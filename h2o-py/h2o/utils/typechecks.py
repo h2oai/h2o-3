@@ -16,7 +16,7 @@ from h2o.exceptions import H2OTypeError, H2OValueError
 
 __all__ = ("is_str", "is_int", "is_numeric", "is_listlike",
            "assert_is_type", "assert_matches", "assert_satisfies",
-           "assert_is_bool", "assert_is_int", "assert_is_numeric", "assert_is_str",
+           "assert_is_int", "assert_is_numeric", "assert_is_str",
            "assert_maybe_int", "assert_maybe_numeric", "assert_maybe_str")
 
 
@@ -55,35 +55,65 @@ def is_listlike(s):
 
 
 
-def assert_is_type(var, expected_type, message=None, skip_frames=1):
+def assert_is_type(var, *types, **kwargs):
     """
     Assert that the argument has the specified type.
 
-    This function is used to check that the type of the argument is correct, otherwises it raises an error.
-    Use it like following::
+    This function is used to check that the type of the argument is correct, otherwises it raises an H2OTypeError.
+    The following use cases are supported::
 
+        # simple check
+        assert_is_type(flag, bool)
         assert_is_type(fr, H2OFrame)
-        assert_is_type(port, (int, str))
+        assert_is_type(arr, list)
 
-    :param var: variable to check.
-    :param expected_type: the expected type. This could be either a raw type (such as ``bool``), a ``None`` literal,
-        a class name, or a tuple of those. If ``str`` or ``int`` are passed, then on Py2 we will also attempt to
-        match ``unicode`` and ``long`` respectively (so that the check is Py2/Py3 compatible).
-    :param message: override the error message.
+        # technically None is not a type, but this will also work as expected
+        assert_is_type(v, None)
+
+        # on Py2 these will also pass if `x` is long or `y` is unicode
+        assert_is_type(x, int)
+        assert_is_type(y, str)
+
+        # check for a variable that may have multiple different types
+        assert_is_type(ip, None, str)
+        assert_is_type(x, int, float, str, None)
+
+        # check for a list or set of ints
+        assert_is_type(arr, [int], {int})
+
+        # check for a 2-dimensional array of numeric variables
+        assert_is_type(arr2, [[float, int]])
+
+        # check for a dictionary<str, H2OFrame>
+        assert_is_type(cols, {str: H2OFrame})
+
+        # check for a dictionary<str, int|float>
+        # (note that it is not possible to ask for a dict which has, say str:int and int:bool key/values only.
+        # Although it is technically possible to implement such check, it has no foreseeable utility).
+        assert_is_type(vals, {str: int, str: float})
+
+        # check for a tuple with the specific type signature
+        # (we do not have a way for specifying type unions for individual elements of the tuple).
+        assert_is_type(t, (int, int, int, [str]))
+
+    Note that in Python everything is an ``object``, so you can use "object" to mean "any".
+
+    :param var: variable to check
+    :param *types: the expected types
+    :param message: override the error message
     :param skip_frames: how many local frames to skip when printing out the error.
 
     :raises H2OTypeError: if the argument is not of the desired type.
     """
-    if _check_type(var, expected_type): return
+    assert types, "The expected types were not provided"
+    if _check_type(var, types): return
+    assert set(kwargs).issubset({"message", "skip_frames"}), "Unexpected keyword arguments: %r" % kwargs
     vname = _retrieve_assert_arguments()[0]
-    raise H2OTypeError(var_name=vname, var_value=var, exp_type=expected_type, message=message,
-                       skip_frames=skip_frames)
+    message = kwargs.get("message", None)
+    skip_frames = kwargs.get("skip_frames", 1)
+    raise H2OTypeError(var_name=vname, var_value=var, exp_type=types, message=message, skip_frames=skip_frames)
 
 
-
-def assert_is_none(s):
-    """Assert that the argument is None."""
-    assert_is_type(s, None, skip_frames=2)
 
 def assert_is_str(s):
     """Assert that the argument is a string."""
@@ -91,7 +121,7 @@ def assert_is_str(s):
 
 def assert_maybe_str(s):
     """Assert that the argument is a string or None."""
-    assert_is_type(s, (str, None), skip_frames=2)
+    assert_is_type(s, str, None, skip_frames=2)
 
 def assert_is_int(x):
     """Assert that the argument is integer."""
@@ -99,19 +129,15 @@ def assert_is_int(x):
 
 def assert_maybe_int(x):
     """Assert that the argument is integer or None."""
-    assert_is_type(x, (int, None), skip_frames=2)
-
-def assert_is_bool(b):
-    """Assert that the argument is boolean."""
-    assert_is_type(b, bool, skip_frames=2)
+    assert_is_type(x, int, None, skip_frames=2)
 
 def assert_is_numeric(x):
     """Assert that the argument is numeric (integer or float)."""
-    assert_is_type(x, (int, float), skip_frames=2)
+    assert_is_type(x, int, float, skip_frames=2)
 
 def assert_maybe_numeric(x):
     """Assert that the argument is either numeric or None."""
-    assert_is_type(x, (int, float, None), skip_frames=2)
+    assert_is_type(x, int, float, None, skip_frames=2)
 
 
 def assert_true(cond, message):
@@ -218,22 +244,34 @@ def _retrieve_assert_arguments():
 
 
 
-def _check_type(s, stype, _nested=False):
+def _check_type(var, types):
     """
-    Return True if the variable has the specified type, and False otherwise.
+    Return True if the variable is of one of the specified types, and False otherwise.
 
-    :param s: variable to check.
-    :param stype: expected type (should be either a type, a tuple of types, or None).
+    :param var: variable to check
+    :param types: iterable of types
     """
-    if stype is None:
-        return s is None
-    elif stype is str:
-        return isinstance(s, _str_type)
-    elif stype is int:
-        return isinstance(s, _int_type)
-    elif isinstance(stype, type):
-        return isinstance(s, stype)
-    elif isinstance(stype, tuple) and not _nested:
-        return any(_check_type(s, tt, _nested=True) for tt in stype)
-    else:
-        raise RuntimeError("Ivalid argument %r to _check_type()" % stype)
+    for tt in types:
+        if tt is None:
+            if var is None: return True
+        elif tt is str:
+            if isinstance(var, _str_type): return True
+        elif tt is int:
+            if isinstance(var, _int_type): return True
+        elif isinstance(tt, type):
+            if isinstance(var, tt): return True
+        elif isinstance(tt, list):
+            if isinstance(var, list) and all(_check_type(item, tt) for item in var): return True
+        elif isinstance(tt, set):
+            if isinstance(var, set) and all(_check_type(item, tt) for item in var): return True
+        elif isinstance(tt, tuple):
+            if isinstance(var, tuple) and len(tt) == len(var) and \
+               all(_check_type(var[i], [tt[i]]) for i in range(len(tt))): return True
+        elif isinstance(tt, dict):
+            ttkeys = set(viewkeys(tt))
+            ttvals = set(viewvalues(tt))
+            if isinstance(var, dict) and all(_check_type(k, ttkeys) and _check_type(v, ttvals)
+                                             for k, v in viewitems(var)): return True
+        else:
+            raise RuntimeError("Ivalid type %r in _check_type()" % tt)
+    return False

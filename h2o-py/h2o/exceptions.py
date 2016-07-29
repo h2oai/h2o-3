@@ -75,7 +75,7 @@ class H2OTypeError(H2OSoftError):
         val = self._var_value
         etn = self._get_type_name(self._exp_type)
         article = "an" if etn.lstrip("?")[0] in "aioeH" else "a"
-        atn = self._get_type_name(type(val))
+        atn = self._get_type_name([type(val)])
         return "Argument `{var}` should be {an} {expected_type}, got {actual_type} (value: {value})".\
                format(var=var, an=article, expected_type=etn, actual_type=atn, value=val)
 
@@ -91,46 +91,43 @@ class H2OTypeError(H2OSoftError):
 
 
     @staticmethod
-    def _get_type_name(stype, _nested=False):
+    def _get_type_name(types):
         """
         Return the name of the provided type.
 
-            >>> _get_type_name(int) == "integer"
-            >>> _get_type_name(str) == "string"
-            >>> _get_type_name(tuple) == "tuple"
-            >>> _get_type_name(Exception) == "Exception object"
+            >>> _get_type_name([int]) == "integer"
+            >>> _get_type_name([str]) == "string"
+            >>> _get_type_name([tuple]) == "tuple"
+            >>> _get_type_name([Exception]) == "Exception"
             >>> _get_type_name((int, float, bool)) == "integer|float|bool"
             >>> _get_type_name((H2OFrame, None)) == "?H2OFrame"
         """
-        if stype is None or isinstance(None, stype):
-            return "None"
-        elif stype is str:
-            return "string"
-        elif stype is int:
-            return "integer"
-        elif isinstance(stype, type):
-            n = stype.__name__
-            if n[0].isupper() and not _nested:
-                return n + " object"
+        maybe_type = False
+        res = []
+        for tt in types:
+            if tt is None:
+                maybe_type = True
+            elif tt is str:
+                res.append("string")
+            elif tt is int:
+                res.append("integer")
+            elif isinstance(tt, type):
+                res.append(tt.__name__)
+            elif isinstance(tt, list):
+                res.append("list(%s)" % H2OTypeError._get_type_name(tt))
+            elif isinstance(tt, set):
+                res.append("set(%s)" % H2OTypeError._get_type_name(tt))
+            elif isinstance(tt, tuple):
+                res.append("(%s)" % ", ".join(H2OTypeError._get_type_name([item]) for item in tt))
+            elif isinstance(tt, dict):
+                res.append("dict(%s: %s)" % (H2OTypeError._get_type_name(set(tt.keys())),
+                                             H2OTypeError._get_type_name(set(tt.values()))))
             else:
-                return n
-        elif isinstance(stype, tuple):
-            maybe_type = False
-            res = []
-            for tt in stype:
-                nn = H2OTypeError._get_type_name(tt, _nested=True)
-                if nn == "None":
-                    maybe_type = True
-                else:
-                    res.append(nn)
-            if maybe_type:
-                if res:
-                    res[0] = "?" + res[0]
-                else:
-                    res.append("None")
-            return "|".join(res)
-        else:
-            raise RuntimeError("Unexpected `stype`: %r" % stype)
+                raise RuntimeError("Unexpected `tt`: %r" % tt)
+        if maybe_type:
+            if not res: return "None"
+            res[0] = "?" + res[0]
+        return "|".join(res)
 
 
 

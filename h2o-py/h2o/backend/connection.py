@@ -140,9 +140,9 @@ class H2OConnection(backwards_compatible()):
 
         if verify_ssl_certificates is None: verify_ssl_certificates = True
         assert_is_type(verify_ssl_certificates, bool)
-        assert_is_type(proxy, (str, None))
-        assert_is_type(auth, (AuthBase, tuple, None))
-        assert_is_type(cluster_name, (str, None))
+        assert_is_type(proxy, str, None)
+        assert_is_type(auth, AuthBase, (str, str), None)
+        assert_is_type(cluster_name, str, None)
 
         conn = H2OConnection()
         conn._verbose = bool(verbose)
@@ -376,7 +376,7 @@ class H2OConnection(backwards_compatible()):
         :param dest: Where to write the log: either a filename (str), or an open file handle (file). If not given,
             then a new temporary file will be created.
         """
-        assert_is_type(dest, (None, str, type(sys.stdout)))
+        assert_is_type(dest, None, str, type(sys.stdout))
         if dest is None:
             dest = os.path.join(tempfile.mkdtemp(), "h2o-connection.log")
         self._print("Now logging all API requests to file %r" % dest)

@@ -302,7 +302,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
       A new H2OFrame instance.
     """
     #assert_is_str(path)
-    assert_maybe_str(destination_frame)
+    assert_is_type(destination_frame, str, None)
     if not parse:
         return lazy_import(path)
 
