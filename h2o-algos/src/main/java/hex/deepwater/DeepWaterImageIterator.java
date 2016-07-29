@@ -10,7 +10,7 @@ import java.util.ArrayList;
 public class DeepWaterImageIterator {
 
   public DeepWaterImageIterator(ArrayList<String> img_lst, ArrayList<Float> lable_lst, int batch_size, int width, int height) throws IOException {
-    assert img_lst.size() == lable_lst.size();
+    assert label_lst==null || img_lst.size() == lable_lst.size();
     this.img_lst = img_lst;
     this.label_lst = lable_lst;
     this.batch_size = batch_size;
@@ -83,7 +83,7 @@ public class DeepWaterImageIterator {
       conv.width=this.width;
       conv.channels=3;
       for (int i = 0; i < batch_size; i++)
-        fs.add(H2O.submitTask(new ImageConverter(i,img_lst.get(start_index+i),label_lst.get(start_index+i),conv,data[which],label[which],file[which])));
+        fs.add(H2O.submitTask(new ImageConverter(i,img_lst.get(start_index+i), label_lst==null?Float.NaN:label_lst.get(start_index+i),conv, data[which],label[which],file[which])));
       fs.blockForPending();
       flip();
       start_index = start_index + batch_size;
