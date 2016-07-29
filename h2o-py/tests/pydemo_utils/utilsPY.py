@@ -1,3 +1,4 @@
+# -*- encoding: utf-8 -*-
 import json
 import codecs
 
@@ -8,10 +9,10 @@ def ipy_notebook_exec(path, save_and_norun=None):
         for line in ipy_valid_lines(block):
             if "h2o.init" not in line:
                 program += line if '\n' in line else line + '\n'
-    if not save_and_norun == None:
-        with open(save_and_norun,"w") as f: f.write(program)
-    else :
-        d={}
+    if save_and_norun is not None:
+        with open(save_and_norun, "w") as f: f.write(program)
+    else:
+        d = {}
         exec(program, d)  # safe, but horrible (exec is horrible)
 
 def ipy_blocks(notebook):
@@ -46,12 +47,12 @@ def ipy_valid_lines(block):
     lines = [line for line in lines if not line.startswith('%')]
 
     # don't show any plots
-    lines = [line for line in lines if not "plt.show()" in line]
+    lines = [line for line in lines if "plt.show()" not in line]
 
     return lines
 
 def pydemo_exec(test_name):
-    with open (test_name, "r") as t: demo = t.read()
+    with open(test_name, "r") as t: demo = t.read()
     program = ''
     for line in demo.split('\n'):
         if "h2o.init" not in line:
@@ -59,4 +60,3 @@ def pydemo_exec(test_name):
     demo_c = compile(program, '<string>', 'exec')
     p = {}
     exec(demo_c, p)
-
