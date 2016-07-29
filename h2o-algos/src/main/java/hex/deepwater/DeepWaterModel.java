@@ -428,10 +428,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       int width = 224;
       int height = 224;
 
-      ArrayList<Float> train_labels = new ArrayList<>();
       ArrayList<String> train_data = new ArrayList<>();
 
-      //make predictions for all rows - even those with weights 0 for now (easier to deal with minibatch, since we need to scoring)
+      //make predictions for all rows - even those with weights 0 for now (easier to deal with minibatch)
       for (int i=0; i<_fr.vec(0).length(); ++i) {
         if (isCancelled() || _j != null && _j.stop_requested()) return;
 //        double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
@@ -439,7 +438,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 //          continue;
         String file = _fr.vec(0).atStr(bs, i).toString();
         train_data.add(file);
-        train_labels.add(new Float(-999)); //dummy
       }
       final int orig_length = train_data.size();
       assert(orig_length==_fr.numRows());
@@ -450,7 +448,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       while (train_data.size()%batch_size!=0) {
         int pick = rng.nextInt(train_data.size());
         train_data.add(train_data.get(pick));
-        train_labels.add(train_labels.get(pick));
       }
 
       _mb = makeMetricBuilder(_domain);
@@ -473,7 +470,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         }
 
         int obs=0;
-        img_iter = new DeepWaterImageIterator(train_data, train_labels, batch_size, width, height);
+        img_iter = new DeepWaterImageIterator(train_data, null /*no labels*/, batch_size, width, height);
         Futures fs=new Futures();
         while(img_iter.Next(fs)) {
           if (isCancelled() || _j != null && _j.stop_requested()) return;
@@ -501,6 +498,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
                 GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
               preds[0] = hex.genmodel.GenModel.getPrediction(preds, _output._priorClassDist, null, defaultThreshold());
               if (_makePreds) {
+                Log.info(img_iter.getFiles()[j] + " -> preds: " + Arrays.toString(preds));
                 for (int i = 0; i <= classes; ++i)
                   vw[i].set(row, preds[i]);
               }
@@ -531,6 +529,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
+  @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
@@ -541,7 +540,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     BigScore bs = new DeepWaterBigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
-    return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
+    return bs.outputFrame(null == destination_key ? Key.make() : Key.make(destination_key), names, domains);
   }
 
   @Override
