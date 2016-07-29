@@ -1,6 +1,16 @@
 FAQ
 ===
 
+H2O
+---
+
+**What is H2O?**
+
+H2O is an open-source platform for scalable and distributed machine
+learning, and set of algorithms implemented on that platform.
+
+--------------
+
 General Troubleshooting Tips
 ----------------------------
 
@@ -862,18 +872,6 @@ In-H2O scoring is triggered on an existing H2O cluster, typically using
 a REST API call. H2O evaluates the predictions in a parallel and
 distributed fashion for this case. The predictions are stored into a new
 Frame and can be written out using ``h2o.exportFile()``, for example.
-
---------------
-
-**I am using an older version of H2O (2.8 or prior) - where can I find
-documentation for this version?**
-
-If you are using H2O 2.8 or prior, we strongly recommend upgrading to
-the latest version of H2O if possible.
-
-If you do not wish to upgrade to the latest version, documentation for
-H2O Classic is available
-`here <http://docs.h2o.ai/h2oclassic/index.html>`__.
 
 --------------
 
@@ -1889,6 +1887,16 @@ example:
 
 Sparkling Water
 ---------------
+
+**What is Sparkling Water?**
+
+Sparkling Water allows users to combine the fast, scalable machine
+learning algorithms of H2O with the capabilities of Spark. With
+Sparkling Water, users can drive computation from Scala/R/Python and
+utilize the H2O Flow UI, providing an ideal machine learning platform
+for application developers.
+
+--------------
 
 **What are the advantages of using Sparkling Water compared with H2O?**
 
