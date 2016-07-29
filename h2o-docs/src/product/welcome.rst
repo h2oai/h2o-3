@@ -49,13 +49,13 @@ learn more:
    -  `Kmeans <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/kmeans/kmeans.md>`_
    -  `Distributed Random Forest (DRF) <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/rf/rf.md>`_
 
--  `Getting Started with Flow <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/flow/README.md>`_: This document describes our new intuitive
+-  :ref:`using-flow`: This document describes our new intuitive
    web interface, Flow. This interface is similar to IPython notebooks,
    and allows you to create a visual workflow to share with others.
 
 -  `Launch from the command line <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/H2O-DevCmdLine.md>`_: This document describes some of the additional options that you can configure when launching H2O (for example, to specify a different directory for saved Flow data, to allocate more memory, or to use a flatfile for quick configuration of a cluster).
 
--  `Algorithms <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/datascience/DataScienceH2O-Dev.md>`_: This document describes the science behind our algorithms and provides a detailed, per-algo view of each model type.
+-  :ref:`Data_Science`: This document describes the science behind our algorithms and provides a detailed, per-algo view of each model type.
 
 -  `GitHub Help <https://help.github.com/>`_: The GitHub Help system is a useful resource for becoming familiar with Git. 
 
@@ -188,44 +188,28 @@ Experienced Users
 -----------------
 
 If you've used previous versions of H2O, the following links will help
-guide you through the process of upgrading to H2O 3.0.
+guide you through the process of upgrading to H2O-3.
 
 -  `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/>`_: This one-page PDF provides a basic overview of
    the operating systems, languages and APIs, Hadoop resource manager
    versions, cloud computing environments, browsers, and other resources
    recommended to run H2O.
 
--  `Migration Guide <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/Migration.md>`_: This document provides a comprehensive guide to
+-  :ref:`migration`: This document provides a comprehensive guide to
    assist users in upgrading to H2O 3.0. It gives an overview of the
    changes to the algorithms and the web UI introduced in this version
    and describes the benefits of upgrading for users of R, APIs, and
    Java.
 
--  `Porting R Scripts <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md>`_: This document is designed to assist users who have
-   created R scripts using previous versions of H2O. Due to the many
-   improvements in R, scripts created using previous versions of H2O
-   need some revision to work with H2O 3.0. This document provides a
-   side-by-side comparison of the changes in R for each algorithm, as
-   well as overall structural enhancements R users should be aware of,
-   and provides a link to a tool that assists users in upgrading their
-   scripts.
-
--  `Recent Changes <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/flow/RecentChanges.md>`_: This document describes the most recent changes in
+-  `Recent Changes <https://github.com/h2oai/h2o-3/blob/master/Changes.md>`_: This document describes the most recent changes in
    the latest build of H2O. It lists new features, enhancements
    (including changed parameter default values), and bug fixes for each
    release, organized by sub-categories such as Python, R, and Web UI.
-
--  `H2O Classic vs H2O 3.0 <https://github.com/h2oai/h2o-3/blob/jessica-dev-docs/h2o-docs/src/product/upgrade/H2OvsH2O-Dev.md>`_: This document presents a side-by-side
-   comparison of H2O 3.0 and the previous version of H2O. It compares
-   and contrasts the features, capabilities, and supported algorithms
-   between the versions. If you'd like to learn more about the benefits
-   of upgrading, this is a great source of information.
 
 -  `Contributing code <https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md>`_: If you're interested in contributing code to H2O,
    we appreciate your assistance! This document describes how to access
    our list of Jiras that are suggested tasks for contributors and how
    to contact us.
-
 
 
 Sparkling Water Users
@@ -236,7 +220,7 @@ Sparkling Water is a gradle project with the following submodules:
 -  Core: Implementation of H2OContext, H2ORDD, and all technical
    integration code
 -  Examples: Application, demos, examples
--  ML: Implementation of MLLib pipelines for H2O algorithms
+-  ML: Implementation of MLlib pipelines for H2O algorithms
 -  Assembly: Creates "fatJar" composed of all other modules
 -  py: Implementation of (h2o) Python binding to Sparkling Water
 
@@ -250,20 +234,8 @@ links.
 
 Sparkling Water is versioned according to the Spark versioning, so make
 sure to use the Sparkling Water version that corresponds to the
-installed version of Spark:
+installed version of Spark.
 
--  Use `Sparkling Water
-   1.2 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.2/6/index.html>`__
-   for Spark 1.2
--  Use `Sparkling Water
-   1.3 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.3/7/index.html>`__
-   for Spark 1.3+
--  Use `Sparkling Water
-   1.4 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.4/3/index.html>`__
-   for Spark 1.4
--  Use `Sparkling Water
-   1.5 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html>`__
-   for Spark 1.5
 
 Getting Started with Sparkling Water
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -287,7 +259,7 @@ Getting Started with Sparkling Water
 
    - `Sparkling Water on YARN <http://blog.h2o.ai/2014/11/sparkling-water-on-yarn-example/>`_: Follow these instructions to run Sparkling Water on a YARN cluster.
 
--  `Building Applications on top of H2O <http://learn.h2o.ai/content/tutorials/sparkling-water/index.html>`_ : This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
+-  `Building Machine Learning Applications with Sparkling Water <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/sparkling-water/index.html>`_: This short tutorial describes project building and demonstrates the capabilities of Sparkling Water using Spark Shell to build a Deep Learning model.
 
 -  `Sparkling Water FAQ <http://www.h2o.ai/product/faq/#SparklingH2O>`_: This FAQ provides answers to many common
    questions about Sparkling Water.
@@ -318,7 +290,7 @@ Sparkling Water Meetup Slide Decks
 PySparkling
 ~~~~~~~~~~~~
 
-**Note**: PySparkling requires `Sparkling Water 1.5 <http://h2o-release.s3.amazonaws.com/sparkling-water/rel-1.5/3/index.html>`__ or later.
+**Note**: PySparkling requires Sparkling Water 1.5 or later.
 
 H2O's PySparkling package is not available through ``pip``. (There is
 `another <https://pypi.python.org/pypi/pysparkling/>`__ similarly-named
@@ -350,33 +322,14 @@ notebooks. For more information, refer to the following links.
    `here <http://www.h2o.ai/download/h2o/python>`__
    to view instructions on how to use H2O with Python.
 
--  `Python readme <https://github.com/h2oai/h2o-3/blob/master/h2o-py/README.rst>`_: This document describes how to setup and install the
-   prerequisites for using Python with H2O.
-
 -  `Python docs <../h2o-py/docs/index.html>`_: This document represents the definitive guide to using
    Python with H2O.
-
--  `Python Parity <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/PythonParity.md>`_: This document is is a list of Python capabilities that
-   were previously available only through the H2O R interface but are
-   now available in H2O using the Python interface.
 
 -   `Grid Search in Python <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/H2O_tutorial_eeg_eyestate.ipynb>`_: This notebook demonstrates the use of grid search in Python.
 
 
 R Users
 -------
-
-Don't worry, R users - we still provide R support in the latest version
-of H2O, just as before. The R components of H2O have been cleaned up,
-simplified, and standardized, so the command format is easier and more
-intuitive. Due to these improvements, be aware that any scripts created
-with previous versions of H2O will need some revision to be compatible
-with the latest version.
-
-We have provided the following helpful resources to assist R users in
-upgrading to the latest version, including a document that outlines the
-differences between versions and a tool that reviews scripts for
-deprecated or renamed parameters.
 
 Currently, the only version of R that is known to be incompatible with
 H2O is R version 3.1.0 (codename "Spring Dance"). If you are using that
@@ -385,24 +338,13 @@ version, we recommend upgrading the R version before using H2O.
 To check which version of H2O is installed in R, use
 ``versions::installed.versions("h2o")``.
 
--  Click
-   `here <http://h2o-release.s3.amazonaws.com/h2o/latest_stable.html#R>`__
-   to view instructions for using H2O with R.
-
 -  `R User Documentation <../h2o-r/h2o_package.pdf>`_: This document contains all commands in the H2O
    package for R, including examples and arguments. It represents the
    definitive guide to using H2O in R.
 
--  `Porting R Scripts <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/upgrade/H2ODevPortingRScripts.md>`_: This document is designed to assist users who have
-   created R scripts using previous versions of H2O. Due to the many
-   improvements in R, scripts created using previous versions of H2O
-   will not work. This document provides a side-by-side comparison of
-   the changes in R for each algorithm, as well as overall structural
-   enhancements R users should be aware of, and provides a link to a
-   tool that assists users in upgrading their scripts.
-
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial
    describes how to use RStudio to connect to Sparkling Water.
+
 
 Ensembles
 ---------
@@ -410,10 +352,10 @@ Ensembles
 Ensemble machine learning methods use multiple learning algorithms to
 obtain better predictive performance.
 
--  `H2O Ensemble GitHub repository <https://github.com/h2oai/h2o-2/tree/master/R/ensemble>`_: Location for the H2O Ensemble R
+-  `H2O Ensemble GitHub repository <https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble>`_: Location for the H2O Ensemble R
    package.
 
--  `Ensemble Documentation <http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html>`_: This documentation provides more details on
+-  `Ensemble Documentation <http://docs.h2o.ai/h2o-tutorials/latest-stable/tutorials/ensembles-stacking/index.html>`_: This documentation provides more details on
    the concepts behind ensembles and how to use them.
 
 
@@ -453,20 +395,6 @@ own custom app that uses H2O.
    for the algorithms used by H2O.
 
 -  `h2o-genmodel (POJO) Javadoc <../h2o-genmodel/javadoc/index.html>`_: Provides a step-by-step guide to creating and implementing POJOs in a Java application.
-
-SDK Information
----------------
-
-The Java API is generated and accessible from the `download
-page <http://h2o.ai/download>`_.
-
--  `Central
-   repository <http://search.maven.org/#search%7Cga%7C1%7Cai.h2o>`_
--  `View code on
-   Github <https://github.com/h2oai/h2o-3/>`_
--  `Apache
-   License <https://github.com/h2oai/h2o-3/blob/master/LICENSE>`_
-
 
 
 Developers
