@@ -190,7 +190,6 @@ class H2OConnection(backwards_compatible()):
         :param filename: file to upload to the server. Cannot be used with `data` or `json`.
 
         :returns: an H2OResponse object representing the server's response
-        :raises ValueError: if the endpoint's URL is invalid
         :raises H2OConnectionError: if the H2O server cannot be reached (or connection is not initialized)
         :raises H2OServerError: if there was a server error (http 500), or server returned malformed JSON
         :raises H2OResponseError: if the server returned an H2OErrorV3 response (e.g. if the parameters were invalid)
@@ -335,16 +334,13 @@ class H2OConnection(backwards_compatible()):
 
         This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O
         instance. All data will be lost.
+
         :param self: An H2OConnection object containing the IP address and port of the server running H2O.
         :param prompt: A logical value indicating whether to prompt the user before shutting down the H2O server.
-        :return: None
+
+        :returns: None
         """
-        try:
-            if not self.cluster_is_up():
-                raise ValueError("There is no H2O instance running at " + self._base_url)
-        except:
-            # H2O is already shutdown on the java side
-            raise ValueError("The H2O instance running at %s has already been shutdown." % self._base_url)
+        if not self.cluster_is_up(): return
         assert_is_type(prompt, bool)
         if prompt:
             question = "Are you sure you want to shutdown the H2O instance running at %s (Y/N)? " % self._base_url
@@ -360,7 +356,7 @@ class H2OConnection(backwards_compatible()):
         """
         Determine if an H2O cluster is running or not.
 
-        :return: True if the cluster is up; False otherwise
+        :returns: True if the cluster is up; False otherwise
         """
         try:
             if self._local_server and not self._local_server.is_running(): return False
