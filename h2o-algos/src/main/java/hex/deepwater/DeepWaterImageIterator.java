@@ -60,12 +60,9 @@ public class DeepWaterImageIterator {
       _destFile[_index] = _file;
       _destLabel[_index] = _label;
       try {
-        float[] tmp = img2pixels(_file, _conv.width, _conv.height); //TODO: directly fill _destData
-        final int len = tmp.length;
-        assert(len==_conv.width*_conv.height*_conv.channels);
+        final int len = _conv.width*_conv.height*_conv.channels;
         final int start=_index*len;
-        for (int j = 0; j < len; j++)
-          _destData[start+j] = tmp[j];
+        img2pixels(_file, _conv.width, _conv.height, _destData, start);
       } catch (IOException e) {
         e.printStackTrace();
       }
