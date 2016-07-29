@@ -114,7 +114,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
         _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double)n));
         _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double)n));
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-        ntt = new NativeTrainTask(model_info()._imageTrain, data, labels);
+        ntt = new NativeTrainTask(_localmodel._imageTrain, data, labels);
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(batch_size);
       }
