@@ -65,6 +65,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     BufferedString bs = new BufferedString();
     int width = _localmodel._height;
     int height = _localmodel._width;
+    int channels = _localmodel._channels;
 
     if (_fr.numRows()>Integer.MAX_VALUE) {
       throw H2O.unimpl("Need to implement batching into int-sized chunks.");
@@ -97,7 +98,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     }
     try {
       long start = System.currentTimeMillis();
-      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(train_data, train_labels, batch_size, width, height);
+      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(train_data, train_labels, batch_size, width, height, channels);
       long end = System.currentTimeMillis();
       Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
 
