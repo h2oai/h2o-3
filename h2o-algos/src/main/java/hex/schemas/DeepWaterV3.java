@@ -44,7 +44,9 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "replicate_training_data",
         "single_node_mode",
         "shuffle_training_data",
-        "mini_batch_size"
+        "mini_batch_size",
+        "clip_gradient",
+        "network"
     };
 
 
@@ -276,5 +278,14 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     @API(level = API.Level.expert, direction=API.Direction.INOUT,
         help = "Mini-batch size (smaller leads to better fit, larger can speed up and generalize better).")
     public int mini_batch_size;
+
+    @API(level = API.Level.expert, direction=API.Direction.INOUT, help = "Clip gradients once their absolute value is larger than this value.")
+    public double clip_gradient;
+
+    @API(level = API.Level.critical, direction=API.Direction.INOUT, values = {"AUTO","USER","lenet","alexnet","vgg","vgg16","googlenet","inception_bn","resnet"}, help = "Network architecture.")
+    public DeepWaterParameters.Network network;
+
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, values = {"AUTO","mxnet","caffe","tensorflow"}, help = "Deep Learning Backend.")
+    public DeepWaterParameters.Backend backend;
   }
 }
