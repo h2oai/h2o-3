@@ -99,9 +99,10 @@ def assert_is_type(var, *types, **kwargs):
     Note that in Python everything is an ``object``, so you can use "object" to mean "any".
 
     :param var: variable to check
-    :param *types: the expected types
-    :param message: override the error message
-    :param skip_frames: how many local frames to skip when printing out the error.
+    :param types: the expected types
+    :param kwargs:
+        message: override the error message
+        skip_frames: how many local frames to skip when printing out the error.
 
     :raises H2OTypeError: if the argument is not of the desired type.
     """

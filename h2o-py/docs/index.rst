@@ -18,6 +18,7 @@ H2O Documentation
    metrics
    assembly
    backend
+   exceptions
 
 Indices and tables
 ==================

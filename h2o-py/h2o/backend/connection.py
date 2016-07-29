@@ -335,10 +335,7 @@ class H2OConnection(backwards_compatible()):
         This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O
         instance. All data will be lost.
 
-        :param self: An H2OConnection object containing the IP address and port of the server running H2O.
         :param prompt: A logical value indicating whether to prompt the user before shutting down the H2O server.
-
-        :returns: None
         """
         if not self.cluster_is_up(): return
         assert_is_type(prompt, bool)
