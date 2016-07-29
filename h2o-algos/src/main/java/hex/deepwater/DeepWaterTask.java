@@ -120,9 +120,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
       }
       nativetime +=ntt._timeInMillis;
       end = System.currentTimeMillis();
-      long cputime=end-start- nativetime;
       Log.info("Time for one epoch: " + PrettyPrint.msecs(end-start, true));
-      Log.info("Time for data preparation: " + PrettyPrint.msecs(cputime, true));
       Log.info("Time for Native training : " + PrettyPrint.msecs(nativetime, true));
 
     } catch (IOException e) {
