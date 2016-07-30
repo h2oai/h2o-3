@@ -2,6 +2,82 @@
 
 ##H2O
 
+###Turin (3.10.0.2) - 7/29/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2805'>PUBDEV-2805</a>] -         Error when setting a string column to a single value in R/Py
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2879'>PUBDEV-2879</a>] -         NPE in MetadataHandler
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2965'>PUBDEV-2965</a>] -         R h2o.merge() ignores by.x and by.y
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3052'>PUBDEV-3052</a>] -         reading some (large) CSV file fails in 3.8.2.9 (works in 3.8.2.8)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3062'>PUBDEV-3062</a>] -         ui - parameter labels disappeared
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3135'>PUBDEV-3135</a>] -         Download Logs broken URL from Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3180'>PUBDEV-3180</a>] -         Modify default credentials provider chain for S3
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2958'>PUBDEV-2958</a>] -         H2O Version Check
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3022'>PUBDEV-3022</a>] -         Add an h2o.concat function equivalent to pandas.concat
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3050'>PUBDEV-3050</a>] -         Add Huber loss function for GBM and DL (for regression)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3071'>PUBDEV-3071</a>] -         Add RMSE to model metrics
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3104'>PUBDEV-3104</a>] -         Add Mean Absolute Error to Model Metrics
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3108'>PUBDEV-3108</a>] -         Add mean absolute error to scoring history and model plotting
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3116'>PUBDEV-3116</a>] -         Add categorical encoding schemes for DL and Aggregator
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3155'>PUBDEV-3155</a>] -         Compute supervised ModelMetrics from predicted and actual values in Java/R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3162'>PUBDEV-3162</a>] -         Compute supervised ModelMetrics from predicted and actual values in Python
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3163'>PUBDEV-3163</a>] -         Add docs for h2o.make_metrics() for R and Python
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3012'>PUBDEV-3012</a>] -         Remove grid.sort_by method in Python API
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1888'>PUBDEV-1888</a>] -         Implement gradient checking for DL
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2627'>PUBDEV-2627</a>] -         Add better warning message to functions of H2OModelMetrics objects
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3021'>PUBDEV-3021</a>] -         Add demo datasets to Python package
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3073'>PUBDEV-3073</a>] -         Random columns having high variable importance in GBM after training
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3113'>PUBDEV-3113</a>] -         Replace &quot;MSE&quot; with &quot;RMSE&quot; in scoring history table
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3122'>PUBDEV-3122</a>] -         Make all TwoDimTable Headers Pythonic in R and Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3129'>PUBDEV-3129</a>] -         Achieve consistency between DL and GBM/RF scoring history in regression case
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3131'>PUBDEV-3131</a>] -         Disable R^2 stopping criterion in tree model builders
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3149'>PUBDEV-3149</a>] -         Remove R^2 from all model output except GLM
+</li>
+</ul>
+
 ###Turin (3.8.3.4) - 7/15/2016
 
 <h4>        Bug
