@@ -509,7 +509,7 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' 
 #' ## If model uses balance_classes
 #' ## the results from train = TRUE will not match the results from newdata = prostate.hex
-#' prostate.gbm.balanced <- h2o.gbm(3:9, "CAPSULE", prostate.hex, balance_classes = T)
+#' prostate.gbm.balanced <- h2o.gbm(3:9, "CAPSULE", prostate.hex, balance_classes = TRUE)
 #' h2o.performance(model = prostate.gbm.balanced, newdata = prostate.hex)
 #' h2o.performance(model = prostate.gbm.balanced, train = TRUE)
 #' }
