@@ -68,8 +68,8 @@ final public class DeepWaterModelInfo extends Iced {
     parameters = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     _model_id = model_id;
     DeepWaterParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
-    _width = 360;
-    _height = 360;
+    _width = 224;
+    _height = 224;
     _channels = 3;
     _imageTrain = new ImageTrain(_width,_height,_channels);
     _imageTrain.buildNet(nClasses, parameters._mini_batch_size, "inception_bn");
