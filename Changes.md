@@ -9,17 +9,9 @@
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2805'>PUBDEV-2805</a>] -         Error when setting a string column to a single value in R/Py
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2879'>PUBDEV-2879</a>] -         NPE in MetadataHandler
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2965'>PUBDEV-2965</a>] -         R h2o.merge() ignores by.x and by.y
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3052'>PUBDEV-3052</a>] -         reading some (large) CSV file fails in 3.8.2.9 (works in 3.8.2.8)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3062'>PUBDEV-3062</a>] -         ui - parameter labels disappeared
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3135'>PUBDEV-3135</a>] -         Download Logs broken URL from Flow
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3180'>PUBDEV-3180</a>] -         Modify default credentials provider chain for S3
 </li>
 </ul>
 
@@ -44,15 +36,6 @@
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3162'>PUBDEV-3162</a>] -         Compute supervised ModelMetrics from predicted and actual values in Python
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3163'>PUBDEV-3163</a>] -         Add docs for h2o.make_metrics() for R and Python
-</li>
-</ul>
-
-<h4>        Task
-</h4>
-<ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3012'>PUBDEV-3012</a>] -         Remove grid.sort_by method in Python API
-</li>
 </ul>
 
 <h4>        Improvement
@@ -63,8 +46,6 @@
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2627'>PUBDEV-2627</a>] -         Add better warning message to functions of H2OModelMetrics objects
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3021'>PUBDEV-3021</a>] -         Add demo datasets to Python package
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3073'>PUBDEV-3073</a>] -         Random columns having high variable importance in GBM after training
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3113'>PUBDEV-3113</a>] -         Replace &quot;MSE&quot; with &quot;RMSE&quot; in scoring history table
 </li>
