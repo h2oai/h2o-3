@@ -15,7 +15,8 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.exceptions import H2OTypeError, H2OValueError
 
 __all__ = ("is_str", "is_int", "is_numeric", "is_listlike",
-           "U", "assert_is_type", "assert_matches", "assert_satisfies",
+           "U", "I", "numeric",
+           "assert_is_type", "assert_matches", "assert_satisfies",
            "assert_is_int", "assert_is_numeric", "assert_is_str",
            "assert_maybe_int", "assert_maybe_numeric", "assert_maybe_str")
 
@@ -56,15 +57,48 @@ def is_listlike(s):
 
 
 class U(object):
-    """Helper class to create unions of types (in situations where such unions won't be otherwise possible."""
+    """
+    Union of types.
+
+    We say that ``type(x) is U(type1, ..., typeN)`` if type of ``x`` is one of ``type1``, ..., ``typeN``.
+
+    This is a helper class that can be used in situations where unions are otherwise hard or impossible to declare.
+    For example, one doesn't need a union type to in the test ``assert_is_type(x, int, str, None)``, but if we want to
+    have unions as dictionary keys, one has to use this class: ``assert_is_type(d, {str: U(int, bool, None)})``.
+    """
 
     def __init__(self, *types):
-        """Create a union of types."""
+        """Create an object representing the union of ``*types``."""
         self._types = types
 
     def __iter__(self):
+        """Iterate through the union's constituent types."""
         for t in self._types:
             yield t
+
+
+class I(object):
+    """
+    Intersection of types.
+
+    We say that ``type(x) is I(type1, ..., typeN)`` if type of ``x`` is all of ``type1``, ..., ``typeN``. Arguably,
+    this is much less useful concept than the union, however it may occasionally be used for classes with
+    multiple inheritance.
+    """
+
+    def __init__(self, *types):
+        """Create an intersection of types."""
+        self._types = types
+
+    def __iter__(self):
+        """Iterate through the intersection's constituent types."""
+        for t in self._types:
+            yield t
+
+
+# We export this type, for convenience
+numeric = U(int, float)
+
 
 
 def assert_is_type(var, *types, **kwargs):
@@ -104,7 +138,9 @@ def assert_is_type(var, *types, **kwargs):
 
         # check for a dictionary<str, int|float>
         assert_is_type(vals, {str: U(int, float)})
-        assert_is_type({"foo": 1, "bar": 2}, {"foo": int, "bar": U(int, float, None)})
+
+        # check for a struct with the specific shape
+        assert_is_type({"foo": 1, "bar": 2}, {"foo": int, "bar": U(int, float, None), "baz": bool})
 
         # check for a tuple with the specific type signature
         assert_is_type(t, (int, int, int, [str]))
@@ -275,10 +311,14 @@ def _check_type(var, types):
             if isinstance(var, _str_type): return True
         elif tt is int:
             if isinstance(var, _int_type): return True
+        elif tt is numeric:
+            if isinstance(var, _num_type): return True
         elif isinstance(tt, _str_type) or isinstance(tt, _int_type):
             if var == tt: return True
         elif isinstance(tt, U):
             if _check_type(var, tt): return True
+        elif isinstance(tt, I):
+            if all(_check_type(var, [tttt]) for tttt in tt): return True
         elif isinstance(tt, type):
             if isinstance(var, tt): return True
         elif isinstance(tt, list):

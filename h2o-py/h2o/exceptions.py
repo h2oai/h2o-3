@@ -103,7 +103,7 @@ class H2OTypeError(H2OSoftError):
             >>> _get_type_name((int, float, bool)) == "integer|float|bool"
             >>> _get_type_name((H2OFrame, None)) == "?H2OFrame"
         """
-        from h2o.utils.typechecks import is_str, is_int, U
+        from h2o.utils.typechecks import is_str, is_int, U, I, numeric
         maybe_type = False
         res = []
         for tt in types:
@@ -113,12 +113,16 @@ class H2OTypeError(H2OSoftError):
                 res.append("string")
             elif tt is int:
                 res.append("integer")
+            elif tt is numeric:
+                res.append("numeric")
             elif is_str(tt):
                 res.append('"%s"' % repr(tt)[1:-1])
             elif is_int(tt):
                 res.append(str(tt))
             elif isinstance(tt, U):
                 res.append(H2OTypeError._get_type_name(tt))
+            elif isinstance(tt, I):
+                res.append("&".join(H2OTypeError._get_type_name([tttt]) for tttt in tt))
             elif isinstance(tt, type):
                 res.append(tt.__name__)
             elif isinstance(tt, list):

@@ -3,11 +3,12 @@
 """Pyunit for h2o.utils.typechecks."""
 from __future__ import absolute_import, division, print_function
 from h2o.exceptions import H2OTypeError, H2OValueError
-from h2o.utils.typechecks import (U, assert_is_type, assert_matches, assert_satisfies)
+from h2o.utils.typechecks import (U, I, numeric, assert_is_type, assert_matches, assert_satisfies)
 
 def test_asserts():
     """Test type-checking functionality."""
     def assert_error(*args, **kwargs):
+        """Check that assert_is_type() with given arguments throws an error."""
         try:
             assert_is_type(*args, **kwargs)
             raise RuntimeError("Failed to throw an exception")
@@ -16,11 +17,15 @@ def test_asserts():
             message = str(e)
             assert len(message) < 1000
             return
-        raise RuntimeError("???")
 
     class A(object): pass
 
     class B(A): pass
+
+    class C(A): pass
+
+    class D(B, C): pass
+
 
     assert_is_type(3, int)
     assert_is_type(2**100, int)
@@ -43,15 +48,20 @@ def test_asserts():
     assert_is_type({1, "hello", 3}, {int, str})
     assert_is_type({"foo": 1, "bar": 2}, {str: int})
     assert_is_type({"foo": 3, "bar": [5], "baz": None}, {str: U(int, None, [int])})
-    assert_is_type({"foo": 1, "bar": 2}, {"foo": int, "bar": U(int, float, None)})
+    assert_is_type({"foo": 1, "bar": 2}, {"foo": int, "bar": U(int, float, None), "baz": bool})
     assert_is_type((1, 3), (int, int))
     assert_is_type(("a", "b", "c"), (int, int, int), (str, str, str))
     assert_is_type([1, [2], [{3}]], [int, [int], [{3}]])
     assert_is_type(A(), None, A)
     assert_is_type(B(), None, A)
+    assert_is_type(C(), A, B)
+    assert_is_type(D(), I(A, B, C))
     assert_is_type(A, type)
     for a in range(-2, 5):
         assert_is_type(a, -2, -1, 0, 1, 2, 3, 4)
+    assert_is_type(1, numeric)
+    assert_is_type(2.2, numeric)
+    assert_is_type(1, I(numeric, object))
 
     assert_error(3, str)
     assert_error("Z", *list("ABCDEFGHIJKL"))
@@ -65,6 +75,10 @@ def test_asserts():
     assert_error(A, A)
     assert_error({"foo": 1, "bar": "2"}, {"foo": int, "bar": U(int, float, None)})
     assert_error(3, 0, 2, 4)
+    assert_error(None, numeric)
+    assert_error("sss", numeric)
+    assert_error(B(), I(A, B, C))
+    assert_error(2, I(int, str))
 
     url_regex = r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?$"
     assert_matches("Hello, world!", r"^(\w+), (\w*)!$")
