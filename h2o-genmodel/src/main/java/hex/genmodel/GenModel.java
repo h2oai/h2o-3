@@ -234,7 +234,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    * @return the best prediction (index of class, zero-based)
    */
   public static int getPrediction(double[] preds, double[] priorClassDist, double data[], double threshold) {
-    assert(preds.length==priorClassDist.length+1);
     if (preds.length == 3) {
       return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
     }
