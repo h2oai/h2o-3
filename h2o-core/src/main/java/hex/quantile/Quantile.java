@@ -114,9 +114,9 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
   public static class StratifiedQuantilesTask extends H2O.H2OCountedCompleter<StratifiedQuantilesTask> {
     // INPUT
     final double _prob;
-    final Vec _response; //vec to compute quantile for
-    final Vec _weights; //obs weights
-    final Vec _strata; //continuous integer range mapping into the _quantiles[id][]
+    final VecAry _response; //vec to compute quantile for
+    final VecAry _weights; //obs weights
+    final VecAry _strata; //continuous integer range mapping into the _quantiles[id][]
     final QuantileModel.CombineMethod _combine_method;
 
     // OUTPUT
@@ -125,9 +125,9 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
     public StratifiedQuantilesTask(H2O.H2OCountedCompleter cc,
                                    double prob,
-                                   Vec response, // response
-                                   Vec weights,  // obs weights
-                                   Vec strata,   // stratification (can be null)
+                                   VecAry response, // response
+                                   VecAry weights,  // obs weights
+                                   VecAry strata,   // stratification (can be null)
                                    QuantileModel.CombineMethod combine_method) {
       super(cc); _response = response; _prob=prob; _combine_method=combine_method; _weights=weights; _strata=strata;
     }
@@ -143,24 +143,24 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       Log.info("Computing quantiles for (up to) " + nstrata + " different strata.");
       _quantiles = new double[nstrata];
       _nids = new int[nstrata];
-      Vec weights = _weights != null ? _weights : _response.makeCon(1);
+      VecAry weights = _weights != null ? _weights : _response.makeCon(1);
       for (int i=0;i<nstrata;++i) { //loop over nodes
-        Vec newWeights = weights.makeCopy();
+        VecAry newWeights = weights.makeCopy();
         //only keep weights for this stratum (node), set rest to 0
         if (_strata!=null) {
           _nids[i] = strataMin+i;
-          new KeepOnlyOneStrata(_nids[i]).doAll(_strata, newWeights);
+          new KeepOnlyOneStrata(_nids[i]).doAll(new VecAry(_strata, newWeights));
         }
-        double sumRows = new SumWeights().doAll(_response, newWeights).sum;
+        double sumRows = new SumWeights().doAll(new VecAry(_response, newWeights)).sum;
         if (sumRows==0) {
           // no observations with weight > 0 found - no need to compute quantiles
           _quantiles[i] = Double.NaN;
 //          Log.warn("No observations in leaf " + _nids[i] + " - all weights are 0.");
         } else {
           Histo h = new Histo(_response.min(0), _response.max(0), 0, sumRows, _response.isInt(0));
-          h.doAll(_response, newWeights);
+          h.doAll(new VecAry(_response, newWeights));
           while (Double.isNaN(_quantiles[i] = h.findQuantile(_prob, _combine_method)))
-            h = h.refinePass(_prob).doAll(_response, newWeights);
+            h = h.refinePass(_prob).doAll(new VecAry(_response, newWeights));
           newWeights.remove();
           //sanity check quantiles
           assert (_quantiles[i] <= _response.max(0) + 1e-6);

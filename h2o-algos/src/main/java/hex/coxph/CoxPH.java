@@ -9,6 +9,7 @@ import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.*;
 import java.util.Arrays;
 
@@ -30,13 +31,13 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   @Override public void init(boolean expensive) {
     super.init(expensive);
 
-    if ((_parms.start_column != null) && !_parms.start_column.isInt())
+    if ((_parms.start_column != null) && !_parms.start_column.isInt(0))
       error("start_column", "start time must be null or of type integer");
 
-    if (!_parms.stop_column.isInt())
+    if (!_parms.stop_column.isInt(0))
       error("stop_column", "stop time must be of type integer");
 
-    if (!_parms.event_column.isInt() && !_parms.event_column.isCategorical())
+    if (!_parms.event_column.isInt(0) && !_parms.event_column.isCategorical(0))
       error("event_column", "event must be of type integer or factor");
 
     if (Double.isNaN(_parms.lre_min) || _parms.lre_min <= 0)
@@ -46,8 +47,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       error("iter_max", "iter_max must be a positive integer");
 
     final int MAX_TIME_BINS = 10000;
-    final long min_time = (_parms.start_column == null) ? (long) _parms.stop_column.min() : (long) _parms.start_column.min() + 1;
-    final int n_time = (int) (_parms.stop_column.max() - min_time + 1);
+    final long min_time = (_parms.start_column == null) ? (long) _parms.stop_column.min(0) : (long) _parms.start_column.min(0) + 1;
+    final int n_time = (int) (_parms.stop_column.max(0) - min_time + 1);
     if (n_time < 1)
       error("start_column", "start times must be strictly less than stop times");
     if (n_time > MAX_TIME_BINS)
@@ -58,23 +59,21 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private Frame _modelBuilderTrain = null;
 
     private void applyScoringFrameSideEffects() {
-      final int offset_ncol = _parms.offset_columns == null ? 0 : _parms.offset_columns.length;
+      final int offset_ncol = _parms.offset_columns == null ? 0 : _parms.offset_columns.len();
       if (offset_ncol == 0) {
         return;
       }
-
       int numCols = _modelBuilderTrain.numCols();
-      String responseVecName = _modelBuilderTrain.names()[numCols-1];
-      Vec responseVec = _modelBuilderTrain.remove(numCols-1);
+      String responseVecName = _modelBuilderTrain._names.getName(numCols-1);
+      VecAry responseVec = _modelBuilderTrain.remove(numCols-1);
 
       for (int i = 0; i < offset_ncol; i++) {
-        Vec offsetVec = _parms.offset_columns[i];
-        int idxInRawFrame = _train.find(offsetVec);
-        if (idxInRawFrame < 0) {
+        VecAry offsetVec = _parms.offset_columns.getVecs(i);
+        int idxInRawFrame = _train.vecs().find(offsetVec);
+        if (idxInRawFrame < 0)
           throw new RuntimeException("CoxPHDriver failed to find offsetVec");
-        }
 
-        String offsetVecName = _parms.train().names()[idxInRawFrame];
+        String offsetVecName = _parms.train()._names.getName(idxInRawFrame);
         _modelBuilderTrain.add(offsetVecName, offsetVec);
       }
 
@@ -83,42 +82,39 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
     private void applyTrainingFrameSideEffects() {
       int numCols = _modelBuilderTrain.numCols();
-      String responseVecName = _modelBuilderTrain.names()[numCols-1];
-      Vec responseVec = _modelBuilderTrain.remove(numCols-1);
+      String responseVecName = _modelBuilderTrain._names.getName(numCols-1);
+      VecAry responseVec = _modelBuilderTrain.remove(numCols-1);
 
       final boolean use_weights_column = (_parms.weights_column != null);
       final boolean use_start_column   = (_parms.start_column != null);
 
       if (use_weights_column) {
-        Vec weightsVec = _parms.weights_column;
-        int idxInRawFrame = _train.find(weightsVec);
+        VecAry weightsVec = _parms.weights_column;
+        int idxInRawFrame = _train.vecs().find(weightsVec);
         if (idxInRawFrame < 0) {
           throw new RuntimeException("CoxPHDriver failed to find weightVec");
         }
-
-        String weightsVecName = _parms.train().names()[idxInRawFrame];
+        String weightsVecName = _parms.train()._names.getName(idxInRawFrame);
         _modelBuilderTrain.add(weightsVecName, weightsVec);
       }
 
       if (use_start_column) {
-        Vec startVec = _parms.start_column;
-        int idxInRawFrame = _train.find(startVec);
+        VecAry startVec = _parms.start_column;
+        int idxInRawFrame = _train.vecs().find(startVec);
         if (idxInRawFrame < 0) {
           throw new RuntimeException("CoxPHDriver failed to find startVec");
         }
-
-        String startVecName = _parms.train().names()[idxInRawFrame];
+        String startVecName = _parms.train()._names.getName(idxInRawFrame);
         _modelBuilderTrain.add(startVecName, startVec);
       }
 
       {
-        Vec stopVec = _parms.stop_column;
-        int idxInRawFrame = _train.find(stopVec);
+        VecAry stopVec = _parms.stop_column;
+        int idxInRawFrame = _train.vecs().find(stopVec);
         if (idxInRawFrame < 0) {
           throw new RuntimeException("CoxPHDriver failed to find stopVec");
         }
-
-        String stopVecName = _parms.train().names()[idxInRawFrame];
+        String stopVecName = _parms.train()._names.getName(idxInRawFrame);
         _modelBuilderTrain.add(stopVecName, stopVec);
       }
 
@@ -129,9 +125,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       CoxPHModel.CoxPHParameters p = model._parms;
       CoxPHModel.CoxPHOutput o = model._output;
 
-      o.n = p.stop_column.length();
+      o.n = p.stop_column.numRows();
       o.data_info = dinfo;
-      final int n_offsets = (p.offset_columns == null) ? 0 : p.offset_columns.length;
+      final int n_offsets = (p.offset_columns == null) ? 0 : p.offset_columns.len();
       final int n_coef    = o.data_info.fullN() - n_offsets;
       final String[] coefNames = o.data_info.coefNames();
       o.coef_names   = new String[n_coef];
@@ -150,11 +146,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o.offset_names = new String[n_offsets];
       System.arraycopy(coefNames, n_coef, o.offset_names, 0, n_offsets);
 
-      final Vec start_column = p.start_column;
-      final Vec stop_column  = p.stop_column;
-      o.min_time = p.start_column == null ? (long) stop_column.min():
-              (long) start_column.min() + 1;
-      o.max_time = (long) stop_column.max();
+      final VecAry start_column = p.start_column;
+      final VecAry stop_column  = p.stop_column;
+      o.min_time = p.start_column == null ? (long) stop_column.min(0):
+              (long) start_column.min(0) + 1;
+      o.max_time = (long) stop_column.max(0);
 
       final int n_time = new VecUtils.CollectDomain().doAll(stop_column).domain().length;
       o.time         = MemoryManager.malloc8(n_time);
@@ -406,7 +402,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       final DataInfo dinfo = new DataInfo(_modelBuilderTrain, null, nResponses, useAllFactorLevels, DataInfo.TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false);
       initStats(model, dinfo);
 
-      final int n_offsets    = (model._parms.offset_columns == null) ? 0 : model._parms.offset_columns.length;
+      final int n_offsets    = (model._parms.offset_columns == null) ? 0 : model._parms.offset_columns.len();
       final int n_coef       = dinfo.fullN() - n_offsets;
       final double[] step    = MemoryManager.malloc8d(n_coef);
       final double[] oldCoef = MemoryManager.malloc8d(n_coef);
@@ -423,7 +419,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         model._output.iter = i;
 
         final CoxPHTask coxMR = new CoxPHTask(_job._key, dinfo, newCoef, model._output.min_time, n_time, n_offsets,
-                has_start_column, has_weights_column).doAll(dinfo._adaptedFrame);
+                has_start_column, has_weights_column).doAll(dinfo._adaptedFrame.vecs());
 
         final double newLoglik = calcLoglik(model, coxMR);
         if (newLoglik > oldLoglik) {

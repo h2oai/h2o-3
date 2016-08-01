@@ -156,7 +156,7 @@ public class Word2VecTest extends TestUtil {
       System.out.println("Done Parse: "+(float)(System.currentTimeMillis()-start)/1000+"s");
 
       start = System.currentTimeMillis();
-      wca = (new WordCountTask(3)).doAll(fr)._wordCountKey;
+      wca = (new WordCountTask(3)).doAll(fr.vecs())._wordCountKey;
       System.out.println("Done counting: "+(float)(System.currentTimeMillis()-start)/1000+"s");
       Assert.assertEquals(100038l, ((Frame)wca.get()).numRows());
     } finally {

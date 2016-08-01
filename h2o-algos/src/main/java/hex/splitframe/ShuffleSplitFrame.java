@@ -34,6 +34,7 @@ public class ShuffleSplitFrame {
       @Override public void map( Chunk cs[], NewChunk ncs[] ) {
         Random rng = new Random(seed*cs[0].cidx());
         int nrows = cs[0]._len;
+        byte [] types = _vecs.types();
         for( int i=0; i<nrows; i++ ) {
           double r = rng.nextDouble();
           int x=0;              // Pick the NewChunk split
@@ -41,7 +42,7 @@ public class ShuffleSplitFrame {
           x *= ncols;
           // Copy row to correct set of NewChunks
           for( int j=0; j<ncols; j++ ) {
-            byte colType = cs[j].vec().get_type();
+            byte colType = types[j];
             switch (colType) {
               case Vec.T_BAD : break; /* NOP */
               case Vec.T_STR : ncs[x + j].addStr(cs[j], i); break;
@@ -57,20 +58,21 @@ public class ShuffleSplitFrame {
           }
         }
       }
-    }.doAll(alltypes,fr);
+    }.doAll(alltypes,fr.vecs());
 
     // Build output frames
     Frame frames[] = new Frame[ratios.length];
-    Vec[] vecs = fr.vecs();
-    String[] names = fr.names();
+    VecAry vecs = fr.vecs();
+    String[] names = fr._names.getNames();
     Futures fs = new Futures();
     for( int i=0; i<ratios.length; i++ ) {
-      Vec[] nvecs = new Vec[ncols];
-      final int rowLayout = mr.appendables()[i*ncols].compute_rowLayout();
-      for( int c=0; c<ncols; c++ ) {
+      VecAry nvecs = new VecAry();
+      AppendableVec av0 = mr.appendables()[i*ncols ];
+      nvecs.addVecs(av0.layout_and_close(fs,vecs.domain(i)));
+      final int rowLayout = nvecs.rowLayout();
+      for( int c=1; c<ncols; c++ ) {
         AppendableVec av = mr.appendables()[i*ncols + c];
-        av.setDomain(vecs[c].domain());
-        nvecs[c] = av.closeVecs(rowLayout,fs);
+        nvecs.addVecs(av.closeVecs(vecs.domain(c),rowLayout,fs));
       }
       frames[i] = new Frame(keys[i],fr.names(),nvecs);
       DKV.put(frames[i],fs);

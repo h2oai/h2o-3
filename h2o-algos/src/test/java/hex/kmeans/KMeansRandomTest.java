@@ -6,6 +6,7 @@ import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.Log;
 
 import java.util.Random;
@@ -67,9 +68,9 @@ public class KMeansRandomTest extends TestUtil {
 
                   // make prediction (cluster assignment)
                   score = m.score(frame);
-                  Vec.Reader vr = score.anyVec().new Reader();
+                  VecAry vr = score.vecs();
                   for (long j = 0; j < score.numRows(); ++j)
-                    Assert.assertTrue(vr.at8(j) >= 0 && vr.at8(j) < centers);
+                    Assert.assertTrue(vr.at8(j,0) >= 0 && vr.at8(j,0) < centers);
 
                   Log.info("Parameters combination " + count + ": PASS");
                   testcount++;

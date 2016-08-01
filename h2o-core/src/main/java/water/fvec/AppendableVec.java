@@ -64,7 +64,9 @@ public class AppendableVec extends AVec {
     }
   }
 
-
+  public VecAry closeVecs(String[] domains, int rowLayout, Futures fs) {
+    return closeVecs(new String[][]{domains},rowLayout,fs);
+  }
 
   // "Close" out a NEW vector - rewrite it to a plain Vec that supports random
   // reads, plus computes rows-per-chunk, min/max/mean, etc.
@@ -201,5 +203,9 @@ public class AppendableVec extends AVec {
 
   public void setNCols(int newColCnt) {
     throw H2O.unimpl();
+  }
+
+  public VecAry closeVecs(int rowLayout, Futures fs) {
+    return closeVecs((String[])null,rowLayout,fs);
   }
 }

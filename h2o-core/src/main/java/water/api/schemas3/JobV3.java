@@ -39,6 +39,7 @@ public class JobV3 extends SchemaV3<Job, JobV3> {
 
   @API(help="exception", direction=API.Direction.OUTPUT)
   public String [] warnings;
+
   @API(help="exception", direction=API.Direction.OUTPUT)
   public String exception;
 

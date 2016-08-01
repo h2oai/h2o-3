@@ -33,10 +33,10 @@ public class DataSet {
 		AccuracyTestingSuite.summaryLog.println("Loading data set: " + this.id);
 		frame = TestUtil.parse_test_file(makeDataSetFile(this.uri).getCanonicalPath());
 		if (!regression) {
-			String responseColumnName = frame._names[responseColumn];
+			String responseColumnName = frame._names.getName(responseColumn);
 			AccuracyTestingSuite.summaryLog.println("Converting response column (idx/name): " + responseColumn + "/" +
 				responseColumnName + " to categorical for dataset: " + this.id);
-			Scope.track(frame.replace(responseColumn, frame.vecs()[responseColumn].toCategoricalVec()));
+			Scope.track(frame.replace(frame.vecs(responseColumn).toCategoricalVec(),responseColumn));
 			DKV.put(frame);
 		}
 	}

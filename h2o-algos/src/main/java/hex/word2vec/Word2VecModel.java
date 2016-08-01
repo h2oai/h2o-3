@@ -7,11 +7,7 @@ import water.H2O;
 import water.Futures;
 import water.DKV;
 import water.Iced;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.AppendableVec;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
@@ -58,20 +54,20 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   public float[] transform(String target) {
     NonBlockingHashMap<BufferedString, Integer> vocabHM = buildVocabHashMap();
-    Vec[] vs = ((Frame) _w2vKey.get()).vecs();
+    VecAry vs = ((Frame) _w2vKey.get()).vecs();
     BufferedString tmp = new BufferedString(target);
     return transform(tmp, vocabHM, vs);
   }
 
-  private float[] transform(BufferedString tmp, NonBlockingHashMap<BufferedString, Integer> vocabHM, Vec[] vs) {
-    final int vecSize = vs.length-1;
+  private float[] transform(BufferedString tmp, NonBlockingHashMap<BufferedString, Integer> vocabHM, VecAry vs) {
+    final int vecSize = vs.len()-1;
     float[] vec = new float[vecSize];
     if (!vocabHM.containsKey(tmp)) {
       Log.warn("Target word " + tmp + " isn't in vocabulary.");
       return null;
     }
     int row = vocabHM.get(tmp);
-    for(int i=0; i < vecSize; i++) vec[i] = (float) vs[i+1].at(row);
+    for(int i=0; i < vecSize; i++) vec[i] = (float) vs.at(row,i+1);
     return vec;
   }
 
@@ -86,7 +82,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   public HashMap<String, Float> findSynonyms(String target, int cnt) {
     if (cnt > 0) {
       NonBlockingHashMap<BufferedString, Integer> vocabHM = buildVocabHashMap();
-      Vec[] vs = ((Frame) _w2vKey.get()).vecs();
+      VecAry vs = ((Frame) _w2vKey.get()).vecs();
       BufferedString tmp = new BufferedString(target);
       float[] tarVec = transform(tmp, vocabHM, vs);
       return findSynonyms(tarVec, cnt, vs);
@@ -107,26 +103,26 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   public void findSynonyms(float[] tarVec, int cnt) {
     if (cnt > 0) {
-      Vec[] vs = ((Frame) _w2vKey.get()).vecs();
+      VecAry vs = ((Frame) _w2vKey.get()).vecs();
       findSynonyms(tarVec, cnt, vs);
     } else Log.err("Synonym count must be greater than 0.");
   }
 
-  private HashMap<String, Float> findSynonyms(float[] tarVec, int cnt, Vec[] vs) {
-    final int vecSize= vs.length - 1, vocabSize = (int) vs[0].length();
+  private HashMap<String, Float> findSynonyms(float[] tarVec, int cnt, VecAry vs) {
+    final int vecSize= vs.len() - 1, vocabSize = (int) vs.numRows();
     int[] matches = new int[cnt];
     float [] scores = new float[cnt];
     float[] curVec = new float[vecSize];
 
     HashMap<String, Float> res = new HashMap<>();
 
-    if (tarVec.length != vs.length-1) {
+    if (tarVec.length != vs.numRows()-1) {
       Log.warn("Target vector length differs from the vocab's vector length.");
       return null;
     }
 
     for (int i=0; i < vocabSize; i++) {
-      for(int j=0; j < vecSize; j++) curVec[j] = (float) vs[j+1].at(i);
+      for(int j=0; j < vecSize; j++) curVec[j] = (float) vs.at(i,j+1);
       float score = cosineSimilarity(tarVec, curVec);
 
       for (int j = 0; j < cnt; j++) {
@@ -142,8 +138,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       }
     }
     for (int i=0; i < cnt; i++)
-      res.put(vs[0].atStr(new BufferedString(), matches[i]).toString(), scores[i]);
-
+      res.put(vs.atStr(new BufferedString(), matches[i],0).toString(), scores[i]);
     return res;
   }
   /**
@@ -167,10 +162,10 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   private  NonBlockingHashMap<BufferedString, Integer>  buildVocabHashMap() {
     NonBlockingHashMap<BufferedString, Integer> vocabHM;
-    Vec word = ((Frame) _w2vKey.get()).vec(0);
+    VecAry word = ((Frame) _w2vKey.get()).vecs(0);
     final int vocabSize = (int) ((Frame) _w2vKey.get()).numRows();
     vocabHM = new NonBlockingHashMap<>(vocabSize);
-    for(int i=0; i < vocabSize; i++) vocabHM.put(word.atStr(new BufferedString(),i),i);
+    for(int i=0; i < vocabSize; i++) vocabHM.put(word.atStr(new BufferedString(),i,0),i);
     return vocabHM;
   }
 
@@ -178,13 +173,13 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     final int vecSize = _parms._vecSize;
     Futures fs = new Futures();
     String[] colNames = new String[vecSize];
-    Vec[] vecs = new Vec[vecSize];
-    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
+    VecAry vecs = new VecAry();
+    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.len());
 
     //allocate
-    NewChunk cs[] = new NewChunk[vecs.length];
-    AppendableVec avs[] = new AppendableVec[vecs.length];
-    for (int i = 0; i < vecs.length; i++) {
+    NewChunk cs[] = new NewChunk[vecs.len()];
+    AppendableVec avs[] = new AppendableVec[vecs.len()];
+    for (int i = 0; i < vecs.len(); i++) {
       avs[i] = new AppendableVec(keys[i], Vec.T_NUM);
       cs[i] = new NewChunk(avs[i], 0);
     }
@@ -196,18 +191,21 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     }
 
     //finalize vectors
-    final int rowLayout = avs[0].compute_rowLayout();
-    for (int i = 0; i < vecs.length; i++) {
+    colNames[0] = new String("V"+0);
+    avs[0].closeChunk(0, cs[0], fs);
+    vecs.addVecs(avs[0].layout_and_close(fs));
+    final int rowLayout = vecs.rowLayout();
+    for (int i = 0; i < vecs.len(); i++) {
       colNames[i] = new String("V"+i);
-      cs[i].close(0, fs);
-      vecs[i] = avs[i].closeVecs(rowLayout,fs);
+      avs[i].closeChunk(0, cs[i], fs);
+      vecs.addVecs(avs[i].closeVecs(rowLayout,fs));
     }
 
     fs.blockForPending();
-    Frame fr = new Frame(_w2vKey = Key.make("w2v"));
+    Frame fr = new Frame(_w2vKey = Key.make("w2v"), new VecAry());
     //FIXME this ties the word count frame to this one which means
     //FIXME one can't be deleted without destroying the other
-    fr.add("Word", (_parms._vocabKey.get()).vec(0));
+    fr.add("Word", (_parms._vocabKey.get()).vecs(0));
     fr.add(colNames, vecs);
     DKV.put(_w2vKey, fr);
   }
@@ -272,7 +270,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       _parameters = params;
 
       if(_parameters._vocabKey == null) {
-        _parameters._vocabKey = (new WordCountTask(_parameters._minWordFreq)).doAll(_parameters.train())._wordCountKey;
+        _parameters._vocabKey = (new WordCountTask(_parameters._minWordFreq)).doAll(_parameters.train().vecs())._wordCountKey;
       }
       _vocabSize = (int) (_parameters._vocabKey.get()).numRows();
       _trainFrameSize = getTrainFrameSize(_parameters.train());
@@ -350,13 +348,13 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       long vocabWordsPow = 0;
       _uniTable = new int[UNIGRAM_TABLE_SIZE];
 
-      Vec wCount = (_parameters._vocabKey.get()).vec(1);
-      for (int i=0; i < wCount.length(); i++) vocabWordsPow += Math.pow(wCount.at8(i), UNIGRAM_POWER);
+      VecAry wCount = (_parameters._vocabKey.get()).vecs(1);
+      for (int i=0; i < wCount.numRows(); i++) vocabWordsPow += Math.pow(wCount.at8(i,0), UNIGRAM_POWER);
       for (int i = 0, j =0; i < UNIGRAM_TABLE_SIZE; i++) {
         _uniTable[i] = j;
         if (j >= _vocabSize-1) j = 0;
         if (i / (float) UNIGRAM_TABLE_SIZE > d)
-          d += Math.pow(wCount.at8(j++), UNIGRAM_POWER) / (float) vocabWordsPow;
+          d += Math.pow(wCount.at8(j++,0), UNIGRAM_POWER) / (float) vocabWordsPow;
       }
     }
 
@@ -409,12 +407,12 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       long[] count = new long[_vocabSize * 2 - 1];
       int[] binary = new int[_vocabSize * 2 - 1];
       int[] parent_node = new int[_vocabSize * 2 - 1];
-      Vec wCount = (_parameters._vocabKey.get()).vec(1);
+      VecAry wCount = (_parameters._vocabKey.get()).vecs(1);
       _HBWTCode = new int[_vocabSize][];
       _HBWTPoint = new int[_vocabSize][];
 
-      assert (_vocabSize == wCount.length());
-      for (int i = 0; i < _vocabSize; i++) count[i] = wCount.at8(i);
+      assert (_vocabSize == wCount.len());
+      for (int i = 0; i < _vocabSize; i++) count[i] = wCount.at8(i,0);
       for (int i = _vocabSize; i < _vocabSize * 2 - 1; i++) count[i] = (long) 1e15;
       pos1 = _vocabSize - 1;
       pos2 = _vocabSize;
@@ -484,8 +482,9 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
      */
     private long getTrainFrameSize(Frame tf) {
       long count=0;
-
-      for (Vec v: tf.vecs()) if(v.isString()) count += v.length();
+      VecAry vecs = tf.vecs();
+      for(int i = 0; i < vecs.len(); ++i)
+        if(vecs.isString(i)) count += vecs.numRows();
 
       return count;
     }

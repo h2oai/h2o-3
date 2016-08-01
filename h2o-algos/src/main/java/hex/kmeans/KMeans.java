@@ -8,6 +8,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.*;
 
 import java.util.ArrayList;
@@ -71,13 +72,13 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     private String[][] _isCats;  // Categorical columns
 
     // Initialize cluster centers
-    double[][] initial_centers( KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults, final int[] modes ) {
+    double[][] initial_centers( KMeansModel model, final VecAry vecs, final double[] means, final double[] mults, final int[] modes ) {
 
       // Categoricals use a different distance metric than numeric columns.
       model._output._categorical_column_count=0;
-      _isCats = new String[vecs.length][];
-      for( int v=0; v<vecs.length; v++ ) {
-        _isCats[v] = vecs[v].isCategorical() ? new String[0] : null;
+      _isCats = new String[vecs.len()][];
+      for( int v=0; v<vecs.len(); v++ ) {
+        _isCats[v] = vecs.isCategorical(v) ? new String[0] : null;
         if (_isCats[v] != null) model._output._categorical_column_count++;
       }
       
@@ -88,11 +89,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         int numCenters = (int)user_points.numRows();
         int numCols = model._output.nfeatures();
         centers = new double[numCenters][numCols];
-        Vec[] centersVecs = user_points.vecs();
+        VecAry centersVecs = user_points.vecs();
         // Get the centers and standardize them if requested
         for (int r=0; r<numCenters; r++) {
           for (int c=0; c<numCols; c++){
-            centers[r][c] = centersVecs[c].at(r);
+            centers[r][c] = centersVecs.at(r,c);
             centers[r][c] = data(centers[r][c], c, means, mults, modes);
           }
         }
@@ -138,7 +139,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     transient private int _reinit_attempts;
     // Handle the case where some centers go dry.  Rescue only 1 cluster
     // per iteration ('cause we only tracked the 1 worst row)
-    boolean cleanupBadClusters( Lloyds task, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults, final int[] modes ) {
+    boolean cleanupBadClusters( Lloyds task, final VecAry vecs, final double[][] centers, final double[] means, final double[] mults, final int[] modes ) {
       // Find any bad clusters
       int clu;
       for( clu=0; clu<_parms._k; clu++ )
@@ -170,7 +171,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
     // Compute all interesting KMeans stats (errors & variances of clusters,
     // etc).  Return new centers.
-    double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults, final int[] modes ) {
+    double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final VecAry vecs, final double[] means, final double[] mults, final int[] modes ) {
       // Fill in the model based on original destandardized centers
       if (model._parms._standardize) {
         model._output._centers_std_raw = task._cMeans;
@@ -188,7 +189,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         model._output._totss = model._output._tot_withinss;
       else {
         // If data already standardized, grand mean is just the origin
-        TotSS totss = new TotSS(means,mults,modes, _parms.train().domains(), _parms.train().cardinality()).doAll(vecs);
+        TotSS totss = new TotSS(means,mults,modes, vecs).doAll(vecs);
         model._output._totss = totss._tss;
       }
       model._output._betweenss = model._output._totss - model._output._tot_withinss;  // MSE between-cluster
@@ -245,13 +246,18 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         model.delete_and_lock(_job);
 
         //
-        final Vec vecs[] = _train.vecs();
+        final VecAry vecs = _train.vecs();
         // mults & means for standardization
-        final double[] means = _train.means();  // means are used to impute NAs
-        final double[] mults = _parms._standardize ? _train.mults() : null;
-        final int   [] impute_cat = new int[vecs.length];
-        for(int i = 0; i < vecs.length; i++)
-          impute_cat[i] = vecs[i].isNumeric() ? -1 : DataInfo.imputeCat(vecs[i]);
+        final double[] means = vecs.means();  // means are used to impute NAs
+        double[] mults = null;
+        if(_parms._standardize) {
+          mults = vecs.sigmas();
+          for(int i = 0; i < mults.length; ++i)
+            mults[i] = 1.0/mults[i];
+        }
+        final int   [] impute_cat = new int[vecs.len()];
+        for(int i = 0; i < vecs.len(); i++)
+          impute_cat[i] = vecs.isNumeric(i) ? -1 : DataInfo.imputeCat(vecs.getVecs(i));
         model._output._normSub = means;
         model._output._normMul = mults;
         // Initialize cluster centers and standardize if requested
@@ -319,7 +325,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               "");
       int row = 0;
       int col = 0;
-      table.set(row, col++, Math.round(_train.numRows() * (hasWeightCol() ? _train.lastVec().mean() : 1)));
+      table.set(row, col++, Math.round(_train.numRows() * (hasWeightCol() ? _train.lastVec().mean(0) : 1)));
       table.set(row, col++, output._centers_raw.length);
       table.set(row, col++, output._categorical_column_count);
       table.set(row, col++, output._iterations);
@@ -377,13 +383,13 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     String[] rowHeaders = new String[output._size.length];
     for(int i = 0; i < rowHeaders.length; i++)
       rowHeaders[i] = String.valueOf(i+1);
-    String[] colTypes = new String[output._names.length];
-    String[] colFormats = new String[output._names.length];
+    String[] colTypes = new String[output._names.len()];
+    String[] colFormats = new String[output._names.len()];
     for (int i = 0; i < output._domains.length; ++i) {
       colTypes[i] = output._domains[i] == null ? "double" : "String";
       colFormats[i] = output._domains[i] == null ? "%f" : "%s";
     }
-    TwoDimTable table = new TwoDimTable(name, null, rowHeaders, output._names, colTypes, colFormats, "Centroid");
+    TwoDimTable table = new TwoDimTable(name, null, rowHeaders, output._names.getNames(), colTypes, colFormats, "Centroid");
 
     for (int j=0; j<output._domains.length; ++j) {
       boolean string = output._domains[j] != null;
@@ -407,25 +413,25 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     final double[] _means, _mults;
     final int[] _modes;
     final String[][] _isCats;
-    final int[] _card;
+//    final int[] _card;
 
     // OUT
     double _tss;
     double[] _gc; // Grand center (mean of cols)
 
-    TotSS(double[] means, double[] mults, int[] modes, String[][] isCats, int[] card) {
+    TotSS(double[] means, double[] mults, int[] modes, VecAry vecs) {
       _means = means;
       _mults = mults;
       _modes = modes;
       _tss = 0;
-      _isCats = isCats;
-      _card = card;
+      _isCats = vecs.domains();
+//      _card = card;
 
       // Mean of numeric col is zero when standardized
       _gc = mults!=null ? new double[means.length] : Arrays.copyOf(means, means.length);
       for(int i=0; i<means.length; i++) {
-        if(isCats[i] != null)
-          _gc[i] = Math.min(Math.round(means[i]), _card[i]-1);  // TODO: Should set to majority class of categorical column
+        if(vecs.isCategorical(i))
+          _gc[i] = Math.min(Math.round(means[i]), vecs.cardinality(i)-1);  // TODO: Should set to majority class of categorical column
       }
     }
 
@@ -577,7 +583,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       _cats = new long[_k][N][];
       for( int clu=0; clu< _k; clu++ )
         for( int col=0; col<N; col++ )
-          _cats[clu][col] = _isCats[col]==null ? null : new long[cs[col].vec().cardinality()];
+          _cats[clu][col] = _isCats[col]==null ? null : new long[_vecs.cardinality(col)];
       _worst_err = 0;
 
       // Find closest cluster center for each row
@@ -702,8 +708,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     return res;
   }
 
-  private void randomRow(Vec[] vecs, Random rand, double[] center, double[] means, double[] mults, int[] modes) {
-    long row = Math.max(0, (long) (rand.nextDouble() * vecs[0].length()) - 1);
+  private void randomRow(VecAry vecs, Random rand, double[] center, double[] means, double[] mults, int[] modes) {
+    long row = Math.max(0, (long) (rand.nextDouble() * vecs.numRows()) - 1);
     data(center, vecs, row, means, mults, modes);
   }
 
@@ -731,9 +737,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     return value;
   }
 
-  private static void data(double[] values, Vec[] vecs, long row, double[] means, double[] mults, int[] modes) {
+  private static void data(double[] values, VecAry vecs, long row, double[] means, double[] mults, int[] modes) {
     for( int i = 0; i < values.length; i++ ) {
-      double d = vecs[i].at(row);
+      double d = vecs.at(row,i);
       values[i] = data(d, i, means, mults, modes);
     }
   }

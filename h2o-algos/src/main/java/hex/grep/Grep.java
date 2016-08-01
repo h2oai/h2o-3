@@ -104,7 +104,8 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
     @Override public void map( Chunk chk ) {
       _matches = new String[1]; // Result holders; will lazy expand
       _offsets = new long  [1];
-      ByteSeq bs = new ByteSeq(chk,chk.nextChunk());
+      Chunk nchk = chk.cidx()+1 < _vecs.nChunks()?_vecs.getChunk(chk.cidx()+1,0):null;
+      ByteSeq bs = new ByteSeq(chk,nchk);
       Pattern p = Pattern.compile(_regex);
       // We already checked that this is an instance of a ByteVec, which means
       // all the Chunks contain raw text as byte arrays.

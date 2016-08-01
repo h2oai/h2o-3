@@ -15,6 +15,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
@@ -104,7 +105,7 @@ public class DeepLearningIrisTest extends TestUtil {
                               for (int c = 0; c < frame.numCols(); c++) {
                                 names[c] = "ColumnName" + c;
                                 for (int r = 0; r < frame.numRows(); r++)
-                                  rows[r][c] = frame.vecs()[c].at(r);
+                                  rows[r][c] = frame.vecs().at(r,c);
                               }
 
                               for (int i = rows.length - 1; i >= 0; i--) {
@@ -124,17 +125,17 @@ public class DeepLearningIrisTest extends TestUtil {
                               // of classes is not known unless we visit
                               // all the response data - force that now.
                               String respname = _train.lastVecName();
-                              Vec resp = _train.lastVec().toCategoricalVec();
+                              VecAry resp = _train.lastVec().toCategoricalVec();
                               _train.remove(respname).remove();
                               _train.add(respname, resp);
                               DKV.put(_train);
 
-                              Vec vresp = _test.lastVec().toCategoricalVec();
+                              VecAry vresp = _test.lastVec().toCategoricalVec();
                               _test.remove(respname).remove();
                               _test.add(respname, vresp);
                               DKV.put(_test);
                             }
-                            while( _train.lastVec().cardinality() < 3);
+                            while( _train.lastVec().cardinality(0) < 3);
 
                             // use the same seed for the reference implementation
                             DeepLearningMLPReference ref = new DeepLearningMLPReference();
@@ -143,7 +144,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             DeepLearningParameters p = new DeepLearningParameters();
                             p._train = _train._key;
                             p._response_column = _train.lastVecName();
-                            assert _train.lastVec().isCategorical();
+                            assert _train.lastVec().isCategorical(0);
                             p._ignored_columns = null;
 
                             p._seed = seed;
@@ -277,7 +278,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 preds[0] = GenModel.getPrediction(preds, null, xValues, 0.5);
 
                                 // compare predicted label
-                                Assert.assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));
+                                Assert.assertTrue(preds[0] == (int) fpreds.vecs().at(i,0));
 //                                // compare predicted probabilities
 //                                for (int j=0; j<ref_preds.length; ++j) {
 //                                  compareVal((float)(ref_preds[j]), fpreds.vecs()[1+j].at(i), abseps, releps);

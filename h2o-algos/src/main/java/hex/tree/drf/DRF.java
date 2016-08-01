@@ -12,6 +12,8 @@ import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.VecAry;
+
 import java.util.Random;
 
 import static hex.genmodel.GenModel.getPrediction;
@@ -129,7 +131,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
             }
           }
         }
-      }.doAll(_train);
+      }.doAll(_train.vecs());
     }
 
     // --------------------------------------------------------------------------
@@ -146,7 +148,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       growTrees(ktrees, leafs, _rand);
 
       // Move rows into the final leaf rows - fill "Tree" and OUT_BAG_TREES columns and zap the NIDs column
-      CollectPreds cp = new CollectPreds(ktrees,leafs,_model.defaultThreshold()).doAll(_train,_parms._build_tree_one_node);
+      CollectPreds cp = new CollectPreds(ktrees,leafs,_model.defaultThreshold()).doAll(_train.vecs(),_parms._build_tree_one_node);
 
       if (isClassifier())   asVotes(_treeMeasuresOnOOB).append(cp.rightVotes, cp.allRows); // Track right votes over OOB rows for this tree
       else /* regression */ asSSE  (_treeMeasuresOnOOB).append(cp.sse, cp.allRows);
@@ -184,7 +186,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Sample - mark the lines by putting 'OUT_OF_BAG' into nid(<klass>) vector
       Sample ss[] = new Sample[_nclass];
       for( int k=0; k<_nclass; k++)
-        if (ktrees[k] != null) ss[k] = new Sample(ktrees[k], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null,new Frame(vec_nids(_train,k),vec_resp(_train)), _parms._build_tree_one_node);
+        if (ktrees[k] != null) ss[k] = new Sample(ktrees[k], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null,new VecAry(vec_nids(_train,k),vec_resp(_train)), _parms._build_tree_one_node);
       for( int k=0; k<_nclass; k++)
         if( ss[k] != null ) ss[k].getResult();
 

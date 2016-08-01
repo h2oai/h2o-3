@@ -7,12 +7,7 @@ import water.MRTask;
 import water.Futures;
 import water.DKV;
 import water.AutoBuffer;
-import water.fvec.Vec;
-import water.fvec.AppendableVec;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
-import water.fvec.CStrChunk;
-import water.fvec.Frame;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 
@@ -164,7 +159,7 @@ public class WordCountTask extends MRTask<WordCountTask> {
 
   private void buildFrame() {
     Futures fs = new Futures();
-    Vec[] vecs = new Vec[2];
+    VecAry vecs = new VecAry();
     Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(2);
 
     //allocate
@@ -180,14 +175,12 @@ public class WordCountTask extends MRTask<WordCountTask> {
     }
 
     //finalize vectors
-    wordNC.close(0, fs);
-    cntNC.close(0, fs);
-    vecs[0] = wordAV.layout_and_close(fs);
-    vecs[1] = cntAV.layout_and_close(fs);
+    wordAV.closeChunk(0,wordNC, fs);
+    cntAV.closeChunk(0,cntNC, fs);
+    vecs.addVecs(wordAV.layout_and_close(fs));
+    vecs.addVecs(cntAV.layout_and_close(fs));
     fs.blockForPending();
-
-    if(_fr != null && _fr._key != null) _wordCountKey = Key.make("wca_"+_fr._key.toString());
-    else _wordCountKey = Key.make("wca");
+    _wordCountKey = Key.make("wca");
     String[] names = {"Word", "Count"};
     DKV.put(_wordCountKey, new Frame(_wordCountKey, names, vecs));
   }

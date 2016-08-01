@@ -79,10 +79,10 @@ public class AggregatorTest extends TestUtil {
 
     for (int i : new int[]{1,2,5,10,50,100}) {
       Key key = Key.make();
-      RebalanceDataSet rb = new RebalanceDataSet(frame, key, i);
+      RebalanceDataSet rb = new RebalanceDataSet(frame.vecs(), i);
       H2O.submitTask(rb);
-      rb.join();
-      Frame rebalanced = DKV.get(key).get();
+      Frame rebalanced = new Frame(key,frame._names,rb.getResult());
+      DKV.put(key,rebalanced);
 
       parms = new AggregatorModel.AggregatorParameters();
       parms._train = frame._key;

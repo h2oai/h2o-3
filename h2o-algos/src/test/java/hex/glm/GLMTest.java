@@ -40,206 +40,205 @@ public class GLMTest  extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
 
-  @Test
-  public void testWideData(){
-    int M = 1000000;
-    int P = 100000;
-    double fillRatio = 0.001;
-    final double[] res = new double[1];
-
-    Vec [] vs = null;
-    int nchunks = 0;
-    long [] espc = null;
-    try {
-      System.out.println("making the vecs");
-      long t0 = System.currentTimeMillis();
-      Vec v = Vec.makeCon(0, M, 15, true);
-      nchunks = v.nChunks();
-      System.out.println("got " + nchunks + " chunks.");
-      vs = v.makeZeros(P);
-      v.remove();
-      espc = vs[0].espc();
-      long t1 = System.currentTimeMillis();
-      System.out.println("done in " + (t1 - t0) + " ms");
-      System.out.println("filling the vecs");
-      t0 = System.currentTimeMillis();
-      final AtomicInteger sum1 = new AtomicInteger();
-      final AtomicInteger sum2 = new AtomicInteger();
-      // fill vecs
-      new MRTask() {
-        @Override
-        public void map(Chunk[] chks) {
-          Random r = new Random();
-          PoissonDistribution ps = new PoissonDistribution(3.2768);
-          Futures fs = new Futures();
-          for (int i = 0; i < chks.length; ++i) {
-            int cnt = ps.sample();
-            sum1.addAndGet(cnt);
-            int[] ids = new int[cnt];
-            for (int j = 0; j < cnt; ++j)
-              ids[j] = r.nextInt(chks[0].len());
-            Arrays.sort(ids);
-            NewChunk nc = new NewChunk(chks[i].vec(), chks[i].cidx(), true);
-            int x = -1;
-            for (int id : ids) {
-              if(x == id) ++x;
-              nc.addZeros(id - x - 1);
-              nc.addNum(1);
-              sum2.incrementAndGet();
-              x = id;
-            }
-            nc.addZeros(chks[i].len()-x);
-            nc.close(fs);
-          }
-          fs.blockForPending();
-        }
-      }.doAll(vs);
-      t1 = System.currentTimeMillis();
-      System.out.println("done in " + (t1 - t0) + " ms");
-      System.out.println("sum1 = " + sum1.get() + ", sum2 = " + sum2.get());
-      System.out.println("Running task");
-      t0 = System.currentTimeMillis();
-      for(int i = 0; i < 100; ++i) {
-        res[0] = 0;
-        // access vecs
-        new MRTask() {
-          double sum;
-
-          @Override
-          public void map(Chunk[] chks) {
-            double[] vals = new double[chks[0].len()];
-            int[] ids = new int[chks[0]._len];
-            for (int i = 0; i < chks.length; ++i) {
-              int n = chks[i].asSparseDoubles(vals, ids);
-              for (int j = 0; j < n; ++j)
-                sum += vals[j];
-            }
-          }
-
-          @Override
-          public void reduce(MRTask m) {
-            sum += ((Double) m.result());
-          }
-
-          @Override
-          public void postGlobal() {
-            res[0] = sum;
-          }
-
-          @Override
-          public Double result() {
-            return sum;
-          }
-        }.doAll(vs);
-      }
-      System.out.println("sum = " + res[0]);
-      t1 = System.currentTimeMillis();
-      System.out.println("done in " + (t1 - t0) + " ms");
-      long r = NonBlockingHashMap.reprobeCount.get();
-      long o = NonBlockingHashMap.opsCount.get();
-      if(o % 1000000 == 0)
-        System.out.println("avg reprobe count after " + o + " operations = " + (double)r/(double)o);
-    } finally {
-      if(vs != null)
-      for (Vec v : vs) if(v != null) v.remove();
-    }
-
-    System.out.println();
-    System.out.println("===========================================");
-    System.out.println();
-    System.out.println("doing blocks now");
-    Key [] ks = new Key[nchunks];
-    try {
-      System.out.println("making the vecs");
-      long t0 = System.currentTimeMillis();
-      for(int i = 0; i < nchunks; ++i) {
-        Chunk [] chunks = new Chunk[P];
-        int nrows = (int)(espc[i+1] - espc[i]);
-        Arrays.fill(chunks,new C0DChunk(0,nrows));;
-        ChunkBlock cb = new ChunkBlock(0,P,null,chunks);
-        ks[i] = Key.make("chunk" + i);
-        DKV.put(ks[i],cb);
-      }
-      long t1 = System.currentTimeMillis();
-      System.out.println("done in " + (t1-t0) + "ms");
-      System.out.println("filling the values");
-      final AtomicInteger sum1 = new AtomicInteger();
-      final AtomicInteger sum2 = new AtomicInteger();
-      new MRTask(){
-        @Override public void map(Key k) {
-          ChunkBlock cb = DKV.getGet(k);
-          Random r = new Random();
-          PoissonDistribution ps = new PoissonDistribution(3.2768);
-          Futures fs = new Futures();
-          for (int i = cb.vecStart(); i < cb.vecEnd(); ++i) {
-            int cnt = ps.sample();
-            sum1.addAndGet(cnt);
-            int[] ids = new int[cnt];
-            for (int j = 0; j < cnt; ++j)
-              ids[j] = r.nextInt(cb.len());
-            Arrays.sort(ids);
-            NewChunk nc = new NewChunk(cb, i ,true);
-            int x = -1;
-            for (int id : ids) {
-              if(x == id) ++x;
-              nc.addZeros(id - x - 1);
-              nc.addNum(1);
-              sum2.incrementAndGet();
-              x = id;
-            }
-            nc.addZeros(cb.len()-x);
-            nc.close(fs);
-          }
-          fs.blockForPending();
-          DKV.put(cb._key = k,cb,_fs);
-        }
-      }.doAll(ks);
-      long t2 = System.currentTimeMillis();
-      System.out.println("done in " + (t2 - t1) + " ms");
-      System.out.println("sum1 = " + sum1 + ", sum2 = " + sum2);
-      System.out.println("running the sum");
-      for(int i = 0; i < 100; ++i) {
-        res[0] = 0;
-        // access vecs
-        new MRTask() {
-          double sum;
-          @Override
-          public void map(Key k) {
-            ChunkBlock cb = DKV.getGet(k);
-            double[] vals = new double[cb.len()];
-            int[] ids = new int[cb.len()];
-            Chunk[] chunks = cb.chunks();
-            for (int i = cb.vecStart(); i < cb.vecEnd(); ++i) {
-              int n = chunks[i].asSparseDoubles(vals, ids);
-              for (int j = 0; j < n; ++j)
-                sum += vals[j];
-            }
-          }
-
-          @Override
-          public void reduce(MRTask m) {
-            sum += ((Double) m.result());
-          }
-
-          @Override
-          public void postGlobal() {
-            res[0] = sum;
-//            System.out.println("sum = " + sum);
-          }
-
-          @Override
-          public Double result() {
-            return sum;
-          }
-        }.doAll(ks);
-      }
-      System.out.println("sum = " + res[0]);
-      long t3 = System.currentTimeMillis();
-      System.out.println("done in " + (t3 - t2) + " ms");
-    } finally {
-      for(Key k:ks) if(k != null)DKV.remove(k);
-    }
-  }
+//  @Test
+//  public void testWideData(){
+//    int M = 1000000;
+//    int P = 100000;
+//    double fillRatio = 0.001;
+//    final double[] res = new double[1];
+//
+//    VecAry vs = null;
+//    int nchunks = 0;
+//    long [] espc = null;
+//    try {
+//      System.out.println("making the vecs");
+//      long t0 = System.currentTimeMillis();
+//      VecAry v = new VecAry(Vec.makeCon(0, M, 15, true));
+//      nchunks = v.nChunks();
+//      System.out.println("got " + nchunks + " chunks.");
+//      vs = v.makeZeros(P);
+//      v.remove();
+//      espc = vs.espc();
+//      long t1 = System.currentTimeMillis();
+//      System.out.println("done in " + (t1 - t0) + " ms");
+//      System.out.println("filling the vecs");
+//      t0 = System.currentTimeMillis();
+//      final AtomicInteger sum1 = new AtomicInteger();
+//      final AtomicInteger sum2 = new AtomicInteger();
+//      // fill vecs
+//      new MRTask() {
+//        @Override
+//        public void map(Chunk[] chks) {
+//          Random r = new Random();
+//          PoissonDistribution ps = new PoissonDistribution(3.2768);
+//          Futures fs = new Futures();
+//          for (int i = 0; i < chks.length; ++i) {
+//            int cnt = ps.sample();
+//            sum1.addAndGet(cnt);
+//            int[] ids = new int[cnt];
+//            for (int j = 0; j < cnt; ++j)
+//              ids[j] = r.nextInt(chks[0].len());
+//            Arrays.sort(ids);
+//            NewChunk nc = new NewChunk(chks[i].vec(), chks[i].cidx(), true);
+//            int x = -1;
+//            for (int id : ids) {
+//              if(x == id) ++x;
+//              nc.addZeros(id - x - 1);
+//              nc.addNum(1);
+//              sum2.incrementAndGet();
+//              x = id;
+//            }
+//            nc.addZeros(chks[i].len()-x);
+//            nc.close(chks[i].cidx(),fs);
+//          }
+//          fs.blockForPending();
+//        }
+//      }.doAll(vs);
+//      t1 = System.currentTimeMillis();
+//      System.out.println("done in " + (t1 - t0) + " ms");
+//      System.out.println("sum1 = " + sum1.get() + ", sum2 = " + sum2.get());
+//      System.out.println("Running task");
+//      t0 = System.currentTimeMillis();
+//      for(int i = 0; i < 100; ++i) {
+//        res[0] = 0;
+//        // access vecs
+//        new MRTask() {
+//          double sum;
+//
+//          @Override
+//          public void map(Chunk[] chks) {
+//            double[] vals = new double[chks[0].len()];
+//            int[] ids = new int[chks[0]._len];
+//            for (int i = 0; i < chks.length; ++i) {
+//              int n = chks[i].asSparseDoubles(vals, ids);
+//              for (int j = 0; j < n; ++j)
+//                sum += vals[j];
+//            }
+//          }
+//
+//          @Override
+//          public void reduce(MRTask m) {
+//            sum += ((Double) m.result());
+//          }
+//
+//          @Override
+//          public void postGlobal() {
+//            res[0] = sum;
+//          }
+//
+//          @Override
+//          public Double result() {
+//            return sum;
+//          }
+//        }.doAll(vs);
+//      }
+//      System.out.println("sum = " + res[0]);
+//      t1 = System.currentTimeMillis();
+//      System.out.println("done in " + (t1 - t0) + " ms");
+//      long r = NonBlockingHashMap.reprobeCount.get();
+//      long o = NonBlockingHashMap.opsCount.get();
+//      if(o % 1000000 == 0)
+//        System.out.println("avg reprobe count after " + o + " operations = " + (double)r/(double)o);
+//    } finally {
+//      if(vs != null) vs.remove();
+//    }
+//
+//    System.out.println();
+//    System.out.println("===========================================");
+//    System.out.println();
+//    System.out.println("doing blocks now");
+//    Key [] ks = new Key[nchunks];
+//    try {
+//      System.out.println("making the vecs");
+//      long t0 = System.currentTimeMillis();
+//      for(int i = 0; i < nchunks; ++i) {
+//        Chunk [] chunks = new Chunk[P];
+//        int nrows = (int)(espc[i+1] - espc[i]);
+//        Arrays.fill(chunks,new C0DChunk(0,nrows));;
+//        ChunkBlock cb = new ChunkBlock(0,P,null,chunks);
+//        ks[i] = Key.make("chunk" + i);
+//        DKV.put(ks[i],cb);
+//      }
+//      long t1 = System.currentTimeMillis();
+//      System.out.println("done in " + (t1-t0) + "ms");
+//      System.out.println("filling the values");
+//      final AtomicInteger sum1 = new AtomicInteger();
+//      final AtomicInteger sum2 = new AtomicInteger();
+//      new MRTask(){
+//        @Override public void map(Key k) {
+//          ChunkBlock cb = DKV.getGet(k);
+//          Random r = new Random();
+//          PoissonDistribution ps = new PoissonDistribution(3.2768);
+//          Futures fs = new Futures();
+//          for (int i = cb.vecStart(); i < cb.vecEnd(); ++i) {
+//            int cnt = ps.sample();
+//            sum1.addAndGet(cnt);
+//            int[] ids = new int[cnt];
+//            for (int j = 0; j < cnt; ++j)
+//              ids[j] = r.nextInt(cb.len());
+//            Arrays.sort(ids);
+//            NewChunk nc = new NewChunk(cb, i ,true);
+//            int x = -1;
+//            for (int id : ids) {
+//              if(x == id) ++x;
+//              nc.addZeros(id - x - 1);
+//              nc.addNum(1);
+//              sum2.incrementAndGet();
+//              x = id;
+//            }
+//            nc.addZeros(cb.len()-x);
+//            nc.close(fs);
+//          }
+//          fs.blockForPending();
+//          DKV.put(cb._key = k,cb,_fs);
+//        }
+//      }.doAll(ks);
+//      long t2 = System.currentTimeMillis();
+//      System.out.println("done in " + (t2 - t1) + " ms");
+//      System.out.println("sum1 = " + sum1 + ", sum2 = " + sum2);
+//      System.out.println("running the sum");
+//      for(int i = 0; i < 100; ++i) {
+//        res[0] = 0;
+//        // access vecs
+//        new MRTask() {
+//          double sum;
+//          @Override
+//          public void map(Key k) {
+//            ChunkBlock cb = DKV.getGet(k);
+//            double[] vals = new double[cb.len()];
+//            int[] ids = new int[cb.len()];
+//            Chunk[] chunks = cb.chunks();
+//            for (int i = cb.vecStart(); i < cb.vecEnd(); ++i) {
+//              int n = chunks[i].asSparseDoubles(vals, ids);
+//              for (int j = 0; j < n; ++j)
+//                sum += vals[j];
+//            }
+//          }
+//
+//          @Override
+//          public void reduce(MRTask m) {
+//            sum += ((Double) m.result());
+//          }
+//
+//          @Override
+//          public void postGlobal() {
+//            res[0] = sum;
+////            System.out.println("sum = " + sum);
+//          }
+//
+//          @Override
+//          public Double result() {
+//            return sum;
+//          }
+//        }.doAll(ks);
+//      }
+//      System.out.println("sum = " + res[0]);
+//      long t3 = System.currentTimeMillis();
+//      System.out.println("done in " + (t3 - t2) + " ms");
+//    } finally {
+//      for(Key k:ks) if(k != null)DKV.remove(k);
+//    }
+//  }
   public static void testScoring(GLMModel m, Frame fr) {
     Scope.enter();
     // standard predictions
@@ -250,9 +249,9 @@ public class GLMTest  extends TestUtil {
     int p = m._output._dinfo._cats + m._output._dinfo._nums;
     int p2 = fr2.numCols() - (m._output._dinfo._weights?1:0)- (m._output._dinfo._offset?1:0);
     assert p == p2: p + " != " + p2;
-    fr2.add(preds.names(),preds.vecs());
+    fr2.add(preds);
     // test score0
-    new TestScore0(m,m._output._dinfo._weights,m._output._dinfo._offset).doAll(fr2);
+    new TestScore0(m,m._output._dinfo._weights,m._output._dinfo._offset).doAll(fr2.vecs());
     // test pojo
     if((!m._output._dinfo._weights && !m._output._dinfo._offset))
       Assert.assertTrue(m.testJavaScoring(fr,preds,1e-15));
@@ -330,7 +329,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._train = fr._key;
       // params._response = 1;
-      params._response_column = fr._names[1];
+      params._response_column = fr._names.getName(1);
       params._lambda = new double[]{0};
 //      params._standardize= false;
       model = new GLM(params).trainModel().get();
@@ -360,12 +359,12 @@ public class GLMTest  extends TestUtil {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       FVecTest.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
       fr = ParseDataset.parse(parsed, raw);
-      Vec v = fr.vec(0);
-      System.out.println(v.min() + ", " + v.max() + ", mean = " + v.mean());
+      VecAry v = fr.vecs(0);
+      System.out.println(v.min(0) + ", " + v.max(0) + ", mean = " + v.mean(0));
       GLMParameters params = new GLMParameters(Family.poisson);
       params._train = fr._key;
       // params._response = 1;
-      params._response_column = fr._names[1];
+      params._response_column = fr._names.getName(1);
       params._lambda = new double[]{0};
       params._standardize = false;
       model = new GLM(params).trainModel().get();
@@ -381,7 +380,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params2 = new GLMParameters(Family.poisson);
       params2._train = fr._key;
       // params2._response = 1;
-      params2._response_column = fr._names[1];
+      params2._response_column = fr._names.getName(1);
       params2._lambda = new double[]{0};
       params2._standardize = true;
       params2._beta_epsilon = 1e-5;
@@ -420,7 +419,7 @@ public class GLMTest  extends TestUtil {
       //public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
       GLMParameters params = new GLMParameters(Family.gamma);
       // params._response = 1;
-      params._response_column = fr._names[1];
+      params._response_column = fr._names.getName(1);
       params._train = parsed;
       params._lambda = new double[]{0};
       model = new GLM(params).trainModel().get();
@@ -476,7 +475,7 @@ public class GLMTest  extends TestUtil {
     try {
       GLMParameters params = new GLMParameters(Family.poisson);
       // params._response = 1;
-      params._response_column = fr._names[1];
+      params._response_column = fr._names.getName(1);
       params._train = parsed;
       params._lambda = new double[]{0};
       params._missing_values_handling = MissingValuesHandling.Skip;
@@ -512,8 +511,8 @@ public class GLMTest  extends TestUtil {
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
 
-      GLMGradientTask grtSpc = new GLMBinomialGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
-      GLMGradientTask grtGen = new GLMGenericGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
+      GLMGradientTask grtSpc = new GLMBinomialGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame.vecs());
+      GLMGradientTask grtGen = new GLMGenericGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame.vecs());
       for (int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ", grtSpc._gradient[i], grtGen._gradient[i], 1e-4);
       params = new GLMParameters(Family.gaussian, Family.gaussian.defaultLink, new double[]{0}, new double[]{0}, 0, 0);
@@ -525,8 +524,8 @@ public class GLMTest  extends TestUtil {
       rnd = new Random(1987654321);
       for (int i = 0; i < beta.length; ++i)
         beta[i] = 1 - 2 * rnd.nextDouble();
-      grtSpc = new GLMGaussianGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
-      grtGen = new GLMGenericGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame);
+      grtSpc = new GLMGaussianGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame.vecs());
+      grtGen = new GLMGenericGradientTask(null,dinfo, params, params._lambda[0], beta).doAll(dinfo._adaptedFrame.vecs());
       for (int i = 0; i < beta.length; ++i)
         assertEquals("gradients differ: " + Arrays.toString(grtSpc._gradient) + " != " + Arrays.toString(grtGen._gradient), grtSpc._gradient[i], grtGen._gradient[i], 1e-4);
       dinfo.remove();
@@ -648,7 +647,7 @@ public class GLMTest  extends TestUtil {
       -4.303234e-04,  2.608783e-05,  7.889196e-05, -3.559375e-04, -5.551586e-04, -2.777131e-04, 6.505911e-04,  1.033867e-05,  1.837583e-05,  6.750772e-04,
        1.247379e-04, -5.408403e-04,  -4.453114e-04,
     };
-  Vec origRes = null;
+  VecAry origRes = null;
     try {
       fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
       fr.remove("C21").remove();
@@ -661,14 +660,14 @@ public class GLMTest  extends TestUtil {
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
       origRes = fr.remove("C55");
-      Vec res = fr.add("C55",origRes.toCategoricalVec());
-      double [] means = new double [res.domain().length];
-      long [] bins = res.bins();
+      VecAry res = fr.add("C55",origRes.toCategoricalVec());
+      double [] means = new double [res.domain(0).length];
+      long [] bins = res.bins(0);
       double sumInv = 1.0/ArrayUtils.sum(bins);
       for(int i = 0; i < bins.length; ++i)
         means[i] = bins[i]*sumInv;
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMTask.GLMMultinomialGradientTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
+      GLMTask.GLMMultinomialGradientTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame.vecs());
       assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
       System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
       double [] g = gmt.gradient();
@@ -866,15 +865,15 @@ public class GLMTest  extends TestUtil {
       DKV.put(fr._key, fr);
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo,params,0,beta).doAll(dinfo._adaptedFrame);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo,params,0,beta).doAll(dinfo._adaptedFrame.vecs());
       double [] grad = lt._gradient;
       String [] names = model.dinfo().coefNames();
       BufferedString tmpStr = new BufferedString();
       outer:
       for (int i = 0; i < names.length; ++i) {
         for (int j = 0; j < betaConstraints.numRows(); ++j) {
-          if (betaConstraints.vec("names").atStr(tmpStr, j).toString().equals(names[i])) {
-            if (Math.abs(beta[i] - betaConstraints.vec("lower_bounds").at(j)) < 1e-4 || Math.abs(beta[i] - betaConstraints.vec("upper_bounds").at(j)) < 1e-4) {
+          if (betaConstraints.vecs("names").atStr(tmpStr, j,0).toString().equals(names[i])) {
+            if (Math.abs(beta[i] - betaConstraints.vecs("lower_bounds").at(j,0)) < 1e-4 || Math.abs(beta[i] - betaConstraints.vecs("upper_bounds").at(j,0)) < 1e-4) {
               continue outer;
             }
           }
@@ -1047,10 +1046,10 @@ public class GLMTest  extends TestUtil {
       fr.add("CAPSULE", fr.remove("CAPSULE"));
       // now check the ginfo
       DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo, params, 0, beta_1).doAll(dinfo._adaptedFrame);
+      GLMGradientTask lt = new GLMBinomialGradientTask(null,dinfo, params, 0, beta_1).doAll(dinfo._adaptedFrame.vecs());
       double[] grad = lt._gradient;
       for (int i = 0; i < beta_1.length; ++i)
-        assertEquals(0, grad[i] + betaConstraints.vec("rho").at(i) * (beta_1[i] - betaConstraints.vec("beta_given").at(i)), 1e-4);
+        assertEquals(0, grad[i] + betaConstraints.vecs("rho").at(i,0) * (beta_1[i] - betaConstraints.vecs("beta_given").at(i,0)), 1e-4);
     } finally {
       betaConstraints.delete();
       fr.delete();
@@ -1226,13 +1225,13 @@ public class GLMTest  extends TestUtil {
     Vec v11 = Vec.makeVec(d8, vg_1.addVec());
     Vec v12 = Vec.makeVec(d9, vg_1.addVec());
 
-    Frame f = new Frame(Key.make("TestData"), null, new Vec[]{v01, v02, v03, v04, v05, v05, v06, v07, v08, v09, v10, v11, v12});
+    Frame f = new Frame(Key.make("TestData"), new VecAry(v01, v02, v03, v04, v05, v05, v06, v07, v08, v09, v10, v11, v12));
     DKV.put(f);
     DataInfo dinfo = new DataInfo(f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
     GLMParameters params = new GLMParameters(Family.gaussian);
     //                              public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw,double [] beta, double lambda) {
-    final GLMIterationTask glmtSparse = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).setSparse(true).doAll(dinfo._adaptedFrame);
-    final GLMIterationTask glmtDense = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).setSparse(false).doAll(dinfo._adaptedFrame);
+    final GLMIterationTask glmtSparse = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).setSparse(true).doAll(dinfo._adaptedFrame.vecs());
+    final GLMIterationTask glmtDense = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).setSparse(false).doAll(dinfo._adaptedFrame.vecs());
     for (int i = 0; i < glmtDense._xy.length; ++i) {
       for (int j = 0; j <= i; ++j) {
         assertEquals(glmtDense._gram.get(i, j), glmtSparse._gram.get(i, j), 1e-8);
@@ -1248,8 +1247,8 @@ public class GLMTest  extends TestUtil {
         tryComplete();
       }
     }).join();
-    final GLMIterationTask glmtSparse2 = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), beta).setSparse(true).doAll(dinfo._adaptedFrame);
-    final GLMIterationTask glmtDense2 = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), beta).setSparse(false).doAll(dinfo._adaptedFrame);
+    final GLMIterationTask glmtSparse2 = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), beta).setSparse(true).doAll(dinfo._adaptedFrame.vecs());
+    final GLMIterationTask glmtDense2 = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), beta).setSparse(false).doAll(dinfo._adaptedFrame.vecs());
     for (int i = 0; i < glmtDense2._xy.length; ++i) {
       for (int j = 0; j <= i; ++j) {
         assertEquals(glmtDense2._gram.get(i, j), glmtSparse2._gram.get(i, j), 1e-8);
@@ -1267,14 +1266,14 @@ public class GLMTest  extends TestUtil {
     GLMModel model1 = null, model2 = null, model3 = null, model4 = null;
     Frame frMM = parse_test_file(Key.make("AirlinesMM"), "smalldata/airlines/AirlinesTrainMM.csv.zip");
     Frame frG = parse_test_file(Key.make("gram"), "smalldata/airlines/gram_std.csv", true);
-    Vec xy = frG.remove("xy");
+    VecAry xy = frG.remove("xy");
     frMM.remove("C1").remove();
-    Vec v;
-    frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).makeCopy(null));
+    VecAry v;
+    frMM.add("IsDepDelayed", (v = frMM.remove("IsDepDelayed")).makeCopy());
     v.remove();
     DKV.put(frMM._key, frMM);
     Frame fr = parse_test_file(Key.make("Airlines"), "smalldata/airlines/AirlinesTrain.csv.zip"), res = null;
-    fr.add("IsDepDelayed",(v =fr.remove("IsDepDelayed")).makeCopy(null));
+    fr.add("IsDepDelayed",(v =fr.remove("IsDepDelayed")).makeCopy());
     v.remove();
     DKV.put(fr._key,fr);
     //  Distance + Origin + Dest + UniqueCarrier
@@ -1326,12 +1325,12 @@ public class GLMTest  extends TestUtil {
       params._use_all_factor_levels = true;
       // test the gram
       DataInfo dinfo = new DataInfo(frMM, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMIterationTask glmt = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).doAll(dinfo._adaptedFrame);
+      GLMIterationTask glmt = new GLMIterationTask(null, dinfo, new GLMWeightsFun(params), null).doAll(dinfo._adaptedFrame.vecs());
       for(int i = 0; i < glmt._xy.length; ++i) {
         for(int j = 0; j <= i; ++j ) {
-          assertEquals(frG.vec(j).at(i), glmt._gram.get(i, j), 1e-5);
+          assertEquals(frG.vecs().at(i,j), glmt._gram.get(i, j), 1e-5);
         }
-        assertEquals(xy.at(i), glmt._xy[i], 1e-5);
+        assertEquals(xy.at(i,0), glmt._xy[i], 1e-5);
       }
       xy.remove();
       params = (GLMParameters) params.clone();
@@ -1634,7 +1633,7 @@ public class GLMTest  extends TestUtil {
     public void map(Chunk[] chks) {
       super.map(chks);
 
-      _val2 = (GLMMetricBuilder) _m.makeMetricBuilder(chks[chks.length - 1].vec().domain());
+      _val2 = (GLMMetricBuilder) _m.makeMetricBuilder(chks[chks.length - 1].vec().domain(0));
       double[] ds = new double[3];
 
       float[] actual = new float[1];
@@ -1859,7 +1858,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.gaussian);
       // params._response = 0;
       params._lambda = null;
-      params._response_column = fr._names[0];
+      params._response_column = fr._names.getName(0);
       params._train = parsed;
       params._lambda_search = true;
       params._nlambdas = 35;
@@ -1882,7 +1881,7 @@ public class GLMTest  extends TestUtil {
       params = new GLMParameters(Family.gaussian);
       // params._response = 0;
       params._lambda = null;
-      params._response_column = fr._names[0];
+      params._response_column = fr._names.getName(0);
       params._train = parsed;
       params._lambda_search = true;
       params._nlambdas = 35;
@@ -1916,7 +1915,7 @@ public class GLMTest  extends TestUtil {
       GLMParameters params = new GLMParameters(Family.gaussian);
       // params._response = 0;
       params._lambda = null;
-      params._response_column = fr._names[0];
+      params._response_column = fr._names.getName(0);
       params._train = fr._key;
       params._max_active_predictors = 100000;
       params._alpha = new double[]{0};
@@ -1942,7 +1941,7 @@ public class GLMTest  extends TestUtil {
       Scope.track(fr);
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._train = fr._key;
-      params._response_column = fr._names[8];
+      params._response_column = fr._names.getName(8);
       params._alpha = new double[]{1.0};
       params._lambda_search = true;
       GLM glm = new GLM(params);

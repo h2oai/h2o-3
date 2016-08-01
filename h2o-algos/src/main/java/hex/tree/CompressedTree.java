@@ -127,7 +127,7 @@ public class CompressedTree extends Keyed {
   @Override protected long checksum_impl() { throw water.H2O.fail(); }
 
   public String toString( SharedTreeModel.SharedTreeOutput tm ) {
-    final String[] names = tm._names;
+    final String[] names = tm._names.getNames();
     final SB sb = new SB();
     new TreeVisitor<RuntimeException>(this) {
       @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, DHistogram.NASplitDir naSplitDir) {

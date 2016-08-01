@@ -78,23 +78,23 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       String prefix = "cluster_";
       Frame adaptFrm = new Frame(adaptedFr);
       for(int c = 0; c < len; c++)
-        adaptFrm.add(prefix + Double.toString(c+1), adaptFrm.anyVec().makeZero());
+        adaptFrm.add(prefix + Double.toString(c+1), adaptFrm.vecs().makeZero());
       new MRTask() {
         @Override public void map( Chunk chks[] ) {
           if (isCancelled() || j != null && j.stop_requested()) return;
-          double tmp [] = new double[_output._names.length];
+          double tmp [] = new double[_output._names.len()];
           double preds[] = new double[len];
           for(int row = 0; row < chks[0]._len; row++) {
             double p[] = score_indicator(chks, row, tmp, preds);
             for(int c = 0; c < preds.length; c++)
-              chks[_output._names.length + c].set(row, p[c]);
+              chks[_output._names.len() + c].set(row, p[c]);
           }
           if (j != null) j.update(1);
         }
-      }.doAll(adaptFrm);
+      }.doAll(adaptFrm.vecs());
 
       // Return the predicted columns
-      int x = _output._names.length, y = adaptFrm.numCols();
+      int x = _output._names.len(), y = adaptFrm.numCols();
       Frame f = adaptFrm.extractFrame(x, y); // this will call vec_impl() and we cannot call the delete() below just yet
 
       f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
@@ -106,7 +106,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   public double[] score_indicator(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     assert _parms._pred_indicator;
-    assert tmp.length == _output._names.length && preds.length == _parms._k;
+    assert tmp.length == _output._names.len() && preds.length == _parms._k;
     for(int i = 0; i < tmp.length; i++)
       tmp[i] = chks[i].atd(row_in_chunk);
 
@@ -121,7 +121,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   public double[] score_ratio(Chunk[] chks, int row_in_chunk, double[] tmp) {
     assert _parms._pred_indicator;
-    assert tmp.length == _output._names.length;
+    assert tmp.length == _output._names.len();
     for(int i = 0; i < tmp.length; i++)
       tmp[i] = chks[i].atd(row_in_chunk);
 

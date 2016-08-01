@@ -68,7 +68,7 @@ public class L_BFGS_Test  extends TestUtil {
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/prostate_cat_replaced.csv");
       source.add("CAPSULE", source.remove("CAPSULE"));
       source.remove("ID").remove();
-      Frame valid = new Frame(source._names.clone(),source.vecs().clone());
+      Frame valid = new Frame(source);
       dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
       DKV.put(dinfo._key,dinfo);
       glmp._obj_reg = 1/380.0;
@@ -76,7 +76,7 @@ public class L_BFGS_Test  extends TestUtil {
       L_BFGS lbfgs = new L_BFGS().setGradEps(1e-8);
 
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
-      beta[beta.length-1] = new GLMWeightsFun(glmp).link(source.vec("CAPSULE").mean());
+      beta[beta.length-1] = new GLMWeightsFun(glmp).link(source.vecs("CAPSULE").mean(0));
       L_BFGS.Result r = lbfgs.solve(solver, beta, solver.getGradient(beta),new L_BFGS.ProgressMonitor(){
         int _i = 0;
         public boolean progress(double [] beta, GradientInfo ginfo){
@@ -103,7 +103,7 @@ public class L_BFGS_Test  extends TestUtil {
     DataInfo dinfo = null;
     try {
       Frame source = parse_test_file(parsedKey, "smalldata/glm_test/arcene.csv");
-      Frame valid = new Frame(source._names.clone(),source.vecs().clone());
+      Frame valid = new Frame(source);
       GLMParameters glmp = new GLMParameters(Family.gaussian);
       glmp._lambda = new double[]{1e-5};
       glmp._alpha = new double[]{0};
@@ -113,7 +113,7 @@ public class L_BFGS_Test  extends TestUtil {
       GradientSolver solver = new GLMGradientSolver(null,glmp, dinfo, 1e-5, null);
       L_BFGS lbfgs = new L_BFGS().setMaxIter(20);
       double [] beta = MemoryManager.malloc8d(dinfo.fullN()+1);
-      beta[beta.length-1] = new GLMWeightsFun(glmp).link(source.lastVec().mean());
+      beta[beta.length-1] = new GLMWeightsFun(glmp).link(source.lastVec().mean(0));
       L_BFGS.Result r1 = lbfgs.solve(solver, beta.clone(), solver.getGradient(beta),new L_BFGS.ProgressMonitor(){
         int _i = 0;
         public boolean progress(double [] beta, GradientInfo ginfo){

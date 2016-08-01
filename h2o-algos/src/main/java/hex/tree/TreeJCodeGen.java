@@ -103,7 +103,7 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
         _sb.p("data[").p(col);
         // Generate column names only if necessary
         if (_verboseCode) {
-          _sb.p(" /* ").p(_tm._output._names[col]).p(" */");
+          _sb.p(" /* ").p(_tm._output._names.getName(col)).p(" */");
         }
         _sb.p("] ").p(equal == 1 ? "!= " : "<").pj(fcmp); // then left and then right (left is !=)
         _constantPoolSize += 2; // * bytes for generated float which is represented as double because of cast (Double occupies 2 slots in constant pool)
@@ -112,7 +112,7 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
       if (naSplitDir == DHistogram.NASplitDir.NAvsREST ) _sb.p("!Double.isNaN(data[").p(col).p("])"); //no need to store group split, all we need to know is NA or not
       else {
         if (naSplitDir == DHistogram.NASplitDir.NALeft || naSplitDir == DHistogram.NASplitDir.Left) _sb.p("Double.isNaN(data[").p(col).p("]) || "); //NAs go left
-        gcmp.toJava(_sb, "GRPSPLIT" + _grpCnt, col, _tm._output._names[col]);
+        gcmp.toJava(_sb, "GRPSPLIT" + _grpCnt, col, _tm._output._names.getName(col));
       }
       _grpCnt++;
     }

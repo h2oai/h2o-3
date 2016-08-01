@@ -15,6 +15,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.ASTKFold;
 import water.util.ArrayUtils;
 
@@ -39,7 +40,7 @@ public class XValPredictionsCheck extends TestUtil {
     try {
       // Load data, hack frames
       tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      Frame foldId = new Frame(new String[]{"foldId"}, new Vec[]{ASTKFold.kfoldColumn(tfr.vec("class").makeZero(), nfolds, 543216789)});
+      Frame foldId = new Frame(new String[]{"foldId"}, ASTKFold.kfoldColumn(tfr.vecs("class").makeZero(), nfolds, 543216789));
       tfr.add(foldId);
       DKV.put(tfr);
 
@@ -54,7 +55,7 @@ public class XValPredictionsCheck extends TestUtil {
       parms._keep_cross_validation_predictions=true;
       GBM job = new GBM(parms);
       GBMModel gbm = job.trainModel().get();
-      checkModel(gbm, foldId.anyVec(),3);
+      checkModel(gbm, foldId.vecs(),3);
 
 
       // DRF
@@ -68,7 +69,7 @@ public class XValPredictionsCheck extends TestUtil {
       parmsDRF._keep_cross_validation_predictions=true;
       DRF drfJob = new DRF(parmsDRF);
       DRFModel drf = drfJob.trainModel().get();
-      checkModel(drf, foldId.anyVec(),3);
+      checkModel(drf, foldId.vecs(),3);
 
       // GLM
       GLMModel.GLMParameters parmsGLM = new GLMModel.GLMParameters();
@@ -78,7 +79,7 @@ public class XValPredictionsCheck extends TestUtil {
       parmsGLM._keep_cross_validation_predictions=true;
       GLM glmJob = new GLM(parmsGLM);
       GLMModel glm = glmJob.trainModel().get();
-      checkModel(glm, foldId.anyVec(),1);
+      checkModel(glm, foldId.vecs(),1);
 
       // DL
       DeepLearningModel.DeepLearningParameters parmsDL = new DeepLearningModel.DeepLearningParameters();
@@ -90,7 +91,7 @@ public class XValPredictionsCheck extends TestUtil {
       parmsDL._keep_cross_validation_predictions=true;
       DeepLearning dlJob = new DeepLearning(parmsDL);
       DeepLearningModel dl = dlJob.trainModel().get();
-      checkModel(dl, foldId.anyVec(),3);
+      checkModel(dl, foldId.vecs(),3);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -98,7 +99,7 @@ public class XValPredictionsCheck extends TestUtil {
     }
   }
 
-  void checkModel(Model m, Vec foldId, int nclass) {
+  void checkModel(Model m, VecAry foldId, int nclass) {
     if(!(m instanceof DRFModel)) // DRF does out of back instead of true training, nobs might be different
       assertEquals(m._output._training_metrics._nobs,m._output._cross_validation_metrics._nobs);
     m.delete();
@@ -108,10 +109,9 @@ public class XValPredictionsCheck extends TestUtil {
     final int[] id = new int[1];
     for(Key k: xvalKeys) {
       Frame preds = DKV.getGet(k);
-      assert preds.numRows() == foldId.length();
-      Vec[] vecs = new Vec[nclass+1];
-      vecs[0] = foldId;
-      if( nclass==1 ) vecs[1] = preds.anyVec();
+      assert preds.numRows() == foldId.numRows();
+      VecAry vecs = new VecAry(foldId);
+      if( nclass==1 ) vecs.addVecs(preds.vecs());
       else
         System.arraycopy(preds.vecs(ArrayUtils.range(1, nclass)), 0, vecs, 1, nclass);
       new MRTask() {

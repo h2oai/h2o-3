@@ -157,10 +157,10 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
   }*/
 
   public static TreeVotes collectVotes(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold, SharedTree st) {
-    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold, st).doAll(f).resultVotes();
+    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold, st).doAll(f.vecs()).resultVotes();
   }
   public static TreeSSE collectSSE(CompressedTree[/*nclass || 1 for regression*/] tree, int nclasses, Frame f, int ncols, float rate, int variable, double threshold, SharedTree st) {
-    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold, st).doAll(f).resultSSE();
+    return new TreeMeasuresCollector(new CompressedTree[][] {tree}, nclasses, ncols, rate, variable, threshold, st).doAll(f.vecs()).resultSSE();
   }
 
   private static final class DummyRandom extends Random {

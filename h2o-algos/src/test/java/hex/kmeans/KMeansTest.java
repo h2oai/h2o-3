@@ -148,7 +148,7 @@ public class KMeansTest extends TestUtil {
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
       Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
-      assertVecEquals(predR.vec(0), fr2.vec(0), threshold);
+      assertVecEquals(predR.vecs(0), fr2.vecs(0), threshold);
       fr2.delete();
     } finally {
       init .delete();
@@ -414,7 +414,7 @@ public class KMeansTest extends TestUtil {
             parms._train = train._key;
             parms._valid = valid._key;
             if (!categorical) {
-              parms._ignored_columns = new String[]{fr._names[4]};
+              parms._ignored_columns = new String[]{fr._names.getName(4)};
             }
             parms._k = 3;
             parms._standardize = standardize;

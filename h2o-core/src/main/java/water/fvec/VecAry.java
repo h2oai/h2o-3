@@ -6,6 +6,7 @@ import water.util.ArrayUtils;
 import water.util.RandomUtils;
 import water.util.VecUtils;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -311,6 +312,12 @@ public class VecAry extends Iced {
     return res.toArray(new AVec[res.size()]);
   }
 
+  public VecAry makeCopy() {return makeCopy((String[][])null);}
+
+  public VecAry makeCons(double... cons) {throw H2O.unimpl();}
+
+  public int find(VecAry vec) {throw H2O.unimpl();}
+
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,
    *  but much faster than Vec.at(i).  Limited to single-threaded
@@ -372,7 +379,7 @@ public class VecAry extends Iced {
     }
   }
 
-  public final class VecAryWriter extends VecAryReader {
+  public final class VecAryWriter extends VecAryReader implements Closeable {
     public final void set  ( long rowId, int vecId, long val)   { chk(rowId,vecId).set((int)(rowId-_start), val); }
     public final void set  ( long rowId, int vecId, double val) { chk(rowId,vecId).set((int)(rowId-_start), val); }
     public final void setNA( long rowId, int vecId) { chk(rowId,vecId).setNA((int)(rowId-_start)); }

@@ -12,6 +12,8 @@ import water.parser.Categorical;
 import java.util.*;
 
 public class VecUtils {
+
+
   /**
    * Create a new {@link Vec} of categorical values from an existing {@link Vec}.
    *

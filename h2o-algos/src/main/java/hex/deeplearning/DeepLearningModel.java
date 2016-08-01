@@ -859,7 +859,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param quantile Quantile for cut-off
    * @return Threshold in MSE value for a point to be above the quantile
    */
-  public double calcOutlierThreshold(Vec mse, double quantile) {
+  public double calcOutlierThreshold(VecAry mse, double quantile) {
     Frame mse_frame = new Frame(Key.make(), new String[]{"Reconstruction.MSE"}, new VecAry(mse));
     DKV.put(mse_frame._key, mse_frame);
 

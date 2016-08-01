@@ -55,7 +55,8 @@ public class DataInfoTest extends TestUtil {
     try {
       Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2), true, true,true);
       int len=0;
-      for(Vec v: interactions.vecs()) len += ((InteractionWrappedVec)v).expandedLength();
+      for(int i = 0; i < interactions.vecs().len(); ++i )
+       len += ((InteractionWrappedVec)interactions.vecs().getAVecForCol(i)).expandedLength();
       interactions.delete();
       Assert.assertTrue(len==290+132+10);
 
@@ -109,7 +110,8 @@ public class DataInfoTest extends TestUtil {
     try {
       Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2), false, true, true);
       int len=0;
-      for(Vec v: interactions.vecs()) len += ((InteractionWrappedVec)v).expandedLength();
+      for(int i = 0; i < interactions.vecs().len(); ++i )
+        len += ((InteractionWrappedVec)interactions.vecs().getAVecForCol(i)).expandedLength();
       interactions.delete();
       Assert.assertTrue(len==426);
 
@@ -398,6 +400,6 @@ public class DataInfoTest extends TestUtil {
           }
         }
       }
-    }.doAll(di._adaptedFrame);
+    }.doAll(di._adaptedFrame.vecs());
   }
 }

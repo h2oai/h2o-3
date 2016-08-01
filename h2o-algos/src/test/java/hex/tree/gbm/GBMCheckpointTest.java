@@ -11,6 +11,7 @@ import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.VecUtils;
 
 import static water.ModelSerializationTest.assertTreeEquals;
@@ -71,12 +72,12 @@ public class GBMCheckpointTest extends TestUtil {
                                             int ntreesInPriorModel, int ntreesInNewModel,
                                             float sampleRateInPriorModel, float sampleRateInNewModel) {
     Frame f = parse_test_file(dataset);
-    Vec v = f.remove("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
+    VecAry v = f.remove("economy"); if (v!=null) v.remove(); //avoid overfitting for binomial case for cars dataset
     DKV.put(f);
     // If classification turn response into categorical
     if (classification) {
-      Vec respVec = f.vec(responseIdx);
-      f.replace(responseIdx, VecUtils.toCategoricalVec(respVec)).remove();
+      VecAry respVec = f.vecs(responseIdx);
+      f.vecs().replaceVecs(VecUtils.toCategoricalVec(respVec),responseIdx).remove();
       DKV.put(f._key, f);
     }
     GBMModel model = null;
@@ -149,7 +150,7 @@ public class GBMCheckpointTest extends TestUtil {
     Frame tr = parse_test_file("smalldata/jira/gbm_checkpoint_train.csv");
     Frame val = parse_test_file("smalldata/jira/gbm_checkpoint_valid.csv");
 
-    Vec old = null;
+    VecAry old = null;
 
     tr.remove("name").remove();
     tr.remove("economy").remove();

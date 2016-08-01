@@ -8,11 +8,10 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
+import water.fvec.*;
+
 import static water.fvec.FVecTest.makeByteVec;
-import water.fvec.Frame;
-import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
+
 import water.parser.ParseDataset;
 import water.util.*;
 
@@ -39,14 +38,14 @@ public class GBMTest extends TestUtil {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = fr._key;
       parms._distribution = Distribution.Family.gaussian;
-      parms._response_column = fr._names[1]; // Row in col 0, dependent in col 1, predictor in col 2
+      parms._response_column = fr._names.getName(1); // Row in col 0, dependent in col 1, predictor in col 2
       parms._ntrees = 1;
       parms._max_depth = 1;
       parms._min_rows = 1;
       parms._nbins = 20;
       // Drop ColV2 0 (row), keep 1 (response), keep col 2 (only predictor), drop remaining cols
       String[] xcols = parms._ignored_columns = new String[fr.numCols()-2];
-      xcols[0] = fr._names[0];
+      xcols[0] = fr._names.getName(0);
       System.arraycopy(fr._names,3,xcols,1,fr.numCols()-3);
       parms._learn_rate = 1.0f;
       parms._score_each_iteration=true;
@@ -58,7 +57,7 @@ public class GBMTest extends TestUtil {
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
       //job.response() can be used in place of fr.vecs()[1] but it has been rebalanced 
-      double sq_err = new MathUtils.SquareError().doAll(fr.vecs()[1],fr2.vecs()[0])._sum;
+      double sq_err = new MathUtils.SquareError().doAll( new VecAry(fr.vecs(1),fr2.vecs(0)))._sum;
       double mse = sq_err/fr2.numRows();
       assertEquals(79152.12337641386,mse,0.1);
       assertEquals(79152.12337641386,gbm._output._scored_train[1]._mse,0.1);
@@ -144,7 +143,7 @@ public class GBMTest extends TestUtil {
               int prep(Frame fr) {
                 fr.remove("ID").remove(); // Remove not-predictive ID
                 int ci = fr.find("RACE"); // Change RACE to categorical
-                Scope.track(fr.replace(ci,fr.vecs()[ci].toCategoricalVec()));
+                Scope.track(fr.vecs().replaceVecs(fr.vecs(ci).toCategoricalVec(),ci));
                 return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
               }
             }, false, Distribution.Family.bernoulli);
@@ -160,8 +159,8 @@ public class GBMTest extends TestUtil {
       fr = parse_test_file(fname);
       int idx = prep.prep(fr); // hack frame per-test
       if (family == Distribution.Family.bernoulli || family == Distribution.Family.multinomial) {
-        if (!fr.vecs()[idx].isCategorical()) {
-          Scope.track(fr.replace(idx, fr.vecs()[idx].toCategoricalVec()));
+        if (!fr.vecs().isCategorical(idx)) {
+          Scope.track(fr.vecs().replaceVecs(fr.vecs(idx).toCategoricalVec(),idx));
         }
       }
       DKV.put(fr);             // Update frame after hacking it
@@ -169,7 +168,7 @@ public class GBMTest extends TestUtil {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       if( idx < 0 ) idx = ~idx;
       parms._train = fr._key;
-      parms._response_column = fr._names[idx];
+      parms._response_column = fr._names.getName(idx);
       parms._ntrees = 5;
       parms._distribution = family;
       parms._max_depth = 4;
@@ -214,7 +213,7 @@ public class GBMTest extends TestUtil {
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");    // Convert response to categorical
-      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));
+      Scope.track(train.vecs().replaceVecs(train.vecs(ci).toCategoricalVec(),ci));
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -250,7 +249,7 @@ public class GBMTest extends TestUtil {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");
-      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      Scope.track(train.vecs().replaceVecs(train.vecs(ci).toCategoricalVec(),ci));   // Convert response 'Angaus' to categorical
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -294,8 +293,8 @@ public class GBMTest extends TestUtil {
       Frame res = gbm.score(v);
 
       int[] ps = new int[(int)v.numRows()];
-      Vec.Reader vr = res.vecs()[0].new Reader();
-      for( int i=0; i<ps.length; i++ ) ps[i] = (int)vr.at8(i);
+      VecAry vr = res.vecs(0);
+      for( int i=0; i<ps.length; i++ ) ps[i] = (int)vr.at8(i,0);
       // Expected predictions are X,X,Y,Y,X,Y,Z,X,Y
       // Never predicts W, the extra class in the test set.
       // Badly predicts Z because 1 tree does not pick up that feature#2 can also
@@ -329,7 +328,7 @@ public class GBMTest extends TestUtil {
       fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       fr.remove("Site").remove();        // Remove unique ID
       int ci = fr.find("Angaus");
-      Scope.track(fr.replace(ci, fr.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      Scope.track(fr.vecs().replaceVecs(fr.vecs(ci).toCategoricalVec(),ci));   // Convert response 'Angaus' to categorical
       DKV.put(fr);                       // Update after hacking
       parms._train = fr._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -425,8 +424,8 @@ public class GBMTest extends TestUtil {
       vfr = inF2.subframe(cols);
       inF1.remove(cols).remove(); // Toss all the rest away
       inF2.remove(cols).remove();
-      tfr.replace(0, tfr.vec("DOB").toCategoricalVec());     // Convert 'DOB' to categorical
-      vfr.replace(0, vfr.vec("DOB").toCategoricalVec());
+      tfr.vecs().replaceVecs(tfr.vecs("DOB").toCategoricalVec(),0);     // Convert 'DOB' to categorical
+      vfr.vecs().replaceVecs(vfr.vecs("DOB").toCategoricalVec(),0);
       DKV.put(tfr);
       DKV.put(vfr);
 
@@ -483,11 +482,11 @@ public class GBMTest extends TestUtil {
     try {
       // Load data, hack frames
       tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
-      Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
+      Scope.track(tfr.replace(tfr.vecs(784).toCategoricalVec(),784));   // Convert response 'C785' to categorical
       DKV.put(tfr);
 
       vfr = parse_test_file("bigdata/laptop/mnist/test.csv.gz");
-      Scope.track(vfr.replace(784, vfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
+      Scope.track(vfr.replace(vfr.vecs(784).toCategoricalVec(),784));   // Convert response 'C785' to categorical
       DKV.put(vfr);
 
       // Same parms for all
@@ -502,7 +501,7 @@ public class GBMTest extends TestUtil {
       GBMModel gbm = new GBM(parms).trainModel().get();
 
       Frame pred = gbm.score(vfr);
-      double sq_err = new MathUtils.SquareError().doAll(vfr.lastVec(),pred.vecs()[0])._sum;
+      double sq_err = new MathUtils.SquareError().doAll(new VecAry(vfr.lastVec(),pred.vecs(0)))._sum;
       double mse = sq_err/pred.numRows();
       assertEquals(3.0199, mse, 1e-15); //same results
       gbm.delete();
@@ -526,13 +525,12 @@ public class GBMTest extends TestUtil {
 
       // rebalance to 256 chunks
       Key dest = Key.make("df.rebalanced.hex");
-      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      RebalanceDataSet rb = new RebalanceDataSet(tfr.vecs(), 256);
       H2O.submitTask(rb);
       rb.join();
       tfr.delete();
-      tfr = DKV.get(dest).get();
-//      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
-//      DKV.put(tfr);
+      tfr = new Frame(dest,tfr._names,rb.getResult());
+      DKV.put(dest,tfr);
 
       for (int i=0; i<N; ++i) {
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -570,14 +568,14 @@ public class GBMTest extends TestUtil {
     try {
       // Load data, hack frames
       tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
-
       // rebalance to fixed number of chunks
       Key dest = Key.make("df.rebalanced.hex");
-      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      RebalanceDataSet rb = new RebalanceDataSet(tfr.vecs(),256);
       H2O.submitTask(rb);
       rb.join();
       tfr.delete();
-      tfr = DKV.get(dest).get();
+      tfr = new Frame(dest,tfr._names,rb.getResult());
+      DKV.put(dest,tfr);
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
@@ -629,10 +627,11 @@ public class GBMTest extends TestUtil {
 
       // rebalance to fixed number of chunks
       Key dest = Key.make("df.rebalanced.hex");
-      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      RebalanceDataSet rb = new RebalanceDataSet(tfr.vecs(),256);
       H2O.submitTask(rb);
       rb.join();
       tfr.delete();
+
       tfr = DKV.get(dest).get();
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
 //      DKV.put(tfr);
@@ -683,7 +682,7 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       tfr = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
-      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));
+      Scope.track(tfr.replace(tfr.vecs(1).toCategoricalVec(),1));
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -722,8 +721,8 @@ public class GBMTest extends TestUtil {
       tfr = parse_test_file("./bigdata/covktr.csv");
       vfr = parse_test_file("./bigdata/covkts.csv");
       int idx = tfr.find("V55");
-      Scope.track(tfr.replace(idx, tfr.vecs()[idx].toCategoricalVec()));
-      Scope.track(vfr.replace(idx, vfr.vecs()[idx].toCategoricalVec()));
+      Scope.track(tfr.replace(tfr.vecs(idx).toCategoricalVec(),idx));
+      Scope.track(vfr.replace(vfr.vecs(idx).toCategoricalVec(),idx));
       DKV.put(tfr);
       DKV.put(vfr);
 
@@ -761,8 +760,8 @@ public class GBMTest extends TestUtil {
       v_pred.remove();
 
       // Compute the perfect AUC
-      double t_auc3 = AUC2.perfectAUC(t_pred.vecs()[2], tfr.vec("V55"));
-      double v_auc3 = AUC2.perfectAUC(v_pred.vecs()[2], vfr.vec("V55"));
+      double t_auc3 = AUC2.perfectAUC(t_pred.vecs(2), tfr.vecs("V55"));
+      double v_auc3 = AUC2.perfectAUC(v_pred.vecs(2), vfr.vecs("V55"));
       System.out.println("train_AUC3= "+t_auc3+" , validation_AUC3= "+v_auc3);
       Assert.assertEquals(t_auc3, t_auc , 1e-6);
       Assert.assertEquals(t_auc3, t_auc2, 1e-6);
@@ -1223,7 +1222,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testNfoldsConsecutiveModelsSame() {
     Frame tfr = null;
-    Vec old = null;
+    VecAry old = null;
     GBMModel gbm1 = null;
     GBMModel gbm2 = null;
 
@@ -1286,7 +1285,7 @@ public class GBMTest extends TestUtil {
       parms._train = tfr._key;
       parms._response_column = "economy_20mpg";
       parms._fold_column = "cylinders";
-      Vec old = tfr.remove("cylinders");
+      VecAry old = tfr.remove("cylinders");
       tfr.add("cylinders",old.toCategoricalVec());
       DKV.put(tfr);
       parms._ntrees = 10;
@@ -1326,7 +1325,7 @@ public class GBMTest extends TestUtil {
             if (c.at8(i) == 8) c.set(i, 4);
           }
         }
-      }.doAll(tfr.vec("cylinders"));
+      }.doAll(tfr.vecs("cylinders"));
       DKV.put(tfr);
 
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -1351,7 +1350,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testNfoldsColumnCategorical() {
     Frame tfr = null;
-    Vec old = null;
+    VecAry old = null;
     GBMModel gbm1 = null;
 
     try {
@@ -1447,8 +1446,8 @@ public class GBMTest extends TestUtil {
         for (String s : new String[]{
                 "Merit", "Class"
         }) {
-          Scope.track(tfr.replace(tfr.find(s), tfr.vec(s).toCategoricalVec()));
-          Scope.track(vfr.replace(vfr.find(s), vfr.vec(s).toCategoricalVec()));
+          Scope.track(tfr.replace(tfr.vecs(s).toCategoricalVec(),tfr.find(s)));
+          Scope.track(vfr.replace(vfr.vecs(s).toCategoricalVec(),vfr.find(s)));
         }
         DKV.put(tfr);
         DKV.put(vfr);
@@ -1625,12 +1624,13 @@ public class GBMTest extends TestUtil {
 
       // rebalance to a given number of chunks
       Key dest = Key.make("df.rebalanced.hex");
-      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, chunks[i]);
+      RebalanceDataSet rb = new RebalanceDataSet(tfr.vecs(),chunks[i]);
       H2O.submitTask(rb);
       rb.join();
       tfr.delete();
-      tfr = DKV.get(dest).get();
-      assertEquals(tfr.vec(0).nChunks(), chunks[i]);
+      tfr = new Frame(dest,tfr._names,rb.getResult());
+      DKV.put(dest,tfr);
+      assertEquals(tfr.vecs().nChunks(), chunks[i]);
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
       DKV.put(tfr);
 
@@ -1825,7 +1825,7 @@ public class GBMTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(tfr.vecs(resp).toCategoricalVec(),resp));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1839,7 +1839,7 @@ public class GBMTest extends TestUtil {
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
         parms._train = ksplits[0];
         parms._valid = ksplits[1];
-        parms._response_column = tfr.names()[resp];
+        parms._response_column = tfr._names.getName(resp);
         parms._learn_rate = 0.05f;
         parms._min_split_improvement = msi[i];
         parms._ntrees = 10;
@@ -1876,7 +1876,7 @@ public class GBMTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(tfr.vecs(resp).toCategoricalVec(),resp));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1890,7 +1890,7 @@ public class GBMTest extends TestUtil {
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
         parms._train = ksplits[0];
         parms._valid = ksplits[1];
-        parms._response_column = tfr.names()[resp];
+        parms._response_column = tfr._names.getName(resp);
         parms._learn_rate = 0.05f;
         parms._histogram_type = histoType[i];
         parms._ntrees = 10;
@@ -1926,7 +1926,7 @@ public class GBMTest extends TestUtil {
       Scope.enter();
       tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
       int resp = 54;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(tfr.vecs(resp).toCategoricalVec(),resp));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1935,7 +1935,7 @@ public class GBMTest extends TestUtil {
       GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
-      parms._response_column = tfr.names()[resp];
+      parms._response_column = tfr._names.getName(resp);
       parms._learn_rate = 0.05f;
       parms._min_split_improvement = 1e-5;
       parms._ntrees = 10;
@@ -1972,12 +1972,12 @@ public class GBMTest extends TestUtil {
     Log.info(df);
     Log.info(preds);
     Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - -10) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(0,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(1,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(2,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(3,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(4,0) - -10) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(5,0) - 0) < 1e-6);
     preds.remove();
     gbm.remove();
     df.remove();
@@ -2000,12 +2000,12 @@ public class GBMTest extends TestUtil {
     Log.info(df);
     Log.info(preds);
     Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(preds.vec(0).at(0) == 10);
-    Assert.assertTrue(preds.vec(0).at(1) == 0);
-    Assert.assertTrue(preds.vec(0).at(2) == 0);
-    Assert.assertTrue(preds.vec(0).at(3) == 0);
-    Assert.assertTrue(preds.vec(0).at(4) == 10);
-    Assert.assertTrue(preds.vec(0).at(5) == 10);
+    Assert.assertTrue(preds.vecs().at(0,0) == 10);
+    Assert.assertTrue(preds.vecs().at(1,0) == 0);
+    Assert.assertTrue(preds.vecs().at(2,0) == 0);
+    Assert.assertTrue(preds.vecs().at(3,0) == 0);
+    Assert.assertTrue(preds.vecs().at(4,0) == 10);
+    Assert.assertTrue(preds.vecs().at(5,0) == 10);
     preds.remove();
     gbm.remove();
     df.remove();
@@ -2028,12 +2028,12 @@ public class GBMTest extends TestUtil {
     Log.info(df);
     Log.info(preds);
     Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 10) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(0,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(1,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(2,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(3,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(4,0) - 10) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(5,0) - 0) < 1e-6);
     preds.remove();
     gbm.remove();
     df.remove();
@@ -2056,12 +2056,12 @@ public class GBMTest extends TestUtil {
     Log.info(df);
     Log.info(preds);
     Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 4) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 4) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(0,0) - 4) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(1,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(2,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(3,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(4,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(5,0) - 4) < 1e-6);
     preds.remove();
     gbm.remove();
     df.remove();
@@ -2084,12 +2084,12 @@ public class GBMTest extends TestUtil {
     Log.info(df);
     Log.info(preds);
     Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 4) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 4) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(0,0) - 4) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(1,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(2,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(3,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(4,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(5,0) - 4) < 1e-6);
     preds.remove();
     gbm.remove();
     df.remove();
@@ -2108,17 +2108,18 @@ public class GBMTest extends TestUtil {
     parms._ntrees = 1;
     GBM job = new GBM(parms);
     GBMModel gbm = job.trainModel().get();
-    Frame preds = gbm.score(df);
+    Frame fpreds = gbm.score(df);
+    VecAry preds = fpreds.vecs();
     Log.info(df);
-    Log.info(preds);
-    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - -10) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 0) < 1e-6);
-    preds.remove();
+    Log.info(fpreds);
+    Assert.assertTrue(gbm.testJavaScoring(df,fpreds,1e-15));
+    Assert.assertTrue(Math.abs(preds.at(0,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(1,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(2,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(3,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(4,0) - -10) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(5,0) - 0) < 1e-6);
+    fpreds.remove();
     gbm.remove();
     df.remove();
   }
@@ -2136,17 +2137,18 @@ public class GBMTest extends TestUtil {
     parms._ntrees = 1;
     GBM job = new GBM(parms);
     GBMModel gbm = job.trainModel().get();
-    Frame preds = gbm.score(df);
+    Frame fpreds = gbm.score(df);
+    VecAry preds = fpreds.vecs();
     Log.info(df);
     Log.info(preds);
-    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(preds.vec(0).at(0) == 10);
-    Assert.assertTrue(preds.vec(0).at(1) == 0);
-    Assert.assertTrue(preds.vec(0).at(2) == 0);
-    Assert.assertTrue(preds.vec(0).at(3) == 0);
-    Assert.assertTrue(preds.vec(0).at(4) == 10);
-    Assert.assertTrue(preds.vec(0).at(5) == 10);
-    preds.remove();
+    Assert.assertTrue(gbm.testJavaScoring(df,fpreds,1e-15));
+    Assert.assertTrue(preds.at(0,0) == 10);
+    Assert.assertTrue(preds.at(1,0) == 0);
+    Assert.assertTrue(preds.at(2,0) == 0);
+    Assert.assertTrue(preds.at(3,0) == 0);
+    Assert.assertTrue(preds.at(4,0) == 10);
+    Assert.assertTrue(preds.at(5,0) == 10);
+    fpreds.remove();
     gbm.remove();
     df.remove();
   }
@@ -2164,17 +2166,18 @@ public class GBMTest extends TestUtil {
     parms._ntrees = 1;
     GBM job = new GBM(parms);
     GBMModel gbm = job.trainModel().get();
-    Frame preds = gbm.score(df);
+    Frame fpreds = gbm.score(df);
+    VecAry preds = fpreds.vecs();
     Log.info(df);
     Log.info(preds);
-    Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 10) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 0) < 1e-6);
-    preds.remove();
+    Assert.assertTrue(gbm.testJavaScoring(df,fpreds,1e-15));
+    Assert.assertTrue(Math.abs(preds.at(0,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(1,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(2,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(3,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(4,0) - 10) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.at(5,0) - 0) < 1e-6);
+    fpreds.remove();
     gbm.remove();
     df.remove();
   }
@@ -2196,12 +2199,12 @@ public class GBMTest extends TestUtil {
     Log.info(df);
     Log.info(preds);
     Assert.assertTrue(gbm.testJavaScoring(df,preds,1e-15));
-    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - 4) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 4) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(0,0) - 4) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(1,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(2,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(3,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(4,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs().at(5,0) - 4) < 1e-6);
     preds.remove();
     gbm.remove();
     df.remove();
@@ -2234,12 +2237,12 @@ public class GBMTest extends TestUtil {
     Log.info(preds2);
     Assert.assertTrue(gbm.testJavaScoring(df, preds, 1e-15));
     Assert.assertTrue(gbm.testJavaScoring(df2, preds2, 1e-15));
-    Assert.assertTrue(Math.abs(preds.vec(0).at(0) - -2.5) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(1) - 1) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(2) - -2.5) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(3) - 1) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(4) - 0) < 1e-6);
-    Assert.assertTrue(Math.abs(preds.vec(0).at(5) - 1) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs(0).at(0,0) - -2.5) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs(0).at(1,0) - 1) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs(0).at(2,0) - -2.5) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs(0).at(3,0) - 1) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs(0).at(4,0) - 0) < 1e-6);
+    Assert.assertTrue(Math.abs(preds.vecs(0).at(5,0) - 1) < 1e-6);
     preds.remove();
     preds2.remove();
     gbm.remove();

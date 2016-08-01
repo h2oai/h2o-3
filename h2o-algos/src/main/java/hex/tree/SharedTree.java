@@ -14,6 +14,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.*;
 
 import java.io.FileNotFoundException;
@@ -86,7 +87,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           _parms.validateWithCheckpoint(checkpointModel._parms);
           if( isClassifier() != checkpointModel._output.isClassifier() )
             throw new IllegalArgumentException("Response type must be the same as for the checkpointed model.");
-          if (!Arrays.equals(_train.names(), checkpointModel._output._names)) {
+          if (!_train._names.equals(checkpointModel._output._names)) {
             throw new IllegalArgumentException("The columns of the training data must be the same as for the checkpointed model");
           }
           if (!Arrays.deepEquals(_train.domains(), checkpointModel._output._domains)) {
@@ -116,7 +117,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (_parms._sample_rate_per_class.length != nclasses()) error("_sample_rate_per_class", "_sample_rate_per_class must have " + nclasses() + " values (one per class).");
       for (int i=0;i<_parms._sample_rate_per_class.length;++i) {
         if (!(0.0 < _parms._sample_rate_per_class[i] && _parms._sample_rate_per_class[i] <= 1.0))
-          error("_sample_rate_per_class", "sample_rate_per_class for class " + response().domain()[i] + " should be in interval ]0,1] but it is " + _parms._sample_rate_per_class[i] + ".");
+          error("_sample_rate_per_class", "sample_rate_per_class for class " + response().domain(i) + " should be in interval ]0,1] but it is " + _parms._sample_rate_per_class[i] + ".");
       }
     }
     if (!(0.0 < _parms._sample_rate && _parms._sample_rate <= 1.0))
@@ -128,7 +129,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if( !(0. < _parms._col_sample_rate_change_per_level && _parms._col_sample_rate_change_per_level <= 2) )
       error("_col_sample_rate_change_per_level", "col_sample_rate_change_per_level must be between 0 and 2");
     if (_train != null) {
-      double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vec(_parms._weights_column).mean() : 1);
+      double sumWeights = _train.numRows() * (hasWeightCol() ? _train.vecs(_parms._weights_column).mean(0) : 1);
       if (sumWeights < 2*_parms._min_rows ) // Need at least 2*min_rows weighted rows to split even once
         error("_min_rows", "The dataset size is too small to split for min_rows=" + _parms._min_rows
                 + ": must have at least " + 2*_parms._min_rows + " (weighted) rows, but have only " + sumWeights + ".");
@@ -166,7 +167,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         }
 
         // Compute the response domain; makes for nicer printouts
-        String[] domain = _response.domain();
+        String[] domain = _response.domain(0);
         assert (_nclass > 1 && domain != null) || (_nclass==1 && domain==null);
         if( _nclass==1 ) domain = new String[] {"r"}; // For regression, give a name to class 0
 
@@ -180,20 +181,21 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           // distribution ratios
           if(_model._output.isClassifier() && _parms._balance_classes ) {
 
-            float[] trainSamplingFactors = new float[_train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
+            float[] trainSamplingFactors = new float[_train.lastVec().domain(0).length]; //leave initialized to 0 -> will be filled up below
             if (_parms._class_sampling_factors != null) {
-              if (_parms._class_sampling_factors.length != _train.lastVec().domain().length)
-                throw new IllegalArgumentException("class_sampling_factors must have " + _train.lastVec().domain().length + " elements");
+              if (_parms._class_sampling_factors.length != _train.lastVec().domain(0).length)
+                throw new IllegalArgumentException("class_sampling_factors must have " + _train.lastVec().domain(0).length + " elements");
               trainSamplingFactors = _parms._class_sampling_factors.clone(); //clone: don't modify the original
             }
-            Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
+            VecAry stratifiedVecs = water.util.MRUtils.sampleFrameStratified(_train.vecs(), _train.numCols()-1, _train._names.getId(_model._output.weightsName()), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
+            Frame stratified = new Frame(null,_train._names,stratifiedVecs);
             if (stratified != _train) {
               _train = stratified;
-              _response = stratified.vec(_parms._response_column);
-              _weights = stratified.vec(_parms._weights_column);
+              _response = stratified.vecs(_parms._response_column);
+              _weights = stratified.vecs(_parms._weights_column);
               // Recompute distribution since the input frame was modified
               MRUtils.ClassDist cdmt2 = _weights != null ?
-                      new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
+                      new MRUtils.ClassDist(_nclass).doAll(new VecAry(_response, _weights)) : new MRUtils.ClassDist(_nclass).doAll(_response);
               _model._output._distribution = cdmt2.dist();
               _model._output._modelClassDist = cdmt2.rel_dist();
             }
@@ -203,7 +205,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           if (_parms._sample_rate_per_class != null) {
             Log.info("Sample rates per tree (this affects the distribution of probabilities):");
             for (int i = 0; i < nclasses(); ++i)
-              Log.info(" sample rate for class '" + response().domain()[i] + "' : " + _parms._sample_rate_per_class[i]);
+              Log.info(" sample rate for class '" + response().domain(0)[i] + "' : " + _parms._sample_rate_per_class[i]);
           }
         }
 
@@ -232,12 +234,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           for (int i=0;i<keys.length;++i)
             keys[i] = getGlobalQuantilesKey(i);
           for (int i=0;i<origQuantiles.length;++i) {
-            if (!_train.vec(i).isNumeric() || _train.vec(i).isCategorical() || _train.vec(i).isBinary() || origQuantiles[i].length <= 1) {
+            if (!_train.vecs().isNumeric(i) || _train.vecs().isCategorical(i) || _train.vecs().isBinary(i) || origQuantiles[i].length <= 1) {
               keys[i] = null;
               continue;
             }
             // make the quantiles split points unique
-            splitPoints[i] = ArrayUtils.makeUniqueAndLimitToRange(origQuantiles[i], _train.vec(i).min(), _train.vec(i).max());
+            splitPoints[i] = ArrayUtils.makeUniqueAndLimitToRange(origQuantiles[i], _train.vecs().min(i), _train.vecs().max(i));
             if (splitPoints[i].length <= 1) //not enough split points left - fall back to regular binning
               splitPoints[i] = null;
             else
@@ -318,7 +320,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Reconstruct the working tree state from the checkpoint
       Timer t = new Timer();
       int ntreesFromCheckpoint = ((SharedTreeModel.SharedTreeParameters) _parms._checkpoint.<SharedTreeModel>get()._parms)._ntrees;
-      new ReconstructTreeState(_ncols, _nclass, st /*large, but cleaner code this way*/, _parms._sample_rate,_model._output._treeKeys, doOOBScoring()).doAll(_train, _parms._build_tree_one_node);
+      new ReconstructTreeState(_ncols, _nclass, st /*large, but cleaner code this way*/, _parms._sample_rate,_model._output._treeKeys, doOOBScoring()).doAll(_train.vecs(), _parms._build_tree_one_node);
       for (int i = 0; i < ntreesFromCheckpoint; i++) _rand.nextLong(); //for determinism
       Log.info("Reconstructing OOB stats from checkpoint took " + t);
       if (DEV_DEBUG) {
@@ -372,20 +374,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     //           O( #active_splits * #bins * #ncols )
     // but is NOT over all the data.
     ScoreBuildOneTree sb1ts[] = new ScoreBuildOneTree[_nclass];
-    Vec vecs[] = fr.vecs();
+    VecAry vecs = fr.vecs();
     for( int k=0; k<_nclass; k++ ) {
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;
       // Build a frame with just a single tree (& work & nid) columns, so the
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
-      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1)); //predictors and actual response
-
+      Frame fr2 = new Frame(fr);
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int weightIdx = fr2.find(_parms._weights_column);
-      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);                              //tree predictions
-      int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
-      int nidIdx  = fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
+      fr2.add(fr._names.getName(idx_tree(k)),fr.vecs(idx_tree(k)));                              //tree predictions
+      int workIdx = fr2.numCols(); fr2.add(fr._names.getName(idx_work(k)),fr.vecs(idx_work(k))); //target value to fit (copy of actual response for DRF, residual for GBM)
+      int nidIdx  = fr2.numCols(); fr2.add(fr._names.getName(idx_nids(k)),fr.vecs(idx_nids(k))); //node indices for tree construction
       if (DEV_DEBUG) {
         System.out.println("Building a layer for class " + k + ":\n" + fr2.toString());
       }
@@ -404,11 +405,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (DEV_DEBUG) {
         System.out.println("Done with this layer for class " + k + ":\n" + new Frame(
                 new String[]{"TREE", "WORK", "NIDS"},
-                new Vec[]{
-                        vecs[idx_tree(k)],
-                        vecs[idx_work(k)],
-                        vecs[idx_nids(k)]
-                }
+                vecs.getVecs(idx_tree(k),idx_work(k),idx_nids(k))
         ).toString());
       }
     }
@@ -458,7 +455,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // Pass 2: Build new summary DHistograms on the new child Nodes every row
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
-      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork(null,_fr2,_build_tree_one_node);
+      new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork(null,_fr2.vecs(),_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
@@ -510,13 +507,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
 
-  protected final Vec vec_weight(Frame fr      ) { return fr.vecs()[idx_weight()]; }
-  protected final Vec vec_offset(Frame fr      ) { return fr.vecs()[idx_offset()]; }
-  protected final Vec vec_resp( Frame fr       ) { return fr.vecs()[idx_resp() ]; }
-  protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[idx_tree(c)]; }
-  protected final Vec vec_work( Frame fr, int c) { return fr.vecs()[idx_work(c)]; }
-  protected final Vec vec_nids( Frame fr, int c) { return fr.vecs()[idx_nids(c)]; }
-  protected final Vec vec_oobt( Frame fr       ) { return fr.vecs()[idx_oobt()]; }
+
+  protected final VecAry vec_resp( Frame fr       ) { return fr.vecs(idx_resp()); }
+  protected final VecAry vec_tree( Frame fr, int c) { return fr.vecs(idx_tree(c)); }
+  protected final VecAry vec_work( Frame fr, int c) { return fr.vecs(idx_tree(c)); }
+  protected final VecAry vec_nids( Frame fr, int c) { return fr.vecs(idx_nids(c)); }
+  protected final VecAry vec_oobt( Frame fr, int c) { return fr.vecs(idx_nids(c)); }
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
     assert data.length == _ncols;
@@ -585,7 +581,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       // Score on training data
       _job.update(0,"Scoring the model.");
-      Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response()._key,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
+      Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response(),_model._output.getModelCategory(),computeGainsLift).doAll(train().vecs(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train());
       out._training_metrics = mm;
       if (oob) out._training_metrics._description = "Metrics reported on Out-Of-Bag training samples";
@@ -593,7 +589,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       // Score again on validation data
       if( _parms._valid != null ) {
-        Score scv = new Score(this,false,false,vresponse()._key,_model._output.getModelCategory(),computeGainsLift).doAll(valid(), build_tree_one_node);
+        Score scv = new Score(this,false,false,vresponse(),_model._output.getModelCategory(),computeGainsLift).doAll(valid().vecs(), build_tree_one_node);
         ModelMetrics mmv = scv.makeModelMetrics(_model,_parms.valid());
         out._validation_metrics = mmv;
         if (_model._output._ntrees>0 || scoreZeroTrees()) //don't score the 0-tree model - the error is too large
@@ -602,7 +598,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       out._model_summary = createModelSummaryTable(out);
       out._scoring_history = createScoringHistoryTable(out);
       if( out._ntrees > 0 ) {    // Compute variable importances
-        out._varimp = new hex.VarImp(_improvPerVar, out._names);
+        out._varimp = new hex.VarImp(_improvPerVar, out._names.getNames());
         out._variable_importances = hex.ModelMetrics.calcVarImp(out._varimp);
       }
       if (printout) {
@@ -814,11 +810,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    * @return initial value
    */
   protected double getInitialValue() {
-    return new InitialValue(_parms).doAll(
-            _response,
-            hasWeightCol() ? _weights : _response.makeCon(1),
-            hasOffsetCol() ? _offset : _response.makeCon(0)
-    ).initialValue();
+    VecAry v = new VecAry(_response);
+    v.addVecs(hasWeightCol()?_weights:v.makeCon(1));
+    v.addVecs(hasOffsetCol()?_weights:v.makeCon(0));
+    return new InitialValue(_parms).doAll(v).initialValue();
   }
 
   // Helper MRTask to compute the initial value

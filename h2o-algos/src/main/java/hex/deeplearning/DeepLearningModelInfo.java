@@ -171,7 +171,7 @@ final public class DeepLearningModelInfo extends Iced {
     DeepLearningParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
 
     final int num_input = dinfo.fullN();
-    final int num_output = get_params()._autoencoder ? num_input : (_classification ? train.lastVec().cardinality() : 1);
+    final int num_output = get_params()._autoencoder ? num_input : (_classification ? train.lastVec().cardinality(0) : 1);
     if (!get_params()._autoencoder) assert(num_output == nClasses);
 
     _saw_missing_cats = dinfo._cats > 0 ? new boolean[data_info._cats] : null;
@@ -208,9 +208,9 @@ final public class DeepLearningModelInfo extends Iced {
         for (int i = 0; i < dinfo._adaptedFrame.numCols() - (get_params()._autoencoder ? 0 : 1) && count < 10; ++i) {
           if (dinfo._adaptedFrame.domains()[i] != null && dinfo._adaptedFrame.domains()[i].length >= levelcutoff) {
             if (warn) {
-              Log.warn("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              Log.warn("Categorical feature '" + dinfo._adaptedFrame._names.getName(i)+ "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
             } else {
-              Log.info("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
+              Log.info("Categorical feature '" + dinfo._adaptedFrame._names.getName(i) + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
             }
           }
           count++;
@@ -460,9 +460,9 @@ final public class DeepLearningModelInfo extends Iced {
         }
         for (int c=0; c<w.numCols(); ++c)
           for (int r=0; r<w.numRows(); ++r)
-            get_weights(i).set(r,c,(float)w.vec(c).at(r));
+            get_weights(i).set(r,c,(float)w.vecs().at(r,c));
         for (int r=0; r<w.numRows(); ++r)
-          get_biases(i).set(r,(float)b.vec(0).at(r));
+          get_biases(i).set(r,(float)b.vecs().at(r,0));
       }
     }
     else {

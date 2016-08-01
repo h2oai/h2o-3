@@ -46,7 +46,7 @@ public class DTree extends Iced {
   }
 
   public DTree(Frame fr, int ncols, char nclass, int mtrys, int mtrys_per_tree, long seed, SharedTreeModel.SharedTreeParameters parms) {
-    _names = fr.names();
+    _names = fr._names.getNames();
     _ncols = ncols;
     _parms = parms;
     _nclass=nclass;

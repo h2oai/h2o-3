@@ -74,13 +74,13 @@ public class WorkFlowTest extends TestUtil {
       // 2- light data munging
   
       // Convert start time to: Day since the Epoch
-      Vec startime = data.vec("starttime");
-      data.add(new TimeSplit().doIt(startime));
+      VecAry startime = data.vecs("starttime");
+      data.add("Days",new TimeSplit().doIt(startime));
 
       // Now do a monster Group-By.  Count bike starts per-station per-day
-      Vec days = data.vec("Days");
+      VecAry days = data.vecs("Days");
       long start = System.currentTimeMillis();
-      Frame bph = new CountBikes(days).doAll(days,data.vec("start station name")).makeFrame(Key.make("bph.hex"));
+      Frame bph = new CountBikes(days).doAll(new VecAry(days,data.vecs("start station name"))).makeFrame(Key.make("bph.hex"));
       System.out.println("Groupby took "+(System.currentTimeMillis()-start));
       System.out.println(bph);
       System.out.println(bph.toString(10000,20));
@@ -209,8 +209,8 @@ public class WorkFlowTest extends TestUtil {
 
   // Split out Days, Month, DayOfWeek and HourOfDay from Unix Epoch msec
   class TimeSplit extends MRTask<TimeSplit> {
-    public Frame doIt(Vec time) {
-      return doAll(new byte[]{Vec.T_NUM}, time).outputFrame(new String[]{"Days"}, null);
+    public VecAry doIt(VecAry time) {
+      return doAll(new byte[]{Vec.T_NUM}, time).outputVecs();
     }
 
     @Override public void map(Chunk msec, NewChunk day) {
@@ -228,14 +228,14 @@ public class WorkFlowTest extends TestUtil {
     private int idx( long day, long sid ) {
       return (int)((day-_day0)*_num_sid+sid);
     }
-    CountBikes( Vec vday ) {
-      _day0 = (int)vday.at8(0);
-      _last_day = (int)vday.at8((int)vday.length()-1)+1;
+    CountBikes( VecAry vday ) {
+      _day0 = (int)vday.at8(0,0);
+      _last_day = (int)vday.at8((int)vday.numRows()-1,0)+1;
     }
     @Override public void map( Chunk chk[] ) {
       Chunk day = chk[0];
       Chunk sid = chk[1];
-      _num_sid = sid.vec().cardinality();
+      _num_sid = _vecs.cardinality(1);
       int len = chk[0]._len;
       _bikes = new int[idx(_last_day,0)];
       for( int i=0; i<len; i++ )
@@ -277,14 +277,14 @@ public class WorkFlowTest extends TestUtil {
         }
       }
 
-      Vec[] vecs = new Vec[ncols];
-      final int rowLayout = avecs[0].compute_rowLayout();
-      for( int c = 0; c < avecs.length; c++ )
-        vecs[c] = avecs[c].closeVecs(rowLayout,fs);
-      vecs[0].setDomain(_fr.vec(1).domain());
-      vecs[1].setDomain(null);
-      vecs[2].setDomain(new String[]{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"});
-      vecs[3].setDomain(new String[]{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}); // Order comes from Joda
+      VecAry vecs = new VecAry(avecs[0].layout_and_close(fs));
+      final int rowLayout = vecs.rowLayout();
+      for( int c = 1; c < avecs.length; c++ )
+        vecs.addVecs(avecs[c].closeVecs(rowLayout,fs));
+      vecs.setDomain(0,_vecs.domain(1));
+      vecs.setDomain(1,null);
+      vecs.setDomain(2,new String[]{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"});
+      vecs.setDomain(3,new String[]{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}); // Order comes from Joda
       fs.blockForPending();
       Frame fr = new Frame(key,new String[]{"Station","bikes","Month","DayOfWeek"}, vecs);
       DKV.put(fr);

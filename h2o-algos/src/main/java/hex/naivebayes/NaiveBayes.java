@@ -31,7 +31,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   @Override
   protected void checkMemoryFootPrint() {
     // compute memory usage for pcond matrix
-    long mem_usage = (_train.numCols() - 1) * _train.lastVec().cardinality();
+    long mem_usage = (_train.numCols() - 1) * _train.lastVec().cardinality(0);
     String[][] domains = _train.domains();
     long count = 0;
     for (int i = 0; i < _train.numCols() - 1; i++) {
@@ -56,8 +56,8 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   public void init(boolean expensive) {
     super.init(expensive);
     if (_response != null) {
-      if (!_response.isCategorical()) error("_response", "Response must be a categorical column");
-      else if (_response.isConst()) error("_response", "Response must have at least two unique categorical levels");
+      if (!_response.isCategorical(0)) error("_response", "Response must be a categorical column");
+      else if (_response.isConst(0)) error("_response", "Response must have at least two unique categorical levels");
     }
     if (_parms._laplace < 0) error("_laplace", "Laplace smoothing must be a number >= 0");
     if (_parms._min_sdev < 1e-10) error("_min_sdev", "Min. standard deviation must be at least 1e-10");
@@ -72,7 +72,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   class NaiveBayesDriver extends Driver {
 
     public boolean computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
-      model._output._levels = _response.domain();
+      model._output._levels = _response.domain(0);
       model._output._rescnt = tsk._rescnt;
       model._output._ncats = dinfo._cats;
 
@@ -123,9 +123,9 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
 
       // Create table of conditional probabilities for every predictor
       model._output._pcond = new TwoDimTable[pcond.length];
-      String[] rowNames = _response.domain();
+      String[] rowNames = _response.domain(0);
       for(int col = 0; col < dinfo._cats; col++) {
-        String[] colNames = _train.vec(col).domain();
+        String[] colNames = _train.vecs().domain(col);
         String[] colTypes = new String[colNames.length];
         String[] colFormats = new String[colNames.length];
         Arrays.fill(colTypes, "double");
@@ -142,11 +142,11 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       }
 
       // Create table of a-priori probabilities for the response
-      String[] colTypes = new String[_response.cardinality()];
-      String[] colFormats = new String[_response.cardinality()];
+      String[] colTypes = new String[_response.cardinality(0)];
+      String[] colFormats = new String[_response.cardinality(0)];
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
-      model._output._apriori = new TwoDimTable("A Priori Response Probabilities", null, new String[1], _response.domain(), colTypes, colFormats, "",
+      model._output._apriori = new TwoDimTable("A Priori Response Probabilities", null, new String[1], _response.domain(0), colTypes, colFormats, "",
               new String[1][], new double[][] {apriori});
       model._output._model_summary = createModelSummaryTable(model._output);
 
@@ -183,7 +183,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
         model.delete_and_lock(_job);
 
         _job.update(1, "Begin distributed Naive Bayes calculation");
-        NBTask tsk = new NBTask(_job._key, dinfo, _response.cardinality()).doAll(dinfo._adaptedFrame);
+        NBTask tsk = new NBTask(_job._key, dinfo, _response.cardinality(0)).doAll(dinfo._adaptedFrame.vecs());
         if (computeStatsFillModel(model, dinfo, tsk))
           model.update(_job);
       } finally {

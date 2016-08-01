@@ -73,8 +73,8 @@ public class DeepLearningMissingTest extends TestUtil {
           p = new DeepLearningParameters();
           p._train = train._key;
           p._valid = test._key;
-          p._response_column = train._names[train.numCols()-1];
-          p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
+          p._response_column = train._names.getName(train.numCols()-1);
+          p._ignored_columns = new String[]{train._names.getName(1),train._names.getName(22)}; //only for weather data
           p._missing_values_handling = mvh;
           p._loss = DeepLearningParameters.Loss.Huber;
           p._activation = DeepLearningParameters.Activation.Rectifier;
@@ -89,8 +89,8 @@ public class DeepLearningMissingTest extends TestUtil {
           // Convert response to categorical
           int ri = train.numCols()-1;
           int ci = test.find(p._response_column);
-          Scope.track(train.replace(ri, train.vecs()[ri].toCategoricalVec()));
-          Scope.track(test .replace(ci, test.vecs()[ci].toCategoricalVec()));
+          Scope.track(train.vecs().replaceVecs(train.vecs(ri).toCategoricalVec(),ri));
+          Scope.track(test.vecs().replaceVecs(test.vecs(ci).toCategoricalVec()));
           DKV.put(train);
           DKV.put(test);
 

@@ -24,7 +24,7 @@ public class NaiveBayesTest extends TestUtil {
       NaiveBayesParameters parms = new NaiveBayesParameters();
       parms._train = train._key;
       parms._laplace = 0;
-      parms._response_column = train._names[4];
+      parms._response_column = train._names.getName(4);
       parms._compute_metrics = false;
 
       model = new NaiveBayes(parms).trainModel().get();
@@ -58,7 +58,7 @@ public class NaiveBayesTest extends TestUtil {
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
       parms._laplace = 0.01;    // Need Laplace smoothing
-      parms._response_column = fr._names[4];
+      parms._response_column = fr._names.getName(4);
       parms._compute_metrics = true;
 
       model = new NaiveBayes(parms).trainModel().get();
@@ -84,14 +84,14 @@ public class NaiveBayesTest extends TestUtil {
       Scope.enter();
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/logreg/prostate.csv");
       for(int i = 0; i < cats.length; i++)
-        Scope.track(train.replace(cats[i], train.vec(cats[i]).toCategoricalVec()));
+        Scope.track(train.replace(train.vecs(cats[i]).toCategoricalVec(),cats[4]));
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
       NaiveBayesParameters parms = new NaiveBayesParameters();
       parms._train = train._key;
       parms._laplace = 0;
-      parms._response_column = train._names[0];
+      parms._response_column = train._names.getName(0);
       parms._compute_metrics = true;
 
       model = new NaiveBayes(parms).trainModel().get();
@@ -114,13 +114,13 @@ public class NaiveBayesTest extends TestUtil {
     try {
       Scope.enter();
       train = parse_test_file(Key.make("covtype.hex"), "smalldata/covtype/covtype.20k.data");
-      Scope.track(train.replace(54, train.vecs()[54].toCategoricalVec()));   // Change response to categorical
+      Scope.track(train.replace(train.vecs(54).toCategoricalVec(),54));   // Change response to categorical
       DKV.put(train);
 
       NaiveBayesParameters parms = new NaiveBayesParameters();
       parms._train = train._key;
       parms._laplace = 0;
-      parms._response_column = train._names[54];
+      parms._response_column = train._names.getName(54);
       parms._compute_metrics = false;
 
       model = new NaiveBayes(parms).trainModel().get();

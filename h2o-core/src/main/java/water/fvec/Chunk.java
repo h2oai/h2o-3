@@ -119,6 +119,13 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
     _mem = bytes;initFromBytes();
   }
 
+  public Futures close( int cidx, Futures fs ) {
+    if( this  instanceof NewChunk ) _chk2 = this;
+    if( _chk2 == null ) return fs;          // No change?
+    if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).compress();
+    DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
+    return fs;
+  }
 
   public final Chunk getChunk(int i) {
     if(i != 0) throw new ArrayIndexOutOfBoundsException(i);

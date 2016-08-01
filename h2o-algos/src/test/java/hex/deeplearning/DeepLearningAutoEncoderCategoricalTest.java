@@ -9,6 +9,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.parser.ParseDataset;
 import water.util.Log;
 
@@ -27,7 +28,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     DeepLearningParameters p = new DeepLearningParameters();
     p._train = train._key;
     p._autoencoder = true;
-    p._response_column = train.names()[train.names().length-1];
+    p._response_column = train.names().getName(train.names().len()-1);
     p._seed = seed;
     p._hidden = new int[]{10, 5, 3};
     p._adaptive_rate = true;
@@ -60,22 +61,22 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     rec.remove();
 
     final Frame l2 = mymodel.scoreAutoEncoder(train, Key.make(), false);
-    final Vec l2vec = l2.anyVec();
-    sb.append("Actual   mean reconstruction error: " + l2vec.mean() + "\n");
+    final VecAry l2vec = l2.vecs();
+    sb.append("Actual   mean reconstruction error: " + l2vec.mean(0) + "\n");
 
     // print stats and potential outliers
     double quantile = 1 - 5. / train.numRows();
     sb.append("The following training points are reconstructed with an error above the "
             + quantile * 100 + "-th percentile - potential \"outliers\" in testing data.\n");
     double thresh = mymodel.calcOutlierThreshold(l2vec, quantile);
-    for (long i = 0; i < l2vec.length(); i++) {
-      if (l2vec.at(i) > thresh) {
-        sb.append(String.format("row %d : l2vec error = %5f\n", i, l2vec.at(i)));
+    for (long i = 0; i < l2vec.numRows(); i++) {
+      if (l2vec.at(i,0) > thresh) {
+        sb.append(String.format("row %d : l2vec error = %5f\n", i, l2vec.at(i,0)));
       }
     }
     Log.info(sb.toString());
 
-    Assert.assertEquals(l2vec.mean(), mymodel.mse(), 1e-8*mymodel.mse());
+    Assert.assertEquals(l2vec.mean(0), mymodel.mse(), 1e-8*mymodel.mse());
 
     // Create reconstruction
     Log.info("Creating full reconstruction.");

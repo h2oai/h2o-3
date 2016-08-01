@@ -91,7 +91,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         error("_offset_column", "Offset is not supported for multinomial distribution.");
       }
       if (hasOffsetCol() && _parms._distribution == Distribution.Family.bernoulli) {
-        if (_offset.max() > 1)
+        if (_offset.max(0) > 1)
           error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
       }
     }
@@ -176,21 +176,21 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
      */
     private double getInitialValueQuantile(double quantile) {
       // obtain y - o
-      Vec y = hasOffsetCol() ? new MRTask() {
+      VecAry y = hasOffsetCol() ? new MRTask() {
         @Override public void map(Chunk[] chks, NewChunk[] nc) {
           final Chunk resp = chk_resp(chks);
           final Chunk offset = chk_offset(chks);
           for (int i=0; i<chks[0]._len; ++i)
             nc[0].addNum(resp.atd(i) - offset.atd(i)); //y - o
         }
-      }.doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec() : response();
+      }.doAll(1, (byte)3 /*numeric*/, _train.vecs()).outputVecs(null) : response();
 
       // Now compute (weighted) quantile of y - o
       double res = Double.NaN;
       QuantileModel qm = null;
       Frame tempFrame = null;
       try {
-        tempFrame = new Frame(Key.make(H2O.SELF), new String[]{"y"}, new Vec[]{y});
+        tempFrame = new Frame(Key.make(H2O.SELF), new String[]{"y"}, y);
         if (hasWeightCol()) tempFrame.add("w", _weights);
         DKV.put(tempFrame);
         QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
@@ -226,7 +226,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       double init = 0; //start with initial value of 0 for convergence
       do {
-        double newInit = new NewtonRaphson(init).doAll(train).value();
+        double newInit = new NewtonRaphson(init).doAll(train.vecs()).value();
         delta = Math.abs(init - newInit);
         init = newInit;
         Log.info("Iteration " + ++count + ": initial value: " + init);
@@ -357,7 +357,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     private void truncatePreds(final DTree tree, int firstLeafIndex, Distribution.Family dist) {
       if (firstLeafIndex==tree._len) return;
-      ComputeMinMax minMax = new ComputeMinMax(firstLeafIndex, tree._len).doAll(_train);
+      ComputeMinMax minMax = new ComputeMinMax(firstLeafIndex, tree._len).doAll(_train.vecs());
       if (DEV_DEBUG) {
         Log.info("Number of leaf nodes: " + minMax._mins.length);
         Log.info("Min: " + java.util.Arrays.toString(minMax._mins));
@@ -414,10 +414,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // Compute predictions and resulting re
       // ESL2, page 387, Steps 2a, 2b
-      new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node); //fills "Work" columns for all rows (incl. OOB)
+      new ComputePredAndRes().doAll(_train.vecs(), _parms._build_tree_one_node); //fills "Work" columns for all rows (incl. OOB)
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
-          System.out.println("Updated predictions in WORK col for class " + k + ":\n" + new Frame(new String[]{"WORK"},new Vec[]{vec_work(_train, k)}).toString());
+          System.out.println("Updated predictions in WORK col for class " + k + ":\n" + new Frame(new String[]{"WORK"},vec_work(_train, k)).toString());
         }
       }
 
@@ -428,14 +428,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       growTrees(ktrees, leaves, _rand);
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
-          System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},new Vec[]{vec_nids(_train, k)}).toString());
+          System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},vec_nids(_train, k)).toString());
         }
       }
 
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      GammaPass gp = new GammaPass(ktrees, leaves, _parms._distribution).doAll(_train);
+      GammaPass gp = new GammaPass(ktrees, leaves, _parms._distribution).doAll(_train.vecs());
       if (_parms._distribution == Distribution.Family.laplace) {
         fitBestConstantsQuantile(ktrees, leaves[0], 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
       } else if (_parms._distribution == Distribution.Family.quantile) {
@@ -457,11 +457,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // new tree, in the 'tree' columns.  Also, zap the NIDs for next pass.
       // Tree <== f(Tree)
       // Nids <== 0
-      new AddTreeContributions(ktrees).doAll(_train);
+      new AddTreeContributions(ktrees).doAll(_train.vecs());
 
       // sanity check
       for (int k = 0; k < _nclass; k++) {
-        if (ktrees[k]!=null) assert(vec_nids(_train,k).mean()==0);
+        if (ktrees[k]!=null) assert(vec_nids(_train,k).mean(0)==0);
       }
 
       // Grow the model by K-trees
@@ -499,7 +499,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         Sample ss[] = new Sample[_nclass];
         for (int k = 0; k < _nclass; k++)
           if (ktrees[k] != null)
-            ss[k] = new Sample(ktrees[k], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null, new Frame(vec_nids(_train, k), _response), _parms._build_tree_one_node);
+            ss[k] = new Sample(ktrees[k], _parms._sample_rate, _parms._sample_rate_per_class).dfork(null, new VecAry(vec_nids(_train, k), _response), _parms._build_tree_one_node);
         for (int k = 0; k < _nclass; k++) {
           if (ss[k] != null) {
             ss[k].getResult();
@@ -571,9 +571,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
       assert(_nclass==1);
       QuantilePrep qp = new QuantilePrep();
-      Vec response = qp.doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
-      Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
-      Vec strata = vec_nids(_train,0);
+      VecAry response = qp.doAll(1, (byte)3 /*numeric*/, _train.vecs()).outputVecs();
+      VecAry weights = hasWeightCol() ? _train.vecs(idx_weight()) : null;
+      VecAry strata = vec_nids(_train,0);
 
       // compute quantile for all leaf nodes
       Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, response, weights, strata, QuantileModel.CombineMethod.INTERPOLATE);

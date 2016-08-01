@@ -43,7 +43,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._train = train._key;
         p._valid = test._key;
         p._autoencoder = true;
-        p._response_column = train.names()[train.names().length-1];
+        p._response_column = train._names.getName(train._names.len()-1);
         p._seed = seed;
         p._hidden = new int[]{37, 12};
         p._adaptive_rate = true;
@@ -77,10 +77,10 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           l2_frame_test.remove();
 
           l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make(), false);
-          Vec l2_test = l2_frame_test.anyVec();
-          sb.append("Mean reconstruction error (test): ").append(l2_test.mean()).append("\n");
-          Assert.assertEquals(l2_test.mean(), mymodel.mse(), 1e-7);
-          Assert.assertTrue("too big a reconstruction error: " + l2_test.mean(), l2_test.mean() < 2.0);
+          VecAry l2_test = l2_frame_test.vecs();
+          sb.append("Mean reconstruction error (test): ").append(l2_test.mean(0)).append("\n");
+          Assert.assertEquals(l2_test.mean(0), mymodel.mse(), 1e-7);
+          Assert.assertTrue("too big a reconstruction error: " + l2_test.mean(0), l2_test.mean(0) < 2.0);
           l2_test.remove();
 
           // manually compute L2
@@ -88,27 +88,29 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           Assert.assertTrue(mymodel.testJavaScoring(train,reconstr,1e-6));
 
           l2_frame_train = mymodel.scoreAutoEncoder(train, Key.make(), false);
-          final Vec l2_train = l2_frame_train.anyVec();
+          final VecAry l2_train = l2_frame_train.vecs();
           double mean_l2 = 0;
+          VecAry rVecs = reconstr.vecs();
+          VecAry tVecs = train.vecs();
           for (int r = 0; r < reconstr.numRows(); ++r) {
             double my_l2 = 0;
             for (int c = 0; c < reconstr.numCols(); ++c) {
-              my_l2 += Math.pow((reconstr.vec(c).at(r) - train.vec(c).at(r)) * mymodel.model_info().data_info()._normMul[c], 2); //undo normalization here
+              my_l2 += Math.pow((rVecs.at(r,c) - tVecs.at(r,c)) * mymodel.model_info().data_info()._normMul[c], 2); //undo normalization here
             }
             my_l2 /= reconstr.numCols();
             mean_l2 += my_l2;
           }
           mean_l2 /= reconstr.numRows();
           reconstr.delete();
-          sb.append("Mean reconstruction error (train): ").append(l2_train.mean()).append("\n");
+          sb.append("Mean reconstruction error (train): ").append(l2_train.mean(0)).append("\n");
           Assert.assertEquals(mymodel._output.errors.scored_train._mse, mean_l2, 1e-7);
 
           // print stats and potential outliers
           sb.append("The following training points are reconstructed with an error above the ").append(quantile * 100).append("-th percentile - check for \"goodness\" of training data.\n");
           double thresh_train = mymodel.calcOutlierThreshold(l2_train, quantile);
-          for (long i = 0; i < l2_train.length(); i++) {
-            if (l2_train.at(i) > thresh_train) {
-              sb.append(String.format("row %d : l2_train error = %5f\n", i, l2_train.at(i)));
+          for (long i = 0; i < l2_train.numRows(); i++) {
+            if (l2_train.at(i,0) > thresh_train) {
+              sb.append(String.format("row %d : l2_train error = %5f\n", i, l2_train.at(i,0)));
             }
           }
 
@@ -117,11 +119,11 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           // Reconstruct data using the same helper functions and verify that self-reported MSE agrees
           l2_frame_test.remove();
           l2_frame_test = mymodel.scoreAutoEncoder(test, Key.make(), false);
-          l2_test = l2_frame_test.anyVec();
+          l2_test = l2_frame_test.vecs();
           double mult = 10;
           double thresh_test = mult * thresh_train;
           sb.append("\nFinding outliers.\n");
-          sb.append("Mean reconstruction error (test): ").append(l2_test.mean()).append("\n");
+          sb.append("Mean reconstruction error (test): ").append(l2_test.mean(0)).append("\n");
 
           Frame df1 = mymodel.scoreDeepFeatures(test, 0);
           Assert.assertTrue(df1.numCols() == 37);
@@ -137,10 +139,10 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
           // print stats and potential outliers
           sb.append("The following test points are reconstructed with an error greater than ").append(mult).append(" times the mean reconstruction error of the training data:\n");
           HashSet<Long> outliers = new HashSet<>();
-          for (long i = 0; i < l2_test.length(); i++) {
-            if (l2_test.at(i) > thresh_test) {
+          for (long i = 0; i < l2_test.numRows(); i++) {
+            if (l2_test.at(i,0) > thresh_test) {
               outliers.add(i);
-              sb.append(String.format("row %d : l2 error = %5f\n", i, l2_test.at(i)));
+              sb.append(String.format("row %d : l2 error = %5f\n", i, l2_test.at(i,0)));
             }
           }
 

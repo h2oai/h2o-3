@@ -13,6 +13,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.parser.ParseDataset;
 import water.rapids.Rapids;
 import water.util.Log;
@@ -50,16 +51,16 @@ public class DeepLearningProstateTest extends TestUtil {
       try {
         for (int resp : responses[i]) {
           boolean classification = !(i == 0 && resp == 2);
-          if (classification && !frame.vec(resp).isCategorical()) {
+          if (classification && !frame.vecs().isCategorical(resp)) {
             DKV.remove(frame._key);
             String respname = frame.name(resp);
-            Vec r = frame.vec(respname).toCategoricalVec();
+            VecAry r = frame.vecs(respname).toCategoricalVec();
             frame.remove(respname).remove();
             frame.add(respname, r);
             DKV.put(frame);
 
             DKV.remove(vframe._key);
-            Vec vr = vframe.vec(respname).toCategoricalVec();
+            VecAry vr = vframe.vecs(respname).toCategoricalVec();
             vframe.remove(respname).remove();
             vframe.add(respname, vr);
             DKV.put(vframe);
@@ -190,7 +191,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           {
                                             Log.info("Using seed: " + myseed);
                                             p._train = frame._key;
-                                            p._response_column = frame._names[resp];
+                                            p._response_column = frame._names.getName(resp);
                                             p._valid = valid==null ? null : valid._key;
 
                                             p._hidden = hidden;
@@ -281,7 +282,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                             p2._l1 = 1e-3;
                                             p2._l2 = 1e-3;
                                             p2._reproducible = reproducible;
-                                            p2._response_column = frame._names[resp];
+                                            p2._response_column = frame._names.getName(resp);
                                             p2._overwrite_with_best_model = overwrite_with_best_model;
                                             p2._quiet_mode = true;
                                             p2._epochs = 2*epochs; //final amount of training epochs
@@ -346,7 +347,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                           double threshold;
                                           if (model2._output.isClassifier()) {
                                             Frame pred = null;
-                                            Vec labels, predlabels, pred2labels;
+                                            VecAry labels, predlabels, pred2labels;
                                             try {
                                               pred = model2.score(valid);
                                               // Build a POJO, validate same results
@@ -365,8 +366,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 Assert.assertEquals(mm.cm().err(), error, 1e-15);
 
                                                 // check that the labels made with the default threshold are consistent with the CM that's reported by the AUC object
-                                                labels = valid.vec(resp);
-                                                predlabels = pred.vecs()[0];
+                                                labels = valid.vecs(resp);
+                                                predlabels = pred.vecs(0);
                                                 ConfusionMatrix cm = buildCM(labels, predlabels);
                                                 Log.info("CM from pre-made labels:");
                                                 Log.info(cm.toASCII());
@@ -376,7 +377,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 // manually make labels with AUC-given default threshold
                                                 String ast = "(= pred (> ([] pred 2) #"+threshold+") [0] [])";
                                                 Frame tmp = Rapids.exec(ast).getFrame();
-                                                pred2labels = tmp.vecs()[0];
+                                                pred2labels = tmp.vecs(0);
                                                 cm = buildCM(labels, pred2labels);
                                                 Log.info("CM from self-made labels:");
                                                 Log.info(cm.toASCII());

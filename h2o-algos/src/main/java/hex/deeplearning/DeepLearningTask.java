@@ -83,7 +83,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   // Create local workspace (neurons) and link them to shared weights
   @Override protected boolean chunkInit(){
-    if (_localmodel.get_processed_local() >= _useFraction * _fr.numRows())
+    if (_localmodel.get_processed_local() >= _useFraction * _vecs.numRows())
       return false;
     _neurons = makeNeuronsForTraining(_localmodel);
     _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());

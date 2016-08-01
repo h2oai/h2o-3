@@ -476,7 +476,7 @@ public class TestCase {
     // _train, _valid, _response
     glmParams._train = trainingDataSet.getFrame()._key;
     glmParams._valid = testingDataSet.getFrame()._key;
-    glmParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
+    glmParams._response_column = trainingDataSet.getFrame()._names.getName(trainingDataSet.getResponseColumn());
     return glmParams;
   }
 
@@ -484,14 +484,14 @@ public class TestCase {
     Frame trainingFrame = trainingDataSet.getFrame();
     int responseColumn = trainingDataSet.getResponseColumn();
     String betaConstraintsString = "names, lower_bounds, upper_bounds\n";
-    List<String> predictorNames = Arrays.asList(trainingFrame._names);
+    List<String> predictorNames = Arrays.asList(trainingFrame._names.getNames());
     for (String name : predictorNames) {
       // ignore the response column and any constant column in bc.
       // we only want predictors
-      if (!name.equals(trainingFrame._names[responseColumn]) && !trainingFrame.vec(name).isConst()) {
+      if (!name.equals(trainingFrame._names.getName(responseColumn)) && !trainingFrame.vecs(name).isConst(0)) {
         // need coefficient names for each level of a categorical column
-        if (trainingFrame.vec(name).isCategorical()) {
-          for (String level : trainingFrame.vec(name).domain()) {
+        if (trainingFrame.vecs(name).isCategorical(0)) {
+          for (String level : trainingFrame.vecs(name).domain(0)) {
             betaConstraintsString += String.format("%s.%s,%s,%s\n", name, level, lowerBound, upperBound);
           }
         } else { // numeric columns only need one coefficient name
@@ -655,7 +655,7 @@ public class TestCase {
     // _train, _valid, _response
     gbmParams._train = trainingDataSet.getFrame()._key;
     gbmParams._valid = testingDataSet.getFrame()._key;
-    gbmParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
+    gbmParams._response_column = trainingDataSet.getFrame()._names.getName(trainingDataSet.getResponseColumn());
     return gbmParams;
   }
 
@@ -928,7 +928,7 @@ public class TestCase {
     // _train, _valid, _response
     dlParams._train = trainingDataSet.getFrame()._key;
     dlParams._valid = testingDataSet.getFrame()._key;
-    dlParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
+    dlParams._response_column = trainingDataSet.getFrame()._names.getName(trainingDataSet.getResponseColumn());
     return dlParams;
   }
 
@@ -1062,7 +1062,7 @@ public class TestCase {
     // _train, _valid, _response
     drfParams._train = trainingDataSet.getFrame()._key;
     drfParams._valid = testingDataSet.getFrame()._key;
-    drfParams._response_column = trainingDataSet.getFrame()._names[trainingDataSet.getResponseColumn()];
+    drfParams._response_column = trainingDataSet.getFrame()._names.getName(trainingDataSet.getResponseColumn());
     return drfParams;
   }
 

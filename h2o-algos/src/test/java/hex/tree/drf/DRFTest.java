@@ -15,6 +15,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Triple;
@@ -262,7 +263,7 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                Vec resp = fr.remove("C2");
+                VecAry resp = fr.remove("C2");
                 fr.add("C2", VecUtils.toCategoricalVec(resp));
                 resp.remove();
                 return fr.find("C3");
@@ -283,13 +284,13 @@ public class DRFTest extends TestUtil {
             new PrepData() {
               @Override
               int prep(Frame fr) {
-                String[] names = fr.names().clone();
-                Vec[] en = fr.remove(new int[]{1,4,5,8});
-                fr.add(names[1], VecUtils.toCategoricalVec(en[0])); //CAPSULE
-                fr.add(names[4], VecUtils.toCategoricalVec(en[1])); //DPROS
-                fr.add(names[5], VecUtils.toCategoricalVec(en[2])); //DCAPS
-                fr.add(names[8], VecUtils.toCategoricalVec(en[3])); //GLEASON
-                for (Vec v : en) v.remove();
+                String[] names = fr._names.getNames().clone();
+                VecAry en = fr.remove(1,4,5,8);
+                fr.add(names[1], en.getVecs(0).toCategoricalVec()); //CAPSULE
+                fr.add(names[4], en.getVecs(1).toCategoricalVec()); //DPROS
+                fr.add(names[5], en.getVecs(2).toCategoricalVec()); //DCAPS
+                fr.add(names[8], en.getVecs(3).toCategoricalVec()); //GLEASON
+                en.remove();
                 fr.remove(0).remove(); //drop ID
                 return 4; //CAPSULE
               }
@@ -365,14 +366,13 @@ public class DRFTest extends TestUtil {
 
   // Put response as the last vector in the frame and return possible frames to clean up later
   // Also fill DRF.
-  static Vec unifyFrame(DRFModel.DRFParameters drf, Frame fr, PrepData prep, boolean classification) {
+  static VecAry unifyFrame(DRFModel.DRFParameters drf, Frame fr, PrepData prep, boolean classification) {
     int idx = prep.prep(fr);
     if( idx < 0 ) { idx = ~idx; }
-    String rname = fr._names[idx];
-    drf._response_column = fr.names()[idx];
-
-    Vec resp = fr.vecs()[idx];
-    Vec ret = null;
+    String rname = fr._names.getName(idx);
+    drf._response_column = fr._names.getName(idx);
+    VecAry resp = fr.vecs(idx);
+    VecAry ret = null;
     if (classification) {
       ret = fr.remove(idx);
       fr.add(rname, VecUtils.toCategoricalVec(resp));
@@ -399,7 +399,7 @@ public class DRFTest extends TestUtil {
     DRFModel model = null;
     try {
       frTrain = parse_test_file(fnametrain);
-      Vec removeme = unifyFrame(drf, frTrain, prep, classification);
+      VecAry removeme = unifyFrame(drf, frTrain, prep, classification);
       if (removeme != null) Scope.track(removeme);
       DKV.put(frTrain._key, frTrain);
       // Configure DRF
@@ -548,7 +548,7 @@ public class DRFTest extends TestUtil {
             assertEquals(drf._output._ntrees, parms._ntrees);
             ModelMetricsRegression mm = (ModelMetricsRegression) drf._output._training_metrics;
             R2[c] = (double) Math.round(mm.r2() * 10000d) / 10000d;
-            int actualChunk = job.train().anyVec().nChunks();
+            int actualChunk = job.train().vecs().nChunks();
             drf.delete();
 
             tfr.remove();
@@ -602,12 +602,13 @@ public class DRFTest extends TestUtil {
 
       // rebalance to 256 chunks
       Key dest = Key.make("df.rebalanced.hex");
-      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, chunks[i]);
+      RebalanceDataSet rb = new RebalanceDataSet(tfr.vecs(),chunks[i]);
       H2O.submitTask(rb);
       rb.join();
       tfr.delete();
-      tfr = DKV.get(dest).get();
-      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec()));
+      tfr = new Frame(dest,tfr._names,rb.getResult());
+      DKV.put(tfr._key,tfr);
+      Scope.track(tfr.replace(tfr.vecs(54).toCategoricalVec(),54));
       DKV.put(tfr);
 
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -647,11 +648,12 @@ public class DRFTest extends TestUtil {
 
       // rebalance to 256 chunks
       Key dest = Key.make("df.rebalanced.hex");
-      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      RebalanceDataSet rb = new RebalanceDataSet(tfr.vecs(), 256);
       H2O.submitTask(rb);
       rb.join();
       tfr.delete();
-      tfr = DKV.get(dest).get();
+      tfr = new Frame(dest,tfr._names,rb.getResult());
+      DKV.put(dest,tfr);
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
 //      DKV.put(tfr);
 
@@ -697,11 +699,12 @@ public class DRFTest extends TestUtil {
 
       // rebalance to fixed number of chunks
       Key dest = Key.make("df.rebalanced.hex");
-      RebalanceDataSet rb = new RebalanceDataSet(tfr, dest, 256);
+      RebalanceDataSet rb = new RebalanceDataSet(tfr.vecs(), 256);
       H2O.submitTask(rb);
       rb.join();
       tfr.delete();
-      tfr = DKV.get(dest).get();
+      tfr = new Frame(dest,tfr._names,rb.getResult());
+      DKV.put(dest,tfr);
 //      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec())._key);
 //      DKV.put(tfr);
       for (String s : new String[]{
@@ -1265,7 +1268,7 @@ public class DRFTest extends TestUtil {
   @Test
   public void testNfoldsConsecutiveModelsSame() {
     Frame tfr = null;
-    Vec old = null;
+    VecAry old = null;
     DRFModel drf1 = null;
     DRFModel drf2 = null;
 
@@ -1316,7 +1319,7 @@ public class DRFTest extends TestUtil {
   @Test
   public void testMTrys() {
     Frame tfr = null;
-    Vec old = null;
+    VecAry old = null;
     DRFModel drf1 = null;
 
     for (int i=1; i<=6; ++i) {
@@ -1479,7 +1482,7 @@ public class DRFTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(tfr.vecs(resp).toCategoricalVec(),resp));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1493,7 +1496,7 @@ public class DRFTest extends TestUtil {
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
         parms._train = ksplits[0];
         parms._valid = ksplits[1];
-        parms._response_column = tfr.names()[resp];
+        parms._response_column = tfr._names.getName(resp);
         parms._min_split_improvement = msi[i];
         parms._ntrees = 20;
         parms._score_tree_interval = parms._ntrees;
@@ -1529,7 +1532,7 @@ public class DRFTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(tfr.vecs(resp).toCategoricalVec(),resp));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1543,7 +1546,7 @@ public class DRFTest extends TestUtil {
         DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
         parms._train = ksplits[0];
         parms._valid = ksplits[1];
-        parms._response_column = tfr.names()[resp];
+        parms._response_column = tfr._names.getName(resp);
         parms._histogram_type = histoType[i];
         parms._ntrees = 10;
         parms._score_tree_interval = parms._ntrees;
@@ -1582,7 +1585,7 @@ public class DRFTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(tfr.vecs(resp).toCategoricalVec(),resp));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1592,7 +1595,7 @@ public class DRFTest extends TestUtil {
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
       parms._train = ksplits[0];
       parms._valid = ksplits[1];
-      parms._response_column = tfr.names()[resp];
+      parms._response_column = tfr._names.getName(resp);
       parms._min_split_improvement = 1e-5;
       parms._ntrees = 20;
       parms._score_tree_interval = parms._ntrees;

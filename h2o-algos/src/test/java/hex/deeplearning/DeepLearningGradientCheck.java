@@ -12,6 +12,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.Log;
 import water.util.PrettyPrint;
 
@@ -33,7 +34,7 @@ public class DeepLearningGradientCheck extends TestUtil {
       for (String s : new String[]{
               "Merit", "Class"
       }) {
-        Vec f = tfr.vec(s).toCategoricalVec();
+        VecAry f = tfr.vecs(s).toCategoricalVec();
         tfr.remove(s).remove();
         tfr.add(s, f);
       }
@@ -127,7 +128,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                     final DataInfo.Row[] rowsMiniBatch = new DataInfo.Row[miniBatchSize];
                     for (int i=0; i<rowsMiniBatch.length; ++i) {
                       if (0 <= rId+i && rId+i < tfr.numRows()) {
-                        rowsMiniBatch[i] = new FrameTask.ExtractDenseRow(di, rId+i).doAll(di._adaptedFrame)._row;
+                        rowsMiniBatch[i] = new FrameTask.ExtractDenseRow(di, rId+i).doAll(di._adaptedFrame.vecs())._row;
                       }
                     }
 

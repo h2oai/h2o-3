@@ -96,6 +96,19 @@ public class Frame extends Lockable<Frame> {
 
   public long byteSize() {return _vecs.byteSize();}
 
+  public String lastVecName() {return _names.getName(numCols()-1);}
+
+  public byte[] types() {return _vecs.types();}
+
+  public VecAry replace(VecAry vecAry, int... ids) {
+    if(vecAry.len() != ids.length) throw new IllegalArgumentException("");
+    throw H2O.unimpl();
+  }
+  public VecAry replace(VecAry vecAry, String... nms) {
+    if(vecAry.len() != nms.length) throw new IllegalArgumentException("");
+    throw H2O.unimpl();
+  }
+
   /** Pair of (column name, Frame key). */
   public static class VecSpecifier extends Iced {
     public Key<Frame> _frame;
@@ -370,14 +383,15 @@ public class Frame extends Lockable<Frame> {
 
 
   // Add a bunch of vecs
-  public void add( String name, VecAry vecs) {
+  public VecAry add( String name, VecAry vecs) {
     assert vecs.len() == 1;
-    add(new String[]{name},vecs);
+    return add(new String[]{name},vecs);
   }
   // Add a bunch of vecs
-  public void add( String[] names, VecAry vecs) {
+  public VecAry add( String[] names, VecAry vecs) {
     _names.add(names);
     _vecs.addVecs(vecs);
+    return vecs;
   }
 
   /** Append a Frame onto this Frame.  Names are forced unique, by appending

@@ -310,6 +310,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return outputFrame(make,(Frame.Names)null,(String[][])null);
   }
 
+  public VecAry outputVecs(){return outputVecs(null);}
+
 
   // Profiling support.  Time for each subpart of a single M/R task, plus any
   // nested MRTasks.  All numbers are CTM stamps or millisecond times.

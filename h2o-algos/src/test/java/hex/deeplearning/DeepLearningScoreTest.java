@@ -7,10 +7,7 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.TestUtil;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.ParseDataset;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 
@@ -29,13 +26,11 @@ public class DeepLearningScoreTest extends TestUtil {
     Key rebalancedKey = Key.make("rebalanced");
     NFSFileVec nfs = NFSFileVec.make(find_test_file("smalldata/logreg/prostate.csv"));
     Frame fr = ParseDataset.parse(Key.make(), nfs._key);
-    RebalanceDataSet rb = new RebalanceDataSet(fr, rebalancedKey, (int)(fr.numRows()+1));
+    RebalanceDataSet rb = new RebalanceDataSet(fr.vecs(),(int)(fr.numRows()+1));
     H2O.submitTask(rb);
-    rb.join();
-    Frame rebalanced = DKV.get(rebalancedKey).get();
-
+    Frame rebalanced = new Frame(null,fr._names,rb.getResult());
     // Assert that there is at least one 0-len chunk
-    assertZeroLengthChunk("Rebalanced dataset should contain at least one 0-len chunk!", rebalanced.anyVec());
+    assertZeroLengthChunk("Rebalanced dataset should contain at least one 0-len chunk!", rebalanced.vecs());
 
     DeepLearningModel dlModel = null;
     try {
@@ -53,11 +48,11 @@ public class DeepLearningScoreTest extends TestUtil {
     }
   }
 
-  private void assertZeroLengthChunk(String msg, Vec v) {
+  private void assertZeroLengthChunk(String msg, VecAry v) {
     boolean hasZeroLenChunk = false;
     for (int i = 0; i < v.nChunks(); i++) {
-      hasZeroLenChunk |= (v.chunkForChunkIdx(i).len() == 0);
-      System.out.println(v.chunkForChunkIdx(i).len());
+      hasZeroLenChunk |= (v.getChunk(i,0).len() == 0);
+      System.out.println(v.getVecs(i,0).len());
     }
     Assert.assertTrue(msg, hasZeroLenChunk);
   }
