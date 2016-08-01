@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-from setuptools import setup
+from setuptools import setup, find_packages
 from codecs import open
 from os import path
 import h2o
@@ -9,6 +9,9 @@ here = path.abspath(path.dirname(__file__))
 # Get the long description from the relevant file
 with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
+
+packages = find_packages(exclude=["tests*"])
+print("Found packages: %r" % packages)
 
 setup(
     name='h2o',
@@ -61,8 +64,7 @@ setup(
 
     keywords='machine learning, data mining, statistical analysis, modeling, big data, distributed, parallel',
 
-    packages=["h2o"],
-    package_dir={"h2o": "h2o"},
+    packages=packages,
     package_data={"h2o": [
         "LICENSE",
         "h2o_data/*.*",
