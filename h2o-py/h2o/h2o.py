@@ -32,7 +32,7 @@ from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_is_str, assert_maybe_str, is_str, is_int, is_listlike
 from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, h2o_deprecated
-
+import copy
 warnings.simplefilter("always", DeprecationWarning)
 
 
@@ -584,6 +584,21 @@ def assign(data, xid):
     data._ex._children = None
     return data
 
+# def deep_copy(data, xid):
+#     if data.frame_id == xid: ValueError("Desination key must differ input frame")
+#     new = copy.deepcopy(data)
+#     new._ex = ExprNode("assign", xid, new)._eval_driver(False)
+#     new._ex._cache._id = xid
+#     new._ex._children = None
+#     return new
+
+def deep_copy(data, xid):
+    if data.frame_id == xid: ValueError("Desination key must differ input frame")
+    duplicate = data.apply(lambda x:x)
+    duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver(False)
+    duplicate._ex._cache._id = xid
+    duplicate._ex._children = None
+    return duplicate
 
 def get_model(model_id):
     """Return the specified model.
