@@ -6,6 +6,7 @@ import water.*;
 import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
+import water.rapids.Merge;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -1515,4 +1516,8 @@ public class Frame extends Lockable<Frame> {
   }
 
   @Override public Class<KeyV3.FrameKeyV3> makeSchema() { return KeyV3.FrameKeyV3.class; }
+
+  /** Sort rows of a frame, using the set of columns as keys.  
+   *  @return Copy of frame, sorted */
+  public Frame sort( int[] cols ) { return Merge.sort(this,cols); }
 }

@@ -9,11 +9,12 @@ import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.RandomUtils;
 
 
 class MySample extends MRTask<MySample> {
-    final int K;
-    public MySample(int K) {
+    private final int K;
+    MySample(int K) {
         this.K = K;
     }
     @Override public void map( Chunk chk ) {
@@ -24,25 +25,10 @@ class MySample extends MRTask<MySample> {
     }
 }
 
-class MySeq extends MRTask<MySeq> {
-    // Much faster than :
-    // for (int i=0; i<vec.length(); i++) vec.set(i, i % 100);
-    final int K;
-    public MySeq(int K) {
-        this.K = K;
-    }
-    @Override public void map( Chunk chk ) {
-        for (int i=0; i<chk.len(); i++) {
-            chk.set(i, (chk.start() + i) % K);
-        }
-    }
-}
-
-
 class MyCountRange extends MRTask<MyCountRange> {
-    final long _max, _min;
+    private final long _max, _min;
     long _counts[][];
-    int _nChunks;
+    private int _nChunks;
     // int ans;
     MyCountRange(long max, long min, int nChunks) {
         System.out.println("Constructor for MyCountRange");
@@ -75,16 +61,14 @@ class MyCountRange extends MRTask<MyCountRange> {
                 }
             }
             // throw H2O.unimpl();
-        } else {
-            //System.out.println("Reduce of two chunks on the same node");
         }
     }
 }
 
 
 class MyCountRangeNoSpline extends MRTask<MyCountRangeNoSpline> {
-    final long _max, _min;
-    long _counts[];
+    private final long _max, _min;
+    private long _counts[];
     MyCountRangeNoSpline(long max, long min, int nChunks) {
         System.out.println("Constructor for MyCountRange");
         _max = max; _min = min;
@@ -152,9 +136,8 @@ class WriteOrder extends MRTask<WriteOrder> {
     }
 }
 
-
 public class GroupingBench extends TestUtil {
-    @BeforeClass public static void setup() { stall_till_cloudsize(2); }
+    @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
     @Ignore @Test public void runGroupingBench() {
         // Simplified version of tests in runit_quantile_1_golden.R. There we test probs=seq(0,1,by=0.01)
@@ -268,6 +251,77 @@ public class GroupingBench extends TestUtil {
         vec.remove();
         frame.delete();
     }
+
+  @Test public void runBench2() {
+    Frame f1=null, f2=null, fx=null;
+    try { 
+      // build a hi count cardinality frame
+      final long card = (long)1e4;
+      f1 = buildFrame(card,-1);
+      System.out.println(f1.toString(0,100));
+      Vec seq = Vec.makeSeq(card,false);
+      f2 = new Frame(seq,seq);
+      for( int i=0; i<10; i++ ) {
+        long t0 = System.currentTimeMillis();
+        fx = Merge.merge(f1, f2, new int[]{0}, new int[]{0}, false, new int[1][]);
+        long t1 = System.currentTimeMillis();
+        System.out.println("MERGE Took " + (t1 - t0) + " msec for " + f1.numRows());
+        //System.out.println(fx.toString(0,100));
+        fx.delete();
+      }
+    } finally {
+      if( f1 != null ) f1.delete();
+      if( f2 != null ) f2.delete();
+      if( fx != null ) fx.delete();
+    }
+  }
+
+  // Build 2 column frame, with the given Chunks.  Col #0 is high-count
+  // categorical; we will make about 1/10 this many rows drawing at random from
+  // the "card" range with replacement.  Col#1 is a row number.
+  private static Frame buildFrame( final long card, int nChunks ) {
+    final int scale0 = 10;
+    final long len = card/scale0;
+    if( nChunks == -1 ) {
+      int rowsPerChunk = 100000;
+      nChunks = (int)((len+rowsPerChunk-1)/rowsPerChunk);
+    }
+
+    Vec.VectorGroup g = new Vec.VectorGroup();
+    AppendableVec col0 = new AppendableVec(g.addVec(), Vec.T_NUM);
+    AppendableVec col1 = new AppendableVec(g.addVec(), Vec.T_NUM);
+    NewChunk ncs0[] = new NewChunk[nChunks];
+    NewChunk ncs1[] = new NewChunk[nChunks];
+    for( int i=0; i<nChunks; i++ ) {
+      ncs0[i] = new NewChunk(col0,i);
+      ncs1[i] = new NewChunk(col1,i);
+    }
+
+    RandomUtils.PCGRNG R = new RandomUtils.PCGRNG(card,0);
+    for( long i=0; i<len; i++ )
+      ncs0[R.nextInt(nChunks)].addNum( R.nextInt((int)card), 0 );
+
+    // Compute data layout
+    int espc[] = new int[nChunks+1];
+    for( int i=0; i<nChunks; i++ )
+      espc[i+1] = espc[i] + ncs0[i].len();
+
+    // Compute row numbers into col 2
+    for( int i=0; i<nChunks; i++ )
+      for( int j=0; j<ncs0[i].len(); j++ )
+        ncs1[i].addNum(espc[i]+j,0);
+
+    Futures fs = new Futures();
+    for( int i=0; i<nChunks; i++ ) {
+      ncs0[i].close(i,fs);
+      ncs1[i].close(i,fs);
+    }
+
+    Vec vec0 = col0.layout_and_close(fs);
+    Vec vec1 = col1.layout_and_close(fs);
+    fs.blockForPending();
+    Frame fr = new Frame(Key.make("hex"), null, new Vec[]{vec0,vec1});
+    DKV.put(fr);
+    return fr;
+  }
 }
-
-
