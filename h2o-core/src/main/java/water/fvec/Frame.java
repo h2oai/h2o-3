@@ -1343,16 +1343,6 @@ public class Frame extends Lockable<Frame> {
     return f2.vecs();
   }
 
-  private boolean isLastRowOfCurrentNonEmptyChunk(int chunkIdx, long row) {
-    long[] espc = anyVec().espc();
-    long lastRowOfCurrentChunk = espc[chunkIdx + 1] - 1;
-    // Assert chunk is non-empty.
-    assert espc[chunkIdx + 1] > espc[chunkIdx];
-    // Assert row numbering sanity.
-    assert row <= lastRowOfCurrentChunk;
-    return row >= lastRowOfCurrentChunk;
-  }
-
   public static Job export(Frame fr, String path, String frameName, boolean overwrite) {
     // Validate input
     boolean fileExists = H2O.getPM().exists(path);
@@ -1371,43 +1361,58 @@ public class Frame extends Lockable<Frame> {
    *  is compatible with R 3.1's recent change to read.csv()'s behavior.
    *  @return An InputStream containing this Frame as a CSV */
   public InputStream toCSV(boolean headers, boolean hex_string) {
-    return new CSVStream(headers, hex_string);
+    return new CSVStream(this, headers, hex_string);
   }
 
-  public class CSVStream extends InputStream {
+  public static class CSVStream extends InputStream {
     private final boolean _hex_string;
     byte[] _line;
     int _position;
-    public volatile int _curChkIdx;
-    long _row;
+    int _chkRow;
+    Chunk[] _curChks;
+    int _lastChkIdx;
+    public volatile int _curChkIdx; // used only for progress reporting
 
-    CSVStream(boolean headers, boolean hex_string) {
-      _curChkIdx=0;
+    public CSVStream(Frame fr, boolean headers, boolean hex_string) {
+      this(firstChunks(fr), headers ? fr.names() : null, fr.anyVec().nChunks(), hex_string);
+    }
+
+    private static Chunk[] firstChunks(Frame fr) {
+      Chunk[] chks = new Chunk[fr.vecs().length];
+      for (int i = 0; i < fr.vecs().length; i++) {
+        chks[i] = fr.vec(i).chunkForRow(0);
+      }
+      return chks;
+    }
+
+    public CSVStream(Chunk[] chks, String[] names, int nChunks, boolean hex_string) {
+      _lastChkIdx = chks[0].cidx() + nChunks - 1;
       _hex_string = hex_string;
       StringBuilder sb = new StringBuilder();
-      Vec vs[] = vecs();
-      if( headers ) {
-        sb.append('"').append(_names[0]).append('"');
-        for(int i = 1; i < vs.length; i++)
-          sb.append(',').append('"').append(_names[i]).append('"');
+      if (names != null) {
+        sb.append('"').append(names[0]).append('"');
+        for(int i = 1; i < names.length; i++)
+          sb.append(',').append('"').append(names[i]).append('"');
         sb.append('\n');
       }
       _line = sb.toString().getBytes();
+      _chkRow = -1; // first process the header line
+      _curChks = chks;
     }
 
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
-      Vec vs[] = vecs();
       BufferedString tmpStr = new BufferedString();
-      for( int i = 0; i < vs.length; i++ ) {
+      for (int i = 0; i < _curChks.length; i++ ) {
+        Vec v = _curChks[i]._vec;
         if(i > 0) sb.append(',');
-        if(!vs[i].isNA(_row)) {
-          if( vs[i].isCategorical() ) sb.append('"').append(vs[i].factor(vs[i].at8(_row))).append('"');
-          else if( vs[i].isUUID() ) sb.append(PrettyPrint.UUID(vs[i].at16l(_row), vs[i].at16h(_row)));
-          else if( vs[i].isInt() ) sb.append(vs[i].at8(_row));
-          else if (vs[i].isString()) sb.append('"').append(vs[i].atStr(tmpStr, _row)).append('"');
+        if(!_curChks[i].isNA(_chkRow)) {
+          if( v.isCategorical() ) sb.append('"').append(v.factor(_curChks[i].at8(_chkRow))).append('"');
+          else if( v.isUUID() ) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
+          else if( v.isInt() ) sb.append(_curChks[i].at8(_chkRow));
+          else if (v.isString()) sb.append('"').append(_curChks[i].atStr(tmpStr, _chkRow)).append('"');
           else {
-            double d = vs[i].at(_row);
+            double d = _curChks[i].atd(_chkRow);
             // R 3.1 unfortunately changed the behavior of read.csv().
             // (Really type.convert()).
             //
@@ -1432,27 +1437,38 @@ public class Frame extends Lockable<Frame> {
         return _line.length - _position;
       }
 
+      _chkRow++;
+      Chunk anyChunk = _curChks[0];
+
       // Case 2:  Out of data.
-      if (_row == numRows()) {
+      if (anyChunk._start + _chkRow == anyChunk._vec.length()) {
         return 0;
       }
 
-      // Case 3:  Return data for the current row.
-      //          Note this will fast-forward past empty chunks.
-      _curChkIdx = anyVec().elem2ChunkIdx(_row);
-      _line = getBytesForRow();
-      _position = 0;
-
-      // Flush non-empty remote chunk if we're done with it.
-      if (isLastRowOfCurrentNonEmptyChunk(_curChkIdx, _row)) {
-        for (Vec v : vecs()) {
-          Key k = v.chunkKey(_curChkIdx);
-          if( !k.home() )
-            H2O.raw_remove(k);
+      // Case 3:  Out of data in the current chunks => fast-forward to the next set of non-empty chunks.
+      if (_chkRow == anyChunk.len()) {
+        _curChkIdx = anyChunk._vec.elem2ChunkIdx(anyChunk._start + _chkRow); // skips empty chunks
+        // Case 4:  Processed all requested chunks.
+        if (_curChkIdx > _lastChkIdx) {
+          return 0;
         }
+        // fetch the next non-empty chunks
+        Chunk[] newChks = new Chunk[_curChks.length];
+        for (int i = 0; i < _curChks.length; i++) {
+          newChks[i] = _curChks[i]._vec.chunkForChunkIdx(_curChkIdx);
+          // flush the remote chunk
+          Key oldKey = _curChks[i]._vec.chunkKey(_curChks[i]._cidx);
+          if (! oldKey.home()) {
+            H2O.raw_remove(oldKey);
+          }
+        }
+        _curChks = newChks;
+        _chkRow = 0;
       }
 
-      _row++;
+      // Case 4:  Return data for the current row.
+      _line = getBytesForRow();
+      _position = 0;
 
       return _line.length;
     }
