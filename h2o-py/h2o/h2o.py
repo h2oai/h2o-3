@@ -10,8 +10,8 @@ import os
 import re
 import warnings
 
-from h2o.backend.connection import H2OConnection
-from h2o.backend.server import H2OLocalServer
+from h2o.backend import H2OConnection
+from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError
 from .expr import ExprNode
 from .job import H2OJob
