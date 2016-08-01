@@ -1,20 +1,18 @@
-package hex.deeplearning;
-
-import javax.imageio.ImageIO;
+package hex.deepwater;
 
 import hex.ModelMetricsMultinomial;
-import hex.deepwater.DeepWaterImageIterator;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Futures;
 import water.TestUtil;
-import water.fvec.*;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.gpu.ImagePred;
 import water.gpu.ImageTrain;
 import water.gpu.util;
 import water.util.RandomUtils;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
