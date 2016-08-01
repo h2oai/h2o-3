@@ -257,6 +257,91 @@ public class FrameUtils {
     }
   }
 
+  public static class ExportTaskParallelDriver extends H2O.H2OCountedCompleter<ExportTaskParallelDriver> {
+    final Frame _frame;
+    final String _path;
+    final String _frameName;
+    final boolean _overwrite;
+    final Job _j;
+    final int _nParts;
+
+    public ExportTaskParallelDriver(Frame frame, String path, String frameName, boolean overwrite, Job j, int nParts) {
+      _frame = frame;
+      _path = path;
+      _frameName = frameName;
+      _overwrite = overwrite;
+      _j = j;
+      _nParts = nParts;
+    }
+
+    @Override
+    public void compute2() {
+      int nChunksPerPart = _frame.anyVec().nChunks() / _nParts;
+      PartExportTask exportTask = new PartExportTask(_frame._names, nChunksPerPart, false); // FIXME hex_string??
+      exportTask.doAll(_frame).outputFrame();
+      tryComplete();
+    }
+
+    class PartExportTask extends MRTask<PartExportTask> {
+      final String[] _col_names;
+      final boolean _hex_string;
+      final int _nChunks;
+
+      PartExportTask(String[] col_names, int nChunks, boolean hex_string) {
+        _col_names = col_names;
+        _hex_string = hex_string;
+        _nChunks = nChunks;
+      }
+
+      private long copyStream(InputStream is, OutputStream os, final int buffer_size) throws IOException {
+        long len = 0;
+        byte[] bytes = new byte[buffer_size];
+        for (;;) {
+          int count = is.read(bytes, 0, buffer_size);
+          if (count <= 0) {
+            break;
+          }
+          len += count;
+          os.write(bytes, 0, count);
+        }
+        return len;
+      }
+
+      @Override
+      public void map(Chunk[] cs) {
+        if (cs[0].cidx() % _nChunks > 0) {
+          return;
+        }
+        int partIdx = cs[0].cidx() / _nChunks;
+        String partPath = _path + "/part-m-" + partIdx;
+        InputStream is = new Frame.CSVStream(cs, _col_names, _nChunks, _hex_string);
+        OutputStream os = null;
+        long written = -1;
+        try {
+          os = H2O.getPM().create(partPath, _overwrite);
+          written = copyStream(is, os, 4 * 1024 * 1024);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } finally {
+          if (os != null) {
+            try {
+              os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
+              os.close();
+              Log.info("Part " + partIdx + " of key '" + _frameName + "' of " + written + " bytes was written to " + _path + ".");
+            } catch (Exception e) {
+              Log.err(e);
+            }
+          }
+          try {
+            is.close();
+          } catch (Exception e) {
+            Log.err(e);
+          }
+        }
+      }
+    }
+  }
+
   public static class ExportTask extends H2O.H2OCountedCompleter<ExportTask> {
     final InputStream _csv;
     final String _path;

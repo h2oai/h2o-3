@@ -1351,9 +1351,8 @@ public class Frame extends Lockable<Frame> {
     } else if (!overwrite && fileExists) {
       throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
     }
-    InputStream is = (fr).toCSV(true, false);
-    Job job =  new Job(fr._key,"water.fvec.Frame","Export dataset");
-    FrameUtils.ExportTask t = new FrameUtils.ExportTask(is, path, frameName, overwrite, job);
+    Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
+    FrameUtils.ExportTaskParallelDriver t = new FrameUtils.ExportTaskParallelDriver(fr, path, frameName, overwrite, job, 8); // FIXME
     return job.start(t, fr.anyVec().nChunks());
   }
 
