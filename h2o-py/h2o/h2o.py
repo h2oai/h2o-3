@@ -584,14 +584,6 @@ def assign(data, xid):
     data._ex._children = None
     return data
 
-# def deep_copy(data, xid):
-#     if data.frame_id == xid: ValueError("Desination key must differ input frame")
-#     new = copy.deepcopy(data)
-#     new._ex = ExprNode("assign", xid, new)._eval_driver(False)
-#     new._ex._cache._id = xid
-#     new._ex._children = None
-#     return new
-
 def deep_copy(data, xid):
     if data.frame_id == xid: ValueError("Desination key must differ input frame")
     duplicate = data.apply(lambda x:x)
