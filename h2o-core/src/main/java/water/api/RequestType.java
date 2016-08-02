@@ -22,8 +22,10 @@ enum RequestType {
   query, // Displays the query for the argument in html mode
   png  , // image, e.g. plot
   txt  , // text, e.g. a script
+  jar  , // request jar file
   java , // java program
   xml  , // xml request
+  zip  , // zip file requested
     ;
   private static final RequestType[] _values = values();
 

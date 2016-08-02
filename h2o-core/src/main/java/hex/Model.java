@@ -1,20 +1,20 @@
 package hex;
 
-import org.apache.commons.io.*;
 import org.joda.time.DateTime;
 
 import hex.genmodel.easy.prediction.DimReductionModelPrediction;
-import water.*;
 import water.api.StreamWriter;
 import water.api.schemas3.KeyV3;
 import water.codegen.CodeGenerationService;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
-import water.fvec.*;
+import water.codegen.driver.ZipOutputDriver;
+import water.codegen.java.JavaCodeGenerator;
 import water.util.*;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -26,7 +26,6 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.AbstractPrediction;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.ClusteringModelPrediction;
-import hex.genmodel.easy.prediction.DimReductionModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.easy.prediction.RegressionModelPrediction;
 import water.AutoBuffer;
@@ -41,13 +40,9 @@ import water.Lockable;
 import water.MRTask;
 import water.MemoryManager;
 import water.Weaver;
-import water.api.StreamWriter;
-import water.codegen.CodeGenerator;
-import water.codegen.CodeGeneratorPipeline;
 import water.codegen.JCodeGen;
 import water.codegen.JCodeSB;
 import water.codegen.SBPrintStream;
-import water.fvec.C0DChunk;
 import water.fvec.CategoricalWrappedVec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -1503,6 +1498,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override
     public void writeTo(OutputStream os) {
       toJava(os, preview, true);
+    }
+  }
+
+  // FIXME: move to better place
+  public class JavaArchiveModelStreamWriter extends StreamWriter {
+    private final JavaCodeGenerator mcg;
+
+    public JavaArchiveModelStreamWriter(JavaCodeGenerator mcg) {
+      this.mcg = mcg;
+    }
+
+    @Override
+    public void writeTo(OutputStream os) {
+      ZipOutputDriver zod = new ZipOutputDriver();
+      try {
+        zod.codegen(mcg, os);
+      } catch (IOException ioe) {
+        throw new RuntimeException(ioe);
+      }
     }
   }
 

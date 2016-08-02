@@ -87,7 +87,7 @@ abstract public class POJOModelCodeGenerator<S extends POJOModelCodeGenerator<S,
     final String modelName = getModelName();
     // Create a klass generator and prepare method generators for all abstract class in GenModel
     ClassCodeGenerator ccg = klazz(modelName, GenModel.class, model)
-        .withMixin(model, true, ModelMixin.class)
+        .withMixin(model, true, true, ModelMixin.class)
         .withModifiers(PUBLIC)
         .withAnnotation(s("@ModelPojo(name=\"").p(getModelName()).p("\", algorithm=\"").p(getAlgoName()).p("\")"))
         .withCtor(

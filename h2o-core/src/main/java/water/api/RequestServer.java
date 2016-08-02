@@ -617,7 +617,9 @@ public class RequestServer extends HttpServlet {
         return new NanoResponse(http_response_header, MIME_JSON, s.toJsonString());
       case xml:
         throw H2O.unimpl("Unknown type: " + type.toString());
+      case jar:
       case java:
+      case zip:
         if (s instanceof H2OErrorV3) {
           return new NanoResponse(http_response_header, MIME_JSON, s.toJsonString());
         }

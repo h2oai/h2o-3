@@ -1,5 +1,7 @@
 package water.api;
 
+import javassist.compiler.CodeGen;
+
 import java.io.*;
 import java.net.URI;
 import java.util.*;
@@ -8,6 +10,8 @@ import hex.Model;
 import water.*;
 import water.api.FramesHandler.Frames;
 import water.api.schemas3.*;
+import water.codegen.CodeGenerationService;
+import water.codegen.java.JavaCodeGenerator;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.persist.Persist;
@@ -152,6 +156,20 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".java";
     // Return stream writer for given model
     return new StreamingSchema(model.new JavaModelStreamWriter(s.preview), filename);
+  }
+
+  public StreamingSchema fetchJavaCodeArchive(int version, ModelsV3 s) {
+    final Model model = getFromDKV("key", s.model_id.key());
+    final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".zip";
+    if (CodeGenerationService.INSTANCE.hasCodeGenerator(model)) {
+      JavaCodeGenerator mcg = CodeGenerationService.INSTANCE.getGenerator(model).build();
+      // Return stream writer for given model
+      return new StreamingSchema(model.new JavaArchiveModelStreamWriter(mcg), filename);
+    } else {
+      throw new UnsupportedOperationException("Model generator for model " + (model != null ? model.getClass() : "null")
+                                              + " was not found!");
+    }
+
   }
 
   /** Remove an unlocked model.  Fails if model is in-use. */

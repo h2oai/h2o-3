@@ -185,5 +185,5 @@ public class LargeArrayGenerator<T> extends ArrayGenerator<LargeArrayGenerator<T
   }
 
   /** FIXME: remove it!!! Maximum number of string generated per class (static initializer) */
-  public static int MAX_STRINGS_IN_CONST_POOL = 30;
+  public static int MAX_STRINGS_IN_CONST_POOL = 32000;
 }

@@ -53,6 +53,7 @@ public class ZipOutputDriver extends CodeGenOutputDriver {
 
     // Append meta information about H2O
     // FIXME: should be already prepared in ZIS input variable
+    // FIXME: should be as last step to generate necessary info for compilation
     appendMetaInfo(zos, appendGenModelLib);
     // Generate model code
     try {
@@ -85,6 +86,7 @@ public class ZipOutputDriver extends CodeGenOutputDriver {
       if (appendGenModelLib) {
         sbos.p("hasGenModelLib=true").nl();
       }
+      sbos.p("org.gradle.jvmargs='-Xmx1G -XX:MaxPermSize=384m'");
     } finally {
       zos.closeEntry();
     }
@@ -92,6 +94,7 @@ public class ZipOutputDriver extends CodeGenOutputDriver {
     // Append gen-model.jar
     if (appendGenModelLib) {
       InputStream is = ZipOutputDriver.class.getResourceAsStream("/www/3/h2o-genmodel.jar");
+      assert is != null : "Cannot find h2o-genmodel in resources. Did you run `./gradlew :h2o-core:copyGenModelJarToWebRoot`?";
       if (is != null) {
         try {
           zos.putNextEntry(new ZipEntry("model-pojo/lib/h2o-genmodel.jar"));

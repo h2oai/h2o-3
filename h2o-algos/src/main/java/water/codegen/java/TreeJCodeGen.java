@@ -53,6 +53,11 @@ class TreePOJOCodeGenVisitor extends TreeVisitor<RuntimeException> {
    * @throws RuntimeException
    */
   protected TreeCodeGenState entry(int subtree) throws RuntimeException {
+    // Save actual state on top of stack when entering new state
+    if (_state != null) {
+      _state.depth = _depth;
+      _stack.push(_state);
+    }
     String treeClassName = _javaClassName + (subtree > 0 ? "_" + String.valueOf(subtree) : "");
 
     TreeCodeGenState state = new TreeCodeGenState();
@@ -76,14 +81,22 @@ class TreePOJOCodeGenVisitor extends TreeVisitor<RuntimeException> {
     return _stack.isEmpty() ? null : _stack.pop();
   }
 
+  /**
+   * Look at the stack of processed nodes
+   * and check if there is a node saved at actual depth.
+   *
+   * @return true if node on the top of stack was saved at current depth
+   */
+  protected boolean isExitPoint() {
+    return !_stack.empty() && _stack.peek().depth == _depth;
+  }
+
   @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, DHistogram.NASplitDir naSplitDir) {
     // Check for method size and number of constants generated in constant pool
     if (_state.isBigEnough()) {
       // Offload computation to newly generated class
       _state.body.p(_javaClassName).p('_').p(_subtrees).p(".score0").p("(data)");
-      // Save the current state - FIXME: should be in entry
-      _stack.push(_state);
-      // Start generation of new tree class
+      // Save and entry new state of tree generation
       _state = entry(_subtrees++);
     }
     // Generates array for group splits
@@ -125,7 +138,7 @@ class TreePOJOCodeGenVisitor extends TreeVisitor<RuntimeException> {
         gcmp.toJava(_state.body, groupSplitFieldName, col, _columnNames[col]);
       }
     }
-    _state.body.p(" ? ").ii(2).nl();
+    _state.body.p(" ? ").ii(1).nl();
     _state.nodesCount++;
   }
   @Override protected void leaf( float pred  ) {
@@ -141,8 +154,8 @@ class TreePOJOCodeGenVisitor extends TreeVisitor<RuntimeException> {
   }
 
   @Override protected void post(int col, float fcmp, int equal ) {
-    _state.body.p(')').di(2);
-    if (!_stack.isEmpty()) {
+    _state.body.p(')').di(1);
+    if (isExitPoint()) {
       _state = exit();
     }
   }
@@ -174,6 +187,8 @@ class TreePOJOCodeGenVisitor extends TreeVisitor<RuntimeException> {
     ClassCodeGenerator treeCcg;
     // Actual score method body
     JCodeSB body = new SB();
+    // Depth of reached state when pushed onto stack
+    int depth;
 
     boolean isBigEnough() {
       return nodesCount > MAX_NODES
