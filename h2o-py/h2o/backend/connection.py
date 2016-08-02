@@ -67,7 +67,7 @@ class H2OConnection(backwards_compatible()):
 
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, auth=None, verify_ssl_certificates=True,
-             proxy=None, cluster_name=None, verbose=True):
+             proxy=None, cluster_name=None, verbose=True, _msgs=None):
         r"""
         Establish connection to an existing H2O server.
 
@@ -103,6 +103,8 @@ class H2OConnection(backwards_compatible()):
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
         :param cluster_name: name of the H2O cluster to connect to. This option is used from Steam only.
         :param verbose: if True, then connection progress info will be printed to the stdout.
+        :param _msgs: custom messages to display during connection. This is a tuple (initial message, success message,
+            failure message).
 
         :returns: A new :class:`H2OConnection` instance.
         :raises H2OConnectionError: if the server cannot be reached.
@@ -143,6 +145,7 @@ class H2OConnection(backwards_compatible()):
         assert_is_type(proxy, str, None)
         assert_is_type(auth, AuthBase, (str, str), None)
         assert_is_type(cluster_name, str, None)
+        assert_is_type(_msgs, None, (str, str, str))
 
         conn = H2OConnection()
         conn._verbose = bool(verbose)
@@ -163,16 +166,18 @@ class H2OConnection(backwards_compatible()):
                          "This may interfere with your H2O Connection." % os.environ[name])
 
         try:
-            # Make a fake _session_id, otherwise .request() will complain that the connection is not initialized
             retries = 20 if server else 5
             conn._stage = 1
             conn._timeout = 3.0
-            conn._cluster_info = conn._test_connection(retries)
+            conn._cluster_info = conn._test_connection(retries, messages=_msgs)
             # If a server is unable to respond within 1s, it should be considered a bug. However we disable this
             # setting for now, for no good reason other than to ignore all those bugs :(
             conn._timeout = None
+            # This is a good one! On the surface it registers a callback to be invoked when the script is about
+            # to finish, but it also has a side effect in that the reference to current connection will be held
+            # by the ``atexit`` service till the end -- which means it will never be garbage-collected.
             atexit.register(lambda: conn.close())
-        except:
+        except Exception:
             # Reset _session_id so that we know the connection was not initialized properly.
             conn._stage = 0
             raise
@@ -408,15 +413,18 @@ class H2OConnection(backwards_compatible()):
         # self.start_logging(sys.stdout)
 
 
-    def _test_connection(self, max_retries=5):
+    def _test_connection(self, max_retries=5, messages=None):
         """
         Test that the H2O cluster can be reached, and retrieve basic cloud status info.
 
-        :param max_retries: Number of times to try to connect to the cloud (with 0.2s intervals)
-        :return Cloud information (an H2OCluster object)
-        :raise H2OConnectionError, H2OServerError
+        :param max_retries: Number of times to try to connect to the cloud (with 0.2s intervals).
+
+        :returns: Cloud information (an H2OCluster object)
+        :raises H2OConnectionError, H2OServerError:
         """
-        self._print("Connecting to H2O server at " + self._base_url, end="..")
+        if messages is None:
+            messages = ("Connecting to H2O server at {url}..", "successful.", "failed.")
+        self._print(messages[0].format(url=self._base_url), end="")
         cld = None
         errors = []
         for _ in range(max_retries):
@@ -426,7 +434,7 @@ class H2OConnection(backwards_compatible()):
             try:
                 cld = self.request("GET /3/Cloud")
                 if cld.consensus and cld.cloud_healthy:
-                    self._print(" successful!")
+                    self._print(" " + messages[1])
                     return cld
                 else:
                     if cld.consensus and not cld.cloud_healthy:
@@ -445,7 +453,7 @@ class H2OConnection(backwards_compatible()):
             # Cloud too small, or voting in progress, or server is not up yet; sleep then try again
             time.sleep(0.2)
 
-        self._print(" failed.")
+        self._print(" " + messages[2])
         if cld and not cld.cloud_healthy:
             raise H2OServerError("Cluster reports unhealthy status")
         if cld and not cld.consensus:

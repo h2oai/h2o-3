@@ -61,7 +61,9 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param verbose: Set to False to disable printing connection status messages.
     """
     global h2oconn
-    h2oconn = H2OConnection.open(**locals())
+    h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
+                                 verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
+                                 cluster_name=cluster_name, verbose=verbose)
     if verbose:
         h2oconn.info().pprint()
     return h2oconn
@@ -80,9 +82,7 @@ def connection():
 
 
 def version_check():
-    """
-    Used to verify that h2o-python module and the H2O server are compatible with each other.
-    """
+    """Used to verify that h2o-python module and the H2O server are compatible with each other."""
     if os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"): return
     ci = h2oconn.info()
     if not ci:
@@ -110,6 +110,10 @@ def version_check():
                 "Install the matching h2o-Python version from - "
                 "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
                 "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
+    # Check age of the install
+    if h2oconn.info().build_too_old:
+        print("Warning: Your H2O cluster version is too old ({})! Please download and install the latest "
+              "version from http://h2o.ai/download/".format(h2oconn.info().build_age))
 
 
 def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_name=None,
@@ -137,6 +141,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     :param kwargs: (all other deprecated attributes)
     :returns: nothing
     """
+    global h2oconn
     scheme = "https" if https else "http"
     proxy = proxy[scheme] if proxy is not None and scheme in proxy else \
         kwargs["proxies"][scheme] if "proxies" in kwargs and scheme in kwargs["proxies"] else None
@@ -150,23 +155,21 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     if ip and ip != "localhost" and ip != "127.0.0.1" and start_h2o:
         print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
-        connect(url=url, ip=ip, port=port, https=https, verify_ssl_certificates=not insecure, auth=auth,
-                proxy=proxy, cluster_name=cluster_name, verbose=True)
+        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https, verify_ssl_certificates=not insecure,
+                                     auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True,
+                                     _msgs=("Checking whether there is an H2O instance running at {url}",
+                                            "connected.", "not found."))
     except H2OConnectionError:
         # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
         if port and not str(port).endswith("+"):
             port = str(port) + "+"
         if not start_h2o: raise
-        global h2oconn
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, port=port)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True)
     if strict_version_check:
         version_check()
-
-    if h2oconn.info().build_too_old:
-        print("Warning: Your H2O cluster version is too old ({})! Please download and install the latest version from http://h2o.ai/download/".format(h2oconn.info().build_age))
 
 
 def lazy_import(path):

@@ -120,7 +120,7 @@ class H2OLocalServer(object):
         if verbose: print("Attempting to start a local H2O server...")
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
                           mmax=max_mem_size, mmin=min_mem_size)
-        if verbose: print("Server is running at %s://%s:%d" % (hs.scheme, hs.ip, hs.port))
+        if verbose: print("  Server is running at %s://%s:%d" % (hs.scheme, hs.ip, hs.port))
         atexit.register(lambda: hs.shutdown())
         return hs
 
