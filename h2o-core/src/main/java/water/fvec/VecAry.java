@@ -13,6 +13,14 @@ import java.util.Random;
 
 /**
  * Created by tomas on 7/7/16.
+ *
+ * Abstraction over an array of Vecs (columns) and primary interface for working with Vecs.
+ *
+ * Provides access to individual vectors, to their chunks and values and supports basic operations such as adding and subsetting.
+ *
+ * Vecs can be stored in simple 1D vectors or 2D vector blocks. VecArray asbtracts from that by storing a pointer
+ *
+ *
  */
 public class VecAry extends Iced {
   AVec[] _vblocks;
