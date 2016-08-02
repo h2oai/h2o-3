@@ -10,7 +10,8 @@ Data collection is easy. Decision making is hard. H2O makes it fast and easy to 
 
 * [Downloading H2O-3](#Downloading)
 * [Open Source Resources](#Resources)
-    * [Issue tracking](#IssueTracking) 
+    * [Issue Tracking and Feature Requests](#IssueTracking) 
+    * [List of Open Source Resources](#OpenSourceResources)
 * [Using H2O-3 Code Artifacts (libraries)](#Artifacts)
 * [Building H2O-3](#Building)
 * [Launching H2O after Building](#Launching)
@@ -35,7 +36,9 @@ While most of this README is written for developers who do their own builds, mos
 Most people interact with three primary open source resources:  **GitHub** (which you've already found), **JIRA** (for issue tracking), and **h2ostream** (a community discussion forum).
 
 <a name="IssueTracking"></a>
-### 2.1 Issue tracking
+### 2.1 Issue Tracking and Feature Requests
+
+> (Note: There is only one issue tracking system for the project.  GitHub issues are not enabled; you must use JIRA.)
 
 You can browse and create new issues in our open source **JIRA**:  <http://jira.h2o.ai>
 
@@ -47,10 +50,14 @@ You can browse and create new issues in our open source **JIRA**:  <http://jira.
     1.  Click `Create an acccount` near the bottom of the login box
     1.  Once you have created an account and logged in, use the `Create` button on the menu to create an issue
     1.  Create H2O-3 issues in the [PUBDEV](https://0xdata.atlassian.net/projects/PUBDEV/issues) project
+*	You can also vote for feature requests and/or other issues. Voting can help H2O prioritize the features that are included in each release. 
+	1. Go to the [H2O JIRA page](https://0xdata.atlassian.net/).
+	2. Click **Log In** to either log in or create an account if you do not already have one.
+	3. Search for the feature that you want to prioritize, or create a new feature.
+	4. Click on the **Vote for this issue** link. This is located on the right side of the issue under the **People** section. 
 
-> (Note: There is only one issue tracking system for the project.  GitHub issues are not enabled, you must use JIRA.)
-
-### 2.2 List of open source resources
+<a name="OpenSourceResources"></a>
+### 2.2 List of Open Source Resources
 
 *  GitHub
     * <https://github.com/h2oai/h2o-3>
