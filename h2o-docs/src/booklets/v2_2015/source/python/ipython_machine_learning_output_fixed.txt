@@ -25,7 +25,7 @@ H2O Connection port:        54321
 
 In [3]: from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
-In [4]: iris_data_path = h2o.system_file("iris.csv") # load demonstration data
+In [4]: iris_data_path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv" # load demonstration data
 
 In [5]: iris_df = h2o.import_file(path=iris_data_path)
 
@@ -167,7 +167,7 @@ C2          0.773032               0.00401032           0.00310549
 
 In [13]: from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
-In [14]: prostate_data_path = h2o.system_file("prostate.csv")
+In [14]: prostate_data_path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv"
 
 In [15]: prostate_df = h2o.import_file(path=prostate_data_path)
 
