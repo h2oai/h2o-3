@@ -11,7 +11,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.gpu.ImageTrain;
 import water.gpu.util;
 import water.parser.BufferedString;
 import water.util.*;
@@ -107,7 +106,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
     _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
     _output._domains= train.domains();
-    model_info = new DeepWaterModelInfo(parms, destKey, null, nClasses, train, valid);
+    model_info = new DeepWaterModelInfo(parms, destKey, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
     _dist = new Distribution(get_params());
     assert(_dist.distribution != Distribution.Family.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
