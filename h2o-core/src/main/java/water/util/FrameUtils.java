@@ -257,63 +257,95 @@ public class FrameUtils {
     }
   }
 
-  public static class ExportTask extends H2O.H2OCountedCompleter<ExportTask> {
-    final InputStream _csv;
+  public static class ExportTaskDriver extends H2O.H2OCountedCompleter<ExportTaskDriver> {
+    final Frame _frame;
     final String _path;
     final String _frameName;
     final boolean _overwrite;
     final Job _j;
+    final int _nParts;
 
-    public ExportTask(InputStream csv, String path, String frameName, boolean overwrite, Job j) {
-      _csv = csv;
+    public ExportTaskDriver(Frame frame, String path, String frameName, boolean overwrite, Job j, int nParts) {
+      _frame = frame;
       _path = path;
       _frameName = frameName;
       _overwrite = overwrite;
       _j = j;
+      _nParts = nParts;
     }
 
-    private long copyStream(OutputStream os, final int buffer_size) {
-      long len = 0;
-      int curIdx = 0;
-      try {
+    @Override
+    public void compute2() {
+      int nChunksPerPart = ((_frame.anyVec().nChunks() - 1) / _nParts) + 1;
+      boolean usePartNaming = _nParts > 1;
+      new PartExportTask(this, _frame._names, nChunksPerPart, usePartNaming).dfork(_frame);
+    }
+
+    class PartExportTask extends MRTask<PartExportTask> {
+      final String[] _colNames;
+      final int _length;
+      final boolean _partNaming;
+
+      PartExportTask(H2O.H2OCountedCompleter<?> completer, String[] colNames, int length, boolean partNaming) {
+        super(completer);
+        _colNames = colNames;
+        _length = length;
+        _partNaming = partNaming;
+      }
+
+      private long copyStream(Frame.CSVStream is, OutputStream os, int firstChkIdx, int buffer_size) throws IOException {
+        long len = 0;
         byte[] bytes = new byte[buffer_size];
-        for (; ; ) {
-          int count = _csv.read(bytes, 0, buffer_size);
+        int curChkIdx = firstChkIdx;
+        for (;;) {
+          int count = is.read(bytes, 0, buffer_size);
           if (count <= 0) {
             break;
           }
           len += count;
           os.write(bytes, 0, count);
-          int workDone = ((Frame.CSVStream) _csv)._curChkIdx;
-          if (curIdx != workDone) {
-            _j.update(workDone - curIdx);
-            curIdx = workDone;
+          int workDone = is._curChkIdx - curChkIdx;
+          if (workDone > 0) {
+            _j.update(workDone);
+            curChkIdx = is._curChkIdx;
           }
         }
-      } catch (Exception ex) {
-        throw new RuntimeException(ex);
+        return len;
       }
-      return len;
-    }
 
-    @Override public void compute2() {
-      OutputStream os = null;
-      long written = -1;
-      try {
-        os = H2O.getPM().create(_path, _overwrite);
-        written = copyStream(os, 4 * 1024 * 1024);
-      } finally {
-        if (os != null) {
+      @Override
+      public void map(Chunk[] cs) {
+        Chunk anyChunk = cs[0];
+        if (anyChunk.cidx() % _length > 0) {
+          return;
+        }
+        int partIdx = anyChunk.cidx() / _length;
+        String partPath = _partNaming ? _path + "/part-m-" + String.valueOf(100000 + partIdx).substring(1) : _path;
+        Frame.CSVStream is = new Frame.CSVStream(cs, _colNames, _length, false);
+        OutputStream os = null;
+        long written = -1;
+        try {
+          os = H2O.getPM().create(partPath, _overwrite);
+          written = copyStream(is, os, anyChunk.cidx(), 4 * 1024 * 1024);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } finally {
+          if (os != null) {
+            try {
+              os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
+              os.close();
+              Log.info("Part " + partIdx + " of key '" + _frameName + "' of " + written + " bytes was written to " + _path + ".");
+            } catch (Exception e) {
+              Log.err(e);
+            }
+          }
           try {
-            os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
-            os.close();
-            Log.info("Key '" + _frameName + "' of "+written+" bytes was written to " + _path + ".");
+            is.close();
           } catch (Exception e) {
             Log.err(e);
           }
         }
       }
-      tryComplete();
     }
   }
 

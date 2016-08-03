@@ -7,6 +7,7 @@ import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
 import water.rapids.Merge;
+import water.persist.Persist;
 import water.util.FrameUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -1381,17 +1382,37 @@ public class Frame extends Lockable<Frame> {
     return f2.vecs();
   }
 
-  public static Job export(Frame fr, String path, String frameName, boolean overwrite) {
-    // Validate input
+  public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts) {
+    boolean forceSingle = nParts == 1;
     boolean fileExists = H2O.getPM().exists(path);
-    if (overwrite && fileExists) {
-      Log.warn("File " + path + " exists, but will be overwritten!");
-    } else if (!overwrite && fileExists) {
-      throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
+    // Validate input
+    if (forceSingle) {
+      if (overwrite && fileExists) {
+        Log.warn("File " + path + " exists, but will be overwritten!");
+      } else if (!overwrite && fileExists) {
+        throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
+      }
+    } else if (fileExists) {
+      boolean isDirectory = H2O.getPM().isDirectory(path);
+      if (! isDirectory) {
+        throw new H2OIllegalArgumentException(path, "exportFrame", "Cannot use regular existing file " + path +
+                " to store part files! Empty directory is expected.");
+      }
+      Persist.PersistEntry[] dirContent = H2O.getPM().list(path);
+      if (dirContent.length != 0) {
+        throw new H2OIllegalArgumentException(path, "exportFrame", "Target directory " + path + " is non-empty. " +
+                "Empty directory is expected.");
+      }
     }
-    InputStream is = (fr).toCSV(true, false);
-    Job job =  new Job(fr._key,"water.fvec.Frame","Export dataset");
-    FrameUtils.ExportTask t = new FrameUtils.ExportTask(is, path, frameName, overwrite, job);
+    if (nParts == -1) {
+      throw new UnsupportedOperationException("Unsupported: cannot automatically derive optimal number of part files.");
+    }
+    // Make directory for part files
+    if ((! forceSingle) && (! fileExists)) {
+      H2O.getPM().mkdirs(path);
+    }
+    Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
+    FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(fr, path, frameName, overwrite, job, nParts);
     return job.start(t, fr.anyVec().nChunks());
   }
 

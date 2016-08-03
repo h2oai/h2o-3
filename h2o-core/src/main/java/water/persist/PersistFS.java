@@ -166,6 +166,11 @@ final class PersistFS extends Persist {
     return new File(URI.create(path)).exists();
   }
 
+  @Override
+  public boolean isDirectory(String path) {
+    return new File(URI.create(path)).isDirectory();
+  }
+
   private PersistEntry getPersistEntry(File f) {
     return new PersistEntry(f.getName(), f.length(), f.lastModified());
   }

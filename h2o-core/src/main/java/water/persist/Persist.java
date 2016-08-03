@@ -201,6 +201,10 @@ public abstract class Persist {
     throw new RuntimeException("Not implemented");
   }
 
+  public boolean isDirectory(String path) {
+    throw new RuntimeException("Not implemented");
+  }
+
   public long length(String path) {
     throw new RuntimeException("Not implemented");
   }

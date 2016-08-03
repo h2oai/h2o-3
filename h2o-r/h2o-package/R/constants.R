@@ -90,9 +90,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 .h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo)
 
 #' Export Files Endpoint Generator
-.h2o.__EXPORT_FILES <- function(frame,path,force) {
-  paste0("Frames/", h2o.getId(frame), "/export/",path,"/overwrite/",force)
-}
+.h2o.__EXPORT_FILES <- function(frame) paste0("Frames/", h2o.getId(frame), '/export')
 
 #' Model Endpoint
 .h2o.__MODELS         <- "Models"
