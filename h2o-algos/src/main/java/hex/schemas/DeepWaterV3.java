@@ -46,7 +46,9 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "shuffle_training_data",
         "mini_batch_size",
         "clip_gradient",
-        "network"
+        "network",
+        "width",
+        "height"
     };
 
 
@@ -287,5 +289,14 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, values = {"AUTO","mxnet","caffe","tensorflow"}, help = "Deep Learning Backend.")
     public DeepWaterParameters.Backend backend;
+
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Width of image (optional).")
+    public int width;
+
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Height of image (optional).")
+    public int height;
+
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Number of (color) channels.")
+    public int channels;
   }
 }
