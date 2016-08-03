@@ -32,7 +32,6 @@ from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_is_str, assert_maybe_str, is_str, is_int, is_listlike
 from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, h2o_deprecated
-import copy
 warnings.simplefilter("always", DeprecationWarning)
 
 
