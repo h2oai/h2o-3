@@ -1404,9 +1404,6 @@ public class Frame extends Lockable<Frame> {
                 "Empty directory is expected.");
       }
     }
-    if (nParts == -1) {
-      throw new UnsupportedOperationException("Unsupported: cannot automatically derive optimal number of part files.");
-    }
     // Make directory for part files
     if ((! forceSingle) && (! fileExists)) {
       H2O.getPM().mkdirs(path);
@@ -1464,6 +1461,12 @@ public class Frame extends Lockable<Frame> {
       _line = sb.toString().getBytes();
       _chkRow = -1; // first process the header line
       _curChks = chks;
+    }
+
+    public int getCurrentRowSize() throws IOException {
+      int av = available();
+      assert av > 0;
+      return _line.length;
     }
 
     byte[] getBytesForRow() {

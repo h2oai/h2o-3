@@ -30,8 +30,8 @@ public class ExportTest extends TestUtil {
     Key rebalancedKey = Key.make("rebalanced");
     Frame rebalanced = null;
     Frame imported = null;
-    int[] partSpec = {1, 4, 7, 30};
-    int[] expPart = {1, 4, 6, 17};
+    int[] partSpec = {1, 4, 7, 30, -1};
+    int[] expPart = {1, 4, 6, 17, -1};
     for (int i = 0; i < partSpec.length; i++) {
       Log.info("Testing export to " + partSpec[i] + " files.");
       try {
@@ -42,13 +42,16 @@ public class ExportTest extends TestUtil {
         File target = (parts == 1) ? new File(folder, "data.csv") : folder;
         Log.info("Should output #" + expPart[i] + " part files to " + target.getPath() + ".");
         Frame.export(rebalanced, target.getPath(), "export", false, parts).get();
-        assertEquals(expPart[i], folder.listFiles().length);
-        if (parts == 1) {
-          assertTrue(target.exists());
-        } else {
-          for (int j = 0; j < expPart[i]; j++) {
-            String suffix = (j < 10) ? "0000" + j : "000" + j;
-            assertTrue(new File(folder, "part-m-" + suffix).exists());
+        // check the number of produced part files (only if the number was given)
+        if (expPart[i] != -1) {
+          assertEquals(expPart[i], folder.listFiles().length);
+          if (parts == 1) {
+            assertTrue(target.exists());
+          } else {
+            for (int j = 0; j < expPart[i]; j++) {
+              String suffix = (j < 10) ? "0000" + j : "000" + j;
+              assertTrue(new File(folder, "part-m-" + suffix).exists());
+            }
           }
         }
         assertTrue(target.exists());

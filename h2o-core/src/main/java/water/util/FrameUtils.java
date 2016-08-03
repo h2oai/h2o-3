@@ -258,12 +258,13 @@ public class FrameUtils {
   }
 
   public static class ExportTaskDriver extends H2O.H2OCountedCompleter<ExportTaskDriver> {
+    private static long DEFAULT_TARGET_PART_SIZE = 134217728L; // 128MB, default HDFS block size
     final Frame _frame;
     final String _path;
     final String _frameName;
     final boolean _overwrite;
     final Job _j;
-    final int _nParts;
+    int _nParts;
 
     public ExportTaskDriver(Frame frame, String path, String frameName, boolean overwrite, Job j, int nParts) {
       _frame = frame;
@@ -276,9 +277,51 @@ public class FrameUtils {
 
     @Override
     public void compute2() {
+      if (_nParts < 0) {
+        EstimateSizeTask estSize = new EstimateSizeTask().dfork(_frame).getResult();
+        Log.debug("Estimator result: ", estSize);
+        // the goal is to not to create too small part files (and too many files), ideal part file size is one HDFS block
+        _nParts = Math.max((int) (estSize._size / DEFAULT_TARGET_PART_SIZE), H2O.CLOUD.size() + 1);
+        Log.info("For file of estimated size " + estSize + "B determined number of parts: " + _nParts);
+      }
       int nChunksPerPart = ((_frame.anyVec().nChunks() - 1) / _nParts) + 1;
       boolean usePartNaming = _nParts > 1;
       new PartExportTask(this, _frame._names, nChunksPerPart, usePartNaming).dfork(_frame);
+    }
+
+    /**
+     * Trivial CSV file size estimator. Uses the first line of each non-empty chunk to estimate the size of the chunk.
+     * The total estimated size is the total of the estimated chunk sizes.
+     */
+    class EstimateSizeTask extends MRTask<EstimateSizeTask> {
+      // OUT
+      int _nNonEmpty;
+      long _size;
+
+      @Override
+      public void map(Chunk[] cs) {
+        if (cs[0]._len == 0) return;
+        Frame.CSVStream is = new Frame.CSVStream(cs, null, 1, false);
+        try {
+          _nNonEmpty++;
+          _size += is.getCurrentRowSize() * cs[0]._len;
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } finally {
+          try { is.close(); } catch (Exception e) { Log.err(e); }
+        }
+      }
+
+      @Override
+      public void reduce(EstimateSizeTask mrt) {
+        _nNonEmpty += mrt._nNonEmpty;
+        _size += mrt._size;
+      }
+
+      @Override
+      public String toString() {
+        return "EstimateSizeTask{_nNonEmpty=" + _nNonEmpty + ", _size=" + _size + '}';
+      }
     }
 
     class PartExportTask extends MRTask<PartExportTask> {
