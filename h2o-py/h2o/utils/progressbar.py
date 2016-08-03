@@ -15,6 +15,7 @@ from types import FunctionType, GeneratorType, MethodType
 
 import colorama
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.shared_utils import clamp
 from h2o.utils.typechecks import assert_is_type, numeric, is_str
 
 
@@ -61,6 +62,10 @@ class ProgressBar(object):
         v(t) = vₑ + (v₀ - vₑ)e⁻ᵝ⁽ᵗ⁻ᵗ⁰⁾,  and
         vₑ = v₀ + β(1 - x₀ - v₀(T - t₀))/(β(T - t₀) - 1 + e⁻ᵝ⁽ᵀ⁻ᵗ⁰⁾)
 
+    In order to ensure smoothness of the model, we need to be careful as the progress approaches 100% and t
+    approaches T. First, under no circumstance we are allowed to finish the progress if the underlying process did
+    not report 100% status. At the same time we don't want to jump suddenly from, say, 90% to 100% at the final step.
+    Thus, we allow the model to progress for a very short amount of time after the process has completed.
     """
 
     # Minimum and maximum frequency for progress checks (i.e. do not query progress faster than every
@@ -73,6 +78,9 @@ class ProgressBar(object):
 
     # This parameter determines calculation of local speed progress.
     GAMMA = 0.6
+
+    # How long are we allowed to wait after the progress is finished before returning.
+    FINISH_DELAY = 0.3
 
     def __init__(self, title=None, widgets=None, maxval=1.0, file_mode=None):
         """
@@ -98,12 +106,16 @@ class ProgressBar(object):
 
         # Variables needed for progress model (see docs).
         self._t0 = None  # Time when the model's parameters were computed
-        self._x0 = None  # Progress level at t0
+        self._x0 = None  # Progress level at t0, a real number from 0 to 1
         self._v0 = None  # Progress speed at t0, in 1/s
         self._ve = None  # Target progress speed
 
-        self._start_time = None
-        self._progress_data = []  # list of tuples (time, progress_value) reported by the external source.
+        # List of tuples (timestamp, progress_value) reported by the external source. The timestamps are taken from
+        # the moment the data was received, not when it was requested. The progress values are raw (i.e. they range
+        # from 0 to self._maxval).
+        self._progress_data = []
+        # Timestamp when should the progress be queried next.
+        self._next_poll_time = None
 
 
     def execute(self, progress_fn):
@@ -124,23 +136,37 @@ class ProgressBar(object):
             progress_fn = (lambda g: lambda: next(g))(progress_fn)
 
         # Initialize the execution context
-        colorama.init()
-        self._start_time = time.time()
-        next_progress_check = 0
+        self._next_poll_time = 0
+        self._t0 = time.time()
+        self._x0 = 0
+        self._v0 = 0.01  # corresponds to 100s completion time
+        self._ve = 0.01
 
         progress = 0
         status = None  # Status message in case the job gets interrupted.
         try:
             while True:
+                # We attempt to synchronize all helper functions, ensuring that each of them has the same idea
+                # for what the current time moment is. Otherwise we could have some corner cases when one method
+                # says that something must happen right now, while the other already sees that moment in the past.
+                now = time.time()
+
                 # Query the progress level, but only if it's time already
-                if next_progress_check <= time.time():
-                    next_progress_check = self._query_progress(progress_fn)
-                    self._recalculate_model_parameters()
+                if self._next_poll_time <= now:
+                    res = progress_fn()  # may raise StopIteration
+                    assert_is_type(res, (numeric, numeric), numeric)
+                    if not isinstance(res, tuple):
+                        res = (res, -1)
+                    # Progress querying could have taken some time, so update the current time moment
+                    now = time.time()
+                    self._store_model_progress(res, now)
+                    self._recalculate_model_parameters(now)
 
                 # Render the widget regardless of whether it's too early or not
-                current_time = time.time()
-                progress = self._compute_progress_at_time(current_time)[0]
-                if progress >= 1: break
+                progress = min(self._compute_progress_at_time(now)[0], 1)
+                if progress == 1 and self._get_real_progress() >= 1:
+                    # Do not exit until both the model and the actual progress reach 100% mark.
+                    break
                 result = self._widget.render(progress)
                 assert_is_type(result, RenderResult)
                 time0 = result.next_time
@@ -149,10 +175,9 @@ class ProgressBar(object):
                 self._draw(result.rendered)
 
                 # Wait until the next rendering/querying cycle
-                wait_time = min(next_render_time, next_progress_check) - current_time
+                wait_time = min(next_render_time, self._next_poll_time) - now
                 if wait_time > 0:
                     time.sleep(wait_time)
-            progress = 1
         except KeyboardInterrupt:
             # If the user presses Ctrl+C, we interrupt the progress bar.
             status = "cancelled"
@@ -174,72 +199,105 @@ class ProgressBar(object):
     #  Private
     #-------------------------------------------------------------------------------------------------------------------
 
-    def _query_progress(self, progress_fn):
+    def _get_real_progress(self):
+        return self._progress_data[-1][1] / self._maxval
+
+    def _store_model_progress(self, res, now):
         """
-        Check the current progress level by calling the provided executor function.
+        Save the current model progress into ``self._progress_data``, and update ``self._next_poll_time``.
 
-        :param progress_fn: same as ``progress_fn`` in :meth:`execute` (however it must be a regular function, not a
-            generator).
-
-        :returns: time moment when the next progress check should be made.
-        :raises StopIteration: if the progress function stopped yielding results.
+        :param res: tuple (progress level, poll delay).
+        :param now: current timestamp.
         """
-        res = progress_fn()  # may raise StopIteration
-        assert_is_type(res, (numeric, numeric), numeric)
+        raw_progress, delay = res
+        raw_progress = clamp(raw_progress, 0, self._maxval)
+        self._progress_data.append((now, raw_progress))
 
-        progress = res[0] if isinstance(res, tuple) else res
-        now = time.time()
-        self._progress_data.append((now, progress))
-        delay = res[1] if isinstance(res, tuple) else self._guess_next_poll_interval()
-        return now + max(min(delay, self.MAX_PROGRESS_CHECK_INTERVAL), self.MIN_PROGRESS_CHECK_INTERVAL)
+        if delay < 0:
+            # calculation of ``_guess_next_poll_interval()`` should be done only *after* we pushed the fresh data to
+            # ``self._progress_data``.
+            delay = self._guess_next_poll_interval()
+        self._next_poll_time = now + clamp(delay, self.MIN_PROGRESS_CHECK_INTERVAL, self.MAX_PROGRESS_CHECK_INTERVAL)
 
 
-    def _recalculate_model_parameters(self):
+    def _recalculate_model_parameters(self, now):
         """Compute t0, x0, v0, ve."""
-        t_final = self._estimate_progress_completion_time()
-        t0 = time.time()
-        if t_final <= t0:
-            ve = 0
-            v0 = 0
-            x0 = 1
+        time_until_end = self._estimate_progress_completion_time(now) - now
+        assert time_until_end >= 0, "Estimated progress completion cannot be in the past."
+        x_real = self._get_real_progress()
+        if x_real == 1:
+            t0, x0, v0, ve = now, 1, 0, 0
         else:
-            x0, v0 = self._compute_progress_at_time(t0)
-            z = self.BETA * (t_final - t0)
+            x0, v0 = self._compute_progress_at_time(now)
+            t0 = now
+            if x0 >= 1:
+                # On rare occasion, the model's progress may have reached 100% by ``now``. This can happen if
+                # (1) the progress is close to 100% initially and has high speed, (2) on the previous call we
+                # estimated that the process completion time will be right after the next poll time, and (3)
+                # the polling itself took so much time that the process effectively "overshoot".
+                # If this happens, then we adjust x0, v0 to the previous valid data checkpoint.
+                t0, x0, v0 = self._t0, self._x0, self._v0
+                time_until_end += now - t0
+            z = self.BETA * time_until_end
+            max_speed = (1 - x_real**2) / self.FINISH_DELAY
             ve = v0 + (self.BETA * (1 - x0) - v0 * z) / (z - 1 + math.exp(-z))
+            if ve < 0:
+                # Current speed is too high -- reduce v0 (violate non-smoothness of speed)
+                v0 = self.BETA * (1 - x0) / (1 - math.exp(-z))
+                ve = 0
+            if ve > max_speed:
+                # Current speed is too low: finish later, but do not allow ``ve`` to be higher than ``max_speed``
+                ve = max_speed
         self._t0, self._x0, self._v0, self._ve = t0, x0, v0, ve
 
 
-    def _estimate_progress_completion_time(self):
+    def _estimate_progress_completion_time(self, now):
         """
         Estimate the moment when the underlying process is expected to reach completion.
 
-        This function is invoked every time new physical data about the underlying process' status arrives.
+        This function should only return future times. Also this function is not allowed to return time moments less
+        than self._next_poll_time if the actual progress is below 100% (this is because we won't know that the
+        process have finished until we poll the external progress function).
         """
-        if self._progress_data[-1][1] == self._maxval:
-            return self._progress_data[-1][0]
-        if self._progress_data[-1][1] == self._progress_data[0][1]:
-            return self._progress_data[-1][0] + 90
-        tlast, xlast = self._progress_data[-1]
-        tacc, xacc = 0, 0
+        assert self._next_poll_time >= now
+        tlast, wlast = self._progress_data[-1]
+        # If reached 100%, make sure that we finish as soon as possible, but maybe not immediately
+        if wlast == self._maxval:
+            current_completion_time = (1 - self._x0) / self._v0 + self._t0
+            return clamp(current_completion_time, now, now + self.FINISH_DELAY)
+
+        # Calculate the approximate speed of the raw progress based on recent data
+        tacc, wacc = 0, 0
         factor = self.GAMMA
         for t, x in self._progress_data[-2::-1]:
             tacc += factor * (tlast - t)
-            xacc += factor * (xlast - x)
+            wacc += factor * (wlast - x)
             factor *= self.GAMMA
-        if xacc == 0: return tlast + 300
-        return tlast + tacc * (self._maxval - xlast) / xacc
+            if factor < 1e-2: break
+
+        # If there was no progress at all, then just assume it's 5 minutes from now
+        if wacc == 0: return now + 300
+
+        # Estimate the completion time assuming linear progress
+        t_estimate = tlast + tacc * (self._maxval - wlast) / wacc
+
+        # Adjust the estimate if it looks like it may happen too soon
+        if t_estimate <= self._next_poll_time:
+            t_estimate = self._next_poll_time + self.FINISH_DELAY
+
+        return t_estimate
 
 
     def _guess_next_poll_interval(self):
         """
         Determine when to query the progress status next.
 
-        This function is called
+        This function is used if the external progress function did not return time interval for when it should be
+        queried next.
         """
-        if not self._progress_data: return 0
-        time_elapsed = self._progress_data[-1][0] - self._start_time
-        raw_progress = self._progress_data[-1][1]
-        return min(0.2 * time_elapsed, 0.5 + (1 - raw_progress)**2)
+        time_elapsed = self._progress_data[-1][0] - self._progress_data[0][0]
+        real_progress = self._get_real_progress()
+        return min(0.2 * time_elapsed, 0.5 + (1 - real_progress)**0.5)
 
 
     def _compute_progress_at_time(self, t):
@@ -248,12 +306,11 @@ class ProgressBar(object):
 
         :returns: tuple (x, v) of the progress level and progress speed.
         """
-        if self._t0 is None: return (0, 0.01)
         t0, x0, v0, ve = self._t0, self._x0, self._v0, self._ve
         z = (v0 - ve) * math.exp(-self.BETA * (t - t0))
         vt = ve + z
-        xt = x0 + ve * (t - t0) + (v0 - ve - z) / self.BETA
-        return (min(xt, 1), vt)
+        xt = clamp(x0 + ve * (t - t0) + (v0 - ve - z) / self.BETA, 0, 1)
+        return xt, vt
 
 
     def _get_time_at_progress(self, x_target):
@@ -277,9 +334,11 @@ class ProgressBar(object):
         return time.time() + 100
 
 
-
     def _draw(self, txt, final=False):
         """Print the rendered string to the stdout."""
+        if not self._file_mode:
+            # If the user presses Ctrl+C this ensures we still start writing from the beginning of the line
+            sys.stdout.write("\r")
         sys.stdout.write(txt)
         if final:
             sys.stdout.write("\n")
@@ -287,6 +346,14 @@ class ProgressBar(object):
             if not self._file_mode:
                 sys.stdout.write("\r")
             sys.stdout.flush()
+
+
+    def __repr__(self):
+        """Progressbar internal state (for debug purposes)."""
+        t0 = self._progress_data[0][0]
+        data = ",".join("(%.1f,%.3f)" % (t - t0, w / self._maxval) for t, w in self._progress_data)
+        return "<Progressbar x0=%.3f, v0=%.3f, xraw=%.3f; data:[%s]>" % \
+            (self._x0, self._v0, self._get_real_progress(), data)
 
 
 
@@ -345,6 +412,7 @@ class ProgressBarWidget(object):
 
         :param float progress: current job progress, a number between 0 and 1.
         :param int width: target character widths (for flexible widgets).
+        :param str status: if the job has finished unexpectedly, this will be a message explaining the reason.
         :returns: a ``RenderResult`` object.
         """
         raise NotImplementedError()
@@ -380,6 +448,10 @@ class ProgressBarFlexibleWidget(ProgressBarWidget):
 
     Thus, this class behaves as LaTeX's \hfill, or CSS flex: "1 1 auto".
     """
+
+    def render(self, progress, width=None, status=None):
+        """Render the widget."""
+        raise NotImplementedError()
 
 
 
@@ -495,7 +567,7 @@ class PBWString(ProgressBarWidget):
     def __init__(self, text):
         """Initialize the widget."""
         super(ProgressBarWidget, self).__init__()
-        self._str = str(text)
+        self._str = "%s" % text
 
     def render(self, progress, width=None, status=None):
         """Render the widget."""
@@ -520,7 +592,7 @@ class PBWBar(ProgressBarFlexibleWidget):
         self._rendered = ""
         self.set_encoding(None)
 
-    def render(self, progress, width, status=None):
+    def render(self, progress, width=None, status=None):
         """Render the widget."""
         if width <= 3: return RenderResult()
         bar_width = width - 2  # Total width minus the bar ends
@@ -568,7 +640,7 @@ class PBWBar(ProgressBarFlexibleWidget):
                 self._bar_ends = "||"
                 self._bar_symbols = s
                 return
-            except UnicodeDecodeError:
+            except UnicodeEncodeError:
                 pass
             except LookupError:
                 print("Warning: unknown encoding %s" % encoding)
@@ -587,3 +659,7 @@ class PBWPercentage(ProgressBarWidget):
         """Render the widget."""
         current_pct = int(progress * 100 + 0.1)
         return RenderResult(rendered="%3d%%" % current_pct, next_progress=(current_pct + 1) / 100)
+
+
+# Initialize colorama
+colorama.init()

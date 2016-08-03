@@ -14,6 +14,7 @@ import warnings
 
 import h2o
 from h2o.utils.progressbar import ProgressBar
+from h2o.utils.shared_utils import clamp
 
 
 class H2OJob(object):
@@ -54,15 +55,18 @@ class H2OJob(object):
             pb.execute(self._refresh_job_status)
         except StopIteration as e:
             if str(e) == "cancelled":
-                self.status = "CANCELLED"
                 h2o.api("POST /3/Jobs/%s/cancel" % self.job_key)
-                print("Job {} was cancelled.".format(self.job_key))
+                self.status = "CANCELLED"
             # Potentially we may want to re-raise the exception here
 
+        assert self.status in {"DONE", "CANCELLED", "FAILED"} or self._poll_count <= 0, \
+            "Polling finished while the job has status %s" % self.status
         if self.warnings:
             for w in self.warnings:
                 warnings.warn(w)
         # TODO: this needs to br thought through more carefully
+        #       Right now if the user presses Ctrl+C the progress bar handles this gracefully and passes the
+        #       exception up, but these calls create ugly stacktrace dumps...
         # check if failed... and politely print relevant message
         if self.status == "CANCELLED":
             raise EnvironmentError("Job with key {} was cancelled by the user.".format(self.job_key))
@@ -87,10 +91,18 @@ class H2OJob(object):
         jobs = h2o.api("GET /3/Jobs/%s" % self.job_key)
         self.job = jobs["jobs"][0] if "jobs" in jobs else jobs["job"][0]
         self.status = self.job["status"]
-        self.progress = min(self.job["progress"], 1)
+        self.progress = self.job["progress"]
         self.exception = self.job["exception"]
         self.warnings = self.job["warnings"] if "warnings" in self.job else None
         self._poll_count -= 1
+        # Sometimes the server may report the job at 100% but still having status "RUNNING" -- we work around this
+        # by showing progress at 99% instead. Sometimes the server may report the job at 0% but having status "DONE",
+        # in this case we set the progress to 100% manually.
+        if self.status == "CREATED": self.progress = 0
+        if self.status == "RUNNING": self.progress = clamp(self.progress, 0, 0.99)
+        if self.status == "DONE": self.progress = 1
+        if self.status == "FAILED": raise StopIteration("failed")
+        if self.status == "CANCELLED": raise StopIteration("cancelled by the server")
         return self.progress
 
     def __repr__(self):

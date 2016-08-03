@@ -68,6 +68,9 @@ def urlopen():
         import urllib2
         return urllib2.urlopen
 
+def clamp(x, xmin, xmax):
+    """Return the value of x, clamped from below by `xmin` and from above by `xmax`."""
+    return max(xmin, min(x, xmax))
 
 def _gen_header(cols):
     return ["C" + str(c) for c in range(1, cols + 1, 1)]
