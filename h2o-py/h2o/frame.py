@@ -945,8 +945,6 @@ class H2OFrame(object):
         -------
           True if the column is numeric, otherwise return False
         """
-        if self._ex._cache.types_valid():
-            return [str(list(viewvalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]]
         return [bool(o) for o in ExprNode("is.numeric", self)._eager_scalar()]
 
     def isstring(self):
@@ -1876,9 +1874,6 @@ class H2OFrame(object):
           True if the column is categorical; otherwise False. For String columns, the result
           is False.
         """
-        # TODO: list for fr.ncol > 1 ?
-        if self._ex._cache.types_valid():
-            return [str(list(viewvalues(self._ex._cache.types))[0]) == "enum"]
         return [bool(o) for o in ExprNode("is.factor", self)._eager_scalar()]
 
     def anyfactor(self):
