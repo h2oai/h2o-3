@@ -1,11 +1,13 @@
 package hex.deepwater;
 
-import hex.DataInfo;
 import hex.Model;
 import water.*;
 import water.fvec.Frame;
 import water.gpu.ImageTrain;
 import water.util.*;
+
+import static hex.deepwater.DeepWaterParameters.Network.AUTO;
+import static hex.deepwater.DeepWaterParameters.Network.inception_bn;
 
 
 /**
@@ -56,24 +58,51 @@ final public class DeepWaterModelInfo extends Iced {
   /**
    * Main constructor
    * @param params Model parameters
-   * @param dinfo Data Info
    * @param nClasses number of classes (1 for regression, 0 for autoencoder)
    * @param train User-given training data frame, prepared by AdaptTestTrain
    * @param valid User-specified validation data frame, prepared by AdaptTestTrain
    */
-  public DeepWaterModelInfo(final DeepWaterParameters params, Key model_id, final DataInfo dinfo, int nClasses, Frame train, Frame valid) {
+  public DeepWaterModelInfo(final DeepWaterParameters params, Key model_id, int nClasses, Frame train, Frame valid) {
     _classification = nClasses > 1;
     _train = train;
     _valid = valid;
     parameters = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     _model_id = model_id;
     DeepWaterParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
-    _width = 224;
-    _height = 224;
-    _channels = 3;
+    if (parameters._network == AUTO) parameters._network = inception_bn;
+    _width=parameters._width;
+    _height=parameters._height;
+    _channels=parameters._channels;
+    if (_width==0 || _height==0) {
+      switch(parameters._network) {
+        case lenet:
+          _width = 28;
+          _height = 28;
+          break;
+        case AUTO:
+        case alexnet:
+        case inception_bn:
+        case googlenet:
+        case resnet:
+          _width = 224;
+          _height = 224;
+          break;
+        case vgg:
+        case vgg16:
+          _width = 320;
+          _height = 320;
+          break;
+        default:
+          throw H2O.unimpl("TODO: need to implement auto-derivation of width/height");
+      }
+    }
     _imageTrain = new ImageTrain(_width,_height,_channels);
-    _imageTrain.buildNet(nClasses, parameters._mini_batch_size, "inception_bn");
-    _imageTrain.loadParam(expandPath("~/deepwater/Inception/model.params"));
+    String network = parameters._network == AUTO ? inception_bn.toString() : parameters._network.toString();
+    _imageTrain.buildNet(nClasses, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
+
+    // load a network
+//    _imageTrain.loadModel(expandPath("~/deepwater/Inception/model-symbol.json"));
+    //_imageTrain.loadParam(expandPath("~/deepwater/Inception/model.params"));
   }
   static String expandPath(String path) {
     return path.replaceFirst("^~", System.getProperty("user.home"));
