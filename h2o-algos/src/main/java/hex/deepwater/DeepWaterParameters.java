@@ -51,6 +51,7 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public double _clip_gradient = 10.0;
+  public int _width=0, _height=0, _channels=3;
 
   public Network _network = Network.AUTO;
   public Backend _backend = Backend.AUTO;
