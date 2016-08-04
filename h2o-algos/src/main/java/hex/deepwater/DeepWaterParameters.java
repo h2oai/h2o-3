@@ -58,6 +58,7 @@ public class DeepWaterParameters extends Model.Parameters {
   public Backend _backend = Backend.AUTO;
   public String _network_definition_file=null;
   public String _network_parameters_file=null;
+  public String _export_native_model_prefix=null;
 
   /**
    * If enabled, store the best model under the destination key of this model at the end of training.
@@ -217,7 +218,7 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_channels!=1 && _channels!=3)
       dl.error("_channels", "Number of channels must be either 1 or 3.");
 
-    if (!classification)
+    if (expensive && !classification)
       dl.error("_response_column", "Only classification is supported right now.");
 
     if (_autoencoder)
@@ -226,8 +227,6 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_network == Network.USER) {
       if (_network_definition_file == null || _network_definition_file.isEmpty())
         dl.error("_network_definition_file", "network_definition_file must be provided if the network is user-specified.");
-      if (_network_parameters_file == null || _network_parameters_file.isEmpty())
-        dl.error("_network_parameters_file", "network_parameters_file must be provided if the network is user-specified.");
     } else {
       if (_network_definition_file != null && !_network_definition_file.isEmpty() && _network != Network.AUTO)
         dl.error("_network_definition_file", "network_definition_file cannot be provided if a pre-defined network is chosen.");
@@ -461,6 +460,16 @@ public class DeepWaterParameters extends Model.Parameters {
             Log.info("_overwrite_with_best_model: Automatically disabling overwrite_with_best_model, since the final model is the only scored model with n-fold cross-validation.");
           toParms._overwrite_with_best_model = false;
         }
+      }
+      if (fromParms._network == Network.AUTO) {
+        if (!fromParms._quiet_mode)
+          Log.info("_network: Using inception_bn model by default.");
+        toParms._network = Network.inception_bn;
+      }
+      if (fromParms._backend == DeepWaterParameters.Backend.AUTO) {
+        if (!fromParms._quiet_mode)
+          Log.info("_backend: Using the mxnet backend by default.");
+        toParms._backend = DeepWaterParameters.Backend.mxnet;
       }
       if (fromParms._autoencoder && fromParms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
         if (!fromParms._quiet_mode)

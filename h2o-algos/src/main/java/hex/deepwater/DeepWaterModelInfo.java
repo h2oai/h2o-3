@@ -71,7 +71,6 @@ final public class DeepWaterModelInfo extends Iced {
     parameters = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     _model_id = model_id;
     DeepWaterParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
-    if (parameters._network == AUTO) parameters._network = inception_bn;
     _width=parameters._width;
     _height=parameters._height;
     _channels=parameters._channels;
@@ -121,6 +120,8 @@ final public class DeepWaterModelInfo extends Iced {
       if (networkParms != null && !networkParms.isEmpty()) {
         Log.info("Loading the model parameters file: " + networkParms);
         _imageTrain.loadParam(networkParms);
+      } else {
+        Log.warn("No network parameters file specified. Starting from scratch.");
       }
     } catch(Throwable t) {
       Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());

@@ -556,5 +556,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     BigScore bs = new DeepWaterBigScore(domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
     return bs._mb;
   }
+
+  void exportNativeModel(String path, int iteration) {
+    if (_parms._backend==DeepWaterParameters.Backend.mxnet) {
+      model_info()._imageTrain.saveModel(path + ".json"); //independent of iterations
+      model_info()._imageTrain.saveParam(path + "." + iteration + ".params");
+    } else throw H2O.unimpl();
+  }
 }
 
