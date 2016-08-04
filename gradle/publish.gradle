@@ -1,26 +1,6 @@
-apply plugin: "java"
+apply plugin: 'java'
 apply plugin: 'maven-publish'
 apply plugin: "signing"
-
-//
-// Calculate artifact ID
-//
-def calcArtifactId() {
-    def rv
-    if ("${project.name}" == "h2o-scala") {
-        rv = "${project.name}_${scalaBinaryVersion}"
-    }
-    else {
-        rv = "${project.name}"
-    }
-    return rv
-}
-
-// Default task to bundle javadoc as jar
-task javadocJar(type: Jar, group: "documentation") {
-    classifier = 'javadoc'
-    from javadoc
-}
 
 // Default task to bundle sources code as jar
 task sourcesJar(type: Jar) {
@@ -40,7 +20,6 @@ configurations {
 }
 
 artifacts {
-    toPublish javadocJar
     toPublish sourcesJar
 }
 
@@ -72,7 +51,7 @@ publishing {
   publications {
 
       mavenAll(MavenPublication) {
-          artifactId calcArtifactId()
+          artifactId project.name
 
           H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
           def projectVersion = bv.getProjectVersion()
@@ -107,7 +86,7 @@ publishing {
                   resolveStrategy = Closure.DELEGATE_FIRST
                   name project.name
                   description project.description
-                  url 'https://github.com/h2oai/h2o-dev'
+                  url 'https://github.com/h2oai/h2o-3'
                   inceptionYear '2013'
 
                   organization {
@@ -139,9 +118,9 @@ publishing {
                   // Developer information
                   developers {
                       developer {
-                          id 'support'
-                          name 'H2O Support'
-                          email 'support@h2o.ai'
+                          id 'oss'
+                          name 'Open Source Google Group'
+                          email 'https://groups.google.com/forum/#!forum/h2ostream'
                       }
                   }
               }

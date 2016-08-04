@@ -1,7 +1,7 @@
 //
 // H2O Scala Module
 //
-description = "H2O Scala API"
+description = "H2O Scala API (Scala version ${scalaVersion})"
 
 dependencies {
   compile project(":h2o-core")
