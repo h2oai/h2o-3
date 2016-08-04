@@ -259,6 +259,7 @@ public class FrameUtils {
 
   public static class ExportTaskDriver extends H2O.H2OCountedCompleter<ExportTaskDriver> {
     private static long DEFAULT_TARGET_PART_SIZE = 134217728L; // 128MB, default HDFS block size
+    private static int AUTO_PARTS_MAX = 128; // maximum number of parts if automatic determination is enabled
     final Frame _frame;
     final String _path;
     final String _frameName;
@@ -282,6 +283,11 @@ public class FrameUtils {
         Log.debug("Estimator result: ", estSize);
         // the goal is to not to create too small part files (and too many files), ideal part file size is one HDFS block
         _nParts = Math.max((int) (estSize._size / DEFAULT_TARGET_PART_SIZE), H2O.CLOUD.size() + 1);
+        if (_nParts > AUTO_PARTS_MAX) {
+          Log.debug("Recommended number of part files (" + _nParts + ") exceeds maximum limit " + AUTO_PARTS_MAX + ". " +
+                  "Number of part files is limited to avoid slow downs when importing back to H2O."); // @tomk
+          _nParts = AUTO_PARTS_MAX;
+        }
         Log.info("For file of estimated size " + estSize + "B determined number of parts: " + _nParts);
       }
       int nChunksPerPart = ((_frame.anyVec().nChunks() - 1) / _nParts) + 1;
