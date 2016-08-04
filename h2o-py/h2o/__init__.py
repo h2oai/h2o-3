@@ -10,11 +10,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from h2o.h2o import (connect, init, api, connection,
                      lazy_import, upload_file, import_file, import_sql_table, import_sql_select,
-                     parse_setup, parse_raw, assign,deep_copy, get_model, get_grid, get_frame,
+                     parse_setup, parse_raw, assign, deep_copy, get_model, get_grid, get_frame,
                      show_progress, no_progress, log_and_echo, remove, remove_all, rapids,
                      ls, frame, frames, create_frame,
                      download_pojo, download_csv, download_all_logs, save_model, load_model, export_file,
-                     cluster_status, cluster_info, shutdown, network_test,
+                     cluster_status, cluster_info, shutdown, network_test, cluster,
                      interaction, as_list,
                      get_timezone, set_timezone, list_timezones,
                      demo, make_metrics)
@@ -25,13 +25,10 @@ from h2o.frame import H2OFrame  # NOQA
 
 __version__ = "SUBST_PROJECT_VERSION"
 
-# __all__ = ['assembly', 'astfun', 'connection', 'cross_validation', 'display',
-#            'expr', 'frame', 'group_by', 'h2o',
-#            'job', 'two_dim_table', 'estimators', 'grid', 'model', 'transforms']
 
 __all__ = ("connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
-           "import_sql_select", "parse_setup", "parse_raw", "assign","deep_copy" "get_model", "get_grid", "get_frame",
+           "import_sql_select", "parse_setup", "parse_raw", "assign", "deep_copy", "get_model", "get_grid", "get_frame",
            "show_progress", "no_progress", "log_and_echo", "remove", "remove_all", "rapids", "ls", "frame",
            "frames", "download_pojo", "download_csv", "download_all_logs", "save_model", "load_model", "export_file",
            "cluster_status", "cluster_info", "shutdown", "create_frame", "interaction", "as_list", "network_test",
-           "set_timezone", "get_timezone", "list_timezones", "demo", "make_metrics")
+           "set_timezone", "get_timezone", "list_timezones", "demo", "make_metrics", "cluster")

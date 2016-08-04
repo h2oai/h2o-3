@@ -40,7 +40,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 
 from .cluster import H2OCluster
-from .connection import H2OConnection
 from .server import H2OLocalServer
+from .connection import H2OConnection
 
 __all__ = ("H2OCluster", "H2OConnection", "H2OLocalServer")
