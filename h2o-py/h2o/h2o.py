@@ -31,7 +31,7 @@ from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_is_str, assert_maybe_str, is_str, is_int, is_listlike
-from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, h2o_deprecated
+from h2o.utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, deprecated
 warnings.simplefilter("always", DeprecationWarning)
 
 
@@ -64,7 +64,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
                                  verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
                                  cluster_name=cluster_name, verbose=verbose)
     if verbose:
-        h2oconn.info().pprint()
+        h2oconn.cluster.show_status()
     return h2oconn
 
 
@@ -83,7 +83,7 @@ def connection():
 def version_check():
     """Used to verify that h2o-python module and the H2O server are compatible with each other."""
     if os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"): return
-    ci = h2oconn.info()
+    ci = h2oconn.cluster
     if not ci:
         raise H2OConnectionError("Connection not initialized. Did you run h2o.connect()?")
     ver_h2o = ci.version
@@ -110,9 +110,9 @@ def version_check():
                 "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
                 "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
     # Check age of the install
-    if h2oconn.info().build_too_old:
+    if ci.build_too_old:
         print("Warning: Your H2O cluster version is too old ({})! Please download and install the latest "
-              "version from http://h2o.ai/download/".format(h2oconn.info().build_age))
+              "version from http://h2o.ai/download/".format(ci.build_age))
 
 
 def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_name=None,
@@ -321,8 +321,8 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
         java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
 
     Also see h2o.import_sql_select.
-    Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server
-    is forthcoming.
+    Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL
+    Server is forthcoming.
 
     Parameters
     ----------
@@ -741,17 +741,14 @@ def remove_all():
 
 
 def rapids(expr):
-    """Execute a Rapids expression.
-
-    Parameters
-    ----------
-    expr : str
-      The rapids expression (ascii string).
-
-    Returns
-    -------
-      The JSON response (as a python dictionary) of the Rapids execution
     """
+    Execute a Rapids expression.
+
+    :param expr: The rapids expression (ascii string).
+
+    :returns: The JSON response (as a python dictionary) of the Rapids execution
+    """
+    assert_is_type(expr, str)
     return ExprNode.rapids(expr)
 
 
@@ -922,35 +919,6 @@ def load_model(path):
     return get_model(res['models'][0]['model_id']['name'])
 
 
-def cluster_status():
-    """This is possibly confusing because this can come back without warning,
-    but if a user tries to do any remoteSend, they will get a "cloud sick warning"
-    Retrieve information on the status of the cluster running H2O.
-    """
-    cluster = api("GET /3/Cloud?skip_ticks=true")
-
-    print("Version: %s" % cluster.version)
-    print("Cloud name: %s" % cluster.cloud_name)
-    print("Cloud size: %d" % cluster.cloud_size)
-    if cluster.locked:
-        print("Cloud is locked")
-    else:
-        print("Accepting new members")
-    if not cluster.nodes:
-        print("No nodes found")
-        return
-
-    status = []
-    for node in cluster.nodes:
-        for k in ["h2o", "healthy", "last_ping", "num_cpus", "sys_load",
-                  "mem_value_size", "free_mem", "pojo_mem", "swap_mem",
-                  "free_disk", "max_disk", "pid", "num_keys", "tcps_active",
-                  "open_fds", "rpcs_active"]:
-            if k in node:
-                status.append("%s: %s" % (k, node[k]))
-        print(", ".join(status))
-    print()
-
 
 def export_file(frame, path, force=False):
     """Export a given H2OFrame to a path on the machine this python session is currently
@@ -969,22 +937,10 @@ def export_file(frame, path, force=False):
            "Export File").poll()
 
 
-def cluster_info():
-    """
-    Display the current H2O cluster information.
-    """
-    h2oconn.info().pprint()
+def cluster():
+    """Return H2OCluster object describing the backend H2O cloud."""
+    return h2oconn.cluster if h2oconn else None
 
-
-def shutdown(prompt=True):
-    """
-    Shut down the specified instance. All data will be lost.
-    This method checks if H2O is running at the specified IP address and port,
-    and if it is, shuts down that H2O instance.
-
-    :param prompt: (bool) A logical value indicating whether to prompt the user before shutting down the H2O server.
-    """
-    h2oconn.shutdown_server(prompt)
 
 
 def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_range=100,
@@ -1158,40 +1114,6 @@ def as_list(data, use_pandas=True):
     return H2OFrame.as_data_frame(data, use_pandas=use_pandas)
 
 
-def network_test():
-    res = api("GET /3/NetworkTest")
-    res.table.show()
-
-
-def set_timezone(tz):
-    """Set the Time Zone on the H2O Cloud
-
-    Parameters
-    ----------
-      tz : str
-        The desired timezone.
-    """
-    ExprNode("setTimeZone", tz)._eager_scalar()
-
-
-def get_timezone():
-    """Get the Time Zone on the H2O Cloud
-
-    Returns
-    -------
-      The time zone (string)
-    """
-    return ExprNode("getTimeZone")._eager_scalar()
-
-
-def list_timezones():
-    """Get a list of all the timezones
-
-    Returns
-    -------
-      The time zones (as an H2OFrame)
-    """
-    return H2OFrame._expr(expr=ExprNode("listTimeZones"))._frame()
 
 
 def demo(funcname, interactive=True, echo=True, test=False):
@@ -1243,13 +1165,75 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
+# Private
+#-----------------------------------------------------------------------------------------------------------------------
+
+def _check_connection():
+    if not h2oconn or not h2oconn.cluster:
+        raise H2OConnectionError("Not connected to a cluster. Did you run `h2o.connect()`?")
+
+
+#-----------------------------------------------------------------------------------------------------------------------
 #  ALL DEPRECATED METHODS BELOW
 #-----------------------------------------------------------------------------------------------------------------------
 
-@h2o_deprecated(import_file)
+# Deprecated since 2015-10-08
+@deprecated("Deprecated, use ``h2o.import_file()``.")
 def import_frame():
-    """Deprecated (use import_file)."""
+    """Deprecated."""
+    import_file()
 
-@h2o_deprecated()
+# Deprecated since 2015-10-08
+@deprecated("Deprecated (converted to a private method).")
 def parse():
-    """Deprecated (converted to a private method)."""
+    """Deprecated."""
+    pass
+
+# Deprecated since 2016-08-04
+@deprecated("Deprecated, use ``h2o.cluster().show_status()``.")
+def cluster_info():
+    """Deprecated."""
+    _check_connection()
+    cluster().show_status()
+
+# Deprecated since 2016-08-04
+@deprecated("Deprecated, use ``h2o.cluster().show_status(True)``.")
+def cluster_status():
+    """Deprecated."""
+    _check_connection()
+    cluster().show_status(True)
+
+# Deprecated since 2016-08-04
+@deprecated("Deprecated, use ``h2o.cluster().shutdown()``.")
+def shutdown(prompt=False):
+    """Deprecated."""
+    _check_connection()
+    cluster().shutdown(prompt)
+
+# Deprecated since 2016-08-04
+@deprecated("Deprecated, use ``h2o.cluster().network_test()``.")
+def network_test():
+    """Deprecated."""
+    _check_connection()
+    cluster().network_test()
+
+# Deprecated since 2016-08-04
+@deprecated("Deprecated, use ``h2o.cluster().timezone``.")
+def get_timezone():
+    """Deprecated."""
+    _check_connection()
+    return cluster().timezone
+
+# Deprecated since 2016-08-04
+@deprecated("Deprecated, set ``h2o.cluster().timezone`` instead.")
+def set_timezone(value):
+    """Deprecated."""
+    _check_connection()
+    cluster().timezone = value
+
+# Deprecated since 2016-08-04
+@deprecated("Deprecated, use ``h2o.cluster().list_timezones()``.")
+def list_timezones():
+    """Deprecated."""
+    _check_connection()
+    return cluster().list_timezones()

@@ -10,6 +10,9 @@ Classes for communication with backend H2O servers.
 :class:`H2OLocalServer`
     Start an H2O server on your local machine.
 
+:class:`H2OCluster`
+    Handle to the remote H2O cluster -- used mainly to retrieve information about it.
+
 The :mod:`h2o` module has convenience functions for accessing these classes, and those are the ones that are
 recommended for everyday use. The following are the common use cases:
 
@@ -36,7 +39,8 @@ have multiple connections to separate H2O servers open at the same time. Such fa
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 
-from .connection import H2OConnection
+from .cluster import H2OCluster
 from .server import H2OLocalServer
+from .connection import H2OConnection
 
-__all__ = ("H2OConnection", "H2OLocalServer")
+__all__ = ("H2OCluster", "H2OConnection", "H2OLocalServer")

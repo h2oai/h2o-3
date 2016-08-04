@@ -197,16 +197,12 @@ class ExprNode(object):
 
     @staticmethod
     def rapids(expr):
-        """Execute a Rapids expression.
+        """
+        Execute a Rapids expression.
 
-        Parameters
-        ----------
-        expr : str
-          The rapids expression (ascii string).
+        :param expr: The rapids expression (ascii string).
 
-        Returns
-        -------
-          The JSON response (as a python dictionary) of the Rapids execution
+        :returns: The JSON response (as a python dictionary) of the Rapids execution
         """
         return h2o.api("POST /99/Rapids", data={"ast": expr, "session_id": h2o.connection().session_id})
 

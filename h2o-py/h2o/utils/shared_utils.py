@@ -306,8 +306,8 @@ handle_python_lists = _handle_python_lists
 check_lists_of_lists = _check_lists_of_lists
 
 
-# the @deprecated decorator
 def deprecated(message):
+    """The decorator to mark deprecated functions."""
     from traceback import extract_stack
     assert message, "`message` argument in @deprecated is required."
 
@@ -316,23 +316,14 @@ def deprecated(message):
             stack = extract_stack()
             assert len(stack) >= 2 and stack[-1][2] == "decorator_invisible", "Got confusing stack... %r" % stack
             print("[WARNING] in %s line %d:" % (stack[-2][0], stack[-2][1]))
-            print("    >>> %s" % stack[-2][3])
+            print("    >>> %s" % (stack[-2][3] or "????"))
             print("        ^^^^ %s" % message)
             return fun(*args, **kwargs)
+
+        decorator_invisible.__doc__ = message
+        decorator_invisible.__name__ = fun.__name__
+        decorator_invisible.__module__ = fun.__module__
+        decorator_invisible.__deprecated__ = True
         return decorator_invisible
 
     return deprecated_decorator
-
-def h2o_deprecated(newfun=None):
-    """The @h2o_deprecated decorator."""
-    def _o(fun):
-        def _i(*args, **kwargs):
-            print("\n")
-            if newfun is None:
-                raise DeprecationWarning("%s is deprecated." % fun.__name__)
-            else:
-                warnings.warn("%s is deprecated. Use %s instead." % (fun.__name__, newfun.__name__),
-                              category=DeprecationWarning, stacklevel=2)
-                return newfun(*args, **kwargs)
-        return _i
-    return _o

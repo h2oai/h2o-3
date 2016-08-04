@@ -24,9 +24,8 @@ from warnings import warn
 import requests
 from requests.auth import AuthBase
 
-from h2o.backend.server import H2OLocalServer
+from h2o.backend import H2OCluster, H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OServerError, H2OResponseError, H2OValueError
-from h2o.schemas.cloud import H2OCluster
 from h2o.schemas.error import H2OErrorV3, H2OModelBuilderErrorV3
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.backward_compatibility import backwards_compatible, CallableString
@@ -169,7 +168,7 @@ class H2OConnection(backwards_compatible()):
             retries = 20 if server else 5
             conn._stage = 1
             conn._timeout = 3.0
-            conn._cluster_info = conn._test_connection(retries, messages=_msgs)
+            conn._cluster = conn._test_connection(retries, messages=_msgs)
             # If a server is unable to respond within 1s, it should be considered a bug. However we disable this
             # setting for now, for no good reason other than to ignore all those bugs :(
             conn._timeout = None
@@ -259,22 +258,6 @@ class H2OConnection(backwards_compatible()):
             raise
 
 
-    def info(self, refresh=False):
-        """
-        Information about the current state of the connection, or None if it has not been initialized properly.
-
-        :param refresh: If False, then retrieve the latest known info; if True then fetch the newest info from the
-            server. Usually you want `refresh` to be True, except right after establishing a connection when it is
-            still fresh.
-        :return: H2OCluster object.
-        """
-        if self._stage == 0: return None
-        if refresh:
-            self._cluster_info = self.request("GET /3/Cloud")
-        self._cluster_info.connection = self
-        return self._cluster_info
-
-
     def close(self):
         """
         Close an existing connection; once closed it cannot be used again.
@@ -307,6 +290,11 @@ class H2OConnection(backwards_compatible()):
         return CallableString(self._session_id)
 
     @property
+    def cluster(self):
+        """H2OCluster object describing the underlying cloud."""
+        return self._cluster
+
+    @property
     def base_url(self):
         """Base URL of the server, without trailing ``"/"``. For example: ``"https://example.com:54321"``."""
         return self._base_url
@@ -316,6 +304,12 @@ class H2OConnection(backwards_compatible()):
         """URL of the proxy server used for the connection (or None if there is no proxy)."""
         if self._proxies is None: return None
         return self._proxies.values()[0]
+
+    @property
+    def local_server(self):
+        """Handler to the H2OLocalServer instance (if connected to one)."""
+        return self._local_server
+
 
     @property
     def requests_count(self):
@@ -332,40 +326,6 @@ class H2OConnection(backwards_compatible()):
         assert_maybe_numeric(v)
         self._timeout = v
 
-
-    def shutdown_server(self, prompt):
-        """
-        Shut down the specified server.
-
-        This method checks if H2O is running at the specified IP address and port, and if it is, shuts down that H2O
-        instance. All data will be lost.
-
-        :param prompt: A logical value indicating whether to prompt the user before shutting down the H2O server.
-        """
-        if not self.cluster_is_up(): return
-        assert_is_type(prompt, bool)
-        if prompt:
-            question = "Are you sure you want to shutdown the H2O instance running at %s (Y/N)? " % self._base_url
-            response = input(question)  # works in Py2 & Py3 because redefined in h2o.utils.compatibility module
-        else:
-            response = "Y"
-        if response.lower() in {"y", "yes"}:
-            self.request("POST /3/Shutdown")
-            self.close()
-
-
-    def cluster_is_up(self):
-        """
-        Determine if an H2O cluster is running or not.
-
-        :returns: True if the cluster is up; False otherwise
-        """
-        try:
-            if self._local_server and not self._local_server.is_running(): return False
-            self.request("GET /")
-            return True
-        except (H2OConnectionError, H2OServerError):
-            return False
 
     def start_logging(self, dest=None):
         """
@@ -403,7 +363,7 @@ class H2OConnection(backwards_compatible()):
         self._auth = None           # Authentication token
         self._proxies = None        # `proxies` dictionary in the format required by the requests module
         self._cluster_name = None
-        self._cluster_info = None   # Latest result of "GET /3/Cloud" request
+        self._cluster = None        # H2OCluster object
         self._verbose = None        # Print detailed information about connection status
         self._requests_counter = 0  # how many API requests were made
         self._timeout = None        # timeout for a single request (in seconds)
@@ -643,7 +603,6 @@ class H2OConnection(backwards_compatible()):
         "insecure": lambda: not getattr(__H2OCONN__, "_verify_ssl_cert"),
         "current_connection": lambda: __H2OCONN__,
         "check_conn": lambda: _deprecated_check_conn(),
-        # "cluster_is_up" used to be static (required `conn` parameter) -> now it's non-static w/o any patching needed
         "make_url": lambda url_suffix, _rest_version=3: __H2OCONN__.make_url(url_suffix, _rest_version),
         "get": lambda url_suffix, **kwargs: _deprecated_get(__H2OCONN__, url_suffix, **kwargs),
         "post": lambda url_suffix, file_upload_info=None, **kwa:
@@ -655,6 +614,9 @@ class H2OConnection(backwards_compatible()):
         "rest_ctr": lambda: __H2OCONN__.requests_count,
     }
     _bcim = {
+        "cluster_is_up": lambda self: self.cluster.is_running(),
+        "info": lambda self, refresh=True: self.cluster,
+        "shutdown_server": lambda self, prompt=True: self.cluster.shutdown(prompt),
         "make_url": lambda self, url_suffix, _rest_version=3:
             "/".join([self._base_url, str(_rest_version), url_suffix]),
         "get": lambda *args, **kwargs: _deprecated_get(*args, **kwargs),
@@ -682,7 +644,7 @@ class H2OResponse(dict):
             if k == "__schema" and is_str(v):
                 schema = v
                 break
-        if schema == "CloudV3": return H2OCluster(keyvals)
+        if schema == "CloudV3": return H2OCluster.from_kvs(keyvals)
         if schema == "H2OErrorV3": return H2OErrorV3(keyvals)
         if schema == "H2OModelBuilderErrorV3": return H2OModelBuilderErrorV3(keyvals)
         if schema == "TwoDimTableV3": return H2OTwoDimTable.make(keyvals)
