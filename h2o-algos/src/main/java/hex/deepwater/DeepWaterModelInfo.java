@@ -1,7 +1,9 @@
 package hex.deepwater;
 
 import hex.Model;
+import static hex.deepwater.DeepWaterParameters.Network.USER;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.gpu.ImageTrain;
 import water.util.*;
@@ -92,14 +94,19 @@ final public class DeepWaterModelInfo extends Iced {
           _width = 320;
           _height = 320;
           break;
+        case USER:
+          throw new H2OIllegalArgumentException("_network", "Please specify width and height for user-given model definition.");
         default:
-          throw H2O.unimpl("TODO: need to implement auto-derivation of width/height");
+          throw H2O.unimpl("Unknown network type: " + parameters._network);
       }
     }
     _imageTrain = new ImageTrain(_width,_height,_channels);
 
     String network = parameters._network == AUTO ? inception_bn.toString() : parameters._network.toString();
-    _imageTrain.buildNet(nClasses, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
+    if (parameters._network!=USER) {
+      Log.info("Creating a fresh model of the following network type: " + network);
+      _imageTrain.buildNet(nClasses, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
+    }
 
     // load a network if specified
     final String networkDef = parameters._network_definition_file;
