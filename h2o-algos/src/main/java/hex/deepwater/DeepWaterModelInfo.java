@@ -100,25 +100,31 @@ final public class DeepWaterModelInfo extends Iced {
           throw H2O.unimpl("Unknown network type: " + parameters._network);
       }
     }
-    _imageTrain = new ImageTrain(_width,_height,_channels);
+    try {
+      _imageTrain = new ImageTrain(_width, _height, _channels);
 
-    String network = parameters._network == AUTO ? inception_bn.toString() : parameters._network.toString();
-    if (parameters._network!=USER) {
-      Log.info("Creating a fresh model of the following network type: " + network);
-      _imageTrain.buildNet(nClasses, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
-    }
+      String network = parameters._network == AUTO ? inception_bn.toString() : parameters._network.toString();
+      if (parameters._network != USER) {
+        Log.info("Creating a fresh model of the following network type: " + network);
+        _imageTrain.buildNet(nClasses, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
+      }
 
-    // load a network if specified
-    final String networkDef = parameters._network_definition_file;
-    if (networkDef != null && !networkDef.isEmpty()) {
-      Log.info("Loading the model definition file: " + networkDef);
-      _imageTrain.loadModel(networkDef);
-    }
+      // load a network if specified
+      final String networkDef = parameters._network_definition_file;
+      if (networkDef != null && !networkDef.isEmpty()) {
+        Log.info("Loading the model definition file: " + networkDef);
+        _imageTrain.loadModel(networkDef);
+        _imageTrain.setOptimizer(nClasses, parameters._mini_batch_size);
+      }
 
-    final String networkParms = parameters._network_parameters_file;
-    if (networkParms != null && !networkParms.isEmpty()) {
-      Log.info("Loading the model parameters file: " + networkParms);
-      _imageTrain.loadModel(networkParms);
+      final String networkParms = parameters._network_parameters_file;
+      if (networkParms != null && !networkParms.isEmpty()) {
+        Log.info("Loading the model parameters file: " + networkParms);
+        _imageTrain.loadModel(networkParms);
+      }
+    } catch(Throwable t) {
+      Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
+      throw t;
     }
   }
 
