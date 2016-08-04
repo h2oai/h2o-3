@@ -7,13 +7,15 @@ Interactive demos for the h2o-py library.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import linecache
 import os
 import sys
 
 import h2o
-import linecache
+from h2o.h2o import data_file
+# noinspection PyUnresolvedReferences
 from h2o.utils.compatibility import *  # NOQA
-
+from h2o.utils.typechecks import assert_is_type
 
 
 def gbm(interactive=True, echo=True, testing=False):
@@ -33,7 +35,7 @@ def gbm(interactive=True, echo=True, testing=False):
 
         go()
         # Upload the prostate dataset that comes included in the h2o python package
-        prostate = h2o.upload_file(h2o.data_file("h2o_data/prostate.csv"))
+        prostate = h2o.upload_file(data_file("h2o_data/prostate.csv"))
 
         go()
         # Print a description of the prostate data
@@ -94,7 +96,7 @@ def deeplearning(interactive=True, echo=True, testing=False):
 
         go()
         # Upload the prostate dataset that comes included in the h2o python package
-        prostate = h2o.upload_file(h2o.data_file("h2o_data/prostate.csv"))
+        prostate = h2o.upload_file(data_file("h2o_data/prostate.csv"))
 
         go()
         # Print a description of the prostate data
@@ -154,7 +156,7 @@ def glm(interactive=True, echo=True, testing=False):
 
         go()
         # Upload the prostate dataset that comes included in the h2o python package
-        prostate = h2o.upload_file(h2o.data_file("h2o_data/prostate.csv"))
+        prostate = h2o.upload_file(data_file("h2o_data/prostate.csv"))
 
         go()
         # Print a description of the prostate data
@@ -214,7 +216,7 @@ def _run_demo(body_fn, interactive, echo, testing):
     class StopExecution(Exception):
         """Helper class for cancelling the demo."""
 
-    assert_is_type(body_fn, "body_fn", type(_run_demo))
+    assert_is_type(body_fn, type(_run_demo))
     # Reformat description by removing extra spaces; then print it.
     if body_fn.__doc__:
         desc_lines = body_fn.__doc__.split("\n")

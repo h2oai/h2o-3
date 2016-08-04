@@ -11,6 +11,8 @@ from h2o.utils.compatibility import *  # NOQA
 from ..frame import H2OFrame
 import h2o
 from .model_base import ModelBase
+from h2o.utils.typechecks import assert_is_type
+
 
 
 class H2OMultinomialModel(ModelBase):
@@ -21,7 +23,7 @@ class H2OMultinomialModel(ModelBase):
         """
         Returns a confusion matrix based of H2O's default prediction threshold for a dataset
         """
-        assert_is_type(data, "data", H2OFrame)
+        assert_is_type(data, H2OFrame)
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self._id, data.frame_id))
         return j["model_metrics"][0]["cm"]["table"]
 

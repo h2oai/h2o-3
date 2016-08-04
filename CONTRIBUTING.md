@@ -13,7 +13,9 @@ No matter what your skill set or level of engagement is with H2O you can help ot
 
 ## Bug Reports and Feature Requests
 
-The single most important contribution that you can make is to report bugs and make feature requests.  The development work on H2O is largely driven by these, so please make your voice heard!  Bug reports are most helpful if you send us a script which reproduces the problem.
+The single most important contribution that you can make is to report bugs and make feature requests.  The development work on H2O is largely driven by these, so please make your voice heard!  
+
+Bug reports are most helpful if you send us a script which reproduces the problem.
 
 If you're a customer with an Enterprise Support contract you should send these to support@h2o.ai.
 
@@ -22,11 +24,15 @@ If you're an Open Source community member you should send these to one of:
 * The h2ostream mailing list, at: [https://groups.google.com/forum/#!forum/h2ostream](https://groups.google.com/forum/#!forum/h2ostream)
 * Gitter chat, at [https://gitter.im/h2oai/h2o-3](https://gitter.im/h2oai/h2o-3)
 
-All bugs and feature requests get added to the JIRA tracking system at [https://0xdata.atlassian.net/](https://0xdata.atlassian.net/), where you can track their progress.  Note that issues for customers with Enterprise Support contracts go into a private project so that customer information is kept secure.  Contact support@h2o.ai for more information.
+All bugs and feature requests get added to the JIRA tracking system at [https://0xdata.atlassian.net/](https://0xdata.atlassian.net/), where you can track their progress. 
+
+>***Note***: JIRA issues for customers with Enterprise Support contracts go into a private project so that customer information is kept secure. Contact support@h2o.ai for more information.
+
+You can also vote for bugs and feature requests that are added to JIRA. To vote for a JIRA issue, log in the the H2O JIRA tracking system (create an account if necessary), find or create the issue that you want to vote for, then click the **Vote for this issue** link (upper right portion of the issue). Voting can help H2O prioritize the features that are included in each release. 
 
 ## Help and Documentation
 
-You can help others directly, and help improve the resources that others read to learn and use H2O, by contributing to the formal documentation or the forums.
+You can help others directly and help improve the resources that others read to learn and use H2O by contributing to the formal documentation or the forums.
 
 There are several places that users find information about using H2O:
 

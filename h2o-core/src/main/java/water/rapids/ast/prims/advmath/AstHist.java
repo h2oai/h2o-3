@@ -18,8 +18,6 @@ import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.util.ArrayUtils;
 
-/**
- */
 public class AstHist extends AstPrimitive {
   @Override
   public String[] args() {

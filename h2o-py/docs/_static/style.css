@@ -1,0 +1,22 @@
+
+code {
+    font-size: 85%;
+    border: none;
+    background: transparent;
+    padding: 2px 3px;
+}
+
+
+.rst-content dl:not(.docutils) dt {
+    display: block;
+}
+
+.rst-content dt a.reference.internal .viewcode-link {
+    float: right;
+}
+
+.highlight span.gp {
+    /* Make it so that terminal prompts ">>>" don't get selected. */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+}

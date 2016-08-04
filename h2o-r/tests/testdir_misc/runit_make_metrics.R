@@ -26,10 +26,11 @@ makeMetrics <- function() {
       expect_true(abs(h2o.rmse(m0)-h2o.rmse(m1))<1e-5)
       expect_true(abs(h2o.mae(m0)-h2o.mae(m1))<1e-5)
       expect_true(abs(h2o.mse(m0)-h2o.mse(m1))<1e-5)
-      if (distribution=="gaussian")
+      if (distribution=="gaussian") {
         expect_true(abs(h2o.mean_residual_deviance(m0)-h2o.mean_residual_deviance(m1))<1e-5)
-      else
+      } else {
         expect_true(abs(h2o.mean_residual_deviance(m0)-h2o.mean_residual_deviance(m1))>1e-5)
+      }
 
       expect_true(abs(h2o.rmse(m1)-h2o.rmse(m2))<1e-5)
       expect_true(abs(h2o.mae(m1)-h2o.mae(m2))<1e-5)

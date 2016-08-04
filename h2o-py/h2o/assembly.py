@@ -1,12 +1,18 @@
-from __future__ import division, print_function, absolute_import, unicode_literals
-# noinspection PyUnresolvedReferences
-from .utils.compatibility import *
+# -*- encoding: utf-8 -*-
+"""
+Assembly.
 
-from collections import namedtuple
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import division, print_function, absolute_import, unicode_literals
+
 import uuid
-from .utils.shared_utils import urlopen, quoted
+
 import h2o
 from h2o.frame import H2OFrame
+from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.shared_utils import urlopen, quoted
 
 
 class H2OAssembly(object):
@@ -60,7 +66,7 @@ class H2OAssembly(object):
             with open(file_path, 'w', encoding="utf-8") as f:
                 f.write(java)  # this had better be utf-8 ?
         if get_jar and path != "":
-            url = h2o.conn().make_url("h2o-genmodel.jar")
+            url = h2o.connection().make_url("h2o-genmodel.jar")
             filename = path + "/" + "h2o-genmodel.jar"
             response = urlopen()(url)
             with open(filename, "wb") as f:

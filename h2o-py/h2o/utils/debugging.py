@@ -1,17 +1,30 @@
 # -*- encoding: utf-8 -*-
-#
-# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
-#
+"""
+Collection of utilities for debugging.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 from __future__ import division, print_function, absolute_import, unicode_literals
 
+import colorama
+import inspect
 import sys
+from colorama import Style, Fore
 from types import ModuleType
 
+from h2o.exceptions import H2OSoftError
 from h2o.utils.compatibility import *  # NOQA
 
 # Nothing to import; this module's only job is to install an exception hook for debugging.
 __all__ = ()
 
+def get_tb():
+    return get_tb.tb
+
+def err(msg=""):
+    """Helper function for printing to stderr."""
+    print(msg, file=sys.stderr)
 
 
 def _except_hook(exc_type, exc_value, exc_tb):
@@ -75,11 +88,11 @@ def _except_hook(exc_type, exc_value, exc_tb):
     if not exc_tb:  # Happens on SyntaxError exceptions
         sys.__excepthook__(exc_type, exc_value, exc_tb)
         return
+    get_tb.tb = exc_tb
 
-    # Helper function for printing to stderr
-    def err(msg=""):
-        """Print to stderr."""
-        print(msg, file=sys.stderr)
+    if isinstance(exc_value, H2OSoftError):
+        _handle_soft_error(exc_type, exc_value, exc_tb)
+        return
 
     err("\n================================ EXCEPTION INFO ================================\n")
     if exc_type != type(exc_value):
@@ -178,3 +191,146 @@ def _except_hook(exc_type, exc_value, exc_tb):
 # The original exception hook is stored at sys.__excepthook__, and it will get called if our custom exception
 # handling function itself raises an exception.
 sys.excepthook = _except_hook
+
+
+def _handle_soft_error(exc_type, exc_value, exc_tb):
+    colorama.init()
+    err(Fore.LIGHTRED_EX + exc_type.__name__ + ": " + str(exc_value) + Style.RESET_ALL)
+
+    # Convert to the list of frames
+    tb = exc_tb
+    frames = []
+    while tb:
+        frames.append(tb.tb_frame)
+        tb = tb.tb_next
+
+    i0 = len(frames) - 1 - getattr(exc_value, "skip_frames", 0)
+    indent = " " * (len(exc_type.__name__) + 2)
+    for i in range(i0, 0, -1):
+        co = frames[i].f_code
+        func = _find_function_from_code(frames[i - 1], co)
+        fullname = _get_method_full_name(func) if func else "???." + co.co_name
+        highlight = getattr(exc_value, "var_name", None) if i == i0 else None
+        args_str = _get_args_str(func, highlight=highlight)
+        indent_len = len(exc_type.__name__) + len(fullname) + 6
+        line = Fore.LIGHTBLACK_EX + indent + ("in " if i == i0 else "   ")
+        line += (Fore.CYAN + fullname + Fore.LIGHTBLACK_EX if i == i0 else fullname) + "("
+        line += _wrap(args_str + ") line %d" % frames[i].f_lineno, indent=indent_len)
+        line += Style.RESET_ALL
+        err(line)
+    err()
+
+    colorama.deinit()
+
+
+
+def _get_method_full_name(func):
+    """
+    Return fully qualified function name.
+
+    This method will attempt to find "full name" of the given function object. This full name is either of
+    the form "<class name>.<method name>" if the function is a class method, or "<module name>.<func name>"
+    if it's a regular function. Thus, this is an attempt to back-port func.__qualname__ to Python 2.
+
+    :param func: a function object.
+
+    :returns: string with the function's full name as explained above.
+    """
+    # Python 3.3 already has this information available...
+    if hasattr(func, "__qualname__"): return func.__qualname__
+
+    module = inspect.getmodule(func)
+    for cls_name in dir(module):
+        cls = getattr(module, cls_name)
+        if not inspect.isclass(cls): continue
+        for method_name in dir(cls):
+            cls_method = getattr(cls, method_name)
+            if cls_method == func:
+                return "%s.%s" % (cls_name, method_name)
+    if hasattr(func, "__name__"):
+        return "%s.%s" % (module.__name__, func.__name__)
+    return "<unknown>"
+
+
+def _find_function_from_code(frame, code):
+    """
+    Given a frame and a compiled function code, find the corresponding function object within the frame.
+
+    This function addresses the following problem: when handling a stacktrace, we receive information about
+    which piece of code was being executed in the form of a CodeType object. That objects contains function name,
+    file name, line number, and the compiled bytecode. What it *doesn't* contain is the function object itself.
+
+    So this utility function aims at locating this function object, and it does so by searching through objects
+    in the preceding local frame (i.e. the frame where the function was called from). We expect that the function
+    should usually exist there -- either by itself, or as a method on one of the objects.
+
+    :param types.FrameType frame: local frame where the function ought to be found somewhere.
+    :param types.CodeType code: the compiled code of the function to look for.
+
+    :returns: the function object, or None if not found.
+    """
+    def find_code(iterable, depth=0):
+        if depth > 3: return  # Avoid potential infinite loops, or generally objects that are too deep.
+        for item in iterable:
+            if not item: continue
+            found = None
+            if hasattr(item, "__code__") and item.__code__ == code:
+                found = item
+            elif isinstance(item, type) or isinstance(item, ModuleType):  # class / module
+                found = find_code((getattr(item, n, None) for n in dir(item)), depth + 1)
+            elif isinstance(item, (list, tuple, set)):
+                found = find_code(item, depth + 1)
+            elif isinstance(item, dict):
+                found = find_code(item.values(), depth + 1)
+            if found: return found
+    return find_code(frame.f_locals.values()) or find_code(frame.f_globals.values())
+
+
+def _get_args_str(func, highlight=None):
+    """
+    Return function's declared arguments as a string.
+
+    For example for this function it returns "func"; for the ``_wrap`` function it returns
+    "text, wrap_at=100, indent=4". This should usually coincide with the function's declaration (the part
+    which is inside the parentheses).
+    """
+    def gen_args():
+        args_spec = inspect.getargspec(func)
+        defaults = args_spec.defaults or []
+        i0 = len(args_spec.args) - len(defaults)
+        for i in range(len(args_spec.args)):
+            var = args_spec.args[i]
+            if var == highlight:
+                var = Style.BRIGHT + Fore.WHITE + var + Fore.LIGHTBLACK_EX + Style.NORMAL
+            if i < i0:
+                yield var
+            else:
+                yield "%s=%r" % (var, defaults[i - i0])
+        if args_spec.varargs: yield "*" + args_spec.varargs
+        if args_spec.keywords: yield "**" + args_spec.keywords
+    return ", ".join(gen_args())
+
+
+def _wrap(text, wrap_at=120, indent=4):
+    """
+    Return piece of text, wrapped around if needed.
+
+    :param text: text that may be too long and then needs to be wrapped.
+    :param wrap_at: the maximum line length.
+    :param indent: number of spaces to prepend to all subsequent lines after the first.
+    """
+    out = ""
+    curr_line_length = indent
+    space_needed = False
+    for word in text.split():
+        if curr_line_length + len(word) > wrap_at:
+            out += "\n" + " " * indent
+            curr_line_length = indent
+            space_needed = False
+        if space_needed:
+            out += " "
+            curr_line_length += 1
+        out += word
+        curr_line_length += len(word)
+        space_needed = True
+    return out

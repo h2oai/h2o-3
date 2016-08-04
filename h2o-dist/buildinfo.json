@@ -93,6 +93,11 @@
     "user_documents" : [
         {
             "name" : "H2O Documentation",
+            "id"   : "doc-front",
+            "path" : "docs-website/index.html"
+        },
+        {
+            "name" : "H2O User Guide",
             "id"   : "doc-flow",
             "path" : "docs-website/h2o-docs/index.html"
         },
@@ -152,7 +157,17 @@
         {
             "name" : "H2O Scala API Developer Documentation (Scaladoc)",
             "id"   : "doc-h2o-scala-javadoc",
-            "path" : "docs-website/h2o-scala/scaladoc/index.html"
+            "path" : "docs-website/h2o-scala_2.10/scaladoc/index.html"
+        },
+        {
+            "name" : "H2O Scala 2.10 API Developer Documentation (Scaladoc)",
+            "id"   : "doc-h2o-scala-2-10-javadoc",
+            "path" : "docs-website/h2o-scala_2.10/scaladoc/index.html"
+        },
+        {
+            "name" : "H2O Scala 2.11 API Developer Documentation (Scaladoc)",
+            "id"   : "doc-h2o-scala-2-11-javadoc",
+            "path" : "docs-website/h2o-scala_2.11/scaladoc/index.html"
         }
     ],
 

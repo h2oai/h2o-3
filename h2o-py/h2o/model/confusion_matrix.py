@@ -6,9 +6,10 @@ A confusion matrix from H2O.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from h2o.utils.compatibility import *  # NOQA
 
-from ..two_dim_table import H2OTwoDimTable
+from h2o.two_dim_table import H2OTwoDimTable
+from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import is_listlike
 
 
 class ConfusionMatrix(object):

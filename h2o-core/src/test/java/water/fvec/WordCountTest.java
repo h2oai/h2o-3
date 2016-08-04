@@ -21,7 +21,7 @@ public class WordCountTest extends TestUtil {
   protected void doWordCount(File file) throws IOException {
     NFSFileVec nfs=NFSFileVec.make(file);
   
-    System.out.printf("\nProgress: 00%%");
+    System.out.printf("\nProgress: 00 percent");
     final long start = System.currentTimeMillis();
     NonBlockingHashMap<VStr,VStr> words = new WordCount().doAll(nfs)._words;
     final long time_wc = System.currentTimeMillis();
@@ -87,7 +87,7 @@ public class WordCountTest extends TestUtil {
       final long total = bv._vec.length();
       int perc0 = (int)(100*pre     /total);
       int perc1 = (int)(100*progress/total);
-      if( perc0 != perc1 ) System.out.printf("\b\b\b%2d%%",perc1);
+      if( perc0 != perc1 ) System.out.printf("\b\b\b%2d percent",perc1);
     }
 
     private VStr doChar( VStr vs, int raw ) {

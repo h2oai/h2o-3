@@ -10,8 +10,6 @@ import water.rapids.ast.AstRoot;
 
 import java.util.Random;
 
-/**
- */
 public class AstRunif extends AstPrimitive {
   @Override
   public String[] args() {

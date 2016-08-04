@@ -16,9 +16,6 @@ import java.util.Random;
 
 import static water.util.RandomUtils.getRNG;
 
-/**
- *
- */
 public class AstStratifiedSplit extends AstPrimitive {
   @Override
   public String[] args() {

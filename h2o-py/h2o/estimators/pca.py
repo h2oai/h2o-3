@@ -10,9 +10,9 @@ from .estimator_base import H2OEstimator
 class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     """
     Principal Components Analysis
-    -----------------------------
 
-    Parameters (optional, unless specified otherwise)
+
+    Parameters
     ----------
       model_id : str
         Destination id for this model; auto-generated if not specified.

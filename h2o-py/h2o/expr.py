@@ -1,7 +1,10 @@
 # -*- encoding: utf-8 -*-
-#
-# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
-#
+"""
+Rapids expressions.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 from __future__ import division, print_function, absolute_import, unicode_literals
 
 import collections
@@ -9,12 +12,14 @@ import copy
 import gc
 import math
 import sys
+
 import tabulate
 
 import h2o
-from h2o.connection import H2OConnectionError
+from h2o.backend.connection import H2OConnectionError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
+from h2o.utils.typechecks import is_numeric, is_str
 
 
 class ExprNode(object):
@@ -120,7 +125,7 @@ class ExprNode(object):
         exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
         gc_ref_cnt = len(gc.get_referrers(self))
         if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
-            self._cache._id = _py_tmp_key(append=h2o.conn().session_id)
+            self._cache._id = _py_tmp_key(append=h2o.connection().session_id)
             exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
         return exec_str
 
@@ -184,8 +189,11 @@ class ExprNode(object):
         return sb
 
     def __repr__(self):
-        return "Expr(op=%r,id=%r,ast=%r,is_scalar=%r)" % (
-        self._op, self._cache._id, self._children, self._cache.is_scalar())
+        return "<Expr(%s)%s%s>" % (
+            " ".join([self._op] + [repr(x) for x in (self._children or [])]),
+            "#%s" % self._cache._id if self._cache._id else "",
+            "; scalar" if self._cache.is_scalar() else "",
+        )
 
     @staticmethod
     def rapids(expr):
@@ -200,7 +208,7 @@ class ExprNode(object):
         -------
           The JSON response (as a python dictionary) of the Rapids execution
         """
-        return h2o.api("POST /99/Rapids", data={"ast": expr, "session_id": h2o.conn().session_id})
+        return h2o.api("POST /99/Rapids", data={"ast": expr, "session_id": h2o.connection().session_id})
 
 
 class ASTId:
@@ -285,12 +293,12 @@ class H2OCache(object):
         return not isinstance(self._data, dict)
 
     def is_valid(self):
-        return self._id is not None and \
-               not self.is_empty() and \
-               self.nrows_valid() and \
-               self.ncols_valid() and \
-               self.names_valid() and \
-               self.types_valid()
+        return (# self._id is not None and
+                not self.is_empty() and \
+                self.nrows_valid() and
+                self.ncols_valid() and
+                self.names_valid() and
+                self.types_valid())
 
     def fill(self, rows=10):
         assert self._id is not None
@@ -322,7 +330,7 @@ class H2OCache(object):
             self._data[c.pop('label')] = c  # Label used as the Key
         return self
 
-    #### pretty printing ####
+    #---- pretty printing ----
 
     def _tabulate(self, tablefmt, rollups):
         """Pretty tabulated string of all the cached data, and column names"""

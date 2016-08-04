@@ -186,48 +186,43 @@ public class AstRectangleAssign extends AstPrimitive {
   // Assign a STRING over some dst rows; optimize for all rows
   private void assign_frame_scalar(Frame dst, int[] cols, final AstNumList rows, final String src, Session ses) {
     // Check for needing to copy before updating
-    throw H2O.unimpl();
-    //// Handle fast small case
-    //Vec[] dvecs = dst.vecs();
-    //long nrows = rows.cnt();
-    //if( nrows==1 ) {
-    //  long drow = (long)rows.expand()[0];
-    //  for( Vec vec : dvecs )
-    //    vec.set(drow, src);
-    //  return;
-    //}
-    //
-    //// Bulk assign constant (probably the empty string) over a frame
-    ////if( dst.numRows() == nrows && rows.isDense() ) {
-    ////  new MRTask(){
-    ////    @Override public void map(Chunk[] cs) {
-    ////      for( Chunk c : cs )  c.replaceAll(new C0StrChunk(src,c._len));
-    ////    }
-    ////  }.doAll(dst);
-    ////  return;
-    ////}
-    //
-    //// Handle large case
-    //new MRTask(){
-    //  @Override public void map(Chunk[] cs) {
-    //    long start = cs[0].start();
-    //    long end   = start + cs[0]._len;
-    //    double min = rows.min(), max = rows.max()-1; // exclusive max to inclusive max when stride == 1
-    //    //     [ start, ...,  end ]     the chunk
-    //    //1 []                          rows out left:  rows.max() < start
-    //    //2                         []  rows out rite:  rows.min() > end
-    //    //3 [ rows ]                    rows run left:  rows.min() < start && rows.max() <= end
-    //    //4          [ rows ]           rows run in  :  start <= rows.min() && rows.max() <= end
-    //    //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
-    //    if( !(max<start || min>end) ) {   // not situation 1 or 2 above
-    //      int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
-    //      for(int i=startOffset;i<cs[0]._len;++i)
-    //        if( rows.has(start+i) )
-    //          for( Chunk chk : cs )
-    //            chk.set(i,src);
-    //    }
-    //  }
-    //}.doAll(dst);
+    // Handle fast small case
+    Vec[] dvecs = dst.vecs();
+    long nrows = rows.cnt();
+    if( nrows==1 ) {
+      long drow = (long)rows.expand()[0];
+      for( Vec vec : dvecs )
+        vec.set(drow, src);
+      return;
+    }
+
+    // Handle large case
+    Vec[] vecs = ses.copyOnWrite(dst, cols);
+    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
+    for (int i = 0; i < cols.length; i++)
+      vecs2[i] = vecs[cols[i]];
+    rows.sort();                // Side-effect internal sort; needed for fast row lookup
+    new MRTask() {
+      @Override
+      public void map(Chunk[] cs) {
+        long start = cs[0].start();
+        long end = start + cs[0]._len;
+        long min = (long) rows.min(), max = (long) rows.max() - 1; // exclusive max to inclusive max when stride == 1
+        //     [ start, ...,  end ]     the chunk
+        //1 []                          rows out left:  rows.max() < start
+        //2                         []  rows out rite:  rows.min() > end
+        //3 [ rows ]                    rows run left:  rows.min() < start && rows.max() <= end
+        //4          [ rows ]           rows run in  :  start <= rows.min() && rows.max() <= end
+        //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
+        if (!(max < start || min > end)) {   // not situation 1 or 2 above
+          int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
+          for (int i = (int) (startOffset - start); i < cs[0]._len; ++i)
+            if (rows.has(start + i))
+              for (Chunk chk : cs)
+                chk.set(i, src);
+        }
+      }
+    }.doAll(vecs2);
   }
 
   // Boolean assignment with a scalar

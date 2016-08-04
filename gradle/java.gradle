@@ -40,3 +40,16 @@ javadoc {
     def tmp = title.tokenize()[0] +  " version " + bv.getProjectVersion() + " API"
     title = tmp
 }
+
+// Default task to bundle javadoc as jar
+task javadocJar(type: Jar) {
+    classifier = 'javadoc'
+    from javadoc
+}
+
+plugins.withType(org.gradle.api.publish.maven.plugins.MavenPublishPlugin) {
+    // Publish it only if "maven-publish" plugin is in the context
+    artifacts {
+        toPublish javadocJar
+    }
+}

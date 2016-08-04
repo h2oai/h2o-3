@@ -88,11 +88,11 @@ def gen_module(schema, name):
     yield "class %s(H2OEstimator):" % classname
     yield "    \"\"\""
     yield "    " + schema["algo_full_name"]
-    yield "    " + ("-" * len(schema["algo_full_name"]))
+    yield ""
     if help_preamble:
         yield "    %s" % reindent_block(help_preamble, 4)
     yield ""
-    yield "    Parameters (optional, unless specified otherwise)"
+    yield "    Parameters"
     yield "    ----------"
     param_names = []
     for param in schema["parameters"]:

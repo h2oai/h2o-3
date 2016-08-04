@@ -1,4 +1,15 @@
+# -*- encoding: utf-8 -*-
+"""
+h2o -- module for using H2O services.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+
 import tabulate
+
+from .utils.compatibility import *  # NOQA
 
 
 class H2ODisplay(object):
@@ -56,6 +67,7 @@ class H2ODisplay(object):
     @staticmethod
     def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html
         try:
+            # noinspection PyUnresolvedReferences,PyStatementEffect
             __IPYTHON__
             return True
         except NameError:
@@ -64,7 +76,8 @@ class H2ODisplay(object):
     # some html table builder helper things
     @staticmethod
     def _html_table(rows, header=None):
-        table = "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"  # keep table in a div for scroll-a-bility
+        # keep table in a div for scrollability
+        table = "<div style=\"overflow:auto\"><table style=\"width:50%\">{}</table></div>"
         table_rows = []
         if header is not None:
             table_rows.append(H2ODisplay._html_row(header, bold=True))

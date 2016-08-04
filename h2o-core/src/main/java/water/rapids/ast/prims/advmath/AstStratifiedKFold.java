@@ -9,8 +9,6 @@ import water.rapids.ast.AstRoot;
 
 import java.util.Random;
 
-/**
- */
 public class AstStratifiedKFold extends AstPrimitive {
   @Override
   public String[] args() {

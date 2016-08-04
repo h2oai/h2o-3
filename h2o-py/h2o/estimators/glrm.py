@@ -10,10 +10,10 @@ from .estimator_base import H2OEstimator
 class H2OGeneralizedLowRankEstimator(H2OEstimator):
     """
     Generalized Low Rank Modeling
-    -----------------------------
+
     Builds a generalized low rank model of a H2O dataset.
 
-    Parameters (optional, unless specified otherwise)
+    Parameters
     ----------
       model_id : str
         Destination id for this model; auto-generated if not specified.

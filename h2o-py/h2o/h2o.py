@@ -10,7 +10,9 @@ import os
 import re
 import warnings
 
-from .connection import H2OConnection, H2OLocalServer, H2OConnectionError, H2OServerError
+from h2o.backend import H2OConnection
+from h2o.backend import H2OLocalServer
+from h2o.exceptions import H2OConnectionError
 from .expr import ExprNode
 from .job import H2OJob
 from .frame import H2OFrame
@@ -28,10 +30,10 @@ from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import assert_is_type, assert_is_str, assert_maybe_str, is_str, is_int, is_listlike
 from .utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, h2o_deprecated
-
-
-warnings.simplefilter('always', DeprecationWarning)
+import copy
+warnings.simplefilter("always", DeprecationWarning)
 
 
 
@@ -57,10 +59,11 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param proxy: Proxy server address.
     :param cluster_name: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param verbose: Set to False to disable printing connection status messages.
-    :return  None
     """
     global h2oconn
-    h2oconn = H2OConnection.open(**locals())
+    h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
+                                 verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
+                                 cluster_name=cluster_name, verbose=verbose)
     if verbose:
         h2oconn.info().pprint()
     return h2oconn
@@ -72,36 +75,14 @@ def api(endpoint, data=None, json=None, filename=None):
     return h2oconn.request(endpoint, data=data, json=json, filename=filename)
 
 
-def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None, ice_root=None,
-          port="54321+", verbose=True):
-    """
-    Start a new local H2O server.
 
-    This server object can then be passed to `h2o.connect()` to connect to that server; or you can launch multiple
-    local servers and connect to only one of them. The servers will connect into a cloud.
-    :param jar_path: Path to the h2o.jar executable (if not given, we'll try to autodetect).
-    :param nthreads: Number of threads in the server's thread pool, or -1 to set to the number of CPUs.
-    :param enable_assertions: If True, then the server will start with the -ea JVM option (enabling code assertions).
-    :param max_mem_size: Maximum heap size (jvm option Xmx), in bytes.
-    :param min_mem_size: Minimum heap size (jvm option Xms), in bytes.
-    :param ice_root: A temporary directory where H2O log files will be placed. If not specified, then the folder will
-        be chosen by `tempfile.mkdtemp()`.
-    :param port: Port that the server should start listening to.
-    :param verbose: Whether to print connection progress messages to the stdout or not.
-    :return:
-    """
-    return H2OLocalServer.start(**locals())
-
-
-def conn():
+def connection():
     """Return current H2OConnection handler."""
     return h2oconn
 
 
 def version_check():
-    """
-    Used to verify that h2o-python module and the H2O server are compatible with each other.
-    """
+    """Used to verify that h2o-python module and the H2O server are compatible with each other."""
     if os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"): return
     ci = h2oconn.info()
     if not ci:
@@ -129,6 +110,10 @@ def version_check():
                 "Install the matching h2o-Python version from - "
                 "http://h2o-release.s3.amazonaws.com/h2o/{2}/{3}/index.html."
                 "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
+    # Check age of the install
+    if h2oconn.info().build_too_old:
+        print("Warning: Your H2O cluster version is too old ({})! Please download and install the latest "
+              "version from http://h2o.ai/download/".format(h2oconn.info().build_age))
 
 
 def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_name=None,
@@ -136,9 +121,6 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
          max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
-
-    The use of this method is discouraged, and it may be removed in the future. Prefer `h2o.connect()` and
-    `h2o.start()`.
 
     :param url:
     :param ip:
@@ -159,6 +141,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     :param kwargs: (all other deprecated attributes)
     :returns: nothing
     """
+    global h2oconn
     scheme = "https" if https else "http"
     proxy = proxy[scheme] if proxy is not None and scheme in proxy else \
         kwargs["proxies"][scheme] if "proxies" in kwargs and scheme in kwargs["proxies"] else None
@@ -172,14 +155,15 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     if ip and ip != "localhost" and ip != "127.0.0.1" and start_h2o:
         print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
-        connect(url=url, ip=ip, port=port, https=https, verify_ssl_certificates=not insecure, auth=auth,
-                proxy=proxy, cluster_name=cluster_name, verbose=True)
+        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https, verify_ssl_certificates=not insecure,
+                                     auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True,
+                                     _msgs=("Checking whether there is an H2O instance running at {url}",
+                                            "connected.", "not found."))
     except H2OConnectionError:
         # Backward compatibility: in init() port parameter really meant "baseport" when starting a local server...
         if port and not str(port).endswith("+"):
             port = str(port) + "+"
         if not start_h2o: raise
-        global h2oconn
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, port=port)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
@@ -197,7 +181,7 @@ def lazy_import(path):
     if is_listlike(path):
         return [_import(p)[0] for p in path]
     else:
-        assert_is_str(path, "path")
+        assert_is_str(path)
         return _import(path)
 
 
@@ -209,8 +193,11 @@ def _import(path):
 
 def upload_file(path, destination_frame="", header=(-1, 0, 1), sep="", col_names=None, col_types=None,
                 na_strings=None):
-    """Upload a dataset at the path given from the local machine to the H2O cluster. Does a single-threaded push to H2O.
-    Also see import_file.
+    """
+    Upload a dataset at the path given from the local machine to the H2O cluster.
+
+    Does a single-threaded push to H2O.
+    Also see :meth:`import_file`.
 
     Parameters
     ----------
@@ -272,7 +259,7 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
 
     Parameters
     ----------
-      path : str
+      path : str | list(str)
         A path specifying the location of the data to import.
 
       destination_frame : str, optional
@@ -317,6 +304,8 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
     -------
       A new H2OFrame instance.
     """
+    #assert_is_str(path)
+    assert_is_type(destination_frame, str, None)
     if not parse:
         return lazy_import(path)
 
@@ -325,10 +314,13 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
 
 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=None):
-    """Import SQL table to H2OFrame in memory. Assumes that the SQL table is not being updated and is stable.
+    """
+    Import SQL table to H2OFrame in memory. Assumes that the SQL table is not being updated and is stable.
     Runs multiple SELECT SQL queries concurrently for parallel ingestion.
-    Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
-      `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
+    Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath::
+
+        java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
+
     Also see h2o.import_sql_select.
     Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server
     is forthcoming.
@@ -376,14 +368,17 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
 
 
 def import_sql_select(connection_url, select_query, username, password, optimize=None):
-    """Imports the SQL table that is the result of the specified SQL query to H2OFrame in memory.
+    """
+    Imports the SQL table that is the result of the specified SQL query to H2OFrame in memory.
+
     Creates a temporary SQL table from the specified sql_query.
     Runs multiple SELECT SQL queries on the temporary table concurrently for parallel ingestion, then drops the table.
-    Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath:
-      `java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp`
-    Also see h2o.import_sql_table.
-    Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support for Oracle 12g and Microsoft SQL Server
-    is forthcoming.
+    Be sure to start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath::
+
+      java -cp <path_to_h2o_jar>:<path_to_jdbc_driver_jar> water.H2OApp
+
+    Also see h2o.import_sql_table. Currently supported SQL databases are MySQL, PostgreSQL, and MariaDB. Support
+    for Oracle 12g and Microsoft SQL Server is forthcoming.
 
     Parameters
     ----------
@@ -409,11 +404,11 @@ def import_sql_select(connection_url, select_query, username, password, optimize
 
     Examples
     --------
-      >> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
-      >> select_query = "SELECT bikeid from citibike20k"
-      >> username = "root"
-      >> password = "abc123"
-      >> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
+        >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+        >>> select_query = "SELECT bikeid from citibike20k"
+        >>> username = "root"
+        >>> password = "abc123"
+        >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
     """
     p = {}
     p.update({k: v for k, v in locals().items() if k is not "p"})
@@ -592,6 +587,13 @@ def assign(data, xid):
     data._ex._children = None
     return data
 
+def deep_copy(data, xid):
+    if data.frame_id == xid: ValueError("Desination key must differ input frame")
+    duplicate = data.apply(lambda x:x)
+    duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver(False)
+    duplicate._ex._cache._id = xid
+    duplicate._ex._children = None
+    return duplicate
 
 def get_model(model_id):
     """Return the specified model.
@@ -755,26 +757,20 @@ def rapids(expr):
 
 
 def ls():
-    """List Keys on an H2O Cluster
-
-    Returns
-    -------
-      A list of keys in the current H2O instance.
-    """
+    """List keys on an H2O Cluster."""
     return H2OFrame._expr(expr=ExprNode("ls")).as_data_frame(use_pandas=True)
 
 
 def frame(frame_id, exclude=""):
-    """Retrieve metadata for an id that points to a Frame.
+    """
+    Retrieve metadata for an id that points to a Frame.
 
     Parameters
     ----------
     frame_id : str
       A pointer to a Frame in H2O.
 
-    Returns
-    -------
-      Python dict containing the frame meta-information
+    :returns: dict containing the frame meta-information.
     """
     return api("GET /3/Frames/%s" % (frame_id + exclude))
 
@@ -782,9 +778,7 @@ def frame(frame_id, exclude=""):
 def frames():
     """Retrieve all the Frames.
 
-    Returns
-    -------
-      Meta information on the frames
+    :returns: Meta information on the frames
     """
     return api("GET /3/Frames")
 
@@ -1227,6 +1221,26 @@ def data_file(relative_path):
     h2o_dir = os.path.split(__file__)[0]
     return os.path.join(h2o_dir, relative_path)
 
+
+def make_metrics(predicted, actual, domain=None, distribution=None):
+    """
+    Create Model Metrics from predicted and actual values in H2O.
+
+    :params H2OFrame predicted: an H2OFrame containing predictions.
+    :params H2OFrame actuals: an H2OFrame containing actual values.
+    :params domain: list of response factors for classification.
+    :params distribution: distribution for regression.
+    """
+    assert_is_type(predicted, H2OFrame)
+    assert_is_type(actual, H2OFrame)
+    # assert predicted.ncol == 1, "`predicted` frame should have exactly 1 column"
+    assert actual.ncol == 1, "`actual` frame should have exactly 1 column"
+    assert_maybe_str(distribution)
+    if domain is None and any(actual.isfactor()):
+        domain = actual.levels()[0]
+    res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
+              data={"domain": domain, "distribution": distribution})
+    return res["model_metrics"]
 
 
 #-----------------------------------------------------------------------------------------------------------------------

@@ -1,13 +1,14 @@
 import sys
 sys.path.insert(1, "../../")
 import h2o
+from h2o.exceptions import H2OConnectionError
 
 
 def check_strict():
     # We may be either connected to an existing h2o server, or not. If we are, then discover the connection settings
     # so that we don't have to start a new server (starting a new server may be not possible if h2o.jar is located in
     # some unknown to us place in the system).
-    hc = h2o.conn()
+    hc = h2o.connection()
     url = None
     if hc is not None:
         url = hc.base_url
@@ -20,7 +21,7 @@ def check_strict():
     sys.settrace(tracefunc)
     try:
         h2o.init(url=url)
-    except h2o.H2OConnectionError:
+    except H2OConnectionError:
         pass
 
     assert out["version_check_called"], \

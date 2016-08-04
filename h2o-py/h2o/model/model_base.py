@@ -7,17 +7,18 @@ This module implements the base model class.  All model things inherit from this
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import h2o
-from h2o.utils.compatibility import *  # NOQA
-
 import imp
 import traceback
 import warnings
-from ..utils.shared_utils import can_use_pandas
+
+import h2o
 from h2o.job import H2OJob
+from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.shared_utils import can_use_pandas
 
 
 class ModelBase(object):
+
     def __init__(self):
         self._id = None
         self._model_json = None
@@ -30,49 +31,51 @@ class ModelBase(object):
         self._future = False  # used by __repr__/show to query job state
         self._job = None  # used when _future is True
 
+
     @property
     def model_id(self):
-        """
-        :return: Retrieve this model's identifier.
-        """
+        """Model identifier."""
         return self._id
 
     @model_id.setter
-    def model_id(self, value):
-        oldname = self.model_id
-        self._id = value
-        h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, value))
+    def model_id(self, newid):
+        oldid = self._id
+        self._id = newid
+        h2o.rapids('(rename "%s" "%s")' % (oldid, newid))
+
 
     @property
     def params(self):
         """
         Get the parameters and the actual/default values only.
 
-        :return: A dictionary of parameters used to build this model.
+        :returns: A dictionary of parameters used to build this model.
         """
         params = {}
         for p in self.parms:
-            params[p] = {"default": self.parms[p]["default_value"], "actual": self.parms[p]["actual_value"]}
+            params[p] = {"default": self.parms[p]["default_value"],
+                         "actual": self.parms[p]["actual_value"]}
         return params
+
 
     @property
     def full_parameters(self):
         """
         Get the full specification of all parameters.
 
-        :return: a dictionary of parameters used to build this model.
+        :returns: a dictionary of parameters used to build this model.
         """
         return self.parms
+
 
     @property
     def type(self):
         """Get the type of model built as a string.
 
-        Returns
-        -------
-          "classifier" or "regressor" or "unsupervised"
+        :returns: "classifier" or "regressor" or "unsupervised"
         """
         return self._estimator_type
+
 
     def __repr__(self):
         # PUBDEV-2278: using <method>? from IPython caused everything to dump
@@ -81,36 +84,28 @@ class ModelBase(object):
             self.show()
         return ""
 
+
     def predict_leaf_node_assignment(self, test_data):
         """
-        Predict on a dataset and return the leaf node assignment (only for tree-based models)
+        Predict on a dataset and return the leaf node assignment (only for tree-based models).
 
-        Parameters
-        ----------
-        test_data: H2OFrame
-          Data on which to make predictions.
+        :param H2OFrame test_data: Data on which to make predictions.
 
-        Returns
-        -------
-          A new H2OFrame of predictions.
+        :returns: A new H2OFrame of predictions.
         """
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                     data={"leaf_node_assignment": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
 
+
     def predict(self, test_data):
         """
         Predict on a dataset.
 
-        Parameters
-        ----------
-        test_data: H2OFrame
-          Data on which to make predictions.
+        :param H2OFrame test_data: Data on which to make predictions.
 
-        Returns
-        -------
-          A new H2OFrame of predictions.
+        :returns: A new H2OFrame of predictions.
         """
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
         j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id)),
@@ -118,39 +113,41 @@ class ModelBase(object):
         j.poll()
         return h2o.get_frame(j.dest_key)
 
+
     def is_cross_validated(self):
-        """
-        :return:  True if the model was cross-validated.
-        """
+        """Return True if the model was cross-validated."""
         return self._is_xvalidated
 
+
     def xval_keys(self):
-        """
-        :return: The model keys for the cross-validated model.
-        """
+        """Return model keys for the cross-validated model."""
         return self._xval_keys
+
 
     def get_xval_models(self, key=None):
         """
         Return a Model object.
 
         :param key: If None, return all cross-validated models; otherwise return the model that key points to.
-        :return: A model or list of models.
+
+        :returns: A model or list of models.
         """
         return h2o.get_model(key) if key is not None else [h2o.get_model(k) for k in self._xval_keys]
+
 
     @property
     def xvals(self):
         """
         Return a list of the cross-validated models.
 
-        :return: A list of models
+        :returns: A list of models
         """
         return self.get_xval_models()
 
+
     def deepfeatures(self, test_data, layer):
         """
-        Return hidden layer details
+        Return hidden layer details.
 
         :param test_data: Data to create a feature space on
         :param layer: 0 index hidden layer
@@ -161,11 +158,14 @@ class ModelBase(object):
         j.poll()
         return h2o.get_frame(j.dest_key)
 
+
     def weights(self, matrix_id=0):
         """
-        Return the frame for the respective weight matrix
+        Return the frame for the respective weight matrix.
+
         :param: matrix_id: an integer, ranging from 0 to number of layers, that specifies the weight matrix to return.
-        :return: an H2OFrame which represents the weight matrix identified by matrix_id
+
+        :returns: an H2OFrame which represents the weight matrix identified by matrix_id
         """
         num_weight_matrices = len(self._model_json['output']['weights'])
         if matrix_id not in list(range(num_weight_matrices)):
@@ -174,11 +174,14 @@ class ModelBase(object):
                 "was requested.".format(num_weight_matrices, matrix_id))
         return h2o.get_frame(self._model_json['output']['weights'][matrix_id]['URL'].split('/')[3])
 
+
     def biases(self, vector_id=0):
         """
-        Return the frame for the respective bias vector
+        Return the frame for the respective bias vector.
+
         :param: vector_id: an integer, ranging from 0 to number of layers, that specifies the bias vector to return.
-        :return: an H2OFrame which represents the bias vector identified by vector_id
+
+        :returns: an H2OFrame which represents the bias vector identified by vector_id
         """
         num_bias_vectors = len(self._model_json['output']['biases'])
         if vector_id not in list(range(num_bias_vectors)):
@@ -187,35 +190,31 @@ class ModelBase(object):
                 "was requested.".format(num_bias_vectors, vector_id))
         return h2o.get_frame(self._model_json['output']['biases'][vector_id]['URL'].split('/')[3])
 
+
     def normmul(self):
-        """
-        Normalization/Standardization multipliers for numeric predictors
-        """
+        """Normalization/Standardization multipliers for numeric predictors."""
         return self._model_json['output']['normmul']
 
+
     def normsub(self):
-        """
-        Normalization/Standardization offsets for numeric predictors
-        """
+        """Normalization/Standardization offsets for numeric predictors."""
         return self._model_json['output']['normsub']
 
+
     def respmul(self):
-        """
-        Normalization/Standardization multipliers for numeric response
-        """
+        """Normalization/Standardization multipliers for numeric response."""
         return self._model_json['output']['normrespmul']
 
+
     def respsub(self):
-        """
-        Normalization/Standardization offsets for numeric response
-        """
+        """Normalization/Standardization offsets for numeric response."""
         return self._model_json['output']['normrespsub']
 
+
     def catoffsets(self):
-        """
-        Categorical offsets for one-hot encoding
-        """
+        """Categorical offsets for one-hot encoding."""
         return self._model_json['output']['catoffsets']
+
 
     def model_performance(self, test_data=None, train=False, valid=False, xval=False):
         """
@@ -224,7 +223,8 @@ class ModelBase(object):
         Parameters
         ----------
         test_data: H2OFrame, optional
-          Data set for which model metrics shall be computed against. All three of train, valid and xval arguments are ignored if test_data is not None.
+          Data set for which model metrics shall be computed against. All three of train, valid and xval arguments are
+          ignored if test_data is not None.
         train: boolean, optional
           Report the training metrics for the model.
         valid: boolean, optional
@@ -232,9 +232,7 @@ class ModelBase(object):
         xval: boolean, optional
           Report the cross-validation metrics for the model. If train and valid are True, then it defaults to True.
 
-        Returns
-        -------
-          An object of class H2OModelMetrics.
+        :returns: An object of class H2OModelMetrics.
         """
         if test_data is None:
             if not train and not valid and not xval: train = True  # default to train
@@ -247,61 +245,48 @@ class ModelBase(object):
                 raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
             res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
 
-            # FIXME need to do the client-side filtering...  PUBDEV-874:   https://0xdata.atlassian.net/browse/PUBDEV-874
+            # FIXME need to do the client-side filtering...  (PUBDEV-874)
             raw_metrics = None
             for mm in res["model_metrics"]:
-                if not mm["frame"] == None and mm["frame"]["name"] == test_data.frame_id:
+                if mm["frame"] is not None and mm["frame"]["name"] == test_data.frame_id:
                     raw_metrics = mm
                     break
             return self._metrics_class(raw_metrics, algo=self._model_json["algo"])
 
+
     def scoring_history(self):
         """
-        Retrieve Model Score History
+        Retrieve Model Score History.
 
-        Returns
-        -------
-          The score history as an H2OTwoDimTable or a Pandas DataFrame.
+        :returns: The score history as an H2OTwoDimTable or a Pandas DataFrame.
         """
         model = self._model_json["output"]
-        if 'scoring_history' in list(model.keys()) and model["scoring_history"] is not None:
+        if "scoring_history" in model and model["scoring_history"] is not None:
             return model["scoring_history"].as_data_frame()
         print("No score history for this model")
 
-    def score_history(self):
-        """
-        Deprecated for scoring_history
-        """
-        warnings.warn("`score_history` is deprecated. Use `scoring_history`", category=DeprecationWarning, stacklevel=2)
-        return self.scoring_history()
 
     def cross_validation_metrics_summary(self):
         """
-        Retrieve Cross-Validation Metrics Summary
+        Retrieve Cross-Validation Metrics Summary.
 
-        Returns
-        -------
-          The cross-validation metrics summary as an H2OTwoDimTable
+        :returns: The cross-validation metrics summary as an H2OTwoDimTable
         """
         model = self._model_json["output"]
-        if 'cross_validation_metrics_summary' in list(model.keys()) and model[
-            "cross_validation_metrics_summary"] is not None:
+        if "cross_validation_metrics_summary" in model and model["cross_validation_metrics_summary"] is not None:
             return model["cross_validation_metrics_summary"]
         print("No cross-validation metrics summary for this model")
 
+
     def summary(self):
-        """
-        Print a detailed summary of the model.
-        """
+        """Print a detailed summary of the model."""
         model = self._model_json["output"]
         if model["model_summary"]:
             model["model_summary"].show()  # H2OTwoDimTable object
 
-    def show(self):
-        """
-        Print innards of model, without regards to type
 
-        """
+    def show(self):
+        """Print innards of model, without regards to type."""
         if self._future:
             self._job.poll_once()
             return
@@ -331,22 +316,19 @@ class ModelBase(object):
         xms = model["cross_validation_metrics_summary"]
         if xms: xms.show()
 
-        if "scoring_history" in list(model.keys()) and model["scoring_history"]: model["scoring_history"].show()
-        if "variable_importances" in list(model.keys()) and model["variable_importances"]: model[
-            "variable_importances"].show()
+        if "scoring_history" in model and model["scoring_history"]:
+            model["scoring_history"].show()
+        if "variable_importances" in model and model["variable_importances"]:
+            model["variable_importances"].show()
+
 
     def varimp(self, use_pandas=False):
         """
-        Pretty print the variable importances, or return them in a list
+        Pretty print the variable importances, or return them in a list.
 
-        Parameters
-        ----------
-        use_pandas: boolean, optional
-          If True, then the variable importances will be returned as a pandas data frame.
+        :param use_pandas: If True, then the variable importances will be returned as a pandas data frame.
 
-        Returns
-        -------
-          A list or Pandas DataFrame.
+        :returns: A list or Pandas DataFrame.
         """
         model = self._model_json["output"]
         if "variable_importances" in list(model.keys()) and model["variable_importances"]:
@@ -360,113 +342,137 @@ class ModelBase(object):
         else:
             print("Warning: This model doesn't have variable importances")
 
+
     def residual_deviance(self, train=False, valid=False, xval=False):
         """
         Retreive the residual deviance if this model has the attribute, or None otherwise.
 
-        :param train: Get the residual deviance for the training set. If both train and valid are False, then train is selected by default.
-        :param valid: Get the residual deviance for the validation set. If both train and valid are True, then train is selected by default.
-        :return: Return the residual deviance, or None if it is not present.
+        :param train: Get the residual deviance for the training set. If both train and valid are False, then
+            train is selected by default.
+        :param valid: Get the residual deviance for the validation set. If both train and valid are True, then
+            train is selected by default.
+
+        :returns: Return the residual deviance, or None if it is not present.
         """
         if xval: raise ValueError("Cross-validation metrics are not available.")
         if not train and not valid: train = True
         if train and valid:  train = True
-        return self._model_json["output"]["training_metrics"].residual_deviance() if train else \
-        self._model_json["output"]["validation_metrics"].residual_deviance()
+        if train:
+            return self._model_json["output"]["training_metrics"].residual_deviance()
+        else:
+            return self._model_json["output"]["validation_metrics"].residual_deviance()
+
 
     def residual_degrees_of_freedom(self, train=False, valid=False, xval=False):
         """
         Retreive the residual degress of freedom if this model has the attribute, or None otherwise.
 
-        :param train: Get the residual dof for the training set. If both train and valid are False, then train is selected by default.
-        :param valid: Get the residual dof for the validation set. If both train and valid are True, then train is selected by default.
-        :return: Return the residual dof, or None if it is not present.
+        :param train: Get the residual dof for the training set. If both train and valid are False, then train
+            is selected by default.
+        :param valid: Get the residual dof for the validation set. If both train and valid are True, then train
+            is selected by default.
+
+        :returns: Return the residual dof, or None if it is not present.
         """
         if xval: raise ValueError("Cross-validation metrics are not available.")
         if not train and not valid: train = True
         if train and valid:         train = True
-        return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom() if train else \
-        self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
+        if train:
+            return self._model_json["output"]["training_metrics"].residual_degrees_of_freedom()
+        else:
+            return self._model_json["output"]["validation_metrics"].residual_degrees_of_freedom()
+
 
     def null_deviance(self, train=False, valid=False, xval=False):
         """
         Retreive the null deviance if this model has the attribute, or None otherwise.
 
-        :param:  train Get the null deviance for the training set. If both train and valid are False, then train is selected by default.
-        :param:  valid Get the null deviance for the validation set. If both train and valid are True, then train is selected by default.
-        :return: Return the null deviance, or None if it is not present.
+        :param train: Get the null deviance for the training set. If both train and valid are False, then train
+            is selected by default.
+        :param valid: Get the null deviance for the validation set. If both train and valid are True, then train
+            is selected by default.
+
+        :returns: Return the null deviance, or None if it is not present.
         """
         if xval: raise ValueError("Cross-validation metrics are not available.")
         if not train and not valid: train = True
         if train and valid:         train = True
-        return self._model_json["output"]["training_metrics"].null_deviance() if train else self._model_json["output"][
-            "validation_metrics"].null_deviance()
+        if train:
+            return self._model_json["output"]["training_metrics"].null_deviance()
+        else:
+            return self._model_json["output"]["validation_metrics"].null_deviance()
+
 
     def null_degrees_of_freedom(self, train=False, valid=False, xval=False):
         """
         Retreive the null degress of freedom if this model has the attribute, or None otherwise.
 
-        :param train: Get the null dof for the training set. If both train and valid are False, then train is selected by default.
-        :param valid: Get the null dof for the validation set. If both train and valid are True, then train is selected by default.
-        :return: Return the null dof, or None if it is not present.
+        :param train: Get the null dof for the training set. If both train and valid are False, then train is
+            selected by default.
+        :param valid: Get the null dof for the validation set. If both train and valid are True, then train is
+            selected by default.
+
+        :returns: Return the null dof, or None if it is not present.
         """
         if xval: raise ValueError("Cross-validation metrics are not available.")
         if not train and not valid: train = True
         if train and valid:         train = True
-        return self._model_json["output"]["training_metrics"].null_degrees_of_freedom() if train else \
-        self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
+        if train:
+            return self._model_json["output"]["training_metrics"].null_degrees_of_freedom()
+        else:
+            return self._model_json["output"]["validation_metrics"].null_degrees_of_freedom()
+
 
     def pprint_coef(self):
-        """
-        Pretty print the coefficents table (includes normalized coefficients)
-        """
+        """Pretty print the coefficents table (includes normalized coefficients)."""
         print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
 
     def coef(self):
-        """
-        :return: Return the coefficients for this model.
-        """
+        """Return the coefficients for this model."""
         tbl = self._model_json["output"]["coefficients_table"]
         if tbl is None: return None
         tbl = tbl.cell_values
         return {a[0]: a[1] for a in tbl}
 
     def coef_norm(self):
-        """
-        :return: Return the normalized coefficients
-        """
+        """Return the normalized coefficients."""
         tbl = self._model_json["output"]["coefficients_table"]
         if tbl is None: return None
         tbl = tbl.cell_values
         return {a[0]: a[2] for a in tbl}
 
+
     def r2(self, train=False, valid=False, xval=False):
         """
         Return the R^2 for this regression model.
 
-        The R^2 value is defined to be 1 - MSE/var,
-        where var is computed as sigma*sigma.
+        Will return R^2 for GLM Models and will return NaN otherwise.
+
+        The R^2 value is defined to be 1 - MSE/var, where var is computed as sigma*sigma.
 
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
 
         :param train: If train is True, then return the R^2 value for the training data.
         :param valid: If valid is True, then return the R^2 value for the validation data.
         :param xval:  If xval is True, then return the R^2 value for the cross validation data.
-        :return: The R^2 for this regression model.
+
+        :returns: The R^2 for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.r2()
         return list(m.values())[0] if len(m) == 1 else m
 
+
     def mse(self, train=False, valid=False, xval=False):
         """
-        Get the MSE(s).
+        Get the MSE.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
 
         Parameters
         ----------
@@ -477,21 +483,21 @@ class ModelBase(object):
         xval : bool, default=True
           If xval is True, then return the MSE value for the cross validation data.
 
-        Returns
-        -------
-          The MSE for this regression model.
+        :returns: The MSE for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.mse()
         return list(m.values())[0] if len(m) == 1 else m
 
+
     def rmse(self, train=False, valid=False, xval=False):
         """
-        Get the RMSE(s).
+        Get the RMSE.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
 
         Parameters
         ----------
@@ -511,12 +517,14 @@ class ModelBase(object):
         for k, v in viewitems(tm): m[k] = None if v is None else v.rmse()
         return list(m.values())[0] if len(m) == 1 else m
 
+
     def mae(self, train=False, valid=False, xval=False):
         """
-        Get the MAE(s).
+        Get the MAE.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
 
         Parameters
         ----------
@@ -536,100 +544,120 @@ class ModelBase(object):
         for k, v in viewitems(tm): m[k] = None if v is None else v.mae()
         return list(m.values())[0] if len(m) == 1 else m
 
+
     def logloss(self, train=False, valid=False, xval=False):
         """
-        Get the Log Loss(s).
+        Get the Log Loss.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
 
         :param train: If train is True, then return the Log Loss value for the training data.
         :param valid: If valid is True, then return the Log Loss value for the validation data.
         :param xval:  If xval is True, then return the Log Loss value for the cross validation data.
-        :return: The Log Loss for this binomial model.
+
+        :returns: The Log Loss for this binomial model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.logloss()
         return list(m.values())[0] if len(m) == 1 else m
 
+
     def mean_residual_deviance(self, train=False, valid=False, xval=False):
         """
-        Get the Mean Residual Deviances(s).
+        Get the Mean Residual Deviances.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
 
         :param train: If train is True, then return the Mean Residual Deviance value for the training data.
         :param valid: If valid is True, then return the Mean Residual Deviance value for the validation data.
         :param xval:  If xval is True, then return the Mean Residual Deviance value for the cross validation data.
-        :return: The Mean Residual Deviance for this regression model.
+
+        :returns: The Mean Residual Deviance for this regression model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.mean_residual_deviance()
         return list(m.values())[0] if len(m) == 1 else m
 
+
     def auc(self, train=False, valid=False, xval=False):
         """
-        Get the AUC(s).
+        Get the AUC.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
 
         :param train: If train is True, then return the AUC value for the training data.
         :param valid: If valid is True, then return the AUC value for the validation data.
         :param xval:  If xval is True, then return the AUC value for the validation data.
-        :return: The AUC.
+
+        :returns: The AUC.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
+
     def aic(self, train=False, valid=False, xval=False):
         """
         Get the AIC(s).
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         :param train: If train is True, then return the AIC value for the training data.
         :param valid: If valid is True, then return the AIC value for the validation data.
         :param xval:  If xval is True, then return the AIC value for the validation data.
-        :return: The AIC.
+
+        :returns: The AIC.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.aic()
         return list(m.values())[0] if len(m) == 1 else m
 
+
     def giniCoef(self, train=False, valid=False, xval=False):
         """
-        Get the Gini Coefficient(s).
+        Get the Gini coefficient.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         :param train: If train is True, then return the Gini Coefficient value for the training data.
         :param valid: If valid is True, then return the Gini Coefficient value for the validation data.
         :param xval:  If xval is True, then return the Gini Coefficient value for the cross validation data.
-        :return: The Gini Coefficient for this binomial model.
+
+        :returns: The Gini Coefficient for this binomial model.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): m[k] = None if v is None else v.giniCoef()
         return list(m.values())[0] if len(m) == 1 else m
 
+
     def download_pojo(self, path=""):
         """
         Download the POJO for this model to the directory specified by path (no trailing slash!).
+
         If path is "", then dump to screen.
+
         :param model: Retrieve this model's scoring POJO.
         :param path:  An absolute path to the directory where POJO should be saved.
-        :return: None
+
+        :returns: None
         """
         h2o.download_pojo(self, path)  # call the "package" function
+
 
     @staticmethod
     def _get_metrics(o, train, valid, xval):
@@ -639,6 +667,7 @@ class ModelBase(object):
         if xval: metrics["xval"] = o._model_json["output"]["cross_validation_metrics"]
         if len(metrics) == 0: metrics["train"] = o._model_json["output"]["training_metrics"]
         return metrics
+
 
     # Delete from cluster as model goes out of scope
     # def __del__(self):
@@ -725,21 +754,25 @@ class ModelBase(object):
             raise ValueError("Plotting not implemented for this type of model")
         if "server" not in list(kwargs.keys()) or not kwargs["server"]: plt.show()
 
+
     @staticmethod
     def _check_targets(y_actual, y_predicted):
         """Check that y_actual and y_predicted have the same length.
 
-        :param y_actual: An H2OFrame
-        :param y_predicted: An H2OFrame
-        :return: None
+        :param H2OFrame y_actual:
+        :param H2OFrame y_predicted:
+
+        :returns: None
         """
         if len(y_actual) != len(y_predicted):
             raise ValueError("Row mismatch: [{},{}]".format(len(y_actual), len(y_predicted)))
 
+
     def cross_validation_models(self):
         """
         Obtain a list of cross-validation models.
-        :return: list of H2OModel objects
+
+        :returns: list of H2OModel objects
         """
         cvmodels = self._model_json["output"]["cross_validation_models"]
         if cvmodels is None: return None
@@ -747,11 +780,14 @@ class ModelBase(object):
         for p in cvmodels: m.append(h2o.get_model(p["name"]))
         return m
 
+
     def cross_validation_predictions(self):
         """
         Obtain the (out-of-sample) holdout predictions of all cross-validation models on their holdout data.
+
         Note that the predictions are expanded to the full number of rows of the training data, with 0 fill-in.
-        :return: list of H2OFrame objects
+
+        :returns: list of H2OFrame objects
         """
         preds = self._model_json["output"]["cross_validation_predictions"]
         if preds is None: return None
@@ -759,21 +795,32 @@ class ModelBase(object):
         for p in preds: m.append(h2o.get_frame(p["name"]))
         return m
 
+
     def cross_validation_holdout_predictions(self):
         """
         Obtain the (out-of-sample) holdout predictions of all cross-validation models on the training data.
+
         This is equivalent to summing up all H2OFrames returned by cross_validation_predictions.
-        :return: H2OFrame
+
+        :returns: H2OFrame
         """
         preds = self._model_json["output"]["cross_validation_holdout_predictions_frame_id"]
         if preds is None: return None
         return h2o.get_frame(preds["name"])
 
+
     def cross_validation_fold_assignment(self):
         """
         Obtain the cross-validation fold assignment for all rows in the training data.
-        :return: H2OFrame
+
+        :returns: H2OFrame
         """
         fid = self._model_json["output"]["cross_validation_fold_assignment_frame_id"]
         if fid is None: return None
         return h2o.get_frame(fid["name"])
+
+
+    def score_history(self):
+        """[DEPRECATED]."""
+        warnings.warn("`score_history` is deprecated. Use `scoring_history`", category=DeprecationWarning, stacklevel=2)
+        return self.scoring_history()

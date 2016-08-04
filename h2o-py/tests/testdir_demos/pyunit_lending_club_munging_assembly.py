@@ -11,7 +11,7 @@ from h2o.transforms.preprocessing import *
 
 def lending_club_munging_assembly():
 
-  small_test = [pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3a.csv")]
+  small_test = pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3a.csv")
 
   # lending-club munging assembly
   print("Import and Parse data")

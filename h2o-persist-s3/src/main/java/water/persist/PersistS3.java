@@ -13,11 +13,14 @@ import water.util.Log;
 import water.util.RIStream;
 import com.amazonaws.*;
 import com.amazonaws.auth.*;
+import com.amazonaws.auth.profile.ProfileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.*;
 
 import com.google.common.io.ByteStreams;
+
+import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 /** Persistence backend for S3 */
 public final class PersistS3 extends Persist {
@@ -58,7 +61,8 @@ public final class PersistS3 extends Persist {
       super(new H2OArgCredentialsProvider(),
           new InstanceProfileCredentialsProvider(),
           new EnvironmentVariableCredentialsProvider(),
-          new SystemPropertiesCredentialsProvider());
+          new SystemPropertiesCredentialsProvider(),
+          new ProfileCredentialsProvider());
     }
   }
 
@@ -280,24 +284,25 @@ public final class PersistS3 extends Persist {
   }
 
   /** S3 socket timeout property name */
-  public final static String S3_SOCKET_TIMEOUT_PROP = "water.s3.socketTimeout";
+  public final static String S3_SOCKET_TIMEOUT_PROP = SYSTEM_PROP_PREFIX + "persist.s3.socketTimeout";
   /** S3 connection timeout property name */
-  public final static String S3_CONNECTION_TIMEOUT_PROP = "water.s3.connectionTimeout";
+  public final static String S3_CONNECTION_TIMEOUT_PROP = SYSTEM_PROP_PREFIX + "persist.s3.connectionTimeout";
   /** S3 maximal error retry number */
-  public final static String S3_MAX_ERROR_RETRY_PROP = "water.s3.maxErrorRetry";
+  public final static String S3_MAX_ERROR_RETRY_PROP = SYSTEM_PROP_PREFIX + "persist.s3.maxErrorRetry";
   /** S3 maximal http connections */
-  public final static String S3_MAX_HTTP_CONNECTIONS_PROP = "water.s3.maxHttpConnections";
+  public final static String S3_MAX_HTTP_CONNECTIONS_PROP = SYSTEM_PROP_PREFIX + "persist.s3.maxHttpConnections";
+  /** S3 force HTTP traffic */
+  public final static String S3_FORCE_HTTP = SYSTEM_PROP_PREFIX + "persist.s3.force.http";
 
   static ClientConfiguration s3ClientCfg() {
     ClientConfiguration cfg = new ClientConfiguration();
     Properties prop = System.getProperties();
-    if( prop.containsKey(S3_SOCKET_TIMEOUT_PROP) ) cfg.setSocketTimeout(Integer.getInteger(S3_SOCKET_TIMEOUT_PROP));
-    if( prop.containsKey(S3_CONNECTION_TIMEOUT_PROP) ) cfg.setConnectionTimeout(Integer
-        .getInteger(S3_CONNECTION_TIMEOUT_PROP));
-    if( prop.containsKey(S3_MAX_ERROR_RETRY_PROP) ) cfg.setMaxErrorRetry(Integer.getInteger(S3_MAX_ERROR_RETRY_PROP));
-    if( prop.containsKey(S3_MAX_HTTP_CONNECTIONS_PROP) ) cfg.setMaxConnections(Integer
-        .getInteger(S3_MAX_HTTP_CONNECTIONS_PROP));
-    cfg.setProtocol(Protocol.HTTP);
+    if (prop.containsKey(S3_SOCKET_TIMEOUT_PROP)) cfg.setSocketTimeout(Integer.getInteger(S3_SOCKET_TIMEOUT_PROP));
+    if (prop.containsKey(S3_CONNECTION_TIMEOUT_PROP)) cfg.setConnectionTimeout(Integer.getInteger(S3_CONNECTION_TIMEOUT_PROP));
+    if (prop.containsKey(S3_MAX_ERROR_RETRY_PROP)) cfg.setMaxErrorRetry(Integer.getInteger(S3_MAX_ERROR_RETRY_PROP));
+    if (prop.containsKey(S3_MAX_HTTP_CONNECTIONS_PROP)) cfg.setMaxConnections(Integer.getInteger(S3_MAX_HTTP_CONNECTIONS_PROP));
+    if (prop.containsKey(S3_FORCE_HTTP)) cfg.setProtocol(Protocol.HTTP);
+
     return cfg;
   }
 

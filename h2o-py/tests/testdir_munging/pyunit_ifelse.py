@@ -9,21 +9,21 @@ from tests import pyunit_utils
 
 
 def insert_missing():
-  air_path = [pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip")]
+    air_path = pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip")
 
-  data = h2o.import_file(path=air_path)
+    data = h2o.import_file(path=air_path)
 
-  hour1 = old_div(data["CRSArrTime"], 100)
-  mins1 = data["CRSArrTime"] % 100
-  arrTime = hour1*60 + mins1
+    hour1 = old_div(data["CRSArrTime"], 100)
+    mins1 = data["CRSArrTime"] % 100
+    arr_time = hour1 * 60 + mins1
 
-  hour2 = old_div(data["CRSDepTime"], 100)
-  mins2 = data["CRSDepTime"] % 100
-  depTime = hour2*60 + mins2
+    hour2 = old_div(data["CRSDepTime"], 100)
+    mins2 = data["CRSDepTime"] % 100
+    dep_time = hour2 * 60 + mins2
 
-  data["TravelTime"] = ((arrTime-depTime)>0).ifelse((arrTime-depTime),float("nan"))[0]
+    data["TravelTime"] = ((arr_time - dep_time) > 0).ifelse((arr_time - dep_time), float("nan"))[0]
 
-  data.show()
+    data.show()
 
 
 

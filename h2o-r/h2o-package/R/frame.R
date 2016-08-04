@@ -1930,6 +1930,7 @@ summary.H2OFrame <- h2o.summary
 #' @param ... Further arguments to be passed from or to other methods.
 #' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
 #' @seealso \code{\link[base]{mean}} for the base R implementation.
+#' @return Returns a list containing the mean for each column (NaN for non-numeric columns).
 #' @examples
 #' \donttest{
 #' h2o.init()
@@ -1943,6 +1944,30 @@ h2o.mean <- function(x, ..., na.rm=TRUE) .eval.scalar(.newExpr("mean",x,na.rm))
 #' @rdname h2o.mean
 #' @export
 mean.H2OFrame <- h2o.mean
+
+#'
+#' Skewness of a column
+#'
+#' Obtain the skewness of a column of a parsed H2O data object.
+#'
+#' @name h2o.skewness
+#' @param x An H2OFrame object.
+#' @param ... Further arguments to be passed from or to other methods.
+#' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
+#' @return Returns a list containing the skewness for each column (NaN for non-numeric columns).
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' h2o.skewness(prostate.hex$AGE)
+#' }
+#' @export
+h2o.skewness <- function(x, ...,na.rm=TRUE) .eval.scalar(.newExpr("skewness",x,na.rm))
+
+#' @rdname h2o.mean
+#' @export
+skewness.H2OFrame <- h2o.skewness
 
 #
 #" Mode of a enum or int column.
@@ -2107,8 +2132,6 @@ round <- function(x, digits=0) {
   else base::round(x,digits)
 }
 
-
-
 #'
 #' Scaling and Centering of an H2OFrame
 #'
@@ -2137,7 +2160,282 @@ h2o.scale <- function(x, center = TRUE, scale = TRUE) .newExpr("scale", chk.H2OF
 scale.H2OFrame <- h2o.scale
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Casting Operations: as.data.frame, as.factor,
+# Below takes H2O primitives and appends h2o.* to ensure all H2O primitives exist with h2o.*
+# This will deal with some of the primitives in H2O:
+# .h2o.primitives = c(
+#    "*", "+", "/", "-", "^", "%%", "%/%", #No h2o.* needed...#
+#    "==", "!=", "<", ">", "<=", ">=", #No h2o.* needed...#
+#    "cos", "sin", "acos", "cosh", "tan", "tanh", "exp", "log", "sqrt",
+#    "abs", "ceiling", "floor",
+#    "mean", "sd", "sum", "prod", "all", "any", "min", "max",
+#    "is.factor", #No h2o.* needed to avoid confusion.#
+#    "nrow", "ncol", "length"
+#  )
+#-----------------------------------------------------------------------------------------------------------------------
+
+#'
+#' Compute the cosine of x
+#'
+#' @name h2o.cos
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{cos}} for the base R implementation.
+#' @export
+h2o.cos <- function(x) {
+  if( is.H2OFrame(x) ) cos(x)
+  else cos(x)
+}
+
+#'
+#' Compute the sine of x
+#'
+#' @name h2o.sin
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{sin}} for the base R implementation.
+#' @export
+h2o.sin <- function(x) {
+  if( is.H2OFrame(x) ) sin(x)
+  else sin(x)
+}
+
+#'
+#' Compute the arc cosine of x
+#'
+#' @name h2o.acos
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{acos}} for the base R implementation.
+#' @export
+h2o.acos <- function(x) {
+  if( is.H2OFrame(x) ) acos(x)
+  else acos(x)
+}
+
+#'
+#' Compute the hyperbolic cosine of x
+#'
+#' @name h2o.cosh
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{cosh}} for the base R implementation.
+#' @export
+h2o.cosh <- function(x) {
+  if( is.H2OFrame(x) ) cosh(x)
+  else cosh(x)
+}
+
+#'
+#' Compute the tangent of x
+#'
+#' @name h2o.tan
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{tan}} for the base R implementation.
+#' @export
+h2o.tan <- function(x) {
+  if( is.H2OFrame(x) ) tan(x)
+  else tan(x)
+}
+
+#'
+#' Compute the hyperbolic tangent of x
+#'
+#' @name h2o.tanh
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{tanh}} for the base R implementation.
+#' @export
+h2o.tanh <- function(x) {
+  if( is.H2OFrame(x) ) tanh(x)
+  else tanh(x)
+}
+
+#'
+#' Compute the exponential function of x
+#'
+#' @name h2o.exp
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{exp}} for the base R implementation.
+#' @export
+h2o.exp <- function(x) {
+  if( is.H2OFrame(x) ) exp(x)
+  else exp(x)
+}
+
+#'
+#' Compute the logarithm of x
+#'
+#' @name h2o.log
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{log}} for the base R implementation.
+#' @export
+h2o.log <- function(x) {
+  if( is.H2OFrame(x) ) log(x)
+  else log(x)
+}
+
+#'
+#' Compute the square root of x
+#'
+#' @name h2o.sqrt
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{sqrt}} for the base R implementation.
+#' @export
+h2o.sqrt <- function(x) {
+  if( is.H2OFrame(x) ) sqrt(x)
+  else sqrt(x)
+}
+
+#'
+#' Compute the absolute value of x
+#'
+#' @name h2o.abs
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{abs}} for the base R implementation.
+#' @export
+h2o.abs <- function(x) {
+  if( is.H2OFrame(x) ) abs(x)
+  else abs(x)
+}
+
+#'
+#' ceiling takes a single numeric argument x and returns a
+#' numeric vector containing the smallest integers not less than the
+#' corresponding elements of x.
+#'
+#' @name h2o.ceiling
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{ceiling}} for the base R implementation.
+#' @export
+h2o.ceiling <- function(x) {
+  if( is.H2OFrame(x) ) ceiling(x)
+  else ceiling(x)
+}
+
+#'
+#' floor takes a single numeric argument x and returns a numeric
+#' vector containing the largest integers not greater than the
+#' corresponding elements of x.
+#'
+#' @name h2o.floor
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{floor}} for the base R implementation.
+#' @export
+h2o.floor <- function(x) {
+  if( is.H2OFrame(x) ) floor(x)
+  else floor(x)
+}
+
+#'
+#' Return the sum of all the values present in its arguments.
+#'
+#' @name h2o.sum
+#' @param x An H2OFrame object.
+#' @param na.rm \code{logical}. indicating whether missing values should be removed.
+#' @seealso \code{\link[base]{sum}} for the base R implementation.
+#' @export
+h2o.sum <- function(x,na.rm = FALSE) {
+  if( is.H2OFrame(x) ) sum(x,na.rm)
+  else sum(x,na.rm)
+}
+
+#'
+#' Return the product of all the values present in its arguments.
+#'
+#' @name h2o.prod
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{prod}} for the base R implementation.
+#' @export
+h2o.prod <- function(x) {
+  if( is.H2OFrame(x) ) prod(x)
+  else prod(x)
+}
+
+#'
+#' Given a set of logical vectors, are all of the values true?
+#'
+#' @name h2o.all
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{all}} for the base R implementation.
+#' @export
+h2o.all <- function(x) {
+  if( is.H2OFrame(x) ) all(x)
+  else all(x)
+}
+
+#'
+#' Given a set of logical vectors, is at least one of the values true?
+#'
+#' @name h2o.any
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{all}} for the base R implementation.
+#' @export
+h2o.any <- function(x) {
+  if( is.H2OFrame(x) ) all(x)
+  else all(x)
+}
+
+#'
+#' Returns the minima of the input values.
+#'
+#' @name h2o.min
+#' @param x An H2OFrame object.
+#' @param na.rm \code{logical}. indicating whether missing values should be removed.
+#' @seealso \code{\link[base]{min}} for the base R implementation.
+#' @export
+h2o.min <- function(x,na.rm = FALSE) {
+  if( is.H2OFrame(x) ) min(x,na.rm)
+  else min(x,na.rm)
+}
+
+#'
+#' Returns the maxima of the input values.
+#'
+#' @name h2o.max
+#' @param x An H2OFrame object.
+#' @param na.rm \code{logical}. indicating whether missing values should be removed.
+#' @seealso \code{\link[base]{max}} for the base R implementation.
+#' @export
+h2o.max <- function(x,na.rm = FALSE) {
+  if( is.H2OFrame(x) ) max(x,na.rm)
+  else max(x,na.rm)
+}
+
+#'
+#' Return the number of rows present in x.
+#'
+#' @name h2o.nrow
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{nrow}} for the base R implementation.
+#' @export
+h2o.nrow <- function(x) {
+  if( is.H2OFrame(x) ) nrow(x)
+  else nrow(x)
+}
+
+#'
+#' Return the number of columns present in x.
+#'
+#' @name h2o.ncol
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{ncol}} for the base R implementation.
+#' @export
+h2o.ncol <- function(x) {
+  if( is.H2OFrame(x) ) ncol(x)
+  else ncol(x)
+}
+
+#'
+#' Returns a vector containing the minimum and maximum of all the given arguments.
+#'
+#' @name h2o.range
+#' @param x An H2OFrame object.
+#' @param na.rm \code{logical}. indicating whether missing values should be removed.
+#' @param finite \code{logical}. indicating if all non-finite elements should be omitted.
+#' @seealso \code{\link[base]{range}} for the base R implementation.
+#' @export
+h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
+  if( is.H2OFrame(x) ) range(x,na.rm,finite)
+  else range(x,na.rm,finite)
+}
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Casting Operations: as.data.frame, as.factor
 #-----------------------------------------------------------------------------------------------------------------------
 
 #'
@@ -2285,7 +2583,7 @@ as.logical.H2OFrame <- function(x, ...) as.vector.H2OFrame(x, "logical")
 #'
 #' Convert a column into a factor column.
 #' @param x a column from an H2OFrame data set.
-#' @seealso \code{\link{is.factor}}.
+#' @seealso \code{\link{as.factor}}.
 #' @examples
 #' \donttest{
 #' h2o.init()
@@ -2459,20 +2757,17 @@ h2o.rbind <- function(...) {
 
 #' Merge Two H2O Data Frames
 #'
-#' Merges two H2OFrame objects by shared column names. Unlike the
-#' base R implementation, \code{h2o.merge} only supports merging through shared
-#' column names.
-#'
-#' In order for \code{h2o.merge} to work in multinode clusters, one of the
-#' datasets must be small enough to exist in every node. Currently, this
-#' function only supports \code{all.x = TRUE}. All other permutations will fail.
+#' Merges two H2OFrame objects with the same arguments and meanings
+#' as merge() in base R.
 #'
 #' @param x,y H2OFrame objects
+#' @param by columns used for merging by default the common names
+#' @param by.x x columns used for merging by name or number
+#' @param by.y y columns used for merging by name or number
+#' @param all TRUE includes all rows in x and all rows in y even if there is no match to the other
 #' @param all.x If all.x is true, all rows in the x will be included, even if there is no matching
 #'        row in y, and vice-versa for all.y.
 #' @param all.y see all.x
-#' @param by.x x columns used for merging.
-#' @param by.y y columns used for merging.
 #' @param method auto, radix, or hash (default)
 #' @examples
 #' \donttest{
@@ -2486,12 +2781,22 @@ h2o.rbind <- function(...) {
 #' left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
 #' }
 #' @export
-h2o.merge <- function(x, y, all.x = FALSE, all.y = FALSE, by.x=NULL, by.y=NULL, method="hash") {
-  common.names = intersect(names(x), names(y))
-  if (length(common.names) == 0) stop("No columns in common to merge on!")
-  if (is.null(by.x)) by.x = match(common.names, names(x))
-  if (is.null(by.y)) by.y = match(common.names, names(y))
-  .newExpr("merge", x, y, all.x, all.y, by.x, by.y, .quote(method))
+h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, all=FALSE, all.x=all, all.y=all, method="hash") {
+  if (length(by.x) != length(by.y)) stop("`by.x` and `by.y` must be the same length.")
+  if (!length(by.x)) stop("`by` or `by.x` must specify at least one column") 
+  checkMatch = function(x,y) {
+    tt = match(x,y,nomatch=NA)
+    if (anyNA(tt)) stop("Column '", x[is.na(tt)[1]], "' in ", substitute(x), " not found")
+    tt
+  }
+  if (!is.numeric(by.x)) by.x = checkMatch(by.x, names(x))
+  else if (any(is.na(by.x) | by.x<1 | by.x>ncol(x))) stop("by.x contains NA or an item outside range [1,ncol(x)]")
+  if (!is.numeric(by.y)) by.y = checkMatch(by.y, names(y))
+  else if (any(is.na(by.y) | by.y<1 | by.y>ncol(y))) stop("by.y contains NA or an item outside range [1,ncol(y)]")
+  if (anyDuplicated(by.x)) stop("by.x contains duplicates")
+  if (anyDuplicated(by.y)) stop("by.y contains duplicates")
+  # -1L to be clear rapids in 0-based
+  .newExpr("merge", x, y, all.x, all.y, by.x-1L, by.y-1L, .quote(method))
 }
 
 

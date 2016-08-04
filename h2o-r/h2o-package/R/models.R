@@ -490,6 +490,9 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #'        match the dataset that was used to train the model, in terms of
 #'        column names, types, and dimensions. If newdata is passed in, then train, valid, and xval are ignored.
 #' @param train A logical value indicating whether to return the training metrics (constructed during training).
+#' 
+#' Note: when the trained h2o model uses balance_classes, the training metrics constructed during training will be from the balanced training dataset.
+#' For more information visit: \url{https://0xdata.atlassian.net/browse/TN-9}
 #' @param valid A logical value indicating whether to return the validation metrics (constructed during training).
 #' @param xval A logical value indicating whether to return the cross-validation metrics (constructed during training). 
 #' @param data (DEPRECATED) An H2OFrame. This argument is now called `newdata`.
@@ -503,6 +506,12 @@ h2o.crossValidate <- function(model, nfolds, model.type = c("gbm", "glm", "deepl
 #' prostate.hex$CAPSULE <- as.factor(prostate.hex$CAPSULE)
 #' prostate.gbm <- h2o.gbm(3:9, "CAPSULE", prostate.hex)
 #' h2o.performance(model = prostate.gbm, newdata=prostate.hex)
+#' 
+#' ## If model uses balance_classes
+#' ## the results from train = TRUE will not match the results from newdata = prostate.hex
+#' prostate.gbm.balanced <- h2o.gbm(3:9, "CAPSULE", prostate.hex, balance_classes = TRUE)
+#' h2o.performance(model = prostate.gbm.balanced, newdata = prostate.hex)
+#' h2o.performance(model = prostate.gbm.balanced, train = TRUE)
 #' }
 #' @export
 h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=FALSE, data=NULL) {
@@ -794,6 +803,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' Retrieve the R2 value
 #'
 #' Retrieves the R2 value from an H2O model.
+#' Will return R^2 for GLM Models and will return NaN otherwise.
 #' If "train", "valid", and "xval" parameters are FALSE (default), then the training R2 value is returned. If more
 #' than one parameter is set to TRUE, then a named vector of R2s are returned, where the names are "train", "valid"
 #' or "xval".
@@ -809,7 +819,7 @@ h2o.aic <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h <- h2o.init()
 #' fr <- as.h2o(iris)
 #'
-#' m <- h2o.deeplearning(x=2:5,y=1,training_frame=fr)
+#' m <- h2o.glm(x=2:5,y=1,training_frame=fr)
 #'
 #' h2o.r2(m)
 #' }

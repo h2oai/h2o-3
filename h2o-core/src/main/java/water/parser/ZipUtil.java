@@ -10,13 +10,16 @@ import water.util.UnsafeUtils;
 
 abstract class ZipUtil {
 
-  public static enum Compression { NONE, ZIP, GZIP }
+  public enum Compression { NONE, ZIP, GZIP }
 
   static byte [] getFirstUnzippedBytes( ByteVec bv ) {
-    try{
+    try {
       byte[] bits = bv.getFirstBytes();
       return unzipBytes(bits, guessCompressionMethod(bits), FileVec.DFLT_CHUNK_SIZE);
-    } catch(Exception e) { return null; }
+    } catch(Exception e) {
+      Log.debug("Cannot get unzipped bytes from ByteVec!", e);
+      return null;
+    }
   }
 
   static Compression guessCompressionMethod(byte [] bits) {

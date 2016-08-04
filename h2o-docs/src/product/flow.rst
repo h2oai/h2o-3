@@ -1,3 +1,5 @@
+.. _using-flow:
+
 Using Flow - H2O's Web UI
 =========================
 

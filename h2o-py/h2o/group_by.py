@@ -7,12 +7,13 @@ Group-by operations on an H2OFrame.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from .expr import ExprNode
 import h2o
+from h2o.expr import ExprNode
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import is_str, is_listlike, is_int
 
 
-class GroupBy:
+class GroupBy(object):
     """
     A class that represents the group by operation on an H2OFrame.
 

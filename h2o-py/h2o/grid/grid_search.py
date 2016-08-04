@@ -15,9 +15,10 @@ from h2o.frame import H2OFrame
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
-from .metrics import *
+from h2o.grid.metrics import *
 from h2o.utils.shared_utils import quoted
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import is_listlike, is_int
 
 
 class H2OGridSearch(object):

@@ -1,7 +1,7 @@
 from future import standard_library
 standard_library.install_aliases()
 import sys
-sys.path.insert(1,"../../")
+sys.path.insert(1, "../../")
 import h2o
 from tests import pyunit_utils
 ################################################################################
@@ -19,7 +19,7 @@ def separator():
 
     fhex = h2o.import_file(pyunit_utils.locate(path), sep=",")
     fhex.summary()
-    fhex_col_summary =  h2o.H2OConnection.get_json("Frames/" + urllib.parse.quote(fhex.frame_id) + "/summary")["frames"][0]["columns"]
+    fhex_col_summary = h2o.api("GET /3/Frames/%s/summary" % urllib.parse.quote(fhex.frame_id))["frames"][0]["columns"]
     fhex_missing_count = sum([e["missing_count"] for e in fhex_col_summary])
     assert fhex_missing_count == 0
 

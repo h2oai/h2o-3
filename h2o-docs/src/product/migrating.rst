@@ -1,3 +1,5 @@
+.. _migration:
+
 Migrating to H2O 3
 ==================
 

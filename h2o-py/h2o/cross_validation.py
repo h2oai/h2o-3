@@ -1,3 +1,14 @@
+# -*- encoding: utf-8 -*-
+"""
+Cross-validation.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
+from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
+
+
 class H2OPartitionIterator(object):
     def __init__(self, n):
         if abs(n - int(n)) >= 1e-15: raise ValueError("n must be an integer")
@@ -9,7 +20,7 @@ class H2OPartitionIterator(object):
             yield 1 - test_mask, test_mask
 
     def _test_masks(self):
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class H2OKFold(H2OPartitionIterator):

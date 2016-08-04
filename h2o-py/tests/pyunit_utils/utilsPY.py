@@ -36,7 +36,8 @@ from random import shuffle
 
 def check_models(model1, model2, use_cross_validation=False, op='e'):
     """
-    Check that the given models are equivalent
+    Check that the given models are equivalent.
+
     :param model1:
     :param model2:
     :param use_cross_validation: boolean. if True, use validation metrics to determine model equality. Otherwise, use
@@ -324,15 +325,15 @@ def locate(path):
     :return: Absolute path if it is found.  None otherwise.
     """
     if (test_is_on_hadoop()):
-       # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
-       # in an h2o multinode hadoop cluster scenario, the clustered machines don't know about the symbolic link.
-       # Consequently, `locate` needs to return the actual path to the data on the clustered machines. ALL jenkins
-       # machines store smalldata and bigdata in /home/0xdiag/. If ON.HADOOP is set by the run.py, the path arg MUST
-       # be an immediate subdirectory of /home/0xdiag/. Moreover, the only guaranteed subdirectories of /home/0xdiag/ are
-       # smalldata and bigdata.
-       p = os.path.realpath(os.path.join("/home/0xdiag/",path))
-       if not os.path.exists(p): raise ValueError("File not found: " + path)
-       return p
+        # Jenkins jobs create symbolic links to smalldata and bigdata on the machine that starts the test. However,
+        # in an h2o multinode hadoop cluster scenario, the clustered machines don't know about the symbolic link.
+        # Consequently, `locate` needs to return the actual path to the data on the clustered machines. ALL jenkins
+        # machines store smalldata and bigdata in /home/0xdiag/. If ON.HADOOP is set by the run.py, the path arg MUST
+        # be an immediate subdirectory of /home/0xdiag/. Moreover, the only guaranteed subdirectories of /home/0xdiag/
+        # are smalldata and bigdata.
+        p = os.path.realpath(os.path.join("/home/0xdiag/", path))
+        if not os.path.exists(p): raise ValueError("File not found: " + path)
+        return p
     else:
         tmp_dir = os.path.realpath(os.getcwd())
         possible_result = os.path.join(tmp_dir, path)
@@ -472,7 +473,8 @@ def expect_model_param(models, attribute_name, expected_values):
                                                             .format(expected_values[i], actual_values[i])
 
 
-def rest_ctr():  return h2o.H2OConnection.rest_ctr()
+def rest_ctr():
+    return h2o.connection().requests_count
 
 
 def write_syn_floating_point_dataset_glm(csv_training_data_filename, csv_validation_data_filename,
@@ -2507,17 +2509,13 @@ def check_and_count_models(hyper_params, params_zero_one, params_more_than_zero,
 
 def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
     """
-    This function will write a json file of the hyper_parameters in directories dir1 and dir2
-    for debugging purposes.
+    Write a json file of the hyper_parameters in directories dir1 and dir2 for debugging purposes.
 
     :param dir1: String containing first directory where you want to write the json file to
     :param dir2: String containing second directory where you want to write the json file to
     :param json_filename: String containing json file name
     :param hyper_parameters: dict containing hyper-parameters used
-
-    :return: None.
     """
-
     # save hyper-parameter file in test directory
     with open(os.path.join(dir1, json_filename), 'w') as test_file:
         json.dump(hyper_parameters, test_file)
@@ -2525,5 +2523,3 @@ def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
     # save hyper-parameter file in sandbox
     with open(os.path.join(dir2, json_filename), 'w') as test_file:
         json.dump(hyper_parameters, test_file)
-
-

@@ -12,19 +12,21 @@ from __future__ import print_function
 import sys
 sys.path.insert(0, "../..")
 import h2o
+from h2o.backend import H2OLocalServer
+from h2o.exceptions import H2OConnectionError
 
 PORT = 55330
 
 # Check whether there is already an instance running at the specified port, and if so shut it down.
 try:
-    conn = h2o.connect(port=PORT)
-    conn.shutdown(prompt=False)
-except h2o.H2OConnectionError:
+    conn = h2o.connect(ip="localhost", port=PORT)
+    conn.shutdown_server(prompt=False)
+except H2OConnectionError:
     pass
 
 
 # Now start a new H2O server and connect to it.
-server = h2o.start(port=str(PORT) + "+")
+server = H2OLocalServer.start(port=str(PORT) + "+")
 conn = h2o.connect(server=server)
 
 # Get if cluster is up (True) or not (False)

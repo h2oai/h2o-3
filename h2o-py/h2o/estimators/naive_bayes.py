@@ -10,7 +10,7 @@ from .estimator_base import H2OEstimator
 class H2ONaiveBayesEstimator(H2OEstimator):
     """
     Naive Bayes
-    -----------
+
     The naive Bayes classifier assumes independence between predictor variables
     conditional on the response, and a Gaussian distribution of numeric predictors with
     mean and standard deviation computed from the training dataset. When building a naive
@@ -18,7 +18,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     be skipped completely. If the test dataset has missing values, then those predictors
     are omitted in the probability calculation during prediction.
 
-    Parameters (optional, unless specified otherwise)
+    Parameters
     ----------
       model_id : str
         Destination id for this model; auto-generated if not specified.

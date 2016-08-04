@@ -15,7 +15,8 @@ from ..model.dim_reduction import H2ODimReductionModel
 from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
 from ..model.metrics_base import *
-from ..utils.shared_utils import quoted
+from h2o.utils.shared_utils import quoted
+from h2o.utils.typechecks import is_int
 import h2o
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame

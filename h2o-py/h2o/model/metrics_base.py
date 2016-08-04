@@ -7,9 +7,11 @@ Regression model.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from h2o.utils.compatibility import *  # NOQA
-from h2o.model.confusion_matrix import ConfusionMatrix
 import imp
+
+from h2o.model.confusion_matrix import ConfusionMatrix
+from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import assert_is_numeric, is_numeric
 
 
 class MetricsBase(object):
@@ -20,6 +22,8 @@ class MetricsBase(object):
     """
 
     def __init__(self, metric_json, on=None, algo=""):
+        # Yep, it's messed up...
+        if isinstance(metric_json, MetricsBase): metric_json = metric_json._metric_json
         self._metric_json = metric_json
         self._on_train = False  # train and valid and xval are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
         self._on_valid = False
@@ -36,9 +40,19 @@ class MetricsBase(object):
         else:
             raise ValueError("on expected to be train,valid,or xval. Got: " + str(on))
 
+    @classmethod
+    def make(cls, kvs):
+        """Factory method to instantiate a MetricsBase object from the list of key-value pairs."""
+        return cls(metric_json=dict(kvs))
+
     def __repr__(self):
+        # FIXME !!!  __repr__ should never print anything, but return a string
         self.show()
         return ""
+
+    # TODO: convert to actual fields list
+    def __getitem__(self, key):
+        return self._metric_json.get(key)
 
     @staticmethod
     def _has(dictionary, key):
@@ -83,8 +97,8 @@ class MetricsBase(object):
         if metric_type in types_w_logloss:
             print("LogLoss: " + str(self.logloss()))
         if metric_type == 'ModelMetricsBinomial':
-            print("Mean Per-Class Error: " + str(self.mean_per_class_error()[0][
-                                                     1]))  ## second element for first threshold is the actual mean per class error
+            # second element for first threshold is the actual mean per class error
+            print("Mean Per-Class Error: %s" % self.mean_per_class_error()[0][1])
         if metric_type == 'ModelMetricsMultinomial':
             print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
         if metric_type in types_w_glm:
@@ -572,7 +586,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param threshold: Find the index of this input threshold.
         :return: Return the index or throw a ValueError if no such index can be found.
         """
-        assert_is_numeric(threshold, "threshold")
+        assert_is_numeric(threshold)
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         for i, e in enumerate(thresh2d.cell_values):
             t = float(e[0])

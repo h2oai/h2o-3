@@ -166,6 +166,9 @@ public class ScoringInfo extends Iced {
     if (isClassifier) {
       colHeaders.add("Training Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
     }
+    if(modelCategory == ModelCategory.AutoEncoder) {
+      colHeaders.add("Training MSE"); colTypes.add("double"); colFormat.add("%.5f");
+    }
     if (hasValidation) {
       colHeaders.add("Validation RMSE"); colTypes.add("double"); colFormat.add("%.5f");
       if (modelCategory == ModelCategory.Regression) {
@@ -183,6 +186,9 @@ public class ScoringInfo extends Iced {
       }
       if (isClassifier) {
         colHeaders.add("Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if(modelCategory == ModelCategory.AutoEncoder) {
+        colHeaders.add("Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
       }
     } // (hasValidation)
     if (hasCrossValidation) {
@@ -202,6 +208,9 @@ public class ScoringInfo extends Iced {
       }
       if (isClassifier) {
         colHeaders.add("Cross-Validation Classification Error"); colTypes.add("double"); colFormat.add("%.5f");
+      }
+      if(modelCategory == ModelCategory.AutoEncoder) {
+        colHeaders.add("Cross-Validation MSE"); colTypes.add("double"); colFormat.add("%.5f");
       }
     } // (hasCrossValidation)
 
@@ -257,6 +266,9 @@ public class ScoringInfo extends Iced {
       if (isClassifier) {
         table.set(row, col++, si.scored_train != null ? si.scored_train._classError : Double.NaN);
       }
+      if (isAutoencoder) {
+        table.set(row, col++, si.scored_train != null ? si.scored_train._mse : Double.NaN);
+      }
       if (hasValidation) {
         table.set(row, col++, si.scored_valid != null ? si.scored_valid._rmse : Double.NaN);
         if (modelCategory == ModelCategory.Regression) {
@@ -274,6 +286,9 @@ public class ScoringInfo extends Iced {
         }
         if (isClassifier) {
           table.set(row, col, si.scored_valid != null ? si.scored_valid._classError : Double.NaN);
+        }
+        if (isAutoencoder) {
+          table.set(row, col++, si.scored_valid != null ? si.scored_valid._mse : Double.NaN);
         }
       } // hasValidation
       if (hasCrossValidation) {
@@ -293,6 +308,9 @@ public class ScoringInfo extends Iced {
         }
         if (isClassifier) {
           table.set(row, col, si.scored_xval != null ? si.scored_xval._classError : Double.NaN);
+        }
+        if (isAutoencoder) {
+          table.set(row, col++, si.scored_xval != null ? si.scored_xval._mse : Double.NaN);
         }
       } // hasCrossValidation
       row++;

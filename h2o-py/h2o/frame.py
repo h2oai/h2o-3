@@ -1,28 +1,35 @@
 # -*- encoding: utf-8 -*-
-#
-# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
-#
+"""
+H2O data frame.
+
+:copyright: (c) 2016 H2O.ai
+:license:   Apache License Version 2.0 (see LICENSE for details)
+"""
 from __future__ import division, print_function, absolute_import, unicode_literals
 
-import requests
 import collections
-from io import StringIO
 import csv
+import functools
 import imp
 import os
-import tempfile
 import sys
+import tempfile
 import traceback
+import warnings
+from io import StringIO
+
+import requests
+
+
+import h2o
 from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list, \
     _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote, _py_tmp_key
 from .display import H2ODisplay
 from .job import H2OJob
 from .expr import ExprNode
 from .group_by import GroupBy
-import h2o
 from h2o.utils.compatibility import *  # NOQA
-from functools import reduce
-import warnings
+from h2o.utils.typechecks import is_str, is_int, is_listlike
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
@@ -193,6 +200,8 @@ class H2OFrame(object):
         return fr
 
     def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
+        if is_str(path) and "://" not in path:
+            path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
         return self
@@ -430,8 +439,8 @@ class H2OFrame(object):
             print(self._ex._cache._tabulate("simple", True))
 
     def describe(self):
-        """Generate an in-depth description of this H2OFrame. Everything in summary(), plus
-        the data layout.
+        """
+        Generate an in-depth description of this H2OFrame. Everything in summary(), plus the data layout.
         """
         # Force a fetch of 10 rows; the chunk & distribution summaries are not
         # cached, so must be pulled.  While we're at it, go ahead and fill in
@@ -968,7 +977,10 @@ class H2OFrame(object):
         -------
           An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
         """
-        return reduce(H2OFrame.__or__, (self == i for i in item)) if _is_list(item) else self == item
+        if is_listlike(item):
+            return functools.reduce(H2OFrame.__or__, (self == i for i in item))
+        else:
+            return self == item
 
     def kfold_column(self, n_folds=3, seed=-1):
         """Build a fold assignments column for cross-validation. This call will produce a
@@ -1073,11 +1085,11 @@ class H2OFrame(object):
           A local python string, each line is a row and each element separated by commas,
           containing this H2OFrame instance's data.
         """
-        url = h2o.conn().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
+        url = h2o.connection().make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(self.frame_id)
         # TODO: this should be moved into H2OConnection class
         return requests.get(url, headers={'User-Agent': 'H2O Python client/' + sys.version.replace('\n', '')},
-                            auth=h2o.conn()._auth,
-                            verify=h2o.conn()._verify_ssl_cert, stream=True).text
+                            auth=h2o.connection()._auth,
+                            verify=h2o.connection()._verify_ssl_cert, stream=True).text
 
     def __getitem__(self, item):
         """Frame slicing. Supports R-like row and column slicing.
@@ -1165,6 +1177,11 @@ class H2OFrame(object):
         fr._ex._cache.names = new_names
         fr._ex._cache.types = new_types
         return fr
+
+    # def __getattr__(self, key):
+    #     if key in self.names:
+    #         return self[key]
+    #     raise AttributeError(".%s column not found in H2OFrame" % key)
 
     def _compute_ncol_update(self, item):  # computes new ncol, names, and types
         try:
@@ -1337,16 +1354,12 @@ class H2OFrame(object):
         return fr
 
     def pop(self, i):
-        """Pop a column from the H2OFrame at index i
+        """
+        Pop a column from the H2OFrame at index i.
 
-        Parameters
-        ----------
-        i : int, str
-          The index or name of the column to pop.
+        :param i: The index (int) or name (str) of the column to pop.
 
-        Returns
-        -------
-          The column dropped from the frame; the frame is side-effected to lose the column.
+        :returns: The column dropped from the frame; the frame is side-effected to lose the column.
         """
         if is_str(i): i = self.names.index(i)
         col = H2OFrame._expr(expr=ExprNode("cols", self, i))
@@ -1736,6 +1749,20 @@ class H2OFrame(object):
         """
         return ExprNode("mean", self, na_rm)._eager_scalar()
 
+    def skewness(self, na_rm=False):
+        """Compute the skewness.
+
+        Parameters
+        ----------
+          na_rm: bool, default=False
+            If True, then remove NAs from the computation.
+
+        Returns
+        -------
+          A list containing the skewness for each column (NaN for non-numeric columns).
+        """
+        return ExprNode("skewness", self, na_rm)._eager_scalar()
+
     def nacnt(self):
         """Count of NAs for each column in this H2OFrame.
 
@@ -1760,7 +1787,9 @@ class H2OFrame(object):
         return ExprNode("median", self, na_rm)._eager_scalar()
 
     def var(self, y=None, na_rm=False, use=None):
-        """Compute the variance or covariance matrix of one or two H2OFrames.
+        """
+        Compute the variance or covariance matrix of one or two H2OFrames.
+
         Parameters
         ----------
         y : H2OFrame, default=None
@@ -1774,6 +1803,7 @@ class H2OFrame(object):
             "everything"            - outputs NaNs whenever one of its contributing observations is missing
             "all.obs"               - presence of missing observations will throw an error
             "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+
         Returns
         -------
           An H2OFrame of the covariance matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y
@@ -1819,6 +1849,7 @@ class H2OFrame(object):
             "everything"            - outputs NaNs whenever one of its contributing observations is missing
             "all.obs"               - presence of missing observations will throw an error
             "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+
         Returns
         -------
           An H2OFrame of the correlation matrix of the columns of this H2OFrame with itself (if y is not given), or with the columns of y
@@ -1831,11 +1862,7 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("cor", self, y, use))._frame()
 
     def asfactor(self):
-        """
-        Returns
-        -------
-          H2Oframe of one column converted to a factor.
-        """
+        """Create H2Oframe of one column converted to a factor."""
         fr = H2OFrame._expr(expr=ExprNode("as.factor", self), cache=self._ex._cache)
         if fr._ex._cache.types_valid():
             fr._ex._cache.types = {list(fr._ex._cache.types)[0]: "enum"}

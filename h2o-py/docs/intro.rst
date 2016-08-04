@@ -10,8 +10,8 @@ by an IP address and a port) via a series of REST calls (see connection.py for t
 layer implementation and details).
 
 There is a single active connection to the H2O JVM at any time, and this handle is stashed
-out of sight in a singleton instance of :class:`H2OConnection` (this is the global
-:envvar:`__H2OConn__`). In other words, this package does not rely on Jython, and there
+out of sight in a singleton instance of :class:`H2OConnection`. In other words, this
+package does not rely on Jython, and there
 is no direct manipulation of the JVM.
 
 The H2O python module is not intended as a replacement for other popular machine learning
@@ -95,45 +95,41 @@ There are many tools for directly interacting with user-visible objects in the H
 Every new python session begins by initializing a connection between the python client and
 the H2O cluster:
 
-  >>> import h2o
-  >>> h2o.init()
+    >>> import h2o
+    >>> h2o.init()
 
-By default, this will attempt to discover an H2O at `localhost:54321`. If it fails to find
-a running H2O instance at this address, it will seek out an h2o jar at one of four
-possible locations (depending on how the h2o module was installed). To see the possible
-search locations, use the :mod:`jar_paths` command available as a static method in
-:class:`H2OConnection`:
+By default, this will attempt to discover an H2O at ``localhost:54321``. If it fails to find
+a running H2O instance at this address, it will seek out an h2o jar at several possible
+locations. If no jar is found, then an :class:`H2OStartupError` will be raised:
 
-
-  >>> h2o.H2OConnection.jar_paths()
-  ['/usr/local/Cellar/python/2.7.9/Frameworks/Python.framework/Versions/2.7/h2o_jar/h2o.jar',
-  '/usr/local/h2o_jar/h2o.jar',
-  '/usr/local/Cellar/python/2.7.9/Frameworks/Python.framework/Versions/2.7/local/h2o_jar/h2o.jar',
-  '/Users/spencer/Library/Python/2.7/h2o_jar/h2o.jar']
-
-If no jar is found, then an :mod:`EnvironmentError` will be raised:
-
-.. code-block:: python
-
-  EnvironmentError: Max retries exceeded. Could not establish link to the H2O cloud @ localhost:54321
+    >>> h2o.init()
+    Connecting to H2O server at http://localhost:54321....... failed.
+    H2OStartupError:
+        Cannot start local server: h2o.jar not found. Paths searched:
+        /Users/me/github/h2o-3/build/h2o.jar
+        /Library/Frameworks/Python.framework/Versions/2.7/h2o_jar/h2o.jar
+        /usr/local/h2o_jar/h2o.jar
+        /Library/Frameworks/Python.framework/Versions/2.7/local/h2o_jar/h2o.jar
+        /Users/me/Library/Python/2.7/h2o_jar/h2o.jar
+        /Library/Frameworks/Python.framework/Versions/2.7/h2o_jar/h2o.jar
 
 After making a successful connection, you can obtain a high-level summary of the cluster
 status:
 
->>> h2o.cluster_info()
---------------------------  ---------------------------
-H2O cluster uptime:         13 seconds 903 milliseconds
-H2O cluster version:        (unknown)
-H2O cluster name:           spIdea
-H2O cluster total nodes:    1
-H2O cluster total memory:   12.44 GB
-H2O cluster total cores:    8
-H2O cluster allowed cores:  8
-H2O cluster healthy:        True
-H2O Connection ip:          127.0.0.1
-H2O Connection port:        54321
-H2O Connection proxy:
---------------------------  ---------------------------
+    >>> h2o.cluster_info()
+    --------------------------  ---------------------------
+    H2O cluster uptime:         13 seconds 903 milliseconds
+    H2O cluster version:        (unknown)
+    H2O cluster name:           spIdea
+    H2O cluster total nodes:    1
+    H2O cluster total memory:   12.44 GB
+    H2O cluster total cores:    8
+    H2O cluster allowed cores:  8
+    H2O cluster healthy:        True
+    H2O Connection ip:          127.0.0.1
+    H2O Connection port:        54321
+    H2O Connection proxy:
+    --------------------------  ---------------------------
 
 If pip was used to perform a versioned install of the h2o module, then the version field
 would display display something other than `(unknown)`.

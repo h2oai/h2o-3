@@ -27,7 +27,7 @@ import textwrap
 import time
 
 
-class TypeTranslator:
+class TypeTranslator(object):
     """
     Helper class to assist translating H2O types into native types of your target languages. Typically the user extends
     this class, providing the types dictionary, as well as overwriting any type-conversion lambda-functions.

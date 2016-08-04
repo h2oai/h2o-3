@@ -39,6 +39,14 @@ class H2OCluster(object):
         return self._props["build_number"]
 
     @property
+    def build_age(self):
+        return self._props["build_age"]
+
+    @property
+    def build_too_old(self):
+        return self._props["build_too_old"]
+
+    @property
     def cloud_healthy(self):
         return self._props["cloud_healthy"]
 
@@ -86,7 +94,7 @@ class H2OCluster(object):
     @property
     def connection(self):
         if self._connection is None:
-            from ..connection import H2OConnection
+            from h2o.backend.connection import H2OConnection
             self._connection = H2OConnection()
         return self._connection
 
@@ -102,6 +110,7 @@ class H2OCluster(object):
         H2ODisplay([
             ["H2O cluster uptime:",        get_human_readable_time(self.cloud_uptime_millis)],
             ["H2O cluster version:",       self.version],
+            ["H2O cluster version age:",   "{} {}".format(self.build_age, ("!!!" if self.build_too_old else ""))],
             ["H2O cluster name:",          self.cloud_name],
             ["H2O cluster total nodes:",   self.cloud_size],
             ["H2O cluster free memory:",   get_human_readable_bytes(free_mem)],
@@ -109,7 +118,7 @@ class H2OCluster(object):
             ["H2O cluster allowed cores:", str(allowed_cpus)],
             ["H2O cluster is healthy:",    str(cluster_health)],
             ["H2O cluster is locked:",     self.locked],
-            ["H2O connection url:", self.connection.base_url],
+            ["H2O connection url:",        self.connection.base_url],
             ["H2O connection proxy:",      self.connection.proxy],
             ["Python version:",            "%d.%d.%d %s" % tuple(sys.version_info[:4])],
         ])
@@ -118,4 +127,4 @@ class H2OCluster(object):
 
 _cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",
                         "version", "cloud_uptime_millis", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
-                        "nodes"}
+                        "nodes", "build_age", "build_too_old"}

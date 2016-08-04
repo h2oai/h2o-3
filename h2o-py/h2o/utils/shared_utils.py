@@ -13,8 +13,11 @@ import imp
 import itertools
 import os
 import re
+import sys
+import warnings
 
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import assert_is_int, is_str, is_numeric
 
 # private static methods
 _id_ctr = 0
@@ -65,6 +68,9 @@ def urlopen():
         import urllib2
         return urllib2.urlopen
 
+def clamp(x, xmin, xmax):
+    """Return the value of x, clamped from below by `xmin` and from above by `xmax`."""
+    return max(xmin, min(x, xmax))
 
 def _gen_header(cols):
     return ["C" + str(c) for c in range(1, cols + 1, 1)]
@@ -205,7 +211,7 @@ def get_human_readable_bytes(size):
     """
     if size == 0: return "0"
     if size is None: return ""
-    assert_is_int(size, "size")
+    assert_is_int(size)
     assert size >= 0, "`size` cannot be negative, got %d" % size
     suffixes = "PTGMk"
     maxl = len(suffixes)
@@ -271,6 +277,16 @@ def get_human_readable_time(time_ms):
         res = " %d ms" % millis
 
     return res.strip()
+
+
+def print2(msg, flush=False, end="\n"):
+    """
+    This function exists here ONLY because Sphinx.ext.autodoc gets into a bad state when seeing the print()
+    function. When in that state, autodoc doesn't display any errors or warnings, but instead completely
+    ignores the "bysource" member-order option.
+    """
+    print(msg, end=end)
+    if flush: sys.stdout.flush()
 
 
 gen_header = _gen_header
