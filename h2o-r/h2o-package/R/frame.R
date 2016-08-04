@@ -1965,7 +1965,7 @@ mean.H2OFrame <- h2o.mean
 #' @export
 h2o.skewness <- function(x, ...,na.rm=TRUE) .eval.scalar(.newExpr("skewness",x,na.rm))
 
-#' @rdname h2o.mean
+#' @rdname h2o.skewness
 #' @export
 skewness.H2OFrame <- h2o.skewness
 
