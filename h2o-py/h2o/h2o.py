@@ -64,7 +64,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
                                  verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
                                  cluster_name=cluster_name, verbose=verbose)
     if verbose:
-        h2oconn.cluster.status()
+        h2oconn.cluster.show_status()
     return h2oconn
 
 
