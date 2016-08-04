@@ -48,7 +48,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "clip_gradient",
         "network",
         "width",
-        "height"
+        "height",
+        "channels"
     };
 
 
