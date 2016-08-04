@@ -24,7 +24,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
 				"score_each_iteration",
         "overwrite_with_best_model",
         "epochs",
-        "train_samples_per_iteration",
+//        "train_samples_per_iteration",
         "target_ratio_comm_to_comp",
         "seed",
         "rate",
@@ -49,7 +49,9 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "network",
         "width",
         "height",
-        "channels"
+        "channels",
+        "network_definition_file",
+        "network_parameters_file",
     };
 
 
@@ -291,13 +293,19 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, values = {"AUTO","mxnet","caffe","tensorflow"}, help = "Deep Learning Backend.")
     public DeepWaterParameters.Backend backend;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Width of image (optional).")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Width of image.")
     public int width;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Height of image (optional).")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Height of image.")
     public int height;
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Number of (color) channels.")
     public int channels;
+
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path of file containing network definition (graph, architecture).")
+    public String network_definition_file;
+
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path of file containing network (initial) parameters (weights, biases).")
+    public String network_parameters_file;
   }
 }

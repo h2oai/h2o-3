@@ -97,16 +97,24 @@ final public class DeepWaterModelInfo extends Iced {
       }
     }
     _imageTrain = new ImageTrain(_width,_height,_channels);
+
     String network = parameters._network == AUTO ? inception_bn.toString() : parameters._network.toString();
     _imageTrain.buildNet(nClasses, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
 
-    // load a network
-//    _imageTrain.loadModel(expandPath("~/deepwater/Inception/model-symbol.json"));
-    //_imageTrain.loadParam(expandPath("~/deepwater/Inception/model.params"));
+    // load a network if specified
+    final String networkDef = parameters._network_definition_file;
+    if (networkDef != null && !networkDef.isEmpty()) {
+      Log.info("Loading the model definition file: " + networkDef);
+      _imageTrain.loadModel(networkDef);
+    }
+
+    final String networkParms = parameters._network_parameters_file;
+    if (networkParms != null && !networkParms.isEmpty()) {
+      Log.info("Loading the model parameters file: " + networkParms);
+      _imageTrain.loadModel(networkParms);
+    }
   }
-  static String expandPath(String path) {
-    return path.replaceFirst("^~", System.getProperty("user.home"));
-  }
+
   DeepWaterModelInfo deep_clone() {
     AutoBuffer ab = new AutoBuffer();
     this.write(ab);
