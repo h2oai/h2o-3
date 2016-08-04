@@ -197,6 +197,8 @@ final public class H2O {
    */
   public static class
     OptArgs {
+    // Prefix of hidden system properties
+    public static final String SYSTEM_PROP_PREFIX = "sys.ai.h2o.";
     //-----------------------------------------------------------------------------------
     // Help and info
     //-----------------------------------------------------------------------------------
