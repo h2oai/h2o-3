@@ -6,6 +6,7 @@ import java.util.*;
 
 import hex.Model;
 import hex.ToEigenVec;
+import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
@@ -278,6 +279,7 @@ public class FrameUtils {
 
     @Override
     public void compute2() {
+      _frame.read_lock(_j._key);
       if (_nParts < 0) {
         EstimateSizeTask estSize = new EstimateSizeTask().dfork(_frame).getResult();
         Log.debug("Estimator result: ", estSize);
@@ -293,6 +295,17 @@ public class FrameUtils {
       int nChunksPerPart = ((_frame.anyVec().nChunks() - 1) / _nParts) + 1;
       boolean usePartNaming = _nParts > 1;
       new PartExportTask(this, _frame._names, nChunksPerPart, usePartNaming).dfork(_frame);
+    }
+
+    @Override
+    public void onCompletion(CountedCompleter caller) {
+      _frame.unlock(_j);
+    }
+
+    @Override
+    public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller) {
+      _frame.unlock(_j);
+      return super.onExceptionalCompletion(t, caller);
     }
 
     /**
