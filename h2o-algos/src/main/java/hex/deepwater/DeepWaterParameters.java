@@ -1,5 +1,6 @@
 package hex.deepwater;
 
+import com.sun.corba.se.impl.ior.NewObjectKeyTemplateBase;
 import hex.Distribution;
 import hex.Model;
 import hex.ScoreKeeper;
@@ -55,6 +56,8 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public Network _network = Network.AUTO;
   public Backend _backend = Backend.AUTO;
+  public String _network_definition_file=null;
+  public String _network_parameters_file=null;
 
   /**
    * If enabled, store the best model under the destination key of this model at the end of training.
@@ -206,10 +209,31 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_clip_gradient<=0)
       dl.error("_clip_gradient", "Clip gradient must be >= 0");
 
-    if (!_autoencoder) {
-      if (_valid == null)
-        dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
+    if (_width<0)
+      dl.error("_width", "Width must be >=1 or automatic (0).");
+    if (_height<0)
+      dl.error("_height", "Height must be >=1 or automatic (0).");
 
+    if (_channels!=1 && _channels!=3)
+      dl.error("_channels", "Number of channels must be either 1 or 3.");
+
+    if (!classification)
+      dl.error("_response_column", "Only classification is supported right now.");
+
+    if (_autoencoder)
+      dl.error("_autoencoder", "Autoencoder is not supported right now.");
+
+    if (_network == Network.USER) {
+      if (_network_definition_file == null || _network_definition_file.isEmpty())
+        dl.error("_network_definition_file", "network_definition_file must be provided if the network is user-specified.");
+      if (_network_parameters_file == null || _network_parameters_file.isEmpty())
+        dl.error("_network_parameters_file", "network_parameters_file must be provided if the network is user-specified.");
+    } else {
+      if (_network_definition_file != null && !_network_definition_file.isEmpty() && _network != Network.AUTO)
+        dl.error("_network_definition_file", "network_definition_file cannot be provided if a pre-defined network is chosen.");
+    }
+
+    if (!_autoencoder) {
       if (classification) {
         dl.hide("_regression_stop", "regression_stop is used only with regression.");
       } else {
@@ -285,38 +309,17 @@ public class DeepWaterParameters extends Model.Parameters {
             "_regression_stop",
             "_stopping_rounds",
             "_stopping_metric",
-            "_stopping_tolerance",
             "_quiet_mode",
             "_max_confusion_matrix_size",
             "_max_hit_ratio_k",
             "_diagnostics",
             "_variable_importances",
-            "_initial_weight_distribution", //will be ignored anyway
-            "_initial_weight_scale", //will be ignored anyway
-            "_initial_weights",
-            "_initial_biases",
-            "_force_load_balance",
             "_replicate_training_data",
             "_shuffle_training_data",
             "_single_node_mode",
-            "_fast_mode",
-            // Allow modification of the regularization parameters after a checkpoint restart
-            "_l1",
-            "_l2",
-            "_max_w2",
-            "_input_dropout_ratio",
-            "_hidden_dropout_ratios",
-            "_loss",
             "_overwrite_with_best_model",
-            "_missing_values_handling",
-            "_average_activation",
-            "_reproducible",
-            "_export_weights_and_biases",
-            "_elastic_averaging",
-            "_elastic_averaging_moving_rate",
-            "_elastic_averaging_regularization",
             "_mini_batch_size",
-            "_pretrained_autoencoder"
+            "_network_parameters_file"
     };
 
     // the following parameters must not be modified when restarting from a checkpoint
@@ -326,27 +329,18 @@ public class DeepWaterParameters extends Model.Parameters {
             "_activation",
             "_use_all_factor_levels",
             "_standardize",
-            "_adaptive_rate",
             "_autoencoder",
-            "_rho",
-            "_epsilon",
-            "_sparse",
-            "_sparsity_beta",
-            "_col_major",
             "_rate",
             "_rate_annealing",
             "_rate_decay",
             "_momentum_start",
             "_momentum_ramp",
             "_momentum_stable",
-            "_nesterov_accelerated_gradient",
             "_ignore_const_cols",
             "_max_categorical_features",
             "_nfolds",
             "_distribution",
-            "_quantile_alpha",
-            "_huber_alpha",
-            "_tweedie_power"
+            "_network_definition_file"
     };
 
     static void checkCompleteness() {
