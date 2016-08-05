@@ -1,16 +1,3 @@
-		.node{
-        font-size:13px;
-        font-family:Times;
-		font-weight: bold;
-        }
-
-        .node:hover{
-        font-size:14px;
-        }
-
-        .node:hover circle{
-        stroke: yellow;
-        }
 
         #sidebar{
         float:right;
