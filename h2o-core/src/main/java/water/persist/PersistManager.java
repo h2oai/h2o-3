@@ -325,6 +325,17 @@ public class PersistManager {
     return f.exists();
   }
 
+  public boolean isDirectory(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      boolean b = I[Value.HDFS].isDirectory(path);
+      return b;
+    }
+
+    File f = new File(path);
+    return f.isDirectory();
+  }
+
   public long length(String path) {
     if (isHdfsPath(path)) {
       validateHdfsConfigured();
