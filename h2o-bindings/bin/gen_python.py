@@ -223,6 +223,7 @@ def gen_module(schema, algo):
 
 def algo_to_classname(algo):
     if algo == "deeplearning": return "H2ODeepLearningEstimator"
+    if algo == "deepwater": return "H2ODeepWaterEstimator"
     if algo == "gbm": return "H2OGradientBoostingEstimator"
     if algo == "glm": return "H2OGeneralizedLinearEstimator"
     if algo == "glrm": return "H2OGeneralizedLowRankEstimator"
@@ -242,7 +243,11 @@ def help_preamble_for(algo):
         return """
             Build a supervised Deep Neural Network model
             Builds a feed-forward multilayer artificial neural network on an H2OFrame"""
-    if algo == "kmeans":
+    if algo == "deepwater":
+        return """
+            Build a supervised Deep Neural Network model for image classification
+            Builds a artificial neural network on an H2OFrame containing paths of images"""
+    if algo == "kmenas":
         return """Performs k-means clustering on an H2O dataset."""
     if algo == "glrm":
         return """Builds a generalized low rank model of a H2O dataset."""
