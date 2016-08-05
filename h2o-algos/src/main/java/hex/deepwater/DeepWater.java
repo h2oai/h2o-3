@@ -199,21 +199,22 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             assert(best_model.loss() == model.loss());
           }
         }
+      }
+      catch(Throwable t) {
+        if (!(t instanceof Job.JobCancelledException)) t.printStackTrace();
+      }
+      finally {
+        //TODO: refactor DL the same way
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
           if (stop_requested()) {
-            Log.info("Deep Learning model training was interrupted.");
+            Log.info("Deep Water model training was interrupted.");
           } else {
-            Log.info("Finished training the Deep Learning model.");
+            Log.info("Finished training the Deep Water model.");
             Log.info(model);
           }
           Log.info("==============================================================================================================================================================================");
         }
-      }
-      catch(Throwable t) {
-        t.printStackTrace();
-      }
-      finally {
         if (model != null) {
           model.unlock(_job);
           if (model.actual_best_model_key != null) {
