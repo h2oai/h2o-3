@@ -1,14 +1,14 @@
 
         #sidebar{
-        float:right;
-        border: 2px dashed grey;
-		border-bottom: none;
-		border-right: none;
-        width:300px;
-        padding:20px;
-        margin:20px;
-        padding-top: 10px;
-		margin-right: 0px;
+        	float:right;
+        	border: 2px dashed grey;
+			border-bottom: none;
+			border-right: none;
+        	width:300px;
+        	padding:20px;
+        	margin:20px;
+        	padding-top: 10px;
+			margin-right: 0px;
         }
 
 		#topPage{
