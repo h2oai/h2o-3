@@ -288,7 +288,7 @@ public class RapidsTest extends TestUtil {
       Val res = Rapids.exec(x);
       f = res.getFrame();
       System.out.println(f);
-      VecAry.VecAryReader rdr = f.vecs().vecReader(false);
+      VecAry.VecAryReader rdr = f.vecs().reader(false);
       VecAry names = f.vecs().getVecs(0);
       Assert.assertEquals(f.vecs().domain(0)[(int)rdr.at8(0,0)],"Cliff");
       Assert.assertEquals(f.vecs().domain(1)[(int)(rdr .at8(0,1))],">dirt");
@@ -323,7 +323,7 @@ public class RapidsTest extends TestUtil {
       // Expected values computed as golden values from R's quantile call
       double[] exp = ard(1.4413698000016206E-13, 7.206849000001562E-13, 1.4413698000001489E-12, 2.882739600000134E-12, 7.20684900000009E-12,
               1.4413698000000017E-11, 5.831131148999999E-07, 3.3669567275300000E-04, 0.00152780988        , 0.011162408988      );
-      VecAry.VecAryReader r = f.vecs().vecReader(false);
+      VecAry.VecAryReader r = f.vecs().reader(false);
       for( int i=0; i<exp.length; i++ )
         Assert.assertTrue( "expected "+exp[i]+" got "+r.at(i,1), water.util.MathUtils.compare(exp[i],r.at(i,1),1e-6,1e-6) );
     } finally {

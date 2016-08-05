@@ -8,7 +8,7 @@ import water.util.UnsafeUtils;
  */
 public class C8Chunk extends Chunk {
   protected static final long _NA = Long.MIN_VALUE;
-  C8Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>3); }
+  C8Chunk( byte[] bs ) { _mem=bs; set_len(_mem.length>>3); }
   @Override protected final long at8_impl( int i ) {
     long res = UnsafeUtils.get8(_mem,i<<3);
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -24,7 +24,6 @@ public class C8Chunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem,(idx<<3),_NA); return true; }
   @Override public final void initFromBytes () {
-    _start = -1;  _cidx = -1;
     set_len(_mem.length>>3);
     assert _mem.length == _len <<3;
   }

@@ -12,7 +12,7 @@ public class C1SChunkTest extends TestUtil {
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(false);
       // 0, 0.2, 0.3, 2.54, NA for l==0
       // NA, 0, 0.2, 0.3, 2.54, NA for l==1
       long[] man = new long[]{0, 2, 3, 254};
@@ -74,7 +74,7 @@ public class C1SChunkTest extends TestUtil {
   }
   @Test public void test_inflate_impl2() {
     for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(false);
       long[] man = new long[]{-1228, -997, -9740};
       int[] exp = new int[]{-4, -4, -5};
       if (l==1) nc.addNA();
@@ -118,17 +118,15 @@ public class C1SChunkTest extends TestUtil {
   @Test public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
     water.Key key = Vec.newKey();
-    Vec vec = new Vec(key, AVec.ESPC.rowLayout(key,new long[]{0,15})).makeCon(0);
+    VecAry vec = new VecAry(new Vec(key, AVec.ESPC.rowLayout(key,new long[]{0,15})).makeCon(0));
     int[] vals = new int[]{0, 3, 0, 6, 0, 0, 0, -128, 0, 12, 0, 126, 0, 0, 19};
-    Vec.Writer w = vec.open();
-    for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);
+    VecAry.Writer w = vec.open();
+    for (int i =0; i<vals.length; ++i) w.set(i,0, vals[i]);
     w.close();
-
-    Chunk cc = vec.chunkForChunkIdx(0);
+    Chunk cc = vec.getChunk(0,0);
     assert cc instanceof C1SChunk;
     Futures fs = new Futures();
     fs.blockForPending();
-
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(i));
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8_abs(i));
 

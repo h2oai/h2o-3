@@ -69,10 +69,7 @@ public abstract class FileVec extends ByteVec {
   @Override public boolean writable() { return false; }
 
   /** Size of vector data. */
-  @Override public long byteSize(int colId){
-    if(colId != 0) throw new ArrayIndexOutOfBoundsException();
-    return length();
-  }
+  @Override public long byteSize(){return length();}
 
   // Convert a row# to a chunk#.  For constant-sized chunks this is a little
   // shift-and-add math.  For variable-sized chunks this is a binary search,

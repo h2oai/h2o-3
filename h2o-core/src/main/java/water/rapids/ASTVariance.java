@@ -39,9 +39,9 @@ class ASTVariance extends ASTPrim {
     if( frx.numCols() != fry.numCols()) 
       throw new IllegalArgumentException("Single rows must have the same number of columns, found "+frx.numCols()+" and "+fry.numCols());
     VecAry vecxs = frx.vecs();
-    Chunk [] chunksx = vecxs.getChunks(0);
+    Chunk [] chunksx = vecxs.getChunks(0).chks();
     VecAry vecys = fry.vecs();
-    Chunk [] chunksy = vecys.getChunks(0);
+    Chunk [] chunksy = vecys.getChunks(0).chks();
     double xmean=0, ymean=0, ncols = frx.numCols(), NACount=0, xval, yval, ss=0;
     for( int r = 0; r < ncols; r++) {
       xval = chunksx[r].atd(0);

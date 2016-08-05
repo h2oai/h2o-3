@@ -11,7 +11,7 @@ public class C0DChunkTest extends TestUtil {
   public void test_inflate_impl() {
     final int K = 1<<16;
     for (Double d : new Double[]{3.14159265358, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.MAX_VALUE, Double.NaN}) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(false);
       for (int i=0;i<K;++i) nc.addNum(d);
       Assert.assertEquals(K, nc._len);
       Assert.assertEquals(Double.isNaN(d) ? 0: K, nc._sparseLen);

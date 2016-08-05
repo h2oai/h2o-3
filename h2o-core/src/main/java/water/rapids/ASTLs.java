@@ -22,14 +22,14 @@ class ASTLs extends ASTPrim {
     ArrayList<String> domain = new ArrayList<>();
     Futures fs = new Futures();
     AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec(),Vec.T_CAT);
-    NewChunk keys = new NewChunk(av,0);
+    NewChunk keys = new NewChunk(new SingleChunk(av,0),0);
     int r = 0;
     for( Key key : KeySnapshot.globalSnapshot().keys()) {
       keys.addCategorical(r++);
       domain.add(key.toString());
     }
     String[] key_domain = domain.toArray(new String[domain.size()]);
-    av.closeChunk(0,keys,fs);
+    keys.close(fs);
     VecAry c0 = av.layout_and_close(fs, key_domain);   // c0 is the row index vec
     fs.blockForPending();
     return new ValFrame(new Frame(Key.make("h2o_ls"), new String[]{"key"}, c0));

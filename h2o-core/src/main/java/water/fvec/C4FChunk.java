@@ -7,7 +7,7 @@ import water.util.UnsafeUtils;
  * The empty-compression function, where data is in 'float's.
  */
 public class C4FChunk extends Chunk {
-  C4FChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>2); }
+  C4FChunk( byte[] bs ) { _mem=bs; set_len(_mem.length>>2); }
 
   @Override
   public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
@@ -50,7 +50,6 @@ public class C4FChunk extends Chunk {
 //  public int pformat_len0() { return 14; }
 //  public String pformat0() { return "% 13.7e"; }
   @Override public final void initFromBytes () {
-    _start = -1;  _cidx = -1;
     set_len(_mem.length>>2);
     assert _mem.length == _len <<2;
   }

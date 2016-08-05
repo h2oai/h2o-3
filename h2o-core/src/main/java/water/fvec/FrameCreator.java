@@ -172,7 +172,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       // response
       if(_createFrame.has_response) {
         for (int r = 0; r < cs[0]._len; r++) {
-          setSeed(rng, 0, cs[0]._start + r);
+          setSeed(rng, 0, cs[0].start() + r);
           if (_createFrame.response_factors > 1)
             cs[0].set(r, (int) (rng.nextDouble() * _createFrame.response_factors)); //classification
           else if (_createFrame.positive_response)
@@ -184,35 +184,35 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       job.update(1);
       for (int c : _cat_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c]._start + r);
+          setSeed(rng, c, cs[c].start() + r);
           cs[c].set(r, (int)(rng.nextDouble() * _createFrame.factors));
         }
       }
       job.update(1);
       for (int c : _int_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c]._start + r);
+          setSeed(rng, c, cs[c].start() + r);
           cs[c].set(r, -_createFrame.integer_range + (long)(rng.nextDouble()*(2*_createFrame.integer_range+1)));
         }
       }
       job.update(1);
       for (int c : _real_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c]._start + r);
+          setSeed(rng, c, cs[c].start() + r);
           cs[c].set(r, _createFrame.real_range * (1 - 2 * rng.nextDouble()));
         }
       }
       job.update(1);
       for (int c : _bin_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c]._start + r);
+          setSeed(rng, c, cs[c].start() + r);
           cs[c].set(r, rng.nextFloat() > _createFrame.binary_ones_fraction ? 0 : 1);
         }
       }
       job.update(1);
       for (int c : _time_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c]._start + r);
+          setSeed(rng, c, cs[c].start() + r);
           cs[c].set(r, Math.abs(rng.nextLong() % (50L*365*24*3600*1000))); //make a random moment in time between 1970 and 2020
         }
       }
@@ -220,7 +220,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       byte[] by = new byte[8];
       for (int c : _string_cols) {
         for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c]._start + r);
+          setSeed(rng, c, cs[c].start() + r);
           for (int i=0;i<by.length;++i)
             by[i] = (byte)(65+rng.nextInt(25));
           cs[c].set(r, new String(by));

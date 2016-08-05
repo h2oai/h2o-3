@@ -21,7 +21,7 @@ public class VecStatsTest extends TestUtil {
         NewChunk chunk = new NewChunk(vec, i);
         for( int r = 0; r < 1000; r++ )
           chunk.addNum(random.nextInt(1000));
-        vec.closeChunk(i, chunk, fs);
+        chunk.close(fs);
       }
       VecAry vecs = vec.layout_and_close(fs);
       fs.blockForPending();

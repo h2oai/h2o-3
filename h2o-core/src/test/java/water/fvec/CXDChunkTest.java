@@ -11,7 +11,7 @@ public class CXDChunkTest extends TestUtil {
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(false);
 
       double[] vals = new double[]{0, 0, 0, Double.MAX_VALUE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

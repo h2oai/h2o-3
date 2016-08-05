@@ -205,7 +205,6 @@ public class NewChunk extends Chunk {
     }
   }
 
-  public final int _cidx;
   // We can record the following (mixed) data types:
   // 1- doubles, in _ds including NaN for NA & 0; _ls==_xs==null
   // 2- scaled decimals from parsing, in _ls & _xs; _ds==null
@@ -269,28 +268,31 @@ public class NewChunk extends Chunk {
   private int _sparseRatio = MIN_SPARSE_RATIO;
   public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
 
-  public NewChunk( AVec vec, int cidx ) {
-    _vec = vec; _cidx = cidx;
-    _ms = new Mantissas(4);
-    _xs = new Exponents(4);
+  public NewChunk( ){this(false);}
+  public NewChunk(boolean sparse){this(null,-1,sparse);}
+  public NewChunk( AVec av, int cidx) {
+    this(new SingleChunk(av,cidx),0,false);
+    assert av.numCols() == 1;
   }
 
+  public NewChunk( AVec.AChunk c, int vidx) {this(c,vidx,false);}
 
-  public NewChunk( AVec vec, int cidx, boolean sparse ) {
-    _vec = vec; _cidx = cidx;
+  public NewChunk( AVec.AChunk c, int vidx, boolean sparse) {
+    _achunk = c;
+    _vidx = vidx;
     _ms = new Mantissas(4);
     _xs = new Exponents(4);
     if(sparse) _id = new int[4];
-
   }
 
   public NewChunk(double [] ds) {
-    _cidx = -1;
-    _vec = null;
+    _vidx = -1;
+    _achunk = null;
     setDoubles(ds);
   }
-  public NewChunk( AVec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
-    _vec = vec; _cidx = cidx;
+  public NewChunk(AVec.AChunk c, int vidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
+    _achunk = c;
+    _vidx = vidx;
     _ms = new Mantissas(mantissa.length);
     _xs = new Exponents(exponent.length);
     for(int i = 0; i < mantissa.length; ++i) {
@@ -304,22 +306,18 @@ public class NewChunk extends Chunk {
     if (_id != null && _sparseLen==0) set_sparseLen(_id.length);
   }
   // Constructor used when inflating a Chunk.
-  public NewChunk( Chunk c ) {
-    this(c._vec, c.cidx());
-    _start = c._start;
-  }
+  public NewChunk( Chunk c ) {this(c._achunk, c._vidx);}
 
   // Constructor used when inflating a Chunk.
   public NewChunk( Chunk c, double [] vals) {
-    _vec = c._vec; _cidx = c.cidx();
-    _start = c._start;
+    _achunk = c._achunk; _vidx = c._vidx;
     _ds = vals;
     _sparseLen = _len = _ds.length;
   }
 
   // Pre-sized newchunks.
-  public NewChunk( Vec vec, int cidx, int len ) {
-    this(vec,cidx);
+  public NewChunk( AVec.AChunk c, int vidx, int len ) {
+    this(c,vidx);
     _ds = new double[len];
     Arrays.fill(_ds, Double.NaN);
     set_sparseLen(set_len(len));
@@ -336,11 +334,6 @@ public class NewChunk extends Chunk {
     _ms = null;
     _xs = null;
   }
-
-  public void set_vec(Vec vec) { _vec = vec; }
-
-
-
 
 
   public final class Value {
@@ -634,12 +627,6 @@ public class NewChunk extends Chunk {
     assert _sparseLen <= _len;
   }
 
-  // TODO: FIX isAllASCII test to actually inspect string contents
-  public void addStr(Chunk c, long row) {
-    if( c.isNA_abs(row) ) addNA();
-    else { addStr(c.atStr_abs(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
-  }
-
   public void addStr(Chunk c, int row) {
     if( c.isNA(row) ) addNA();
     else { addStr(c.atStr(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
@@ -656,10 +643,7 @@ public class NewChunk extends Chunk {
     _len++;
     assert _sparseLen <= _len;
   }
-  public void addUUID( Chunk c, long row ) {
-    if( c.isNA_abs(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
-    else addUUID(c.at16l_abs(row),c.at16h_abs(row));
-  }
+
   public void addUUID( Chunk c, int row ) {
     if( c.isNA(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
     else addUUID(c.at16l(row),c.at16h(row));
@@ -689,7 +673,7 @@ public class NewChunk extends Chunk {
   
   // Append all of 'nc' onto the current NewChunk.  Kill nc.
   public void add( NewChunk nc ) {
-    assert _cidx >= 0;
+    assert _vidx >= 0;
     assert _sparseLen <= _len;
     assert nc._sparseLen <= nc._len :"_sparseLen = " + nc._sparseLen + ", _len = " + nc._len;
     if( nc._len == 0 ) return;
@@ -1607,9 +1591,7 @@ public class NewChunk extends Chunk {
     throw H2O.unimpl();
   }
 
-  // We have to explicitly override cidx implementation since we hide _cidx field with new version
   @Override
-  public int cidx() {
-    return _cidx;
-  }
+  public Futures close(Futures fs) {return _achunk.updateChunk(_vidx,compress(),fs);}
+
 }

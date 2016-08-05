@@ -99,8 +99,8 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
         chks[i] = new NewChunk(chks[i]);
       int k = 0;
       while(k < n){
-        Chunk [] srcChks = _src.getChunks(_src.elem2ChunkIdx(start + k),false);
-        long srcChunkStart = srcChks[0]._start;
+        Chunk [] srcChks = _src.getChunks(_src.elem2ChunkIdx(start + k),false).chks();
+        long srcChunkStart = srcChks[0].start();
         int srcFrom = (int)(start+ k - srcChunkStart);
         final int srcTo = Math.min(srcChks[0]._len,srcFrom + n - k);
         for(int i = 0; i < srcChks.length; ++i)

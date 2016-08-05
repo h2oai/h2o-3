@@ -1320,8 +1320,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       double features   [] = MemoryManager.malloc8d(genmodel._names.length);
       double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
-      VecAry.VecAryReader dr = dvecs.vecReader(false);
-      VecAry.VecAryReader pr = pvecs.vecReader(false);
+      VecAry.VecAryReader dr = dvecs.reader(false);
+      VecAry.VecAryReader pr = pvecs.reader(false);
       // Compare predictions, counting mis-predicts
       int totalMiss = 0;
       int miss = 0;

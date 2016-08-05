@@ -18,9 +18,11 @@ public class SubsetVec extends WrappedVec {
   }
 
   // A subset chunk
-  @Override public Chunk chunkForChunkIdx(int cidx) {
-    Chunk crows = rows().chunkForChunkIdx(cidx);
-    return new SubsetChunk(crows,this);
+  @Override public SingleChunk chunkForChunkIdx(int cidx) {
+    Chunk crows = rows().chunkForChunkIdx(cidx)._c;
+    SingleChunk sc = new SingleChunk(this,cidx);
+    sc._c = new SubsetChunk(crows,sc,_masterVec);
+    return sc;
   }
 
   @Override public Futures remove_impl(Futures fs) {
@@ -42,13 +44,11 @@ public class SubsetVec extends WrappedVec {
   static class SubsetChunk extends Chunk {
     final Chunk _crows;
     final VecAry.VecAryReader _masterVec;
-    protected SubsetChunk(Chunk crows, SubsetVec vec) {
-      _vec = vec;
-      _masterVec = vec._masterVec.vecReader(false);
+    protected SubsetChunk(Chunk crows, SingleChunk sc, VecAry masterVec) {
+      _achunk = sc;
+      _masterVec = masterVec.reader(false);
       _len = crows._len;
-      _start = crows._start;
       _crows  = crows;
-      _cidx = crows._cidx;
     }
     @Override protected double atd_impl(int idx) {
       long rownum = _crows.at8_impl(idx);

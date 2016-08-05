@@ -106,7 +106,7 @@ public final class RollupStats extends Iced {
     if (isString) rs._isInt = false;
     // Checksum support
     long checksum = 0;
-    long start = c._start;
+    long start = c.start();
     long l = 81985529216486895L;
 
     // Check for popular easy cases: All Constant

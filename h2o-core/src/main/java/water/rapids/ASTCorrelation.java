@@ -45,8 +45,8 @@ class ASTCorrelation extends ASTPrim {
         VecAry vecxs = frx.vecs();
         VecAry vecys = fry.vecs();
         double xmean=0, ymean=0, xvar=0, yvar=0,xsd=0,ysd=0, ncols = frx.numCols(), NACount=0, xval, yval, ss=0;
-        Chunk [] chunkx = vecxs.getChunks(0,false);
-        Chunk [] chunky = vecxs.getChunks(0,false);
+        Chunk [] chunkx = vecxs.getChunks(0,false).chks();
+        Chunk [] chunky = vecxs.getChunks(0,false).chks();
         for( int r = 0; r < ncols; r++) {
             xval = chunkx[r].atd(0);
             yval = chunky[r].atd(0);

@@ -123,7 +123,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
     private double computeSigmaU(DataInfo dinfo, SVDModel model, int k, double[][] ivv_sum, VecAry uvecs) {
       double[] ivv_vk = ArrayUtils.multArrVec(ivv_sum, model._output._v[k]);
-      CalcSigmaU ctsk = new CalcSigmaU(_job._key, dinfo, ivv_vk).doAll(Vec.T_NUM, dinfo._adaptedFrame.vecs());
+      CalcSigmaU ctsk = new CalcSigmaU(_job._key, dinfo, ivv_vk).doAll(1,Vec.T_NUM, dinfo._adaptedFrame.vecs());
       model._output._d[k] = ctsk._sval;
       assert ctsk._nobs == model._output._nobs : "Processed " + ctsk._nobs + " rows but expected " + model._output._nobs;    // Check same number of skipped rows as Gram
       Frame tmp = ctsk.outputFrame();

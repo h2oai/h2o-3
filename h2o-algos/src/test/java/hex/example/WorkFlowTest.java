@@ -271,7 +271,7 @@ public class WorkFlowTest extends TestUtil {
           ncs[3].addNum(mdt.getDayOfWeek()  -1); // Convert to 0-based from 1-based
         }
         if( ncs[0] != null ) {
-          for( int c=0; c<ncols; c++ ) ncs[c].close(chunknum,fs);
+          for( int c=0; c<ncols; c++ ) ncs[c].close(fs);
           chunknum++;
           ncs[0] = null;
         }

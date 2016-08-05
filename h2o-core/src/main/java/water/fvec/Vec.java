@@ -151,7 +151,7 @@ import java.util.UUID;
  *
  * @author Cliff Click
  */
-public class Vec extends AVec<Chunk> {
+public class Vec extends AVec<SingleChunk> {
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
   byte _type;                   // Vec Type
   // String domain, only for Categorical columns
@@ -363,11 +363,12 @@ public class Vec extends AVec<Chunk> {
 
   public static Vec makeVec(double [] vals, Key<AVec> vecKey){
     Vec v = new Vec(vecKey, AVec.ESPC.rowLayout(vecKey,new long[]{0,vals.length}));
-    NewChunk nc = new NewChunk(v,0);
+    SingleChunk sc = new SingleChunk(v,0);
+    NewChunk nc = new NewChunk(sc,0);
     Futures fs = new Futures();
     for(double d:vals)
       nc.addNum(d);
-    v.closeChunk(0,nc,fs);
+    nc.close(fs);
     DKV.put(v._key, v, fs);
     fs.blockForPending();
     return v;
@@ -376,13 +377,13 @@ public class Vec extends AVec<Chunk> {
   // allow missing (NaN) categorical values
   public static Vec makeVec(double [] vals, String [] domain, Key<AVec> vecKey){
     Vec v = new Vec(vecKey, AVec.ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
-    NewChunk nc = new NewChunk(v,0);
+    NewChunk nc = new NewChunk(new SingleChunk(v,0),0);
     Futures fs = new Futures();
     for(double d:vals) {
       assert(Double.isNaN(d) || (long)d == d);
       nc.addNum(d);
     }
-    v.closeChunk(0,nc,fs);
+    nc.close(fs);
     DKV.put(v._key, v, fs);
     fs.blockForPending();
     return v;
@@ -390,11 +391,11 @@ public class Vec extends AVec<Chunk> {
   // Warning: longs are lossily converted to doubles in nc.addNum(d)
   public static Vec makeVec(long [] vals, String [] domain, Key<AVec> vecKey){
     Vec v = new Vec(vecKey, AVec.ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
-    NewChunk nc = new NewChunk(v,0);
+    NewChunk nc = new NewChunk(new SingleChunk(v,0),0);
     Futures fs = new Futures();
     for(long d:vals)
       nc.addNum(d);
-    v.closeChunk(0,nc,fs);
+    nc.close(fs);
     DKV.put(v._key, v, fs);
     fs.blockForPending();
     return v;
@@ -439,9 +440,9 @@ public class Vec extends AVec<Chunk> {
     k = k==null?Vec.VectorGroup.VG_LEN1.addVec():k;
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k, T_NUM);
-    NewChunk chunk = new NewChunk(avec, 0);
+    NewChunk chunk = new NewChunk(new SingleChunk(avec,0), 0);
     for( double r : rows ) chunk.addNum(r);
-    avec.closeChunk(0,chunk, fs);
+    chunk.close(fs);
     VecAry vec = avec.layout_and_close(fs);
     fs.blockForPending();
     return vec;
@@ -454,7 +455,7 @@ public class Vec extends AVec<Chunk> {
       @Override public void map(Chunk[] cs) {
         for( Chunk c : cs )
           for( int r = 0; r < c._len; r++ )
-            c.set(r, r + 1 + c._start);
+            c.set(r, r + 1 + c.start());
       }
     }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
   }
@@ -467,7 +468,7 @@ public class Vec extends AVec<Chunk> {
       @Override public void map(Chunk[] cs) {
         for (Chunk c : cs)
           for (int r = 0; r < c._len; r++)
-            c.set(r, r + min + c._start);
+            c.set(r, r + min + c.start());
       }
     }.doAll(makeZero(len)).vecs().getAVecRaw(0);
   }
@@ -477,10 +478,9 @@ public class Vec extends AVec<Chunk> {
    */
   public static Vec makeSeq(final long min, long len, boolean redistribute) {
     return (Vec) new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for (Chunk c : cs)
-          for (int r = 0; r < c._len; r++)
-            c.set(r, r + min + c._start);
+      @Override public void map(Chunk c) {
+        for (int r = 0; r < c._len; r++)
+          c.set(r, r + min + c.start());
       }
     }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
   }
@@ -492,7 +492,7 @@ public class Vec extends AVec<Chunk> {
     return (Vec) new MRTask() {
       @Override public void map(Chunk c) {
         for( int r = 0; r < c._len; r++ )
-          c.set(r, (r + c._start) % repeat);
+          c.set(r, (r + c.start()) % repeat);
       }
     }.doAll(makeZero(len)).vecs().getAVecRaw(0);
   }
@@ -548,23 +548,23 @@ public class Vec extends AVec<Chunk> {
   /** Fetch element the slow way, as a long.  Floating point values are
    *  silently rounded to an integer.  Throws if the value is missing. 
    *  @return {@code i}th element as a long, or throw if missing */
-  public final long  at8( long i ) { return chunkForRow(i).at8_abs(i); }
+  public final long  at8( long i ) {return chunkForRow(i).getChunk(0).at8_abs(i);}
 
   /** Fetch element the slow way, as a double, or Double.NaN is missing.
    *  @return {@code i}th element as a double, or Double.NaN if missing */
-  public final double at( long i ) { return chunkForRow(i).at_abs(i); }
+  public final double at( long i ) { return chunkForRow(i).getChunk(0).at_abs(i); }
   /** Fetch the missing-status the slow way. 
    *  @return the missing-status the slow way */
-  public final boolean isNA(long row){ return chunkForRow(row).isNA_abs(row); }
+  public final boolean isNA(long row){ return chunkForRow(row).getChunk(0).isNA_abs(row); }
 
   /** Fetch element the slow way, as the low half of a UUID.  Throws if the
    *  value is missing or not a UUID.
    *  @return {@code i}th element as a UUID low half, or throw if missing */
-  public final long  at16l( long i ) { return chunkForRow(i).at16l_abs(i); }
+  public final long  at16l( long i ) { return chunkForRow(i).getChunk(0).at16l_abs(i); }
   /** Fetch element the slow way, as the high half of a UUID.  Throws if the
    *  value is missing or not a UUID.
    *  @return {@code i}th element as a UUID high half, or throw if missing */
-  public final long  at16h( long i ) { return chunkForRow(i).at16h_abs(i); }
+  public final long  at16h( long i ) { return chunkForRow(i).getChunk(0).at16h_abs(i); }
 
   /** Fetch element the slow way, as a {@link BufferedString} or null if missing.
    *  Throws if the value is not a String.  BufferedStrings are String-like
@@ -572,7 +572,7 @@ public class Vec extends AVec<Chunk> {
    *  constructing Strings.
    *  @return {@code i}th element as {@link BufferedString} or null if missing, or
    *  throw if not a String */
-  public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).atStr_abs(bStr, i); }
+  public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).getChunk(0).atStr_abs(bStr, i); }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,
    *  but much faster than Vec.at(i).  Limited to single-threaded
@@ -585,58 +585,58 @@ public class Vec extends AVec<Chunk> {
    * z = vr.at(2);
    */
   public final class Reader {
-    private Chunk _cache;
-    private Chunk chk(long i) {
-      Chunk c = _cache;
-      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
+    private SingleChunk _cache;
+    private SingleChunk chk(long i) {
+      SingleChunk c = _cache;
+      return (c != null && c._start <= i && i < c._start+ c._c._len) ? c : (_cache = chunkForRow(i));
     }
-    public final long    at8( long i ) { return chk(i). at8_abs(i); }
-    public final double   at( long i ) { return chk(i).  at_abs(i); }
-    public final boolean isNA(long i ) { return chk(i).isNA_abs(i); }
+    public final long    at8( long i ) { return chk(i)._c. at8_abs(i); }
+    public final double   at( long i ) { return chk(i)._c. at_abs(i); }
+    public final boolean isNA(long i ) { return chk(i)._c. isNA_abs(i); }
     public final long length() { return Vec.this.length(); }
   }
 
-  /** Write element the slow way, as a long.  There is no way to write a
-   *  missing value with this call.  Under rare circumstances this can throw:
-   *  if the long does not fit in a double (value is larger magnitude than
-   *  2^52), AND float values are stored in Vec.  In this case, there is no
-   *  common compatible data representation.  */
-  public final void set( long i, long l) {
-    Chunk ck = chunkForRow(i);
-    ck.set(ck.rowInChunk(i), l);
-    postWrite(closeChunk(ck.cidx(), ck,  new Futures())).blockForPending();
-  }
-
-  /** Write element the slow way, as a double.  Double.NaN will be treated as a
-   *  set of a missing element. */
-  public final void set( long i, double d) {
-    Chunk ck = chunkForRow(i);
-    ck.set(ck.rowInChunk(i), d);
-    postWrite(closeChunk(ck.cidx(),ck, new Futures())).blockForPending();
-  }
-
-  /** Write element the slow way, as a float.  Float.NaN will be treated as a
-   *  set of a missing element. */
-  public final void set( long i, float  f) {
-    Chunk ck = chunkForRow(i);
-    ck.set(ck.rowInChunk(i), f);
-    postWrite(closeChunk(ck.cidx(), ck, new Futures())).blockForPending();
-  }
-
-  /** Set the element as missing the slow way.  */
-  final void setNA( long i ) {
-    Chunk ck = chunkForRow(i);
-    ck.setNA(ck.rowInChunk(i));
-    postWrite(closeChunk(ck.cidx(),ck, new Futures())).blockForPending();
-  }
-
-  /** Write element the slow way, as a String.  {@code null} will be treated as a
-   *  set of a missing element. */
-  public final void set( long i, String str) {
-    Chunk ck = chunkForRow(i);
-    ck.set((int)(i - ck.start()), str);
-    postWrite(closeChunk(ck.cidx(),ck, new Futures())).blockForPending();
-  }
+//  /** Write element the slow way, as a long.  There is no way to write a
+//   *  missing value with this call.  Under rare circumstances this can throw:
+//   *  if the long does not fit in a double (value is larger magnitude than
+//   *  2^52), AND float values are stored in Vec.  In this case, there is no
+//   *  common compatible data representation.  */
+//  public final void set( long i, long l) {
+//    chunkForRow(i).set_abs(i,l);
+//
+//    postWrite(closeChunk(ck.cidx(), ck,  new Futures())).blockForPending();
+//  }
+//
+//  /** Write element the slow way, as a double.  Double.NaN will be treated as a
+//   *  set of a missing element. */
+//  public final void set( long i, double d) {
+//    Chunk ck = chunkForRow(i);
+//    ck.set(ck.rowInChunk(i), d);
+//    postWrite(closeChunk(ck.cidx(),ck, new Futures())).blockForPending();
+//  }
+//
+//  /** Write element the slow way, as a float.  Float.NaN will be treated as a
+//   *  set of a missing element. */
+//  public final void set( long i, float  f) {
+//    Chunk ck = chunkForRow(i);
+//    ck.set(ck.rowInChunk(i), f);
+//    postWrite(closeChunk(ck.cidx(), ck, new Futures())).blockForPending();
+//  }
+//
+//  /** Set the element as missing the slow way.  */
+//  final void setNA( long i ) {
+//    Chunk ck = chunkForRow(i);
+//    ck.setNA(ck.rowInChunk(i));
+//    postWrite(closeChunk(ck.cidx(),ck, new Futures())).blockForPending();
+//  }
+//
+//  /** Write element the slow way, as a String.  {@code null} will be treated as a
+//   *  set of a missing element. */
+//  public final void set( long i, String str) {
+//    Chunk ck = chunkForRow(i);
+//    ck.set((int)(i - ck.start()), str);
+//    postWrite(closeChunk(ck.cidx(),ck, new Futures())).blockForPending();
+//  }
 
   /** A more efficient way to write randomly to a Vec - still single-threaded,
    *  still slow, but much faster than Vec.set().  Limited to single-threaded
@@ -649,67 +649,67 @@ public class Vec extends AVec<Chunk> {
    *   vw.set(2, 5.32);
    * }
    */
-  public final class Writer implements java.io.Closeable {
-    private Chunk _cache;
-    long _start;
-    private Chunk chk(long i) {
-      Chunk c = _cache;
-      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
-    }
-    private Writer() { preWriting(); }
-    public final void set( long i, long   l) {
-      Chunk c = chk(i);
-      c.set(c.rowInChunk(i), l);
-    }
-    public final void set( long i, double d) {
-      Chunk c = chk(i);
-      c.set(c.rowInChunk(i), d);
-    }
-    public final void set( long i, float  f) {
-      Chunk c = chk(i);
-      c.set(c.rowInChunk(i), f);
-    }
-    public final void setNA( long i        ) {
-      Chunk c = chk(i);
-      c.setNA(c.rowInChunk(i));
-    }
-    public final void set( long i,String str){
-      Chunk c = chk(i);
-      c.set(c.rowInChunk(i), str);
-    }
-    public Futures close(Futures fs) { return postWrite(closeLocal(fs)); }
-    public void close() { close(new Futures()).blockForPending(); }
-  }
-
-  /** Create a writer for bulk serial writes into this Vec.
-   *  @return A Writer for bulk serial writes */
-  public final Writer open() { return new Writer(); }
-
-  /** Close all chunks that are local (not just the ones that are homed)
-   *  This should only be called from a Writer object */
-  private Futures closeLocal(Futures fs) {
-    int nc = nChunks();
-    for( int i=0; i<nc; i++ )
-      if( H2O.containsKey(chunkKey(i)) )
-        closeChunk(i,chunkForChunkIdx(i),fs);
-    return fs;                  // Flow-coding
-  }
-
-  /** Pretty print the Vec: {@code [#elems, min/mean/max]{chunks,...}}
-   *  @return Brief string representation of a Vec */
-  @Override public String toString() {
-    RollupStats rs = RollupStats.getOrNull(this,rollupStatsKey());
-    String s = "["+length()+(rs == null ? ", {" : ","+rs._mins[0]+"/"+rs._mean+"/"+rs._maxs[0]+", "+PrettyPrint.bytes(rs._size)+", {");
-    int nc = nChunks();
-    for( int i=0; i<nc; i++ ) {
-      s += chunkKey(i).home_node()+":"+chunk2StartElem(i)+":";
-      // CNC: Bad plan to load remote data during a toString... messes up debug printing
-      // Stupidly chunkForChunkIdx loads all data locally
-      // s += chunkForChunkIdx(i).getClass().getSimpleName().replaceAll("Chunk","")+", ";
-    }
-    return s+"}]";
-  }
-
+//  public final class Writer implements java.io.Closeable {
+//    private Chunk _cache;
+//    long _start;
+//    private Chunk chk(long i) {
+//      Chunk c = _cache;
+//      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
+//    }
+//    private Writer() { preWriting(); }
+//    public final void set( long i, long   l) {
+//      Chunk c = chk(i);
+//      c.set(c.rowInChunk(i), l);
+//    }
+//    public final void set( long i, double d) {
+//      Chunk c = chk(i);
+//      c.set(c.rowInChunk(i), d);
+//    }
+//    public final void set( long i, float  f) {
+//      Chunk c = chk(i);
+//      c.set(c.rowInChunk(i), f);
+//    }
+//    public final void setNA( long i        ) {
+//      Chunk c = chk(i);
+//      c.setNA(c.rowInChunk(i));
+//    }
+//    public final void set( long i,String str){
+//      Chunk c = chk(i);
+//      c.set(c.rowInChunk(i), str);
+//    }
+//    public Futures close(Futures fs) { return postWrite(closeLocal(fs)); }
+//    public void close() { close(new Futures()).blockForPending(); }
+//  }
+//
+//  /** Create a writer for bulk serial writes into this Vec.
+//   *  @return A Writer for bulk serial writes */
+//  public final Writer open() { return new Writer(); }
+//
+//  /** Close all chunks that are local (not just the ones that are homed)
+//   *  This should only be called from a Writer object */
+//  private Futures closeLocal(Futures fs) {
+//    int nc = nChunks();
+//    for( int i=0; i<nc; i++ )
+//      if( H2O.containsKey(chunkKey(i)) )
+//        closeChunk(i,chunkForChunkIdx(i),fs);
+//    return fs;                  // Flow-coding
+//  }
+//
+//  /** Pretty print the Vec: {@code [#elems, min/mean/max]{chunks,...}}
+//   *  @return Brief string representation of a Vec */
+//  @Override public String toString() {
+//    RollupStats rs = RollupStats.getOrNull(this,rollupStatsKey());
+//    String s = "["+length()+(rs == null ? ", {" : ","+rs._mins[0]+"/"+rs._mean+"/"+rs._maxs[0]+", "+PrettyPrint.bytes(rs._size)+", {");
+//    int nc = nChunks();
+//    for( int i=0; i<nc; i++ ) {
+//      s += chunkKey(i).home_node()+":"+chunk2StartElem(i)+":";
+//      // CNC: Bad plan to load remote data during a toString... messes up debug printing
+//      // Stupidly chunkForChunkIdx loads all data locally
+//      // s += chunkForChunkIdx(i).getClass().getSimpleName().replaceAll("Chunk","")+", ";
+//    }
+//    return s+"}]";
+//  }
+//
 
   /** True if two Vecs are equal.  Checks for equal-Keys only (so it is fast)
    *  and not equal-contents.
@@ -744,31 +744,4 @@ public class Vec extends AVec<Chunk> {
     H2O.raw_remove(kr);
     H2O.raw_remove(vkey);
   }
-
-  // ======= Whole Vec Transformations ======
-
-
-  /** After writing we must call close() to register the bulk changes.  If a
-   *  NewChunk was needed, it will be compressed into some other kind of Chunk.
-   *  The resulting Chunk (either a modified self, or a compressed NewChunk)
-   *  will be written to the DKV.  Only after that {@code DKV.put} completes
-   *  will all readers of this Chunk witness the changes.
-   *  @return the passed-in {@link Futures}, for flow-coding.
-   */
-  public Futures closeChunk( int cidx, AChunk chk, Futures fs ) {
-    Chunk c = chk.getChunk(0);
-    if( c  instanceof NewChunk ) c._chk2 = c;
-    if( c._chk2 == null ) return fs;          // No change?
-    if( c._chk2 instanceof NewChunk ) {
-      long [] espc = espc();
-      int len = (int)(espc[cidx+1] - espc[cidx]);
-      if(c._chk2.len() != len)
-        throw new IllegalArgumentException("number of rows in a chunk can not change for non-appendable vec");
-      c._chk2 = ((NewChunk)c._chk2).compress();
-    }
-    DKV.put(chunkKey(cidx),c._chk2,fs,true); // Write updated chunk back into K/V
-    return fs;
-  }
-
-
 }

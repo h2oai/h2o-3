@@ -70,7 +70,7 @@ public class WordCountTest extends TestUtil {
       int i=0;                  // Parse point
       // Skip partial words at the start of chunks, assuming they belong to the
       // trailing end of the prior chunk.
-      if( bv._start > 0 )       // Not on the 1st chunk...
+      if( bv.start() > 0 )       // Not on the 1st chunk...
         while( i < len && isChar((int)bv.atd(i)) >= 0 ) i++; // skip any partial word from prior
       VStr vs = new VStr(new byte[512],(short)0);
       // Loop over the chunk, picking out words
@@ -86,7 +86,7 @@ public class WordCountTest extends TestUtil {
       // Show some progress
       long progress = PROGRESS.addAndGet(len);
       long pre = progress - len;
-      final long total = bv._vec.length();
+      final long total = bv.vec().length();
       int perc0 = (int)(100*pre     /total);
       int perc1 = (int)(100*progress/total);
       if( perc0 != perc1 ) System.out.printf("\b\b\b%2d%%",perc1);

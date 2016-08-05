@@ -59,14 +59,17 @@ class ASTDdply extends ASTPrim {
     // same Chunk layout, except each Chunk will be the filter rows numbers; a
     // list of the Chunk-relative row-numbers for that group in an original
     // data Chunk.  Each Vec will have a *different* number of rows.
-    Vec[] vgrps = new BuildGroup(gbCols,gss).doAll(gss.size(), Vec.T_NUM, fr.vecs()).close();
+    byte [][] types = new byte[gss.size()][1];
+    for(int i = 0; i < types.length; ++i)
+      types[i][0] = Vec.T_NUM;
+    Vec [] vgrps = new BuildGroup(gbCols,gss).doAll(types, fr.vecs()).close();
 
     // Pass 3: For each group, build a full frame for the group, run the
     // function on it and tear the frame down.
     final RemoteRapids[] remoteTasks = new RemoteRapids[gss.size()]; // gather up the remote tasks...
     Futures fs = new Futures();
     for( int i=0; i<remoteTasks.length; i++ )
-      fs.add(RPC.call(vgrps[i]._key.home_node(), remoteTasks[i] = new RemoteRapids(fr, vgrps[i]._key, fun, scope)));
+      fs.add(RPC.call(vgrps[i]._key.home_node(), remoteTasks[i] = new RemoteRapids(fr, new VecAry(vgrps[i]), fun, scope)));
     fs.blockForPending();
 
     // Build the output!
@@ -114,52 +117,48 @@ class ASTDdply extends ASTPrim {
     // of rows, and taken together they do NOT make a valid Frame.
     Vec[] close() {
       Futures fs = new Futures();
-      Vec[] vgrps = new Vec[_gss.size()];
-      for( int i = 0; i < vgrps.length; i++ )
-        vgrps[i] = (Vec)_appendables[i].layout_and_close(fs).getAVecRaw(0);
+      Vec [] grps = new Vec[_appendables.length];
+      for(int i = 0; i < grps.length; ++i)
+        grps[i] = (Vec)_appendables[i].layout_and_close(fs).getAVecRaw(0);
       fs.blockForPending();
-      return vgrps;
+      return grps;
     }
   }
 
   // --------------------------------------------------------------------------
   private static class RemoteRapids extends DTask<RemoteRapids> {
     private Frame _data;        // Data frame
-    private Key<AVec> _vKey;     // the group to process...
+    private VecAry _gVec;     // the group to process...
     private AST _fun;           // the ast to execute on the group
     private ASTFun _scope;      // Execution environment
     private double[] _result;   // result is 1 row per group!
 
-    RemoteRapids( Frame data, Key<AVec> vKey, AST fun, ASTFun scope) {
-      _data = data; _vKey=vKey; _fun=fun; _scope = scope;
+    RemoteRapids( Frame data, VecAry gVec, AST fun, ASTFun scope) {
+      _data = data; _gVec=gVec; _fun=fun; _scope = scope;
     }
 
     @Override public void compute2() {
-      assert _vKey.home();
-      final Vec gvec = DKV.getGet(_vKey);
-      assert gvec.group().equals(_data.vecs().group());
-
       // Make a group Frame, using wrapped Vecs wrapping the original data
       // frame with the filtered Vec passed in.  Run the function, getting a
       // scalar or a 1-row Frame back out.  Delete the group Frame.  Return the
       // 1-row Frame as a double[] of results for this group.
 
       // Make the subset Frame Vecs, no chunks yet
-      Key<AVec>[] groupKeys = gvec.group().addVecs(_data.numCols());
+      Key<AVec>[] groupKeys = _gVec.group().addVecs(_data.numCols());
       final Vec[] groupVecs = new Vec[_data.numCols()];
       Futures fs = new Futures();
       for( int i=0; i<_data.numCols(); i++ )
-        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec.rowLayout(), gvec.domain(0), gvec.type(0)), fs);
+        DKV.put(groupVecs[i] = new Vec(groupKeys[i], _gVec.rowLayout(), _gVec.domain(0), _gVec.type(0)), fs);
       fs.blockForPending();
       // Fill in the chunks
       new MRTask() {
         @Override public void setupLocal() {
           VecAry data_vecs = _data.vecs();
-          for( int i=0; i<gvec.nChunks(); i++ )
+          for( int i=0; i<_gVec.nChunks(); i++ )
             if( data_vecs.isHomedLocally(i) ) {
-              Chunk rowchk = gvec.chunkForChunkIdx(i);
+              Chunk rowchk = _gVec.getChunk(i,0);
               for( int col=0; col<data_vecs.len(); col++ )
-                DKV.put( Vec.chunkKey(groupVecs[col]._key,i), new SubsetChunk(data_vecs.getChunk(i,col),rowchk,groupVecs[col]), _fs);
+                DKV.put( Vec.chunkKey(groupVecs[col]._key,i), new SubsetChunk(data_vecs.getChunk(i,col),rowchk,new SingleChunk(groupVecs[col],i)), _fs);
             }
         }
       }.doAllNodes();
@@ -177,7 +176,7 @@ class ASTDdply extends ASTPrim {
         if( res.numRows() != 1 )
           throw new IllegalArgumentException("ddply must return a 1-row (many column) frame, found "+res.numRows());
         _result = new double[res.numCols()];
-        VecAry.VecAryReader r = res.vecs().vecReader(false);
+        VecAry.VecAryReader r = res.vecs().reader(false);
         for( int i=0; i<res.numCols(); i++ )
           _result[i] = r.at(0,i);
       } else if( val.isNum() ) {
@@ -189,9 +188,9 @@ class ASTDdply extends ASTPrim {
       
       // Cleanup
       groupFrame.delete();      // Delete the Frame holding WrappedVecs over SubsetChunks
-      gvec.remove();            // Delete the group-defining Vec
+      _gVec.remove();            // Delete the group-defining Vec
+      _gVec = null;
       _data = null;             // Nuke to avoid returning (not for GC)
-      _vKey = null;             // Nuke to avoid returning (not for GC)
       _fun = null;              // Nuke to avoid returning (not for GC)
       _scope = null;            // Nuke to avoid returning (not for GC)
       // And done!

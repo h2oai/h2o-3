@@ -28,15 +28,14 @@ public class NewChunkTest extends TestUtil {
   private void post() {
     cc = nc.compress();
     av._tmp_espc[0] = K; //HACK
-    cc._start = 0; //HACK
-    cc._cidx = 0; // HACK as well
+
     Futures fs = new Futures();
     vec = (Vec) av.layout_and_close(fs).getAVecRaw(0);
     fs.blockForPending();
     assert(DKV.get(vec._key)!=null); //only the vec header is in DKV, the chunk is not
   }
   private void post_write() {
-    vec.closeChunk(0,cc,new Futures()).blockForPending();
+    cc.close(new Futures()).blockForPending();
   }
   void remove() {if(vec != null)vec.remove();}
 
@@ -53,8 +52,8 @@ public class NewChunkTest extends TestUtil {
   }
 
   private static class NewChunkTestCpy extends NewChunk {
-    NewChunkTestCpy(Vec vec, int cidx) {super(vec, cidx);}
-    public NewChunkTestCpy() { super(null,0); }
+    NewChunkTestCpy(AVec av, int cidx) {super(av, cidx);}
+    public NewChunkTestCpy() { super(false); }
     int mantissaSize() {return _ms._vals1 != null?1:_ms._vals4 != null?4:8;}
     int exponentSize() {return _xs._vals1 != null?1:_xs._vals4 != null?4:0;}
     int missingSize()  {return _missing == null?0:_missing.size();}
@@ -172,7 +171,7 @@ public class NewChunkTest extends TestUtil {
 
 
   @Test public void testSparseDoubles2(){
-    NewChunk nc = new NewChunk((Vec)null, 0, false);
+    NewChunk nc = new NewChunk(false);
     int N = 1000;
     nc.addZeros(N);
     nc.addNum(Math.PI);
@@ -187,7 +186,7 @@ public class NewChunkTest extends TestUtil {
     assertEquals(i,c.nextNZ(c.nextNZ(-1)));
     assertEquals(         Math.E,c.atd(i  ),1e-16);
 
-    nc = new NewChunk((Vec)null, 0, false);
+    nc = new NewChunk(false);
     nc.addNum(Math.PI);
     nc.addNum(Double.MAX_VALUE);
     nc.addNum(Double.MIN_VALUE);
@@ -203,7 +202,7 @@ public class NewChunkTest extends TestUtil {
     assertEquals(c.atd(8), Math.E,1e-16);
 
     // test flip from dense -> sparse0 -> desne
-    nc = new NewChunk((Vec)null, 0, false);
+    nc = new NewChunk(false);
     double [] rvals = new double[2*1024];
     nc.addNum(rvals[0] = Math.PI);
     nc.addNum(rvals[1] = Double.MAX_VALUE);
@@ -224,7 +223,7 @@ public class NewChunkTest extends TestUtil {
       assertEquals(rvals[j],c.atd(j),0);
 
     // test flip from dense -> sparseNA -> desne
-    nc = new NewChunk((Vec)null, 0, false);
+    nc = new NewChunk(false);
     rvals = new double[2*1024];
     Arrays.fill(rvals,Double.NaN);
     nc.addNum(rvals[0] = Math.PI);

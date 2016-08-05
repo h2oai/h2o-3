@@ -46,8 +46,8 @@ public class CategoricalWrappedVec extends WrappedVec {
     return tmp._map;
   }
 
-  @Override public Chunk chunkForChunkIdx(int cidx) {
-    return new CategoricalWrappedChunk(_masterVec.getChunk(cidx,0), this);
+  @Override public SingleChunk chunkForChunkIdx(int cidx) {
+    return new SingleChunk(this,cidx,new CategoricalWrappedChunk(_masterVec.getChunk(cidx,0), this));
   }
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
@@ -148,7 +148,6 @@ public class CategoricalWrappedVec extends WrappedVec {
 
     CategoricalWrappedChunk(Chunk c, CategoricalWrappedVec vec) {
       _c  = c; set_len(_c._len);
-      _start = _c._start; _vec = vec; _cidx = _c._cidx;
       _map = vec._map; _p = vec._p;
     }
 

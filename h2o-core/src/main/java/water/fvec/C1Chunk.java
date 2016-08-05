@@ -9,7 +9,7 @@ import water.*;
 public class C1Chunk extends Chunk {
   static protected final int _OFF = 0;
   static protected final long _NA = 0xFF;
-  C1Chunk(byte[] bs) { _mem=bs; _start = -1; set_len(_mem.length); }
+  C1Chunk(byte[] bs) { _mem=bs; set_len(_mem.length); }
   @Override protected final long at8_impl( int i ) {
     long res = 0xFF&_mem[i+_OFF];
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -29,10 +29,7 @@ public class C1Chunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)_NA; return true; }
 
-  @Override public void initFromBytes(){
-    _start = -1;  _cidx = -1;
-    set_len(_mem.length);
-  }
+  @Override public void initFromBytes(){set_len(_mem.length);}
   @Override
   public boolean hasFloat() {return false;}
 

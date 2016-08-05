@@ -49,6 +49,13 @@ public class VecBlock extends AVec<ChunkBlock> {
   }
 
   @Override
+  public synchronized void setDomain(int vec, String[] domain) {
+    if(_domains == null)
+      _domains = new String[numCols()][];
+    _domains[vec] = domain;
+  }
+
+  @Override
   public void setBad(int colId) {
 
   }
@@ -59,6 +66,24 @@ public class VecBlock extends AVec<ChunkBlock> {
 
   private transient Key _rollupStatsKey;
 
+  private static class SetMutating extends TAtomic<RollupStatsBlock> {
+    final int _N;
+    final int [] _ids;
+
+    SetMutating(int N, int... ids) {_ids = ids; _N = N;}
+
+    @Override
+    protected RollupStatsBlock atomic(RollupStatsBlock old) {
+      if(old == null) {
+        RollupStats [] rs = new RollupStats[_N];
+        for(int i:_ids) rs[i] = RollupStats.makeMutating();
+        return new RollupStatsBlock(rs);
+      }
+      for(int i:_ids) old._rs[i] = RollupStats.makeMutating();
+      return old;
+    }
+  }
+
   public Key rollupStatsKey() {
     if( _rollupStatsKey==null ) _rollupStatsKey=chunkKey(-2);
     return _rollupStatsKey;
@@ -66,7 +91,18 @@ public class VecBlock extends AVec<ChunkBlock> {
 
   @Override
   public void preWriting(int... colIds) {
-
+    RollupStatsBlock rbs = DKV.getGet(rollupStatsKey());
+    boolean allreadyLocked = true;
+    if(rbs != null){
+      for(int i:colIds) {
+        if (rbs._rs[i] == null || !rbs._rs[i].isMutating()) {
+          allreadyLocked = false;
+          break; // Vector already locked against rollups
+        }
+      }
+    }
+    if(!allreadyLocked)
+      new SetMutating(numCols(),colIds).invoke(rollupStatsKey());
   }
 
   @Override
@@ -74,21 +110,21 @@ public class VecBlock extends AVec<ChunkBlock> {
     throw H2O.unimpl();
   }
 
-  @Override
-  public Futures closeChunk(int cidx, AChunk ac, Futures fs) {
-    ChunkBlock cb = (ChunkBlock) ac;
-    boolean modified = false;
-    for(int i = 0; i < cb._chunks[i]._len; ++i) {
-      Chunk c = cb._chunks[i];
-      if(c._chk2 != null) {
-        modified = true;
-        if(c._chk2 instanceof NewChunk)
-          cb._chunks[i] = ((NewChunk) c._chk2).compress();
-      }
-    }
-    if(modified) DKV.put(chunkKey(cidx),cb,fs);
-    return fs;
-  }
+//  @Override
+//  public Futures closeChunk(int cidx, AChunk ac, Futures fs) {
+//    ChunkBlock cb = (ChunkBlock) ac;
+//    boolean modified = false;
+//    for(int i = 0; i < cb._chunks[i]._len; ++i) {
+//      Chunk c = cb._chunks[i];
+//      if(c._chk2 != null) {
+//        modified = true;
+//        if(c._chk2 instanceof NewChunk)
+//          cb._chunks[i] = ((NewChunk) c._chk2).compress();
+//      }
+//    }
+//    if(modified) DKV.put(chunkKey(cidx),cb,fs);
+//    return fs;
+//  }
 
 
   public long byteSize() { return 0; }

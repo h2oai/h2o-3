@@ -24,7 +24,7 @@ class ASTRepLen extends ASTPrim {
       new MRTask() {
         @Override
         public void map(Chunk c) {
-          VecAry.VecAryReader reader = fr.vecs().vecReader(false);
+          VecAry.VecAryReader reader = fr.vecs().reader(false);
           for (int i = 0; i < c._len; ++i)
             c.set(i, reader.at((long) c.atd(i),0));
         }
@@ -60,11 +60,11 @@ class ASTSeq extends ASTPrim {
       else if(n > Double.MAX_VALUE) throw new IllegalArgumentException("'by' argument is much too small");
       Futures fs = new Futures();
       AppendableVec av = new AppendableVec(Vec.newKey(),Vec.T_NUM);
-      NewChunk nc = new NewChunk(av, 0);
+      NewChunk nc = new NewChunk(new SingleChunk(av,0), 0);
       int len = (int)n + 1;
       for (int r = 0; r < len; r++) nc.addNum(from + r*by);
       // May need to adjust values = by > 0 ? min(values, to) : max(values, to)
-      av.closeChunk(0,nc,fs);
+      nc.close(fs);
       VecAry vec = av.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));

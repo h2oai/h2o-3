@@ -88,10 +88,9 @@ public class DMatrix  {
       final int colStart = (int)chks[0].start();
       for (int i = 0; i < espc.length - 1; ++i) {
         final int fi = i;
-
         final NewChunk[] tgtChunks = new NewChunk[chks[0]._len];
         for (int j = 0; j < tgtChunks.length; ++j)
-          tgtChunks[j] = new NewChunk(tgt.vecs().getAVecForCol(j + colStart), fi);
+          tgtChunks[j] = new NewChunk(new SingleChunk(tgt.vecs().getAVecForCol(j + colStart),fi),j);
         for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
           NewChunk nc = chks[c].inflate();
           if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?
@@ -106,7 +105,7 @@ public class DMatrix  {
         for (int j = 0; j < tgtChunks.length; ++j) { // finalize the target chunks and close them
           final int fj = j;
           tgtChunks[fj].addZeros((int) (espc[fi + 1] - espc[fi]) - tgtChunks[fj]._len);
-          tgt.vecs().getAVecForCol(j + colStart).closeChunk(fi,tgtChunks[fj],_fs);
+          tgtChunks[fj].close(_fs);
           tgtChunks[fj] = null;
         }
 

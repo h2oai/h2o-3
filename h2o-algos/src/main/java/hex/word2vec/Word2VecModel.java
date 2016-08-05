@@ -192,12 +192,12 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
 
     //finalize vectors
     colNames[0] = new String("V"+0);
-    avs[0].closeChunk(0, cs[0], fs);
+    cs[0].close(fs);
     vecs.addVecs(avs[0].layout_and_close(fs));
     final int rowLayout = vecs.rowLayout();
     for (int i = 0; i < vecs.len(); i++) {
       colNames[i] = new String("V"+i);
-      avs[i].closeChunk(0, cs[i], fs);
+      cs[i].close(fs);
       vecs.addVecs(avs[i].closeVecs(rowLayout,fs));
     }
 

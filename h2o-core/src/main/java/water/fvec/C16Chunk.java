@@ -6,7 +6,12 @@ import water.util.UnsafeUtils;
 public class C16Chunk extends Chunk {
   public static final long _LO_NA = Long.MIN_VALUE;
   public static final long _HI_NA = 0;
-  C16Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>4); }
+  C16Chunk( byte[] bs ) {
+    _mem=bs;
+    _vidx = -1;
+    _achunk = null;
+    set_len(_mem.length>>4);
+  }
 
   @Override
   public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
@@ -55,7 +60,8 @@ public class C16Chunk extends Chunk {
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem, (idx << 4), _LO_NA); UnsafeUtils.set8(_mem,(idx<<4),_HI_NA); return true; }
 
   @Override protected final void initFromBytes () {
-    _start = -1;  _cidx = -1;
+    _vidx = -1;
+    _achunk = null;
     set_len(_mem.length>>4);
     assert _mem.length == _len <<4;
   }

@@ -241,7 +241,7 @@ class ASTCountMatches extends ASTPrim {
           }
         }
       }
-    }.doAll(Vec.T_NUM, vec).outputVecs(null);
+    }.doAll(1,Vec.T_NUM, vec).outputVecs(null);
   }
 }
 

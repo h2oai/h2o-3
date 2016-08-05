@@ -28,12 +28,11 @@ public class CBSChunk extends Chunk {
       }
     }
     _mem = bytes;
-    _start = -1;
     set_len(((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
   }
   public CBSChunk(byte[] bs, byte gap, byte bpv) {
     assert gap < 8; assert bpv == 1 || bpv == 2;
-    _mem = bs; _start = -1; _gap = gap; _bpv = bpv;
+    _mem = bs; _gap = gap; _bpv = bpv;
     set_len(((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
   }
   @Override protected long at8_impl(int idx) {
@@ -88,7 +87,6 @@ public class CBSChunk extends Chunk {
   @Override double max() { return 1; }
 
   @Override protected final void initFromBytes () {
-    _start = -1;  _cidx = -1;
     _gap   = _mem[0];
     _bpv   = _mem[1];
     set_len(((_mem.length - _OFF)*8 - _gap) / _bpv);

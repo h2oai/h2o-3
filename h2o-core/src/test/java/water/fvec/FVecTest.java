@@ -82,7 +82,7 @@ public class FVecTest extends TestUtil {
         { c=chks[i]; break; }
       }
       Assert.assertNotNull("Expect to find a C2Chunk", c);
-      assertTrue(c._vec.writable());
+      assertTrue(c.vec().writable());
 
       double d=_mins[i];
       for(i=0; i< c._len; i++ ) {
@@ -182,10 +182,10 @@ public class FVecTest extends TestUtil {
       assertEquals(0, vecs2.min(0), 0);
       assertEquals(9, vecs2.max(0), 0);
       assertEquals(4.5, v.mean(0), 1e-8);
-      Vec v2 = (Vec) vecs2.getAVecRaw(0);
-      v2.set(5, -100);
+      VecAry v2 = vecs2.getVecs(0);
+      v2.set(5,0, -100);
       assertEquals(-100, v2.min(0), 0);
-      v2.set(5, 5);
+      v2.set(5,0, 5);
       // make several rollups requests in parallel with and without histo and then get histo
       v2.startRollupStats(fs, false, 0);
       v2.startRollupStats(fs, false, 0);
@@ -195,7 +195,7 @@ public class FVecTest extends TestUtil {
       assertEquals(10,bins.length);
       // TODO: should test percentiles?
       for(long l:bins) assertEquals(1,l);
-      Vec.Writer w = v2.open();
+      VecAry.Writer w = v2.open();
       try {
         v2.min(0);
         assertTrue("should have thrown IAE since we're requesting rollups while changing the Vec (got Vec.Writer)",false); // fail - should've thrown

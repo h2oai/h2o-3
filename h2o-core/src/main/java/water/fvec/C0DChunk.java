@@ -12,7 +12,8 @@ public class C0DChunk extends Chunk {
   private static final int _OFF=8+4;
   private double _con;
   public C0DChunk(double con, int len) {
-    _start = -1;
+    _vidx = -1;
+    _achunk = null;
     set_len(len);
     _mem=new byte[_OFF];
     _con = con;
@@ -40,7 +41,8 @@ public class C0DChunk extends Chunk {
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.
   @Override final public void initFromBytes() {
-    _start = -1;  _cidx = -1;
+    _vidx = -1;
+    _achunk = null;
     _con = UnsafeUtils.get8d(_mem,0);
     set_len(UnsafeUtils.get4(_mem,8));
   }

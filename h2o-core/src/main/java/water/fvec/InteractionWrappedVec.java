@@ -272,8 +272,8 @@ public class InteractionWrappedVec extends WrappedVec {
     }
   }
 
-  @Override public Chunk chunkForChunkIdx(int cidx) {
-    return new InteractionWrappedChunk(this,_masterVec.getChunks(cidx));
+  @Override public SingleChunk chunkForChunkIdx(int cidx) {
+    return new SingleChunk(this,cidx,new InteractionWrappedChunk(_masterVec.getChunks(cidx).chks()));
   }
 
   @Override public Vec doCopy() {throw new UnsupportedOperationException();}
@@ -284,13 +284,12 @@ public class InteractionWrappedVec extends WrappedVec {
     public final boolean _c1IsCat; // left chunk is categorical
     public final boolean _c2IsCat; // rite chunk is categorical
     public final boolean _isCat;   // this vec is categorical
-    InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c) {
+    InteractionWrappedChunk(Chunk[] c) {
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
-      _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
-      _c1IsCat=_c[0]._vec.isCategorical(0);
-      _c2IsCat=_c[1]._vec.isCategorical(0);
-      _isCat = _vec.isCategorical(0);
+      _c1IsCat=_c[0].vec().isCategorical(0);
+      _c2IsCat=_c[1].vec().isCategorical(0);
+      _isCat = vec().isCategorical(0);
     }
 
     @Override
@@ -306,10 +305,10 @@ public class InteractionWrappedVec extends WrappedVec {
     @Override public double atd_impl(int idx) {
       if( _isCat )
         if( isNA_impl(idx) ) return Double.NaN;
-      return _isCat ? Arrays.binarySearch(_vec.domain(0), getKey(idx)) : ( _c1IsCat?1: (_c[0].atd(idx))) * ( _c2IsCat?1: (_c[1].atd(idx)) );
+      return _isCat ? Arrays.binarySearch(vec().domain(0), getKey(idx)) : ( _c1IsCat?1: (_c[0].atd(idx))) * ( _c2IsCat?1: (_c[1].atd(idx)) );
     }
-    @Override public long at8_impl(int idx)   { return _isCat ? Arrays.binarySearch(_vec.domain(0), getKey(idx)) : ( _c1IsCat?1:_c[0].at8(idx) ) * ( _c2IsCat?1:_c[1].at8(idx) ); }
-    private String getKey(int idx) { return _c[0]._vec.domain(0)[(int)_c[0].at8(idx)] + "_" + _c[1]._vec.domain(0)[(int)_c[1].at8(idx)]; }
+    @Override public long at8_impl(int idx)   { return _isCat ? Arrays.binarySearch(vec().domain(0), getKey(idx)) : ( _c1IsCat?1:_c[0].at8(idx) ) * ( _c2IsCat?1:_c[1].at8(idx) ); }
+    private String getKey(int idx) { return _c[0].vec().domain(0)[(int)_c[0].at8(idx)] + "_" + _c[1].vec().domain(0)[(int)_c[1].at8(idx)]; }
     @Override public boolean isNA_impl(int idx) { return _c[0].isNA(idx) || _c[1].isNA(idx); }
     // Returns true if the masterVec is missing, false otherwise
     @Override public boolean set_impl(int idx, long l)   { return false; }

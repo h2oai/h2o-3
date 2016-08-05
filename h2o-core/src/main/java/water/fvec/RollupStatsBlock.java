@@ -33,6 +33,10 @@ public class RollupStatsBlock extends Iced {
 
   volatile boolean _isComputing;
 
+  public RollupStatsBlock(RollupStats[] rs) {
+    _rs = rs;
+  }
+
   public boolean isReady() {
     if (_rs == null) return false;
     for (int i = 0; i < _rs.length; ++i)

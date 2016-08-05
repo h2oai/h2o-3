@@ -195,7 +195,7 @@ public class VecUtils {
           }
         }
       }
-    }.doAll(Vec.T_NUM, src).outputFrame().vecs();
+    }.doAll(1,Vec.T_NUM, src).outputFrame().vecs();
     assert res != null;
     return res;
   }
@@ -291,7 +291,7 @@ public class VecUtils {
     if( !src.isCategorical(0) )
       throw new H2OIllegalValueException("Can not convert a non-categorical column"
           + " using categoricalToStringVec().",src);
-    return new Categorical2StrChkTask(src.domain(0)).doAll(Vec.T_STR,src).outputFrame().vecs();
+    return new Categorical2StrChkTask(src.domain(0)).doAll(1,Vec.T_STR,src).outputFrame().vecs();
   }
 
   private static class Categorical2StrChkTask extends MRTask<Categorical2StrChkTask> {
@@ -335,7 +335,7 @@ public class VecUtils {
           }
         }
       }
-    }.doAll(Vec.T_STR, src).outputFrame().vecs();
+    }.doAll(1,Vec.T_STR, src).outputFrame().vecs();
     assert res != null;
     return res;
   }
@@ -365,7 +365,7 @@ public class VecUtils {
           }
         }
       }
-    }.doAll(Vec.T_STR,src).outputFrame().vecs();
+    }.doAll(1,Vec.T_STR,src).outputFrame().vecs();
     assert res != null;
     return res;
   }
@@ -390,7 +390,7 @@ public class VecUtils {
             if( !c.isNA(i) )
               c.set(i, Integer.parseInt(src.domain(0)[(int)c.at8(i)]));
         }
-      }.doAll(Vec.T_NUM, src).outputFrame().vecs();
+      }.doAll(1,Vec.T_NUM, src).outputFrame().vecs();
   }
 
   /** Collect numeric domain of given {@link Vec}
@@ -533,7 +533,7 @@ public class VecUtils {
   private static VecAry copyOver(VecAry src, byte type, long[] domain) {
     String[][] dom = new String[1][];
     dom[0]=domain==null?null:ArrayUtils.toString(domain);
-    return new CPTask(domain).doAll(type, src).outputFrame(null,dom).vecs();
+    return new CPTask(domain).doAll(1,type, src).outputFrame(null,dom).vecs();
   }
 
   private static class CPTask extends MRTask<CPTask> {

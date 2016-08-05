@@ -2,10 +2,7 @@ package water.parser;
 
 import water.Futures;
 import water.Iced;
-import water.fvec.AppendableVec;
-import water.fvec.C1Chunk;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -16,6 +13,7 @@ import java.util.Arrays;
 public class FVecParseWriter extends Iced implements StreamParseWriter<FVecParseWriter> {
   protected AppendableVec _vec;
   protected transient NewChunk[] _nvs;
+
   protected transient final Categorical [] _categoricals;
   protected transient final byte[] _ctypes;
   long _nLines;
@@ -26,21 +24,21 @@ public class FVecParseWriter extends Iced implements StreamParseWriter<FVecParse
   private final Vec.VectorGroup _vg;
   private long _errCnt;
 
+
   public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, AppendableVec av){
     _ctypes = ctypes;           // Required not-null
     _vec = av;
+    _cidx = cidx;
     _nvs = new NewChunk[ctypes.length];
-    for(int i = 0; i < _nvs.length; ++i)
-      _nvs[i] = new NewChunk(_vec,cidx);
+    for( int c = 0; c < _nvs.length; c++ )
+      _nvs[c] = new NewChunk();
     _categoricals = categoricals;
     _nCols = _nvs.length;
-    _cidx = cidx;
     _vg = vg;
   }
 
   @Override public FVecParseWriter reduce(FVecParseWriter sdout){
-    FVecParseWriter dout = (FVecParseWriter)sdout;
-    _nCols = Math.max(_nCols,dout._nCols); // SVMLight: max of columns
+    _nCols = Math.max(_nCols,sdout._nCols); // SVMLight: max of columns
     _vec.reduce(sdout._vec);
     _errCnt += sdout._errCnt;
     if(_errs.length < 20 && sdout._errs.length > 0) {
@@ -58,7 +56,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter<FVecParse
   }
   @Override public FVecParseWriter close(Futures fs){
     if( _nvs == null ) return this; // Might call close twice
-    _vec.closeChunks(_nvs,_cidx,fs);
+    new ChunkBlock(_vec,_cidx,_nvs).close(fs);
     _nvs = null;  // Free for GC
     return this;
   }

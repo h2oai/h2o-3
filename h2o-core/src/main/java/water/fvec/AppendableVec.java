@@ -35,35 +35,6 @@ public class AppendableVec extends AVec {
     _types = type;
     _blocks = blocks == null?new int[_types.length]:blocks;
   }
-  // A NewVector chunk was "closed" - completed.  Add it's info to the roll-up.
-  // This call is made in parallel across all node-local created chunks, but is
-  // not called distributed.
-  public synchronized void closeChunks( NewChunk [] ncs, int cidx, Futures fs) {
-    if(ncs.length != numCols())
-      throw new IllegalArgumentException("number of columns must match. expected " + numCols() + " got " + ncs.length);
-    int len = ncs[0].len();
-    // The Parser will pre-allocate the _tmp_espc large enough (the Parser
-    // knows how many final Chunks there will be up front).  Other users are
-    // encouraged to set a "large enough" espc - and a shared one at that - to
-    // avoid these copies.
-    // Set the length into the temp ESPC at the Chunk index (accounting for _chunkOff)
-    cidx -= _chunkOff;
-    while( cidx >= _tmp_espc.length ) // should not happen if espcs are preallocated and shared!
-      _tmp_espc = Arrays.copyOf(_tmp_espc, _tmp_espc.length<<1);
-    _tmp_espc[cidx] = len;
-    int k = 0;
-    for(int i = 0; i < _blocks.length;++i) {
-      if(_blocks[i] == 1)
-        DKV.put(chunkKey(_key,cidx,i), ncs[k].compress(), fs);
-      else {
-        Chunk[] chks = new Chunk[_blocks[i]];
-        for (int j = 0; j < chks.length; ++j)
-          chks[i] = ncs[i].compress();
-        DKV.put(chunkKey(_key,cidx, i), new ChunkBlock(chks), fs);
-      }
-    }
-  }
-
   public VecAry closeVecs(String[] domains, int rowLayout, Futures fs) {
     return closeVecs(new String[][]{domains},rowLayout,fs);
   }
@@ -155,9 +126,13 @@ public class AppendableVec extends AVec {
 
   @Override public AChunk chunkForChunkIdx(int cidx) {throw new UnsupportedOperationException();}
 
-  @Override
-  public Futures closeChunk(int cidx, AChunk c, Futures fs) {
-    throw new UnsupportedOperationException("should use closeChunks(NewChunk [] chks)");
+
+  public synchronized void closeChunk(int cidx, int len) {
+    if(_tmp_espc == null)
+      _tmp_espc = new long[cidx+1];
+    else if(_tmp_espc.length <= cidx)
+      _tmp_espc = Arrays.copyOf(_tmp_espc,cidx+1);
+    _tmp_espc[cidx] = len;
   }
 
   @Override
@@ -179,6 +154,9 @@ public class AppendableVec extends AVec {
   }
 
   @Override
+  public void setDomain(int vec, String[] domain) {throw new UnsupportedOperationException();}
+
+  @Override
   public void setBad(int colId) {
 
   }
@@ -187,10 +165,7 @@ public class AppendableVec extends AVec {
   @Override public int nChunks() { throw H2O.fail(); }
   @Override public int elem2ChunkIdx( long i ) { throw H2O.fail(); }
   @Override public long chunk2StartElem( int cidx ) { throw H2O.fail(); }
-  @Override public long byteSize(int colId) {
-    if(colId != 0) throw new ArrayIndexOutOfBoundsException();
-    return 0;
-  }
+  @Override public long byteSize() {return 0;}
 
   @Override
   public void preWriting(int... colIds) {}

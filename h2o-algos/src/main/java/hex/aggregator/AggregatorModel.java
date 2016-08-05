@@ -8,8 +8,6 @@ import hex.pca.PCAModel;
 import water.*;
 import water.fvec.*;
 
-import java.util.Arrays;
-
 public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> implements Model.ExemplarMembers {
 
   public static class AggregatorParameters extends Model.Parameters {
@@ -90,7 +88,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     assert(res.numRows()==_exemplars.length);
 
     VecAry cnts = res.vecs().makeZero();
-    VecAry.VecAryWriter vw = cnts.vecWriter();
+    VecAry.Writer vw = cnts.open();
     for (int i=0;i<_counts.length;++i)
       vw.set(i,0, _counts[i]);
     vw.close();
@@ -106,7 +104,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
         for (int i=0;i<c._len;++i)
           nc.addNum(c.at8(i)==_exemplars[exemplarIdx].gid ? 1 : 0,0);
       }
-    }.doAll(Vec.T_NUM, _exemplar_assignment_vec).outputVecs(null);
+    }.doAll(1,Vec.T_NUM, _exemplar_assignment_vec).outputVecs(null);
 
     Frame orig = _parms.train();
     VecAry vecs = new VecAry(orig.vecs());

@@ -20,7 +20,8 @@ public class CUDChunk extends Chunk {
   int numUniques;
   CUDChunk() {}
   CUDChunk(byte[] bs, HashMap<Long,Byte> hs, int len) {
-    _start = -1;
+    _vidx = -1;
+    _achunk = null;
     numUniques = hs.size();
     set_len(len);
     _mem = MemoryManager.malloc1(computeByteSize(numUniques, _len), false);
@@ -94,7 +95,8 @@ public class CUDChunk extends Chunk {
     return set_impl(idx, Double.NaN);
   }
   @Override protected final void initFromBytes () {
-    _start = -1;  _cidx = -1;
+    _vidx = -1;
+    _achunk = null;
     _len = UnsafeUtils.get4(_mem, 0);
     numUniques = UnsafeUtils.get4(_mem, 4);
     set_len(_len);

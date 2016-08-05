@@ -204,7 +204,7 @@ public class GroupingBench extends TestUtil {
 
         int o[][] = new int[vec.nChunks()][];    // [(int)vec.length()];
         for (int c=0; c<o.length; c++)
-            o[c] = new int[vec.chunkForChunkIdx(c)._len];
+            o[c] = new int[vec.chunkForChunkIdx(c).getChunk(0)._len];
 
         for (int timeRep=0; timeRep<3; timeRep++) {   // TO DO: caliper java project
 

@@ -12,7 +12,7 @@ public class CUDChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   @Test
   public void test_inflate_impl() {
-    NewChunk nc = new NewChunk(null, 0);
+    NewChunk nc = new NewChunk(false);
     final double a = -3.1415926e-118;
     final double b = 23423423.234234234;
     final double c = 0.00103E217;

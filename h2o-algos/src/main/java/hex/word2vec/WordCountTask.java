@@ -173,10 +173,9 @@ public class WordCountTask extends MRTask<WordCountTask> {
       wordNC.addStr(str);
       cntNC.addNum(str._cnt, 0);
     }
-
     //finalize vectors
-    wordAV.closeChunk(0,wordNC, fs);
-    cntAV.closeChunk(0,cntNC, fs);
+    wordNC.close(fs);
+    cntNC.close(fs);
     vecs.addVecs(wordAV.layout_and_close(fs));
     vecs.addVecs(cntAV.layout_and_close(fs));
     fs.blockForPending();

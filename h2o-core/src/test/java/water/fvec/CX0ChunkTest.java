@@ -10,7 +10,7 @@ public class CX0ChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   @Test
   public void test_inflate_impl() {
-    NewChunk nc = new NewChunk(null, 0);
+    NewChunk nc = new NewChunk(false);
 
     int[] vals = new int[]{0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,

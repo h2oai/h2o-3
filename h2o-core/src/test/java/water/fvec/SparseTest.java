@@ -26,7 +26,7 @@ public class SparseTest extends TestUtil {
       else if((long)d == d) nv.addNum((long)d,0);
       else nv.addNum(d);
     }
-    av.closeChunk(0,nv,fs);
+    nv.close(fs);
     return av.layout_and_close(fs);
   }
 
@@ -91,7 +91,7 @@ public class SparseTest extends TestUtil {
       }
       fs.blockForPending();
     } finally {
-      c0._vec.remove();
+      v0.remove();
     }
   }
 

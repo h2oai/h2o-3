@@ -95,8 +95,8 @@ class ASTRectangleAssign extends ASTPrim {
       // Copy dst columns as-needed to allow update-in-place
       dvecs = ses.copyOnWrite(dst,cols); // Update dst columns
       long[] rownums = rows.expand8();   // Just these rows
-      VecAry.VecAryWriter w = dvecs.vecWriter();
-      VecAry.VecAryReader r = dvecs.vecReader(false);
+      VecAry.Writer w = dvecs.open();
+      VecAry.VecAryReader r = dvecs.reader(false);
       for( int col=0; col<svecs.len(); col++ )
         for( int ridx=0; ridx<rownums.length; ridx++ )
           w.set(rownums[ridx], cols[col], r.at(ridx,col));
@@ -115,7 +115,7 @@ class ASTRectangleAssign extends ASTPrim {
     if( nrows==1 ) {
       VecAry vecs = ses.copyOnWrite(dst,cols);
       long drow = (long)rows._bases[0];
-      VecAry.VecAryWriter w = vecs.vecWriter();
+      VecAry.Writer w = vecs.open();
       for( int i=0; i<cols.length; i++ )
         w.set(drow, cols[i],src);
       w.close();

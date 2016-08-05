@@ -2,9 +2,7 @@ package water.fvec;
 
 import org.junit.Assert;
 import org.junit.Ignore;
-import water.DKV;
 import water.Futures;
-import water.Key;
 import water.parser.BufferedString;
 
 /**
@@ -20,7 +18,7 @@ public class FrameTestUtil {
       NewChunk nc = new NewChunk(av,i);
       for(int j = 0; j < vals[i].length; ++j)
         nc.addStr(vals[i][j]);
-      av.closeChunk(i,nc,fs);
+      nc.close(fs);
     }
     VecAry vecs = av.layout_and_close(fs);
     fs.blockForPending();
@@ -34,7 +32,7 @@ public class FrameTestUtil {
   public static void assertValues(VecAry v, String[] expValues) {
     Assert.assertEquals("Number of rows", expValues.length, v.numRows());
     BufferedString tmpStr = new BufferedString();
-    VecAry.VecAryReader r = v.vecReader(false);
+    VecAry.VecAryReader r = v.reader(false);
     for (int i = 0; i < v.numRows(); i++) {
       if (r.isNA(i,0)) Assert.assertEquals("NAs should match", null, expValues[i]);
       else Assert.assertEquals("Values should match", expValues[i], r.atStr(tmpStr,i,0).toString());
@@ -44,7 +42,7 @@ public class FrameTestUtil {
   public static String[] collectS(VecAry v) {
     String[] res = new String[(int) v.numRows()];
     BufferedString tmpStr = new BufferedString();
-    VecAry.VecAryReader r = v.vecReader(false);
+    VecAry.VecAryReader r = v.reader(false);
       for (int i = 0; i < v.numRows(); i++)
         res[i] = r.isNA(i,0) ? null : r.atStr(tmpStr, i,0).toString();
     return res;

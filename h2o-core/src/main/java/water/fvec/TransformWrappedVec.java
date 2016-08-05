@@ -53,16 +53,18 @@ public class TransformWrappedVec extends WrappedVec {
         for(int i=0;i<c._len;++i)
           nc.addNum(c.atd(i));
       }
-    }.doAll(Vec.T_NUM,new VecAry(this)).outputVecs(null).getAVecRaw(0);
+    }.doAll(1,Vec.T_NUM,new VecAry(this)).outputVecs(null).getAVecRaw(0);
     remove();
     return v;
   }
 
 
 
-  @Override public Chunk chunkForChunkIdx(int cidx) {
-    Chunk[] cs = _masterVec.getChunks(cidx);
-    return new TransformWrappedChunk(_fun, this, cs);
+  @Override public SingleChunk chunkForChunkIdx(int cidx) {
+    Chunk[] cs = _masterVec.getChunks(cidx).chks();
+    SingleChunk sc = new SingleChunk(this,cidx);
+    sc._c = new TransformWrappedChunk(_fun, sc, cs);
+    return sc;
   }
 
   @Override public Vec doCopy() {
@@ -76,12 +78,10 @@ public class TransformWrappedVec extends WrappedVec {
     private final AST[] _asts;
     private final Env _env;
 
-    TransformWrappedChunk(AST fun, Vec transformWrappedVec, Chunk... c) {
-
+    TransformWrappedChunk(AST fun, SingleChunk sc, Chunk... c) {
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
-      _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
-
+      _achunk = sc;
       _fun=fun;
       _asts = new AST[1+_c.length];
       _asts[0]=_fun;

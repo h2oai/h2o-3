@@ -12,7 +12,10 @@ public class C1SChunk extends Chunk {
   public double scale() { return _scale; }
   private transient long _bias;
   @Override public boolean hasFloat(){ return _scale != (long)_scale; }
-  C1SChunk( byte[] bs, long bias, double scale ) { _mem=bs; _start = -1; set_len(_mem.length-_OFF);
+  C1SChunk( byte[] bs, long bias, double scale ) { _mem=bs;
+    _vidx = -1;
+    _achunk = null;
+    set_len(_mem.length-_OFF);
     _bias = bias; _scale = scale;
     UnsafeUtils.set8d(_mem, 0, scale);
     UnsafeUtils.set8 (_mem,8,bias );
@@ -43,7 +46,8 @@ public class C1SChunk extends Chunk {
   //public String  pformat0() { return hasFloat() ? "% 8.2e" : super.pformat0(); }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
   @Override public final void initFromBytes () {
-    _start = -1;  _cidx = -1;
+    _vidx = -1;
+    _achunk = null;
     set_len(_mem.length-_OFF);
     _scale= UnsafeUtils.get8d(_mem,0);
     _bias = UnsafeUtils.get8 (_mem,8);

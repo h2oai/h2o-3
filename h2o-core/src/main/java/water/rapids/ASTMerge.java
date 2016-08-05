@@ -326,7 +326,7 @@ public class ASTMerge extends ASTPrim {
       // Shared common hash map
       final IcedHashMap<Row,String> rows = _rows;
       VecAry hvecs = _hashed.vecs(); // Data source from hashed set
-      VecAry.VecAryReader hreader = hvecs.vecReader(false);
+      VecAry.VecAryReader hreader = hvecs.reader(false);
       assert hvecs.len() == _ncols + nchks.length;
       Row row = new Row(_ncols);  // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
@@ -369,7 +369,7 @@ public class ASTMerge extends ASTPrim {
       // Shared common hash map
       final IcedHashMap<Row,String> rows = _rows;
       VecAry hvecs = _hashed.vecs(); // Data source from hashed set
-      VecAry.VecAryReader hvecsReader = hvecs.vecReader(false);
+      VecAry.VecAryReader hvecsReader = hvecs.reader(false);
 //      assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString

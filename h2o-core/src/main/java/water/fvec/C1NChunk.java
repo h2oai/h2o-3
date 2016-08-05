@@ -8,7 +8,7 @@ import water.*;
  */
 public class C1NChunk extends Chunk {
   protected static final int _OFF=0;
-  public C1NChunk(byte[] bs) { _mem=bs; _start = -1; set_len(_mem.length); }
+  public C1NChunk(byte[] bs) { _mem=bs; set_len(_mem.length); }
   @Override protected final long   at8_impl( int i ) { return 0xFF&_mem[i]; }
   @Override protected final double atd_impl( int i ) { return 0xFF&_mem[i]; }
   @Override protected final boolean isNA_impl( int i ) { return false; }
@@ -21,8 +21,7 @@ public class C1NChunk extends Chunk {
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.
   @Override protected final void initFromBytes () {
-    _start = -1;
-    _cidx = -1;
+
     set_len(_mem.length);
   }
   @Override public boolean hasFloat() {return false;}

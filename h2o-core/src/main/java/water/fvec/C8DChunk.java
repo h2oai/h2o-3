@@ -8,7 +8,7 @@ import water.util.UnsafeUtils;
  * The empty-compression function, where data is in 'double's.
  */
 public class C8DChunk extends Chunk {
-  C8DChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>3); }
+  C8DChunk( byte[] bs ) { _mem=bs; set_len(_mem.length>>3); }
 
   @Override protected final long   at8_impl( int i ) {
     double res = UnsafeUtils.get8d(_mem, i << 3);
@@ -42,7 +42,6 @@ public class C8DChunk extends Chunk {
 //  public int pformat_len0() { return 22; }
 //  public String pformat0() { return "% 21.15e"; }
   @Override public final void initFromBytes () {
-    _start = -1;  _cidx = -1;
     set_len(_mem.length>>3);
     assert _mem.length == _len <<3;
   }

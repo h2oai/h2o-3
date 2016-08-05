@@ -90,12 +90,12 @@ public class GLMBasicTestBinomial extends TestUtil {
     };
 
     VecAry offsetVecTrain = _prostateTrain.vecs().makeZero();
-    try( VecAry.VecAryWriter vw = offsetVecTrain.vecWriter() ) {
+    try( VecAry.Writer vw = offsetVecTrain.open() ) {
       for (int i = 0; i < offset_train.length; ++i)
         vw.set(i, 0, offset_train[i]);
     }
     VecAry offsetVecTest = _prostateTest.vecs().makeZero();
-    try( VecAry.VecAryWriter vw = offsetVecTest.vecWriter() ) {
+    try( VecAry.Writer vw = offsetVecTest.open() ) {
       for (int i = 0; i < offset_test.length; ++i)
         vw.set(i, 0, offset_test[i]);
     }
@@ -286,12 +286,12 @@ public class GLMBasicTestBinomial extends TestUtil {
     };
 
     VecAry offsetVecTrain = _prostateTrain.vecs().makeZero();
-    try( VecAry.VecAryWriter vw = offsetVecTrain.vecWriter() ) {
+    try( VecAry.Writer vw = offsetVecTrain.open() ) {
       for (int i = 0; i < offset_train.length; ++i)
         vw.set(i, 0, offset_train[i]);
     }
     VecAry offsetVecTest = _prostateTest.vecs().makeZero();
-    try( VecAry.VecAryWriter vw = offsetVecTest.vecWriter() ) {
+    try( VecAry.Writer vw = offsetVecTest.open() ) {
       for (int i = 0; i < offset_test.length; ++i)
         vw.set(i, 0, offset_test[i]);
     }
@@ -514,7 +514,7 @@ public class GLMBasicTestBinomial extends TestUtil {
     //Arrays.fill(weights, 1);
 
     VecAry offsetVecTrain = _prostateTrain.vecs().makeZero();
-    try( VecAry.VecAryWriter vw = offsetVecTrain.vecWriter() ) {
+    try( VecAry.Writer vw = offsetVecTrain.open() ) {
       for (int i = 0; i < weights.length; ++i)
         vw.set(i,0, weights[i]);
     }
@@ -848,19 +848,19 @@ public class GLMBasicTestBinomial extends TestUtil {
 
 
     VecAry offsetVecTrain = _prostateTrain.vecs().makeZero();
-    try( VecAry.VecAryWriter vw = offsetVecTrain.vecWriter() ) {
+    try( VecAry.Writer vw = offsetVecTrain.open() ) {
       for (int i = 0; i < offset_train.length; ++i)
         vw.set(i, 0, offset_train[i]);
     }
 
     VecAry weightsVecTrain = _prostateTrain.vecs().makeZero();
-    try( VecAry.VecAryWriter vw = weightsVecTrain.vecWriter() ) {
+    try( VecAry.Writer vw = weightsVecTrain.open() ) {
       for (int i = 0; i < weights_train.length; ++i)
         vw.set(i, 0, weights_train[i]);
     }
 
     VecAry offsetVecTest = _prostateTest.vecs().makeZero();
-    try( VecAry.VecAryWriter vw = offsetVecTest.vecWriter() ) {
+    try( VecAry.Writer vw = offsetVecTest.open() ) {
       for (int i = 0; i < offset_test.length; ++i)
         vw.set(i, 0,offset_test[i]);
     }

@@ -257,8 +257,7 @@ class ASTLevels extends ASTPrim {
   public ValFrame apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     Futures fs = new Futures();
-    Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f.numCols());
-
+    Key key = Vec.VectorGroup.VG_LEN1.addVec();
 
     // compute the longest vec... that's the one with the most domain levels
     int max=0;
@@ -266,20 +265,22 @@ class ASTLevels extends ASTPrim {
     for(int i=0;i<f.numCols();++i )
       if( vecs.isCategorical(i) )
         if( max < vecs.domain(i).length ) max = vecs.domain(i).length;
-    final int rowLayout = AVec.ESPC.rowLayout(keys[0],new long[]{0,max});
+    final int rowLayout = AVec.ESPC.rowLayout(key,new long[]{0,max});
+    byte [] types = new byte[f.numCols()];
+    Arrays.fill(types,Vec.T_NUM);
+    AppendableVec av = new AppendableVec(key,types);
     for( int i=0;i<f.numCols();++i ) {
-      AppendableVec v = new AppendableVec(keys[i],Vec.T_NUM);
-      NewChunk nc = new NewChunk(v,0);
+      NewChunk nc = new NewChunk(new SingleChunk(av,0),i);
       String[] dom = vecs.domain(i);
       int numToPad = dom==null?max:max-dom.length;
       if( dom != null )
         for(int j=0;j<dom.length;++j) nc.addNum(j);
       for(int j=0;j<numToPad;++j)     nc.addNA();
-      v.closeChunk(0,nc,fs);
-      vecs.setVec(i, v.closeVecs(new String[][]{dom},rowLayout,fs));
+      nc.close(fs);
     }
+    VecAry newVecs = av.closeVecs(vecs.domains(),rowLayout,fs);
     fs.blockForPending();
-    Frame fr2 = new Frame((Key)null,vecs);
+    Frame fr2 = new Frame((Key)null,newVecs);
     return new ValFrame(fr2);
   }
 }
@@ -487,12 +488,12 @@ class ASTWhich extends ASTPrim {
     // The 1-row version
     if( f.numRows()==1 && f.numCols() > 1) {
       AppendableVec v = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec(),Vec.T_NUM);
-      NewChunk nc = new NewChunk(v, 0);
-      Chunk [] chunks = f.vecs().getChunks(0);
+      NewChunk nc = new NewChunk(new SingleChunk(v,0), 0);
+      Chunk [] chunks = f.vecs().getChunks(0).chks();
       for( int i=0; i<f.numCols(); i++ ) 
         if( chunks[i].at8(0)!=0 )
           nc.addNum(i);
-      Futures fs = v.closeChunk(0,nc, new Futures());
+      Futures fs = nc.close(new Futures());
       VecAry vec = v.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame((Key)null,vec));

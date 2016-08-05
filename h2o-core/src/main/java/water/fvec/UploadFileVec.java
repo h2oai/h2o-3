@@ -13,20 +13,22 @@ public class UploadFileVec extends FileVec {
 
   @Override public boolean writable() { return _len==-1; }
 
-  public void addAndCloseChunk(Chunk c, Futures fs) {
+  public Futures addAndCloseChunk(Chunk c, Futures fs) {
     assert _len==-1;            // Not closed
-    assert (c._vec == null);    // Don't try to re-purpose a chunk.
-    c._vec = this;              // Attach chunk to this vec.
-    DKV.put(chunkKey(_nchunks++),c,fs); // Write updated chunk back into K/V
+    SingleChunk sc = new SingleChunk(this,_nchunks++);
+    sc._c = c;
+    return sc.close(fs);
   }
 
   // Close, and possible replace the prior chunk with a new, larger Chunk
-  public void close(C1NChunk c, int cidx, Futures fs) {
+  public Futures close(C1NChunk c, int cidx, Futures fs) {
     assert _len==-1;            // Not closed
-    c._vec = this;              // Attach chunk to this vec.
-    DKV.put(chunkKey(cidx),c,fs); // Write updated chunk back into K/V
+    SingleChunk sc = new SingleChunk(this,cidx);
+    sc._c = c;
+    sc.close(fs);
     long l = _nchunks-1L;
     _len = l*_chunkSize +c._len;
+    return fs;
   }
 
   private boolean checkMissing(int cidx, Value val) {

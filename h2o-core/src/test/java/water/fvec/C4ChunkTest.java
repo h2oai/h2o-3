@@ -12,7 +12,7 @@ public class C4ChunkTest extends TestUtil {
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(false);
 
       int[] vals = new int[]{-2147483647, 0, 2147483647};
       if (l==1) nc.addNA();
@@ -59,13 +59,12 @@ public class C4ChunkTest extends TestUtil {
   @Test public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
     water.Key key = Vec.newKey();
-    Vec vec = new Vec(key, AVec.ESPC.rowLayout(key,new long[]{0,15})).makeZero();
+    VecAry vec = new VecAry(new Vec(key, AVec.ESPC.rowLayout(key,new long[]{0,15})).makeZero());
     int[] vals = new int[]{0, 3, 0, 6, 0, 0, 0, Integer.MIN_VALUE+1, 0, 12, Integer.MAX_VALUE, 32767, 0, 0, 19};
-    Vec.Writer w = vec.open();
-    for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);
-    w.close();
-
-    Chunk cc = vec.chunkForChunkIdx(0);
+    try(VecAry.Writer w = vec.open()) {
+      for (int i = 0; i < vals.length; ++i) w.set(i, 0, vals[i]);
+    }
+    Chunk cc = vec.getChunk(0,0);
     assert cc instanceof C4Chunk;
     Futures fs = new Futures();
     fs.blockForPending();
@@ -75,8 +74,9 @@ public class C4ChunkTest extends TestUtil {
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    for (int na : NAs) vec.setNA(na);
-
+    try(VecAry.Writer w = vec.open()) {
+      for (int na : NAs) w.setNA(na,0);
+    }
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
     for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));

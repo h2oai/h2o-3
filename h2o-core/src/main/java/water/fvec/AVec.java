@@ -159,11 +159,23 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
 
   public final RollupStats getRollups(int colId){return getRollups(colId,false);}
   public abstract RollupStats getRollups(int colId, boolean histo);
-
+  public abstract void setDomain(int vec, String[] domain);
 
   public static abstract class AChunk<T extends AChunk<T>> extends Iced<T> {
+    transient long _start = -1;
+    transient AVec _vec = null;
+    transient int _cidx = -1;
     public abstract Chunk getChunk(int i);
     public abstract  Chunk[] getChunks();
+
+    public abstract Futures close(Futures fs);
+
+    public void setWrite(Chunk chunk) {
+      throw H2O.unimpl();
+    }
+
+    public abstract Futures updateChunk(int chunkIdx,Chunk c, Futures fs);
+
   }
 
   public final long[] espc() { if( _espc==null ) _espc = ESPC.espc(this); return _espc; }
@@ -246,7 +258,12 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
 
   public final boolean isInt(int colId){return getRollups(colId)._isInt; }
   /** Size of compressed vector data. */
-  public long byteSize(int colId){return getRollups(colId)._size; }
+  public long byteSize(){
+    long res = 0;
+    for(int i = 0; i < numCols(); ++i)
+      res += getRollups(i)._size;
+    return res;
+  }
 
   /** Vecs's mode
    * @return Vec's mode */
@@ -493,7 +510,17 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a chunk# */
   public T chunkForChunkIdx(int cidx) {
-    return chunkIdx(cidx).get();        // Chunk# to chunk data
+    T c = chunkIdx(cidx).get();        // Chunk# to chunk data
+    long cstart = c._start;             // Read once, since racily filled in
+    int tcidx = c._cidx;
+    AVec v = c._vec;
+    if( cstart != -1 && v != null && tcidx == cidx)
+      return c;                       // Already filled-in
+    assert cstart == -1 || v == null || tcidx == -1; // Was not filled in (everybody racily writes the same start value)
+    c._vec = this;             // Fields not filled in by unpacking from Value
+    c._start = chunk2StartElem(cidx);          // Fields not filled in by unpacking from Value
+    c._cidx = cidx;
+    return c;
   }
 
   /** The Chunk for a row#.  Warning: this pulls the data locally; using this
@@ -834,9 +861,6 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
   public final AVec align(final AVec vec) {
     return new VecAry(this).makeCompatible(new VecAry(vec),true).getAVecRaw(0);
   }
-
-
-  public abstract Futures closeChunk(int cidx, AChunk c, Futures fs);
 
   public abstract AVec doCopy();
 

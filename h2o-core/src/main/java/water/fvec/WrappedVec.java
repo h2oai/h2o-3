@@ -14,8 +14,7 @@ abstract class WrappedVec extends Vec {
     assert masterVec.len() == 1;
     _masterVec = masterVec;
   }
-
   public VecAry masterVec() { return _masterVec; }
   // Map from chunk-index to Chunk.  These wrappers are making custom Chunks
-  abstract public Chunk chunkForChunkIdx(int cidx);
+  abstract public SingleChunk chunkForChunkIdx(int cidx);
 }

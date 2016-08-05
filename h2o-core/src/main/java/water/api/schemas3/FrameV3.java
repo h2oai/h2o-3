@@ -201,7 +201,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
     this.columns = new ColV3[column_count];
     VecAry vecs = f.vecs();
-    VecAry.VecAryReader vReader = vecs.vecReader(true);
+    VecAry.VecAryReader vReader = vecs.reader(true);
     Futures fs = new Futures();
     for( int i = 0; i < column_count; i++ ) {
       double [] dvals = new double[row_count];

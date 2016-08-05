@@ -86,7 +86,7 @@ class ASTApply extends ASTPrim {
 
     // do a single row of the frame to determine the size of the output.
     double[] ds = new double[fr.numCols()];
-    Chunk [] chks = fr.vecs().getChunks(0,false);
+    Chunk [] chks = fr.vecs().getChunks(0,false).chks();
     for(int col=0;col<fr.numCols();++col)
       ds[col] = chks[col].atd(0);
     int noutputs = fun.apply(env,env.stk(),new AST[]{fun,new ASTRow(ds,fr._names.getNames())}).getRow().length;

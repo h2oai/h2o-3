@@ -177,6 +177,12 @@ public class ArrayUtils {
       res[i] = ary[i].clone();
     return res;
   }
+  public static int[][] deepClone(int [][] ary){
+    int [][] res = ary.clone();
+    for(int i = 0 ; i < res.length; ++i)
+      res[i] = ary[i].clone();
+    return res;
+  }
   public static String[][] deepClone(String [][] ary){
     String [][] res = ary.clone();
     for(int i = 0 ; i < res.length; ++i)
@@ -1285,11 +1291,12 @@ public class ArrayUtils {
     int rowLayout = -1;
     AppendableVec vec = new AppendableVec(k, Vec.T_NUM);
     NewChunk [] chunks = new NewChunk[rows.length];
+    ChunkBlock cb = new ChunkBlock(vec,0,rows.length);
     for( int c = 0; c < chunks.length; c++ ) {
-      NewChunk chunk = (chunks[c] = new NewChunk(vec,0));
+      NewChunk chunk = (chunks[c] = new NewChunk(cb,c));
       for (double[] row : rows) chunk.addNum(row[c]);
     }
-    vec.closeChunks(chunks,0,fs);
+    cb.close(fs);
     VecAry vecs = vec.layout_and_close(fs);
     fs.blockForPending();
     Frame fr = new Frame(key, names, vecs);

@@ -2,6 +2,7 @@ package water.parser;
 
 import water.Futures;
 import water.fvec.AppendableVec;
+import water.fvec.ChunkBlock;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
@@ -12,13 +13,15 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   protected final Vec.VectorGroup _vg;
   int _vecIdStart;
 
+
+
   public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, AppendableVec av){
     super(vg, cidx, null, null, av);
     _vg = vg;
     _vecIdStart = vecIdStart;
     _nvs = new NewChunk[av.numCols()];
     for(int i = 0; i < _nvs.length; ++i)
-      _nvs[i] = new NewChunk(_vec, _cidx, true);
+      _nvs[i] = new NewChunk(true);
     _col = 0;
   }
 
@@ -50,8 +53,7 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
       _nvs   = Arrays.copyOf(_nvs, newColCnt);
       _vec.setNCols(newColCnt);
       for(int i = oldColCnt; i < newColCnt; ++i)
-        _nvs[i] = new NewChunk(_vec, _cidx, true);
-
+        _nvs[i] = new NewChunk(true);
       _nCols = newColCnt;
     }
   }

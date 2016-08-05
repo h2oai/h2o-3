@@ -37,13 +37,13 @@ import water.parser.BufferedString;
  *  completed there.  Later the NewChunk will be compressed (probably into a
  *  different underlying Chunk subclass) and put back in the K/V store under
  *  the same Key - effectively replacing the original Chunk; this is done when
- *  {@link AVec#closeChunk} is called, and is taken care of by the standard {@link
+ *  {@link #close} is called, and is taken care of by the standard {@link
  *  MRTask} calls.
  *
  *  <p>Chunk updates are not multi-thread safe; the caller must do correct
  *  synchronization.  This is already handled by the Map/Reduce {MRTask)
  *  framework.  Chunk updates are not visible cross-cluster until the
- *  {@link AVec#closeChunk} is made; again this is handled by MRTask directly.
+ *  {@link #close} is made; again this is handled by MRTask directly.
  *
  *  <p>In addition to normal load and store operations, Chunks support the
  *  notion a missing element via the {@code isNA_abs()} calls, and a "next
@@ -108,7 +108,7 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 }}</pre>
  */
 
-public abstract class Chunk extends AVec.AChunk<Chunk> {
+public abstract class Chunk extends Iced<Chunk> {
 
   final boolean _sparseZero;
   final boolean _sparseNA;
@@ -119,13 +119,14 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
     _mem = bytes;initFromBytes();
   }
 
-  public Futures close( int cidx, Futures fs ) {
-    if( this  instanceof NewChunk ) _chk2 = this;
-    if( _chk2 == null ) return fs;          // No change?
-    if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).compress();
-    DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
-    return fs;
-  }
+//  public Futures close( int cidx, Futures fs ) {
+//    if( this  instanceof NewChunk ) _chk2 = this;
+//    if( _chk2 == null ) return fs;          // No change?
+//    if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).compress();
+//
+//    DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
+//    return fs;
+//  }
 
   public final Chunk getChunk(int i) {
     if(i != 0) throw new ArrayIndexOutOfBoundsException(i);
@@ -187,12 +188,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
     for(int i:ids) vals[j++] = atd(i);
     return vals;
   }
-  /** Global starting row for this local Chunk; a read-only field. */
-  transient long _start = -1;
-  /** Global starting row for this local Chunk */
-  public final long start() { return _start; }
-  /** Global index of this chunk filled during chunk load */
-  transient int _cidx = -1;
+
 
   /** Number of rows in this Chunk; publically a read-only field.  Odd API
    *  design choice: public, not-final, read-only, NO-ACCESSOR.
@@ -220,16 +216,18 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   public Chunk chk2() { return _chk2; }
 
   /** Owning Vec; a read-only field */
-  transient AVec _vec;
+  transient AVec.AChunk _achunk;
+  transient int _vidx = -1;
 
   /** Owning Vec */
-  public AVec vec() { return _vec; }
+  public AVec vec() { return _achunk._vec; }
 
-  /** Set the owning Vec */
-  public void setVec(Vec vec) { _vec = vec; }
+  public Futures close(Futures fs){
+    if( _chk2 == null ) return fs;          // No change?
+    if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).compress();
+    return _achunk.updateChunk(_vidx,_chk2,fs);
+  }
 
-  /** Set the start */
-  public void setStart(long start) { _start = start; }
   /** The Big Data.  Frequently set in the subclasses, but not otherwise a publically writable field. */
   byte[] _mem;
   /** Short-cut to the embedded big-data memory.  Generally not useful for
@@ -243,92 +241,13 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
    *  NPE.  Not intended for public use. */
   public final void crushBytes() { _mem=null; }
 
-  final long at8_abs(long i) {
-    long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return at8((int) x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
-  }
 
-  /** Load a {@code double} value using absolute row numbers.  Returns
-   *  Double.NaN if value is missing.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #atd} since it range-checks within a chunk.
-   *  @return double value at the given row, or NaN if the value is missing */
-  final double at_abs(long i) {
-    long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return atd((int) x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
-  }
-
-  /** Missing value status.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #isNA} since it range-checks within a chunk.
-   *  @return true if the value is missing */
-  final boolean isNA_abs(long i) {
-    long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return isNA((int) x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
-  }
-
-  /** Low half of a 128-bit UUID, or throws if the value is missing.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #at16l} since it range-checks within a chunk.
-   *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
-  final long at16l_abs(long i) {
-    long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return at16l((int) x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
-  }
-
-  /** High half of a 128-bit UUID, or throws if the value is missing.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #at16h} since it range-checks within a chunk.
-   *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
-  final long at16h_abs(long i) {
-    long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return at16h((int) x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
-  }
-
-  /** String value using absolute row numbers, or null if missing.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #atStr} since it range-checks within a chunk.
-   *  @return String value using absolute row numbers, or null if missing. */
-  final BufferedString atStr_abs(BufferedString bStr, long i) {
-    long x = i - (_start>0 ? _start : 0);
-    if( 0 <= x && x < _len) return atStr(bStr, (int) x);
-    throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
-  }
 
   /** Load a {@code double} value using chunk-relative row numbers.  Returns Double.NaN
    *  if value is missing.
    *  @return double value at the given row, or NaN if the value is missing */
   public final double atd(int i) { return _chk2 == null ? atd_impl(i) : _chk2. atd_impl(i); }
+
 
   /** Load a {@code long} value using chunk-relative row numbers.  Floating
    *  point values are silently rounded to a long.  Throws if the value is
@@ -344,6 +263,106 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
     if(res != l) throw new IllegalArgumentException(l + " does not fit in int");
     return res;
   }
+
+
+  final long at8_abs(long i) {
+    long s = start();
+    long x = i - (s > 0 ? s : 0);
+    if( 0 <= x && x < _len) return at8((int) x);
+    throw new ArrayIndexOutOfBoundsException(""+ s + " <= "+i+" < "+( s+ _len));
+  }
+
+  /** Load a {@code double} value using absolute row numbers.  Returns
+   *  Double.NaN if value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #atd} since it range-checks within a chunk.
+   *  @return double value at the given row, or NaN if the value is missing */
+  final double at_abs(long i) {
+    long s = start();
+    long x = i - (s>0 ? s : 0);
+    if( 0 <= x && x < _len) return atd((int) x);
+    throw new ArrayIndexOutOfBoundsException(""+s+" <= "+i+" < "+(s+ _len));
+  }
+
+  final void set_abs(long i, double d) {
+    long s = start();
+    long x = i - (s>0 ? s : 0);
+    if( 0 <= x && x < _len)
+      set((int) x,d);
+    else
+      throw new ArrayIndexOutOfBoundsException(""+s+" <= "+i+" < "+(s+ _len));
+  }
+
+  /** Missing value status.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #isNA} since it range-checks within a chunk.
+   *  @return true if the value is missing */
+  final boolean isNA_abs(long i) {
+    long s = start();
+    long x = i - (s>0 ? s : 0);
+    if( 0 <= x && x < _len) return isNA((int) x);
+    throw new ArrayIndexOutOfBoundsException(""+ s+" <= "+i+" < "+(s+ _len));
+  }
+
+  /** Low half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at16l} since it range-checks within a chunk.
+   *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
+  final long at16l_abs(long i) {
+    long s = start();
+    long x = i - (s>0 ? s : 0);
+    if( 0 <= x && x < _len) return at16l((int) x);
+    throw new ArrayIndexOutOfBoundsException(""+s+" <= "+i+" < "+(s+ _len));
+  }
+
+  /** High half of a 128-bit UUID, or throws if the value is missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #at16h} since it range-checks within a chunk.
+   *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
+  final long at16h_abs(long i) {
+    long s = start();
+    long x = i - (s>0 ? s : 0);
+    if( 0 <= x && x < _len) return at16h((int) x);
+    throw new ArrayIndexOutOfBoundsException("" + s + " <= " + i + " < " + ( s + _len));
+  }
+
+  /** String value using absolute row numbers, or null if missing.
+   *
+   *  <p>This version uses absolute element numbers, but must convert them to
+   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  leading to lower quality JIT'd code (similar issue to using iterator
+   *  objects).
+   *
+   *  <p>Slightly slower than {@link #atStr} since it range-checks within a chunk.
+   *  @return String value using absolute row numbers, or null if missing. */
+  final BufferedString atStr_abs(BufferedString bStr, long i) {
+    long s = start();
+    long x = i - (s>0 ? s : 0);
+    if( 0 <= x && x < _len) return atStr(bStr, (int) x);
+    throw new ArrayIndexOutOfBoundsException(""+ s+" <= "+i+" < "+(s+ _len));
+  }
+
+
 
   public final NewChunk add2NewChunk(NewChunk nc, int from, int to){
     if(_chk2 != null) return _chk2.add2NewChunk(nc,from, to);
@@ -367,6 +386,9 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   public double sparseLenNA() {
     return _sparseNA?sparseLen():_len;
   }
+
+  public long start() {return _achunk._start;}
+
 
 
   public static final class NumVal {
@@ -394,9 +416,9 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   public final long at16h(int i) { return _chk2 == null ? at16h_impl(i) : _chk2.at16h_impl(i); }
 
 
-  public final int rowInChunk(long l) {
-    return (int)(l - _start);
-  }
+//  public final int rowInChunk(long l) {
+//    return (int)(l - _achunk._start);
+//  }
   /** String value using chunk-relative row numbers, or null if missing.
    *
    *  @return String value or null if missing. */
@@ -474,7 +496,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link #close} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -487,19 +509,9 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   public boolean hasFloat(){return true;}
   public boolean hasNA(){return true;}
 
-  /** Replace all rows with this new chunk */
-  public void replaceAll( Chunk replacement ) {
-    assert _len == replacement._len;
-    _vec.preWriting();          // One-shot writing-init
-    _chk2 = replacement;
-    assert _chk2._chk2 == null; // Replacement has NOT been written into
-  }
 
   public Chunk deepCopy() {
     Chunk c2 = (Chunk)clone();
-    c2._vec=null;
-    c2._start=-1;
-    c2._cidx=-1;
     c2._mem = _mem.clone();
     return c2;
   }
@@ -507,8 +519,8 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
     assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";
-    _vec.preWriting();          // One-shot writing-init
-    _chk2 = (Chunk)clone();     // Flag this chunk as having been written into
+    _achunk.setWrite(this);
+    _chk2 = clone();     // Flag this chunk as having been written into
     assert _chk2._chk2 == null; // Clone has NOT been written into
   }
 
@@ -521,7 +533,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link #close} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -544,7 +556,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link #close} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -562,7 +574,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link #close} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -579,7 +591,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link #close} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -597,7 +609,7 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link #close} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *  @return the set value
@@ -611,8 +623,9 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
 
   /** @return Chunk index */
   public int cidx() {
-    assert _cidx != -1 : "Chunk idx was not properly loaded!";
-    return _cidx;
+    int cidx = _achunk._cidx;
+    assert cidx != -1 : "Chunk idx was not properly loaded!";
+    return cidx;
   }
 
   /** Chunk-specific readers.  Not a public API */
@@ -751,15 +764,15 @@ public abstract class Chunk extends AVec.AChunk<Chunk> {
     StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + cmap.length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
     int k = 0;
     for(; k < Math.min(5,_len); ++k)
-      sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
+      sb.append("at8_abs[" + (k+_achunk._start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     k = Math.max(k,j-2);
     sb.append("...\n");
     for(; k < Math.min(_len,j+2); ++k)
-      sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
+      sb.append("at8_abs[" + (k+_achunk._start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     sb.append("...\n");
     k = Math.max(k,_len-5);
     for(; k < _len; ++k)
-      sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
+      sb.append("at8_abs[" + (k+_achunk._start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     throw new RuntimeException(sb.toString());
   }
 }

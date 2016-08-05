@@ -20,10 +20,10 @@ public class NewVectorTest extends TestUtil {
     Vec vec = null;
     try {
       AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-      NewChunk nv = new NewChunk(av,0, ls, xs, id, null);
+      NewChunk nv = new NewChunk(new SingleChunk(av,0),0, ls, xs, id, null);
       Chunk bv = nv.compress();
       Futures fs = new Futures();
-      vec = (Vec) (bv._vec = av.layout_and_close(fs).getAVecRaw(0));
+      vec = (Vec) av.layout_and_close(fs).getAVecRaw(0);
       fs.blockForPending();
       // Compression returns the expected compressed-type:
       assertTrue( "Found chunk class "+bv.getClass()+" but expected "+C, C.isInstance(bv) );
@@ -97,47 +97,54 @@ public class NewVectorTest extends TestUtil {
       AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
       long ls[] = new long[]{0,0,0,0}; // A 4-row chunk
       int xs[] = new int[]{0,0,0,0}; // A 4-row chunk
-      NewChunk nv = new NewChunk(av,0,ls,xs,null,null);
-      av.closeChunk(0,nv,fs);
+      NewChunk nv = new NewChunk(new SingleChunk(av,0),0,ls,xs,null,null);
+      nv.close(fs);
       vec = (Vec) av.layout_and_close(fs).getAVecRaw(0);
       fs.blockForPending();
       assertEquals(nv._len, vec.length());
       // Compression returns the expected constant-compression-type:
-      Chunk c0 = vec.chunkForChunkIdx(0);
+      Chunk c0 = vec.chunkForChunkIdx(0)._c;
       assertTrue( "Found chunk class "+c0.getClass()+" but expected C0LChunk", c0 instanceof C0LChunk );
       // Also, we can decompress correctly
       for( int i=0; i<ls.length; i++ )
         assertEquals(0, c0.atd(i), c0.atd(i)*EPSILON);
 
       // Now write a zero into slot 0
-      vec.set(0,0);
+      VecAry vary = new VecAry(vec);
+      try(VecAry.Writer w = vary.open()){
+        w.set(0,0,0);
+      }
       assertEquals(vec.at8(0),0);
-      Chunk c1 = vec.chunkForChunkIdx(0);
+      Chunk c1 = vec.chunkForChunkIdx(0)._c;
       assertTrue( "Found chunk class "+c1.getClass()+" but expected C0LChunk", c1 instanceof C0LChunk );
 
       // Now write a one into slot 1; chunk should inflate into boolean vector.
-      vec.set(1, 1);
+      try(VecAry.Writer w = vary.open()){
+        w.set(1,0,1);
+      }
       assertEquals(vec.at8(1),1); // Immediate visibility in current thread
-      Chunk c2 = vec.chunkForChunkIdx(0);  // Look again at the installed chunk
+      Chunk c2 = vec.chunkForChunkIdx(0)._c;  // Look again at the installed chunk
       assertTrue( "Found chunk class "+c2.getClass()+" but expected CBSChunk", c2 instanceof CBSChunk );
 
       // Now write a two into slot 2; chunk should inflate into byte vector
-      vec.set(2, 2);
+      try(VecAry.Writer w = vary.open()){
+        w.set(2,0,2);
+      }
       assertEquals(vec.at8(2),2); // Immediate visibility in current thread
-      Chunk c3 = vec.chunkForChunkIdx(0);  // Look again at the installed chunk
+      Chunk c3 = vec.chunkForChunkIdx(0)._c;  // Look again at the installed chunk
       assertTrue( "Found chunk class "+c3.getClass()+" but expected C1NChunk", c3 instanceof C1NChunk );
 
-      vec.set(3, 3);
+      try(VecAry.Writer w = vary.open()){
+        w.set(3,0,3);
+      }
       assertEquals(vec.at8(3),3); // Immediate visibility in current thread
-      Chunk c4 = vec.chunkForChunkIdx(0);  // Look again at the installed chunk
+      Chunk c4 = vec.chunkForChunkIdx(0)._c;  // Look again at the installed chunk
       assertTrue("Found chunk class " + c4.getClass() + " but expected C1NChunk", c4 instanceof C1NChunk);
 
-      // Now doing the same for multiple writes, close() only at the end for better speed
-      try (Vec.Writer vw = vec.open()) {
-        vw.set(1, 4);
-        vw.set(2, 5);
-        vw.set(3, 6);
-        // Updates will be immediately visible on the writing node
+      try(VecAry.Writer w = vary.open()){
+        w.set(1, 0, 4);
+        w.set(2, 0, 5);
+        w.set(3, 0, 6);
       }
       // now, after vw.close(), numbers are consistent across the H2O cloud
       assertEquals(vec.at8(1),4);

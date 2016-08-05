@@ -13,7 +13,7 @@ public class CStrChunkTest extends TestUtil {
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(false);
 
       BufferedString[] vals = new BufferedString[1000001];
       for (int i = 0; i < vals.length; i++) {
@@ -79,7 +79,7 @@ public class CStrChunkTest extends TestUtil {
       //Create a label vector
       byte[] typeArr = {Vec.T_STR};
       VecAry labels = frame.vecs().makeCons(1, 0, null, typeArr);
-      VecAry.VecAryWriter writer = labels.vecWriter();
+      VecAry.Writer writer = labels.open();
       int rowCnt = (int)frame.numRows();
       for (int r = 0; r < rowCnt; r++) // adding labels in reverse order
         writer.set(rowCnt-r-1,0, "Foo"+(r+1));
@@ -87,7 +87,7 @@ public class CStrChunkTest extends TestUtil {
 
       //Append label vector and spot check
       frame.add("Labels", labels);
-      Assert.assertTrue("Failed to create a new String based label column", frame.vecs().vecReader(false).atStr(new BufferedString(), 42, frame.numCols()-1).compareTo(new BufferedString("Foo108"))==0);
+      Assert.assertTrue("Failed to create a new String based label column", frame.vecs().reader(false).atStr(new BufferedString(), 42, frame.numCols()-1).compareTo(new BufferedString("Foo108"))==0);
     } finally {
       if (frame != null) frame.delete();
     }

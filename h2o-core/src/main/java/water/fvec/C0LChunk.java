@@ -11,7 +11,11 @@ import java.util.Arrays;
 public class C0LChunk extends Chunk {
   protected static final int _OFF=8+4;
   private long _con;
-  public C0LChunk(long con, int len) { _mem=new byte[_OFF]; _start = -1; set_len(len);
+  public C0LChunk(long con, int len) {
+    _mem=new byte[_OFF];
+    _vidx = -1;
+    _achunk = null;
+    set_len(len);
     _con = con;
     UnsafeUtils.set8(_mem, 0, con);
     UnsafeUtils.set4(_mem,8,len);
@@ -30,7 +34,8 @@ public class C0LChunk extends Chunk {
   @Override double max() { return _con; }
 
   @Override public final void initFromBytes () {
-    _start = -1;  _cidx = -1;
+    _vidx = -1;
+    _achunk = null;
     _con = UnsafeUtils.get8(_mem,0);
     set_len(UnsafeUtils.get4(_mem,8));
   }
