@@ -240,6 +240,8 @@ def _get_method_full_name(func):
     if hasattr(func, "__qualname__"): return func.__qualname__
 
     module = inspect.getmodule(func)
+    if module is None:
+        return "?.%s" % getattr(func, "__name__", "?")
     for cls_name in dir(module):
         cls = getattr(module, cls_name)
         if not inspect.isclass(cls): continue
@@ -272,7 +274,7 @@ def _find_function_from_code(frame, code):
     def find_code(iterable, depth=0):
         if depth > 3: return  # Avoid potential infinite loops, or generally objects that are too deep.
         for item in iterable:
-            if not item: continue
+            if item is None: continue
             found = None
             if hasattr(item, "__code__") and item.__code__ == code:
                 found = item
