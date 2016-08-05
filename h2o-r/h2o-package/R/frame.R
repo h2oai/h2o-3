@@ -1969,6 +1969,30 @@ h2o.skewness <- function(x, ...,na.rm=TRUE) .eval.scalar(.newExpr("skewness",x,n
 #' @export
 skewness.H2OFrame <- h2o.skewness
 
+#'
+#' Kurtosis of a column
+#'
+#' Obtain the kurtosis of a column of a parsed H2O data object.
+#'
+#' @name h2o.kurtosis
+#' @param x An H2OFrame object.
+#' @param ... Further arguments to be passed from or to other methods.
+#' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
+#' @return Returns a list containing the kurtosis for each column (NaN for non-numeric columns).
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' h2o.kurtosis(prostate.hex$AGE)
+#' }
+#' @export
+h2o.kurtosis <- function(x, ...,na.rm=TRUE) .eval.scalar(.newExpr("kurtosis",x,na.rm))
+
+#' @rdname h2o.kurtosis
+#' @export
+kurtosis.H2OFrame <- h2o.kurtosis
+
 #
 #" Mode of a enum or int column.
 #" Returns single string or int value or an array of strings and int that are tied.

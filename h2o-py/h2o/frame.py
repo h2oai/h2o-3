@@ -1790,6 +1790,20 @@ class H2OFrame(object):
           A list containing the skewness for each column (NaN for non-numeric columns).
         """
         return ExprNode("skewness", self, na_rm)._eager_scalar()
+    
+    def kurtosis(self, na_rm=False):
+        """Compute the kurtosis.
+
+        Parameters
+        ----------
+          na_rm: bool, default=False
+            If True, then remove NAs from the computation.
+
+        Returns
+        -------
+          A list containing the kurtosis for each column (NaN for non-numeric columns).
+        """
+        return ExprNode("kurtosis", self, na_rm)._eager_scalar()
 
     def nacnt(self):
         """Count of NAs for each column in this H2OFrame.
