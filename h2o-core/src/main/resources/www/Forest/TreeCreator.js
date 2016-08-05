@@ -70,4 +70,3 @@ function display4(){
  													<p>Ask?: </p> \
  													";
  }
-
