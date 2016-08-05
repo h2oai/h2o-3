@@ -5,7 +5,7 @@ apply plugin: 'scala'
 // to be set up as extension properties on this project.
 //
 
-// Setup additional sources
+// Setup additional sources specific to version
 sourceSets {
     main {
         scala {
