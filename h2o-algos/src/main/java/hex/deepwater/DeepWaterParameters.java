@@ -232,6 +232,18 @@ public class DeepWaterParameters extends Model.Parameters {
         dl.error("_network_definition_file", "network_definition_file cannot be provided if a pre-defined network is chosen.");
     }
 
+    if (_checkpoint!=null) {
+      DeepWaterModel other = (DeepWaterModel) _checkpoint.get();
+      if (other == null)
+        dl.error("_width", "Invalid checkpoint provided: width mismatch.");
+      if (_width != other.model_info()._width)
+        dl.error("_width", "Invalid checkpoint provided: width mismatch.");
+      if (_height != other.model_info()._height)
+        dl.error("_height", "Invalid checkpoint provided: height mismatch.");
+      if (_channels != other.model_info()._channels)
+        dl.error("_channels", "Invalid checkpoint provided: channels mismatch.");
+    }
+
     if (!_autoencoder) {
       if (classification) {
         dl.hide("_regression_stop", "regression_stop is used only with regression.");
