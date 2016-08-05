@@ -204,6 +204,48 @@ public class AstHist extends AstPrimitive {
     }
   }
 
+  public static double fourth_moment(Vec v) {
+    final double mean = v.mean();
+    AstHist.FourthMomTask t = new AstHist.FourthMomTask(mean).doAll(v);
+    double m2 = t._ss / v.length();
+    double m4 = t._sc / v.length();
+    return m4 / Math.pow(m2, 2.0);
+  }
+  
+  public static class FourthMomTask extends MRTask<AstHist.FourthMomTask> {
+    double _ss;
+    double _sc;
+    final double _mean;
+
+    FourthMomTask(double mean) {
+      _mean = mean;
+    }
+
+    @Override
+    public void setupLocal() {
+      _ss = 0;
+      _sc = 0;
+    }
+
+    @Override
+    public void map(Chunk c) {
+      for (int i = 0; i < c._len; ++i) {
+        if (!c.isNA(i)) {
+          double d = c.atd(i) - _mean;
+          double d2 = d * d;
+          _ss += d2;
+          _sc += d2 * d * d;
+        }
+      }
+    }
+
+    @Override
+    public void reduce(AstHist.FourthMomTask t) {
+      _ss += t._ss;
+      _sc += t._sc;
+    }
+  }
+
   public double[] computeCuts(Vec v, int numBreaks) {
     if (numBreaks <= 0) throw new IllegalArgumentException("breaks must be a positive number");
     // just make numBreaks cuts equidistant from each other spanning range of [v.min, v.max]
