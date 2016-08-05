@@ -15,7 +15,7 @@ from h2o.backend import H2OConnection
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
 from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_tmp_key, quoted, urlopen
-from h2o.utils.typechecks import BoundInt, BoundNumeric, I, U, assert_is_type, assert_satisfies, is_type, numeric
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.estimator_base import H2OEstimator
@@ -199,7 +199,8 @@ def lazy_import(path):
 
     :param path: A path to a data file (remote or local).
     """
-    if is_type(path, list, tuple, set):
+    assert_is_type(path, str, [str])
+    if is_listlike(path):
         return [_import(p)[0] for p in path]
     else:
         return _import(path)
@@ -221,7 +222,7 @@ def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, 
 
     :param path: A path specifying the location of the data to upload.
     :param destination_frame:  The unique hex key assigned to the imported file. If none is given, a key will
-        automatically be generated.
+        be automatically generated.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
@@ -752,7 +753,6 @@ def download_pojo(model, path="", get_jar=True):
         print(java)
     else:
         filepath = os.path.join(path, pojoname + ".java")
-        print("Filepath: {}".format(filepath))
         with open(filepath, "wb") as f:
             f.write(java.encode("utf-8"))
     if get_jar and path != "":
