@@ -2841,6 +2841,20 @@ h2o.arrange <- function(x, ...) {
 }
 
 
+#' Reorders levels of an H2O factor, similarly to standard R's relevel.
+#'
+#' The levels of a factor are reordered os that the reference level is at level 0, remaining levels are moved down as needed.
+#'
+#' @param x factor column in h2o frame
+#' @param y reference level (string)
+#' @return new reordered factor column
+#'
+#' @export
+h2o.relevel <- function(x,y) {
+  .newExpr("relevel", x, .quote(y))
+}
+
+
 #' Group and Apply by Column
 #'
 #' Performs a group by and apply similar to ddply.
