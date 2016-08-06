@@ -204,6 +204,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         if (!(t instanceof Job.JobCancelledException)) t.printStackTrace();
       }
       finally {
+        model.model_info()._imageTrain.delete();
         //TODO: refactor DL the same way
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
