@@ -182,6 +182,15 @@ public class Vec extends AVec<SingleChunk> {
     if( domain != null ) _type = T_CAT;
   }
 
+  /** Set the categorical/factor names.  No range-checking on the actual
+   *  underlying numeric domain; user is responsible for maintaining a mapping
+   *  which is coherent with the Vec contents. */
+  @Override
+  public void setType(int i, byte t) {
+    if(i != 0) throw new ArrayIndexOutOfBoundsException();
+    _type = t;
+  }
+
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
    *  {@code espc} array).

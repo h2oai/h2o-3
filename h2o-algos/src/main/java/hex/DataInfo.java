@@ -25,7 +25,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public VecAry setWeights(String name, VecAry vec) {
     if(_weights)
-      return _adaptedFrame.vecs().replaceVecs(vec,weightChunkId());
+      return _adaptedFrame.vecs().setVec(weightChunkId(),vec);
     _adaptedFrame.insertVec(weightChunkId(),name,vec);
     _weights = true;
     return null;

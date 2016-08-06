@@ -25,7 +25,7 @@ public class CreateFrameV3 extends SchemaV3<CreateFrame, CreateFrameV3> {
   public boolean randomize;
 
   @API(help = "Constant value (for randomize=false)", direction=API.Direction.INOUT)
-  public long value;
+  public double value;
 
   @API(help = "Range for real variables (-range ... range)", direction=API.Direction.INOUT)
   public long real_range;

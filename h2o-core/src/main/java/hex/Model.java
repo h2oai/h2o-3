@@ -884,9 +884,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Remove temp keys.  TODO: Really should use Scope but Scope does not
     // currently allow nested-key-keepers.
   static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
-    fr.vecs().removeTemps(adaptFr.vecs());
-    adaptFr.restructure(new Frame.Names(0),new VecAry());
-    adaptFr.delete();
+    HashSet<Key> keepSet = new HashSet();
+    VecAry vecs = adaptFr.vecs();
+    if(adaptFr._key != null){
+      adaptFr.restructure(null,new VecAry());
+      adaptFr.delete();
+    }
+    for(Key k:fr.vecs().keys())
+      keepSet.add(k);
+    Futures fs = new Futures();
+    for(Key k:fr.vecs().keys())
+      if(!keepSet.contains(k))
+        DKV.remove(k,fs);
+    fs.blockForPending();
   }
 
   protected String [] makeScoringNames(){

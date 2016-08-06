@@ -161,6 +161,8 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
   public abstract RollupStats getRollups(int colId, boolean histo);
   public abstract void setDomain(int vec, String[] domain);
 
+  public abstract void setType(int i, byte type);
+
   public static abstract class AChunk<T extends AChunk<T>> extends Iced<T> {
     transient long _start = -1;
     transient AVec _vec = null;

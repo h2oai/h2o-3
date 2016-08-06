@@ -22,7 +22,7 @@ public class CreateFrame extends Iced {
   public long seed = new Random().nextLong();
   public long seed_for_column_types = -1;
   public boolean randomize = true;
-  public long value = 0;
+  public double value = 0;
   public long real_range = 100;
   public double categorical_fraction = 0.2;
   public int factors = 100;

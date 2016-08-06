@@ -29,6 +29,7 @@ public class VecAry extends Iced {
   private Key _vg;
   private int [] _blockIds;
 
+  protected AVec avec(int i) {return avecs()[i];}
   protected AVec[] avecs(){
     if(_vblocks != null) return _vblocks;
     synchronized(_vg) {
@@ -47,6 +48,11 @@ public class VecAry extends Iced {
 
 
   public VecAry(){}
+
+  private void setAVec(int i, AVec v) {
+    _blockIds[i] = AVec.VectorGroup.getVecId(v._key._kb);
+    if(_vblocks != null) _vblocks[i] = v;
+  }
   private void setAVecs(AVec... v) {
     assert _vg == null;
     _vg = v[0].groupKey();
@@ -54,8 +60,8 @@ public class VecAry extends Iced {
     _blockIds = new int[v.length];
     for(int i = 0; i < v.length; ++i)
       _blockIds[i] = AVec.VectorGroup.getVecId(v[i]._key._kb);
-
   }
+
 
   private void calculateVecOffsets(AVec... v){
     _vecOffsets = new int[v.length+1];
@@ -260,12 +266,12 @@ public class VecAry extends Iced {
 
   public void setBad(int ecol) {
     int blockId = block(ecol);
-    _vblocks[blockId].setBad(vec(blockId,ecol));
+    avec(blockId).setBad(vec(blockId,ecol));
   }
 
   public void setDomain(int ecol, String[] domain) {
     int blockId = block(ecol);
-    _vblocks[blockId].setDomain(vec(blockId,ecol),domain);
+    avec(blockId).setDomain(vec(blockId,ecol),domain);
   }
 
   public VecAry adaptTo(String [] domain){
@@ -284,8 +290,9 @@ public class VecAry extends Iced {
 
   public Key<AVec>[] keys() {
     Key<AVec> [] res = new Key[_vblocks.length];
+    AVec [] avs = avecs();
     for(int i = 0; i < res.length; ++i)
-      res[i] = _vblocks[i]._key;
+      res[i] = avs[i]._key;
     return res;
   }
 
@@ -300,21 +307,36 @@ public class VecAry extends Iced {
     if(vec.len() != 1) throw new IllegalArgumentException();
     if(len() == id) return addVecs(vec);
     int blockId = block(id);
-    if(_vblocks[blockId].numCols() == 1) {
+    if(avec(blockId).numCols() == 1) {
       AVec v = _vblocks[blockId];
       VecAry res = new VecAry(new AVec[]{v});
       _vblocks[blockId] = vec._vblocks[0];
       if(_vecIds != null) _vecIds[blockId] = null;
       return res;
     }
-    throw H2O.unimpl();
+    return replaceVecs(vec,id);
   }
 
-  /**
-   * Helper method. Go over all other vecs and remove those which are not present int this array
-   */
-  public void removeTemps(VecAry vecs) {
-    throw H2O.unimpl();
+  private int numCols(int block) {
+    return _vecIds == null || _vecIds[block] == null?avec(block).numCols():_vecIds[block].length;
+  }
+  public VecAry replaceVecs(VecAry vecs, int... cols) {
+    for(int i = 0; i < cols.length; ++i) {
+      int c = cols[i];
+      int b0 = block(c);
+      int v0 = vec(b0,c);
+      int b1 = vecs.block(i);
+      int v1 = vecs.vec(b1,i);
+      AVec av0 = avec(b0);
+      AVec av1 = vecs.getAVecRaw(b1);
+      if(av0.equals(av1)) { // just fix the indeces
+
+      } else { // need to insert new block?
+
+      }
+
+    }
+    return null;
   }
 
   public double[] means() {
@@ -325,7 +347,7 @@ public class VecAry extends Iced {
     return res;
   }
 
-  public int rowLayout() {return _vblocks[0]._rowLayout;}
+  public int rowLayout() {return avec(0)._rowLayout;}
 
   public VecAry makeCopy(String[] domains){
     if(len() != 1) throw new IllegalArgumentException();
@@ -337,9 +359,22 @@ public class VecAry extends Iced {
   public VecAry makeCopy(String[][] domains, byte... types) {
     if(domains.length != types.length)
       throw new IllegalArgumentException();
-    throw H2O.unimpl();
+    VecAry res = deepCopy();
+    res.setMeta(types,domains);
+    return res;
   }
 
+  public void setMeta(byte [] types, String[][] domains) {
+    if(types.length != len()) throw new IllegalArgumentException();
+    if(domains != null && domains.length != len()) throw new IllegalArgumentException();
+    int off = 0;
+    for(AVec av:avecs()) {
+      for(int i = 0; i < av.numCols(); ++i, off++) {
+        av.setType(i, types[off]);
+        av.setDomain(i,domains == null?null:domains[i]);
+      }
+    }
+  }
 
   public String[] typesStr() {  // typesStr not strTypes since shows up in intelliJ next to types
     String s[] = new String[len()];
@@ -349,15 +384,18 @@ public class VecAry extends Iced {
   }
 
   public int cardinality(int i) {
-    throw H2O.unimpl();
+    int blockId = block(i);
+    return avec(blockId).cardinality(vec(blockId,i));
   }
 
   public double[] pctiles(int i) {
-    throw H2O.unimpl();
+    int blockId = block(i);
+    return avec(blockId).pctiles(vec(blockId,i));
   }
 
   public long[] bins(int i) {
-    throw H2O.unimpl();
+    int blockId = block(i);
+    return avec(blockId).bins(vec(blockId,i));
   }
 
   /**
@@ -366,7 +404,13 @@ public class VecAry extends Iced {
    * @param k
    */
   public void replaceWithCopy(Key<AVec> k) {
-    throw H2O.unimpl();
+    Key[] ks = keys();
+    for (int b = 0; b < ks.length; ++b)
+      if (ks[b].equals(k)) {
+        VecAry v = new VecAry(_vblocks[b], _vecIds == null ? null : _vecIds[b]).deepCopy();
+        setAVec(b, v.getAVecRaw(0));
+        if (_vecIds != null) _vecIds[b] = null;
+      }
   }
 
   public int homeNode(int c) {return _vblocks[0].chunkKey(c).home_node().index();}
@@ -380,26 +424,35 @@ public class VecAry extends Iced {
     return j == res.length?res:Arrays.copyOf(res,j);
   }
 
-  public int nzCnt(int i) {
-    throw H2O.unimpl();
+  public long nzCnt(int i) {
+    int blockId = block(i);
+    return avec(blockId).nzCnt(vec(blockId,i));
+  }
+
+  public boolean isNA(long i, int j) {
+    return getChunk(elem2ChunkIdx(i),j).isNA_abs(i);
   }
 
   public double[] sigmas() {
-    throw H2O.unimpl();
+    double [] res = new double[len()];
+    RollupStats[] rolls = getRollups();
+    for(int i = 0; i < res.length; ++i)
+      res[i] = rolls[i].sigma();
+    return res;
   }
 
   public double sparseRatio(int i) {
     return (double)nzCnt(i)/numRows();
   }
 
-  public VecAry makeCons(int totcols, long value) {
-    throw H2O.unimpl();
+  public VecAry makeCons(int totcols, double value) {
+    byte [] types = new byte[totcols];
+    Arrays.fill(types,Vec.T_NUM);
+    return makeCons(totcols,value,null,types);
   }
 
 
-  public VecAry replaceVecs(VecAry vecs, int... cols) {
-    throw H2O.unimpl();
-  }
+
   public boolean isTime(int n) {
     throw H2O.unimpl();
   }
@@ -415,9 +468,7 @@ public class VecAry extends Iced {
     postWrite(new Futures()).blockForPending();
   }
 
-  public boolean isNA(long i, int j) {
-    throw H2O.unimpl();
-  }
+
 
   public BufferedString atStr(BufferedString str, long row, int vecId) {
     throw H2O.unimpl();

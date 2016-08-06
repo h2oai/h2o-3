@@ -56,6 +56,9 @@ public class VecBlock extends AVec<ChunkBlock> {
   }
 
   @Override
+  public void setType(int i, byte t) {_types[i] = t;}
+
+  @Override
   public void setBad(int colId) {
 
   }
