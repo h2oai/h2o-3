@@ -2,10 +2,12 @@ package hex.deepwater;
 
 import water.Futures;
 import water.H2O;
-import static water.gpu.util.img2pixels;
+import water.util.Log;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
+import static water.gpu.util.img2pixels;
 
 public class DeepWaterImageIterator {
 
@@ -65,7 +67,8 @@ public class DeepWaterImageIterator {
         final int start=_index*len;
         img2pixels(_file, _conv.width, _conv.height, _conv.channels, _destData, start);
       } catch (IOException e) {
-        e.printStackTrace();
+        Log.warn(_file + ": " + e.getMessage());
+        //e.printStackTrace();
       }
       tryComplete();
     }
