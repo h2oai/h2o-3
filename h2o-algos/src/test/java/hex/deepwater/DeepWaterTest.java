@@ -2,6 +2,7 @@ package hex.deepwater;
 
 import hex.ModelMetricsMultinomial;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.Futures;
 import water.TestUtil;
@@ -10,6 +11,7 @@ import water.fvec.Vec;
 import water.gpu.ImagePred;
 import water.gpu.ImageTrain;
 import water.gpu.util;
+import water.util.Log;
 import water.util.RandomUtils;
 
 import javax.imageio.ImageIO;
@@ -183,6 +185,27 @@ public class DeepWaterTest extends TestUtil {
       }
     }
     fw.close();
+  }
+
+  @Test
+  public void deepWaterCV() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      // cat driver_imgs_list.csv | awk -F, '{print "/users/arno/kaggle/statefarm/input/train/"$2"/"$3,$2,$1}' \
+      // | awk '{if ($3=="p002" || $3=="p042" || $3=="p075") print $1, $2, "A"; else print $1, $2, "B"}' | sed 1d | gshuf | head -n 10 > train.10.csv
+      p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
+      p._response_column = "C2";
+      p._fold_column = "C3";
+      p._mini_batch_size = 1;
+      p._epochs = 1;
+      m = new DeepWater(p).trainModel().get();
+      Log.info(m);
+    } finally {
+      if (m!=null) m.remove();
+      if (tr!=null) tr.remove();
+    }
   }
 }
 
