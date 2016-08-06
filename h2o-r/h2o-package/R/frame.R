@@ -2779,6 +2779,13 @@ h2o.rbind <- function(...) {
   .newExprList("rbind", l)
 }
 
+# Helper function for merge and sort inputs
+checkMatch = function(x,y) {
+  tt = match(x,y,nomatch=NA)
+  if (anyNA(tt)) stop("Column '", x[is.na(tt)[1]], "' in ", substitute(x), " not found")
+  tt
+}
+
 #' Merge Two H2O Data Frames
 #'
 #' Merges two H2OFrame objects with the same arguments and meanings
@@ -2808,11 +2815,6 @@ h2o.rbind <- function(...) {
 h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, all=FALSE, all.x=all, all.y=all, method="hash") {
   if (length(by.x) != length(by.y)) stop("`by.x` and `by.y` must be the same length.")
   if (!length(by.x)) stop("`by` or `by.x` must specify at least one column") 
-  checkMatch = function(x,y) {
-    tt = match(x,y,nomatch=NA)
-    if (anyNA(tt)) stop("Column '", x[is.na(tt)[1]], "' in ", substitute(x), " not found")
-    tt
-  }
   if (!is.numeric(by.x)) by.x = checkMatch(by.x, names(x))
   else if (any(is.na(by.x) | by.x<1 | by.x>ncol(x))) stop("by.x contains NA or an item outside range [1,ncol(x)]")
   if (!is.numeric(by.y)) by.y = checkMatch(by.y, names(y))
@@ -2824,17 +2826,18 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 }
 
 
-#' Reorders levels of an H2O factor, similarly to standard R's relevel.
+#' Sorts H2OFrame by the columns specified. Returns a new H2OFrame, like dplyr::arrange.
 #'
-#' The levels of a factor are reordered os that the reference level is at level 0, remaining levels are moved down as needed.
-#'
-#' @param x factor column in h2o frame
-#' @param y reference level (string)
-#' @return new reordered factor column
+#' @param x The H2OFrame input to be sorted.
+#' @param \dots The column names to sort by.
 #'
 #' @export
-h2o.relevel <- function(x,y) {
-  .newExpr("relevel", x, .quote(y))
+h2o.arrange <- function(x, ...) {
+  by = as.character(substitute(list(...))[-1])
+  if (!length(by)) stop("Please provide at least one column to sort by")
+  by = checkMatch(by, names(x))
+  if (anyDuplicated(by)) stop("Some duplicate column names have been provided")
+  .newExpr("sort", x, by-1L)
 }
 
 
