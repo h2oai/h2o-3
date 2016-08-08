@@ -441,8 +441,13 @@ public abstract class Chunk extends Iced<Chunk> {
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
     assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";
+    setWrite(clone());
+  }
+
+  private void setWrite(Chunk ck) {
+    assert(_chk2==null);
     _vec.preWriting();          // One-shot writing-init
-    _chk2 = (Chunk)clone();     // Flag this chunk as having been written into
+    _chk2 = ck;
     assert _chk2._chk2 == null; // Clone has NOT been written into
   }
 
@@ -469,7 +474,7 @@ public abstract class Chunk extends Iced<Chunk> {
 
   public final double [] set(double [] d){
     assert d.length == _len && _chk2 == null;
-    _chk2 = new NewChunk(this,d);
+    setWrite(new NewChunk(this,d));
     return d;
   }
   /** Write a {@code double} with check-relative indexing.  NaN will be treated
