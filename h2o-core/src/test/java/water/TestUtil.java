@@ -174,6 +174,30 @@ public class TestUtil extends Iced {
     return file;
   }
 
+  /** Compare 2 frames
+   *  @param fr1 Frame
+   *  @param fr2 Frame
+   *  @param epsilon Relative tolerance for floating point numbers
+   *  @return true if equal  */
+  public static boolean isIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon) {
+    if (fr1 == fr2) return true;
+    if( fr1.numCols() != fr2.numCols() ) return false;
+    if( fr1.numRows() != fr2.numRows() ) return false;
+    Scope.enter();
+    if( !fr1.isCompatible(fr2) ) fr1.makeCompatible(fr2);
+    boolean identical = !(new Cmp1(epsilon).doAll(new Frame(fr1).add(fr2))._unequal);
+    Scope.exit();
+    return identical;
+  }
+
+  /** Compare 2 frames
+   *  @param fr1 Frame
+   *  @param fr2 Frame
+   *  @return true if equal  */
+  public static boolean isBitIdentical(Frame fr1, Frame fr2) {
+    return isIdenticalUpToRelTolerance(fr1,fr2,0);
+  }
+
   /** Hunt for test files in likely places.  Null if cannot find.
    *  @param fname Test filename
    *  @return      Found file or null */
@@ -315,6 +339,7 @@ public class TestUtil extends Iced {
     }
     return flipped;
   }
+
   // Run tests from cmd-line since testng doesn't seem to be able to it.
   public static void main( String[] args ) {
     H2O.main(new String[0]);
@@ -338,5 +363,45 @@ public class TestUtil extends Iced {
     try { Thread.sleep(100); } catch( Exception ignore ) { }
     if( args.length != 0 )
       UDPRebooted.T.shutdown.send(H2O.SELF);
+  }
+
+  protected static class Cmp1 extends MRTask<Cmp1> {
+    final double _epsilon;
+    Cmp1( double epsilon ) { _epsilon = epsilon; }
+    boolean _unequal;
+    @Override public void map( Chunk chks[] ) {
+      for( int cols=0; cols<chks.length>>1; cols++ ) {
+        Chunk c0 = chks[cols                 ];
+        Chunk c1 = chks[cols+(chks.length>>1)];
+        for( int rows = 0; rows < chks[0]._len; rows++ ) {
+          if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
+            if (! (c0.isNA(rows) && c1.isNA(rows))) {
+              long lo0 = c0.at16l(rows), lo1 = c1.at16l(rows);
+              long hi0 = c0.at16h(rows), hi1 = c1.at16h(rows);
+              if (lo0 != lo1 || hi0 != hi1) {
+                _unequal = true;
+                return;
+              }
+            }
+          } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
+            if (!(c0.isNA(rows) && c1.isNA(rows))) {
+              BufferedString s0 = new BufferedString(), s1 = new BufferedString();
+              c0.atStr(s0, rows); c1.atStr(s1, rows);
+              if (s0.compareTo(s1) != 0) {
+                _unequal = true;
+                return;
+              }
+            }
+          }else {
+            double d0 = c0.atd(rows), d1 = c1.atd(rows);
+            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && !(Math.abs(d0-d1)<=Math.abs(d0+d1)*_epsilon) ) {
+              _unequal = true;
+              return;
+            }
+          }
+        }
+      }
+    }
+    @Override public void reduce( Cmp1 cmp ) { _unequal |= cmp._unequal; }
   }
 }

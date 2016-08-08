@@ -29,7 +29,7 @@ public class RebalanceDatasetTest extends TestUtil {
           rebalanced = DKV.get(rebalancedKey).get();
           assertEquals(rebalanced.numRows(), fr.numRows());
           assertEquals(rebalanced.anyVec().nChunks(), i);
-          assertTrue(FrameUtils.isBitIdentical(fr, rebalanced));
+          assertTrue(TestUtil.isIdenticalUpToRelTolerance(fr, rebalanced, 1e-10));
           Log.info("Rebalanced into " + i + " chunks:");
           Log.info(FrameUtils.chunkSummary(rebalanced).toString());
         } finally {

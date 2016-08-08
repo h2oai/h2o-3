@@ -10,7 +10,6 @@ import water.*;
 import water.fvec.Vec;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.util.FrameUtils;
 
 public class ParseCompressedAndXLSTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5); }
@@ -22,9 +21,9 @@ public class ParseCompressedAndXLSTest extends TestUtil {
       k2 = parse_test_file("smalldata/junit/iris.xls");
       k3 = parse_test_file("smalldata/junit/iris.csv.gz");
       k4 = parse_test_file("smalldata/junit/iris.csv.zip");
-      assertTrue(FrameUtils.isBitIdentical(k1,k2));
-      assertTrue(FrameUtils.isBitIdentical(k2,k3));
-      assertTrue(FrameUtils.isBitIdentical(k3,k4));
+      assertTrue(TestUtil.isBitIdentical(k1,k2));
+      assertTrue(TestUtil.isBitIdentical(k2,k3));
+      assertTrue(TestUtil.isBitIdentical(k3,k4));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
