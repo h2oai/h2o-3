@@ -643,14 +643,14 @@ public class FrameUtils {
 
       @Override public void compute2() {
         Vec[] frameVecs = _frame.vecs();
-        Vec[] extraVecs = new Vec[_skipCols.length];
+        Vec[] extraVecs = new Vec[_skipCols==null?0:_skipCols.length];
         for (int i=0; i< extraVecs.length; ++i) {
-          Vec v = _frame.vec(_skipCols[i]); //can be null
+          Vec v = _skipCols==null||_skipCols.length<=i?null:_frame.vec(_skipCols[i]); //can be null
           if (v!=null) extraVecs[i] = v;
         }
         Frame outputFrame = new Frame(_destKey);
         for (int i = 0; i < frameVecs.length; ++i) {
-          if (ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
+          if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
           if (frameVecs[i].isCategorical())
             outputFrame.add(_frame.name(i), _tev.toEigenVec(frameVecs[i]));
           else
