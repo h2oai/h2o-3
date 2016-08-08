@@ -1,13 +1,16 @@
 package water.util;
 
 import hex.CreateFrame;
+import hex.ToEigenVec;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.hamcrest.CoreMatchers;
+import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 
 
 /**
@@ -78,6 +81,7 @@ public class FrameUtilsTest extends TestUtil {
       }
     } catch (Throwable e) {
       e.printStackTrace();
+      throw e;
     } finally {
       mainFrame.delete();
       if (transformedFrame != null) transformedFrame.delete();
