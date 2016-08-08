@@ -15,10 +15,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.RandomUtils;
+import water.util.*;
 
 import java.io.File;
 import java.util.Arrays;
@@ -2030,10 +2027,10 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(0.95176, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
-      Assert.assertEquals(0.94829, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-3);
-      Assert.assertEquals(0.9128, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-2);
-      Assert.assertEquals(0.9200, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-2);
+      Assert.assertEquals(0.951761433868974, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-15);
+      Assert.assertEquals(0.9482892459826947, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-15);
+      Assert.assertEquals(0.919123609394314, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-15);
+      Assert.assertEquals(0.9200111, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-7);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -2273,6 +2270,78 @@ public class DeepLearningTest extends TestUtil {
       if (preds!=null)  preds.remove();
       if (train!=null)  train.remove();
       Scope.exit();
+    }
+  }
+
+  @Test
+  public void testCategoricalColumnsEigenEncoding() {
+    int numNoncatColumns = 1;
+    int[] catSizes       = {16};
+    String[] catNames = {"sixteen"};
+    Assert.assertEquals(catSizes.length, catNames.length);
+    int totalExpectedColumns = numNoncatColumns + catSizes.length;
+    double[] expectedMean = {0.0453}; //to test reproducibility
+
+    Key<Frame> frameKey = Key.make();
+    CreateFrame cf = new CreateFrame(frameKey);
+    cf.rows = 100000;
+    cf.cols = numNoncatColumns;
+    cf.categorical_fraction = 0.0;
+    cf.seed = 1234;
+    cf.integer_fraction = 0.3;
+    cf.binary_fraction = 0.1;
+    cf.time_fraction = 0.2;
+    cf.string_fraction = 0.1;
+    Frame mainFrame = cf.execImpl().get();
+    assert mainFrame != null : "Unable to create a frame";
+    Frame[] auxFrames = new Frame[catSizes.length];
+    Frame transformedFrame = null;
+    try {
+      for (int i = 0; i < catSizes.length; ++i) {
+        CreateFrame ccf = new CreateFrame();
+        ccf.rows = 100000;
+        ccf.cols = 1;
+        ccf.categorical_fraction = 1;
+        ccf.integer_fraction = 0;
+        ccf.binary_fraction = 0;
+        ccf.seed = 1234;
+        ccf.time_fraction = 0;
+        ccf.string_fraction = 0;
+        ccf.factors = catSizes[i];
+        auxFrames[i] = ccf.execImpl().get();
+        auxFrames[i]._names[0] = catNames[i];
+        mainFrame.add(auxFrames[i]);
+      }
+      Log.info(mainFrame, 0, 100);
+
+      FrameUtils.CategoricalEigenEncoder cbed =
+              new FrameUtils.CategoricalEigenEncoder(new DeepLearning(new DeepLearningParameters()).getToEigenVec(), mainFrame, null);
+      transformedFrame = cbed.exec().get();
+      assert transformedFrame != null : "Unable to transform a frame";
+
+      Assert.assertEquals("Wrong number of columns after converting to eigen encoding",
+              totalExpectedColumns, transformedFrame.numCols());
+      for (int i = 0; i < numNoncatColumns; ++i) {
+        Assert.assertEquals(mainFrame.name(i), transformedFrame.name(i));
+        Assert.assertEquals(mainFrame.types()[i], transformedFrame.types()[i]);
+      }
+      for (int i = numNoncatColumns; i < transformedFrame.numCols(); i++) {
+          Assert.assertTrue("A categorical column should be transformed into one numeric one (col "+i+")",
+                  transformedFrame.vec(i).isNumeric());
+          Assert.assertEquals("Transformed categorical column should carry the name of the original column",
+                  transformedFrame.name(i), mainFrame.name(i));
+        Assert.assertEquals("Transformed categorical column should have the correct mean value",
+                expectedMean[i-numNoncatColumns], transformedFrame.vec(i).mean(), 5e-4);
+      }
+    } catch (Throwable e) {
+      e.printStackTrace();
+      throw e;
+    } finally {
+      mainFrame.delete();
+      if (transformedFrame != null) transformedFrame.delete();
+      for (Frame f : auxFrames)
+        if (f != null)
+          f.delete();
     }
   }
 
