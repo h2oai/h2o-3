@@ -16,7 +16,6 @@ code constructs. Unlike :mod:`ast`, this module guarantees round-trip behavior i
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import tokenize
-import types
 
 from future.builtins import open
 
@@ -25,7 +24,7 @@ __all__ = []  # ("parse_text", "parse_file")
 
 
 def parse_text(text):
-    gen = iter(text.splitlines(keepends=True))
+    gen = iter(text.splitlines(True))  # True = keep newlines
     readline = gen.next if hasattr(gen, "next") else gen.__next__
     return _parse(readline, target=ParsedCode)
 
@@ -48,12 +47,13 @@ def _parse(readline, target):
 
     :param readline: a function that returns subsequent lines on each call.
     :param target: which class to construct from the list of tokens.
+
     :returns: an instance of ``target`` class.
     """
-    assert isinstance(readline, (types.FunctionType, types.MethodType, types.BuiltinFunctionType))
+    assert hasattr(readline, "__call__"), "`readline` should be a function"
     assert isinstance(target, type)
     tokens = _normalize_tokens(Token(tok) for tok in tokenize.generate_tokens(readline))
-    return target(tokens)
+    return ParsedCode(tokens)
 
 
 def _normalize_tokens(tokens):
@@ -67,32 +67,38 @@ def _normalize_tokens(tokens):
 
         # funny function
         def test_funny():
+            # not so funny
             pass
 
     Normally, Python will parse it as the following sequence of tokens:
 
-        ['def', 'test', '(', ')', ':', NEWLINE, INDENT, 'pass', NEWLINE, NL, '# funny function', NL,
-         DEDENT, 'def', 'test_funny', '(', ')', ':', NEWLINE, INDENT, 'pass', NEWLINE, DEDENT, END]
+        ['def', 'test', '(', ')', ':', NEWLINE, INDENT, 'pass', NEWLINE, NL, '# funny', NL, DEDENT, 'def',
+         'test_funny', '(', ')', ':', NEWLINE, '# not so funny', NL, INDENT, 'pass', NEWLINE, DEDENT, END]
 
-    The problem here is that the DEDENT token is generated not after the 'pass' but after the comment, which means
-    that if we treat INDENTs / DEDENTs as block boundaries, then the comment "belongs" to the first function. This
-    is contrary to how most people understand this code.
+    The problem here is that the DEDENT token is generated not after the first 'pass' but after the comment, which
+    means that if we treat INDENTs / DEDENTs as block boundaries, then the comment "belongs" to the first function.
+    This is contrary to how most people would understand this code. Similarly, the second comment visually goes
+    after the INDENT, not before.
 
-    This function attempts to rectify the situation by looking at the offset of each comment. If it's higher or
+    So here we attempt to modify the token stream. Looking at the offset of each comment: if it's higher or
     equal to the current indentation level, then leave the comment as-is. However if it's lower, then we insert
     DEDENT token(s) in front of this comment and ignore the DEDENT token(s) that go after the comment. The
-    resulting stream of tokens generates the same source code, yet is more sensible. Note that this function will
-    raise an error on some code which is ok from Python's perspective -- this will happen if there is a comment
-    which is visually dedented, but does not correspond to a true dedent in the code::
+    resulting stream of tokens generates the same source code, yet is more sensible:
+
+        ['def', 'test', '(', ')', ':', NEWLINE, INDENT, 'pass', NEWLINE, DEDENT, NL, '# funny function', NL,
+         'def', 'test_funny', '(', ')', ':', NEWLINE, INDENT, '# not so funny', NL, 'pass', NEWLINE, DEDENT, END]
+
+    Note that this function will raise an error on some code which is ok from Python's perspective -- this will
+    happen if there is a comment which is visually dedented, but does not correspond to a true dedent in the code
+    (I consider such code unreadable and unPythonic, and will not support it)::
 
         def test3():
-            x = x + 1
-          # haha
+            x = 1
+          # bad
             print(x)
 
-    We consider such code unreadable and un-Pythonic, so please don't do such things.
-
     :param tokens: list (or any iterable) of :class:`Token`s.
+
     :returns: the augmented list of Tokens.
     """
     indent_levels = [0]
@@ -113,12 +119,21 @@ def _normalize_tokens(tokens):
             loc = (tok.start_row, tok.start_col)
             while indent_levels[-1] > tok.start_col:
                 indent_levels.pop()
-                out.append(Token((tokenize.DEDENT, '', loc, loc)))
+                out.append(Token((tokenize.DEDENT, '', loc, loc, '')))
                 dedents_injected += 1
         else:
             assert dedents_injected == 0 or tok.op == tokenize.NL
         out.append(tok)
     assert dedents_injected == 0
+
+    # One more pass: if there are any NL tokens preceding DEDENTs, then swap them
+    i = len(out) - 1
+    while i > 0:
+        if out[i].op == tokenize.DEDENT and out[i - 1].op == tokenize.NL and out[i - 1].start_col == 0:
+            out[i].move(-1, 0)
+            out[i], out[i - 1] = out[i - 1], out[i]
+            i += 2
+        i -= 1
     return out
 
 
@@ -173,6 +188,23 @@ class Token(object):
         if self.op == tokenize.INDENT: return 1
         if self.op == tokenize.DEDENT: return -1
         return 0
+
+    def paren(self):
+        """Return 1 for an OP '(' token, -1 for an OP ')' token, and 0 otherwise."""
+        if self.op == tokenize.OP:
+            if self.str == "(": return 1
+            if self.str == ")": return -1
+        return 0
+
+    def move(self, drow, dcol):
+        """Move the token by `drow` rows and `dcol` columns."""
+        self._t = (
+            self.op,
+            self.str,
+            (self.start_row + drow, self.start_col + dcol),
+            (self.end_row + drow, self.end_col + dcol),
+            self._t[4]
+        )
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -249,31 +281,113 @@ class ParsedCode(object):
     def parse(self):
         self._parsed = self._parse1()
 
+    def unparse(self):
+        """Convert the parsed representation back into the source code."""
+        if self._parsed:
+            pass  # TODO
+        else:
+            return tokenize.untokenize(t.token for t in self._tokens)
+
+
     #-------------------------------------------------------------------------------------------------------------------
     # Private
     #-------------------------------------------------------------------------------------------------------------------
 
     def _parse1(self):
-        """First stage of parsing: find all function / class declarations at the top level."""
-        chunks = []
+        """
+        First stage of parsing the code (stored as a raw stream of tokens).
 
-        # If `level` is not None, then we are seacrhing for the end of the block, and this variable contains the
-        # current indentation level.
-        level = None
-        # When searching for the end of the block, this will store its beginning.
-        i0 = None
-        for i, tok in enumerate(self._tokens):
-            if level is None:
-                if tok.op == tokenize.NAME and (tok.str == "class" or tok.str == "def"):
-                    level = 0
-                    i0 = i
+        This method will do the initial pass of the ``self._tokens`` list of tokens, and mark different section as
+        belonging to one of the categories: comment, whitespace, docstring, import, code, decorator, def, class, end.
+        These sections will be returned as a list of tuples ``(fragment_type, start, end)``, where ``start`` and ``end``
+        are indices in the list of raw tokens.
+        """
+        fragments = []
+        tokens = self._tokens
+
+        i = 0
+        while i < len(tokens):
+            # Assume that we always start at the beginning of a new block
+            i0 = i
+            tok = tokens[i]
+            fragment_type = "???"  # to be determined in the switch clause below
+
+            if tok.op == tokenize.ENDMARKER:
+                i += 1
+                assert i == len(tokens), "ENDMARKER token encountered before the end of the stream"
+                fragment_type = "end"
+            elif tok.op == tokenize.NL:
+                while tokens[i].op == tokenize.NL:
+                    i += 1
+                fragment_type = "whitespace"
+            elif tok.op == tokenize.COMMENT:
+                while tokens[i].op == tokenize.COMMENT:
+                    assert tokens[i + 1].op == tokenize.NL, "Unexpected token after a comment: %r" % tokens[i + 1]
+                    i += 2
+                fragment_type = "comment"
+            elif (tok.op == tokenize.STRING and tokens[i + 1].op == tokenize.NEWLINE and
+                  all(frag[0] == "whitespace" or frag[0] == "comment" for frag in fragments)):
+                i += 2
+                fragment_type = "docstring"
+            elif tok.op == tokenize.OP and tok.str == "@" and tokens[i + 1].op == tokenize.NAME:
+                while tokens[i].op == tokenize.OP and tokens[i].str == "@" and tokens[i + 1].op == tokenize.NAME:
+                    i += 2
+                    if tokens[i].op == tokenize.OP and tokens[i].str == "(":
+                        level = 1
+                        while level > 0:
+                            i += 1
+                            level += tokens[i].paren()
+                        assert tokens[i].str == ")"
+                        i += 1
+                    assert tokens[i].op == tokenize.NEWLINE
+                    i += 1
+                fragment_type = "decorator"
+            elif tok.op == tokenize.NAME and tok.str in {"from", "import"}:
+                while tokens[i].op == tokenize.NAME and tokens[i].str in {"from", "import"}:
+                    while tokens[i].op != tokenize.NEWLINE:
+                        i += 1
+                    i += 1  # eat the NEWLINE
+                fragment_type = "import"
+            elif tok.op in {tokenize.INDENT, tokenize.DEDENT, tokenize.NEWLINE}:
+                for i, tok in enumerate(self._tokens):
+                    print("%3d  %r" % (i, tok))
+                assert False, "Unexpected token %d: %r" % (i, tok)
             else:
-                level += tok.indent()
-                if level == 0 and tok.op == tokenize.DEDENT:
-                    level = None
-                    i0 = None
-                    chunks.append((self._tokens[i0].str, i0, i + 1))
-        return chunks
+                while tokens[i].op != tokenize.NEWLINE:
+                    i += 1
+                i += 1  # skip the NEWLINE too
+                if tokens[i].op == tokenize.INDENT:
+                    level = 1
+                    while level > 0:
+                        i += 1
+                        level += tokens[i].indent()
+                    assert tokens[i].op == tokenize.DEDENT
+                    i += 1  # consume the last DEDENT
+                while tokens[i].op == tokenize.COMMENT and tokens[i].start_col > tok.start_col:
+                    assert tokens[i + 1].op == tokenize.NL
+                    i += 2
+                if tok.op == tokenize.NAME and tok.str in {"def", "class"}:
+                    fragment_type = tok.str
+                else:
+                    fragment_type = "code"
+            assert i > i0, "Stuck at i = %d" % i
+            fragments.append((fragment_type, i0, i))
+            print(fragments[-1])
+        return fragments
+
+
+    def _parse2(self, fragments):
+        """
+        Second stage of parsing: convert ``fragments`` into the list of code objects.
+
+        This method in fact does more than simple conversion of fragments into objects. It also attempts to group
+        certain fragments into one, if they in fact seem like a single piece. For example, decorators are grouped
+        together with the objects they decorate, comments that explain certain objects or statements are attached to
+        those as well.
+        """
+
+
+
 
     def __repr__(self):
         if self._parsed:
