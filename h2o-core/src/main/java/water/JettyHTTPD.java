@@ -317,6 +317,7 @@ public class JettyHTTPD {
     hc.setHandlers(new Handler[]{
         new GateHandler(),
         new AuthenticationHandler(),
+        new ExtensionHandler1(),
         context,
     });
     handlerWrapper.setHandler(hc);
@@ -331,6 +332,23 @@ public class JettyHTTPD {
         catch (Exception ignore) {}
       }
       setCommonResponseHttpHeaders(response);
+    }
+  }
+
+  @SuppressWarnings("unused")
+  protected void handle1(String target,
+                         Request baseRequest,
+                         HttpServletRequest request,
+                         HttpServletResponse response) throws IOException, ServletException {}
+
+  public class ExtensionHandler1 extends AbstractHandler {
+    public ExtensionHandler1() {}
+
+    public void handle(String target,
+                       Request baseRequest,
+                       HttpServletRequest request,
+                       HttpServletResponse response) throws IOException, ServletException {
+      H2O.getJetty().handle1(target, baseRequest, request, response);
     }
   }
 
