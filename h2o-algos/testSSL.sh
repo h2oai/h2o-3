@@ -105,7 +105,7 @@ echo Running nonSSL test on interface ${INTERFACE}...
 
 pwd
 
-tshark -i ${INTERFACE} -T fields -e data -w ${OUTDIR}/h2o-nonSSL.pcap 1> $OUTDIR>tshark.out 2>&1 & PID_4=$!
+tshark -i ${INTERFACE} -T fields -e data -w ${OUTDIR}/h2o-nonSSL.pcap 1> $OUTDIR/tshark1.out 2>&1 & PID_4=$!
 
 java -Dai.h2o.name=$CLUSTER_NAME -ea \
     -cp "build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*" \
@@ -124,7 +124,7 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 
 
 echo Running SSL test...
 
-tshark -i ${INTERFACE} -T fields -e data -w ${OUTDIR}/h2o-SSL.pcap 1> $OUTDIR>tshark.out 2>&1 & PID_4=$!
+tshark -i ${INTERFACE} -T fields -e data -w ${OUTDIR}/h2o-SSL.pcap 1> $OUTDIR/tshark2.out 2>&1 & PID_4=$!
 
 java -Dai.h2o.name=$CLUSTER_NAME -ea \
     -cp "build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*" \
