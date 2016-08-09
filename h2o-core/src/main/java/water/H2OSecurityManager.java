@@ -40,12 +40,12 @@ import java.nio.channels.SocketChannel;
  *  - data saved to disk - currently not supported, using an encrypted drive is recommended
  *
  */
-public class SecurityManager {
+public class H2OSecurityManager {
 
     public boolean securityEnabled = false;
     private SSLSocketChannelFactory sslSocketChannelFactory;
 
-    SecurityManager() {
+    H2OSecurityManager() {
         try {
             if (null != H2O.ARGS.ssl_config) {
                 this.sslSocketChannelFactory = new SSLSocketChannelFactory();

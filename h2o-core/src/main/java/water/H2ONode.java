@@ -31,7 +31,7 @@ import water.util.UnsafeUtils;
 
 public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient private SocketChannelFactory _socketFactory;
-  transient private SecurityManager _security;
+  transient private H2OSecurityManager _security;
 
   transient short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   transient boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
@@ -116,7 +116,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     _last_heard_from = System.currentTimeMillis();
     _heartbeat = new HeartBeat();
 
-    _security = new SecurityManager();
+    _security = new H2OSecurityManager();
     _socketFactory = new SocketChannelFactory(_security);
   }
 
@@ -586,7 +586,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
 
 
-  public SocketChannelFactory get_socketFactory() {
+  public SocketChannelFactory getSocketFactory() {
     return _socketFactory;
   }
 }
