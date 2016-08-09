@@ -263,16 +263,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Step 4: Run all the CV models and launch the main model
       H2O.H2OCountedCompleter mainMB = cv_buildModels(N, cvModelBuilders);
 
-      // Step 5: Score the CV models
-      ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
-      
       // wait for completion of the main model
       if (mainMB!=null) mainMB.join();
+
+      // Step 5: Score the CV models
+      ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
 
       // Step 6: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
       cv_mainModelScores(N, mbs, cvModelBuilders);
-
 
       // Step 7: Clean up potentially created temp frames
       for (ModelBuilder mb : cvModelBuilders)
