@@ -180,6 +180,7 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, network);
+      if (_imageTrain==null) _imageTrain = new ImageTrain();
       _imageTrain.loadModel(path.toString());
       _imageTrain.setOptimizer(nClasses, miniBatchSize);
     } catch (IOException e) {
