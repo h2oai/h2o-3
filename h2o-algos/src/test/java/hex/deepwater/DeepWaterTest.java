@@ -203,7 +203,8 @@ public class DeepWaterTest extends TestUtil {
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
     } finally {
-      if (m!=null) m.remove();
+      if (m!=null) m.deleteCrossValidationModels();
+      if (m!=null) m.delete();
       if (tr!=null) tr.remove();
     }
   }
