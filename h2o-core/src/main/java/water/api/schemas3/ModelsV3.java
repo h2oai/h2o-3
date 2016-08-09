@@ -4,7 +4,7 @@ import hex.Model;
 import water.api.*;
 import water.api.ModelsHandler.Models;
 
-public class ModelsV3 extends SchemaV3<Models, ModelsV3> {
+public class ModelsV3 extends RequestSchemaV3<Models, ModelsV3> {
 
   // Input fields
   @API(help="Name of Model of interest", json=false)

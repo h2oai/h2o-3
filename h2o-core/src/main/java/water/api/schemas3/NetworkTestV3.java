@@ -3,7 +3,7 @@ package water.api.schemas3;
 import water.api.API;
 import water.init.NetworkTest;
 
-public class NetworkTestV3 extends SchemaV3<NetworkTest, NetworkTestV3> {
+public class NetworkTestV3 extends RequestSchemaV3<NetworkTest, NetworkTestV3> {
 
   @API(help="Collective broadcast/reduce times in microseconds (for each message size)", direction = API.Direction.OUTPUT)
   public double[] microseconds_collective;

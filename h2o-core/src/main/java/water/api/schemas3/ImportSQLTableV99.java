@@ -4,8 +4,8 @@ import water.Iced;
 import water.api.API;
 
 
-public class ImportSQLTableV99 extends SchemaV3<Iced,ImportSQLTableV99> {
-  
+public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
+
   //Input fields
   @API(help = "connection_url", required = true)
   public String connection_url;
@@ -27,5 +27,5 @@ public class ImportSQLTableV99 extends SchemaV3<Iced,ImportSQLTableV99> {
 
   @API(help = "optimize")
   public boolean optimize = true;
-  
+
 }

@@ -73,8 +73,10 @@ class ModelMetricsHandler extends Handler {
   } // class ModelMetricsList
 
   /** Schema for a list of ModelMetricsBaseV3.
-   *  This should be common across all versions of ModelMetrics schemas, so it lives here.   */
-  public static final class ModelMetricsListSchemaV3 extends SchemaV3<ModelMetricsList, ModelMetricsListSchemaV3> {
+   *  This should be common across all versions of ModelMetrics schemas, so it lives here.
+   *  TODO: move to water.api.schemas3
+   *  */
+  public static final class ModelMetricsListSchemaV3 extends RequestSchemaV3<ModelMetricsList, ModelMetricsListSchemaV3> {
     // Input fields
     @API(help = "Key of Model of interest (optional)", json = true)
     public KeyV3.ModelKeyV3 model;
@@ -303,10 +305,10 @@ class ModelMetricsHandler extends Handler {
     if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
 
     final ModelMetricsList parms = s.createAndFillImpl();
-    
+
     //predict2 does not return modelmetrics, so cannot handle deeplearning: reconstruction_error (anomaly) or GLRM: reconstruct and archetypes
-    //predict2 can handle deeplearning: deepfeatures and predict 
-    
+    //predict2 can handle deeplearning: deepfeatures and predict
+
     if (s.deep_features_hidden_layer > 0) {
       if (null == parms._predictions_name)
         parms._predictions_name = "deep_features" + Key.make().toString().substring(0, 5) + "_" +
@@ -332,7 +334,7 @@ class ModelMetricsHandler extends Handler {
           predictions = new Frame(Key.make(parms._predictions_name), predictions.names(), predictions.vecs());
           DKV.put(predictions._key, predictions);
         }
-        tryComplete(); 
+        tryComplete();
       }
     };
     j.start(work, parms._frame.anyVec().nChunks());
