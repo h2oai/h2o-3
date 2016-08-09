@@ -28,7 +28,7 @@ public class TCPReceiverThread extends Thread {
           ServerSocketChannel sock) {
     super("TCP-Accept");
     SOCK = sock;
-    this.socketChannelFactory = H2O.SELF.get_socketFactory();
+    this.socketChannelFactory = H2O.SELF.getSocketFactory();
   }
 
   // The Run Method.

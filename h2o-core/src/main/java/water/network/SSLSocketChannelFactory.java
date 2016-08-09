@@ -36,18 +36,28 @@ public class SSLSocketChannelFactory {
     private void init(SSLProperties props) throws SSLContextException {
         properties = props;
         try {
-            if(sslParamsPresent()) {
+            if (sslParamsPresent()) {
                 this.sslContext = SSLContext.getInstance(properties.h2o_ssl_protocol());
                 this.sslContext.init(keyManager(), trustManager(), null);
             } else {
                 this.sslContext = SSLContext.getDefault();
             }
-        } catch (NoSuchAlgorithmException |
-                IOException |
-                UnrecoverableKeyException |
-                KeyStoreException |
-                KeyManagementException |
-                CertificateException e) {
+        } catch (NoSuchAlgorithmException e) {
+            Log.err("Failed to initialized SSL context.", e);
+            throw new SSLContextException("Failed to initialized SSL context.", e);
+        } catch (IOException e) {
+            Log.err("Failed to initialized SSL context.", e);
+            throw new SSLContextException("Failed to initialized SSL context.", e);
+        } catch (UnrecoverableKeyException e) {
+            Log.err("Failed to initialized SSL context.", e);
+            throw new SSLContextException("Failed to initialized SSL context.", e);
+        } catch (KeyStoreException e) {
+            Log.err("Failed to initialized SSL context.", e);
+            throw new SSLContextException("Failed to initialized SSL context.", e);
+        } catch (KeyManagementException e) {
+            Log.err("Failed to initialized SSL context.", e);
+            throw new SSLContextException("Failed to initialized SSL context.", e);
+        } catch (CertificateException e) {
             Log.err("Failed to initialized SSL context.", e);
             throw new SSLContextException("Failed to initialized SSL context.", e);
         }
@@ -56,9 +66,9 @@ public class SSLSocketChannelFactory {
 
     private boolean sslParamsPresent() {
         return null != properties.h2o_ssl_jks_internal() &&
-        null != properties.h2o_ssl_jks_password() &&
-        null != properties.h2o_ssl_jts() &&
-        null != properties.h2o_ssl_jts_password();
+                null != properties.h2o_ssl_jks_password() &&
+                null != properties.h2o_ssl_jts() &&
+                null != properties.h2o_ssl_jts_password();
     }
 
     private TrustManager[] trustManager() throws
@@ -91,7 +101,7 @@ public class SSLSocketChannelFactory {
             int port) throws IOException {
         SSLEngine sslEngine = sslContext.createSSLEngine(host, port);
         sslEngine.setUseClientMode(false);
-        if(null != properties.h2o_ssl_enabled_algorithms()) {
+        if (null != properties.h2o_ssl_enabled_algorithms()) {
             sslEngine.setEnabledCipherSuites(properties.h2o_ssl_enabled_algorithms());
         }
         return new SSLSocketChannel(channel, sslEngine);
@@ -100,7 +110,7 @@ public class SSLSocketChannelFactory {
     public ByteChannel wrapServerChannel(SocketChannel channel) throws IOException {
         SSLEngine sslEngine = sslContext.createSSLEngine();
         sslEngine.setUseClientMode(true);
-        if(null != properties.h2o_ssl_enabled_algorithms()) {
+        if (null != properties.h2o_ssl_enabled_algorithms()) {
             sslEngine.setEnabledCipherSuites(properties.h2o_ssl_enabled_algorithms());
         }
         return new SSLSocketChannel(channel, sslEngine);

@@ -1,15 +1,10 @@
 package water.network;
 
-import water.SecurityManager;
+import water.H2OSecurityManager;
 
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
 
 /**
  * Creates either a raw or an SSL/TLS wrapped socket depending on
@@ -18,9 +13,9 @@ import java.security.cert.CertificateException;
  */
 public class SocketChannelFactory {
 
-    private SecurityManager sm;
+    private H2OSecurityManager sm;
 
-    public SocketChannelFactory(SecurityManager sm) {
+    public SocketChannelFactory(H2OSecurityManager sm) {
         this.sm = sm;
     }
 

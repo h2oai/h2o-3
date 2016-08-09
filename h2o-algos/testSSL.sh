@@ -99,9 +99,11 @@ $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.3 2>&1 & PID_3=$!
 
-INTERFACE=${TSHARK_INTERFACE:-"lo0"}
+INTERFACE=${TSHARK_INTERFACE:-"eth0"}
 
-echo Running nonSSL test...
+echo Running nonSSL test on interface ${INTERFACE}...
+
+pwd
 
 tshark -i ${INTERFACE} -T fields -e data -w ${OUTDIR}/h2o-nonSSL.pcap 1> /dev/null 2>&1 & PID_4=$!
 

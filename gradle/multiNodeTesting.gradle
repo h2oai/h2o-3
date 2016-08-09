@@ -9,7 +9,7 @@ task testMultiNode(type: Exec) {
 
     def args = ['bash', './testMultiNode.sh']
 
-    if(project.hasProperty('test_ssl')) {
+    if(project.doTestSSL) {
         args << 'ssl'
     }
 

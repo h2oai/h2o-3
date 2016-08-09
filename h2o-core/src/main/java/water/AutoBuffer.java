@@ -426,14 +426,14 @@ public final class AutoBuffer {
             assert x == 0xab : "AB.close instead of 0xab sentinel got "+x+", "+this;
             assert _chan != null; // chan set by incoming reader, since we KNOW it is a TCP
             // Write the reader-handshake-byte.
-            SocketChannelUtils.underlyingSocket(_chan).socket().getOutputStream().write(0xcd);
+            SocketChannelUtils.underlyingSocketChannel(_chan).socket().getOutputStream().write(0xcd);
             // do not close actually reader socket; recycle it in TCPReader thread
           } else {              // Writer?
             put1(0xab);         // Write one-more byte  ; might set _chan from null to not-null
             sendPartial();      // Finish partial writes; might set _chan from null to not-null
             assert _chan != null; // _chan is set not-null now!
             // Read the writer-handshake-byte.
-            int x = SocketChannelUtils.underlyingSocket(_chan).socket().getInputStream().read();
+            int x = SocketChannelUtils.underlyingSocketChannel(_chan).socket().getInputStream().read();
             // either TCP con was dropped or other side closed connection without reading/confirming (e.g. task was cancelled).
             if( x == -1 ) throw new IOException("Other side closed connection before handshake byte read");
             assert x == 0xcd : "Handshake; writer expected a 0xcd from reader but got "+x;
@@ -487,7 +487,7 @@ public final class AutoBuffer {
     if( chan != null ) {                  // Channel assumed sick from prior IOException
       try { chan.close(); } catch( IOException ignore ) {} // Silently close
       _chan = null;                       // No channel now!
-      if( !_read && SocketChannelUtils.socketChannel(chan)) _h2o.freeTCPSocket(chan); // Recycle writable TCP channel
+      if( !_read && SocketChannelUtils.isSocketChannel(chan)) _h2o.freeTCPSocket(chan); // Recycle writable TCP channel
     }
     restorePriority();          // And if we raised priority, lower it back
     bbFree();
@@ -497,7 +497,7 @@ public final class AutoBuffer {
   }
 
   // True if we opened a TCP channel, or will open one to close-and-send
-  boolean hasTCP() { assert !isClosed(); return SocketChannelUtils.socketChannel(_chan) || (_h2o!=null && _bb.position() >= MTU); }
+  boolean hasTCP() { assert !isClosed(); return SocketChannelUtils.isSocketChannel(_chan) || (_h2o!=null && _bb.position() >= MTU); }
 
   // Size in bytes sent, after a close()
   int size() { return _size; }
@@ -528,7 +528,7 @@ public final class AutoBuffer {
   // over with.
   private void raisePriority() {
     if(_oldPrior == -1){
-      assert SocketChannelUtils.socketChannel(_chan);
+      assert SocketChannelUtils.isSocketChannel(_chan);
       _oldPrior = Thread.currentThread().getPriority();
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY-1);
     }
@@ -651,7 +651,7 @@ public final class AutoBuffer {
       long ns = System.nanoTime();
       while( _bb.hasRemaining() ) {
         _chan.write(_bb);
-        if( RANDOM_TCP_DROP != null && SocketChannelUtils.socketChannel(_chan) && RANDOM_TCP_DROP.nextInt(100) == 0 )
+        if( RANDOM_TCP_DROP != null && SocketChannelUtils.isSocketChannel(_chan) && RANDOM_TCP_DROP.nextInt(100) == 0 )
           throw new IOException("Random TCP Write Fail");
       }
       _time_io_ns += (System.nanoTime()-ns);

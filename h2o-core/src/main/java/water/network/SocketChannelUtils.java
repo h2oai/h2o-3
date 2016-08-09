@@ -5,11 +5,11 @@ import java.nio.channels.SocketChannel;
 
 public class SocketChannelUtils {
 
-    public static boolean socketChannel(ByteChannel channel) {
+    public static boolean isSocketChannel(ByteChannel channel) {
         return channel instanceof SocketChannel || channel instanceof SSLSocketChannel;
     }
 
-    public static SocketChannel underlyingSocket(ByteChannel channel) {
+    public static SocketChannel underlyingSocketChannel(ByteChannel channel) {
         if(channel instanceof SSLSocketChannel) {
             return ((SSLSocketChannel) channel).channel();
         } else if(channel instanceof SocketChannel) {
