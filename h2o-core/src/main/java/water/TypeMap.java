@@ -30,6 +30,7 @@ public class TypeMap {
 
     // Status pages looked at without locking the cloud
     water.api.Schema.class.getName(),
+    RequestSchemaV3.class.getName(),
     SchemaV3.Meta.class.getName(),
     SchemaV3.class.getName(),
     CloudV3.class.getName(),
