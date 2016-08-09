@@ -4,7 +4,7 @@ import water.api.API;
 import water.api.FramesHandler.Frames;
 import water.fvec.Frame;
 
-public class FramesV3 extends SchemaV3<Frames,FramesV3> {
+public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
 
   // Input fields
   @API(help="Name of Frame of interest", json=false)
