@@ -24,7 +24,7 @@ class ASTRepLen extends ASTPrim {
       new MRTask() {
         @Override
         public void map(Chunk c) {
-          VecAry.VecAryReader reader = fr.vecs().reader(false);
+          VecAry.Reader reader = fr.vecs().reader(false);
           for (int i = 0; i < c._len; ++i)
             c.set(i, reader.at((long) c.atd(i),0));
         }

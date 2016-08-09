@@ -43,7 +43,7 @@ public class SubsetVec extends WrappedVec {
   // 
   static class SubsetChunk extends Chunk {
     final Chunk _crows;
-    final VecAry.VecAryReader _masterVec;
+    final VecAry.Reader _masterVec;
     protected SubsetChunk(Chunk crows, SingleChunk sc, VecAry masterVec) {
       _achunk = sc;
       _masterVec = masterVec.reader(false);

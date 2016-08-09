@@ -176,7 +176,7 @@ class ASTDdply extends ASTPrim {
         if( res.numRows() != 1 )
           throw new IllegalArgumentException("ddply must return a 1-row (many column) frame, found "+res.numRows());
         _result = new double[res.numCols()];
-        VecAry.VecAryReader r = res.vecs().reader(false);
+        VecAry.Reader r = res.vecs().reader(false);
         for( int i=0; i<res.numCols(); i++ )
           _result[i] = r.at(0,i);
       } else if( val.isNum() ) {

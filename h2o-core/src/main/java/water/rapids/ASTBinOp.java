@@ -264,7 +264,7 @@ abstract class ASTBinOp extends ASTPrim {
   private ValFrame frame_op_row(Frame lf, Frame row) {
     final double[] rawRow = new double[row.numCols()];
     VecAry rowVecs = row.vecs();
-    VecAry.VecAryReader r = rowVecs.reader(false);
+    VecAry.Reader r = rowVecs.reader(false);
     for(int i=0; i<rawRow.length;++i)
       rawRow[i] = rowVecs.isNumeric(i) ? r.at(0,i) : Double.NaN; // is numeric, if not then NaN
     Frame res = new MRTask() {
@@ -741,7 +741,7 @@ class ASTScale extends ASTPrim {
   private static double[] toArray(VecAry v) {
     if(v.len() != 1) throw new IllegalArgumentException("expected exactly one vec here");
     double[] res = new double[(int)v.numRows()];
-    VecAry.VecAryReader r = v.reader(false);
+    VecAry.Reader r = v.reader(false);
     for(int i=0;i<res.length;++i)
       res[i] = r.at(0,i);
     return res;

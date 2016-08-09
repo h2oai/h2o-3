@@ -303,7 +303,7 @@ public class ASTMerge extends ASTPrim {
       else if( c.hasFloat() )           nc.addNum(c.atd(row));
       else                              nc.addNum(c.at8(row),0);
     }
-    protected static void addElem(NewChunk nc, int id, byte type, VecAry.VecAryReader r, long absRow, BufferedString bStr) {
+    protected static void addElem(NewChunk nc, int id, byte type, VecAry.Reader r, long absRow, BufferedString bStr) {
       switch( type ) {
       case Vec.T_NUM : nc.addNum(r.at(absRow,id)); break;
       case Vec.T_CAT :
@@ -326,7 +326,7 @@ public class ASTMerge extends ASTPrim {
       // Shared common hash map
       final IcedHashMap<Row,String> rows = _rows;
       VecAry hvecs = _hashed.vecs(); // Data source from hashed set
-      VecAry.VecAryReader hreader = hvecs.reader(false);
+      VecAry.Reader hreader = hvecs.reader(false);
       assert hvecs.len() == _ncols + nchks.length;
       Row row = new Row(_ncols);  // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
@@ -369,7 +369,7 @@ public class ASTMerge extends ASTPrim {
       // Shared common hash map
       final IcedHashMap<Row,String> rows = _rows;
       VecAry hvecs = _hashed.vecs(); // Data source from hashed set
-      VecAry.VecAryReader hvecsReader = hvecs.reader(false);
+      VecAry.Reader hvecsReader = hvecs.reader(false);
 //      assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
@@ -388,7 +388,7 @@ public class ASTMerge extends ASTPrim {
         }
       }
     }
-    void addRow(NewChunk[] nchks, Chunk[] chks, VecAry vecs, int relRow, long absRow, BufferedString bStr, VecAry.VecAryReader reader) {
+    void addRow(NewChunk[] nchks, Chunk[] chks, VecAry vecs, int relRow, long absRow, BufferedString bStr, VecAry.Reader reader) {
       int c=0;
       for( ;c< chks.length;++c) addElem(nchks[c],chks[c],relRow);
       for( ;c<nchks.length;++c) addElem(nchks[c],c - chks.length + _ncols,vecs.type(c - chks.length + _ncols),reader,absRow,bStr);

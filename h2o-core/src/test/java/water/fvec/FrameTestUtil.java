@@ -32,7 +32,7 @@ public class FrameTestUtil {
   public static void assertValues(VecAry v, String[] expValues) {
     Assert.assertEquals("Number of rows", expValues.length, v.numRows());
     BufferedString tmpStr = new BufferedString();
-    VecAry.VecAryReader r = v.reader(false);
+    VecAry.Reader r = v.reader(false);
     for (int i = 0; i < v.numRows(); i++) {
       if (r.isNA(i,0)) Assert.assertEquals("NAs should match", null, expValues[i]);
       else Assert.assertEquals("Values should match", expValues[i], r.atStr(tmpStr,i,0).toString());
@@ -42,7 +42,7 @@ public class FrameTestUtil {
   public static String[] collectS(VecAry v) {
     String[] res = new String[(int) v.numRows()];
     BufferedString tmpStr = new BufferedString();
-    VecAry.VecAryReader r = v.reader(false);
+    VecAry.Reader r = v.reader(false);
       for (int i = 0; i < v.numRows(); i++)
         res[i] = r.isNA(i,0) ? null : r.atStr(tmpStr, i,0).toString();
     return res;

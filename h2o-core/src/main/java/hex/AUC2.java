@@ -396,8 +396,8 @@ public class AUC2 extends Iced {
       throw new IllegalArgumentException("Probabilities are between 0 and 1");
     // Horrible data replication into array of structs, to sort.  
     Pair[] ps = new Pair[(int)vprob.numRows()];
-    VecAry.VecAryReader rprob = vprob.reader(false);
-    VecAry.VecAryReader racts = vacts.reader(false);
+    VecAry.Reader rprob = vprob.reader(false);
+    VecAry.Reader racts = vacts.reader(false);
     for( int i=0; i<ps.length; i++ )
       ps[i] = new Pair(rprob.at(i,0),(byte)racts.at8(i,0));
     return perfectAUC(ps);

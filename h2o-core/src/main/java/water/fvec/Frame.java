@@ -482,7 +482,7 @@ public class Frame extends Lockable<Frame> {
     int [] cols;
     long [] lcols;
     if (ocols instanceof Frame) {
-      VecAry.VecAryReader v = ((Frame) ocols).vecs().reader(true);
+      VecAry.Reader v = ((Frame) ocols).vecs().reader(true);
       int n = (int) v.length();
       lcols = new long[n];
       for (int i = 0; i < n; i++)
@@ -607,7 +607,7 @@ public class Frame extends Lockable<Frame> {
     final BufferedString tmpStr = new BufferedString();
 
     RollupStats [] rs = rollups?vecs.getRollups():null;
-    VecAry.VecAryReader vReader = _vecs.reader(true);
+    VecAry.Reader vReader = _vecs.reader(true);
     for( int i=0; i<ncols; i++ ) {
       if( rollups ) {
         dblCells[0][i] = rs[i].min();
@@ -707,7 +707,7 @@ public class Frame extends Lockable<Frame> {
       StringBuilder sb = new StringBuilder();
       VecAry vecs = _vecs;
       BufferedString tmpStr = new BufferedString();
-      VecAry.VecAryReader vReader = vecs.reader(false);
+      VecAry.Reader vReader = vecs.reader(false);
       for( int i = 0; i < vecs.len(); i++ ) {
         if(i > 0) sb.append(',');
         if(!vReader.isNA(_row,i)) {

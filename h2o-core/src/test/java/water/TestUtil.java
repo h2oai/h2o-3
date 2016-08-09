@@ -313,8 +313,8 @@ public class TestUtil extends Iced {
     int nfeat = (int) expected.numRows();
     int ncomp = expected.numCols();
 
-    VecAry.VecAryReader rexp = expected.vecs().reader(false);
-    VecAry.VecAryReader ract = actual.vecs().reader(false);
+    VecAry.Reader rexp = expected.vecs().reader(false);
+    VecAry.Reader ract = actual.vecs().reader(false);
     Assert.assertEquals(expected.numCols(), actual.numRows());
     for(int j = 0; j < ncomp; j++) {
       for (int i = 0; i < nfeat; i++) {
@@ -371,7 +371,7 @@ public class TestUtil extends Iced {
       for( int cols=0; cols<chks.length>>1; cols++ ) {
         if( _unequal ) return;
         Chunk c0 = chks[cols];
-        VecAry.VecAryReader r = _fr.vecs().reader(false);
+        VecAry.Reader r = _fr.vecs().reader(false);
         for( int rows = 0; rows < chks[0]._len; rows++ ) {
           double d0 = c0.atd(rows), d1 = r.at(c0.start() + rows,cols);
           if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {

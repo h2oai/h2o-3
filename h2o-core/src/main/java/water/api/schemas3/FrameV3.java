@@ -6,6 +6,7 @@ import water.fvec.VecAry;
 import water.api.*;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.util.*;
 
 /**
@@ -201,15 +202,28 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
     this.columns = new ColV3[column_count];
     VecAry vecs = f.vecs();
-    VecAry.VecAryReader vReader = vecs.reader(true);
+    VecAry.Reader vReader = vecs.reader(true);
     Futures fs = new Futures();
-    for( int i = 0; i < column_count; i++ ) {
-      double [] dvals = new double[row_count];
-      String [] svals = new String[row_count];
-      vReader.getDoubles(row_offset,i,dvals);
-      vReader.getStrings(row_offset,i,svals);
-      columns[i] = new ColV3(f.name(column_offset + i), vecs.getRollups(i), dvals,svals, vecs.domain(i), this.row_offset, this.row_count);
+    double[][] dvals = new double[column_count][];
+    String[][] svals = new String[column_count][];
+    byte [] types = f.types();
+    for(int i =0 ; i < types.length; ++i) {
+      if(types[i] == Vec.T_UUID || types[i] == Vec.T_STR)
+        svals[i] = new String[row_count];
+      else
+        dvals[i] = new double[row_count];
     }
+    BufferedString tmp = new BufferedString();
+    for(int i = 0; i < row_count; i++) {
+      for (int j = 0; j < column_count; j++) {
+        if(types[j] == Vec.T_UUID || types[j] == Vec.T_STR)
+          svals[j][i] = vReader.atStr(tmp,row_offset+i,j).toString();
+        else
+          dvals[j][i] = vReader.at(row_offset+i,j);
+      }
+    }
+    for(int i =0 ; i < types.length; ++i)
+      columns[i] = new ColV3(f.name(column_offset + i), vecs.getRollups(i), dvals[i], svals[i], vecs.domain(i), this.row_offset, this.row_count);
     fs.blockForPending();
     this.is_text = vecs.isRawBytes();
     this.default_percentiles = Vec.PERCENTILES;

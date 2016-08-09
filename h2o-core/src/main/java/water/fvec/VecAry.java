@@ -1,13 +1,12 @@
 package water.fvec;
 
-import sun.misc.Unsafe;
 import water.*;
 import water.parser.BufferedString;
 import water.util.*;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by tomas on 7/7/16.
@@ -670,23 +669,43 @@ public class VecAry extends Iced {
    * y = vr.at(1);
    * z = vr.at(2);
    */
-  public class VecAryReader {
+  public class Reader implements Closeable {
 
-    private ChunkBlock _cache;
-    long _start;
+    private final boolean _dontCache;
+    public Reader(boolean dontChache) {
+      _dontCache = dontChache;}
+    protected ChunkAry _cache = null;
+
+    long _start = Long.MAX_VALUE;
+    long _end = Long.MIN_VALUE;
 
     protected Chunk chk(long rowId, int vecId) {
-      throw H2O.unimpl(); // TODO
+      if(_cache == null ||  _end <= rowId || rowId < _start) {
+        if(_cache != null ) {
+          _cache.close(new Futures()).blockForPending();
+          if(_dontCache && !isHomedLocally(_cache._cidx))
+            for (int i = 0; i < _cache._chks.length; ++i)
+              if (_cache._chks[i] != null) H2O.raw_remove(_cache._chks[i]._vec.chunkKey(_cache._cidx));
+        }
+        int cidx = Arrays.binarySearch(espc(),rowId);
+        if(cidx < 0) cidx = (-cidx-2);
+        _cache = getChunks(elem2ChunkIdx(rowId));
+        _start = espc()[cidx];
+        _end = espc()[cidx+1];
+      }
+      return _cache.getChnunk(vecId);
     }
 
-    public final long at8(long rowId, int vecId) {
-      return chk(rowId, vecId).at8((int) (rowId - _start));
-    }
-
+    public final long at8(long rowId, int vecId) {return chk(rowId, vecId).at8((int) (rowId - _start));}
     public final double at(long rowId, int vecId) {
-      return chk(rowId, vecId).at8((int) (rowId - _start));
+      return chk(rowId, vecId).atd((int) (rowId - _start));
     }
-
+    public long at16l(long rowId, int vecId) {
+      return chk(rowId, vecId).at16l((int) (rowId - _start));
+    }
+    public long at16h(long rowId, int vecId) {
+      return chk(rowId, vecId).at16h((int) (rowId - _start));
+    }
     public final boolean isNA(long rowId, int vecId) {
       return chk(rowId, vecId).isNA((int) (rowId - _start));
     }
@@ -698,56 +717,42 @@ public class VecAry extends Iced {
     public BufferedString atStr(BufferedString tmpStr, long rowId, int vecId) {
       return chk(rowId, vecId).atStr(tmpStr, (int) (rowId - _start));
     }
-
     public String factor(long rowId, int vecId) {
-      throw H2O.unimpl();
+      return domain(vecId)[chk(rowId, vecId).at4((int) (rowId - _start))];
     }
 
-    public long at16l(long row, int i) {
-      throw H2O.unimpl();
-    }
-
-    public long at16h(long row, int i) {
-      throw H2O.unimpl();
-    }
-
-    public int getDoubles(long rowId, int vecId, double[] dvals) {
-      throw H2O.unimpl();
-    }
-
-    public int getStrings(long rowId, int vecId, String[] svals) {
-      throw H2O.unimpl();
-    }
-  }
-
-  public final class Writer extends VecAryReader implements Closeable {
-    public final void set  ( long rowId, int vecId, long val)   { chk(rowId,vecId).set((int)(rowId-_start), val); }
-    public final void set  ( long rowId, int vecId, double val) { chk(rowId,vecId).set((int)(rowId-_start), val); }
-    public final void setNA( long rowId, int vecId) { chk(rowId,vecId).setNA((int)(rowId-_start)); }
     public Futures close(Futures fs){
-      throw H2O.unimpl(); // TODO
+      _cache.close(fs);
+      _cache = null;
+      return fs;
     }
+    @Override
+    public final void close() {close(new Futures()).blockForPending();}
+  }
 
-    public void close() {
-      Futures fs = new Futures();
-      close(fs);
-      fs.blockForPending();
-    }
-
+  public final class Writer extends Reader implements Closeable {
+    public Writer(boolean dontCache) {super(dontCache);}
+    public void set  (long rowId, int vecId, long val)   { chk(rowId,vecId).set((int)(rowId-_start), val); }
+    public void set  ( long rowId, int vecId, double val) { chk(rowId,vecId).set((int)(rowId-_start), val); }
     public void set(long rowId, int vecId, String s) {
-      throw H2O.unimpl();
+      chk(rowId,vecId).set((int)(rowId-_start), s);
+    }
+    public void setNA( long rowId, int vecId) { chk(rowId,vecId).setNA((int)(rowId-_start)); }
+    public Futures close(Futures fs){
+      super.close(fs);
+      return postWrite(fs);
     }
   }
 
 
-  public VecAryReader reader(boolean keepCache) {
-    throw H2O.unimpl(); // TODO
+  public Reader reader() { return reader(false);}
+  public Reader reader(boolean dontCache) {
+    return new Reader(dontCache);
   }
-
-  public Writer open() {
-    throw H2O.unimpl(); // TODO
+  public Writer open() { return open(false);}
+  public Writer open(boolean dontCache) {
+     return new Writer(dontCache);
   }
-
 
   public Futures remove(Futures fs) {
     int i = 0;
@@ -864,8 +869,9 @@ public class VecAry extends Iced {
     }
 
     private AVec.AChunk achunk(int j) {
-      if(_chks[j] == null)
+      if(_chks[j] == null) {
         _chks[j] = _vecs.get(j).chunkForChunkIdx(_cidx);
+      }
       return _chks[j];
     }
 

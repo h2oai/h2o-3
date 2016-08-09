@@ -96,7 +96,7 @@ class ASTRectangleAssign extends ASTPrim {
       dvecs = ses.copyOnWrite(dst,cols); // Update dst columns
       long[] rownums = rows.expand8();   // Just these rows
       VecAry.Writer w = dvecs.open();
-      VecAry.VecAryReader r = dvecs.reader(false);
+      VecAry.Reader r = dvecs.reader(false);
       for( int col=0; col<svecs.len(); col++ )
         for( int ridx=0; ridx<rownums.length; ridx++ )
           w.set(rownums[ridx], cols[col], r.at(ridx,col));
