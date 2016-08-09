@@ -205,6 +205,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
       }
       finally {
         model.model_info()._imageTrain.delete();
+        model.model_info()._imageTrain=null;
         //TODO: refactor DL the same way
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");

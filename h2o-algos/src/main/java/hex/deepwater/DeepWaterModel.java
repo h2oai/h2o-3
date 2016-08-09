@@ -535,6 +535,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
+    if (model_info()._imageTrain==null)
+      model_info().restoreFromInternalState(_output.nclasses(), _parms._mini_batch_size, model_info()._network, model_info()._modelparams);
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
     String[] names = makeScoringNames();
@@ -549,6 +551,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
+    if (model_info()._imageTrain==null)
+      model_info().restoreFromInternalState(_output.nclasses(), _parms._mini_batch_size, model_info()._network, model_info()._modelparams);
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
     String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
