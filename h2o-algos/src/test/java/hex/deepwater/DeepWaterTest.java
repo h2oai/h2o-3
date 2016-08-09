@@ -2,7 +2,6 @@ package hex.deepwater;
 
 import hex.ModelMetricsMultinomial;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.Futures;
 import water.TestUtil;
@@ -188,6 +187,54 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
+  public void deepWaterGrayScale() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
+      p._response_column = "C2";
+      p._mini_batch_size = 10;
+      p._epochs = 1;
+      m = new DeepWater(p).trainModel().get();
+
+      // exercise some work
+      m.model_info().javaToNative();
+      m.model_info().nativeToJava();
+
+      Log.info(m);
+    } finally {
+      if (m!=null) m.deleteCrossValidationModels();
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+
+  @Test
+  public void deepWaterLoadSaveTest() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
+      p._response_column = "C2";
+      p._mini_batch_size = 10;
+      p._epochs = 1;
+      m = new DeepWater(p).trainModel().get();
+
+      // exercise some work
+      m.model_info().javaToNative();
+      m.model_info().nativeToJava();
+
+      Log.info(m);
+    } finally {
+      if (m!=null) m.deleteCrossValidationModels();
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+
+  @Test
   public void deepWaterCV() throws IOException {
     DeepWaterModel m = null;
     Frame tr = null;
@@ -198,7 +245,7 @@ public class DeepWaterTest extends TestUtil {
       p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
       p._response_column = "C2";
       p._fold_column = "C3";
-      p._mini_batch_size = 1;
+      p._mini_batch_size = 5;
       p._epochs = 1;
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
