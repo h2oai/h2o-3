@@ -9,10 +9,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 
-/** Display of a Timeline
- *  Created by tomasnykodym on 6/5/14.
+/**
+ * Display of a Timeline
  */
-public class TimelineV3 extends SchemaV3<Timeline,TimelineV3> {
+public class TimelineV3 extends RequestSchemaV3<Timeline,TimelineV3> {
   // This schema has no input params
   @API(help="Current time in millis.", direction=API.Direction.OUTPUT)
   private long now;

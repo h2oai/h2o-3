@@ -11,6 +11,8 @@ import water.util.Log;
  *  calls. */
 public class TypeMap {
   static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP;
+
+  // This list contains all classes that are needed at cloud initialization time.
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                               // 1 -
@@ -30,6 +32,7 @@ public class TypeMap {
 
     // Status pages looked at without locking the cloud
     water.api.Schema.class.getName(),
+    RequestSchemaV3.class.getName(),
     SchemaV3.Meta.class.getName(),
     SchemaV3.class.getName(),
     CloudV3.class.getName(),

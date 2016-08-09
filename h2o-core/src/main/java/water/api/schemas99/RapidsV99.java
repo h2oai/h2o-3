@@ -2,10 +2,10 @@ package water.api.schemas99;
 
 import water.Iced;
 import water.api.API;
-import water.api.schemas3.SchemaV3;
+import water.api.schemas3.RequestSchemaV3;
 import water.api.schemas3.KeyV3;
 
-public class RapidsV99 extends SchemaV3<Iced, RapidsV99> {
+public class RapidsV99 extends RequestSchemaV3<Iced, RapidsV99> {
   // Input fields
   @API(help="An Abstract Syntax Tree.", direction=API.Direction.INPUT)
   public String ast;

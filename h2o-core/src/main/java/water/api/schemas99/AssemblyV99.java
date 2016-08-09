@@ -4,10 +4,10 @@ package water.api.schemas99;
 import water.Iced;
 import water.api.API;
 import water.api.schemas3.KeyV3;
-import water.api.schemas3.SchemaV3;
+import water.api.schemas3.RequestSchemaV3;
 
 /** FIXME: comments please! */
-public class AssemblyV99 extends SchemaV3<Iced, AssemblyV99> {
+public class AssemblyV99 extends RequestSchemaV3<Iced, AssemblyV99> {
 
   // input fields
   @API(help="A list of steps describing the assembly line.")

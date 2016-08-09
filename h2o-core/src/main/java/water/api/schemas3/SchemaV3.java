@@ -5,17 +5,17 @@ import water.api.API;
 import water.api.Schema;
 
 /**
- * Base Schema class for all v3 REST API requests, gathering up common behavior such as __meta field and the
- * __exclude_fields/__include_fields query params.
+ * Base Schema class for all v3 REST API objects.
+ *
+ * Any schema which is *NOT* used for requests (i.e. it cannot be an input to a REST API handler) should inherit from
+ * this class.
+ * However if a schema is used for requests, then it should inherit from {@link RequestSchemaV3}, which contains some
+ * additional fields common for all REST API requests.
  */
 public class SchemaV3<I extends Iced, S extends SchemaV3<I,S>> extends Schema<I, S> {
 
   @API(help="Metadata on this schema instance, to make it self-describing.", direction=API.Direction.OUTPUT)
   public Meta __meta;
-
-  @API(help="Comma-separated list of JSON field paths to exclude from the result, used like: \"/3/Frames?_exclude_fields=frames/frame_id/URL,__meta\"", direction=API.Direction.INPUT)
-  public String _exclude_fields = "";
-
 
   /**
    * Metadata for a Schema, including the version, name and type.  This information is included in all v3 REST API

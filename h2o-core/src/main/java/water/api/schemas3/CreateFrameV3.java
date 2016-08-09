@@ -5,7 +5,7 @@ import water.Key;
 import water.api.API;
 import water.fvec.Frame;
 
-public class CreateFrameV3 extends SchemaV3<CreateFrame, CreateFrameV3> {
+public class CreateFrameV3 extends RequestSchemaV3<CreateFrame, CreateFrameV3> {
   @API(help="destination key", direction=API.Direction.INOUT)
   public KeyV3.FrameKeyV3 dest;
 

@@ -6,7 +6,7 @@ import water.api.API;
 /**
  * Model export REST end-point.
  */
-public class ModelExportV3 extends SchemaV3<Iced, ModelExportV3> {
+public class ModelExportV3 extends RequestSchemaV3<Iced, ModelExportV3> {
 
   /** Model to export. */
   @API(help="Name of Model of interest", json=false)
