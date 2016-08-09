@@ -11,6 +11,8 @@ import water.util.Log;
  *  calls. */
 public class TypeMap {
   static public final short NULL, PRIM_B, ICED, H2OCC, C1NCHUNK, FRAME, VECGROUP, ESPCGROUP;
+
+  // This list contains all classes that are needed at cloud initialization time.
   static final String BOOTSTRAP_CLASSES[] = {
     " BAD",
     "[B",                               // 1 -

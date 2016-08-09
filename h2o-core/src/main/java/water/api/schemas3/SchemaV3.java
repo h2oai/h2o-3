@@ -5,8 +5,12 @@ import water.api.API;
 import water.api.Schema;
 
 /**
- * Base Schema class for all v3 REST API objects. Use this class for all response objects, but {@link RequestSchemaV3}
- * for any schemas used for requests only.
+ * Base Schema class for all v3 REST API objects.
+ *
+ * Any schema which is *NOT* used for requests (i.e. it cannot be an input to a REST API handler) should inherit from
+ * this class.
+ * However if a schema is used for requests, then it should inherit from {@link RequestSchemaV3}, which contains some
+ * additional fields common for all REST API requests.
  */
 public class SchemaV3<I extends Iced, S extends SchemaV3<I,S>> extends Schema<I, S> {
 
