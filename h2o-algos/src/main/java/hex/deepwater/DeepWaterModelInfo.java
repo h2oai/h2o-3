@@ -27,6 +27,7 @@ final public class DeepWaterModelInfo extends Iced {
   int _height;
   int _width;
   int _channels;
+  int _classes;
   byte[] _network;
   byte[] _modelparams;
 
@@ -76,17 +77,18 @@ final public class DeepWaterModelInfo extends Iced {
    * @param valid User-specified validation data frame, prepared by AdaptTestTrain
    */
   public DeepWaterModelInfo(final DeepWaterParameters params, Key model_id, int nClasses, Frame train, Frame valid) {
-    _classification = nClasses > 1;
+    _classes = nClasses;
+    _classification = _classes > 1;
     _train = train;
     _valid = valid;
     parameters = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     _model_id = model_id;
-    DeepWaterParameters.Sanity.modifyParms(parameters, parameters, nClasses); //sanitize the model_info's parameters
+    DeepWaterParameters.Sanity.modifyParms(parameters, parameters, _classes); //sanitize the model_info's parameters
 
     if (parameters._checkpoint!=null) {
       try {
         DeepWaterModel other = (DeepWaterModel) parameters._checkpoint.get();
-        restoreFromInternalState(nClasses, parameters._mini_batch_size, other.model_info()._network, other.model_info()._modelparams);
+        javaToNative(other.model_info()._network, other.model_info()._modelparams);
       } catch (Throwable t) {
         throw new H2OIllegalArgumentException("_checkpoint", "Invalid checkpoint provided.");
       }
@@ -125,7 +127,7 @@ final public class DeepWaterModelInfo extends Iced {
         if (parameters._network != USER) {
           String network = parameters._network == AUTO ? inception_bn.toString() : parameters._network.toString();
           Log.info("Creating a fresh model of the following network type: " + network);
-          _imageTrain.buildNet(nClasses, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
+          _imageTrain.buildNet(_classes, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
         }
         // load a network if specified
         final String networkDef = parameters._network_definition_file;
@@ -133,7 +135,7 @@ final public class DeepWaterModelInfo extends Iced {
           Log.info("Loading the network from: " + networkDef);
           _imageTrain.loadModel(networkDef);
           Log.info("Setting the optimizer.");
-          _imageTrain.setOptimizer(nClasses, parameters._mini_batch_size);
+          _imageTrain.setOptimizer(_classes, parameters._mini_batch_size);
         }
         final String networkParms = parameters._network_parameters_file;
         if (networkParms != null && !networkParms.isEmpty()) {
@@ -150,7 +152,7 @@ final public class DeepWaterModelInfo extends Iced {
     }
   }
 
-  public void storeInternalState() {
+  public void nativeToJava() {
     Path path = null;
     // only overwrite the network definition if it's null
     if (_network==null) {
@@ -172,7 +174,21 @@ final public class DeepWaterModelInfo extends Iced {
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
   }
 
-  public void restoreFromInternalState(int nClasses, int miniBatchSize, byte[] network, byte[] parameters) {
+  /**
+   * Create native backend and fill it with the model's state stored in the Java model
+   */
+  public void javaToNative() {
+    javaToNative(null,null);
+  }
+
+  /**
+   * Internal helper to create a native backend, and fill its state
+   * @param network user-given network topology
+   * @param parameters user-given network state (weights/biases)
+   */
+  private void javaToNative(byte[] network, byte[] parameters) {
+    if (network==null) network = _network;
+    if (parameters==null) parameters= _modelparams;
     if (network==null || parameters==null) return;
 
     Path path = null;
@@ -182,7 +198,7 @@ final public class DeepWaterModelInfo extends Iced {
       Files.write(path, network);
       if (_imageTrain==null) _imageTrain = new ImageTrain();
       _imageTrain.loadModel(path.toString());
-      _imageTrain.setOptimizer(nClasses, miniBatchSize);
+      _imageTrain.setOptimizer(_classes, get_params()._mini_batch_size);
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
