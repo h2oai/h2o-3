@@ -169,7 +169,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
                   new DeepWaterTask2(_job._key, train, model.model_info(), 1f/*FIXME*/, model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
                   new DeepWaterTask2(_job._key, train, model.model_info(), 1f/*FIXME*/, model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepWaterTask (model.model_info(), 1/*FIXME*/, _job).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
-          model.model_info().storeInternalState();
+          model.model_info().nativeToJava();
           if (_parms._export_native_model_prefix!=null) {
             Log.info("Saving model state.");
             model.exportNativeModel(_parms._export_native_model_prefix, model.iterations);
@@ -189,7 +189,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             if (!_parms._quiet_mode)
               Log.info("Setting the model to be the best model so far (based on scoring history).");
             DeepWaterModelInfo mi = best_model.model_info().deep_clone();
-            mi.restoreFromInternalState(nclasses(), _parms._mini_batch_size, mi._network, mi._modelparams);
+            mi.javaToNative();
             // Don't cheat - count full amount of training samples, since that's the amount of training it took to train (without finding anything better)
             mi.set_processed_global(model.model_info().get_processed_global());
             mi.set_processed_local(model.model_info().get_processed_local());
