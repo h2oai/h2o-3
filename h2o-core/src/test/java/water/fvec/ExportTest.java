@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.*;
 import water.parser.ParseDataset;
+import water.util.FrameUtils;
 import water.util.Log;
 
 import java.io.File;
@@ -57,7 +58,7 @@ public class ExportTest extends TestUtil {
         assertTrue(target.exists());
         imported = parseFolder(folder);
         assertEquals(fr.numRows(), imported.numRows());
-        assertTrue(isBitIdentical(fr, imported));
+        assertTrue(FrameUtils.isBitIdentical(fr, imported));
       } finally {
         if (rebalanced != null) rebalanced.delete();
         if (imported != null) imported.delete();

@@ -6,7 +6,10 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.rapids.ast.prims.advmath.AstKFold;
 import water.util.*;
+import static water.util.FrameUtils.isBitIdentical;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -169,6 +172,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       } finally {
         setFinalState();
         _parms.read_unlock_frames(_job);
+        if (!_parms._is_cv_model) cleanUp(); //cv calls cleanUp on its own terms
         Scope.exit();
       }
       tryComplete();
@@ -277,12 +281,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Step 7: Clean up potentially created temp frames
       for (ModelBuilder mb : cvModelBuilders)
         mb.cleanUp();
-      cleanUp();
 
       _job.setReadyForView(true);
       DKV.put(_job);
 
     } finally {
+      cleanUp();
       Scope.exit();
     }
   }
@@ -907,8 +911,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive) {
-      String[] skipCols = Arrays.copyOf(specialColNames(), numSpecialCols() + 1); //weight,offset,fold
-      skipCols[numSpecialCols()] = _parms._response_column; //response
+      String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
       Frame newtrain = FrameUtils.categoricalEncoder(_train, skipCols, _parms._categorical_encoding, getToEigenVec());
       if (newtrain!=_train) {
         assert(newtrain._key!=null);

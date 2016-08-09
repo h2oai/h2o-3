@@ -7,6 +7,7 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.util.FrameUtils;
 
 public class ParseFolderTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5); }
@@ -16,7 +17,7 @@ public class ParseFolderTest extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/parse_folder" );
       k1 = parse_test_file  ("smalldata/junit/parse_folder_gold.csv");
-      Assert.assertTrue("parsed values do not match!",isBitIdentical(k1,k2));
+      Assert.assertTrue("parsed values do not match!", FrameUtils.isBitIdentical(k1,k2));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();

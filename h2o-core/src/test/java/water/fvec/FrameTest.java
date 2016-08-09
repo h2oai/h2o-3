@@ -8,6 +8,7 @@ import water.Scope;
 import water.TestUtil;
 
 import static org.junit.Assert.assertTrue;
+import water.util.FrameUtils;
 
 /**
  * Created by tomas on 3/16/16.
@@ -34,7 +35,7 @@ public class FrameTest extends TestUtil {
     try {
       x = testData.deepSlice(new Frame(rnd.vec(1)), null);
 //      y = testData.deepSlice(new Frame(rnd.vec(2)),null);
-      assertTrue(isBitIdentical(subset1, x));
+      assertTrue(FrameUtils.isBitIdentical(subset1, x));
 //      assertTrue(isBitIdentical(subset2,y));
     } finally {
       Scope.exit();

@@ -2003,6 +2003,51 @@ public class DeepLearningTest extends TestUtil {
   @Test
   public void testCategoricalEncodingEigen() {
     Frame tfr = null;
+    Frame vfr = null;
+    DeepLearningModel dl = null;
+
+    try {
+      String response = "survived";
+      tfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      vfr = parse_test_file("./smalldata/junit/titanic_alt.csv");
+      if (tfr.vec(response).isBinary()) {
+        Vec v = tfr.remove(response);
+        tfr.add(response, v.toCategoricalVec());
+        v.remove();
+      }
+      if (vfr.vec(response).isBinary()) {
+        Vec v = vfr.remove(response);
+        vfr.add(response, v.toCategoricalVec());
+        v.remove();
+      }
+      DKV.put(tfr);
+      DKV.put(vfr);
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._valid = vfr._key;
+      parms._response_column = response;
+      parms._reproducible = true;
+      parms._hidden = new int[]{20,20};
+      parms._seed = 0xdecaf;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
+      parms._score_training_samples = 0;
+
+      dl = new DeepLearning(parms).trainModel().get();
+
+      Assert.assertEquals(
+              ((ModelMetricsBinomial)dl._output._training_metrics)._logloss,
+              ((ModelMetricsBinomial)dl._output._validation_metrics)._logloss,
+              1e-8);
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (vfr != null) vfr.remove();
+      if (dl != null) dl.delete();
+    }
+  }
+
+  @Test
+  public void testCategoricalEncodingEigenCV() {
+    Frame tfr = null;
     DeepLearningModel dl = null;
 
     try {
@@ -2027,10 +2072,10 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(0.951761433868974, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-15);
-      Assert.assertEquals(0.9482892459826947, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-15);
-      Assert.assertEquals(0.919123609394314, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-15);
-      Assert.assertEquals(0.9200111, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-7);
+      Assert.assertEquals(0.9521718170580964, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-5);
+      Assert.assertEquals(0.9521656365883807, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-5);
+      Assert.assertEquals(0.9115080346106303, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
+      Assert.assertEquals(0.913637, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-5);
 
     } finally {
       if (tfr != null) tfr.remove();
@@ -2273,8 +2318,9 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  // NOTE: This test has nothing to do with Deep Learning, except that it uses the Deep Learning infrastructure to get access to the EigenVec computation logic
   @Test
-  public void testCategoricalColumnsEigenEncoding() {
+  public void testEigenEncodingLogic() {
     int numNoncatColumns = 1;
     int[] catSizes       = {16};
     String[] catNames = {"sixteen"};

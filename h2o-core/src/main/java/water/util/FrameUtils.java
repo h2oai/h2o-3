@@ -8,11 +8,8 @@ import hex.Model;
 import hex.ToEigenVec;
 import jsr166y.CountedCompleter;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.fvec.Vec;
+import water.fvec.*;
+import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
@@ -84,6 +81,20 @@ public class FrameUtils {
       default:
         throw H2O.unimpl();
     }
+  }
+
+  /** Compare 2 frames
+   *  @param fr1 Frame
+   *  @param fr2 Frame
+   *  @return true if equal  */
+  public static boolean isBitIdentical(Frame fr1, Frame fr2) {
+    if (fr1 == fr2) return true;
+    if( fr1.numCols() != fr2.numCols() ) return false;
+    if( fr1.numRows() != fr2.numRows() ) return false;
+    if( fr1.isCompatible(fr2) )
+      return !(new Cmp1().doAll(new Frame(fr1).add(fr2))._unequal);
+    // Else do it the slow hard way
+    return !(new Cmp2(fr2).doAll(fr1)._unequal);
   }
 
   private static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
@@ -682,5 +693,65 @@ public class FrameUtils {
     }
     fs.blockForPending();
     toDelete.clear();
+  }
+
+  // Fast compatible Frames
+  protected static class Cmp1 extends MRTask<Cmp1> {
+    boolean _unequal;
+    @Override public void map( Chunk chks[] ) {
+      for( int cols=0; cols<chks.length>>1; cols++ ) {
+        Chunk c0 = chks[cols                 ];
+        Chunk c1 = chks[cols+(chks.length>>1)];
+        for( int rows = 0; rows < chks[0]._len; rows++ ) {
+          if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
+            if (! (c0.isNA(rows) && c1.isNA(rows))) {
+              long lo0 = c0.at16l(rows), lo1 = c1.at16l(rows);
+              long hi0 = c0.at16h(rows), hi1 = c1.at16h(rows);
+              if (lo0 != lo1 || hi0 != hi1) {
+                _unequal = true;
+                return;
+              }
+            }
+          } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
+            if (!(c0.isNA(rows) && c1.isNA(rows))) {
+              BufferedString s0 = new BufferedString(), s1 = new BufferedString();
+              c0.atStr(s0, rows); c1.atStr(s1, rows);
+              if (s0.compareTo(s1) != 0) {
+                _unequal = true;
+                return;
+              }
+            }
+          }else {
+            double d0 = c0.atd(rows), d1 = c1.atd(rows);
+            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1)) {
+              _unequal = true;
+              return;
+            }
+          }
+        }
+      }
+    }
+    @Override public void reduce( Cmp1 cmp ) { _unequal |= cmp._unequal; }
+  }
+
+  // Slow incompatible frames
+  protected static class Cmp2 extends MRTask<Cmp2> {
+    final Frame _frrrr;
+    Cmp2( Frame fr ) { _frrrr = fr; }
+    boolean _unequal;
+    @Override public void map( Chunk chks[] ) {
+      for( int cols=0; cols<chks.length; cols++ ) {
+        if( _unequal ) return;
+        Chunk c0 = chks[cols];
+        Vec v1 = _frrrr.vecs()[cols];
+        for( int rows = 0; rows < chks[0]._len; rows++ ) {
+          double d0 = c0.atd(rows), d1 = v1.at(c0.start() + rows);
+          if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
+            _unequal = true; return;
+          }
+        }
+      }
+    }
+    @Override public void reduce( Cmp2 cmp ) { _unequal |= cmp._unequal; }
   }
 }
