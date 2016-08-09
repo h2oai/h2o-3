@@ -5,7 +5,7 @@ import water.init.NetworkBench;
 
 /**
  */
-public class NetworkBenchV3 extends SchemaV3<NetworkBench, NetworkBenchV3> {
+public class NetworkBenchV3 extends RequestSchemaV3<NetworkBench, NetworkBenchV3> {
   @API(help="NetworkBenchResults", direction = API.Direction.OUTPUT)
   TwoDimTableV3[] results;
 

@@ -239,12 +239,12 @@ Install [Node.js](http://nodejs.org/download/) and add the installed directory `
 ##### Step 5. Install R, the required packages, and Rtools:
 
 To install these packages from within an R session, enter:
-
-    R> install.packages("RCurl")
-    R> install.packages("jsonlite")
-    R> install.packages("statmod")
-    R> install.packages(c("devtools", "roxygen2", "testthat"))
-
+```R
+    install.packages("RCurl")
+    install.packages("jsonlite")
+    install.packages("statmod")
+    install.packages(c("devtools", "roxygen2", "testthat"))
+```
 Install [R](http://www.r-project.org/) and add the preferred bin\i386 or bin\x64 directory to your PATH.
 
 Note: Acceptable versions of R are >= 2.13 && <= 3.0.0 && >= 3.1.1.

@@ -4,7 +4,7 @@ import water.api.API;
 import water.api.FramesHandler.Frames;
 import water.fvec.Frame;
 
-public class FramesV3 extends SchemaV3<Frames,FramesV3> {
+public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
 
   // Input fields
   @API(help="Name of Frame of interest", json=false)
@@ -33,6 +33,9 @@ public class FramesV3 extends SchemaV3<Frames,FramesV3> {
 
   @API(help="Overwrite existing file",json=false)
   public boolean force;
+
+  @API(help="Number of part files to use (1=single file,-1=automatic)",json=false)
+  public int num_parts = 1;
 
   @API(help="Job for export file",direction=API.Direction.OUTPUT)
   public JobV3 job;

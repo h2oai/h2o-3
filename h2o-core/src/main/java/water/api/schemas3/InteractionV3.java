@@ -3,7 +3,7 @@ package water.api.schemas3;
 import hex.Interaction;
 import water.api.API;
 
-public class InteractionV3 extends SchemaV3<Interaction, InteractionV3> {
+public class InteractionV3 extends RequestSchemaV3<Interaction, InteractionV3> {
   static public String[] own_fields = new String[] { "source_frame", "factor_columns", "pairwise", "max_factors", "min_occurrence" };
 
   @API(help="destination key", direction=API.Direction.INOUT)

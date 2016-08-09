@@ -83,7 +83,7 @@ public class Merge {
                                            new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
                                            true);
           bmList.add(bm);
-          fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), bm).call());
+          fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
         }
     } else {
       // completely ignore right MSBs below the left base
@@ -109,7 +109,7 @@ public class Merge {
                                            new BinaryMerge.FFSB(riteFrame,/*rightMSB*/-1,riteShift,riteIndex._bytesUsed,riteIndex._base),
                                            true);
           bmList.add(bm);
-          fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(0), bm).call());
+          fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
       }
     } else {
       // completely ignore right MSBs after the right peak

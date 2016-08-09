@@ -5,7 +5,7 @@ import water.api.API;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.ParseTypeValuesProvider;
 
-public class ParseV3 extends SchemaV3<Iced, ParseV3> {
+public class ParseV3 extends RequestSchemaV3<Iced, ParseV3> {
   // Input fields
   @API(help="Final frame name",required=true)
   public FrameKeyV3 destination_frame;  // TODO: for now this has to be a Key, not a Frame, because it doesn't exist

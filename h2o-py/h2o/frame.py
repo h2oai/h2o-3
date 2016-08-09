@@ -945,8 +945,6 @@ class H2OFrame(object):
         -------
           True if the column is numeric, otherwise return False
         """
-        if self._ex._cache.types_valid():
-            return [str(list(viewvalues(self._ex._cache.types))[0]) in ["numeric", "int", "real"]]
         return [bool(o) for o in ExprNode("is.numeric", self)._eager_scalar()]
 
     def isstring(self):
@@ -1334,23 +1332,53 @@ class H2OFrame(object):
         if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
         return float(self.flatten())
 
-    def drop(self, i):
-        """Drop a column from the current H2OFrame.
+    def drop(self, index, axis = 1):
+        """Drop a set of columns or rows from the current H2OFrame.
 
         Parameters
         ----------
-          i : str, int
-            The column to be dropped
+          index : list
+            A list of column indexes, column names, or row indexes to drop.
+
+          axis : int, default = 1
+            Type of drop to conduct.
+            If axis = 1, then column-wise (Default).
+            If axis = 0, then row-wise.
 
         Returns
         -------
-          H2OFrame with the column at index i dropped. Returns a new H2OFrame.
+          H2OFrame with the respective dropped columns or rows. Returns a new H2OFrame.
         """
-        if is_str(i): i = self.names.index(i)
-        fr = H2OFrame._expr(expr=ExprNode("cols", self, -(i + 1)), cache=self._ex._cache)
-        fr._ex._cache.ncols -= 1
-        fr._ex._cache.names = self.names[:i] + self.names[i + 1:]
-        fr._ex._cache.types = {name: self.types[name] for name in fr._ex._cache.names}
+        if axis == 1:
+            if is_str(index):
+                index = self.names.index(index)
+                fr = H2OFrame._expr(expr=ExprNode("cols", self, -(index + 1)), cache=self._ex._cache)
+                fr._ex._cache.ncols -= 1
+                fr._ex._cache.names = self.names[:index] + self.names[index + 1:]
+                fr._ex._cache.types = {name: self.types[name] for name in fr._ex._cache.names}
+                return fr
+            if all(isinstance(item, int) for item in index):
+                for i in range(len(index)):
+                        index[i] = index[i] + 1
+                index = [ -x for x in index]
+                fr = H2OFrame._expr(expr=ExprNode("cols", self, index), cache=self._ex._cache)
+            elif all(isinstance(item, str) for item in index):
+                for i in range(len(index)):
+                    if is_str(index[i]):
+                        index[i] = self.names.index(index[i]) + 1
+                index = [ -x for x in index]
+                fr = H2OFrame._expr(expr=ExprNode("cols", self, index), cache=self._ex._cache)
+            else:
+                raise ValueError("Invalid column index types. Must either be a list of all int indexes or a list of all column names (strings) for dropping columns.")
+            return fr
+        elif axis == 0:
+            if all(isinstance(item, int) for item in index):
+                for i in range(len(index)):
+                    index[i] = index[i] + 1
+                index = [ -x for x in index]
+                fr = H2OFrame._expr(expr=ExprNode("rows", self, index), cache=self._ex._cache)
+            else:
+                raise ValueError("Invalid row indexes. Must be a list of int row indexes to drop from the H2OFrame.")
         return fr
 
     def pop(self, i):
@@ -1762,6 +1790,20 @@ class H2OFrame(object):
           A list containing the skewness for each column (NaN for non-numeric columns).
         """
         return ExprNode("skewness", self, na_rm)._eager_scalar()
+    
+    def kurtosis(self, na_rm=False):
+        """Compute the kurtosis.
+
+        Parameters
+        ----------
+          na_rm: bool, default=False
+            If True, then remove NAs from the computation.
+
+        Returns
+        -------
+          A list containing the kurtosis for each column (NaN for non-numeric columns).
+        """
+        return ExprNode("kurtosis", self, na_rm)._eager_scalar()
 
     def nacnt(self):
         """Count of NAs for each column in this H2OFrame.
@@ -1876,9 +1918,6 @@ class H2OFrame(object):
           True if the column is categorical; otherwise False. For String columns, the result
           is False.
         """
-        # TODO: list for fr.ncol > 1 ?
-        if self._ex._cache.types_valid():
-            return [str(list(viewvalues(self._ex._cache.types))[0]) == "enum"]
         return [bool(o) for o in ExprNode("is.factor", self)._eager_scalar()]
 
     def anyfactor(self):

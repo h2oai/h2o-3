@@ -449,6 +449,19 @@ public final class PersistHdfs extends Persist {
   }
 
   @Override
+  public boolean isDirectory(String path) {
+    Path p = new Path(path);
+    URI uri = p.toUri();
+    try {
+      FileSystem fs = FileSystem.get(uri, CONF);
+      return fs.isDirectory(p);
+    }
+    catch (IOException e) {
+      throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
   public long length(String path) {
     Path p = new Path(path);
     URI uri = p.toUri();

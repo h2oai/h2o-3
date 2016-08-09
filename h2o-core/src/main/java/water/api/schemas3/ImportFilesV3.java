@@ -3,7 +3,7 @@ package water.api.schemas3;
 import water.Iced;
 import water.api.API;
 
-public class ImportFilesV3 extends SchemaV3<Iced,ImportFilesV3> {
+public class ImportFilesV3 extends RequestSchemaV3<Iced, ImportFilesV3> {
 
   // Input fields
   @API(help = "path", required = true)
@@ -21,5 +21,5 @@ public class ImportFilesV3 extends SchemaV3<Iced,ImportFilesV3> {
 
   @API(help = "dels", direction = API.Direction.OUTPUT)
   public String dels[];
-  
+
 }

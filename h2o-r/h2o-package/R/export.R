@@ -4,7 +4,7 @@
 #` Export data to local disk or HDFS.
 #` Save models to local disk or HDFS.
 
-#' Export an H2O Data Frame (H2OFrame) to a File
+#' Export an H2O Data Frame (H2OFrame) to a File or to a collection of Files.
 #'
 #' Exports an H2OFrame (which can be either VA or FV) to a file.
 #' This file may be on the H2O instace's local filesystem, or to HDFS (preface
@@ -15,9 +15,19 @@
 #'
 #' @param data An H2OFrame object.
 #' @param path The path to write the file to. Must include the directory and
-#'        filename. May be prefaced with hdfs:// or s3n://. Each row of data
-#'        appears as line of the file.
+#'        also filename if exporting to a single file. May be prefaced with
+#'        hdfs:// or s3n://. Each row of data appears as line of the file.
 #' @param force logical, indicates how to deal with files that already exist.
+#' @param parts integer, number of part files to export to. Default is to
+#'        write to a single file. Large data can be exported to multiple
+#'        'part' files, where each part file contains subset of the data.
+#'        User can specify the maximum number of part files or use value
+#'        -1 to indicate that H2O should itself determine the optimal
+#'        number of files.
+#'        Parameter path will be considered to be a path to a directory
+#'        if export to multiple part files is desired. Part files conform
+#'        to naming scheme 'part-m-?????'.
+#'        
 #' @examples
 #'\dontrun{
 #' library(h2o)
@@ -31,7 +41,7 @@
 #' # h2o.exportFile(iris.hex, path = "s3n://path/in/s3/iris.csv")
 #' }
 #' @export
-h2o.exportFile <- function(data, path, force = FALSE) {
+h2o.exportFile <- function(data, path, force = FALSE, parts = 1) {
   if (!is.H2OFrame(data))
     stop("`data` must be an H2OFrame object")
 
@@ -41,7 +51,10 @@ h2o.exportFile <- function(data, path, force = FALSE) {
   if(!is.logical(force) || length(force) != 1L || is.na(force))
     stop("`force` must be TRUE or FALSE")
 
-  res <- .h2o.__remoteSend(.h2o.__EXPORT_FILES(data,path,force))
+  if(!is.numeric(parts) || length(parts) != 1L || is.na(parts) || (! all.equal(parts, as.integer(parts))))
+    stop("`parts` must be -1, 1 or any other positive integer number")
+
+  res <- .h2o.__remoteSend(.h2o.__EXPORT_FILES(data), method="POST", path=path, num_parts=parts, force=force)
   .h2o.__waitOnJob(res$job$key$name)
 }
 

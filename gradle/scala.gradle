@@ -2,10 +2,10 @@ apply plugin: 'scala'
 
 //
 // The Scala module expects scalaVersion and scalaBaseVersion
-// to be setup as extension properties on this project.
+// to be set up as extension properties on this project.
 //
 
-// Setup additional sources
+// Setup additional sources specific to version
 sourceSets {
     main {
         scala {
