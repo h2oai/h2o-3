@@ -5,7 +5,7 @@ import water.api.API;
 
 /**
 */
-public class NodePersistentStorageV3 extends SchemaV3<Iced, NodePersistentStorageV3> {
+public class NodePersistentStorageV3 extends RequestSchemaV3<Iced, NodePersistentStorageV3> {
 
   public static class NodePersistentStorageEntryV3 extends SchemaV3<Iced, NodePersistentStorageEntryV3> {
     @API(help = "Category name", required = true, direction = API.Direction.OUTPUT)
