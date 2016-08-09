@@ -352,7 +352,7 @@ public class ChunkSpeedTest extends TestUtil {
 
     long start = System.currentTimeMillis();
     for (int r = 0; r < rep; ++r) {
-      fr.vecs().preWriting(null);
+      fr.vecs().preWriting();
       fr.vecs().postWrite(new Futures()).blockForPending();
       fr.vecs().getRollups();
     }

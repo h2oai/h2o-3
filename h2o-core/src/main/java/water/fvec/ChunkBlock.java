@@ -40,11 +40,11 @@ public class ChunkBlock extends AVec.AChunk<ChunkBlock> {
   public ChunkBlock (){ _numCols = 0;}
   public ChunkBlock (AVec v,int cidx, int ncols) { _vec = v; _cidx = cidx; _chunks = new Chunk[ncols];}
   public ChunkBlock (AVec v,int cidx,Chunk [] chks) { _vec = v; _cidx = cidx; setChunks(chks);}
-  public ChunkBlock (AVec v,int cidx, int ncols, int len, double con) {
+  public ChunkBlock (AVec v,int cidx, int ncols, int len, double... cons) {
     _vec = v; _cidx = cidx;
     Chunk [] chunks = new Chunk[ncols];
     for(int i = 0; i < _chunks.length; ++i)
-      chunks[i] = new C0DChunk(con,len);
+      chunks[i] = new C0DChunk(cons[i],len);
     setChunks(chunks);
   }
 
@@ -68,6 +68,7 @@ public class ChunkBlock extends AVec.AChunk<ChunkBlock> {
     ab.putA(_chunks);
     return ab;
   }
+
   public final ChunkBlock read_impl(AutoBuffer ab){
     _numCols = ab.get4();
     _nzChunks = ab.getA4();
@@ -76,19 +77,18 @@ public class ChunkBlock extends AVec.AChunk<ChunkBlock> {
     return this;
   }
 
-
-
-  public Chunk [] getChunks(){return _chunks;}
+  public Chunk [] getChunks() {
+    return _chunks;
+  }
 
   @Override
-  public Chunk getChunk(int i) {
-    if(!_vb.hasVec(i))
-      throw new NullPointerException();
-    if(isSparse()) {
-      i = Arrays.binarySearch(_nzChunks,i);
-    }
-    return _chunks[i];
+  public Chunk[] getChunks(Chunk[] chks, int off, int... ids) {
+    for(int i:ids) chks[off++] = _chunks[i];
+    return chks;
   }
+
+  @Override
+  public Chunk getChunk(int i) {return _chunks[i];}
 
   public synchronized Futures close(Futures fs) {
     boolean modified = false;

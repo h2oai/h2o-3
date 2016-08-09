@@ -359,13 +359,6 @@ public class DataInfo extends Keyed<DataInfo> {
     res._valid = true;
     res._interactions=_interactions;
     res._interactionColumns=_interactionColumns;
-
-    // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
-    for( AVec v: res._adaptedFrame.vecs().getAVecs(InteractionWrappedVec.class) ) {
-      ((InteractionWrappedVec) v)._useAllFactorLevels = _useAllFactorLevels;
-      ((InteractionWrappedVec) v)._skipMissing = _skipMissing;
-      DKV.put(v);
-    }
     return res;
   }
 

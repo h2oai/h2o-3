@@ -123,6 +123,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   protected VecAry _vecs;
 
+
   public VecAry vecs(){return _vecs;}
 
   /** This <code>Key[]</code> instance is the handle used for computation when
@@ -242,7 +243,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   }
 
 
-
+  public void map( AVec.AChunk c ) { }
   /** Override with your map implementation.  This overload is given a single
    *  <strong>local</strong> input Chunk.  It is meant for map/reduce jobs that use a
    *  single column in a input Frame.  All map variants are called, but only one is

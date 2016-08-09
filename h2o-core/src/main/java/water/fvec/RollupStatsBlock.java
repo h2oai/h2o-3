@@ -79,6 +79,7 @@ public class RollupStatsBlock extends Iced {
       throw new RuntimeException("Rollups not possible, because Vec was deleted: " + vb._key + ", vec id = " + i);
     final Key rskey = vb.rollupStatsKey();
     RollupStatsBlock rs = DKV.getGet(rskey);
+
     while (rs == null || (!rs.isReady(i) || (computeHisto && !rs.hasHisto(i)))) {
       if (rs != null && rs.isMutating(i))
         throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (1)");

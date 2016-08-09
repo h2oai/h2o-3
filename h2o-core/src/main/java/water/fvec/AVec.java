@@ -118,6 +118,8 @@ import java.util.UUID;
  */
 public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
 
+  public int vecId(){return VectorGroup.getVecId(_key._kb);}
+
   /** Element-start per chunk, i.e. the row layout.  Defined in the
    *  VectorGroup.  This field is dead/ignored in subclasses that are
    *  guaranteed to have fixed-sized chunks such as file-backed Vecs. */
@@ -139,7 +141,7 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
     _espc = ESPC.espc(this);
   }
 
-  public abstract boolean hasCol(int id);
+//  public abstract boolean hasCol(int id);
 
 
   /**
@@ -152,9 +154,7 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
    * @param doHisto Also compute histogram, requires second pass over data amd is not computed by default.
    *
    */
-  public void startRollupStats(Futures fs, boolean doHisto, int... colIds) {
-    throw H2O.unimpl();
-  }
+  public abstract Futures startRollupStats(Futures fs, boolean doHisto, int... colIds);
 
 
   public final RollupStats getRollups(int colId){return getRollups(colId,false);}
@@ -163,12 +163,16 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
 
   public abstract void setType(int i, byte type);
 
+  public abstract Futures removeVecs(int[] ints, Futures fs);
+
   public static abstract class AChunk<T extends AChunk<T>> extends Iced<T> {
     transient long _start = -1;
     transient AVec _vec = null;
     transient int _cidx = -1;
     public abstract Chunk getChunk(int i);
     public abstract  Chunk[] getChunks();
+    public abstract  Chunk[] getChunks(Chunk [] chks, int off, int... ids);
+
 
     public abstract Futures close(Futures fs);
 
@@ -440,6 +444,10 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
     VectorGroup.setVecId(bits,vidx + VectorGroup.getVecId(bits));
     UnsafeUtils.set4(bits, 6, cidx); // chunk#
     return Key.make(bits);
+  }
+
+  public static void setChunkId(Key<AVec> key, int cidx) {
+    UnsafeUtils.set4(key._kb, 6, cidx); // chunk#
   }
 
 

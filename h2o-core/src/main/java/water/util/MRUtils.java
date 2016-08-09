@@ -310,7 +310,7 @@ public class MRUtils {
 
     public ReplaceWithCon(double c) {_conn = c;}
 
-    public void setupLocal(){_vecs.preWriting(null);}
+    public void setupLocal(){_vecs.preWriting();}
     @Override public void map(Chunk [] chks) {
       int len = chks[0]._len;
       for(int i = 0;  i < chks.length; ++i)

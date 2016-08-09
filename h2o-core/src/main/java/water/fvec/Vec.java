@@ -191,11 +191,26 @@ public class Vec extends AVec<SingleChunk> {
     _type = t;
   }
 
+  @Override
+  public Futures removeVecs(int[] ids, Futures fs) {
+    if(ids.length != 1 || ids[0] != 0) throw new ArrayIndexOutOfBoundsException();
+    return remove(fs);
+  }
+
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
    *  {@code espc} array).
    */
   public Vec( Key<AVec> key, int rowLayout) { this(key, rowLayout, null, T_NUM); }
+
+  @Override
+  public Futures startRollupStats(Futures fs, boolean doHisto, int... colIds) {
+    if(colIds.length != 1 || colIds[0] != 0) throw new IllegalArgumentException();
+    throw H2O.unimpl();
+  }
+
+
+
 
   /** Build a numeric-type or categorical-type Vec; the caller understands Chunk
    *  layout (via the {@code espc} array); categorical Vecs need to pass the
@@ -214,10 +229,6 @@ public class Vec extends AVec<SingleChunk> {
     _type = type;
     _domain = domain;
   }
-
-  @Override
-  public boolean hasCol(int id) {return id == 0;}
-
 
   @Override
   public RollupStats getRollups(int colId, boolean histo) {

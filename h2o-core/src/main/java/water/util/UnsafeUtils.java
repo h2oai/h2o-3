@@ -3,6 +3,8 @@ package water.util;
 import sun.misc.Unsafe;
 import water.nbhm.UtilUnsafe;
 
+import java.lang.reflect.Field;
+
 public class UnsafeUtils {
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
   private static final long _Bbase  = _unsafe.arrayBaseOffset(byte[].class);
@@ -19,4 +21,11 @@ public class UnsafeUtils {
   public static int set4f(byte[] buf, int off, float f ) {_unsafe.putFloat (buf, _Bbase+off, f); return 4;}
   public static int set8 (byte[] buf, int off, long x  ) {_unsafe.putLong  (buf, _Bbase+off, x); return 8;}
   public static int set8d(byte[] buf, int off, double x) {_unsafe.putDouble(buf, _Bbase+off, x); return 8;}
+
+  public static long getObjectFieldOffset(Field f) {
+    return _unsafe.objectFieldOffset(f);
+  }
+  public static boolean compareAndSet(Object owner, long offset, Object exp, Object nnn) {
+    return _unsafe.compareAndSwapObject(owner,offset,exp,nnn);
+  }
 }

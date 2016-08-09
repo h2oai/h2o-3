@@ -34,6 +34,13 @@ public class SingleChunk extends AVec.AChunk<SingleChunk> {
   }
 
   @Override
+  public Chunk[] getChunks(Chunk[] chks, int off, int... ids) {
+    if(ids.length > 1 || ids[0] > 0) throw new ArrayIndexOutOfBoundsException(ids[0]);
+    chks[off] = _c;
+    return chks;
+  }
+
+  @Override
   public Futures close(Futures fs) {
     if(_c._chk2 != null)
       setChunk(_c._chk2 instanceof NewChunk?((NewChunk)_c._chk2).compress():_c._chk2);

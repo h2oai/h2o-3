@@ -1,9 +1,14 @@
 package water.fvec;
 
 import water.*;
+import water.util.ArrayUtils;
+import water.util.IcedBitSet;
 import water.util.UnsafeUtils;
 
 import java.util.Arrays;
+import java.util.BitSet;
+import java.util.concurrent.CountedCompleter;
+import java.util.concurrent.RecursiveAction;
 
 /**
  * Created by tomas on 7/8/16.
@@ -11,8 +16,7 @@ import java.util.Arrays;
  */
 public class VecBlock extends AVec<ChunkBlock> {
   int _nVecs;
-  int [] _removedVecs;
-
+  IcedBitSet _removed = new IcedBitSet(0);
   String [][] _domains;
 
   public VecBlock(Key<AVec> key, int rowLayout, int nCols, String[][] domains, byte[] types) {
@@ -28,23 +32,23 @@ public class VecBlock extends AVec<ChunkBlock> {
     return 0;
   }
 
-  public boolean hasVec(int id) {
-    if(_nVecs < id || id < 0) return false;
-    return _removedVecs == null || Arrays.binarySearch(_removedVecs,id) < 0;
-  }
+//  public boolean hasVec(int id) {
+//    if(_nVecs < id || id < 0) return false;
+//    return _removedVecs == null || Arrays.binarySearch(_removedVecs,id) < 0;
+//  }
 
 
   @Override
   public int numCols(){return _nVecs - (_removedVecs == null?0:_removedVecs.length);}
 
-  @Override
-  public boolean hasCol(int id) {
-    if(numCols() < id || id < 0) return false;
-    return _removedVecs == null || Arrays.binarySearch(_removedVecs,id) < 0;
-  }
+//  @Override
+//  public boolean hasCol(int id) {
+//    if(numCols() < id || id < 0) return false;
+//    return _removedVecs == null || Arrays.binarySearch(_removedVecs,id) < 0;
+//  }
 
   public RollupStats getRollups(int vecId, boolean histo) {
-    if(!hasVec(vecId)) throw new NullPointerException("vec has been removed");
+//    if(!hasVec(vecId)) throw new NullPointerException("vec has been removed");
     throw H2O.unimpl(); // TODO
   }
 
@@ -59,8 +63,60 @@ public class VecBlock extends AVec<ChunkBlock> {
   public void setType(int i, byte t) {_types[i] = t;}
 
   @Override
-  public void setBad(int colId) {
+  public Futures removeVecs(final int[] ids, Futures fs) {
+    if(ids.length == numCols()) return remove(fs);
+    Arrays.sort(ids);
+    for(int i = 1; i < ids.length; ++i)
+      if(ids[i-1] == ids[i]) throw new IllegalArgumentException("removing duplicate column " + ids[i]);
+    fs.add(new TAtomic<VecBlock>() {
+      @Override
+      protected VecBlock atomic(VecBlock old) {
+        for(int i:ids) old._removed.set(i);
+        return old;
+      }
+      @Override public void onSuccess(VecBlock old) {
+        if(old.numCols() == 0)
+          old.remove(new Futures()); // do not wait for delete to finish
+      }
+    }.fork(_key));
 
+    new MRTask() {
+      @Override public void setupLocal(){
+        final int N = 1000;
+        for(int i = 0; i < nChunks(); i += N) {
+          final int fi = i;
+          addToPendingCount(1);
+          new H2O.H2OCountedCompleter(this) {
+            @Override
+            public void compute2() {
+              int n = Math.min(fi+N,nChunks());
+              Key k = Key.make(_key._kb.clone());
+              Futures fs = new Futures();
+              for(int i = fi; i < n; ++i) {
+                AVec.setChunkId(k,i);
+                if(k.home()) {
+                  Value v = DKV.get(k);
+                  if(v != null) {
+                    ChunkBlock cb = v.get();
+                    if (cb != null) {
+                      for (int j : ids) cb._chunks[j] = null;
+                      DKV.DputIfMatch(k, v, new Value(k,cb), fs);
+                    }
+                  }
+                }
+              }
+              fs.blockForPending();
+            }
+          }.fork();
+        }
+      }
+    }.doAllNodes();
+    return fs;
+  }
+
+  @Override
+  public void setBad(int colId) {
+    throw H2O.unimpl();
   }
 
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME

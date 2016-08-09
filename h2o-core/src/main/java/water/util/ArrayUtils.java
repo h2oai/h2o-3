@@ -1084,6 +1084,23 @@ public class ArrayUtils {
     assert i == aIds.length && j == bIds.length;
   }
 
+  // sparse sortedMerge (ids and vals)
+  public static int[] sortedUnion(int[] a,int[] b) {
+    int [] res = new int[a.length + b.length];
+    int i = 0, j = 0,k = 0;
+    while(i < a.length && j < b.length) {
+      if(a[i] == b[j]) {
+        res[k++] = a[i];
+        i++; j++;
+      } else
+        res[k++] = (a[i] > b[j]) ? b[j++] : a[i++];
+    }
+    assert i == a.length || j == b.length;
+    for(; i < a.length; ++i)res[k++] = a[i];
+    for(; j < b.length; ++j)res[k++] = b[j];
+    return Arrays.copyOf(res,k);
+  }
+
   public static String[] select(String[] ary, int[] idxs) {
     String [] res  = new String[idxs.length];
     for(int i = 0; i < res.length; ++i)
@@ -1501,5 +1518,27 @@ public class ArrayUtils {
       if (value == lhValue) return true;
     }
     return false;
+  }
+
+  public static byte[] expandByteAry(byte val, int n) {
+    byte [] res = new byte[n];
+    Arrays.fill(res,val);
+    return res;
+  }
+
+  public static int[] sortedDupsCnt(int[] blocks) {
+    Arrays.sort(blocks);
+    int dups = 0;
+    for(int i = 0; i < blocks.length-1; ++i)
+      if(blocks[i] == blocks[i+1]) ++dups;
+    if(dups == 0) return blocks;
+    int [] res = new int[blocks.length-dups];
+    res[0] = blocks[0];
+    int j = 0;
+    for(int i = 1; i < blocks.length; ++i) {
+      if(blocks[i] != blocks[i-1])res[j++] = blocks[i];
+    }
+    assert j == res.length;
+    return res;
   }
 }
