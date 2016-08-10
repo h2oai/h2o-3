@@ -56,9 +56,10 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public Network _network = Network.AUTO;
   public Backend _backend = Backend.AUTO;
-  public String _network_definition_file=null;
-  public String _network_parameters_file=null;
-  public String _export_native_model_prefix=null;
+  public String _network_definition_file;
+  public String _network_parameters_file;
+  public String _mean_image_file;
+  public String _export_native_model_prefix;
 
   /**
    * If enabled, store the best model under the destination key of this model at the end of training.
@@ -351,7 +352,8 @@ public class DeepWaterParameters extends Model.Parameters {
             "_max_categorical_features",
             "_nfolds",
             "_distribution",
-            "_network_definition_file"
+            "_network_definition_file",
+            "_mean_image_file"
     };
 
     static void checkCompleteness() {
