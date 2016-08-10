@@ -51,6 +51,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "width",
         "height",
         "channels",
+        "device_id",
         "network_definition_file",
         "network_parameters_file",
         "mean_image_file",
@@ -304,6 +305,9 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Number of (color) channels.")
     public int channels;
+
+    @API(level = API.Level.expert, direction=API.Direction.INOUT, help = "Device ID (which GPU).")
+    public int device_id;
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path of file containing network definition (graph, architecture).")
     public String network_definition_file;
