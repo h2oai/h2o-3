@@ -1,7 +1,5 @@
 package water.persist;
 
-import com.google.common.io.ByteStreams;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 
@@ -13,19 +11,14 @@ import java.io.OutputStream;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import water.Futures;
-import water.H2O;
-import water.Key;
-import water.MemoryManager;
-import water.Value;
+import water.*;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
-import water.fvec.Vec;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -37,12 +30,6 @@ public final class PersistHdfs extends Persist {
   public static final Configuration CONF;
   /** Root path of HDFS */
   private final Path _iceRoot;
-
-  // Returns String with path for given key.
-  private static String getPathForKey(Key k) {
-    final int off = k._kb[0]==Key.CHK ? Vec.KEY_PREFIX_LEN : 0;
-    return new String(k._kb,off,k._kb.length-off);
-  }
 
   // Global HDFS initialization
   // FIXME: do not share it via classes, but initialize it by object
@@ -94,22 +81,6 @@ public final class PersistHdfs extends Persist {
       throw Log.throwErr(e);
     }
   }
-  
-  /** InputStream from a HDFS-based Key */
-  /*public static InputStream openStream(Key k, Job pmon) throws IOException {
-    H2OHdfsInputStream res = null;
-    Path p = new Path(k.toString());
-    try {
-      res = new H2OHdfsInputStream(p, 0, pmon);
-    } catch( IOException e ) {
-      try {
-        Thread.sleep(1000);
-      } catch( Exception ex ) {}
-      Log.warn("Error while opening HDFS key " + k.toString() + ", will wait and retry.");
-      res = new H2OHdfsInputStream(p, 0, pmon);
-    }
-    return res;
-  }*/
 
   @Override public byte[] load(final Value v) {
     //
@@ -142,56 +113,70 @@ public final class PersistHdfs extends Persist {
     // new library version.  Might make sense to go to straight to 's3a' which is a replacement
     // for 's3n'.
     //
-    long end, start = System.currentTimeMillis();
     final byte[] b = MemoryManager.malloc1(v._max);
-    Key k = v._key;
-    long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
-    final Path p = _iceRoot == null?new Path(getPathForKey(k)):new Path(_iceRoot, getIceName(v));
-    final long skip_ = skip;
+    final Key k = v._key;
+    final long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
+    long end, start = System.currentTimeMillis();
+    if (_iceRoot != null) {
+      Path p = new Path(_iceRoot, getIceName(v));
+      read(p, b, skip, 0, v._max);
+    } else if (k.isChunkKey()) {
+      HDFSFileVec fv = DKV.getGet(k.getVecKey());
+      readParts(fv, b, skip);
+    } else {
+      Path p = new Path(new String(k._kb));
+      read(p, b, skip, 0, v._max);
+    }
+    end = System.currentTimeMillis();
+    if (end-start > 1000) // Only log read that took over 1 second to complete
+      Log.debug("Slow Read: "+(end-start)+" millis to get bytes "+skip+"-"+(skip+b.length)+" in HDFS read.");
+
+    return b;
+  }
+
+  private void readParts(HDFSFileVec v, byte[] b, long skip) {
+    int part = v.findPartIdx(skip);
+    int loaded = 0;
+    while (loaded < b.length) {
+      Path partPath = new Path(v._files[part]);
+      long partSkip = skip + loaded - v._offsets[part];
+      int length = (int) Math.min(v.getPartLen(part) - partSkip, b.length - loaded);
+      read(partPath, b, partSkip, loaded, length);
+      loaded += length;
+      part++;
+    }
+  }
+
+  private void read(final Path p, final byte[] b, final long skip, final int offset, final int length) {
     run(new Callable() {
       @Override public Object call() throws Exception {
         FileSystem fs = FileSystem.get(p.toUri(), CONF);
-
         FSDataInputStream s = null;
         try {
-//          fs.getDefaultBlockSize(p);
-
-            s = fs.open(p);
-//          System.out.println("default block size = " + fs.getDefaultBlockSize(p));
-//          FileStatus f = fs.getFileStatus(p);
-//          BlockLocation [] bs = fs.getFileBlockLocations(f,0,f.getLen());
-//          System.out.println(Arrays.toString(bs));
+          s = fs.open(p);
           if (p.toString().toLowerCase().startsWith("maprfs:")) {
             // MapR behaves really horribly with the google ByteStreams code below.
             // Instead of skipping by seeking, it skips by reading and dropping.  Very bad.
             // Use the HDFS API here directly instead.
-
-            s.seek(skip_);
-            s.readFully(b);
-          }
-          else {
+            s.seek(skip);
+            s.readFully(b, offset, length);
+          } else {
             // NOTE:
             // The following line degrades performance of HDFS load from S3 API: s.readFully(skip,b,0,b.length);
             // Google API's simple seek has better performance
             // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
-//            ByteStreams.skipFully(s, skip_);
-//            ByteStreams.readFully(s, b);
-            s.seek(skip_);
-            s.readFully(b);
+            //            ByteStreams.skipFully(s, skip_);
+            //            ByteStreams.readFully(s, b);
+            s.seek(skip);
+            s.readFully(b, offset, length);
           }
-          assert v.isPersisted();
         } finally {
           s.getWrappedStream().close();
           FileUtils.close(s);
         }
         return null;
       }
-    }, true, v._max);
-    end = System.currentTimeMillis();
-    if (end-start > 1000) // Only log read that took over 1 second to complete
-      Log.debug("Slow Read: "+(end-start)+" millis to get bytes "+skip_ +"-"+(skip_+b.length)+" in HDFS read.");
-
-    return b;
+    }, true, length);
   }
 
   @Override public void store(Value v) {
@@ -282,28 +267,38 @@ public final class PersistHdfs extends Persist {
     } catch( InterruptedException ie ) {}
   }
 
-  public static void addFolder(Path p, ArrayList<String> keys,ArrayList<String> failed) throws IOException {
+  private static void addFolder(Path p, ArrayList<String> keys, ArrayList<String> failed) throws IOException {
     FileSystem fs = FileSystem.get(p.toUri(), PersistHdfs.CONF);
-    if(!fs.exists(p)){
+    if (! fs.exists(p)) {
       failed.add("Path does not exist: '" + p.toString() + "'");
       return;
     }
-    addFolder(fs, p, keys, failed);
+    List<FileStatus> files = new ArrayList<>();
+    findFilesRecursive(fs, p, files, failed);
+    if (files.isEmpty()) {
+      Log.debug("No files found on path " + p);
+      return;
+    }
+    Futures futures = new Futures();
+    String[] parts = new String[files.size()];
+    long[] sizes = new long[files.size()];
+    for (int i = 0; i < files.size(); i++) {
+      parts[i] = files.get(i).getPath().toString();
+      sizes[i] = files.get(i).getLen();
+    }
+    Key k = HDFSFileVec.make(p.toString(), parts, sizes, futures);
+    keys.add(k.toString());
+    Log.debug("PersistHdfs: DKV.put(" + k + ")");
   }
 
-  private static void addFolder(FileSystem fs, Path p, ArrayList<String> keys, ArrayList<String> failed) {
+  private static void findFilesRecursive(FileSystem fs, Path p, List<FileStatus> files, List<String> failed) {
     try {
-      if( fs == null ) return;
-
-      Futures futures = new Futures();
-      for( FileStatus file : fs.listStatus(p) ) {
+      for (FileStatus file : fs.listStatus(p) ) {
         Path pfs = file.getPath();
-        if( file.isDir() ) {
-          addFolder(fs, pfs, keys, failed);
-        } else if (file.getLen() > 0){
-          Key k = null;
-          keys.add((k = HDFSFileVec.make(file.getPath().toString(), file.getLen(), futures)).toString());
-          Log.debug("PersistHdfs: DKV.put(" + k + ")");
+        if (file.isDir()) {
+          findFilesRecursive(fs, pfs, files, failed);
+        } else if (file.getLen() > 0) {
+          files.add(file);
         }
       }
     } catch( Exception e ) {
