@@ -22,6 +22,7 @@ import water.util.RandomUtils;
 
 import java.util.Random;
 
+
 public class DeepLearningIrisTest extends TestUtil {
   static final String PATH = "smalldata/iris/iris.csv";
   Frame _train, _test;

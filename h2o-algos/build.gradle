@@ -8,6 +8,9 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
   compile files('water.gpu.jar')
+  compile files('javacpp.jar')
+  compile files('tensorflow.jar')
+  compile files('tensorflow-linux-x86_64.jar')
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
