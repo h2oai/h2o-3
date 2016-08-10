@@ -30,6 +30,7 @@ final public class DeepWaterModelInfo extends Iced {
   int _classes;
   byte[] _network;
   byte[] _modelparams;
+  float[] _meanData; //mean pixel value of the training data
 
   public TwoDimTable summaryTable;
 
@@ -144,6 +145,14 @@ final public class DeepWaterModelInfo extends Iced {
         } else {
           Log.warn("No network parameters file specified. Starting from scratch.");
         }
+
+        final String meanData = parameters._mean_image_file;
+        if (meanData != null && !meanData.isEmpty()) {
+          Log.info("Loading the parameters (weights/biases) from: " + networkParms);
+          _meanData = null; //loader(meanData);
+        } else {
+          Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
+        }
 //        storeInternalState();
       } catch(Throwable t) {
         Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
@@ -153,6 +162,7 @@ final public class DeepWaterModelInfo extends Iced {
   }
 
   public void nativeToJava() {
+    Log.info("Moving native state into Java.");
     Path path = null;
     // only overwrite the network definition if it's null
     if (_network==null) {
@@ -190,6 +200,7 @@ final public class DeepWaterModelInfo extends Iced {
     if (network==null) network = _network;
     if (parameters==null) parameters= _modelparams;
     if (network==null || parameters==null) return;
+    Log.info("Moving Java state into native.");
 
     Path path = null;
     // only overwrite the network definition if it's null
@@ -206,7 +217,6 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, parameters);
-      Log.info("Loading the parameters.");
       _imageTrain.loadParam(path.toString());
     } catch (IOException e) {
       e.printStackTrace();
