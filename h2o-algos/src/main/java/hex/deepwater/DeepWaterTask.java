@@ -59,7 +59,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     _localmodel.set_processed_local(0);
     final int weightIdx =_fr.find(_localmodel.get_params()._weights_column);
     final int respIdx =_fr.find(_localmodel.get_params()._response_column);
-    final int batch_size = _localmodel.get_params()._mini_batch_size;
+    final int batchSize = _localmodel.get_params()._mini_batch_size;
 
     // single-threaded logic
     BufferedString bs = new BufferedString();
@@ -72,33 +72,33 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     }
 
     // loop over all images on this node
-    ArrayList<Float> train_labels = new ArrayList<>();
-    ArrayList<String> train_data = new ArrayList<>();
+    ArrayList<Float> trainLabels = new ArrayList<>();
+    ArrayList<String> trainData = new ArrayList<>();
     for (int i=0; i<_fr.vec(0).length(); ++i) {
       double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
       if (weight == 0)
         continue;
       String file = _fr.vec(0).atStr(bs, i).toString();
       float response = (float) _fr.vec(respIdx).at(i);
-      train_data.add(file);
-      train_labels.add(response);
+      trainData.add(file);
+      trainLabels.add(response);
     }
     long seed = 0xDECAF + 0xD00D * _localmodel.get_processed_global();
     Random rng = RandomUtils.getRNG(seed);
     if (_localmodel.get_params()._shuffle_training_data) {
-      Collections.shuffle(train_labels, rng);
+      Collections.shuffle(trainLabels, rng);
       rng.setSeed(seed);
-      Collections.shuffle(train_data, rng);
+      Collections.shuffle(trainData, rng);
     }
     // randomly add more rows to fill up to a multiple of batch_size
-    while (train_data.size()%batch_size!=0) {
-      int pick = rng.nextInt(train_data.size());
-      train_data.add(train_data.get(pick));
-      train_labels.add(train_labels.get(pick));
+    while (trainData.size()%batchSize!=0) {
+      int pick = rng.nextInt(trainData.size());
+      trainData.add(trainData.get(pick));
+      trainLabels.add(trainLabels.get(pick));
     }
     try {
       long start = System.currentTimeMillis();
-      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(train_data, train_labels, batch_size, width, height, channels);
+      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, width, height, channels);
       long end = System.currentTimeMillis();
       Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
 
@@ -117,7 +117,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
         ntt = new NativeTrainTask(_localmodel._imageTrain, data, labels);
         fs.add(H2O.submitTask(ntt));
-        _localmodel.add_processed_local(batch_size);
+        _localmodel.add_processed_local(batchSize);
       }
       nativetime +=ntt._timeInMillis;
       end = System.currentTimeMillis();
