@@ -1254,7 +1254,7 @@ public class h2odriver extends Configured implements Tool {
       if (sslConfig.isEmpty()) {
         SecurityUtils.SSLCredentials credentials = SecurityUtils.generateSSLPair();
         String sslConfigFile = SecurityUtils.generateSSLConfig(credentials);
-        addMapperConf(conf, "", credentials.jks.name, credentials.jks.path);
+        addMapperConf(conf, "", credentials.jks.getLocation(), credentials.jks.getLocation());
         addMapperConf(conf, "-ssl_config", "ssl.config", sslConfigFile);
       } else {
         addMapperConf(conf, "-ssl_config", "ssl.config", sslConfig);

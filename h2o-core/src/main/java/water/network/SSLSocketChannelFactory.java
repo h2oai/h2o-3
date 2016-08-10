@@ -5,13 +5,11 @@ import water.util.Log;
 
 import javax.net.ssl.*;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
 import java.nio.channels.SocketChannel;
 import java.security.*;
 import java.security.cert.CertificateException;
-import java.util.Properties;
 
 public class SSLSocketChannelFactory {
 
