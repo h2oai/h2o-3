@@ -157,7 +157,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
       network : "AUTO" | "USER" | "lenet" | "alexnet" | "vgg" | "vgg16" | "googlenet" | "inception_bn" | "resnet"
         Network architecture.
-        Default: "AUTO"
+        Default: "auto"
 
       width : int
         Width of image.
@@ -171,8 +171,18 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Number of (color) channels.
         Default: 3
 
+      device_id : int
+        Device ID (which GPU).
+        Default: 0
+
       network_definition_file : str
         Path of file containing network definition (graph, architecture).
+
+      network_parameters_file : str
+        Path of file containing network (initial) parameters (weights, biases).
+
+      mean_image_file : str
+        Path of file containing the mean image data for data normalization.
 
       export_native_model_prefix : str
         Path (prefix) where to export the native model after every iteration.
@@ -189,8 +199,8 @@ class H2ODeepWaterEstimator(H2OEstimator):
                      "score_interval", "score_training_samples", "score_validation_samples", "score_duty_cycle",
                      "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
                      "replicate_training_data", "single_node_mode", "shuffle_training_data", "mini_batch_size",
-                     "clip_gradient", "network", "width", "height", "channels", "network_definition_file",
-                     "export_native_model_prefix"]:
+                     "clip_gradient", "network", "width", "height", "channels", "device_id", "network_definition_file",
+                     "network_parameters_file", "mean_image_file", "export_native_model_prefix"]:
             pname = name[:-1] if name[-1] == '_' else name
             self._parms[pname] = kwargs[name] if name in kwargs else None
 
@@ -499,12 +509,36 @@ class H2ODeepWaterEstimator(H2OEstimator):
         self._parms["channels"] = value
 
     @property
+    def device_id(self):
+        return self._parms["device_id"]
+
+    @device_id.setter
+    def device_id(self, value):
+        self._parms["device_id"] = value
+
+    @property
     def network_definition_file(self):
         return self._parms["network_definition_file"]
 
     @network_definition_file.setter
     def network_definition_file(self, value):
         self._parms["network_definition_file"] = value
+
+    @property
+    def network_parameters_file(self):
+        return self._parms["network_parameters_file"]
+
+    @network_parameters_file.setter
+    def network_parameters_file(self, value):
+        self._parms["network_parameters_file"] = value
+
+    @property
+    def mean_image_file(self):
+        return self._parms["mean_image_file"]
+
+    @mean_image_file.setter
+    def mean_image_file(self, value):
+        self._parms["mean_image_file"] = value
 
     @property
     def export_native_model_prefix(self):
