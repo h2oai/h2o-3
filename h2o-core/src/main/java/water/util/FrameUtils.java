@@ -558,13 +558,15 @@ public class FrameUtils {
         Vec[] frameVecs = _frame.vecs();
         int numCategoricals = 0;
         for (int i=0;i<frameVecs.length;++i)
-          if (frameVecs[i].isCategorical() && ArrayUtils.find(_skipCols, _frame._names[i])==-1)
+          if (frameVecs[i].isCategorical() && (_skipCols==null || ArrayUtils.find(_skipCols, _frame._names[i])==-1))
             numCategoricals++;
 
-        Vec[] extraVecs = new Vec[_skipCols.length];
-        for (int i=0; i< extraVecs.length; ++i) {
-          Vec v = _frame.vec(_skipCols[i]); //can be null
-          if (v!=null) extraVecs[i] = v;
+        Vec[] extraVecs = _skipCols==null?null:new Vec[_skipCols.length];
+        if (extraVecs!=null) {
+          for (int i = 0; i < extraVecs.length; ++i) {
+            Vec v = _frame.vec(_skipCols[i]); //can be null
+            if (v != null) extraVecs[i] = v;
+          }
         }
 
         Frame categoricalFrame = new Frame();
@@ -572,7 +574,7 @@ public class FrameUtils {
         int[] binaryCategorySizes = new int[numCategoricals];
         int numOutputColumns = 0;
         for (int i = 0, j = 0; i < frameVecs.length; ++i) {
-          if (ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
+          if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
           int numCategories = frameVecs[i].cardinality(); // Returns -1 if non-categorical variable
           if (numCategories > 0) {
             categoricalFrame.add(_frame.name(i), frameVecs[i]);
@@ -591,9 +593,11 @@ public class FrameUtils {
           }
         }
         outputFrame.add(binaryCols);
-        for (int i=0;i<extraVecs.length;++i) {
-          if (extraVecs[i]!=null)
-            outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
+        if (_skipCols!=null) {
+          for (int i = 0; i < extraVecs.length; ++i) {
+            if (extraVecs[i] != null)
+              outputFrame.add(_skipCols[i], extraVecs[i].makeCopy());
+          }
         }
         DKV.put(outputFrame);
         tryComplete();
