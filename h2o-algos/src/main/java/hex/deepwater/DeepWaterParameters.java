@@ -44,18 +44,18 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public enum Network {
-    AUTO, USER, lenet, alexnet, vgg, vgg16, googlenet, inception_bn, resnet
+    auto, user, lenet, alexnet, vgg, vgg16, googlenet, inception_bn, resnet
   }
 
   public enum Backend {
-    AUTO, mxnet, caffe, tensorflow
+    auto, mxnet, caffe, tensorflow
   }
 
   public double _clip_gradient = 10.0;
-  public int _width=0, _height=0, _channels=3;
+  public int _width=0, _height=0, _channels=3, _device_id=0;
 
-  public Network _network = Network.AUTO;
-  public Backend _backend = Backend.AUTO;
+  public Network _network = Network.auto;
+  public Backend _backend = Backend.auto;
   public String _network_definition_file;
   public String _network_parameters_file;
   public String _mean_image_file;
@@ -225,11 +225,11 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_autoencoder)
       dl.error("_autoencoder", "Autoencoder is not supported right now.");
 
-    if (_network == Network.USER) {
+    if (_network == Network.user) {
       if (_network_definition_file == null || _network_definition_file.isEmpty())
         dl.error("_network_definition_file", "network_definition_file must be provided if the network is user-specified.");
     } else {
-      if (_network_definition_file != null && !_network_definition_file.isEmpty() && _network != Network.AUTO)
+      if (_network_definition_file != null && !_network_definition_file.isEmpty() && _network != Network.auto)
         dl.error("_network_definition_file", "network_definition_file cannot be provided if a pre-defined network is chosen.");
     }
 
@@ -475,12 +475,12 @@ public class DeepWaterParameters extends Model.Parameters {
           toParms._overwrite_with_best_model = false;
         }
       }
-      if (fromParms._network == Network.AUTO) {
+      if (fromParms._network == Network.auto) {
         if (!fromParms._quiet_mode)
           Log.info("_network: Using inception_bn model by default.");
         toParms._network = Network.inception_bn;
       }
-      if (fromParms._backend == DeepWaterParameters.Backend.AUTO) {
+      if (fromParms._backend == DeepWaterParameters.Backend.auto) {
         if (!fromParms._quiet_mode)
           Log.info("_backend: Using the mxnet backend by default.");
         toParms._backend = DeepWaterParameters.Backend.mxnet;
