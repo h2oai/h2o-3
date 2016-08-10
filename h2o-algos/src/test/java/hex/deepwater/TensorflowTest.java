@@ -121,19 +121,36 @@ public class TensorflowTest extends TestUtil {
 
         int wrong_prediction = 0;
         int right_prediction = 0;
-        for( Pair<Integer, float[]> sample: images.subList(0,10) ){
-            int prediction = inferDigit(sess, sample.getValue());
-            if (prediction != sample.getKey()){
-               wrong_prediction++;
-            } else {
-               right_prediction++;
+        int batch_size = 10;
+        float[] batch = new float[784*batch_size];
+        int[] batch_labels = new int[784*batch_size];
+        int current_batch_size = 0;
+        for( Pair<Integer, float[]> sample: images ){
+            float[] array = sample.getValue();
+            // accumulate images and labels into a batch
+            System.arraycopy(array, 0, batch, current_batch_size*784, array.length );
+            batch_labels[current_batch_size] = sample.getKey();
+            current_batch_size++;
+            if (current_batch_size < batch_size) {
+               continue;
+            }
+
+            current_batch_size = 0;
+            int[] predictions = inferDigit(sess, batch, batch_size);
+            for (int i = 0; i < predictions.length; i++) {
+                if (predictions[i] != batch_labels[i]) {
+                    wrong_prediction++;
+                } else {
+                    right_prediction++;
+                }
             }
         }
 
         System.out.println("right predictions: " + right_prediction + " - wrong Predictions:" + wrong_prediction);
+        System.out.println("accuracy:" + right_prediction/1.0*(right_prediction+wrong_prediction));
     }
 
-    int inferDigit(Session sess, float[] data) throws Exception {
+    int[] inferDigit(Session sess, float[] data, int batch_size) throws Exception {
             TensorVector outputs = new TensorVector();
             ImageParams params = new ImageParams(expandPath("~/workspace/mnist_png/mnist_png/testing/0/1416.png"), 28, 28, 128, 128);
             loadImage(params, outputs); // "input/x-input", "layer2/activation", outputs);
@@ -142,7 +159,7 @@ public class TensorflowTest extends TestUtil {
 
             outputs = new TensorVector();
 
-            Tensor mnist_batch_image = new Tensor(DT_FLOAT, new TensorShape(1, 784));
+            Tensor mnist_batch_image = new Tensor(DT_FLOAT, new TensorShape(batch_size, 784));
 
             ((FloatBuffer)mnist_batch_image.createBuffer()).put(data);
             Tensor dropout = new Tensor( DT_FLOAT, new TensorShape(1));
@@ -155,20 +172,20 @@ public class TensorflowTest extends TestUtil {
                     new StringVector("layer2/activation"),
                     new StringVector(), outputs);
             checkStatus(status);
-            getTopKLabels(outputs, 5);
+            getTopKLabels(outputs, 1);
 
             FloatBuffer fb = outputs.get(0).createBuffer();
-            float[] activation_layer = new float[5];
+            float[] activation_layer = new float[batch_size];
             fb.get(activation_layer);
 
-            int[] indexes = new int[5];
+            int[] indexes = new int[batch_size];
             ((IntBuffer) outputs.get(1).createBuffer()).get(indexes);
 
             for (int i = 0; i < activation_layer.length ; i++) {
-                System.out.println("activation layer:" + indexes[i] + ":" + activation_layer[i] );
+                //System.out.println("activation layer:" + indexes[i] + ":" + activation_layer[i] );
             }
 
-            return indexes[0];
+            return indexes;
 
     }
 
