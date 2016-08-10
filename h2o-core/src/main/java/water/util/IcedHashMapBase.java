@@ -9,8 +9,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Iced / Freezable NonBlockingHashMap abstract base class.
@@ -122,7 +120,15 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       return this;
     } catch(Throwable t) {
       t.printStackTrace();
-      throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage());
+
+      if (null == t.getCause()) {
+        throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage() + ", cause: null");
+      } else {
+        throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage() +
+                ", cause: " + t.getCause().toString() +
+                ", cause msg: " + t.getCause().getMessage() +
+                ", cause stacktrace: " + java.util.Arrays.toString(t.getCause().getStackTrace()));
+      }
     }
   }
   public final IcedHashMapBase readJSON_impl( AutoBuffer ab ) {throw H2O.unimpl();}
