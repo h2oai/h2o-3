@@ -18,7 +18,11 @@ check.deeplearning_multi <- function() {
   hh <- h2o.deeplearning(x=c(3,4,5,6,7,8,9),y=2,training_frame=prostate,hidden=c(20,20),use_all_factor_levels=F,loss="CrossEntropy")
   print(hh)
 
+  hh <- h2o.deeplearning(x=c(3,4,5,6,7,8,9),y=2,training_frame=prostate,validation_frame=prostate,nfolds=2,hidden=c(20,20),use_all_factor_levels=F,loss="CrossEntropy", categorical_encoding="Binary")
+  print(hh)
   
+  hh <- h2o.deeplearning(x=c(3,4,5,6,7,8,9),y=2,training_frame=prostate,validation_frame=prostate,nfolds=2,hidden=c(20,20),use_all_factor_levels=F,loss="CrossEntropy", categorical_encoding="Eigen")
+  print(hh)
 }
 
 doTest("Deep Learning MultiClass Test", check.deeplearning_multi)
