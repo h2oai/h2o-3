@@ -3,7 +3,7 @@ package water.api.schemas3;
 import water.Iced;
 import water.api.API;
 
-public final class MetadataV3 extends SchemaV3<Iced, MetadataV3> {
+public final class MetadataV3 extends RequestSchemaV3<Iced, MetadataV3> {
   @API(help="Number for specifying an endpoint", json=false)
   public int num;
 

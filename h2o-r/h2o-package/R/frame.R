@@ -1965,9 +1965,33 @@ mean.H2OFrame <- h2o.mean
 #' @export
 h2o.skewness <- function(x, ...,na.rm=TRUE) .eval.scalar(.newExpr("skewness",x,na.rm))
 
-#' @rdname h2o.mean
+#' @rdname h2o.skewness
 #' @export
 skewness.H2OFrame <- h2o.skewness
+
+#'
+#' Kurtosis of a column
+#'
+#' Obtain the kurtosis of a column of a parsed H2O data object.
+#'
+#' @name h2o.kurtosis
+#' @param x An H2OFrame object.
+#' @param ... Further arguments to be passed from or to other methods.
+#' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
+#' @return Returns a list containing the kurtosis for each column (NaN for non-numeric columns).
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' h2o.kurtosis(prostate.hex$AGE)
+#' }
+#' @export
+h2o.kurtosis <- function(x, ...,na.rm=TRUE) .eval.scalar(.newExpr("kurtosis",x,na.rm))
+
+#' @rdname h2o.kurtosis
+#' @export
+kurtosis.H2OFrame <- h2o.kurtosis
 
 #
 #" Mode of a enum or int column.
@@ -2755,6 +2779,13 @@ h2o.rbind <- function(...) {
   .newExprList("rbind", l)
 }
 
+# Helper function for merge and sort inputs
+checkMatch = function(x,y) {
+  tt = match(x,y,nomatch=NA)
+  if (anyNA(tt)) stop("Column '", x[is.na(tt)[1]], "' in ", substitute(x), " not found")
+  tt
+}
+
 #' Merge Two H2O Data Frames
 #'
 #' Merges two H2OFrame objects with the same arguments and meanings
@@ -2784,11 +2815,6 @@ h2o.rbind <- function(...) {
 h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, all=FALSE, all.x=all, all.y=all, method="hash") {
   if (length(by.x) != length(by.y)) stop("`by.x` and `by.y` must be the same length.")
   if (!length(by.x)) stop("`by` or `by.x` must specify at least one column") 
-  checkMatch = function(x,y) {
-    tt = match(x,y,nomatch=NA)
-    if (anyNA(tt)) stop("Column '", x[is.na(tt)[1]], "' in ", substitute(x), " not found")
-    tt
-  }
   if (!is.numeric(by.x)) by.x = checkMatch(by.x, names(x))
   else if (any(is.na(by.x) | by.x<1 | by.x>ncol(x))) stop("by.x contains NA or an item outside range [1,ncol(x)]")
   if (!is.numeric(by.y)) by.y = checkMatch(by.y, names(y))
@@ -2797,6 +2823,21 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
   if (anyDuplicated(by.y)) stop("by.y contains duplicates")
   # -1L to be clear rapids in 0-based
   .newExpr("merge", x, y, all.x, all.y, by.x-1L, by.y-1L, .quote(method))
+}
+
+
+#' Sorts H2OFrame by the columns specified. Returns a new H2OFrame, like dplyr::arrange.
+#'
+#' @param x The H2OFrame input to be sorted.
+#' @param \dots The column names to sort by.
+#'
+#' @export
+h2o.arrange <- function(x, ...) {
+  by = as.character(substitute(list(...))[-1])
+  if (!length(by)) stop("Please provide at least one column to sort by")
+  by = checkMatch(by, names(x))
+  if (anyDuplicated(by)) stop("Some duplicate column names have been provided")
+  .newExpr("sort", x, by-1L)
 }
 
 

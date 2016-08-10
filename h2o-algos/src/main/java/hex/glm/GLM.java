@@ -518,7 +518,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void doCleanup() {
       try {
-        if(!_cv)
+        if(!_cv && _model!=null)
           _model.unlock(_job);
       } catch(Throwable t){
         // nada

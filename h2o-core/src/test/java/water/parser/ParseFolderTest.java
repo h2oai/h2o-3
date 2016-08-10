@@ -16,7 +16,7 @@ public class ParseFolderTest extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/parse_folder" );
       k1 = parse_test_file  ("smalldata/junit/parse_folder_gold.csv");
-      Assert.assertTrue("parsed values do not match!",isBitIdentical(k1,k2));
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();

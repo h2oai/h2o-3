@@ -6,7 +6,7 @@ import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.fvec.Frame;
 import water.util.DCTTransformer;
 
-public class DCTTransformerV3 extends SchemaV3<DCTTransformer, DCTTransformerV3> {
+public class DCTTransformerV3 extends RequestSchemaV3<DCTTransformer, DCTTransformerV3> {
   @API(help="Dataset", required = true)
   public FrameKeyV3 dataset;
 

@@ -453,18 +453,18 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         //store coefficient names for future use
         //possibly change 
         model.model_info().data_info().coefNames();
+      }
+      finally {
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
           if (stop_requested()) {
             Log.info("Deep Learning model training was interrupted.");
           } else {
             Log.info("Finished training the Deep Learning model.");
-            Log.info(model);
+            if (model!=null) Log.info(model);
           }
           Log.info("==============================================================================================================================================================================");
         }
-      }
-      finally {
         if (model != null) {
           model.deleteElasticAverageModels();
           model.unlock(_job);

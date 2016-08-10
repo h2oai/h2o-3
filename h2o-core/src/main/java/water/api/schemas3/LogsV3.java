@@ -3,7 +3,7 @@ package water.api.schemas3;
 import water.Iced;
 import water.api.API;
 
-public class LogsV3 extends SchemaV3<Iced, LogsV3> {
+public class LogsV3 extends RequestSchemaV3<Iced, LogsV3> {
   @API(help="Index of node to query ticks for (0-based).  -1 means current node.", required = true, direction = API.Direction.INPUT)
   public int nodeidx;
 

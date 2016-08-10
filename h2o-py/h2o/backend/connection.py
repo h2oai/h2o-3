@@ -258,22 +258,6 @@ class H2OConnection(backwards_compatible()):
             raise
 
 
-    def info(self, refresh=False):
-        """
-        Information about the current state of the connection, or None if it has not been initialized properly.
-
-        :param refresh: If False, then retrieve the latest known info; if True then fetch the newest info from the
-            server. Usually you want `refresh` to be True, except right after establishing a connection when it is
-            still fresh.
-        :return: H2OCluster object.
-        """
-        if self._stage == 0: return None
-        if refresh:
-            self._cluster_info = self.request("GET /3/Cloud")
-        self._cluster_info.connection = self
-        return self._cluster_info
-
-
     def close(self):
         """
         Close an existing connection; once closed it cannot be used again.
@@ -619,7 +603,6 @@ class H2OConnection(backwards_compatible()):
         "insecure": lambda: not getattr(__H2OCONN__, "_verify_ssl_cert"),
         "current_connection": lambda: __H2OCONN__,
         "check_conn": lambda: _deprecated_check_conn(),
-        # "cluster_is_up" used to be static (required `conn` parameter) -> now it's non-static w/o any patching needed
         "make_url": lambda url_suffix, _rest_version=3: __H2OCONN__.make_url(url_suffix, _rest_version),
         "get": lambda url_suffix, **kwargs: _deprecated_get(__H2OCONN__, url_suffix, **kwargs),
         "post": lambda url_suffix, file_upload_info=None, **kwa:
@@ -631,6 +614,9 @@ class H2OConnection(backwards_compatible()):
         "rest_ctr": lambda: __H2OCONN__.requests_count,
     }
     _bcim = {
+        "cluster_is_up": lambda self: self.cluster.is_running(),
+        "info": lambda self, refresh=True: self.cluster,
+        "shutdown_server": lambda self, prompt=True: self.cluster.shutdown(prompt),
         "make_url": lambda self, url_suffix, _rest_version=3:
             "/".join([self._base_url, str(_rest_version), url_suffix]),
         "get": lambda *args, **kwargs: _deprecated_get(*args, **kwargs),
