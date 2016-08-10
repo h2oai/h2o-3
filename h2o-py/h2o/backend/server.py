@@ -335,10 +335,12 @@ class H2OLocalServer(object):
 
         # check "/Program Files" and "/Program Files (x86)" on Windows
         if sys.platform == "win32":
-            program_folders = [os.path.join("C:", "Program Files", "Java"),
-                               os.path.join("C:", "Program Files (x86)", "Java")]
+            # On Windows, backslash on the drive letter is necessary, otherwise os.path.join produces an invalid path
+            program_folders = [os.path.join("C:\\", "Program Files", "Java"),
+                               os.path.join("C:\\", "Program Files (x86)", "Java")]
             # Look for JDK
             for folder in program_folders:
+                if not os.path.exists(folder): continue
                 for jdk in os.listdir(folder):
                     if "jdk" not in jdk.lower(): continue
                     path = os.path.join(folder, jdk, "bin", "java.exe")
