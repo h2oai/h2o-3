@@ -71,6 +71,7 @@ class SSLSocketChannel implements ByteChannel {
     private void prepareBuffers(SSLSession session) throws SocketException {
         int appBufferSize = session.getApplicationBufferSize();
         // Less is not more. More is more. Bigger than the app buffer size so successful unwraps() don't cause BUFFER_OVERFLOW
+        // Value 64 was based on other frameworks using it and some manual testing. Might require tuning in the future.
         peerAppData = ByteBuffer.allocate(appBufferSize + 64);
 
         int netBufferSize = session.getPacketBufferSize();

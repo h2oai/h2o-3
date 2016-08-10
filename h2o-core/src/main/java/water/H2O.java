@@ -527,10 +527,6 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.login_conf = args[i];
       }
-      else if (s.matches("login_conf")) {
-        i = s.incrementAndCheck(i, args);
-        ARGS.login_conf = args[i];
-      }
       else if (s.matches("ssl_config")) {
         i = s.incrementAndCheck(i, args);
         ARGS.ssl_config = args[i];
