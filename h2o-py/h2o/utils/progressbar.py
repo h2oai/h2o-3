@@ -474,6 +474,7 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
             widget.set_mode("file" if file_mode else "tty")
             widget.set_encoding(self._encoding)
             wlist.append(widget)
+        self._to_render = None  # Render this string on the next rendering cycle. Rarely used.
         self._widgets = tuple(wlist)
         self._widget_lengths = self._compute_widget_sizes()
         self._rendered = ""
@@ -494,6 +495,9 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
             self._rendered = res
         else:
             rendered_str = " ".join(r.rendered for r in results)
+            if self._to_render:
+                rendered_str = self._to_render + rendered_str
+                self._to_render = None
         next_progress = min(r.next_progress for r in results)
         next_time = min(r.next_time for r in results)
         return RenderResult(rendered_str, next_progress=next_progress, next_time=next_time)
@@ -513,6 +517,23 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
 
         remaining_width = self._width - sum(wl)
         remaining_width -= len(self._widgets) - 1  # account for 1-space interval between widgets
+        if remaining_width < 10 * flex_count:
+            if self._file_mode:
+                remaining_width = 10 * flex_count
+            else:
+                # The window is too small to accomodate the widget: try to split it into several lines, otherwise
+                # switch to "file mode". If we don't do this, then rendering the widget will cause it to wrap, and
+                # then when we use \r to go to the beginning of the line, only part of the widget will be overwritten,
+                # which means we'll have many (possibly hundreds) of progress bar lines in the end.
+                widget0 = self._widgets[0]
+                if isinstance(widget0, PBWString) and remaining_width + widget0.render(0).length >= 10 * flex_count:
+                    remaining_width += widget0.render(0).length + 1
+                    self._to_render = widget0.render(0).rendered + "\n"
+                    self._widgets = self._widgets[1:]
+                if remaining_width < 10 * flex_count:
+                    self._file_mode = True
+                    remaining_width = 10 * flex_count
+
         remaining_width = max(remaining_width, 10 * flex_count)  # Ensure at least 10 chars per flexible widget
 
         for i, widget in enumerate(self._widgets):
