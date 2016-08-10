@@ -13,8 +13,8 @@ apply from: "${rootDir}/gradle/dataCheck.gradle"
 
 task testSSLEncryption(type: Exec) {
   dependsOn cpLibs, jar, testJar
-  if(project.doTestSSL) {
-    commandLine 'bash', './testSSL.sh'
+  if(project.hasProperty('doTestSsl')) {
+      commandLine 'bash', './testSSL.sh'
   } else {
     commandLine 'echo', 'SSL tests not enabled'
   }
