@@ -934,7 +934,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
     }
-    assert (!expensive || _valid==null || Arrays.equals(_train._names, _valid._names));
+    assert (!expensive || _valid==null || Arrays.equals(_train._names, _valid._names) || _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary);
+    if (_valid!=null && !Arrays.equals(_train._names, _valid._names) && _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary) {
+      for (String name : _train._names)
+        assert(ArrayUtils.contains(_valid._names, name)) : "Internal error during categorical encoding: training column " + name + " not in validation frame with columns " + Arrays.toString(_valid._names);
+    }
 
     if (_parms._checkpoint != null && DKV.get(_parms._checkpoint) == null) {
       error("_checkpoint", "Checkpoint has to point to existing model!");
