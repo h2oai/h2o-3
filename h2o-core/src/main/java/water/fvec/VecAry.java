@@ -679,14 +679,16 @@ public class VecAry extends Iced {
     long _start = Long.MAX_VALUE;
     long _end = Long.MIN_VALUE;
 
+    private void nukeCache(){
+      _cache.close(new Futures()).blockForPending();
+      if(_dontCache && !isHomedLocally(_cache._cidx))
+        for (int i = 0; i < _cache._chks.length; ++i)
+          if (_cache._chks[i] != null) H2O.raw_remove(_cache._chks[i]._vec.chunkKey(_cache._cidx));
+      _cache = null;
+    }
     protected Chunk chk(long rowId, int vecId) {
       if(_cache == null ||  _end <= rowId || rowId < _start) {
-        if(_cache != null ) {
-          _cache.close(new Futures()).blockForPending();
-          if(_dontCache && !isHomedLocally(_cache._cidx))
-            for (int i = 0; i < _cache._chks.length; ++i)
-              if (_cache._chks[i] != null) H2O.raw_remove(_cache._chks[i]._vec.chunkKey(_cache._cidx));
-        }
+        if(_cache != null ) nukeCache();
         int cidx = Arrays.binarySearch(espc(),rowId);
         if(cidx < 0) cidx = (-cidx-2);
         _cache = getChunks(elem2ChunkIdx(rowId));
@@ -722,8 +724,7 @@ public class VecAry extends Iced {
     }
 
     public Futures close(Futures fs){
-      _cache.close(fs);
-      _cache = null;
+      nukeCache();
       return fs;
     }
     @Override
