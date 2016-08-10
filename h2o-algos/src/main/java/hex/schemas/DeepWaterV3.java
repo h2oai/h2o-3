@@ -52,6 +52,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "height",
         "channels",
         "network_definition_file",
+        "network_parameters_file",
+        "mean_image_file",
         "export_native_model_prefix",
     };
 
@@ -308,6 +310,9 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path of file containing network (initial) parameters (weights, biases).")
     public String network_parameters_file;
+
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path of file containing the mean image data for data normalization.")
+    public String mean_image_file;
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path (prefix) where to export the native model after every iteration.")
     public String export_native_model_prefix;
