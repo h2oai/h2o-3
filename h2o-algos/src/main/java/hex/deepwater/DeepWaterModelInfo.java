@@ -1,14 +1,14 @@
 package hex.deepwater;
 
 import hex.Model;
-import static hex.deepwater.DeepWaterParameters.Network.USER;
+import static hex.deepwater.DeepWaterParameters.Network.user;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.gpu.ImageTrain;
 import water.util.*;
 
-import static hex.deepwater.DeepWaterParameters.Network.AUTO;
+import static hex.deepwater.DeepWaterParameters.Network.auto;
 import static hex.deepwater.DeepWaterParameters.Network.inception_bn;
 
 import java.io.IOException;
@@ -28,6 +28,7 @@ final public class DeepWaterModelInfo extends Iced {
   int _width;
   int _channels;
   int _classes;
+  int _deviceID;
   byte[] _network;
   byte[] _modelparams;
   float[] _meanData; //mean pixel value of the training data
@@ -85,6 +86,7 @@ final public class DeepWaterModelInfo extends Iced {
     parameters = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     _model_id = model_id;
     DeepWaterParameters.Sanity.modifyParms(parameters, parameters, _classes); //sanitize the model_info's parameters
+    _deviceID=parameters._device_id;
 
     if (parameters._checkpoint!=null) {
       try {
@@ -104,7 +106,7 @@ final public class DeepWaterModelInfo extends Iced {
             _width = 28;
             _height = 28;
             break;
-          case AUTO:
+          case auto:
           case alexnet:
           case inception_bn:
           case googlenet:
@@ -117,16 +119,16 @@ final public class DeepWaterModelInfo extends Iced {
             _width = 320;
             _height = 320;
             break;
-          case USER:
+          case user:
             throw new H2OIllegalArgumentException("_network", "Please specify width and height for user-given model definition.");
           default:
             throw H2O.unimpl("Unknown network type: " + parameters._network);
         }
       }
       try {
-        _imageTrain = new ImageTrain(_width, _height, _channels);
-        if (parameters._network != USER) {
-          String network = parameters._network == AUTO ? inception_bn.toString() : parameters._network.toString();
+        _imageTrain = new ImageTrain(_width, _height, _channels, _deviceID);
+        if (parameters._network != user) {
+          String network = parameters._network == auto ? inception_bn.toString() : parameters._network.toString();
           Log.info("Creating a fresh model of the following network type: " + network);
           _imageTrain.buildNet(_classes, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
         }
@@ -207,7 +209,7 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, network);
-      if (_imageTrain==null) _imageTrain = new ImageTrain();
+      if (_imageTrain==null) _imageTrain = new ImageTrain(_width, _height, _channels, _deviceID);
       _imageTrain.loadModel(path.toString());
       _imageTrain.setOptimizer(_classes, get_params()._mini_batch_size);
     } catch (IOException e) {
