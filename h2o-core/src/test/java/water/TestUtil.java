@@ -174,6 +174,30 @@ public class TestUtil extends Iced {
     return file;
   }
 
+  /** Compare 2 frames
+   *  @param fr1 Frame
+   *  @param fr2 Frame
+   *  @param epsilon Relative tolerance for floating point numbers
+   *  @return true if equal  */
+  public static boolean isIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon) {
+    if (fr1 == fr2) return true;
+    if( fr1.numCols() != fr2.numCols() ) return false;
+    if( fr1.numRows() != fr2.numRows() ) return false;
+    Scope.enter();
+    if( !fr1.isCompatible(fr2) ) fr1.makeCompatible(fr2);
+    boolean identical = !(new Cmp1(epsilon).doAll(new Frame(fr1).add(fr2))._unequal);
+    Scope.exit();
+    return identical;
+  }
+
+  /** Compare 2 frames
+   *  @param fr1 Frame
+   *  @param fr2 Frame
+   *  @return true if equal  */
+  public static boolean isBitIdentical(Frame fr1, Frame fr2) {
+    return isIdenticalUpToRelTolerance(fr1,fr2,0);
+  }
+
   /** Hunt for test files in likely places.  Null if cannot find.
    *  @param fname Test filename
    *  @return      Found file or null */
@@ -256,20 +280,6 @@ public class TestUtil extends Iced {
 
   // ==== Comparing Results ====
 
-  /** Compare 2 frames
-   *  @param fr1 Frame
-   *  @param fr2 Frame
-   *  @return true if equal  */
-  protected static boolean isBitIdentical( Frame fr1, Frame fr2 ) {
-    if (fr1 == fr2) return true;
-    if( fr1.numCols() != fr2.numCols() ) return false;
-    if( fr1.numRows() != fr2.numRows() ) return false;
-    if( fr1.isCompatible(fr2) )
-      return !(new Cmp1().doAll(new Frame(fr1).add(fr2))._unequal);
-    // Else do it the slow hard way
-    return !(new Cmp2(fr2).doAll(fr1)._unequal);
-  }
-
   public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
@@ -330,8 +340,34 @@ public class TestUtil extends Iced {
     return flipped;
   }
 
-  // Fast compatible Frames
-  private static class Cmp1 extends MRTask<Cmp1> {
+  // Run tests from cmd-line since testng doesn't seem to be able to it.
+  public static void main( String[] args ) {
+    H2O.main(new String[0]);
+    for( String arg : args ) {
+      try {
+        System.out.println("=== Starting "+arg);
+        Class clz = Class.forName(arg);
+        Method main = clz.getDeclaredMethod("main");
+        main.invoke(null);
+      } catch( InvocationTargetException ite ) {
+        Throwable e = ite.getCause();
+        e.printStackTrace();
+        try { Thread.sleep(100); } catch( Exception ignore ) { }
+      } catch( Exception e ) {
+        e.printStackTrace();
+        try { Thread.sleep(100); } catch( Exception ignore ) { }
+      } finally {
+        System.out.println("=== Stopping "+arg);
+      }
+    }
+    try { Thread.sleep(100); } catch( Exception ignore ) { }
+    if( args.length != 0 )
+      UDPRebooted.T.shutdown.send(H2O.SELF);
+  }
+
+  protected static class Cmp1 extends MRTask<Cmp1> {
+    final double _epsilon;
+    Cmp1( double epsilon ) { _epsilon = epsilon; }
     boolean _unequal;
     @Override public void map( Chunk chks[] ) {
       for( int cols=0; cols<chks.length>>1; cols++ ) {
@@ -358,7 +394,7 @@ public class TestUtil extends Iced {
             }
           }else {
             double d0 = c0.atd(rows), d1 = c1.atd(rows);
-            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1)) {
+            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && !(Math.abs(d0-d1)<=Math.abs(d0+d1)*_epsilon) ) {
               _unequal = true;
               return;
             }
@@ -367,50 +403,5 @@ public class TestUtil extends Iced {
       }
     }
     @Override public void reduce( Cmp1 cmp ) { _unequal |= cmp._unequal; }
-  }
-  // Slow incompatible frames
-  private static class Cmp2 extends MRTask<Cmp2> {
-    final Frame _fr;
-    Cmp2( Frame fr ) { _fr = fr; }
-    boolean _unequal;
-    @Override public void map( Chunk chks[] ) {
-      for( int cols=0; cols<chks.length>>1; cols++ ) {
-        if( _unequal ) return;
-        Chunk c0 = chks[cols];
-        Vec v1 = _fr.vecs()[cols];
-        for( int rows = 0; rows < chks[0]._len; rows++ ) {
-          double d0 = c0.atd(rows), d1 = v1.at(c0.start() + rows);
-          if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
-            _unequal = true; return;
-          }
-        }
-      }
-    }
-    @Override public void reduce( Cmp2 cmp ) { _unequal |= cmp._unequal; }
-  }
-
-  // Run tests from cmd-line since testng doesn't seem to be able to it.
-  public static void main( String[] args ) {
-    H2O.main(new String[0]);
-    for( String arg : args ) {
-      try {
-        System.out.println("=== Starting "+arg);
-        Class clz = Class.forName(arg);
-        Method main = clz.getDeclaredMethod("main");
-        main.invoke(null);
-      } catch( InvocationTargetException ite ) {
-        Throwable e = ite.getCause();
-        e.printStackTrace();
-        try { Thread.sleep(100); } catch( Exception ignore ) { }
-      } catch( Exception e ) {
-        e.printStackTrace();
-        try { Thread.sleep(100); } catch( Exception ignore ) { }
-      } finally {
-        System.out.println("=== Stopping "+arg);
-      }
-    }
-    try { Thread.sleep(100); } catch( Exception ignore ) { }
-    if( args.length != 0 )
-      UDPRebooted.T.shutdown.send(H2O.SELF);
   }
 }

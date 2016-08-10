@@ -379,7 +379,7 @@ public class LinearAlgebraUtils {
           nc[0].addNA();
         } else {
           int which = (int) cs[0].at8(i);
-          nc[0].addNum(_yCoord[which]);
+          nc[0].addNum((float)_yCoord[which]); //make it more reproducible by casting to float
         }
       }
     }
@@ -392,8 +392,14 @@ public class LinearAlgebraUtils {
             /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
     DKV.put(dinfo);
     Gram.GramTask gtsk = new Gram.GramTask(null, dinfo).doAll(dinfo._adaptedFrame);
+    // round the numbers to float precision to be more reproducible
+//    double[] rounded = gtsk._gram._diag;
+    double[] rounded = new double[gtsk._gram._diag.length];
+    for (int i = 0; i < rounded.length; ++i)
+      rounded[i] = (float) gtsk._gram._diag[i];
     dinfo.remove();
-    return new ProjectOntoEigenVector(multiple(gtsk._gram._diag,(int)gtsk._nobs,1)).doAll(1,(byte)3,train).outputFrame().anyVec();
+    Vec v = new ProjectOntoEigenVector(multiple(rounded, (int) gtsk._nobs, 1)).doAll(1, (byte) 3, train).outputFrame().anyVec();
+    return v;
   }
   public static ToEigenVec toEigen = new ToEigenVec() {
     @Override public Vec toEigenVec(Vec src) { return toEigen(src); }

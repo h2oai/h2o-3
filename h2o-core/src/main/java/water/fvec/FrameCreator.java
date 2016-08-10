@@ -72,11 +72,10 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       for (int c : _cat_cols) {
         _domain[c] = new String[_createFrame.factors];
         for (int i = 0; i < _createFrame.factors; ++i) {
-          _domain[c][i] = UUID.randomUUID().toString().subSequence(0, 5).toString();
-          // make sure that there's no pure number-labels
-          while (_domain[c][i].matches("^\\d+$") || _domain[c][i].matches("^\\d+e\\d+$")) {
-            _domain[c][i] = UUID.randomUUID().toString().subSequence(0, 5).toString();
-          }
+          byte[] data = new byte[16];
+          Random rng = RandomUtils.getRNG(_createFrame.seed + c*0xDECAF + i);
+          rng.nextBytes(data);
+          _domain[c][i] = "c" + c + ".l" + i;
         }
       }
     }
