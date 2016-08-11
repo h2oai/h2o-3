@@ -116,7 +116,7 @@ echo After test cleanup...
 cleanup
 
 SSL_CONFIG="src/test/resources/ssl.properties"
-SSL="-ssl_config "$SSL_CONFIG
+SSL="-internal_security_conf "$SSL_CONFIG
 CLUSTER_NAME=$CLUSTER_NAME"_2"
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.1 2>&1 & PID_1=$!
 $JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out $SSL 1> $OUTDIR/out.2 2>&1 & PID_2=$!

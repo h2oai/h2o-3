@@ -3,11 +3,11 @@ SSL=""
 TEST_SSL=""
 if [[ "$@" == "ssl" ]]; then
   if [ ! -f "../h2o-algos/src/test/resources/ssl.properties" ]; then
-    SSL="-ssl_config ../../h2o-algos/src/test/resources/ssl2.properties"
-    TEST_SSL="-Dai.h2o.ssl_config=../../h2o-algos/src/test/resources/ssl2.properties"
+    SSL="-internal_security_conf ../../h2o-algos/src/test/resources/ssl2.properties"
+    TEST_SSL="-Dai.h2o.internal_security_conf=../../h2o-algos/src/test/resources/ssl2.properties"
   else
-    SSL="-ssl_config ../h2o-algos/src/test/resources/ssl.properties"
-    TEST_SSL="-Dai.h2o.ssl_config=../h2o-algos/src/test/resources/ssl.properties"
+    SSL="-internal_security_conf ../h2o-algos/src/test/resources/ssl.properties"
+    TEST_SSL="-Dai.h2o.internal_security_conf=../h2o-algos/src/test/resources/ssl.properties"
   fi
 
 fi

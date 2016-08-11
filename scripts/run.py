@@ -361,7 +361,7 @@ class H2OCloudNode(object):
             cmd = cmd[:1] + [jacoco] + cmd[1:]
 
         if self.test_ssl:
-            cmd.append("-ssl_config")
+            cmd.append("-internal_security_conf")
             if g_convenient:
                 cmd.append("../h2o-algos/src/test/resources/ssl.properties")
             else:

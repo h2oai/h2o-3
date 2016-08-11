@@ -299,7 +299,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       }
 
       // Need to modify this config here as we don't know the destination dir for keys when generating it
-      if("ssl.config".equals(basename)) {
+      if("default-security.config".equals(basename)) {
         modifyKeyPath(fileName, ice_root);
       }
     }

@@ -47,7 +47,7 @@ public class H2OSecurityManager {
 
     H2OSecurityManager() {
         try {
-            if (null != H2O.ARGS.ssl_config) {
+            if (null != H2O.ARGS.internal_security_conf) {
                 this.sslSocketChannelFactory = new SSLSocketChannelFactory();
                 this.securityEnabled = true;
             }

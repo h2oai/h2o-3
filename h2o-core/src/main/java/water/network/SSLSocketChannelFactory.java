@@ -19,7 +19,7 @@ public class SSLSocketChannelFactory {
     public SSLSocketChannelFactory() throws SSLContextException {
         try {
             SSLProperties props = new SSLProperties();
-            props.load(new FileInputStream(H2O.ARGS.ssl_config));
+            props.load(new FileInputStream(H2O.ARGS.internal_security_conf));
             init(props);
         } catch (IOException e) {
             Log.err("Failed to initialized SSL context.", e);
@@ -34,7 +34,7 @@ public class SSLSocketChannelFactory {
     private void init(SSLProperties props) throws SSLContextException {
         properties = props;
         try {
-            if (sslParamsPresent()) {
+            if (requiredParamsPresent()) {
                 this.sslContext = SSLContext.getInstance(properties.h2o_ssl_protocol());
                 this.sslContext.init(keyManager(), trustManager(), null);
             } else {
@@ -62,11 +62,9 @@ public class SSLSocketChannelFactory {
     }
 
 
-    private boolean sslParamsPresent() {
+    private boolean requiredParamsPresent() {
         return null != properties.h2o_ssl_jks_internal() &&
-                null != properties.h2o_ssl_jks_password() &&
-                null != properties.h2o_ssl_jts() &&
-                null != properties.h2o_ssl_jts_password();
+                null != properties.h2o_ssl_jks_password();
     }
 
     private TrustManager[] trustManager() throws
@@ -77,7 +75,7 @@ public class SSLSocketChannelFactory {
                 new FileInputStream(properties.h2o_ssl_jts()),
                 properties.h2o_ssl_jts_password().toCharArray()
         );
-        TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         tmf.init(ksTrust);
         return tmf.getTrustManagers();
     }
@@ -88,7 +86,7 @@ public class SSLSocketChannelFactory {
         ksKeys.load(new FileInputStream(properties.h2o_ssl_jks_internal()),
                 properties.h2o_ssl_jks_password().toCharArray()
         );
-        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         kmf.init(ksKeys, properties.h2o_ssl_jks_password().toCharArray());
         return kmf.getKeyManagers();
     }

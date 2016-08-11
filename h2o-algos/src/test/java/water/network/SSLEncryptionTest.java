@@ -44,7 +44,7 @@ public class SSLEncryptionTest extends TestUtil {
     }
 
     public static void testGBMRegressionGaussianSSL(String prop) {
-        stall_till_cloudsize(new String[] {"-ssl_config", prop}, 4);
+        stall_till_cloudsize(new String[] {"-internal_security_conf", prop}, 4);
         testGBMRegressionGaussian();
     }
 

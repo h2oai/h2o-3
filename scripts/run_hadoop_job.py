@@ -48,7 +48,7 @@ class H2OCloud:
                '-disown']
 
         if self.test_ssl:
-            cmd.append("-ssl_config")
+            cmd.append("-internal_security_conf")
 
         print("+ CMD: " + str(cmd))
         returncode = subprocess.call(cmd)

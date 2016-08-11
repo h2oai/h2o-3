@@ -16,7 +16,7 @@ class SSLProperties extends Properties {
 
     String h2o_ssl_jks_internal() { return getProperty("h2o_ssl_jks_internal"); }
     String h2o_ssl_jks_password() { return getProperty("h2o_ssl_jks_password"); }
-    String h2o_ssl_jts() { return getProperty("h2o_ssl_jts"); }
-    String h2o_ssl_jts_password() { return getProperty("h2o_ssl_jts_password"); }
+    String h2o_ssl_jts() { return getProperty("h2o_ssl_jts") != null ? getProperty("h2o_ssl_jts") : getProperty("h2o_ssl_jks_internal"); }
+    String h2o_ssl_jts_password() { return getProperty("h2o_ssl_jts_password") != null ? getProperty("h2o_ssl_jts_password") : getProperty("h2o_ssl_jks_password"); }
 
 }

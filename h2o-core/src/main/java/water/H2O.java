@@ -160,8 +160,8 @@ final public class H2O {
             "    -login_conf <filename>\n" +
             "          LoginService configuration file\n" +
             "\n" +
-            "    -ssl_config <filename>\n" +
-            "          Path (absolute or relative) to a file containing all SSL related configurations\n" +
+            "    -internal_security_conf <filename>\n" +
+            "          Path (absolute or relative) to a file containing all internal security related configurations\n" +
             "\n" +
             "Cloud formation behavior:\n" +
             "\n" +
@@ -301,8 +301,8 @@ final public class H2O {
     /** -login_conf is login configuration service file on local filesystem */
     public String login_conf = null;
 
-    /** -ssl_config path (absolute or relative) to a file containing all SSL related configurations */
-    public String ssl_config = null;
+    /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
+    public String internal_security_conf = null;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -527,9 +527,9 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         ARGS.login_conf = args[i];
       }
-      else if (s.matches("ssl_config")) {
+      else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
-        ARGS.ssl_config = args[i];
+        ARGS.internal_security_conf = args[i];
       }
       else {
         parseFailed("Unknown argument (" + s + ")");

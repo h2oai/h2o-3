@@ -84,7 +84,8 @@ public class h2odriver extends Configured implements Tool {
   static ArrayList<String> extraJvmArguments = new ArrayList<String>();
   static String jksFileName = null;
   static String jksPass = null;
-  static String sslConfig = null;
+  static String securityConf = null;
+  static boolean internal_secure_connections = false;
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
   static boolean kerberosLogin = false;
@@ -785,13 +786,12 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         jksPass = args[i];
       }
-      else if (s.equals("-ssl_config")) {
-        if (i+1 >= args.length || args[i+1].startsWith("-")) {
-          sslConfig = "";
-        } else {
-          i++;
-          sslConfig = args[i];
-        }
+      else if (s.equals("-internal_secure_connections")) {
+        internal_secure_connections = true;
+      }
+      else if (s.equals("-internal_security")) {
+        i++; if (i >= args.length) { usage(); }
+        securityConf = args[i];
       }
       else if (s.equals("-hash_login")) {
         hashLogin = true;
@@ -1250,15 +1250,13 @@ public class h2odriver extends Configured implements Tool {
     }
 
     // SSL
-    if (null != sslConfig) {
-      if (sslConfig.isEmpty()) {
-        SecurityUtils.SSLCredentials credentials = SecurityUtils.generateSSLPair();
-        String sslConfigFile = SecurityUtils.generateSSLConfig(credentials);
-        addMapperConf(conf, "", credentials.jks.getLocation(), credentials.jks.getLocation());
-        addMapperConf(conf, "-ssl_config", "ssl.config", sslConfigFile);
-      } else {
-        addMapperConf(conf, "-ssl_config", "ssl.config", sslConfig);
-      }
+    if (null != securityConf && !securityConf.isEmpty()) {
+      addMapperConf(conf, "-internal_security_conf", "security.config", securityConf);
+    } else if(internal_secure_connections) {
+      SecurityUtils.SSLCredentials credentials = SecurityUtils.generateSSLPair();
+      String sslConfigFile = SecurityUtils.generateSSLConfig(credentials);
+      addMapperConf(conf, "", credentials.jks.name, credentials.jks.getLocation());
+      addMapperConf(conf, "-internal_security_conf", "default-security.config", sslConfigFile);
     }
 
     conf.set(h2omapper.H2O_MAPPER_CONF_LENGTH, Integer.toString(mapperConfLength));
