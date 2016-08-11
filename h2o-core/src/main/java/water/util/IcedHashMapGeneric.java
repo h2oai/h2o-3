@@ -15,6 +15,13 @@ import java.util.Set;
  * Iced / Freezable NonBlockingHashMap abstract base class.
  */
 public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Cloneable, Serializable {
+
+  public boolean isSupportedKeyType(Object K) {
+    return (K instanceof Freezable[] || K instanceof Freezable || K instanceof String);
+  }
+  public boolean isSupportedValType(Object V) {
+    return (V instanceof Freezable[] || V instanceof Freezable || V instanceof String || V instanceof Integer);
+  }
   public IcedHashMapGeneric(){init();}
   private transient volatile boolean _write_lock;
   transient NonBlockingHashMap<K,V> _map;
@@ -24,9 +31,19 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
   public boolean containsKey(Object key)                { return map().containsKey(key); }
   public boolean containsValue(Object value)            { return map().containsValue(value); }
   public V get(Object key)                              { return (V)map().get(key); }
-  public V put(K key, V value)                          { assert !_write_lock; return (V)map().put(key, value);}
+  public V put(K key, V val)                          {
+    assert !_write_lock;
+    if(!isSupportedKeyType(key))
+      throw new IllegalArgumentException("given key type is not supported: " + key.getClass().getName());
+    if(!isSupportedValType(val))
+      throw new IllegalArgumentException("given val type is not supported: " + val.getClass().getName());
+    return (V)map().put(key, val);
+  }
   public V remove(Object key)                           { assert !_write_lock; return map().remove(key); }
-  public void putAll(Map<? extends K, ? extends V> m)   { assert !_write_lock;        map().putAll(m); }
+  public void putAll(Map<? extends K, ? extends V> m)   { assert !_write_lock;
+    for(Entry<? extends K, ? extends V> e:m.entrySet())
+      put(e.getKey(),e.getValue());
+  }
   public void clear()                                   { assert !_write_lock;        map().clear(); }
   public Set<K> keySet()                                { return map().keySet(); }
   public Collection<V> values()                         { return map().values(); }
@@ -41,7 +58,7 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
   private boolean isStringVal(int mode){return mode == 1 || mode == 2;}
   private boolean isFreezeVal(int mode){return mode == 3 || mode == 4;}
   private boolean isFArrayVal(int mode){return mode == 5 || mode == 6;}
-  private boolean isObjectVal(int mode){return mode == 7 || mode == 8;}
+  private boolean isIntegrVal(int mode){return mode == 7 || mode == 8;}
 
   // This comment is stolen from water.parser.Categorical:
   //
@@ -67,8 +84,10 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
             mode = 3;
           } else if(val instanceof Freezable[]) {
             mode = 5;
-          } else {
+          } else if( val instanceof Integer ){
             mode = 7;
+          } else {
+            throw new IllegalArgumentException("unsupported value class " + val.getClass().getName());
           }
         } else {
           if(!(key instanceof Iced))
@@ -79,8 +98,10 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
             mode = 4;
           } else if(val instanceof Freezable[]) {
             mode = 6;
-          } else {
+          } else if (val instanceof Integer){
             mode = 8;
+          } else {
+            throw new IllegalArgumentException("unsupported value class " + val.getClass().getName());
           }
         }
         ab.put1(mode);              // Type of hashmap being serialized
@@ -95,8 +116,8 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
         else if (isFArrayVal(mode)) {
           ab.put4(((Freezable[]) val).length);
           for (Freezable v : (Freezable[]) val) ab.put(v);
-        } else if(isObjectVal(mode))
-          ab.putSer(val);
+        } else if(isIntegrVal(mode))
+          ab.put4((Integer)val);
         else
           throw H2O.fail();
       }
@@ -137,8 +158,8 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
           Freezable[] vals = new Freezable[ab.get4()];
           for (int i = 0; i < vals.length; ++i) vals[i] = ab.get();
           val = (V)vals;
-        } else if(isObjectVal(mode))
-          val = (V)ab.getSer();
+        } else if(isIntegrVal(mode))
+          val = (V) (new Integer(ab.get4()));
         else
           throw H2O.fail();
         map.put(key,val);

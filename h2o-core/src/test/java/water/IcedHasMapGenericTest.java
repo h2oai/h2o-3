@@ -26,14 +26,13 @@ public class IcedHasMapGenericTest extends TestUtil {
     m.put("haha","gaga"); // String -> String pair
     m.put("str->freezable", new IcedDouble(3.14)); // String -> String pair
     m.put("str->freezable[]", new Freezable[]{new IcedDouble(3.14)}); // String -> String pair
-    m.put("str->Object", new Double(3.14)); // String -> String pair
+    m.put("str->Integer", 314); // String -> String pair
 
     m.put(new BufferedString("haha2"),"gaga"); // Freezable -> String pair
     m.put(new BufferedString("str->freezable2"), new IcedDouble(3.14)); // String -> String pair
     m.put(new BufferedString("str->freezable[]2"), new Freezable[]{new IcedDouble(3.14)}); // String -> String pair
-    m.put(new BufferedString("str->Object2"), new Double(3.14)); // String -> String pair
-    m.put(new IcedLong(1234), new Long(1234)); // String -> String pair
-    m.put(new Long(1234),new Long(54321));
+    m.put(new BufferedString("str->Integer2"), 314); // String -> String pair
+    m.put(new IcedLong(1234), 1234); // String -> String pair
 
     byte [] buf = new AutoBuffer().put(m).buf();
     IcedHashMapGeneric m2 = new AutoBuffer(buf).get();
