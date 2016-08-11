@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import water.Weaver;
 import water.api.API;
 import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.lang.reflect.Field;
@@ -68,7 +69,7 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   public long run_time;
 
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)
-  public IcedHashMap.IcedHashMapStringString help;
+  public IcedHashMapGeneric.IcedHashMapStringString help;
 
   public ModelOutputSchemaV3() {
     super();
@@ -82,7 +83,7 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   }
 
   private void fillHelp() {
-    this.help = new IcedHashMap.IcedHashMapStringString();
+    this.help = new IcedHashMapGeneric.IcedHashMapStringString();
     try {
       Field[] dest_fields = Weaver.getWovenFields(this.getClass());
       for (Field f : dest_fields) {

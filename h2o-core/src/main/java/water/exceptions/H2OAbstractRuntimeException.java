@@ -3,6 +3,7 @@ package water.exceptions;
 import water.util.HttpResponseStatus;
 import water.H2OError;
 import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 
 /**
  * RuntimeException which results in an http 400 error, and serves as a base class for other error types.
@@ -13,9 +14,9 @@ abstract public class H2OAbstractRuntimeException extends RuntimeException {
 
   public long timestamp;
   public String dev_message;
-  public IcedHashMap.IcedHashMapStringObject values;
+  public IcedHashMapGeneric.IcedHashMapStringObject values;
 
-  public H2OAbstractRuntimeException(String message, String dev_message, IcedHashMap.IcedHashMapStringObject values) {
+  public H2OAbstractRuntimeException(String message, String dev_message, IcedHashMapGeneric.IcedHashMapStringObject values) {
     super(message);
 
     this.timestamp = System.currentTimeMillis();
@@ -24,7 +25,7 @@ abstract public class H2OAbstractRuntimeException extends RuntimeException {
   }
 
   public H2OAbstractRuntimeException(String msg, String dev_msg) {
-    this(msg, dev_msg, new IcedHashMap.IcedHashMapStringObject());
+    this(msg, dev_msg, new IcedHashMapGeneric.IcedHashMapStringObject());
   }
 
   public H2OError toH2OError() {

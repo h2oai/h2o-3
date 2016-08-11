@@ -4,6 +4,7 @@ import water.AutoBuffer;
 import water.Freezable;
 import water.H2O;
 import water.Iced;
+import water.nbhm.NonBlockingHashMap;
 
 import java.io.Serializable;
 import java.util.Collection;
@@ -13,9 +14,11 @@ import java.util.Set;
 /**
  * Iced / Freezable NonBlockingHashMap abstract base class.
  */
-public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, Cloneable, Serializable {
+public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Cloneable, Serializable {
+  public IcedHashMapGeneric(){init();}
   private transient volatile boolean _write_lock;
-  abstract protected Map<K,V> map();
+  transient NonBlockingHashMap<K,V> _map;
+  protected Map<K,V> map(){return _map;}
   public int size()                                     { return map().size(); }
   public boolean isEmpty()                              { return map().isEmpty(); }
   public boolean containsKey(Object key)                { return map().containsKey(key); }
@@ -33,8 +36,13 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
 
 
   private boolean isStringKey(int mode){
-    return mode == 1 || mode == 2 || mode == 5;
+    return mode % 2 == 1;
   }
+  private boolean isStringVal(int mode){return mode == 1 || mode == 2;}
+  private boolean isFreezeVal(int mode){return mode == 3 || mode == 4;}
+  private boolean isFArrayVal(int mode){return mode == 5 || mode == 6;}
+  private boolean isObjectVal(int mode){return mode == 7 || mode == 8;}
+
   // This comment is stolen from water.parser.Categorical:
   //
   // Since this is a *concurrent* hashtable, writing it whilst its being
@@ -45,32 +53,54 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
   // random Value is written.
   public final AutoBuffer write_impl( AutoBuffer ab ) {
     _write_lock = true;
-    try {
-      if (map().size() == 0) return ab.put1(0); // empty map
-      Entry<K, V> entry = map().entrySet().iterator().next();
-      K key = entry.getKey();
-      V val = entry.getValue();
-      assert key != null && val != null;
-      int mode;
-      if (key instanceof String) {
-        if (val instanceof String) {
-          mode = 1;
+    try{
+      for( Entry<K, V> e : map().entrySet() ) {
+        K key = e.getKey();
+        assert key != null;
+        V val = e.getValue();
+        assert val != null;
+        int mode = 0;
+        if (key instanceof String) {
+          if (val instanceof String) {
+            mode = 1;
+          } else if(val instanceof Freezable){
+            mode = 3;
+          } else if(val instanceof Freezable[]) {
+            mode = 5;
+          } else {
+            mode = 7;
+          }
         } else {
-          assert (val instanceof Freezable || val instanceof Freezable[]):"incompatible class " + val.getClass();
-          mode = val instanceof Freezable ? 2 : 5;
+          if(!(key instanceof Iced))
+            throw new IllegalArgumentException("key must be String or Freezable, got " + key.getClass().getName());
+          if (val instanceof String) {
+            mode = 2;
+          } else if(val instanceof Freezable) {
+            mode = 4;
+          } else if(val instanceof Freezable[]) {
+            mode = 6;
+          } else {
+            mode = 8;
+          }
         }
-      } else {
-        assert key instanceof Iced;
-        if (val instanceof String) {
-          mode = 3;
-        } else {
-          assert (val instanceof Freezable || val instanceof Freezable[]);
-          mode = val instanceof Freezable ? 4 : 6;
-        }
+        ab.put1(mode);              // Type of hashmap being serialized
+        // put key
+        if (isStringKey(mode)) ab.putStr((String) key);
+        else ab.put((Freezable) key);
+        // put value
+        if (isStringVal(mode))
+          ab.putStr((String) val);
+        else if(isFreezeVal(mode))
+          ab.put((Freezable) val);
+        else if (isFArrayVal(mode)) {
+          ab.put4(((Freezable[]) val).length);
+          for (Freezable v : (Freezable[]) val) ab.put(v);
+        } else if(isObjectVal(mode))
+          ab.putSer(val);
+        else
+          throw H2O.fail();
       }
-      ab.put1(mode);              // Type of hashmap being serialized
-      writeMap(ab, mode);          // Do the hard work of writing the map
-      return isStringKey(mode) ? ab.putStr(null) : ab.put(null);
+      ab.put1(-1);
     } catch(Throwable t){
       System.err.println("Iced hash map serialization failed! " + t.toString() + ", msg = " + t.getMessage());
       t.printStackTrace();
@@ -78,48 +108,40 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     } finally {
       _write_lock = false;
     }
+    return ab;
   }
 
-  abstract protected Map<K,V> init();
+  protected Map<K, V> init() { return _map = new NonBlockingHashMap<>(); }
 
-  protected void writeMap(AutoBuffer ab, int mode) {
-    for( Entry<K, V> e : map().entrySet() ) {
-      K key = e.getKey();   assert key != null;
-      V val = e.getValue(); assert val != null;
-      // put key
-      if( mode==1 || mode==2 || mode==5 ) ab.putStr((String)key); else ab.put((Freezable)key);
 
-      // put value
-      if( mode==1 || mode==3 ) ab.putStr((String)val);
-      else if( mode==5 || mode==6 ) {
-        ab.put4(((Freezable[]) val).length);
-        for (Freezable v : (Freezable[]) val) ab.put(v);
-      }
-      else ab.put((Freezable)val);
-    }
-  }
 
   /**
    * Helper for serialization - fills the mymap() from K-V pairs in the AutoBuffer object
    * @param ab Contains the serialized K-V pairs
    */
-  public final IcedHashMapBase read_impl(AutoBuffer ab) {
+  public final IcedHashMapGeneric read_impl(AutoBuffer ab) {
     try {
       assert map() == null || map().isEmpty(); // Fresh from serializer, no constructor has run
       Map<K, V> map = init();
-      int mode = ab.get1();
-      if (mode == 0) return this;
       K key;
       V val;
-      while ((key = (isStringKey(mode) ? (K) ab.getStr() : (K) ab.get())) != null) {
-        if (mode == 5 || mode == 6) {
+      int mode;
+      while ((mode = ab.get1()) != -1) {
+        key = isStringKey(mode)?(K)ab.getStr():(K)ab.get();
+
+        if (isStringVal(mode))
+          val = (V)ab.getStr();
+        else if(isFreezeVal(mode))
+          val = (V)ab.get();
+        else if (isFArrayVal(mode)) {
           Freezable[] vals = new Freezable[ab.get4()];
           for (int i = 0; i < vals.length; ++i) vals[i] = ab.get();
-          map.put(key, (V) vals);
-        } else {
-          val = ((mode == 1 || mode == 3) ? (V) ab.getStr() : (V) ab.get());
-          map.put(key, val);
-        }
+          val = (V)vals;
+        } else if(isObjectVal(mode))
+          val = (V)ab.getSer();
+        else
+          throw H2O.fail();
+        map.put(key,val);
       }
       return this;
     } catch(Throwable t) {
@@ -135,7 +157,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       }
     }
   }
-  public final IcedHashMapBase readJSON_impl( AutoBuffer ab ) {throw H2O.unimpl();}
+  public final IcedHashMapGeneric readJSON_impl(AutoBuffer ab ) {throw H2O.unimpl();}
 
   public final AutoBuffer writeJSON_impl( AutoBuffer ab ) {
     boolean first = true;
@@ -164,4 +186,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     // ab.put1('}'); // NOTE: the serialization framework adds this automagically
     return ab;
   }
+  // Subtypes which allow us to determine the type parameters at runtime, for generating schema metadata.
+  public static class IcedHashMapStringString extends IcedHashMapGeneric<String, String> {}
+  public static class IcedHashMapStringObject extends IcedHashMapGeneric<String, Object> {}
 }

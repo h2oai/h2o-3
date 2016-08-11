@@ -3,6 +3,7 @@ package water.exceptions;
 import water.util.HttpResponseStatus;
 import water.Keyed;
 import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 
 public class H2OKeyWrongTypeArgumentException extends H2OIllegalArgumentException {
   protected int HTTP_RESPONSE_CODE() { return HttpResponseStatus.NOT_FOUND.getCode(); }
@@ -11,7 +12,7 @@ public class H2OKeyWrongTypeArgumentException extends H2OIllegalArgumentExceptio
 
     super("Expected a " + expected.getSimpleName() + " for key argument: " + argument + " with value: " + value + ".  Found a: " + actual.getSimpleName(),
           "Expected a " + expected.getCanonicalName() + " for key argument: " + argument + " with value: " + value + ".  Found a: " + actual.getCanonicalName());
-    this.values = new IcedHashMap.IcedHashMapStringObject();
+    this.values = new IcedHashMapGeneric.IcedHashMapStringObject();
     this.values.put("argument", argument);
     this.values.put("value", value);
     this.values.put("expected_type", expected.getCanonicalName());

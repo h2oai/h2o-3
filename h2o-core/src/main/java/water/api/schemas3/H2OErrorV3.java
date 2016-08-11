@@ -4,6 +4,7 @@ import water.H2OError;
 import water.api.API;
 import water.api.SpecifiesHttpResponseCode;
 import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 
 
 /**
@@ -33,7 +34,7 @@ public class H2OErrorV3<I extends H2OError, S extends H2OErrorV3<I, S>>
 //  public int error_id;
 
   @API(help="Any values that are relevant to reporting or handling this error.  Examples are a key name if the error is on a key, or a field name and object name if it's on a specific field.", direction=API.Direction.OUTPUT)
-  public IcedHashMap.IcedHashMapStringObject values;
+  public IcedHashMapGeneric.IcedHashMapStringObject values;
 
   @API(help="Exception type, if any.", direction=API.Direction.OUTPUT)
   public String exception_type;

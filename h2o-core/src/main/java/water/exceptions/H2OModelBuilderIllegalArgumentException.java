@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import water.H2OModelBuilderError;
 import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 
 public class H2OModelBuilderIllegalArgumentException extends H2OIllegalArgumentException {
   /** Raw-message constructor for use by the factory method. */
@@ -18,7 +19,7 @@ public class H2OModelBuilderIllegalArgumentException extends H2OIllegalArgumentE
 
     H2OModelBuilderIllegalArgumentException exception = new H2OModelBuilderIllegalArgumentException(msg, msg);
 
-    exception.values = new IcedHashMap.IcedHashMapStringObject();
+    exception.values = new IcedHashMapGeneric.IcedHashMapStringObject();
     exception.values.put("algo", algo);
     exception.values.put("parameters", parameters);
     exception.values.put("error_count", builder.error_count());
