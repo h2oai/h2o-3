@@ -1,5 +1,6 @@
 package hex.deepwater;
 
+import com.sun.javafx.scene.shape.PathUtils;
 import hex.Model;
 import static hex.deepwater.DeepWaterParameters.Network.user;
 import water.*;
@@ -10,7 +11,9 @@ import water.util.*;
 
 import static hex.deepwater.DeepWaterParameters.Network.auto;
 import static hex.deepwater.DeepWaterParameters.Network.inception_bn;
+import static water.gpu.deepwater.loadNDArray;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -126,6 +129,7 @@ final public class DeepWaterModelInfo extends Iced {
         }
       }
       try {
+        assert _imageTrain==null;
         _imageTrain = new ImageTrain(_width, _height, _channels, _deviceID);
         if (parameters._network != user) {
           String network = parameters._network == auto ? inception_bn.toString() : parameters._network.toString();
@@ -135,27 +139,42 @@ final public class DeepWaterModelInfo extends Iced {
         // load a network if specified
         final String networkDef = parameters._network_definition_file;
         if (networkDef != null && !networkDef.isEmpty()) {
-          Log.info("Loading the network from: " + networkDef);
-          _imageTrain.loadModel(networkDef);
-          Log.info("Setting the optimizer.");
-          _imageTrain.setOptimizer(_classes, parameters._mini_batch_size);
+          File f = new File(networkDef);
+          if(!f.exists() || f.isDirectory()) {
+            Log.err("Network definition file " + f + " not found.");
+          } else {
+            Log.info("Loading the network from: " + networkDef);
+            _imageTrain.loadModel(f.getAbsolutePath());
+            Log.info("Setting the optimizer.");
+            _imageTrain.setOptimizer(_classes, parameters._mini_batch_size);
+          }
         }
         final String networkParms = parameters._network_parameters_file;
         if (networkParms != null && !networkParms.isEmpty()) {
-          Log.info("Loading the parameters (weights/biases) from: " + networkParms);
-          _imageTrain.loadParam(networkParms);
+          File f = new File(networkParms);
+          if(!f.exists() || f.isDirectory()) {
+            Log.err("Parameter file " + f + " not found.");
+          } else {
+            Log.info("Loading the parameters (weights/biases) from: " + networkParms);
+            _imageTrain.loadParam(f.getAbsolutePath());
+          }
         } else {
           Log.warn("No network parameters file specified. Starting from scratch.");
         }
 
         final String meanData = parameters._mean_image_file;
         if (meanData != null && !meanData.isEmpty()) {
-          Log.info("Loading the parameters (weights/biases) from: " + networkParms);
-          _meanData = null; //loader(meanData);
+          File f = new File(meanData);
+          if(!f.exists() || f.isDirectory()) {
+            Log.err("Mean image file " + f + " not found.");
+          } else {
+            Log.info("Loading the parameters (weights/biases) from: " + networkParms);
+            _meanData = loadNDArray(f.getAbsolutePath());
+          }
         } else {
           Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
         }
-//        storeInternalState();
+        nativeToJava(); //store initial state
       } catch(Throwable t) {
         Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
         throw t;
