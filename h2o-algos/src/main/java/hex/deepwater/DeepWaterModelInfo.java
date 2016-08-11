@@ -174,7 +174,7 @@ final public class DeepWaterModelInfo extends Iced {
         } else {
           Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
         }
-        nativeToJava(); //store initial state
+        //nativeToJava(); //store initial state - Not clear why this isn't working
       } catch(Throwable t) {
         Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
         throw t;
