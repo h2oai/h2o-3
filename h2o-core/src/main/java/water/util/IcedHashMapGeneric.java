@@ -12,7 +12,15 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Iced / Freezable NonBlockingHashMap abstract base class.
+ *
+ * Generalization of standard IcedHashMap (Iced NBHM wrapper) with relaxed restrictions on K/V pairs.
+ *
+ * K/V pairs do not have to follow the same mode, each K/V pair is independent and can be one of:
+ *
+ * String | Freezable  -> Integer | String | Freezable | Freezable[].
+ *
+ * Values are type checked during put operation.
+ *
  */
 public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Cloneable, Serializable {
 
