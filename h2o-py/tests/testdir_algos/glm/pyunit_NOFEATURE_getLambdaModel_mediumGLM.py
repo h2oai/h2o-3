@@ -11,8 +11,8 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 import random
 
 def getLambdaModel():
-	
-	
+
+
 
 	print("Read data")
 	prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
@@ -24,14 +24,14 @@ def getLambdaModel():
 
 	print("Do lambda search and build models")
 	if family == "gaussian":
-#		model = h2o.glm(x=prostate[myX], y=prostate[myY], family=family, standardize=True, use_all_factor_levels=True, lambda_search=True)
+		# model = h2o.glm(x=prostate[myX], y=prostate[myY], family=family, standardize=True, use_all_factor_levels=True, lambda_search=True)
 		model = H2OGeneralizedLinearEstimator(family=family, standardize=True, use_all_factor_levels=True, lambda_search=True)
 		model.train(x=myX,y=myY,training_frame=prostate)
 	else:
 		prostate[myY] = prostate[myY].asfactor()
 		model = H2OGeneralizedLinearEstimator(family=family, standardize=True, use_all_factor_levels=True, lambda_search=True)
 		model.train(x=myX,y=myY,training_frame=prostate)
-#		model = h2o.glm(x=prostate[myX], y=prostate[myY].asfactor(), family=family, standardize=True, use_all_factor_levels=True, lambda_search=True)
+		# model = h2o.glm(x=prostate[myX], y=prostate[myY].asfactor(), family=family, standardize=True, use_all_factor_levels=True, lambda_search=True)
 
 	print("the models were built over the following lambda values: ")
 	all_lambdas = model.models(1).lambda_all()

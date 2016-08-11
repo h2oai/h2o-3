@@ -395,7 +395,7 @@ class Test_glm_grid_search:
                     grid_model_metrics = each_model.model_performance(test_data=self.training2_data)
                     manual_model_metrics = manual_model.model_performance(test_data=self.training2_data)
 
-                # just compare the mse in this case within tolerance:
+                    # just compare the mse in this case within tolerance:
                     if not((type(grid_model_metrics.mse()) == str) or (type(manual_model_metrics.mse()) == str)):
                         if (abs(grid_model_metrics.mse()) > 0) \
             and abs(grid_model_metrics.mse() - manual_model_metrics.mse())/grid_model_metrics.mse() > self.allowed_diff:
@@ -414,8 +414,8 @@ class Test_glm_grid_search:
 
             # make sure the max_runtime_secs is working to restrict model built time, GLM does not respect that.
             if not(manual_run_runtime <= total_run_time_limits):
- #               self.test_failed += 1
- #               self.test_failed_array[self.test_num] = 1
+                # self.test_failed += 1
+                # self.test_failed_array[self.test_num] = 1
                 print("test1_glm_grid_search_over_params for GLM warning: allow time to build models: {0}, actual "
                       "time taken: {1}".format(total_run_time_limits, manual_run_runtime))
 

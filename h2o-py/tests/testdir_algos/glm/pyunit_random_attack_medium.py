@@ -65,10 +65,10 @@ def random_attack():
             else:
                 print(k + ": {0}".format(v))
         if do_validation:
- #         h2o.glm(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
+          # h2o.glm(x=train[x], y=train[y], validation_x=valid[x], validation_y=valid[y], **kwargs)
           H2OGeneralizedLinearEstimator(**kwargs).train(x=x,y=y,training_frame=train,validation_frame=valid)
         else:
- #         h2o.glm(x=train[x], y=train[y], **kwargs)
+          # h2o.glm(x=train[x], y=train[y], **kwargs)
           H2OGeneralizedLinearEstimator(**kwargs).train(x=x,y=y,training_frame=train)
         print("-----------------------")
 
