@@ -124,23 +124,6 @@ For cluster startup, if you are not launching on Hadoop, then you will not need 
 Algorithms
 ----------
 
-**What does it mean if the R^2 value in my model is negative?**
-
-The coefficient of determination (also known as R^2) can be negative if:
-
--  linear regression is used without an intercept (constant)
--  non-linear functions are fitted to the data
--  predictions compared to the corresponding outcomes are not based on
-   the model-fitting procedure using those data
--  it is early in the build process (may self-correct as more trees are
-   added)
-
-If your R^2 value is negative after your model is complete, your model is
-likely incorrect. Make sure your data is suitable for the type of model,
-then try adding an intercept.
-
---------------
-
 **What's the process for implementing new algorithms in H2O?**
 
 This `blog post <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`__ by Cliff
