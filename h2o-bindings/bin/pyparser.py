@@ -163,8 +163,7 @@ def _tokenize(readline):
                 assert False, "Unexpected sequence of tokens: %r %r %r" % (pptok, ptok, tok)
         elif tok.op == COMMENT:
             if tok.start_col < tok.pre_indent:
-                # _warn("Comment '%s' is under-indented relative to the surrounding block" % tok.str)
-                pass
+                _warn("Comment '%s' is under-indented relative to the surrounding block" % tok.str)
         i -= 1
 
     return tokens
@@ -353,9 +352,21 @@ class ParsedBase(object):
         self._tokens = tokens
         self._parsed = None
         self._type = None
-        # line0 = tokens[0].start_row
-        # for t in self._tokens:
-        #     t.move(1 - line0)
+
+    def parse(self, level=1):
+        if level <= 0: return
+        self._parsed = self._parse()
+        if self._parsed:
+            for p in self._parsed:
+                assert isinstance(p, ParsedBase), "You should parse the tokens into a list of ParsedBase objects."
+                p.parse(level - 1)
+        return self
+
+    def unparse(self):
+        """Convert the parsed representation back into the source code."""
+        ut = Untokenizer(start_row=self._tokens[0].start_row)
+        self._unparse(ut)
+        return ut.result()
 
     @property
     def type(self):
@@ -364,19 +375,6 @@ class ParsedBase(object):
     @type.setter
     def type(self, val):
         self._type = val
-
-
-    def parse(self):
-        self._parsed = self._parse()
-        assert self._parsed is None or all(isinstance(p, ParsedBase) for p in self._parsed), \
-            "You should parse the tokens into a list of ParsedBase objects."
-        return self
-
-    def unparse(self):
-        """Convert the parsed representation back into the source code."""
-        ut = Untokenizer(start_row=self._tokens[0].start_row)
-        self._unparse(ut)
-        return ut.result()
 
     @property
     def tokens(self):
@@ -412,7 +410,7 @@ class ParsedBase(object):
                 except UnicodeEncodeError as e:
                     s += "<%s>: %s" % (p.__class__.__name__, e)
         else:
-            for line in tokenize.untokenize(t.token for t in self._tokens).splitlines(True):
+            for line in self.unparse().splitlines(True):
                 s += "    %s" % line
         return s
 
@@ -447,6 +445,13 @@ class Code(ParsedBase):
         fragments = []
         tokens = self._tokens
 
+        def advance_after_newline(i0):
+            """Return the index of the first token after the end of the current (logical) line."""
+            for i in range(i0, len(tokens)):
+                if tokens[i].op == NEWLINE:
+                    break
+            return i + 1
+
         i = 0
         while i < len(tokens):
             # Assume that we always start at the beginning of a new block
@@ -470,7 +475,7 @@ class Code(ParsedBase):
                 # Collapse multiple comment lines into a single comment fragment; but only if they are at the same
                 # level of indentation.
                 is_banner = False
-                while tokens[i].op == COMMENT and tokens[i].start_col == tok.start_col:
+                while i < len(tokens) and tokens[i].op == COMMENT and tokens[i].start_col == tok.start_col:
                     assert tokens[i + 1].op == NL, "Unexpected token after a comment: %r" % tokens[i + 1]
                     s = tokens[i].str
                     if re.match(r"^#\s?[#*=-]{10,}$", s) or re.match(r"^#\s?[#*=-]{4,}.*?[#*=-]{4,}$", s):
@@ -486,34 +491,27 @@ class Code(ParsedBase):
 
             elif tok.op == OP and tok.str == "@" and tokens[i + 1].op == NAME:
                 while tokens[i].op == OP and tokens[i].str == "@" and tokens[i + 1].op == NAME:
-                    # Skip until the end of the (logical) line
-                    while tokens[i].op != NEWLINE:
-                        i += 1
-                    i += 1
+                    i = advance_after_newline(i)
                 fragment_type = "decorator"
 
             elif tok.op == NAME and tok.str in {"from", "import"}:
                 while tokens[i].op == NAME and tokens[i].str in {"from", "import"}:
-                    while tokens[i].op != NEWLINE:
-                        i += 1
-                    i += 1  # eat the NEWLINE
+                    i = advance_after_newline(i)
                 fragment_type = "import"
 
             elif tok.op in {INDENT, DEDENT, NEWLINE}:
                 assert False, "Unexpected token %d: %r" % (i, tok)
 
             else:
-                while tokens[i].op != NEWLINE:
-                    i += 1
-                i += 1  # skip the NEWLINE too
-                if tokens[i].op == INDENT:
+                i = advance_after_newline(i)
+                if i < len(tokens) and tokens[i].op == INDENT:
                     level = 1
                     while level > 0:
                         i += 1
                         level += tokens[i].indent()
                     assert tokens[i].op == DEDENT
                     i += 1  # consume the last DEDENT
-                while tokens[i].op == COMMENT and tokens[i].start_col > tok.start_col:
+                while i < len(tokens) and tokens[i].op == COMMENT and tokens[i].start_col > tok.start_col:
                     assert tokens[i + 1].op == NL
                     i += 2
                 if tok.op == NAME and tok.str in {"def", "class"}:
@@ -714,11 +712,12 @@ class Callable(ParsedBase):
             i += 1
         if i < len(tokens):
             assert tokens[-1].op == DEDENT
+            body = Code(tokens[i + 1:-1])
             out.append(Declaration(tokens[i0:i]))
-            # out.append(Bident(tokens[i]))
-            # out.append(Code(tokens[i + 1:-1]))
-            # out.append(Bident(tokens[-1]))
-            out.append(Code(tokens[i:]))
+            out.append(Bident(tokens[i]))
+            out.append(body)
+            out.append(Bident(tokens[-1]))
+            body.parse()
         else:
             # It is possible to have a single-line function / class
             out.append(Declaration(tokens[i0:]))
@@ -803,13 +802,10 @@ class Bident(ParsedBase):
         super(Bident, self).__init__([])
         self._type = "Indent" if token.op == INDENT else "Dedent"
         self._tokens = [token]
-        token.move(1 - token.start_row)
 
     def __repr__(self):
         return "<%s>\n" % self._type
 
-    def unparse(self):
-        return ""
 
 
 class Expression(ParsedBase):

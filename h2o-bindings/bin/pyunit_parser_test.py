@@ -67,7 +67,7 @@ def assert_same_code(code1, code2):
 
 
 
-def test_normalize_tokens():
+def test_tokenization():
     """
     Test function for ``pyparser._normalize_tokens()``.
 
@@ -308,7 +308,7 @@ def test_pyparser():
         unparsed = None
         try:
             preparsed = pyparser.parse_text(code)
-            parsed = preparsed.parse()
+            parsed = preparsed.parse(2)
             try:
                 unparsed = parsed.unparse()
             except ValueError as e:
@@ -405,5 +405,5 @@ def test_pyparser():
 
 
 
-test_normalize_tokens()
+# test_tokenization()
 test_pyparser()
