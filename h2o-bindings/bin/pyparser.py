@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-"""
+r"""
 pyparser -- module for parsing Python files.
 
 This module provides capabilities for parsing Python files into logical pieces. It relies on standard
@@ -8,7 +8,11 @@ code constructs. Unlike :mod:`ast`, this module guarantees round-trip behavior i
 
     assert pyparser.parse_text(text).unparse() == text
 
-(the only exception being improperly placed line continuation symbols).
+There are few exceptions to this rules. Most notably, comments that has wrong indentation (negative
+relative to the current block) will be forcibly moved to the proper position. Also, continuation lines
+(i.e. "\" symbols at the end of the line) may shift slightly, and whitespace at the end of lines will get
+removed. Lastly, parsing may break if the file does not contain a \n in the last line -- however fixing the
+parser is more tedious than fixing that newline.
 
 :copyright: 2016 H2O.ai
 :license: Apache License Version 2.0
@@ -16,24 +20,38 @@ code constructs. Unlike :mod:`ast`, this module guarantees round-trip behavior i
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import re
+import sys
 import tokenize
+from tokenize import INDENT, DEDENT, NEWLINE, NL, COMMENT, NAME, OP, STRING, ENDMARKER
 
-from future.builtins import open
+import colorama
 
-__all__ = []  # ("parse_text", "parse_file")
+if sys.version_info < (3,):
+    # On Python 2, we need this newer version of ``open`` in order to read file in utf-8 encoding.
+    from io import open
+    _str_type = (str, unicode)
+else:
+    _str_type = str
+
+
+# List of symbols exported from this module
+__all__ = ("parse_text", "parse_file")
 
 
 
 def parse_text(text):
+    """Parse code from a string of text."""
+    assert isinstance(text, _str_type), "`text` parameter should be a string, got %r" % type(text)
     gen = iter(text.splitlines(True))  # True = keep newlines
     readline = gen.next if hasattr(gen, "next") else gen.__next__
-    return _parse(readline)
+    return Code(_tokenize(readline))
 
 
 def parse_file(filename):
-    """Parse the provided file, and return ParsedCode object."""
+    """Parse the provided file, and return Code object."""
+    assert isinstance(filename, _str_type), "`filename` parameter should be a string, got %r" % type(filename)
     with open(filename, "rt", encoding="utf-8") as f:
-        return _parse(f.readline)
+        return Code(_tokenize(f.readline))
 
 
 
@@ -41,25 +59,16 @@ def parse_file(filename):
 # Implementation
 #=======================================================================================================================
 
-def _parse(readline):
+def _tokenize(readline):
     """
-    Parse any object through a readline interface.
+    Parse any object accessible through a readline interface into a list of :class:`Token`s.
 
-    :param readline: a function that returns subsequent lines on each call.
+    This function is very similar to :func:`tokenize.generate_tokens`, with few differences. First, the returned list
+    is a list of :class:`Token` objects instead of 5-tuples. This may be slightly less efficient, but far more
+    convenient for subsequent parsing. Second, the list of tokens is **normalized** to better match the way humans
+    understand the code, not what is more suitable for the compiler.
 
-    :returns: an instance of ``target`` class.
-    """
-    assert hasattr(readline, "__call__"), "`readline` should be a function"
-    tokens = [Token(tok) for tok in tokenize.generate_tokens(readline)]
-    _normalize_tokens(tokens)
-    return ParsedCode(tokens)
-
-
-def _normalize_tokens(tokens):
-    r"""
-    Fix tokenization of dedents / comments and correct the list of tokens in-place.
-
-    In order to understand the rationale for this function, consider the following code example::
+    To better understand the normalization process, consider the following code example::
 
         def test():
             pass
@@ -71,53 +80,101 @@ def _normalize_tokens(tokens):
 
     Normally, Python will parse it as the following sequence of tokens:
 
-        ['def', 'test', '(', ')', ':', NEWLINE, INDENT, 'pass', NEWLINE, NL, '# funny', NL, DEDENT, 'def',
-         'test_funny', '(', ')', ':', NEWLINE, '# not so funny', NL, INDENT, 'pass', NEWLINE, DEDENT, END]
+        ['def', 'test', '(', ')', ':', NEWLINE, INDENT, 'pass', NEWLINE, NL, '# funny function', NL, DEDENT,
+         'def', 'test_funny', '(', ')', ':', NEWLINE, '# not so funny', NL, INDENT, 'pass', NEWLINE, DEDENT, END]
 
     The problem here is that the DEDENT token is generated not after the first 'pass' but after the comment, which
     means that if we treat INDENTs / DEDENTs as block boundaries, then the comment "belongs" to the first function.
     This is contrary to how most people would understand this code. Similarly, the second comment visually goes
-    after the INDENT, not before.
-
-    So here we attempt to modify the token stream. Looking at the offset of each comment: if it's higher or
-    equal to the current indentation level, then leave the comment as-is. However if it's lower, then we insert
-    DEDENT token(s) in front of this comment and ignore the DEDENT token(s) that go after the comment. The
-    resulting stream of tokens generates the same source code, yet is more sensible:
+    after the INDENT, not before. Consequently, after "normalization" this function will return the following list
+    of tokens:
 
         ['def', 'test', '(', ')', ':', NEWLINE, INDENT, 'pass', NEWLINE, DEDENT, NL, '# funny function', NL,
          'def', 'test_funny', '(', ')', ':', NEWLINE, INDENT, '# not so funny', NL, 'pass', NEWLINE, DEDENT, END]
 
-    :param tokens: list of :class:`Token`s.
+    :param readline: a function that allows access to the code being parsed in a line-by-line fashion.
 
-    :returns: the augmented list of Tokens.
+    :returns: a list of :class:`Token`s.
     """
-    # First, determine the levels of all dedents
-    indents_stack = [0]  # Current stack of indent levels
-    for i, tok in enumerate(tokens):
-        if tok.op == tokenize.INDENT:
-            indents_stack.append(tok.end_col)
-        elif tok.op == tokenize.DEDENT:
-            indents_stack.pop()
-            tok.indent_level = indents_stack[-1]
+    assert callable(readline), "`readline` should be a function"
 
+    # Generate the initial list of tokens.
+    tokens = [Token(tok) for tok in tokenize.generate_tokens(readline)]
+
+    # Determine the levels of all indents / dedents.
+    indents_stack = [0]  # Stack of all indent levels up to the current parsing point
+    for tok in tokens:
+        if tok.op == INDENT:
+            tok.pre_indent = indents_stack[-1]
+            indents_stack.append(tok.end_col)
+            tok.post_indent = tok.end_col
+        elif tok.op == DEDENT:
+            tok.pre_indent = indents_stack.pop()
+            tok.post_indent = indents_stack[-1]
+        elif tok.op == COMMENT:
+            tok.pre_indent = tok.post_indent = indents_stack[-1]
+
+    # Iterate through tokens backwards and see whether it's necessary to swap any of them.
     i = len(tokens) - 1
-    while i > 0:
-        tok = tokens[i]
-        if (tok.op == tokenize.INDENT and i >= 2 and tokens[i - 1].op == tokenize.NL and
-                tokens[i - 2].op == tokenize.COMMENT and tokens[i - 2].start_col == tok.end_col):
-            tokens[i].move(-1)
-            tokens[i - 2], tokens[i - 1], tokens[i] = tokens[i], tokens[i - 2], tokens[i - 1]
-        elif (tok.op == tokenize.DEDENT and i >= 2 and tokens[i - 1].op == tokenize.NL and
-                tokens[i - 2].op == tokenize.COMMENT and tok.start_col <= tokens[i - 2].start_col <= tok.indent_level):
-            tokens[i].move(-1)
-            tokens[i - 2], tokens[i - 1], tokens[i] = tokens[i], tokens[i - 2], tokens[i - 1]
-            i += 2
-        elif (tok.op in {tokenize.DEDENT, tokenize.INDENT} and i >= 1 and
-                tokens[i - 1].op == tokenize.NL and tokens[i - 1].start_col == 0):
-            tokens[i].move(-1)
-            tokens[i], tokens[i - 1] = tokens[i - 1], tokens[i]
-            i += 2
+    while i >= 2:
+        pptok, ptok, tok = tokens[i - 2:i + 1]
+        if tok.op == INDENT:
+            if ptok.op == NL and pptok.op == COMMENT:
+                # Comment preceding an INDENT token
+                indent, nl, comment = tok, ptok, pptok
+                assert nl.start_col == comment.end_col
+                underindent = indent.post_indent - comment.start_col
+                if underindent > 0:
+                    _warn("Comment '%s' is under-indented. Fixing..." % comment.str)
+                    comment.move(0, underindent)
+                    nl.move(0, underindent)
+                indent.move(-1, 0)
+                tokens[i - 2:i + 1] = indent, comment, nl
+                comment.pre_indent = comment.post_indent = indent.post_indent
+                assert indent.end_row == comment.start_row and indent.end_col <= comment.start_col
+            elif ptok.op == NL and ptok.start_col == 0:
+                # Empty line before an INDENT
+                indent, nl = tok, ptok
+                indent.move(-1, 0)
+                tokens[i - 1:i + 1] = indent, nl
+        elif tok.op == DEDENT and ptok.op == NL:
+            if pptok.op == COMMENT:
+                # Comment preceding a DEDENT. Switch only if comment is not at the level of the previous block!
+                dedent, nl, comment = tok, ptok, pptok
+                if comment.start_col <= dedent.post_indent:
+                    rel_indent = comment.start_col - dedent.start_col
+                    if rel_indent < 0:
+                        _warn("Comment '%s' has wrong indentation" % comment.str)
+                        ptok.move(0, -rel_indent)
+                        comment.move(0, -rel_indent)
+                    dedent.move(-1)
+                    tokens[i - 2:i + 1] = dedent, comment, nl
+                    comment.pre_indent = comment.post_indent = dedent.post_indent
+                    i += 1
+                    continue
+            elif ptok.start_col == 0:
+                # Empty line before a DEDENT
+                dedent, nl = tok, ptok
+                dedent.move(-1, -dedent.start_col)
+                tokens[i - 1:i + 1] = dedent, nl
+                i += 1
+                continue
+            else:
+                assert False, "Unexpected sequence of tokens: %r %r %r" % (pptok, ptok, tok)
+        elif tok.op == COMMENT:
+            if tok.start_col < tok.pre_indent:
+                # _warn("Comment '%s' is under-indented relative to the surrounding block" % tok.str)
+                pass
         i -= 1
+
+    return tokens
+
+
+def _warn(message):
+    if not hasattr(_warn, "colorama_initialized"):
+        colorama.init()
+        _warn.colorama_initialized = True
+    print(colorama.Fore.YELLOW + "    Warning: " + message + colorama.Fore.RESET)
 
 
 
@@ -136,75 +193,63 @@ class Token(object):
         assert (isinstance(t, tuple) and len(t) >= 4 and
                 isinstance(t[2], tuple) and len(t[2]) == 2 and
                 isinstance(t[3], tuple) and len(t[3]) == 2), "Wrong initializer for Token object: %r" % t
-        self._t = t
-        self._indent_level = None
+        self._op = t[0]
+        self._str = t[1]
+        self._start_row = t[2][0]
+        self._start_col = t[2][1]
+        self._end_row = t[3][0]
+        self._end_col = t[3][1]
+        # Indent levels before / after the token. These will be the same for all tokens, except for INDENTs and DEDENTs
+        self.pre_indent = None
+        self.post_indent = None
 
     @property
     def op(self):
-        return self._t[0]
+        return self._op
 
     @property
     def str(self):
-        return self._t[1]
+        return self._str
 
     @property
     def start_row(self):
-        return self._t[2][0]
+        return self._start_row
 
     @property
     def start_col(self):
-        return self._t[2][1]
+        return self._start_col
 
     @property
     def end_row(self):
-        return self._t[3][0]
+        return self._end_row
 
     @property
     def end_col(self):
-        return self._t[3][1]
+        return self._end_col
 
     @property
     def token(self):
-        return self._t
-
-    @property
-    def indent_level(self):
-        """
-        Indent level at the end of the token.
-
-        Initially this indent level is known for INDENT tokens only, for all other tokens it must be set
-        explicitly before it can be queried.
-        """
-        if self.op == tokenize.INDENT:
-            return self.end_col
-        return self._indent_level
-
-    @indent_level.setter
-    def indent_level(self, level):
-        self._indent_level = level
+        return (self._op, self._str, (self._start_row, self._start_col), (self._end_row, self._end_col), "")
 
     def indent(self):
         """Return 1 for an INDENT token, -1 for a DEDENT token, and 0 otherwise."""
-        if self.op == tokenize.INDENT: return 1
-        if self.op == tokenize.DEDENT: return -1
+        if self._op == INDENT: return 1
+        if self._op == DEDENT: return -1
         return 0
 
     def paren(self):
         """Return 1 for an OP '(' token, -1 for an OP ')' token, and 0 otherwise."""
-        if self.op == tokenize.OP:
-            if self.str == "(": return 1
-            if self.str == ")": return -1
+        if self._op == OP:
+            if self._str == "(": return 1
+            if self._str == ")": return -1
         return 0
 
     def move(self, drow, dcol=0):
         """Move the token by `drow` rows and `dcol` columns."""
-        self._t = (
-            self.op,
-            self.str,
-            (self.start_row + drow, self.start_col + dcol),
-            (self.end_row + drow, self.end_col + dcol),
-            self._t[4]
-        )
+        self._start_row += drow
+        self._start_col += dcol
+        self._end_row += drow
+        self._end_col += dcol
 
     #-------------------------------------------------------------------------------------------------------------------
 
@@ -217,11 +262,11 @@ class Token(object):
             assert id < 300, "Unexpected token %d : %s" % (id, name)
             _token_names[id] = name
     # List of tokens that do not have meaningful string representation
-    _bare_tokens = {tokenize.NL, tokenize.NEWLINE, tokenize.DEDENT, tokenize.ENDMARKER}
+    _bare_tokens = {NL, NEWLINE, DEDENT, ENDMARKER}
 
     def __repr__(self):
-        tok_name = Token._token_names[self.op]
-        if self.op not in Token._bare_tokens:
+        tok_name = Token._token_names[self._op]
+        if self._op not in Token._bare_tokens:
             # Properly escape any special symbols inside `self.str`
             s = repr(self.str)
             if s[0] == "u":
@@ -229,7 +274,72 @@ class Token(object):
             else:
                 s = s[1:-1]
             tok_name += "(" + s + ")"
-        return "<Token %s at %d:%d..%d:%d>" % (tok_name, self.start_row, self.start_col, self.end_row, self.end_col)
+        return "<Token %s at %d:%d..%d:%d>" % (tok_name, self._start_row, self._start_col, self._end_row, self._end_col)
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Untokenizer
+#-----------------------------------------------------------------------------------------------------------------------
+
+class Untokenizer(object):
+    r"""
+    Helper class to convert stream of Tokens back into code text.
+
+    This is **very** similar to ``tokenize.Untokenizer``, with few differences: (1) it accepts the list of
+    :class:`Token`s instead of tuples; (2) it supports multiple invokations, so that the user may call
+    :meth:`add_tokens` multiple times, and finally get the :meth:`result`; (3) it inserts a single space before each
+    line continuation backslash.
+    """
+
+    def __init__(self, start_row=1):
+        self._untokens = []  # List of string representations of all processed tokens
+        self._indents = []   # Indent levels as strings (needed to handle tabs as indents)
+        self._last_row = start_row
+        self._last_col = 0
+        self._startline = False
+
+    def add_tokens(self, tokens):
+        for tok in tokens:
+            if tok.op == ENDMARKER: break
+            if tok.op == INDENT:
+                self._indents.append(tok.str)
+                continue
+            elif tok.op == DEDENT:
+                self._indents.pop()
+                self._last_row = tok.end_row
+                self._last_col = tok.end_col
+                continue
+            elif tok.op in {NEWLINE, NL}:
+                self._startline = True
+            elif self._startline and self._indents:
+                if tok._start_col >= len(self._indents[-1]):
+                    self._untokens.append(self._indents[-1])
+                    self._last_col = len(self._indents[-1])
+                self._startline = False
+            self._add_whitespace(tok.start_row, tok.start_col)
+            self._untokens.append(tok.str)
+            self._last_row = tok.end_row
+            self._last_col = tok.end_col
+            if tok.op in {NEWLINE, NL}:
+                self._last_row += 1
+                self._last_col = 0
+
+    def result(self):
+        assert not self._indents, "Untokenizer did not finish properly: indent levels remain unbalanced."
+        return "".join(self._untokens)
+
+    def _add_whitespace(self, row, col):
+        if row < self._last_row or row == self._last_row and col < self._last_col:
+            raise ValueError("start ({},{}) precedes previous end ({},{})"
+                             .format(row, col, self._last_row, self._last_col))
+        row_offset = row - self._last_row
+        if row_offset:
+            self._untokens.append(" \\\n" * row_offset)
+            self._last_col = 0
+        col_offset = col - self._last_col
+        if col_offset:
+            self._untokens.append(" " * col_offset)
 
 
 
@@ -243,9 +353,9 @@ class ParsedBase(object):
         self._tokens = tokens
         self._parsed = None
         self._type = None
-        line0 = tokens[0].start_row
-        for t in self._tokens:
-            t.move(1 - line0)
+        # line0 = tokens[0].start_row
+        # for t in self._tokens:
+        #     t.move(1 - line0)
 
     @property
     def type(self):
@@ -260,13 +370,13 @@ class ParsedBase(object):
         self._parsed = self._parse()
         assert self._parsed is None or all(isinstance(p, ParsedBase) for p in self._parsed), \
             "You should parse the tokens into a list of ParsedBase objects."
+        return self
 
     def unparse(self):
         """Convert the parsed representation back into the source code."""
-        if self._parsed:
-            return self._unparse()
-        else:
-            return tokenize.untokenize(t.token for t in self._tokens)
+        ut = Untokenizer(start_row=self._tokens[0].start_row)
+        self._unparse(ut)
+        return ut.result()
 
     @property
     def tokens(self):
@@ -280,9 +390,13 @@ class ParsedBase(object):
         # Override this method to provide meaningful parsing.
         return None
 
-    def _unparse(self):
+    def _unparse(self, ut):
         # You may override this method as well, for custom unparsing
-        return "".join(p.unparse() for p in self._parsed)
+        if self._parsed:
+            for part in self._parsed:
+                part._unparse(ut)
+        else:
+            ut.add_tokens(self._tokens)
 
     def __repr__(self):
         if self._type:
@@ -291,9 +405,12 @@ class ParsedBase(object):
             s = "<%s>:\n" % self.__class__.__name__
         if self._parsed:
             for p in self._parsed:
-                r = repr(p)
-                for line in r.splitlines(True):
-                    s += "    %s" % line
+                try:
+                    r = repr(p)
+                    for line in r.splitlines(True):
+                        s += "    %s" % line
+                except UnicodeEncodeError as e:
+                    s += "<%s>: %s" % (p.__class__.__name__, e)
         else:
             for line in tokenize.untokenize(t.token for t in self._tokens).splitlines(True):
                 s += "    %s" % line
@@ -302,13 +419,13 @@ class ParsedBase(object):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-# ParsedCode class
+# Code class
 #-----------------------------------------------------------------------------------------------------------------------
 
-class ParsedCode(ParsedBase):
+class Code(ParsedBase):
 
     def __init__(self, tokens):
-        super(ParsedCode, self).__init__(tokens)
+        super(Code, self).__init__(tokens)
         self._type = "unparsed"
 
     def _parse(self):
@@ -337,81 +454,74 @@ class ParsedCode(ParsedBase):
             tok = tokens[i]
             fragment_type = "???"  # to be determined in the switch clause below
 
-            if tok.op == tokenize.ENDMARKER:
+            if tok.op == ENDMARKER:
                 fragment_type = "end"
                 i += 1
                 assert i == len(tokens), "ENDMARKER token encountered before the end of the stream"
 
-            elif tok.op == tokenize.NL:
+            elif tok.op == NL:
                 fragment_type = "whitespace"
                 # If there are multiple whitespaces, gobble them all
-                while tokens[i].op == tokenize.NL:
+                while tokens[i].op == NL:
                     i += 1
 
-            elif tok.op == tokenize.COMMENT:
+            elif tok.op == COMMENT:
                 fragment_type = "comment"
                 # Collapse multiple comment lines into a single comment fragment; but only if they are at the same
                 # level of indentation.
                 is_banner = False
-                while tokens[i].op == tokenize.COMMENT and tokens[i].start_col == tok.start_col:
-                    assert tokens[i + 1].op == tokenize.NL, "Unexpected token after a comment: %r" % tokens[i + 1]
+                while tokens[i].op == COMMENT and tokens[i].start_col == tok.start_col:
+                    assert tokens[i + 1].op == NL, "Unexpected token after a comment: %r" % tokens[i + 1]
                     s = tokens[i].str
-                    if len(s) > 1 and (s == "#" + (s[1] * (len(s) - 1)) or s == "# " + (s[1] * (len(s) - 2)) or
-                                       re.match(r"^#\s?[#*=-]{4,}.*?[#*=-]{4,}$", s)):
+                    if re.match(r"^#\s?[#*=-]{10,}$", s) or re.match(r"^#\s?[#*=-]{4,}.*?[#*=-]{4,}$", s):
                         is_banner = True
                     i += 2
                 if is_banner:
                     fragment_type = "banner-comment"
 
-            elif (tok.op == tokenize.STRING and tokens[i + 1].op == tokenize.NEWLINE and
+            elif (tok.op == STRING and tokens[i + 1].op == NEWLINE and
                   all(frag[0] == "whitespace" or frag[0] == "comment" for frag in fragments)):
                 i += 2
                 fragment_type = "docstring"
 
-            elif tok.op == tokenize.OP and tok.str == "@" and tokens[i + 1].op == tokenize.NAME:
-                while tokens[i].op == tokenize.OP and tokens[i].str == "@" and tokens[i + 1].op == tokenize.NAME:
-                    i += 2
-                    if tokens[i].op == tokenize.OP and tokens[i].str == "(":
-                        level = 1
-                        while level > 0:
-                            i += 1
-                            level += tokens[i].paren()
-                        assert tokens[i].str == ")"
+            elif tok.op == OP and tok.str == "@" and tokens[i + 1].op == NAME:
+                while tokens[i].op == OP and tokens[i].str == "@" and tokens[i + 1].op == NAME:
+                    # Skip until the end of the (logical) line
+                    while tokens[i].op != NEWLINE:
                         i += 1
-                    assert tokens[i].op == tokenize.NEWLINE
                     i += 1
                 fragment_type = "decorator"
-            elif tok.op == tokenize.NAME and tok.str in {"from", "import"}:
-                while tokens[i].op == tokenize.NAME and tokens[i].str in {"from", "import"}:
-                    while tokens[i].op != tokenize.NEWLINE:
+
+            elif tok.op == NAME and tok.str in {"from", "import"}:
+                while tokens[i].op == NAME and tokens[i].str in {"from", "import"}:
+                    while tokens[i].op != NEWLINE:
                         i += 1
                     i += 1  # eat the NEWLINE
                 fragment_type = "import"
-            elif tok.op in {tokenize.INDENT, tokenize.DEDENT, tokenize.NEWLINE}:
-                for i, tok in enumerate(self._tokens):
-                    print("%3d  %r" % (i, tok))
+
+            elif tok.op in {INDENT, DEDENT, NEWLINE}:
                 assert False, "Unexpected token %d: %r" % (i, tok)
+
             else:
-                while tokens[i].op != tokenize.NEWLINE:
+                while tokens[i].op != NEWLINE:
                     i += 1
                 i += 1  # skip the NEWLINE too
-                if tokens[i].op == tokenize.INDENT:
+                if tokens[i].op == INDENT:
                     level = 1
                     while level > 0:
                         i += 1
                         level += tokens[i].indent()
-                    assert tokens[i].op == tokenize.DEDENT
+                    assert tokens[i].op == DEDENT
                     i += 1  # consume the last DEDENT
-                while tokens[i].op == tokenize.COMMENT and tokens[i].start_col > tok.start_col:
-                    assert tokens[i + 1].op == tokenize.NL
+                while tokens[i].op == COMMENT and tokens[i].start_col > tok.start_col:
+                    assert tokens[i + 1].op == NL
                     i += 2
-                if tok.op == tokenize.NAME and tok.str in {"def", "class"}:
+                if tok.op == NAME and tok.str in {"def", "class"}:
                     fragment_type = tok.str
                 else:
                     fragment_type = "code"
             assert i > i0, "Stuck at i = %d" % i
             fragments.append((fragment_type, i0, i))
-            print(fragments[-1])
         return fragments
 
 
@@ -471,7 +581,7 @@ class ParsedCode(ParsedBase):
             elif ftype in {"class", "def"}:
                 real_start = start if saved_start is None else saved_start
                 saved_start = None
-                obj = ParsedObject(tokens[real_start:end])
+                obj = Callable(tokens[real_start:end])
                 obj.type = ftype
             elif ftype == "code":
                 real_start = start if saved_start is None else saved_start
@@ -479,7 +589,6 @@ class ParsedCode(ParsedBase):
                 obj = Expression(tokens[real_start:end])
             else:
                 assert False, "Unknown fragment type %s" % ftype
-            print("%d %s" % (i, obj.__class__.__name__))
             out.append(obj)
             i += 1
         return out
@@ -503,18 +612,18 @@ class ImportBlock(ParsedBase):
         tokens = self._tokens
         i = 0
         # Parse the initial Comment section
-        while tokens[i].op == tokenize.COMMENT and tokens[i + 1].op == tokenize.NL:
+        while tokens[i].op == COMMENT and tokens[i + 1].op == NL:
             i += 2
         if i > 0:
             out.append(Comment(tokens[:i]))
         # Parse the remaining import instructions
         import_types = set()
         while i < len(tokens):
-            assert tokens[i].op == tokenize.NAME and tokens[i].str in {"import", "from"}, \
+            assert tokens[i].op == NAME and tokens[i].str in {"import", "from"},\
                 "Unexpected token in ImportBlock: %r" % tokens[i]
             i0 = i
             # Find the statement's end
-            while tokens[i].op != tokenize.NEWLINE:
+            while tokens[i].op != NEWLINE:
                 i += 1
             i += 1  # consume the NEWLINE too
             # Construct the `ImportExpr` object
@@ -570,13 +679,13 @@ class ImportExpr(ParsedBase):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-# ParsedObject class
+# Callable class
 #-----------------------------------------------------------------------------------------------------------------------
 
-class ParsedObject(ParsedBase):
+class Callable(ParsedBase):
 
     def __init__(self, tokens):
-        super(ParsedObject, self).__init__(tokens)
+        super(Callable, self).__init__(tokens)
         self._name = None
 
     def _parse(self):
@@ -584,31 +693,35 @@ class ParsedObject(ParsedBase):
         tokens = self._tokens
         i = 0
         # Parse the initial Comment section
-        while tokens[i].op == tokenize.COMMENT:
-            assert tokens[i + 1].op == tokenize.NL
+        while tokens[i].op == COMMENT:
+            assert tokens[i + 1].op == NL
             i += 2
         if i > 0:
             out.append(Comment(tokens[:i]))
         # Parse the decorators section
-        while tokens[i].op == tokenize.OP and tokens[i].str == "@":
+        while tokens[i].op == OP and tokens[i].str == "@":
             i0 = i
-            while tokens[i].op != tokenize.NEWLINE:
+            while tokens[i].op != NEWLINE:
                 i += 1
             i += 1
             out.append(Decorator(tokens[i0:i]))
         # Parse the object declaration line
-        assert tokens[i].op == tokenize.NAME and tokens[i].str == self._type
-        assert tokens[i + 1].op == tokenize.NAME
+        assert tokens[i].op == NAME and tokens[i].str == self._type
+        assert tokens[i + 1].op == NAME
         self._name = tokens[i + 1].str
         i0 = i
-        while tokens[i].op != tokenize.INDENT:
+        while i < len(tokens) and tokens[i].op != INDENT:
             i += 1
-        assert tokens[-1].op == tokenize.DEDENT
-        out.append(Declaration(tokens[i0:i]))
-        out.append(Bident(tokens[i]))
-        out.append(ParsedCode(tokens[i + 1:-1]))
-        out.append(Bident(tokens[-1]))
-        # Finish parsing
+        if i < len(tokens):
+            assert tokens[-1].op == DEDENT
+            out.append(Declaration(tokens[i0:i]))
+            # out.append(Bident(tokens[i]))
+            # out.append(Code(tokens[i + 1:-1]))
+            # out.append(Bident(tokens[-1]))
+            out.append(Code(tokens[i:]))
+        else:
+            # It is possible to have a single-line function / class
+            out.append(Declaration(tokens[i0:]))
         return out
 
     @property
@@ -633,13 +746,14 @@ class Comment(ParsedBase):
         elif self._type == "code": name = "Commented code"
         s = "<%s>:\n" % name
         for t in self._tokens:
-            if t.op == tokenize.NL: s += "\n"
-            if t.op == tokenize.COMMENT: s += "    %s" % t.str
+            if t.op == NL: s += "\n"
+            if t.op == COMMENT: s += "    %s" % t.str
         return s
 
     def _parse(self):
+        if self._type == "banner": return
         indent = self._tokens[0].start_col
-        assert all(t.start_col == indent if t.op == tokenize.COMMENT else t.op == tokenize.NL for t in self._tokens)
+        assert all(t.start_col == indent if t.op == COMMENT else t.op == NL for t in self._tokens)
         indentstr1 = " " * indent + "# "
         indentstr2 = indentstr1[:-1]
         uncommented = ""
@@ -660,12 +774,12 @@ class Comment(ParsedBase):
 
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Other Parsed* classes
+# Other ParsedBase classes
 #-----------------------------------------------------------------------------------------------------------------------
 
 class Whitespace(ParsedBase):
     def __repr__(self):
-        s = " ".join("NL" if t.op == tokenize.NL else "END" if t.op == tokenize.ENDMARKER else "??"
+        s = " ".join("NL" if t.op == NL else "END" if t.op == ENDMARKER else "??"
                      for t in self._tokens)
         return "<Whitespace>: %s\n" % s
 
@@ -673,8 +787,8 @@ class Whitespace(ParsedBase):
 class Docstring(ParsedBase):
     def __repr__(self):
         assert len(self._tokens) == 2
-        assert self._tokens[0].op == tokenize.STRING
-        assert self._tokens[1].op == tokenize.NEWLINE
+        assert self._tokens[0].op == STRING
+        assert self._tokens[1].op == NEWLINE
         s = "<DocString>:\n"
         for line in self._tokens[0].str.splitlines(True):
             s += "    %s" % line
@@ -686,8 +800,8 @@ class Bident(ParsedBase):
     """This class serves as either an Indent or a Dedent, hence the funny name."""
 
     def __init__(self, token):
-        self._type = "Indent" if token.op == tokenize.INDENT else "Dedent"
-        self._parsed = None
+        super(Bident, self).__init__([])
+        self._type = "Indent" if token.op == INDENT else "Dedent"
         self._tokens = [token]
         token.move(1 - token.start_row)
 
