@@ -170,6 +170,10 @@ final public class DeepWaterModelInfo extends Iced {
           } else {
             Log.info("Loading the mean image data from: " + f.getAbsolutePath());
             _meanData = loadNDArray(f.getAbsolutePath());
+            int dim = _channels*_width*_height;
+            if (_meanData.length != dim) {
+              throw new H2OIllegalArgumentException("_mean_image_data", "Invalid mean image data format. Expected length: " + dim + ", but has length: " + _meanData.length);
+            }
           }
         } else {
           Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
