@@ -1296,12 +1296,10 @@ class H2OFrame(object):
             self._ex = ExprNode("append", self, src, colname)
             self._ex._cache.fill_from(old_cache)
             self._ex._cache.names = self.names + [colname]
-            if not self._ex._cache.types_valid() or \
-                    not isinstance(src, H2OFrame) or \
-                    not src._ex._cache.types_valid():
-                self._ex._cache.types = None
-            else:
+            if self._ex._cache.types_valid() and isinstance(src, H2OFrame) and src._ex._cache.types_valid():
                 self._ex._cache._types[colname] = list(viewvalues(src._ex._cache.types))[0]
+            else:
+                self._ex._cache.types = None
         if isinstance(src, H2OFrame) and src_in_self:
             src._ex = None  # wipe out to keep ref counts correct
             # self._frame()  # setitem is eager
