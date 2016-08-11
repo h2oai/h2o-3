@@ -143,7 +143,7 @@ final public class DeepWaterModelInfo extends Iced {
           if(!f.exists() || f.isDirectory()) {
             Log.err("Network definition file " + f + " not found.");
           } else {
-            Log.info("Loading the network from: " + networkDef);
+            Log.info("Loading the network from: " + f.getAbsolutePath());
             _imageTrain.loadModel(f.getAbsolutePath());
             Log.info("Setting the optimizer.");
             _imageTrain.setOptimizer(_classes, parameters._mini_batch_size);
@@ -155,7 +155,7 @@ final public class DeepWaterModelInfo extends Iced {
           if(!f.exists() || f.isDirectory()) {
             Log.err("Parameter file " + f + " not found.");
           } else {
-            Log.info("Loading the parameters (weights/biases) from: " + networkParms);
+            Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
             _imageTrain.loadParam(f.getAbsolutePath());
           }
         } else {
@@ -168,7 +168,7 @@ final public class DeepWaterModelInfo extends Iced {
           if(!f.exists() || f.isDirectory()) {
             Log.err("Mean image file " + f + " not found.");
           } else {
-            Log.info("Loading the parameters (weights/biases) from: " + networkParms);
+            Log.info("Loading the mean image data from: " + f.getAbsolutePath());
             _meanData = loadNDArray(f.getAbsolutePath());
           }
         } else {
