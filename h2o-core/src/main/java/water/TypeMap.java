@@ -57,6 +57,7 @@ public class TypeMap {
     // Beginning to hunt for files
     water.util.IcedHashMap.class.getName(),
     water.util.IcedHashMapBase.class.getName(),
+    water.util.IcedHashMapGeneric.class.getName(),
     water.util.IcedHashMapGeneric.IcedHashMapStringString.class.getName(),
     water.util.IcedHashMapGeneric.IcedHashMapStringObject.class.getName(),
     TypeaheadV3.class.getName(),    // Allow typeahead without locking
