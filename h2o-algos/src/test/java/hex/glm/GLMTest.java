@@ -1729,13 +1729,8 @@ public class GLMTest  extends TestUtil {
     }
   }
 
-
-  public class TestC implements Serializable {
-    H2OIllegalArgumentException _exp;
-  }
   @Test public void testAbalone() {
     Scope.enter();
-
     GLMModel model = null;
     try {
       Frame fr = parse_test_file("smalldata/glm_test/Abalone.gz");
