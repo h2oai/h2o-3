@@ -314,7 +314,9 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
   }
   private static class Barrier1OnExCom extends JAtomic {
     final byte[] _dex;
-    Barrier1OnExCom(Throwable ex) { _dex = AutoBuffer.javaSerializeWritePojo(ex); }
+    Barrier1OnExCom(Throwable ex) {
+      _dex = AutoBuffer.javaSerializeWritePojo(ex);
+    }
     @Override boolean abort(Job job) { return job._ex != null && job._end_time!=0; } // Already stopped & exception'd
     @Override void update(Job job) {
       if( job._ex == null ) job._ex = _dex; // Keep first exception ever

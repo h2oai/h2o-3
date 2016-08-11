@@ -419,7 +419,7 @@ public class RequestServer extends HttpServlet {
               e.toString(),
               e.toString(),
               HttpResponseStatus.INTERNAL_SERVER_ERROR.getCode(),
-              new IcedHashMap.IcedHashMapStringObject(),
+              new IcedHashMapGeneric.IcedHashMapStringObject(),
               e);
       Log.err("Caught assertion error: " + error.toString());
       return serveError(error);

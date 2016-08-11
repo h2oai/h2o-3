@@ -16,12 +16,15 @@ import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import water.*;
 import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -1727,8 +1730,12 @@ public class GLMTest  extends TestUtil {
   }
 
 
+  public class TestC implements Serializable {
+    H2OIllegalArgumentException _exp;
+  }
   @Test public void testAbalone() {
     Scope.enter();
+
     GLMModel model = null;
     try {
       Frame fr = parse_test_file("smalldata/glm_test/Abalone.gz");
