@@ -25,28 +25,28 @@ public class VecAry extends Iced {
   private final class VecSet {
     final int _min;
     final int _max;
-    final AVec [] _vs;
+    final AVec[] _vs;
 
     public VecSet(AVec... vs) {
-      if(vs != null && vs.length != 0)
+      if (vs != null && vs.length != 0)
         _vgTemplate = vs[0].groupKey();
       int min = Integer.MAX_VALUE;
       int max = Integer.MIN_VALUE;
-      for(AVec a:vs) {
+      for (AVec a : vs) {
         int id = a.vecId();
-        if(id < min) min = id;
-        if(id > max) max = id;
+        if (id < min) min = id;
+        if (id > max) max = id;
       }
       _vs = vs;
       _min = min;
       _max = max;
     }
 
-    public VecSet(int min, int max, AVec [] vs) {
+    public VecSet(int min, int max, AVec[] vs) {
       _min = min;
       _max = max;
       _vs = vs;
-      if(vs != null && vs.length != 0)
+      if (vs != null && vs.length != 0)
         _vgTemplate = vs[0].groupKey();
     }
 
@@ -55,73 +55,97 @@ public class VecAry extends Iced {
       return _min <= s._min && s._max <= _max;
     }
 
-    public VecSet add(VecSet s){
-      if(contains(s)) return this;
-      if(s.contains(this)) return s;
-      if(s._min < _min) {
+    public VecSet add(VecSet s) {
+      if (contains(s)) return this;
+      if (s.contains(this)) return s;
+      if (s._min < _min) {
         assert s._max < _max;
-        AVec [] vs = new AVec[_max - s._min + 1];
+        AVec[] vs = new AVec[_max - s._min + 1];
         // TODO
-        return new VecSet(s._min,_max,vs);
+        return new VecSet(s._min, _max, vs);
       } else {
         assert s._max > _max;
         assert s._min > _min;
-        AVec [] vs = new AVec[s._max - _min + 1];
+        AVec[] vs = new AVec[s._max - _min + 1];
         // TODO
-        return new VecSet(_min,s._max,vs);
+        return new VecSet(_min, s._max, vs);
       }
     }
-    public VecSet set(AVec v){
+
+    public VecSet set(AVec v) {
       int id = v.vecId();
-      if(_vs == null) {
+      if (_vs == null) {
         _vgTemplate = v.groupKey();
         return new VecSet(id, id, new AVec[]{v});
       }
-      if(id < _min) {
-        AVec [] vs = new AVec[_max - id];
+      if (id < _min) {
+        AVec[] vs = new AVec[_max - id];
         int off = _min - id;
-        for(int i = 0; i < _vs.length; ++i)
-          vs[off+i] = _vs[i];
+        for (int i = 0; i < _vs.length; ++i)
+          vs[off + i] = _vs[i];
         vs[0] = v;
-        return new VecSet(id,_max,vs);
-      } else if(id > _max) {
-        AVec [] vs = new AVec[id - _min];
-        for(int i = 0; i < _vs.length; ++i)
+        return new VecSet(id, _max, vs);
+      } else if (id > _max) {
+        AVec[] vs = new AVec[id - _min];
+        for (int i = 0; i < _vs.length; ++i)
           vs[i] = _vs[i];
-        vs[vs.length-1] = v;
-        return new VecSet(_min,id,vs);
+        vs[vs.length - 1] = v;
+        return new VecSet(_min, id, vs);
       }
       _vs[id - _min] = v;
       return this;
     }
 
-    public AVec anyVec(){return _vs[0];}
+    public AVec anyVec() {
+      return _vs[0];
+    }
+
     public AVec get(int vecId) {
-      if(_max < vecId || vecId < _min)
+      if (_max < vecId || vecId < _min)
         return null;
       int i = vecId - _min;
       AVec res = _vs[i];
-      if(res == null)
+      if (res == null)
         res = _vs[i] = fetchVec(vecId);
-     return res;
+      return res;
     }
+
     public VecSet subset(int min, int max) {
-      return new VecSet(min,max,Arrays.copyOfRange(_vs,min - _min,_max - max + 1));
+      return new VecSet(min, max, Arrays.copyOfRange(_vs, min - _min, _max - max + 1));
     }
 
     public VecSet subset(int[] vids) {
       int min = Integer.MAX_VALUE;
       int max = Integer.MIN_VALUE;
-      for(int i = 0; i <vids.length; i += 2){
+      for (int i = 0; i < vids.length; i += 2) {
         int vid = vids[i];
-        if(vid < min) min = vid;
-        if(vid < max) max = vid;
+        if (vid < min) min = vid;
+        if (vid < max) max = vid;
       }
-      return subset(min,max);
+      return subset(min, max);
     }
 
     public int size() {
       return _max - _min + 1;
+    }
+
+    public VecSet remove(int[] vids_rem, int[] vids_new) {
+      for (int i = 0; i < vids_rem.length; i += 2)
+        _vs[i] = null;
+      int min = Integer.MAX_VALUE;
+      int max = Integer.MIN_VALUE;
+      for (int i = 0; i < _vids.length; i += 2) {
+        int x = _vids[i];
+        if (x < min) min = x;
+        if (x > max) max = x;
+      }
+      AVec[] vs = _vs;
+      if (min > _min || max < _max) {
+        int start = min - _min;
+        int end = _max + (max - _max);
+        return new VecSet(min, max, Arrays.copyOfRange(_vs, start, end));
+      }
+      return this;
     }
   }
   private VecSet _vecs = new VecSet(-1,-1,null);
@@ -835,11 +859,42 @@ public class VecAry extends Iced {
   }
 
   public VecAry removeVecs(int... id) {
-    throw H2O.unimpl(); // TODO
+    int [] vids_rem = new int[id.length*2];
+    int [] vids_new = new int[_vids.length - id.length*2];
+    int j = 0; int k = 0;
+    for(int i = 0; i < _vids[i]; i += 2) {
+      if(i == id[j]) {
+        vids_rem[j*2+1] = _vids[i+0];
+        vids_rem[j*2+1] = _vids[i+1];
+        j++;
+      } else {
+        vids_new[k++] = _vids[i+0];
+        vids_new[k++] = _vids[i+1];
+      }
+    }
+    _vids = vids_new;
+    VecAry res = new VecAry(_vecs.subset(vids_new),vids_new);
+    _vecs = _vecs.remove(vids_rem, vids_new);
+    return res;
   }
 
   public VecAry removeRange(int startIdx, int endIdx) {
-    throw H2O.unimpl(); // TODO
+    int n = endIdx - startIdx;
+    int [] vids_rem = Arrays.copyOfRange(_vids,startIdx*2,endIdx*2);
+    int [] vids_new = new int[_vids.length - n*2];
+    int j = 0; int k = 0;
+    for(int i = 0; i < 2*startIdx; i += 2) {
+      vids_new[k++] = _vids[i+0];
+      vids_new[k++] = _vids[i+1];
+    }
+    for(int i = 2*endIdx; i < _vids.length; i += 2) {
+      vids_new[k++] = _vids[i+0];
+      vids_new[k++] = _vids[i+1];
+    }
+    _vids = vids_new;
+    VecAry res = new VecAry(_vecs.subset(vids_new),vids_new);
+    _vecs = _vecs.remove(vids_rem, vids_new);
+    return res;
   }
 
   public static class SparseChunks {
