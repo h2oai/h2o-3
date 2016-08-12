@@ -2,6 +2,8 @@
 """
 H2O data frame.
 
+TODO: Automatically convert column names into Frame properties!
+
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
@@ -36,11 +38,21 @@ from h2o.utils.typechecks import is_type, assert_is_type, assert_satisfies
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
 
-# TODO: Automatically convert column names into Frame properties!
 class H2OFrame(object):
+    """
+    Primary data store for H2O.
+
+    H2OFrame is similar to pandas' ``DataFrame``, or R's ``data.frame``. One of the critical distinction is that the
+    data is generally not held in memory, instead it is located on a (possibly remote) H2O cluster, and thus
+    ``H2OFrame`` represents a mere handle to that data.
+    """
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Construction
+    #-------------------------------------------------------------------------------------------------------------------
 
     def __init__(self, python_obj=None):
-        """Instantiate a new H2OFrame object."""
+        """Initialize a new H2OFrame object, possibly from some other object."""
         self._ex = ExprNode()
         self._ex._children = None
         if python_obj is not None:
@@ -48,11 +60,141 @@ class H2OFrame(object):
 
     @staticmethod
     def _expr(expr, cache=None):
+        # TODO: 1) make `cache` parameter part of `expr`
+        # TODO: 2) merge this method with `__init__`
         fr = H2OFrame()
         fr._ex = expr
         if cache is not None:
             fr._ex._cache.fill_from(cache)
         return fr
+
+    @staticmethod
+    def from_python(python_obj, destination_frame="", header=(-1, 0, 1), separator="", column_names=None,
+                    column_types=None, na_strings=None):
+        """
+        Create a new ``H2OFrame`` object from an existing Python object (which can be of different kinds).
+
+        Properly handle native python data types. For a discussion of the rules and
+        permissible data types please refer to the main documentation for H2OFrame.
+
+        Parameters
+        ----------
+          python_obj : tuple, list, dict, collections.OrderedDict
+            If a nested list/tuple, then each nested collection is a row.
+
+          destination_frame : str, optional
+            The unique hex key assigned to the imported file. If none is given, a key will
+            automatically be generated.
+
+          header : int, optional
+            -1 means the first line is data, 0 means guess, 1 means first line is header.
+
+          sep : str, optional
+            The field separator character. Values on each line of the file are separated by
+            this character. If sep = "", the parser will automatically detect the separator.
+
+          col_names : list, optional
+            A list of column names for the file.
+
+          col_types : list or dict, optional
+            A list of types or a dictionary of column names to types to specify whether
+            columns should be forced to a certain type upon import parsing. If a list, the
+            types for elements that are None will be guessed. The possible types a column may
+            have are.
+
+          na_strings : list or dict, optional
+            A list of strings, or a list of lists of strings (one list per column), or a
+            dictionary of column names to strings which are to be interpreted as missing values.
+
+        Returns
+        -------
+          A new H2OFrame instance.
+
+        Examples
+        --------
+          >>> l = [[1,2,3,4,5], [99,123,51233,321]]
+          >>> l = H2OFrame(l)
+          >>> l
+        """
+        fr = H2OFrame()
+        fr._upload_python_object(python_obj, destination_frame, header, separator, column_names, column_types,
+                                 na_strings)
+        return fr
+
+    def _upload_python_object(self, python_obj, destination_frame="", header=(-1, 0, 1), separator="",
+                              column_names=None, column_types=None, na_strings=None):
+        # [] and () cases -- folded together since H2OFrame is mutable
+        if is_listlike(python_obj):
+            col_header, data_to_write = _handle_python_lists(python_obj, header)
+
+        # {} and collections.OrderedDict cases
+        elif isinstance(python_obj, (dict, collections.OrderedDict)):
+            col_header, data_to_write = _handle_python_dicts(python_obj)
+
+        # handle a numpy.ndarray, pandas.DataFrame
+        else:
+            if can_use_numpy() and can_use_pandas():
+                import numpy
+                import pandas
+                if isinstance(python_obj, numpy.ndarray):
+                    col_header, data_to_write = _handle_numpy_array(python_obj, header)
+                elif isinstance(python_obj, pandas.DataFrame):
+                    col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
+                else:
+                    raise ValueError(
+                        "`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                        "pandas.DataFrame. Got: " + str(type(python_obj)))
+            elif can_use_numpy():
+                import numpy
+                if isinstance(python_obj, numpy.ndarray):
+                    col_header, data_to_write = _handle_numpy_array(python_obj, header)
+                else:
+                    raise ValueError(
+                        "`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                        "pandas.DataFrame. Got: " + str(type(python_obj)))
+            elif can_use_pandas():
+                import pandas
+                if isinstance(python_obj, pandas.DataFrame):
+                    col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
+                else:
+                    raise ValueError(
+                        "`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                        "pandas.DataFrame. Got: " + str(type(python_obj)))
+            else:
+                raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
+                                 "pandas.DataFrame. Got: " + str(type(python_obj)))
+
+        if col_header is None or data_to_write is None: raise ValueError("No data to write")
+
+        #
+        # write python data to file and upload
+        #
+
+        # create a temporary file that will be written to
+        tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
+        tmp_file = os.fdopen(tmp_handle, 'w')
+        # create a new csv writer object thingy
+        csv_writer = csv_dict_writer(tmp_file, fieldnames=col_header, restval=None, dialect="excel",
+                                     extrasaction="ignore", quoting=csv.QUOTE_NONNUMERIC)
+        csv_writer.writeheader()  # write the header
+        # Because we have written the header, header in this newly created tmp csv file must be 1
+        header = 1
+        if column_names is None: column_names = col_header
+        csv_writer.writerows(data_to_write)  # write the data
+        tmp_file.close()  # close the streams
+        print("Tmp file created: " + tmp_path)
+        with open(tmp_path, "rt") as f:
+            print(f.read())
+        self._upload_parse(tmp_path, destination_frame, header, separator, column_names, column_types,
+                           na_strings)  # actually upload the data to H2O
+        os.remove(tmp_path)  # delete the tmp file
+
+
+    #-------------------------------------------------------------------------------------------------------------------
+    #
+    #-------------------------------------------------------------------------------------------------------------------
+
+
 
     @property
     def columns(self):
@@ -161,120 +303,6 @@ class H2OFrame(object):
         self._parse(rawkey, destination_frame, header, sep, column_names, column_types, na_strings)
         return self
 
-    def _upload_python_object(self, python_obj, destination_frame="", header=(-1, 0, 1), separator="",
-                              column_names=None, column_types=None, na_strings=None):
-        # [] and () cases -- folded together since H2OFrame is mutable
-        if is_type(python_obj, list, tuple):
-            col_header, data_to_write = _handle_python_lists(python_obj, header)
-
-        # {} and collections.OrderedDict cases
-        elif isinstance(python_obj, (dict, collections.OrderedDict)):
-            col_header, data_to_write = _handle_python_dicts(python_obj)
-
-        # handle a numpy.ndarray, pandas.DataFrame
-        else:
-            if can_use_numpy() and can_use_pandas():
-                import numpy
-                import pandas
-                if isinstance(python_obj, numpy.ndarray):
-                    col_header, data_to_write = _handle_numpy_array(python_obj, header)
-                elif isinstance(python_obj, pandas.DataFrame):
-                    col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
-                else:
-                    raise ValueError(
-                        "`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
-                        "pandas.DataFrame. Got: " + str(type(python_obj)))
-            elif can_use_numpy():
-                import numpy
-                if isinstance(python_obj, numpy.ndarray):
-                    col_header, data_to_write = _handle_numpy_array(python_obj, header)
-                else:
-                    raise ValueError(
-                        "`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
-                        "pandas.DataFrame. Got: " + str(type(python_obj)))
-            elif can_use_pandas():
-                import pandas
-                if isinstance(python_obj, pandas.DataFrame):
-                    col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
-                else:
-                    raise ValueError(
-                        "`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
-                        "pandas.DataFrame. Got: " + str(type(python_obj)))
-            else:
-                raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
-                                 "pandas.DataFrame. Got: " + str(type(python_obj)))
-
-        if col_header is None or data_to_write is None: raise ValueError("No data to write")
-
-        #
-        # write python data to file and upload
-        #
-
-        # create a temporary file that will be written to
-        tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
-        tmp_file = os.fdopen(tmp_handle, 'w')
-        # create a new csv writer object thingy
-        csv_writer = csv_dict_writer(tmp_file, fieldnames=col_header, restval=None, dialect="excel",
-                                     extrasaction="ignore", quoting=csv.QUOTE_NONNUMERIC)
-        csv_writer.writeheader()  # write the header
-        # Because we have written the header, header in this newly created tmp csv file must be 1
-        header = 1
-        if column_names is None: column_names = col_header
-        csv_writer.writerows(data_to_write)  # write the data
-        tmp_file.close()  # close the streams
-        self._upload_parse(tmp_path, destination_frame, header, separator, column_names, column_types,
-                           na_strings)  # actually upload the data to H2O
-        os.remove(tmp_path)  # delete the tmp file
-
-    @staticmethod
-    def from_python(python_obj, destination_frame="", header=(-1, 0, 1), separator="", column_names=None,
-                    column_types=None, na_strings=None):
-        """Properly handle native python data types. For a discussion of the rules and
-        permissible data types please refer to the main documentation for H2OFrame.
-
-        Parameters
-        ----------
-          python_obj : tuple, list, dict, collections.OrderedDict
-            If a nested list/tuple, then each nested collection is a row.
-
-          destination_frame : str, optional
-            The unique hex key assigned to the imported file. If none is given, a key will
-            automatically be generated.
-
-          header : int, optional
-            -1 means the first line is data, 0 means guess, 1 means first line is header.
-
-          sep : str, optional
-            The field separator character. Values on each line of the file are separated by
-            this character. If sep = "", the parser will automatically detect the separator.
-
-          col_names : list, optional
-            A list of column names for the file.
-
-          col_types : list or dict, optional
-            A list of types or a dictionary of column names to types to specify whether
-            columns should be forced to a certain type upon import parsing. If a list, the
-            types for elements that are None will be guessed. The possible types a column may
-            have are.
-
-          na_strings : list or dict, optional
-            A list of strings, or a list of lists of strings (one list per column), or a
-            dictionary of column names to strings which are to be interpreted as missing values.
-
-        Returns
-        -------
-          A new H2OFrame instance.
-
-        Examples
-        --------
-          >>> l = [[1,2,3,4,5], [99,123,51233,321]]
-          >>> l = H2OFrame(l)
-          >>> l
-        """
-        fr = H2OFrame()
-        fr._upload_python_object(python_obj, destination_frame, header, separator, column_names, column_types,
-                                 na_strings)
-        return fr
 
     def _parse(self, rawkey, destination_frame="", header=None, separator=None, column_names=None, column_types=None,
                na_strings=None):
@@ -352,9 +380,10 @@ class H2OFrame(object):
         return ""
 
     def show(self, use_pandas=False):
-        """Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
-        If called from IPython, displays an html'ized result
-        Else prints a tabulate'd result
+        """
+        Used by the H2OFrame.__repr__ method to print or display a snippet of the data frame.
+
+        If called from IPython, displays an html'ized result. Else prints a tabulate'd result.
         """
         if self._ex is None:
             print("This H2OFrame has been removed.")
@@ -443,6 +472,7 @@ class H2OFrame(object):
         return self[start_idx:start_idx + nrows, :ncols]
 
     def logical_negation(self):
+        """Logical not applied to each element of the frame."""
         return H2OFrame._expr(expr=ExprNode("not", self), cache=self._ex._cache)
 
     # ops
@@ -966,8 +996,7 @@ class H2OFrame(object):
             expr=ExprNode("stratified_kfold_column", self, n_folds, seed))._frame()  # want this to be eager!
 
     def structure(self):
-        """Similar to R's str method: Compactly Display the Structure of this H2OFrame.
-        """
+        """Similar to R's str method: compactly display the structure of this H2OFrame."""
         df = self.as_data_frame(use_pandas=False)
         cn = df.pop(0)
         nr = self.nrow
@@ -2180,7 +2209,8 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("tolower", self), cache=self._ex._cache)
 
     def rep_len(self, length_out):
-        """Replicates the values in `data` in the H2O backend.
+        """
+        Replicate the values in `data` in the H2O backend.
 
         Parameters
         ----------
@@ -2194,7 +2224,8 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("rep_len", self, length_out))
 
     def scale(self, center=True, scale=True):
-        """Centers and/or scales the columns of the self._newExpr.
+        """
+        Center and/or scale the columns of the self._newExpr.
 
         Parameters
         ----------
