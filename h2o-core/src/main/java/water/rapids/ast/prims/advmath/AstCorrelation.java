@@ -86,12 +86,13 @@ public class AstCorrelation extends AstPrimitive {
     for (int r = 0; r < ncols; r++) {
       xval = vecxs[r].at(0);
       yval = vecys[r].at(0);
-      if (!(Double.isNaN(xval) || Double.isNaN(yval)))
+      if (!(Double.isNaN(xval) || Double.isNaN(yval))) {
         //Compute variance of x and y vars
         xvar += Math.pow((vecxs[r].at(0) - xmean), 2);
         yvar += Math.pow((vecys[r].at(0) - ymean), 2);
         //Compute sum of squares of x and y
         ss += (vecxs[r].at(0) - xmean) * (vecys[r].at(0) - ymean);
+      }
     }
     xsd = Math.sqrt(xvar / (frx.numRows())); //Sample Standard Deviation
     ysd = Math.sqrt(yvar / (fry.numRows())); //Sample Standard Deviation
