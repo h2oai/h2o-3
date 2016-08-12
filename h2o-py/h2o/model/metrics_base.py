@@ -11,7 +11,7 @@ import imp
 
 from h2o.model.confusion_matrix import ConfusionMatrix
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_numeric, is_numeric
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, numeric
 
 
 class MetricsBase(object):
@@ -25,7 +25,8 @@ class MetricsBase(object):
         # Yep, it's messed up...
         if isinstance(metric_json, MetricsBase): metric_json = metric_json._metric_json
         self._metric_json = metric_json
-        self._on_train = False  # train and valid and xval are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
+        self._on_train = False  # train and valid and xval are not mutually exclusive -- could have a test. train and
+                                # valid only make sense at model build time.
         self._on_valid = False
         self._on_xval = False
         self._algo = algo
@@ -503,9 +504,11 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         Get the confusion matrix for the specified metric
 
-        :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1","mean_per_class_accuracy"}
+        :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr",
+            "tpr", "precision", "accuracy", "f0point5", "f2", "f1","mean_per_class_accuracy"}
         :param thresholds: A value (or list of values) between 0 and 1
-        :return: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix (if there is only one)
+        :return: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
+            (if there is only one)
         """
         # make lists out of metrics and thresholds arguments
         if metrics is None and thresholds is None: metrics = ["f1"]
@@ -525,14 +528,14 @@ class H2OBinomialModelMetrics(MetricsBase):
             thresholds_list = [thresholds]
 
         # error check the metrics_list and thresholds_list
-        if not all(is_numeric(t) for t in thresholds_list) or \
-                not all(t >= 0 or t <= 1 for t in thresholds_list):
-            raise ValueError("All thresholds must be numbers between 0 and 1 (inclusive).")
+        assert_is_type(thresholds_list, [numeric])
+        assert_satisfies(thresholds_list, all(0 <= t <= 1 for t in thresholds_list))
 
         if not all(m in ["min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity", "accuracy",
                          "f0point5", "f2", "f1", "mean_per_class_accuracy"] for m in metrics_list):
             raise ValueError(
-                "The only allowable metrics are min_per_class_accuracy, absolute_mcc, precision, accuracy, f0point5, f2, f1, mean_per_class_accuracy")
+                "The only allowable metrics are min_per_class_accuracy, absolute_mcc, precision, accuracy, f0point5, "
+                "f2, f1, mean_per_class_accuracy")
 
         # make one big list that combines the thresholds and metric-thresholds
         metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
@@ -586,7 +589,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param threshold: Find the index of this input threshold.
         :return: Return the index or throw a ValueError if no such index can be found.
         """
-        assert_is_numeric(threshold)
+        assert_is_type(threshold, numeric)
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         for i, e in enumerate(thresh2d.cell_values):
             t = float(e[0])

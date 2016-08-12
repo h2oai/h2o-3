@@ -29,7 +29,7 @@ from .job import H2OJob
 from .expr import ExprNode
 from .group_by import GroupBy
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import is_str, is_int, is_listlike
+from h2o.utils.typechecks import test_type
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
@@ -200,7 +200,7 @@ class H2OFrame(object):
         return fr
 
     def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
-        if is_str(path) and "://" not in path:
+        if test_type(path, str) and "://" not in path:
             path = os.path.abspath(path)
         rawkey = h2o.lazy_import(path)
         self._parse(rawkey, destination_frame, header, separator, column_names, column_types, na_strings)
@@ -215,7 +215,7 @@ class H2OFrame(object):
     def _upload_python_object(self, python_obj, destination_frame="", header=(-1, 0, 1), separator="",
                               column_names=None, column_types=None, na_strings=None):
         # [] and () cases -- folded together since H2OFrame is mutable
-        if is_listlike(python_obj):
+        if test_type(python_obj, list, tuple):
             col_header, data_to_write = _handle_python_lists(python_obj, header)
 
         # {} and collections.OrderedDict cases
@@ -842,8 +842,8 @@ class H2OFrame(object):
         -------
           Returns self.
         """
-        if is_str(col): col = self.names.index(col)  # lookup the name
-        if not is_int(col) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
+        if test_type(col, str): col = self.names.index(col)  # lookup the name
+        if not test_type(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
         if self.ncol == 1: col = 0
         old_cache = self._ex._cache
         self._ex = ExprNode("colnames=", self, col, name)  # Update-in-place, but still lazy
@@ -975,7 +975,7 @@ class H2OFrame(object):
         -------
           An H2OFrame of 0s and 1s showing whether each element in the original H2OFrame is contained in item.
         """
-        if is_listlike(item):
+        if test_type(item, list, tuple, set):
             return functools.reduce(H2OFrame.__or__, (self == i for i in item))
         else:
             return self == item
@@ -1126,7 +1126,7 @@ class H2OFrame(object):
         new_types = None
         fr = None
         flatten = False
-        if is_str(item) or is_int(item) or isinstance(item, (list, slice)):
+        if test_type(item, str, int, list, slice):
             new_ncols, new_names, new_types, item = self._compute_ncol_update(item)
             new_nrows = self.nrow
             fr = H2OFrame._expr(expr=ExprNode("cols_py", self, item))
@@ -1159,7 +1159,7 @@ class H2OFrame(object):
                 new_nrows, rows = self._compute_nrow_update(rows)
                 fr = H2OFrame._expr(expr=ExprNode("rows", ExprNode("cols_py", self, cols), rows))
 
-            flatten = is_int(rows) and (is_str(cols) or is_int(cols))
+            flatten = test_type(rows, int) and test_type(cols, str, int)
         else:
             raise ValueError("Unexpected __getitem__ selector: " + str(type(item)) + " " + str(item.__class__))
 
@@ -1203,9 +1203,9 @@ class H2OFrame(object):
                 new_names = [self.names[i] for i in range_list]
                 new_types = {name: self.types[name] for name in new_names}
                 item = slice(start, end)
-            elif is_str(item) or is_int(item):
+            elif test_type(item, str, int):
                 new_ncols = 1
-                if is_str(item):
+                if test_type(item, str):
                     new_names = [item]
                     new_types = None if item not in self.types else {item: self.types[item]}
                 else:
@@ -1257,18 +1257,18 @@ class H2OFrame(object):
         row_expr = None
         colname = None  # When set, we are doing an append
 
-        if is_str(b):  # String column name, could be new or old
+        if test_type(b, str):  # String column name, could be new or old
             if b in self.names:
                 col_expr = self.names.index(b)  # Old, update
             else:
                 col_expr = self.ncol
                 colname = b  # New, append
-        elif is_int(b):
+        elif test_type(b, int):
             col_expr = b  # Column by number
         elif isinstance(b, tuple):  # Both row and col specifiers
             row_expr = b[0]
             col_expr = b[1]
-            if is_str(col_expr):  # Col by name
+            if test_type(col_expr, str):  # Col by name
                 if col_expr not in self.names:  # Append
                     colname = col_expr
                     col_expr = self.ncol
@@ -1348,7 +1348,7 @@ class H2OFrame(object):
           H2OFrame with the respective dropped columns or rows. Returns a new H2OFrame.
         """
         if axis == 1:
-            if is_str(index):
+            if test_type(index, str):
                 index = self.names.index(index)
                 fr = H2OFrame._expr(expr=ExprNode("cols", self, -(index + 1)), cache=self._ex._cache)
                 fr._ex._cache.ncols -= 1
@@ -1358,13 +1358,13 @@ class H2OFrame(object):
             if all(isinstance(item, int) for item in index):
                 for i in range(len(index)):
                         index[i] = index[i] + 1
-                index = [ -x for x in index]
+                index = [-x for x in index]
                 fr = H2OFrame._expr(expr=ExprNode("cols", self, index), cache=self._ex._cache)
             elif all(isinstance(item, str) for item in index):
                 for i in range(len(index)):
-                    if is_str(index[i]):
+                    if test_type(index[i], str):
                         index[i] = self.names.index(index[i]) + 1
-                index = [ -x for x in index]
+                index = [-x for x in index]
                 fr = H2OFrame._expr(expr=ExprNode("cols", self, index), cache=self._ex._cache)
             else:
                 raise ValueError("Invalid column index types. Must either be a list of all int indexes or a list of all column names (strings) for dropping columns.")
@@ -1373,7 +1373,7 @@ class H2OFrame(object):
             if all(isinstance(item, int) for item in index):
                 for i in range(len(index)):
                     index[i] = index[i] + 1
-                index = [ -x for x in index]
+                index = [-x for x in index]
                 fr = H2OFrame._expr(expr=ExprNode("rows", self, index), cache=self._ex._cache)
             else:
                 raise ValueError("Invalid row indexes. Must be a list of int row indexes to drop from the H2OFrame.")
@@ -1387,7 +1387,7 @@ class H2OFrame(object):
 
         :returns: The column dropped from the frame; the frame is side-effected to lose the column.
         """
-        if is_str(i): i = self.names.index(i)
+        if test_type(i, str): i = self.names.index(i)
         col = H2OFrame._expr(expr=ExprNode("cols", self, i))
         old_cache = self._ex._cache
         self._ex = ExprNode("cols", self, -(i + 1))
@@ -1423,7 +1423,7 @@ class H2OFrame(object):
         if weights_column is None:
             weights_column = "_"
         else:
-            if not (is_str(weights_column) or (isinstance(weights_column, H2OFrame)
+            if not (test_type(weights_column, str) or (isinstance(weights_column, H2OFrame)
                                                and weights_column.ncol == 1 and weights_column.nrow == self.nrow)):
                 raise ValueError(
                     "`weights_column` must be a column name in x or an H2OFrame object with 1 column and same row count as x")
@@ -1633,8 +1633,8 @@ class H2OFrame(object):
         -------
           A list of values used in the imputation or the group by result used in imputation.
         """
-        if is_str(column): column = self.names.index(column)
-        if is_str(by):     by = self.names.index(by)
+        if test_type(column, str): column = self.names.index(column)
+        if test_type(by, str):     by = self.names.index(by)
 
         if values is None: values = "_"
         if group_by_frame is None: group_by_frame = "_"
@@ -1788,7 +1788,7 @@ class H2OFrame(object):
           A list containing the skewness for each column (NaN for non-numeric columns).
         """
         return ExprNode("skewness", self, na_rm)._eager_scalar()
-    
+
     def kurtosis(self, na_rm=False):
         """Compute the kurtosis.
 

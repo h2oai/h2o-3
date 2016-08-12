@@ -18,7 +18,7 @@ from h2o.display import H2ODisplay
 from h2o.grid.metrics import *
 from h2o.utils.shared_utils import quoted
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import is_listlike, is_int
+from h2o.utils.typechecks import test_type
 
 
 class H2OGridSearch(object):
@@ -168,7 +168,7 @@ class H2OGridSearch(object):
         tframe = algo_params["training_frame"]
         if tframe is None: raise ValueError("Missing training_frame")
         if y is not None:
-            if is_listlike(y):
+            if test_type(y, list, tuple):
                 if len(y) == 1:
                     parms["y"] = y[0]
                 else:
@@ -192,10 +192,10 @@ class H2OGridSearch(object):
     def _model_build(self, x, y, tframe, vframe, kwargs):
         kwargs['training_frame'] = tframe
         if vframe is not None: kwargs["validation_frame"] = vframe
-        if is_int(y): y = tframe.names[y]
+        if test_type(y, int): y = tframe.names[y]
         if y is not None: kwargs['response_column'] = y
-        if not is_listlike(x): x = [x]
-        if is_int(x[0]):
+        if not test_type(x, list, tuple): x = [x]
+        if test_type(x[0], int):
             x = [tframe.names[i] for i in x]
         offset = kwargs["offset_column"]
         folds = kwargs["fold_column"]
@@ -674,7 +674,7 @@ class H2OGridSearch(object):
         -------
           A list of the hyperparameters for the specified model.
         """
-        idx = id if is_int(id) else self.model_ids.index(id)
+        idx = id if test_type(id, int) else self.model_ids.index(id)
         model = self[idx]
 
         # if cross-validation is turned on, parameters in one of the fold model actuall contains the max_runtime_secs
@@ -703,7 +703,7 @@ class H2OGridSearch(object):
         -------
           A dict of model pararmeters derived from the hyper-parameters used to train this particular model.
         """
-        idx = id if is_int(id) else self.model_ids.index(id)
+        idx = id if test_type(id, int) else self.model_ids.index(id)
         model = self[idx]
 
         model_params = dict()

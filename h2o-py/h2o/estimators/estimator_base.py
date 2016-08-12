@@ -16,7 +16,7 @@ from ..model.multinomial import H2OMultinomialModel
 from ..model.regression import H2ORegressionModel
 from ..model.metrics_base import *
 from h2o.utils.shared_utils import quoted
-from h2o.utils.typechecks import is_int
+from h2o.utils.typechecks import test_type
 import h2o
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
@@ -152,10 +152,10 @@ class H2OEstimator(ModelBase):
   def _model_build(self, x, y, tframe, vframe, kwargs):
     kwargs['training_frame'] = tframe
     if vframe is not None: kwargs["validation_frame"] = vframe
-    if is_int(y): y = tframe.names[y]
+    if test_type(y, int): y = tframe.names[y]
     if y is not None: kwargs['response_column'] = y
     if not isinstance(x, (list,tuple)): x=[x]
-    if is_int(x[0]):
+    if test_type(x[0], int):
       x = [tframe.names[i] for i in x]
     offset = kwargs["offset_column"]
     folds  = kwargs["fold_column"]

@@ -30,7 +30,7 @@ from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, assert_is_str, assert_maybe_str, is_str, is_int, is_listlike
+from h2o.utils.typechecks import assert_is_type, test_type
 from h2o.utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, deprecated
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -177,10 +177,10 @@ def lazy_import(path):
 
     :param path: A path to a data file (remote or local).
     """
-    if is_listlike(path):
+    if test_type(path, list, tuple, set):
         return [_import(p)[0] for p in path]
     else:
-        assert_is_str(path)
+        assert_is_type(path, str)
         return _import(path)
 
 
@@ -303,7 +303,6 @@ def import_file(path=None, destination_frame="", parse=True, header=(-1, 0, 1), 
     -------
       A new H2OFrame instance.
     """
-    #assert_is_str(path)
     assert_is_type(destination_frame, str, None)
     if not parse:
         return lazy_import(path)
@@ -471,7 +470,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
     """
 
     # The H2O backend only accepts things that are quoted
-    if is_str(raw_frames): raw_frames = [raw_frames]
+    if test_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
     kwargs = {}
@@ -482,7 +481,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
     # set separator
     if separator:
-        if not is_str(separator) or len(separator) != 1:
+        if not test_type(separator, str) or len(separator) != 1:
             raise ValueError("separator should be a single character string; got %r" % separator)
         kwargs["separator"] = ord(separator)
 
@@ -532,7 +531,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
             j["na_strings"] = [[] for _ in range(len(j["column_names"]))]
             for name, na in na_strings.items():
                 idx = j["column_names"].index(name)
-                if is_str(na): na = [na]
+                if test_type(na, str): na = [na]
                 for n in na: j["na_strings"][idx].append(quoted(n))
         elif is_list_of_lists(na_strings):
             if len(na_strings) != len(j["column_types"]): raise ValueError(
@@ -588,7 +587,7 @@ def assign(data, xid):
 
 def deep_copy(data, xid):
     if data.frame_id == xid: ValueError("Desination key must differ input frame")
-    duplicate = data.apply(lambda x:x)
+    duplicate = data.apply(lambda x: x)
     duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver(False)
     duplicate._ex._cache._id = xid
     duplicate._ex._children = None
@@ -725,7 +724,7 @@ def remove(x):
         elif isinstance(xi, H2OEstimator):
             api("DELETE /3/DKV/%s" % xi.model_id)
             xi._id = None
-        elif is_str(xi):
+        elif test_type(xi, str):
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
             try:
                 rapids("(rm {})".format(xi))
@@ -1078,7 +1077,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     -------
       H2OFrame
     """
-    factors = [data.names[n] if is_int(n) else n for n in factors]
+    factors = [data.names[n] if test_type(n, int) else n for n in factors]
     parms = {"dest": py_tmp_key(append=h2oconn.session_id) if destination_frame is None else destination_frame,
              "source_frame": data.frame_id,
              "factor_columns": [quoted(f) for f in factors],
@@ -1156,7 +1155,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
     assert_is_type(actual, H2OFrame)
     # assert predicted.ncol == 1, "`predicted` frame should have exactly 1 column"
     assert actual.ncol == 1, "`actual` frame should have exactly 1 column"
-    assert_maybe_str(distribution)
+    assert_is_type(distribution, str, None)
     if domain is None and any(actual.isfactor()):
         domain = actual.levels()[0]
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),

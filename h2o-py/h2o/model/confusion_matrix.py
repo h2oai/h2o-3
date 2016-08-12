@@ -9,15 +9,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import is_listlike
+from h2o.utils.typechecks import assert_is_type
 
 
 class ConfusionMatrix(object):
     ROUND = 4  # round count_errs / sum
 
     def __init__(self, cm, domains=None, table_header=None):
-        if not cm: raise ValueError("Missing data, `cm_raw` is None")
-        if not isinstance(cm, list):  raise ValueError("`cm` is not a list. Got: " + type(cm))
+        assert_is_type(cm, list)
 
         if len(cm) == 2: cm = list(zip(*cm))  # transpose if 2x2
         nclass = len(cm)
@@ -79,8 +78,5 @@ class ConfusionMatrix(object):
 
     @staticmethod
     def read_cms(cms=None, domains=None):
-        if cms is None:  raise ValueError("Missing data, no `cms`.")
-        if not isinstance(cms, list):  raise ValueError("`cms` must be a list of lists")
-        lol_all = all(is_listlike(l) for l in cms)
-        if not lol_all: raise ValueError("`cms` must be a list of lists")
+        assert_is_type(cms, [list])
         return [ConfusionMatrix(cm, domains) for cm in cms]
