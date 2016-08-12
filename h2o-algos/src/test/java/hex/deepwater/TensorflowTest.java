@@ -4,22 +4,33 @@
  */
 package hex.deepwater;
 
+        import org.apache.commons.io.IOUtils;
+        import org.apache.commons.math3.distribution.IntegerDistribution;
         import org.junit.BeforeClass;
         import org.junit.Test;
         import water.TestUtil;
         import water.util.Pair;
+
+        import javax.imageio.ImageIO;
+        import java.awt.image.BufferedImage;
         import java.io.*;
+        import java.nio.ByteBuffer;
         import java.nio.FloatBuffer;
         import java.nio.IntBuffer;
+        import java.nio.file.Files;
+        import java.nio.file.Path;
+        import java.nio.file.Paths;
+        import java.util.ArrayList;
+        import java.util.HashMap;
         import java.util.List;
+        import java.util.regex.Matcher;
+        import java.util.regex.Pattern;
 
-import static org.bytedeco.javacpp.tensorflow.*;
+        import static org.bytedeco.javacpp.tensorflow.*;
 
 public class TensorflowTest extends TestUtil {
     @BeforeClass
     public static void stall() { stall_till_cloudsize(1); }
-
-    final boolean GPU = System.getenv("CUDA_PATH")!=null;
 
     static String expandPath(String path) {
         return path.replaceFirst("^~", System.getProperty("user.home"));
@@ -65,28 +76,28 @@ public class TensorflowTest extends TestUtil {
         return Status.OK();
     }
 
-    void getTopKLabels(TensorVector outputs, int k){
+    TensorVector getTopKLabels(Tensor distribution, int k){
 
         final String output_name = "top_k";
 
         GraphDefBuilder b = new GraphDefBuilder();
 
-        TopKV2(Const(outputs.get(0), b.opts()), Const(k, b.opts()), b.opts().WithName("top_k"));
+        TopKV2(Const(distribution, b.opts()), Const(k, b.opts()), b.opts().WithName("top_k"));
 
         GraphDef graph = new GraphDef();
         Status status = b.ToGraphDef(graph);
 
         checkStatus(status);
-
         Session session = new Session(new SessionOptions());
         checkStatus(session.Create(graph));
+        TensorVector outputs = new TensorVector();
         status = session.Run( new StringTensorPairVector(),
                 new StringVector( new String[]{output_name+ ":0", output_name+":1"}),
                 new StringVector(),
             outputs);
 
         checkStatus(status);
-
+        return outputs;
     }
 
     void checkStatus(Status status) {
@@ -172,7 +183,7 @@ public class TensorflowTest extends TestUtil {
                     new StringVector("layer2/activation"),
                     new StringVector(), outputs);
             checkStatus(status);
-            getTopKLabels(outputs, 1);
+            getTopKLabels(outputs.get(0), 1);
 
             FloatBuffer fb = outputs.get(0).createBuffer();
             float[] activation_layer = new float[batch_size];
@@ -187,6 +198,110 @@ public class TensorflowTest extends TestUtil {
 
             return indexes;
 
+    }
+
+    public Tensor asTensor(String value) {
+        Tensor t = new Tensor( DT_STRING, new TensorShape(value.length() ));
+        t.createStringArray().put(value);
+        return t;
+    }
+
+    @Test
+    public void inferInception() throws Exception {
+        SessionOptions opt = new SessionOptions();
+        Session sess = new Session(opt);
+        GraphDef graph_def = new GraphDef();
+        Status status = ReadBinaryProto(Env.Default(), expandPath("~/workspace/deepwater/tensorflow/models/inception/classify_image_graph_def.pb"), graph_def);
+        checkStatus(status);
+        status = sess.Create(graph_def);
+        checkStatus(status);
+
+        HashMap<Integer, String>  uid_to_human_name = loadMapping(expandPath("~/workspace/deepwater/tensorflow/models/inception/imagenet_2012_challenge_label_map_proto.pbtxt"),
+                expandPath("~/workspace/deepwater/tensorflow/models/inception/imagenet_synset_to_human_label_map.txt"));
+
+
+        String image_path = expandPath("~/workspace/deepwater/tensorflow/models/inception/cropped_panda.jpg");
+        BufferedImage bimg = ImageIO.read(new File(image_path));
+
+        byte[] img = Files.readAllBytes(Paths.get(image_path));
+        TensorVector outputs = new TensorVector();
+        Tensor image_data = new Tensor(DT_STRING, new TensorShape(img.length));
+        StringArray buffer_image_data = image_data.createStringArray();
+        //buffer_image_data.put(new StringArray().data().put(img));
+        buffer_image_data.resize(img.length);
+        buffer_image_data.data().put(img);
+        assert buffer_image_data.size()  == img.length: image_data.dim_size(0) + " " + img.length;
+
+        Tensor image_path_t = asTensor(new String(img));
+        status = sess.Run(new StringTensorPairVector(new String[]{"DecodeJpeg/contents"}, new Tensor[]{image_data}),
+                new StringVector("softmax"), new StringVector(), outputs );
+        checkStatus(status);
+
+        FloatBuffer softmax = outputs.get(0).createBuffer();
+        TensorVector results = getTopKLabels(outputs.get(0), 5);
+
+        FloatBuffer topK = results.get(0).createBuffer();
+        IntBuffer topKindex = results.get(1).createBuffer();
+        assert topK.limit() == topKindex.limit();
+        for (int i = 0; i < topK.limit(); i++) {
+            System.out.println(i + " " + topK.get(i) + " " + uid_to_human_name.get(topKindex.get(i)));
+        }
+    }
+
+    HashMap<Integer, String> loadMapping(String label_map_proto, String label_map){
+        Pattern regexp = Pattern.compile("^n(\\d+)(\\s+)([ \\S,]*)");
+        Matcher matcher = regexp.matcher("");
+        HashMap<Integer, String> uid_to_class_name = new HashMap<>();
+        try {
+            // Read the uid -> Class mapping
+            BufferedReader buff_reader = new BufferedReader( new FileReader(label_map));
+            LineNumberReader reader = new LineNumberReader(buff_reader);
+            String line;
+            while ((line = reader.readLine()) != null) {
+                matcher.reset(line);
+                if(matcher.find()){
+                    uid_to_class_name.put(Integer.parseInt(matcher.group(1)), matcher.group(3));
+                }
+            }
+        } catch(IOException e){
+            e.printStackTrace();
+        }
+
+        HashMap<Integer, String> result = new HashMap<>();
+        regexp = Pattern.compile("^.*?(\\d+).*");
+        matcher = regexp.matcher("");
+
+        try {
+            // Read the uid -> int mapping
+            BufferedReader buff_reader = new BufferedReader( new FileReader(label_map_proto));
+            LineNumberReader reader = new LineNumberReader(buff_reader);
+            List<Integer> values = new ArrayList<>();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // skip comments. This is needed or the regex will pick up the number inside it.
+                if (line.startsWith("#")){
+                    continue;
+                }
+                matcher.reset(line);
+                if(matcher.find()){
+                    values.add(Integer.parseInt(matcher.group(1)));
+                }
+            }
+            assert values.size() % 2 == 0: values;
+
+            // consume the array as a sequence of [(uid,id),...]
+            for (int i = 0; i < values.size(); i+=2) {
+                int index = values.get(i);
+                int uid = values.get(i+1);
+                // remap uid to id
+                result.put(index, uid_to_class_name.get(uid));
+            }
+
+        } catch(IOException e){
+            e.printStackTrace();
+        }
+
+        return result;
     }
 
     private static class ImageParams {
