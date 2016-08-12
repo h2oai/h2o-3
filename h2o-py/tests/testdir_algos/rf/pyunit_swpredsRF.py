@@ -25,7 +25,7 @@ def swpredsRF():
   # Train H2O DRF without Noise Column
 
 
-#Log.info("Distributed Random Forest with only Predictor Column")
+  # Log.info("Distributed Random Forest with only Predictor Column")
   model1 = H2ORandomForestEstimator(ntrees=50, max_depth=20, nbins=500)
   model1.train(x="X1", y="y", training_frame=swpreds)
   model1.show()

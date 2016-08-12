@@ -10,8 +10,8 @@ from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 import random
 
 def lambda_search():
-    
-    
+
+
 
     #Log.info("Importing prostate.csv data...\n")
     prostate = h2o.import_file(pyunit_utils.locate("smalldata/logreg/prostate.csv"))
@@ -21,7 +21,7 @@ def lambda_search():
     #Log.info("H2O GLM (binomial) with parameters: lambda_search = TRUE, nfolds: 2\n")
     prostate_nosearch = H2OGeneralizedLinearEstimator(family = "binomial", nlambdas = 5, lambda_search = False, n_folds = 2)
     prostate_nosearch.train(x=list(range(2,9)),y=1,training_frame=prostate.hex)
- #   prostate_nosearch = h2o.glm(x=prostate[2:9], y=prostate[1], training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = False, n_folds = 2)
+    # prostate_nosearch = h2o.glm(x=prostate[2:9], y=prostate[1], training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = False, n_folds = 2)
     params_nosearch = prostate_nosearch.params()
 
     try:
@@ -35,7 +35,7 @@ def lambda_search():
     prostate_search = H2OGeneralizedLinearEstimator(family = "binomial", nlambdas = 5, lambda_search = True, n_folds = 2)
     prostate_search.train(x=list(range(2,9)),y=1,training_frame=prostate.hex)
 
- #   prostate_search = h2o.glm(x=prostate[2:9], y=prostate[1], training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = True, n_folds = 2)
+    # prostate_search = h2o.glm(x=prostate[2:9], y=prostate[1], training_frame = prostate.hex, family = "binomial", nlambdas = 5, lambda_search = True, n_folds = 2)
     params_search = prostate_search.params()
 
     random_lambda = random.choice(prostate_search.lambda_all())
@@ -46,7 +46,7 @@ def lambda_search():
     #Log.info(cat("Retrieving model corresponding to best lambda", params.bestlambda$lambda_best, "\n"))
     best_model = prostate_search.getGLMLambdaModel(params_search.bestlambda())
     assert best_model.model() == prostate_search.model(), "expected models to be equal"
-  
+
 
 
 if __name__ == "__main__":

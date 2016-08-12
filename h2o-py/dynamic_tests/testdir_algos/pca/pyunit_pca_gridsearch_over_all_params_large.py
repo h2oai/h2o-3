@@ -81,7 +81,7 @@ class Test_PCA_grid_search:
 
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params = dict()
- #   hyper_params["pca_method"] = ["GramSVD", "Power"]
+    # hyper_params["pca_method"] = ["GramSVD", "Power"]
     hyper_params["transform"] = ["NONE","DEMEAN","DESCALE","STANDARDIZE","NORMALIZE"]
     pca_method = "GramSVD"
 

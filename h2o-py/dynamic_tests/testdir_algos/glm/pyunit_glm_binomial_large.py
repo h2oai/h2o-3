@@ -796,7 +796,7 @@ class TestGLMBinomial:
         model_h2o.train(x=x_indices, y=y_index, training_frame=training_data)
 
         print("Best lambda is {0}, best alpha is {1}".format(self.best_lambda, self.best_alpha))
-              
+
         # evaluate model over test data set
         model_h2o_metrics = model_h2o.model_performance(test_data=test_data)
 
@@ -1448,7 +1448,7 @@ def test_glm_binomial():
     test_glm_binomial.test5_missing_values()
     test_glm_binomial.test6_enum_missing_values()
     test_glm_binomial.test7_missing_enum_values_lambda_search()
-#    test_glm_binomial.teardown()
+    # test_glm_binomial.teardown()
 
     sys.stdout.flush()
 

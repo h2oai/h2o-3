@@ -26,7 +26,7 @@ def glrm_set_loss_by_col_rand():
   print("Run GLRM with loss_by_col = [" + ', '.join(loss_all) + "]")
   glrm_h2o = H2OGeneralizedLowRankEstimator(k=5, loss_by_col=loss_all)
   glrm_h2o.train(x=prostateH2O.names,training_frame=prostateH2O)
-#  glrm_h2o = h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all)
+  # glrm_h2o = h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all)
   glrm_h2o.show()
 
   # Randomly set columns and loss functions
@@ -46,49 +46,49 @@ def glrm_set_loss_by_col_rand():
   if(len(loss_all) < prostateH2O.ncol):
     try:
       H2OGeneralizedLowRankEstimator(k=5, loss_by_col=loss_all).train(x=prostateH2O.names,training_frame=prostateH2O)
-#      h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all)
+      # h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all)
       assert False, "Expected GLRM to throw error since column indices not specified"
     except:
       pass
 
   try:
     H2OGeneralizedLowRankEstimator(k=5, loss_by_col_idx=loss_idx_all).train(x=prostateH2O.names,training_frame=prostateH2O)
-#    h2o.glrm(x=prostateH2O, k=5, loss_by_col_idx=loss_idx_all)
+    # h2o.glrm(x=prostateH2O, k=5, loss_by_col_idx=loss_idx_all)
     assert False, "Expected GLRM to throw error since losses for columns not specified"
   except:
     pass
 
   try:
     H2OGeneralizedLowRankEstimator(k=5, loss_by_col=["Absolute", "Ordinal", "Huber"], loss_by_col_idx = [1,2]).train(x=prostateH2O.names,training_frame=prostateH2O)
-#    h2o.glrm(x=prostateH2O, k=5, loss_by_col=["Absolute", "Ordinal", "Huber"], loss_by_col_idx = [1,2])
+    # h2o.glrm(x=prostateH2O, k=5, loss_by_col=["Absolute", "Ordinal", "Huber"], loss_by_col_idx = [1,2])
     assert False, "Expected GLRM to throw error since not all column indices specified"
   except:
     pass
 
   try:
     H2OGeneralizedLowRankEstimator(k=5, loss_by_col=["Absolute", "Ordinal"], loss_by_col_idx=[1,2,5]).train(x=prostateH2O.names,training_frame=prostateH2O)
-#    h2o.glrm(x=prostateH2O, k=5, loss_by_col=["Absolute", "Ordinal"], loss_by_col_idx=[1,2,5])
+    # h2o.glrm(x=prostateH2O, k=5, loss_by_col=["Absolute", "Ordinal"], loss_by_col_idx=[1,2,5])
     assert False, "Expected GLRM to throw error since not all losses for columns specified"
   except:
     pass
 
   try:
     H2OGeneralizedLowRankEstimator(k=5, loss_by_col="Absolute", loss_by_col_idx=8).train(x=prostateH2O.names,training_frame=prostateH2O)
-#    h2o.glrm(x=prostateH2O, k=5, loss_by_col="Absolute", loss_by_col_idx=8)
+    # h2o.glrm(x=prostateH2O, k=5, loss_by_col="Absolute", loss_by_col_idx=8)
     assert False, "Expected GLRM to throw error since column index 8 is out of bounds (zero indexing)"
   except:
     pass
 
   try:
     H2OGeneralizedLowRankEstimator(k=5, loss_by_col=rd.sample(NUM_LOSS,1), loss_by_col_idx=rd.sample(CAT_COLS,1)).train(x=prostateH2O.names,training_frame=prostateH2O)
-#    h2o.glrm(x=prostateH2O, k=5, loss_by_col=rd.sample(NUM_LOSS,1), loss_by_col_idx=rd.sample(CAT_COLS,1))
+    # h2o.glrm(x=prostateH2O, k=5, loss_by_col=rd.sample(NUM_LOSS,1), loss_by_col_idx=rd.sample(CAT_COLS,1))
     assert False, "Expected GLRM to throw error since numeric loss cannot apply to categorical column"
   except:
     pass
 
   try:
     H2OGeneralizedLowRankEstimator(k=5, loss_by_col=rd.sample(CAT_LOSS,1), loss_by_col_idx=rd.sample(NUM_COLS,1)).train(x=prostateH2O.names,training_frame=prostateH2O)
-#    h2o.glrm(x=prostateH2O, k=5, loss_by_col=rd.sample(CAT_LOSS,1), loss_by_col_idx=rd.sample(NUM_COLS,1))
+    # h2o.glrm(x=prostateH2O, k=5, loss_by_col=rd.sample(CAT_LOSS,1), loss_by_col_idx=rd.sample(NUM_COLS,1))
     assert False, "Expected GLRM to throw error since categorical loss cannot apply to numeric column"
   except:
     pass
@@ -96,7 +96,7 @@ def glrm_set_loss_by_col_rand():
   print("Run GLRM with loss_by_col = [" + ', '.join(loss_all) + "] and loss_by_col_idx = [" + ', '.join([str(a) for a in loss_idx_all]) + "]")
   glrm_h2o = H2OGeneralizedLowRankEstimator(k=5, loss_by_col=loss_all, loss_by_col_idx=loss_idx_all)
   glrm_h2o.train(x=prostateH2O.names,training_frame=prostateH2O)
-#  glrm_h2o = h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all, loss_by_col_idx=loss_idx_all)
+  # glrm_h2o = h2o.glrm(x=prostateH2O, k=5, loss_by_col=loss_all, loss_by_col_idx=loss_idx_all)
   glrm_h2o.show()
 
 if __name__ == "__main__":

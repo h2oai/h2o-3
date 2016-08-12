@@ -156,7 +156,7 @@ class H2O(object):
     '''
     Make a REST request to the h2o server and if succesful return a dict containing the JSON result.
     '''
-#    @profile
+    # @profile
     def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
                           cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, raiseIfNon200=True, suppressErrorMsg=False, **kwargs):
         H2O.verboseprint("__do_json_request, timeout: " + str(timeout))

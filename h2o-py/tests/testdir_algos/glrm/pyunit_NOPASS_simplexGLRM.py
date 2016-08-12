@@ -15,7 +15,7 @@ def glrm_simplex():
     m = 1000
     n = 100
     k = 10
-    
+
     print("Uploading random uniform matrix with rows = " + str(m) + " and cols = " + str(n))
     Y = np.random.rand(k,n)
     def ind_list(k):
@@ -26,15 +26,15 @@ def glrm_simplex():
     X = np.array(X)
     train = np.dot(X,Y)
     train_h2o = h2o.H2OFrame(list(zip(*train.tolist())))
-    
+
     print("Run GLRM with quadratic mixtures (simplex) regularization on X")
     initial_y = np.random.rand(n,k)
     initial_y_h2o = h2o.H2OFrame(initial_y.tolist())
     glrm_h2o = H2OGeneralizedLowRankEstimator(k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="Simplex", regularization_y="None", gamma_x=1, gamma_y=0)
     glrm_h2o.train(x=train_h2o.names,training_frame=train_h2o)
-#    glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="Simplex", regularization_y="None", gamma_x=1, gamma_y=0)
+    # glrm_h2o = h2o.glrm(x=train_h2o, k=k, init="User", user_y=initial_y_h2o, loss="Quadratic", regularization_x="Simplex", regularization_y="None", gamma_x=1, gamma_y=0)
     glrm_h2o.show()
-    
+
     print("Check that X matrix consists of rows within standard probability simplex")
     fit_x = h2o.get_frame(glrm_h2o._model_json['output']['representation_name'])
     fit_x_np = np.array(h2o.as_list(fit_x))
@@ -44,7 +44,7 @@ def glrm_simplex():
         assert simplex, "Got sum over row = " + row_sum + ", but expected 1"
         return simplex
     np.apply_along_axis(is_simplex, 1, fit_x_np)
-    
+
     print("Check final objective function value")
     fit_y = glrm_h2o._model_json['output']['archetypes'].cell_values
     fit_y_np = [[float(s) for s in list(row)[1:]] for row in fit_y]
@@ -53,7 +53,7 @@ def glrm_simplex():
     glrm_obj = glrm_h2o._model_json['output']['objective']
     sse = np.sum(np.square(train.__sub__(fit_xy)))
     assert abs(glrm_obj - sse) < 1e-6, "Final objective was " + str(glrm_obj) + " but should equal " + str(sse)
-    
+
     print("Impute XY and check error metrics")
     pred_h2o = glrm_h2o.predict(train_h2o)
     pred_np = np.array(h2o.as_list(pred_h2o))
@@ -62,7 +62,7 @@ def glrm_simplex():
     glrm_caterr = glrm_h2o._model_json['output']['training_metrics']._metric_json['caterr']
     assert abs(glrm_numerr - glrm_obj) < 1e-3, "Numeric error was " + str(glrm_numerr) + " but should equal final objective " + str(glrm_obj)
     assert glrm_caterr == 0, "Categorical error was " + str(glrm_caterr) + " but should be zero"
-    
+
 
 
 if __name__ == "__main__":

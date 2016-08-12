@@ -79,9 +79,9 @@ class Test_kmeans_grid_search:
 
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params = dict()
-#    hyper_params["standardize "] = [True, False]
+    # hyper_params["standardize "] = [True, False]
     hyper_params['init'] = ["Random", "PlusPlus", "Furthest"]
-#    hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]    # cannot use stratified
+    # hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]    # cannot use stratified
 
     # parameters to be excluded from hyper parameter list even though they may be gridable
     exclude_parameter_lists = ['model_id', 'seed', 'keep_cross_validation_fold_assignment', 'fold_assignment'
@@ -267,17 +267,17 @@ class Test_kmeans_grid_search:
                     manual_run_runtime += model_runtime
 
                     summary_list = manual_model._model_json['output']['model_summary']
-                    if not(summary_list == None):
+                    if summary_list is not None:
                         num_iter = summary_list.cell_values[0][summary_list.col_header.index('number_of_iterations')]
 
                         # compute and compare test metrics between the two models
-                        if not(each_model._model_json["output"]["model_summary"] == None):
+                        if not(each_model._model_json["output"]["model_summary"] is None):
                             grid_model_metrics = \
-each_model._model_json["output"]["model_summary"].cell_values[0][summary_list.col_header.index('total_sum_of_squares')]
+                                each_model._model_json["output"]["model_summary"].cell_values[0][summary_list.col_header.index('total_sum_of_squares')]
                             manual_model_metrics = \
-manual_model._model_json["output"]["model_summary"].cell_values[0][summary_list.col_header.index('total_sum_of_squares')]
+                                manual_model._model_json["output"]["model_summary"].cell_values[0][summary_list.col_header.index('total_sum_of_squares')]
 
-                        # just compare the training metrics in this case within tolerance:
+                            # just compare the training metrics in this case within tolerance:
                             if not((type(grid_model_metrics) == str) or (type(manual_model_metrics) == str)):
                                 if (abs(grid_model_metrics) > 0) and \
                                         (abs(grid_model_metrics - manual_model_metrics)/grid_model_metrics >

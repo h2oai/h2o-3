@@ -12,7 +12,7 @@ def pyunit_make_glm_model():
 
     model = H2OGeneralizedLinearEstimator(family="gaussian", alpha=[0])
     model.train(x=["AGE","DPROS","DCAPS","PSA","VOL","GLEASON"],y="CAPSULE",training_frame=pros)
-#    model = h2o.glm(x=pros[["AGE","DPROS","DCAPS","PSA","VOL","GLEASON"]], y=pros["CAPSULE"], family="gaussian", alpha=[0])
+    # model = h2o.glm(x=pros[["AGE","DPROS","DCAPS","PSA","VOL","GLEASON"]], y=pros["CAPSULE"], family="gaussian", alpha=[0])
     new_betas = {"AGE":0.5, "DPROS":0.5, "DCAPS":0.5, "PSA":0.5, "VOL":0.5, "GLEASON":0.5}
 
     names = '['

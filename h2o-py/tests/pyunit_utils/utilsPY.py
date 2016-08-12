@@ -1300,7 +1300,7 @@ def insert_nan_in_data(old_filename, new_filename, missing_fraction):
 
     :return: None
     """
-#    pd_frame = pd.read_csv(old_filename, header=None)    # read in a dataset
+    # pd_frame = pd.read_csv(old_filename, header=None)    # read in a dataset
     np_frame = np.asmatrix(np.genfromtxt(old_filename, delimiter=',', dtype=None))
     (row_count, col_count) = np_frame.shape
     random_matrix = np.random.uniform(0, 1, [row_count, col_count-1])
@@ -1312,7 +1312,7 @@ def insert_nan_in_data(old_filename, new_filename, missing_fraction):
 
     # save new data set with missing values to new file
     np.savetxt(new_filename, np_frame, delimiter=",")
-#    pd_frame.to_csv(new_filename, sep=',', header=False, index=False, na_rep='nan')
+    # pd_frame.to_csv(new_filename, sep=',', header=False, index=False, na_rep='nan')
 
 
 def print_message_values(start_string, nump_array):
@@ -2167,7 +2167,7 @@ def insert_error_grid_search(hyper_params, gridable_parameters, gridable_types, 
     :return: new dict with errors in either parameter names or parameter values
     """
     error_hyper_params = copy.deepcopy(hyper_params)
-#    error_hyper_params = {k : v for k, v in hyper_params.items()}
+    # error_hyper_params = {k : v for k, v in hyper_params.items()}
 
     param_index = random.randint(0, len(hyper_params)-1)
     param_name = list(hyper_params)[param_index]
@@ -2250,7 +2250,7 @@ def generate_redundant_parameters(hyper_params, gridable_parameters, gridable_de
     :return: 2 dicts containing duplicated parameters with specification, new hyperparameter specification
     """
     error_hyper_params = copy.deepcopy(hyper_params)
-#    error_hyper_params = {k : v for k, v in hyper_params.items()}
+    # error_hyper_params = {k : v for k, v in hyper_params.items()}
 
     params_dict = {}
     num_params = random.randint(1, len(error_hyper_params))

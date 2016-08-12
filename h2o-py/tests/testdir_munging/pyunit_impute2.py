@@ -7,7 +7,7 @@ from tests import pyunit_utils
 
 def impute2():
     # Connect to a pre-existing cluster
-    
+
 
     prostate = h2o.upload_file(pyunit_utils.locate("smalldata/logreg/prostate_missing.csv"))
     methods = ["mean","median","mode"]
@@ -18,11 +18,11 @@ def impute2():
         for combine_method in combine_methods:
           prostate.impute("DPROS", method=method, combine_method=combine_method)
 
-#    air = h2o.upload_file(pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
-#    for inpl in inplace:
-#        for method in methods:
-#            for combine_method in combine_methods:
-#              air.impute( "TailNum", method = method, combine_method = combine_method)
+    # air = h2o.upload_file(pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
+    # for inpl in inplace:
+    #     for method in methods:
+    #         for combine_method in combine_methods:
+    #           air.impute( "TailNum", method = method, combine_method = combine_method)
 
     data = [[None, 2,    3,    1,    'a',  1,    9],
             [1,    None, 4,    2,    'a',  1,    9],

@@ -253,7 +253,7 @@ class Test_glrm_grid_search:
             else:
                 # add parameters into params_dict.  Use this to manually build model
                 params_dict = dict()
-    #                params_dict["nfolds"] = self.nfolds
+                # params_dict["nfolds"] = self.nfolds
                 total_run_time_limits = 0.0   # calculate upper bound of max_runtime_secs
                 true_run_time_limits = 0.0
                 manual_run_runtime = 0.0

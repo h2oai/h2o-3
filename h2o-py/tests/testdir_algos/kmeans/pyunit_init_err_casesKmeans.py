@@ -45,7 +45,7 @@ def init_err_casesKmeans():
   except EnvironmentError:
     assert True
 
-  # Log.info("Number of columns doesn't equal training set's")
+    # Log.info("Number of columns doesn't equal training set's")
     start_small = [[random.gauss(0,1) for c in range(numcol-2)] for r in range(5)]
     start_large = [[random.gauss(0,1) for c in range(numcol+2)] for r in range(5)]
 

@@ -434,7 +434,7 @@ def test_random_grid_search_for_glm():
     test_glm_gaussian_random_grid.test3_glm_random_grid_search_max_runtime_secs()
     test_glm_gaussian_random_grid.test4_glm_random_grid_search_metric("MSE", False)
     test_glm_gaussian_random_grid.test4_glm_random_grid_search_metric("r2", True)
-#    test_glm_gaussian_random_grid.tear_down()  # obsolete
+    # test_glm_gaussian_random_grid.tear_down()  # obsolete
 
     # exit with error if any tests have failed
     if test_glm_gaussian_random_grid.test_failed > 0:
