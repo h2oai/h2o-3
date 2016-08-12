@@ -70,7 +70,7 @@ def random_attack():
         else:
             # h2o.glm(x=train[x], y=train[y], **kwargs)
             H2OGeneralizedLinearEstimator(**kwargs).train(x=x,y=y,training_frame=train)
-å        print("-----------------------")
+        print("-----------------------")
 
     print("Import and data munging...")
     seed = random.randint(1,10000)
