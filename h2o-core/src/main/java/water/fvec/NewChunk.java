@@ -939,8 +939,8 @@ public class NewChunk extends Chunk {
             }
           }
         }
-        if(_missing != null)
-          _missing.clear(num_noncompressibles,_missing.length());
+        if(_missing != null && _missing.length() > num_noncompressibles)
+            _missing.clear(num_noncompressibles, _missing.length());
       }
     } else {
       assert num_noncompressibles <= _ds.length;
