@@ -11,6 +11,7 @@ dependencies {
   compile files('javacpp.jar')
   compile files('tensorflow.jar')
   compile files('tensorflow-linux-x86_64.jar')
+  compile files('jpy-0.9-SNAPSHOT.jar')
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

@@ -6,6 +6,9 @@ package hex.deepwater;
 
         import org.apache.commons.io.IOUtils;
         import org.apache.commons.math3.distribution.IntegerDistribution;
+        import org.jpy.PyModule;
+        import org.jpy.PyObject;
+        import org.junit.Assert;
         import org.junit.BeforeClass;
         import org.junit.Test;
         import water.TestUtil;
@@ -17,6 +20,7 @@ package hex.deepwater;
         import java.nio.ByteBuffer;
         import java.nio.FloatBuffer;
         import java.nio.IntBuffer;
+        import java.nio.charset.StandardCharsets;
         import java.nio.file.Files;
         import java.nio.file.Path;
         import java.nio.file.Paths;
@@ -27,6 +31,9 @@ package hex.deepwater;
         import java.util.regex.Pattern;
 
         import static org.bytedeco.javacpp.tensorflow.*;
+        import static org.junit.Assert.assertEquals;
+
+import org.jpy.PyLib;
 
 public class TensorflowTest extends TestUtil {
     @BeforeClass
@@ -303,6 +310,52 @@ public class TensorflowTest extends TestUtil {
 
         return result;
     }
+
+    @Test
+    public void setAndGetGlobalPythonVariables() throws Exception {
+        System.setProperty("jpy.debug", "true");
+        System.setProperty("jpy.jdlLib", "/home/fmilo/anaconda2/envs/h2o/lib/python2.7/site-packages/jdl.so");
+        System.setProperty("jpy.pythonLib", "/home/fmilo/anaconda2/envs/h2o/lib/libpython2.7.so");
+        System.setProperty("jpy.jpyLib", "/home/fmilo/anaconda2/envs/h2o/lib/python2.7/site-packages/jpy.so");
+
+        PyLib.startPython();
+        PyLib.execScript("paramInt = 123");
+        PyLib.execScript("paramStr = 'abc'");
+        PyModule mainModule = PyModule.getMain();
+        PyObject paramIntObj = mainModule.getAttribute("paramInt");
+        PyObject paramStrObj = mainModule.getAttribute("paramStr");
+        int paramIntValue = paramIntObj.getIntValue();
+        String paramStrValue = paramStrObj.getStringValue();
+
+        InputStream in = this.getClass().getResourceAsStream("k_means.py") ;
+        in = new FileInputStream(expandPath("~/workspace/h2o-3/h2o-algos/src/test/java/hex/deepwater/k_means.py"));
+        String code = IOUtils.toString(in, StandardCharsets.UTF_8);
+        PyLib.execScript(code);
+        PyObject result = mainModule.callMethod("multiply", 2, 3 );
+
+        // values from http://mnemstudio.org/clustering-k-means-example-1.htm
+        PyObject kMeans = mainModule.callMethod("TFKMeansCluster", new double[][]{
+                        new double[]{1.0, 1.5, 3.0, 5.0, 3.5, 4.5, 3.5},
+                        new double[]{1.0, 2.0, 4.0, 7.0, 5.0, 5.0, 4.5},
+                }, 2 );
+
+        PyObject centroids = kMeans.call("__getitem__", 0);
+        PyObject assignments = kMeans.call("__getitem__", 1);
+
+        /////////////////////////////////////////////////
+        assertEquals(6, result.getIntValue());
+        assertEquals(123, paramIntValue);
+        assertEquals("abc", paramStrValue);
+        Double[] centroids_java = centroids.call("__getitem__", 0).getObjectArrayValue(Double.class);
+        Assert.assertArrayEquals(new Double[]{}, centroids_java);
+        assertEquals(1, assignments.call("__getitem__",0).getIntValue());// (Integer.class));
+        //Assert.assertArrayEquals(new Integer[]{0,1}, assignments.getIntValue());// (Integer.class));
+
+        /////////////////////////////////////////////////
+
+        //PyLib.stopPython();
+    }
+
 
     private static class ImageParams {
         private final String imagePath;
