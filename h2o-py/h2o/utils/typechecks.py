@@ -157,7 +157,10 @@ def assert_is_type(var, *types, **kwargs):
     vname = _retrieve_assert_arguments()[0]
     message = kwargs.get("message", None)
     skip_frames = kwargs.get("skip_frames", 1)
-    raise H2OTypeError(var_name=vname, var_value=var, exp_types=types, message=message, skip_frames=skip_frames)
+    etn = _get_type_name(types)
+    vtn = _get_type_name([type(var)])
+    raise H2OTypeError(var_name=vname, var_value=var, var_type_name=vtn, exp_type_name=etn, message=message,
+                       skip_frames=skip_frames)
 
 
 
@@ -300,3 +303,54 @@ def _check_type(var, types):
         else:
             raise RuntimeError("Ivalid type %r in _check_type()" % tt)
     return False
+
+
+def _get_type_name(types):
+    """
+    Return the name of the provided type(s).
+
+        _get_type_name([int]) == "integer"
+        _get_type_name([str]) == "string"
+        _get_type_name([tuple]) == "tuple"
+        _get_type_name([Exception]) == "Exception"
+        _get_type_name((int, float, bool)) == "integer|float|bool"
+        _get_type_name((H2OFrame, None)) == "?H2OFrame"
+    """
+    maybe_type = False
+    res = []
+    for tt in types:
+        if tt is None:
+            maybe_type = True
+        elif tt is str:
+            res.append("string")
+        elif tt is int:
+            res.append("integer")
+        elif tt is numeric:
+            res.append("numeric")
+        elif test_type(tt, str):
+            res.append('"%s"' % repr(tt)[1:-1])
+        elif test_type(tt, int):
+            res.append(str(tt))
+        elif isinstance(tt, U):
+            res.append(H2OTypeError._get_type_name(tt))
+        elif isinstance(tt, I):
+            res.append("&".join(H2OTypeError._get_type_name([tttt]) for tttt in tt))
+        elif isinstance(tt, type):
+            res.append(tt.__name__)
+        elif isinstance(tt, list):
+            res.append("list(%s)" % H2OTypeError._get_type_name(tt))
+        elif isinstance(tt, set):
+            res.append("set(%s)" % H2OTypeError._get_type_name(tt))
+        elif isinstance(tt, tuple):
+            res.append("(%s)" % ", ".join(H2OTypeError._get_type_name([item]) for item in tt))
+        elif isinstance(tt, dict):
+            res.append("dict(%s)" % ", ".join(
+                "%s: %s" % (H2OTypeError._get_type_name([tk]), H2OTypeError._get_type_name([tv]))
+                for tk, tv in tt.items()
+            ))
+        else:
+            raise RuntimeError("Unexpected `tt`: %r" % tt)
+    if maybe_type:
+        if not res: return "None"
+        res[0] = "?" + res[0]
+    return "|".join(res)
