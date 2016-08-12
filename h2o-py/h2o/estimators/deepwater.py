@@ -155,7 +155,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Clip gradients once their absolute value is larger than this value.
         Default: 10.0
 
-      network : "AUTO" | "USER" | "lenet" | "alexnet" | "vgg" | "vgg16" | "googlenet" | "inception_bn" | "resnet"
+      network : "auto" | "user" | "lenet" | "alexnet" | "vgg" | "vgg16" | "googlenet" | "inception_bn" | "resnet"
         Network architecture.
         Default: "auto"
 
