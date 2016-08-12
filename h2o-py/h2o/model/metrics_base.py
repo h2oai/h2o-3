@@ -11,7 +11,7 @@ import imp
 
 from h2o.model.confusion_matrix import ConfusionMatrix
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, numeric
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, numeric
 
 
 class MetricsBase(object):
