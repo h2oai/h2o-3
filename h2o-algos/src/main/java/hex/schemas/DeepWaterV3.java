@@ -291,10 +291,10 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     @API(level = API.Level.expert, direction=API.Direction.INOUT, help = "Clip gradients once their absolute value is larger than this value.")
     public double clip_gradient;
 
-    @API(level = API.Level.critical, direction=API.Direction.INOUT, values = {"AUTO","USER","lenet","alexnet","vgg","vgg16","googlenet","inception_bn","resnet"}, help = "Network architecture.")
+    @API(level = API.Level.critical, direction=API.Direction.INOUT, values = {"auto","user","lenet","alexnet","vgg","vgg16","googlenet","inception_bn","resnet"}, help = "Network architecture.")
     public DeepWaterParameters.Network network;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, values = {"AUTO","mxnet","caffe","tensorflow"}, help = "Deep Learning Backend.")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, values = {"auto","mxnet","caffe","tensorflow"}, help = "Deep Learning Backend.")
     public DeepWaterParameters.Backend backend;
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Width of image.")
