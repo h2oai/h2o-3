@@ -2015,9 +2015,9 @@ kurtosis.H2OFrame <- h2o.kurtosis
 #' @param y \code{NULL} (default) or an H2OFrame. The default is equivalent to y = x.
 #' @param na.rm \code{logical}. Should missing values be removed?
 #' @param use An optional character string indicating how to handle missing values. This must be one of the following: 
-#   "everything"            - outputs NaNs whenever one of its contributing observations is missing
-#   "all.obs"               - presence of missing observations will throw an error
-#   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+#'   "everything"            - outputs NaNs whenever one of its contributing observations is missing
+#'   "all.obs"               - presence of missing observations will throw an error
+#'   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
 #' \donttest{
@@ -2058,9 +2058,9 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' @param y \code{NULL} (default) or an H2OFrame. The default is equivalent to y = x.
 #' @param na.rm \code{logical}. Should missing values be removed?
 #' @param use An optional character string indicating how to handle missing values. This must be one of the following:
-#   "everything"            - outputs NaNs whenever one of its contributing observations is missing
-#   "all.obs"               - presence of missing observations will throw an error
-#   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+#'   "everything"            - outputs NaNs whenever one of its contributing observations is missing
+#'   "all.obs"               - presence of missing observations will throw an error
+#'   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
 #' @examples
 #' \donttest{
 #' h2o.init()
