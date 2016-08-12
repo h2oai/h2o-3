@@ -10,12 +10,14 @@ from h2o.transforms.preprocessing import *
 def javamunge_assembly():
     h2o.remove_all()
     train = pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3a.csv")
-    test  = pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3b.csv")
+    test = pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3b.csv")
 
     # lending-club munging assembly
     print("Import and Parse data")
-    #Add "earliest_cr_line" and "issue_d" and cast as Strings to aide Cliff's PR on 7/13
-    types = {"int_rate":"String", "revol_util":"String", "emp_length":"String", "earliest_cr_line":"String", "issue_d":"String", "last_credit_pull_d":"Factor"}
+    # Add "earliest_cr_line" and "issue_d" and cast as strings to aide Cliff's PR on 7/13
+    types = {"int_rate": "string", "revol_util": "string", "emp_length": "string", "earliest_cr_line": "string",
+             "issue_d": "string", "last_credit_pull_d": "factor"}
+
     data = h2o.import_file(path=train, col_types=types)
     test = h2o.import_file(path=test,  col_types=data.types) ## use the same data types as the training set for the test set
     test = test[[1,5,19,23,45,66,99,590,8903,9999,10001,23892,23893,50123],:]

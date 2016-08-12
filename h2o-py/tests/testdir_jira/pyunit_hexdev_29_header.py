@@ -25,12 +25,12 @@ def header():
     try:
         h2o.import_file(pyunit_utils.locate(path), header=2)
         assert False
-    except ValueError:
+    except h2o.exceptions.H2OTypeError:
         pass
 
     assert fhex_header_true.nrow == fhex_header_false.nrow - 1
-    assert fhex_header_unknown.nrow == fhex_header_false.nrow or fhex_header_unknown.nrow == fhex_header_true.nrow
-    assert fhex_header_unspecified.nrow == fhex_header_false.nrow or fhex_header_unspecified.nrow == fhex_header_true.nrow
+    assert fhex_header_unknown.nrow in {fhex_header_false.nrow, fhex_header_true.nrow}
+    assert fhex_header_unspecified.nrow in {fhex_header_false.nrow, fhex_header_true.nrow}
 
 
 

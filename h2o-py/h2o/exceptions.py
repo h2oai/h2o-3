@@ -77,7 +77,7 @@ class H2OTypeError(H2OSoftError):
         etn = self._get_type_name(self._exp_types)
         article = "an" if etn.lstrip("?")[0] in "aioeH" else "a"
         atn = self._get_type_name([type(val)])
-        return "Argument `{var}` should be {an} {expected_type}, got {actual_type} (value: {value})".\
+        return "Argument `{var}` should be {an} {expected_type}, got {actual_type} {value}".\
                format(var=var, an=article, expected_type=etn, actual_type=atn, value=val)
 
     @property
@@ -116,7 +116,10 @@ class H2OTypeError(H2OSoftError):
             elif tt is numeric:
                 res.append("numeric")
             elif is_str(tt):
-                res.append('"%s"' % repr(tt)[1:-1])
+                rtt = repr(tt)
+                if rtt[0] == "u": rtt = rtt[1:]
+                if rtt[0] == "'" and rtt[-1] == "'": rtt = '"%s"' % rtt[1:-1]
+                res.append(rtt)
             elif is_int(tt):
                 res.append(str(tt))
             elif isinstance(tt, U):

@@ -22,6 +22,8 @@ import requests
 
 
 import h2o
+from types import FunctionType
+
 from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list, \
     _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote, _py_tmp_key
 from .display import H2ODisplay
@@ -29,7 +31,7 @@ from .job import H2OJob
 from .expr import ExprNode
 from .group_by import GroupBy
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import is_str, is_int, is_listlike
+from h2o.utils.typechecks import assert_is_type, is_str, is_int, is_listlike, assert_satisfies
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
@@ -2554,28 +2556,19 @@ class H2OFrame(object):
         """
         return H2OFrame._expr(expr=ExprNode("ifelse", self, yes, no))
 
+
     def apply(self, fun=None, axis=0):
-        """Apply a lambda expression to an H2OFrame.
+        """
+        Apply a lambda expression to an H2OFrame.
 
-        Parameters
-        ----------
-          fun: lambda
-            A lambda expression to be applied per row or per column
+        :param fun: a lambda expression to be applied per row or per column.
+        :param axis: 0 = apply to each column; 1 = apply to each row
 
-          axis: int
-            0: apply to each column; 1: apply to each row
-
-        Returns
-        -------
-          H2OFrame
+        :returns: an H2OFrame
         """
         from .astfun import _bytecode_decompile_lambda
-        if axis not in [0, 1]:
-            raise ValueError("margin must be either 0 (cols) or 1 (rows).")
-        if fun is None:
-            raise ValueError("No function to apply.")
-        if isinstance(fun, type(lambda: 0)) and fun.__name__ == (lambda: 0).__name__:  # have lambda
-            res = _bytecode_decompile_lambda(fun.__code__)
-            return H2OFrame._expr(expr=ExprNode("apply", self, 1 + (axis == 0), *res))
-        else:
-            raise ValueError("unimpl: not a lambda")
+        assert_is_type(axis, 0, 1)
+        assert_is_type(fun, FunctionType)
+        assert_satisfies(fun, fun.__name__ == "<lambda>")
+        res = _bytecode_decompile_lambda(fun.__code__)
+        return H2OFrame._expr(expr=ExprNode("apply", self, 1 + (axis == 0), *res))
