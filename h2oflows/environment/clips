@@ -1,0 +1,25 @@
+{
+  "version": "1.0.0",
+  "clips": [
+    {
+      "type": "cs",
+      "input": "importFiles [ \"https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-1db630c7-bd38-4baf-aa77-aced669b4bc0\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-1db630c7-bd38-4baf-aa77-aced669b4bc0\", frame: \"ad.hex\", predictions_frame: \"prediction-d22fec39-e7ae-480a-8ab2-b4bb78ebc3b3\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"drf-1db630c7-bd38-4baf-aa77-aced669b4bc0\""
+    }
+  ]
+}

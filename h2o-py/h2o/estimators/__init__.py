@@ -6,19 +6,19 @@
 #
 from .deeplearning import H2OAutoEncoderEstimator
 from .glrm import H2OGeneralizedLowRankEstimator
-from .glm import H2OGeneralizedLinearEstimator
 from .aggregator import H2OAggregatorEstimator
-from .svd import H2OSingularValueDecompositionEstimator
 from .gbm import H2OGradientBoostingEstimator
-from .kmeans import H2OKMeansEstimator
-from .naive_bayes import H2ONaiveBayesEstimator
-from .deeplearning import H2ODeepLearningEstimator
 from .pca import H2OPrincipalComponentAnalysisEstimator
+from .naive_bayes import H2ONaiveBayesEstimator
 from .random_forest import H2ORandomForestEstimator
+from .glm import H2OGeneralizedLinearEstimator
+from .kmeans import H2OKMeansEstimator
+from .svd import H2OSingularValueDecompositionEstimator
+from .deeplearning import H2ODeepLearningEstimator
 
 __all__ = [
-    "H2OAutoEncoderEstimator", "H2OGeneralizedLowRankEstimator", "H2OGeneralizedLinearEstimator",
-    "H2OAggregatorEstimator", "H2OSingularValueDecompositionEstimator", "H2OGradientBoostingEstimator",
-    "H2OKMeansEstimator", "H2ONaiveBayesEstimator", "H2ODeepLearningEstimator",
-    "H2OPrincipalComponentAnalysisEstimator", "H2ORandomForestEstimator"
+    "H2OAutoEncoderEstimator", "H2OGeneralizedLowRankEstimator", "H2OAggregatorEstimator",
+    "H2OGradientBoostingEstimator", "H2OPrincipalComponentAnalysisEstimator", "H2ONaiveBayesEstimator",
+    "H2ORandomForestEstimator", "H2OGeneralizedLinearEstimator", "H2OKMeansEstimator",
+    "H2OSingularValueDecompositionEstimator", "H2ODeepLearningEstimator"
 ]

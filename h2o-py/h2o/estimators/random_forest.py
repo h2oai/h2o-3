@@ -118,7 +118,7 @@ class H2ORandomForestEstimator(H2OEstimator):
 
       r2_stopping : float
         Stop making trees when the R^2 metric equals or exceeds this
-        Default: 1.79769313486e+308
+        Default: 1.7976931348623157e+308
 
       stopping_rounds : int
         Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
@@ -153,7 +153,7 @@ class H2ORandomForestEstimator(H2OEstimator):
 
       sample_rate : float
         Row sample rate per tree (from 0.0 to 1.0)
-        Default: 0.632000029087
+        Default: 0.6320000290870667
 
       sample_rate_per_class : list(float)
         Row sample rate per tree per class (from 0.0 to 1.0)

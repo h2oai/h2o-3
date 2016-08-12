@@ -1,8 +1,14 @@
 package hex.tree;
 
+import java.lang.ref.Reference;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.Stack;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import water.*;
 import water.util.IcedBitSet;
 import water.util.SB;
@@ -142,13 +148,60 @@ public class CompressedTree extends Keyed {
         }
         sb.ii(1).nl();
       }
-      @Override protected void post( int col, float fcmp, int equal ) { sb.di(1); }
-      @Override protected void leaf( float pred ) { sb.i().p("return ").p(pred).nl(); }
+      @Override protected void post( int col, float fcmp, int equal ) {
+        sb.di(1);
+      }
+      @Override protected void leaf( float pred ) {
+        sb.i().p("return ").p(pred).nl();
+      }
     }.visit();
     return sb.toString();
+  }
+
+  public String toJSON( SharedTreeModel.SharedTreeOutput tm ) {
+
+    final String[] names = tm._names;
+    final ThreadLocal<JsonObject> root = new ThreadLocal<>(); // ThreadLocal used just as a container
+    final Stack<JsonObject> objStack = new Stack<>();
+    new TreeVisitor<RuntimeException>(this) {
+      @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, DHistogram.NASplitDir naSplitDir) {
+        JsonObject current = new JsonObject();
+        if (root.get() == null) root.set(current);
+        else objStack.peek().getAsJsonArray("children").add(current);
+        objStack.push(current);
+        SB name = new SB();
+        if (naSplitDir == DHistogram.NASplitDir.NAvsREST) name.p("!Double.isNaN("+name.i().p(names[col]).p(")"));
+        else if (naSplitDir == DHistogram.NASplitDir.NALeft) name.p("Double.isNaN("+name.i().p(names[col]).p(") || "));
+        else if (equal==1) name.p("!Double.isNaN("+name.i().p(names[col]).p(") && "));
+        if (naSplitDir != DHistogram.NASplitDir.NAvsREST) {
+          name.i().p(names[col]);
+          SB value = new SB();
+          if (equal == 0) value.p("< ").p(fcmp);
+          else if (equal == 1) value.p("!=").p(fcmp);
+          else value.p("in ").p(gcmp);
+          current.addProperty("name", name.toString());
+          current.addProperty("value", value.toString());
+          current.add("children", new JsonArray());
+        }
+      }
+
+      @Override protected void leaf( float pred ) {
+        JsonArray children = objStack.peek().getAsJsonArray("children");
+        JsonObject current = new JsonObject();
+        current.addProperty("name", "return");
+        current.addProperty("value", pred);
+        children.add(current);
+      }
+
+      @Override protected void post( int col, float fcmp, int equal ) {
+        objStack.pop();
+      }
+    }.visit();
+    return (new GsonBuilder()).setPrettyPrinting().disableHtmlEscaping().create().toJson(root.get());
   }
 
   public static Key<CompressedTree> makeTreeKey(int treeId, int clazz) {
     return Key.makeSystem("tree_" + treeId + "_" + clazz + "_" + Key.rand());
   }
+  public StringBuilder toJsonString(StringBuilder sb) {sb.append(toJsonString());return sb;}
 }

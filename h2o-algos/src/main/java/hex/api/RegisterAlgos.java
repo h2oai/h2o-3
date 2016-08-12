@@ -52,5 +52,8 @@ public class RegisterAlgos extends water.api.AbstractRegister {
 
     H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "glm_datainfo_frame",
         "Test only");
+
+    H2O.register("GET /3/TreeViz", TreeVizHandler.class, "get_trees", "get_trees",
+            "Get trees as json");
   }
 }

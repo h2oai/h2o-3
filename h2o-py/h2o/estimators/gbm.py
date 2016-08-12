@@ -122,7 +122,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
       r2_stopping : float
         Stop making trees when the R^2 metric equals or exceeds this
-        Default: 1.79769313486e+308
+        Default: 1.7976931348623157e+308
 
       stopping_rounds : int
         Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
@@ -207,7 +207,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
       max_abs_leafnode_pred : float
         Maximum absolute value of a leaf node prediction
-        Default: 1.79769313486e+308
+        Default: 1.7976931348623157e+308
 
     """
     def __init__(self, **kwargs):

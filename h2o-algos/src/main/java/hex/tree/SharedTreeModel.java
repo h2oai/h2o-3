@@ -174,6 +174,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     public CompressedTree ctree( int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
     public String toStringTree ( int tnum, int knum ) { return ctree(tnum,knum).toString(this); }
+    public String toJSONTree(int tnum, int knum) { return ctree(tnum, knum).toJSON(this); }
   }
 
   public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
