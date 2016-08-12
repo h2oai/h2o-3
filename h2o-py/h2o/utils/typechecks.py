@@ -14,7 +14,7 @@ import tokenize
 from h2o.utils.compatibility import *  # NOQA
 from h2o.exceptions import H2OTypeError, H2OValueError
 
-__all__ = ("U", "I", "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
+__all__ = ("U", "I", "NOT", "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
            "assert_is_type", "assert_matches", "assert_satisfies", "test_type")
 
 
@@ -72,6 +72,7 @@ class U(MagicType):
 
     def __init__(self, *types):
         """Create an object representing the union of ``*types``."""
+        assert len(types) >= 1
         self._types = types
 
     def check(self, var):
@@ -98,6 +99,7 @@ class I(MagicType):
 
     def __init__(self, *types):
         """Create an intersection of types."""
+        assert len(types) >= 1
         self._types = types
 
     def check(self, var):
@@ -106,6 +108,29 @@ class I(MagicType):
 
     def __str__(self):
         return "&".join(_get_type_name(tt) for tt in self._types)
+
+
+class NOT(MagicType):
+    """
+    Negation of a type.
+
+    This type matches if and only if the variable is *not* of any of the provided types.
+    """
+
+    def __init__(self, *types):
+        """Create a negation of types."""
+        assert len(types) >= 1
+        self._types = types
+
+    def check(self, var):
+        """Return True if the variable does not match any of the types, and False otherwise."""
+        return not any(_check_type(var, tt) for tt in self._types)
+
+    def __str__(self):
+        if len(self._types) > 1:
+            return "!(%s)" % str("|".join(_get_type_name(tt) for tt in self._types))
+        else:
+            return "!" + _get_type_name(self._types[0])
 
 
 class _LazyClass(MagicType):
