@@ -31,7 +31,7 @@ from h2o.two_dim_table import H2OTwoDimTable
 from h2o.utils.backward_compatibility import backwards_compatible, CallableString
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import stringify_list, print2
-from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, assert_maybe_numeric, is_str)
+from h2o.utils.typechecks import (assert_is_type, assert_matches, assert_satisfies, test_type, numeric)
 from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringModelMetrics, H2OBinomialModelMetrics,
                                     H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics)
 
@@ -131,7 +131,7 @@ class H2OConnection(backwards_compatible()):
             if ip is None: ip = str("localhost")
             if port is None: port = 54321
             if https is None: https = False
-            if is_str(port) and port.isdigit(): port = int(port)
+            if test_type(port, str) and port.isdigit(): port = int(port)
             assert_is_type(ip, str)
             assert_is_type(port, int)
             assert_is_type(https, bool)
@@ -323,7 +323,7 @@ class H2OConnection(backwards_compatible()):
 
     @timeout_interval.setter
     def timeout_interval(self, v):
-        assert_maybe_numeric(v)
+        assert_is_type(v, numeric, None)
         self._timeout = v
 
 
@@ -509,7 +509,7 @@ class H2OConnection(backwards_compatible()):
         immediately. If the destination is an open file handle, then we simply write the message there and do not
         attempt to close it.
         """
-        if is_str(self._logging_dest):
+        if test_type(self._logging_dest, str):
             with open(self._logging_dest, "at", encoding="utf-8") as f:
                 f.write(msg)
         else:
@@ -641,7 +641,7 @@ class H2OResponse(dict):
             if k == "__meta" and isinstance(v, dict):
                 schema = v["schema_name"]
                 break
-            if k == "__schema" and is_str(v):
+            if k == "__schema" and test_type(v, str):
                 schema = v
                 break
         if schema == "CloudV3": return H2OCluster.from_kvs(keyvals)
