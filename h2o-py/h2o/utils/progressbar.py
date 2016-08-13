@@ -16,7 +16,7 @@ from types import FunctionType, GeneratorType, MethodType
 import colorama
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import clamp
-from h2o.utils.typechecks import assert_is_type, test_type, numeric
+from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 
 
@@ -469,7 +469,7 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
         self._encoding = (sys.stdout.encoding or "").lower()
         wlist = []
         for widget in (widgets or [title + ":", PBWBar(), PBWPercentage()]):
-            if test_type(widget, str):
+            if is_type(widget, str):
                 widget = PBWString(widget)
             widget.set_mode("file" if file_mode else "tty")
             widget.set_encoding(self._encoding)

@@ -16,7 +16,7 @@ import re
 import sys
 
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, test_type, numeric
+from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 # private static methods
 _id_ctr = 0
@@ -118,11 +118,11 @@ def _is_list(l):
 
 
 def _is_str_list(l):
-    return test_type(l, [str])
+    return is_type(l, [str])
 
 
 def _is_num_list(l):
-    return test_type(l, [numeric])
+    return is_type(l, [numeric])
 
 
 def _is_list_of_lists(o):
@@ -147,7 +147,7 @@ def _handle_python_dicts(python_obj):
         if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
             if _is_list_of_lists(v):
                 raise ValueError("Values in the dictionary must be flattened!")
-        elif test_type(v, str, numeric):
+        elif is_type(v, str, numeric):
             python_obj[k] = [v]
         else:
             raise ValueError("Encountered invalid dictionary value when constructing H2OFrame. Got: {0}".format(v))

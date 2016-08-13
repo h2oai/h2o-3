@@ -2,11 +2,93 @@
 """
 Utilities for checking types and validity of variables.
 
+The primary purpose of this module is to facilitate testing whether some variable has the desired type. Such testing
+comes in two flavors: as the ``is_type()`` function, and the ``assert_is_type()`` assert. The latter should be used
+for checking types of input variables in public methods / functions. Its advantage over simple ``assert is_type()``
+construct is that: firstly it composes the error message in case of failure, and secondly it throws an
+:class:`H2OTypeError` exception instead of an ``AssertionError``, which is both more precise, and more user-friendly
+(in the sense that it produces much nicer error message).
+
+General interface of this module is:
+
+    assert_is_type(var, type1, ..., typeN)
+    assert_satisfies(var, condition)
+    assert_matches(var, regular_expression)
+    if is_type(var, type1, ..., typeN): ...
+
+The ``typeI`` items here deserve a more thorough explanation. They could be:
+
+    # Plain types
+    assert_is_type(flag, bool)
+    assert_is_type(port, int)  # ``int`` and ``str`` will work on Py2 as if you were on Py3
+    assert_is_type(text, str)  # (i.e. they'll also match ``long`` and ``unicode`` respectively)
+    assert_is_type(hls, H2OLocalServer)
+    assert_is_type(arr, list, tuple, set)
+    assert_is_type(json, dict)
+    assert_is_type(asdffkj, object)  # in Python ``object`` is equivalent to ``any``
+
+    # "numeric" is a special type, meaning ``U(int, float)``
+    assert_is_type(x, numeric)
+
+    # Literals are matched by value
+    assert_is_type(v, None)
+    assert_is_type(scheme, "http", "https", "ftp")
+    assert_is_type(dir, -1, 0, 1)
+
+    # Testing lists
+    assert_is_type(arr, [numeric])   # List of numbers
+    assert_is_type(arr2, [[float]])  # List of lists of floats (i.e. a 2-dimensional array)
+    assert_is_type(arr, list)        # Generic list, same as ``[object]``
+    assert_is_type(arr, [int, str])  # List of either ints or strings, same as ``[U(int, str)]``
+
+    # Sets follow the same semantic as lists, only use curly braces ``{}`` instead of square ones
+    assert_is_type(s, {str})  # Set of string values
+    assert_is_type(s, set)    # Generic set, same as ``{object}``
+
+    # Tuples
+    assert_is_type(t, tuple)  # any tuple
+    assert_is_type(t, (int, int, int, [str]))  # Test for a 4-tuple having first 3 ints and last an array of strings
+    assert_is_type(t, Tuple(int))  # tuple of ints of arbitrary length
+
+    # Dictionaries
+    assert_is_type(t, dict)  # any dictionary
+    assert_is_type(cols, {str: H2OFrame})  # Same as Map<str, H2OFrame> in Java
+    assert_is_type(vals, {str: U(numeric, str)})  # Dictionary with string keys and ``U(numeric, str)`` values
+    # Dictionary whose key-value pairs match either ``(ktype1, vtype1)``, or ..., or ``(ktypeN, vtypeN)``
+    assert_is_type(foo, {ktype1: vtype1, ..., ktypeN: vtypeN})
+    # Here we test whether ``xyz`` has keys of the specified types. For example ``xyz = {"foo": 1, "bar": 2}`` will
+    # pass the test, whereas ``xyz = {"foo": 0, "kaboom": None}`` will not.
+    assert_is_type(xyz, {"foo": int, "bar": U(int, float, None), "baz": bool})
+
+As you have noticed, we define a number of special classes to facilitate type construction::
+
+    # Union / intersection / negation
+    U(str, int, float)     # denotes a type which can be either a string, or an integer, or a float
+    I(Widget, Renderable)  # denotes a class which is both a Widget and a Renderable (it uses multiple inheritance)
+    NOT(None)              # denotes any type except None
+    # Intersection and negation are best used together:
+    I(int, NOT(0))         # integer which is not zero
+
+    # ``Tuple`` may be used to denote tuples with variable number of arguments (same as lists)
+    Tuple(int)             # tuple with any number of integer elements
+
+    # ``Dict`` is a dictionary type which should match exactly (i.e. each key must be present in tested variable)
+    Dict(error=str)        # dictionary with only one key "error" with string value
+
+    # Lazy class references: these types can be used anywhere without having to load the corresponding modules. Their
+    # resolution is deferred until the run time, and if the module cannot be loaded no exception will be raised (but
+    # of course the type check will fail).
+    h2oframe          # Same as H2OFrame
+    pandas_dataframe  # Same as pandas.DataFrame
+    numpy_ndarray     # Same as numpy.ndarray
+
+
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import importlib
 import re
 import sys
 import tokenize
@@ -14,8 +96,8 @@ import tokenize
 from h2o.utils.compatibility import *  # NOQA
 from h2o.exceptions import H2OTypeError, H2OValueError
 
-__all__ = ("U", "I", "NOT", "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
-           "assert_is_type", "assert_matches", "assert_satisfies", "test_type")
+__all__ = ("U", "I", "NOT", "Tuple", "Dict", "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
+           "assert_is_type", "assert_matches", "assert_satisfies", "is_type")
 
 
 if PY2:
@@ -34,7 +116,7 @@ else:
 
 
 
-def test_type(var, *args):
+def is_type(var, *args):
     """
     Return True if the variable is of the specified type(s) and False otherwise.
 
@@ -133,6 +215,56 @@ class NOT(MagicType):
             return "!" + _get_type_name(self._types[0])
 
 
+class Tuple(MagicType):
+    """Tuple of arbitrary length and having elements of same type(s)."""
+
+    def __init__(self, *types):
+        """Create a tuple of types."""
+        assert len(types) >= 1
+        self._element_type = types[0] if len(types) == 1 else U(*types)
+
+    def check(self, var):
+        """Return True if the variable matches this type, and False otherwise."""
+        return isinstance(var, tuple) and all(_check_type(t, self._element_type) for t in var)
+
+    def __str__(self):
+        return "(*%s)" % _get_type_name(self._element_type)
+
+
+class Dict(MagicType):
+    """
+    Dictionary with strict shape signature.
+
+    Simple dict literals can be used to specify dictionary types where keys may be optionally present, but when they
+    are they should match the specified types. For example, ``{"foo": int, "bar": str}`` is a valid type for ``{}`` or
+    ``{"foo": 3}`` or ``{"bar": "^_^"}`` or ``{"foo": 0, "bar": ""}``. On the other hand, ``Dict(foo=int, bar=str)``
+    specifies a dictionary type where both keys "foo" and "bar" must be present and their values must be of integer
+    and string types respectively.
+
+    As a convenience, we assume that any key which is missing in the variable being tested is equivalent to
+    ``value = None``, therefore if the Dict type allows for some key to be None, then it can also be missing.
+    """
+
+    def __init__(self, **kwargs):
+        """Create a Dictionary object."""
+        self._types = kwargs
+
+    def check(self, var):
+        """Return True if the variable matches this type, and False otherwise."""
+        if not isinstance(var, dict): return False
+        if any(key not in self._types for key in var): return False
+        for key, ktype in viewitems(self._types):
+            val = var.get(key, None)
+            if not _check_type(val, ktype):
+                return False
+        return True
+
+    def __str__(self):
+        return "{%s}" % ", ".join("%s: %s" % (key, _get_type_name(ktype))
+                                  for key, ktype in viewitems(self._types))
+
+
+
 class _LazyClass(MagicType):
     """
     Helper class for lazy (on-demand) loading of some external classes.
@@ -146,9 +278,11 @@ class _LazyClass(MagicType):
         assert_is_type(fr, h2oframe, pandas_dataframe, numpy_ndarray)
     """
 
-    def __init__(self, name):
-        assert name in {"H2OFrame", "pandas.DataFrame", "numpy.ndarray"}
-        self._name = name
+    def __init__(self, module, symbol):
+        """Lazily load ``symbol`` from ``module``."""
+        self._module = module
+        self._symbol = symbol
+        self._name = symbol if module.startswith("h2o") else module + "." + symbol
         # Initially this is None, but will contain the class object once the class is loaded. If the class cannot be
         # loaded, this will be set to False.
         self._class = None
@@ -159,23 +293,11 @@ class _LazyClass(MagicType):
         return self._class and isinstance(var, self._class)
 
     def _init(self):
-        if self._name == "H2OFrame":
-            from h2o import H2OFrame
-            self._class = H2OFrame
-        elif self._name == "pandas.DataFrame":
-            try:
-                # noinspection PyUnresolvedReferences
-                from pandas import DataFrame
-                self._class = DataFrame
-            except ImportError:
-                self._class = False
-        elif self._name == "numpy.ndarray":
-            try:
-                # noinspection PyUnresolvedReferences
-                from numpy import ndarray
-                self._class = ndarray
-            except ImportError:
-                self._class = False
+        try:
+            mod = importlib.import_module(self._module)
+            self._class = getattr(mod, self._symbol, False)
+        except ImportError:
+            self._class = False
 
     def __str__(self):
         return self._name
@@ -186,9 +308,9 @@ class _LazyClass(MagicType):
 numeric = U(int, float)
 """Number, either integer or real."""
 
-h2oframe = _LazyClass("H2OFrame")
-pandas_dataframe = _LazyClass("pandas.DataFrame")
-numpy_ndarray = _LazyClass("numpy.ndarray")
+h2oframe = _LazyClass("h2o", "H2OFrame")
+pandas_dataframe = _LazyClass("pandas", "DataFrame")
+numpy_ndarray = _LazyClass("numpy", "ndarray")
 
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -200,49 +322,7 @@ def assert_is_type(var, *types, **kwargs):
     Assert that the argument has the specified type.
 
     This function is used to check that the type of the argument is correct, otherwises it raises an H2OTypeError.
-    The following use cases are supported::
-
-        # simple check
-        assert_is_type(flag, bool)
-        assert_is_type(fr, H2OFrame)
-        assert_is_type(arr, list)
-
-        # this works as expected (even though None is not a type): asserts that v is None
-        assert_is_type(v, None)
-
-        # ``int`` and ``str`` are special-cased to work on Py2 same way as on Py3
-        assert_is_type(x, int)
-        assert_is_type(y, str)
-
-        # ``numeric`` is a special type, meaning ``U(int, float)``
-        assert_is_type(x, numeric)
-
-        # check for a variable that may have multiple different types
-        assert_is_type(ip, None, str)
-        assert_is_type(x, int, float, str, None)
-        assert_is_type(x, U(int, float, str, None))
-        assert_is_type(scheme, "http", "https", "ftp")
-        assert_is_type(dir, -1, 0, 1)
-
-        # check for a list of ints or set of ints
-        assert_is_type(arr, [int], {int})
-
-        # check for a 2-dimensional array of numeric variables
-        assert_is_type(arr2, [[numeric]])
-
-        # check for a dictionary<str, H2OFrame>
-        assert_is_type(cols, {str: H2OFrame})
-
-        # check for a dictionary<str, int|float>
-        assert_is_type(vals, {str: U(int, float)})
-
-        # check for a struct with the specific shape
-        assert_is_type({"foo": 1, "bar": 2}, {"foo": int, "bar": U(int, float, None), "baz": bool})
-
-        # check for a tuple with the specific type signature
-        assert_is_type(t, (int, int, int, [str]))
-
-    Note that in Python everything is an ``object``, so you can use "object" to mean "any".
+    See more details in the module's help.
 
     :param var: variable to check
     :param types: the expected types
@@ -264,7 +344,7 @@ def assert_is_type(var, *types, **kwargs):
     vname = _retrieve_assert_arguments()[0]
     message = kwargs.get("message", None)
     skip_frames = kwargs.get("skip_frames", 1)
-    vtn = _get_type_name([type(var)])
+    vtn = _get_type_name(type(var))
     raise H2OTypeError(var_name=vname, var_value=var, var_type_name=vtn, exp_type_name=etn, message=message,
                        skip_frames=skip_frames)
 
@@ -427,9 +507,9 @@ def _get_type_name(vtype):
         return "integer"
     if vtype is numeric:
         return "numeric"
-    if test_type(vtype, str):
+    if is_type(vtype, str):
         return '"%s"' % repr(vtype)[1:-1]
-    if test_type(vtype, int):
+    if is_type(vtype, int):
         return str(vtype)
     if isinstance(vtype, MagicType):
         return str(vtype)
