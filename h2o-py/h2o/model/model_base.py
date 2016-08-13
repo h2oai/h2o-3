@@ -544,6 +544,32 @@ class ModelBase(object):
         for k, v in viewitems(tm): m[k] = None if v is None else v.mae()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def rmsle(self, train=False, valid=False, xval=False):
+        """
+        Get the rmsle.
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        Parameters
+        ----------
+        train : bool, default=True
+          If train is True, then return the rmsle value for the training data.
+        valid : bool, default=True
+          If valid is True, then return the rmsle value for the validation data.
+        xval : bool, default=True
+          If xval is True, then return the rmsle value for the cross validation data.
+
+        Returns
+        -------
+          The rmsle for this regression model.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in viewitems(tm): m[k] = None if v is None else v.rmsle()
+        return list(m.values())[0] if len(m) == 1 else m
+
 
     def logloss(self, train=False, valid=False, xval=False):
         """

@@ -20,6 +20,7 @@ public class ScoreKeeper extends Iced {
   public double _mse = Double.NaN;
   public double _rmse = Double.NaN;
   public double _mae = Double.NaN;
+  public double _rmsle = Double.NaN;
   public double _logloss = Double.NaN;
   public double _AUC = Double.NaN;
   public double _classError = Double.NaN;
@@ -70,6 +71,7 @@ public class ScoreKeeper extends Iced {
     if (m instanceof ModelMetricsRegression) {
       _mean_residual_deviance = ((ModelMetricsRegression)m)._mean_residual_deviance;
       _mae = ((ModelMetricsRegression)m)._mean_absolute_error;
+      _rmsle = ((ModelMetricsRegression)m)._mean_absolute_error;
     }
     if (m instanceof ModelMetricsBinomial) {
       _logloss = ((ModelMetricsBinomial)m)._logloss;
@@ -91,7 +93,7 @@ public class ScoreKeeper extends Iced {
     }
   }
 
-  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE, AUC, lift_top_group, misclassification, mean_per_class_error}
+  public enum StoppingMetric { AUTO, deviance, logloss, MSE, RMSE,MAE,RMSLE, AUC, lift_top_group, misclassification, mean_per_class_error}
   public static boolean moreIsBetter(StoppingMetric criterion) {
     return (criterion == StoppingMetric.AUC || criterion == StoppingMetric.lift_top_group);
   }
@@ -149,6 +151,9 @@ public class ScoreKeeper extends Iced {
             break;
           case MAE:
             val = skj._mae;
+            break;
+          case RMSLE:
+            val = skj._rmsle;
             break;
           case deviance:
             val = skj._mean_residual_deviance;
@@ -213,6 +218,7 @@ public class ScoreKeeper extends Iced {
     return MathUtils.compare(_mean_residual_deviance, o._mean_residual_deviance, 1e-6, 1e-6)
             && MathUtils.compare(_mse, o._mse, 1e-6, 1e-6)
             && MathUtils.compare(_mae, o._mae, 1e-6, 1e-6)
+            && MathUtils.compare(_rmsle, o._rmsle, 1e-6, 1e-6)
             && MathUtils.compare(_logloss, o._logloss, 1e-6, 1e-6)
             && MathUtils.compare(_classError, o._classError, 1e-6, 1e-6)
             && MathUtils.compare(_mean_per_class_error, o._mean_per_class_error, 1e-6, 1e-6)
@@ -240,6 +246,13 @@ public class ScoreKeeper extends Iced {
           @Override
           public int compare(ScoreKeeper o1, ScoreKeeper o2) {
             return (int)Math.signum(o1._mae - o2._mae); // lessIsBetter
+          }
+        };
+      case RMSLE:
+        return new Comparator<ScoreKeeper>() {
+          @Override
+          public int compare(ScoreKeeper o1, ScoreKeeper o2) {
+            return (int)Math.signum(o1._rmsle - o2._rmsle); // lessIsBetter
           }
         };
       case deviance:
@@ -288,6 +301,7 @@ public class ScoreKeeper extends Iced {
         "  _mean_residual_deviance=" + _mean_residual_deviance +
         ", _rmse=" + _rmse +
             ",_mae=" + _mae +
+            ",_rmsle=" + _rmsle +
         ", _logloss=" + _logloss +
         ", _AUC=" + _AUC +
         ", _classError=" + _classError +

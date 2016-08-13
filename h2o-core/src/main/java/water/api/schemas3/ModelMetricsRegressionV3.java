@@ -14,11 +14,15 @@ public class ModelMetricsRegressionV3<I extends ModelMetricsRegression, S extend
   @API(help="The mean absolute error for this scoring run.", direction=API.Direction.OUTPUT)
   public double mae;
 
+  @API(help="The root mean squared log error for this scoring run.", direction=API.Direction.OUTPUT)
+  public double rmsle;
+
   @Override
   public S fillFromImpl(I modelMetrics) {
     super.fillFromImpl(modelMetrics);
     r2 = modelMetrics.r2();
     mae = modelMetrics._mean_absolute_error;
+    rmsle = modelMetrics._root_mean_squared_log_error;
     return (S) this;
   }
 }
