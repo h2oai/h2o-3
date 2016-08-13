@@ -60,6 +60,13 @@ The ``typeI`` items here deserve a more thorough explanation. They could be:
     # pass the test, whereas ``xyz = {"foo": 0, "kaboom": None}`` will not.
     assert_is_type(xyz, {"foo": int, "bar": U(int, float, None), "baz": bool})
 
+    # Functions and lambda-expressions
+    assert_is_type(progress, I(numeric, lambda x: 0 <= x <= 1))
+    assert_is_type(x, None, "N/A", I(float, math.isnan))
+    assert_is_type(matrix, I([[numeric]], lambda v: all(len(vi) == len(v[0]) for vi in v)))
+    assert_is_type(a, lambda t: issubclass(t, object))
+    # (lambda-expressions should be used judiciously because they do not produce nice error messages).
+
 As you have noticed, we define a number of special classes to facilitate type construction::
 
     # Union / intersection / negation
@@ -92,6 +99,7 @@ import importlib
 import re
 import sys
 import tokenize
+from types import FunctionType, BuiltinFunctionType
 
 from h2o.utils.compatibility import *  # NOQA
 from h2o.exceptions import H2OTypeError, H2OValueError
@@ -472,19 +480,26 @@ def _check_type(var, vtype):
     if isinstance(vtype, MagicType):
         return vtype.check(var)
     if isinstance(vtype, type):
+        # ``vtype`` is a name of the class, or a built-in type such as "list", "tuple", etc
         return isinstance(var, vtype)
     if isinstance(vtype, list):
+        # ``vtype`` is a list literal
         elem_type = U(*vtype)
         return isinstance(var, list) and all(_check_type(item, elem_type) for item in var)
     if isinstance(vtype, set):
+        # ``vtype`` is a set literal
         elem_type = U(*vtype)
         return isinstance(var, set) and all(_check_type(item, elem_type) for item in var)
     if isinstance(vtype, tuple):
+        # ``vtype`` is a tuple literal
         return (isinstance(var, tuple) and len(vtype) == len(var) and
                 all(_check_type(var[i], vtype[i]) for i in range(len(vtype))))
     if isinstance(vtype, dict):
+        # ``vtype`` is a dict literal
         ttkv = U(*viewitems(vtype))
         return isinstance(var, dict) and all(_check_type(kv, ttkv) for kv in viewitems(var))
+    if isinstance(vtype, (FunctionType, BuiltinFunctionType)):
+        return vtype(var)
     raise RuntimeError("Ivalid type %r in _check_type()" % vtype)
 
 
@@ -524,4 +539,6 @@ def _get_type_name(vtype):
     if isinstance(vtype, dict):
         return "dict(%s)" % ", ".join("%s: %s" % (_get_type_name(tk), _get_type_name(tv))
                                       for tk, tv in viewitems(vtype))
+    if isinstance(vtype, (FunctionType, BuiltinFunctionType)):
+        return vtype.__name__  # Not optimal, but it's hard to do better
     raise RuntimeError("Unexpected `vtype`: %r" % vtype)

@@ -2,6 +2,9 @@
 # -*- encoding: utf-8 -*-
 """Pyunit for h2o.utils.typechecks."""
 from __future__ import absolute_import, division, print_function
+
+import math
+
 from h2o import H2OFrame
 from h2o.exceptions import H2OTypeError, H2OValueError
 from h2o.utils.typechecks import (U, I, NOT, Tuple, Dict, numeric, h2oframe, pandas_dataframe, numpy_ndarray,
@@ -73,6 +76,7 @@ def test_asserts():
     assert_is_type(C(), A, B)
     assert_is_type(D(), I(A, B, C))
     assert_is_type(A, type)
+    assert_is_type(B, lambda aa: issubclass(aa, A))
     for a in range(-2, 5):
         assert_is_type(a, -2, -1, 0, 1, 2, 3, 4)
     assert_is_type(1, numeric)
@@ -81,6 +85,9 @@ def test_asserts():
     assert_is_type(34, I(int, NOT(0)))
     assert_is_type(["foo", "egg", "spaam"], [I(str, NOT("spam"))])
     assert_is_type(H2OFrame(), h2oframe)
+    assert_is_type([[2.0, 3.1, 0], [2, 4.4, 1.1], [-1, 0, 0]],
+                   I([[numeric]], lambda v: all(len(vi) == len(v[0]) for vi in v)))
+    assert_is_type([None, None, float('nan'), None, "N/A"], [None, "N/A", I(float, math.isnan)])
 
     assert_error(3, str)
     assert_error(0, float)
@@ -93,6 +100,7 @@ def test_asserts():
     assert_error((1, 3), (int, str), (str, int), (float, float))
     assert_error(A(), None, B)
     assert_error(A, A)
+    assert_error(A, lambda aa: issubclass(aa, B))
     assert_error({"foo": 1, "bar": "2"}, {"foo": int, "bar": U(int, float, None)})
     assert_error(3, 0, 2, 4)
     assert_error(None, numeric)
@@ -105,6 +113,8 @@ def test_asserts():
     assert_error({"spam": 10}, Dict(spam=int, egg=int))
     assert_error({"egg": 5}, Dict(spam=int, egg=int))
     assert_error(False, h2oframe, pandas_dataframe, numpy_ndarray)
+    assert_error([[2.0, 3.1, 0], [2, 4.4, 1.1], [-1, 0]],
+                 I([[numeric]], lambda v: all(len(vi) == len(v[0]) for vi in v)))
 
     url_regex = r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?$"
     assert_matches("Hello, world!", r"^(\w+), (\w*)!$")
