@@ -1,6 +1,5 @@
 package hex.deepwater;
 
-import com.sun.javafx.scene.shape.PathUtils;
 import hex.Model;
 import static hex.deepwater.DeepWaterParameters.Network.user;
 import water.*;
@@ -96,7 +95,7 @@ final public class DeepWaterModelInfo extends Iced {
         DeepWaterModel other = (DeepWaterModel) parameters._checkpoint.get();
         javaToNative(other.model_info()._network, other.model_info()._modelparams);
       } catch (Throwable t) {
-        throw new H2OIllegalArgumentException("_checkpoint", "Invalid checkpoint provided.");
+        throw new H2OIllegalArgumentException("Invalid checkpoint provided.");
       }
     }
     else {
@@ -118,12 +117,11 @@ final public class DeepWaterModelInfo extends Iced {
             _height = 224;
             break;
           case vgg:
-          case vgg16:
             _width = 320;
             _height = 320;
             break;
           case user:
-            throw new H2OIllegalArgumentException("_network", "Please specify width and height for user-given model definition.");
+            throw new H2OIllegalArgumentException("Please specify width and height for user-given model definition.");
           default:
             throw H2O.unimpl("Unknown network type: " + parameters._network);
         }
@@ -172,7 +170,7 @@ final public class DeepWaterModelInfo extends Iced {
             _meanData = loadNDArray(f.getAbsolutePath());
             int dim = _channels*_width*_height;
             if (_meanData.length != dim) {
-              throw new H2OIllegalArgumentException("_mean_image_data", "Invalid mean image data format. Expected length: " + dim + ", but has length: " + _meanData.length);
+              throw new H2OIllegalArgumentException("Invalid mean image data format. Expected length: " + dim + ", but has length: " + _meanData.length);
             }
           }
         } else {
