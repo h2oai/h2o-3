@@ -187,6 +187,29 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
+  public void memoryLeakTest() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    int counter=100;
+    while(counter-- > 0) {
+      try {
+        DeepWaterParameters p = new DeepWaterParameters();
+        p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
+        p._response_column = "C2";
+        p._network = DeepWaterParameters.Network.alexnet;
+        p._mini_batch_size = 32;
+        p._epochs = 1;
+        m = new DeepWater(p).trainModel().get();
+        Log.info(m);
+      } finally {
+        if (m!=null) m.deleteCrossValidationModels();
+        if (m!=null) m.delete();
+        if (tr!=null) tr.remove();
+      }
+    }
+  }
+
+  @Test
   public void deepWaterGrayScale() throws IOException {
     DeepWaterModel m = null;
     Frame tr = null;
@@ -195,13 +218,9 @@ public class DeepWaterTest extends TestUtil {
       p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
       p._response_column = "C2";
       p._mini_batch_size = 10;
+      p._channels = 1;
       p._epochs = 1;
       m = new DeepWater(p).trainModel().get();
-
-      // exercise some work
-      m.model_info().javaToNative();
-      m.model_info().nativeToJava();
-
       Log.info(m);
     } finally {
       if (m!=null) m.deleteCrossValidationModels();
