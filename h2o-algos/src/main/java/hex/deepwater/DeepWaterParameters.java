@@ -44,7 +44,7 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public enum Network {
-    auto, user, lenet, alexnet, vgg, vgg16, googlenet, inception_bn, resnet
+    auto, user, lenet, alexnet, vgg, googlenet, inception_bn, resnet
   }
 
   public enum Backend {
