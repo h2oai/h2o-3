@@ -43,7 +43,6 @@ def test_asserts():
     assert_is_type(u"3", str)
     assert_is_type("foo", u"foo")
     assert_is_type(u"foo", "foo")
-    assert_is_type(b"foo", "foo")
     assert_is_type("I", *list("ABCDEFGHIJKL"))
     assert_is_type(False, bool)
     assert_is_type(43, str, bool, int)
