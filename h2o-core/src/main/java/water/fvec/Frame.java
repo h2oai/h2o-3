@@ -1101,7 +1101,7 @@ public class Frame extends Lockable<Frame> {
     sb.append("Frame key: " + _key + "\n");
     sb.append("   cols: " + numCols() + "\n");
     sb.append("   rows: " + numRows() + "\n");
-    sb.append(" chunks: " + anyVec().nChunks() + "\n");
+    sb.append(" chunks: " + (anyVec()==null?"N/A":anyVec().nChunks()) + "\n");
     sb.append("   size: " + byteSize() + "\n");
     return sb.toString();
   }
