@@ -24,7 +24,7 @@ from warnings import warn
 
 from h2o.exceptions import H2OServerError, H2OStartupError
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, assert_satisfies, test_type
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type
 
 __all__ = ("H2OLocalServer", )
 
@@ -98,7 +98,7 @@ class H2OLocalServer(object):
             assert os.path.isdir(ice_root), "`ice_root` is not a valid directory: %s" % ice_root
         if port is None: port = "54321+"
         baseport = None
-        if test_type(port, str):
+        if is_type(port, str):
             if port.isdigit():
                 port = int(port)
             else:

@@ -30,7 +30,7 @@ from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, test_type
+from h2o.utils.typechecks import assert_is_type, is_type
 from h2o.utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, deprecated
 warnings.simplefilter("always", DeprecationWarning)
 
@@ -177,7 +177,7 @@ def lazy_import(path):
 
     :param path: A path to a data file (remote or local).
     """
-    if test_type(path, list, tuple, set):
+    if is_type(path, list, tuple, set):
         return [_import(p)[0] for p in path]
     else:
         assert_is_type(path, str)
@@ -470,7 +470,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
     """
 
     # The H2O backend only accepts things that are quoted
-    if test_type(raw_frames, str): raw_frames = [raw_frames]
+    if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
     kwargs = {}
@@ -481,7 +481,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
 
     # set separator
     if separator:
-        if not test_type(separator, str) or len(separator) != 1:
+        if not is_type(separator, str) or len(separator) != 1:
             raise ValueError("separator should be a single character string; got %r" % separator)
         kwargs["separator"] = ord(separator)
 
@@ -531,7 +531,7 @@ def parse_setup(raw_frames, destination_frame="", header=(-1, 0, 1), separator="
             j["na_strings"] = [[] for _ in range(len(j["column_names"]))]
             for name, na in na_strings.items():
                 idx = j["column_names"].index(name)
-                if test_type(na, str): na = [na]
+                if is_type(na, str): na = [na]
                 for n in na: j["na_strings"][idx].append(quoted(n))
         elif is_list_of_lists(na_strings):
             if len(na_strings) != len(j["column_types"]): raise ValueError(
@@ -724,7 +724,7 @@ def remove(x):
         elif isinstance(xi, H2OEstimator):
             api("DELETE /3/DKV/%s" % xi.model_id)
             xi._id = None
-        elif test_type(xi, str):
+        elif is_type(xi, str):
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
             try:
                 rapids("(rm {})".format(xi))
@@ -1077,7 +1077,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     -------
       H2OFrame
     """
-    factors = [data.names[n] if test_type(n, int) else n for n in factors]
+    factors = [data.names[n] if is_type(n, int) else n for n in factors]
     parms = {"dest": py_tmp_key(append=h2oconn.session_id) if destination_frame is None else destination_frame,
              "source_frame": data.frame_id,
              "factor_columns": [quoted(f) for f in factors],

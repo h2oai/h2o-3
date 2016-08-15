@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import h2o
 from h2o.expr import ExprNode
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import test_type
+from h2o.utils.typechecks import is_type
 
 
 class GroupBy(object):
@@ -43,10 +43,10 @@ class GroupBy(object):
         self._aggs = {}  # IN
         self._res = None  # OUT
 
-        if test_type(by, str):
+        if is_type(by, str):
             self._by = [self._fr.names.index(by)]
-        elif test_type(by, list, tuple):
-            self._by = [self._fr.names.index(b) if test_type(b, str) else b for b in by]
+        elif is_type(by, list, tuple):
+            self._by = [self._fr.names.index(b) if is_type(b, str) else b for b in by]
         else:
             self._by = [self._by]
 
@@ -102,11 +102,11 @@ class GroupBy(object):
             for i in range(self._fr.ncol):
                 if i not in self._by: self._add_agg(op, i, na)
             return self
-        elif test_type(col, str):
+        elif is_type(col, str):
             cidx = self._fr.names.index(col)
-        elif test_type(col, int):
+        elif is_type(col, int):
             cidx = col
-        elif test_type(col, list, tuple):
+        elif is_type(col, list, tuple):
             for i in col:
                 self._add_agg(op, i, na)
             return self
