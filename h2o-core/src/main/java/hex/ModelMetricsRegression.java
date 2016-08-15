@@ -101,7 +101,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       // Compute error
       double err = yact[0] - ds[0]; // Error: distance from the actual
       _sumsqe += w*err*err;       // Squared error
-      _abserror += Math.abs(err);
+      _abserror += w*Math.abs(err);
       assert !Double.isNaN(_sumsqe);
       if (m!=null && m._parms._distribution!=Distribution.Family.huber)
         _sumdeviance += m.deviance(w, yact[0], ds[0]);
