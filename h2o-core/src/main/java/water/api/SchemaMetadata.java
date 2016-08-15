@@ -7,6 +7,7 @@ import water.Weaver;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.IcedHashMapBase;
+import water.util.IcedHashMapGeneric;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -229,7 +230,7 @@ public final class SchemaMetadata extends Iced {
         return consType(schema, clz.getComponentType(), field_name, annotation) + "[]";
 
       if (Map.class.isAssignableFrom(clz)) {
-        if (IcedHashMapBase.class.isAssignableFrom(clz)) {
+        if (IcedHashMapGeneric.class.isAssignableFrom(clz) || IcedHashMapBase.class.isAssignableFrom(clz)) {
           String type0 = ReflectionUtils.findActualClassParameter(clz, 0).getSimpleName();
           String type1 = ReflectionUtils.findActualClassParameter(clz, 1).getSimpleName();
           if ("String".equals(type0)) type0 = "string";

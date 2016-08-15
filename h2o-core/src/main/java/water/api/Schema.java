@@ -331,7 +331,7 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
           API api = (API) f.getAnnotations()[0]; // TODO: is there a more specific way we can do this?
           if (api.required()) {
             if (parms.getProperty(f.getName()) == null) {
-              IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
+              IcedHashMapGeneric.IcedHashMapStringObject values = new IcedHashMapGeneric.IcedHashMapStringObject();
               values.put("schema", this.getClass().getSimpleName());
               values.put("argument", f.getName());
               throw new H2OIllegalArgumentException(
@@ -709,7 +709,7 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
       // TODO: render examples and other stuff, if it's passed in
     }
     catch (Exception e) {
-      IcedHashMap.IcedHashMapStringObject values = new IcedHashMap.IcedHashMapStringObject();
+      IcedHashMapGeneric.IcedHashMapStringObject values = new IcedHashMapGeneric.IcedHashMapStringObject();
       values.put("schema", this);
       // TODO: This isn't quite the right exception type:
       throw new H2OIllegalArgumentException("Caught exception using reflection on schema: " + this,

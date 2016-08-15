@@ -74,8 +74,4 @@ public class IcedHashMap<K, V> extends IcedHashMapBase<K,V> implements Concurren
     default: throw H2O.fail();
     }
   }
-
-  // Subtypes which allow us to determine the type parameters at runtime, for generating schema metadata.
-  public static class IcedHashMapStringString extends IcedHashMap<String, String> {}
-  public static class IcedHashMapStringObject extends IcedHashMap<String, Object> {}
 }

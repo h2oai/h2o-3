@@ -16,12 +16,10 @@ import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import water.*;
 import water.H2O.H2OCountedCompleter;
-import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
-
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
@@ -1725,7 +1723,6 @@ public class GLMTest  extends TestUtil {
       Scope.exit();
     }
   }
-
 
   @Test public void testAbalone() {
     Scope.enter();
