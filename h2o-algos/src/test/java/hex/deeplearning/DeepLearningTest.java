@@ -1990,7 +1990,7 @@ public class DeepLearningTest extends TestUtil {
 
       Assert.assertEquals(0.94696  , ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
       Assert.assertEquals(0.94696  , ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-4);
-      Assert.assertEquals(0.86556613, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
+      Assert.assertEquals(0.86556613, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-4);
       Assert.assertEquals(0.86556613, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-2);
 
     } finally {
@@ -2072,10 +2072,10 @@ public class DeepLearningTest extends TestUtil {
 
       dl = new DeepLearning(parms).trainModel().get();
 
-      Assert.assertEquals(0.9521718170580964, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-5);
-      Assert.assertEquals(0.9521656365883807, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-5);
-      Assert.assertEquals(0.9115080346106303, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-5);
-      Assert.assertEquals(0.913637, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-5);
+      Assert.assertEquals(0.9521718170580964, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
+      Assert.assertEquals(0.9521656365883807, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-4);
+      Assert.assertEquals(0.9115080346106303, ((ModelMetricsBinomial)dl._output._cross_validation_metrics)._auc._auc,1e-4);
+      Assert.assertEquals(0.913637, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(1,0)), 1e-4);
 
     } finally {
       if (tfr != null) tfr.remove();
