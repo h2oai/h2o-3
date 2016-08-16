@@ -1185,7 +1185,7 @@ final public class H2O {
           }
         }
       } catch( Throwable ex ) {
-        System.err.println("TRACING ASSERTION ERROR IN H2OCountedCompleter ... " + ex.getMessage());
+        // System.err.println("TRACING ASSERTION ERROR IN H2OCountedCompleter ... " + ex.getMessage());
         // If the higher priority job popped an exception, complete it
         // exceptionally...  but then carry on and do the lower priority job.
         if( h2o != null ) h2o.completeExceptionally(ex);
