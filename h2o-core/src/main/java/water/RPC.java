@@ -51,7 +51,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   // The distributed Task to execute.  Think: code-object+args while this RPC
   // is a call-in-progress (i.e. has an 'execution stack')
-  final V _dt;
+  final public  V _dt;
 
   // True if _dt contains the final answer
   volatile boolean _done;
@@ -138,6 +138,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     assert _dt.getCompleter()==null;
     _dt.setCompleter(new H2O.H2OCallback<DTask>() {
         @Override public void callback(DTask dt) {
+          if(dt.bad_guy())
+            System.out.println("================== should not get here, BAD GUY finished ok");
           synchronized(RPC.this) {
             _done = true;
             RPC.this.notifyAll();
@@ -237,6 +239,8 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
   private V result() {
     Throwable t = _dt.getDException();
+    if(_dt.bad_guy())
+      System.out.println("bad bad bad, t = " + t);
     if( t != null )
       throw (t instanceof DistributedException)?new DistributedException(t.getMessage(),t.getCause()):new DistributedException(t);
     return _dt;
@@ -246,6 +250,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
   // Throws a DException if the remote throws, wrapping the original exception.
   @Override public V get() {
     // check priorities - FJ task can only block on a task with higher priority!
+
     Thread cThr = Thread.currentThread();
     int priority = (cThr instanceof FJWThr) ? ((FJWThr)cThr)._priority : -1;
     assert _dt.priority() > priority || (_dt.priority() == priority && _dt instanceof MRTask)
@@ -353,6 +358,7 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
     // send it back to the caller.  Can be called lots of times (e.g., once per
     // MRTask.map call that throws).
     @Override public boolean onExceptionalCompletion( Throwable ex, CountedCompleter caller ) {
+      System.out.println("******* onExceptionalCompletion "+_dt.getClass().getName()+" task number:"+_tsknum+" computed="+_computed);
       if( _computed ) return false;
       synchronized(this) {    // Filter dup calls to onExCompletion
         if( _computed ) return false;

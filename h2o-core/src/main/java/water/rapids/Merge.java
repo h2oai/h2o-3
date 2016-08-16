@@ -155,6 +155,9 @@ public class Merge {
     t0 = System.nanoTime();
     System.out.println("Sending BinaryMerge async RPC calls in a queue ... ");
     fs.blockForPending();
+    for(int i = 0; i < fs.pending().length; ++i) {
+      System.out.println(i + ": " + ((RPC)fs.pending()[i])._dt.bad_guy());
+    }
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
 

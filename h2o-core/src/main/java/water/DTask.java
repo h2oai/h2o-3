@@ -24,6 +24,8 @@ import java.io.*;
  *
  */
 public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
+
+  public boolean bad_guy(){return false;}
   protected DTask(H2OCountedCompleter completer, byte prior){super(completer,prior);}
   protected DTask(H2OCountedCompleter completer){super(completer);}
   protected DTask(byte prior) { super(prior); }

@@ -3,6 +3,7 @@ package water.rapids;
 // Since we have a single key field in H2O (different to data.table), bmerge() becomes a lot simpler (no
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
 
+import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -11,9 +12,14 @@ import water.fvec.Vec;
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Arrays;
 
 class BinaryMerge extends DTask<BinaryMerge> {
+  public boolean BADGUY = false;
   long _numRowsInResult=0;  // returned to caller, so not transient
   int _chunkSizes[]; // TODO:  only _chunkSizes.length is needed by caller, so return that length only
   double _timings[];
@@ -66,7 +72,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
         _chunkNode[i] = vec.chunkKey(i).home_node().index();
     }
 
-    long min() { return (((long)_msb  ) << _shift) + _base[0]-1; } // the first key possible in this bucket
+    long min() { return (((long)_msb  ) << _shift) + _base[0]-1; } // the first key possible in this bucket (_base[0]-1 represents NA)
     long max() { return (((long)_msb+1) << _shift) + _base[0]-2; } // the last  key possible in this bucket
   }
 
@@ -79,8 +85,8 @@ class BinaryMerge extends DTask<BinaryMerge> {
     _numJoinCols = Math.min(_leftSB._fieldSizes.length, _riteSB._fieldSizes.length);
     _allLeft = allLeft;
     _allRight = false;  // TODO: pass through
+    //System.out.println("Left MSB" + _leftSB._msb + " [" + leftSB.min() + "," + leftSB.max() + "]  Right MSB" + _riteSB._msb + " [" + riteSB.min() + "," + riteSB.max() + "]");
   }
-
 
   @Override
   public void compute2() {
@@ -162,12 +168,30 @@ class BinaryMerge extends DTask<BinaryMerge> {
       _retLen[b] = MemoryManager.malloc8(b==retNBatch-1 ? retLastSize : _retBatchSize);
     }
 
+    if (_leftSB._msb==0 && _riteSB._msb==0) {
+      try {
+        FileWriter fw = new FileWriter(new File("/tmp/superTrace.txt"));
+        BufferedWriter bw = new BufferedWriter(fw);
+        bw.write("Debug MSB0/MSB0: retSize=" + retSize + " _leftFrom=" + _leftFrom + " leftTo=" + leftTo + " rightN=" + rightN + " _leftKO: ");
+        for (int i=0; i<_leftKO._key.length; i++) bw.write(_leftKO._key[i].length / _leftSB._keySize + " ");
+        bw.write("; _riteKO: ");
+        for (int i=0; i<_riteKO._key.length; i++) bw.write(_riteKO._key[i].length / _riteSB._keySize + " ");
+        bw.write("\n");
+        bw.write("Left linsearch:");
+        linSearch(16769022, _leftKO._key, _leftSB._fieldSizes[0], _leftSB._base[0], bw);
+        bw.write("Rite linsearch:");
+        linSearch(16769022, _riteKO._key, _riteSB._fieldSizes[0], _riteSB._base[0], bw);
+        bw.close();
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    }
     // always look at the whole right bucket.  Even though in types -1 and 1,
     // we know range is outside so nothing should match.  if types -1 and 1 do
     // occur, they only happen for leftMSB 0 and 255, and will quickly resolve
     // to no match in the right bucket via bmerge
     t0 = System.nanoTime();
-    bmerge_r(_leftFrom, leftTo, -1, rightN);   
+    bmerge_r(_leftFrom, leftTo, -1, rightN, _leftSB._msb==0);
     _timings[1] += (System.nanoTime() - t0) / 1e9;
 
     if (_allLeft) {
@@ -221,7 +245,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     long at8order( long idx ) { return _order[(int)(idx / _batchSize)][(int)(idx % _batchSize)]; }
 
     long[][] fillPerNodeRows( int i ) {
-      final int batchSizeLong = 256*1024*1024 / 8;  // 256GB DKV limit / sizeof(long)
+      final int batchSizeLong = 256*1024*1024 / 16;  // 256GB DKV limit / sizeof(long)
       if( _perNodeNumRowsToFetch[i] <= 0 ) return null;
       int nbatch  = (int) ((_perNodeNumRowsToFetch[i] - 1) / batchSizeLong + 1);  // TODO: wrap in class to avoid this boiler plate
       assert nbatch >= 1;
@@ -237,7 +261,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
 
   // TODO: specialize keycmp for cases when no join column contains NA (very
   // very often) and make this totally branch free; i.e. without the two `==0 ? :`
-  private int keycmp(byte xss[][], long xi, byte yss[][], long yi) {
+  private int keycmp(byte xss[][], long xi, byte yss[][], long yi, boolean superTrace) {
     // Must be passed a left key and a right key to avoid call overhead of
     // extra arguments.  Only need left to left for equality only and that's
     // optimized in leftKeyEqual below.
@@ -264,6 +288,11 @@ class BinaryMerge extends DTask<BinaryMerge> {
       i++;
     }
 
+    if (superTrace) System.out.println("xval="+xval+" yval="+yval+ " at xi="+xi+" yi="+yi+ " with _leftKO._batchSize="+_leftKO._batchSize+ " _riteKO._batchSize="+_riteKO._batchSize+ " _leftSB._keySize="+_leftSB._keySize+ " _riteSB._keySize="+_riteSB._keySize);
+
+    if (xval < 16777216 && (xval == 16769022 || xval == 16768012 || xi == 16777216+166 || yi==16762937)) {
+      System.out.println("xval " + xval + " at location " + xi + " being compared to " + yval + " at location " + yi);
+    }
     // The magnitude of the difference is used for limiting staleness in a
     // rolling join, capped at Integer.MAX|(MIN+1).  Roll's type is chosen to
     // be int so staleness can't be requested over int's limit.
@@ -298,6 +327,69 @@ class BinaryMerge extends DTask<BinaryMerge> {
     return returnLow ? low : upp;
   }
 
+
+
+
+
+  @Override public boolean bad_guy(){return BADGUY;}
+  private void linSearch(long v, byte x[][], int width, long base, BufferedWriter bw) { // just for tracing/debugging
+    assert width>=1;
+    long prevVal = 0;
+    for (int batch=0; batch<x.length; batch++) {
+      try {
+        bw.write("Starting to search batch="+batch+ " with width="+width+ " base="+base+ "\n");
+        int i=0;
+        byte thisBatch[] = x[batch];
+        assert thisBatch.length % width == 0;
+        while (i < thisBatch.length) {
+          long val = thisBatch[i] & 0xFFL;
+          int len = width;
+          while( len>1 ) {
+            val <<= 8; val |= thisBatch[++i] & 0xFFL;
+            len--;
+          }
+          val = val==0 ? Long.MIN_VALUE : val-1+base;
+          // assert val >= prevVal;
+          if (val == -997) {
+            BADGUY = true;
+            bw.write("Seen value -997. Now asserting something false. leftMSB="+_leftSB._msb+" riteMSB="+_riteSB._msb+"\n");
+            System.out.println("======================  " +this + " " + H2O.SELF.toString() + "========================");
+            bw.flush();
+            assert 4==3;
+          }
+          if (val < prevVal) {
+            bw.write("Value NOT SORTED " + val + " at x["+batch+"]["+i/width+"]\n");
+            //assert 4==2;
+          }
+          prevVal = val;
+          if (val == v) {
+            bw.write("Found " + v + " at x["+batch+"]["+i/width+"]\n");
+          }
+          i++;
+        }
+      } catch (IOException ex) {
+        ex.printStackTrace();
+      }
+    }
+  }
+
+  private void printKeys(byte x[], int start, int len, int width, long base) { // just for tracing/debugging
+    assert width>=1;
+    int i=start*width;
+    assert x.length % width == 0;
+    while (i < (start+len)*width) {
+      long val = x[i] & 0xFFL;
+      int j = width;
+      while( j>1 ) {
+        val <<= 8; val |= x[++i] & 0xFFL;
+        j--;
+      }
+      val = val==0 ? Long.MIN_VALUE : val-1+base;
+      System.out.print(val + " ");
+      i++;
+    }
+  }
+
   // Must be passed two leftKeys only.
   // Optimized special case for the two calling points; see usages in bmerge_r below.
   private boolean leftKeyEqual(byte x[][], long xi, long yi) {
@@ -310,16 +402,30 @@ class BinaryMerge extends DTask<BinaryMerge> {
     return(i==_leftSB._keySize);
   }
 
-  private void bmerge_r(long lLowIn, long lUppIn, long rLowIn, long rUppIn) {
+  private void bmerge_r(long lLowIn, long lUppIn, long rLowIn, long rUppIn, boolean verbose) {
     // TODO: parallel each of the 256 bins
     long lLow = lLowIn, lUpp = lUppIn, rLow = rLowIn, rUpp = rUppIn;
     long mid, tmpLow, tmpUpp;
+    boolean superTrace=false;
     // i.e. (lLow+lUpp)/2 but being robust to one day in the future someone
     // somewhere overflowing long; e.g. 32 exabytes of 1-column ints
-    long lr = lLow + (lUpp - lLow) / 2;   
+    long lr = lLow + (lUpp - lLow) / 2;
+    if (verbose && lLowIn<=16777382 && 16777382<=lUppIn) {
+      System.out.println("bmerge_r " + lLowIn + " " + lUppIn + " " + rLowIn + " " + rUppIn);
+      if (lLowIn == 16777379 && lUppIn==16777387) {
+        System.out.println("*** printing the left keys in the left range now:");
+        printKeys(_leftKO._key[1], (int)(lLowIn-16777216), (int)(lUppIn-lLowIn+1), _leftSB._fieldSizes[0], _leftSB._base[0]);
+        System.out.println();
+        System.out.println("*** printing the right keys in the right range now:");
+        printKeys(_riteKO._key[0], (int)(rLowIn-0), (int)(rUppIn-rLowIn+1), _riteSB._fieldSizes[0], _riteSB._base[0]);
+        System.out.println();
+      }
+      superTrace = true;
+    }
     while (rLow < rUpp - 1) {
       mid = rLow + (rUpp - rLow) / 2;
-      int cmp = keycmp(_leftKO._key, lr, _riteKO._key, mid);  // -1, 0 or 1, like strcmp
+      int cmp = keycmp(_leftKO._key, lr, _riteKO._key, mid, superTrace);  // -1, 0 or 1, like strcmp
+      if (superTrace) System.out.println("Compared lr="+lr + " to="+mid+ " with result cmp="+cmp);
       if (cmp < 0) {
         rUpp = mid;
       } else if (cmp > 0) {
@@ -331,12 +437,12 @@ class BinaryMerge extends DTask<BinaryMerge> {
         tmpUpp = mid;
         while (tmpLow < rUpp - 1) {
           mid = tmpLow + (rUpp - tmpLow) / 2;
-          if (keycmp(_leftKO._key, lr, _riteKO._key, mid) == 0) tmpLow = mid;
+          if (keycmp(_leftKO._key, lr, _riteKO._key, mid, superTrace) == 0) tmpLow = mid;
           else rUpp = mid;
         }
         while (rLow < tmpUpp - 1) {
           mid = rLow + (tmpUpp - rLow) / 2;
-          if (keycmp(_leftKO._key, lr, _riteKO._key, mid) == 0) tmpUpp = mid;
+          if (keycmp(_leftKO._key, lr, _riteKO._key, mid, superTrace) == 0) tmpUpp = mid;
           else rLow = mid;
         }
         break;
@@ -428,10 +534,11 @@ class BinaryMerge extends DTask<BinaryMerge> {
     // '|| _allLeft' is needed here in H2O (but not data.table) for the
     // _leftKO._perNodeNumRowsToFetch above to populate and pass the assert near
     // the end of the compute2() above.
+    if (superTrace) System.out.println("About to recurse...");
     if (lLow > lLowIn && (rLow > rLowIn || _allLeft)) // '|| _allLeft' is needed here in H2O (but not data.table)
-      bmerge_r(lLowIn, lLow+1, rLowIn, rLow+1);
+      bmerge_r(lLowIn, lLow+1, rLowIn, rLow+1, verbose);
     if (lUpp < lUppIn && (rUpp < rUppIn || _allLeft))
-      bmerge_r(lUpp-1, lUppIn, rUpp-1, rUppIn);
+      bmerge_r(lUpp-1, lUppIn, rUpp-1, rUppIn, verbose);
 
     // We don't feel tempted to reduce the global _ansN here and make a global
     // frame, since we want to process each MSB l/r combo individually without
@@ -502,7 +609,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
   // Loop over _ret1st and _retLen and populate the batched requests for
   // each node helper.  _ret1st and _retLen are the same shape
   private void chunksPopulatePerNode( final long perNodeLeftLoc[], final long perNodeLeftRows[][][], final long perNodeRightLoc[], final long perNodeRightRows[][][] ) {
-    final int batchSizeLong = 256*1024*1024 / 8;  // 256GB DKV limit / sizeof(long)
+    final int batchSizeLong = 256*1024*1024 / 16;  // 256GB DKV limit / sizeof(long)
     long prevf = -1, prevl = -1;
     // TODO: hop back to original order here for [] syntax.
     long leftLoc=_leftFrom;  // sweep through left table along the sorted row locations.  

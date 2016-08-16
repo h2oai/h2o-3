@@ -76,4 +76,6 @@ public class Futures {
       throw Log.throwErr(new RuntimeException(e.getCause()));
     } catch( InterruptedException e ) { throw Log.throwErr(e); }
   }
+
+  public Future [] pending(){return _pending;}
 }
