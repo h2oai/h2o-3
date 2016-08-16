@@ -4,6 +4,8 @@
 description = "H2O Algorithms"
 
 dependencies {
+
+  compile files('bazel-lib/guava-19.0.jar')
   compile project(":h2o-core")
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
@@ -12,6 +14,37 @@ dependencies {
   compile files('tensorflow.jar')
   compile files('tensorflow-linux-x86_64.jar')
   compile files('jpy-0.9-SNAPSHOT.jar')
+
+  //compile fileTree('bazel-lib')
+  //compile files('bazel-lib/*.jar')
+
+  compile files('bazel-lib/libsyntax.jar')
+  compile files('bazel-lib/libevents.jar')
+
+  compile files('bazel-lib/libutil.jar')
+  compile files('bazel-lib/libunix.jar')
+  compile files('bazel-lib/libvfs.jar')
+  compile files('bazel-lib/libio.jar')
+  compile files('bazel-lib/libpreconditions.jar')
+  compile files('bazel-lib/libskylarkinterface.jar')
+
+  compile files('bazel-lib/asm.jar')
+  compile files('bazel-lib/libbase-util.jar')
+
+  compile files('bazel-lib/asm-commons-5.0.4.jar')
+  compile files('bazel-lib/asm-5.0.4.jar')
+  compile files('bazel-lib/asm-util-5.0.4.jar')
+
+  compile files('bazel-lib/libcollect.jar')
+
+  compile "com.google.protobuf:protobuf-java:3.0.0"
+
+  compile files('jython-standalone-2.7.0.jar')
+
+  compile files('jnumeric-0.2-SNAPSHOT.jar')
+
+  compile files('byte-buddy-dep-0.7-rc6.jar')
+  testCompile files("libtestutil.jar")
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

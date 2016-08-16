@@ -4,8 +4,16 @@
  */
 package hex.deepwater;
 
+
+import org.bytedeco.javacpp.tensorflow;
+import org.tensorflow.framework.AttrValue;
+
+
+import org.tensorflow.framework.AllocationDescription;
+
         import org.apache.commons.io.IOUtils;
         import org.apache.commons.math3.distribution.IntegerDistribution;
+        import org.jpy.PyInputMode;
         import org.jpy.PyModule;
         import org.jpy.PyObject;
         import org.junit.Assert;
@@ -27,6 +35,7 @@ package hex.deepwater;
         import java.util.ArrayList;
         import java.util.HashMap;
         import java.util.List;
+        import java.util.Map;
         import java.util.regex.Matcher;
         import java.util.regex.Pattern;
 
@@ -68,7 +77,7 @@ public class TensorflowTest extends TestUtil {
         Squeeze(normalized, graphBuilder.opts());
         Reshape(normalized, Const(new int[]{-1, 784}, graphBuilder.opts()), graphBuilder.opts().WithName(output_name));
 
-        GraphDef graph = new GraphDef();
+        tensorflow.GraphDef graph = new tensorflow.GraphDef();
         Status status = graphBuilder.ToGraphDef(graph);
 
         checkStatus(status);
@@ -91,7 +100,7 @@ public class TensorflowTest extends TestUtil {
 
         TopKV2(Const(distribution, b.opts()), Const(k, b.opts()), b.opts().WithName("top_k"));
 
-        GraphDef graph = new GraphDef();
+        tensorflow.GraphDef graph = new tensorflow.GraphDef();
         Status status = b.ToGraphDef(graph);
 
         checkStatus(status);
@@ -312,7 +321,64 @@ public class TensorflowTest extends TestUtil {
     }
 
     @Test
+    public void TestKerasModelInMemoryProcess() throws Exception {
+        System.setProperty("jpy.debug", "true");
+        System.setProperty("jpy.jdlLib", "/home/fmilo/anaconda2/envs/h2o/lib/python2.7/site-packages/jdl.so");
+        System.setProperty("jpy.pythonLib", "/home/fmilo/anaconda2/envs/h2o/lib/libpython2.7.so");
+        System.setProperty("jpy.jpyLib", "/home/fmilo/anaconda2/envs/h2o/lib/python2.7/site-packages/jpy.so");
+
+        PyLib.startPython();
+        InputStream in = new FileInputStream(expandPath("~/workspace/h2o-3/h2o-algos/src/test/java/hex/deepwater/inception_v3.py"));
+        String code = IOUtils.toString(in, StandardCharsets.UTF_8);
+
+
+
+        PyModule.executeCode("import os;os.environ['KERAS_BACKEND'] = 'tensorflow'", PyInputMode.STATEMENT);
+        //PyObject result = PyLib.executeCode(code, new Map<String,Object>(), new Map<String,Object>());
+        PyLib.execScript(code);
+        PyLib.execScript("print(locals())");
+
+        Map<String,Object> locals = new HashMap<>();
+        Map<String,Object> globals = new HashMap<>();
+
+        PyObject module = PyModule.executeCode(code, PyInputMode.SCRIPT, locals, globals);
+
+        PyModule.getMain().getAttribute("model").getAttribute("optimizer").setAttribute("learning_rate", 1.0, Double.class );
+
+        PyModule.executeCode("print(model.optimizer.learning_rate)", PyInputMode.SCRIPT);
+
+    }
+
+    @Test
+    public void TestIPythonModelInMemoryProcess() throws Exception {
+        System.setProperty("jpy.debug", "true");
+        System.setProperty("jpy.jdlLib", "/home/fmilo/anaconda2/envs/h2o/lib/python2.7/site-packages/jdl.so");
+        System.setProperty("jpy.pythonLib", "/home/fmilo/anaconda2/envs/h2o/lib/libpython2.7.so");
+        System.setProperty("jpy.jpyLib", "/home/fmilo/anaconda2/envs/h2o/lib/python2.7/site-packages/jpy.so");
+
+        PyLib.startPython();
+        InputStream in = new FileInputStream(expandPath("~/workspace/h2o-3/h2o-algos/src/test/java/hex/deepwater/ipython_start.py"));
+        String code = IOUtils.toString(in, StandardCharsets.UTF_8);
+
+        //PyObject result = PyLib.executeCode(code, new Map<String,Object>(), new Map<String,Object>());
+        PyLib.execScript(code);
+        //PyLib.execScript("print(locals())");
+
+        Map<String,Object> locals = new HashMap<>();
+        Map<String,Object> globals = new HashMap<>();
+
+        PyObject module = PyModule.executeCode(code, PyInputMode.SCRIPT, locals, globals);
+
+        PyModule.getMain().getAttribute("model").getAttribute("optimizer").setAttribute("learning_rate", 1.0, Double.class );
+
+        PyModule.executeCode("print(model.optimizer.learning_rate)", PyInputMode.SCRIPT);
+
+    }
+
+
+    @Test
     public void setAndGetGlobalPythonVariables() throws Exception {
+
         System.setProperty("jpy.debug", "true");
         System.setProperty("jpy.jdlLib", "/home/fmilo/anaconda2/envs/h2o/lib/python2.7/site-packages/jdl.so");
         System.setProperty("jpy.pythonLib", "/home/fmilo/anaconda2/envs/h2o/lib/libpython2.7.so");
@@ -327,11 +393,13 @@ public class TensorflowTest extends TestUtil {
         int paramIntValue = paramIntObj.getIntValue();
         String paramStrValue = paramStrObj.getStringValue();
 
-        InputStream in = this.getClass().getResourceAsStream("k_means.py") ;
-        in = new FileInputStream(expandPath("~/workspace/h2o-3/h2o-algos/src/test/java/hex/deepwater/k_means.py"));
+
+        InputStream in = new FileInputStream(expandPath("~/workspace/h2o-3/h2o-algos/src/test/java/hex/deepwater/k_means.py"));
         String code = IOUtils.toString(in, StandardCharsets.UTF_8);
         PyLib.execScript(code);
         PyObject result = mainModule.callMethod("multiply", 2, 3 );
+
+
 
         // values from http://mnemstudio.org/clustering-k-means-example-1.htm
         PyObject kMeans = mainModule.callMethod("TFKMeansCluster", new double[][]{
@@ -347,8 +415,8 @@ public class TensorflowTest extends TestUtil {
         assertEquals(123, paramIntValue);
         assertEquals("abc", paramStrValue);
         Double[] centroids_java = centroids.call("__getitem__", 0).getObjectArrayValue(Double.class);
-        Assert.assertArrayEquals(new Double[]{}, centroids_java);
-        assertEquals(1, assignments.call("__getitem__",0).getIntValue());// (Integer.class));
+        Assert.assertArrayEquals(new Double[]{1. ,  1.5,  3. ,  5. ,  3.5,  4.5,  3.5}, centroids_java);
+        assertEquals(0, assignments.call("__getitem__",0).getIntValue());// (Integer.class));
         //Assert.assertArrayEquals(new Integer[]{0,1}, assignments.getIntValue());// (Integer.class));
 
         /////////////////////////////////////////////////
