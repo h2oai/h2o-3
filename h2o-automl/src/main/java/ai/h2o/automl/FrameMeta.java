@@ -368,7 +368,7 @@ public class FrameMeta extends Iced {
       private double _mean;
 
       HistTask(DHistogram h, double mean) { _h = h; _mean=mean; }
-      @Override public void setupLocal() { _h._bins = MemoryManager.malloc8d(_h._nbin); }
+      @Override public void setupLocal() { _h._w = MemoryManager.malloc8d(_h._nbin); }
       @Override public void map( Chunk C ) {
         double min = _h.find_min();
         double max = _h.find_maxIn();
@@ -383,10 +383,10 @@ public class FrameMeta extends Iced {
           _thirdMoment  += threeDelta;
           _fourthMoment += threeDelta*delta;
         }
-        _h.setMin(min); _h.setMax(max);
+        _h.setMin(min); _h.setMaxIn(max);
         for(int b=0; b<bins.length; ++b)
           if( bins[b]!=0 )
-            AtomicUtils.DoubleArray.add(_h._bins, b, bins[b]);
+            AtomicUtils.DoubleArray.add(_h._w, b, bins[b]);
       }
 
       @Override public void reduce(HistTask t) {

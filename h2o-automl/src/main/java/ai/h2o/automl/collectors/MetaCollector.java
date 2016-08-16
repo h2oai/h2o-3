@@ -2,6 +2,7 @@ package ai.h2o.automl.collectors;
 
 
 import hex.tree.DHistogram;
+import hex.tree.SharedTreeModel;
 import water.H2O;
 import water.MRTask;
 import water.MemoryManager;
@@ -98,28 +99,43 @@ public class MetaCollector {
                         double min, double max) {
       _h = makeDHistogram(name, nbins, nbins_cats, isInt, min, max);
     }
+
+    private static class SharedTreeParameters extends SharedTreeModel.SharedTreeParameters {
+      public String algoName() { return "DUM"; }
+      public String fullName() { return "dummy"; }
+      public String javaName() { return "this.is.unused"; }
+    }
     public static DHistogram makeDHistogram(String name, int nbins, int nbins_cats, byte isInt,
                                   double min, double max) {
       final double minIn = Math.max(min,-Double.MAX_VALUE);   // inclusive vector min
       final double maxIn = Math.min(max, Double.MAX_VALUE);   // inclusive vector max
       final double maxEx = DHistogram.find_maxEx(maxIn,isInt==1?1:0); // smallest exclusive max
-      return DHistogram.make(name,nbins,nbins_cats,isInt,minIn,maxEx,0);
+
+      SharedTreeModel.SharedTreeParameters parms = new SharedTreeParameters();
+      // make(String name, final int nbins, byte isInt, double min, double maxEx, long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey) {
+      parms._nbins = nbins;
+      parms._nbins_cats = nbins_cats;
+
+
+      return DHistogram.make(name, nbins, isInt, minIn, maxEx, 0, parms, null);
     }
     public double binAt(int b) { return _h.binAt(b); }
 
+    // TODO: move into DHistogram
     public double mean(int b ) {
-      double n = _h._bins[b];
+      double n = _h._w[b];
       return n>0 ? _sums[b]/n : _h.binAt(b);
     }
 
+    // TODO: move into DHistogram
     public double var (int b) { // sample variance
-      double n = _h._bins[b];
+      double n = _h._w[b];
       if( n<=1 ) return 0;
       return Math.max(0, (_ssqs[b] - _sums[b]*_sums[b]/n)/(n-1));
     }
 
     protected void init() {
-      _h._bins = MemoryManager.malloc8d(_h._nbin);
+      _h._w = MemoryManager.malloc8d(_h._nbin);
       _sums = MemoryManager.malloc8d(_h._nbin);
       _ssqs = MemoryManager.malloc8d(_h._nbin);
     }
@@ -147,10 +163,10 @@ public class MetaCollector {
         sums[b] += colData;
         ssqs[b] += colData*colData;
       }
-      _h.setMin(min); _h.setMax(max);
+      _h.setMin(min); _h.setMaxIn(max);
       for(int b=0; b<bins.length; ++b)
         if( bins[b]!=0 ) {
-          AtomicUtils.DoubleArray.add(_h._bins, b, bins[b]);
+          AtomicUtils.DoubleArray.add(_h._w, b, bins[b]);
           AtomicUtils.DoubleArray.add(_sums, b, sums[b]);
           AtomicUtils.DoubleArray.add(_ssqs, b, ssqs[b]);
         }

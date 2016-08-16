@@ -5,7 +5,7 @@ import ai.h2o.automl.TimedH2OJob;
 import water.DKV;
 import water.Key;
 import water.api.Handler;
-import water.api.JobV3;
+import water.api.schemas3.JobV3;
 import water.fvec.Frame;
 
 

@@ -4,10 +4,11 @@ package water.automl;
 import ai.h2o.automl.AutoML;
 import water.Iced;
 import water.api.API;
-import water.api.JobV3;
-import water.api.RequestSchema;
+import water.api.schemas3.JobV3;
+import water.api.schemas3.SchemaV3;
 
-public class AutoMLBuilderV3 extends RequestSchema<Iced,AutoMLBuilderV3> {
+// TODO: this is about to change from SchemaV3 to RequestSchemaV3:
+public class AutoMLBuilderV3 extends SchemaV3<Iced,AutoMLBuilderV3> {
   @API(help="the name of the dataset",direction=API.Direction.INPUT)                 public String dataset;
   @API(help="auxiliary relational datasets", direction=API.Direction.INPUT)         public String[] relationalDatasets;
   @API(help="response column by index",direction=API.Direction.INPUT)                public int target_index;

@@ -9,7 +9,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.rapids.ASTGroup;
+import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.IcedHashMap;
 
 import java.util.ArrayList;
@@ -210,8 +210,8 @@ public class FeatureFactory {
    */
   public static class AggFeatureBuilder {
     public final int[][] _gbCols;
-    public final ASTGroup.AGG[][] _aggs;
-    public AggFeatureBuilder(int[][] gbCols, ASTGroup.AGG[][] aggs) { _gbCols=gbCols; _aggs=aggs; }
+    public final AstGroup.AGG[][] _aggs;
+    public AggFeatureBuilder(int[][] gbCols, AstGroup.AGG[][] aggs) { _gbCols=gbCols; _aggs=aggs; }
 
     public static AggFeatureBuilder buildAggFeatures(FrameMeta fullFrameMeta) {
       // choose group-by keys:
@@ -220,7 +220,7 @@ public class FeatureFactory {
       //  3. at most 5 cols per key
       //     => and then all combinations therein
       // AGG fcns:
-      ArrayList<ASTGroup.AGG[]> agg = new ArrayList<>();
+      ArrayList<AstGroup.AGG[]> agg = new ArrayList<>();
       ArrayList<Integer[]> gbCols = new ArrayList<>();
 
       fullFrameMeta.numberOfCategoricalFeatures();
@@ -242,7 +242,7 @@ public class FeatureFactory {
         }
       }
       int[][] groupByCols = new int[gbCols.size()][];
-      ASTGroup.AGG[][] aggs = new ASTGroup.AGG[agg.size()][];
+      AstGroup.AGG[][] aggs = new AstGroup.AGG[agg.size()][];
 
       // could launch all group-by tasks in parallel => BIG memory overhead EEKS!
       for(int i=0;i<groupByCols.length;++i) {
@@ -255,17 +255,17 @@ public class FeatureFactory {
     }
   }
 
-  private static ASTGroup.AGG[] makeAggs(int[] gbCols, FrameMeta fm) {
+  private static AstGroup.AGG[] makeAggs(int[] gbCols, FrameMeta fm) {
     // numerical columns get sum, mean, var
-    ArrayList<ASTGroup.AGG> aggs = new ArrayList<>();
+    ArrayList<AstGroup.AGG> aggs = new ArrayList<>();
     int[] cols = fm.diffCols(gbCols);
     for (int col : cols)
       if (fm._fr.vec(col).isNumeric()) {
-        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.mean, col, ASTGroup.NAHandling.IGNORE, -1));
-        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.var,  col, ASTGroup.NAHandling.IGNORE, -1));
-        aggs.add(new ASTGroup.AGG(ASTGroup.FCN.sum,  col, ASTGroup.NAHandling.IGNORE, -1));
+        aggs.add(new AstGroup.AGG(AstGroup.FCN.mean, col, AstGroup.NAHandling.IGNORE, -1));
+        aggs.add(new AstGroup.AGG(AstGroup.FCN.var,  col, AstGroup.NAHandling.IGNORE, -1));
+        aggs.add(new AstGroup.AGG(AstGroup.FCN.sum,  col, AstGroup.NAHandling.IGNORE, -1));
       }
-    return aggs.toArray(new ASTGroup.AGG[aggs.size()]);
+    return aggs.toArray(new AstGroup.AGG[aggs.size()]);
   }
 
 
@@ -355,23 +355,23 @@ public class FeatureFactory {
 
 
   private static class GBTasks extends MRTask<GBTasks> {
-    final IcedHashMap<ASTGroup.G,String> _gss[]; // Shared per-node, common, racy
+    final IcedHashMap<AstGroup.G,String> _gss[]; // Shared per-node, common, racy
     private final int[][] _gbCols; // Columns used to define group
-    private final ASTGroup.AGG[][] _aggs;   // Aggregate descriptions
-    GBTasks(int[][] gbCols, ASTGroup.AGG[][] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap[_gbCols.length]; for(int i=0;i<_gss.length;++i) _gss[i]=new IcedHashMap<>(); }
+    private final AstGroup.AGG[][] _aggs;   // Aggregate descriptions
+    GBTasks(int[][] gbCols, AstGroup.AGG[][] aggs) { _gbCols=gbCols; _aggs=aggs; _gss = new IcedHashMap[_gbCols.length]; for(int i=0;i<_gss.length;++i) _gss[i]=new IcedHashMap<>(); }
     @Override public void map(Chunk[] cs) {
       // Groups found in this Chunk
-      IcedHashMap<ASTGroup.G,String> gs[] = new IcedHashMap[_gbCols.length];
+      IcedHashMap<AstGroup.G,String> gs[] = new IcedHashMap[_gbCols.length];
       for(int gId=0;gId<_gbCols.length;++gId) {
         gs[gId] = new IcedHashMap<>();
-        ASTGroup.G gWork = new ASTGroup.G(_gbCols[gId].length,_aggs[gId]);
-        ASTGroup.G gOld;
+        AstGroup.G gWork = new AstGroup.G(_gbCols[gId].length,_aggs[gId]);
+        AstGroup.G gOld;
         for( int row=0; row<cs[0]._len; row++ ) {
           // Find the Group being worked on
           gWork.fill(row,cs,_gbCols[gId]);            // Fill the worker Group for the hashtable lookup
           if( gs[gId].putIfAbsent(gWork,"")==null ) { // Insert if not absent (note: no race, no need for atomic)
             gOld=gWork;                          // Inserted 'gWork' into table
-            gWork=new ASTGroup.G(_gbCols[gId].length,_aggs[gId]);   // need entirely new G
+            gWork=new AstGroup.G(_gbCols[gId].length,_aggs[gId]);   // need entirely new G
           } else gOld=gs[gId].getk(gWork);            // Else get existing group
 
           for( int i=0; i<_aggs[gId].length; i++ ) // Accumulate aggregate reductions
@@ -385,14 +385,14 @@ public class FeatureFactory {
     // parallel map calls.
     @Override public void reduce(GBTasks t) { if( _gss != t._gss ) reduce(t._gss); }
     // Non-blocking race-safe update of the shared per-node groups hashtable
-    private void reduce(IcedHashMap<ASTGroup.G,String>[] r) {
+    private void reduce(IcedHashMap<AstGroup.G,String>[] r) {
       for(int gId=0;gId<r.length;++gId)
         reduce(r[gId],gId);
     }
-    private void reduce( IcedHashMap<ASTGroup.G,String> r, int gID ) {
-      for( ASTGroup.G rg : r.keySet() )
+    private void reduce( IcedHashMap<AstGroup.G,String> r, int gID ) {
+      for( AstGroup.G rg : r.keySet() )
         if( _gss[gID].putIfAbsent(rg,"")!=null ) {
-          ASTGroup.G lg = _gss[gID].getk(rg);
+          AstGroup.G lg = _gss[gID].getk(rg);
           for( int i=0; i<_aggs[gID].length; i++ )
             _aggs[gID][i].atomic_op(lg._dss,lg._ns,i, rg._dss[i], rg._ns[i]); // Need to atomically merge groups here
         }
@@ -418,7 +418,7 @@ class AggFeatureBuilder {
 
 
   private void buildAggs() {
-    ArrayList<ASTGroup.AGG[]> agg = new ArrayList<>();
+    ArrayList<AstGroup.AGG[]> agg = new ArrayList<>();
     ArrayList<Integer[]> gbCols = new ArrayList<>();
 
     int primaryAgg = _fm._fr.find(_primaryAgg);
