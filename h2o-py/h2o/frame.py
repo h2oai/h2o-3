@@ -9,7 +9,6 @@ TODO: Automatically convert column names into Frame properties!
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 
-import collections
 import csv
 import functools
 import imp
@@ -25,7 +24,7 @@ import requests
 import h2o
 from types import FunctionType
 
-from .utils.shared_utils import _quoted, can_use_pandas, can_use_numpy, _handle_python_lists, _is_list, _is_str_list, \
+from .utils.shared_utils import _quoted, can_use_pandas, _handle_python_lists, _is_list, _is_str_list, \
     _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote, _py_tmp_key
 from .display import H2ODisplay
 from .job import H2OJob
@@ -33,7 +32,7 @@ from .expr import ExprNode
 from .group_by import GroupBy
 from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import is_type, assert_is_type, assert_satisfies
+from h2o.utils.typechecks import I, is_type, assert_is_type, assert_satisfies, pandas_dataframe, numpy_ndarray
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
@@ -69,7 +68,7 @@ class H2OFrame(object):
         return fr
 
     @staticmethod
-    def from_python(python_obj, destination_frame="", header=(-1, 0, 1), separator="", column_names=None,
+    def from_python(python_obj, destination_frame=None, header=0, separator=",", column_names=None,
                     column_types=None, na_strings=None):
         """
         Create a new ``H2OFrame`` object from an existing Python object (which can be of different kinds).
@@ -116,77 +115,43 @@ class H2OFrame(object):
           >>> l = H2OFrame(l)
           >>> l
         """
+        coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
+                    "categorical", "factor", "enum", "time")
+        assert_is_type(destination_frame, None, str)
+        assert_is_type(header, -1, 0, 1)
+        assert_is_type(separator, I(str, lambda s: len(s) == 1))
+        assert_is_type(column_names, None, [str])
+        assert_is_type(column_types, None, [coltype])
+        assert_is_type(na_strings, None, [str])
         fr = H2OFrame()
         fr._upload_python_object(python_obj, destination_frame, header, separator, column_names, column_types,
                                  na_strings)
         return fr
 
-    def _upload_python_object(self, python_obj, destination_frame="", header=(-1, 0, 1), separator="",
+    def _upload_python_object(self, python_obj, destination_frame=None, header=0, separator=",",
                               column_names=None, column_types=None, na_strings=None):
-        # [] and () cases -- folded together since H2OFrame is mutable
-        if is_listlike(python_obj):
-            col_header, data_to_write = _handle_python_lists(python_obj, header)
-
-        # {} and collections.OrderedDict cases
-        elif isinstance(python_obj, (dict, collections.OrderedDict)):
-            col_header, data_to_write = _handle_python_dicts(python_obj)
-
-        # handle a numpy.ndarray, pandas.DataFrame
-        else:
-            if can_use_numpy() and can_use_pandas():
-                import numpy
-                import pandas
-                if isinstance(python_obj, numpy.ndarray):
-                    col_header, data_to_write = _handle_numpy_array(python_obj, header)
-                elif isinstance(python_obj, pandas.DataFrame):
-                    col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
-                else:
-                    raise ValueError(
-                        "`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
-                        "pandas.DataFrame. Got: " + str(type(python_obj)))
-            elif can_use_numpy():
-                import numpy
-                if isinstance(python_obj, numpy.ndarray):
-                    col_header, data_to_write = _handle_numpy_array(python_obj, header)
-                else:
-                    raise ValueError(
-                        "`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
-                        "pandas.DataFrame. Got: " + str(type(python_obj)))
-            elif can_use_pandas():
-                import pandas
-                if isinstance(python_obj, pandas.DataFrame):
-                    col_header, data_to_write = _handle_pandas_data_frame(python_obj, header)
-                else:
-                    raise ValueError(
-                        "`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
-                        "pandas.DataFrame. Got: " + str(type(python_obj)))
-            else:
-                raise ValueError("`python_obj` must be a tuple, list, dict, collections.OrderedDict, numpy.ndarray, or "
-                                 "pandas.DataFrame. Got: " + str(type(python_obj)))
-
-        if col_header is None or data_to_write is None: raise ValueError("No data to write")
-
-        #
-        # write python data to file and upload
-        #
+        assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe)
+        # TODO: all these _handle*rs should really belong to this class, not to shared_utils.
+        processor = (_handle_pandas_data_frame if is_type(python_obj, pandas_dataframe) else
+                     _handle_numpy_array if is_type(python_obj, numpy_ndarray) else
+                     _handle_python_dicts if is_type(python_obj, dict) else
+                     _handle_python_lists)
+        col_header, data_to_write = processor(python_obj, header)
+        if col_header is None or data_to_write is None:
+            raise H2OValueError("No data to write")
+        if not column_names:
+            column_names = col_header
 
         # create a temporary file that will be written to
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".csv")
         tmp_file = os.fdopen(tmp_handle, 'w')
         # create a new csv writer object thingy
-        csv_writer = csv_dict_writer(tmp_file, fieldnames=col_header, restval=None, dialect="excel",
-                                     extrasaction="ignore", quoting=csv.QUOTE_NONNUMERIC)
-        csv_writer.writeheader()  # write the header
-        # Because we have written the header, header in this newly created tmp csv file must be 1
-        header = 1
-        if column_names is None: column_names = col_header
-        csv_writer.writerows(data_to_write)  # write the data
+        csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
+        csv_writer.writerow(column_names)
+        for row in data_to_write:
+            csv_writer.writerow([row[k] for k in col_header])
         tmp_file.close()  # close the streams
-        print("Tmp file created: " + tmp_path)
-        with open(tmp_path, "rt") as f:
-            print(f.read())
-        self._upload_parse(tmp_path, destination_frame, header, separator, column_names, column_types,
-                           na_strings)  # actually upload the data to H2O
+        self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings)
         os.remove(tmp_path)  # delete the tmp file
 
 
