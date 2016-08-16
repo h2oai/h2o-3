@@ -65,7 +65,6 @@ The ``typeI`` items here deserve a more thorough explanation. They could be:
     assert_is_type(x, None, "N/A", I(float, math.isnan))
     assert_is_type(matrix, I([[numeric]], lambda v: all(len(vi) == len(v[0]) for vi in v)))
     assert_is_type(a, lambda t: issubclass(t, object))
-    # (lambda-expressions should be used judiciously because they do not produce nice error messages).
 
 As you have noticed, we define a number of special classes to facilitate type construction::
 
@@ -104,7 +103,7 @@ from types import FunctionType, BuiltinFunctionType
 from h2o.utils.compatibility import *  # NOQA
 from h2o.exceptions import H2OTypeError, H2OValueError
 
-__all__ = ("U", "I", "NOT", "Tuple", "Dict", "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
+__all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
            "assert_is_type", "assert_matches", "assert_satisfies", "is_type")
 
 
@@ -144,7 +143,7 @@ class MagicType(object):
     def check(self, var):
         """Return True if the variable matches this type, and False otherwise."""
 
-    def __str__(self):
+    def name(self, src=None):
         """Return string representing the name of this type."""
         return "<%s>" % self.__class__.__name__
 
@@ -169,13 +168,14 @@ class U(MagicType):
         """Return True if the variable matches this type, and False otherwise."""
         return any(_check_type(var, tt) for tt in self._types)
 
-    def __str__(self):
-        res = [_get_type_name(tt) for tt in self._types]
+    def name(self, src=None):
+        """Return string representing the name of this type."""
+        res = [_get_type_name(tt, src) for tt in self._types]
         if len(res) == 2 and "None" in res:
             res.remove("None")
             return "?" + res[0]
         else:
-            return "|".join(res)
+            return " | ".join(res)
 
 
 class I(MagicType):
@@ -196,8 +196,9 @@ class I(MagicType):
         """Return True if the variable matches this type, and False otherwise."""
         return all(_check_type(var, tt) for tt in self._types)
 
-    def __str__(self):
-        return "&".join(_get_type_name(tt) for tt in self._types)
+    def name(self, src=None):
+        """Return string representing the name of this type."""
+        return " & ".join(_get_type_name(tt, src) for tt in self._types)
 
 
 class NOT(MagicType):
@@ -216,11 +217,12 @@ class NOT(MagicType):
         """Return True if the variable does not match any of the types, and False otherwise."""
         return not any(_check_type(var, tt) for tt in self._types)
 
-    def __str__(self):
+    def name(self, src=None):
+        """Return string representing the name of this type."""
         if len(self._types) > 1:
-            return "!(%s)" % str("|".join(_get_type_name(tt) for tt in self._types))
+            return "!(%s)" % str("|".join(_get_type_name(tt, src) for tt in self._types))
         else:
-            return "!" + _get_type_name(self._types[0])
+            return "!" + _get_type_name(self._types[0], src)
 
 
 class Tuple(MagicType):
@@ -235,8 +237,9 @@ class Tuple(MagicType):
         """Return True if the variable matches this type, and False otherwise."""
         return isinstance(var, tuple) and all(_check_type(t, self._element_type) for t in var)
 
-    def __str__(self):
-        return "(*%s)" % _get_type_name(self._element_type)
+    def name(self, src=None):
+        """Return string representing the name of this type."""
+        return "(*%s)" % _get_type_name(self._element_type, src)
 
 
 class Dict(MagicType):
@@ -267,8 +270,9 @@ class Dict(MagicType):
                 return False
         return True
 
-    def __str__(self):
-        return "{%s}" % ", ".join("%s: %s" % (key, _get_type_name(ktype))
+    def name(self, src=None):
+        """Return string representing the name of this type."""
+        return "{%s}" % ", ".join("%s: %s" % (key, _get_type_name(ktype, src))
                                   for key, ktype in viewitems(self._types))
 
 
@@ -307,7 +311,8 @@ class _LazyClass(MagicType):
         except ImportError:
             self._class = False
 
-    def __str__(self):
+    def name(self, src=None):
+        """Return string representing the name of this type."""
         return self._name
 
 
@@ -341,17 +346,16 @@ def assert_is_type(var, *types, **kwargs):
     :raises H2OTypeError: if the argument is not of the desired type.
     """
     assert types, "The list of expected types was not provided"
-    if len(types) == 1:
-        if _check_type(var, types[0]): return
-        etn = _get_type_name(types[0])
-    else:
-        union_type = U(*types)
-        if _check_type(var, union_type): return
-        etn = str(union_type)
+    expected_type = types[0] if len(types) == 1 else U(*types)
+    if _check_type(var, expected_type): return
+
+    # Type check failed => Create a nice error message
     assert set(kwargs).issubset({"message", "skip_frames"}), "Unexpected keyword arguments: %r" % kwargs
-    vname = _retrieve_assert_arguments()[0]
     message = kwargs.get("message", None)
     skip_frames = kwargs.get("skip_frames", 1)
+    args = _retrieve_assert_arguments()
+    vname = args[0]
+    etn = _get_type_name(expected_type, dump=", ".join(args[1:]))
     vtn = _get_type_name(type(var))
     raise H2OTypeError(var_name=vname, var_value=var, var_type_name=vtn, exp_type_name=etn, message=message,
                        skip_frames=skip_frames)
@@ -503,9 +507,9 @@ def _check_type(var, vtype):
     raise RuntimeError("Ivalid type %r in _check_type()" % vtype)
 
 
-def _get_type_name(vtype):
+def _get_type_name(vtype, dump=None):
     """
-    Return the name of the provided type(s).
+    Return the name of the provided type.
 
         _get_type_name(int) == "integer"
         _get_type_name(str) == "string"
@@ -527,18 +531,70 @@ def _get_type_name(vtype):
     if is_type(vtype, int):
         return str(vtype)
     if isinstance(vtype, MagicType):
-        return str(vtype)
+        return vtype.name(dump)
     if isinstance(vtype, type):
         return vtype.__name__
     if isinstance(vtype, list):
-        return "list(%s)" % _get_type_name(U(*vtype))
+        return "list(%s)" % _get_type_name(U(*vtype), dump)
     if isinstance(vtype, set):
-        return "set(%s)" % _get_type_name(U(*vtype))
+        return "set(%s)" % _get_type_name(U(*vtype), dump)
     if isinstance(vtype, tuple):
-        return "(%s)" % ", ".join(_get_type_name(item) for item in vtype)
+        return "(%s)" % ", ".join(_get_type_name(item, dump) for item in vtype)
     if isinstance(vtype, dict):
-        return "dict(%s)" % ", ".join("%s: %s" % (_get_type_name(tk), _get_type_name(tv))
+        return "dict(%s)" % ", ".join("%s: %s" % (_get_type_name(tk, dump), _get_type_name(tv, dump))
                                       for tk, tv in viewitems(vtype))
     if isinstance(vtype, (FunctionType, BuiltinFunctionType)):
-        return vtype.__name__  # Not optimal, but it's hard to do better
+        if vtype.__name__ == "<lambda>":
+            return _get_lambda_source_code(vtype, dump)
+        else:
+            return vtype.__name__
     raise RuntimeError("Unexpected `vtype`: %r" % vtype)
+
+
+def _get_lambda_source_code(lambda_fn, src):
+    """Attempt to find the source code of the ``lambda_fn`` within the string ``src``."""
+    def gen_lambdas():
+        def gen():
+            yield src + "\n"
+
+        g = gen()
+        step = 0
+        tokens = []
+        for tok in tokenize.generate_tokens(getattr(g, "next", getattr(g, "__next__", None))):
+            if step == 0:
+                if tok[0] == tokenize.NAME and tok[1] == "lambda":
+                    step = 1
+                    tokens = [tok]
+                    level = 0
+            elif step == 1:
+                if tok[0] == tokenize.NAME:
+                    tokens.append(tok)
+                    step = 2
+                else:
+                    step = 0
+            elif step == 2:
+                if tok[0] == tokenize.OP and tok[1] == ":":
+                    tokens.append(tok)
+                    step = 3
+                else:
+                    step = 0
+            elif step == 3:
+                if level == 0 and (tok[0] == tokenize.OP and tok[1] in ",)" or tok[0] == tokenize.ENDMARKER):
+                    yield tokenize.untokenize(tokens).strip()
+                    step = 0
+                else:
+                    tokens.append(tok)
+                    if tok[0] == tokenize.OP:
+                        if tok[1] in "[({": level += 1
+                        if tok[1] in "])}": level -= 1
+        assert not tokens
+
+    actual_code = lambda_fn.__code__.co_code
+    for lambda_src in gen_lambdas():
+        try:
+            fn = eval(lambda_src, globals(), locals())
+            if fn.__code__.co_code == actual_code:
+                return lambda_src.split(":", 1)[1].strip()
+        except Exception:
+            pass
+    return "<lambda>"
