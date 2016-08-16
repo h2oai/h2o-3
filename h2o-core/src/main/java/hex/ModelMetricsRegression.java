@@ -10,6 +10,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   public double residual_deviance() { return _mean_residual_deviance; }
   public final double _mean_residual_deviance;
   public final double _mean_absolute_error;
+  public double mae() { return _mean_absolute_error; }
   public ModelMetricsRegression(Model model, Frame frame, long nobs, double mse, double sigma, double mae, double meanResidualDeviance) {
     super(model, frame, nobs, mse, null, sigma);
     _mean_residual_deviance = meanResidualDeviance;
@@ -101,7 +102,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       // Compute error
       double err = yact[0] - ds[0]; // Error: distance from the actual
       _sumsqe += w*err*err;       // Squared error
-      _abserror += Math.abs(err);
+      _abserror += w*Math.abs(err);
       assert !Double.isNaN(_sumsqe);
       if (m!=null && m._parms._distribution!=Distribution.Family.huber)
         _sumdeviance += m.deviance(w, yact[0], ds[0]);

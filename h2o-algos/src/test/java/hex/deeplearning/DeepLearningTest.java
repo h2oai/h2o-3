@@ -2114,7 +2114,7 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-4);
       Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl._output._validation_metrics)._mean_residual_deviance,1e-4);
       Assert.assertEquals(117.8014, ((ModelMetricsRegression)dl._output._cross_validation_metrics)._mean_residual_deviance,1e-4);
-      Assert.assertEquals(117.8014, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(2,0)), 1);
+      Assert.assertEquals(117.8014, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(3,0)), 1);
 
     } finally {
       if (tfr != null) tfr.remove();
