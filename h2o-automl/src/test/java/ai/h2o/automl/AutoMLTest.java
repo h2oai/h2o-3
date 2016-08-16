@@ -50,7 +50,7 @@ public class AutoMLTest extends TestUtil {
     Frame fr=null;
     AutoML aml=null;
     try {
-      aml=AutoML.makeAutoML(Key.<AutoML>make(),"/Users/spencer/Downloads/train.csv.zip", "TARGET","MSE", 3600,-1,true,null,true);
+      aml=AutoML.makeAutoML(Key.<AutoML>make(),"/Users/spencer/Downloads/train.csv.zip", null, "TARGET","MSE", 3600,-1,true,null,true);
       aml.learn();
     } finally {
       // cleanup

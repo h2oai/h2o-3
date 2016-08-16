@@ -5,8 +5,9 @@ import water.Key;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.parser.DefaultParserProviders;
 import water.parser.ParseSetup;
-import water.parser.ParserType;
+import water.parser.ParserInfo;
 import water.util.ArrayUtils;
 
 import java.io.BufferedReader;
@@ -20,7 +21,7 @@ import java.util.Arrays;
 //    <datasetName>
 //    <relPathToDataset>
 //    <parse_type>  // svmlight, csv, arff ?
-//    <task>        // binary_classification, multiclass_classification, regression … possibly other types in future
+//    <task>        // binary_classification, multiclass_classification, regression and possibly other types in future
 //    <x>
 //    <col_types>  // all numerical, unless otherwise specified in svmlight-style syntax
 //    <y>
@@ -43,7 +44,7 @@ public class MetaConfig {
   private Frame _testFrame;
   private byte[] _colTypes;
   private byte _task;
-  private ParserType _parseType;  // GUESS(false), ARFF(true), XLS(false), XLSX(false), CSV(true), SVMLight(true);
+  private ParserInfo _parseType;  // GUESS(false), ARFF(true), XLS(false), XLSX(false), CSV(true), SVMLight(true);
   private int _ncol;
 
   public static MetaConfig[] readMeta(String pathToMetaFile) {
@@ -144,12 +145,12 @@ public class MetaConfig {
     switch( line ) {
       case "d":
       case "default":
-      case "guess": _parseType = ParserType.GUESS; break;
-      case "csv":   _parseType = ParserType.CSV;   break;
-      case "xls":   _parseType = ParserType.XLS;   break;
-      case "xlsx":  _parseType = ParserType.XLSX;  break;
-      case "arff":  _parseType = ParserType.ARFF;  break;
-      case "svmlight": _parseType = ParserType.SVMLight; break;
+      case "guess": _parseType = DefaultParserProviders.GUESS_INFO; break;
+      case "csv":   _parseType = DefaultParserProviders.CSV_INFO;   break;
+      case "xls":   _parseType = DefaultParserProviders.XLS_INFO;   break;
+      case "xlsx":  _parseType = DefaultParserProviders.XLSX_INFO;  break;
+      case "arff":  _parseType = DefaultParserProviders.ARFF_INFO;  break;
+      case "svmlight": _parseType = DefaultParserProviders.SVMLight_INFO; break;
       default:
         throw new IllegalArgumentException("Unknown parse type: " + line + ". Must be one of: <d,default,guess,csv,xls,xlsx,arff,svmlight>");
     }

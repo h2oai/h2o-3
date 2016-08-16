@@ -9,7 +9,7 @@ import water.api.Handler;
 
 
 public class AutoMLJSONSchemaHandler extends Handler {
-  public AutoMLJSONSChemaV3 getJSONSchema(int version, AutoMLJSONSChemaV3 args) {
+  public AutoMLJSONSchemaV3 getJSONSchema(int version, AutoMLJSONSchemaV3 args) {
 
     Class clazz = AutoMLBuilderV3.class;
     ObjectMapper m = new ObjectMapper();

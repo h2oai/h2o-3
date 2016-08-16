@@ -13,7 +13,7 @@ import water.util.ArrayUtils;
 /**
  *  Collect the Variance Inflation Factors for numerical columns.
  *
- *  Useful for column selection strategies and detecting multicollinearity.
+ *  Useful for column selection strategies and detecting multicollinearity.
  *
  *  Given a set of predictors, each numerical column is regressed on remaining predictors,
  *  and the R^2 value is inspected. R^2 of ~ 0.875 is indicative of collinear columns.

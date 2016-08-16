@@ -5,7 +5,7 @@ import ai.h2o.automl.utils.AutoMLUtils;
 import hex.Model;
 import hex.ModelBuilder;
 import water.*;
-import water.api.KeyV3;
+import water.api.schemas3.KeyV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
@@ -248,11 +248,12 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
 
   // satisfy typing for job return type...
-  public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML>{
+  public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {
     public AutoMLKeyV3(){}
     public AutoMLKeyV3(Key<AutoML> key) { super(key); }
   }
-  @Override public Class<AutoMLKeyV3> makeSchema() { return AutoMLKeyV3.class; }
+
+//  @Override public Class<AutoMLKeyV3> makeSchema() { return AutoMLKeyV3.class; }
 
   private class AutoMLDoneException extends H2OAbstractRuntimeException {
     public AutoMLDoneException() { this("done","done"); }

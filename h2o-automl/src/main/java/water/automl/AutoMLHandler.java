@@ -1,7 +1,7 @@
 package water.automl;
 
 import water.api.Handler;
-import water.api.KeyV3;
+import water.api.schemas3.KeyV3;
 
 
 // essentially the AutoMLBuilderHandler
