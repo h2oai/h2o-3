@@ -149,7 +149,7 @@ class H2OFrame(object):
         csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
         csv_writer.writerow(column_names)
         for row in data_to_write:
-            csv_writer.writerow([row[k] for k in col_header])
+            csv_writer.writerow([row.get(k, None) for k in col_header])
         tmp_file.close()  # close the streams
         self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings)
         os.remove(tmp_path)  # delete the tmp file
