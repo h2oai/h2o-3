@@ -136,7 +136,7 @@ def _handle_numpy_array(python_obj, header):
 def _handle_pandas_data_frame(python_obj, header):
     return _handle_numpy_array(python_obj.as_matrix(), header)
 
-def _handle_python_dicts(python_obj):
+def _handle_python_dicts(python_obj, check_header):
     header = list(python_obj.keys())
     is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])  # is this a valid header?
     if not is_valid:

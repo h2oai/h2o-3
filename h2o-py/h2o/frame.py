@@ -32,7 +32,7 @@ from .expr import ExprNode
 from .group_by import GroupBy
 from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import I, is_type, assert_is_type, assert_satisfies, pandas_dataframe, numpy_ndarray
+from h2o.utils.typechecks import I, U, is_type, assert_is_type, assert_satisfies, pandas_dataframe, numpy_ndarray
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
