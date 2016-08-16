@@ -134,8 +134,8 @@ Clouding Up: Cluster Creation
 
 H2O provides two modes for cluster creation:
 
-  1. Multicast based
-  2. Flatfile based
+-  Multicast based
+-  Flatfile based
 
 Multicast
 ^^^^^^^^^
@@ -149,7 +149,7 @@ For more information about scopes, see the following `image <http://www.tcpipgui
 
 Flatfile
 ^^^^^^^^
-he flatfile describes a topology of a H2O cluster. The flatfile definition is passed via the ``-flatfile`` option. It needs to be passed at each node in the cluster, but definition does not be the same at each node. However, transitive closure of all definitions should contains all nodes. For example, for the following definition
+The flatfile describes a topology of a H2O cluster. The flatfile definition is passed via the ``-flatfile`` option. It needs to be passed at each node in the cluster, but definition does not be the same at each node. However, transitive closure of all definitions should contains all nodes. For example, for the following definition
 
 +---------+-------+-------+-------+
 | Nodes   | nodeA | nodeB | nodeC |
@@ -159,7 +159,7 @@ he flatfile describes a topology of a H2O cluster. The flatfile definition is pa
 
 The resulting cluster will be formed by nodes A, B, C. The node A transitively sees node C via node B flatfile definition, and vice versa.
 
-The flatfile contains a list of nodes in the form ``IP:PORT`` (each node on separated line, everything prefixed by ``#`` is ignored) which are going to compose a resulting cluster. For example, running H2O on a multi-node cluster allows you to use more memory for large-scale tasks (for example, creating models from huge datasets) than would be possible on a single node.
+The flatfile contains a list of nodes in the form ``IP:PORT`` that are going to compose a resulting cluster (each node on a separated line, everything prefixed by ``#`` is ignored). Running H2O on a multi-node cluster allows you to use more memory for large-scale tasks (for example, creating models from huge datasets) than would be possible on a single node.
 
 **IPv4**:
 
@@ -190,9 +190,7 @@ Dual Stacks
 ~~~~~~~~~~~
 
 Dual stack machines support IPv4 and IPv6 network stacks.
-Right now, H2O always prefer IPV4, however the preference can be changed via JVM system options ``java.net.preferIPv4Addresses`` and ``java.net.preferIPv6Addresses``.
-
-For example:
+Right now, H2O always prefer IPV4, however the preference can be changed via JVM system options ``java.net.preferIPv4Addresses`` and ``java.net.preferIPv6Addresses``. For example:
 
 - ``-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Addresses=true`` - H2O will try to select IPv4
 - ``-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Addresses=false`` - H2O will try to select IPv6

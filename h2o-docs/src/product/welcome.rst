@@ -1,32 +1,42 @@
 Welcome to H2O 3
 ==================
 
+Requirements
+------------
+
+The `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/>`_ PDF provides a basic overview of the operating systems, languages and APIs, Hadoop resource manager versions, cloud computing environments, browsers, and other resources recommended to run H2O. At a minimum, we recommend the following for compatibility with H2O:
+
+-  **Operating Systems**:
+ 
+   -  Windows 7 or later
+   -  OS X 10.9 or later
+   -  Ubuntu 12.04
+   -  RHEL/CentOS 6 or later
+   
+-  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
+
+   -  Java 7 or later. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required. Both of these are available on the `Java download page <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__.
+   -  Scala 2.10 or later
+   -  R version 3 or later
+   -  Python 2.7.x or 3.5.x 
+
+-  **Browser**: An internet browser is required to use H2O's web UI, Flow. Supported versions include the latest version of Chrome, Firefox, Safari, or Internet Explorer. 
+-  **Hadoop**: Hadoop is not required to run H2O unless you want to deploy H2O on a Hadoop cluster. Supported versions are listed on the `Download page <http://www.h2o.ai/download/h2o/hadoop>`_ for Hadoop and include:
+
+   -  Cloudera CDH 5.2 or later (5.3 is recommended)
+   -  MapR 3.1.1 or later
+   -  Hortonworks HDP 2.1 or later 
+
+-  **Spark**: Version 1.4 or later. Spark is only required if you want to run
+   `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
+
+
+
 New Users
 ---------
 
 If you're just getting started with H2O, here are some links to help you
 learn more:
-
--  `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/>`_: This one-page PDF provides a basic overview of
-   the operating systems, languages and APIs, Hadoop resource manager
-   versions, cloud computing environments, browsers, and other resources
-   recommended to run H2O. At a minimum, we recommend the following for
-   compatibility with H2O:
-
--  **Operating Systems**: Windows 7 or later; OS X 10.9 or later, Ubuntu
-   12.04, or RHEL/CentOS 6 or later
--  **Languages**: Java 7 or later; Scala v 2.10 or later; R v.3 or
-   later; Python 2.7.x or 3.5.x (Scala, R, and Python are not required
-   to use H2O unless you want to use H2O in those environments, but Java
-   is always required)
--  **Browsers**: Latest version of Chrome, Firefox, Safari, or Internet
-   Explorer (An internet browser is required to use H2O's web UI, Flow)
--  **Hadoop**: Cloudera CDH 5.2 or later (5.3 is recommended); MapR
-   v.3.1.1 or later; Hortonworks HDP 2.1 or later (Hadoop is not
-   required to run H2O unless you want to deploy H2O on a Hadoop
-   cluster)
--  **Spark**: v 1.4 or later (Spark is only required if you want to run
-   `Sparkling Water <https://github.com/h2oai/sparkling-water>`__)
 
 -  `Downloads page <http://www.h2o.ai/download/>`_: First things first - download a copy of H2O here by
    selecting a build under "Download H2O" (the "Bleeding Edge" build
