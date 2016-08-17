@@ -28,7 +28,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Id of the validation data frame.
 
       nfolds : int
-        Number of folds for N-fold cross-validation (0 to disable or ≥ 2).
+        Number of folds for N-fold cross-validation (0 to disable or >= 2).
         Default: 0
 
       keep_cross_validation_predictions : bool

@@ -24,7 +24,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Destination id for this model; auto-generated if not specified.
 
       nfolds : int
-        Number of folds for N-fold cross-validation (0 to disable or ≥ 2).
+        Number of folds for N-fold cross-validation (0 to disable or >= 2).
         Default: 0
 
       seed : int
