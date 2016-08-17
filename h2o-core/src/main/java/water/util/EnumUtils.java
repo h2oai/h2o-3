@@ -30,7 +30,7 @@ public class EnumUtils {
    * This is like Enum.valueOf() only better: it matches enum constants very loosely: case-insensitive and disregarding
    * any non-alphanumeric characters (e.g. "_"). For example, if Enum declares constant LOG_NORMAL, then all of the
    * following would also match to this constant:
-   *     log_normal, logNormal, LogNormal, __LoGnOrmaL___, "LogNormal", $Log.Normal, ツlognormal, etc.
+   *     log_normal, logNormal, LogNormal, __LoGnOrmaL___, "LogNormal", $Log.Normal, lognormal, etc.
    *
    * @param <T>  The enum type whose constant is to be returned
    * @param clz  the {@code Class} object of the enum type from which to return a constant

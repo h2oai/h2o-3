@@ -93,7 +93,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
     CONSTS.put("NA", AstConst.NAN);
     CONSTS.put("PI", AstConst.PI);
     CONSTS.put("Pi", AstConst.PI);
-    CONSTS.put("π", AstConst.PI);
+    // fails to compile on some systems due to JavaDoc failure: CONSTS.put("<pi character>", AstConst.PI);
 
     // Standard math functions
     init(new AstAbs());
