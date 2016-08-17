@@ -119,7 +119,6 @@ public class Merge {
 
     // the overlapped region; i.e. between [ max(leftMin,rightMin), min(leftMax, rightMax) ]
     for (int leftMSB=(int)leftMSBfrom; leftMSB<=leftMSBto; leftMSB++) {
-
       assert leftMSB >= 0;
       assert leftMSB <= 255;
 
@@ -155,9 +154,9 @@ public class Merge {
     t0 = System.nanoTime();
     System.out.println("Sending BinaryMerge async RPC calls in a queue ... ");
     fs.blockForPending();
-    /*for(int i = 0; i < fs.pending().length; ++i) {
-      System.out.println(i + ": " + ((RPC)fs.pending()[i])._dt.bad_guy());
-    }*/
+    for(int i = 0; i < fs.pending().length; ++i) {
+      if(fs.pending()[i] != null)System.out.println(i + ": " + ((RPC)fs.pending()[i])._dt.bad_guy());
+    }
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
 

@@ -26,7 +26,8 @@ public class Futures {
   /** Some Future task which needs to complete before this Futures completes */
   synchronized public Futures add( Future f ) {
     if( f == null ) return this;
-    if( f.isDone() ) return this;
+   // if( f.isDone() )
+   //   return this;
     // NPE here if this Futures has already been added to some other Futures
     // list, and should be added to again.
     if( _pending_cnt == _pending.length ) {
@@ -52,10 +53,10 @@ public class Futures {
    *  things clean out as fast as new ones are added and the list never gets
    *  very large. */
   synchronized private void cleanCompleted() {
-    for( int i=0; i<_pending_cnt; i++ )
+    /*for( int i=0; i<_pending_cnt; i++ )
       if( _pending[i].isDone() ) // Done?
         // Do cheap array compression to remove from list
-        _pending[i--] = _pending[--_pending_cnt];
+        _pending[i--] = _pending[--_pending_cnt];*/
   }
 
   /** Block until all pending futures have completed or canceled.  */

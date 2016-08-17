@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 class BinaryMerge extends DTask<BinaryMerge> {
-  public boolean BADGUY = false;
+  public volatile boolean BADGUY = false;
   long _numRowsInResult=0;  // returned to caller, so not transient
   int _chunkSizes[]; // TODO:  only _chunkSizes.length is needed by caller, so return that length only
   double _timings[];
@@ -352,6 +352,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
           // assert val >= prevVal;
           if (val == -997) {
             BADGUY = true;
+            System.out.println("bad guy");
             bw.write("Seen value -997. Now asserting something false. leftMSB="+_leftSB._msb+" riteMSB="+_riteSB._msb+"\n");
             System.out.println("======================  " +this + " " + H2O.SELF.toString() + "========================");
             bw.flush();
