@@ -2344,6 +2344,169 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
   }
 }
 
+#' Plot Variable Importances
+#'
+# Plot a trained model's variable importances.
+#'
+#' @param model A trained model (accepts a trained random forest, GBM,
+#' or deep learning model, will use \code{\link{h2o.std_coef_plot}}
+#' for a trained GLM
+#' @param num_of_features The number of features to be shown in the plot
+#' @seealso \code{\link{h2o.std_coef_plot}} for GLM.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' hex <- h2o.importFile(prosPath)
+#' hex[,2] <- as.factor(hex[,2])
+#' model <- h2o.gbm(x = 3:9, y = 2, training_frame = hex, distribution = "bernoulli")
+#' h2o.varimp_plot(model)
+#'
+#' # for deep learning set the variable_importance parameter to TRUE
+#' iris.hex <- as.h2o(iris)
+#' iris.dl <- h2o.deeplearning(x = 1:4, y = 5, training_frame = iris.hex,
+#' variable_importances = TRUE)
+#' h2o.varimp_plot(iris.dl)
+#' }
+#' @export
+h2o.varimp_plot <- function(model, num_of_features = NULL){
+  # if glm use h2o.std_coef_plot() instead to get std. coef. magnitudes
+  if(model@algorithm[1] == 'glm') {h2o.std_coef_plot(model, num_of_features = num_of_features )}
+  else{
+  # store the variable importance table as vi
+  vi <- h2o.varimp(model)
+
+  # check if num_of_features was passed as an integer, otherwise use all features
+  if(is.null(num_of_features)) {num_of_features = length(vi$variable)}
+  else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
+
+  # check the model type and then update the model title
+  if(model@algorithm[1] == "deeplearning") {title = "Variable Importance: Deep Learning"}
+  else {title = paste("Variable Importance: ", model_type = toupper(model@algorithm[1]), sep="")}
+
+  # use the longest ylable to adjust margins so ylabels don't cut off long string labels
+  ylabels = vi$variable
+  ymargin <-  max(strwidth(ylabels, "inch")+0.4, na.rm = TRUE)
+  par(mai=c(1.02,ymargin,0.82,0.42))
+
+  # if num_of_features = 1, creat only one bar (adjust size to look nice)
+  if(num_of_features == 1) {
+    barplot(rev(head(vi$scaled_importance, n = num_of_features)),
+            names.arg = rev(head(vi$variable, n = num_of_features)),
+            width = 0.2,
+            space = 1,
+            horiz = TRUE, las = 2,
+            ylim=c(0 ,2),
+            xlim = c(0,1),
+            axes = TRUE,
+            col ='#1F77B4',
+            main = title)
+  }
+
+  # plot num_of_features > 1
+  else if (num_of_features > 1) {
+    barplot(rev(head(vi$scaled_importance, n = num_of_features)),
+            names.arg = rev(head(vi$variable, n = num_of_features)),
+            space = 1,las = 2,
+            horiz = TRUE,
+            col ='#1F77B4', # blue
+            main = title)
+  }
+
+  }
+}
+  
+#' Plot Standardized Coefficient Magnitudes
+#'
+#' Plot a GLM model's standardized coefficient magnitudes.
+#'
+#' @param model A trained generalized linear model
+#' @param num_of_features The number of features to be shown in the plot
+#' @seealso \code{\link{h2o.varimp_plot}} for variable importances plot of
+#'          random forest, GBM, deep learning.
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h2o.init()
+#'
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.importFile(prosPath)
+#' prostate.hex[,2] <- as.factor(prostate.hex[,2])
+#' prostate.glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#'                          training_frame = prostate.hex, family = "binomial",
+#'                          nfolds = 0, alpha = 0.5, lambda_search = FALSE)
+#' h2o.std_coef_plot(prostate.glm)
+#' }
+#' @export
+h2o.std_coef_plot <- function(model, num_of_features = NULL){
+  # check that the model is a glm
+  if(model@algorithm[1] != "glm") stop("Warning: model must be a GLM")
+
+  # get the coefficients table
+  coeff_table_complete <- model@model$coefficients_table
+  # remove the intercept row from the complete coeff_table_complete
+  coeff_table <- coeff_table_complete[coeff_table_complete$names != "Intercept",]
+  # order the coeffcients table by the absolute value of the standardized_coefficients
+  sorted_table <- coeff_table[order(abs(coeff_table$standardized_coefficients)),]
+
+  # get a vector of normalized coefs. and abs norm coefs., and the corresponding labels
+  norm_coef <- sorted_table$standardized_coefficients
+  sort_norm <- abs(sorted_table$standardized_coefficients)
+  labels <- sorted_table$names
+
+  # check if num_of_features was passed as an integer, otherwise use all features
+  if(is.null(num_of_features)) {num_of_features = length(norm_coef)}
+  else if ((num_of_features != round(num_of_features)) || (num_of_features <= 0)) stop("num_of_features must be an integer greater than 0")
+
+  # initialize a vector of color codes, based on norm_coef values
+  color_code <- c()
+  for(element in norm_coef)
+  {if(element >= 0) color_code <- append(color_code, "#1F77B4")  # blue
+  else color_code <- append(color_code, '#FF7F0E')} # orange
+
+  # get the color sign, needed for the legend
+  color_sign <- c()
+  for(element in norm_coef)
+  {if(element >= 0) color_sign <- append(color_sign, "Positive")  # blue
+  else color_sign <- append(color_sign, 'Negative')} # orange
+
+  # use the longest ylable to adjust margins so ylabels don't cut off long string labels
+  ylabels = labels
+  ymargin <-  max(strwidth(ylabels, "inch")+0.4, na.rm = TRUE)
+  par(mai=c(1.02,ymargin,0.82,0.42))
+
+  # check if num_of_features = 1 and plot only one bar
+  if(num_of_features == 1) {
+    barplot(rev(sort_norm)[num_of_features],
+            names.arg = rev(labels)[num_of_features],
+            width = 0.2,
+            space = 1,
+            horiz = TRUE, las = 1,
+            ylim=c(0 ,2),
+            xlim = c(0,1),
+            col = rev(color_code)[num_of_features],
+            main = "Standardized Coef. Magnitudes")
+  }
+
+  # create horizontal barplot for one or more features
+  else {
+    barplot(tail(sort_norm, n = num_of_features),
+        names.arg = tail(labels, n = num_of_features),
+        legend.text = TRUE,
+        space = 1,
+        horiz = TRUE, las = 1,
+        col = tail(color_code, n = num_of_features),
+        xlim = c(0,1),
+        main = "Standardized Coef. Magnitudes")
+  }
+
+  # add legend, that adapts if one to all bars are plotted
+  legend('bottomright', legend = unique(tail(color_sign, n = num_of_features)),
+  col = unique(tail(color_code, n = num_of_features)), pch = 20)
+
+}
+
 #' @export
 plot.H2OBinomialMetrics <- function(x, type = "roc", main, ...) {
   # TODO: add more types (i.e. cutoffs)
