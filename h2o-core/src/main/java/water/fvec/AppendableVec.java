@@ -79,19 +79,26 @@ public class AppendableVec extends Vec {
 
   public Vec layout_and_close(Futures fs) { return close(compute_rowLayout(),fs); }
 
+  private static int findLastNZ( long[] espc ) {
+    int i = espc.length-1;
+    while( i >= 0 && espc[i]==0 ) i--;
+    return i+1;
+  }
   public int compute_rowLayout() {
-    int nchunk = _tmp_espc.length;
-    while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 )
-      nchunk--;
+    // Compute #chunks; use existing #chunks, if any, else use non-zero row counts in _tmp_espc
+    int len = ESPC.espc_len(this);
+    int nchunk = len == -1 ? findLastNZ(_tmp_espc) : len-1;
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     long espc[] = new long[nchunk+1]; // Shorter array
     long x=0;                   // Total row count so far
     for( int i=0; i<nchunk; i++ ) {
       espc[i] = x;              // Start elem# for chunk i
-      x += _tmp_espc[i];        // Raise total elem count
+      x += i<_tmp_espc.length ? _tmp_espc[i] : 0; // Raise total elem count
     }
     espc[nchunk]=x;             // Total element count in last
+    for( int i=nchunk; i<_tmp_espc.length; i++ )
+      assert _tmp_espc[i]==0;
     return ESPC.rowLayout(_key,espc);
   }
 
@@ -99,13 +106,11 @@ public class AppendableVec extends Vec {
   // "Close" out a NEW vector - rewrite it to a plain Vec that supports random
   // reads, plus computes rows-per-chunk, min/max/mean, etc.
   public Vec close(int rowLayout, Futures fs) {
-    // Compute #chunks
-    int nchunk = _tmp_espc.length;
-    DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
-    while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 ) {
-      nchunk--;
-      DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
-    }
+    // Compute #chunks; use existing #chunks, if any, else use non-zero row counts in _tmp_espc
+    int len = ESPC.espc_len(this);
+    int nchunk = len==-1 ? findLastNZ(_tmp_espc) : len-1;
+    for( int i=nchunk; i<_tmp_espc.length; i++ )
+      DKV.remove(chunkKey(i),fs); // remove potential trailing key
 
     // Replacement plain Vec for AppendableVec.
     Vec vec = new Vec(_key, rowLayout, domain(), _type);
