@@ -81,13 +81,13 @@ public class AppendableVec extends Vec {
 
   private static int findLastNZ( long[] espc ) {
     int i = espc.length-1;
-    while( i >= 0 && espc[i]==0 ) i--;
+    while( i > 0 && espc[i]==0 ) i--;
     return i+1;
   }
   public int compute_rowLayout() {
     // Compute #chunks; use existing #chunks, if any, else use non-zero row counts in _tmp_espc
-    int len = ESPC.espc_len(this);
-    int nchunk = len == -1 ? findLastNZ(_tmp_espc) : len-1;
+    final int len = ESPC.espc_len(this);
+    final int nchunk = len == -1 ? findLastNZ(_tmp_espc) : len-1;
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     long espc[] = new long[nchunk+1]; // Shorter array
