@@ -30,30 +30,30 @@ def varimp_plot_test():
   cars_rf.train(x=predictors, y=response_col, training_frame=cars_train, validation_frame=cars_valid)
 
   #Plot DRF Variable Importances, check that num_of_features accepts input
-  cars_rf.varimp_plot()
-  cars_rf.varimp_plot(num_of_features=2)
+  cars_rf.varimp_plot(server=True)
+  cars_rf.varimp_plot(num_of_features=2, server=True)
 
   # Build and train a GBM model
   cars_gbm = H2OGradientBoostingEstimator()
   cars_gbm.train(x=predictors, y=response_col, training_frame=cars_train, validation_frame=cars_valid)
 
   # Plot GBM Variable Importances
-  cars_gbm.varimp_plot()
-  cars_gbm.varimp_plot(num_of_features=2)
+  cars_gbm.varimp_plot(server=True)
+  cars_gbm.varimp_plot(num_of_features=2, server=True)
 
   # Build and train a Deep Learning model
   cars_dl = H2ODeepLearningEstimator(variable_importances=True)
   cars_dl.train(x=predictors, y=response_col, training_frame=cars_train, validation_frame=cars_valid)
 
   # Plot Deep Learning Variable Importances
-  cars_dl.varimp_plot()
-  cars_dl.varimp_plot(num_of_features=2)
+  cars_dl.varimp_plot(server=True)
+  cars_dl.varimp_plot(num_of_features=2, server=True)
 
   # check that varimp_plot() uses std_coef_plot() for a glm
   cars_glm = H2OGeneralizedLinearEstimator()
   cars_glm.train(x=predictors, y=response_col, training_frame=cars_train, validation_frame=cars_valid)
-  cars_glm.varimp_plot()
-  cars_glm.varimp_plot(num_of_features=2)
+  cars_glm.varimp_plot(server=True)
+  cars_glm.varimp_plot(num_of_features=2, server=True)
 
 
 if __name__ == "__main__":
