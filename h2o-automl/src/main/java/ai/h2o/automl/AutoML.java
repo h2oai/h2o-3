@@ -9,7 +9,7 @@ import water.api.schemas3.KeyV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
-import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -258,7 +258,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   private class AutoMLDoneException extends H2OAbstractRuntimeException {
     public AutoMLDoneException() { this("done","done"); }
     public AutoMLDoneException(String msg, String dev_msg) {
-      super(msg, dev_msg, new IcedHashMap.IcedHashMapStringObject());
+      super(msg, dev_msg, new IcedHashMapGeneric.IcedHashMapStringObject());
     }
   }
 }
