@@ -7,6 +7,7 @@ Binomial model.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.typechecks import assert_is_type
 from .model_base import ModelBase
 
 
@@ -612,7 +613,7 @@ class H2OBinomialModel(ModelBase):
         for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric(metric, thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
-    def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
+    def plot(self, timestep="AUTO", metric="AUTO", server=False, **kwargs):
         """Plots training set (and validation set if available) scoring history for an
         H2OBinomialModel. The timestep and metric arguments are restricted to what is
         available in its scoring history.
@@ -625,15 +626,11 @@ class H2OBinomialModel(ModelBase):
           metric : str
             A unit of measurement for the y-axis.
         """
-
+        assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse")
         if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
             if metric == "AUTO":
                 metric = "logloss"
-            elif metric not in ("logloss", "auc", "classification_error", "rmse"):
-                raise ValueError(
-                    "metric for H2OBinomialModel must be one of: AUTO, logloss, auc, classification_error, rmse")
-
-        self._plot(timestep=timestep, metric=metric, **kwargs)
+        self._plot(timestep=timestep, metric=metric, server=server)
 
     def roc(self, train=False, valid=False, xval=False):
         """Return the coordinates of the ROC curve for a given set of data, as a two-tuple

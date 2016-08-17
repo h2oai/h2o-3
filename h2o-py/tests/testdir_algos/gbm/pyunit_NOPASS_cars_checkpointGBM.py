@@ -178,8 +178,8 @@ def cars_checkpoint():
         assert model2.logloss(valid=True)==model4.logloss(valid=True), "Expected Model 2 Log Loss: {0} to be the same as Model 4 Log Loss: {1}".format(model2.logloss(valid=True), model4.logloss(valid=True))
         #assert model3.logloss(valid=True)!=model4.logloss(valid=True), "Expected Model 3 Log Loss: {0} to be different from Model 4 Log Loss: {1}".format(model2.logloss(valid=True), model4.logloss(valid=True))
 
-        assert model2.giniCoef(valid=True)==model4.giniCoef(valid=True), "Expected Model 2 Gini Coef {0} to be the same as Model 4 Gini Coef: {1}".format(model2.giniCoef(valid=True), model4.giniCoef(valid=True))
-        #assert model3.giniCoef(valid=True)!=model4.giniCoef(valid=True), "Expected Model 3 Gini Coef: {0} to be different from Model 4 Gini Coef: {1}".format(model2.giniCoef(valid=True), model4.giniCoef(valid=True))
+        assert model2.gini(valid=True)==model4.gini(valid=True), "Expected Model 2 Gini Coef {0} to be the same as Model 4 Gini Coef: {1}".format(model2.gini(valid=True), model4.gini(valid=True))
+        #assert model3.gini(valid=True)!=model4.gini(valid=True), "Expected Model 3 Gini Coef: {0} to be different from Model 4 Gini Coef: {1}".format(model2.gini(valid=True), model4.gini(valid=True))
 
     else:
         assert isinstance(model2,type(model4))
