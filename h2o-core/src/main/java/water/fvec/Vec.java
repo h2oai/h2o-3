@@ -305,7 +305,6 @@ public class Vec extends Keyed<Vec> {
     _domain = domain;
     _type = type;
   }
-  public void copyMeta( Vec src, Futures fs ) { setMeta(src._type,src._domain); DKV.put(this,fs); }
 
   // ======= Create zero/constant Vecs ======
   /** Make a new zero-filled vec **/
@@ -370,8 +369,8 @@ public class Vec extends Keyed<Vec> {
     for( int i=1; i<nchunks; i++ )
       espc[i] = espc[i-1]+len/nchunks;
     espc[nchunks] = len;
-    VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(0, vg, ESPC.rowLayout(vg._key, espc), T_NUM);
+    VectorGroup vg = nchunks==1 ? VectorGroup.VG_LEN1 : new VectorGroup();
+    return makeCon(0,vg,ESPC.rowLayout(vg._key,espc), T_NUM);
   }
 
   /** Make a new constant vector with the given row count.
@@ -389,8 +388,8 @@ public class Vec extends Keyed<Vec> {
     for( int i=1; i<nchunks; i++ )
       espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
-    VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(x, vg, ESPC.rowLayout(vg._key, espc), type);
+    VectorGroup vg = nchunks==1 ? VectorGroup.VG_LEN1 : new VectorGroup();
+    return makeCon(x,vg,ESPC.rowLayout(vg._key,espc), T_NUM);
   }
 
   public Vec [] makeDoubles(int n, double [] values) {
@@ -652,7 +651,7 @@ public class Vec extends Keyed<Vec> {
    *  @param rows Data
    *  @return The Vec  */
   public static Vec makeCon(Key<Vec> k, double ...rows) {
-    k = k==null?Vec.VectorGroup.VG_LEN1.addVec():k;
+    k = k==null?VectorGroup.VG_LEN1.addVec():k;
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k, T_NUM);
     NewChunk chunk = new NewChunk(avec, 0);
@@ -977,7 +976,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   /** Make a ESPC-group key.  */
-  private static Key espcKey(Key key) { 
+  private static Key<ESPC> espcKey(Key key) {
     byte [] bits = key._kb.clone();
     bits[0] = Key.GRP;
     UnsafeUtils.set4(bits, 2, -1);
@@ -986,7 +985,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   /** Make a Vector-group key.  */
-  private Key groupKey(){
+  private Key<VectorGroup> groupKey(){
     byte [] bits = _key._kb.clone();
     bits[0] = Key.GRP;
     UnsafeUtils.set4(bits, 2, -1);
@@ -999,7 +998,7 @@ public class Vec extends Keyed<Vec> {
    *  place VectorGroups are fetched.
    *  @return VectorGroup this vector belongs to */
   public final VectorGroup group() {
-    Key gKey = groupKey();
+    Key<VectorGroup> gKey = groupKey();
     Value v = DKV.get(gKey);
     // if no group exists we have to create one
     return v==null ? new VectorGroup(gKey,1) : (VectorGroup)v.get();
@@ -1353,7 +1352,7 @@ public class Vec extends Keyed<Vec> {
 
     // New empty VectorGroup (no Vecs handed out)
     public VectorGroup() { super(init_key()); _len = 0; }
-    static private Key init_key() { 
+    static private Key<VectorGroup> init_key() {
       byte[] bits = new byte[26];
       bits[0] = Key.GRP;
       bits[1] = -1;
@@ -1366,7 +1365,7 @@ public class Vec extends Keyed<Vec> {
     }
 
     // Clone an old vector group, setting a new len
-    private VectorGroup(Key key, int newlen) { super(key); _len = newlen; }
+    private VectorGroup(Key<VectorGroup> key, int newlen) { super(key); _len = newlen; }
 
     /** Returns Vec Key from Vec id#.  Does NOT allocate a Key id#
      *  @return Vec Key from Vec id# */
@@ -1463,7 +1462,12 @@ public class Vec extends Keyed<Vec> {
   // before fetching.
 
   public static class ESPC extends Keyed<ESPC> {
-    static private NonBlockingHashMap<Key,ESPC> ESPCS = new NonBlockingHashMap<>();
+    static private NonBlockingHashMap<Key<ESPC>,ESPC> ESPCS = new NonBlockingHashMap<>();
+    static {
+      // Preset VG_LEN1 ESPC to 1 Chunk.
+      Key<ESPC> evg = espcKey(VectorGroup.VG_LEN1._key);
+      ESPCS.putIfAbsent(evg, new ESPC(evg,new long[][] {{0,0}}));
+    }
 
     // Array of Row Layouts (Element Start Per Chunk) ever seen by this
     // VectorGroup.  Shared here, amongst all Vecs using the same row layout
@@ -1472,11 +1476,11 @@ public class Vec extends Keyed<Vec> {
     //
     // Element-start per chunk.  Always zero for chunk 0.  One more entry than
     // chunks, so the last entry is the total number of rows.
-    public final long[][] _espcs;
+    final long[][] _espcs;
 
-    private ESPC(Key key, long[][] espcs) { super(key); _espcs = espcs;}
+    private ESPC(Key<ESPC> key, long[][] espcs) { super(key); _espcs = espcs;}
     // Fetch from the local cache
-    private static ESPC getLocal( Key kespc ) {
+    private static ESPC getLocal( Key<ESPC> kespc ) {
       ESPC local = ESPCS.get(kespc);
       if( local != null ) return local;
       ESPCS.putIfAbsent(kespc,new ESPC(kespc,new long[0][])); // Racey, not sure if new or old is returned
@@ -1484,7 +1488,7 @@ public class Vec extends Keyed<Vec> {
     }
 
     // Fetch from remote, and unify as needed
-    private static ESPC getRemote( ESPC local, Key kespc ) {
+    private static ESPC getRemote( ESPC local, Key<ESPC> kespc ) {
       final ESPC remote = DKV.getGet(kespc);
       if( remote == null || remote == local ) return local; // No change
 
@@ -1528,7 +1532,7 @@ public class Vec extends Keyed<Vec> {
       final int r = v._rowLayout;
       if( r == -1 ) return null; // Never was any row layout
       // Check the local cache
-      final Key kespc = espcKey(v._key);
+      final Key<ESPC> kespc = espcKey(v._key);
       ESPC local = getLocal(kespc);
       if( r < local._espcs.length ) return local._espcs[r];
       // Now try to refresh the local cache from the remote cache
@@ -1537,8 +1541,19 @@ public class Vec extends Keyed<Vec> {
       throw H2O.fail("Vec "+v._key+" asked for layout "+r+", but only "+remote._espcs.length+" layouts defined");
     }
 
+    static int espc_len( Vec v ) { 
+      final Key<ESPC> kespc = espcKey(v._key);
+      ESPC local = getLocal(kespc);
+      if( local ._espcs.length > 0 ) return local ._espcs[0].length;
+      final ESPC remote = getRemote( local, kespc);
+      if( remote._espcs.length > 0 ) return remote._espcs[0].length;
+      return -1;                // No layouts; length not decided yet
+    }
+
     // Check for a prior matching ESPC
     private static int find_espc( long[] espc, long[][] espcs ) {
+      assert espcs.length==0 || espcs[0].length==espc.length 
+        : "Mismatched chunk counts; looking for a layout with "+(espc.length-1)+" chunks, in a VectorGroup using "+(espcs[0].length-1)+" chunks.";
       // Check for a local pointer-hit first:
       for( int i=0; i<espcs.length; i++ ) if( espc==espcs[i] ) return i;
       // Check for a local deep equals next:
@@ -1553,7 +1568,7 @@ public class Vec extends Keyed<Vec> {
      *  a new layout.  The expectation is that new layouts are rare: once per
      *  parse, and perhaps from filtering MRTasks, or data-shuffling.  */
     public static int rowLayout( Key key, final long[] espc ) {
-      Key kespc = espcKey(key);
+      Key<ESPC> kespc = espcKey(key);
       ESPC local = getLocal(kespc);
       int idx = find_espc(espc,local._espcs);
       if( idx != -1 ) return idx;
