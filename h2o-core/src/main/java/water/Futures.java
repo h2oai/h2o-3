@@ -25,18 +25,22 @@ public class Futures {
 
   private Throwable _ex;
 
-  private void checkException(Future f) {
-    assert f.isDone();
-    try{f.get();} catch(Throwable t) {if(_ex == null)_ex = t;}
+  private void waitAndCheckForException(Future f) {
+    try {
+      f.get();
+    } catch(CancellationException ex){
+      // ignore cancelled tasks
+    } catch(Throwable t) {
+      if(_ex == null) _ex = t instanceof ExecutionException?t.getCause():t;
+    }
   }
   /** Some Future task which needs to complete before this Futures completes */
   synchronized public Futures add( Future f ) {
     if( f == null ) return this;
     if(f.isDone()) {
-      checkException(f);
+      waitAndCheckForException(f);
       return this;
     }
-
     // NPE here if this Futures has already been added to some other Futures
     // list, and should be added to again.
     if( _pending_cnt == _pending.length ) {
@@ -55,7 +59,7 @@ public class Futures {
   synchronized private void cleanCompleted(){
     for( int i=0; i<_pending_cnt; i++ )
       if( _pending[i].isDone() ) {// Done?
-        checkException(_pending[i]);
+        waitAndCheckForException(_pending[i]);
         // Do cheap array compression to remove from list
         _pending[i--] = _pending[--_pending_cnt];
       }
@@ -72,21 +76,15 @@ public class Futures {
 
   /** Block until all pending futures have completed or canceled.  */
   public final void blockForPending() {
-    try {
-      // Block until the last Future finishes.
-      while( true ) {
-        Future f;
-        synchronized(this) {
-          if(_ex != null) throw new RuntimeException(_ex);
-          if( _pending_cnt == 0 ) return;
-          f = _pending[--_pending_cnt];
-        }
-        try { f.get(); } 
-        catch( CancellationException e ) { /*Ignore canceled tasks*/ }
+    // Block until the last Future finishes.
+    while (true) {
+      Future f;
+      synchronized (this) {
+        if (_pending_cnt == 0) break;
+        f = _pending[--_pending_cnt];
       }
-    } catch( ExecutionException e ) {
-      // Replace ExEx with RunEx
-      throw Log.throwErr(new RuntimeException(e.getCause()));
-    } catch( InterruptedException e ) { throw Log.throwErr(e); }
+      waitAndCheckForException(f);
+    }
+    if (_ex != null) throw new RuntimeException(_ex);
   }
 }
