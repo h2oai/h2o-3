@@ -23,17 +23,38 @@ public class Futures {
   Future[] _pending = new Future[1];
   int _pending_cnt;
 
+  private Throwable _ex;
+
+  private void checkException(Future f) {
+    assert f.isDone();
+    try{f.get();} catch(Throwable t) {if(_ex == null)_ex = t;}
+  }
   /** Some Future task which needs to complete before this Futures completes */
   synchronized public Futures add( Future f ) {
     if( f == null ) return this;
+    if(f.isDone()) {
+      checkException(f);
+      return this;
+    }
+
     // NPE here if this Futures has already been added to some other Futures
     // list, and should be added to again.
     if( _pending_cnt == _pending.length ) {
+      cleanCompleted();
       if( _pending_cnt == _pending.length )
         _pending = Arrays.copyOf(_pending,_pending_cnt<<1);
     }
     _pending[_pending_cnt++] = f;
     return this;
+  }
+
+  synchronized private void cleanCompleted(){
+    for( int i=0; i<_pending_cnt; i++ )
+      if( _pending[i].isDone() ) {// Done?
+        checkException(_pending[i]);
+        // Do cheap array compression to remove from list
+        _pending[i--] = _pending[--_pending_cnt];
+      }
   }
 
   /** Merge pending-task lists (often as part of doing a 'reduce' step) */
@@ -52,6 +73,7 @@ public class Futures {
       while( true ) {
         Future f;
         synchronized(this) {
+          if(_ex != null) throw new RuntimeException(_ex);
           if( _pending_cnt == 0 ) return;
           f = _pending[--_pending_cnt];
         }
