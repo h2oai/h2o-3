@@ -10,11 +10,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import imp
 
 from h2o.model.confusion_matrix import ConfusionMatrix
+from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, numeric
 
 
-class MetricsBase(object):
+class MetricsBase(backwards_compatible()):
     """
     A parent class to house common metrics available for the various Metrics types.
 
@@ -22,11 +23,13 @@ class MetricsBase(object):
     """
 
     def __init__(self, metric_json, on=None, algo=""):
+        super(MetricsBase, self).__init__()
         # Yep, it's messed up...
         if isinstance(metric_json, MetricsBase): metric_json = metric_json._metric_json
         self._metric_json = metric_json
-        self._on_train = False  # train and valid and xval are not mutually exclusive -- could have a test. train and
-                                # valid only make sense at model build time.
+        # train and valid and xval are not mutually exclusive -- could have a test. train and
+        # valid only make sense at model build time.
+        self._on_train = False
         self._on_valid = False
         self._on_xval = False
         self._algo = algo
@@ -111,7 +114,7 @@ class MetricsBase(object):
             print("AIC: " + str(self.aic()))
         if metric_type in types_w_bin:
             print("AUC: " + str(self.auc()))
-            print("Gini: " + str(self.giniCoef()))
+            print("Gini: " + str(self.gini()))
             self.confusion_matrix().show()
             self._metric_json["max_criteria_and_metric_scores"].show()
             if self.gains_lift():
@@ -166,10 +169,8 @@ class MetricsBase(object):
         """
         return self._metric_json['AIC']
 
-    def giniCoef(self):
-        """
-        :return: Retrieve the Gini coefficeint for this set of metrics.
-        """
+    def gini(self):
+        """Gini coefficient."""
         return self._metric_json['Gini']
 
     def mse(self):
@@ -230,9 +231,15 @@ class MetricsBase(object):
 
     def mean_per_class_error(self):
         """
-        Retrieve the mean per class error
+        Retrieve the mean per class error.
         """
         return self._metric_json['mean_per_class_error']
+
+    # Deprecated functions; left here for backward compatibility
+    _bcim = {
+        "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
+    }
+
 
 
 class H2ORegressionModelMetrics(MetricsBase):
@@ -441,12 +448,12 @@ class H2OBinomialModelMetrics(MetricsBase):
     def metric(self, metric, thresholds=None):
         """
         :param metric: The desired metric
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then
+            the thresholds in this set of metrics will be used.
         :return: The set of metrics for the list of thresholds
         """
+        assert_is_type(thresholds, None, [numeric])
         if not thresholds: thresholds = [self.find_threshold_by_max_metric(metric)]
-        if not isinstance(thresholds, list):
-            raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         midx = thresh2d.col_header.index(metric)
         metrics = []
@@ -456,25 +463,25 @@ class H2OBinomialModelMetrics(MetricsBase):
             metrics.append([t, row[midx]])
         return metrics
 
-    def plot(self, type="roc", **kwargs):
+    def plot(self, type="roc", server=False):
         """
         Produce the desired metric plot
         :param type: the type of metric plot (currently, only ROC supported)
         :param show: if False, the plot is not shown. matplotlib show method is blocking.
         :return: None
         """
+        # TODO: add more types (i.e. cutoffs)
+        assert_is_type(type, "roc")
         # check for matplotlib. exit if absent.
         try:
             imp.find_module('matplotlib')
             import matplotlib
-            if 'server' in list(kwargs.keys()) and kwargs['server']: matplotlib.use('Agg', warn=False)
+            if server: matplotlib.use('Agg', warn=False)
             import matplotlib.pyplot as plt
         except ImportError:
             print("matplotlib is required for this function!")
             return
 
-        # TODO: add more types (i.e. cutoffs)
-        if type not in ["roc"]: raise ValueError("type {} is not supported".format(type))
         if type == "roc":
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
@@ -482,7 +489,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             plt.text(0.5, 0.5, r'AUC={0:.4f}'.format(self._metric_json["AUC"]))
             plt.plot(self.fprs, self.tprs, 'b--')
             plt.axis([0, 1, 0, 1])
-            if not ('server' in list(kwargs.keys()) and kwargs['server']): plt.show()
+            if not server: plt.show()
 
     @property
     def fprs(self):
@@ -491,7 +498,6 @@ class H2OBinomialModelMetrics(MetricsBase):
 
         :return: a list of false positive rates.
         """
-
         fpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("fpr")
         fprs = [x[fpr_idx] for x in self._metric_json["thresholds_and_metric_scores"].cell_values]
         return fprs
@@ -619,6 +625,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         if 'gains_lift_table' in self._metric_json:
             return self._metric_json['gains_lift_table']
         return None
+
 
 
 class H2OAutoEncoderModelMetrics(MetricsBase):
