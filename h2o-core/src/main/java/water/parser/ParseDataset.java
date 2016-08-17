@@ -241,7 +241,7 @@ public final class ParseDataset {
     if( fkeys.length == 0) { job.stop();  return pds;  }
 
     job.update(0, "Ingesting files.");
-    VectorGroup vg = getByteVec(fkeys[0]).group();
+    VectorGroup vg = fkeys.length > 1 ? new VectorGroup() : getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = pds._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,deleteOnDone);
     mfpt.doAll(fkeys);
     Log.trace("Done ingesting files.");
@@ -949,10 +949,9 @@ public final class ParseDataset {
         if( _jobKey.get().stop_requested() ) throw new Job.JobCancelledException();
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
-          if (_setup._column_types == null) // SVMLight
-            avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, Vec.T_NUM, _startChunkIdx);
-          else
-            avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, _setup._column_types[i], _startChunkIdx);
+          avs[i] = new AppendableVec(_vg.vecKey(_vecIdStart + i), _espc, 
+                                     _setup._column_types == null ? Vec.T_NUM : _setup._column_types[i], // SVMLight
+                                     _startChunkIdx);
         // Break out the input & output vectors before the parse loop
         FVecParseReader din = new FVecParseReader(in);
         FVecParseWriter dout;

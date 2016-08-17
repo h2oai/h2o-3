@@ -122,7 +122,7 @@ public class AstRBind extends AstPrimitive {
     }
 
     // Now make Keys for the new Vecs
-    Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
+    Key<Vec>[] keys = new Vec.VectorGroup().addVecs(fr.numCols());
     Vec[] vecs = new Vec[fr.numCols()];
     int rowLayout = Vec.ESPC.rowLayout(keys[0], espc);
     for (int i = 0; i < vecs.length; i++)
@@ -174,9 +174,7 @@ public class AstRBind extends AstPrimitive {
     }
 
     private class Callback extends H2O.H2OCallback {
-      public Callback() {
-        super(AstRBind.ParallelRbinds.this);
-      }
+      Callback() { super(AstRBind.ParallelRbinds.this); }
 
       @Override
       public void callback(H2O.H2OCountedCompleter h2OCountedCompleter) {
