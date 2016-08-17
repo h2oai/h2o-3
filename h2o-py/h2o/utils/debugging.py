@@ -301,6 +301,8 @@ def _get_args_str(func, highlight=None):
     "text, wrap_at=100, indent=4". This should usually coincide with the function's declaration (the part
     which is inside the parentheses).
     """
+    if not func: return ""
+
     def gen_args():
         args_spec = inspect.getargspec(func)
         defaults = args_spec.defaults or []

@@ -23,7 +23,7 @@ class H2OSoftError(H2OError):
 # H2OValueError
 #-----------------------------------------------------------------------------------------------------------------------
 
-class H2OValueError(H2OSoftError):
+class H2OValueError(H2OSoftError, ValueError):
     """Error indicating that wrong parameter value was passed to a function."""
 
     def __init__(self, message, var_name=None, skip_frames=0):
