@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
+import hex.util.ClusteringUtils;
 import water.api.API;
 import water.api.schemas3.ModelOutputSchemaV3;
 import water.api.schemas3.ModelSchemaV3;
@@ -19,9 +20,9 @@ public class KMeansModelV3 extends ModelSchemaV3<KMeansModel, KMeansModelV3, KMe
 
     @Override public KMeansModelOutputV3 fillFromImpl(KMeansModel.KMeansOutput impl) {
       KMeansModelOutputV3 kmv3 = super.fillFromImpl(impl);
-      kmv3.centers = new TwoDimTableV3().fillFromImpl(KMeans.createCenterTable(impl, false));
+      kmv3.centers = new TwoDimTableV3().fillFromImpl(ClusteringUtils.createCenterTable(impl, false));
       if (impl._centers_std_raw != null)
-        kmv3.centers_std = new TwoDimTableV3().fillFromImpl(KMeans.createCenterTable(impl, true));
+        kmv3.centers_std = new TwoDimTableV3().fillFromImpl(ClusteringUtils.createCenterTable(impl, true));
       return kmv3;
     }
 
