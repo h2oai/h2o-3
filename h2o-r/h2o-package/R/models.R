@@ -1221,6 +1221,66 @@ h2o.mae <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
+#'
+#' Retrieve the Root Mean Squared Log Error
+#'
+#' Retrieves the root mean squared log error (RMSLE) value from an H2O model.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training rmsle value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of rmsles are returned, where the names are "train", "valid"
+#' or "xval".
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @param train Retrieve the training rmsle
+#' @param valid  Retrieve the validation set rmsle if a validation set was passed in during model build time.
+#' @param xval Retrieve the cross-validation rmsle
+#' @examples
+#' \donttest{
+#' library(h2o)
+#'
+#' h <- h2o.init()
+#' fr <- as.h2o(iris)
+#'
+#' m <- h2o.deeplearning(x=2:5,y=1,training_frame=fr)
+#'
+#' h2o.rmsle(m)
+#' }
+#' @export
+h2o.rmsle <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+  if( is(object, "H2OModelMetrics") ) return( object@metrics$rmsle )
+  if( is(object, "H2OModel") ) {
+    model.parts <- .model.parts(object)
+    if ( !train && !valid && !xval ) {
+      metric <- model.parts$tm@metrics$rmsle
+      if ( !is.null(metric) ) return(metric)
+    }
+    v <- c()
+    v_names <- c()
+    if ( train ) {
+      v <- c(v,model.parts$tm@metrics$rmsle)
+      v_names <- c(v_names,"train")
+    }
+    if ( valid ) {
+      if( is.null(model.parts$vm) ) return(invisible(.warn.no.validation()))
+      else {
+        v <- c(v,model.parts$vm@metrics$rmsle)
+        v_names <- c(v_names,"valid")
+      }
+    }
+    if ( xval ) {
+      if( is.null(model.parts$xm) ) return(invisible(.warn.no.cross.validation()))
+      else {
+        v <- c(v,model.parts$xm@metrics$rmsle)
+        v_names <- c(v_names,"xval")
+      }
+    }
+    if ( !is.null(v) ) {
+      names(v) <- v_names
+      if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
+    }
+  }
+  warning(paste0("No rmsle for ", class(object)))
+  invisible(NULL)
+}
 
 #' Retrieve the Log Loss Value
 #'
