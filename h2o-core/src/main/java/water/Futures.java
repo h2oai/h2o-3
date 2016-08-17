@@ -26,11 +26,9 @@ public class Futures {
   /** Some Future task which needs to complete before this Futures completes */
   synchronized public Futures add( Future f ) {
     if( f == null ) return this;
-    if( f.isDone() ) return this;
     // NPE here if this Futures has already been added to some other Futures
     // list, and should be added to again.
     if( _pending_cnt == _pending.length ) {
-      cleanCompleted();
       if( _pending_cnt == _pending.length )
         _pending = Arrays.copyOf(_pending,_pending_cnt<<1);
     }
@@ -45,17 +43,6 @@ public class Futures {
     for( int i=0; i<fs._pending_cnt; i++ )
       add(fs._pending[i]); // NPE here if using a dead Future
     fs._pending = null;    // You are dead, should never be inserted into again
-  }
-
-  /** Clean out from the list any pending-tasks which are already done.  Note
-   *  that this drops the algorithm from O(n) to O(1) in practice, since mostly
-   *  things clean out as fast as new ones are added and the list never gets
-   *  very large. */
-  synchronized private void cleanCompleted() {
-    for( int i=0; i<_pending_cnt; i++ )
-      if( _pending[i].isDone() ) // Done?
-        // Do cheap array compression to remove from list
-        _pending[i--] = _pending[--_pending_cnt];
   }
 
   /** Block until all pending futures have completed or canceled.  */
