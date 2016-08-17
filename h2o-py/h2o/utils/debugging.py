@@ -279,7 +279,12 @@ def _find_function_from_code(frame, code):
             if hasattr(item, "__code__") and item.__code__ == code:
                 found = item
             elif isinstance(item, type) or isinstance(item, ModuleType):  # class / module
-                found = find_code((getattr(item, n, None) for n in dir(item)), depth + 1)
+                try:
+                    found = find_code((getattr(item, n, None) for n in dir(item)), depth + 1)
+                except Exception:
+                    # Sometimes merely getting module's attributes may cause an exception. For example :mod:`six.moves`
+                    # is such an offender...
+                    continue
             elif isinstance(item, (list, tuple, set)):
                 found = find_code(item, depth + 1)
             elif isinstance(item, dict):
