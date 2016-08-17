@@ -1466,7 +1466,10 @@ public class Vec extends Keyed<Vec> {
     static {
       // Preset VG_LEN1 ESPC to 1 Chunk.
       Key<ESPC> evg = espcKey(VectorGroup.VG_LEN1._key);
-      ESPCS.putIfAbsent(evg, new ESPC(evg,new long[][] {{0,0}}));
+      Futures fs = new Futures();
+      DKV.DputIfMatch(evg, new Value(evg,new ESPC(evg,new long[][] {{0,0}})), null, fs);
+      fs.blockForPending();
+      //ESPCS.putIfAbsent(evg, new ESPC(evg,new long[][] {{0,0}}));
     }
 
     // Array of Row Layouts (Element Start Per Chunk) ever seen by this
