@@ -48,6 +48,10 @@ public class Futures {
     return this;
   }
 
+  /** Clean out from the list any pending-tasks which are already done.  Note
+   *  that this drops the algorithm from O(n) to O(1) in practice, since mostly
+   *  things clean out as fast as new ones are added and the list never gets
+   *  very large. */
   synchronized private void cleanCompleted(){
     for( int i=0; i<_pending_cnt; i++ )
       if( _pending[i].isDone() ) {// Done?
