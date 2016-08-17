@@ -46,11 +46,13 @@ def pyunit_make_metrics():
         assert abs(m0.mse() - m1.mse()) < 1e-5
         assert abs(m0.rmse() - m1.rmse()) < 1e-5
         assert abs(m0.mean_residual_deviance() - m1.mean_residual_deviance()) < 1e-5
+        assert abs(m0.rmsle() - m1.rmsle()) < 1e-5
+
         assert abs(m2.mae() - m1.mae()) < 1e-5
         assert abs(m2.mse() - m1.mse()) < 1e-5
         assert abs(m2.rmse() - m1.rmse()) < 1e-5
         assert (abs(m1.mean_residual_deviance() - m2.mean_residual_deviance()) < 1e-7) == (distr == "gaussian")
-
+        assert abs(m2.rmsle() - m1.rmsle()) < 1e-5
 
     print("\n\n======= BINOMIAL ========\n")
     response = "CAPSULE"
