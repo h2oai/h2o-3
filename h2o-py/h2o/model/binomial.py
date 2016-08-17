@@ -12,8 +12,11 @@ from .model_base import ModelBase
 
 
 class H2OBinomialModel(ModelBase):
+    """Binomial model."""
+
     def F1(self, thresholds=None, train=False, valid=False, xval=False):
-        """Get the F1 value for a set of thresholds
+        """
+        Get the F1 value for a set of thresholds.
 
         If all are False (default), then return the training metric value.
         If more than one options is set to True, then return a dictionary of metrics where
@@ -51,15 +54,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in tm.items():
+        for k, v in viewitems(tm):
             m[k] = None if v is None else v.metric("f1", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def F2(self, thresholds=None, train=False, valid=False, xval=False):
-        """Get the F2 for a set of thresholds.
+        """
+        Get the F2 for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -81,15 +86,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("f2",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("f2", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def F0point5(self, thresholds=None, train=False, valid=False, xval=False):
-        """Get the F0.5 for a set of thresholds.
+        """
+        Get the F0.5 for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -111,16 +118,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("f0point5",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("f0point5", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def accuracy(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the accuracy for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -142,16 +150,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("accuracy",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("accuracy", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def error(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the error for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -173,17 +182,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else [[acc[0], 1 - acc[1]] for acc
-                                                                                            in v.metric("accuracy",
-                                                                                                        thresholds=thresholds)]
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else [[acc[0], 1 - acc[1]] for acc in v.metric("accuracy", thresholds=thresholds)]
         return list(m.values())[0] if len(m) == 1 else m
 
     def precision(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the precision for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -205,16 +214,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("precision",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("precision", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def tpr(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the True Positive Rate for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -236,16 +246,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("tpr",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def tnr(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the True Negative Rate for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -267,16 +278,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("tnr",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("tnr", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def fnr(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the False Negative Rates for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -298,16 +310,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("fnr",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("fnr", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def fpr(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the False Positive Rates for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -329,16 +342,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("fpr",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("fpr", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def recall(self, thresholds=None, train=False, valid=False, xval=False):
         """
-        Get the Recall (AKA True Positive Rate) for a set of thresholds.
+        Get the recall for a set of thresholds (aka True Positive Rate).
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -360,16 +374,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("tpr",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def sensitivity(self, thresholds=None, train=False, valid=False, xval=False):
         """
-        Get the sensitivity (AKA True Positive Rate or Recall) for a set of thresholds.
+        Get the sensitivity for a set of thresholds (aka True Positive Rate or Recall).
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -391,16 +406,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("tpr",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("tpr", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def fallout(self, thresholds=None, train=False, valid=False, xval=False):
         """
-        Get the Fallout (AKA False Positive Rate) for a set of thresholds.
+        Get the fallout for a set of thresholds (aka False Positive Rate).
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -422,16 +438,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("fpr",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("fpr", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def missrate(self, thresholds=None, train=False, valid=False, xval=False):
         """
-        Get the miss rate (AKA False Negative Rate) for a set of thresholds.
+        Get the miss rate for a set of thresholds (aka False Negative Rate).
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -453,16 +470,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("fnr",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("fnr", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def specificity(self, thresholds=None, train=False, valid=False, xval=False):
         """
-        Get the specificity (AKA True Negative Rate) for a set of thresholds.
+        Get the specificity for a set of thresholds (aka True Negative Rate).
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -484,16 +502,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("tnr",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("tnr", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def mcc(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the mcc for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -515,16 +534,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric("absolute_mcc",
-                                                                                                    thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric("absolute_mcc", thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def max_per_class_error(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the max per class error for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -546,17 +566,18 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else [[mpca[0], 1 - mpca[1]] for
-                                                                                            mpca in v.metric(
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else [[mpca[0], 1 - mpca[1]] for mpca in v.metric(
                 "min_per_class_accuracy", thresholds=thresholds)]
         return list(m.values())[0] if len(m) == 1 else m
 
     def mean_per_class_error(self, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the mean per class error for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -578,17 +599,20 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else [[mpca[0], 1 - mpca[1]] for
-                                                                                            mpca in v.metric(
-                "mean_per_class_accuracy", thresholds=thresholds)]
+        for k, v in viewitems(tm):
+            if v is None:
+                m[k] = None
+            else:
+                m[k] = [[mpca[0], 1 - mpca[1]] for mpca in v.metric("mean_per_class_accuracy", thresholds=thresholds)]
         return list(m.values())[0] if len(m) == 1 else m
 
     def metric(self, metric, thresholds=None, train=False, valid=False, xval=False):
         """
         Get the metric value for a set of thresholds.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -610,13 +634,15 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.metric(metric, thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.metric(metric, thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def plot(self, timestep="AUTO", metric="AUTO", server=False, **kwargs):
-        """Plots training set (and validation set if available) scoring history for an
-        H2OBinomialModel. The timestep and metric arguments are restricted to what is
-        available in its scoring history.
+        """
+        Plot training set (and validation set if available) scoring history for an H2OBinomialModel.
+
+        The timestep and metric arguments are restricted to what is available in its scoring history.
 
         Parameters
         ----------
@@ -633,8 +659,10 @@ class H2OBinomialModel(ModelBase):
         self._plot(timestep=timestep, metric=metric, server=server)
 
     def roc(self, train=False, valid=False, xval=False):
-        """Return the coordinates of the ROC curve for a given set of data, as a two-tuple
-        containing the false positive rates as a list and true positive rates as a list.
+        """
+        Return the coordinates of the ROC curve for a given set of data.
+
+        The coordinates are two-tuples containing the false positive rates as a list and true positive rates as a list.
         If all are False (default), then return is the training data. If more than one ROC
         curve is requested, the data is returned as a dictionary of two-tuples.
 
@@ -655,14 +683,16 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())):
+        for k, v in viewitems(tm):
+
             if v is not None:
                 m[k] = (v.fprs, v.tprs)
         return list(m.values())[0] if len(m) == 1 else m
 
     def gains_lift(self, train=False, valid=False, xval=False):
         """
-        Get the Gains/Lift table for the specified metrics
+        Get the Gains/Lift table for the specified metrics.
+
         If all are False (default), then return the training metric Gains/Lift table.
         If more than one options is set to True, then return a dictionary of metrics where t
         he keys are "train", "valid", and "xval"
@@ -684,12 +714,14 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.gains_lift()
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.gains_lift()
         return list(m.values())[0] if len(m) == 1 else m
 
     def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False, xval=False):
         """
-        Get the confusion matrix for the specified metrics/thresholds
+        Get the confusion matrix for the specified metrics/thresholds.
+
         If all are False (default), then return the training metric value.
         If more than one options is set to True, then return a dictionary of metrics where the
         keys are "train", "valid", and "xval"
@@ -718,14 +750,16 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.confusion_matrix(
-            metrics=metrics, thresholds=thresholds)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.confusion_matrix(metrics=metrics, thresholds=thresholds)
         return list(m.values())[0] if len(m) == 1 else m
 
     def find_threshold_by_max_metric(self, metric, train=False, valid=False, xval=False):
-        """If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        """
+        If all are False (default), then return the training metric value.
+
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -744,16 +778,17 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[
-            k] = None if v is None else v.find_threshold_by_max_metric(metric)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.find_threshold_by_max_metric(metric)
         return list(m.values())[0] if len(m) == 1 else m
 
     def find_idx_by_threshold(self, threshold, train=False, valid=False, xval=False):
         """
         Retrieve the index in this metric's threshold list at which the given threshold is located.
+
         If all are False (default), then return the training metric value.
-        If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
-        and "xval"
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval"
 
         Parameters
         ----------
@@ -772,6 +807,6 @@ class H2OBinomialModel(ModelBase):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in zip(list(tm.keys()), list(tm.values())): m[k] = None if v is None else v.find_idx_by_threshold(
-            threshold)
+        for k, v in viewitems(tm):
+            m[k] = None if v is None else v.find_idx_by_threshold(threshold)
         return list(m.values())[0] if len(m) == 1 else m
