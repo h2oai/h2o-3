@@ -77,6 +77,12 @@ if True:
     from future.builtins.iterators import (range, filter, map, zip)
     from future.utils import (viewitems, viewkeys, viewvalues)
 
+    def next_method(gen):
+        """Return the 'next' method of the given generator."""
+        if PY2:
+            return gen.next
+        else:
+            return gen.__next__
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Disabled functions

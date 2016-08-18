@@ -16,19 +16,20 @@ from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *
+from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.shared_utils import quoted
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import is_type
+from h2o.utils.typechecks import assert_is_type, is_type
 
 
-class H2OGridSearch(object):
+class H2OGridSearch(backwards_compatible()):
     def __init__(self, model, hyper_params, grid_id=None, search_criteria=None):
         """
         Grid Search of a Hyper-Parameter Space for a Model
 
         Parameters
         ----------
-        model : H2OEstimator
+        model : H2OEstimator, type
           The type of model to be explored initialized with optional parameters that will be
           unchanged across explored models.
         hyper_params: dict
@@ -44,8 +45,10 @@ class H2OGridSearch(object):
           of your hyperparameters.  RandomDiscrete should usually be combined with at least one early
           stopping criterion, max_models and/or max_runtime_secs, e.g.
           search_criteria = {strategy: 'RandomDiscrete', max_models: 42, max_runtime_secs: 28800} or
-          search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'AUTO', stopping_tolerance: 0.001, stopping_rounds: 10} or
-          search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'misclassification', stopping_tolerance: 0.00001, stopping_rounds: 5}.
+          search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'AUTO', stopping_tolerance: 0.001,
+                             stopping_rounds: 10} or
+          search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'misclassification',
+                             stopping_tolerance: 0.00001, stopping_rounds: 5}.
 
         Returns
         -------
@@ -61,10 +64,16 @@ class H2OGridSearch(object):
           >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
           >>> gs.show()
         """
+        super(H2OGridSearch, self).__init__()
+        assert_is_type(model, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
+        assert_is_type(hyper_params, dict)
+        assert_is_type(grid_id, None, str)
+        assert_is_type(search_criteria, None, dict)
+        if not is_type(model, H2OEstimator): model = model()
         self._id = grid_id
-        self.model = model() if model.__class__.__name__ == 'type' else model  # H2O Estimator child class
+        self.model = model
         self.hyper_params = dict(hyper_params)
-        self.search_criteria = None if None == search_criteria else dict(search_criteria)
+        self.search_criteria = None if search_criteria is None else dict(search_criteria)
         self._grid_json = None
         self.models = None  # list of H2O Estimator instances
         self._parms = {}  # internal, for object recycle #
@@ -74,18 +83,14 @@ class H2OGridSearch(object):
 
     @property
     def grid_id(self):
-        """
-        Returns
-        -------
-          A key that identifies this grid search object in H2O.
-        """
+        """A key that identifies this grid search object in H2O."""
         return self._id
 
     @grid_id.setter
     def grid_id(self, value):
         oldname = self.grid_id
         self._id = value
-        h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, value))
+        h2o.rapids('(rename "{}" "{}")'.format(oldname, value))
 
     @property
     def model_ids(self):
@@ -97,19 +102,19 @@ class H2OGridSearch(object):
 
     @property
     def failed_params(self):
-        return self._grid_json["failed_params"] if self._grid_json["failed_params"] else None
+        return self._grid_json.get("failed_params", None)
 
     @property
     def failure_details(self):
-        return self._grid_json['failure_details'] if self._grid_json['failure_details'] else None
+        return self._grid_json.get("failure_details", None)
 
     @property
     def failure_stack_traces(self):
-        return self._grid_json['failure_stack_traces'] if self._grid_json['failure_stack_traces'] else None
+        return self._grid_json.get("failure_stack_traces", None)
 
     @property
     def failed_raw_params(self):
-        return self._grid_json['failed_raw_params'] if self._grid_json['failed_raw_params'] else None
+        return self._grid_json.get("failed_raw_params", None)
 
     def start(self, x, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
               validation_frame=None, **params):
@@ -474,8 +479,10 @@ class H2OGridSearch(object):
         """
         Retreive the residual degress of freedom if this model has the attribute, or None otherwise.
 
-        :param train: Get the residual dof for the training set. If both train and valid are False, then train is selected by default.
-        :param valid: Get the residual dof for the validation set. If both train and valid are True, then train is selected by default.
+        :param train: Get the residual dof for the training set. If both train and valid are False, then
+            train is selected by default.
+        :param valid: Get the residual dof for the validation set. If both train and valid are True, then
+            train is selected by default.
         :return: Return the residual dof, or None if it is not present.
         """
         return {model.model_id: model.residual_degrees_of_freedom(train, valid, xval) for model in self.models}
@@ -484,8 +491,10 @@ class H2OGridSearch(object):
         """
         Retreive the null deviance if this model has the attribute, or None otherwise.
 
-        :param:  train Get the null deviance for the training set. If both train and valid are False, then train is selected by default.
-        :param:  valid Get the null deviance for the validation set. If both train and valid are True, then train is selected by default.
+        :param:  train Get the null deviance for the training set. If both train and valid are False, then
+            train is selected by default.
+        :param:  valid Get the null deviance for the validation set. If both train and valid are True, then
+            train is selected by default.
         :return: Return the null deviance, or None if it is not present.
         """
         return {model.model_id: model.null_deviance(train, valid, xval) for model in self.models}
@@ -494,8 +503,10 @@ class H2OGridSearch(object):
         """
         Retreive the null degress of freedom if this model has the attribute, or None otherwise.
 
-        :param train: Get the null dof for the training set. If both train and valid are False, then train is selected by default.
-        :param valid: Get the null dof for the validation set. If both train and valid are True, then train is selected by default.
+        :param train: Get the null dof for the training set. If both train and valid are False, then train is
+            selected by default.
+        :param valid: Get the null dof for the validation set. If both train and valid are True, then train is
+            selected by default.
         :return: Return the null dof, or None if it is not present.
         """
         return {model.model_id: model.null_degrees_of_freedom(train, valid, xval) for model in self.models}
@@ -610,9 +621,10 @@ class H2OGridSearch(object):
         """
         return {model.model_id: model.aic(train, valid, xval) for model in self.models}
 
-    def giniCoef(self, train=False, valid=False, xval=False):
+    def gini(self, train=False, valid=False, xval=False):
         """
         Get the Gini Coefficient(s).
+
         If all are False (default), then return the training metric value.
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train", "valid",
         and "xval"
@@ -622,7 +634,7 @@ class H2OGridSearch(object):
         :param xval:  If xval is True, then return the Gini Coefficient value for the cross validation data.
         :return: The Gini Coefficient for this binomial model.
         """
-        return {model.model_id: model.giniCoef(train, valid, xval) for model in self.models}
+        return {model.model_id: model.gini(train, valid, xval) for model in self.models}
 
     def sort_by(self, metric, increasing=True):
         """
@@ -657,7 +669,8 @@ class H2OGridSearch(object):
         if metric[-2] == '(': metric = metric[:-2]
         return H2OTwoDimTable(
             col_header=['Model Id', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']', metric],
-            table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=list(zip(*c_values)))
+            table_header='Grid Search Results for ' + self.model.__class__.__name__,
+            cell_values=[list(x) for x in zip(*c_values)])
 
     def get_hyperparams(self, id, display=True):
         """
@@ -782,3 +795,9 @@ class H2OGridSearch(object):
         H2OEstimator.mixin(grid, model_class)
         grid.__dict__.update(m.__dict__.copy())
         return grid
+
+
+    # Deprecated functions; left here for backward compatibility
+    _bcim = {
+        "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
+    }

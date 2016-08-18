@@ -22,7 +22,7 @@ class H2ODimReductionModel(ModelBase):
           Number of iterations (integer)
         """
         o = self._model_json["output"]
-        return o["model_summary"].cell_values[0][o["model_summary"].col_header.index('number_of_iterations')]
+        return o["model_summary"]["number_of_iterations"][0]
 
     def objective(self):
         """Get the final value of the objective function from the GLRM model.
@@ -32,7 +32,7 @@ class H2ODimReductionModel(ModelBase):
           Final objective value
         """
         o = self._model_json["output"]
-        return o["model_summary"].cell_values[0][o["model_summary"].col_header.index('final_objective_value')]
+        return o["model_summary"]["final_objective_value"][0]
 
     def final_step(self):
         """Get the final step size from the GLRM model.
@@ -42,7 +42,7 @@ class H2ODimReductionModel(ModelBase):
           Final step size
         """
         o = self._model_json["output"]
-        return o["model_summary"].cell_values[0][o["model_summary"].col_header.index('final_step_size')]
+        return o["model_summary"]["final_step_size"][0]
 
     def archetypes(self):
         """
