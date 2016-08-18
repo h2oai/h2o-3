@@ -1,23 +1,21 @@
+#!/usr/bin/env python
+# -*- encoding: utf-8 -*-
+import random
 import sys
-sys.path.insert(1,"../../")
+sys.path.insert(1, "../../")
 import h2o
 from tests import pyunit_utils
 
-
-
-import random
-
 def create_frame_test():
-    
-    
 
     # REALLY basic test TODO: add more checks
-    r = random.randint(1,1000)
-    c = random.randint(1,1000)
+    for _ in range(10):
+        r = random.randint(1, 1000)
+        c = random.randint(1, 1000)
 
-    frame = h2o.create_frame(rows=r, cols=c)
-    assert frame.nrow == r and frame.ncol == c, "Expected {0} rows and {1} cols, but got {2} rows and {3} " \
-                                                    "cols.".format(r,c,frame.nrow,frame.ncol)
+        frame = h2o.create_frame(rows=r, cols=c)
+        assert frame.nrow == r and frame.ncol == c, \
+            "Expected {0} rows and {1} cols, but got {2} rows and {3} cols.".format(r, c, frame.nrow, frame.ncol)
 
 
 
