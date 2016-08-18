@@ -138,7 +138,7 @@ class Test_gbm_grid_search:
 
         # create and clean out the sandbox directory first
         self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
-        
+
         # randomly choose which family of GBM algo to use
         self.family = self.families[random.randint(0, len(self.families)-1)]
 
@@ -181,7 +181,7 @@ class Test_gbm_grid_search:
         print("Time taken to build a base barebone model is {0}".format(self.model_run_time))
 
         summary_list = model._model_json["output"]["model_summary"]
-        num_trees = summary_list.cell_values[0][summary_list.col_header.index('number_of_trees')]
+        num_trees = summary_list["number_of_trees"][0]
 
         if num_trees == 0:
             self.min_runtime_per_tree = self.model_run_time
@@ -341,7 +341,7 @@ class Test_gbm_grid_search:
                     manual_run_runtime += model_runtime
 
                     summary_list = manual_model._model_json['output']['model_summary']
-                    tree_num = summary_list.cell_values[0][summary_list.col_header.index('number_of_trees')]
+                    tree_num = summary_list.cell_values["number_of_trees"][0]
 
                     if max_runtime > 0:
                         # shortest possible time it takes to build this model

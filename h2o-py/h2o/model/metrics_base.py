@@ -134,15 +134,11 @@ class MetricsBase(backwards_compatible()):
             print("Misclassification Error (Categorical): " + str(self.cat_err()))
 
     def r2(self):
-        """
-        :return: Retrieve the R^2 coefficient for this set of metrics
-        """
+        """The R^2 coefficient."""
         return self._metric_json["r2"]
 
     def logloss(self):
-        """
-        :return: Retrieve the log loss for this set of metrics.
-        """
+        """Log loss."""
         return self._metric_json["logloss"]
 
     def nobs(self):
@@ -455,12 +451,10 @@ class H2OBinomialModelMetrics(MetricsBase):
         assert_is_type(thresholds, None, [numeric])
         if not thresholds: thresholds = [self.find_threshold_by_max_metric(metric)]
         thresh2d = self._metric_json['thresholds_and_metric_scores']
-        midx = thresh2d.col_header.index(metric)
         metrics = []
         for t in thresholds:
             idx = self.find_idx_by_threshold(t)
-            row = thresh2d.cell_values[idx]
-            metrics.append([t, row[midx]])
+            metrics.append([t, thresh2d[metric][idx]])
         return metrics
 
     def plot(self, type="roc", server=False):
@@ -498,9 +492,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
         :return: a list of false positive rates.
         """
-        fpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("fpr")
-        fprs = [x[fpr_idx] for x in self._metric_json["thresholds_and_metric_scores"].cell_values]
-        return fprs
+        return self._metric_json["thresholds_and_metric_scores"]["fpr"]
 
     @property
     def tprs(self):
@@ -509,9 +501,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
         :return: a list of true positive rates.
         """
-        tpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("tpr")
-        tprs = [y[tpr_idx] for y in self._metric_json["thresholds_and_metric_scores"].cell_values]
-        return tprs
+        return self._metric_json["thresholds_and_metric_scores"]["tpr"]
 
     def confusion_matrix(self, metrics=None, thresholds=None):
         """

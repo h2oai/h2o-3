@@ -142,7 +142,7 @@ class Test_kmeans_grid_search:
         print("Time taken to build a base barebone model is {0}".format(self.model_run_time))
 
         summary_list = model._model_json["output"]["model_summary"]
-        num_iter = summary_list.cell_values[0][summary_list.col_header.index('number_of_iterations')]
+        num_iter = summary_list["number_of_iterations"][0]
 
         self.min_runtime_per_iter = self.model_run_time / num_iter
 
@@ -268,19 +268,19 @@ class Test_kmeans_grid_search:
 
                     summary_list = manual_model._model_json['output']['model_summary']
                     if summary_list is not None:
-                        num_iter = summary_list.cell_values[0][summary_list.col_header.index('number_of_iterations')]
+                        num_iter = summary_list["number_of_iterations"][0]
 
                         # compute and compare test metrics between the two models
                         if not(each_model._model_json["output"]["model_summary"] is None):
                             grid_model_metrics = \
-                                each_model._model_json["output"]["model_summary"].cell_values[0][summary_list.col_header.index('total_sum_of_squares')]
+                                each_model._model_json["output"]["model_summary"]["total_sum_of_squares"][0]
                             manual_model_metrics = \
-                                manual_model._model_json["output"]["model_summary"].cell_values[0][summary_list.col_header.index('total_sum_of_squares')]
+                                manual_model._model_json["output"]["model_summary"]["total_sum_of_squares"][0]
 
                             # just compare the training metrics in this case within tolerance:
                             if not((type(grid_model_metrics) == str) or (type(manual_model_metrics) == str)):
                                 if (abs(grid_model_metrics) > 0) and \
-                                        (abs(grid_model_metrics - manual_model_metrics)/grid_model_metrics >
+                                        (abs(grid_model_metrics - manual_model_metrics) / grid_model_metrics >
                                              self.allowed_diff):
                                     print("test_kmeans_grid_search_over_params for kmeans warning: grid search model "
                                           "metric ({0}) and manually built H2O model metric ({1}) differ too much"
