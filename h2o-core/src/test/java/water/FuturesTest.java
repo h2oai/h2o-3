@@ -15,7 +15,7 @@ public class FuturesTest extends TestUtil {
   @BeforeClass
   public static void setup() { stall_till_cloudsize(1); }
 
-  public static class TstFuture implements Future {
+  public static class TstFuture implements H2OFuture {
     private boolean _isDone;
     private boolean _isCancelled;
     public ExecutionException _exex;
@@ -66,6 +66,16 @@ public class FuturesTest extends TestUtil {
     @Override
     public Object get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
       return null;
+    }
+
+    @Override
+    public boolean isDoneExceptionally() {
+      return _exex != null || _rex != null;
+    }
+
+    @Override
+    public Throwable getException() {
+      return _exex != null?_exex:_rex;
     }
   }
   private static class TstException extends RuntimeException {

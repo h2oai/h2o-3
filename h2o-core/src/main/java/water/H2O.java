@@ -1124,7 +1124,11 @@ final public class H2O {
    *  attempt to work and drain the higher-priority queues. */
   public static abstract class H2OCountedCompleter<T extends H2OCountedCompleter>
       extends CountedCompleter
-      implements Cloneable, Freezable<T> {
+      implements Cloneable, Freezable<T>, water.H2OFuture<Void> {
+
+    @Override
+    public boolean isDoneExceptionally(){return isCompletedAbnormally();}
+
 
     @Override
     public byte [] asBytes(){return new AutoBuffer().put(this).buf();}

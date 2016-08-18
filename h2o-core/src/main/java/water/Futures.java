@@ -20,27 +20,44 @@ import water.util.Log;
 public class Futures {
   // implemented as an exposed array mostly because ArrayList doesn't offer
   // synchronization and constant-time removal.
-  Future[] _pending = new Future[1];
+  H2OFuture[] _pending = new H2OFuture[1];
   int _pending_cnt;
 
   private Throwable _ex;
 
-  private void waitAndCheckForException(Future f) {
-    try {
-      f.get();
-    } catch(CancellationException ex){
-      // ignore cancelled tasks
-    } catch(Throwable t) {
-      if(_ex == null) _ex = t instanceof ExecutionException?t.getCause():t;
+  private void setException(Throwable ex) {
+    if(_ex != null) // reporting at most one
+      return;
+    if(ex instanceof CancellationException)
+      return; // Cancellations are ignored
+    if(ex instanceof ExecutionException)
+      ex = ex.getCause();
+    _ex = ex;
+  }
+
+  private boolean isDone(H2OFuture f) {
+    if(f.isDone()) {
+      if (_ex == null && f.isDoneExceptionally())
+        setException(f.getException());
+      return true;
     }
+    return false;
+  }
+
+  private void waitAndCheckForException(H2OFuture f) {
+    if(!isDone(f))
+      try {
+        f.get();
+      } catch(CancellationException ex){
+        // ignore cancelled tasks
+      } catch(Throwable t) {
+        setException(t);
+      }
   }
   /** Some Future task which needs to complete before this Futures completes */
-  synchronized public Futures add( Future f ) {
+  synchronized public Futures add( H2OFuture f ) {
     if( f == null ) return this;
-    if(f.isDone()) {
-      waitAndCheckForException(f);
-      return this;
-    }
+    if(isDone(f)) return this;
     // NPE here if this Futures has already been added to some other Futures
     // list, and should be added to again.
     if( _pending_cnt == _pending.length ) {
@@ -58,8 +75,7 @@ public class Futures {
    *  very large. */
   synchronized private void cleanCompleted(){
     for( int i=0; i<_pending_cnt; i++ )
-      if( _pending[i].isDone() ) {// Done?
-        waitAndCheckForException(_pending[i]);
+      if(isDone(_pending[i])) {// Done?
         // Do cheap array compression to remove from list
         _pending[i--] = _pending[--_pending_cnt];
       }
@@ -78,7 +94,7 @@ public class Futures {
   public final void blockForPending() {
     // Block until the last Future finishes.
     while (true) {
-      Future f;
+      H2OFuture f;
       synchronized (this) {
         if (_pending_cnt == 0) break;
         f = _pending[--_pending_cnt];

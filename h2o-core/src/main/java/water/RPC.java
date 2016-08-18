@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
  * @version 1.0
  */
 
-public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.ManagedBlocker {
+public class RPC<V extends DTask> implements H2OFuture<V>, Delayed, ForkJoinPool.ManagedBlocker {
   // The target remote node to pester for a response.  NULL'd out if the target
   // disappears or we cancel things (hence not final).
   H2ONode _target;
@@ -290,6 +290,17 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
       notifyAll();              // notify in any case
     }
     return did;
+  }
+
+  @Override
+  public boolean isDoneExceptionally() {
+    return isDone() && _dt.hasException();
+  }
+
+  @Override
+  public Throwable getException() {
+    if(!isDone()) throw new RuntimeException("asking for exception bu task is not done yet.");
+    return _dt.getException();
   }
 
 

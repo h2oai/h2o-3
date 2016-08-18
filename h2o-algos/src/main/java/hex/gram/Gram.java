@@ -328,7 +328,7 @@ public final class Gram extends Iced<Gram> {
     final double _xx[][];             // Lower triangle of the symmetric matrix.
     private boolean _isSPD;
     private InPlaceCholesky(double xx[][], boolean isspd) { _xx = xx; _isSPD = isspd; }
-    static private class BlockTask extends RecursiveAction {
+    static private class BlockTask extends RecursiveAction implements H2OFuture<Void>{
       final double[][] _xx;
       final int _i0, _i1, _j0, _j1;
       public BlockTask(double xx[][], int ifr, int ito, int jfr, int jto) {
@@ -345,6 +345,11 @@ public final class Gram extends Iced<Gram> {
             rowi[k] = (rowi[k] - s) / rowk[k];
           }
         }
+      }
+
+      @Override
+      public boolean isDoneExceptionally() {
+        return isCompletedAbnormally();
       }
     }
     public static InPlaceCholesky decompose_2(double xx[][], int STEP, int P) {
@@ -377,7 +382,7 @@ public final class Gram extends Iced<Gram> {
         int p = P;                  // concurrency
         while ( tjR*(rpb=(N - tjR)/p)<Gram.MIN_TSKSZ && p>1) --p;
         while (p-- > 1) {
-          fs.add(new BlockTask(xx,i,i+rpb,j,tjR).fork());
+          fs.add((H2OFuture)new BlockTask(xx,i,i+rpb,j,tjR).fork());
           i += rpb;
         }
         new BlockTask(xx,i,N,j,tjR).compute();
