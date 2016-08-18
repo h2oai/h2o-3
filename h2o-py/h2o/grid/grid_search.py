@@ -669,7 +669,8 @@ class H2OGridSearch(backwards_compatible()):
         if metric[-2] == '(': metric = metric[:-2]
         return H2OTwoDimTable(
             col_header=['Model Id', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']', metric],
-            table_header='Grid Search Results for ' + self.model.__class__.__name__, cell_values=list(zip(*c_values)))
+            table_header='Grid Search Results for ' + self.model.__class__.__name__,
+            cell_values=[list(x) for x in zip(*c_values)])
 
     def get_hyperparams(self, id, display=True):
         """

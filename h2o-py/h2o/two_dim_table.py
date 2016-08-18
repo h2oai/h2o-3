@@ -10,28 +10,44 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import copy
 
 from h2o.display import H2ODisplay
-from h2o.utils.shared_utils import _is_list_of_lists, can_use_pandas
+from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.shared_utils import _is_list_of_lists, can_use_pandas
+from h2o.utils.typechecks import I, assert_is_type, is_type
 
 
 class H2OTwoDimTable(object):
     """A class representing an 2D table (for pretty printing output)."""
 
-    def __init__(self, row_header=None, col_header=None, col_types=None,
-                 table_header=None, raw_cell_values=None,
-                 col_formats=None, cell_values=None, table_description=None):
-        self.row_header = row_header
-        self.col_header = col_header
-        self.col_types = col_types
-        self.table_header = table_header
-        self.cell_values = cell_values if cell_values else self._parse_values(raw_cell_values, col_types)
-        self.col_formats = col_formats
-        self.table_description = table_description
+    def __init__(self, table_header=None, table_description=None, col_header=None,
+                 cell_values=None, raw_cell_values=None, col_types=None, row_header=None, col_formats=None):
+        """
+        Create new H2OTwoDimTable object.
+
+        :param table_header: Header for the entire table.
+        :param table_description: Longer description of the table.
+        :param col_header: list of column names (used in conjunction with)
+        :param cell_values: table values, as an array of individual rows
+        :param raw_cell_values:
+        :param col_types:
+        :param row_header: ignored.
+        :param col_formats: ignored.
+        """
+        assert_is_type(table_header, None, str)
+        assert_is_type(table_description, None, str)
+        assert_is_type(col_header, None, [str])
+        assert_is_type(col_types, None, [str])
+        assert_is_type(cell_values, None, I([[object]], lambda m: all(len(row) == len(m[0]) for row in m)))
+        self._table_header = table_header
+        self._table_description = table_description
+        self._col_header = col_header
+        self._cell_values = cell_values or self._parse_values(raw_cell_values, col_types)
 
     @staticmethod
     def make(keyvals):
         """
         Create new H2OTwoDimTable object from list of (key,value) tuples which are a pre-cursor to JSON dict.
+
         :param keyvals: list of (key, value) tuples
         :return: new H2OTwoDimTable object
         """
@@ -47,25 +63,38 @@ class H2OTwoDimTable(object):
             if key == "data": kwargs["raw_cell_values"] = value
         return H2OTwoDimTable(**kwargs)
 
+    @property
+    def cell_values(self):
+        """The contents of the table, as a list of rows."""
+        return self._cell_values
+
+    @property
+    def col_header(self):
+        """Array of column names."""
+        return self._col_header
+
+
+
     def as_data_frame(self):
+        """Convert to a python 'data frame'."""
         if can_use_pandas():
             import pandas
             pandas.options.display.max_colwidth = 70
-            return pandas.DataFrame(self.cell_values, columns=self.col_header)
+            return pandas.DataFrame(self._cell_values, columns=self._col_header)
         return self
 
     def show(self, header=True):
+        """Print the contents of this table."""
         # if h2o.can_use_pandas():
         #  import pandas
         #  pandas.options.display.max_rows = 20
-        #  print pandas.DataFrame(self.cell_values,columns=self.col_header)
+        #  print pandas.DataFrame(self._cell_values,columns=self._col_header)
         #  return
+        if header and self._table_header:
+            print(self._table_header + ":", end=' ')
+            if self._table_description: print(self._table_description)
         print()
-        if header:
-            print(self.table_header + ":", end=' ')
-            if self.table_description: print(self.table_description)
-        print()
-        table = copy.deepcopy(self.cell_values)
+        table = copy.deepcopy(self._cell_values)
         nr = 0
         if _is_list_of_lists(table): nr = len(
             table)  # only set if we truly have multiple rows... not just one long row :)
@@ -76,16 +105,17 @@ class H2OTwoDimTable(object):
             trunc_table += [v for v in table[(nr - 5):]]
             table = trunc_table
 
-        H2ODisplay(table, self.col_header, numalign="left", stralign="left")
+        H2ODisplay(table, self._col_header, numalign="left", stralign="left")
         if nr > 20 and can_use_pandas(): print('\nSee the whole table with table.as_data_frame()')
 
     def __repr__(self):
+        # FIXME: should return a string rather than printing it
         self.show()
         return ""
 
     def _parse_values(self, values, types):
-        if self.col_header[0] is None:
-            self.col_header = self.col_header[1:]
+        if self._col_header[0] is None:
+            self._col_header = self._col_header[1:]
             types = types[1:]
             values = values[1:]
         for col_index, column in enumerate(values):
@@ -101,23 +131,37 @@ class H2OTwoDimTable(object):
         return list(zip(*values))  # transpose the values! <3 splat ops
 
     def __getitem__(self, item):
-        if item in self.col_header:  # single col selection returns list
-            return list(zip(*self.cell_values))[self.col_header.index(item)]
-        elif isinstance(item, slice):  # row selection if item is slice returns H2OTwoDimTable
-            self.cell_values = [self.cell_values[ii] for ii in xrange(*item.indices(len(self.cell_values)))]
+        if is_type(item, int, str):
+            # single col selection returns list
+            if is_type(item, int):
+                index = item
+                if index < 0: index += len(self._col_header)
+                if index < 0 or index >= len(self._col_header):
+                    raise H2OValueError("Index %d is out of range" % item)
+            else:
+                if item in self._col_header:
+                    index = self._col_header.index(item)
+                else:
+                    raise H2OValueError("Column `%s` does not exist in the table" % item)
+            return [row[index] for row in self._cell_values]
+        elif isinstance(item, slice):
+            # row selection if item is slice returns H2OTwoDimTable
+            # FIXME! slice behavior should be consistent with other selectors - return columns instead of rows...
+            self._cell_values = [self._cell_values[ii] for ii in range(*item.indices(len(self._cell_values)))]
             return self
-        elif isinstance(item, list) and set(item).issubset(
-                self.col_header):  # multiple col selection returns list of cols
-            return [list(zip(*self.cell_values))[self.col_header.index(i)] for i in item]
+        elif is_type(item, [int, str]):
+            # multiple col selection returns list of cols
+            return [self[i] for i in item]
         else:
             raise TypeError('can not support getting item for ' + str(item))
 
     def __setitem__(self, key, value):
-        cols = list(zip(*self.cell_values))
+        # This is not tested, and probably not used anywhere... That's why it's so horrible.
+        cols = list(zip(*self._cell_values))
         if len(cols[0]) != len(value): raise ValueError('value must be same length as columns')
-        if key not in self.col_header:
-            self.col_header.append(key)
+        if key not in self._col_header:
+            self._col_header.append(key)
             cols.append(tuple(value))
         else:
-            cols[self.col_header.index(key)] = value
-        self.cell_values = [list(x) for x in zip(*cols)]
+            cols[self._col_header.index(key)] = value
+        self._cell_values = [list(x) for x in zip(*cols)]
