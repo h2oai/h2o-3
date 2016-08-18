@@ -7,7 +7,7 @@ TODO: Automatically convert column names into Frame properties!
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import csv
 import functools
@@ -18,21 +18,21 @@ import tempfile
 import traceback
 import warnings
 from io import StringIO
-
-import requests
-
-import h2o
 from types import FunctionType
 
-from .utils.shared_utils import _quoted, can_use_pandas, _handle_python_lists, _is_list, _is_str_list, \
-    _handle_python_dicts, _handle_numpy_array, _handle_pandas_data_frame, quote, _py_tmp_key
-from .display import H2ODisplay
-from .job import H2OJob
-from .expr import ExprNode
-from .group_by import GroupBy
+import h2o
+from h2o.display import H2ODisplay
 from h2o.exceptions import H2OValueError
+from h2o.expr import ExprNode
+from h2o.group_by import GroupBy
+from h2o.job import H2OJob
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import I, U, is_type, assert_is_type, assert_satisfies, pandas_dataframe, numpy_ndarray
+from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
+                                    _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
+                                    can_use_pandas, quote)
+from h2o.utils.typechecks import I, U, assert_is_type, assert_satisfies, is_type, numpy_ndarray, pandas_dataframe
+
+import requests
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
@@ -1348,10 +1348,7 @@ class H2OFrame(object):
         if weights_column is None:
             weights_column = "_"
         else:
-            if not (is_type(weights_column, str) or (isinstance(weights_column, H2OFrame)
-                                               and weights_column.ncol == 1 and weights_column.nrow == self.nrow)):
-                raise ValueError("`weights_column` must be a column name in x or an H2OFrame object with 1 column "
-                                 "and same row count as x")
+            assert_is_type(weights_column, str, I(H2OFrame, lambda wc: wc.ncol == 1 and wc.nrow == self.nrow))
             if isinstance(weights_column, H2OFrame):
                 merged = self.cbind(weights_column)
                 weights_column = merged.names[-1]

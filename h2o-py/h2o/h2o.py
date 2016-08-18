@@ -6,6 +6,7 @@ h2o -- module for using H2O services.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+
 import os
 import re
 import warnings
@@ -13,26 +14,26 @@ import warnings
 from h2o.backend import H2OConnection
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
-from .expr import ExprNode
-from .job import H2OJob
-from .frame import H2OFrame
-from .model.model_base import ModelBase
-from .estimators.estimator_base import H2OEstimator
+from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_tmp_key, quoted, urlopen
+from h2o.utils.typechecks import U, assert_is_type, assert_satisfies, is_type, numeric
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
+from .estimators.estimator_base import H2OEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
+from .expr import ExprNode
+from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
+from .job import H2OJob
+from .model.model_base import ModelBase
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
-from .utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import U, assert_is_type, assert_satisfies, is_type, numeric
-from h2o.utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, deprecated
+from .utils.compatibility import PY3, *  # NOQA
 warnings.simplefilter("always", DeprecationWarning)
 
 
