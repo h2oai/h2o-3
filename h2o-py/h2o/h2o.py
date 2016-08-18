@@ -212,7 +212,7 @@ def _import(path):
     return j["destination_frames"]
 
 
-def upload_file(path, destination_frame="", header=0, sep="", col_names=None, col_types=None,
+def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
@@ -224,7 +224,7 @@ def upload_file(path, destination_frame="", header=0, sep="", col_names=None, co
         automatically be generated.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
-        this character. If sep = "", the parser will automatically detect the separator.
+        this character. If not provided, the parser will automatically detect the separator.
     :param col_names: A list of column names for the file.
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
@@ -254,14 +254,14 @@ def upload_file(path, destination_frame="", header=0, sep="", col_names=None, co
     assert_is_type(path, str)
     assert_is_type(destination_frame, str)
     assert_is_type(header, -1, 0, 1)
-    assert_is_type(sep, str)
+    assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
-def import_file(path=None, destination_frame="", parse=True, header=0, sep="", col_names=None, col_types=None,
+def import_file(path=None, destination_frame="", parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Import a dataset that is already on the cluster.
@@ -276,7 +276,7 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep="", c
     :param parse: If True, the file should be parsed after import.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
-        this character. If sep = "", the parser will automatically detect the separator.
+        this character. If not provided, the parser will automatically detect the separator.
     :param col_names: A list of column names for the file.
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
@@ -303,7 +303,7 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep="", c
     assert_is_type(destination_frame, str)
     assert_is_type(parse, bool)
     assert_is_type(header, -1, 0, 1)
-    assert_is_type(sep, str)
+    assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
@@ -399,7 +399,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     return get_frame(j.dest_key)
 
 
-def parse_setup(raw_frames, destination_frame="", header=0, separator="", column_names=None,
+def parse_setup(raw_frames, destination_frame="", header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
@@ -414,7 +414,7 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator="", column
         automatically be generated.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param separator: The field separator character. Values on each line of the file are separated by
-        this character. If sep = "", the parser will automatically detect the separator.
+        this character. If not provided, the parser will automatically detect the separator.
     :param col_names: A list of column names for the file.
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
@@ -449,11 +449,11 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator="", column
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {
-        "check_header": header,
-        "separator": ord(separator),
-        "source_frames": [quoted(id) for id in raw_frames],
-    }
+    kwargs = {}
+    kwargs["check_header"] = header
+    kwargs["source_frames"] = [quoted(id) for id in raw_frames]
+    if separator:
+        kwargs["separator"] = ord(separator)
 
     j = api("POST /3/ParseSetup", data=kwargs)
     if "warnings" in j and j["warnings"]:
