@@ -388,12 +388,12 @@ def import_sql_select(connection_url, select_query, username, password, optimize
         >>> password = "abc123"
         >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
     """
-    assert_is_type(connection, str)
+    assert_is_type(connection_url, str)
     assert_is_type(select_query, str)
     assert_is_type(username, str)
     assert_is_type(password, str)
     assert_is_type(optimize, bool)
-    p = {"connection": connection, "select_query": select_query, "username": username, "password": password,
+    p = {"connection_url": connection_url, "select_query": select_query, "username": username, "password": password,
          "optimize": optimize}
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
@@ -415,8 +415,8 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param separator: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
-    :param col_names: A list of column names for the file.
-    :param col_types: A list of types or a dictionary of column names to types to specify whether columns
+    :param column_names: A list of column names for the file.
+    :param column_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
         one will be guessed. The possible types a column may have are:
         * "unknown" - this will force the column to be parsed as all NA
@@ -449,9 +449,7 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {}
-    kwargs["check_header"] = header
-    kwargs["source_frames"] = [quoted(id) for id in raw_frames]
+    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
     if separator:
         kwargs["separator"] = ord(separator)
 
