@@ -38,7 +38,7 @@ class H2OValueError(H2OSoftError, ValueError):
 # H2OTypeError
 #-----------------------------------------------------------------------------------------------------------------------
 
-class H2OTypeError(H2OSoftError):
+class H2OTypeError(H2OSoftError, TypeError):
     """
     Error indicating that the user passed a parameter of wrong type.
 
