@@ -19,6 +19,7 @@ public abstract class UDP {
     heartbeat     ( true, new UDPHeartbeat(),H2O.MAX_PRIORITY),
     rebooted      ( true, new UDPRebooted() ,H2O.MAX_PRIORITY), // This node has rebooted recently
     timeline      (false, new TimeLine()    ,H2O.MAX_PRIORITY), // Get timeline dumps from across the Cloud
+    client_event  ( true, new UDPClientEvent(), H2O.MAX_PRIORITY), // This packet informs about a client action (connect/disconnect)
 
     // All my *reliable* tasks (below), are sent to remote nodes who then ACK
     // back an answer.  To be reliable, I might send the TASK multiple times.
@@ -40,7 +41,7 @@ public abstract class UDP {
     // identical result ACK packets.
     exec(false,new RPC.RemoteHandler(),H2O.DESERIAL_PRIORITY), // Remote hi-q execution request
     i_o (false,new UDP.IO_record(),(byte)-1); // Only used to profile I/O
-    
+
     final UDP _udp;           // The Callable S.A.M. instance
     final byte _prior;        // Priority
     final boolean _paxos;     // Ignore (or not) packets from outside the Cloud
