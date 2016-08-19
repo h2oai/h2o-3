@@ -356,6 +356,11 @@ To check which version of H2O is installed in R, use
    describes how to use RStudio to connect to Sparkling Water.
 
 
+**Note**: If you are running R on Linux, then you must install ``libcurl``, which allows H2O to communicate with R. We also recommend disabling SElinux and any firewalls, at least initially until you have confirmed H2O can initialize.
+
+- On Ubuntu, run: ``apt-get install libcurl4-openssl-dev``
+- On CentOs, run: ``yum install libcurl-devel``
+
 Ensembles
 ---------
 

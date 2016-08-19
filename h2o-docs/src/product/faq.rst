@@ -1492,6 +1492,8 @@ including dependencies:
 - ``data.table``
 - ``cvAUC``
 
+Finally, if you are running R on Linux, then you must install ``libcurl``, which allows H2O to communicate with R.
+
 --------------
 
 **How can I install the H2O R package if I am having permissions
@@ -1642,12 +1644,15 @@ example:
 
 --------------
 
-**I'm using CentOS and I want to run H2O in R - are there any
+**I'm using Linux and I want to run H2O in R - are there any
 dependencies I need to install?**
 
 Yes, make sure to install ``libcurl``, which allows H2O to communicate
 with R. We also recommend disabling SElinux and any firewalls, at least
 initially until you have confirmed H2O can initialize.
+
+- On Ubuntu, run: ``apt-get install libcurl4-openssl-dev``
+- On CentOS, run: ``yum install libcurl-devel``
 
 --------------
 
