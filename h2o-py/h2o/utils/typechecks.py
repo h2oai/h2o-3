@@ -19,7 +19,7 @@ General interface of this module is:
 The ``typeI`` items here deserve a more thorough explanation. They could be:
 
     # Plain types
-    assert_is_type(flag, bool)
+    assert_is_type(flag, bool) # note that in Python ``bool`` is a subclass of ``int``
     assert_is_type(port, int)  # ``int`` and ``str`` will work on Py2 as if you were on Py3
     assert_is_type(text, str)  # (i.e. they'll also match ``long`` and ``unicode`` respectively)
     assert_is_type(hls, H2OLocalServer)
