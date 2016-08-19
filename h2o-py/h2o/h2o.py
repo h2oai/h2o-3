@@ -6,6 +6,7 @@ h2o -- module for using H2O services.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+
 import os
 import re
 import warnings
@@ -13,26 +14,27 @@ import warnings
 from h2o.backend import H2OConnection
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
-from .expr import ExprNode
-from .job import H2OJob
-from .frame import H2OFrame
-from .model.model_base import ModelBase
-from .estimators.estimator_base import H2OEstimator
+from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_tmp_key, quoted, urlopen
+from h2o.utils.typechecks import I, U, assert_is_type, assert_satisfies, is_type, numeric
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
+from .estimators.estimator_base import H2OEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
+from .expr import ExprNode
+from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
+from .job import H2OJob
+from .model.model_base import ModelBase
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import U, assert_is_type, assert_satisfies, is_type, numeric
-from h2o.utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, deprecated
+from .utils.compatibility import PY3
 warnings.simplefilter("always", DeprecationWarning)
 
 
@@ -206,11 +208,11 @@ def lazy_import(path):
 def _import(path):
     assert_is_type(path, str)
     j = api("GET /3/ImportFiles", data={"path": path})
-    if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
-    return j['destination_frames']
+    if j["fails"]: raise ValueError("ImportFiles of " + path + " failed on " + str(j["fails"]))
+    return j["destination_frames"]
 
 
-def upload_file(path, destination_frame="", header=0, sep="", col_names=None, col_types=None,
+def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
@@ -222,7 +224,7 @@ def upload_file(path, destination_frame="", header=0, sep="", col_names=None, co
         automatically be generated.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
-        this character. If sep = "", the parser will automatically detect the separator.
+        this character. If not provided, the parser will automatically detect the separator.
     :param col_names: A list of column names for the file.
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
@@ -252,14 +254,14 @@ def upload_file(path, destination_frame="", header=0, sep="", col_names=None, co
     assert_is_type(path, str)
     assert_is_type(destination_frame, str)
     assert_is_type(header, -1, 0, 1)
-    assert_is_type(sep, str)
+    assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
-def import_file(path=None, destination_frame="", parse=True, header=0, sep="", col_names=None, col_types=None,
+def import_file(path=None, destination_frame="", parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Import a dataset that is already on the cluster.
@@ -274,7 +276,7 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep="", c
     :param parse: If True, the file should be parsed after import.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
-        this character. If sep = "", the parser will automatically detect the separator.
+        this character. If not provided, the parser will automatically detect the separator.
     :param col_names: A list of column names for the file.
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
@@ -301,7 +303,7 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep="", c
     assert_is_type(destination_frame, str)
     assert_is_type(parse, bool)
     assert_is_type(header, -1, 0, 1)
-    assert_is_type(sep, str)
+    assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
@@ -386,18 +388,18 @@ def import_sql_select(connection_url, select_query, username, password, optimize
         >>> password = "abc123"
         >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
     """
-    assert_is_type(connection, str)
+    assert_is_type(connection_url, str)
     assert_is_type(select_query, str)
     assert_is_type(username, str)
     assert_is_type(password, str)
     assert_is_type(optimize, bool)
-    p = {"connection": connection, "select_query": select_query, "username": username, "password": password,
+    p = {"connection_url": connection_url, "select_query": select_query, "username": username, "password": password,
          "optimize": optimize}
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
-def parse_setup(raw_frames, destination_frame="", header=0, separator="", column_names=None,
+def parse_setup(raw_frames, destination_frame="", header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
@@ -412,9 +414,9 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator="", column
         automatically be generated.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param separator: The field separator character. Values on each line of the file are separated by
-        this character. If sep = "", the parser will automatically detect the separator.
-    :param col_names: A list of column names for the file.
-    :param col_types: A list of types or a dictionary of column names to types to specify whether columns
+        this character. If not provided, the parser will automatically detect the separator.
+    :param column_names: A list of column names for the file.
+    :param column_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
         one will be guessed. The possible types a column may have are:
         * "unknown" - this will force the column to be parsed as all NA
@@ -438,7 +440,7 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator="", column
     assert_is_type(raw_frames, str, [str])
     assert_is_type(destination_frame, None, str)
     assert_is_type(header, -1, 0, 1)
-    assert_is_type(separator, None, str)
+    assert_is_type(separator, None, I(str, lambda s: len(s) == 1))
     assert_is_type(column_names, [str], None)
     assert_is_type(column_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
@@ -447,22 +449,13 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator="", column
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {}
-    # set header
-    if header != (-1, 0, 1):
-        if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
-        kwargs["check_header"] = header
-
-    # set separator
+    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
     if separator:
-        if not is_type(separator, str) or len(separator) != 1:
-            raise ValueError("separator should be a single character string; got %r" % separator)
         kwargs["separator"] = ord(separator)
 
-    kwargs["source_frames"] = [quoted(id) for id in raw_frames]
     j = api("POST /3/ParseSetup", data=kwargs)
     if "warnings" in j and j["warnings"]:
-        for w in j['warnings']:
+        for w in j["warnings"]:
             warnings.warn(w)
     # TODO: really should be url encoding...
     # TODO: clean up all this
@@ -608,16 +601,16 @@ def get_grid(grid_id):
     """
     assert_is_type(grid_id, str)
     grid_json = api("GET /99/Grids/%s" % grid_id)
-    models = [get_model(key['name']) for key in grid_json['model_ids']]
+    models = [get_model(key["name"]) for key in grid_json["model_ids"]]
     # get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
-    first_model_json = api("GET /3/Models/%s" % grid_json['model_ids'][0]['name'])['models'][0]
+    first_model_json = api("GET /3/Models/%s" % grid_json["model_ids"][0]["name"])["models"][0]
     gs = H2OGridSearch(None, {}, grid_id)
     gs._resolve_grid(grid_id, grid_json, first_model_json)
     gs.models = models
     hyper_params = {param: set() for param in gs.hyper_names}
     for param in gs.hyper_names:
         for model in models:
-            hyper_params[param].add(model.full_parameters[param]['actual_value'][0])
+            hyper_params[param].add(model.full_parameters[param]["actual_value"][0])
     hyper_params = {str(param): list(vals) for param, vals in hyper_params.items()}
     gs.hyper_params = hyper_params
     gs.model = model.__class__()
@@ -683,14 +676,12 @@ def remove(x):
         elif isinstance(xi, H2OEstimator):
             api("DELETE /3/DKV/%s" % xi.model_id)
             xi._id = None
-        elif is_type(xi, str):
+        else:
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
             try:
                 rapids("(rm {})".format(xi))
             except:
                 api("DELETE /3/DKV/%s" % xi)
-        else:
-            raise ValueError('input to h2o.remove must one of: H2OFrame, H2OEstimator, or string')
 
 
 def remove_all():
@@ -762,7 +753,7 @@ def download_pojo(model, path="", get_jar=True):
     else:
         filepath = os.path.join(path, pojoname + ".java")
         print("Filepath: {}".format(filepath))
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             f.write(java.encode("utf-8"))
     if get_jar and path != "":
         url = h2oconn.make_url("h2o-genmodel.jar")
@@ -785,7 +776,7 @@ def download_csv(data, filename):
     assert_is_type(data, H2OFrame)
     assert_is_type(filename, str)
     url = h2oconn.make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(data.frame_id)
-    with open(filename, 'wb') as f:
+    with open(filename, "wb") as f:
         f.write(urlopen()(url).read())
 
 
@@ -811,14 +802,14 @@ def download_all_logs(dirname=".", filename=None):
         else:
             headers = response.headers.headers
         for h in headers:
-            if 'filename=' in h:
+            if "filename=" in h:
                 filename = h.split("filename=")[1].strip()
                 break
     path = os.path.join(dirname, filename)
     response = opener(url).read()
 
     print("Writing H2O logs to " + path)
-    with open(path, 'wb') as f:
+    with open(path, "wb") as f:
         f.write(response)
     return path
 
@@ -855,7 +846,7 @@ def load_model(path):
     """
     assert_is_type(path, str)
     res = api("POST /99/Models.bin/%s" % "", data={"dir": path})
-    return get_model(res['models'][0]['model_id']['name'])
+    return get_model(res["models"][0]["model_id"]["name"])
 
 
 
