@@ -5,7 +5,13 @@
 package hex.deepwater;
 
 
+import hex.deeplearning.Callback;
+import org.bytedeco.javacpp.BytePointer;
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacpp.Pointer;
+import org.bytedeco.javacpp.annotation.Cast;
 import org.bytedeco.javacpp.tensorflow;
+import org.python.antlr.ast.Call;
 import org.tensorflow.framework.AttrValue;
 
 
@@ -28,7 +34,8 @@ import org.tensorflow.framework.AllocationDescription;
         import java.nio.ByteBuffer;
         import java.nio.FloatBuffer;
         import java.nio.IntBuffer;
-        import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
         import java.nio.file.Files;
         import java.nio.file.Path;
         import java.nio.file.Paths;
@@ -111,13 +118,11 @@ public class TensorflowTest extends TestUtil {
                 new StringVector( new String[]{output_name+ ":0", output_name+":1"}),
                 new StringVector(),
             outputs);
-
         checkStatus(status);
         return outputs;
     }
 
     void checkStatus(Status status) {
-
         if (!status.ok()){
             throw new InternalError(status.error_message().getString());
         }
@@ -226,11 +231,16 @@ public class TensorflowTest extends TestUtil {
     public void inferInception() throws Exception {
         SessionOptions opt = new SessionOptions();
         Session sess = new Session(opt);
+
         GraphDef graph_def = new GraphDef();
+
+        ArrayList<OpDef> list = new ArrayList<>();
+
         Status status = ReadBinaryProto(Env.Default(), expandPath("~/workspace/deepwater/tensorflow/models/inception/classify_image_graph_def.pb"), graph_def);
         checkStatus(status);
         status = sess.Create(graph_def);
         checkStatus(status);
+
 
         HashMap<Integer, String>  uid_to_human_name = loadMapping(expandPath("~/workspace/deepwater/tensorflow/models/inception/imagenet_2012_challenge_label_map_proto.pbtxt"),
                 expandPath("~/workspace/deepwater/tensorflow/models/inception/imagenet_synset_to_human_label_map.txt"));
@@ -262,7 +272,24 @@ public class TensorflowTest extends TestUtil {
         for (int i = 0; i < topK.limit(); i++) {
             System.out.println(i + " " + topK.get(i) + " " + uid_to_human_name.get(topKindex.get(i)));
         }
+
+        GraphConstructorOptions opts = new GraphConstructorOptions();
+        tensorflow.Graph gg = new tensorflow.Graph(OpRegistry.Global());
+        ConvertGraphDefToGraph(opts, graph_def, gg);
+
+        DotOptions gopts = new DotOptions();
+
+        //gopts.node_label(new Callback());
+
+
+
+        String s = DotGraph(gg, gopts).getString();
+        //String buff = new String(dotValue.asBuffer().array(), Charset.forName("UTF-8"));
+
+        System.out.println(s);
     }
+
+
 
     HashMap<Integer, String> loadMapping(String label_map_proto, String label_map){
         Pattern regexp = Pattern.compile("^n(\\d+)(\\s+)([ \\S,]*)");
