@@ -104,8 +104,9 @@ import sys
 import tokenize
 from types import BuiltinFunctionType, FunctionType
 
-from h2o.utils.compatibility import *  # NOQA
 from h2o.exceptions import H2OTypeError, H2OValueError
+from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.compatibility import PY2, viewitems
 
 __all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNumeric",
            "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
