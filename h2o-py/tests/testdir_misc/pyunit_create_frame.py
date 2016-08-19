@@ -11,13 +11,13 @@ from tests import pyunit_utils
 
 def create_frame_test():
     """Test `h2o.create_frame()`."""
-    # for _ in range(10):
-    #     r = random.randint(1, 1000)
-    #     c = random.randint(1, 1000)
+    for _ in range(10):
+        r = random.randint(1, 1000)
+        c = random.randint(1, 1000)
 
-    #     frame = h2o.create_frame(rows=r, cols=c)
-    #     assert frame.nrow == r and frame.ncol == c, \
-    #         "Expected {0} rows and {1} cols, but got {2} rows and {3} cols.".format(r, c, frame.nrow, frame.ncol)
+        frame = h2o.create_frame(rows=r, cols=c)
+        assert frame.nrow == r and frame.ncol == c, \
+            "Expected {0} rows and {1} cols, but got {2} rows and {3} cols.".format(r, c, frame.nrow, frame.ncol)
 
     def assert_coltypes(frame, freal, fenum, fint, fbin, ftime, fstring):
         # The server does not report columns as binary -- instead they are integer.
