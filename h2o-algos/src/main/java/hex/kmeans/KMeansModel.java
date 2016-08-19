@@ -41,9 +41,6 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     // Sum squared distance between each point and its cluster center.
     public double[/*k*/] _withinss;   // Within-cluster sum of square error
 
-    // Cluster size. Defined as the number of rows in each cluster.
-    public long[/*k*/] _size;
-
     // Sum squared distance between each point and its cluster center.
     public double _tot_withinss;      // Within-cluster sum-of-square error
     public double[/*iterations*/] _history_withinss = new double[0];
