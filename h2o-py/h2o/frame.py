@@ -20,6 +20,8 @@ import warnings
 from io import StringIO
 from types import FunctionType
 
+import requests
+
 import h2o
 from h2o.display import H2ODisplay
 from h2o.exceptions import H2OValueError
@@ -30,9 +32,8 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote)
-from h2o.utils.typechecks import I, U, assert_is_type, assert_satisfies, is_type, numpy_ndarray, pandas_dataframe
-
-import requests
+from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, numeric, numpy_ndarray,
+                                  pandas_dataframe, U)
 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
@@ -492,7 +493,7 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("^", self, i), cache=self._ex._cache)
 
     def __contains__(self, i):
-        return all([(t == self).any() for t in i]) if _is_list(i) else (i == self).any()
+        return all((t == self).any() for t in i) if _is_list(i) else (i == self).any()
 
     # rops
     def __rmod__(self, i):
@@ -1177,6 +1178,10 @@ class H2OFrame(object):
         -------
           Returns this H2OFrame.
         """
+        # TODO: add far stronger type checks, so that we never run in a situation where the server has to
+        #       tell us that we requested an illegal operation.
+        assert_is_type(b, str, int, tuple, list, ExprNode, H2OFrame)
+        assert_is_type(c, None, numeric, str, H2OFrame, ExprNode)
         col_expr = None
         row_expr = None
         colname = None  # When set, we are doing an append
@@ -1188,8 +1193,10 @@ class H2OFrame(object):
                 col_expr = self.ncol
                 colname = b  # New, append
         elif is_type(b, int):
+            assert_satisfies(b, -self.ncol <= b < self.ncol)
             col_expr = b  # Column by number
         elif isinstance(b, tuple):  # Both row and col specifiers
+            # Need more type checks
             row_expr = b[0]
             col_expr = b[1]
             if is_type(col_expr, str):  # Col by name
