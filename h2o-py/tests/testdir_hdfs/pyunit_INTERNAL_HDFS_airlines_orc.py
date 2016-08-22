@@ -24,52 +24,59 @@ def hdfs_orc_parser():
         tol_numeric = 1e-5
 
         hdfs_name_node = pyunit_utils.hadoop_namenode()
-        hdfs_orc_file = "/datasets/airlines_all_orc_parts"
-        hdfs_csv_file = "/datasets/air_csv_part"
 
-        col_types = ['real', 'real', 'real', 'real', 'real', 'real', 'real', 'real', 'enum', 'real', 'enum', 'real',
-                     'real', 'enum', 'real', 'real', 'enum', 'enum', 'real', 'enum', 'enum', 'real', 'real', 'real',
-                     'enum', 'enum', 'enum', 'enum', 'enum', 'enum', 'enum']
+        if pyunit_utils.cannaryHDFSTest(hdfs_name_node, "/datasets/orc_parser/orc/orc_split_elim.orc"):
+            print("Your hive-exec version is too old.  Orc parser test {0} is "
+                  "skipped.".format("pyunit_INTERNAL_HDFS_airlines_orc.py"))
+            pass
+        else:
 
-        # import CSV file
-        print("Import airlines 116M dataset in original csv format from HDFS")
-        url_csv = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_csv_file)
+            hdfs_orc_file = "/datasets/airlines_all_orc_parts"
+            hdfs_csv_file = "/datasets/air_csv_part"
 
-        startcsv = time.time()
-        multi_file_csv = h2o.import_file(url_csv, na_strings=['\\N'], col_types=col_types)
-        endcsv = time.time()
+            col_types = ['real', 'real', 'real', 'real', 'real', 'real', 'real', 'real', 'enum', 'real', 'enum', 'real',
+                         'real', 'enum', 'real', 'real', 'enum', 'enum', 'real', 'enum', 'enum', 'real', 'real', 'real',
+                         'enum', 'enum', 'enum', 'enum', 'enum', 'enum', 'enum']
 
-        startcsv1 = time.time()
-        multi_file_csv1 = h2o.import_file(url_csv)
-        endcsv1 = time.time()
-        h2o.remove(multi_file_csv1)
+            # import CSV file
+            print("Import airlines 116M dataset in original csv format from HDFS")
+            url_csv = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_csv_file)
 
-        multi_file_csv.summary()
-        csv_summary = h2o.frame(multi_file_csv.frame_id)["frames"][0]["columns"]
+            startcsv = time.time()
+            multi_file_csv = h2o.import_file(url_csv, na_strings=['\\N'], col_types=col_types)
+            endcsv = time.time()
 
-        # import ORC file with same column types as CSV file
-        print("Import airlines 116M dataset in ORC format from HDFS")
-        url_orc = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_orc_file)
+            startcsv1 = time.time()
+            multi_file_csv1 = h2o.import_file(url_csv)
+            endcsv1 = time.time()
+            h2o.remove(multi_file_csv1)
 
-        startorc1 = time.time()
-        multi_file_orc1 = h2o.import_file(url_orc)
-        endorc1 = time.time()
-        h2o.remove(multi_file_orc1)
+            multi_file_csv.summary()
+            csv_summary = h2o.frame(multi_file_csv.frame_id)["frames"][0]["columns"]
 
-        startorc = time.time()
-        multi_file_orc = h2o.import_file(url_orc, col_types=col_types)
-        endorc = time.time()
+            # import ORC file with same column types as CSV file
+            print("Import airlines 116M dataset in ORC format from HDFS")
+            url_orc = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_orc_file)
 
-        multi_file_orc.summary()
-        orc_summary = h2o.frame(multi_file_orc.frame_id)["frames"][0]["columns"]
+            startorc1 = time.time()
+            multi_file_orc1 = h2o.import_file(url_orc)
+            endorc1 = time.time()
+            h2o.remove(multi_file_orc1)
 
-        print("************** CSV (without column type forcing) parse time is {0}".format(endcsv1-startcsv1))
-        print("************** CSV (with column type forcing) parse time is {0}".format(endcsv-startcsv))
-        print("************** ORC (without column type forcing) parse time is {0}".format(endorc1-startorc1))
-        print("************** ORC (with column type forcing) parse time is {0}".format(endorc-startorc))
+            startorc = time.time()
+            multi_file_orc = h2o.import_file(url_orc, col_types=col_types)
+            endorc = time.time()
 
-    # compare frame read by orc by forcing column type,
-        pyunit_utils.compare_frame_summary(csv_summary, orc_summary)
+            multi_file_orc.summary()
+            orc_summary = h2o.frame(multi_file_orc.frame_id)["frames"][0]["columns"]
+
+            print("************** CSV (without column type forcing) parse time is {0}".format(endcsv1-startcsv1))
+            print("************** CSV (with column type forcing) parse time is {0}".format(endcsv-startcsv))
+            print("************** ORC (without column type forcing) parse time is {0}".format(endorc1-startorc1))
+            print("************** ORC (with column type forcing) parse time is {0}".format(endorc-startorc))
+
+            # compare frame read by orc by forcing column type,
+            pyunit_utils.compare_frame_summary(csv_summary, orc_summary)
 
     else:
         raise EnvironmentError

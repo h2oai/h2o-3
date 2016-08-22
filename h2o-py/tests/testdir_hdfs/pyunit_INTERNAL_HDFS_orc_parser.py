@@ -22,34 +22,40 @@ def hdfs_orc_parser():
 
         hdfs_name_node = pyunit_utils.hadoop_namenode()
 
-        allOrcFiles = ["/datasets/orc_parser/orc/TestOrcFile.columnProjection.orc",
-                       "/datasets/orc_parser/orc/bigint_single_col.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.emptyFile.orc",
-                       "/datasets/orc_parser/orc/bool_single_col.orc",
-                       "/datasets/orc_parser/orc/demo-11-zlib.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.testDate1900.orc",
-                       "/datasets/orc_parser/orc/demo-12-zlib.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.testDate2038.orc",
-                       "/datasets/orc_parser/orc/double_single_col.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.testMemoryManagementV11.orc",
-                       "/datasets/orc_parser/orc/float_single_col.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.testMemoryManagementV12.orc",
-                       "/datasets/orc_parser/orc/int_single_col.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.testPredicatePushdown.orc",
-                       "/datasets/orc_parser/orc/nulls-at-end-snappy.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.testSnappy.orc",
-                       "/datasets/orc_parser/orc/orc_split_elim.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.testStringAndBinaryStatistics.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.testStripeLevelStats.orc",
-                       "/datasets/orc_parser/orc/smallint_single_col.orc",
-                       "/datasets/orc_parser/orc/string_single_col.orc",
-                       "/datasets/orc_parser/orc/tinyint_single_col.orc",
-                       "/datasets/orc_parser/orc/TestOrcFile.testWithoutIndex.orc"]
+        if pyunit_utils.cannaryHDFSTest(hdfs_name_node, "/datasets/orc_parser/orc/orc_split_elim.orc"):
+            print("Your hive-exec version is too old.  Orc parser test {0} is "
+                  "skipped.".format("pyunit_INTERNAL_HDFS_orc_parser.py"))
+            pass
+        else:
+
+            allOrcFiles = ["/datasets/orc_parser/orc/TestOrcFile.columnProjection.orc",
+                           "/datasets/orc_parser/orc/bigint_single_col.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.emptyFile.orc",
+                           "/datasets/orc_parser/orc/bool_single_col.orc",
+                           "/datasets/orc_parser/orc/demo-11-zlib.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testDate1900.orc",
+                           "/datasets/orc_parser/orc/demo-12-zlib.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testDate2038.orc",
+                           "/datasets/orc_parser/orc/double_single_col.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testMemoryManagementV11.orc",
+                           "/datasets/orc_parser/orc/float_single_col.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testMemoryManagementV12.orc",
+                           "/datasets/orc_parser/orc/int_single_col.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testPredicatePushdown.orc",
+                           "/datasets/orc_parser/orc/nulls-at-end-snappy.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testSnappy.orc",
+                           "/datasets/orc_parser/orc/orc_split_elim.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testStringAndBinaryStatistics.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testStripeLevelStats.orc",
+                           "/datasets/orc_parser/orc/smallint_single_col.orc",
+                           "/datasets/orc_parser/orc/string_single_col.orc",
+                           "/datasets/orc_parser/orc/tinyint_single_col.orc",
+                           "/datasets/orc_parser/orc/TestOrcFile.testWithoutIndex.orc"]
 
 
-        for fIndex in range(len(allOrcFiles)):
-            url_orc = "hdfs://{0}{1}".format(hdfs_name_node, allOrcFiles[fIndex])
-            tab_test = h2o.import_file(url_orc)
+            for fIndex in range(len(allOrcFiles)):
+                url_orc = "hdfs://{0}{1}".format(hdfs_name_node, allOrcFiles[fIndex])
+                tab_test = h2o.import_file(url_orc)
     else:
         raise EnvironmentError
 

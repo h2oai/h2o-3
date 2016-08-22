@@ -21,19 +21,25 @@ def hdfs_kmeans_airlines():
 
     if hadoop_namenode_is_accessible:
         hdfs_name_node = pyunit_utils.hadoop_namenode()
-        hdfs_file = "/datasets/airlines_all.csv"
 
-        print("Import airlines_all.csv from HDFS")
-        url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_file)
-        airlines_h2o = h2o.import_file(url)
-        n = airlines_h2o.nrow
-        print("rows: {0}".format(n))
+        if pyunit_utils.cannaryHDFSTest(hdfs_name_node, "/datasets/orc_parser/orc/prostate_NA.orc"):
+            print("Your hive-exec version is too old.  Orc parser test {0} is "
+                  "skipped.".format("pyunit_INTERNAL_HDFS_airlines_orc.py"))
+            pass
+        else:
+            hdfs_file = "/datasets/airlines_all.csv"
 
-        print("Run k-means++ with k = 7 and max_iterations = 10")
-        myX = list(range(8)) + list(range(11,16)) + list(range(18,21)) + list(range(24,29)) + [9]
-        airlines_km = h2o.kmeans(training_frame = airlines_h2o, x = airlines_h2o[myX], k = 7, init = "Furthest",
-                                 max_iterations = 10, standardize = True)
-        print(airlines_km)
+            print("Import airlines_all.csv from HDFS")
+            url = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_file)
+            airlines_h2o = h2o.import_file(url)
+            n = airlines_h2o.nrow
+            print("rows: {0}".format(n))
+
+            print("Run k-means++ with k = 7 and max_iterations = 10")
+            myX = list(range(8)) + list(range(11,16)) + list(range(18,21)) + list(range(24,29)) + [9]
+            airlines_km = h2o.kmeans(training_frame = airlines_h2o, x = airlines_h2o[myX], k = 7, init = "Furthest",
+                                     max_iterations = 10, standardize = True)
+            print(airlines_km)
     else:
         raise EnvironmentError
 
