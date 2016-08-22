@@ -2,7 +2,7 @@
 
 #
 # Prepares distribution package which can be uploaded into s3
-# Called by 'gradle makeH2oDevDist'
+# Called by 'gradle buildH2oDevDist'
 #
 
 set -e
