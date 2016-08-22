@@ -9,6 +9,18 @@ public abstract class FileVec extends ByteVec {
   long _len;                    // File length
   final byte _be;
 
+  // Returns String with path for given key.
+  public static String getPathForKey(Key k) {
+    final int off = k._kb[0]==Key.CHK   || k._kb[0]==Key.VEC ? Vec.KEY_PREFIX_LEN : 0;
+    String p = new String(k._kb,off,k._kb.length-off);
+
+    if(p.startsWith("nfs:/"))
+      p = p.substring("nfs:/".length());
+    else if (p.startsWith("nfs:\\"))
+      p = p.substring("nfs:\\".length());
+
+    return p;
+  }
   /** Log-2 of Chunk size. */
   public static final int DFLT_LOG2_CHUNK_SIZE = 20/*1Meg*/+2/*4Meg*/;
   /** Default Chunk size in bytes, useful when breaking up large arrays into
@@ -16,13 +28,17 @@ public abstract class FileVec extends ByteVec {
    *  costs, lower increases fine-grained parallelism. */
   public static final int DFLT_CHUNK_SIZE = 1 << DFLT_LOG2_CHUNK_SIZE;
   public int _chunkSize = DFLT_CHUNK_SIZE;
+  public int _nChunks = -1;
 
   protected FileVec(Key key, long len, byte be) {
     super(key,-1/*no rowLayout*/);
     _len = len;
     _be = be;
   }
-
+  public void setNChunks(int n){
+    _nChunks = n;
+    setChunkSize((int)length()/n);
+  }
   /**
    * Chunk size must be positive, 1G or less, and a power of two.
    * Any values that aren't a power of two will be reduced to the
@@ -36,6 +52,7 @@ public abstract class FileVec extends ByteVec {
    * @return actual _chunkSize setting
    */
   public int setChunkSize(int chunkSize) { return setChunkSize(null, chunkSize); }
+
   public int setChunkSize(Frame fr, int chunkSize) {
     // Clear cached chunks first
     // Peeking into a file before the chunkSize has been set
@@ -63,7 +80,11 @@ public abstract class FileVec extends ByteVec {
   }
 
   @Override public long length() { return _len; }
+
+
   @Override public int nChunks() {
+    if(_nChunks != -1) // number of chunks can be set explicitly
+      return _nChunks;
     return (int)Math.max(1,_len / _chunkSize + ((_len % _chunkSize != 0)?1:0));
   }
   @Override public boolean writable() { return false; }

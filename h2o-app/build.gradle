@@ -9,5 +9,7 @@ dependencies {
   compile project(":h2o-core")
   compile project(":h2o-genmodel")
   compile project(":h2o-avro-parser")
+  // Note: orc parser is included at the assembly level for each 
+  // Hadoop distribution
 }
 
