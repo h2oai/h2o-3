@@ -30,52 +30,53 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   private final int _response;           // response column, -1 for no response column
   private final String _loss;            // overarching loss to minimize (meta loss)
   private final long _maxTime;           // maximum amount of time allotted to automl
-  private final double _minAcc;          // minimum accuracy to achieve
+  private final double _minAccuracy;     // minimum accuracy to achieve
   private final boolean _ensemble;       // allow ensembles?
-  private final models[] _modelEx;       // model types to exclude; e.g. don't allow DL
+  private final algo[] _excludeAlgos;    // model algos to exclude; e.g. don't allow DL
   private final boolean _allowMutations; // allow for INPLACE mutations on input frame
-  FrameMeta _fm;                         // metadata for _fr
+  FrameMetadata _frameMetadata;              // metadata for _fr
   private boolean _isClassification;
 
   private long _timeRemaining;
   private long _totalTime;
   private transient ArrayList<Job> _jobs;
 
-  public enum models { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
+  // TODO: UGH: this should be dynamic, and it's easy to make it so
+  public enum algo { RF, GBM, GLM, GLRM, DL, KMEANS }  // consider EnumSet
 
   // https://0xdata.atlassian.net/browse/STEAM-52  --more interesting user options
   public AutoML(Key<AutoML> key, String datasetName, Frame fr, Frame[] relations, int response, String loss, long maxTime,
-                double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations) {
+                double minAccuracy, boolean ensemble, algo[] excludeAlgos, boolean tryMutations) {
     super(key);
     _datasetName=datasetName;
     _fr=fr;
     _response=response;
     _loss=loss;
     _maxTime=maxTime*1000;   // change to millis
-    _minAcc=minAccuracy;
+    _minAccuracy =minAccuracy;
     _ensemble=ensemble;
-    if( modelExclude!=null ) {
-      HashSet<models> m = new HashSet<>();
-      Collections.addAll(m,modelExclude);
-      _modelEx = m.toArray(new models[m.size()]);
-    } else _modelEx=null;
+    if( excludeAlgos!=null ) {
+      HashSet<algo> m = new HashSet<>();
+      Collections.addAll(m,excludeAlgos);
+      _excludeAlgos = m.toArray(new algo[m.size()]);
+    } else _excludeAlgos =null;
     _allowMutations=tryMutations;
     _jobs = new ArrayList<>();
   }
 
   public AutoML(Key<AutoML> key, String datasetName, Frame fr, Frame[] relations, String responseName, String loss, long maxTime,
-                double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations ) {
-    this(key,datasetName,fr,relations,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
+                double minAccuracy, boolean ensemble, algo[] excludeAlgos, boolean tryMutations ) {
+    this(key,datasetName,fr,relations,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,excludeAlgos,tryMutations);
   }
 
   public static AutoML makeAutoML(Key<AutoML> key, String datasetPath, String[] relationPaths, String responseName, String loss, long maxTime,
-                double minAccuracy, boolean ensemble, models[] modelExclude, boolean tryMutations ) {
+                                  double minAccuracy, boolean ensemble, algo[] excludeAlgos, boolean tryMutations ) {
     Frame fr = importParseFrame(datasetPath);
     Frame[] relations = null==relationPaths?null:new Frame[relationPaths.length];
     if( null!=relationPaths )
       for(int i=0;i<relationPaths.length;++i)
         relations[i] = importParseFrame(relationPaths[i]);
-    return new AutoML(key,fr._key.toString(),fr,relations,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,modelExclude,tryMutations);
+    return new AutoML(key,fr._key.toString(),fr,relations,fr.find(responseName),loss,maxTime,minAccuracy,ensemble,excludeAlgos,tryMutations);
   }
 
   private static Frame importParseFrame(String datasetPath) {
@@ -121,11 +122,11 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   public void learn() {
 
     // step 1: gather initial frame metadata and guess the problem type
-    _fm = new FrameMeta(_fr, _response, _datasetName).computeFrameMetaPass1();
-    _isClassification = _fm.isClassification();
+    _frameMetadata = new FrameMetadata(_fr, _response, _datasetName).computeFrameMetaPass1();
+    _isClassification = _frameMetadata.isClassification();
 
     // step 2: build a fast RF
-    ModelBuilder initModel = selectInitial(_fm);
+    ModelBuilder initModel = selectInitial(_frameMetadata);
     Model m = build(initModel); // need to track this...
     System.out.println("AUTOML DONE");
     // gather more data? build more models? start applying transforms? what next ...?
@@ -140,13 +141,13 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
   public void delete() {
     _fr.delete();
-    _fm.delete();
+    _frameMetadata.delete();
     for(Model m: models()) m.delete();
     DKV.remove(MODELLIST);
     DKV.remove(LEADER);
   }
 
-  private ModelBuilder selectInitial(FrameMeta fm) {  // may use _isClassification so not static method
+  private ModelBuilder selectInitial(FrameMetadata fm) {  // may use _isClassification so not static method
     Frame[] trainTest = AutoMLUtils.makeTrainTestFromWeight(fm._fr,fm.weights());
     ModelBuilder mb = InitModel.initRF(trainTest[0], trainTest[1], fm.response()._name);
     mb._parms._ignored_columns = fm.ignoredCols();
