@@ -20,7 +20,7 @@ public class ParseFolderTestBig extends TestUtil {
     try {
       k2 = parse_test_folder("datasets/parse_folder_test");
       k1 = parse_test_file  ("datasets/UCI/UCI-large/covtype/covtype.data");
-      Assert.assertTrue("parsed values do not match!",isBitIdentical(k1,k2));
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();

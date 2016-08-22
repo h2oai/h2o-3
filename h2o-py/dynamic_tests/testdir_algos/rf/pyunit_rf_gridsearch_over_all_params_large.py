@@ -163,7 +163,7 @@ class Test_rf_grid_search:
         print("Time taken to build a base barebone model is {0}".format(self.model_run_time))
 
         summary_list = model._model_json["output"]["model_summary"]
-        num_trees = summary_list.cell_values[0][summary_list.col_header.index('number_of_trees')]
+        num_trees = summary_list["number_of_trees"][0]
 
         if num_trees == 0:
             self.min_runtime_per_tree = self.model_run_time
@@ -284,7 +284,7 @@ class Test_rf_grid_search:
                     manual_run_runtime += model_runtime
 
                     summary_list = manual_model._model_json['output']['model_summary']
-                    tree_num = summary_list.cell_values[0][summary_list.col_header.index('number_of_trees')]
+                    tree_num = summary_list["number_of_trees"][0]
 
                     if max_runtime > 0:
                         # shortest possible time it takes to build this model

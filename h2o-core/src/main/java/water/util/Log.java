@@ -1,15 +1,15 @@
 package water.util;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.ArrayList;
-
 import org.apache.log4j.H2OPropertyConfigurator;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import water.H2O;
 import water.persist.PersistManager;
+
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.ArrayList;
 
 /** Log for H2O. 
  *
@@ -301,6 +301,9 @@ abstract public class Log {
     p.setProperty("log4j.logger.org.jets3t.service",            "WARN");
     p.setProperty("log4j.logger.org.reflections.Reflections",   "ERROR");
     p.setProperty("log4j.logger.com.brsanthu.googleanalytics",  "ERROR");
+
+    // Turn down the logging for external libraries that Orc parser depends on
+    p.setProperty("log4j.logger.org.apache.hadoop.util.NativeCodeLoader", "ERROR");
 
     // See the following document for information about the pattern layout.
     // http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html

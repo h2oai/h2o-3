@@ -934,9 +934,13 @@ public class NewChunk extends Chunk {
             _ms.move(i - cs, i);
             _xs.move(i - cs, i);
             _id[i - cs] = i;
-            if(sparsity_type != Compress.NA && _missing != null)_missing.set(i-cs,_missing.get(i));
+            if(sparsity_type != Compress.NA && _missing != null){
+              _missing.set(i-cs,_missing.get(i));
+            }
           }
         }
+        if(_missing != null && _missing.length() > num_noncompressibles)
+            _missing.clear(num_noncompressibles, _missing.length());
       }
     } else {
       assert num_noncompressibles <= _ds.length;

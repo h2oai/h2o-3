@@ -37,7 +37,7 @@ public class AstStrList extends AstParameter {
   // This is a special syntatic form; the number-list never executes and hits the execution stack
   @Override
   public Val exec(Env env) {
-    throw H2O.fail();
+    throw new IllegalArgumentException("String list not allowed here");
   }
 
   @Override

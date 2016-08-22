@@ -6,6 +6,7 @@ import java.util.List;
 
 import water.Job;
 import water.Key;
+import water.fvec.ByteVec;
 import water.util.Log;
 
 /**
@@ -23,7 +24,7 @@ public final class DefaultParserProviders {
   public static final ParserInfo SVMLight_INFO = new ParserInfo("SVMLight", 1000, true);
   public static final ParserInfo CSV_INFO = new ParserInfo("CSV", Integer.MAX_VALUE, true);
   public static final ParserInfo GUESS_INFO = new ParserInfo("GUESS", -10000, false);
-  /** Priority of non-core parsers shoudl begin here.*/
+  /** Priority of non-core parsers should begin here.*/
   public static final int MAX_CORE_PRIO = 10000;
 
   public final static class ArffParserProvider extends AbstractParserProvide  {
@@ -39,7 +40,7 @@ public final class DefaultParserProviders {
     }
 
     @Override
-    public ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes,
+    public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
                                  int checkHeader, String[] columnNames, byte[] columnTypes,
                                  String[][] domains, String[][] naStrings) {
       return ARFFParser.guessSetup(bits, sep, singleQuotes, columnNames, naStrings);
@@ -59,7 +60,7 @@ public final class DefaultParserProviders {
     }
 
     @Override
-    public ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes,
+    public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
                                  int checkHeader, String[] columnNames, byte[] columnTypes,
                                  String[][] domains, String[][] naStrings) {
       return XlsParser.guessSetup(bits);
@@ -79,7 +80,7 @@ public final class DefaultParserProviders {
     }
 
     @Override
-    public ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes,
+    public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
                                  int checkHeader, String[] columnNames, byte[] columnTypes,
                                  String[][] domains, String[][] naStrings) {
       return SVMLightParser.guessSetup(bits);
@@ -99,7 +100,7 @@ public final class DefaultParserProviders {
     }
 
     @Override
-    public ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes,
+    public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
                                  int checkHeader, String[] columnNames, byte[] columnTypes,
                                  String[][] domains, String[][] naStrings) {
       return CsvParser.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, naStrings);
@@ -119,7 +120,7 @@ public final class DefaultParserProviders {
     }
 
     @Override
-    public ParseSetup guessSetup(byte[] bits, byte sep, int ncols, boolean singleQuotes,
+    public ParseSetup guessSetup(ByteVec bv, byte[] bits, byte sep, int ncols, boolean singleQuotes,
                                  int checkHeader, String[] columnNames, byte[] columnTypes,
                                  String[][] domains, String[][] naStrings) {
       List<ParserProvider> pps = ParserService.INSTANCE.getAllProviders(true); // Sort them based on priorities
@@ -129,7 +130,7 @@ public final class DefaultParserProviders {
         if (pp == this || pp.info().equals(GUESS_INFO)) continue;
         // Else try to guess with given provider
         try {
-          ParseSetup ps = pp.guessSetup(bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, domains, naStrings);
+          ParseSetup ps = pp.guessSetup(bv, bits, sep, ncols, singleQuotes, checkHeader, columnNames, columnTypes, domains, naStrings);
           if( ps != null) {
             return ps;
           }
@@ -142,7 +143,7 @@ public final class DefaultParserProviders {
     }
   }
 
-  static abstract class AbstractParserProvide implements ParserProvider {
+  static abstract class AbstractParserProvide extends ParserProvider {
 
     @Override
     public ParseSetup createParserSetup(Key[] inputs, ParseSetup requiredSetup) {

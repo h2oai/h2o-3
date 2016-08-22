@@ -162,7 +162,7 @@ class Test_glrm_grid_search:
         print("Time taken to build a base barebone model is {0}".format(self.model_run_time))
 
         summary_list = model._model_json["output"]["model_summary"]
-        num_iter = summary_list.cell_values[0][summary_list.col_header.index('number_of_iterations')]
+        num_iter = summary_list["number_of_iterations"][0]
 
         self.min_runtime_per_iter = self.model_run_time / num_iter
 
@@ -253,7 +253,7 @@ class Test_glrm_grid_search:
             else:
                 # add parameters into params_dict.  Use this to manually build model
                 params_dict = dict()
-    #                params_dict["nfolds"] = self.nfolds
+                # params_dict["nfolds"] = self.nfolds
                 total_run_time_limits = 0.0   # calculate upper bound of max_runtime_secs
                 true_run_time_limits = 0.0
                 manual_run_runtime = 0.0
@@ -283,7 +283,7 @@ class Test_glrm_grid_search:
                     manual_run_runtime += model_runtime
 
                     summary_list = manual_model._model_json['output']['model_summary']
-                    num_iter = summary_list.cell_values[0][summary_list.col_header.index('number_of_iterations')]
+                    num_iter = summary_list["number_of_iterations"][0]
 
                     if max_runtime > 0:
                         # shortest possible time it takes to build this model
@@ -301,7 +301,7 @@ class Test_glrm_grid_search:
                     # just compare the mse in this case within tolerance:
                     if not((type(grid_model_metrics) == str) or (type(manual_model_metrics) == str)):
                         if (abs(grid_model_metrics) > 0) and \
-                            abs(grid_model_metrics - manual_model_metrics)/grid_model_metrics > self.allowed_diff:
+                                abs(grid_model_metrics - manual_model_metrics) / grid_model_metrics > self.allowed_diff:
                             print("test_glrm_grid_search_over_params for GLRM warning: grid search model mdetric ({0}) "
                                   "and manually built H2O model metric ({1}) differ too much"
                                   "!".format(grid_model_metrics, manual_model_metrics))

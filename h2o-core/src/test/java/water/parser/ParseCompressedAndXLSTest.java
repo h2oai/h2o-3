@@ -21,9 +21,9 @@ public class ParseCompressedAndXLSTest extends TestUtil {
       k2 = parse_test_file("smalldata/junit/iris.xls");
       k3 = parse_test_file("smalldata/junit/iris.csv.gz");
       k4 = parse_test_file("smalldata/junit/iris.csv.zip");
-      assertTrue(isBitIdentical(k1,k2));
-      assertTrue(isBitIdentical(k2,k3));
-      assertTrue(isBitIdentical(k3,k4));
+      assertTrue(TestUtil.isBitIdentical(k1,k2));
+      assertTrue(TestUtil.isBitIdentical(k2,k3));
+      assertTrue(TestUtil.isBitIdentical(k3,k4));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();

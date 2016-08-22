@@ -7,19 +7,24 @@ This module implements the base model class.  All model things inherit from this
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import imp
 import traceback
 import warnings
 
 import h2o
+from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
+from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import can_use_pandas
+from h2o.utils.typechecks import I, assert_is_type
 
 
-class ModelBase(object):
+class ModelBase(backwards_compatible()):
+    """Base class for all models."""
 
     def __init__(self):
+        """Construct a new model instance."""
+        super(ModelBase, self).__init__()
         self._id = None
         self._model_json = None
         self._metrics_class = None
@@ -57,6 +62,36 @@ class ModelBase(object):
                          "actual": self.parms[p]["actual_value"]}
         return params
 
+    @property
+    def default_params(self):
+        """
+        Get default parameters of a model
+
+        :return: A dictionary of default parameters for the model
+        """
+        params = {}
+        for p in self.parms:
+            params[p] = self.parms[p]["default_value"]
+        return params
+
+    @property
+    def actual_params(self):
+        """
+        Get actual parameters of a model
+
+        :return: A dictionary of actual parameters for the model
+        """
+        params_to_select = {'model_id':'name', \
+                            'response_column':'column_name', \
+                            'training_frame': 'name', \
+                            'validation_frame':'name'}
+        params = {}
+        for p in self.parms:
+            if p in params_to_select.keys():
+                params[p] = self.parms[p]["actual_value"].get(params_to_select[p], None)
+            else:
+                params[p] = self.parms[p]["actual_value"]
+        return params
 
     @property
     def full_parameters(self):
@@ -343,7 +378,7 @@ class ModelBase(object):
             print("Warning: This model doesn't have variable importances")
 
 
-    def residual_deviance(self, train=False, valid=False, xval=False):
+    def residual_deviance(self, train=False, valid=False, xval=None):
         """
         Retreive the residual deviance if this model has the attribute, or None otherwise.
 
@@ -351,10 +386,11 @@ class ModelBase(object):
             train is selected by default.
         :param valid: Get the residual deviance for the validation set. If both train and valid are True, then
             train is selected by default.
+        :param xval: not implemented
 
         :returns: Return the residual deviance, or None if it is not present.
         """
-        if xval: raise ValueError("Cross-validation metrics are not available.")
+        if xval: raise H2OValueError("Cross-validation metrics are not available.")
         if not train and not valid: train = True
         if train and valid:  train = True
         if train:
@@ -371,10 +407,11 @@ class ModelBase(object):
             is selected by default.
         :param valid: Get the residual dof for the validation set. If both train and valid are True, then train
             is selected by default.
+        :param xval: not implemented
 
         :returns: Return the residual dof, or None if it is not present.
         """
-        if xval: raise ValueError("Cross-validation metrics are not available.")
+        if xval: raise H2OValueError("Cross-validation metrics are not available.")
         if not train and not valid: train = True
         if train and valid:         train = True
         if train:
@@ -391,10 +428,11 @@ class ModelBase(object):
             is selected by default.
         :param valid: Get the null deviance for the validation set. If both train and valid are True, then train
             is selected by default.
+        :param xval: not implemented
 
         :returns: Return the null deviance, or None if it is not present.
         """
-        if xval: raise ValueError("Cross-validation metrics are not available.")
+        if xval: raise H2OValueError("Cross-validation metrics are not available.")
         if not train and not valid: train = True
         if train and valid:         train = True
         if train:
@@ -411,10 +449,11 @@ class ModelBase(object):
             selected by default.
         :param valid: Get the null dof for the validation set. If both train and valid are True, then train is
             selected by default.
+        :param xval: not implemented
 
         :returns: Return the null dof, or None if it is not present.
         """
-        if xval: raise ValueError("Cross-validation metrics are not available.")
+        if xval: raise H2OValueError("Cross-validation metrics are not available.")
         if not train and not valid: train = True
         if train and valid:         train = True
         if train:
@@ -544,6 +583,32 @@ class ModelBase(object):
         for k, v in viewitems(tm): m[k] = None if v is None else v.mae()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def rmsle(self, train=False, valid=False, xval=False):
+        """
+        Get the rmsle.
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        Parameters
+        ----------
+        train : bool, default=True
+          If train is True, then return the rmsle value for the training data.
+        valid : bool, default=True
+          If valid is True, then return the rmsle value for the validation data.
+        xval : bool, default=True
+          If xval is True, then return the rmsle value for the cross validation data.
+
+        Returns
+        -------
+          The rmsle for this regression model.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in viewitems(tm): m[k] = None if v is None else v.rmsle()
+        return list(m.values())[0] if len(m) == 1 else m
+
 
     def logloss(self, train=False, valid=False, xval=False):
         """
@@ -625,7 +690,7 @@ class ModelBase(object):
         return list(m.values())[0] if len(m) == 1 else m
 
 
-    def giniCoef(self, train=False, valid=False, xval=False):
+    def gini(self, train=False, valid=False, xval=False):
         """
         Get the Gini coefficient.
 
@@ -641,31 +706,33 @@ class ModelBase(object):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.giniCoef()
+        for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
 
 
     def download_pojo(self, path=""):
         """
-        Download the POJO for this model to the directory specified by path (no trailing slash!).
+        Download the POJO for this model to the directory specified by path.
 
         If path is "", then dump to screen.
 
-        :param model: Retrieve this model's scoring POJO.
         :param path:  An absolute path to the directory where POJO should be saved.
 
         :returns: None
         """
-        h2o.download_pojo(self, path)  # call the "package" function
+        path = path.rstrip("/")
+        h2o.download_pojo(self, path)
 
 
     @staticmethod
     def _get_metrics(o, train, valid, xval):
+        # noinspection PyProtectedMember
+        output = o._model_json["output"]
         metrics = {}
-        if train: metrics["train"] = o._model_json["output"]["training_metrics"]
-        if valid: metrics["valid"] = o._model_json["output"]["validation_metrics"]
-        if xval: metrics["xval"] = o._model_json["output"]["cross_validation_metrics"]
-        if len(metrics) == 0: metrics["train"] = o._model_json["output"]["training_metrics"]
+        if train: metrics["train"] = output["training_metrics"]
+        if valid: metrics["valid"] = output["validation_metrics"]
+        if xval: metrics["xval"] = output["cross_validation_metrics"]
+        if len(metrics) == 0: metrics["train"] = output["training_metrics"]
         return metrics
 
 
@@ -673,17 +740,9 @@ class ModelBase(object):
     # def __del__(self):
     #   h2o.remove(self._id)
 
-    def _plot(self, timestep, metric, **kwargs):
-
-        # check for matplotlib. exit if absent
-        try:
-            imp.find_module('matplotlib')
-            import matplotlib
-            if 'server' in kwargs and kwargs['server']: matplotlib.use('Agg', warn=False)
-            import matplotlib.pyplot as plt
-        except ImportError:
-            print("matplotlib is required for this function!")
-            return
+    def _plot(self, timestep, metric, server=False):
+        plt = _get_matplotlib_pyplot(server)
+        if not plt: return
 
         scoring_history = self.scoring_history()
         # Separate functionality for GLM since its output is different from other algos
@@ -693,7 +752,7 @@ class ModelBase(object):
             if metric == "AUTO":
                 metric = "log_likelihood"
             elif metric not in ("log_likelihood", "objective"):
-                raise ValueError("for GLM, metric must be one of: log_likelihood, objective")
+                raise H2OValueError("for GLM, metric must be one of: log_likelihood, objective")
             plt.xlabel(timestep)
             plt.ylabel(metric)
             plt.title("Validation Scoring History")
@@ -702,18 +761,16 @@ class ModelBase(object):
         elif self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
             # Set timestep
             if self._model_json["algo"] in ("gbm", "drf"):
+                assert_is_type(timestep, "AUTO", "duration", "number_of_trees")
                 if timestep == "AUTO":
                     timestep = "number_of_trees"
-                elif timestep not in ("duration", "number_of_trees"):
-                    raise ValueError("timestep for gbm or drf must be one of: duration, number_of_trees")
             else:  # self._model_json["algo"] == "deeplearning":
                 # Delete first row of DL scoring history since it contains NAs & NaNs
                 if scoring_history["samples"][0] == 0:
                     scoring_history = scoring_history[1:]
+                assert_is_type(timestep, "AUTO", "epochs",  "samples", "duration")
                 if timestep == "AUTO":
                     timestep = "epochs"
-                elif timestep not in ("epochs", "samples", "duration"):
-                    raise ValueError("timestep for deeplearning must be one of: epochs, samples, duration")
 
             training_metric = "training_{}".format(metric)
             validation_metric = "validation_{}".format(metric)
@@ -751,8 +808,207 @@ class ModelBase(object):
                 plt.plot(scoring_history[timestep], scoring_history[training_metric])
 
         else:  # algo is not glm, deeplearning, drf, gbm
-            raise ValueError("Plotting not implemented for this type of model")
-        if "server" not in list(kwargs.keys()) or not kwargs["server"]: plt.show()
+            raise H2OValueError("Plotting not implemented for this type of model")
+        if not server: plt.show()
+
+
+    def varimp_plot(self, num_of_features=None, server=False):
+        """
+        Plot the variable importance for a trained model.
+
+        :param num_of_features: the number of features shown in the plot.
+        :param server: ?
+
+        :returns: None.
+        """
+        assert_is_type(num_of_features, None, int)
+        assert_is_type(server, bool)
+
+        plt = _get_matplotlib_pyplot(server)
+        if not plt: return
+
+        # check if the model is a glm
+        if self._model_json["algo"] == "glm":
+            # print statement to used std_coef_plot(), and use std_coef_plt instead
+            print("Variable importance does not apply to GLM. Will use std_coef_plot() instead.")
+            self.std_coef_plot(num_of_features)
+            return
+
+        # get the variable importances as a list of tuples, do not use pandas dataframe
+        importances = self.varimp(use_pandas=False)
+        # features labels correspond to the first value of each tuple in the importances list
+        feature_labels = [tup[0] for tup in importances]
+        # relative importances correspond to the first value of each tuple in the importances list
+        scaled_importances = [tup[2] for tup in importances]
+        # specify bar centers on the y axis, but flip the order so largest bar appears at top
+        pos = range(len(feature_labels))[::-1]
+        # specify the bar lengths
+        val = scaled_importances
+
+        # check that num_of_features is an integer
+        if num_of_features is None:
+            num_of_features = len(val)
+
+        fig, ax = plt.subplots(1, 1, figsize=(14, 10))
+        # create separate plot for the case where num_of_features == 1
+        if num_of_features == 1:
+            plt.barh(pos[0:num_of_features], val[0:num_of_features], align="center",
+                     height=0.8, color="#1F77B4", edgecolor="none")
+            # Hide the right and top spines, color others grey
+            ax.spines["right"].set_visible(False)
+            ax.spines["top"].set_visible(False)
+            ax.spines["bottom"].set_color("#7B7B7B")
+            ax.spines["left"].set_color("#7B7B7B")
+            # Only show ticks on the left and bottom spines
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
+            plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
+            ax.margins(y=0.5)
+
+        else:
+            plt.barh(pos[0:num_of_features], val[0:num_of_features], align="center",
+                     height=0.8, color="#1F77B4", edgecolor="none")
+            # Hide the right and top spines, color others grey
+            ax.spines["right"].set_visible(False)
+            ax.spines["top"].set_visible(False)
+            ax.spines["bottom"].set_color("#7B7B7B")
+            ax.spines["left"].set_color("#7B7B7B")
+            # Only show ticks on the left and bottom spines
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
+            plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
+            ax.margins(y=0.5)
+
+        # check which algorithm was used to select right plot title
+        if self._model_json["algo"] == "gbm":
+            plt.title("Variable Importance: H2O GBM", fontsize=20)
+            if not server: plt.show()
+        elif self._model_json["algo"] == "drf":
+            plt.title("Variable Importance: H2O DRF", fontsize=20)
+            if not server: plt.show()
+        # if H2ODeepLearningEstimator has variable_importances == True
+        elif self._model_json["algo"] == "deeplearning":
+            plt.title("Variable Importance: H2O Deep Learning", fontsize=20)
+            if not server: plt.show()
+        else:
+            raise H2OValueError("A variable importances plot is not implemented for this type of model")
+
+
+    def std_coef_plot(self, num_of_features=None, server=False):
+        """
+        Plot a GLM model's standardized coefficient magnitudes.
+
+        :param num_of_features: the number of features shown in the plot.
+        :param server: ?
+
+        :returns: None.
+        """
+        assert_is_type(num_of_features, None, I(int, lambda x: x > 0))
+
+        # check that model is a glm
+        if self._model_json["algo"] != "glm":
+            raise H2OValueError("This function is available for GLM models only")
+
+        plt = _get_matplotlib_pyplot(server)
+        if not plt: return
+
+        # get unsorted tuple of labels and coefficients
+        unsorted_norm_coef = self.coef_norm().items()
+        # drop intercept value then sort tuples by the coefficient's absolute value
+        drop_intercept = [tup for tup in unsorted_norm_coef if tup[0] != "Intercept"]
+        norm_coef = sorted(drop_intercept, key=lambda x: abs(x[1]), reverse=True)
+
+        signage = []
+        for element in norm_coef:
+            # if positive including zero, color blue, else color orange (use same colors as Flow)
+            if element[1] >= 0:
+                signage.append("#1F77B4")  # blue
+            else:
+                signage.append("#FF7F0E")  # dark orange
+
+        # get feature labels and their corresponding magnitudes
+        feature_labels = [tup[0] for tup in norm_coef]
+        norm_coef_magn = [abs(tup[1]) for tup in norm_coef]
+        # specify bar centers on the y axis, but flip the order so largest bar appears at top
+        pos = range(len(feature_labels))[::-1]
+        # specify the bar lengths
+        val = norm_coef_magn
+
+        # check number of features, default is all the features
+        if num_of_features is None:
+            num_of_features = len(val)
+
+        # plot horizontal plot
+        fig, ax = plt.subplots(1, 1, figsize=(14, 10))
+        # create separate plot for the case where num_of_features = 1
+        if num_of_features == 1:
+            plt.barh(pos[0], val[0],
+                     align="center", height=0.8, color=signage[0], edgecolor="none")
+            # Hide the right and top spines, color others grey
+            ax.spines["right"].set_visible(False)
+            ax.spines["top"].set_visible(False)
+            ax.spines["bottom"].set_color("#7B7B7B")
+            ax.spines["left"].set_color("#7B7B7B")
+            # Only show ticks on the left and bottom spines
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
+            plt.yticks([0], feature_labels[0])
+            ax.margins(y=0.5)
+
+        else:
+            plt.barh(pos[0:num_of_features], val[0:num_of_features],
+                     align="center", height=0.8, color=signage[0:num_of_features], edgecolor="none")
+            # Hide the right and top spines, color others grey
+            ax.spines["right"].set_visible(False)
+            ax.spines["top"].set_visible(False)
+            ax.spines["bottom"].set_color("#7B7B7B")
+            ax.spines["left"].set_color("#7B7B7B")
+            # Only show ticks on the left and bottom spines
+            ax.yaxis.set_ticks_position("left")
+            ax.xaxis.set_ticks_position("bottom")
+            plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
+            ax.margins(y=0.05)
+
+        # generate custom fake lines that will be used as legend entries:
+        # check if positive and negative values exist
+        # if positive create positive legend
+        if "#1F77B4" in signage[0:num_of_features] and "#FF7F0E" not in signage[0:num_of_features]:
+            color_ids = {"Positive": "#1F77B4"}
+            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
+                       for color in signage[0:num_of_features]]
+            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
+            lgnd.legendHandles[0]._legmarker.set_markersize(10)
+        # if neg create neg legend
+        elif "#FF7F0E" in signage[0:num_of_features] and "#1F77B4" not in signage[0:num_of_features]:
+            color_ids = {"Negative": "#FF7F0E"}
+            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
+                       for color in set(signage[0:num_of_features])]
+            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
+            lgnd.legendHandles[0]._legmarker.set_markersize(10)
+        # if both provide both colors in legend
+        else:
+            color_ids = {"Positive": "#1F77B4", "Negative": "#FF7F0E"}
+            markers = [plt.Line2D([0, 0], [0, 0], color=color, marker="s", linestyle="")
+                       for color in set(signage[0:num_of_features])]
+            lgnd = plt.legend(markers, color_ids, numpoints=1, loc="best", frameon=False, fontsize=13)
+            lgnd.legendHandles[0]._legmarker.set_markersize(10)
+            lgnd.legendHandles[1]._legmarker.set_markersize(10)
+
+        # Hide the right and top spines, color others grey
+        ax.spines["right"].set_visible(False)
+        ax.spines["top"].set_visible(False)
+        ax.spines["bottom"].set_color("#7B7B7B")
+        ax.spines["left"].set_color("#7B7B7B")
+
+        # Only show ticks on the left and bottom spines
+        # ax.yaxis.set_ticks_position("left")
+        # ax.xaxis.set_ticks_position("bottom")
+        plt.yticks(pos[0:num_of_features], feature_labels[0:num_of_features])
+        plt.tick_params(axis="x", which="minor", bottom="off", top="off",  labelbottom="off")
+        plt.title("Standardized Coef. Magnitudes: H2O GLM", fontsize=20)
+        # plt.axis("tight")
+        # show plot
+        if not server: plt.show()
 
 
     @staticmethod
@@ -824,3 +1080,21 @@ class ModelBase(object):
         """[DEPRECATED]."""
         warnings.warn("`score_history` is deprecated. Use `scoring_history`", category=DeprecationWarning, stacklevel=2)
         return self.scoring_history()
+
+    # Deprecated functions; left here for backward compatibility
+    _bcim = {
+        "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
+    }
+
+
+def _get_matplotlib_pyplot(server):
+    try:
+        # noinspection PyUnresolvedReferences
+        import matplotlib
+        if server: matplotlib.use("Agg", warn=False)
+        # noinspection PyUnresolvedReferences
+        import matplotlib.pyplot as plt
+        return plt
+    except ImportError:
+        print("`matplotlib` library is required for this function!")
+        return None

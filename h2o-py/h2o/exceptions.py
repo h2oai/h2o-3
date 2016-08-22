@@ -23,7 +23,7 @@ class H2OSoftError(H2OError):
 # H2OValueError
 #-----------------------------------------------------------------------------------------------------------------------
 
-class H2OValueError(H2OSoftError):
+class H2OValueError(H2OSoftError, ValueError):
     """Error indicating that wrong parameter value was passed to a function."""
 
     def __init__(self, message, var_name=None, skip_frames=0):
@@ -38,7 +38,7 @@ class H2OValueError(H2OSoftError):
 # H2OTypeError
 #-----------------------------------------------------------------------------------------------------------------------
 
-class H2OTypeError(H2OSoftError):
+class H2OTypeError(H2OSoftError, TypeError):
     """
     Error indicating that the user passed a parameter of wrong type.
 
@@ -46,24 +46,27 @@ class H2OTypeError(H2OSoftError):
     than usual.
     """
 
-    def __init__(self, var_name=None, exp_types=None, var_value=None, message=None, skip_frames=0):
+    def __init__(self, var_name=None, var_value=None, var_type_name=None, exp_type_name=None, message=None,
+                 skip_frames=0):
         """
         Create an H2OTypeError exception object.
 
         :param message: error message that will be shown to the user. If not given, this message will be constructed
-            from ``var_name``, ``var_value`` and ``exp_types``.
-        :param exp_types: expected variable's type.
+            from ``var_name``, ``var_value``, etc.
         :param var_name: name of the variable whose type is wrong (can be used for highlighting etc).
+        :param var_value: the value of the variable.
+        :param var_type_name: the name of the variable's actual type.
+        :param exp_type_name: the name of the variable's expected type.
         :param skip_frames: how many auxiliary function calls have been made since the moment of the exception. This
             many local frames will be skipped in the output of the exception message. For example if you want to check
             a variables type, and call a helper function ``assert_is_type()`` to do that job for you, then
             ``skip_frames`` should be 1 (thus making the call to ``assert_is_type`` invisible).
         """
         super(H2OTypeError, self).__init__(message)
-        assert isinstance(exp_types, (list, tuple)), "Bad `exp_types` argument: %r" % exp_types
         self._var_name = var_name
-        self._exp_types = exp_types
         self._var_value = var_value
+        self._var_type_name = var_type_name or str(type(var_value))
+        self._exp_type_name = exp_type_name
         self._message = message
         self._skip_frames = skip_frames
 
@@ -74,10 +77,10 @@ class H2OTypeError(H2OSoftError):
         # Otherwise construct the message
         var = self._var_name
         val = self._var_value
-        etn = self._get_type_name(self._exp_types)
+        atn = self._var_type_name
+        etn = self._exp_type_name
         article = "an" if etn.lstrip("?")[0] in "aioeH" else "a"
-        atn = self._get_type_name([type(val)])
-        return "Argument `{var}` should be {an} {expected_type}, got {actual_type} (value: {value})".\
+        return "Argument `{var}` should be {an} {expected_type}, got {actual_type} {value}".\
                format(var=var, an=article, expected_type=etn, actual_type=atn, value=val)
 
     @property
@@ -89,59 +92,6 @@ class H2OTypeError(H2OSoftError):
     def skip_frames(self):
         """Number of local frames to skip when printing our the stacktrace."""
         return self._skip_frames
-
-
-    @staticmethod
-    def _get_type_name(types):
-        """
-        Return the name of the provided type.
-
-            >>> _get_type_name([int]) == "integer"
-            >>> _get_type_name([str]) == "string"
-            >>> _get_type_name([tuple]) == "tuple"
-            >>> _get_type_name([Exception]) == "Exception"
-            >>> _get_type_name((int, float, bool)) == "integer|float|bool"
-            >>> _get_type_name((H2OFrame, None)) == "?H2OFrame"
-        """
-        from h2o.utils.typechecks import is_str, is_int, U, I, numeric
-        maybe_type = False
-        res = []
-        for tt in types:
-            if tt is None:
-                maybe_type = True
-            elif tt is str:
-                res.append("string")
-            elif tt is int:
-                res.append("integer")
-            elif tt is numeric:
-                res.append("numeric")
-            elif is_str(tt):
-                res.append('"%s"' % repr(tt)[1:-1])
-            elif is_int(tt):
-                res.append(str(tt))
-            elif isinstance(tt, U):
-                res.append(H2OTypeError._get_type_name(tt))
-            elif isinstance(tt, I):
-                res.append("&".join(H2OTypeError._get_type_name([tttt]) for tttt in tt))
-            elif isinstance(tt, type):
-                res.append(tt.__name__)
-            elif isinstance(tt, list):
-                res.append("list(%s)" % H2OTypeError._get_type_name(tt))
-            elif isinstance(tt, set):
-                res.append("set(%s)" % H2OTypeError._get_type_name(tt))
-            elif isinstance(tt, tuple):
-                res.append("(%s)" % ", ".join(H2OTypeError._get_type_name([item]) for item in tt))
-            elif isinstance(tt, dict):
-                res.append("dict(%s)" % ", ".join(
-                    "%s: %s" % (H2OTypeError._get_type_name([tk]), H2OTypeError._get_type_name([tv]))
-                    for tk, tv in tt.items()
-                ))
-            else:
-                raise RuntimeError("Unexpected `tt`: %r" % tt)
-        if maybe_type:
-            if not res: return "None"
-            res[0] = "?" + res[0]
-        return "|".join(res)
 
 
 

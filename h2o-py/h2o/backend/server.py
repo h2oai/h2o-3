@@ -24,7 +24,7 @@ from warnings import warn
 
 from h2o.exceptions import H2OServerError, H2OStartupError
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import is_int, is_str
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type
 
 __all__ = ("H2OLocalServer", )
 
@@ -80,26 +80,25 @@ class H2OLocalServer(object):
 
         :returns: a new H2OLocalServer instance
         """
-        assert jar_path is None or is_str(jar_path), "`jar_path` should be string, got %s" % type(jar_path)
-        assert jar_path is None or jar_path.endswith("h2o.jar"), \
-            "`jar_path` should be a path to an h2o.jar executable, got %s" % jar_path
-        assert is_int(nthreads), "`nthreads` should be integer, got %s" % type(nthreads)
+        assert_is_type(jar_path, None, str)
+        assert_is_type(port, None, int, str)
+        assert_is_type(nthreads, int)
+        assert_is_type(enable_assertions, bool)
+        assert_is_type(min_mem_size, None, int)
+        assert_is_type(max_mem_size, None, int)
+        assert_is_type(ice_root, None, str)
+        if jar_path:
+            assert_satisfies(jar_path, jar_path.endswith("h2o.jar"))
+
         assert nthreads == -1 or 1 <= nthreads <= 4096, "`nthreads` is out of bounds: %d" % nthreads
-        assert isinstance(enable_assertions, bool), \
-            "`enable_assertions` should be bool, got %s" % type(enable_assertions)
-        assert max_mem_size is None or is_int(max_mem_size), \
-            "`max_mem_size` should be integer, got %s" % type(max_mem_size)
         assert max_mem_size is None or max_mem_size >= 1 << 25, "`max_mem_size` too small: %d" % max_mem_size
-        assert min_mem_size is None or is_int(min_mem_size), \
-            "`min_mem_size` should be integer, got %s" % type(min_mem_size)
         assert min_mem_size is None or max_mem_size is None or min_mem_size <= max_mem_size, \
             "`min_mem_size`=%d is larger than the `max_mem_size`=%d" % (min_mem_size, max_mem_size)
         if ice_root:
-            assert is_str(ice_root), "`ice_root` should be string, got %r" % type(ice_root)
             assert os.path.isdir(ice_root), "`ice_root` is not a valid directory: %s" % ice_root
         if port is None: port = "54321+"
         baseport = None
-        if is_str(port):
+        if is_type(port, str):
             if port.isdigit():
                 port = int(port)
             else:
@@ -107,7 +106,6 @@ class H2OLocalServer(object):
                     "`port` should be of the form 'DDDD+', where D is a digit. Got: %s" % port
                 baseport = int(port[:-1])
                 port = 0
-        assert is_int(port), "`port` should be integer (or string). Got: %s" % type(port)
 
         hs = H2OLocalServer()
         hs._verbose = bool(verbose)
@@ -335,10 +333,12 @@ class H2OLocalServer(object):
 
         # check "/Program Files" and "/Program Files (x86)" on Windows
         if sys.platform == "win32":
-            program_folders = [os.path.join("C:", "Program Files", "Java"),
-                               os.path.join("C:", "Program Files (x86)", "Java")]
+            # On Windows, backslash on the drive letter is necessary, otherwise os.path.join produces an invalid path
+            program_folders = [os.path.join("C:\\", "Program Files", "Java"),
+                               os.path.join("C:\\", "Program Files (x86)", "Java")]
             # Look for JDK
             for folder in program_folders:
+                if not os.path.exists(folder): continue
                 for jdk in os.listdir(folder):
                     if "jdk" not in jdk.lower(): continue
                     path = os.path.join(folder, jdk, "bin", "java.exe")

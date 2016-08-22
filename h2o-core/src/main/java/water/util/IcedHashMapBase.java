@@ -9,8 +9,6 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Iced / Freezable NonBlockingHashMap abstract base class.
@@ -33,6 +31,10 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
   public boolean equals(Object o)                       { return map().equals(o); }
   public int hashCode()                                 { return map().hashCode(); }
 
+
+  private boolean isStringKey(int mode){
+    return mode == 1 || mode == 2 || mode == 5;
+  }
   // This comment is stolen from water.parser.Categorical:
   //
   // Since this is a *concurrent* hashtable, writing it whilst its being
@@ -68,7 +70,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       }
       ab.put1(mode);              // Type of hashmap being serialized
       writeMap(ab, mode);          // Do the hard work of writing the map
-      return (mode == 1 || mode == 2 || mode == 5) ? ab.putStr(null) : ab.put(null);
+      return isStringKey(mode) ? ab.putStr(null) : ab.put(null);
     } catch(Throwable t){
       System.err.println("Iced hash map serialization failed! " + t.toString() + ", msg = " + t.getMessage());
       t.printStackTrace();
@@ -109,7 +111,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       if (mode == 0) return this;
       K key;
       V val;
-      while ((key = ((mode == 1 || mode == 2) ? (K) ab.getStr() : (K) ab.get())) != null) {
+      while ((key = (isStringKey(mode) ? (K) ab.getStr() : (K) ab.get())) != null) {
         if (mode == 5 || mode == 6) {
           Freezable[] vals = new Freezable[ab.get4()];
           for (int i = 0; i < vals.length; ++i) vals[i] = ab.get();
@@ -122,7 +124,15 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       return this;
     } catch(Throwable t) {
       t.printStackTrace();
-      throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage());
+
+      if (null == t.getCause()) {
+        throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage() + ", cause: null");
+      } else {
+        throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage() +
+                ", cause: " + t.getCause().toString() +
+                ", cause msg: " + t.getCause().getMessage() +
+                ", cause stacktrace: " + java.util.Arrays.toString(t.getCause().getStackTrace()));
+      }
     }
   }
   public final IcedHashMapBase readJSON_impl( AutoBuffer ab ) {throw H2O.unimpl();}

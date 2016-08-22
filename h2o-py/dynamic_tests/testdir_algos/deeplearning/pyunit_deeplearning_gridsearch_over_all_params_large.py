@@ -92,7 +92,7 @@ class Test_deeplearning_grid_search:
 
     # give the user opportunity to pre-assign hyper parameters for fixed values
     hyper_params = dict()
-#    hyper_params["balance_classes"] = [True, False]    # for classification only
+    # hyper_params["balance_classes"] = [True, False]    # for classification only
     hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]
     hyper_params["activation"] = ["Tanh", "TanhWithDropout"]
     hyper_params["quiet_mode"] = [True]
@@ -100,7 +100,7 @@ class Test_deeplearning_grid_search:
     hyper_params['variable_importances'] = [False]
     hyper_params['fast_mode'] = [True, False]
     hyper_params['shuffle_training_data'] = [False]
-#    hyper_params["max_hit_ratio_k"] = [0.0]
+    # hyper_params["max_hit_ratio_k"] = [0.0]
 
     # parameters to be excluded from hyper parameter list even though they may be gridable
     exclude_parameter_lists = ['distribution', 'tweedie_power', 'validation_frame', 'response_column',
@@ -108,12 +108,12 @@ class Test_deeplearning_grid_search:
                                'train_samples_per_iteration', 'replicate_training_data', 'sparse', 'initial_weights',
                                'class_sampling_factors', 'standardize', 'fold_column', 'weights_column',
                                'offset_column', 'score_each_iteration', 'seed', 'max_w2', 'initial_weight_scale',
-                               'score_interval', 'score_training_samples','score_validation_samples', 'sparsity_beta',
+                               'score_interval', 'score_training_samples', 'score_validation_samples', 'sparsity_beta',
                                'classification_stop', 'regression_stop',  'score_validation_sampling',
                                'force_load_balance', 'single_node_mode', 'col_major', 'average_activation',
                                'score_duty_cycle', 'max_after_balance_size', 'nesterov_accelerated_gradient',
                                'max_categorical_features', 'reproducible', 'missing_values_handling', 'initial_biases',
-                               'stopping_rounds', 'stopping_tolerance' , 'stopping_metric', 'target_ratio_comm_to_comp',
+                               'stopping_rounds', 'stopping_tolerance', 'stopping_metric', 'target_ratio_comm_to_comp',
                                'stopping_metric', 'max_hit_ratio_k', 'balance_classes']
 
     final_hyper_params = dict()     # store the final hyper-parameters that we are going to use
@@ -169,7 +169,7 @@ class Test_deeplearning_grid_search:
         print("Time taken to build a base barebone model is {0}".format(self.model_run_time))
 
         summary_list = model._model_json["output"]["scoring_history"]
-        num_iterations = summary_list.cell_values[2][summary_list.col_header.index('iterations')]
+        num_iterations = summary_list["iterations"][2]
 
         if num_iterations == 0:
             self.min_runtime_per_iteration = self.model_run_time
@@ -315,7 +315,7 @@ class Test_deeplearning_grid_search:
                 if len(summary_list.cell_values) < 3:
                     num_iterations = 1
                 else:
-                    num_iterations = summary_list.cell_values[2][summary_list.col_header.index('iterations')]
+                    num_iterations = summary_list["iterations"][2]
 
                 if max_runtime > 0:
                     # shortest possible time it takes to build this model

@@ -124,23 +124,6 @@ For cluster startup, if you are not launching on Hadoop, then you will not need 
 Algorithms
 ----------
 
-**What does it mean if the R^2 value in my model is negative?**
-
-The coefficient of determination (also known as R^2) can be negative if:
-
--  linear regression is used without an intercept (constant)
--  non-linear functions are fitted to the data
--  predictions compared to the corresponding outcomes are not based on
-   the model-fitting procedure using those data
--  it is early in the build process (may self-correct as more trees are
-   added)
-
-If your R^2 value is negative after your model is complete, your model is
-likely incorrect. Make sure your data is suitable for the type of model,
-then try adding an intercept.
-
---------------
-
 **What's the process for implementing new algorithms in H2O?**
 
 This `blog post <http://blog.h2o.ai/2014/11/hacking-algorithms-in-h2o-with-cliff/>`__ by Cliff
@@ -1509,6 +1492,8 @@ including dependencies:
 - ``data.table``
 - ``cvAUC``
 
+Finally, if you are running R on Linux, then you must install ``libcurl``, which allows H2O to communicate with R.
+
 --------------
 
 **How can I install the H2O R package if I am having permissions
@@ -1659,12 +1644,15 @@ example:
 
 --------------
 
-**I'm using CentOS and I want to run H2O in R - are there any
+**I'm using Linux and I want to run H2O in R - are there any
 dependencies I need to install?**
 
 Yes, make sure to install ``libcurl``, which allows H2O to communicate
 with R. We also recommend disabling SElinux and any firewalls, at least
 initially until you have confirmed H2O can initialize.
+
+- On Ubuntu, run: ``apt-get install libcurl4-openssl-dev``
+- On CentOS, run: ``yum install libcurl-devel``
 
 --------------
 

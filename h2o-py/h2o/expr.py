@@ -19,7 +19,7 @@ import h2o
 from h2o.backend.connection import H2OConnectionError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
-from h2o.utils.typechecks import is_numeric, is_str
+from h2o.utils.typechecks import numeric, is_type
 
 
 class ExprNode(object):
@@ -140,17 +140,16 @@ class ExprNode(object):
             return str(arg)
         elif isinstance(arg, bool):
             return "{}".format("TRUE" if arg else "FALSE")
-        elif is_numeric(arg):
+        elif is_type(arg, numeric):
             return "{}".format("NaN" if math.isnan(arg) else arg)
-        elif is_str(arg):
+        elif is_type(arg, str):
             return '"' + arg + '"'
         elif isinstance(arg, slice):
             return "[{}:{}]".format(0 if arg.start is None else arg.start,
-                                    "NaN" if (arg.stop is None or math.isnan(arg.stop)) else (
-                                    arg.stop) if arg.start is None else (arg.stop - arg.start))
+                                    "NaN" if (arg.stop is None or math.isnan(arg.stop)) else
+                                    (arg.stop) if arg.start is None else (arg.stop - arg.start))
         elif isinstance(arg, list):
-            allstrs = all(is_str(elem) for elem in arg)
-            if allstrs:
+            if is_type(arg, [str]):
                 return "[%s]" % " ".join('"%s"' % elem for elem in arg)
             else:
                 return "[%s]" % " ".join("NaN" if i == 'NaN' or math.isnan(i) else str(i) for i in arg)
@@ -322,7 +321,8 @@ class H2OCache(object):
             # token NaN, so the default python json decoder does not convert them
             # to math.nan.  Do that now.
             else:
-                c['data'] = [float('nan') if x == "NaN" else x for x in c['data']]
+                if c['data'] and (len(c['data']) > 0):  # orc file parse can return frame with zero rows
+                    c['data'] = [float('nan') if x == "NaN" else x for x in c['data']]
             self._data[c.pop('label')] = c  # Label used as the Key
         return self
 

@@ -5,11 +5,8 @@ import org.junit.*;
 
 import water.*;
 import water.parser.ParseDataset;
-import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;
-
-import java.io.File;
 
 public class RebalanceDatasetTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
@@ -32,7 +29,7 @@ public class RebalanceDatasetTest extends TestUtil {
           rebalanced = DKV.get(rebalancedKey).get();
           assertEquals(rebalanced.numRows(), fr.numRows());
           assertEquals(rebalanced.anyVec().nChunks(), i);
-          assertTrue(isBitIdentical(fr, rebalanced));
+          assertTrue(TestUtil.isIdenticalUpToRelTolerance(fr, rebalanced, 1e-10));
           Log.info("Rebalanced into " + i + " chunks:");
           Log.info(FrameUtils.chunkSummary(rebalanced).toString());
         } finally {

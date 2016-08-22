@@ -153,7 +153,7 @@ class Test_rf_gridsearch_sorting_metrics:
         print("Time taken to build a base barebone model is {0}".format(self.model_run_time))
 
         summary_list = model._model_json["output"]["model_summary"]
-        num_trees = summary_list.cell_values[0][summary_list.col_header.index('number_of_trees')]
+        num_trees = summary_list["number_of_trees"][0]
 
         if num_trees == 0:
             self.min_runtime_per_tree = self.model_run_time
@@ -222,7 +222,6 @@ class Test_rf_gridsearch_sorting_metrics:
             grid_model.train(x=self.x_indices, y=self.y_index, training_frame=self.training1_data)
 
             result_table = grid_model._grid_json["summary_table"]
-            stopping_metric_index = result_table.col_header.index(self.training_metric)
             model_index = 0
             grid_model_metrics = []
 
@@ -231,7 +230,7 @@ class Test_rf_gridsearch_sorting_metrics:
 
             # grab performance metric for each model of grid_model and collect correct sorting metrics by hand
             for each_model in grid_model:
-                grid_model_metric = float(result_table.cell_values[model_index][stopping_metric_index])
+                grid_model_metric = float(result_table[self.training_metric][model_index])
                 grid_model_metrics.append(grid_model_metric)
 
                 manual_metric = each_model._model_json["output"]["cross_validation_metrics"]._metric_json["logloss"]

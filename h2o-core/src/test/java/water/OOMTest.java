@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import org.junit.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.FileUtils;
 import water.util.Log;
 
 @Ignore
@@ -69,7 +68,7 @@ public class OOMTest extends TestUtil {
     }
 
     // Now touch all the data, forcing a reload.  Confirm all reads the same.
-    boolean id = isBitIdentical(new Frame(new String[]{"C1"}, new Vec[]{vrnd1}),
+    boolean id = TestUtil.isBitIdentical(new Frame(new String[]{"C1"}, new Vec[]{vrnd1}),
                                 new Frame(new String[]{"C1"}, new Vec[]{vrnd2}));
     Assert.assertTrue("Frames loaded from disk are equal", id);
     // All Chunks are recorded as being back-in-memory

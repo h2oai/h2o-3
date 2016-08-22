@@ -13,7 +13,7 @@ def cars_checkpoint():
     # build first model
     model1 = H2ORandomForestEstimator(ntrees=10,max_depth=2, min_rows=10)
     model1.train(x=predictors,y=response_col,training_frame=cars)
-#    model1 = h2o.random_forest(x=cars[predictors],y=cars[response_col],ntrees=10,max_depth=2, min_rows=10)
+    # model1 = h2o.random_forest(x=cars[predictors],y=cars[response_col],ntrees=10,max_depth=2, min_rows=10)
 
     # continue building the model
     model2 = H2ORandomForestEstimator(ntrees=11,max_depth=3, min_rows=9,r2_stopping=0.8,
@@ -30,7 +30,7 @@ def cars_checkpoint():
 
         model = H2ORandomForestEstimator(mtries=2,checkpoint=model1._id)
         model.train(x=predictors,y=response_col,training_frame=cars)
-#        model = h2o.random_forest(y=cars[response_col], x=cars[predictors],mtries=2,checkpoint=model1._id)
+        # model = h2o.random_forest(y=cars[response_col], x=cars[predictors],mtries=2,checkpoint=model1._id)
         assert False, "Expected model-build to fail because mtries not modifiable by checkpoint"
     except EnvironmentError:
         assert True
@@ -39,7 +39,7 @@ def cars_checkpoint():
     try:
         model = H2ORandomForestEstimator(sample_rate=0.5,checkpoint=model1._id)
         model.train(x=predictors,y=response_col,training_frame=cars)
-#        model = h2o.random_forest(y=cars[response_col], x=cars[predictors],sample_rate=0.5,checkpoint=model1._id)
+        # model = h2o.random_forest(y=cars[response_col], x=cars[predictors],sample_rate=0.5,checkpoint=model1._id)
         assert False, "Expected model-build to fail because sample_rate not modifiable by checkpoint"
     except EnvironmentError:
         assert True
@@ -48,7 +48,7 @@ def cars_checkpoint():
     try:
         model = H2ORandomForestEstimator(sample_rate=0.5,checkpoint=model1._id)
         model.train(x=predictors,y=response_col,training_frame=cars)
-#        model = h2o.random_forest(y=cars[response_col], x=cars[predictors],nbins_cats=99,checkpoint=model1._id)
+        # model = h2o.random_forest(y=cars[response_col], x=cars[predictors],nbins_cats=99,checkpoint=model1._id)
         assert False, "Expected model-build to fail because nbins_cats not modifiable by checkpoint"
     except EnvironmentError:
         assert True
@@ -57,7 +57,7 @@ def cars_checkpoint():
     try:
         model = H2ORandomForestEstimator(nbins=99,checkpoint=model1._id)
         model.train(x=predictors,y=response_col,training_frame=cars)
-#        model = h2o.random_forest(y=cars[response_col], x=cars[predictors],nbins=99,checkpoint=model1._id)
+        # model = h2o.random_forest(y=cars[response_col], x=cars[predictors],nbins=99,checkpoint=model1._id)
         assert False, "Expected model-build to fail because nbins not modifiable by checkpoint"
     except EnvironmentError:
         assert True
@@ -66,7 +66,7 @@ def cars_checkpoint():
     try:
         model = H2ORandomForestEstimator(balance_classes=True,checkpoint=model1._id)
         model.train(x=predictors,y=response_col,training_frame=cars)
-#        model = h2o.random_forest(y=cars[response_col], x=cars[predictors],balance_classes=True,checkpoint=model1._id)
+        # model = h2o.random_forest(y=cars[response_col], x=cars[predictors],balance_classes=True,checkpoint=model1._id)
         assert False, "Expected model-build to fail because balance_classes not modifiable by checkpoint"
     except EnvironmentError:
         assert True
@@ -75,7 +75,7 @@ def cars_checkpoint():
     try:
         model = H2ORandomForestEstimator(nfolds=3,checkpoint=model1._id)
         model.train(x=predictors,y=response_col,training_frame=cars)
-#        model = h2o.random_forest(y=cars[response_col], x=cars[predictors],nfolds=3,checkpoint=model1._id)
+        # model = h2o.random_forest(y=cars[response_col], x=cars[predictors],nfolds=3,checkpoint=model1._id)
         assert False, "Expected model-build to fail because nfolds not modifiable by checkpoint"
     except EnvironmentError:
         assert True

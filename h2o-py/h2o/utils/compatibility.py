@@ -15,7 +15,7 @@ from h2o.utils.compatibility import *  # NOQA
     Iterating over a `bytes` string in Py2 produces characters, in Py3 character codes.
 
     For consistent results, use
-        is_str(s)  to test whether an argument is a string
+        test_type(s, str)  to test whether an argument is a string
         bytes_iterator(s)  to iterate over byte-codes of strins s (which could be bytes or unicode)
 
 2. Integers
@@ -23,7 +23,7 @@ from h2o.utils.compatibility import *  # NOQA
     In Py3 `int` is a single integer type, `long` doesn't exist.
 
     For consistent results, use
-        is_int(x)  to test whether an argument is an integer
+        test_type(x, int)  to test whether an argument is an integer
         str(x)  to convert x to string (don't use repr()!)
 
 3. Iterators
@@ -77,6 +77,12 @@ if True:
     from future.builtins.iterators import (range, filter, map, zip)
     from future.utils import (viewitems, viewkeys, viewvalues)
 
+    def next_method(gen):
+        """Return the 'next' method of the given generator."""
+        if PY2:
+            return gen.next
+        else:
+            return gen.__next__
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Disabled functions

@@ -81,8 +81,8 @@ class Test_kmeans_grid_search:
 
         print("Hyper-parameters used here is {0}".format(self.hyper_params))
 
-#        try:
-            # start grid search
+        # try:
+        #   start grid search
         grid_model = H2OGridSearch(H2OKMeansEstimator(), hyper_params=self.hyper_params)
         grid_model.train(x=self.x_indices, training_frame=self.training1_data)
 

@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 
 /**
  * Class which represents a ModelBuilder back-end error which will be returned to the client.
@@ -18,7 +19,7 @@ public class H2OModelBuilderError extends H2OError {
   public ModelBuilder.ValidationMessage[] _messages;
   public int _error_count;
 
-  public H2OModelBuilderError(long timestamp, String error_url, String msg, String dev_msg, int http_status, IcedHashMap.IcedHashMapStringObject values, H2OModelBuilderIllegalArgumentException e) {
+  public H2OModelBuilderError(long timestamp, String error_url, String msg, String dev_msg, int http_status, IcedHashMapGeneric.IcedHashMapStringObject values, H2OModelBuilderIllegalArgumentException e) {
     super(timestamp, error_url, msg, dev_msg, http_status, values, e);
     this._parameters = (Model.Parameters) values.get("parameters");
     this._messages = (ModelBuilder.ValidationMessage[]) values.get("messages");

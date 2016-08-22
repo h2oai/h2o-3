@@ -48,7 +48,7 @@ class H2OClusteringModel(ModelBase):
           The number of iterations (integer).
         """
         o = self._model_json["output"]
-        return o["model_summary"].cell_values[0][o["model_summary"].col_header.index('number_of_iterations')]
+        return o["model_summary"]["number_of_iterations"][0]
 
     def betweenss(self, train=False, valid=False, xval=False):
         """Get the between cluster sum of squares.

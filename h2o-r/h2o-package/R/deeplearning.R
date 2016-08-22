@@ -112,6 +112,8 @@
 #' @param sparsity_beta Sparsity regularization (Experimental).
 #' @param max_categorical_features Max. number of categorical features, enforced via hashing
 #'        Experimental).
+#' @param categorical_encoding Encoding scheme for categorical features, must be "AUTO", "Enum", 
+#         "OneHotInternal", "OneHotExplicit", "Binary" or "Eigen"
 #' @param reproducible Force reproducibility on small data (requires setting the \code{seed} argument and this will be slow - only uses 1 thread).
 #' @param export_weights_and_biases Whether to export Neural Network weights and biases to H2O.
 #'        Frames"
@@ -208,6 +210,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              average_activation,
                              sparsity_beta,
                              max_categorical_features,
+                             categorical_encoding = c("AUTO","Enum","OneHotInternal","OneHotExplicit","Binary","Eigen"),
                              reproducible=FALSE,
                              export_weights_and_biases=FALSE,
                              offset_column = NULL,
@@ -383,6 +386,8 @@ h2o.deeplearning <- function(x, y, training_frame,
     parms$sparsity_beta <- sparsity_beta
   if(!missing(max_categorical_features))
     parms$max_categorical_features <- max_categorical_features
+  if(!missing(categorical_encoding))
+    parms$categorical_encoding <- categorical_encoding
   if(!missing(reproducible))
     parms$reproducible <- reproducible
   if(!missing(export_weights_and_biases))

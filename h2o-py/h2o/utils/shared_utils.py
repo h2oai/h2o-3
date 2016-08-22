@@ -14,10 +14,9 @@ import itertools
 import os
 import re
 import sys
-import warnings
 
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_int, is_str, is_numeric
+from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 # private static methods
 _id_ctr = 0
@@ -119,11 +118,11 @@ def _is_list(l):
 
 
 def _is_str_list(l):
-    return isinstance(l, (tuple, list)) and all(is_str(i) for i in l)
+    return is_type(l, [str])
 
 
 def _is_num_list(l):
-    return isinstance(l, (tuple, list)) and all(is_numeric(i) for i in l)
+    return is_type(l, [numeric])
 
 
 def _is_list_of_lists(o):
@@ -137,7 +136,7 @@ def _handle_numpy_array(python_obj, header):
 def _handle_pandas_data_frame(python_obj, header):
     return _handle_numpy_array(python_obj.as_matrix(), header)
 
-def _handle_python_dicts(python_obj):
+def _handle_python_dicts(python_obj, check_header):
     header = list(python_obj.keys())
     is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])  # is this a valid header?
     if not is_valid:
@@ -148,7 +147,7 @@ def _handle_python_dicts(python_obj):
         if isinstance(v, (tuple, list)):  # if value is a tuple/list, then it must be flat
             if _is_list_of_lists(v):
                 raise ValueError("Values in the dictionary must be flattened!")
-        elif is_numeric(v) or is_str(v):
+        elif is_type(v, str, numeric):
             python_obj[k] = [v]
         else:
             raise ValueError("Encountered invalid dictionary value when constructing H2OFrame. Got: {0}".format(v))
@@ -157,8 +156,6 @@ def _handle_python_dicts(python_obj):
     data_to_write = [dict(list(zip(header, row))) for row in rows]
     return header, data_to_write
 
-
-_is_str = is_str
 
 def _is_fr(o):
     return o.__class__.__name__ == "H2OFrame"  # hack to avoid circular imports
@@ -211,7 +208,7 @@ def get_human_readable_bytes(size):
     """
     if size == 0: return "0"
     if size is None: return ""
-    assert_is_int(size)
+    assert_is_type(size, int)
     assert size >= 0, "`size` cannot be negative, got %d" % size
     suffixes = "PTGMk"
     maxl = len(suffixes)
@@ -295,7 +292,6 @@ locate = _locate
 quoted = _quoted
 is_list = _is_list
 is_fr = _is_fr
-is_str = _is_str
 handle_python_dicts = _handle_python_dicts
 handle_pandas_data_frame = _handle_pandas_data_frame
 handle_numpy_array = _handle_numpy_array

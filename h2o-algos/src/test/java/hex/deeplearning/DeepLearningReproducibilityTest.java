@@ -41,7 +41,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
         try {
           NFSFileVec file = NFSFileVec.make(find_test_file("smalldata/junit/weather.csv"));
           data = ParseDataset.parse(Key.make("data.hex"), file._key);
-          Assert.assertTrue(isBitIdentical(data, golden)); //test parser consistency
+          Assert.assertTrue(TestUtil.isBitIdentical(data, golden)); //test parser consistency
 
           // Create holdout test data on clean data (before adding missing values)
           train = data;
@@ -77,7 +77,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           preds[repeat] = mymodel.score(test);
           for (int i=0; i<5; ++i) {
             Frame tmp = mymodel.score(test);
-            Assert.assertTrue("Prediction #" + i + " for repeat #" + repeat + " differs!", isBitIdentical(preds[repeat],tmp));
+            Assert.assertTrue("Prediction #" + i + " for repeat #" + repeat + " differs!", TestUtil.isBitIdentical(preds[repeat],tmp));
             tmp.delete();
           }
           Log.info("Prediction:\n" + FrameUtils.chunkSummary(preds[repeat]).toString());

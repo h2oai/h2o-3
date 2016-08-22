@@ -31,11 +31,13 @@ makeMetrics <- function() {
       } else {
         expect_true(abs(h2o.mean_residual_deviance(m0)-h2o.mean_residual_deviance(m1))>1e-5)
       }
+      expect_true(abs(h2o.rmsle(m0)-h2o.rmsle(m1))<1e-5)
 
       expect_true(abs(h2o.rmse(m1)-h2o.rmse(m2))<1e-5)
       expect_true(abs(h2o.mae(m1)-h2o.mae(m2))<1e-5)
       expect_true(abs(h2o.mse(m1)-h2o.mse(m2))<1e-5)
       expect_true(abs(h2o.mean_residual_deviance(m1)-h2o.mean_residual_deviance(m2))<1e-5)
+      expect_true(abs(h2o.rmsle(m1)-h2o.rmsle(m2))<1e-5)
     }
 
 

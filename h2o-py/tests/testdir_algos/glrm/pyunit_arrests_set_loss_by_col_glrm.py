@@ -15,19 +15,19 @@ def glrm_set_loss_by_col():
     arrestsH2O = h2o.upload_file(pyunit_utils.locate("smalldata/pca_test/USArrests.csv"))
     arrestsPy = np.array(h2o.as_list(arrestsH2O))
     arrestsH2O.describe()
-    
+
     print("H2O GLRM with loss by column = Absolute, Quadratic, Quadratic, Huber")
     glrm_h2o = H2OGeneralizedLowRankEstimator(k=3, loss="Quadratic", loss_by_col=["Absolute","Huber"], loss_by_col_idx=[0,3], regularization_x="None", regularization_y="None")
     glrm_h2o.train(x=arrestsH2O.names,training_frame=arrestsH2O)
- #   glrm_h2o = h2o.glrm(x=arrestsH2O, k=3, loss="Quadratic", loss_by_col=["Absolute","Huber"], loss_by_col_idx=[0,3], regularization_x="None", regularization_y="None")
+    # glrm_h2o = h2o.glrm(x=arrestsH2O, k=3, loss="Quadratic", loss_by_col=["Absolute","Huber"], loss_by_col_idx=[0,3], regularization_x="None", regularization_y="None")
     glrm_h2o.show()
-    
+
     fit_y = glrm_h2o._model_json['output']['archetypes'].cell_values
     fit_y_np = [[float(s) for s in list(row)[1:]] for row in fit_y]
     fit_y_np = np.array(fit_y_np)
     fit_x = h2o.get_frame(glrm_h2o._model_json['output']['representation_name'])
     fit_x_np = np.array(h2o.as_list(fit_x))
-    
+
     print("Check final objective function value")
     fit_xy = np.dot(fit_x_np, fit_y_np)
     fit_diff = arrestsPy.__sub__(fit_xy)

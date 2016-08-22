@@ -2,6 +2,7 @@ package water.exceptions;
 
 import water.fvec.Frame;
 import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
 
 /**
  * Exception signalling that a Vec was not found.
@@ -22,7 +23,7 @@ public class H2OColumnNotFoundArgumentException extends H2ONotFoundArgumentExcep
   public H2OColumnNotFoundArgumentException(String argument, String frame_name, String column_name) {
     super("Column: " + column_name + " not found in frame: " + frame_name + " from argument: " + argument + ": " + argument.toString(),
           "Column: " + column_name + " not found in frame: " + frame_name + " from argument: " + argument + ": " + argument.toString());
-    this.values = new IcedHashMap.IcedHashMapStringObject();
+    this.values = new IcedHashMapGeneric.IcedHashMapStringObject();
     this.values.put("argument", argument);
     this.values.put("frame_name", frame_name);
     this.values.put("column_name", column_name);
@@ -35,7 +36,7 @@ public class H2OColumnNotFoundArgumentException extends H2ONotFoundArgumentExcep
   public H2OColumnNotFoundArgumentException(String frame_name, String column_name) {
     super("Column: " + column_name + " not found in frame: " + frame_name + ".",
           "Column: " + column_name + " not found in frame: " + frame_name + ".");
-    this.values = new IcedHashMap.IcedHashMapStringObject();
+    this.values = new IcedHashMapGeneric.IcedHashMapStringObject();
     this.values.put("frame_name", frame_name);
     this.values.put("column_name", column_name);
   }

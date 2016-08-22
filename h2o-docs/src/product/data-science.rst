@@ -14,4 +14,5 @@ Data Science Algorithms
    data-science/naive-bayes
    data-science/pca
    data-science/gbm
+   data-science/glrm
    data-science/deep-learning

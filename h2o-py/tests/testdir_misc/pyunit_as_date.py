@@ -20,8 +20,8 @@ def test_as_data():
   hdf["ds5"] = hdf["ds5"].as_date("%d.%m.%y %H:%M")
   hdf["ds6"] = hdf["ds6"].as_date("%d.%m.%Y %H:%M:%S")
   ## these two cols are now detected as dates
-#  hdf["ds7"] = hdf["ds7"].as_date("%m/%d/%y")
-#  hdf["ds8"] = hdf["ds8"].as_date("%m/%d/%Y")
+  # hdf["ds7"] = hdf["ds7"].as_date("%m/%d/%y")
+  # hdf["ds8"] = hdf["ds8"].as_date("%m/%d/%Y")
   hdf["ds9"] = hdf["ds9"].asfactor().as_date("%Y%m%d")
   hdf["ds10"] = hdf["ds10"].as_date("%Y_%m_%d")
 

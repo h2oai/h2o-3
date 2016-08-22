@@ -602,6 +602,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return (float) mse();
       case MAE:
         return (float) mae();
+      case RMSLE:
+        return (float) rmsle();
       case logloss:
         return (float) logloss();
       case deviance:
@@ -643,6 +645,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double mae() {
     if (scoringInfo == null) return Double.NaN;
     return last_scored().validation ? last_scored().scored_valid._mae : last_scored().scored_train._mae;
+  }
+
+  public double rmsle() {
+    if (scoringInfo == null) return Double.NaN;
+    return last_scored().validation ? last_scored().scored_valid._rmsle : last_scored().scored_train._rmsle;
   }
 
   public double auc() {

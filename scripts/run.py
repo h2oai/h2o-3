@@ -2051,7 +2051,7 @@ def usage():
     print("    --excludelist    A file containing a list of tests to NOT run.")
     print("")
     print("    --testgroup      Test a group of tests by function:")
-    print("                     pca, glm, kmeans, gbm, rf, deeplearning, algos, golden, munging")
+    print("                     pca, glm, kmeans, gbm, rf, deeplearning, algos, golden, munging, parser")
     print("")
     print("    --testsize       Sizes (and by extension length) of tests to run:")
     print("                     s=small (seconds), m=medium (a minute or two), l=large (longer), x=xlarge (very big)")

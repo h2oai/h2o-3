@@ -123,8 +123,8 @@ class H2O(object):
             self.cloud_name = 'pytest-%s-%s' % (getpass.getuser(), os.getpid())
 
 
-    ''' 
-    Printable string representation of an H2O node object. 
+    '''
+    Printable string representation of an H2O node object.
     '''
     def __str__(self):
         return '%s - http://%s:%d/' % (type(self), self.http_addr, self.port)
@@ -156,7 +156,7 @@ class H2O(object):
     '''
     Make a REST request to the h2o server and if succesful return a dict containing the JSON result.
     '''
-#    @profile
+    # @profile
     def __do_json_request(self, jsonRequest=None, fullUrl=None, timeout=10, params=None, postData=None, returnFast=False,
                           cmd='get', extraComment=None, ignoreH2oError=False, noExtraErrorCheck=False, raiseIfNon200=True, suppressErrorMsg=False, **kwargs):
         H2O.verboseprint("__do_json_request, timeout: " + str(timeout))
@@ -223,7 +223,7 @@ class H2O(object):
                 else:
                     # not list:
                     munged_postData[k] = v
-        else:  
+        else:
             # None
             munged_postData = postData
 
@@ -249,14 +249,14 @@ class H2O(object):
             if 'post' == cmd:
                 # NOTE == cmd: for now, since we don't have deserialization from JSON in h2o-dev, we use form-encoded POST.
                 # This is temporary.
-                # 
+                #
                 # This following does application/json (aka, posting JSON in the body):
                 # r = requests.post(url, timeout=timeout, params=params, data=json.dumps(munged_postData), **kwargs)
-                # 
+                #
                 # This does form-encoded, which doesn't allow POST of nested structures
                 r = requests.post(url, timeout=timeout, params=params, data=munged_postData, **kwargs)
             elif 'delete' == cmd:
-                r = requests.delete(url, timeout=timeout, params=params, **kwargs)                
+                r = requests.delete(url, timeout=timeout, params=params, **kwargs)
             elif 'get' == cmd:
                 r = requests.get(url, timeout=timeout, params=params, **kwargs)
             else:
@@ -270,7 +270,7 @@ class H2O(object):
             # (this is new/experimental)
             exc_info = sys.exc_info()
             # use this to ignore the initial connection errors during build cloud when h2o is coming up
-            if not noExtraErrorCheck: 
+            if not noExtraErrorCheck:
                 h2p.red_print(
                     "ERROR: got exception on %s to h2o. \nGoing to check sandbox, then rethrow.." % (url + paramsStr))
                 time.sleep(2)
@@ -321,7 +321,7 @@ class H2O(object):
                     else:
                         log_rest("r does not have attr text")
         except Exception as e:
-            # Paranoid exception catch.  
+            # Paranoid exception catch.
             # Ignore logging exceptions in the case that the above error checking isn't sufficient.
             print("Caught exception from result logging: ", e, "; result: ", repr(r))
 
@@ -370,7 +370,7 @@ class H2O(object):
                 H2O.verboseprint(dump_json(rjson))
                 print('rjson %s in %s: %s' % (w, inspect.stack()[1][3], rjson[w]))
 
-        
+
         # Allow the caller to check things like __http_request.status_code.
         # The response object is not JSON-serializable, so we capture the fields we want here:
         response = {}
@@ -384,7 +384,7 @@ class H2O(object):
         # end of __do_json_request
 
 
-    ''' 
+    '''
     Check the output for errors.  Note: false positives are possible; a whitelist is available.
     '''
     @staticmethod
@@ -425,7 +425,7 @@ class H2O(object):
 
 
     '''
-    Determine if the cluster status is not good.  Returns a message (which evaluates as True) 
+    Determine if the cluster status is not good.  Returns a message (which evaluates as True)
     if cloud status is bad; else returns None (which evluates as False);
     '''
     def cloud_is_bad(self, timeoutSecs=10, **kwargs):
@@ -483,7 +483,7 @@ class H2O(object):
         while True:
             H2O.verboseprint('Polling for job: ' + job_key + '. . .')
             result = self.__do_json_request('/3/Jobs/' + job_key, timeout=timeoutSecs, params=params_dict)
-            
+
             status = result['jobs'][0]['status']
             if status == 'DONE' or status == 'CANCELLED' or status == 'FAILED':
                 H2O.verboseprint('Job ' + status + ': ' + job_key + '.')
@@ -497,7 +497,7 @@ class H2O(object):
             time.sleep(retryDelaySecs)
 
 
-    ''' 
+    '''
     Create a Frame.
     '''
     def create_frame(self, timeoutSecs=180, **kwargs):
@@ -509,7 +509,7 @@ class H2O(object):
         return a
 
 
-    ''' 
+    '''
     Split a Frame.
     '''
     def split_frame(self, timeoutSecs=180, **kwargs):
@@ -532,7 +532,7 @@ class H2O(object):
         H2O.verboseprint("\ninteraction result:", h2o_test_utils.dump_json(a))
         return a
 
-    ''' 
+    '''
     Import a file or files into h2o.  The 'file' parameter accepts a directory or a single file.
     192.168.0.37:54323/ImportFiles.html?file=%2Fhome%2F0xdiag%2Fdatasets
     '''
@@ -567,7 +567,7 @@ class H2O(object):
         setup_result = self.__do_json_request(jsonRequest="/3/ParseSetup", cmd='post', timeout=timeoutSecs, postData=parse_setup_params)
         H2O.verboseprint("ParseSetup result:", h2o_test_utils.dump_json(setup_result))
 
-        # 
+        #
         # and then Parse?source_frames=<keys list> and params from the ParseSetup result
         # Parse?source_frames=[nfs://Users/rpeck/Source/h2o2/smalldata/logreg/prostate.csv]&destination_frame=prostate.hex&parse_type=CSV&separator=44&number_columns=9&check_header=0&single_quotes=false&column_names=['ID',CAPSULE','AGE','RACE','DPROS','DCAPS','PSA','VOL','GLEASON]
         #
@@ -582,7 +582,7 @@ class H2O(object):
             'number_columns': setup_result['number_columns'],
             'column_names': setup_result['column_names'], # gets stringified inside __do_json_request()
             'column_types': setup_result['column_types'], # gets stringified inside __do_json_request()
-	    'na_strings': setup_result['na_strings'],
+            'na_strings': setup_result['na_strings'],
             'chunk_size': setup_result['chunk_size'],
         }
         H2O.verboseprint("parse_params: " + repr(parse_params))
@@ -612,7 +612,7 @@ class H2O(object):
     frames are contained in a list called "frames" at the top level of the
     result.  Currently the list is unordered.
     TODO:
-    When find_compatible_models is implemented then the top level 
+    When find_compatible_models is implemented then the top level
     dict will also contain a "models" list.
     '''
     def frames(self, key=None, timeoutSecs=10, **kwargs):
@@ -622,7 +622,7 @@ class H2O(object):
             'row_count': 100
         }
         h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'frames', H2O.verbose)
-        
+
         if key:
             result = self.__do_json_request('/3/Frames/' + key, timeout=timeoutSecs, params=params_dict)
         else:
@@ -631,43 +631,43 @@ class H2O(object):
 
 
     '''
-    Return the columns for a single Frame in the h2o cluster.  
+    Return the columns for a single Frame in the h2o cluster.
     '''
     def columns(self, key, timeoutSecs=10, **kwargs):
-        params_dict = { 
+        params_dict = {
             'row_offset': 0,
             'row_count': 100
         }
         h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'columns', H2O.verbose)
-        
+
         result = self.__do_json_request('/3/Frames/' + key + '/columns', timeout=timeoutSecs, params=params_dict)
         return result
 
 
     '''
-    Return a single column for a single Frame in the h2o cluster.  
+    Return a single column for a single Frame in the h2o cluster.
     '''
     def column(self, key, column, timeoutSecs=10, **kwargs):
-        params_dict = { 
+        params_dict = {
             'row_offset': 0,
             'row_count': 100
         }
         h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'column', H2O.verbose)
-        
+
         result = self.__do_json_request('/3/Frames/' + key + '/columns/' + column, timeout=timeoutSecs, params=params_dict)
         return result
 
 
     '''
-    Return the summary for a single column for a single Frame in the h2o cluster.  
+    Return the summary for a single column for a single Frame in the h2o cluster.
     '''
     def summary(self, key, column, timeoutSecs=10, **kwargs):
-        params_dict = { 
+        params_dict = {
             'row_offset': 0,
             'row_count': 100
         }
         h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'summary', H2O.verbose)
-        
+
         result = self.__do_json_request('/3/Frames/' + key + '/columns/' + column + '/summary', timeout=timeoutSecs, params=params_dict)
         return result
 
@@ -688,7 +688,7 @@ class H2O(object):
         }
         result = self.__do_json_request('/99/Rapids', cmd='post', timeout=timeoutSecs, postData=params_dict)
         return result
-    
+
     '''
     Delete a frame on the h2o cluster, given its key.
     '''
@@ -750,7 +750,7 @@ class H2O(object):
         assert model_builders is not None, "FAIL: /ModelBuilders REST call failed"
         assert algo in model_builders['model_builders'], "FAIL: algo " + algo + " not found in model_builders list: " + repr(model_builders)
         builder = model_builders['model_builders'][algo]
-        
+
         # TODO: test this assert, I don't think this is working. . .
         if training_frame is not None:
             frames = self.frames(key=training_frame)
@@ -764,14 +764,14 @@ class H2O(object):
           _rest_version = 99
         else:
           _rest_version = 3
-        result = self.__do_json_request('/' + str(_rest_version) + '/ModelBuilders/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False, suppressErrorMsg=True)  # NOTE: DO NOT die if validation errors 
+        result = self.__do_json_request('/' + str(_rest_version) + '/ModelBuilders/' + algo + "/parameters", cmd='post', timeout=timeoutSecs, postData=parameters, ignoreH2oError=True, noExtraErrorCheck=True, raiseIfNon200=False, suppressErrorMsg=True)  # NOTE: DO NOT die if validation errors
 
         H2O.verboseprint("model parameters validation: " + repr(result))
         return result
 
 
     '''
-    Build a model on the h2o cluster using the given algorithm, training 
+    Build a model on the h2o cluster using the given algorithm, training
     Frame and model parameters.
     '''
     def build_model(self, algo, training_frame, parameters, model_id = None, timeoutSecs=60, asynchronous=False, **kwargs):
@@ -785,7 +785,7 @@ class H2O(object):
         assert model_builders is not None, "FAIL: /ModelBuilders REST call failed"
         assert algo in model_builders['model_builders'], "FAIL: failed to find algo " + algo + " in model_builders list: " + repr(model_builders)
         builder = model_builders['model_builders'][algo]
-        
+
         # TODO: test this assert, I don't think this is working. . .
         # Check for frame:
         frames = self.frames(key=training_frame)
@@ -814,9 +814,9 @@ class H2O(object):
 
 
     '''
-    Build a Cartesian grid of models on the h2o cluster using the given algorithm, training Frame, model parameters and grid parameters.  
+    Build a Cartesian grid of models on the h2o cluster using the given algorithm, training Frame, model parameters and grid parameters.
 
-    The search_criteria parameter is an optional dictionary which specifies smarter hyperparameter search. 
+    The search_criteria parameter is an optional dictionary which specifies smarter hyperparameter search.
     For example, if we set grid_parameters and search_criteria as follows:
 
     { 'ntrees': [1, 2, 4], 'distribution': ["gaussian", "poisson", "gamma", "tweedie"] }, { 'strategy': "Random", 'max_models': 5 }
@@ -824,7 +824,7 @@ class H2O(object):
     5 models will be built from the 12 possible combinations.
 
     Available search_criteria parameters are:
-    
+
     'strategy': 'Cartesian' (the default) or 'Random'
 
     'max_models': an optional integer limit on the number of models
@@ -843,7 +843,7 @@ class H2O(object):
         assert model_builders is not None, "FAIL: /ModelBuilders REST call failed"
         assert algo in model_builders['model_builders'], "FAIL: failed to find algo " + algo + " in model_builders list: " + repr(model_builders)
         builder = model_builders['model_builders'][algo]
-        
+
         # TODO: test this assert, I don't think this is working. . .
         # Check for frame:
         frames = self.frames(key=training_frame)
@@ -887,7 +887,7 @@ class H2O(object):
 
 
     '''
-    Score a model on the h2o cluster on the given Frame and return only the model metrics. 
+    Score a model on the h2o cluster on the given Frame and return only the model metrics.
     '''
     def compute_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
         assert model is not None, 'FAIL: "model" parameter is null'
@@ -931,7 +931,7 @@ class H2O(object):
 
 
     '''
-    ModelMetrics list. 
+    ModelMetrics list.
     '''
     def model_metrics(self, model=None, frame=None, timeoutSecs=60, **kwargs):
         if model is None and frame is None:
@@ -944,7 +944,7 @@ class H2O(object):
 
 
     '''
-    Delete ModelMetrics. 
+    Delete ModelMetrics.
     '''
     def delete_model_metrics(self, model, frame, timeoutSecs=60, **kwargs):
         assert model is not None, 'FAIL: "model" parameter is null'
@@ -956,11 +956,11 @@ class H2O(object):
 
 
     '''
-    Return all of the models in the h2o cluster, or a single model given its key.  
+    Return all of the models in the h2o cluster, or a single model given its key.
     The models are contained in a list called "models" at the top level of the
     result.  Currently the list is unordered.
     TODO:
-    When find_compatible_frames is implemented then the top level 
+    When find_compatible_frames is implemented then the top level
     dict will also contain a "frames" list.
     '''
     def models(self, api_version=3, key=None, timeoutSecs=20, **kwargs):
@@ -1008,7 +1008,7 @@ class H2O(object):
     '''
     def grids(self, api_version=99, timeoutSecs=20, **kwargs):
         params_dict = {
-        }        
+        }
         h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'grids', H2O.verbose)
 
         result = self.__do_json_request(str(api_version) + '/Grids', timeout=timeoutSecs, params=params_dict)
@@ -1016,7 +1016,7 @@ class H2O(object):
 
 
     '''
-    Return a grid search result from the h2o cluster given its key.  
+    Return a grid search result from the h2o cluster given its key.
     The models IDs are contained in a list called "model_ids" at the top level of the
     result.  Currently the list is unordered.
     '''
@@ -1024,7 +1024,7 @@ class H2O(object):
         params_dict = {
             'sort_by': None,
             'decreasing': None
-        }        
+        }
         h2o_test_utils.check_params_update_kwargs(params_dict, kwargs, 'grids', H2O.verbose)
 
         if key:

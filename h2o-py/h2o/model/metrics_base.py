@@ -10,11 +10,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import imp
 
 from h2o.model.confusion_matrix import ConfusionMatrix
+from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_numeric, is_numeric
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, numeric
 
 
-class MetricsBase(object):
+class MetricsBase(backwards_compatible()):
     """
     A parent class to house common metrics available for the various Metrics types.
 
@@ -22,10 +23,13 @@ class MetricsBase(object):
     """
 
     def __init__(self, metric_json, on=None, algo=""):
+        super(MetricsBase, self).__init__()
         # Yep, it's messed up...
         if isinstance(metric_json, MetricsBase): metric_json = metric_json._metric_json
         self._metric_json = metric_json
-        self._on_train = False  # train and valid and xval are not mutually exclusive -- could have a test. train and valid only make sense at model build time.
+        # train and valid and xval are not mutually exclusive -- could have a test. train and
+        # valid only make sense at model build time.
+        self._on_train = False
         self._on_valid = False
         self._on_xval = False
         self._algo = algo
@@ -90,6 +94,7 @@ class MetricsBase(object):
         print("RMSE: " + str(self.rmse()))
         if metric_type in types_w_mean_absolute_error:
             print("MAE: " + str(self.mae()))
+            print("RMSLE: " + str(self.rmsle()))
         if metric_type in types_w_r2:
             print("R^2: " + str(self.r2()))
         if metric_type in types_w_mean_residual_deviance:
@@ -109,7 +114,7 @@ class MetricsBase(object):
             print("AIC: " + str(self.aic()))
         if metric_type in types_w_bin:
             print("AUC: " + str(self.auc()))
-            print("Gini: " + str(self.giniCoef()))
+            print("Gini: " + str(self.gini()))
             self.confusion_matrix().show()
             self._metric_json["max_criteria_and_metric_scores"].show()
             if self.gains_lift():
@@ -129,15 +134,11 @@ class MetricsBase(object):
             print("Misclassification Error (Categorical): " + str(self.cat_err()))
 
     def r2(self):
-        """
-        :return: Retrieve the R^2 coefficient for this set of metrics
-        """
+        """The R^2 coefficient."""
         return self._metric_json["r2"]
 
     def logloss(self):
-        """
-        :return: Retrieve the log loss for this set of metrics.
-        """
+        """Log loss."""
         return self._metric_json["logloss"]
 
     def nobs(self):
@@ -164,10 +165,8 @@ class MetricsBase(object):
         """
         return self._metric_json['AIC']
 
-    def giniCoef(self):
-        """
-        :return: Retrieve the Gini coefficeint for this set of metrics.
-        """
+    def gini(self):
+        """Gini coefficient."""
         return self._metric_json['Gini']
 
     def mse(self):
@@ -187,6 +186,12 @@ class MetricsBase(object):
         :return: Retrieve the MAE for this set of metrics
         """
         return self._metric_json['mae']
+
+    def rmsle(self):
+        """
+        :return: Retrieve the RMSLE for this set of metrics
+        """
+        return self._metric_json['rmsle']
 
     def residual_deviance(self):
         """
@@ -222,9 +227,15 @@ class MetricsBase(object):
 
     def mean_per_class_error(self):
         """
-        Retrieve the mean per class error
+        Retrieve the mean per class error.
         """
         return self._metric_json['mean_per_class_error']
+
+    # Deprecated functions; left here for backward compatibility
+    _bcim = {
+        "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
+    }
+
 
 
 class H2ORegressionModelMetrics(MetricsBase):
@@ -433,40 +444,38 @@ class H2OBinomialModelMetrics(MetricsBase):
     def metric(self, metric, thresholds=None):
         """
         :param metric: The desired metric
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then
+            the thresholds in this set of metrics will be used.
         :return: The set of metrics for the list of thresholds
         """
+        assert_is_type(thresholds, None, [numeric])
         if not thresholds: thresholds = [self.find_threshold_by_max_metric(metric)]
-        if not isinstance(thresholds, list):
-            raise ValueError("thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])")
         thresh2d = self._metric_json['thresholds_and_metric_scores']
-        midx = thresh2d.col_header.index(metric)
         metrics = []
         for t in thresholds:
             idx = self.find_idx_by_threshold(t)
-            row = thresh2d.cell_values[idx]
-            metrics.append([t, row[midx]])
+            metrics.append([t, thresh2d[metric][idx]])
         return metrics
 
-    def plot(self, type="roc", **kwargs):
+    def plot(self, type="roc", server=False):
         """
         Produce the desired metric plot
         :param type: the type of metric plot (currently, only ROC supported)
         :param show: if False, the plot is not shown. matplotlib show method is blocking.
         :return: None
         """
+        # TODO: add more types (i.e. cutoffs)
+        assert_is_type(type, "roc")
         # check for matplotlib. exit if absent.
         try:
             imp.find_module('matplotlib')
             import matplotlib
-            if 'server' in list(kwargs.keys()) and kwargs['server']: matplotlib.use('Agg', warn=False)
+            if server: matplotlib.use('Agg', warn=False)
             import matplotlib.pyplot as plt
         except ImportError:
             print("matplotlib is required for this function!")
             return
 
-        # TODO: add more types (i.e. cutoffs)
-        if type not in ["roc"]: raise ValueError("type {} is not supported".format(type))
         if type == "roc":
             plt.xlabel('False Positive Rate (FPR)')
             plt.ylabel('True Positive Rate (TPR)')
@@ -474,7 +483,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             plt.text(0.5, 0.5, r'AUC={0:.4f}'.format(self._metric_json["AUC"]))
             plt.plot(self.fprs, self.tprs, 'b--')
             plt.axis([0, 1, 0, 1])
-            if not ('server' in list(kwargs.keys()) and kwargs['server']): plt.show()
+            if not server: plt.show()
 
     @property
     def fprs(self):
@@ -483,10 +492,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
         :return: a list of false positive rates.
         """
-
-        fpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("fpr")
-        fprs = [x[fpr_idx] for x in self._metric_json["thresholds_and_metric_scores"].cell_values]
-        return fprs
+        return self._metric_json["thresholds_and_metric_scores"]["fpr"]
 
     @property
     def tprs(self):
@@ -495,17 +501,17 @@ class H2OBinomialModelMetrics(MetricsBase):
 
         :return: a list of true positive rates.
         """
-        tpr_idx = self._metric_json["thresholds_and_metric_scores"].col_header.index("tpr")
-        tprs = [y[tpr_idx] for y in self._metric_json["thresholds_and_metric_scores"].cell_values]
-        return tprs
+        return self._metric_json["thresholds_and_metric_scores"]["tpr"]
 
     def confusion_matrix(self, metrics=None, thresholds=None):
         """
         Get the confusion matrix for the specified metric
 
-        :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr", "tpr", "precision", "accuracy", "f0point5", "f2", "f1","mean_per_class_accuracy"}
+        :param metrics: A string (or list of strings) in {"min_per_class_accuracy", "absolute_mcc", "tnr", "fnr", "fpr",
+            "tpr", "precision", "accuracy", "f0point5", "f2", "f1","mean_per_class_accuracy"}
         :param thresholds: A value (or list of values) between 0 and 1
-        :return: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix (if there is only one)
+        :return: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
+            (if there is only one)
         """
         # make lists out of metrics and thresholds arguments
         if metrics is None and thresholds is None: metrics = ["f1"]
@@ -525,14 +531,14 @@ class H2OBinomialModelMetrics(MetricsBase):
             thresholds_list = [thresholds]
 
         # error check the metrics_list and thresholds_list
-        if not all(is_numeric(t) for t in thresholds_list) or \
-                not all(t >= 0 or t <= 1 for t in thresholds_list):
-            raise ValueError("All thresholds must be numbers between 0 and 1 (inclusive).")
+        assert_is_type(thresholds_list, [numeric])
+        assert_satisfies(thresholds_list, all(0 <= t <= 1 for t in thresholds_list))
 
         if not all(m in ["min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity", "accuracy",
                          "f0point5", "f2", "f1", "mean_per_class_accuracy"] for m in metrics_list):
             raise ValueError(
-                "The only allowable metrics are min_per_class_accuracy, absolute_mcc, precision, accuracy, f0point5, f2, f1, mean_per_class_accuracy")
+                "The only allowable metrics are min_per_class_accuracy, absolute_mcc, precision, accuracy, f0point5, "
+                "f2, f1, mean_per_class_accuracy")
 
         # make one big list that combines the thresholds and metric-thresholds
         metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
@@ -586,7 +592,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param threshold: Find the index of this input threshold.
         :return: Return the index or throw a ValueError if no such index can be found.
         """
-        assert_is_numeric(threshold)
+        assert_is_type(threshold, numeric)
         thresh2d = self._metric_json['thresholds_and_metric_scores']
         for i, e in enumerate(thresh2d.cell_values):
             t = float(e[0])
@@ -609,6 +615,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         if 'gains_lift_table' in self._metric_json:
             return self._metric_json['gains_lift_table']
         return None
+
 
 
 class H2OAutoEncoderModelMetrics(MetricsBase):

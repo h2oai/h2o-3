@@ -9,6 +9,7 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 import water.fvec.*;
 import water.parser.BufferedString;
+import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.Log;
@@ -174,6 +175,30 @@ public class TestUtil extends Iced {
     return file;
   }
 
+  /** Compare 2 frames
+   *  @param fr1 Frame
+   *  @param fr2 Frame
+   *  @param epsilon Relative tolerance for floating point numbers
+   *  @return true if equal  */
+  public static boolean isIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon) {
+    if (fr1 == fr2) return true;
+    if( fr1.numCols() != fr2.numCols() ) return false;
+    if( fr1.numRows() != fr2.numRows() ) return false;
+    Scope.enter();
+    if( !fr1.isCompatible(fr2) ) fr1.makeCompatible(fr2);
+    boolean identical = !(new Cmp1(epsilon).doAll(new Frame(fr1).add(fr2))._unequal);
+    Scope.exit();
+    return identical;
+  }
+
+  /** Compare 2 frames
+   *  @param fr1 Frame
+   *  @param fr2 Frame
+   *  @return true if equal  */
+  public static boolean isBitIdentical(Frame fr1, Frame fr2) {
+    return isIdenticalUpToRelTolerance(fr1,fr2,0);
+  }
+
   /** Hunt for test files in likely places.  Null if cannot find.
    *  @param fname Test filename
    *  @return      Found file or null */
@@ -191,11 +216,44 @@ public class TestUtil extends Iced {
     NFSFileVec nfs = NFSFileVec.make(f);
     return ParseDataset.parse(outputKey, nfs._key);
   }
+
   protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
     File f = find_test_file(fname);
     assert f != null && f.exists():" file not found: " + fname;
     NFSFileVec nfs = NFSFileVec.make(f);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
+  }
+
+  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
+    File f = find_test_file_static(fname);
+    assert f != null && f.exists():" file not found: " + fname;
+    NFSFileVec nfs = NFSFileVec.make(f);
+
+    Key[] res = {nfs._key};
+
+    // create new parseSetup in order to store our na_string
+    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
+            check_header,0,null,null,null,null,null));
+
+    // add the na_strings into p.
+    if (na_string != null) {
+      int column_number = p.getColumnTypes().length;
+      int na_length = na_string.length() - 1;
+
+      String[][] na_strings = new String[column_number][na_length + 1];
+
+      for (int index = 0; index < column_number; index++) {
+        na_strings[index][na_length] = na_string;
+      }
+
+      p.setNAStrings(na_strings);
+    }
+
+    if (column_types != null)
+      p.setColumnTypes(column_types);
+
+    return ParseDataset.parse(Key.make(), res, true, p);
+
   }
 
   /** Find & parse a folder of CSV files.  NPE if file not found.
@@ -214,6 +272,53 @@ public class TestUtil extends Iced {
     keys.toArray(res);
     return ParseDataset.parse(Key.make(), res);
   }
+
+
+  /**
+   * Parse a folder with csv files when a single na_string is specified.
+   *
+   * @param fname
+   * @param na_string
+   * @return
+   */
+  protected Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
+    File folder = find_test_file(fname);
+    assert folder.isDirectory();
+    File[] files = folder.listFiles();
+    Arrays.sort(files);
+    ArrayList<Key> keys = new ArrayList<>();
+    for( File f : files )
+      if( f.isFile() )
+        keys.add(NFSFileVec.make(f)._key);
+
+    Key[] res = new Key[keys.size()];
+    keys.toArray(res);  // generated the necessary key here
+
+    // create new parseSetup in order to store our na_string
+    ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
+            check_header,0,null,null,null,null,null));
+
+    // add the na_strings into p.
+    if (na_string != null) {
+      int column_number = p.getColumnTypes().length;
+      int na_length = na_string.length() - 1;
+
+      String[][] na_strings = new String[column_number][na_length + 1];
+
+      for (int index = 0; index < column_number; index++) {
+        na_strings[index][na_length] = na_string;
+      }
+
+      p.setNAStrings(na_strings);
+    }
+
+    if (column_types != null)
+      p.setColumnTypes(column_types);
+
+    return ParseDataset.parse(Key.make(), res, true, p);
+
+  }
+
 
   /** A Numeric Vec from an array of ints
    *  @param rows Data
@@ -255,20 +360,6 @@ public class TestUtil extends Iced {
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
-
-  /** Compare 2 frames
-   *  @param fr1 Frame
-   *  @param fr2 Frame
-   *  @return true if equal  */
-  protected static boolean isBitIdentical( Frame fr1, Frame fr2 ) {
-    if (fr1 == fr2) return true;
-    if( fr1.numCols() != fr2.numCols() ) return false;
-    if( fr1.numRows() != fr2.numRows() ) return false;
-    if( fr1.isCompatible(fr2) )
-      return !(new Cmp1().doAll(new Frame(fr1).add(fr2))._unequal);
-    // Else do it the slow hard way
-    return !(new Cmp2(fr2).doAll(fr1)._unequal);
-  }
 
   public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
     assertEquals(expecteds.length(), actuals.length());
@@ -330,8 +421,34 @@ public class TestUtil extends Iced {
     return flipped;
   }
 
-  // Fast compatible Frames
-  private static class Cmp1 extends MRTask<Cmp1> {
+  // Run tests from cmd-line since testng doesn't seem to be able to it.
+  public static void main( String[] args ) {
+    H2O.main(new String[0]);
+    for( String arg : args ) {
+      try {
+        System.out.println("=== Starting "+arg);
+        Class clz = Class.forName(arg);
+        Method main = clz.getDeclaredMethod("main");
+        main.invoke(null);
+      } catch( InvocationTargetException ite ) {
+        Throwable e = ite.getCause();
+        e.printStackTrace();
+        try { Thread.sleep(100); } catch( Exception ignore ) { }
+      } catch( Exception e ) {
+        e.printStackTrace();
+        try { Thread.sleep(100); } catch( Exception ignore ) { }
+      } finally {
+        System.out.println("=== Stopping "+arg);
+      }
+    }
+    try { Thread.sleep(100); } catch( Exception ignore ) { }
+    if( args.length != 0 )
+      UDPRebooted.T.shutdown.send(H2O.SELF);
+  }
+
+  protected static class Cmp1 extends MRTask<Cmp1> {
+    final double _epsilon;
+    Cmp1( double epsilon ) { _epsilon = epsilon; }
     boolean _unequal;
     @Override public void map( Chunk chks[] ) {
       for( int cols=0; cols<chks.length>>1; cols++ ) {
@@ -358,7 +475,7 @@ public class TestUtil extends Iced {
             }
           }else {
             double d0 = c0.atd(rows), d1 = c1.atd(rows);
-            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1)) {
+            if (!(Double.isNaN(d0) && Double.isNaN(d1)) && !(Math.abs(d0-d1)<=Math.abs(d0+d1)*_epsilon) ) {
               _unequal = true;
               return;
             }
@@ -367,50 +484,5 @@ public class TestUtil extends Iced {
       }
     }
     @Override public void reduce( Cmp1 cmp ) { _unequal |= cmp._unequal; }
-  }
-  // Slow incompatible frames
-  private static class Cmp2 extends MRTask<Cmp2> {
-    final Frame _fr;
-    Cmp2( Frame fr ) { _fr = fr; }
-    boolean _unequal;
-    @Override public void map( Chunk chks[] ) {
-      for( int cols=0; cols<chks.length>>1; cols++ ) {
-        if( _unequal ) return;
-        Chunk c0 = chks[cols];
-        Vec v1 = _fr.vecs()[cols];
-        for( int rows = 0; rows < chks[0]._len; rows++ ) {
-          double d0 = c0.atd(rows), d1 = v1.at(c0.start() + rows);
-          if( !(Double.isNaN(d0) && Double.isNaN(d1)) && (d0 != d1) ) {
-            _unequal = true; return;
-          }
-        }
-      }
-    }
-    @Override public void reduce( Cmp2 cmp ) { _unequal |= cmp._unequal; }
-  }
-
-  // Run tests from cmd-line since testng doesn't seem to be able to it.
-  public static void main( String[] args ) {
-    H2O.main(new String[0]);
-    for( String arg : args ) {
-      try {
-        System.out.println("=== Starting "+arg);
-        Class clz = Class.forName(arg);
-        Method main = clz.getDeclaredMethod("main");
-        main.invoke(null);
-      } catch( InvocationTargetException ite ) {
-        Throwable e = ite.getCause();
-        e.printStackTrace();
-        try { Thread.sleep(100); } catch( Exception ignore ) { }
-      } catch( Exception e ) {
-        e.printStackTrace();
-        try { Thread.sleep(100); } catch( Exception ignore ) { }
-      } finally {
-        System.out.println("=== Stopping "+arg);
-      }
-    }
-    try { Thread.sleep(100); } catch( Exception ignore ) { }
-    if( args.length != 0 )
-      UDPRebooted.T.shutdown.send(H2O.SELF);
   }
 }

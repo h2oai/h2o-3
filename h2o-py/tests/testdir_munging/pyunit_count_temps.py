@@ -6,70 +6,70 @@ from tests import pyunit_utils
 
 
 def date_munge():
-  crimes_path = pyunit_utils.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
-  # crimes_path = "smalldata/chicago/chicagoCrimes10k.csv.zip"
+    crimes_path = pyunit_utils.locate("smalldata/chicago/chicagoCrimes10k.csv.zip")
+    # crimes_path = "smalldata/chicago/chicagoCrimes10k.csv.zip"
 
-  tmps0 = pyunit_utils.temp_ctr() # Expected 0
-  rest0 = pyunit_utils.rest_ctr() # Expected 0
+    hc = h2o.connection()
+    tmps0 = pyunit_utils.temp_ctr()
 
-  # /3/ImportFiles
-  # /3/ParseSetup
-  # /3/Parse
-  crimes = h2o.import_file(path=crimes_path)
+    # GET /3/ImportFiles
+    # POST /3/ParseSetup
+    # POST /3/Parse
+    # GET /3/Job/{job_id}  (multiple times)
+    # GET /3/Frames/crimes
+    crimes = h2o.import_file(path=crimes_path, destination_frame="crimes")
 
-  # /99/Rapids, parms: {ast=(tmp= py_2 (append py_1 (day (cols_py py_1 "Date")) "Day"))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_1}
-  # /3/Frames/(?<frameid>.*), parms: {frame_id=py_2, row_count=10}
-  crimes["Day"]       = crimes["Date"].day()
+    rest1 = hc.requests_count
 
-  # /99/Rapids, parms: {ast=(tmp= py_3 (append py_2 (+ (month (cols_py py_2 "Date")) 1) "Month"))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_2}
-  # /3/Frames/(?<frameid>.*), parms: {frame_id=py_3, row_count=10}
-  # /99/Rapids, parms: {ast=(tmp= py_4 (:= py_3 (+ (year (cols_py py_3 "Date")) 1900) 17 []))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_3}
-  # /3/Frames/(?<frameid>.*), parms: {frame_id=py_4, row_count=10}
-  # /99/Rapids, parms: {ast=(tmp= py_5 (append py_4 (week (cols_py py_4 "Date")) "WeekNum"))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_4}
-  # /3/Frames/(?<frameid>.*), parms: {frame_id=py_5, row_count=10}
-  # /99/Rapids, parms: {ast=(tmp= py_6 (append py_5 (dayOfWeek (cols_py py_5 "Date")) "WeekDay"))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_5}
-  # /3/Frames/py_6, route: {frame_id=py_6, row_count=10}
-  # /99/Rapids(append py_6 (hour (cols_py py_6 "Date")) "HourOfDay"))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_6}
-  # /3/Frames/(?<frameid>.*), parms: {frame_id=py_7, row_count=10}
-  crimes["Month"]     = crimes["Date"].month() + 1    # Since H2O indexes from 0
-  crimes["Year"]      = crimes["Date"].year() + 1900  # Start of epoch is 1900
-  crimes["WeekNum"]   = crimes["Date"].week()
-  crimes["WeekDay"]   = crimes["Date"].dayOfWeek()
-  crimes["HourOfDay"] = crimes["Date"].hour()
+    crimes["Day"] = crimes["Date"].day()
+    crimes["Month"] = crimes["Date"].month() + 1    # Since H2O indexes from 0
+    crimes["Year"] = crimes["Date"].year() + 1900  # Start of epoch is 1900
+    crimes["WeekNum"] = crimes["Date"].week()
+    crimes["WeekDay"] = crimes["Date"].dayOfWeek()
+    crimes["HourOfDay"] = crimes["Date"].hour()
+    print("# of REST calls used: %d" % (hc.requests_count - rest1))
 
-  # /99/Rapids, parms: {ast=(tmp= py_8 (append py_7 (| (== (cols_py py_7 "WeekDay") "Sun") (== (cols_py py_7 "WeekDay") "Sat")) "Weekend"))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_7}
-  # /3/Frames/(?<frameid>.*), parms: {frame_id=py_8, row_count=10}
-  crimes["Weekend"] = (crimes["WeekDay"] == "Sun") | (crimes["WeekDay"] == "Sat")
+    crimes["Weekend"] = (crimes["WeekDay"] == "Sun") | (crimes["WeekDay"] == "Sat")
+    print("# of REST calls used: %d" % (hc.requests_count - rest1))
 
-  # /99/Rapids, parms: {ast=(tmp= py_9 (append py_8 (cut (cols_py py_8 "Month") [0 2 5 7 10 12] ["Winter" "Spring" "Summer" "Autumn" "Winter"] FALSE TRUE 3) "Season"))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_8}
-  # /3/Frames/(?<frameid>.*), parms: {frame_id=py_9, row_count=10}
-  crimes["Season"]  = crimes["Month"].cut([0, 2, 5, 7, 10, 12], ["Winter", "Spring", "Summer", "Autumn", "Winter"])
+    crimes["Season"] = crimes["Month"].cut([0, 2, 5, 7, 10, 12], ["Winter", "Spring", "Summer", "Autumn", "Winter"])
+    print("# of REST calls used: %d" % (hc.requests_count - rest1))
 
-  # /99/Rapids, parms: {ast=(tmp= py_10 (cols py_9 -3))}
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_9}
-  # /3/Frames/(?<frameid>.*), parms: {frame_id=py_10, row_count=10}
-  crimes = crimes.drop("Date")
+    crimes = crimes.drop("Date")
+    print("# of REST calls used: %d" % (hc.requests_count - rest1))
 
-  crimes.describe()
+    # POST /4/sessions
+    # POST /99/Rapids  {ast:(tmp= py8 (cols (append
+    #                        (tmp= py7 (append
+    #                         (tmp= py6 (append
+    #                          (tmp= py5 (append
+    #                           (tmp= py4 (append
+    #                            (tmp= py3 (:=
+    #                             (tmp= py2 (append
+    #                              (tmp= py1 (append crimes (day (cols_py chicagoCrimes10k.hex "Date")) "Day")
+    #                               ) (+ (month (cols_py py1 "Date")) 1) "Month"))
+    #                                 (+ (year (cols_py py2 "Date")) 1900) 17 []))
+    #                                    (week (cols_py py3 "Date")) "WeekNum"))
+    #                                    (dayOfWeek (cols_py py4 "Date")) "WeekDay"))
+    #                                    (hour (cols_py py5 "Date")) "HourOfDay"))
+    #                                 (| (== (cols_py py6 "WeekDay") "Sun")
+    #                                    (== (cols_py py6 "WeekDay") "Sat")) "Weekend"))
+    #                         (cut (cols_py py7 "Month") [0 2 5 7 10 12]
+    #                           ["Winter" "Spring" "Summer" "Autumn" "Winter"] FALSE TRUE 3) "Season") -3))}
+    # GET /3/Frames/py8
+    crimes.describe()
+    print("# of REST calls used: %d" % (hc.requests_count - rest1))
 
-  # DELETE /3/DKV/(?<key>.*), parms: {key=py_10}
+    ntmps = pyunit_utils.temp_ctr() - tmps0
+    nrest = pyunit_utils.rest_ctr() - rest1
+    print("Number of temps used: %d" % ntmps)
+    print("Number of RESTs used: %d" % nrest)
+    assert ntmps == 8
+    assert nrest == 3
 
-  tmps1 = pyunit_utils.temp_ctr(); ntmps = tmps1-tmps0
-  rest1 = pyunit_utils.rest_ctr(); nrest = rest1-rest0
-  print(("Number of temps used: ",ntmps))
-  print(("Number of RESTs used: ",nrest))
-  assert ntmps <= 15
-  assert nrest <= 20
+
 
 if __name__ == "__main__":
-  pyunit_utils.standalone_test(date_munge)
+    pyunit_utils.standalone_test(date_munge)
 else:
-  date_munge()
+    date_munge()

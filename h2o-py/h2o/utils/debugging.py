@@ -240,6 +240,8 @@ def _get_method_full_name(func):
     if hasattr(func, "__qualname__"): return func.__qualname__
 
     module = inspect.getmodule(func)
+    if module is None:
+        return "?.%s" % getattr(func, "__name__", "?")
     for cls_name in dir(module):
         cls = getattr(module, cls_name)
         if not inspect.isclass(cls): continue
@@ -272,12 +274,17 @@ def _find_function_from_code(frame, code):
     def find_code(iterable, depth=0):
         if depth > 3: return  # Avoid potential infinite loops, or generally objects that are too deep.
         for item in iterable:
-            if not item: continue
+            if item is None: continue
             found = None
             if hasattr(item, "__code__") and item.__code__ == code:
                 found = item
             elif isinstance(item, type) or isinstance(item, ModuleType):  # class / module
-                found = find_code((getattr(item, n, None) for n in dir(item)), depth + 1)
+                try:
+                    found = find_code((getattr(item, n, None) for n in dir(item)), depth + 1)
+                except Exception:
+                    # Sometimes merely getting module's attributes may cause an exception. For example :mod:`six.moves`
+                    # is such an offender...
+                    continue
             elif isinstance(item, (list, tuple, set)):
                 found = find_code(item, depth + 1)
             elif isinstance(item, dict):
@@ -294,6 +301,8 @@ def _get_args_str(func, highlight=None):
     "text, wrap_at=100, indent=4". This should usually coincide with the function's declaration (the part
     which is inside the parentheses).
     """
+    if not func: return ""
+
     def gen_args():
         args_spec = inspect.getargspec(func)
         defaults = args_spec.defaults or []
