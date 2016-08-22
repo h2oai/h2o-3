@@ -100,7 +100,8 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
       long start = System.currentTimeMillis();
       DeepWaterImageIterator img_iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, width, height, channels);
       long end = System.currentTimeMillis();
-      Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
+      if(!_localmodel.get_params()._quiet_mode)
+          Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
 
       start = System.currentTimeMillis();
       long nativetime =0;
@@ -111,7 +112,8 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
         float[] data = img_iter.getData();
         float[] labels = img_iter.getLabel();
         long n = _localmodel.get_processed_total();
-        Log.info("Trained " + n + " samples. Training on " + Arrays.toString(img_iter.getFiles()));
+        if(!_localmodel.get_params()._quiet_mode)
+            Log.info("Trained " + n + " samples. Training on " + Arrays.toString(img_iter.getFiles()));
         _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double)n));
         _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double)n));
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
@@ -121,8 +123,10 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
       }
       nativetime +=ntt._timeInMillis;
       end = System.currentTimeMillis();
-      Log.info("Time for one epoch: " + PrettyPrint.msecs(end-start, true));
-      Log.info("Time for Native training : " + PrettyPrint.msecs(nativetime, true));
+      if(!_localmodel.get_params()._quiet_mode) {
+        Log.info("Time for one epoch: " + PrettyPrint.msecs(end - start, true));
+        Log.info("Time for Native training : " + PrettyPrint.msecs(nativetime, true));
+      }
 
     } catch (IOException e) {
       e.printStackTrace();
