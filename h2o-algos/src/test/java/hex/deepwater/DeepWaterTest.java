@@ -32,14 +32,15 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void inceptionPrediction() throws IOException {
+  public void inceptionPredictionMX() throws IOException {
 
     // load the cuda lib in CUDA_PATH, optional. theoretically we can find them if they are in LD_LIBRARY_PATH
     if (GPU) util.loadCudaLib();
     util.loadNativeLib("mxnet");
     util.loadNativeLib("Native");
 
-    BufferedImage img = ImageIO.read(new File(expandPath("~/deepwater/test/test2.jpg")));
+    File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
+    BufferedImage img = ImageIO.read(imgFile);
 
     int w = 224, h = 224;
 
@@ -70,7 +71,7 @@ public class DeepWaterTest extends TestUtil {
     ImagePred m = new ImagePred();
 
     // the path to Inception model
-    m.setModelPath(expandPath("~/deepwater/Inception"));
+    m.setModelPath(expandPath("~/deepwater/backends/mxnet/Inception"));
 
     m.loadInception();
 
@@ -103,7 +104,7 @@ public class DeepWaterTest extends TestUtil {
 
     ImageTrain m = new ImageTrain();
     m.buildNet(classes, batch_size, "inception_bn");
-    m.loadParam(expandPath("~/deepwater/Inception/model.params"));
+    m.loadParam(expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
 
     int max_iter = 6; //epochs
     int count = 0;
