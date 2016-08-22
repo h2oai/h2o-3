@@ -9,6 +9,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
@@ -228,9 +229,15 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_network == Network.user) {
       if (_network_definition_file == null || _network_definition_file.isEmpty())
         dl.error("_network_definition_file", "network_definition_file must be provided if the network is user-specified.");
+      else if (!new File(_network_definition_file).exists())
+        dl.error("_network_definition_file", "network_definition_file " + _network_definition_file + " not found.");
     } else {
       if (_network_definition_file != null && !_network_definition_file.isEmpty() && _network != Network.auto)
         dl.error("_network_definition_file", "network_definition_file cannot be provided if a pre-defined network is chosen.");
+    }
+    if (_network_parameters_file != null && !_network_parameters_file.isEmpty()) {
+      if (!new File(_network_parameters_file).exists())
+        dl.error("_network_parameters_file", "network_parameters_file " + _network_parameters_file + " not found.");
     }
 
     if (_checkpoint!=null) {
