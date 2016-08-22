@@ -156,6 +156,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     }
 
     // We now have _o and _x collated from all the contributing nodes, in the correct original order.
+    // TODO save this allocation and reuse per thread?  Or will heap just take care of it. Time this allocation and copy as step 1 anyway.
     _xtmp = new byte[_x.length][];
     _otmp = new long[_o.length][];
     assert _x.length == _o.length;  // i.e. aligned batch size between x and o (think 20 bytes keys and 8 bytes of long in o)
@@ -185,12 +186,14 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     OXHeader msbh = new OXHeader(_o.length, numRows, _batchSize);
     Futures fs = new Futures();
     DKV.put(getSortedOXHeaderKey(_isLeft, _MSBvalue), msbh, fs, true);
+    assert _o.length == _x.length;
     for (b=0; b<_o.length; b++) {
       SplitByMSBLocal.OXbatch tmp = new SplitByMSBLocal.OXbatch(_o[b], _x[b]);
       Value v = new Value(SplitByMSBLocal.getSortedOXbatchKey(_isLeft, _MSBvalue, b), tmp);
       DKV.put(v._key, v, fs, true);  // the OXbatchKey's on this node will be reused for the new keys
       v.freeMem();
     }
+    // TODO: check numRows is the total of the _x[b] lengths
     fs.blockForPending();
     tryComplete();
   }
@@ -248,7 +251,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       int cmp = keycmp(_xbatch, offset+i, _xbatch, offset+i-1);  // TO DO: we don't need to compare the whole key here.  Set cmpLen < keySize
       if (cmp < 0) {
         System.arraycopy(_xbatch, (offset+i)*_keySize, keytmp, 0, _keySize);
-        int j = i - 1;
+        int j = i-1;
         long otmp = _obatch[offset+i];
         do {
           System.arraycopy(_xbatch, (offset+j)*_keySize, _xbatch, (offset+j+1)*_keySize, _keySize);
@@ -302,14 +305,14 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
         // final table key columns.
       }
       idx = _keySize-Byte-1;
-      thisLen = (b==nbatch-2/*next iteration will be last batch*/ ? (int)(start+len-1)%_batchSize : _batchSize);
+      thisLen = (b==nbatch-2/*next iteration will be last batch*/ ? (int)((start+len)%_batchSize) : _batchSize);
       // thisLen will be set to _batchSize for the middle batches when nbatch>=3
     }
     if (thisHist[bin] == len) {
       // one bin has count len and the rest zero => next byte quick
       thisHist[bin] = 0;  // important, clear for reuse
       if (Byte != 0)
-        run(start, len, Byte - 1);
+        run(start, len, Byte-1);
       return;
     }
     long rollSum = 0;
@@ -342,7 +345,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       }
       xidx = _keySize-Byte-1;
       oidx = 0;
-      thisLen = (b==nbatch-2/*next iteration will be last batch*/ ? (int)(start+len-1)%_batchSize : _batchSize);
+      thisLen = (b==nbatch-2/*next iteration will be last batch*/ ? (int)((start+len)%_batchSize) : _batchSize);
     }
 
     // now copy _otmp and _xtmp back over _o and _x from the start position, allowing for boundaries
@@ -375,7 +378,6 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       System.arraycopy(otmp[sourceBatch], sourceOffset,         o[targetBatch], targetOffset,         thisCopy);
       System.arraycopy(xtmp[sourceBatch], sourceOffset*keySize, x[targetBatch], targetOffset*keySize, thisCopy*keySize);
       numRowsToCopy -= thisCopy;
-      // sourceBatch no change
       sourceOffset += thisCopy; sourceBatchRemaining -= thisCopy;
       targetOffset += thisCopy; targetBatchRemaining -= thisCopy;
       if (sourceBatchRemaining == 0) { sourceBatch++; sourceOffset = 0; sourceBatchRemaining = batchSize; }

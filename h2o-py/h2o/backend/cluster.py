@@ -67,11 +67,14 @@ class H2OCluster(object):
 
     @property
     def build_age(self):
-        return self._props["build_age"]
+        # If the build age is unknown, then the cluster is so old it comes from "prehistoric" times when no
+        # build number reporting was done...
+        return self._props.get("build_age", "PREHISTORIC")
 
     @property
     def build_too_old(self):
-        return self._props["build_too_old"]
+        # If the prop "build_too_old" wasn't reported by the server, then it's definitely too old :)
+        return self._props.get("build_too_old", True)
 
     @property
     def cloud_healthy(self):

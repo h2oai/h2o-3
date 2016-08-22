@@ -35,12 +35,23 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
     int[] shuffled_idx = new int[idx.length];
     ArrayUtils.shuffleArray(idx, idx.length, shuffled_idx, _createFrame.seed_for_column_types, 0);
 
-    int catcols = (int)(_createFrame.categorical_fraction * _createFrame.cols);
-    int intcols = (int)(_createFrame.integer_fraction * _createFrame.cols);
-    int bincols = (int)(_createFrame.binary_fraction * _createFrame.cols);
-    int timecols = (int)(_createFrame.time_fraction * _createFrame.cols);
-    int stringcols = (int)(_createFrame.string_fraction * _createFrame.cols);
+    // Sometimes the client requests, say, 0.3 categorical columns. By the time this number arrives here, it becomes
+    // something like 0.299999999997. If we just multiply by the number of columns (say 10000) and take integer part,
+    // we'd have 2999 columns only -- not what the client expects. This is why we add 0.1 to each count before taking
+    // the floor part.
+    int catcols = (int)(_createFrame.categorical_fraction * _createFrame.cols + 0.1);
+    int intcols = (int)(_createFrame.integer_fraction * _createFrame.cols + 0.1);
+    int bincols = (int)(_createFrame.binary_fraction * _createFrame.cols + 0.1);
+    int timecols = (int)(_createFrame.time_fraction * _createFrame.cols + 0.1);
+    int stringcols = (int)(_createFrame.string_fraction * _createFrame.cols + 0.1);
     int realcols = _createFrame.cols - catcols - intcols - bincols - timecols - stringcols;
+
+    // At this point we might accidentally allocated too many columns. In such a case, adjust their counts.
+    if (realcols < 0 && catcols > 0) { catcols--; realcols++; }
+    if (realcols < 0 && intcols > 0) { intcols--; realcols++; }
+    if (realcols < 0 && bincols > 0) { bincols--; realcols++; }
+    if (realcols < 0 && timecols > 0) { timecols--; realcols++; }
+    if (realcols < 0 && stringcols > 0) { stringcols--; realcols++; }
 
     assert(catcols >= 0);
     assert(intcols >= 0);

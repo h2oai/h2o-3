@@ -19,7 +19,7 @@ General interface of this module is:
 The ``typeI`` items here deserve a more thorough explanation. They could be:
 
     # Plain types
-    assert_is_type(flag, bool)
+    assert_is_type(flag, bool) # note that in Python ``bool`` is a subclass of ``int``
     assert_is_type(port, int)  # ``int`` and ``str`` will work on Py2 as if you were on Py3
     assert_is_type(text, str)  # (i.e. they'll also match ``long`` and ``unicode`` respectively)
     assert_is_type(hls, H2OLocalServer)
@@ -81,6 +81,10 @@ As you have noticed, we define a number of special classes to facilitate type co
     # ``Dict`` is a dictionary type which should match exactly (i.e. each key must be present in tested variable)
     Dict(error=str)        # dictionary with only one key "error" with string value
 
+    # ``BoundInt``, ``BoundNumeric`` are numbers that are bound from below below and/or above
+    BoundInt(1, 100)
+    BoundNumeric(0, 1)
+
     # Lazy class references: these types can be used anywhere without having to load the corresponding modules. Their
     # resolution is deferred until the run time, and if the module cannot be loaded no exception will be raised (but
     # of course the type check will fail).
@@ -98,12 +102,14 @@ import importlib
 import re
 import sys
 import tokenize
-from types import FunctionType, BuiltinFunctionType
+from types import BuiltinFunctionType, FunctionType
 
-from h2o.utils.compatibility import *  # NOQA
 from h2o.exceptions import H2OTypeError, H2OValueError
+from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.compatibility import PY2, viewitems
 
-__all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
+__all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNumeric",
+           "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
            "assert_is_type", "assert_matches", "assert_satisfies", "is_type")
 
 
@@ -275,6 +281,66 @@ class Dict(MagicType):
         return "{%s}" % ", ".join("%s: %s" % (key, _get_type_name(ktype, src))
                                   for key, ktype in viewitems(self._types))
 
+
+class BoundInt(MagicType):
+    """Integer type bounded from below/above."""
+
+    def __init__(self, lb=None, ub=None):
+        """
+        Create a BoundInt object.
+
+        The type will match any integer that is within the specified bounds (inclusively). Thus, ``BoundInt(0, 100)``
+        matches any integer in the range from 0 to 100 (including 100). Also ``BoundInt(1)`` is a positive integer,
+        and ``BoundInt(None, -1)`` is a negative integer.
+
+        :param lb: lower bound (can be None or int)
+        :param ub: upper bound (can be None or int)
+        """
+        self._lower_bound = lb
+        self._upper_bound = ub
+
+    def check(self, var):
+        """Return True if the variable matches the specified type."""
+        return (isinstance(var, _int_type) and
+                (self._lower_bound is None or var >= self._lower_bound) and
+                (self._upper_bound is None or var <= self._upper_bound))
+
+    def name(self, src=None):
+        """Return string representing the name of this type."""
+        if self._upper_bound is None and self._lower_bound is None: return "int"
+        if self._upper_bound is None:
+            if self._lower_bound == 1: return "int>0"
+            return "int≥%d" % self._lower_bound
+        if self._lower_bound is None:
+            return "int≤%d" % self._upper_bound
+        return "int[%d…%d]" % (self._lower_bound, self._upper_bound)
+
+
+class BoundNumeric(MagicType):
+    """Numeric type bounded from below/above."""
+
+    def __init__(self, lb=None, ub=None):
+        """
+        Create a BoundNumeric object.
+
+        :param lb: lower bound (can be None or numeric)
+        :param ub: upper bound (can be None or numeric)
+        """
+        self._lower_bound = lb
+        self._upper_bound = ub
+
+    def check(self, var):
+        """Return True if the variable matches the specified type."""
+        return (isinstance(var, _num_type) and
+                (self._lower_bound is None or var >= self._lower_bound) and
+                (self._upper_bound is None or var <= self._upper_bound))
+
+    def name(self, src=None):
+        """Return string representing the name of this type."""
+        if self._upper_bound is None and self._lower_bound is None: return "numeric"
+        if self._upper_bound is None: return "numeric≥%d" % self._lower_bound
+        if self._lower_bound is None: return "numeric≤%d" % self._upper_bound
+        return "numeric[%d…%d]" % (self._lower_bound, self._upper_bound)
 
 
 class _LazyClass(MagicType):

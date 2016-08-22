@@ -43,7 +43,9 @@ public class AstHist extends AstPrimitive {
     if (f.numCols() != 1) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
     Vec vec = f.anyVec();
     if (!vec.isNumeric()) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
-
+    //TODO Add case when vec is a constant numeric
+    if(vec.isConst()) throw new IllegalArgumentException("Hist does not apply to constant numeric columns.");
+    
     AstRoot a = asts[2];
     String algo = null;
     int numBreaks = -1;

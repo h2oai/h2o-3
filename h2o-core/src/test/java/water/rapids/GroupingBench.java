@@ -254,7 +254,7 @@ public class GroupingBench extends TestUtil {
 
   @Test public void runBench2() {
     Frame f1=null, f2=null, fx=null;
-    try { 
+    try {
       // build a hi count cardinality frame
       final long card = (long)1e4;
       f1 = buildFrame(card,-1);

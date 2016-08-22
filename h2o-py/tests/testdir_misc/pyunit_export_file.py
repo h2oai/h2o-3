@@ -46,11 +46,7 @@ def export_file():
     print(h_pred.head())
 
     #Test to check if py_pred & h_pred are identical
-    try:
-        assert_frame_equal(py_pred,h_pred)
-        return True
-    except:
-        return False
+    assert_frame_equal(py_pred,h_pred)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(export_file)
