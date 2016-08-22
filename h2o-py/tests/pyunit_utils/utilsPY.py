@@ -4,6 +4,12 @@ standard_library.install_aliases()
 from builtins import range
 from past.builtins import basestring
 import sys, os
+
+try:        # works with python 2.7 not 3
+    from StringIO import StringIO
+except:     # works with python 3
+    from io import StringIO
+
 sys.path.insert(1, "../../")
 import h2o
 import imp
@@ -2522,3 +2528,244 @@ def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
     # save hyper-parameter file in sandbox
     with open(os.path.join(dir2, json_filename), 'w') as test_file:
         json.dump(hyper_parameters, test_file)
+
+
+def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, strict=False, compare_NA=True):
+    """
+    This function will compare two H2O frames to make sure their dimension, and values in all cells are the same.
+    It will not compare the column names though.
+
+    :param frame1: H2O frame to be compared
+    :param frame2: H2O frame to be compared
+    :param numElements: integer to denote number of rows to compare.  Done to reduce compare time.
+        Set to 0 or negative number if you want to compare all elements.
+    :param tol_time: optional parameter to limit time value difference.
+    :param tol_numerica: optional parameter to limit numeric value difference.
+    :param strict: optional parameter to enforce strict comparison or not.  If True, column type must
+        match in order to pass the test.
+    :param compare_NA: optional parameter to compare NA or not.  For csv file generated from orc file, the
+        NAs are represented as some other symbol but our CSV will not be able to parse it correctly as NA.
+        In this case, do not compare the number of NAs.
+    :return: boolean: True, the two frames are equal and False otherwise.
+    """
+
+    # check frame dimensions
+    rows1, cols1 = frame1.dim
+    rows2, cols2 = frame2.dim
+
+    assert rows1 == rows2 and cols1 == cols2, "failed dim check! frame 1 rows:{0} frame 2 rows:{1} frame 1 cols:{2} " \
+                                              "frame2 cols:{3}".format(rows1, rows2, cols1, cols2)
+
+    na_frame1 = frame1.isna().sum()
+    na_frame2 = frame2.isna().sum()
+
+    if compare_NA:      # check number of missing values
+        assert na_frame1 == na_frame2, "failed numbers of NA check!  Frame 1 NA number: {0}, frame 2 " \
+                                   "NA number: {1}".format(na_frame1, na_frame2)
+
+    # check column types are the same before proceeding to check each row content.
+    for col_ind in range(cols1):
+
+        c1_key = frame1.columns[col_ind]
+        c2_key = frame2.columns[col_ind]
+        c2_type = frame2.types[c2_key]
+        c1_type = frame1.types[c1_key]
+
+        print("###### Comparing column: {0} and column type is {1}.".format(col_ind, c1_type))
+
+        if strict:  # every column type must match
+            assert c1_type == c2_type, "failed column type check! frame1 col type: {0}, frame2 col type: " \
+                                       "{1}".format(c1_type, c2_type)
+        else:
+            if str(c2_type) == 'enum':  # orc files do not have enum column type.  We convert it here
+                frame1[col_ind].asfactor()
+            else:
+                assert c1_type == c2_type, "failed column type check! frame1 col type: {0}, frame2 col type: " \
+                                           "{1}".format(c1_type, c2_type)
+        # compare string
+        if (str(c1_type) == 'string') or (str(c1_type) == 'enum'):
+            compareOneStringColumn(frame1, frame2, col_ind, rows1, numElements)
+        else:
+            if str(c2_type) == 'time':  # compare time columns
+                compareOneNumericColumn(frame1, frame2, col_ind, rows1, tol_time, numElements)
+            else:
+                compareOneNumericColumn(frame1, frame2, col_ind, rows1, tol_numeric, numElements)
+    return True
+
+
+def compareOneStringColumn(frame1, frame2, col_ind, rows, numElements):
+    """
+    This function will compare two String columns of two H2O frames to make sure that they are the same.
+
+    :param frame1: H2O frame to be compared
+    :param frame2: H2O frame to be compared
+    :param col_ind: integer denoting column index to compare the two frames
+    :param rows: integer denoting number of rows in the column
+    :param numElements: integer to denote number of rows to compare.  Done to reduce compare time
+    :return: None.  Will throw exceptions if comparison failed.
+    """
+
+    row_indices = list(range(rows))
+    if numElements > 0:
+        random.shuffle(row_indices)
+    else:
+        numElements = rows
+
+    for ele_ind in range(numElements):
+        row_ind = row_indices[ele_ind]
+
+        val1 = frame1[row_ind, col_ind]
+        val2 = frame2[row_ind, col_ind]
+
+        assert val1 == val2, "failed frame values check! frame1 value: {0}, frame2 value: {1} at row {2}, column " \
+                             "{3}".format(val1, val2, row_ind, col_ind)
+
+
+def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElements):
+    """
+    This function compares two numeric columns of two H2O frames to make sure that they are close.
+
+    :param frame1: H2O frame to be compared
+    :param frame2: H2O frame to be compared
+    :param col_ind: integer denoting column index to compare the two frames
+    :param rows: integer denoting number of rows in the column
+    :param tolerance: double parameter to limit numerical value difference.
+    :param numElements: integer to denote number of rows to compare.  Done to reduce compare time.
+    :return: None.  Will throw exceptions if comparison failed.
+    """
+
+    row_indices = []
+    if numElements > 0:
+        row_indices = random.sample(xrange(rows),numElements)
+    else:
+        numElements = rows  # Compare all elements
+        list(range(rows))
+
+    for ele_ind in range(numElements):
+        row_ind = row_indices[ele_ind]
+
+        val1 = frame1[row_ind, col_ind]
+        val2 = frame2[row_ind, col_ind]
+
+        if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
+            diff = abs(val1-val2)
+            assert diff <= tolerance, "failed frame values check! frame1 value = {0}, frame2 value =  {1}, " \
+                                      "at row {2}, column {3}.  The difference is {4}.".format(val1, val2, row_ind,
+                                                                                               col_ind, diff)
+        elif math.isnan(val1) and math.isnan(val2): # both frame contains missing values
+            continue
+        else:   # something is wrong, one frame got a missing value while the other is fine.
+            assert 1 == 2,  "failed frame values check! frame1 value {0}, frame2 value {1} at row {2}, " \
+                            "column {3}".format(val1, val2, row_ind, col_ind)
+
+import warnings
+
+def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1):
+    """
+            This function will execute a command to run and analyze the print outs of
+    running the command.  The goal here is to capture any warnings that we may expect
+    out of running those commands.
+
+    :param filewithpath: name of file to be parsed with path
+    :param warn_phrase: capture the warning header, sometimes it is warn or userwarn.
+    :param warn_string_of_interest: specific warning message string
+    :param number_of_times: number of warning lines we are expecting.
+    :return: True if warning was found and False otherwise
+    """
+
+    number_warngings = 0
+
+    buffer = StringIO()     # redirect warning messages to string buffer for later analysis
+    sys.stderr = buffer
+
+    frame = h2o.import_file(path=locate(filewithpath))
+
+    sys.stderr = sys.__stderr__     # redirect it back to stdout.
+    try:        # for python 2.7
+        if len(buffer.buflist) > 0:
+            for index in range(len(buffer.buflist)):
+                if (warn_phrase in buffer.buflist[index]) and (warn_string_of_interest in buffer.buflist[index]):
+                    number_warngings = number_warngings+1
+    except:     # for python 3.
+        warns = buffer.getvalue()
+
+        if (warn_phrase in warns) and (warn_string_of_interest in warns):
+            number_warngings = number_warngings+1
+
+        number_of_times = 1
+
+    if number_warngings >= number_of_times:
+        return True
+    else:
+        return False
+
+
+def compare_frame_summary(frame1_summary, frame2_summary, compareNames=False, compareTypes=False):
+    """
+        This method is written to compare the frame summary between two frames.
+
+    :param frame1_summary:
+    :param frame2_summary:
+    :param compareNames:
+    :param compareTypes:
+    :return:
+    """
+
+    frame1_column_number = len(frame1_summary)
+    frame2_column_number = len(frame2_summary)
+
+    assert frame1_column_number == frame2_column_number, "failed column number check!  Frame 1 column number: {0}," \
+                                                         "frame 2 column number: {1}".format(frame1_column_number,
+                                                                                             frame2_column_number)
+
+    for col_index in range(frame1_column_number):   # check summary for each column
+        for key_val in list(frame1_summary[col_index]):
+
+            if not(compareNames) and (str(key_val) == 'label'):
+                continue
+
+            if not(compareTypes) and (str(key_val) == 'type'):
+                continue
+
+            if str(key_val) == 'precision':     # skip comparing precision
+                continue
+
+            val1 = frame1_summary[col_index][key_val]
+            val2 = frame2_summary[col_index][key_val]
+
+            if isinstance(val1, list) or isinstance(val1, dict):
+                if isinstance(val1, dict):
+                    assert cmp(val1, val2) == 0, "failed column summary comparison for column {0} and summary " \
+                                                 "type {1}, frame 1 value is {2}, frame 2 value is " \
+                                                 "{3}".format(col_index, str(key_val), val1, val2)
+                else:
+                    if len(val1) > 0:
+                        # find if elements are float
+                        float_found = False
+
+                        for ind in range(len(val1)):
+                            if isinstance(val1[ind], float):
+                                float_found = True
+                                break
+
+                        if float_found:
+                            for ind in range(len(val1)):
+                                if not(str(val1[ind] == 'NaN')):
+                                    assert abs(val1[ind]-val2[ind]) < 1e-5, "failed column summary comparison for " \
+                                                                            "column {0} and summary type {1}, frame 1" \
+                                                                            " value is {2}, frame 2 value is " \
+                                                                            "{3}".format(col_index, str(key_val),
+                                                                                         val1[ind], val2[ind])
+                        else:
+                            assert cmp(val1, val2) == 0, "failed column summary comparison for column {0} and summary" \
+                                                         " type {1}, frame 1 value is {2}, frame 2 value is " \
+                                                         "{3}".format(col_index, str(key_val), val1, val2)
+            else:
+                if isinstance(val1, float):
+                    assert abs(val1-val2) < 1e-5, "failed column summary comparison for column {0} and summary type " \
+                                                  "{1}, frame 1 value is {2}, frame 2 value is " \
+                                                  "{3}".format(col_index, str(key_val), val1, val2)
+                else:
+                    assert val1 == val2, "failed column summary comparison for column {0} and summary type " \
+                                         "{1}, frame 1 value is {2}, frame 2 value is " \
+                                         "{3}".format(col_index, str(key_val), val1, val2)

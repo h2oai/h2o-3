@@ -139,17 +139,22 @@ public final class ParseDataset {
     }
     Log.info("Total file size: "+ PrettyPrint.bytes(totalParseSize));
 
-    // set the parse chunk size for files
-    for( int i = 0; i < keys.length; ++i ) {
-      Iced ice = DKV.getGet(keys[i]);
-      if(ice instanceof FileVec) {
-        ((FileVec) ice).setChunkSize(setup._chunk_size);
-        Log.info("Parse chunk size " + setup._chunk_size);
-      } else if(ice instanceof Frame && ((Frame)ice).vec(0) instanceof FileVec) {
-        ((FileVec) ((Frame) ice).vec(0)).setChunkSize((Frame) ice, setup._chunk_size);
-        Log.info("Parse chunk size " + setup._chunk_size);
+
+    // no need to set this for ORC, it is already done:
+    if (!setup.getParseType().name().contains("ORC")) {
+      for( int i = 0; i < keys.length; ++i ) {
+        Iced ice = DKV.getGet(keys[i]);
+
+        // set the parse chunk size for files
+        if (ice instanceof FileVec) {
+          ((FileVec) ice).setChunkSize(setup._chunk_size);
+          Log.info("Parse chunk size " + setup._chunk_size);
+        } else if (ice instanceof Frame && ((Frame) ice).vec(0) instanceof FileVec) {
+          ((FileVec) ((Frame) ice).vec(0)).setChunkSize((Frame) ice, setup._chunk_size);
+          Log.info("Parse chunk size " + setup._chunk_size);
+        }
       }
-    }
+    } else Log.info("Orc Parse chunk sizes may be different across files");
 
     long memsz = H2O.CLOUD.free_mem();
     if( totalParseSize > memsz*4 )
@@ -909,7 +914,7 @@ public final class ParseDataset {
 
     // ------------------------------------------------------------------------
     private static class DistributedParse extends MRTask<DistributedParse> {
-      private final ParseSetup _setup;
+      private ParseSetup _setup;
       private final int _vecIdStart;
       private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
       private final VectorGroup _vg;
@@ -938,9 +943,10 @@ public final class ParseDataset {
         super.setupLocal();
         _visited = new NonBlockingSetInt();
         _espc = MemoryManager.malloc8(_nchunks);
+        _setup = ParserService.INSTANCE.getByInfo(_setup._parse_type).setupLocal(_fr.anyVec(),_setup);
       }
       @Override public void map( Chunk in ) {
-        if( _jobKey.get().stop_requested() ) return;
+        if( _jobKey.get().stop_requested() ) throw new Job.JobCancelledException();
         AppendableVec [] avs = new AppendableVec[_setup._number_columns];
         for(int i = 0; i < avs.length; ++i)
           if (_setup._column_types == null) // SVMLight
@@ -956,22 +962,24 @@ public final class ParseDataset {
         case "ARFF":
         case "CSV":
           Categorical [] categoricals = categoricals(_cKey, _setup._number_columns);
-          dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), categoricals, _setup._column_types, _setup._chunk_size, avs); //TODO: use _setup._domains instead of categoricals
+          dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), categoricals, _setup._column_types,
+                  _setup._chunk_size, avs); //TODO: use _setup._domains instead of categoricals
           break;
         case "SVMLight":
           dout = new SVMLightFVecParseWriter(_vg, _vecIdStart, in.cidx() + _startChunkIdx, _setup._chunk_size, avs);
           break;
+        case "ORC":  // setup special case for ORC
+          Categorical [] orc_categoricals = categoricals(_cKey, _setup._number_columns);
+          dout = new FVecParseWriter(_vg, in.cidx() + _startChunkIdx, orc_categoricals, _setup._column_types,
+                  _setup._chunk_size, avs);
+          break;
         default: // FIXME: should not be default and creation strategy should be forwarded to ParserProvider
-          dout = new FVecParseWriter(_vg, in.cidx() + _startChunkIdx, null, _setup._column_types, _setup._chunk_size, avs);
+          dout = new FVecParseWriter(_vg, in.cidx() + _startChunkIdx, null, _setup._column_types,
+                  _setup._chunk_size, avs);
           break;
         }
         p.parseChunk(in.cidx(), din, dout);
         (_dout = dout).close(_fs);
-        if(_dout.hasErrors())
-          for(ParseWriter.ParseErr err:_dout._errs) {
-            assert err != null : "Parse error cannot be null!";
-            err._file = _srckey.toString();
-          }
         Job.update(in._len, _jobKey); // Record bytes parsed
         // remove parsed data right away
         freeMem(in);
@@ -1007,6 +1015,7 @@ public final class ParseDataset {
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
         if(_dout.hasErrors()) {
           ParseWriter.ParseErr [] errs = _dout.removeErrors();
+          for(ParseWriter.ParseErr err:errs)err._file = FileVec.getPathForKey(_srckey).toString();
           Arrays.sort(errs, new Comparator<ParseWriter.ParseErr>() {
             @Override
             public int compare(ParseWriter.ParseErr o1, ParseWriter.ParseErr o2) {
