@@ -2636,10 +2636,11 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
 
     row_indices = []
     if numElements > 0:
-        row_indices = random.sample(xrange(rows),numElements)
+        row_indices = random.sample(xrange(rows), numElements)
     else:
         numElements = rows  # Compare all elements
-        list(range(rows))
+        row_indices = list(range(rows))
+
 
     for ele_ind in range(numElements):
         row_ind = row_indices[ele_ind]
@@ -2660,7 +2661,7 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
 
 import warnings
 
-def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1):
+def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1, in_hdfs=False):
     """
             This function will execute a command to run and analyze the print outs of
     running the command.  The goal here is to capture any warnings that we may expect
@@ -2677,23 +2678,29 @@ def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="w
 
     buffer = StringIO()     # redirect warning messages to string buffer for later analysis
     sys.stderr = buffer
+    frame = None
 
-    frame = h2o.import_file(path=locate(filewithpath))
+    if in_hdfs:
+        frame = h2o.import_file(filewithpath)
+    else:
+        frame = h2o.import_file(path=locate(filewithpath))
 
     sys.stderr = sys.__stderr__     # redirect it back to stdout.
     try:        # for python 2.7
         if len(buffer.buflist) > 0:
             for index in range(len(buffer.buflist)):
+                print("*** captured warning message: {0}".format(buffer.buflist[index]))
                 if (warn_phrase in buffer.buflist[index]) and (warn_string_of_interest in buffer.buflist[index]):
                     number_warngings = number_warngings+1
+
     except:     # for python 3.
         warns = buffer.getvalue()
-
+        print("*** captured warning message: {0}".format(warns))
         if (warn_phrase in warns) and (warn_string_of_interest in warns):
             number_warngings = number_warngings+1
 
-        number_of_times = 1
-
+    print("Number of warnings found: {0} and number of times that warnings should appear {1}.".format(number_warngings,
+                                                                                                      number_of_times))
     if number_warngings >= number_of_times:
         return True
     else:
@@ -2769,3 +2776,31 @@ def compare_frame_summary(frame1_summary, frame2_summary, compareNames=False, co
                     assert val1 == val2, "failed column summary comparison for column {0} and summary type " \
                                          "{1}, frame 1 value is {2}, frame 2 value is " \
                                          "{3}".format(col_index, str(key_val), val1, val2)
+
+
+def cannaryHDFSTest(hdfs_name_node, file_name):
+    """
+    This function is written to detect if the hive-exec version is too old.  It will return
+    True if it is too old and false otherwise.
+
+    :param hdfs_name_node:
+    :param file_name:
+    :return:
+    """
+    url_orc = "hdfs://{0}{1}".format(hdfs_name_node, file_name)
+
+    try:
+        tempFrame = h2o.import_file(url_orc)
+        h2o.remove(tempFrame)
+        print("Your hive-exec version is good.  Parsing success for {0}.".format(url_orc))
+        return False
+    except Exception, e:
+        print("Error exception is {0}".format(str(e)))
+
+        if "NoSuchFieldError: vector" in str(e):
+            return True
+        else:       # exception is caused by other reasons.
+            return False
+
+
+
