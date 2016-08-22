@@ -26,7 +26,7 @@ import static ai.h2o.automl.utils.AutoMLUtils.intListToA;
 /**
  * Cache common questions asked upon the frame.
  */
-public class FrameMeta extends Iced {
+public class FrameMetadata extends Iced {
   final String _datasetName;
   public final Frame _fr;
   public int[] _catFeats;
@@ -62,7 +62,7 @@ public class FrameMeta extends Iced {
 
   public static HashMap<String, Object> makeEmptyFrameMeta() {
     HashMap<String,Object> hm = new HashMap<>();
-    for(String key: FrameMeta.METAVALUES) hm.put(key,null);
+    for(String key: FrameMetadata.METAVALUES) hm.put(key,null);
     return hm;
   }
 
@@ -187,23 +187,23 @@ public class FrameMeta extends Iced {
     return _dummies;
   }
 
-  public FrameMeta(Frame fr, int response, String datasetName) {
+  public FrameMetadata(Frame fr, int response, String datasetName) {
     _datasetName=datasetName;
     _fr=fr;
     _response=response;
     _cols = new ColMeta[_fr.numCols()];
   }
 
-  public FrameMeta(Frame fr, int response, String datasetName, boolean isClassification) {
+  public FrameMetadata(Frame fr, int response, String datasetName, boolean isClassification) {
     this(fr,response,datasetName);
     _isClassification=isClassification;
   }
 
-  public FrameMeta(Frame fr, int response, int[] predictors, String datasetName, boolean isClassification) {
+  public FrameMetadata(Frame fr, int response, int[] predictors, String datasetName, boolean isClassification) {
     this(fr, response, intAtoStringA(predictors, fr.names()), datasetName, isClassification);
   }
 
-  public FrameMeta(Frame fr, int response, String[] predictors, String datasetName, boolean isClassification) {
+  public FrameMetadata(Frame fr, int response, String[] predictors, String datasetName, boolean isClassification) {
     this(fr, response, datasetName, isClassification);
     _includeCols = predictors;
     if( null==_includeCols )
@@ -258,7 +258,7 @@ public class FrameMeta extends Iced {
   }
 
   // blocking call to compute 1st pass of column metadata
-  public FrameMeta computeFrameMetaPass1() {
+  public FrameMetadata computeFrameMetaPass1() {
     MetaPass1[] tasks = new MetaPass1[_fr.numCols()];
     for(int i=0; i<tasks.length; ++i)
       tasks[i] = new MetaPass1(i,this);
@@ -310,7 +310,7 @@ public class FrameMeta extends Iced {
     _includeCols=null;
   }
 
-  public FrameMeta computeVIFs() {
+  public FrameMetadata computeVIFs() {
     VIF[] vifs = VIF.make(_fr._key, includedCols(), _fr.names());
     VIF.launchVIFs(vifs);
     int i=0;
@@ -335,7 +335,7 @@ public class FrameMeta extends Iced {
     private long _elapsed;             // time to mrtask
 
     static double log2(double numerator) { return (Math.log(numerator))/Math.log(2)+1e-10; }
-    public MetaPass1(int idx, FrameMeta fm) {
+    public MetaPass1(int idx, FrameMetadata fm) {
       Vec v = fm._fr.vec(idx);
       _response=fm._response==idx;
       String colname = fm._fr.name(idx);

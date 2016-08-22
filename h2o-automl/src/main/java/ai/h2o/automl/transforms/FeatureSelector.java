@@ -1,6 +1,6 @@
 package ai.h2o.automl.transforms;
 
-import ai.h2o.automl.FrameMeta;
+import ai.h2o.automl.FrameMetadata;
 import hex.Model;
 import hex.ScoreKeeper;
 import hex.tree.gbm.GBM;
@@ -29,7 +29,7 @@ public abstract class FeatureSelector {
   final String[] _predictors;
   final String _response;
   final boolean _isClass;
-  FrameMeta _fm;
+  FrameMetadata _fm;
 
   private HashMap<String,Expr> _basicTransformsToTry;  // hold basic transforms that have not yet been vetted
   private HashMap<String,Expr> _basicTransformsToKeep; // these are transforms we want to keep
@@ -39,7 +39,7 @@ public abstract class FeatureSelector {
     _predictors=predictors;
     _response=response;
     _isClass=isClass;
-    _fm = new FrameMeta(f,f.find(response),predictors,f._key.toString(),isClass);
+    _fm = new FrameMetadata(f,f.find(response),predictors,f._key.toString(),isClass);
   }
 
   public void debugRunAll() {
@@ -172,8 +172,8 @@ public abstract class FeatureSelector {
       names[idx++] = name;
     }
     Frame fullFrame = new Frame(names, vecs.clone());
-    FrameMeta fullFrameMeta = new FrameMeta(fullFrame,fullFrame.find(_response),names, "synthesized_fullFrame",_isClass);
-    _aggFeatureBuilder = FeatureFactory.AggFeatureBuilder.buildAggFeatures(fullFrameMeta);
+    FrameMetadata fullFrameMetadata = new FrameMetadata(fullFrame,fullFrame.find(_response),names, "synthesized_fullFrame",_isClass);
+    _aggFeatureBuilder = FeatureFactory.AggFeatureBuilder.buildAggFeatures(fullFrameMetadata);
   }
 
   protected abstract void validateVec(Vec v[], String[] name);

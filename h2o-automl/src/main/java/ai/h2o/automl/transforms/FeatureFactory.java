@@ -1,6 +1,6 @@
 package ai.h2o.automl.transforms;
 
-import ai.h2o.automl.FrameMeta;
+import ai.h2o.automl.FrameMetadata;
 import hex.Model;
 import water.DKV;
 import water.H2O;
@@ -108,7 +108,7 @@ import java.util.HashSet;
  */
 public class FeatureFactory {
 
-  private final FrameMeta _fm;             // the input frame
+  private final FrameMetadata _fm;             // the input frame
 
   private HashMap<String,Expr> _basicTransforms;
   private Frame _basicTransformFrame;
@@ -126,7 +126,7 @@ public class FeatureFactory {
     _predictors=predictors;
     _response=response;
     _isClassification=isClassification;
-    _fm = new FrameMeta(f,f.find(response),predictors,f._key.toString(),isClassification);
+    _fm = new FrameMetadata(f,f.find(response),predictors,f._key.toString(),isClassification);
   }
 
   public void delete() {
@@ -198,8 +198,8 @@ public class FeatureFactory {
       Collections.addAll(preds, _catInteractions.names());
       fullFrame.add(_catInteractions);
     }
-    FrameMeta fullFrameMeta = new FrameMeta(fullFrame,fullFrame.find(_response),preds.toArray(new String[preds.size()]), "synthesized_fullFrame",_isClassification);
-    AggFeatureBuilder afb = AggFeatureBuilder.buildAggFeatures(fullFrameMeta);
+    FrameMetadata fullFrameMetadata = new FrameMetadata(fullFrame,fullFrame.find(_response),preds.toArray(new String[preds.size()]), "synthesized_fullFrame",_isClassification);
+    AggFeatureBuilder afb = AggFeatureBuilder.buildAggFeatures(fullFrameMetadata);
     GBTasks gbs = new GBTasks(afb._gbCols,afb._aggs);
     gbs.doAll(fullFrame);
     System.out.println();
@@ -213,7 +213,7 @@ public class FeatureFactory {
     public final AstGroup.AGG[][] _aggs;
     public AggFeatureBuilder(int[][] gbCols, AstGroup.AGG[][] aggs) { _gbCols=gbCols; _aggs=aggs; }
 
-    public static AggFeatureBuilder buildAggFeatures(FrameMeta fullFrameMeta) {
+    public static AggFeatureBuilder buildAggFeatures(FrameMetadata fullFrameMetadata) {
       // choose group-by keys:
       //  1. must be categorical
       //  2. must have combined total-cardinality < 1M
@@ -223,20 +223,20 @@ public class FeatureFactory {
       ArrayList<AstGroup.AGG[]> agg = new ArrayList<>();
       ArrayList<Integer[]> gbCols = new ArrayList<>();
 
-      fullFrameMeta.numberOfCategoricalFeatures();
-      int[] catFeats = fullFrameMeta._catFeats;
+      fullFrameMetadata.numberOfCategoricalFeatures();
+      int[] catFeats = fullFrameMetadata._catFeats;
       for(int i=0;i<catFeats.length;++i) {                                                  //        1 key group
         gbCols.add(new Integer[]{catFeats[i]});
-        agg.add(makeAggs(new int[]{catFeats[i]}, fullFrameMeta));
+        agg.add(makeAggs(new int[]{catFeats[i]}, fullFrameMetadata));
         for(int j=i+1;j<catFeats.length; ++j) {                                             //        2 key group
           gbCols.add(new Integer[]{catFeats[i],catFeats[j]});
-          agg.add(makeAggs(new int[]{catFeats[i],catFeats[j]},fullFrameMeta));
-          for(int k=j+1;k<fullFrameMeta._catFeats.length;++k) {                             //        3 key group
+          agg.add(makeAggs(new int[]{catFeats[i],catFeats[j]}, fullFrameMetadata));
+          for(int k = j+1; k< fullFrameMetadata._catFeats.length; ++k) {                             //        3 key group
             gbCols.add(new Integer[]{catFeats[i],catFeats[j],catFeats[k]});
-            agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k]},fullFrameMeta));
-            for(int l=k+1;l<fullFrameMeta._catFeats.length;++l) {                           //        4 key group
+            agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k]}, fullFrameMetadata));
+            for(int l = k+1; l< fullFrameMetadata._catFeats.length; ++l) {                           //        4 key group
               gbCols.add(new Integer[]{catFeats[i],catFeats[j],catFeats[k],catFeats[l]});
-              agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k],catFeats[l]},fullFrameMeta));
+              agg.add(makeAggs(new int[]{catFeats[i],catFeats[j],catFeats[k],catFeats[l]}, fullFrameMetadata));
             }
           }
         }
@@ -255,7 +255,7 @@ public class FeatureFactory {
     }
   }
 
-  private static AstGroup.AGG[] makeAggs(int[] gbCols, FrameMeta fm) {
+  private static AstGroup.AGG[] makeAggs(int[] gbCols, FrameMetadata fm) {
     // numerical columns get sum, mean, var
     ArrayList<AstGroup.AGG> aggs = new ArrayList<>();
     int[] cols = fm.diffCols(gbCols);
@@ -408,12 +408,12 @@ public class FeatureFactory {
  */
 class AggFeatureBuilder {
   String _primaryAgg;
-  FrameMeta _fm;
+  FrameMetadata _fm;
   String[] _predictors;
   AggFeatureBuilder(Frame fr, String primaryAgg, String[] predictors) {
     _primaryAgg=primaryAgg;
     _predictors=predictors;
-    _fm = new FrameMeta(fr,-1,fr._key.toString());
+    _fm = new FrameMetadata(fr,-1,fr._key.toString());
   }
 
 

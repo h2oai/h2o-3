@@ -1,6 +1,6 @@
 package ai.h2o.automl.autocollect;
 
-import ai.h2o.automl.FrameMeta;
+import ai.h2o.automl.FrameMetadata;
 import ai.h2o.automl.colmeta.ColMeta;
 import water.DKV;
 import water.H2O;
@@ -182,8 +182,8 @@ public class AutoCollect {
     try {
       conn.setAutoCommit(false);  // transactionally set metadata...
       if( (_idFrame=getidFrameMeta(mc.name()))==-1 ) {
-        FrameMeta fm = new FrameMeta(mc.frame(), mc.y() , mc.x(), mc.name(), mc.isClass());
-        HashMap<String, Object> frameMeta = FrameMeta.makeEmptyFrameMeta();
+        FrameMetadata fm = new FrameMetadata(mc.frame(), mc.y() , mc.x(), mc.name(), mc.isClass());
+        HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
         fm.fillSimpleMeta(frameMeta);
         fm.fillDummies(frameMeta);
         _idFrame = pushFrameMeta(frameMeta);
@@ -223,7 +223,7 @@ public class AutoCollect {
     return res;
   }
 
-  private void computeAndPushColMeta(FrameMeta fm, int idFrameMeta) {
+  private void computeAndPushColMeta(FrameMetadata fm, int idFrameMeta) {
     fm.computeFrameMetaPass1();
     fm.computeVIFs();
     for(int i=0; i<fm._cols.length; ++i) {
@@ -284,7 +284,7 @@ public class AutoCollect {
     throw new RuntimeException("Query failed");
   }
 
-  private static int pushFrameMeta(HashMap<String,Object> fm) { return pushMeta(fm, FrameMeta.METAVALUES, "FrameMeta",null); }
+  private static int pushFrameMeta(HashMap<String,Object> fm) { return pushMeta(fm, FrameMetadata.METAVALUES, "FrameMeta",null); }
   private static int pushColMeta  (HashMap<String,Object> cm) { return pushMeta(cm, ColMeta.METAVALUES, "ColMeta",null); }
   static int pushResourceMeta (HashMap<String,Object> cm) { return pushMeta(cm, cm.keySet().toArray(new String[cm.size()]), "ResourceMeta",conn2); }
   static int pushMeta(HashMap<String, Object> fm, String[] metaValues, String tableName, Connection c) {
