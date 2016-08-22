@@ -1,6 +1,7 @@
 ext {
-  hadoopVersion = 'mapr4.0.1'
-  hadoopMavenArtifactVersion = '2.4.1-mapr-1408'
+  notYarn = true
+  hadoopVersion = 'mapr3.1'
+  hadoopMavenArtifactVersion = '1.0.3-mapr-3.1.1'
   maprExtraDependency = 'org.json:org.json:chargebee-1.0'
 }
 

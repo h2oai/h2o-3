@@ -1,0 +1,6 @@
+ext {
+  hadoopVersion = 'cdh5.4'
+  hadoopMavenArtifactVersion = '2.6.0-cdh5.4.10'
+}
+
+apply from: '../assemblyjar.gradle'

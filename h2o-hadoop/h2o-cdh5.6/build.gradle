@@ -1,5 +1,5 @@
 ext {
-  hadoopVersion = 'cdh5.6.0'
+  hadoopVersion = 'cdh5.6'
   hadoopMavenArtifactVersion = '2.6.0-cdh5.6.0'
 }
 
