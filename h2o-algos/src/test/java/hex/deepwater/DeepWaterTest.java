@@ -1,6 +1,7 @@
 package hex.deepwater;
 
 import hex.ModelMetricsMultinomial;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -200,16 +201,14 @@ public class DeepWaterTest extends TestUtil {
     while(counter-- > 0) {
       try {
         DeepWaterParameters p = new DeepWaterParameters();
-        File imgFile = find_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv");
-        p._train = (tr=parse_test_file(imgFile.toString()))._key;
+        p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
-        p._network = DeepWaterParameters.Network.alexnet;
-        p._mini_batch_size = 32;
-        p._epochs = 1;
+        p._network = DeepWaterParameters.Network.lenet;
+        p._rate = 1e-4;
+        p._epochs = 100;
         m = new DeepWater(p).trainModel().get();
         Log.info(m);
       } finally {
-        if (m!=null) m.deleteCrossValidationModels();
         if (m!=null) m.delete();
         if (tr!=null) tr.remove();
       }
@@ -217,21 +216,40 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void deepWaterGrayScale() throws IOException {
+  public void testConvergenceInceptionColor() throws IOException {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      File imgFile = find_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv");
-      p._train = (tr=parse_test_file(imgFile.toString()))._key;
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
-      p._mini_batch_size = 10;
-      p._channels = 1;
-      p._epochs = 1;
+      p._rate = 1e-3;
+      p._epochs = 25;
+      p._shuffle_training_data = false;
       m = new DeepWater(p).trainModel().get();
+      assert(m._output._training_metrics.cm().accuracy()>0.9);
       Log.info(m);
     } finally {
-      if (m!=null) m.deleteCrossValidationModels();
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+
+  @Test
+  public void testConvergenceInceptionGrayScale() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._response_column = "C2";
+      p._rate = 1e-3;
+      p._epochs = 20;
+      p._channels = 1;
+      m = new DeepWater(p).trainModel().get();
+      Log.info(m);
+      Assert.assertTrue(m._output._training_metrics.cm().accuracy()>0.9);
+    } finally {
       if (m!=null) m.delete();
       if (tr!=null) tr.remove();
     }
@@ -239,26 +257,27 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void deepWaterLoadSaveTest() throws IOException {
-    DeepWaterModel m = null;
-    Frame tr = null;
-    try {
-      DeepWaterParameters p = new DeepWaterParameters();
-      File imgFile = find_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv");
-      p._train = (tr=parse_test_file(imgFile.toString()))._key;
-      p._response_column = "C2";
-      p._mini_batch_size = 10;
-      p._epochs = 1;
-      m = new DeepWater(p).trainModel().get();
+    for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
+      if (network == DeepWaterParameters.Network.user) continue;
+      DeepWaterModel m = null;
+      Frame tr = null;
+      try {
+        DeepWaterParameters p = new DeepWaterParameters();
+        p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+        p._response_column = "C2";
+        p._network = network;
+        p._mini_batch_size = 4;
+        p._epochs = 1;
+        m = new DeepWater(p).trainModel().get();
 
-      // exercise some work
-      m.model_info().javaToNative();
-      m.model_info().nativeToJava();
+        m.model_info().javaToNative();
+        m.model_info().nativeToJava();
 
-      Log.info(m);
-    } finally {
-      if (m!=null) m.deleteCrossValidationModels();
-      if (m!=null) m.delete();
-      if (tr!=null) tr.remove();
+        Log.info(m);
+      } finally {
+        if (m!=null) m.delete();
+        if (tr!=null) tr.remove();
+      }
     }
   }
 
@@ -268,12 +287,17 @@ public class DeepWaterTest extends TestUtil {
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      File imgFile = find_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv");
-      p._train = (tr=parse_test_file(imgFile.toString()))._key;
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
+//      p._network = DeepWaterParameters.Network.user;
+//      p._network_definition_file = expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json");
+//      p._network_parameters_file = expandPath("~/deepwater/backends/mxnet/Inception/model.params");
+//      p._mean_image_file = expandPath("~/deepwater/backends/mxnet/Inception/mean.nd");
+//      p._width = 224;
+//      p._height = 224;
+//      p._channels = 3;
       p._nfolds = 3;
-      p._mini_batch_size = 5;
-      p._epochs = 1;
+      p._epochs = 25;
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
     } finally {
