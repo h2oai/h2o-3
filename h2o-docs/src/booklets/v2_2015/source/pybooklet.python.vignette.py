@@ -7,7 +7,7 @@ def python_vignette():
     approved_py_code_examples = story1+story2+story3
 
     pybooklet_utils.check_code_examples_in_dir(approved_py_code_examples,
-                                               pyunit_utils.locate("python"))
+                                               pyunit_utils.locate("Python_Vignette_code_examples"))
 
     pybooklet_utils.check_story("story1",story1)
     pybooklet_utils.check_story("story2",story2)
