@@ -24,10 +24,8 @@ public class ParseTestMultiFileOrc extends TestUtil {
     int totalFilesTested = 0;
     int numberWrong = 0;
 
-    private String[] csvDirectories = {"bigdata/laptop/parser/orc/pubdev_3200/air05_csv",
-            "bigdata/laptop/parser/orc/milsongs_orc_csv", "smalldata/synthetic_perfect_separation"};
-    private String[] orcDirectories = {"bigdata/laptop/parser/orc/pubdev_3200/air05_orc",
-            "bigdata/laptop/parser/orc/milsongs_orc", "smalldata/parser/orc/synthetic_perfect_separation"};
+    private String[] csvDirectories = {"smalldata/synthetic_perfect_separation"};
+    private String[] orcDirectories = {"smalldata/parser/orc/synthetic_perfect_separation"};
 
     @BeforeClass
     static public void setup() { TestUtil.stall_till_cloudsize(5); }
