@@ -89,19 +89,8 @@ Defining a GBM Model
 
 -  **learn\_rate**: Specify the learning rate. The range is 0.0 to 1.0.
 
--  **distribution**: Specify the loss function. The options are auto,
-   bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+-  **distribution**: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, or tweedie.
 
-       -  If the distribution is **multinomial**, the response column
-          must be categorical.
-       -  If the distribution is **poisson**, the response column must
-          be numeric.
-       -  If the distribution is **gamma**, the response column must be
-          numeric.
-       -  If the distribution is **tweedie**, the response column must
-          be numeric.
-       -  If the distribution is **gaussian**, the response column must
-          be numeric.
        -  If the distribution is **multinomial**, the response column
           must be categorical.
        -  If the distribution is **poisson**, the response column must
@@ -116,6 +105,7 @@ Defining a GBM Model
           and continuous (**Int**).
        -  If the distribution is **quantile**, the data must be numeric
           and continuous (**Int**).
+          
 
 -  **sample\_rate**: Specify the row sampling rate (x-axis). The range
    is 0.0 to 1.0. Higher values may improve training accuracy. Test
@@ -326,7 +316,7 @@ FAQ
 
 -  **What if there are a large number of columns?**
 
-  DRF models are best for datasets with fewer than a few thousand columns.
+  GBM models are best for datasets with a large number of columns (several thousand or more). DRF models are best for datasets with fewer than a few thousand columns.
 
 -  **What if there are a large number of categorical factor levels?**
 
