@@ -2,6 +2,7 @@ package hex.deepwater;
 
 import hex.ModelMetricsMultinomial;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.Futures;
 import water.TestUtil;
@@ -31,6 +32,8 @@ public class DeepWaterTest extends TestUtil {
     return path.replaceFirst("^~", System.getProperty("user.home"));
   }
 
+  // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
+  @Ignore
   @Test
   public void inceptionPredictionMX() throws IOException {
 
@@ -78,6 +81,8 @@ public class DeepWaterTest extends TestUtil {
     System.out.println("\n\n" + m.predict(pixels)+"\n\n");
   }
 
+  // This tests the DeepWaterImageIterator
+  @Ignore
   @Test
   public void inceptionFineTuning() throws IOException {
     if (GPU) util.loadCudaLib();
@@ -195,7 +200,8 @@ public class DeepWaterTest extends TestUtil {
     while(counter-- > 0) {
       try {
         DeepWaterParameters p = new DeepWaterParameters();
-        p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
+        File imgFile = find_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv");
+        p._train = (tr=parse_test_file(imgFile.toString()))._key;
         p._response_column = "C2";
         p._network = DeepWaterParameters.Network.alexnet;
         p._mini_batch_size = 32;
@@ -216,7 +222,8 @@ public class DeepWaterTest extends TestUtil {
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
+      File imgFile = find_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv");
+      p._train = (tr=parse_test_file(imgFile.toString()))._key;
       p._response_column = "C2";
       p._mini_batch_size = 10;
       p._channels = 1;
@@ -236,7 +243,8 @@ public class DeepWaterTest extends TestUtil {
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
+      File imgFile = find_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv");
+      p._train = (tr=parse_test_file(imgFile.toString()))._key;
       p._response_column = "C2";
       p._mini_batch_size = 10;
       p._epochs = 1;
@@ -260,11 +268,10 @@ public class DeepWaterTest extends TestUtil {
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      // cat driver_imgs_list.csv | awk -F, '{print "/users/arno/kaggle/statefarm/input/train/"$2"/"$3,$2,$1}' \
-      // | awk '{if ($3=="p002" || $3=="p042" || $3=="p075") print $1, $2, "A"; else print $1, $2, "B"}' | sed 1d | gshuf | head -n 10 > train.10.csv
-      p._train = (tr=parse_test_file(expandPath("~/kaggle/statefarm/input/train.10.csv")))._key;
+      File imgFile = find_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv");
+      p._train = (tr=parse_test_file(imgFile.toString()))._key;
       p._response_column = "C2";
-      p._fold_column = "C3";
+      p._nfolds = 3;
       p._mini_batch_size = 5;
       p._epochs = 1;
       m = new DeepWater(p).trainModel().get();
