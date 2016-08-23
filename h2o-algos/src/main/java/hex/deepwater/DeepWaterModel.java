@@ -103,6 +103,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     } catch (IOException e) {
       throw new IllegalArgumentException("Couldn't load native DL libraries");
     }
+    if (H2O.getCloudSize() != 1)
+      throw new IllegalArgumentException("Deep Water currently only supports execution of 1 node.");
 
     _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
     _output._domains= train.domains();
