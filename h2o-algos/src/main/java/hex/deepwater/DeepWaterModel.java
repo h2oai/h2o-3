@@ -576,7 +576,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     final Key[] cacheKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
-        return k._key.toString().contains(CACHE_MARKER);
+        return Value.isSubclassOf(k._type, DeepWaterImageIterator.IcedImage.class) && k._key.toString().contains(CACHE_MARKER);
       }
     }).keys();
     Futures fs = new Futures();
