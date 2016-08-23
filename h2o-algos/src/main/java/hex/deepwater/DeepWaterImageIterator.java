@@ -90,9 +90,9 @@ public class DeepWaterImageIterator {
         final int start=_index*_conv.len();
         Key imgKey = Key.make(_file + DeepWaterModel.CACHE_MARKER);
         boolean status = false;
-        if (_cache && DKV.get(imgKey)!=null) {
+        if (_cache) {
           IcedImage icedIm = DKV.getGet(imgKey);
-          if (icedIm._dim.equals(_conv._dim)) {
+          if (icedIm != null && icedIm._dim.compareTo(_conv._dim)==0) {
             // place the cached image into the right minibatch slot
             for (int i=0; i<icedIm._data.length; ++i)
               _destData[start+i] = icedIm._data[i];
