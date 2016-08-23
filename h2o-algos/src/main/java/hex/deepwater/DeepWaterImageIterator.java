@@ -88,7 +88,7 @@ public class DeepWaterImageIterator {
       _destLabel[_index] = _label;
       try {
         final int start=_index*_conv.len();
-        Key imgKey = Key.makeSystem(_file + DeepWaterModel.CACHE_MARKER);
+        Key imgKey = Key.make(_file + DeepWaterModel.CACHE_MARKER);
         boolean status = false;
         if (_cache && DKV.get(imgKey)!=null) {
           IcedImage icedIm = DKV.getGet(imgKey);
