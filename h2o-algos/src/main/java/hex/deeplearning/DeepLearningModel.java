@@ -92,7 +92,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   // auto-tuning
   public long actual_train_samples_per_iteration;
-  public long tspiGuess;
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   // helpers for diagnostics
