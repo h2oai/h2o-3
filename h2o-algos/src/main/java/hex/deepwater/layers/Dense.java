@@ -1,16 +1,13 @@
 package hex.deepwater.layers;
 
 import hex.deepwater.ParameterBuilder;
-import static org.bytedeco.javacpp.tensorflow.*;
 
 import org.python.core.PyObject;
 import org.tensorflow.framework.*;
-import org.tensorflow.framework.CostGraphDef;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
 
 import java.util.ArrayList;
 import java.util.List;
+
 
 /**
  * Created by fmilo on 8/16/16.
@@ -23,9 +20,9 @@ public class Dense implements Layer {
             .optionalList("input_shape", 100L)
             .optional("init", "glorot_uniform");
 
-    public List<Node> _inputs;
-    public List<Node> _weights;
-    public List<Node> _outputs;
+    public List<NodeDef> _inputs;
+    public List<NodeDef> _weights;
+    public List<NodeDef> _outputs;
 
     public Dense(PyObject[] args, String[] keywords){
        this(0);
@@ -36,15 +33,14 @@ public class Dense implements Layer {
         // check output_dim
         _params.set("output_dim", output_dim);
 
-        _inputs = new ArrayList<Node>();
-        _weights = new ArrayList<Node>();
-        _outputs = new ArrayList<Node>();
+        _inputs = new ArrayList<NodeDef>();
+        _weights = new ArrayList<NodeDef>();
+        _outputs = new ArrayList<TensorDescription>();
     }
 
     public void build(GraphDefBuilder b){
 
        long[] inputShape = _params.getLongList("input_shape");
-
 
        GraphDef.newBuilder().addNodeBuilder();
        org.tensorflow.framework.NodeDef.newBuilder().setName("name").setOp("");
