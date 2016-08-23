@@ -96,6 +96,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
     public final DeepWaterModel trainModel(DeepWaterModel model) {
       Frame validScoreFrame = null;
       Frame train, trainScoreFrame;
+      boolean cache = false;
       try {
 //      if (checkpoint == null && !quiet_mode) logStart(); //if checkpoint is given, some Job's params might be uninitialized (but the restarted model's parameters are correct)
         if (model == null) {
@@ -162,6 +163,19 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         Log.info("Starting to train the Deep Learning model.");
         _job.update(0,"Training...");
 
+        // decide whether to cache
+        long bytes = train.numRows() * model.model_info()._width * model.model_info()._height * model.model_info()._channels * 4;
+        cache = mp._cache_data;
+        if (cache) {
+          if (bytes < H2O.CLOUD.free_mem() / 4) {
+            Log.info("Automatically enabling data caching, expecting to require " + PrettyPrint.bytes(bytes) + ".");
+          } else {
+            Log.info("Automatically disabling data caching, since it would require too much space: " + PrettyPrint.bytes(bytes) + ".");
+            mp._cache_data = false;
+            cache = false;
+          }
+        }
+
         //main loop
         for(;;) {
           model.iterations++;
@@ -204,6 +218,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         if (!(t instanceof Job.JobCancelledException)) t.printStackTrace();
       }
       finally {
+        if (cache) model.cleanUpCache();
         model.model_info()._imageTrain.delete();
         model.model_info()._imageTrain=null;
         //TODO: refactor DL the same way
