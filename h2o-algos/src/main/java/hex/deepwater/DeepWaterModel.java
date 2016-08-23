@@ -48,8 +48,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   // auto-tuning
   public long actual_train_samples_per_iteration;
-  public long tspiGuess;
-  public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
+  public long time_for_iteration_overhead_ms; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   // helpers for diagnostics
   public double epoch_counter;
@@ -178,12 +177,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
     // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
     // Note: actual communication time is estimated by the NetworkTest's collective test.
-    if (H2O.CLOUD.size() > 1 && get_params()._train_samples_per_iteration == -2 && iteration > 1) {
+    if (get_params()._train_samples_per_iteration == -2 && iteration > 1) {
       Log.debug("Auto-tuning train_samples_per_iteration.");
-      if (time_for_communication_us > 1e4) {
-        Log.debug("  Time taken for communication: " + PrettyPrint.usecs((long) time_for_communication_us));
+      if (time_for_iteration_overhead_ms > 10) {
+        Log.debug("  Time taken for communication: " + PrettyPrint.msecs(time_for_iteration_overhead_ms, true));
         Log.debug("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_since_last_iter, true));
-        final double comm_to_work_ratio = (time_for_communication_us * 1e-3) / time_since_last_iter;
+        final double comm_to_work_ratio = time_for_iteration_overhead_ms / time_since_last_iter;
         Log.debug("  Ratio of network communication to computation: " + String.format("%.5f", comm_to_work_ratio));
         Log.debug("  target_comm_to_work: " + get_params()._target_ratio_comm_to_comp);
         Log.debug("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
@@ -197,7 +196,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           Log.debug("Keeping value of train_samples_per_iteration the same (would deviate too little from previous value): " + actual_train_samples_per_iteration);
         }
       } else {
-        Log.debug("Communication is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
+        Log.debug("Iteration overhead is faster than 10 ms. Not modifying train_samples_per_iteration: " + actual_train_samples_per_iteration);
       }
     }
 
