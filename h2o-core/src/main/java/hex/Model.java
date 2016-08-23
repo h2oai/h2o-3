@@ -16,9 +16,13 @@ import water.fvec.*;
 import water.util.*;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.nio.charset.Charset;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import static water.util.FrameUtils.categoricalEncoder;
@@ -887,7 +891,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
     return score(fr, destination_key, null);
   }
-  
+
   public Frame score(Frame fr, String destination_key, Job j) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
     final boolean computeMetrics = (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
@@ -958,7 +962,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param adaptFrm Already adapted frame
    * @return A Frame containing the prediction column, and class distribution
    */
- 
+
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
@@ -995,9 +999,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final boolean _hasWeights;
     final boolean _makePreds;
     final Job _j;
-    
+
     BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
-      _j = j;  
+      _j = j;
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
@@ -1102,13 +1106,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   /** Write out K/V pairs, in this case model metrics. */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         ab.putKey(k);
     return super.writeAll_impl(ab);
   }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     if (_output._model_metrics != null)
       for( Key k : _output._model_metrics )
         ab.getKey(k,fs);        // Load model metrics
@@ -1116,6 +1120,127 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   @Override protected long checksum_impl() { return _parms.checksum_impl() * _output.checksum_impl(); }
+
+  //====================================================================================================================
+  /**
+   * Serialize the model into a zipped file containing multiple raw data files. The structure of the zip will be
+   * as follows:
+   *    domains/
+   *        d000.txt
+   *        d001.txt
+   *        ...
+   *    trees/
+   *        t00_000.bin
+   *        ...
+   *    model.ini
+   * Each domain file is a plain text file with one line per category (not quoted).
+   * Each tree file is a binary file that is equivalent to `_bit` array in the model's `score()` function. The first 2
+   * digits in the tree file's name correspond to the class index, the last tree are the tree index (since trees are
+   * stored in a double-array Key&lt;CompressedTree>[ntrees][nclasses].
+   *
+   * The model.ini file has 3 sections: [info], [columns] and [domains]:
+   *    [info]
+   *    algo = Random Forest
+   *    n_trees = 100
+   *    n_columns = 25
+   *    n_domains = 3
+   *    h2o_version = 3.9.10.0
+   *
+   *    [columns]
+   *    col1
+   *    col2
+   *    ...
+   *
+   *    [domains]
+   *    5: d000.txt
+   *    6: d001.txt
+   *    12: d002.txt
+   *
+   * The [info] section lists general model information; [columns] contains the list of all column names; and [domains]
+   *
+   */
+  public class ZippedDataStreamWriter extends StreamWriter {
+    private final Charset utf8 = Charset.forName("UTF-8");
+    private final byte[] newline = {13};
+    protected ZipOutputStream zos;
+
+    @Override
+    public void writeTo(OutputStream os) {
+      zos = new ZipOutputStream(os);
+      try {
+        writeModelInfo();
+        writeDomains();
+        writeModelData();
+        zos.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    private void writeModelInfo() throws IOException {
+      int n_categoricals = 0;
+      for (String[] domain : _output._domains)
+        if (domain != null)
+          n_categoricals++;
+
+      zos.putNextEntry(new ZipEntry("model.ini"));
+      writeln("[info]");
+      writeln("algorithm = " + _parms.fullName());
+      writeln("n_classes = " + _output.nclasses());
+      writeln("n_columns = " + _output._names.length);
+      writeln("n_domains = " + n_categoricals);
+      writeExtraModelInfo();
+      writeln("timestamp = " + new DateTime().toString());
+      writeln("h2o_version = " + H2O.ABV.projectVersion());
+      writeln("license = Apache License Version 2.0");
+      writeln("");
+      writeln("[columns]");
+      for (String name : _output._names) {
+        writeln(name);
+      }
+      writeln("");
+      writeln("[domains]");
+      String format = "%d: d%03d.txt";
+      for (int colIndex = 0, domIndex = 0; colIndex < _output._names.length; colIndex++) {
+        if (_output._domains[colIndex] != null)
+          writeln(String.format(format, colIndex, domIndex++));
+      }
+      zos.closeEntry();
+    }
+
+    private void writeDomains() throws IOException {
+      int domIndex = 0;
+      for (String[] domain : _output._domains) {
+        if (domain == null) continue;
+        zos.putNextEntry(new ZipEntry(String.format("domains/d%03d.txt", domIndex++)));
+        for (String category : domain) {
+          writeln(category.replaceAll("\n", "\u21B5"));  // replace newlines with "↵" characters
+        }
+        zos.closeEntry();
+      }
+    }
+
+    /**
+     * Overwrite in subclasses to write any additional information into the model.ini/[info] section.
+     */
+    protected void writeExtraModelInfo() throws IOException {}
+
+    /**
+     * Overwrite in subclasses to write the actual model data.
+     */
+    protected void writeModelData() throws IOException {}
+
+    protected void writeln(String s) throws IOException {
+      zos.write(s.getBytes(utf8));
+      zos.write(newline);
+    }
+  }
+
+  public ZippedDataStreamWriter getZippedDataStream() {
+    return new ZippedDataStreamWriter();
+  }
+
+
 
   // ==========================================================================
   /** Return a String which is a valid Java program representing a class that

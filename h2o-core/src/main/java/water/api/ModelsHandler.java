@@ -99,11 +99,11 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
 
   // TODO: almost identical to ModelsHandler; refactor
   public static Model getFromDKV(String param_name, Key key) {
-    if (null == key)
-      throw new H2OIllegalArgumentException(param_name, "Models.getFromDKV()", key);
+    if (key == null)
+      throw new H2OIllegalArgumentException(param_name, "Models.getFromDKV()", null);
 
     Value v = DKV.get(key);
-    if (null == v)
+    if (v == null)
       throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
 
     Iced ice = v.get();
@@ -154,6 +154,13 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     return new StreamingSchema(model.new JavaModelStreamWriter(s.preview), filename);
   }
 
+  @SuppressWarnings("unused") // called from the RequestServer through reflection
+  public StreamingSchema fetchZippedModel(int version, ModelsV3 s) {
+    final Model model = getFromDKV("key", s.model_id.key());
+    final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".zip";
+    return new StreamingSchema(model.getZippedDataStream(), filename);
+  }
+
   /** Remove an unlocked model.  Fails if model is in-use. */
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 delete(int version, ModelsV3 s) {
@@ -172,11 +179,11 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
 
     ArrayList<String> missing = new ArrayList<>();
     Futures fs = new Futures();
-    for( int i = 0; i < keys.length; i++ ) {
+    for (Key key : keys) {
       try {
-        getFromDKV("(none)", keys[i]).delete(null, fs);
-      } catch( IllegalArgumentException iae ) {
-        missing.add(keys[i].toString());
+        getFromDKV("(none)", key).delete(null, fs);
+      } catch (IllegalArgumentException iae) {
+        missing.add(key.toString());
       }
     }
     fs.blockForPending();
