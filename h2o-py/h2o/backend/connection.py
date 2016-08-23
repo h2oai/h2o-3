@@ -183,7 +183,7 @@ class H2OConnection(backwards_compatible()):
         return conn
 
 
-    def request(self, endpoint, data=None, json=None, filename=None):
+    def request(self, endpoint, data=None, json=None, filename=None, save_to=None):
         """
         Perform a REST API request to the backend H2O server.
 
@@ -192,8 +192,11 @@ class H2OConnection(backwards_compatible()):
             key/value pairs (values can also be arrays), which will be sent over in x-www-form-encoded format.
         :param json: also data payload, but it will be sent as a JSON body. Cannot be used together with `data`.
         :param filename: file to upload to the server. Cannot be used with `data` or `json`.
+        :param save_to: if provided, will write the response to that file (additionally, the response will be
+            streamed, so large files can be downloaded seamlessly).
 
-        :returns: an H2OResponse object representing the server's response
+        :returns: an H2OResponse object representing the server's response (unless ``save_to`` parameter is
+            provided, in which case nothing will be returned).
         :raises H2OConnectionError: if the H2O server cannot be reached (or connection is not initialized)
         :raises H2OServerError: if there was a server error (http 500), or server returned malformed JSON
         :raises H2OResponseError: if the server returned an H2OErrorV3 response (e.g. if the parameters were invalid)
@@ -228,6 +231,11 @@ class H2OConnection(backwards_compatible()):
             params = data
             data = None
 
+        stream = False
+        if save_to is not None:
+            assert_is_type(save_to, str)
+            stream = True
+
         # Make the request
         start_time = time.time()
         try:
@@ -235,10 +243,10 @@ class H2OConnection(backwards_compatible()):
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
                        "X-Cluster": self._cluster_name}
             resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
-                                    headers=headers, timeout=self._timeout,
+                                    headers=headers, timeout=self._timeout, stream=stream,
                                     auth=self._auth, verify=self._verify_ssl_cert, proxies=self._proxies)
             self._log_end_transaction(start_time, resp)
-            return self._process_response(resp)
+            return self._process_response(resp, save_to)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             if self._local_server and not self._local_server.is_running():
@@ -517,7 +525,7 @@ class H2OConnection(backwards_compatible()):
 
 
     @staticmethod
-    def _process_response(response):
+    def _process_response(response, save_to):
         """
         Given a response object, prepare it to be handed over to the external caller.
 
@@ -525,10 +533,17 @@ class H2OConnection(backwards_compatible()):
            * detect if the response has error status, and convert it to an appropriate exception;
            * detect Content-Type, and based on that either parse the response as JSON or return as plain text.
         """
+        status_code = response.status_code
+        if status_code == 200 and save_to:
+            with open(save_to, "wb") as f:
+                for chunk in response.iter_content(chunk_size=65536):
+                    if chunk:  # Empty chunks may occasionally happen
+                        f.write(chunk)
+            return
+
         content_type = response.headers["Content-Type"] if "Content-Type" in response.headers else ""
         if ";" in content_type:  # Remove a ";charset=..." part
             content_type = content_type[:content_type.index(";")]
-        status_code = response.status_code
 
         # Auto-detect response type by its content-type. Decode JSON, all other responses pass as-is.
         if content_type == "application/json":

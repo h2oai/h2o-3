@@ -71,11 +71,11 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     return h2oconn
 
 
-def api(endpoint, data=None, json=None, filename=None):
+def api(endpoint, data=None, json=None, filename=None, save_to=None):
     """Perform a REST API request to a previously connected server."""
     # type checks are performed in H2OConnection class
     _check_connection()
-    return h2oconn.request(endpoint, data=data, json=json, filename=filename)
+    return h2oconn.request(endpoint, data=data, json=json, filename=filename, save_to=save_to)
 
 
 
