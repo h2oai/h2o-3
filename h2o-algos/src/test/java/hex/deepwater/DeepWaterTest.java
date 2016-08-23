@@ -123,7 +123,7 @@ public class DeepWaterTest extends TestUtil {
       rng.setSeed(0xDECAF+0xD00D*iter);
       Collections.shuffle(train_data,rng);
 
-      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(train_data, train_labels, null /*do not subtract mean*/, batch_size, 224, 224, 3);
+      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(train_data, train_labels, null /*do not subtract mean*/, batch_size, 224, 224, 3, true);
       Futures fs = new Futures();
       while(img_iter.Next(fs)){
         float[] data = img_iter.getData();
@@ -172,7 +172,7 @@ public class DeepWaterTest extends TestUtil {
 
     FileWriter fw = new FileWriter(path+"/submission.csv");
     int batch_size = 64; //avoid issues with batching at the end of the test set
-    DeepWaterImageIterator img_iter = new DeepWaterImageIterator(test_data, test_labels, null /*do not subtract mean*/, batch_size, 224, 224, 3);
+    DeepWaterImageIterator img_iter = new DeepWaterImageIterator(test_data, test_labels, null /*do not subtract mean*/, batch_size, 224, 224, 3, true);
     fw.write("img,c0,c1,c2,c3,c4,c5,c6,c7,c8,c9\n");
     Futures fs = new Futures();
     while(img_iter.Next(fs)) {
