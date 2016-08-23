@@ -21,8 +21,8 @@ def test_zipped_rf_model():
     rf.train(training_frame=df, x=x, y="GLEASON")
     print(rf)
 
-    target_file = os.path.expanduser("~/Downloads/out.zip")
-    h2o.api("GET /3/Models/%s/data" % rf.model_id, save_to=target_file)
+    target_file = os.path.expanduser("~/Downloads/")
+    target_file = h2o.api("GET /3/Models/%s/data" % rf.model_id, save_to=target_file)
     print("Saved to %s" % target_file)
     assert os.path.exists(target_file)
 

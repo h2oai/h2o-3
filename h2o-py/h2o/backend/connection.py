@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import atexit
 import os
+import re
 import sys
 import tempfile
 import time
@@ -193,10 +194,11 @@ class H2OConnection(backwards_compatible()):
         :param json: also data payload, but it will be sent as a JSON body. Cannot be used together with `data`.
         :param filename: file to upload to the server. Cannot be used with `data` or `json`.
         :param save_to: if provided, will write the response to that file (additionally, the response will be
-            streamed, so large files can be downloaded seamlessly).
+            streamed, so large files can be downloaded seamlessly). This parameter can be either a file name,
+            or a folder name. If the folder doesn't exist, it will be created automatically.
 
         :returns: an H2OResponse object representing the server's response (unless ``save_to`` parameter is
-            provided, in which case nothing will be returned).
+            provided, in which case the output file's name will be returned).
         :raises H2OConnectionError: if the H2O server cannot be reached (or connection is not initialized)
         :raises H2OServerError: if there was a server error (http 500), or server returned malformed JSON
         :raises H2OResponseError: if the server returned an H2OErrorV3 response (e.g. if the parameters were invalid)
@@ -535,13 +537,24 @@ class H2OConnection(backwards_compatible()):
         """
         status_code = response.status_code
         if status_code == 200 and save_to:
-            with open(save_to, "wb") as f:
-                for chunk in response.iter_content(chunk_size=65536):
-                    if chunk:  # Empty chunks may occasionally happen
-                        f.write(chunk)
-            return
+            if os.path.isdir(save_to) or save_to.endswith(os.path.sep):
+                dirname = os.path.abspath(save_to)
+                filename = H2OConnection._find_file_name(response)
+            else:
+                dirname, filename = os.path.split(os.path.abspath(save_to))
+            fullname = os.path.join(dirname, filename)
+            try:
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+                with open(fullname, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=65536):
+                        if chunk:  # Empty chunks may occasionally happen
+                            f.write(chunk)
+            except OSError as e:
+                raise H2OValueError("Cannot write to file %s: %s" % (fullname, e))
+            return fullname
 
-        content_type = response.headers["Content-Type"] if "Content-Type" in response.headers else ""
+        content_type = response.headers.get("Content-Type", "")
         if ";" in content_type:  # Remove a ";charset=..." part
             content_type = content_type[:content_type.index(";")]
 
@@ -567,6 +580,12 @@ class H2OConnection(backwards_compatible()):
         # did not provide the correct status code.
         raise H2OServerError("HTTP %d %s:\n%r" % (status_code, response.reason, data))
 
+
+    @staticmethod
+    def _find_file_name(response):
+        cd = response.headers.get("Content-Disposition", "")
+        mm = re.search(r'filename="(.*)"$', cd)
+        return mm.group(1) if mm else "unknown"
 
 
     def _print(self, msg, flush=False, end="\n"):
