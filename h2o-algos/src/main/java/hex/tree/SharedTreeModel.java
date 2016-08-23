@@ -12,9 +12,12 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.*;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> implements Model.LeafNodeAssignment {
 
@@ -176,7 +179,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public String toStringTree ( int tnum, int knum ) { return ctree(tnum,knum).toString(this); }
   }
 
-  public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
+  public SharedTreeModel(Key selfKey, P parms, O output) {
+    super(selfKey, parms, output);
+  }
 
   public Frame scoreLeafNodeAssignment(Frame frame, Key destination_key) {
     Frame adaptFrm = new Frame(frame);
@@ -302,19 +307,48 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return super.writeAll_impl(ab);
   }
 
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     for( Key<CompressedTree> ks[] : _output._treeKeys )
       for( Key<CompressedTree> k : ks )
         ab.getKey(k,fs);
     return super.readAll_impl(ab,fs);
   }
 
+  @Override
+  public Model<M, P, O>.ZippedDataStreamWriter getZippedDataStream() {
+    return new SharedTreeModelZippedDataStreamWriter();
+  }
+
+  public class SharedTreeModelZippedDataStreamWriter extends Model<M,P,O>.ZippedDataStreamWriter {
+    @Override
+    protected void writeExtraModelInfo() throws IOException {
+      writeln("n_trees = " + _output._ntrees);
+    }
+
+    @Override
+    protected void writeModelData() throws IOException {
+      for (int i = 0; i < _output._treeKeys.length; i++) {
+        for (int j = 0; j < _output._treeKeys[i].length; j++) {
+          CompressedTree ct = DKV.get(_output._treeKeys[i][j]).get();
+          assert ct._nclass == _output.nclasses();
+          // assert ct._seed is useless and need not be persisted
+          zos.putNextEntry(new ZipEntry(String.format("trees/t%02d_%03d.bin", j, i)));
+          zos.write(ct._bits);
+          zos.closeEntry();
+        }
+      }
+    }
+  }
+
+
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected boolean toJavaCheckTooBig() {
     // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
     return _output==null || _output._treeStats._num_trees * _output._treeStats._mean_leaves > 1000000;
   }
+
   protected boolean binomialOpt() { return true; }
+
   @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
@@ -322,6 +356,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     sb.ip("public int nclasses() { return "+_output.nclasses()+"; }").nl();
     return sb;
   }
+
   @Override protected void toJavaPredictBody(SBPrintStream body,
                                              CodeGeneratorPipeline classCtx,
                                              CodeGeneratorPipeline fileCtx,
@@ -366,12 +401,15 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     toJavaUnifyPreds(body);
   }
-  abstract protected void toJavaUnifyPreds( SBPrintStream body);
+
+  abstract protected void toJavaUnifyPreds(SBPrintStream body);
 
   protected <T extends JCodeSB> T toJavaTreeName(final T sb, String mname, int t, int c ) {
     return (T) sb.p(mname).p("_Tree_").p(t).p("_class_").p(c);
   }
+
   protected <T extends JCodeSB> T toJavaForestName(final T sb, String mname, int t ) {
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
+
 }
