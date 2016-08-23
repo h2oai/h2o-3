@@ -141,7 +141,8 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
           if (ox[fromNode] == null) {
             // if the last chunksworth fills a batchsize exactly, the getGet above will have returned null.
             // TODO: Check will Cliff that a known fetch of a non-existent key is ok e.g. won't cause a delay/block? If ok, leave as good check.
-            assert oxBatchNum[fromNode]==MSBnodeHeader[fromNode]._MSBnodeChunkCounts.length;
+            int numNonZero = 0; for (int tmp : MSBnodeHeader[fromNode]._MSBnodeChunkCounts) if (tmp>0) numNonZero++;
+            assert oxBatchNum[fromNode]==numNonZero;
             assert ArrayUtils.sum(MSBnodeHeader[fromNode]._MSBnodeChunkCounts) % _batchSize == 0;
           }
           oxOffset[fromNode] = 0;

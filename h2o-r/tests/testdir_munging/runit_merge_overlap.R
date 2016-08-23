@@ -60,6 +60,24 @@ test.many = function() {
       numRows = numRows + nrow(ans1)
       cat(nonZeroCount, numRows, "\n")
     }
+    
+    # Check that sorting the inputs first also works (PUBDEV-3236).
+    # Already sorted inputs are edge case that could break distributing and batching.
+    # Test here just left sorted, just right and both.
+    # In all cases should return the same result above.
+    x_sorted = h2o.arrange(L[[i]], KEY)
+    y_sorted = h2o.arrange(L[[j]], KEY)
+    ans3 = h2o.merge(x_sorted, L[[j]], by="KEY", method="radix")
+    names(ans3) = names(ans2)
+    expect_identical(as.data.frame(ans3), ans2)
+    
+    ans4 = h2o.merge(L[[i]], y_sorted, by="KEY", method="radix")
+    names(ans4) = names(ans2)
+    expect_identical(as.data.frame(ans4), ans2)
+    
+    ans5 = h2o.merge(x_sorted, y_sorted, by="KEY", method="radix")
+    names(ans5) = names(ans2)
+    expect_identical(as.data.frame(ans5), ans2)    
   }}
   # Check that all tables didn't just return nothing all of a sudden for some reason.
   # These count checks depend on set.seed(1) above.
