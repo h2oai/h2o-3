@@ -225,7 +225,6 @@ public class DeepWaterTest extends TestUtil {
       p._response_column = "C2";
       p._rate = 1e-3;
       p._epochs = 25;
-      p._shuffle_training_data = false;
       m = new DeepWater(p).trainModel().get();
       assert(m._output._training_metrics.cm().accuracy()>0.9);
       Log.info(m);
