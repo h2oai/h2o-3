@@ -89,6 +89,23 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
     }
 
     /**
+     * Compute the fraction of rows that need to be used for training during one iteration
+     * @param numRows number of training rows
+     * @param train_samples_per_iteration number of training rows to be processed per iteration
+     * @param replicate_training_data whether of not the training data is replicated on each node
+     * @return fraction of rows to be used for training during one iteration
+     */
+    private float computeRowUsageFraction(final long numRows, final long train_samples_per_iteration, final boolean replicate_training_data) {
+      float rowUsageFraction = (float)train_samples_per_iteration / numRows;
+      if (replicate_training_data) rowUsageFraction /= H2O.CLOUD.size();
+      assert(rowUsageFraction > 0);
+      return rowUsageFraction;
+    }
+    private float rowFraction(Frame train, DeepWaterParameters p, DeepWaterModel m) {
+      return computeRowUsageFraction(train.numRows(), m.actual_train_samples_per_iteration, p._replicate_training_data);
+    }
+
+    /**
      * Train a Deep Learning neural net model
      * @param model Input model (e.g., from initModel(), or from a previous training run)
      * @return Trained model
@@ -116,6 +133,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
         train = tra_fr;
         model.training_rows = train.numRows();
+        model.actual_train_samples_per_iteration = train.numRows();
         if (_weights != null && _weights.min()==0 && _weights.max()==1 && _weights.isInt()) {
           model.training_rows = Math.round(train.numRows()*_weights.mean());
           Log.warn("Not counting " + (train.numRows() - model.training_rows) + " rows with weight=0 towards an epoch.");
@@ -180,10 +198,12 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         for(;;) {
           model.iterations++;
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
-                  new DeepWaterTask2(_job._key, train, model.model_info(), 1f/*FIXME*/, model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
-                  new DeepWaterTask2(_job._key, train, model.model_info(), 1f/*FIXME*/, model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
-                  new DeepWaterTask (model.model_info(), 1/*FIXME*/, _job).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+                  new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
+                  new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
+                  new DeepWaterTask (model.model_info(), rowFraction(train, mp, model), _job).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+          long before = System.currentTimeMillis();
           model.model_info().nativeToJava();
+          model.time_for_iteration_overhead_ms = System.currentTimeMillis()-before;
           if (_parms._export_native_model_prefix!=null) {
             Log.info("Saving model state.");
             model.exportNativeModel(_parms._export_native_model_prefix, model.iterations);
