@@ -17,7 +17,6 @@ import java.util.Collections;
 import java.util.Random;
 
 public class DeepWaterTask extends MRTask<DeepWaterTask> {
-  final private boolean _training;
   private DeepWaterModelInfo _localmodel; //per-node state (to be reduced)
   private DeepWaterModelInfo _sharedmodel; //input/output
   int _chunk_node_count = 1;
@@ -41,7 +40,6 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
    * @param fraction Fraction of rows of the training to train with
    */
   public DeepWaterTask(DeepWaterModelInfo inputModel, float fraction, Job job) {
-    _training=true;
     _sharedmodel = inputModel;
     _useFraction=fraction;
     _shuffle = model_info().get_params()._shuffle_training_data;
@@ -98,7 +96,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     }
     try {
       long start = System.currentTimeMillis();
-      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, width, height, channels);
+      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, width, height, channels, _localmodel.get_params()._cache_data);
       long end = System.currentTimeMillis();
       if(!_localmodel.get_params()._quiet_mode)
           Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
