@@ -472,7 +472,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         long row=0;
         int skippedIdx=0;
         int skippedRow=skipped.isEmpty()?-1:skipped.get(skippedIdx);
-        img_iter = new DeepWaterImageIterator(train_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels);
+        img_iter = new DeepWaterImageIterator(train_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, true);
         Futures fs=new Futures();
         while(img_iter.Next(fs)) {
           if (isCancelled() || _j != null && _j.stop_requested()) return;
@@ -566,6 +566,20 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       model_info()._imageTrain.saveModel(path + ".json"); //independent of iterations
       model_info()._imageTrain.saveParam(path + "." + iteration + ".params");
     } else throw H2O.unimpl();
+  }
+
+  public static String CACHE_MARKER = "__d33pW473r_1n73rn4l__";
+
+  public void cleanUpCache() {
+    final Key[] cacheKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
+      @Override
+      public boolean filter(KeySnapshot.KeyInfo k) {
+        return k._key.toString().contains(CACHE_MARKER);
+      }
+    }).keys();
+    Futures fs = new Futures();
+    for (Key k : cacheKeys) DKV.remove(k, fs);
+    fs.blockForPending();
   }
 }
 

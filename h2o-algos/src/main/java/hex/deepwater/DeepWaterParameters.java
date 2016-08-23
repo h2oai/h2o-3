@@ -1,6 +1,5 @@
 package hex.deepwater;
 
-import com.sun.corba.se.impl.ior.NewObjectKeyTemplateBase;
 import hex.Distribution;
 import hex.Model;
 import hex.ScoreKeeper;
@@ -198,6 +197,9 @@ public class DeepWaterParameters extends Model.Parameters {
   public boolean _shuffle_training_data = true;
 
   public int _mini_batch_size = 32;
+
+  // internal only
+  public boolean _cache_data = true;
 
   /**
    * Validate model parameters
