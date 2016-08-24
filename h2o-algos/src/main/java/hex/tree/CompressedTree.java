@@ -20,15 +20,26 @@ import water.util.SB;
 //    left, right: tree | prediction
 //    prediction: 4 bytes of float (or 1 or 2 bytes of class prediction)
 public class CompressedTree extends Keyed {
+  private static final int DhnasdNaVsRestValue = DHistogram.NASplitDir.NAvsREST.value();
+  private static final int DhnasdNaLeftValue = DHistogram.NASplitDir.NALeft.value();
+  private static final int DhnasdLeftValue = DHistogram.NASplitDir.Left.value();
+
   final byte [] _bits;
   final int _nclass;            // Number of classes being predicted (for an integer prediction tree)
   final long _seed;
   public CompressedTree( byte[] bits, int nclass, long seed, int tid, int cls ) {
     super(makeTreeKey(tid, cls));
-    _bits = bits; _nclass = nclass; _seed = seed; 
+    _bits = bits;
+    _nclass = nclass;
+    _seed = seed;
   }
 
-  /** Highly efficient (critical path) tree scoring */
+  /**
+   * Highly efficient (critical path) tree scoring
+   *
+   * WARNING: If you making any changes to this code, you should synchronize them with the class
+   * `hex.genmodel.algos.DrfRawModel` in package `h2o_genmodel`.
+   */
   public double score( final double row[]) { return score(row, false); }
   public double score( final double row[], boolean computeLeafAssignment) {
     AutoBuffer ab = new AutoBuffer(_bits);
@@ -38,11 +49,11 @@ public class CompressedTree extends Keyed {
     while(true) {
       int nodeType = ab.get1U();
       int colId = ab.get2();
-      if( colId == 65535 ) return scoreLeaf(ab);
-      DHistogram.NASplitDir naSplitDir = DHistogram.NASplitDir.values()[ab.get1U()];
-      final boolean NAvsREST = naSplitDir == DHistogram.NASplitDir.NAvsREST;
-      final boolean NALeft = naSplitDir == DHistogram.NASplitDir.NALeft;
-      final boolean Left = naSplitDir == DHistogram.NASplitDir.Left;
+      if (colId == 65535) return scoreLeaf(ab);
+      int naSplitDir = ab.get1U();
+      final boolean NAvsREST = naSplitDir == DhnasdNaVsRestValue;
+      final boolean NALeft = naSplitDir == DhnasdNaLeftValue;
+      final boolean Left = naSplitDir == DhnasdLeftValue;
       int equal = (nodeType&12) >> 2;
       assert (equal >= 0 && equal <= 3): "illegal equal value " + equal+" at "+ab+" in bitpile "+Arrays.toString(_bits);
 

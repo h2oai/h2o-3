@@ -21,11 +21,11 @@ import java.util.Random;
  *  DHistogram} can determine that fewer bins are needed (e.g. boolean columns
  *  run from 0 to 1, but only ever take on 2 values, so only 2 bins are
  *  needed), then fewer bins are used.
- *  
+ *
  *  <p>{@code DHistogram} are shared per-node, and atomically updated.  There's
  *  an {@code add} call to help cross-node reductions.  The data is stored in
  *  primitive arrays, so it can be sent over the wire.
- *  
+ *
  *  <p>If we are successively splitting rows (e.g. in a decision tree), then a
  *  fresh {@code DHistogram} for each split will dynamically re-bin the data.
  *  Each successive split will logarithmically divide the data.  At the first
@@ -74,16 +74,20 @@ public final class DHistogram extends Iced {
   // split direction for missing values
   public enum NASplitDir {
     //never saw NAs in training
-    None,     //initial state - should not be present in a trained model
+    None(0),     //initial state - should not be present in a trained model
 
     // saw NAs in training
-    NAvsREST, //split off non-NA (left) vs NA (right)
-    NALeft,   //NA goes left
-    NARight,  //NA goes right
+    NAvsREST(1), //split off non-NA (left) vs NA (right)
+    NALeft(2),   //NA goes left
+    NARight(3),  //NA goes right
 
     // never NAs in training, but have a way to deal with them in scoring
-    Left,     //test time NA should go left
-    Right,    //test time NA should go right
+    Left(4),     //test time NA should go left
+    Right(5);    //test time NA should go right
+
+    private int value;
+    NASplitDir(int v) { this.value = v; }
+    public int value() { return value; }
   }
 
   static class HistoQuantiles extends Keyed<HistoQuantiles> {
