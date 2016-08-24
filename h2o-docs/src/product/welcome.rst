@@ -31,6 +31,21 @@ The `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/
    `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
 
+Supported File Formats
+----------------------
+
+H2O currently supports the following file types:
+
+- CSV (delimited) files
+- ORC*
+- SVMLite
+- ARFF
+- XLS
+- XLST
+- Avro (without multifile parsing or column type modification)
+
+*Note that ORC parsing in H2O using Python is only supported over HDFS. 
+
 
 New Users
 ---------
