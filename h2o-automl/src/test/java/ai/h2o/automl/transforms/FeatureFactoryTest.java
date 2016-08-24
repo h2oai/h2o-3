@@ -2,6 +2,7 @@ package ai.h2o.automl.transforms;
 
 import ai.h2o.automl.TestUtil;
 import org.junit.BeforeClass;
+import org.junit.Test;
 import water.fvec.Frame;
 
 public class FeatureFactoryTest extends TestUtil {
@@ -47,13 +48,14 @@ public class FeatureFactoryTest extends TestUtil {
 //  }
 
   // TODO: put back either after we find Spencer's synthetic dataset or reverse engineer this code.
-  /* @Test */ public void test2() {
+  @Test
+  public void test2() {
     Frame fr=null;
     Frame labels=null;
     MISelector miSelector;
     try {
-      fr = parse_test_file("/Users/spencer/Downloads/dummydata_h2o.csv");
-      labels = parse_test_file("/Users/spencer/Downloads/dummydata_labels.csv");
+      fr = parse_test_file("smalldata/dummydata_h2o.csv");
+      labels = parse_test_file("smalldata/dummydata_labels.csv");
 
       miSelector = new MISelector(fr,null,"",true);
       miSelector.debugRunAll();
