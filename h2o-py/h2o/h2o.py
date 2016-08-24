@@ -169,6 +169,8 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
             if mmgb is None: return None
             return mmgb << 30
         if is_type(mmint, int):
+            # If the user gives some small number just assume it's in Gigabytes...
+            if mmint < 1000: return mmint << 30
             return mmint
         if is_type(mmint, str):
             last = mmint[-1].upper()
