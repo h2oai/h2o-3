@@ -1167,6 +1167,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     @Override
     public void writeTo(OutputStream os) {
       zos = new ZipOutputStream(os);
+      // Do not compress Zip file, so that it can be queried much easier
+      zos.setMethod(ZipOutputStream.STORED);
       try {
         writeModelInfo();
         writeDomains();
@@ -1186,6 +1188,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       zos.putNextEntry(new ZipEntry("model.ini"));
       writeln("[info]");
       writeln("algorithm = " + _parms.fullName());
+      writeln("category = " + _output.getModelCategory());
+      writeln("uuid = " + checksum());
       writeln("n_classes = " + _output.nclasses());
       writeln("n_columns = " + _output._names.length);
       writeln("n_domains = " + n_categoricals);
@@ -1200,10 +1204,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       writeln("");
       writeln("[domains]");
-      String format = "%d: d%03d.txt";
+      String format = "%d: %d d%03d.txt";
       for (int colIndex = 0, domIndex = 0; colIndex < _output._names.length; colIndex++) {
         if (_output._domains[colIndex] != null)
-          writeln(String.format(format, colIndex, domIndex++));
+          writeln(String.format(format, colIndex, _output._domains[colIndex].length, domIndex++));
       }
       zos.closeEntry();
     }

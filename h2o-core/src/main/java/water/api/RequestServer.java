@@ -630,7 +630,7 @@ public class RequestServer extends HttpServlet {
         throw H2O.unimpl("Unknown type: " + type.toString());
       case java:
         if (s instanceof AssemblyV99) {
-          // TODO: fix the AssemblyV99 response handler so that it produces the appropriate schema
+          // TODO: fix the AssemblyV99 response handler so that it produces the appropriate StreamingSchema
           Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
           NanoResponse r = new NanoResponse(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
           r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
