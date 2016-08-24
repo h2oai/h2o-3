@@ -1,15 +1,14 @@
 package hex.deepwater;
 
 import hex.Model;
-import static hex.deepwater.DeepWaterParameters.Network.user;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.Frame;
 import water.gpu.ImageTrain;
 import water.util.*;
 
 import static hex.deepwater.DeepWaterParameters.Network.auto;
 import static hex.deepwater.DeepWaterParameters.Network.inception_bn;
+import static hex.deepwater.DeepWaterParameters.Network.user;
 import static water.gpu.deepwater.loadNDArray;
 
 import java.io.File;
@@ -61,8 +60,6 @@ final public class DeepWaterModelInfo extends Iced {
   public synchronized long get_processed_total() { return processed_global + processed_local; }
 
   final boolean _classification; // Classification cache (nclasses>1)
-  final Frame _train;         // Prepared training frame
-  final Frame _valid;         // Prepared validation frame
 
   /**
    * Dummy constructor, only to be used for deserialization from autobuffer
@@ -70,21 +67,16 @@ final public class DeepWaterModelInfo extends Iced {
   private DeepWaterModelInfo() {
     super(); // key is null
     _classification = false;
-    _train = _valid = null;
   }
 
   /**
    * Main constructor
    * @param params Model parameters
    * @param nClasses number of classes (1 for regression, 0 for autoencoder)
-   * @param train User-given training data frame, prepared by AdaptTestTrain
-   * @param valid User-specified validation data frame, prepared by AdaptTestTrain
    */
-  public DeepWaterModelInfo(final DeepWaterParameters params, Key model_id, int nClasses, Frame train, Frame valid) {
+  public DeepWaterModelInfo(final DeepWaterParameters params, Key model_id, int nClasses) {
     _classes = nClasses;
     _classification = _classes > 1;
-    _train = train;
-    _valid = valid;
     parameters = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     _model_id = model_id;
     DeepWaterParameters.Sanity.modifyParms(parameters, parameters, _classes); //sanitize the model_info's parameters
@@ -247,10 +239,7 @@ final public class DeepWaterModelInfo extends Iced {
   }
 
   DeepWaterModelInfo deep_clone() {
-    AutoBuffer ab = new AutoBuffer();
-    this.write(ab);
-    ab.flipForReading();
-    return (DeepWaterModelInfo) new DeepWaterModelInfo().read(ab);
+    return new AutoBuffer().put(this).flipForReading().get();
   }
 
   /**
