@@ -1,7 +1,6 @@
 package hex.deepwater;
 
 import water.*;
-import static water.gpu.util.img2pixels;
 import water.util.Log;
 
 import java.io.IOException;
@@ -101,7 +100,7 @@ public class DeepWaterImageIterator {
         }
         if (!status) {
           // read the image into a float[], directly into the right place
-          img2pixels(_file, _conv._dim._width, _conv._dim._height, _conv._dim._channels, _destData, start, _meanData);
+          water.gpu.util.img2pixels(_file, _conv._dim._width, _conv._dim._height, _conv._dim._channels, _destData, start, _meanData);
           if (_cache)
             DKV.put(imgKey, new IcedImage(_conv._dim, Arrays.copyOfRange(_destData, start, start + _conv.len())));
         }
