@@ -1,10 +1,12 @@
 package water.rapids;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
+import water.parser.ParseDataset;
 import water.rapids.vals.ValFrame;
 
 import java.util.Random;
@@ -67,6 +69,26 @@ public class SortTest extends TestUtil {
     }
   }
 
+  @Test public void testBasicSortDouble() {
+    Frame fr = null, sortedFr = null;
+    try {
+      Key raw = Key.make("sort_test_data_raw");
+      Key parsed = Key.make("sort_test_data_parsed");
+      FVecTest.makeByteVec(raw, "x,y\n0,1.2\n1,2.7\n2,1.1\n3,2.2\n4,1.3\n5,2.8\n6,1.0\n7,2.1");
+      fr = ParseDataset.parse(parsed, raw);
+      sortedFr = fr.sort(new int[]{1});
+
+      for (int i=1; i<sortedFr.numRows(); i++) {
+        double prev = sortedFr.vec(1).at(i - 1);
+        double curr = sortedFr.vec(1).at(i);
+        Assert.assertTrue("Expected the value in column y, row " + (i - 1) + " (value=" + prev + ") to be <= the " +
+          "value in column y, row " + i + " (value=" + curr + ").", prev <= curr);
+      }
+    } finally {
+      if( fr       != null ) fr.delete();
+      if( sortedFr != null ) sortedFr.delete();
+    }
+  }
 
   // Assert that result is indeed sorted - on all 3 columns, as this is a
   // stable sort.
