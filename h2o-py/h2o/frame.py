@@ -34,7 +34,6 @@ from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_fra
                                     can_use_pandas, quote)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, numeric, numpy_ndarray,
                                   pandas_dataframe, U)
-
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
 
@@ -2477,6 +2476,7 @@ class H2OFrame(object):
           H2OFrame of the merged yes/no Frames/scalars according to the test input frame.
         """
         return H2OFrame._expr(expr=ExprNode("ifelse", self, yes, no))
+
 
     def apply(self, fun=None, axis=0):
         """
