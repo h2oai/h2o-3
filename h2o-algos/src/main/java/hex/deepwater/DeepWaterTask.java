@@ -72,7 +72,31 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     // loop over all images on this node
     ArrayList<Float> trainLabels = new ArrayList<>();
     ArrayList<String> trainData = new ArrayList<>();
-    for (int i=0; i<_fr.vec(0).length(); ++i) {
+
+    long seed = 0xDECAF + 0xD00D * _localmodel.get_processed_global();
+    Random rng = RandomUtils.getRNG(seed);
+
+    int len = (int)_fr.numRows();
+    int j=0;
+
+    // full passes over the data
+    int fullpasses = (int)_useFraction;
+    while (j++ < fullpasses) {
+      for (int i=0; i<_fr.numRows(); ++i) {
+        double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
+        if (weight == 0)
+          continue;
+        String file = _fr.vec(0).atStr(bs, i).toString();
+        float response = (float) _fr.vec(respIdx).at(i);
+        trainData.add(file);
+        trainLabels.add(response);
+      }
+    }
+
+    // fractional passes
+    while (trainData.size() < _useFraction*len || trainData.size() % batchSize != 0) {
+      assert(_shuffle);
+      int i = rng.nextInt(len);
       double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
       if (weight == 0)
         continue;
@@ -81,19 +105,14 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
       trainData.add(file);
       trainLabels.add(response);
     }
-    long seed = 0xDECAF + 0xD00D * _localmodel.get_processed_global();
-    Random rng = RandomUtils.getRNG(seed);
-    if (_localmodel.get_params()._shuffle_training_data) {
+
+    if (_shuffle) {
+      rng.setSeed(seed);
       Collections.shuffle(trainLabels, rng);
       rng.setSeed(seed);
       Collections.shuffle(trainData, rng);
     }
-    // randomly add more rows to fill up to a multiple of batch_size
-    while (trainData.size()%batchSize!=0) {
-      int pick = rng.nextInt(trainData.size());
-      trainData.add(trainData.get(pick));
-      trainLabels.add(trainLabels.get(pick));
-    }
+
     try {
       long start = System.currentTimeMillis();
       DeepWaterImageIterator img_iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, width, height, channels, _localmodel.get_params()._cache_data);
