@@ -217,10 +217,10 @@ def lazy_import(path):
     :param path: A path to a data file (remote or local).
     """
     assert_is_type(path, str, [str])
-    if is_listlike(path):
-        return [_import(p)[0] for p in path]
-    else:
+    if is_type(path, str):
         return _import(path)
+    else:
+        return [_import(p)[0] for p in path]
 
 
 def _import(path):
