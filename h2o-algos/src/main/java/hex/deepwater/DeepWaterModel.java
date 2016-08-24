@@ -484,7 +484,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           if (isCancelled() || _j != null && _j.stop_requested()) return;
           float[] data = img_iter.getData();
           float[] predFloats = model_info()._imageTrain.predict(data);
-          Log.info("Scoring on " + batch_size + " samples (rows " + row + " and up): " + Arrays.toString(img_iter.getFiles()));
+//          Log.info("Scoring on " + batch_size + " samples (rows " + row + " and up): " + Arrays.toString(img_iter.getFiles()));
 
           // fill the pre-created output Frame
           for (int j = 0; j < batch_size; ++j) {
@@ -509,7 +509,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
                 GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
               preds[0] = hex.genmodel.GenModel.getPrediction(preds, _output._priorClassDist, null, defaultThreshold());
               if (_makePreds) {
-                Log.info(img_iter.getFiles()[j] + " -> preds: " + Arrays.toString(preds));
+                //Log.info(img_iter.getFiles()[j] + " -> preds: " + Arrays.toString(preds));
                 for (int i = 0; i <= classes; ++i)
                   vw[i].set(row, preds[i]);
               }
@@ -541,8 +541,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
-    if (model_info()._imageTrain==null)
-      model_info().javaToNative();
+    boolean makeNative = model_info()._imageTrain==null;
+    if (makeNative) model_info().javaToNative();
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
     String[] names = makeScoringNames();
@@ -550,21 +550,35 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new DeepWaterBigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
-    if (computeMetrics)
-      bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
+    if (computeMetrics) bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
+    if (makeNative) removeNativeState();
     return bs.outputFrame(null == destination_key ? Key.make() : Key.make(destination_key), names, domains);
   }
 
   @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    if (model_info()._imageTrain==null)
-      model_info().javaToNative();
+    boolean makeNative = model_info()._imageTrain==null;
+    if (makeNative) model_info().javaToNative();
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
     String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new DeepWaterBigScore(domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
+    if (makeNative) removeNativeState();
     return bs._mb;
+  }
+
+  void removeNativeState() {
+    if (model_info()._imageTrain!=null) {
+      model_info()._imageTrain.delete();
+      model_info()._imageTrain = null;
+    }
+  }
+
+  @Override
+  protected Futures remove_impl(Futures fs) {
+    cleanUpCache(fs);
+    return super.remove_impl(fs);
   }
 
   void exportNativeModel(String path, int iteration) {
@@ -577,13 +591,16 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   public static String CACHE_MARKER = "__d33pW473r_1n73rn4l__";
 
   public void cleanUpCache() {
+    cleanUpCache(null);
+  }
+  private void cleanUpCache(Futures fs) {
     final Key[] cacheKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
         return Value.isSubclassOf(k._type, DeepWaterImageIterator.IcedImage.class) && k._key.toString().contains(CACHE_MARKER);
       }
     }).keys();
-    Futures fs = new Futures();
+    if (fs==null) fs = new Futures();
     for (Key k : cacheKeys) DKV.remove(k, fs);
     fs.blockForPending();
   }
