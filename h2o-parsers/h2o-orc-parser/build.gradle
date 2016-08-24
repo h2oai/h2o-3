@@ -24,7 +24,14 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
   // We need correct version of MapRe Hadoop to run JUnits
-  testCompile("org.apache.hadoop:hadoop-client:$orcDefaultHadoopClientVersion")
+  testRuntime("org.apache.hadoop:hadoop-client:$orcDefaultHadoopClientVersion") {
+      exclude module: "jasper-runtime"
+      exclude module: "jasper-compiler"
+      exclude module: "curator-client"
+      exclude module: "curator-recipes"
+      exclude module: "servlet-api"
+      exclude module: "zookeper"
+  }
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
