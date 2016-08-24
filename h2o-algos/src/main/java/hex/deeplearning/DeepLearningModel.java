@@ -92,7 +92,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   // auto-tuning
   public long actual_train_samples_per_iteration;
-  public long tspiGuess;
   public double time_for_communication_us; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   // helpers for diagnostics
@@ -485,7 +484,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       if (!finalScoring) {
         if (actual_best_model_key != null && get_params()._overwrite_with_best_model && (
                 // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
-                (DKV.get(actual_best_model_key) != null && (loss() < DKV.get(actual_best_model_key).<DeepLearningModel>get().loss() || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
+                (DKV.get(actual_best_model_key) != null && (!(loss() >= DKV.get(actual_best_model_key).<DeepLearningModel>get().loss()) || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
                         ||
                         // otherwise, compare against our own _bestError
                         (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
@@ -906,8 +905,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
-    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
-    DKV.put(bestModel._key, bestModel);
+    DeepLearningModel bestModel = new AutoBuffer().put(this).flipForReading().get();
+    DKV.put(bestModelKey, bestModel);
     if (model_info().get_params()._elastic_averaging) {
       DeepLearningModelInfo eamodel = DKV.getGet(model_info.elasticAverageModelInfoKey());
       if (eamodel != null)
