@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 
 /**
@@ -178,6 +179,7 @@ final public class DeepWaterModelInfo extends Iced {
 
   public void nativeToJava() {
     Log.info("Moving native state into Java.");
+    if (_imageTrain==null) throw new RuntimeException("Internal error - Lost connection to native code.");
     Path path = null;
     // only overwrite the network definition if it's null
     if (_network==null) {
@@ -212,6 +214,15 @@ final public class DeepWaterModelInfo extends Iced {
    * @param parameters user-given network state (weights/biases)
    */
   private void javaToNative(byte[] network, byte[] parameters) {
+    //existing state is fine
+    if (_imageTrain!=null
+            // either not overwriting with user-given (new) state, or we already are in sync
+            && (network == null || Arrays.equals(network,_network))
+            && (parameters == null || Arrays.equals(parameters,_modelparams)) )  {
+      Log.warn("No need to move the state from java to native.");
+      return;
+    }
+
     if (network==null) network = _network;
     if (parameters==null) parameters= _modelparams;
     if (network==null || parameters==null) return;
