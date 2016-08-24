@@ -102,7 +102,7 @@ Defining a GBM Model
        -  If the distribution is **gaussian**, the response column must
           be numeric.
        -  If the distribution is **laplace**, the response column must
-          be numeric..
+          be numeric.
        -  If the distribution is **quantile**, the response column must
           be numeric.
           
