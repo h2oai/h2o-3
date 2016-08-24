@@ -12,6 +12,7 @@ import water.fvec.Vec;
 import water.gpu.ImagePred;
 import water.gpu.ImageTrain;
 import water.gpu.util;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.RandomUtils;
 
@@ -235,6 +236,24 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
+  public void testTrainSamplesPerIteration_auto() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._response_column = "C2";
+      p._rate = 1e-3;
+      p._epochs = 1;
+      p._train_samples_per_iteration = -2;
+      m = new DeepWater(p).trainModel().get();
+      Assert.assertTrue(m.iterations>1);
+    } finally {
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+  @Test
   public void testTrainSamplesPerIteration_neg1() throws IOException {
     DeepWaterModel m = null;
     Frame tr = null;
@@ -355,6 +374,7 @@ public class DeepWaterTest extends TestUtil {
       p._rate = 1e-3;
       p._epochs = 20;
       p._channels = 1;
+      p._train_samples_per_iteration = 0;
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
       Assert.assertTrue(m._output._training_metrics.cm().accuracy()>0.9);
@@ -365,29 +385,59 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void deepWaterLoadSaveTest() throws IOException {
+  public void deepWaterLoadSaveTest() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network == DeepWaterParameters.Network.user) continue;
       DeepWaterModel m = null;
       Frame tr = null;
+      Frame pred1 = null;
+      Frame pred2 = null;
+      Frame pred3 = null;
       try {
         DeepWaterParameters p = new DeepWaterParameters();
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
         p._network = network;
         p._mini_batch_size = 4;
-        p._epochs = 0.01;
-        p._score_training_samples = 1;
-        p._train_samples_per_iteration = p._mini_batch_size;
+        p._epochs = 1;
+        p._score_training_samples = 0;
+//        p._train_samples_per_iteration = p._mini_batch_size;
         m = new DeepWater(p).trainModel().get();
-
-        m.model_info().javaToNative();
-        m.model_info().nativeToJava();
-
         Log.info(m);
+
+        Assert.assertTrue(m.model_info()._imageTrain==null);
+
+        // regular prediction
+        pred1 = m.score(tr);
+        pred1.remove(0).remove();
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred1, tr.vec(p._response_column));
+        Assert.assertEquals(mm._logloss, ((ModelMetricsMultinomial)m._output._training_metrics)._logloss, 1e-8);
+
+        Assert.assertTrue(m.model_info()._imageTrain==null);
+
+        // do it again
+        pred2 = m.score(tr);
+
+        Assert.assertTrue(isBitIdentical(pred1, pred2));
+
+        // and again
+        pred3 = m.score(tr);
+        Assert.assertTrue(isBitIdentical(pred2, pred3));
+
+        // move stuff around forever
+        m.model_info().javaToNative();
+        int count=10;
+        while(count-->0) {
+          m.model_info().nativeToJava();
+          m.model_info().javaToNative();
+        }
+
       } finally {
         if (m!=null) m.delete();
         if (tr!=null) tr.remove();
+        if (pred1!=null) pred1.remove();
+        if (pred2!=null) pred2.remove();
+        if (pred3!=null) pred3.remove();
       }
     }
   }
