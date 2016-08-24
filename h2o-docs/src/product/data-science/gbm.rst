@@ -101,10 +101,10 @@ Defining a GBM Model
           be numeric.
        -  If the distribution is **gaussian**, the response column must
           be numeric.
-       -  If the distribution is **laplace**, the data must be numeric
-          and continuous (**Int**).
-       -  If the distribution is **quantile**, the data must be numeric
-          and continuous (**Int**).
+       -  If the distribution is **laplace**, the response column must
+          be numeric..
+       -  If the distribution is **quantile**, the response column must
+          be numeric.
           
 
 -  **sample\_rate**: Specify the row sampling rate (x-axis). The range
@@ -316,7 +316,7 @@ FAQ
 
 -  **What if there are a large number of columns?**
 
-  GBM models are best for datasets with a large number of columns (several thousand or more). DRF models are best for datasets with fewer than a few thousand columns.
+  GBM models are best for datasets with fewer than a few thousand columns.
 
 -  **What if there are a large number of categorical factor levels?**
 
