@@ -133,7 +133,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
         train = tra_fr;
         model.training_rows = train.numRows();
-        model.actual_train_samples_per_iteration = _parms._train_samples_per_iteration > 0 ? _parms._train_samples_per_iteration : train.numRows(); //TODO: add distributed training logic
+        model.actual_train_samples_per_iteration = _parms._train_samples_per_iteration > 0 ? _parms._train_samples_per_iteration : 4*_parms._mini_batch_size;
         if (_weights != null && _weights.min()==0 && _weights.max()==1 && _weights.isInt()) {
           model.training_rows = Math.round(train.numRows()*_weights.mean());
           Log.warn("Not counting " + (train.numRows() - model.training_rows) + " rows with weight=0 towards an epoch.");
@@ -222,7 +222,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           if (best_model != null && best_model.loss() < model.loss() ) {
             if (!_parms._quiet_mode)
               Log.info("Setting the model to be the best model so far (based on scoring history).");
-            model.model_info()._imageTrain.delete(); //free native model's memory
+            model.removeNativeState(); //remove native state
             DeepWaterModelInfo mi = best_model.model_info().deep_clone();
             // Don't cheat - count full amount of training samples, since that's the amount of training it took to train (without finding anything better)
             mi.set_processed_global(model.model_info().get_processed_global());
@@ -242,8 +242,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
       }
       finally {
         if (cache) model.cleanUpCache();
-        model.model_info()._imageTrain.delete();
-        model.model_info()._imageTrain=null;
+        model.removeNativeState();
         //TODO: refactor DL the same way
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
