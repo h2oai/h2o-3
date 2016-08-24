@@ -1,12 +1,14 @@
+#!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """
-  Currently, our R/Python test suite is executed against an established h2o cluster (run.py sets up the cluster).
-  However, we ignore the mode of operation where the h2o cluster is created by the client. Consequently, we may not
-  recognize bugs in h2o.init() for this mode of operation.
-  For this ticket, I think we should create a set of tests that check that h2o.init() is successful for each
-  OS/client interface combination.
+Test h2o initialization / startup options.
 
-  Below is the test that will be implemented:
+Currently, our R/Python test suite is executed against an established h2o cluster (run.py sets up the cluster).
+However, we ignore the mode of operation where the h2o cluster is created by the client. Consequently, we may not
+recognize bugs in h2o.init() for this mode of operation.
+
+For this ticket, I think we should create a set of tests that check that h2o.init() is successful for each
+OS/client interface combination.
 """
 from __future__ import print_function
 import sys
@@ -24,7 +26,16 @@ try:
 except H2OConnectionError:
     pass
 
+# The server takes some time to shut down, so try different ports
+print("Start a server with max_mem_size = 1Gb")
+h2o.init(max_mem_size="1g", port=10101)
+h2o.cluster().shutdown()
 
+print("Starting a server with min_mem_size = 314Mb")
+h2o.init(min_mem_size="314M", port=20202)
+h2o.cluster().shutdown()
+
+print("Starting a server explicitly")
 # Now start a new H2O server and connect to it.
 server = H2OLocalServer.start(port=str(PORT) + "+")
 conn = h2o.connect(server=server)
