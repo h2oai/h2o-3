@@ -83,31 +83,30 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
-  /**
-   * Regular constructor (from scratch)
-   * @param destKey destination key
-   * @param parms DL parameters
-   * @param output DL model output
-   * @param train Training frame
-   * @param valid Validation frame
-   * @param nClasses Number of classes (1 for regression or autoencoder)
-   */
-  public DeepWaterModel(final Key destKey, final DeepWaterParameters parms, final DeepWaterModelOutput output, Frame train, Frame valid, int nClasses) {
-    super(destKey, parms, output);
+  static {
+    final boolean GPU = System.getenv("CUDA_PATH")!=null;
     try {
-      final boolean GPU = System.getenv("CUDA_PATH")!=null;
       if (GPU) util.loadCudaLib();
       util.loadNativeLib("mxnet");
       util.loadNativeLib("Native");
     } catch (IOException e) {
       throw new IllegalArgumentException("Couldn't load native DL libraries");
     }
+  }
+
+  /**
+   * Regular constructor (from scratch)
+   * @param destKey destination key
+   * @param parms DL parameters
+   * @param output DL model output
+   * @param nClasses Number of classes (1 for regression or autoencoder)
+   */
+  public DeepWaterModel(final Key destKey, final DeepWaterParameters parms, final DeepWaterModelOutput output, int nClasses) {
+    super(destKey, parms, output);
     if (H2O.getCloudSize() != 1)
       throw new IllegalArgumentException("Deep Water currently only supports execution of 1 node.");
 
-    _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
-    _output._domains= train.domains();
-    model_info = new DeepWaterModelInfo(parms, destKey, nClasses, train, valid);
+    model_info = new DeepWaterModelInfo(parms, destKey, nClasses);
     model_info_key = Key.make(H2O.SELF);
     _dist = new Distribution(get_params());
     assert(_dist.distribution != Distribution.Family.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
@@ -174,16 +173,15 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
     boolean keep_running;
     // Auto-tuning
-    // if multi-node and auto-tuning and at least 10 ms for communication (to avoid doing thins on multi-JVM on same node),
+    // if multi-node and auto-tuning and at least 10 ms for communication and per-iteration overhead (to avoid doing thins on multi-JVM on same node),
     // then adjust the auto-tuning parameter 'actual_train_samples_per_iteration' such that the targeted ratio of comm to comp is achieved
-    // Note: actual communication time is estimated by the NetworkTest's collective test.
     if (get_params()._train_samples_per_iteration == -2 && iteration > 1) {
       Log.debug("Auto-tuning train_samples_per_iteration.");
       if (time_for_iteration_overhead_ms > 10) {
-        Log.debug("  Time taken for communication: " + PrettyPrint.msecs(time_for_iteration_overhead_ms, true));
+        Log.debug("  Time taken for per-iteration comm overhead: " + PrettyPrint.msecs(time_for_iteration_overhead_ms, true));
         Log.debug("  Time taken for Map/Reduce iteration: " + PrettyPrint.msecs((long) time_since_last_iter, true));
         final double comm_to_work_ratio = time_for_iteration_overhead_ms / time_since_last_iter;
-        Log.debug("  Ratio of network communication to computation: " + String.format("%.5f", comm_to_work_ratio));
+        Log.debug("  Ratio of per-iteration comm overhead to computation: " + String.format("%.5f", comm_to_work_ratio));
         Log.debug("  target_comm_to_work: " + get_params()._target_ratio_comm_to_comp);
         Log.debug("Old value of train_samples_per_iteration: " + actual_train_samples_per_iteration);
         double correction = get_params()._target_ratio_comm_to_comp / comm_to_work_ratio;
@@ -324,13 +322,13 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       if (!finalScoring) {
         if (actual_best_model_key != null && get_params()._overwrite_with_best_model && (
                 // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
-                (DKV.get(actual_best_model_key) != null && (loss() < DKV.get(actual_best_model_key).<DeepWaterModel>get().loss() ) )
+                (DKV.get(actual_best_model_key) != null && !(loss() >= DKV.get(actual_best_model_key).<DeepWaterModel>get().loss() ) )
                         ||
                         // otherwise, compare against our own _bestError
                         (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
         ) ) {
           _bestLoss = loss();
-//          putMeAsBestModel(actual_best_model_key);
+          putMeAsBestModel(actual_best_model_key);
         }
         // print the freshly scored model to ASCII
         if (keep_running && printme)
@@ -353,6 +351,13 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     progressUpdate(jobKey, keep_running);
     update(jobKey);
     return keep_running;
+  }
+
+  private void putMeAsBestModel(Key bestModelKey) {
+    DeepWaterModel dlm = new AutoBuffer().put(this).flipForReading().get();
+    DKV.put(bestModelKey, dlm);
+    assert DKV.get(bestModelKey) != null;
+    assert ((DeepWaterModel)DKV.getGet(bestModelKey)).compareTo(this) <= 0;
   }
 
   private void progressUpdate(Key<Job> job_key, boolean keep_running) {
