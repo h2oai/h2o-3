@@ -216,6 +216,116 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
+  public void testTrainSamplesPerIteration0() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._response_column = "C2";
+      p._rate = 1e-3;
+      p._epochs = 1;
+      p._train_samples_per_iteration = 0;
+      m = new DeepWater(p).trainModel().get();
+      Assert.assertTrue(m.iterations==1);
+    } finally {
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+
+  @Test
+  public void testTrainSamplesPerIteration_neg1() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._response_column = "C2";
+      p._rate = 1e-3;
+      p._epochs = 1;
+      p._train_samples_per_iteration = -1;
+      m = new DeepWater(p).trainModel().get();
+      Assert.assertTrue(m.iterations==1);
+    } finally {
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+
+  @Test
+  public void testTrainSamplesPerIteration_32() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._response_column = "C2";
+      p._rate = 1e-3;
+      p._epochs = 1;
+      p._score_duty_cycle = 1;
+      p._score_interval = 1;
+      p._train_samples_per_iteration = p._mini_batch_size;
+      m = new DeepWater(p).trainModel().get();
+      Assert.assertTrue(m.iterations==9);
+      Assert.assertTrue(m.epoch_counter>1);
+      Assert.assertTrue(m.epoch_counter<2);
+    } finally {
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+
+  @Test
+  public void testTrainSamplesPerIteration_1000() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._response_column = "C2";
+      p._rate = 1e-3;
+      p._epochs = 1;
+      p._train_samples_per_iteration = 1000;
+      m = new DeepWater(p).trainModel().get();
+      Assert.assertTrue(m.iterations==1);
+      Assert.assertTrue(m.epoch_counter>3);
+      Assert.assertTrue(m.epoch_counter<4);
+    } finally {
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+
+  @Test
+  public void testOverWriteWithBestModel() throws IOException {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._response_column = "C2";
+      p._epochs = 2;
+      p._rate = 0.01;
+      p._momentum_start = 0;
+      p._momentum_stable = 0;
+
+      // score a lot
+      p._train_samples_per_iteration = p._mini_batch_size;
+      p._score_duty_cycle = 1;
+      p._score_interval = 0;
+      p._overwrite_with_best_model = true;
+
+      m = new DeepWater(p).trainModel().get();
+      Log.info(m);
+      Assert.assertTrue(m._output._training_metrics.cm().accuracy()>0.9);
+    } finally {
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+
+  @Test
   public void testConvergenceInceptionColor() throws IOException {
     DeepWaterModel m = null;
     Frame tr = null;
@@ -226,8 +336,8 @@ public class DeepWaterTest extends TestUtil {
       p._rate = 1e-3;
       p._epochs = 25;
       m = new DeepWater(p).trainModel().get();
-      assert(m._output._training_metrics.cm().accuracy()>0.9);
       Log.info(m);
+      Assert.assertTrue(m._output._training_metrics.cm().accuracy()>0.9);
     } finally {
       if (m!=null) m.delete();
       if (tr!=null) tr.remove();
@@ -266,7 +376,9 @@ public class DeepWaterTest extends TestUtil {
         p._response_column = "C2";
         p._network = network;
         p._mini_batch_size = 4;
-        p._epochs = 1;
+        p._epochs = 0.01;
+        p._score_training_samples = 1;
+        p._train_samples_per_iteration = p._mini_batch_size;
         m = new DeepWater(p).trainModel().get();
 
         m.model_info().javaToNative();
@@ -296,7 +408,7 @@ public class DeepWaterTest extends TestUtil {
 //      p._height = 224;
 //      p._channels = 3;
       p._nfolds = 3;
-      p._epochs = 25;
+      p._epochs = 2;
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
     } finally {

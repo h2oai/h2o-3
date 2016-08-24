@@ -907,7 +907,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
-    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, null, this, true, model_info().data_info());
+    DeepLearningModel bestModel = new DeepLearningModel(bestModelKey, model_info().get_params(), this, true, model_info().data_info());
     DKV.put(bestModel._key, bestModel);
     if (model_info().get_params()._elastic_averaging) {
       DeepLearningModelInfo eamodel = DKV.getGet(model_info.elasticAverageModelInfoKey());
