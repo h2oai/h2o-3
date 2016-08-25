@@ -23,6 +23,7 @@ public class TypeMap {
     water.FetchClazz.class.getName(),   // used to fetch IDs from leader
     water.FetchId.class.getName(),      // used to fetch IDs from leader
     water.DTask.class.getName(),        // Needed for those first Tasks
+    water.UDPClientEvent.ClientEvent.class.getName(), // Needed for client event broadcast
 
     water.fvec.Chunk.class.getName(),   // parent of Chunk
     water.fvec.C1NChunk.class.getName(),// used as constant in parser
