@@ -22,9 +22,9 @@ from random import choice
 from sysconfig import get_config_var
 from warnings import warn
 
-from h2o.exceptions import H2OServerError, H2OStartupError
+from h2o.exceptions import H2OServerError, H2OStartupError, H2OValueError
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, I, is_type
 
 __all__ = ("H2OLocalServer", )
 
@@ -82,28 +82,25 @@ class H2OLocalServer(object):
         """
         assert_is_type(jar_path, None, str)
         assert_is_type(port, None, int, str)
-        assert_is_type(nthreads, int)
+        assert_is_type(nthreads, -1, BoundInt(1, 4096))
         assert_is_type(enable_assertions, bool)
         assert_is_type(min_mem_size, None, int)
-        assert_is_type(max_mem_size, None, int)
-        assert_is_type(ice_root, None, str)
+        assert_is_type(max_mem_size, None, BoundInt(1 << 25))
+        assert_is_type(ice_root, None, I(str, os.path.isdir))
         if jar_path:
             assert_satisfies(jar_path, jar_path.endswith("h2o.jar"))
 
-        assert nthreads == -1 or 1 <= nthreads <= 4096, "`nthreads` is out of bounds: %d" % nthreads
-        assert max_mem_size is None or max_mem_size >= 1 << 25, "`max_mem_size` too small: %d" % max_mem_size
-        assert min_mem_size is None or max_mem_size is None or min_mem_size <= max_mem_size, \
-            "`min_mem_size`=%d is larger than the `max_mem_size`=%d" % (min_mem_size, max_mem_size)
-        if ice_root:
-            assert os.path.isdir(ice_root), "`ice_root` is not a valid directory: %s" % ice_root
+        if min_mem_size is not None and max_mem_size is not None and min_mem_size > max_mem_size:
+            raise H2OValueError("`min_mem_size`=%d is larger than the `max_mem_size`=%d" % (min_mem_size, max_mem_size))
         if port is None: port = "54321+"
         baseport = None
+        # TODO: get rid of this port gimmick and have 2 separate parameters.
         if is_type(port, str):
             if port.isdigit():
                 port = int(port)
             else:
-                assert port[-1] == "+" and port[:-1].isdigit(), \
-                    "`port` should be of the form 'DDDD+', where D is a digit. Got: %s" % port
+                if not(port[-1] == "+" and port[:-1].isdigit()):
+                    raise H2OValueError("`port` should be of the form 'DDDD+', where D is a digit. Got: %s" % port)
                 baseport = int(port[:-1])
                 port = 0
 

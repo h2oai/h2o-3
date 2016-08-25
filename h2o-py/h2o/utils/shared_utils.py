@@ -7,7 +7,7 @@
 
 This file INTENTIONALLY has NO module dependencies!
 """
-from __future__ import division, print_function, absolute_import, unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import imp
 import itertools
@@ -138,7 +138,7 @@ def _handle_pandas_data_frame(python_obj, header):
 
 def _handle_python_dicts(python_obj, check_header):
     header = list(python_obj.keys())
-    is_valid = all([re.match(r'^[a-zA-Z_][a-zA-Z0-9_.]*$', col) for col in header])  # is this a valid header?
+    is_valid = all(re.match(r"^[a-zA-Z_][a-zA-Z0-9_.]*$", col) for col in header)  # is this a valid header?
     if not is_valid:
         raise ValueError(
             "Did not get a valid set of column names! Must match the regular expression: ^[a-zA-Z_][a-zA-Z0-9_.]*$ ")
@@ -152,7 +152,8 @@ def _handle_python_dicts(python_obj, check_header):
         else:
             raise ValueError("Encountered invalid dictionary value when constructing H2OFrame. Got: {0}".format(v))
 
-    rows = list(map(list, itertools.zip_longest(*list(python_obj.values()))))
+    zipper = getattr(itertools, "zip_longest", None) or getattr(itertools, "izip_longest", None) or zip
+    rows = list(map(list, zipper(*list(python_obj.values()))))
     data_to_write = [dict(list(zip(header, row))) for row in rows]
     return header, data_to_write
 

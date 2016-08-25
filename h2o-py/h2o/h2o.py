@@ -15,7 +15,7 @@ from h2o.backend import H2OConnection
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
 from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_tmp_key, quoted, urlopen
-from h2o.utils.typechecks import BoundInt, BoundNumeric, I, U, assert_is_type, assert_satisfies, is_type, numeric
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.estimator_base import H2OEstimator
@@ -163,13 +163,30 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     assert_is_type(strict_version_check, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool})
+
+    def get_mem_size(mmint, mmgb):
+        if not mmint:  # treat 0 and "" as if they were None
+            if mmgb is None: return None
+            return mmgb << 30
+        if is_type(mmint, int):
+            # If the user gives some small number just assume it's in Gigabytes...
+            if mmint < 1000: return mmint << 30
+            return mmint
+        if is_type(mmint, str):
+            last = mmint[-1].upper()
+            num = mmint[:-1]
+            if not (num.isdigit() and last in "MGT"):
+                raise H2OValueError("Wrong format for a *_memory_size argument: %s (should be a number followed by "
+                                    "a suffix 'M', 'G' or 'T')" % mmint)
+            if last == "T": return int(num) << 40
+            if last == "G": return int(num) << 30
+            if last == "M": return int(num) << 20
+
     scheme = "https" if https else "http"
     proxy = proxy[scheme] if proxy is not None and scheme in proxy else \
         kwargs["proxies"][scheme] if "proxies" in kwargs and scheme in kwargs["proxies"] else None
-    mmax = int(max_mem_size) if max_mem_size is not None else \
-        kwargs["max_mem_size_GB"] << 30 if "max_mem_size_GB" in kwargs else None
-    mmin = int(min_mem_size) if min_mem_size is not None else \
-        kwargs["min_mem_size_GB"] << 30 if "min_mem_size_GB" in kwargs else None
+    mmax = get_mem_size(max_mem_size, kwargs.get("max_mem_size_GB"))
+    mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
@@ -199,10 +216,11 @@ def lazy_import(path):
 
     :param path: A path to a data file (remote or local).
     """
-    if is_type(path, list, tuple, set):
-        return [_import(p)[0] for p in path]
-    else:
+    assert_is_type(path, str, [str])
+    if is_type(path, str):
         return _import(path)
+    else:
+        return [_import(p)[0] for p in path]
 
 
 def _import(path):
@@ -221,7 +239,7 @@ def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, 
 
     :param path: A path specifying the location of the data to upload.
     :param destination_frame:  The unique hex key assigned to the imported file. If none is given, a key will
-        automatically be generated.
+        be automatically generated.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
@@ -752,7 +770,6 @@ def download_pojo(model, path="", get_jar=True):
         print(java)
     else:
         filepath = os.path.join(path, pojoname + ".java")
-        print("Filepath: {}".format(filepath))
         with open(filepath, "wb") as f:
             f.write(java.encode("utf-8"))
     if get_jar and path != "":
