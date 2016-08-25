@@ -56,7 +56,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * Default threshold for assigning class labels to the target class (for binomial models)
    * @return threshold in 0...1
    */
-  public final double defaultThreshold() {
+  public double defaultThreshold() {
     if (_output.nclasses() != 2 || _output._training_metrics == null)
       return 0.5;
     if (_output._validation_metrics != null && ((ModelMetricsBinomial)_output._validation_metrics)._auc != null)
