@@ -2794,7 +2794,7 @@ def cannaryHDFSTest(hdfs_name_node, file_name):
         h2o.remove(tempFrame)
         print("Your hive-exec version is good.  Parsing success for {0}.".format(url_orc))
         return False
-    except Exception, e:
+    except Exception as e:
         print("Error exception is {0}".format(str(e)))
 
         if "NoSuchFieldError: vector" in str(e):
