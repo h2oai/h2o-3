@@ -10,6 +10,7 @@ import types
 import warnings
 
 import h2o
+from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.compatibility import *  # NOQA
@@ -93,7 +94,7 @@ class H2OEstimator(ModelBase):
         self._job = None
 
 
-    def train(self, x=None, y="response", training_frame=None, offset_column=None, fold_column=None,
+    def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
               weights_column=None, validation_frame=None, max_runtime_secs=None, **params):
         """
         Train the H2O model.
@@ -129,22 +130,35 @@ class H2OEstimator(ModelBase):
         assert_is_type(training_frame, H2OFrame)
         assert_is_type(y, None, int, str)
         assert_is_type(x, None, int, str, [str, int], {str, int})
-        if x is None:
-            x = set(training_frame.ncol)
-            if is_type(y, int): x -= {training_frame.names[y]}
-            if is_type(y, str): x -= {y}
+        algo = self._compute_algo()
         algo_params = locals()
         parms = self._parms.copy()
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
-        parms.update({k: v for k, v in algo_params.items() if k not in ["self", "params", "algo_params", "parms"]})
-        tframe = algo_params["training_frame"]
-        if tframe is None: raise ValueError("Missing training_frame")
-        if y is not None:
+        is_auto_encoder = bool(parms.get("autoencoder"))
+        is_supervised = not(is_auto_encoder or algo in {"pca", "svd", "kmeans", "glrm"})
+        if y is None:
+            if is_supervised and "response" in training_frame.names:
+                y = "response"
+        else:
+            if is_auto_encoder:
+                raise H2OValueError("y should not be provided for an autoencoder model")
             if isinstance(y, (list, tuple)):
                 if len(y) == 1: parms["y"] = y[0]
                 else: raise ValueError("y must be a single column reference")
-            self._estimator_type = "classifier" if tframe[y].isfactor() else "regressor"
+            self._estimator_type = "classifier" if training_frame[y].isfactor() else "regressor"
+        if x is None:
+            x = set(training_frame.ncol)
+            if is_type(y, int): x -= {training_frame.names[y]}
+            if is_type(y, str): x -= {y}
+        parms["x"] = x
+        parms["y"] = y
+        parms["training_frame"] = training_frame
+        parms["validation_frame"] = validation_frame
+        parms["offset_column"] = offset_column
+        parms["fold_column"] = fold_column
+        parms["weights_column"] = weights_column
+        parms["max_runtime_secs"] = max_runtime_secs
         self.build_model(parms)
 
     def build_model(self, algo_params):
@@ -154,7 +168,7 @@ class H2OEstimator(ModelBase):
         y = algo_params.pop("y", None)
         training_frame = algo_params.pop("training_frame")
         validation_frame = algo_params.pop("validation_frame", None)
-        is_auto_encoder = (algo_params is not None) and ("autoencoder" in algo_params and algo_params["autoencoder"])
+        is_auto_encoder = "autoencoder" in algo_params and algo_params["autoencoder"]
         algo = self._compute_algo()
         is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
@@ -228,6 +242,7 @@ class H2OEstimator(ModelBase):
         H2OEstimator.mixin(self, model_class)
         self.__dict__.update(m.__dict__.copy())
 
+    # TODO: replace with a property which is overriden in subclasses
     def _compute_algo(self):
         name = self.__class__.__name__
         if name == "H2ODeepLearningEstimator": return "deeplearning"
