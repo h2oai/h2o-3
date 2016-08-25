@@ -28,11 +28,11 @@ except H2OConnectionError:
 
 # The server takes some time to shut down, so try different ports
 print("Start a server with max_mem_size = 1Gb")
-h2o.init(max_mem_size="1g", port=10101)
+h2o.init(max_mem_size="1g", port=10101, strict_version_check=False)
 h2o.cluster().shutdown()
 
 print("Starting a server with min_mem_size = 314Mb")
-h2o.init(min_mem_size="314M", port=20202)
+h2o.init(min_mem_size="314M", port=20202, strict_version_check=False)
 h2o.cluster().shutdown()
 
 print("Starting a server explicitly")
