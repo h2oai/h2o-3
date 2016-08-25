@@ -36,6 +36,7 @@ dependencies {
       transitive = false
     }
   }
+  compile(project(":h2o-parquet-parser"))
 }
 
 
