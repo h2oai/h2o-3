@@ -1,7 +1,5 @@
 package water.genmodel;
 
-import java.util.Map;
-
 /**
  * A generic interface to access generated models.
  */

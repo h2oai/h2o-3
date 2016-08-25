@@ -1,14 +1,13 @@
 package hex.genmodel;
 
-import java.io.*;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
 import hex.genmodel.algos.DrfRawModel;
 import hex.genmodel.utils.ParseUtils;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
+
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**

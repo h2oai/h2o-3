@@ -2,8 +2,8 @@ package hex.genmodel.algos;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.RawModel;
-import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.BastardIcedBitSet;
+import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.NaSplitDir;
 
 import java.io.IOException;
