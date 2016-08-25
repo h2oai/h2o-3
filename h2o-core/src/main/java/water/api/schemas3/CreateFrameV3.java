@@ -57,11 +57,14 @@ public class CreateFrameV3 extends RequestSchemaV3<CreateFrame, CreateFrameV3> {
   @API(help = "Fraction of missing values", direction=API.Direction.INOUT)
   public double missing_fraction;
 
+  @API(help = "Whether an additional response column should be generated", direction=API.Direction.INOUT)
+  public boolean has_response;
+
   @API(help = "Number of factor levels of the first column (1=real, 2=binomial, N=multinomial)", direction=API.Direction.INOUT)
   public int response_factors;
 
-  @API(help = "Whether an additional response column should be generated", direction=API.Direction.INOUT)
-  public boolean has_response;
+  @API(help = "For real-valued response variable: Whether the response should be positive only.", direction=API.Direction.INOUT)
+  public boolean positive_response;
 
   // Output only:
   @API(help="Job Key", direction=API.Direction.OUTPUT)

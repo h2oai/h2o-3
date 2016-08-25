@@ -897,8 +897,10 @@ def cluster():
 def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
                  real_fraction=None, categorical_fraction=None, integer_fraction=None,
                  binary_fraction=None, time_fraction=None, string_fraction=None,
-                 value=0, real_range=100, factors=100, integer_range=100, binary_ones_fraction=0.02,
-                 missing_fraction=0.01, response_factors=2, has_response=False, seed=None, seed_for_column_types=None):
+                 value=0, real_range=100, factors=100, integer_range=100,
+                 binary_ones_fraction=0.02, missing_fraction=0.01,
+                 has_response=False, response_factors=2, positive_response=False,
+                 seed=None, seed_for_column_types=None):
     """
     Create a new frame with random data.
 
@@ -921,9 +923,13 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     :param time_fraction: the fraction of randomly created date/time columns.
     :param string_fraction: the fraction of randomly created string columns.
     :param missing_fraction: the fraction of total entries in the data frame that are set to NA.
-    :param response_factors: if has_response is True, then this is the number of factor levels in the response column.
     :param has_response: A logical value indicating whether an additional response column should be prepended to the
         final H2O data frame. If set to True, the total number of columns will be ``cols + 1``.
+    :param response_factors: if has_response is True, then this variable controls the type of the "response" column:
+        setting response_factors to 1 will generate real-valued response, any value greater or equal than 2 will
+        create categorical response with that many categories.
+    :param positive_reponse: when response variable is present and of real type, this will control whether it
+        contains positive values only, or both positive and negative.
     :param seed: a seed used to generate random values when ``randomize`` is True.
     :param seed_for_column_types: a seed used to generate random column types when ``randomize`` is True.
 
@@ -946,8 +952,9 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     assert_is_type(binary_ones_fraction, t_fraction)
     assert_is_type(factors, BoundInt(1))
     assert_is_type(integer_range, BoundInt(1))
-    assert_is_type(response_factors, None, BoundInt(1))
     assert_is_type(has_response, bool)
+    assert_is_type(response_factors, None, BoundInt(1))
+    assert_is_type(positive_response, bool)
     assert_is_type(seed, int, None)
     assert_is_type(seed_for_column_types, int, None)
     if (categorical_fraction or integer_fraction) and not randomize:
@@ -1003,8 +1010,9 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
              "integer_range": integer_range,
              "binary_ones_fraction": binary_ones_fraction,
              "missing_fraction": missing_fraction,
-             "response_factors": response_factors,
              "has_response": has_response,
+             "response_factors": response_factors,
+             "positive_response": positive_response,
              "seed": -1 if seed is None else seed,
              "seed_for_column_types": -1 if seed_for_column_types is None else seed_for_column_types,
              }
