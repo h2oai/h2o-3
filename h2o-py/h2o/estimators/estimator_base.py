@@ -14,7 +14,7 @@ from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import quoted
-from h2o.utils.typechecks import is_type
+from h2o.utils.typechecks import assert_is_type, is_type
 from ..model.autoencoder import H2OAutoEncoderModel
 from ..model.binomial import H2OBinomialModel
 from ..model.clustering import H2OClusteringModel
@@ -126,12 +126,18 @@ class H2OEstimator(ModelBase):
         max_runtime_secs : float
             Maximum allowed runtime in seconds for model training. Use 0 to disable.
         """
+        assert_is_type(training_frame, H2OFrame)
+        assert_is_type(y, None, int, str)
+        assert_is_type(x, None, [str, int], {str, int})
+        if x is None:
+            x = set(training_frame.ncol)
+            if is_type(y, int): x -= {training_frame.names[y]}
+            if is_type(y, str): x -= {y}
         algo_params = locals()
         parms = self._parms.copy()
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
         parms.update({k: v for k, v in algo_params.items() if k not in ["self", "params", "algo_params", "parms"]})
-        y = algo_params["y"]
         tframe = algo_params["training_frame"]
         if tframe is None: raise ValueError("Missing training_frame")
         if y is not None:
