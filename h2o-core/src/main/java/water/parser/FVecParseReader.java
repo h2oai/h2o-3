@@ -32,4 +32,5 @@ public class FVecParseReader implements ParseReader {
   @Override public long getGlobalByteOffset(){
     return _goffset;
   }
+  public Chunk getChunk() { return _chk; }
 }

@@ -18,6 +18,7 @@ include 'h2o-test-integ'
 include 'h2o-test-accuracy'
 include 'h2o-avro-parser'
 include 'h2o-orc-parser'
+include 'h2o-parquet-parser'
 
 // Reconfigure scala projects to support cross compilation
 // The following code will create two projects for each included item:
@@ -31,7 +32,7 @@ scalaCrossCompile {
 
 // Make structure flat and avoid annoying dummy modules
 rootProject.children.each { project ->
-  if (project.name.equals("h2o-avro-parser") || project.name.equals("h2o-orc-parser")) {
+  if (project.name.startsWith("h2o-") && project.name.endsWith("-parser")) {
     String projectDirName = "h2o-parsers/${project.name}"
     project.projectDir = new File(settingsDir, projectDirName)
   }
