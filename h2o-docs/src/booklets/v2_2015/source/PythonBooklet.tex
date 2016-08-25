@@ -223,8 +223,6 @@ To create an H2OFrame object from a Python tuple:
 To create an H2OFrame object from a Python list:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_create_frame_from_python_list.py}
 
-\newpage
-
 To create an H2OFrame object from \texttt{collections.OrderedDict} or a Python dict:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_create_frame_from_ordered_dict.py}
 
@@ -233,8 +231,6 @@ To create an H2OFrame object from a Python dict and specify the column types:
 
 To display the column types:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_display_column_types.py}
-
-\newpage
 
 \subsection{Viewing Data}
 To display the top and bottom of an H2OFrame:
@@ -249,6 +245,7 @@ To display compression information, distribution (in multi-machine clusters), an
 
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_display_compressiondistributionsummary.py}
 
+\newpage
 
 \subsection{Selection}
 To select a single column by name, resulting in an H2OFrame:
@@ -257,7 +254,6 @@ To select a single column by name, resulting in an H2OFrame:
 To select a single column by index, resulting in an H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_select_column_index.py}
 
-\newpage
 To select multiple columns by name, resulting in an H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_select_multiple_column_names.py}
 
@@ -276,7 +272,7 @@ To select rows based on specific criteria, use Boolean masking:
 
 \subsection{Missing Data}
 The H2O parser can handle many different representations of missing data types, including `' (blank),
-`NA',  and None (Python).  They are all displayed as \texttt{NaN} in Python.
+`NA',  and None (Python).  They are all displayed as \texttt{nan} in Python.
 
 To create an H2OFrame from Python with missing elements:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_create_frame_with_missing_elements.py}
@@ -331,13 +327,18 @@ To split strings based on a regular expression:
 To combine two H2OFrames together by appending one as rows and return a new H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_combine_frames_append_one_as_rows.py}
 
+
 For successful row binding, the column names and column types between the two H2OFrames must match. To combine two H2O frames together by appending one as columns and return a new H2OFrame:
+
+\newpage
+
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_combine_frames_append_one_as_columns.py}
 
 
 H2O also supports merging two frames together by matching column names:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_merge_frames_by_column_name.py}
 
+\newpage
 
 \subsection{Grouping}
 
@@ -354,8 +355,6 @@ To group and then apply a function to the results:
 
 To group by multiple columns and then apply a function:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_group_by_multiple_columns.py}
-
-\newpage
 
 Use {\texttt{merge}} to join the results into the original H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_join_results.py}
@@ -389,9 +388,11 @@ To view the categorical levels in a single column:
 To create categorical interaction features:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_create_categorical_interaction_features.py}
 
-\newpage
 To retain the most common categories and set the remaining categories to a common `Other' category
  and create an interaction of a categorical column with itself:
+
+\newpage
+
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_retain_common_categories.py}
 
 These can then be added as a new column on the original dataframe:
@@ -478,7 +479,7 @@ H2O supports the following models:
 \end{frame}
 
 
-The list is growing quickly, so check \url{www.h2o.ai} to see the latest additions. 
+The list continues to grow, so check \url{www.h2o.ai} to see the latest additions. 
 
 \subsubsection{Supervised Learning}
 
@@ -564,7 +565,6 @@ parameters.
 
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_train_glm_model.py}
 
-\newpage
 \subsubsection{K-means}
 To generate a K-means model for data characterization, use
 {\texttt{h2o.kmeans()}}. This algorithm does not require a
@@ -578,7 +578,6 @@ transformations, use {\texttt{h2o.transforms.decomposition.H2OPCA}}.
 This is the first step in Principal Components Regression.
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_train_pca_model.py}
 
-\newpage
 
 \subsection{Grid Search}
 H2O supports grid search across hyperparameters:
@@ -586,7 +585,8 @@ H2O supports grid search across hyperparameters:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_grid_search.py}
 
 \subsection{Integration with scikit-learn}
-The H2O Python client can be used within scikit-learn pipelines and cross-validation searches.  This extends the capabilities of both H2O and scikit-learn.
+The H2O Python client can be used within scikit-learn pipelines and cross-validation searches.  This extends the capabilities of both H2O and scikit-learn. Note that the sklearn and scipy packages are required to use the H2O Python client with scikit-learn. 
+
 \subsubsection{Pipelines}
 
 To create a scikit-learn style pipeline using H2O transformers and estimators:
@@ -599,7 +599,6 @@ To create a scikit-learn style hyperparameter grid search using k-fold cross val
 
 
 
-\newpage
 \section{References}
 \bibliographystyle{plainnat}  %alphadin}
 \nobibliography{bibliography.bib} %hides entire bibliography so just \bibentry items are included

@@ -1,5 +1,5 @@
-In [26]: df5.apply(lambda row: sum(row), axis=1)
-Out[26]: H2OFrame with 100 rows and 1 columns:
+In [26]: df5.apply(lambda row: row.sum(), axis=1)
+Out[26]: 
          C1
 0  0.906854
 1  0.790760
@@ -11,3 +11,5 @@ Out[26]: H2OFrame with 100 rows and 1 columns:
 7 -1.077747
 8  2.321706
 9 -0.700436
+
+[100 rows x 1 column]

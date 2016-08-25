@@ -5,12 +5,13 @@ In [14]: df2 = h2o.H2OFrame.from_python({'A': [1, 2, 3],
    ....:                                 column_types=['numeric', 'enum', 'string', 'time'])
 
 Parse Progress: [###############################] 100%
-Uploaded py17ea1f6d-ae83-451d-ad33-89e770061601 into cluster with 3 rows and 4 cols
 
 In [10]: df2
-Out[10]: H2OFrame with 3 rows and 4 columns:
-  A      C  B                   D
---- ------ -- -------------------
-  1  hello  a 2015-03-12 11:00:00
-  2    all  a 2015-03-13 12:00:00
-  3  world  b 2015-03-14 13:00:00
+Out[10]: 
+   A  C      B              D
+---  -----  ---  -----------
+  1  hello  a    1.42618e+12
+  2  all    a    1.42627e+12
+  3  world  b    1.42636e+12
+
+[3 rows x 4 columns]

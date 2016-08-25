@@ -1,12 +1,10 @@
 In [16]: import numpy as np
 
-In [17]: df = h2o.H2OFrame.from_python(np.random.randn(4,100).tolist(), column_names=list('ABCD'))
+In [17]: df = h2o.H2OFrame.from_python(np.random.randn(100,4).tolist(), column_names=list('ABCD'))
 
 Parse Progress: [###############################] 100%
-Uploaded py0a4d1d8d-7d04-438a-a97f-a9521f802366 into cluster with 100 rows and 4 cols
 
 In [18]: df.head()
-H2OFrame with 100 rows and 4 columns:
         A           B           C          D
 ---------  ----------  ----------  ---------
 -0.613035  -0.425327   -1.92774    -2.1201
@@ -20,8 +18,9 @@ H2OFrame with 100 rows and 4 columns:
 -0.746025  -0.632182    1.27455    -1.35006
 -1.12065    0.374212    0.232229   -0.602646
 
+[10 rows x 4 columns]
+
 In [19]: df.tail(5)
-H2OFrame with 100 rows and 4 columns:
         A           B          C          D
 ---------  ----------  ---------  ---------
  1.00098   -1.43183    -0.322068   0.374401
@@ -29,3 +28,5 @@ H2OFrame with 100 rows and 4 columns:
 -1.62351   -1.13907     2.1242    -0.275453
 -0.479005  -0.0048988   0.224583   0.219037
 -0.74103    1.13485     0.732951   1.70306
+
+[5 rows x 4 columns]

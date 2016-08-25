@@ -4,7 +4,7 @@ In [26]: pca_decomp = H2OPCA(k=2, transform="NONE", pca_method="Power")
 
 In [27]: pca_decomp.train(x=range(0,4), training_frame=iris_df)
 
-pca Model Build Progress: [##################################################] 100%
+pca Model Build Progress: [#######################################] 100%
 
 In [28]: pca_decomp
 Out[28]: Model Details
@@ -24,8 +24,11 @@ ModelMetricsPCA: pca
 ** Reported on train data. **
 
 MSE: NaN
+RMSE: NaN
 
 In [29]: pred = pca_decomp.predict(iris_df)
+
+pca prediction progress: [#######################################] 100%
 
 In [30]: pred.head()  # Projection results
 Out[30]:

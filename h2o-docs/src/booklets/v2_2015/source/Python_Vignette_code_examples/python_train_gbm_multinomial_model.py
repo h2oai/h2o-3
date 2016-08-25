@@ -2,7 +2,7 @@ In [10]: gbm_classifier = H2OGradientBoostingEstimator(distribution="multinomial
 
 In [11]: gbm_classifier.train(x=range(0,iris_df.ncol-1), y=iris_df.ncol-1, training_frame=iris_df)
 
-gbm Model Build Progress: [##################################################] 100%
+gbm Model Build Progress: [###################################] 100%
 
 In [12]: gbm_classifier
 Out[12]: Model Details
@@ -19,10 +19,10 @@ Model Summary:
 ModelMetricsMultinomial: gbm
 ** Reported on train data. **
 
-MSE: 0.00976685294679
-R^2: 0.98534972058
-LogLoss: 0.0782480971236
-
+MSE: 0.00976685303214
+RMSE: 0.0988273900907
+LogLoss: 0.0782480973696
+Mean Per-Class Error: 0.00666666666667
 Confusion Matrix: vertical: actual; across: predicted
 
 Iris-setosa    Iris-versicolor    Iris-virginica    Error       Rate

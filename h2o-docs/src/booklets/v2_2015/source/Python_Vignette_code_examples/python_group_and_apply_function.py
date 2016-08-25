@@ -3,26 +3,31 @@ In [123]: df12 = h2o.H2OFrame(
             'foo', 'bar', 'foo', 'foo'],
      'B' : ['one', 'one', 'two', 'three',
             'two', 'two', 'one', 'three'],
-     'C' : np.random.randn(8),
-     'D' : np.random.randn(8)})
+     'C' : np.random.randn(8).tolist(),
+     'D' : np.random.randn(8).tolist()})
 
 Parse Progress: [###############################] 100%
-Uploaded pyd297bab5-4e4e-4a89-9b85-f8fecf37f264 into cluster with 8 rows and 4 cols
 
 In [124]: df12
-Out[124]: H2OFrame with 8 rows and 4 columns:
-     A         C      B         D
-0  foo  1.583908    one -0.441779
-1  bar  1.055763    one  1.733467
-2  foo -1.200572    two  0.970428
-3  bar -1.066722  three -0.311055
-4  foo -0.023385    two  0.077905
-5  bar  0.758202    two  0.521504
-6  foo  0.098259    one -1.391587
-7  foo  0.412450  three -0.050374
+Out[124]: 
+   A             C  B                D
+   ---  ----------  -----  -----------
+0  foo  -0.710095   one     0.253189
+1  bar  -0.165891   one    -0.433233
+2  foo  -1.51996    two     1.12321
+3  bar   2.25083    three   0.512449
+4  foo  -0.618324   two     1.35158
+5  bar   0.0817828  two     0.00830419
+6  foo   0.634827   one     1.25897
+7  foo   0.879319   three   1.48051
+
+[8 rows x 4 columns]
 
 In [125]: df12.group_by('A').sum().frame
-Out[125]: H2OFrame with 2 rows and 4 columns:
-     A     sum_C  sum_B     sum_D
-0  bar  0.747244      3  1.943915
-1  foo  0.870661      5 -0.835406
+Out[125]: 
+   A       sum_C    sum_B      sum_D
+   ---  --------  -------  ---------
+0  bar   2.16672        3  0.0875206
+1  foo  -1.33424        5  5.46746
+
+[2 rows x 4 columns]

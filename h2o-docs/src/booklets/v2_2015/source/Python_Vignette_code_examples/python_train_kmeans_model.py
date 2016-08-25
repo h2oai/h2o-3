@@ -4,7 +4,7 @@ In [22]: cluster_estimator = H2OKMeansEstimator(k=3)
 
 In [23]: cluster_estimator.train(x=[0,1,2,3], training_frame=iris_df)
 
-kmeans Model Build Progress: [##################################################] 100%
+kmeans Model Build Progress: [###################################] 100%
 
 In [24]: cluster_estimator
 Out[24]: Model Details
@@ -17,11 +17,11 @@ Model Summary:
 --  ----------------  --------------------  -------------------------------  ----------------------  -------------------------------  ----------------------  --------------------------------
     150               3                     0                                4                       190.757                          596                     405.243
 
-
 ModelMetricsClustering: kmeans
 ** Reported on train data. **
 
 MSE: NaN
+RMSE: NaN
 Total Within Cluster Sum of Square Error: 190.756926265
 Total Sum of Square Error to Grand Mean: 596.0
 Between Cluster Sum of Square Error: 405.243073735
@@ -36,7 +36,10 @@ Centroid Statistics:
 Scoring History:
     timestamp            duration    iteration    avg_change_of_std_centroids    within_cluster_sum_of_squares
 --  -------------------  ----------  -----------  -----------------------------  -------------------------------
-    2015-10-30 08:54:39  0.011 sec   0            nan                            401.733
-    2015-10-30 08:54:39  0.047 sec   1            2.09788                        191.282
-    2015-10-30 08:54:39  0.049 sec   2            0.00316006                     190.82
-    2015-10-30 08:54:39  0.050 sec   3            0.000846952                    190.757
+    2016-08-25 13:03:36  0.005 sec   0            nan                            385.505
+    2016-08-25 13:03:36  0.029 sec   1            1.37093                        173.769
+    2016-08-25 13:03:36  0.029 sec   2            0.184617                       141.623
+    2016-08-25 13:03:36  0.030 sec   3            0.00705735                     140.355
+    2016-08-25 13:03:36  0.030 sec   4            0.00122272                     140.162
+    2016-08-25 13:03:36  0.031 sec   5            0.000263918                    140.072
+    2016-08-25 13:03:36  0.031 sec   6            0.000306555                    140.026

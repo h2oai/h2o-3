@@ -4,8 +4,7 @@ In [14]: prostate_data_path = "http://h2o-public-test-data.s3.amazonaws.com/smal
 
 In [15]: prostate_df = h2o.import_file(path=prostate_data_path)
 
-Parse Progress: [##################################################] 100%
-Imported /Users/hank/PythonEnvs/h2obleeding/bin/../h2o_data/prostate.csv. Parsed 380 rows and 9 cols
+Parse Progress: [###################################] 100%
 
 In [16]: prostate_df["RACE"] = prostate_df["RACE"].asfactor()
 
@@ -37,7 +36,7 @@ In [18]: glm_classifier = H2OGeneralizedLinearEstimator(family="binomial", nfold
 
 In [19]: glm_classifier.train(x=["AGE","RACE","PSA","DCAPS"],y="CAPSULE", training_frame=prostate_df)
 
-glm Model Build Progress: [##################################################] 100%
+glm Model Build Progress: [###################################] 100%
 
 In [20]: glm_classifier
 Out[20]: Model Details
@@ -55,18 +54,17 @@ GLM Model: summary
 ModelMetricsBinomialGLM: glm
 ** Reported on train data. **
 
-MSE: 0.202434568594
-R^2: 0.158344081513
-LogLoss: 0.59112610879
+MSE: 0.202442565125
+RMSE: 0.449936178947
+LogLoss: 0.591121990582
 Null degrees of freedom: 379
 Residual degrees of freedom: 374
 Null deviance: 512.288840185
-Residual deviance: 449.25584268
-AIC: 461.25584268
-AUC: 0.719098211972
-Gini: 0.438196423944
-
-Confusion Matrix (Act/Pred) for max f1 @ threshold = 0.28443600654:
+Residual deviance: 449.252712842
+AIC: 461.252712842
+AUC: 0.718954248366
+Gini: 0.437908496732
+Confusion Matrix (Act/Pred) for max f1 @ threshold = 0.282384349078:
        0    1    Error    Rate
 -----  ---  ---  -------  -------------
 0      80   147  0.6476   (147.0/227.0)
@@ -77,53 +75,60 @@ Maximum Metrics: Maximum metrics at their respective thresholds
 
 metric                      threshold    value     idx
 --------------------------  -----------  --------  -----
-max f1                      0.284436     0.617512  273
-max f2                      0.199001     0.77823   360
-max f0point5                0.415159     0.636672  108
-max accuracy                0.415159     0.705263  108
-max precision               0.998619     1         0
-max absolute_MCC            0.415159     0.369123  108
-max min_per_class_accuracy  0.33266      0.656388  175
+max f1                       0.282384     0.617849  276
+max f2                       0.198777     0.77823   360
+max f0point5                 0.415125     0.636672  108
+max accuracy                 0.415125     0.705263  108
+max precision                0.998613     1         0
+max recall                   0.198777     1         360
+max specificity              0.998613     1         0
+max absolute_mcc             0.415125     0.369123  108
+max min_per_class_accuracy   0.332648     0.656388  175
+max mean_per_class_accuracy  0.377454     0.67326   123
+Gains/Lift Table: Avg response rate: 40.26 %
+
 
 ModelMetricsBinomialGLM: glm
 ** Reported on cross-validation data. **
 
-MSE: 0.209974707772
-R^2: 0.126994679038
-LogLoss: 0.609520995116
+MSE: 0.209698776592
+RMSE: 0.457928789871
+LogLoss: 0.610086165597
 Null degrees of freedom: 379
-Residual degrees of freedom: 373
-Null deviance: 515.693473211
-Residual deviance: 463.235956288
-AIC: 477.235956288
-AUC: 0.686706400622
-Gini: 0.373412801244
-
-Confusion Matrix (Act/Pred) for max f1 @ threshold = 0.326752491231:
+Residual degrees of freedom: 374
+Null deviance: 513.330704712
+Residual deviance: 463.665485854
+AIC: 475.665485854
+AUC: 0.688203622124
+Gini: 0.376407244249
+Confusion Matrix (Act/Pred) for max f1 @ threshold = 0.339885371023: 
        0    1    Error    Rate
 -----  ---  ---  -------  -------------
-0      135  92   0.4053   (92.0/227.0)
-1      48   105  0.3137   (48.0/153.0)
-Total  183  197  0.3684   (140.0/380.0)
-
+0      154  73   0.3216   (73.0/227.0)
+1      53   100  0.3464   (53.0/153.0)
+Total  207  173  0.3316   (126.0/380.0)
 Maximum Metrics: Maximum metrics at their respective thresholds
 
 metric                      threshold    value     idx
 --------------------------  -----------  --------  -----
-max f1                      0.326752     0.6       196
-max f2                      0.234718     0.774359  361
-max f0point5                0.405529     0.632378  109
-max accuracy                0.405529     0.702632  109
-max precision               0.999294     1         0
-max absolute_MCC            0.405529     0.363357  109
-max min_per_class_accuracy  0.336043     0.627451  176
+max f1                       0.339885     0.613497  172
+max f2                       0.172551     0.773509  376
+max f0point5                 0.419649     0.615251  105
+max accuracy                 0.447491     0.692105  93
+max precision                0.998767     1         0
+max recall                   0.172551     1         376
+max specificity              0.998767     1         0
+max absolute_mcc             0.419649     0.338849  105
+max min_per_class_accuracy   0.339885     0.653595  172
+max mean_per_class_accuracy  0.339885     0.666004  172
+Gains/Lift Table: Avg response rate: 40.26 %
+
 
 Scoring History:
     timestamp            duration    iteration    log_likelihood    objective
 --  -------------------  ----------  -----------  ----------------  -----------
-    2015-10-30 08:53:01  0.000 sec   0            256.482           0.674952
-    2015-10-30 08:53:01  0.004 sec   1            226.784           0.597118
-    2015-10-30 08:53:01  0.005 sec   2            224.716           0.591782
-    2015-10-30 08:53:01  0.005 sec   3            224.629           0.59158
-    2015-10-30 08:53:01  0.005 sec   4            224.628           0.591579
-    2015-10-30 08:53:01  0.006 sec   5            224.628           0.591579
+    2016-08-25 12:54:20  0.000 sec   0            256.144              0.674064
+    2016-08-25 12:54:20  0.055 sec   1            226.961              0.597573
+    2016-08-25 12:54:20  0.092 sec   2            224.728              0.591813
+    2016-08-25 12:54:20  0.125 sec   3            224.627              0.591578
+    2016-08-25 12:54:20  0.157 sec   4            224.626              0.591578

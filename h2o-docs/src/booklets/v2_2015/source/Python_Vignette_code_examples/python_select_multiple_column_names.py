@@ -1,5 +1,5 @@
 In [25]: df[['B','C']]
-Out[25]: H2OFrame with 100 rows and 2 columns:
+Out[25]: 
           B         C
 0 -0.425327 -1.927737
 1 -0.241526 -0.044510
@@ -11,3 +11,5 @@ Out[25]: H2OFrame with 100 rows and 2 columns:
 7  1.919987  0.514212
 8 -0.632182  1.274552
 9  0.374212  0.232229
+
+[100 rows x 2 columns]

@@ -1,5 +1,5 @@
 In [49]: df3["A"].isna()
-Out[49]: H2OFrame with 5 rows and 1 columns:
+Out[49]: 
    C1
 0   0
 1   0

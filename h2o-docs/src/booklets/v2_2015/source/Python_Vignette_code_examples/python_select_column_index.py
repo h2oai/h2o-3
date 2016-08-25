@@ -1,5 +1,5 @@
 In [24]: df[1]
-Out[24]: H2OFrame with 100 rows and 1 columns:
+Out[24]: 
           B
 0 -0.425327
 1 -0.241526
@@ -11,3 +11,5 @@ Out[24]: H2OFrame with 100 rows and 1 columns:
 7  1.919987
 8 -0.632182
 9  0.374212
+
+[100 rows x 1 column]

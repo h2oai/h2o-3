@@ -1,5 +1,5 @@
 In [142]: df14['D'].day()
-Out[142]: H2OFrame with 3 rows and 1 columns:
+Out[142]: 
     D
 0  18
 1  19

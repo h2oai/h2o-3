@@ -5,23 +5,27 @@ In [108]: df10 = h2o.H2OFrame.from_python( {
             'n': [0,1,2,3,4,5]} )
 
 Parse Progress: [###############################] 100%
-Uploaded py57e84cb6-ce29-4d13-afe4-4333b2186c72 into cluster with 6 rows and 2 cols
 
-In [109]: df11 = h2o.H2OFrame.from_python(np.random.randint(0, 10, size=100).tolist9), column_names=['n'])
+# Create a single-column, 100-row frame 
+# Include random integers from 0-5
+In [109]: df11 = h2o.H2OFrame.from_python(np.random.randint(0,6,(100,1)), column_names=list('n'))
 
 Parse Progress: [###############################] 100%
-Uploaded py090fa929-b434-43c0-81bd-b9c61b553a31 into cluster with 100 rows and 1 cols
 
+# Combine column "n" from both datasets
 In [112]: df11.merge(df10)
-Out[112]: H2OFrame with 100 rows and 2 columns:
-   n      A
-0  7    NaN
-1  3     To
-2  0  Hello
-3  9    NaN
-4  9    NaN
-5  3     To
-6  4    H2O
-7  4    H2O
-8  5  World
-9  4    H2O
+Out[112]: 
+     n  A
+   ---  -------
+0    2  Welcome
+1    5  World
+2    4  H2O
+3    2  Welcome
+4    3  To
+5    3  To
+6    1  World
+7    1  World
+8    3  To
+9    1  World
+
+[100 rows x 2 columns]
