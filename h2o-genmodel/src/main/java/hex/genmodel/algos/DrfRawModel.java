@@ -3,6 +3,7 @@ package hex.genmodel.algos;
 import hex.genmodel.RawModel;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.BastardIcedBitSet;
+import hex.genmodel.utils.NaSplitDir;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -12,6 +13,9 @@ import java.util.Map;
  * "Distributed Random Forest" RawModel
  */
 public class DrfRawModel extends RawModel {
+    private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
+    private static final int NsdNaLeft = NaSplitDir.NALeft.value();
+    private static final int NsdLeft = NaSplitDir.Left.value();
     private int _ntrees;
 
     public DrfRawModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
@@ -45,6 +49,7 @@ public class DrfRawModel extends RawModel {
     private double scoreTree(byte[] _bits, double[] data) {
         return scoreTree(_bits, data, false);
     }
+
     private double scoreTree(byte[] _bits, double[] data, boolean computeLeafAssignment) {
         ByteBufferWrapper ab = new ByteBufferWrapper(_bits);
         BastardIcedBitSet ibs = null;  // Lazily set on hitting first group test
@@ -54,16 +59,16 @@ public class DrfRawModel extends RawModel {
             int nodeType = ab.get1U();
             int colId = ab.get2();
             if (colId == 65535) return ab.get4f();
-            DHistogram.NASplitDir naSplitDir = DHistogram.NASplitDir.values()[ab.get1U()];
-            final boolean NAvsREST = naSplitDir == DHistogram.NASplitDir.NAvsREST;
-            final boolean NALeft = naSplitDir == DHistogram.NASplitDir.NALeft;
-            final boolean Left = naSplitDir == DHistogram.NASplitDir.Left;
+            int naSplitDir = ab.get1U();
+            final boolean naVsRest = naSplitDir == NsdNaVsRest;
+            final boolean naLeft = naSplitDir == NsdNaLeft;
+            final boolean left = naSplitDir == NsdLeft;
             int equal = (nodeType&12) >> 2;
             assert (equal >= 0 && equal <= 3) :
                     "illegal equal value " + equal + " at " + ab + " in bitpile " + Arrays.toString(_bits);
 
             float splitVal = -1;
-            if (!NAvsREST) {
+            if (!naVsRest) {
                 // Extract value or group to split on
                 if (equal == 0 || equal == 1) {
                     // Standard float-compare test (either < or ==)
@@ -93,19 +98,19 @@ public class DrfRawModel extends RawModel {
 
             assert equal != 1;  // no longer supported
             double d = data[colId];
-            if (Double.isNaN(d) && !NALeft || // NA goes right
-                !NAvsREST && equal == 0 && d >= splitVal ||  // greater or equals goes right
-                !NAvsREST && (equal == 2 || equal == 3) && ibs.contains((int)d)  // if contained in bitset, go right
+            if (Double.isNaN(d) && !naLeft || // NA goes right
+                !naVsRest && equal == 0 && d >= splitVal ||  // greater or equals goes right
+                !naVsRest && (equal == 2 || equal == 3) && ibs.contains((int)d)  // if contained in bitset, go right
                 ) {
                 // RIGHT
-                if (!(Double.isNaN(d) && (NALeft || Left))) { //missing value with NALeft or Left goes LEFT as well
+                if (!(Double.isNaN(d) && (naLeft || left))) { // missing value with NALeft or Left goes LEFT as well
                     ab.skip(skip);        // Skip to the right subtree
                     if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
                     lmask = rmask;        // And set the leaf bits into common place
                 }
             } else {
                 // LEFT
-                assert !Double.isNaN(d) || NALeft || Left;
+                assert !Double.isNaN(d) || naLeft || left;
             }
             level++;
             if ((lmask&16) == 16) {
