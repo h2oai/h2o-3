@@ -1287,14 +1287,16 @@ class H2OFrame(object):
                 #If input is a string, i.e., "C1":
                 if is_type(index, str):
                     #Check if index is an actual column(s) in the frame
-                    assert set([index]).issubset(self.names) == True, "Column(s) selected to drop are not in " \
-                                                                          "original frame: %r" % index
+                    if index not in self.names:
+                        raise H2OValueError("Column(s) selected to drop are not in original frame: %r" % index)
                     index = self.names.index(index)
                 #If input is an int indicating a column index, i.e., 3:
                 elif is_type(index, int):
                     #Check if index is an actual column index in the frame
-                    assert index < self.ncol, "Column index selected to drop is not part of the frame: %r" % index
-                    assert index >= 0, "Column index selected to drop is not positive: %r" % index
+                    if index > self.ncol:
+                        raise H2OValueError("Column index selected to drop is not part of the frame: %r" % index)
+                    if index < 0:
+                        raise H2OValueError("Column index selected to drop is not positive: %r" % index)
 
                 fr = H2OFrame._expr(expr=ExprNode("cols", self, -(index + 1)), cache=self._ex._cache)
                 fr._ex._cache.ncols -= 1
@@ -1304,25 +1306,23 @@ class H2OFrame(object):
 
             elif isinstance(index,list):
                 #If input is an int array indicating a column index, i.e., [3] or [1,2,3]:
-                if all(isinstance(item, int) for item in index):
-                    assert max(index) < self.ncol, "Column index selected to drop is not part of the frame: %r" % index
-                    assert min(index) >= 0, "Column index selected to drop is not positive: %r" % index
+                if is_type(index,[int]):
+                    if max(index) > self.ncol:
+                        raise H2OValueError("Column index selected to drop is not part of the frame: %r" % index)
+                    if min(index) < 0:
+                        raise H2OValueError("Column index selected to drop is not positive: %r" % index)
                     for i in range(len(index)):
-                        index[i] = index[i] + 1
-                    index = [-x for x in index]
+                        index[i] = -(index[i] + 1)
                 #If index is a string array, i.e., ["C1", "C2"]
-                elif all(isinstance(item, str) for item in index):
+                elif is_type(index,[str]):
                     #Check if index is an actual column(s) in the frame
-                    assert set(index).issubset(self.names) == True, "Column(s) selected to drop are not in original " \
-                                                            "frame: %r" % index
+                    if set(index).issubset(self.names) == False:
+                        raise H2OValueError("Column(s) selected to drop are not in original frame: %r" % index)
                     for i in range(len(index)):
-                        if is_type(index[i], str):
-                            index[i] = self.names.index(index[i]) + 1
-                    index = [-x for x in index]
-
+                        index[i] = -(self.names.index(index[i]) + 1)
                 fr = H2OFrame._expr(expr=ExprNode("cols", self, index), cache=self._ex._cache)
                 fr._ex._cache.ncols -= len(index)
-                fr._ex._cache.names[:] = [i for i in self.names]
+                fr._ex._cache.names = [i for i in self.names if self.names.index(i) not in list(map(lambda x: abs(x) - 1, index))]
                 fr._ex._cache.types = {name: fr.types[name] for name in fr._ex._cache.names}
 
             else:
@@ -1331,13 +1331,13 @@ class H2OFrame(object):
                                  "a single string for dropping columns.")
             return fr
         elif axis == 0:
-            if all(isinstance(item, int) for item in index):
+            if is_type(index,[int]):
                 #Check if index is an actual column index in the frame
-                assert max(index) < self.nrow, "Row index selected to drop is not part of the frame: %r" % index
-                assert min(index) >= 0, "Row index selected to drop is not positive: %r" % index
-                for i in range(len(index)):
-                    index[i] = index[i] + 1
-                index = [-x for x in index]
+                if max(index) > self.nrow:
+                    raise H2OValueError("Row index selected to drop is not part of the frame: %r" % index)
+                if min(index) < 0:
+                    raise H2OValueError("Row index selected to drop is not positive: %r" % index)
+                index = [-(x+1) for x in index]
                 fr = H2OFrame._expr(expr=ExprNode("rows", self, index), cache=self._ex._cache)
                 fr._ex._cache.nrows -= len(index)
             else:

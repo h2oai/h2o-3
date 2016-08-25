@@ -6,6 +6,9 @@ from tests import pyunit_utils
 
 
 
+def frame_checker(frame):
+    assert frame.ncol == len(frame.names) == len(frame.types)
+    assert set(frame.names) == set(frame.types)
 
 def pyunit_drop():
 
@@ -13,15 +16,18 @@ def pyunit_drop():
     pros = h2o.import_file(pyunit_utils.locate("smalldata/prostate/prostate.csv"))
     nc = pros.ncol
     nr = pros.nrow
-    print(pros.names)
 
     #There are two ways to drop a single column: Pass in an int index or a string column,i.e., 1 or "C1"
     dropped_col_int = pros.drop(0)
+    frame_checker(dropped_col_int) #call on frame_checker()
     dropped_col_string = pros.drop("ID")
+    frame_checker(dropped_col_string) #call on frame_checker()
 
     #There are two ways to drop a set of columns: Pass in an int array or a string array, i.e., [1,2] or ["C1", "C2"]
     dropped_col_int_array = pros.drop([0,1])
+    frame_checker(dropped_col_int_array) #call on frame_checker()
     dropped_col_string_array = pros.drop(["ID","CAPSULE"])
+    frame_checker(dropped_col_string_array) #call on frame_checker()
 
     #Drop a first few rows from the frame (0 based)
     dropped_row_array_0 = pros.drop([0],axis=0)
@@ -33,45 +39,19 @@ def pyunit_drop():
     dropped_row_array_378 = pros.drop([378,379],axis=0)
     dropped_row_array_377 = pros.drop([377, 378, 379],axis=0)
 
-    #Print dimensions of each frame
-    print(pros.dim)
-    print(dropped_col_int.dim)
-    print(dropped_col_string.dim)
-    print(dropped_col_int_array.dim)
-    print(dropped_col_string_array.dim)
-    print(dropped_row_array_0.dim)
-    print(dropped_row_array_1.dim)
-    print(dropped_row_array_2.dim)
-    print(dropped_row_array_380.dim)
-    print(dropped_row_array_378.dim)
-    print(dropped_row_array_377.dim)
-
-    #Print each frame
-    print(pros)
-    print(dropped_col_int)
-    print(dropped_col_string)
-    print(dropped_col_int_array)
-    print(dropped_col_string_array)
-    print(dropped_row_array_0)
-    print(dropped_row_array_1)
-    print(dropped_row_array_2)
-    print(dropped_row_array_380)
-    print(dropped_row_array_378)
-    print(dropped_row_array_377)
-
     #Check number of columns after drop are correct
     assert dropped_col_int.ncol==nc-1
     assert dropped_col_string.ncol==nc-1
     assert dropped_col_int_array.ncol==nc-2
     assert dropped_col_string_array.ncol==nc-2
 
-    #Check column names are correct after drop
+    # #Check column names are correct after drop
     assert dropped_col_int.names == pros.names[1:]
     assert dropped_col_string.names == pros.names[1:]
     assert dropped_col_int_array.names == pros.names[2:]
     assert dropped_col_string_array.names == pros.names[2:]
-    
-    #Check column types are correct after drop
+
+    # #Check column types are correct after drop
     assert dropped_col_int.types == pros[1:].types
     assert dropped_col_string.types == pros[1:].types
     assert dropped_col_int_array.types == pros[2:].types
