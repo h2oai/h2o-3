@@ -128,7 +128,7 @@ class H2OEstimator(ModelBase):
         """
         assert_is_type(training_frame, H2OFrame)
         assert_is_type(y, None, int, str)
-        assert_is_type(x, None, [str, int], {str, int})
+        assert_is_type(x, None, int, str, [str, int], {str, int})
         if x is None:
             x = set(training_frame.ncol)
             if is_type(y, int): x -= {training_frame.names[y]}
