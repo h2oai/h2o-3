@@ -44,7 +44,7 @@ H2O currently supports the following file types:
 - XLST
 - Avro (without multifile parsing or column type modification)
 
-*Note that ORC parsing in H2O using Python is only supported over HDFS. 
+*Note that ORC is available only if H2O is running as Hadoop job. 
 
 
 New Users
