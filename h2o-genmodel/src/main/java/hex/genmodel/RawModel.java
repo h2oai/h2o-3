@@ -1,10 +1,12 @@
 package hex.genmodel;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import hex.genmodel.algos.DrfRawModel;
+import hex.genmodel.utils.ParseUtils;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipFile;
 
@@ -19,6 +21,10 @@ abstract public class RawModel extends GenModel {
     private boolean _supervised;
     private int _nfeatures;
     protected int _nclasses;
+    protected boolean _balanceClasses;
+    protected double _defaultThreshold;
+    protected double[] _priorClassDistrib;
+    protected double[] _modelClassDistrib;
 
     /**
      * Primary factory method for constructing RawModel instances.
@@ -65,6 +71,10 @@ abstract public class RawModel extends GenModel {
         _supervised = info.get("supervised").equals("true");
         _nfeatures = (int) info.get("n_features");
         _nclasses = (int) info.get("n_classes");
+        _balanceClasses = info.get("balance_classes").equals("true");
+        _defaultThreshold = (double) info.get("default_threshold");
+        _priorClassDistrib = ParseUtils.parseArrayOfDoubles((String) info.get("prior_class_distrib"));
+        _modelClassDistrib = ParseUtils.parseArrayOfDoubles((String) info.get("model_class_distrib"));
     }
 
     static private Map<String, Object> parseModelInfo(ContentReader reader) throws IOException {
@@ -95,14 +105,7 @@ abstract public class RawModel extends GenModel {
             } else if (section == 1) {
                 // [info] section: just parse key-value pairs and store them into the `info` map.
                 String[] res = line.split("\\s*=\\s*", 2);
-                Object value;
-                try {
-                    // Try to see if the value is convertible to integer
-                    value = Integer.parseInt(res[1]);
-                } catch (NumberFormatException e) {
-                    value = res[1];
-                }
-                info.put(res[0], value);
+                info.put(res[0], ParseUtils.maybeParseDouble(res[1]));
             } else if (section == 2) {
                 // [columns] section
                 columns[ic++] = line;

@@ -1,5 +1,6 @@
 package hex.genmodel.algos;
 
+import hex.genmodel.GenModel;
 import hex.genmodel.RawModel;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.BastardIcedBitSet;
@@ -17,18 +18,24 @@ public class DrfRawModel extends RawModel {
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
     private int _ntrees;
+    private boolean _binomial_double_trees;
 
     public DrfRawModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(cr, info, columns, domains);
         _ntrees = (int) info.get("n_trees");
+        _binomial_double_trees = info.get("binomial_double_trees").equals("true");
     }
 
+    public final double[] score0(double[] data) {
+        double[] preds = new double[_nclasses == 1? 1 : _nclasses + 1];
+        return score0(data, preds);
+    }
 
     // Pass in data in a double[], pre-aligned to the Model's requirements.
     // Jam predictions into the preds[] array; preds[0] is reserved for the
     // main prediction (class for classifiers or value for regression),
     // and remaining columns hold a probability distribution for classifiers.
-    public double[] score0(double[] data, double[] preds) {
+    public final double[] score0(double[] data, double[] preds) {
         java.util.Arrays.fill(preds, 0);
         for (int i = 0; i < _nclasses; i++) {
             for (int j = 0; j < _ntrees; j++) {
@@ -40,6 +47,25 @@ public class DrfRawModel extends RawModel {
                 }
             }
         }
+        // Correct the predictions -- see `DRFModel.toJavaUnifyPreds`
+        if (_nclasses == 1) {
+            // Regression
+            preds[0] /= _ntrees;
+        } else {
+            // Classification
+            if (_nclasses == 2 && !_binomial_double_trees) {
+                preds[1] /= _ntrees;
+                preds[2] = 1.0 - preds[1];
+            } else {
+                double sum = 0;
+                for (int i = 1; i <= _nclasses; i++) { sum += preds[i]; }
+                if (sum > 0)
+                    for (int i = 1; i <= _nclasses; i++) { preds[i] /= sum; }
+            }
+            if (_balanceClasses)
+                GenModel.correctProbabilities(preds, _priorClassDistrib, _modelClassDistrib);
+            preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, data, _defaultThreshold);
+        }
         return preds;
     }
 
@@ -50,6 +76,7 @@ public class DrfRawModel extends RawModel {
         return scoreTree(_bits, data, false);
     }
 
+    @SuppressWarnings("ConstantConditions")
     private double scoreTree(byte[] _bits, double[] data, boolean computeLeafAssignment) {
         ByteBufferWrapper ab = new ByteBufferWrapper(_bits);
         BastardIcedBitSet ibs = null;  // Lazily set on hitting first group test

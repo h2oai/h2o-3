@@ -1,9 +1,13 @@
 package hex.tree.drf;
 
+import hex.Model;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.util.MathUtils;
 import water.util.SBPrintStream;
+
+import java.io.IOException;
+
 
 public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
 
@@ -73,4 +77,17 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
     }
   }
 
+  @Override
+  public Model<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput>.ZippedDataStreamWriter getZippedDataStream() {
+    return new DistributedRandomForestZippedDataStreamWriter();
+  }
+
+  public class DistributedRandomForestZippedDataStreamWriter
+          extends Model<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput>.ZippedDataStreamWriter {
+    @Override
+    protected void writeExtraModelInfo() throws IOException {
+      super.writeExtraModelInfo();
+      writeln("binomial_double_trees = " + _parms._binomial_double_trees);
+    }
+  }
 }

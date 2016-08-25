@@ -1193,6 +1193,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       writeln("n_classes = " + _output.nclasses());
       writeln("n_columns = " + _output._names.length);
       writeln("n_domains = " + n_categoricals);
+      writeln("balance_classes = " + _parms._balance_classes);
+      writeln("default_threshold = " + defaultThreshold());
+      writeln("prior_class_distrib = " + Arrays.toString(_output._priorClassDist));
+      writeln("model_class_distrib = " + Arrays.toString(_output._modelClassDist));
       writeExtraModelInfo();
       writeln("timestamp = " + new DateTime().toString());
       writeln("h2o_version = " + H2O.ABV.projectVersion());
