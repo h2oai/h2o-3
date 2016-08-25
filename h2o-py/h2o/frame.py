@@ -1415,7 +1415,7 @@ class H2OFrame(object):
 
     def concat(self, frames, axis=1):
         """
-        Append multiple data to this H2OFrame column-wise.
+        Append multiple data to this H2OFrame column-wise or row wise.
 
         Parameters
         ----------
