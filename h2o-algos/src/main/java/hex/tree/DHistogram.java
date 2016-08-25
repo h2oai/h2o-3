@@ -71,7 +71,12 @@ public final class DHistogram extends Iced {
   public transient boolean _hasQuantiles;
   public Key _globalQuantilesKey; //key under which original top-level quantiles are stored;
 
-  // split direction for missing values
+  /**
+   * Split direction for missing values.
+   *
+   * Warning: If you change this enum, make sure to synchronize them with `hex.genmodel.utils.NaSplitDir` in
+   * package `h2o-genmodel`.
+   */
   public enum NASplitDir {
     //never saw NAs in training
     None(0),     //initial state - should not be present in a trained model
