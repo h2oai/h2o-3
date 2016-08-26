@@ -351,8 +351,8 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                             if (p._loss == DeepLearningParameters.Loss.Automatic) {
                                               assert (p2._loss == DeepLearningParameters.Loss.Automatic);
-//                                              assert(model1.model_info().get_params()._loss != DeepWaterParameters.Loss.Automatic);
-//                                              assert(model2.model_info().get_params()._loss != DeepWaterParameters.Loss.Automatic);
+//                                              assert(model1.model_info().get_params()._loss != DeepLearningParameters.Loss.Automatic);
+//                                              assert(model2.model_info().get_params()._loss != DeepLearningParameters.Loss.Automatic);
                                             }
                                             assert (p._hidden_dropout_ratios == null);
                                             assert (p2._hidden_dropout_ratios == null);
