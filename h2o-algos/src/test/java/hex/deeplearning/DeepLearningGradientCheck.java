@@ -71,10 +71,10 @@ public class DeepLearningGradientCheck extends TestUtil {
               Distribution.Family.bernoulli,
       }) {
         for (DeepLearningParameters.Activation act : new DeepLearningParameters.Activation[]{
-//            DeepWaterParameters.Activation.ExpRectifier,
+//            DeepLearningParameters.Activation.ExpRectifier,
                 DeepLearningParameters.Activation.Tanh,
                 DeepLearningParameters.Activation.Rectifier,
-//                DeepWaterParameters.Activation.Maxout,
+//                DeepLearningParameters.Activation.Maxout,
         }) {
           for (String response : new String[]{
                   "Binary", //binary classification

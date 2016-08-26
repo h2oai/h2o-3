@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.*;
-import hex.deepwater.DeepWaterModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.util.LinearAlgebraUtils;
@@ -71,7 +70,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     @Override public boolean isSupervised() {
       return !autoencoder;
     }
-  } // DeepWaterModelOutput
+  } // DeepLearningModelOutput
 
   void set_model_info(DeepLearningModelInfo mi) {
     assert(mi != null);
@@ -1727,7 +1726,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
       if (!_diagnostics)
         dl.warn("_diagnostics", "Deprecated option: Diagnostics are always enabled.");
-
+  
       if (!_autoencoder) {
         if (_valid == null)
           dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
