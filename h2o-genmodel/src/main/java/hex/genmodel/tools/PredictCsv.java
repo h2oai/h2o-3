@@ -1,6 +1,11 @@
 package hex.genmodel.tools;
 
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.ParameterException;
 import hex.ModelCategory;
+import hex.genmodel.GenModel;
+import hex.genmodel.RawModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
@@ -18,73 +23,49 @@ import java.io.FileWriter;
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/tools/PredictCsv.java" target="_blank">here on github</a>.
  */
 public class PredictCsv {
-  private static String modelClassName;
-  private static String inputCSVFileName;
-  private static String outputCSVFileName;
-  private static int haveHeaders = -1;
+  @Parameter(names = {"--model", "-m"}, required = true,
+      description = "The model to train. This could be either the java class of the model POJO, or the name of the " +
+          "zip file containing raw model's data, or the name of the folder with unzipped raw model's data.")
+  private String modelName;
 
-  private static void usage() {
-    System.out.println("");
-    System.out.println("usage:  java [...java args...] hex.genmodel.tools.PredictCsv --header --model modelClassName --input inputCSVFileName --output outputCSVFileName");
-    System.out.println("");
-    System.out.println("        model class name is something like GBMModel_blahblahblahblah.");
-    System.out.println("");
-    System.out.println("        inputCSVFileName is the test data set.");
-    System.out.println("        Specifying --header is required for h2o-3.");
-    System.out.println("");
-    System.out.println("        outputCSVFileName is the prediction data set (one row per test data set row).");
-    System.out.println("");
-    System.exit(1);
+  @Parameter(names = {"--input", "-i"}, required = true,
+      description = "The dataset that should be scored with the model.")
+  private String inputCSVFileName;
+
+  @Parameter(names = {"--output", "-o"}, required = true,
+      description = "The name of the output file that will contain the predictions, one row per test dataset row.")
+  private String outputCSVFileName;
+
+  @Parameter(names={"--header"}, hidden = true)
+  private boolean haveHeaders = false;
+
+  // Model instance
+  private EasyPredictModelWrapper model;
+
+  public static void main(String[] args) {
+    // Parse command line arguments
+    PredictCsv main = new PredictCsv();
+    JCommander jc = new JCommander(main);
+    try {
+      jc.parse(args);
+    } catch (ParameterException e) {
+      StringBuilder sb = new StringBuilder();
+      jc.usage(sb);
+      sb.insert(sb.indexOf("PredictCsv"), "java [... java args ...] hex.genmodel.tools.");
+      System.out.print(sb);
+      System.exit(1);
+    }
+    // Run the main program
+    try {
+      main.run();
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.exit(2);
+    }
+    // Predictions were successfully generated.  Calling program can now compare them with something.
+    System.exit(0);
   }
 
-  private static void parseArgs(String[] args) {
-    for (int i = 0; i < args.length; i++) {
-      String s = args[i];
-      switch (s) {
-        case "--model":
-          i++;
-          if (i >= args.length) usage();
-          modelClassName = args[i];
-          break;
-        case "--input":
-          i++;
-          if (i >= args.length) usage();
-          inputCSVFileName = args[i];
-          break;
-        case "--output":
-          i++;
-          if (i >= args.length) usage();
-          outputCSVFileName = args[i];
-          break;
-        case "--header":
-          haveHeaders = 1;
-          break;
-        default:
-          System.out.println("ERROR: Bad parameter: " + s);
-          usage();
-      }
-    }
-
-    if (haveHeaders != 1) {
-      System.out.println("ERROR: header not specified");
-      usage();
-    }
-
-    if (modelClassName == null) {
-      System.out.println("ERROR: model not specified");
-      usage();
-    }
-
-    if (inputCSVFileName == null) {
-      System.out.println("ERROR: input not specified");
-      usage();
-    }
-
-    if (outputCSVFileName == null) {
-      System.out.println("ERROR: output not specified");
-      usage();
-    }
-  }
 
   /**
    * This CSV header row parser is as bare bones as it gets.
@@ -131,18 +112,8 @@ public class PredictCsv {
     return Double.toHexString(d);
   }
 
-  /**
-   * CSV reader and predictor test program.
-   *
-   * @param args Command-line args.
-   * @throws Exception
-   */
-  public static void main(String[] args) throws Exception {
-    parseArgs(args);
-
-    hex.genmodel.GenModel rawModel;
-    rawModel = (hex.genmodel.GenModel) Class.forName(modelClassName).newInstance();
-    EasyPredictModelWrapper model = new EasyPredictModelWrapper(rawModel);
+  private void run() throws Exception {
+    loadModel();
     ModelCategory category = model.getModelCategory();
 
     BufferedReader input = new BufferedReader(new FileReader(inputCSVFileName));
@@ -178,6 +149,11 @@ public class PredictCsv {
     output.write("\n");
 
     // Loop over inputCSV one row at a time.
+    //
+    // TODO: performance of scoring can be considerably improved if instead of scoring each row at a time we passed
+    //       all the rows to the score function, in which case it can evaluate each tree for each row, avoiding
+    //       multiple rounds of fetching each tree from the filesystem.
+    //
     int lineNum = 0;
     String line;
     String[] inputColumnNames = null;
@@ -259,7 +235,13 @@ public class PredictCsv {
     output.close();
     input.close();
 
-    // Predictions were successfully generated.  Calling program can now compare them with something.
-    System.exit(0);
   }
+
+  private void loadModel() throws Exception {
+    // This may throw either a `ReflectiveOperationException` or an `IOException`
+    GenModel genModel = modelName.endsWith(".java")? (GenModel) Class.forName(modelName).newInstance()
+                                                   : RawModel.load(modelName);
+    model = new EasyPredictModelWrapper(genModel);
+  }
+
 }

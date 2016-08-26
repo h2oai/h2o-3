@@ -24,4 +24,5 @@ javadoc {
 dependencies {
     testCompile "junit:junit:${junitVersion}"
     compile "org.apache.commons:commons-compress:1.8.1"
+    compile "com.beust:jcommander:1.48"
 }
