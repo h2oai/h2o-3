@@ -588,11 +588,7 @@ public class RequestServer extends HttpServlet {
   private static NanoResponse response404(String what, RequestType type) {
     H2ONotFoundArgumentException e = new H2ONotFoundArgumentException(what + " not found", what + " not found");
     H2OError error = e.toH2OError(what);
-
     Log.warn(error._dev_msg);
-    Log.warn(error._values.toJsonString());
-    Log.warn((Object[]) error._stacktrace);
-
     return serveError(error);
   }
 
