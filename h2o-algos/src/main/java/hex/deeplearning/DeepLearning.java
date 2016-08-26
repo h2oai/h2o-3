@@ -466,7 +466,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           Log.info("==============================================================================================================================================================================");
         }
         if (model != null) {
-          model.deleteElasticAverageModels();
+          model.deleteElasticAverageModels(null);
           model.unlock(_job);
           if (model.actual_best_model_key != null) {
             assert (model.actual_best_model_key != model._key);

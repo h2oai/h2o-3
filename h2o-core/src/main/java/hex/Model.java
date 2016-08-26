@@ -848,6 +848,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (expensive) {
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
       if (updated!=test) {
+        assert(updated._key!=test._key);
         if (toDelete!=null) toDelete.put(updated._key, Thread.currentThread().getStackTrace());
         test.restructure(updated.names(), updated.vecs());
       }
