@@ -3,7 +3,7 @@
 #' Builds a Random Forest Model on an H2OFrame
 #'
 #' @param x A vector containing the names or indices of the predictor variables
-#'        to use in building the RF model.
+#'        to use in building the RF model. If x is missing,then all columns except y are used.
 #' @param y The name or index of the response variable. If the data does not
 #'        contain a header, this is the column index number starting at 1, and
 #'        increasing from left to right. (The response must be either an integer
@@ -108,6 +108,14 @@ h2o.randomForest <- function(x, y, training_frame,
                              histogram_type = c("AUTO","UniformAdaptive","Random","QuantilesGlobal","RoundRobin")
                              )
 {
+  #If x is missing, then assume user wants to use all columns as features.
+  if(missing(x)){
+    if(is.numeric(y)){
+      x <- setdiff(col(training_frame),y)
+    }else{
+      x <- setdiff(colnames(training_frame),y)
+    }
+  }
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),

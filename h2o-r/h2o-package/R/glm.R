@@ -3,6 +3,7 @@
 #' Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error distribution.
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GLM model.
+#'        If x is missing,then all columns except y are used.
 #' @param y A character string or index that represent the response variable in the model.
 #' @param training_frame An H2OFrame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
@@ -144,6 +145,14 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     max_runtime_secs = 0,
                     missing_values_handling = c("MeanImputation","Skip"))
 {
+  #If x is missing, then assume user wants to use all columns as features.
+  if(missing(x)){
+    if(is.numeric(y)){
+      x <- setdiff(col(training_frame),y)
+    }else{
+      x <- setdiff(colnames(training_frame),y)
+    }
+  }
   # if (!is.null(beta_constraints)) {
   #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame(beta_constraints))
   #       stop(paste("`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ", class(beta_constraints)))
