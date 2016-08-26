@@ -1034,10 +1034,9 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private void addMapperConf(Configuration conf, String name, String value, String payloadFileName) {
-    String payload = "";
     try {
-      byte[] byteArr = readBinaryFile(payloadFileName);
-      payload = convertByteArrToString(byteArr);
+      byte[] payloadData = readBinaryFile(payloadFileName);
+      addMapperConf(conf, name, value, payloadData);
     }
     catch (Exception e) {
       StringBuilder sb = new StringBuilder();
@@ -1049,6 +1048,10 @@ public class h2odriver extends Configured implements Tool {
 
       error(sb.toString());
     }
+  }
+
+  private void addMapperConf(Configuration conf, String name, String value, byte[] payloadData) {
+    String payload = convertByteArrToString(payloadData);
 
     conf.set(h2omapper.H2O_MAPPER_CONF_ARG_BASE + Integer.toString(mapperConfLength), name);
     conf.set(h2omapper.H2O_MAPPER_CONF_BASENAME_BASE + Integer.toString(mapperConfLength), value);
@@ -1227,6 +1230,14 @@ public class h2odriver extends Configured implements Tool {
     }
     if (loginConfFileName != null) {
       addMapperConf(conf, "-login_conf", "login.conf", loginConfFileName);
+    } else if (kerberosLogin) {
+      // Use default Kerberos configuration file
+      final byte[] krbConfData = (
+              "krb5loginmodule {\n" +
+              "     com.sun.security.auth.module.Krb5LoginModule required;\n" +
+              "};"
+      ).getBytes();
+      addMapperConf(conf, "-login_conf", "login.conf", krbConfData);
     }
 
     conf.set(h2omapper.H2O_MAPPER_CONF_LENGTH, Integer.toString(mapperConfLength));
