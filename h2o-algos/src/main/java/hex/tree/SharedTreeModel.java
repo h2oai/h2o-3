@@ -328,14 +328,16 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     @Override
     protected void writeModelData() throws IOException {
-      for (int i = 0; i < _output._treeKeys.length; i++) {
-        for (int j = 0; j < _output._treeKeys[i].length; j++) {
-          Key<CompressedTree> key = _output._treeKeys[i][j];
-          Value ctVal = DKV.get(key);
+      assert _output._treeKeys.length == _output._ntrees;
+      int nclasses = _output.nclasses();
+      int ntreesPerClass = binomialOpt() && nclasses == 2? 1 : nclasses;
+      for (int i = 0; i < _output._ntrees; i++) {
+        for (int j = 0; j < ntreesPerClass; j++) {
+          Value ctVal = DKV.get(_output._treeKeys[i][j]);
           if (ctVal == null)
-            throw new H2OKeyNotFoundArgumentException("CompressedTree " + key + " not found in the DKV");
+            throw new H2OKeyNotFoundArgumentException("CompressedTree " + _output._treeKeys[i][j] + " not found");
           CompressedTree ct = ctVal.get();
-          assert ct._nclass == _output.nclasses();
+          assert ct._nclass == nclasses;
           // assume ct._seed is useless and need not be persisted
           writeBinaryFile(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
         }
@@ -382,15 +384,15 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
           out.nl();
           toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
           out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
-          for( int c=0; c<nclass; c++ )
-            if( !binomialOpt() || !(c==1 && nclass==2) ) // Binomial optimization
+          for (int c = 0; c < nclass; c++)
+            if (!(binomialOpt() && c == 1 && nclass == 2)) // Binomial optimization
               toJavaTreeName(out.ip("preds[").p(nclass==1?0:c+1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
           out.di(1).ip("}").nl(); // end of function
           out.di(1).ip("}").nl(); // end of forest class
 
           // Generate the pre-tree classes afterwards
           for (int c = 0; c < nclass; c++) {
-            if( !binomialOpt() || !(c==1 && nclass==2) ) { // Binomial optimization
+            if (!(binomialOpt() && c == 1 && nclass == 2)) { // Binomial optimization
               String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
               CompressedTree ct = _output.ctree(treeIdx, c);
               SB sb = new SB();
