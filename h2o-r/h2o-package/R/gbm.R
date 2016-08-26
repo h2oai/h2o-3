@@ -7,6 +7,7 @@
 #' enum for "bernoulli" or "multinomial".
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GBM model.
+#'        If x is missing,then all columns except y are used.
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
@@ -132,6 +133,14 @@ h2o.gbm <- function(x, y, training_frame,
                     max_abs_leafnode_pred
                     )
 {
+   #If x is missing, then assume user wants to use all columns as features.
+   if(missing(x)){
+     if(is.numeric(y)){
+       x <- setdiff(col(training_frame),y)
+     }else{
+       x <- setdiff(colnames(training_frame),y)
+     }
+   }
   # Required maps for different names params, including deprecated params
   .gbm.map <- c("x" = "ignored_columns",
                 "y" = "response_column")

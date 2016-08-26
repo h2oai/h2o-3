@@ -4,6 +4,7 @@
 #' Builds a feed-forward multilayer artificial neural network on an H2OFrame
 #'
 #' @param x A vector containing the \code{character} names of the predictors in the model.
+#'        If x is missing,then all columns except y are used.
 #' @param y The name of the response variable in the model.
 #' @param training_frame An H2OFrame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
@@ -222,6 +223,15 @@ h2o.deeplearning <- function(x, y, training_frame,
                              keep_cross_validation_fold_assignment = FALSE
                              )
 {
+
+  #If x is missing, then assume user wants to use all columns as features.
+  if(missing(x)){
+    if(is.numeric(y)){
+      x <- setdiff(col(training_frame),y)
+    }else{
+      x <- setdiff(colnames(training_frame),y)
+    }
+  }
 
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
