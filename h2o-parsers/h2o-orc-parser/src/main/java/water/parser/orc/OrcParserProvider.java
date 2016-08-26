@@ -15,7 +15,6 @@ import water.parser.*;
 import water.persist.PersistHdfs;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 import static water.fvec.FileVec.getPathForKey;

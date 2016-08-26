@@ -20,15 +20,26 @@ import water.util.SB;
 //    left, right: tree | prediction
 //    prediction: 4 bytes of float (or 1 or 2 bytes of class prediction)
 public class CompressedTree extends Keyed {
+  private static final int DhnasdNaVsRest = DHistogram.NASplitDir.NAvsREST.value();
+  private static final int DhnasdNaLeft = DHistogram.NASplitDir.NALeft.value();
+  private static final int DhnasdLeft = DHistogram.NASplitDir.Left.value();
+
   final byte [] _bits;
   final int _nclass;            // Number of classes being predicted (for an integer prediction tree)
   final long _seed;
   public CompressedTree( byte[] bits, int nclass, long seed, int tid, int cls ) {
     super(makeTreeKey(tid, cls));
-    _bits = bits; _nclass = nclass; _seed = seed; 
+    _bits = bits;
+    _nclass = nclass;
+    _seed = seed;
   }
 
-  /** Highly efficient (critical path) tree scoring */
+  /**
+   * Highly efficient (critical path) tree scoring
+   *
+   * WARNING: If you making any changes to this code, you should synchronize them with the class
+   * `hex.genmodel.algos.DrfRawModel` in package `h2o_genmodel`.
+   */
   public double score( final double row[]) { return score(row, false); }
   public double score( final double row[], boolean computeLeafAssignment) {
     AutoBuffer ab = new AutoBuffer(_bits);
@@ -38,16 +49,16 @@ public class CompressedTree extends Keyed {
     while(true) {
       int nodeType = ab.get1U();
       int colId = ab.get2();
-      if( colId == 65535 ) return scoreLeaf(ab);
-      DHistogram.NASplitDir naSplitDir = DHistogram.NASplitDir.values()[ab.get1U()];
-      final boolean NAvsREST = naSplitDir == DHistogram.NASplitDir.NAvsREST;
-      final boolean NALeft = naSplitDir == DHistogram.NASplitDir.NALeft;
-      final boolean Left = naSplitDir == DHistogram.NASplitDir.Left;
+      if (colId == 65535) return scoreLeaf(ab);
+      int naSplitDir = ab.get1U();
+      final boolean NaVsRest = naSplitDir == DhnasdNaVsRest;
+      final boolean NaLeft = naSplitDir == DhnasdNaLeft;
+      final boolean Left = naSplitDir == DhnasdLeft;
       int equal = (nodeType&12) >> 2;
       assert (equal >= 0 && equal <= 3): "illegal equal value " + equal+" at "+ab+" in bitpile "+Arrays.toString(_bits);
 
       float splitVal = -1;
-      if (!NAvsREST) {
+      if (!NaVsRest) {
         // Extract value or group to split on
         if (equal == 0 || equal == 1) { // Standard float-compare test (either < or ==)
           splitVal = ab.get4f();       // Get the float to compare
@@ -75,21 +86,21 @@ public class CompressedTree extends Keyed {
       // WARNING: Generated code has to be consistent with this code:
       assert(equal!=1); //no longer supported
       double d = row[colId];
-      if ((Double.isNaN(d) && !NALeft) ||                                            // NA goes right
-              !NAvsREST &&
+      if ((Double.isNaN(d) && !NaLeft) ||                                            // NA goes right
+              !NaVsRest &&
               ( ( (equal==0            ) && d >= splitVal         ) ||  // greater or equals goes right
 //                ( (equal==1            ) && d == splitVal         ) ||  // equals goes right
                 ( (equal==2 || equal==3) && ibs.contains((int)d) ) )    // if contained in bitset, go right
       ) {
         // RIGHT
-        if (!(Double.isNaN(d) && (NALeft||Left))) { //missing value with NALeft or Left goes LEFT as well
+        if (!(Double.isNaN(d) && (NaLeft||Left))) { //missing value with NALeft or Left goes LEFT as well
           ab.skip(skip);        // Skip to the right subtree
           if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
           lmask = rmask;        // And set the leaf bits into common place
         }
       } else {
         // LEFT
-        assert(!Double.isNaN(d) || NALeft || Left);
+        assert(!Double.isNaN(d) || NaLeft || Left);
       }
       level++;
       if( (lmask&16)==16 ) {
@@ -130,11 +141,14 @@ public class CompressedTree extends Keyed {
     final String[] names = tm._names;
     final SB sb = new SB();
     new TreeVisitor<RuntimeException>(this) {
-      @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, DHistogram.NASplitDir naSplitDir) {
-        if (naSplitDir == DHistogram.NASplitDir.NAvsREST) sb.p("!Double.isNaN("+sb.i().p(names[col]).p(")"));
-        else if (naSplitDir == DHistogram.NASplitDir.NALeft) sb.p("Double.isNaN("+sb.i().p(names[col]).p(") || "));
-        else if (equal==1) sb.p("!Double.isNaN("+sb.i().p(names[col]).p(") && "));
-        if (naSplitDir != DHistogram.NASplitDir.NAvsREST) {
+      @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, int naSplitDirInt) {
+        if (naSplitDirInt == DhnasdNaVsRest)
+          sb.p("!Double.isNaN("+sb.i().p(names[col]).p(")"));
+        else if (naSplitDirInt == DhnasdNaLeft)
+          sb.p("Double.isNaN("+sb.i().p(names[col]).p(") || "));
+        else if (equal==1)
+          sb.p("!Double.isNaN("+sb.i().p(names[col]).p(") && "));
+        if (naSplitDirInt != DhnasdNaVsRest) {
           sb.i().p(names[col]).p(' ');
           if (equal == 0) sb.p("< ").p(fcmp);
           else if (equal == 1) sb.p("!=").p(fcmp);

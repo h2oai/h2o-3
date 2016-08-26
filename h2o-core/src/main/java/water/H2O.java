@@ -1326,9 +1326,9 @@ final public class H2O {
     return flow_dir;
   }
 
-  /* Static list of acceptable Cloud members passed via -flatfile option.
+  /* A static list of acceptable Cloud members passed via -flatfile option.
    * It is updated also when a new client appears. */
-  public static HashSet<H2ONode> STATIC_H2OS = null;
+  private static HashSet<H2ONode> STATIC_H2OS = null;
 
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
@@ -1912,5 +1912,51 @@ final public class H2O {
       catch (Exception ignore) {};
       GAUtils.logStartup();
     }
+  }
+
+  /** Add node to a manual multicast list.
+   *  Note: the method is valid only if -flatfile option was specified on commandline*
+   * @param node  h2o node
+   * @return true if node was already in the multicast list.
+   */
+  public static boolean addNodeToFlatfile(H2ONode node) {
+    assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
+    return STATIC_H2OS.add(node);
+  }
+
+  /** Check if a node is included in a manual multicast list.
+   *  Note: the method is valid only if -flatfile option was specified on commandline
+   *
+   * @param node  h2o node
+   * @return true if node was already in the multicast list.
+   */
+  public static boolean isNodeInFlatfile(H2ONode node) {
+    assert isFlatfileEnabled() : "Trying to use flatfile, but flatfile is not enabled!";
+    return STATIC_H2OS.contains(node);
+  }
+
+  /**
+   * Is manual multicast enabled?
+   * @return  true if `-flatfile` option was specified on commandline
+   */
+  public static boolean isFlatfileEnabled() {
+    return STATIC_H2OS != null;
+  }
+
+  /** Setup a set of nodes which should be contacted during
+   * manual multicast.
+   * @param nodes  set of H2O nodes.
+   */
+  public static void setFlatfile(HashSet<H2ONode> nodes) {
+    STATIC_H2OS = nodes;
+  }
+
+  /** Returns a set of nodes which are contacted during manual
+   * multicast. The returned value can be modified by the user since
+   * the call return a copy of the original set.
+   * @return  set of nodes
+   */
+  public static HashSet<H2ONode> getFlatfile() {
+    return (HashSet<H2ONode>) STATIC_H2OS.clone();
   }
 }

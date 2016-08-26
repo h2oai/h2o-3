@@ -209,8 +209,8 @@ public class TestUtil extends Iced {
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  protected static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
-  protected static Frame parse_test_file( Key outputKey, String fname) {
+  public static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
+  public static Frame parse_test_file( Key outputKey, String fname) {
     File f = find_test_file_static(fname);
     assert f != null && f.exists():" file not found: " + fname;
     NFSFileVec nfs = NFSFileVec.make(f);
@@ -283,7 +283,7 @@ public class TestUtil extends Iced {
    */
   protected Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file(fname);
-    assert folder.isDirectory();
+    assert folder != null && folder.isDirectory():"Folder "+fname+" is not a directory.";
     File[] files = folder.listFiles();
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();

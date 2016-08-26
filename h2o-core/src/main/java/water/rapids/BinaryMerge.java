@@ -221,7 +221,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     long at8order( long idx ) { return _order[(int)(idx / _batchSize)][(int)(idx % _batchSize)]; }
 
     long[][] fillPerNodeRows( int i ) {
-      final int batchSizeLong = 256*1024*1024 / 8;  // 256GB DKV limit / sizeof(long)
+      final int batchSizeLong = 256*1024*1024 / 16;  // 256GB DKV limit / sizeof(UUID)
       if( _perNodeNumRowsToFetch[i] <= 0 ) return null;
       int nbatch  = (int) ((_perNodeNumRowsToFetch[i] - 1) / batchSizeLong + 1);  // TODO: wrap in class to avoid this boiler plate
       assert nbatch >= 1;
@@ -502,7 +502,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
   // Loop over _ret1st and _retLen and populate the batched requests for
   // each node helper.  _ret1st and _retLen are the same shape
   private void chunksPopulatePerNode( final long perNodeLeftLoc[], final long perNodeLeftRows[][][], final long perNodeRightLoc[], final long perNodeRightRows[][][] ) {
-    final int batchSizeLong = 256*1024*1024 / 8;  // 256GB DKV limit / sizeof(long)
+    final int batchSizeLong = 256*1024*1024 / 16;  // 256GB DKV limit / sizeof(UUID)
     long prevf = -1, prevl = -1;
     // TODO: hop back to original order here for [] syntax.
     long leftLoc=_leftFrom;  // sweep through left table along the sorted row locations.  

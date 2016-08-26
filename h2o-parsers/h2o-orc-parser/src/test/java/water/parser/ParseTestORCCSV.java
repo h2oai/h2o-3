@@ -1,6 +1,7 @@
 package water.parser;
 
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
@@ -19,11 +20,6 @@ import static org.junit.Assert.assertTrue;
  */
 public class ParseTestORCCSV extends TestUtil {
 
-    private double EPSILON = 1e-9;
-    private long ERRORMARGIN = 1000L;  // error margin when compare timestamp.
-    int totalFilesTested = 0;
-    int numberWrong = 0;
-
     private String[] csvFiles = {"smalldata/parser/orc/orc2csv/TestOrcFile.testDate1900.csv",
             "smalldata/parser/orc/orc2csv/TestOrcFile.testDate2038.csv",
             "smalldata/parser/orc/orc2csv/orc_split_elim.csv", "smalldata/parser/csv2orc/prostate_NA.csv",
@@ -35,6 +31,12 @@ public class ParseTestORCCSV extends TestUtil {
             "smalldata/parser/orc/hexdev_29.orc"};
 
     private Boolean[] forceColumnTypes = {false, false, false, true, true, true};
+
+    @BeforeClass
+    static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup
+        // Does not run test on Java6 since we are running on Hadoop lib
+        Assume.assumeTrue("Java6 is not supported", !System.getProperty("java.version", "NA").startsWith("1.6"));
+    }
 
     @BeforeClass
     static public void setup() { TestUtil.stall_till_cloudsize(5); }

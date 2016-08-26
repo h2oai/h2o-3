@@ -167,7 +167,7 @@ def help_preamble_for(algo):
         return """
             Build a supervised Deep Neural Network model for image classification
             Builds a artificial neural network on an H2OFrame containing paths of images"""
-    if algo == "kmenas":
+    if algo == "kmeans":
         return """Performs k-means clustering on an H2O dataset."""
     if algo == "glrm":
         return """Builds a generalized low rank model of a H2O dataset."""

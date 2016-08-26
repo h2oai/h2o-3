@@ -67,8 +67,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       if (MSBhist[msb] == 0) continue;
       int nbatch = (int) ((MSBhist[msb]-1)/_batchSize +1);  // at least one batch
       int lastSize = (int) (MSBhist[msb] - (nbatch-1) * _batchSize);   // the size of the last batch (could be batchSize)
-      // TO DO: test nbatch>0 by reducing batchSize very small and comparing results with non-batched
-      assert nbatch == 1;  // Prevent large testing for now.  
+      assert nbatch > 0;
       assert lastSize > 0;
       _o[msb] = new long[nbatch][];
       _x[msb] = new byte[nbatch][];

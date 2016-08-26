@@ -23,21 +23,29 @@ def hdfs_orc_parser():
     if hadoop_namenode_is_accessible:
         hdfs_name_node = pyunit_utils.hadoop_namenode()
 
-        tol_time = 200              # comparing in ms or ns
-        tol_numeric = 1e-5          # tolerance for comparing other numeric fields
-        numElements2Compare = 10   # choose number of elements per column to compare.  Save test time.
+        # run a quick test to determine if the hive-exec is too old.
 
-        hdfs_orc_file = "/datasets/orc_parser/orc/prostate_NA.orc"
-        hdfs_csv_file = "/datasets/orc_parser/csv/prostate_NA.csv"
-        url_orc = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_orc_file)
-        url_csv = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_csv_file)
+        if pyunit_utils.cannaryHDFSTest(hdfs_name_node, "/datasets/orc_parser/orc/orc_split_elim.orc"):
+            print("Your hive-exec version is too old.  Orc parser test {0} is "
+                  "skipped.".format("pyunit_INTERNAL_HDFS_prostate_orc.py"))
+            pass
+        else:
 
-        h2oOrc = h2o.import_file(url_orc)
-        h2oCsv = h2o.import_file(url_csv)
+            tol_time = 200              # comparing in ms or ns
+            tol_numeric = 1e-5          # tolerance for comparing other numeric fields
+            numElements2Compare = 10   # choose number of elements per column to compare.  Save test time.
 
-        # compare the two frames
-        assert pyunit_utils.compare_frames(h2oOrc, h2oCsv, numElements2Compare, tol_time, tol_numeric), \
-            "H2O frame parsed from orc and csv files are different!"
+            hdfs_orc_file = "/datasets/orc_parser/orc/prostate_NA.orc"
+            hdfs_csv_file = "/datasets/orc_parser/csv/prostate_NA.csv"
+            url_orc = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_orc_file)
+            url_csv = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_csv_file)
+
+            h2oOrc = h2o.import_file(url_orc)
+            h2oCsv = h2o.import_file(url_csv)
+
+            # compare the two frames
+            assert pyunit_utils.compare_frames(h2oOrc, h2oCsv, numElements2Compare, tol_time, tol_numeric), \
+                "H2O frame parsed from orc and csv files are different!"
     else:
         raise EnvironmentError
 
