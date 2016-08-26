@@ -1,6 +1,6 @@
 ext {
   notYarn = true
-  hadoopVersion = 'mapr3.1.1'
+  hadoopVersion = 'mapr3.1'
   hadoopMavenArtifactVersion = '1.0.3-mapr-3.1.1'
 }
 
