@@ -2,6 +2,74 @@
 
 ##H2O
 
+###Turing (3.10.0.5) - 8/25/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-608'>HEXDEV-608</a>] -         Hashmap in H2OIllegalArgumentException fails to deserialize &amp; throws FATAL
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2879'>PUBDEV-2879</a>] -         NPE in MetadataHandler
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3086'>PUBDEV-3086</a>] -         hist() fails for constant numeric columns
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3173'>PUBDEV-3173</a>] -         Client mode: flatfile requires list of all nodes, but a single entry node should be sufficient
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3207'>PUBDEV-3207</a>] -         Make CreateFrame reproducible for categorical columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3208'>PUBDEV-3208</a>] -         Fix intermittency of categorical encoding via eigenvector.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3211'>PUBDEV-3211</a>] -         isBitIdentical is returning true for two Frames with different content
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3222'>PUBDEV-3222</a>] -         AssertionError for DL train/valid with categorical encoding
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3237'>PUBDEV-3237</a>] -         Wrong MAE for observation weights other than 1.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3244'>PUBDEV-3244</a>] -         H2ODriver for CDH5.7.0 does not accept memory settings
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3276'>PUBDEV-3276</a>] -         H2OFrame.drop() leaves the frame in inconsistent state
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3007'>PUBDEV-3007</a>] -         Implement skewness calculation for H2O Frames
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3008'>PUBDEV-3008</a>] -         Implement kurtosis calculation for H2O Frames
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3128'>PUBDEV-3128</a>] -         Add ability to do a deep copy in Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3163'>PUBDEV-3163</a>] -         Add docs for h2o.make_metrics() for R and Python
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3218'>PUBDEV-3218</a>] -         Add RMSLE to model metrics
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3264'>PUBDEV-3264</a>] -         Return unique values of a categorical column as a Pythonic list
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3235'>PUBDEV-3235</a>] -         Refactor and simplify implementation of Pearson Correlation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3238'>PUBDEV-3238</a>] -         Add MAE to CV Summary
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2702'>PUBDEV-2702</a>] -         Create h2o.* functions for H2O primitives
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3098'>PUBDEV-3098</a>] -         Add methods to get actual and default parameters of a model
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3132'>PUBDEV-3132</a>] -         Add ability to drop a list of columns or a subset of rows from an H2OFrame
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3138'>PUBDEV-3138</a>] -         Ensure all is*() functions return a list
+</li>
+</ul>
+
 ###Turing (3.10.0.3) - 7/29/2016
 
 <h4>        Bug
