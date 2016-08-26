@@ -85,6 +85,7 @@ public class h2odriver extends Configured implements Tool {
   static String jksPass = null;
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
+  static boolean kerberosLogin = false;
   static String loginConfFileName = null;
   static String userName = System.getProperty("user.name");
 
@@ -788,6 +789,9 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-ldap_login")) {
         ldapLogin = true;
       }
+      else if (s.equals("-kerberos_login")) {
+        kerberosLogin = true;
+      }
       else if (s.equals("-login_conf")) {
         i++; if (i >= args.length) { usage(); }
         loginConfFileName = args[i];
@@ -1205,6 +1209,9 @@ public class h2odriver extends Configured implements Tool {
     }
     if (ldapLogin) {
       addMapperArg(conf, "-ldap_login");
+    }
+    if (kerberosLogin) {
+      addMapperArg(conf, "-kerberos_login");
     }
     addMapperArg(conf, "-user_name", userName);
 
