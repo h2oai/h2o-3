@@ -44,7 +44,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "max_runtime_secs",
         "replicate_training_data",
         "single_node_mode",
-//        "shuffle_training_data",
+        "shuffle_training_data",
         "mini_batch_size",
         "clip_gradient",
         "network",

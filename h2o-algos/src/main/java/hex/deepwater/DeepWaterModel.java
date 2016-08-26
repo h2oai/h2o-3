@@ -17,7 +17,6 @@ import water.util.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -131,7 +130,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       fail = true;
     }
     if (byte_size > Value.MAX || fail)
-      throw new IllegalArgumentException(technote(5, "Model is too large"));
+      throw new IllegalArgumentException(technote(5, "Model is too large to fit into the DKV (larger than " + PrettyPrint.bytes(Value.MAX) + ")."));
   }
 
   public long _timeLastIterationEnter;
@@ -549,7 +548,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     String[][] domains = new String[names.length][];
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new DeepWaterBigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+    BigScore bs = new DeepWaterBigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(adaptFrm);
     if (computeMetrics) bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     if (makeNative) removeNativeState();
     return bs.outputFrame(null == destination_key ? Key.make() : Key.make(destination_key), names, domains);
