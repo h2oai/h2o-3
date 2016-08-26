@@ -29,7 +29,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Id of the validation data frame.
 
       nfolds : int
-        Number of folds for N-fold cross-validation (0 to disable or ≥ 2).
+        Number of folds for N-fold cross-validation (0 to disable or >= 2).
         Default: 0
 
       keep_cross_validation_predictions : bool
@@ -142,11 +142,6 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Run on a single node for fine-tuning of model parameters.
         Default: False
 
-      shuffle_training_data : bool
-        Enable shuffling of training data (recommended if training data is replicated and train_samples_per_iteration is
-        close to #nodes x #rows, of if using balance_classes).
-        Default: True
-
       mini_batch_size : int
         Mini-batch size (smaller leads to better fit, larger can speed up and generalize better).
         Default: 32
@@ -198,9 +193,9 @@ class H2ODeepWaterEstimator(H2OEstimator):
                      "rate_annealing", "momentum_start", "momentum_ramp", "momentum_stable", "distribution",
                      "score_interval", "score_training_samples", "score_validation_samples", "score_duty_cycle",
                      "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
-                     "replicate_training_data", "single_node_mode", "shuffle_training_data", "mini_batch_size",
-                     "clip_gradient", "network", "width", "height", "channels", "device_id", "network_definition_file",
-                     "network_parameters_file", "mean_image_file", "export_native_model_prefix"]:
+                     "replicate_training_data", "single_node_mode", "mini_batch_size", "clip_gradient", "network",
+                     "width", "height", "channels", "device_id", "network_definition_file", "network_parameters_file",
+                     "mean_image_file", "export_native_model_prefix"]:
             pname = name[:-1] if name[-1] == '_' else name
             self._parms[pname] = kwargs[name] if name in kwargs else None
 
@@ -451,14 +446,6 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @single_node_mode.setter
     def single_node_mode(self, value):
         self._parms["single_node_mode"] = value
-
-    @property
-    def shuffle_training_data(self):
-        return self._parms["shuffle_training_data"]
-
-    @shuffle_training_data.setter
-    def shuffle_training_data(self, value):
-        self._parms["shuffle_training_data"] = value
 
     @property
     def mini_batch_size(self):
