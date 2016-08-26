@@ -78,12 +78,12 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
   }
 
   @Override
-  public Model<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput>.ZippedDataStreamWriter getZippedDataStream() {
-    return new DistributedRandomForestZippedDataStreamWriter();
+  public Model<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput>.RawDataStreamWriter getRawDataStream() {
+    return new RawDataStreamWriter();
   }
 
-  public class DistributedRandomForestZippedDataStreamWriter
-          extends Model<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput>.ZippedDataStreamWriter {
+  public class RawDataStreamWriter
+          extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput>.RawDataStreamWriter {
     @Override
     protected void writeExtraModelInfo() throws IOException {
       super.writeExtraModelInfo();

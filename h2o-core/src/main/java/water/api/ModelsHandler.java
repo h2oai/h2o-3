@@ -157,8 +157,8 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public StreamingSchema fetchZippedModel(int version, ModelsV3 s) {
     final Model model = getFromDKV("key", s.model_id.key());
-    final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".zip";
-    return new StreamingSchema(model.getZippedDataStream(), filename);
+    final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".tar";
+    return new StreamingSchema(model.getRawDataStream(), filename);
   }
 
   /** Remove an unlocked model.  Fails if model is in-use. */

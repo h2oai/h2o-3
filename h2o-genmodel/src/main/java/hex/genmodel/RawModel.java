@@ -36,7 +36,7 @@ abstract public class RawModel extends GenModel {
         File f = new File(file);
         if (!f.exists())
             throw new FileNotFoundException("File " + file + " cannot be found.");
-        ContentReader cr = f.isDirectory()? new FolderContentReader(file) : new ZipfileContentReader(file);
+        ContentReader cr = f.isDirectory()? new FolderContentReader(file) : new ArchiveContentReader(file);
         Map<String, Object> info = parseModelInfo(cr);
         String[] columns = (String[]) info.get("[columns]");
         String[][] domains = parseModelDomains(cr, columns.length, info.get("[domains]"));
@@ -181,11 +181,11 @@ abstract public class RawModel extends GenModel {
         }
     }
 
-    static private class ZipfileContentReader implements ContentReader {
+    static private class ArchiveContentReader implements ContentReader {
         private ZipFile zf;
 
-        public ZipfileContentReader(String zipfile) throws IOException {
-            zf = new ZipFile(zipfile);
+        public ArchiveContentReader(String archivename) throws IOException {
+            zf = new ZipFile(archivename);
         }
 
         @Override

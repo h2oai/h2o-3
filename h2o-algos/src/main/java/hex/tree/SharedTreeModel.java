@@ -5,6 +5,7 @@ import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -16,8 +17,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> implements Model.LeafNodeAssignment {
 
@@ -315,11 +314,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   }
 
   @Override
-  public Model<M, P, O>.ZippedDataStreamWriter getZippedDataStream() {
-    return new SharedTreeModelZippedDataStreamWriter();
+  public Model<M, P, O>.RawDataStreamWriter getRawDataStream() {
+    return new RawDataStreamWriter();
   }
 
-  public class SharedTreeModelZippedDataStreamWriter extends Model<M,P,O>.ZippedDataStreamWriter {
+  public class RawDataStreamWriter extends Model<M, P, O>.RawDataStreamWriter {
     @Override
     protected void writeExtraModelInfo() throws IOException {
       writeln("n_trees = " + _output._ntrees);
@@ -331,12 +330,14 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     protected void writeModelData() throws IOException {
       for (int i = 0; i < _output._treeKeys.length; i++) {
         for (int j = 0; j < _output._treeKeys[i].length; j++) {
-          CompressedTree ct = DKV.get(_output._treeKeys[i][j]).get();
+          Key<CompressedTree> key = _output._treeKeys[i][j];
+          Value ctVal = DKV.get(key);
+          if (ctVal == null)
+            throw new H2OKeyNotFoundArgumentException("CompressedTree " + key + " not found in the DKV");
+          CompressedTree ct = ctVal.get();
           assert ct._nclass == _output.nclasses();
-          // assert ct._seed is useless and need not be persisted
-          zos.putNextEntry(new ZipEntry(String.format("trees/t%02d_%03d.bin", j, i)));
-          zos.write(ct._bits);
-          zos.closeEntry();
+          // assume ct._seed is useless and need not be persisted
+          writeBinaryFile(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
         }
       }
     }

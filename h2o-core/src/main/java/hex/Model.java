@@ -5,6 +5,8 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.StreamWriter;
@@ -21,8 +23,6 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static hex.ModelMetricsMultinomial.getHitRatioTable;
 import static water.util.FrameUtils.categoricalEncoder;
@@ -1159,21 +1159,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * The [info] section lists general model information; [columns] contains the list of all column names; and [domains]
    *
    */
-  public class ZippedDataStreamWriter extends StreamWriter {
+  public class RawDataStreamWriter extends StreamWriter {
     private final Charset utf8 = Charset.forName("UTF-8");
-    private final byte[] newline = {13};
-    protected ZipOutputStream zos;
+    private final char newline = '\n';
+    private StringBuilder tmpfile;
+    private String tmpname;
+    private TarArchiveOutputStream tos;
 
     @Override
     public void writeTo(OutputStream os) {
-      zos = new ZipOutputStream(os);
-      // Do not compress Zip file, so that it can be queried much easier
-      zos.setMethod(ZipOutputStream.STORED);
+      tos = new TarArchiveOutputStream(os);
       try {
         writeModelInfo();
         writeDomains();
         writeModelData();
-        zos.close();
+        tos.close();
       } catch (IOException e) {
         e.printStackTrace();
       }
@@ -1185,7 +1185,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if (domain != null)
           n_categoricals++;
 
-      zos.putNextEntry(new ZipEntry("model.ini"));
+      startWritingTextFile("model.ini");
       writeln("[info]");
       writeln("algorithm = " + _parms.fullName());
       writeln("category = " + _output.getModelCategory());
@@ -1213,18 +1213,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if (_output._domains[colIndex] != null)
           writeln(String.format(format, colIndex, _output._domains[colIndex].length, domIndex++));
       }
-      zos.closeEntry();
+      finishWritingTextFile();
     }
 
     private void writeDomains() throws IOException {
       int domIndex = 0;
       for (String[] domain : _output._domains) {
         if (domain == null) continue;
-        zos.putNextEntry(new ZipEntry(String.format("domains/d%03d.txt", domIndex++)));
+        startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
         for (String category : domain) {
           writeln(category.replaceAll("\n", "\u21B5"));  // replace newlines with "↵" characters
         }
-        zos.closeEntry();
+        finishWritingTextFile();
       }
     }
 
@@ -1238,14 +1238,34 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     protected void writeModelData() throws IOException {}
 
-    protected void writeln(String s) throws IOException {
-      zos.write(s.getBytes(utf8));
-      zos.write(newline);
+    protected void startWritingTextFile(String filename) {
+      assert tmpfile == null : "Previous text file was not closed";
+      tmpfile = new StringBuilder();
+      tmpname = filename;
+    }
+
+    protected void writeln(String s) {
+      assert tmpfile != null : "No text file is currently being written";
+      tmpfile.append(s);
+      tmpfile.append(newline);
+    }
+
+    protected void finishWritingTextFile() throws IOException {
+      writeBinaryFile(tmpname, tmpfile.toString().getBytes(utf8));
+      tmpfile = null;
+    }
+
+    protected void writeBinaryFile(String filename, byte[] bytes) throws IOException {
+      TarArchiveEntry archiveEntry = new TarArchiveEntry(filename);
+      archiveEntry.setSize(bytes.length);
+      tos.putArchiveEntry(archiveEntry);
+      tos.write(bytes);
+      tos.closeArchiveEntry();
     }
   }
 
-  public ZippedDataStreamWriter getZippedDataStream() {
-    return new ZippedDataStreamWriter();
+  public RawDataStreamWriter getRawDataStream() {
+    return new RawDataStreamWriter();
   }
 
 
