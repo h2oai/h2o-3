@@ -5,8 +5,8 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.StreamWriter;
@@ -1164,11 +1164,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     private final char newline = '\n';
     private StringBuilder tmpfile;
     private String tmpname;
-    private TarArchiveOutputStream tos;
+    private ZipArchiveOutputStream tos;
 
     @Override
     public void writeTo(OutputStream os) {
-      tos = new TarArchiveOutputStream(os);
+      tos = new ZipArchiveOutputStream(os);
       try {
         writeModelInfo();
         writeDomains();
@@ -1256,7 +1256,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     protected void writeBinaryFile(String filename, byte[] bytes) throws IOException {
-      TarArchiveEntry archiveEntry = new TarArchiveEntry(filename);
+      ZipArchiveEntry archiveEntry = new ZipArchiveEntry(filename);
       archiveEntry.setSize(bytes.length);
       tos.putArchiveEntry(archiveEntry);
       tos.write(bytes);

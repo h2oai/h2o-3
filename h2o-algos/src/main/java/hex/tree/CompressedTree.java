@@ -42,6 +42,33 @@ public class CompressedTree extends Keyed {
    */
   public double score( final double row[]) { return score(row, false); }
   public double score( final double row[], boolean computeLeafAssignment) {
+    /*
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    try {
+      ZipOutputStream zos = new ZipOutputStream(bos);
+      zos.putNextEntry(new ZipEntry("tree"));
+      zos.write(_bits);
+      zos.closeEntry();
+      zos.close();
+      bos.close();
+
+      long time1 = System.nanoTime();
+      ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+      ZipInputStream zis = new ZipInputStream(bis);
+      ZipEntry zae = zis.getNextEntry();
+      ByteArrayOutputStream out = new ByteArrayOutputStream();
+      int len = 0;
+      byte[] buffer = new byte[4096];
+      while ((len = zis.read(buffer)) > 0) {
+        out.write(buffer, 0, len);
+      }
+      out.close();
+      long time2 = System.nanoTime();
+      System.out.println("Size of input = " + _bits.length + " compressed = " + bos.size() + " uncompressed = " + out.size());
+      System.out.println("Time taken = " + (time2 - time1)/1e6 + "ms");
+    } catch (IOException e) {}
+    */
+
     AutoBuffer ab = new AutoBuffer(_bits);
     IcedBitSet ibs = null;      // Lazily set on hitting first group test
     long bitsRight = 0;
