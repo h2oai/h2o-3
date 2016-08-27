@@ -7,6 +7,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.AutoBuffer;
 import water.Futures;
+import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -21,6 +22,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
@@ -355,7 +357,7 @@ public class DeepWaterTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._rate = 1e-3;
-      p._epochs = 25;
+      p._epochs = 30;
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
       Assert.assertTrue(m._output._training_metrics.cm().accuracy()>0.9);
@@ -388,68 +390,83 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void testReproInitialDistribution() throws IOException {
-    DeepWaterModel m = null;
-    Frame tr = null;
-    try {
-      DeepWaterParameters p = new DeepWaterParameters();
-      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
-      p._response_column = "C2";
-      p._rate = 0; //no updates to original weights
-      p._seed = 1234;
-      p._epochs = 1; //for some reason, can't use 0 epochs
-      p._channels = 1;
-      p._train_samples_per_iteration = 0;
-      m = new DeepWater(p).trainModel().get();
-      Log.info(m);
-      Assert.assertEquals(1.849889276248635,((ModelMetricsMultinomial)m._output._training_metrics).logloss(),1e-7);
-    } finally {
-      if (m!=null) m.delete();
-      if (tr!=null) tr.remove();
+    final int REPS=3;
+    double[] values=new double[REPS];
+    for (int i=0;i<REPS;++i) {
+      DeepWaterModel m = null;
+      Frame tr = null;
+      try {
+        DeepWaterParameters p = new DeepWaterParameters();
+        p._train = (tr = parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+        p._response_column = "C2";
+        p._rate = 0; //no updates to original weights
+        p._seed = 1234;
+        p._epochs = 1; //for some reason, can't use 0 epochs
+        p._channels = 1;
+        p._train_samples_per_iteration = 0;
+        m = new DeepWater(p).trainModel().get();
+        Log.info(m);
+        values[i]=((ModelMetricsMultinomial)m._output._training_metrics).logloss();
+      } finally {
+        if (m != null) m.delete();
+        if (tr != null) tr.remove();
+      }
     }
+    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-7);
   }
 
   @Test
   public void testReproInitialDistributionNegativeTest() throws IOException {
-    DeepWaterModel m = null;
-    Frame tr = null;
-    try {
-      DeepWaterParameters p = new DeepWaterParameters();
-      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
-      p._response_column = "C2";
-      p._rate = 0; //no updates to original weights
-      //p._seed = 1234; // no seed -> use random
-      p._epochs = 1; //for some reason, can't use 0 epochs
-      p._channels = 1;
-      p._train_samples_per_iteration = 0;
-      m = new DeepWater(p).trainModel().get();
-      Log.info(m);
-      Assert.assertNotEquals(1.849889276248635,((ModelMetricsMultinomial)m._output._training_metrics).logloss(),1e-7);
-    } finally {
-      if (m!=null) m.delete();
-      if (tr!=null) tr.remove();
+    final int REPS=3;
+    double[] values=new double[REPS];
+    for (int i=0;i<REPS;++i) {
+      DeepWaterModel m = null;
+      Frame tr = null;
+      try {
+        DeepWaterParameters p = new DeepWaterParameters();
+        p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+        p._response_column = "C2";
+        p._rate = 0; //no updates to original weights
+        p._seed = i;
+        p._epochs = 1; //for some reason, can't use 0 epochs
+        p._channels = 1;
+        p._train_samples_per_iteration = 0;
+        m = new DeepWater(p).trainModel().get();
+        Log.info(m);
+        values[i] = ((ModelMetricsMultinomial)m._output._training_metrics).logloss();
+      } finally {
+        if (m!=null) m.delete();
+        if (tr!=null) tr.remove();
+      }
     }
+    for (int i=1;i<REPS;++i) Assert.assertNotEquals(values[0],values[i],1e-8);
   }
 
   @Test
   public void testReproTraining() throws IOException {
-    DeepWaterModel m = null;
-    Frame tr = null;
-    try {
-      DeepWaterParameters p = new DeepWaterParameters();
-      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
-      p._response_column = "C2";
-      p._rate = 1e-4;
-      p._seed = 1234;
-      p._epochs = 1;
-      p._channels = 1;
-      p._train_samples_per_iteration = 0;
-      m = new DeepWater(p).trainModel().get();
-      Log.info(m);
-      Assert.assertEquals(1.7676454589640878,((ModelMetricsMultinomial)m._output._training_metrics).logloss(),1e-7);
-    } finally {
-      if (m!=null) m.delete();
-      if (tr!=null) tr.remove();
+    final int REPS=3;
+    double[] values=new double[REPS];
+    for (int i=0;i<REPS;++i) {
+      DeepWaterModel m = null;
+      Frame tr = null;
+      try {
+        DeepWaterParameters p = new DeepWaterParameters();
+        p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+        p._response_column = "C2";
+        p._rate = 1e-4;
+        p._seed = 1234;
+        p._epochs = 1;
+        p._channels = 1;
+        p._train_samples_per_iteration = 0;
+        m = new DeepWater(p).trainModel().get();
+        Log.info(m);
+        values[i] = ((ModelMetricsMultinomial)m._output._training_metrics).logloss();
+      } finally {
+        if (m!=null) m.delete();
+        if (tr!=null) tr.remove();
+      }
     }
+    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-8);
   }
 
   @Test
