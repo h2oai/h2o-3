@@ -589,8 +589,8 @@ public class DeepWaterTest extends TestUtil {
       ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
       Log.info("Restored LL: " + mm2.logloss());
 
-      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-8); //make sure scoring is self-consistent
-      Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-8);
+      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-7); //make sure scoring is self-consistent
+      Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-7);
 
     } finally {
       if (m1 !=null) m1.delete();
