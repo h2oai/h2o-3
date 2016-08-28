@@ -7,6 +7,8 @@ import csv
 import os
 import random
 import subprocess
+import sys
+import tempfile
 
 import colorama
 from tests import pyunit_utils
@@ -23,8 +25,14 @@ def test_zipped_rf_model():
     download the model's data, score the model remotely and fetch the predictions, score the model locally by
     running the genmodel jar, and finally compare the prediction results.
     """
-    genmodel_jar = "../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar"
+    genmodel_jar = os.path.abspath("../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar")
     assert os.path.exists(genmodel_jar), "Cannot find " + genmodel_jar
+
+    target_dir = ""
+    if sys.platform == "win32":
+        target_dir = tempfile.mkdtemp()
+    else:
+        target_dir = os.path.expanduser("~/Downloads/")
 
     for problem in ["regression", "binomial", "multinomial"]:
         df = random_dataset(problem)
@@ -36,24 +44,21 @@ def test_zipped_rf_model():
         model.train(training_frame=train)
         print(model.summary())
 
-        model_file = os.path.expanduser("~/Downloads/")
-        model_file = h2o.api("GET /3/Models/%s/data" % model.model_id, save_to=model_file)
+        model_file = h2o.api("GET /3/Models/%s/data" % model.model_id, save_to=target_dir)
         print("\n\nSaved the model to %s" % model_file)
         assert os.path.exists(model_file)
 
-        test_file = os.path.expanduser("~/Downloads/test_%s.csv" % test.frame_id)
+        test_file = os.path.join(target_dir, "test_%s.csv" % test.frame_id)
         print("\nDownloading the test dataset for local use: %s" % test_file)
         h2o.download_csv(test, test_file)
 
-        local_pred_file = os.path.expanduser("~/Downloads/predL_%s.csv" % test.frame_id)
+        local_pred_file = os.path.join(target_dir, "predL_%s.csv" % test.frame_id)
         print("\nScoring the model locally and saving to file %s..." % local_pred_file)
-        print("java -cp %s hex.genmodel.tools.PredictCsv --input %s --output %s --model %s --decimal" %
-              (genmodel_jar, test_file, local_pred_file, model_file))
         ret = subprocess.call(["java", "-cp", genmodel_jar, "hex.genmodel.tools.PredictCsv", "--input", test_file,
                                "--output", local_pred_file, "--model", model_file, "--decimal"])
         assert ret == 0, "GenModel finished with return code %d" % ret
 
-        h2o_pred_file = os.path.expanduser("~/Downloads/predR_%s.csv" % test.frame_id)
+        h2o_pred_file = os.path.join(target_dir, "predR_%s.csv" % test.frame_id)
         print("\nScoring the model remotely and downloading to file %s..." % h2o_pred_file)
         predictions = model.predict(test)
         h2o.download_csv(predictions, h2o_pred_file)
