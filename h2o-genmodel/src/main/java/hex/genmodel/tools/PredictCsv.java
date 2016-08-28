@@ -225,8 +225,9 @@ public class PredictCsv {
 
   private void loadModel() throws Exception {
     // This may throw either a `ReflectiveOperationException` or an `IOException`
-    GenModel genModel = modelName.endsWith(".java")? (GenModel) Class.forName(modelName).newInstance()
-                                                   : RawModel.load(modelName);
+    GenModel genModel = modelName.endsWith(".java")
+            ? (GenModel) Class.forName(modelName.substring(0, modelName.length() - 5)).newInstance()
+            : RawModel.load(modelName);
     model = new EasyPredictModelWrapper(genModel);
   }
 

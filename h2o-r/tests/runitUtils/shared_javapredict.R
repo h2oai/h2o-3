@@ -19,12 +19,12 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
   } else {
     stop(paste("Unknown model type", model))
   }
-  
+
   print("Downloading Java prediction model code from H2O")
   model_key <- model@model_id
   tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
   if (.Platform$OS.type == "windows") {
-    shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name))) 
+    shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
     shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
   } else {
     safeSystem(sprintf("rm -fr %s", tmpdir_name))
@@ -56,7 +56,7 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
 
   print("Predicting with Java POJO")
   if (.Platform$OS.type == "windows") cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar;%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
-  else cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
+  else cmd <- sprintf("java -ea -cp %s/h2o-genmodel.jar:%s -Xmx4g -XX:MaxPermSize=256m -XX:ReservedCodeCacheSize=256m hex.genmodel.tools.PredictCsv --header --model %s.java --input %s/in.csv --output %s/out_pojo.csv", tmpdir_name, tmpdir_name, model_key, tmpdir_name, tmpdir_name)
   safeSystem(cmd)
 
   print("Comparing predictions between H2O and Java POJO")
@@ -73,7 +73,7 @@ doJavapredictTest <- function(model,test_file,test_frame,params) {
   if (class(match) != "logical") {
     match <- FALSE
   }
-  
+
   if (! match) {
     for (i in 1:nrow(prediction1)) {
       rowmatch <- all.equal(prediction1[i,], prediction2[i,], tolerance = tolerance, check.names = FALSE)

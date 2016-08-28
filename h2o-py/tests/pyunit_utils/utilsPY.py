@@ -215,7 +215,8 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
-                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", pojoname,
+                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header",
+                    "--model", pojoname + ".java",
                     "--input", in_csv, "--output", out_pojo_csv]
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
