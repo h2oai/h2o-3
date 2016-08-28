@@ -215,9 +215,8 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
-                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header",
-                    "--model", pojoname + ".java",
-                    "--input", in_csv, "--output", out_pojo_csv]
+                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
+                    "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv]
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
         print("Java output: {0}".format(o))
@@ -255,7 +254,7 @@ def javamunge(assembly, pojoname, test, compile_only=False):
     tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results", pojoname))
     os.mkdir(tmpdir)
     assembly.to_pojo(pojoname, path=tmpdir, get_jar=True)
-    h2o_genmodel_jar = os.path.join(tmpdir,"h2o-genmodel.jar")
+    h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
     print("h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar))
     java_file = os.path.join(tmpdir,pojoname+".java")
@@ -411,8 +410,8 @@ def make_random_grid_space(algo, ncols=None, nrows=None):
         if random.randint(0,1): grid_space['nbins_cats'] = random.sample(list(range(2,1025)),random.randint(2,3))
 
         if algo == "gbm":
-            if random.randint(0,1): grid_space['learn_rate'] = [random.random() for r in range(random.randint(2,3))]
-            grid_space['distribution'] = random.sample(['bernoulli','multinomial','gaussian','poisson','tweedie','gamma'], 1)
+            if random.randint(0,1): grid_space['learn_rate'] = [random.random() for _ in range(random.randint(2,3))]
+            grid_space['distribution'] = random.sample(['bernoulli', 'multinomial', 'gaussian', 'poisson', 'tweedie', 'gamma'], 1)
         if algo == "rf":
             if random.randint(0,1): grid_space['mtries'] = random.sample(list(range(1,ncols+1)),random.randint(2,3))
             if random.randint(0,1): grid_space['sample_rate'] = [random.random() for r in range(random.randint(2,3))]
@@ -487,7 +486,7 @@ def write_syn_floating_point_dataset_glm(csv_training_data_filename, csv_validat
                                          csv_test_data_filename, csv_weight_name, row_count, col_count, data_type,
                                          max_p_value, min_p_value, max_w_value, min_w_value, noise_std, family_type,
                                          valid_row_count, test_row_count, class_number=2,
-                                         class_method=['probability', 'probability', 'probability'],
+                                         class_method=('probability', 'probability', 'probability'),
                                          class_margin=[0.0, 0.0, 0.0]):
     """
     Generate random data sets to test the GLM algo using the following steps:
@@ -533,7 +532,6 @@ def write_syn_floating_point_dataset_glm(csv_training_data_filename, csv_validat
 
     :return: None
     """
-
     # generate bias b and weight as a column vector
     weights = generate_weights_glm(csv_weight_name, col_count, data_type, min_w_value, max_w_value,
                                    family_type=family_type, class_number=class_number)

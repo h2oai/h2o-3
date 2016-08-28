@@ -1,8 +1,5 @@
 package hex.genmodel.tools;
 
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.RawModel;
@@ -14,6 +11,7 @@ import au.com.bytecode.opencsv.CSVReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * Simple driver program for reading a CSV file and making predictions.
@@ -23,23 +21,12 @@ import java.io.FileWriter;
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/tools/PredictCsv.java" target="_blank">here on github</a>.
  */
 public class PredictCsv {
-  @Parameter(names = {"--model", "-m"}, required = true,
-      description = "The model to train. This could be either the java class of the model POJO, or the name of the " +
-          "zip file containing raw model's data, or the name of the folder with unzipped raw model's data.")
   private String modelName;
 
-  @Parameter(names = {"--input", "-i"}, required = true,
-      description = "The dataset that should be scored with the model.")
   private String inputCSVFileName;
 
-  @Parameter(names = {"--output", "-o"}, required = true,
-      description = "The name of the output file that will contain the predictions, one row per test dataset row.")
   private String outputCSVFileName;
 
-  @Parameter(names={"--header"}, hidden = true)
-  private boolean haveHeaders = false;
-
-  @Parameter(names={"--decimal"}, description = "Use decimal numbers in the output (if false, hexademical is used)")
   private boolean useDecimalOutput = false;
 
   // Model instance
@@ -48,14 +35,8 @@ public class PredictCsv {
   public static void main(String[] args) {
     // Parse command line arguments
     PredictCsv main = new PredictCsv();
-    JCommander jc = new JCommander(main);
-    try {
-      jc.parse(args);
-    } catch (ParameterException e) {
-      jc.setProgramName("java [... java args ...] hex.genmodel.tools.PredictCsv");
-      jc.usage();
-      System.exit(1);
-    }
+    main.parseArgs(args);
+
     // Run the main program
     try {
       main.run();
@@ -63,7 +44,7 @@ public class PredictCsv {
       e.printStackTrace();
       System.exit(2);
     }
-    // Predictions were successfully generated.  Calling program can now compare them with something.
+    // Predictions were successfully generated.
     System.exit(0);
   }
 
@@ -99,7 +80,6 @@ public class PredictCsv {
   }
 
   private void run() throws Exception {
-    loadModel();
     ModelCategory category = model.getModelCategory();
 
     CSVReader reader = new CSVReader(new FileReader(inputCSVFileName));
@@ -220,15 +200,68 @@ public class PredictCsv {
     // Clean up.
     output.close();
     reader.close();
-
   }
 
-  private void loadModel() throws Exception {
-    // This may throw either a `ReflectiveOperationException` or an `IOException`
-    GenModel genModel = modelName.endsWith(".java")
-            ? (GenModel) Class.forName(modelName.substring(0, modelName.length() - 5)).newInstance()
-            : RawModel.load(modelName);
-    model = new EasyPredictModelWrapper(genModel);
+
+  private void loadModel(String modelName) {
+    try {
+      GenModel genModel = RawModel.load(modelName);
+      model = new EasyPredictModelWrapper(genModel);
+    } catch (IOException e) {
+      // In the old code we used --model parameter to indicate POJO name. This is why if we cannot load the model
+      // `modelName` we attempt to load its POJO -- in case the user is still using deprecated API.
+      loadPojo(modelName);
+      System.out.println("\n\nDEPRECATED  Please use --pojo parameter to load the model's POJO.\n\n\n");
+    }
   }
 
+  private void loadPojo(String className) {
+    try {
+      GenModel gm = (GenModel) Class.forName(className).newInstance();
+      model = new EasyPredictModelWrapper(gm);
+    } catch (Exception e) {
+      e.printStackTrace();
+      usage();
+    }
+  }
+
+  private static void usage() {
+    System.out.println("");
+    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PredictCsv --model modelName");
+    System.out.println("             --pojo pojoName --input inputFile --output outputFile --decimal");
+    System.out.println("");
+    System.out.println("     --model   The model to train. This can be either zip file or a folder ");
+    System.out.println("               containing raw model's data.");
+    System.out.println("     --pojo    Name of the java class containing the model's POJO. Either this ");
+    System.out.println("               parameter or --model must be specified.");
+    System.out.println("     --input   CSV file containing the test data set to score.");
+    System.out.println("     --output  Name of the output CSV file with computed predictions.");
+    System.out.println("     --decimal Use decimal numbers in the output (default is to use hexdemical).");
+    System.out.println("");
+    System.exit(1);
+  }
+
+  private void parseArgs(String[] args) {
+    for (int i = 0; i < args.length; i++) {
+      String s = args[i];
+      if (s.equals("--header")) continue;
+      if (s.equals("--decimal"))
+        useDecimalOutput = true;
+      else {
+        i++;
+        if (i >= args.length) usage();
+        String sarg = args[i];
+        switch (s) {
+          case "--model":  loadModel(sarg); break;
+          case "--pojo":   loadPojo(sarg); break;
+          case "--input":  inputCSVFileName = sarg; break;
+          case "--output": outputCSVFileName = sarg; break;
+          default:
+            System.out.println("ERROR: Unknown command line argument: " + s);
+            usage();
+        }
+
+      }
+    }
+  }
 }
