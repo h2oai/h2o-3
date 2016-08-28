@@ -39,7 +39,7 @@ public final class ByteBufferWrapper {
         return _bb.getChar();
     }
     public int get3() {
-        return _bb.get() | _bb.get() << 8 | _bb.get() << 16;
+        return get1U() | (get1U() << 8) | (get1U() << 16);
     }
     public int get4() {
         return _bb.getInt();

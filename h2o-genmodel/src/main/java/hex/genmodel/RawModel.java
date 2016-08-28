@@ -67,13 +67,13 @@ abstract public class RawModel extends GenModel {
         _reader = cr;
         _uuid = (String) info.get("uuid");
         _category = hex.ModelCategory.valueOf((String) info.get("category"));
-        _supervised = info.get("supervised").equals("true");
+        _supervised = (boolean) info.get("supervised");
         _nfeatures = (int) info.get("n_features");
         _nclasses = (int) info.get("n_classes");
-        _balanceClasses = info.get("balance_classes").equals("true");
+        _balanceClasses = (boolean) info.get("balance_classes");
         _defaultThreshold = (double) info.get("default_threshold");
-        _priorClassDistrib = ParseUtils.parseArrayOfDoubles((String) info.get("prior_class_distrib"));
-        _modelClassDistrib = ParseUtils.parseArrayOfDoubles((String) info.get("model_class_distrib"));
+        _priorClassDistrib = (double[]) info.get("prior_class_distrib");
+        _modelClassDistrib = (double[]) info.get("model_class_distrib");
     }
 
     static private Map<String, Object> parseModelInfo(ContentReader reader) throws IOException {
@@ -81,8 +81,8 @@ abstract public class RawModel extends GenModel {
         Map<String, Object> info = new HashMap<>();
         String line;
         int section = 0;
-        String[] columns = new String[0];  // array of column names, will be initialized later
         int ic = 0;  // Index for `columns` array
+        String[] columns = new String[0];  // array of column names, will be initialized later
         Map<Integer, String> domains = new HashMap<>();  // map of (categorical column index => name of the domain file)
         while (true) {
             line = br.readLine();
@@ -104,9 +104,11 @@ abstract public class RawModel extends GenModel {
             } else if (section == 1) {
                 // [info] section: just parse key-value pairs and store them into the `info` map.
                 String[] res = line.split("\\s*=\\s*", 2);
-                info.put(res[0], ParseUtils.maybeParseDouble(res[1]));
+                info.put(res[0], res[0].equals("uuid")? res[1] : ParseUtils.tryParse(res[1]));
             } else if (section == 2) {
                 // [columns] section
+                if (ic >= columns.length)
+                    throw new IOException("`n_columns` variable is too small.");
                 columns[ic++] = line;
             } else if (section == 3) {
                 // [domains] section
@@ -115,8 +117,6 @@ abstract public class RawModel extends GenModel {
                 domains.put(col_index, res[1]);
             }
         }
-        if (ic != (Integer) info.get("n_columns"))
-            throw new IOException("Some of the column names are missing from the model.ini file");
         return info;
     }
 
@@ -127,6 +127,8 @@ abstract public class RawModel extends GenModel {
         Map<Integer, String> domass = (Map<Integer, String>) domains_assignment;
         for (Map.Entry<Integer, String> e : domass.entrySet()) {
             int col_index = e.getKey();
+            // There is a file with categories of the response column, but we ignore it.
+            if (col_index >= n_columns) continue;
             String[] info = e.getValue().split(" ", 2);
             int n_elements = Integer.parseInt(info[0]);
             String domfile = info[1];
@@ -197,6 +199,8 @@ abstract public class RawModel extends GenModel {
         @Override
         public byte[] getBinaryFile(String filename) throws IOException {
             ZipArchiveEntry za = zf.getEntry(filename);
+            if (za == null)
+                throw new IOException("Tree file " + filename + " not found");
             byte[] out = new byte[(int) za.getSize()];
             DataInputStream dis = new DataInputStream(zf.getInputStream(za));
             dis.readFully(out);

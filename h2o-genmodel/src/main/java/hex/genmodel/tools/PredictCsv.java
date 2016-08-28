@@ -9,8 +9,8 @@ import hex.genmodel.RawModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
+import au.com.bytecode.opencsv.CSVReader;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -39,6 +39,9 @@ public class PredictCsv {
   @Parameter(names={"--header"}, hidden = true)
   private boolean haveHeaders = false;
 
+  @Parameter(names={"--decimal"}, description = "Use decimal numbers in the output (if false, hexademical is used)")
+  private boolean useDecimalOutput = false;
+
   // Model instance
   private EasyPredictModelWrapper model;
 
@@ -49,10 +52,8 @@ public class PredictCsv {
     try {
       jc.parse(args);
     } catch (ParameterException e) {
-      StringBuilder sb = new StringBuilder();
-      jc.usage(sb);
-      sb.insert(sb.indexOf("PredictCsv"), "java [... java args ...] hex.genmodel.tools.");
-      System.out.print(sb);
+      jc.setProgramName("java [... java args ...] hex.genmodel.tools.PredictCsv");
+      jc.usage();
       System.exit(1);
     }
     // Run the main program
@@ -67,27 +68,13 @@ public class PredictCsv {
   }
 
 
-  /**
-   * This CSV header row parser is as bare bones as it gets.
-   * Doesn't handle funny quoting, spacing, or other issues.
-   */
-  private static String[] parseHeaderRow(String line) {
-    return line.trim().split(",");
-  }
-
-  /**
-   * This CSV parser is as bare bones as it gets.
-   * Our test data doesn't have funny quoting, spacing, or other issues.
-   * Can't handle cases where the number of data columns is less than the number of header columns.
-   */
-  private static RowData parseDataRow(String line, String[] inputColumnNames) {
-    String[] inputData = line.trim().split(",");
-
+  private static RowData formatDataRow(String[] splitLine, String[] inputColumnNames) {
     // Assemble the input values for the row.
     RowData row = new RowData();
-    for (int i = 0; i < inputColumnNames.length; i++) {
+    int maxI = Math.min(inputColumnNames.length, splitLine.length);
+    for (int i = 0; i < maxI; i++) {
       String columnName = inputColumnNames[i];
-      String cellData = inputData[i];
+      String cellData = splitLine[i];
 
       switch (cellData) {
         case "":
@@ -104,19 +91,18 @@ public class PredictCsv {
     return row;
   }
 
-  static String myDoubleToString(double d) {
+  private String myDoubleToString(double d) {
     if (Double.isNaN(d)) {
       return "NA";
     }
-
-    return Double.toHexString(d);
+    return useDecimalOutput? Double.toString(d) : Double.toHexString(d);
   }
 
   private void run() throws Exception {
     loadModel();
     ModelCategory category = model.getModelCategory();
 
-    BufferedReader input = new BufferedReader(new FileReader(inputCSVFileName));
+    CSVReader reader = new CSVReader(new FileReader(inputCSVFileName));
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
 
     // Emit outputCSV column names.
@@ -155,27 +141,27 @@ public class PredictCsv {
     //       multiple rounds of fetching each tree from the filesystem.
     //
     int lineNum = 0;
-    String line;
-    String[] inputColumnNames = null;
     try {
-      while ((line = input.readLine()) != null) {
+      String[] inputColumnNames = null;
+      String[] splitLine;
+      while ((splitLine = reader.readNext()) != null) {
         lineNum++;
 
         // Handle the header.
         if (lineNum == 1) {
-          inputColumnNames = parseHeaderRow(line);
+          inputColumnNames = splitLine;
           continue;
         }
 
         // Parse the CSV line.  Don't handle quoted commas.  This isn't a parser test.
-        RowData row = parseDataRow(line, inputColumnNames);
+        RowData row = formatDataRow(splitLine, inputColumnNames);
 
         // Do the prediction.
         // Emit the result to the output file.
         switch (category) {
           case AutoEncoder: {
-            AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
-            throw new Exception("TODO");
+            throw new UnsupportedOperationException();
+            // AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
             // break;
           }
 
@@ -233,7 +219,7 @@ public class PredictCsv {
 
     // Clean up.
     output.close();
-    input.close();
+    reader.close();
 
   }
 

@@ -37,13 +37,20 @@ public class DrfRawModel extends RawModel {
     // and remaining columns hold a probability distribution for classifiers.
     public final double[] score0(double[] data, double[] preds) {
         java.util.Arrays.fill(preds, 0);
-        for (int i = 0; i < _nclasses; i++) {
+        boolean isRegressionModel = _nclasses == 1;
+        boolean isBinomialModel = _nclasses == 2 && !_binomial_double_trees;
+        int effectiveNClasses = isBinomialModel? 1 : _nclasses;
+        for (int i = 0; i < effectiveNClasses; i++) {
+            int k = isRegressionModel? 0 : i + 1;
             for (int j = 0; j < _ntrees; j++) {
                 try {
                     byte[] tree = _reader.getBinaryFile(String.format("trees/t%02d_%03d.bin", i, j));
-                    preds[i] += scoreTree(tree, data);
+                    preds[k] += scoreTree(tree, data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
+                } catch (Exception e) {
+                    System.out.println("Exception " + e + " when scoring tree " + i + ", " + j);
+                    throw e;
                 }
             }
         }
@@ -53,7 +60,7 @@ public class DrfRawModel extends RawModel {
             preds[0] /= _ntrees;
         } else {
             // Classification
-            if (_nclasses == 2 && !_binomial_double_trees) {
+            if (isBinomialModel) {
                 preds[1] /= _ntrees;
                 preds[2] = 1.0 - preds[1];
             } else {
@@ -92,7 +99,7 @@ public class DrfRawModel extends RawModel {
             final boolean left = naSplitDir == NsdLeft;
             int equal = (nodeType&12) >> 2;
             assert (equal >= 0 && equal <= 3) :
-                    "illegal equal value " + equal + " at " + ab + " in bitpile " + Arrays.toString(_bits);
+                "illegal equal value " + equal + " in bitpile " + Arrays.toString(_bits);
 
             float splitVal = -1;
             if (!naVsRest) {
@@ -142,7 +149,7 @@ public class DrfRawModel extends RawModel {
             level++;
             if ((lmask&16) == 16) {
                 if (computeLeafAssignment) {
-                    bitsRight |= 1 << level; //mark the end of the tree
+                    bitsRight |= 1 << level;  // mark the end of the tree
                     return Double.longBitsToDouble(bitsRight);
                 }
                 return ab.get4f();

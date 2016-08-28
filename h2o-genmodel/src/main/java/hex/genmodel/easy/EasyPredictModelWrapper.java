@@ -425,7 +425,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
       Integer index = modelColumnNameToIndexMap.get(dataColumnName);
 
       // Skip column names that are not known.
-      if (index == null) {
+      // Skip the "response" column which should not be included in `rawData`
+      if (index == null || index >= rawData.length) {
         continue;
       }
 
