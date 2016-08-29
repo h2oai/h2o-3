@@ -326,7 +326,7 @@ FAQ
    produce a different model with two different validation data sets, or
    the same model?**
 
-  Unless early stopping is turned on (it's disabled by default), then supplying two different validation sets will not change the model, resulting in the same model for both trials. However, if early stopping is turned on and two different validation sets are provided during the training process, that can lead to two slightly different models. The use of a validation set in combination with early stopping can cause the model to stop training earlier (or later), depending on the validation set. Early stopping uses the validation set to determine when to stop building more trees. 
+  Unless early stopping is turned on (it's disabled by default), then supplying two different validation sets will not change the model, resulting in the same model for both trials. However, if early stopping is turned on and two different validation sets are provided during the training process, that can lead to two different models. The use of a validation set in combination with early stopping can cause the model to stop training earlier (or later), depending on the validation set. Early stopping uses the validation set to determine when to stop building more trees. 
 
 -  **How deterministic is GBM?**
 
