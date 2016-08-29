@@ -85,8 +85,8 @@ public class ParseTimeTest extends TestUtil {
         "\"24MAR14:06.10:48.000 PM\"",
         "\"4MAR2014:06.10:48.000 PM\"",  // should handle days with one digit
         "\"24MAR78:06.10:48.000 PM\"",   // should assume 1978
-        "\"24MAR1968:06.10:48.000 PM\"",   // should be a negative time, pre-Epoch
-
+        "\"24MAR1968:06.10:48.000 PM\"", // should be a negative time, pre-Epoch
+        "2015-12-03 15:43:21.654321 ",   // Evil trailing blank
     };
 
     double[][] exp = new double[][] {  // These ms counts all presume PST
@@ -107,13 +107,16 @@ public class ParseTimeTest extends TestUtil {
         d(1393985448000L ),
         d(259639848000L  ),
         d(-55892952000L  ),
+        d(1449186201654L ),
     };
 
     StringBuilder sb1 = new StringBuilder();
     for( String ds : data ) sb1.append(ds).append("\n");
-    Key k1 = ParserTest.makeByteVec(sb1.toString());
+    Key[] k1 = new Key[]{ParserTest.makeByteVec(sb1.toString())};
     Key r1 = Key.make("r1");
-    Frame dataFrame = ParseDataset.parse(r1, k1);
+    ParseSetup ps = ParseSetup.guessSetup(k1, false, 0);
+    ps._separator = ',';
+    Frame dataFrame = ParseDataset.parse(r1, k1, true, ps);
 
     for (int i=0; i < exp.length; i++ )  // Adjust exp[][] to local time
       for (int j=0; j < 1; j++)
