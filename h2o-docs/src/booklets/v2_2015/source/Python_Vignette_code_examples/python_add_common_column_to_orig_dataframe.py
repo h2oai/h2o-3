@@ -1,16 +1,17 @@
-In [170]: df15 = df12.cbind(bb_df)
+df15 = df12.cbind(bb_df)
 
-In [171]: df15
-Out[171]:
-   A             C  B                D  B_B
-   ---  ----------  -----  -----------  -----
-0  foo  -0.710095   one     0.253189    one
-1  bar  -0.165891   one    -0.433233    one
-2  foo  -1.51996    two     1.12321     two
-3  bar   2.25083    three   0.512449    other
-4  foo  -0.618324   two     1.35158     two
-5  bar   0.0817828  two     0.00830419  two
-6  foo   0.634827   one     1.25897     one
-7  foo   0.879319   three   1.48051     other
+# View H2OFrame
+df15
 
-[8 rows x 5 columns]
+# A             C  B               D  B_B
+# ---  ----------  -----  ----------  -----
+# foo  -0.809171   one     1.79059    one
+# bar   0.216644   one     2.88524    one
+# foo  -0.033664   two     0.61205    two
+# bar   0.985545   three   0.357742   other
+# foo  -2.15563    two     0.0456449  two
+# bar  -0.0170454  two    -1.33625    two
+# foo   1.32524    one     0.308092   one
+# foo  -0.546305   three  -0.92675    other
+#
+# [8 rows x 5 columns]

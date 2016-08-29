@@ -171,7 +171,7 @@ The easiest way to directly install H2O is  via a Python package.
 
 To load a recent H2O package from PyPI, run:
 
-\begin{lstlisting}[style=python]
+\begin{lstlisting}[style=pythoncode]
 pip install h2o
 \end{lstlisting}
 
@@ -187,7 +187,7 @@ latest stable H2O-3 build from the H2O download page:
 
 After H2O is installed, verify the installation:
 
-\begin{lstlisting}[style=python]
+\begin{lstlisting}[style=pythoncode]
 import h2o
 
 # Start H2O on your local machine
@@ -242,10 +242,7 @@ To display the column names:
 
 To display compression information, distribution (in multi-machine clusters), and summary statistics of your data:
 
-
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_display_compressiondistributionsummary.py}
-
-\newpage
 
 \subsection{Selection}
 To select a single column by name, resulting in an H2OFrame:
@@ -266,6 +263,8 @@ To select multiple rows by slicing, resulting in an H2OFrame:
 and get all columns, be explicit about selecting all columns:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_select_rows_by_slicing.py}
 
+\newpage
+
 To select rows based on specific criteria, use Boolean masking:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_select_rows_boolean.py}
 
@@ -283,7 +282,9 @@ To determine which rows are missing data for a given column (`1' indicates missi
 To change all missing values in a column to a different value:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_change_missing_values_to_new_value.py}
 
-To determine the locations of all missing data in an H2OFrame:
+\newpage
+
+To determine the location of all missing data in an H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_find_missing_data_in_frame.py}
 
 \subsection{Operations}
@@ -297,6 +298,8 @@ When performing a descriptive statistic on a single column of an H2OFrame, missi
 
 In both examples,  a native Python object is returned (list and float respectively
 in these examples).
+
+\newpage
 
 When applying functions to each column of the data, an H2OFrame containing the means of each column is returned:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_apply_funct_to_columns.py}
@@ -327,18 +330,13 @@ To split strings based on a regular expression:
 To combine two H2OFrames together by appending one as rows and return a new H2OFrame:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_combine_frames_append_one_as_rows.py}
 
-
 For successful row binding, the column names and column types between the two H2OFrames must match. To combine two H2O frames together by appending one as columns and return a new H2OFrame:
-
-\newpage
 
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_combine_frames_append_one_as_columns.py}
 
-
+\newpage
 H2O also supports merging two frames together by matching column names:
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_merge_frames_by_column_name.py}
-
-\newpage
 
 \subsection{Grouping}
 
@@ -391,8 +389,6 @@ To create categorical interaction features:
 To retain the most common categories and set the remaining categories to a common `Other' category
  and create an interaction of a categorical column with itself:
 
-\newpage
-
 \lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_retain_common_categories.py}
 
 These can then be added as a new column on the original dataframe:
@@ -407,8 +403,6 @@ In addition to loading data from Python objects, H2O can load data directly from
 \item HTTP addresses
 \end{itemize}
 
-\newpage
-
  H2O currently supports the following file types:
 
 \begin{frame}%no line table for list of 6+ items
@@ -420,16 +414,13 @@ In addition to loading data from Python objects, H2O can load data directly from
 \item ORC
 \item SVMLite
 \end{itemize} &
-
 \begin{itemize}
 \item ARFF
 \item XLS
 \item XLST 
 \end{itemize}
-
 \end{tabular}
 \end{frame}
-
 
 To load data from the same machine running H2O:
 \lstinputlisting[style=pythoncode, firstline=6, lastline=7]{python/ipython_dataprep_output_fixed.txt}
@@ -447,14 +438,12 @@ To save an H2OFrame on the machine running Python:
 
 The following sections describe some common model types and features. 
 
-
 \subsection{Modeling}
 The following section describes the features and functions of some common models available in H2O.  For more information about running these models in Python using H2O, refer to the documentation on
 the H2O.ai website or to the booklets on specific models.
 
 
 H2O supports the following models:  
-
 
 \begin{frame}%no line table for list of 6+ items
 
@@ -477,7 +466,6 @@ H2O supports the following models:
 \end{tabular}
 
 \end{frame}
-
 
 The list continues to grow, so check \url{www.h2o.ai} to see the latest additions. 
 
@@ -503,8 +491,6 @@ The list continues to grow, so check \url{www.h2o.ai} to see the latest addition
 
 {\textbf{Anomaly Detection}}: Identifies the outliers in your data by invoking the deep learning autoencoder, a powerful pattern recognition model.
 
-\newpage
-
 \subsection{Running Models}
 This section describes how to run the following model types:
 
@@ -526,12 +512,14 @@ defines the parameters of the estimator and the call to
 {\texttt{H2OGradientBoostingEstimator.train}}  trains the estimator on
 the specified data.  This pattern is common for each of the H2O algorithms.
 
-\lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_train_gbm_model.py}
+\newpage
+
+\lstinputlisting[style=pythoncode]{python/python_train_gbm_model.py}
 
 To generate a classification model that uses labels, \\ use 
 {\texttt{distribution="multinomial"}}:
 
-\lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_train_gbm_multinomial_model.py}
+\lstinputlisting[style=pythoncode]{python/python_train_gbm_multinomial_model.py}
 
 \subsubsection{Generalized Linear Models (GLM)}
 Generalized linear models (GLM) are some of the most commonly-used
@@ -563,26 +551,26 @@ linear models for exponential distributions, use
 regularization to the model by adjusting the lambda and alpha
 parameters.
 
-\lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_train_glm_model.py}
+\lstinputlisting[style=pythoncode]{python/python_train_glm_model.py}
 
 \subsubsection{K-means}
 To generate a K-means model for data characterization, use
 {\texttt{h2o.kmeans()}}. This algorithm does not require a
 dependent variable.
 
-\lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_train_kmeans_model.py}
+\lstinputlisting[style=pythoncode]{python/python_train_kmeans_model.py}
 
 \subsubsection{Principal Components Analysis (PCA)}
 To map a set of variables onto a subspace using linear
 transformations, use {\texttt{h2o.transforms.decomposition.H2OPCA}}.
 This is the first step in Principal Components Regression.
-\lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_train_pca_model.py}
+\lstinputlisting[style=pythoncode]{python/python_train_pca_model.py}
 
 
 \subsection{Grid Search}
 H2O supports grid search across hyperparameters:
 
-\lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_grid_search.py}
+\lstinputlisting[style=pythoncode]{python/python_grid_search.py}
 
 \subsection{Integration with scikit-learn}
 The H2O Python client can be used within scikit-learn pipelines and cross-validation searches.  This extends the capabilities of both H2O and scikit-learn. Note that the sklearn and scipy packages are required to use the H2O Python client with scikit-learn. 
@@ -591,11 +579,11 @@ The H2O Python client can be used within scikit-learn pipelines and cross-valida
 
 To create a scikit-learn style pipeline using H2O transformers and estimators:
 
-\lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_scikit_learn_pipeline.py}
+\lstinputlisting[style=pythoncode]{python/python_scikit_learn_pipeline.py}
 
 \subsubsection{Randomized Grid Search}
 To create a scikit-learn style hyperparameter grid search using k-fold cross validation:
-\lstinputlisting[style=pythoncode]{Python_Vignette_code_examples/python_randomized_grid_search.py}
+\lstinputlisting[style=pythoncode]{python/python_randomized_grid_search.py}
 
 
 

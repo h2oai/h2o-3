@@ -1,4 +1,4 @@
-In [60]: df4 = h2o.H2OFrame.from_python(
+df4 = h2o.H2OFrame.from_python(
     {'A': [1, 2, 3,None,''],                          
      'B': ['a', 'a', 'b', 'NA', 'NA'],
      'C': ['hello', 'all', 'world', None, None],
@@ -7,5 +7,5 @@ In [60]: df4 = h2o.H2OFrame.from_python(
            '14MAR2015:13:00:00']},   
     column_types=['numeric', 'enum', 'string', 'time'])
 
-In [61]: df4.mean(na_rm=True)
-Out[61]: [2.0, nan, nan, nan]
+df4.mean(na_rm=True)
+# [2.0, nan, nan, nan]
