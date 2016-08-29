@@ -264,10 +264,7 @@ final public class DeepLearningModelInfo extends Iced {
 
   // deep clone all weights/biases
   DeepLearningModelInfo deep_clone() {
-    AutoBuffer ab = new AutoBuffer();
-    this.write(ab);
-    ab.flipForReading();
-    return (DeepLearningModelInfo) new DeepLearningModelInfo().read(ab);
+    return new AutoBuffer().put(this).flipForReading().get();
   }
 
   /**

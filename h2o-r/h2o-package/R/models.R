@@ -1,6 +1,8 @@
 #'
 #' H2O Model Related Functions
 #'
+#' @importFrom graphics strwidth par legend
+
 
 # ------------------------------- Helper Functions --------------------------- #
 # Used to verify data, x, y and turn into the appropriate things

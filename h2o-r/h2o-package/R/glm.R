@@ -3,6 +3,7 @@
 #' Fit a generalized linear model, specified by a response variable, a set of predictors, and a description of the error distribution.
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GLM model.
+#'        If x is missing,then all columns except y are used.
 #' @param y A character string or index that represent the response variable in the model.
 #' @param training_frame An H2OFrame object containing the variables in the model.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If none is given, an id will automatically be generated.
@@ -35,10 +36,11 @@
 #' @param lambda_search A logical value indicating whether to conduct a search over the space of lambda values starting from the lambda max, given
 #'                      \code{lambda} is interpreted as lambda min.
 #' @param early_stopping A logical value indicating whether to stop early when doing lambda search. H2O will stop the computation at the moment when the likelihood stops changing or gets  (on the validation data).
-#' @param nlambdas The number of lambda values to use when \code{lambda_search = TRUE}.
+#' @param nlambdas The number of lambda values to use when \code{lambda_search = TRUE}. If \code{alpha = 0}, with \code{lambda_search = TRUE},
+#'        the value of \code{nlamdas} is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 #' @param lambda_min_ratio Smallest value for lambda as a fraction of lambda.max. By default if the number of observations is greater than the
-#'                         the number of variables then \code{lambda_min_ratio} = 0.0001; if the number of observations is less than the number
-#'                         of variables then \code{lambda_min_ratio} = 0.01.
+#'        the number of variables then \code{lambda_min_ratio = 0.0001}; if the number of observations is less than the number
+#'        of variables then \code{lambda_min_ratio = 0.01}.
 #' @param beta_constraints A data.frame or H2OParsedData object with the columns ["names",
 #'        "lower_bounds", "upper_bounds", "beta_given", "rho"], where each row corresponds to a predictor
 #'        in the GLM. "names" contains the predictor names, "lower_bounds" and "upper_bounds" are the lower
@@ -56,10 +58,15 @@
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.
 #' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
 #' @param intercept Logical, include constant term (intercept) in the model.
-#' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty.
+#' @param max_active_predictors (Optional) Convergence criteria for number of predictors when using L1 penalty. If
+#'        the IRLSM solver is used, the value of \code{max_active_predictors} is set to 7000 otherwise it is set to 100000000.
 #' @param interactions A vector of column indices to interact pairwise. All combinations of two indices will be computed.
 #' @param objective_epsilon Convergence criteria. Converge if relative change in objective function is below this threshold.
-#' @param gradient_epsilon Convergence criteria. Converge if gradient l-infinity norm is below this threshold.
+#'        If \code{lambda_search = TRUE} the value of \code{objective_epsilon} is set to .0001. If the \code{lambda_search = False}
+#'        and \code{lambda = 0}, the value of \code{objective_epsilon} is set to .000001, for any other value of lambda the value of \code{objective_epsilon} is set to .0001.
+#' @param gradient_epsilon Convergence criteria. Converge if gradient l-infinity norm is below this threshold. If
+#'        \code{lambda_search = FALSE} and \code{lambda = 0}, the default value of gradient_epsilon is equal to
+#'        .000001, otherwise the default value is .0001. If \code{lambda_search = TRUE}, the conditional values above are 1E-8 and 1E-6 respectively.
 #' @param non_negative Logical, allow only positive coefficients.
 #' @param compute_p_values (Optional)  Logical, compute p-values, only allowed with IRLSM solver and no regularization. May fail if there are collinear predictors.
 #' @param remove_collinear_columns (Optional)  Logical, valid only with no regularization. If set, co-linear columns will be automatically ignored (coefficient will be 0).
@@ -144,6 +151,14 @@ h2o.glm <- function(x, y, training_frame, model_id,
                     max_runtime_secs = 0,
                     missing_values_handling = c("MeanImputation","Skip"))
 {
+  #If x is missing, then assume user wants to use all columns as features.
+  if(missing(x)){
+    if(is.numeric(y)){
+      x <- setdiff(col(training_frame),y)
+    }else{
+      x <- setdiff(colnames(training_frame),y)
+    }
+  }
   # if (!is.null(beta_constraints)) {
   #     if (!inherits(beta_constraints, "data.frame") && !is.H2OFrame(beta_constraints))
   #       stop(paste("`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ", class(beta_constraints)))

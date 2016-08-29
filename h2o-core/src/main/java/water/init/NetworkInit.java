@@ -502,9 +502,9 @@ public class NetworkInit {
 
     // Read a flatfile of allowed nodes
     if (embeddedConfigFlatfile != null)
-      H2O.STATIC_H2OS = parseFlatFileFromString(embeddedConfigFlatfile);
+      H2O.setFlatfile(parseFlatFileFromString(embeddedConfigFlatfile));
     else 
-      H2O.STATIC_H2OS = parseFlatFile(H2O.ARGS.flatfile);
+      H2O.setFlatfile(parseFlatFile(H2O.ARGS.flatfile));
 
     // All the machines has to agree on the same multicast address (i.e., multicast group)
     // Hence use the cloud name to generate multicast address
@@ -532,7 +532,7 @@ public class NetworkInit {
   }
 
   static private void multicast2( ByteBuffer bb, byte priority ) {
-    if( H2O.STATIC_H2OS == null ) {
+    if( !H2O.isFlatfileEnabled() ) {
       byte[] buf = new byte[bb.remaining()];
       bb.get(buf);
 
@@ -581,7 +581,7 @@ public class NetworkInit {
 
       // Hideous O(n) algorithm for broadcast - avoid the memory allocation in
       // this method (since it is heavily used)
-      HashSet<H2ONode> nodes = (HashSet<H2ONode>)H2O.STATIC_H2OS.clone();
+      HashSet<H2ONode> nodes = H2O.getFlatfile();
       nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
       for( H2ONode h2o : nodes ) {

@@ -24,7 +24,7 @@ class MultiReceiverThread extends Thread {
   @SuppressWarnings("resource")
   @Override public void run() {
     // No multicast?  Then do not bother with listening for them
-    if( H2O.STATIC_H2OS != null ) return;
+    if (H2O.isFlatfileEnabled()) return;
     Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
 
     MulticastSocket sock = null, errsock = null;
