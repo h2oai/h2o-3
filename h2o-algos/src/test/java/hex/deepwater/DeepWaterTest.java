@@ -473,7 +473,12 @@ public class DeepWaterTest extends TestUtil {
   public void deepWaterLoadSaveTest() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network == DeepWaterParameters.Network.user) continue;
-      if (network != DeepWaterParameters.Network.alexnet) continue;
+
+      // FIXME
+      if (network == DeepWaterParameters.Network.resnet) continue; //FAILS
+      if (network == DeepWaterParameters.Network.inception_bn) continue; //FAILS
+      if (network == DeepWaterParameters.Network.auto) continue; //FAILS
+
       DeepWaterModel m = null;
       Frame tr = null;
       Frame pred1 = null;
@@ -485,10 +490,10 @@ public class DeepWaterTest extends TestUtil {
         p._response_column = "C2";
         p._network = network;
         p._mini_batch_size = 16;
-        p._epochs = 1;
+        p._epochs = 0.1;
         p._seed = 1234;
         p._score_training_samples = 0;
-//        p._train_samples_per_iteration = p._mini_batch_size;
+        p._train_samples_per_iteration = p._mini_batch_size;
         m = new DeepWater(p).trainModel().get();
         Log.info(m);
 
@@ -557,7 +562,12 @@ public class DeepWaterTest extends TestUtil {
   public void testRestoreState() throws IOException {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network == DeepWaterParameters.Network.user) continue;
-      if (network != DeepWaterParameters.Network.lenet) continue;
+
+      // FIXME
+      if (network == DeepWaterParameters.Network.resnet) continue; //FAILS
+      if (network == DeepWaterParameters.Network.inception_bn) continue; //FAILS
+      if (network == DeepWaterParameters.Network.auto) continue; //FAILS
+
       DeepWaterModel m1 = null;
       DeepWaterModel m2 = null;
       Frame tr = null;
@@ -567,9 +577,11 @@ public class DeepWaterTest extends TestUtil {
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._network = network;
         p._response_column = "C2";
+        p._mini_batch_size = 16;
+        p._train_samples_per_iteration = p._mini_batch_size;
         p._rate = 0e-3;
         p._seed = 12345;
-        p._epochs = 1;
+        p._epochs = 0.1;
         m1 = new DeepWater(p).trainModel().get();
 
         Log.info("Scoring the original model.");
