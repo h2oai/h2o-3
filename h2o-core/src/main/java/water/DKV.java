@@ -25,7 +25,7 @@ package water;
  *  Local Puts (one where the Key is homed on this Node) update directly in the
  *  local K/V store, taking no more time than a NonBlockingHashMap write.
  *  Remote Puts will serialize and ship data over the wire, taking time related
- *  to object size and network speed.  
+ *  to object size and network speed.
  *  <p>
  *  Blocking for a Put to complete takes longer, requiring all invalidates to
  *  have happened and perhaps a response from the home node (multiple
@@ -65,8 +65,8 @@ public abstract class DKV {
   static public Value put( Keyed keyed, Futures fs ) { return put(keyed._key,new Value(keyed._key,keyed),fs); }
 
   /** Make the mapping <em>key -&gt; val</em>.  Blocking, caching.  */
-  static public Value put( Key key, Value val ) { 
-    Futures fs = new Futures(); 
+  static public Value put( Key key, Value val ) {
+    Futures fs = new Futures();
     Value old = put(key,val,fs);
     fs.blockForPending();
     return old;
@@ -169,7 +169,7 @@ public abstract class DKV {
   }
 
   /** Return the {@link Value} mapped to Key <em>key</em>, or null if no
-   *  mapping.  Blocks till data available, always caches.  
+   *  mapping.  Blocks till data available, always caches.
    *  @return The {@link Value} mapped to Key <em>key</em>, or null if no
    *  mapping. */
   static public Value get    ( Key key ) { return get(key,true ); }
@@ -185,6 +185,7 @@ public abstract class DKV {
   static public void prefetch( String key_name ) {        get(Key.make(key_name),false); }
 
   static private Value get( Key key, boolean blocking ) {
+    if (key == null) return null;
     // Read the Cloud once per put-attempt, to keep a consistent snapshot.
     H2O cloud = H2O.CLOUD;
     Value val = Value.STORE_get(key);

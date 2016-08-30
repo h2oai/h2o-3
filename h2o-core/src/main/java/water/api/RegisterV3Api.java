@@ -208,6 +208,11 @@ public class RegisterV3Api extends AbstractRegister {
         "GET /3/Models.java/{model_id}", ModelsHandler.class, "fetchJavaCode",
         "[DEPRECATED] Return the stream containing model implementation in Java code.");
 
+    RequestServer.registerEndpoint("modelData",
+        "GET /3/Models/{model_id}/data", ModelsHandler.class, "fetchZippedModel",
+        "Return the model as a zipped set of raw data files. These data files can then be interpreted by " +
+        "gen_model.jar in order to perform the scoring. Works only for a limited set of algos.");
+
     // Model serialization - import/export calls
     RequestServer.registerEndpoint("importModel",
         "POST /99/Models.bin/{model_id}", ModelsHandler.class, "importModel",

@@ -3,7 +3,10 @@ package hex.genmodel.tools;
 import hex.genmodel.GenMunger;
 import hex.genmodel.easy.RowData;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
 
 /**
  * Simple driver program for reading a CSV file and munging it.

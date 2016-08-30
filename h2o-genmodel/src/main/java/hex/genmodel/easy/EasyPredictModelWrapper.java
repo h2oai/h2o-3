@@ -1,11 +1,5 @@
 package hex.genmodel.easy;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
-
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.easy.exception.PredictException;
@@ -13,6 +7,12 @@ import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.exception.PredictUnknownTypeException;
 import hex.genmodel.easy.exception.PredictWrongModelCategoryException;
 import hex.genmodel.easy.prediction.*;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
@@ -425,7 +425,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
       Integer index = modelColumnNameToIndexMap.get(dataColumnName);
 
       // Skip column names that are not known.
-      if (index == null) {
+      // Skip the "response" column which should not be included in `rawData`
+      if (index == null || index >= rawData.length) {
         continue;
       }
 

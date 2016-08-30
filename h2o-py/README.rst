@@ -3,23 +3,17 @@ Setup and Installation
 
 Prerequisites:
 
-    - Python 2.7
-    - Numpy 1.9.2
+  - Python 2.7
+  - Numpy 1.9.2
 
-  For windows users, please grab a .whl from http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy
+For windows users, please grab a `.whl` file from http://www.lfd.uci.edu/~gohlke/pythonlibs/#numpy
 
-This module depends on *requests*, *tabulate*, and *scikit-learn* modules, all of which are available on pypi:
+This module depends on **requests**, **tabulate**, and **scikit-learn** modules, all of which are available on pypi::
 
     $ pip install requests
-
     $ pip install tabulate
-
     $ pip install scikit-learn
-
     $ pip install future
-    
-    $ pip install six
- 
     $ pip install wheel
 
 The H2O Python Module
@@ -33,7 +27,7 @@ The H2O JVM uses a web server so that all communication occurs on a socket (spec
 by an IP address and a port) via a series of REST calls (see connection.py for the REST
 layer implementation and details). There is a single active connection to the H2O JVM at
 any time, and this handle is stashed out of sight in a singleton instance of
-:class:`H2OConnection` (this is the global  :envvar:`__H2OConn__`). In other words,
+:class:`H2OConnection` (can be obtained from :meth:`h2o.connection()`). In other words,
 this package does not rely on Jython, and there is no direct manipulation of the JVM.
 
 The H2O python module is not intended as a replacement for other popular machine learning
@@ -121,13 +115,15 @@ manipulation of a distributed system.
 Objects In This Module
 ----------------------
 
-The objects that are of primary concern to the python user are (in order of importance)
-- Keys
-- Frames
-- Vecs
-- Models
-- ModelMetrics
-- Jobs (to a lesser extent)
+The objects that are of primary concern to a python user are (in order of importance):
+
+  - `Key`s
+  - `Frame`s
+  - `Vec`s
+  - `Model`s
+  - `ModelMetric`s
+  - `Job`s (to a lesser extent)
+
 Each of these objects are described in greater detail in this documentation,
 but a few brief notes are provided here.
 
@@ -186,7 +182,7 @@ Expr
 ++++
 In the guts of this module is the Expr class, which defines objects holding
 the cumulative, unevaluated expressions that may become H2OFrame/H2OVec objects.
-For example:
+For example::
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
@@ -204,7 +200,7 @@ all dependent subparts composing `a` are also evaluated.
 
 This module relies on reference counting of python objects to dispose of
 out-of-scope objects. The Expr class destroys objects and their big data
-counterparts in the H2O cloud using a remove call:
+counterparts in the H2O cloud using a remove call::
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
@@ -224,13 +220,13 @@ from a background in scikit-learn. Instead of using objects to build the model,
 builder functions are provided in the top-level module, and the result of a call
 is a model object belonging to one of the following categories:
 
-    * Regression
-    * Binomial
-    * Multinomial
-    * Clustering
-    * Autoencoder
+  * Regression
+  * Binomial
+  * Multinomial
+  * Clustering
+  * Autoencoder
 
-To better demonstrate this concept, refer to the following example:
+To better demonstrate this concept, refer to the following example::
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
@@ -248,7 +244,7 @@ As you can see in the example, the result of the GLM call is a binomial model. T
 an important feature-munging step needed for GLM to perform a classification task rather than a
 regression task. Namely, the second column is initially read as a numeric column,
 but it must be changed to a factor by way of the H2OVec operation `asfactor`. Let's take a look
-at this more deeply:
+at this more deeply::
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
   >>>
@@ -270,7 +266,7 @@ The above example shows how to properly deal with numeric columns you would like
 classification setting. Additionally, H2O can perform on-the-fly scoring of validation
 data and provide a host of metrics on the validation and training data. Here's an example
 of this functionality, where we additionally split the data set into three pieces for training,
-validation, and finally testing:
+validation, and finally testing::
 
   >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate
   >>>
@@ -297,7 +293,7 @@ validation, and finally testing:
   >>> m.model_performance(test_data=test)                          # score and compute new metrics on the test data!
 
 Expanding on this example, there are a number of ways of querying a model for its attributes.
-Here are some examples of how to do just that:
+Here are some examples of how to do just that::
 
   >>> m.mse()           # MSE on the training data
   >>>
@@ -324,11 +320,13 @@ Metrics
 +++++++
 
 H2O models exhibit a wide array of metrics for each of the model categories:
-- Clustering
-- Binomial
-- Multinomial
-- Regression
-- AutoEncoder
+
+  - Clustering
+  - Binomial
+  - Multinomial
+  - Regression
+  - AutoEncoder
+
 In turn, each of these categories is associated with a corresponding H2OModelMetrics class.
 
 All algorithm calls return at least one type of metrics: the training set metrics. When building
@@ -340,7 +338,7 @@ In addition to the metrics that can be retrieved at model-build time, there is a
 possible third type of metrics available post-build for the final holdout test set that
 contains data that does not appear in either the training or validation sets: the
 test set metrics. While the returned object is an H2OModelMetrics rather than an H2O model,
-it can be queried in the same exact way. Here's an example:
+it can be queried in the same exact way. Here's an example::
 
   >>> fr = h2o.import_file(path="smalldata/iris/iris_wheader.csv")   # import iris
   >>>
@@ -380,12 +378,10 @@ of this document.
 Example of H2O on Hadoop
 ------------------------
 
-Here is a brief example of H2O on Hadoop:
+Here is a brief example of H2O on Hadoop::
 
-.. code-block:: python
-
-  import h2o
-  h2o.init(ip="192.168.1.10", port=54321)
+  >>> import h2o
+  >>> h2o.init(ip="192.168.1.10", port=54321)
   --------------------------  ------------------------------------
   H2O cluster uptime:         2 minutes 1 seconds 966 milliseconds
   H2O cluster version:        0.1.27.1064
@@ -396,30 +392,27 @@ Here is a brief example of H2O on Hadoop:
   H2O cluster allowed cores:  80
   H2O cluster healthy:        True
   --------------------------  ------------------------------------
-  pathDataTrain = ["hdfs://192.168.1.10/user/data/data_train.csv"]
-  pathDataTest = ["hdfs://192.168.1.10/user/data/data_test.csv"]
-  trainFrame = h2o.import_file(path=pathDataTrain)
-  testFrame = h2o.import_file(path=pathDataTest)
+  >>> pathDataTrain = ["hdfs://192.168.1.10/user/data/data_train.csv"]
+  >>> pathDataTest = ["hdfs://192.168.1.10/user/data/data_test.csv"]
+  >>> trainFrame = h2o.import_file(path=pathDataTrain)
+  >>> testFrame = h2o.import_file(path=pathDataTest)
+  Parse Progress: [##################################################] 100%
+  Imported [hdfs://192.168.1.10/user/data/data_train.csv'] into cluster with 60000 rows and 500 cols
 
-  #Parse Progress: [##################################################] 100%
-  #Imported [hdfs://192.168.1.10/user/data/data_train.csv'] into cluster with 60000 rows and 500 cols
+  Parse Progress: [##################################################] 100%
+  Imported ['hdfs://192.168.1.10/user/data/data_test.csv'] into cluster with 10000 rows and 500 cols
 
-  #Parse Progress: [##################################################] 100%
-  #Imported ['hdfs://192.168.1.10/user/data/data_test.csv'] into cluster with 10000 rows and 500 cols
-
-  trainFrame[499]._name = "label"
-  testFrame[499]._name = "label"
-
-  model = h2o.gbm(x=trainFrame.drop("label"),
+  >>> trainFrame[499]._name = "label"
+  >>> testFrame[499]._name = "label"
+  >>> model = h2o.gbm(x=trainFrame.drop("label"),
               y=trainFrame["label"],
               validation_x=testFrame.drop("label"),
               validation_y=testFrame["label"],
               ntrees=100,
               max_depth=10
               )
+  gbm Model Build Progress: [##################################################] 100%
 
-  #gbm Model Build Progress: [##################################################] 100%
-
-  predictFrame = model.predict(testFrame)
-  model.model_performance(testFrame)
+  >>> predictFrame = model.predict(testFrame)
+  >>> model.model_performance(testFrame)
 
