@@ -151,6 +151,7 @@ class H2OEstimator(ModelBase):
             x = set(training_frame.names)
             if is_type(y, int): x -= {training_frame.names[y]}
             if is_type(y, str): x -= {y}
+            x = list(x)
         parms["x"] = x
         parms["y"] = y
         parms["training_frame"] = training_frame

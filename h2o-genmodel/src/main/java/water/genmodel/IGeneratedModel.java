@@ -1,7 +1,5 @@
 package water.genmodel;
 
-import java.util.Map;
-
 /**
  * A generic interface to access generated models.
  */
@@ -82,7 +80,7 @@ public interface IGeneratedModel {
     public int mapEnum(int colIdx, String categoricalValue);
 
     /**
-     * Returns the expected size of preds array which is passed to {@link #predict(double[], float[])} function.
+     * Returns the expected size of preds array which is passed to `predict(double[], float[])` function.
      * @return expected size of preds array
      */
     public int getPredsSize();
