@@ -93,9 +93,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     Frame predsLabel = new Frame(targetClassProbs);
     predsLabel.add("labels", _labels2);
     MetricBuilderBinomial mb = new BinomialMetrics(_labels2.domain()).doAll(predsLabel)._mb;
-    _labels.remove();
     Frame preds = new Frame(targetClassProbs);
     ModelMetricsBinomial mm = (ModelMetricsBinomial)mb.makeModelMetrics(null, predsLabel, null, preds);
+    _labels.remove();
     _labels2.remove();
     mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
     return mm;
