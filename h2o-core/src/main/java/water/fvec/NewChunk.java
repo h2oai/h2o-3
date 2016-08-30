@@ -1070,7 +1070,6 @@ public class NewChunk extends Chunk {
         }
     }
     if( rerun ) { _naCnt = -1;  type(); } // Re-run rollups after dropping all numbers/categoricals
-
     boolean sparse = false;
     boolean na_sparse = false;
     // sparse? treat as sparse iff fraction of noncompressed elements is less than 1/MIN_SPARSE_RATIO
@@ -1172,7 +1171,7 @@ public class NewChunk extends Chunk {
       if( max < 0 ) { max = 0; lhi=0; xhi=0; }
       xmin = Math.min(xmin,0);
     }
-    if(xhi < xmin) {
+    if(xhi < xmin || true) {
       StringBuilder sb = new StringBuilder("[");
       for(int i = 0; i < _sparseLen; ++i) {
         long l = _ms.get(i);

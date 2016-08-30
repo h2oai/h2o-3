@@ -70,7 +70,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
       try {
         _nvs[i].close(_cidx, fs);
       } catch(Throwable t){
-        throw new RuntimeException("Column " + i + " compression failed with exception " + t.toString() + ", msg = '" + t.getMessage() + "'",t);
+        throw new RuntimeException("Chunk " + _cidx + ", chunkSz = " + _chunkSize + ", column " + i + " compression failed with exception " + t.toString(),t);
       }
       _nvs[i] = null; // free immediately, don't wait for all columns to close
     }
