@@ -22,7 +22,7 @@ Quick Start
 * Deep learning in H2O with Arno Candel (Overview) `[Youtube] <https://www.youtube.com/watch?v=zGdXaRug7LI/>`__
 * Top 10 tips and tricks `[Youtube] <https://www.youtube.com/watch?v=LM255qs8Zsk/>`__
 * NYC Tour Deep Learning Panel: Tensorflow, Mxnet, Caffe `[Youtube] <https://www.youtube.com/watch?v=KWdkVoKJG3U/>`__
-
+* Deep Water project: `[Github] <http://github.com/h2oai/deepwater/>`__
 
 Defining a Deep Learning Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
