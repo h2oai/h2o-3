@@ -5,7 +5,6 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import abc
 import inspect
 import types
 import warnings
@@ -244,10 +243,9 @@ class H2OEstimator(ModelBase):
         H2OEstimator.mixin(self, model_class)
         self.__dict__.update(m.__dict__.copy())
 
-    @abc.abstractmethod
     def _compute_algo(self):
         """Overridden in subclasses"""
-        return NotImplemented
+        raise NotImplementedError()
 
     @staticmethod
     def mixin(obj, cls):
