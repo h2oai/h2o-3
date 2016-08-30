@@ -54,6 +54,17 @@ public class Weaver {
     } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
   }
 
+  /**
+   * Obtain the H2O {@link ClassPool} to help manage classes that are generated
+   * dynamically.
+   *
+   * It is desirable to push classes generated at runtime onto the search path
+   * via {@link ClassPool#insertClassPath(ClassPath)}, so that
+   * {@link Weaver#javassistLoadClass(int, Class)} can attempt to find the class
+   * and generate any {@link Icer}s.
+   *
+   * @return {@link ClassPool}
+   */
   public static ClassPool getPool() { return _pool; }
 
   public static <T extends Freezable> Icer<T> genDelegate( int id, Class<T> clazz ) {
