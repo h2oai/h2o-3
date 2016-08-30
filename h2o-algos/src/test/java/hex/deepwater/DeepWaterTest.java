@@ -412,7 +412,7 @@ public class DeepWaterTest extends TestUtil {
         if (tr != null) tr.remove();
       }
     }
-    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-7);
+    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-6);
   }
 
   @Test
@@ -439,7 +439,7 @@ public class DeepWaterTest extends TestUtil {
         if (tr!=null) tr.remove();
       }
     }
-    for (int i=1;i<REPS;++i) Assert.assertNotEquals(values[0],values[i],1e-8);
+    for (int i=1;i<REPS;++i) Assert.assertNotEquals(values[0],values[i],1e-6);
   }
 
   @Test
@@ -466,13 +466,14 @@ public class DeepWaterTest extends TestUtil {
         if (tr!=null) tr.remove();
       }
     }
-    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-8);
+    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-6);
   }
 
   @Test
   public void deepWaterLoadSaveTest() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network == DeepWaterParameters.Network.user) continue;
+      if (network != DeepWaterParameters.Network.alexnet) continue;
       DeepWaterModel m = null;
       Frame tr = null;
       Frame pred1 = null;
@@ -497,12 +498,13 @@ public class DeepWaterTest extends TestUtil {
         pred1 = m.score(tr);
         pred1.remove(0).remove();
         ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred1, tr.vec(p._response_column));
-        Assert.assertEquals(mm._logloss, ((ModelMetricsMultinomial)m._output._training_metrics)._logloss, 1e-8);
+        Assert.assertEquals(mm._logloss, ((ModelMetricsMultinomial)m._output._training_metrics)._logloss, 1e-6);
         Assert.assertTrue(m.model_info()._imageTrain==null);
 
         // do it again
         pred2 = m.score(tr);
-        Assert.assertTrue(isBitIdentical(pred1, pred2));
+        pred2.remove(0).remove();
+        Assert.assertTrue(isIdenticalUpToRelTolerance(pred1, pred2, 1e-6));
 
         // move stuff back and forth a bit
         int count=10;
@@ -511,7 +513,8 @@ public class DeepWaterTest extends TestUtil {
           m.model_info().nativeToJava();
         }
         pred3 = m.score(tr);
-        Assert.assertTrue(isBitIdentical(pred2, pred3));
+        pred3.remove(0).remove();
+        Assert.assertTrue(isIdenticalUpToRelTolerance(pred2, pred3, 1e-6));
 
       } finally {
         if (m!=null) m.delete();
@@ -552,51 +555,55 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void testRestoreState() throws IOException {
-    DeepWaterModel m1 = null;
-    DeepWaterModel m2 = null;
-    Frame tr = null;
-    Frame pred = null;
-    try {
-      DeepWaterParameters p = new DeepWaterParameters();
-      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
-      p._network = DeepWaterParameters.Network.lenet;
-      p._response_column = "C2";
-      p._rate = 0e-3;
-      p._seed = 12345;
-      p._epochs = 1;
-      m1 = new DeepWater(p).trainModel().get();
+    for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
+      if (network == DeepWaterParameters.Network.user) continue;
+      if (network != DeepWaterParameters.Network.lenet) continue;
+      DeepWaterModel m1 = null;
+      DeepWaterModel m2 = null;
+      Frame tr = null;
+      Frame pred = null;
+      try {
+        DeepWaterParameters p = new DeepWaterParameters();
+        p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+        p._network = network;
+        p._response_column = "C2";
+        p._rate = 0e-3;
+        p._seed = 12345;
+        p._epochs = 1;
+        m1 = new DeepWater(p).trainModel().get();
 
-      Log.info("Scoring the original model.");
-      pred = m1.score(tr);
-      pred.remove(0).remove();
-      ModelMetricsMultinomial mm1 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
-      Log.info("Original LL: " + ((ModelMetricsMultinomial) m1._output._training_metrics).logloss());
-      Log.info("Scored   LL: " + mm1.logloss());
-      pred.remove();
+        Log.info("Scoring the original model.");
+        pred = m1.score(tr);
+        pred.remove(0).remove();
+        ModelMetricsMultinomial mm1 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
+        Log.info("Original LL: " + ((ModelMetricsMultinomial) m1._output._training_metrics).logloss());
+        Log.info("Scored   LL: " + mm1.logloss());
+        pred.remove();
 
-      Log.info("Keeping the raw byte[] of the model.");
-      byte[] raw = new AutoBuffer().put(m1).buf();
+        Log.info("Keeping the raw byte[] of the model.");
+        byte[] raw = new AutoBuffer().put(m1).buf();
 
-      Log.info("Removing the model from the DKV.");
-      m1.remove();
+        Log.info("Removing the model from the DKV.");
+        m1.remove();
 
-      Log.info("Restoring the model from the raw byte[].");
-      m2 = new AutoBuffer(raw).get();
+        Log.info("Restoring the model from the raw byte[].");
+        m2 = new AutoBuffer(raw).get();
 
-      Log.info("Scoring the restored model.");
-      pred = m2.score(tr);
-      pred.remove(0).remove();
-      ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
-      Log.info("Restored LL: " + mm2.logloss());
+        Log.info("Scoring the restored model.");
+        pred = m2.score(tr);
+        pred.remove(0).remove();
+        ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
+        Log.info("Restored LL: " + mm2.logloss());
 
-      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-7); //make sure scoring is self-consistent
-      Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-7);
+        Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-6); //make sure scoring is self-consistent
+        Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-6);
 
-    } finally {
-      if (m1 !=null) m1.delete();
-      if (m2!=null) m2.delete();
-      if (tr!=null) tr.remove();
-      if (pred!=null) pred.remove();
+      } finally {
+        if (m1 !=null) m1.delete();
+        if (m2!=null) m2.delete();
+        if (tr!=null) tr.remove();
+        if (pred!=null) pred.remove();
+      }
     }
   }
 }
