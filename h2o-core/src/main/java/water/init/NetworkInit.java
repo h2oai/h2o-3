@@ -458,6 +458,7 @@ public class NetworkInit {
         }
         break;
       } catch (Exception e) {
+        Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);
         if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
         if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
         if( _tcpSocket != null ) try { _tcpSocket.close(); } catch( IOException ie ) { }
@@ -473,7 +474,7 @@ public class NetworkInit {
       // Try next available port to bound
       H2O.API_PORT += 2;
       if (H2O.API_PORT > (1<<16)) {
-        Log.err("Cannot find free port for " + H2O.SELF_ADDRESS);
+        Log.err("Cannot find free port for " + H2O.SELF_ADDRESS + " from baseport = " + H2O.ARGS.baseport);
         H2O.exit(-1);
       }
     }
