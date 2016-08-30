@@ -15,10 +15,10 @@ import java.util.Map;
  */
 abstract public class RawModel extends GenModel {
     protected ContentReader _reader;
-    private hex.ModelCategory _category;
-    private String _uuid;
-    private boolean _supervised;
-    private int _nfeatures;
+    protected hex.ModelCategory _category;
+    protected String _uuid;
+    protected boolean _supervised;
+    protected int _nfeatures;
     protected int _nclasses;
     protected boolean _balanceClasses;
     protected double _defaultThreshold;
@@ -27,6 +27,7 @@ abstract public class RawModel extends GenModel {
 
     /**
      * Primary factory method for constructing RawModel instances.
+     *
      * @param file Name of the zip file (or folder) with the model's data. This should be the data retrieved via
      *             `GET /3/Models/{model_id}/data` endpoint.
      * @return New `RawModel` object.
@@ -62,7 +63,7 @@ abstract public class RawModel extends GenModel {
     // (Private) initialization
     //------------------------------------------------------------------------------------------------------------------
 
-    public RawModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
+    protected RawModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(columns, domains);
         _reader = cr;
         _uuid = (String) info.get("uuid");

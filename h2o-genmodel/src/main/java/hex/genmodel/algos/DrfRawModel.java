@@ -2,7 +2,7 @@ package hex.genmodel.algos;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.RawModel;
-import hex.genmodel.utils.BastardIcedBitSet;
+import hex.genmodel.utils.GenmodelBitSet;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.NaSplitDir;
 
@@ -13,17 +13,22 @@ import java.util.Map;
 /**
  * "Distributed Random Forest" RawModel
  */
-public class DrfRawModel extends RawModel {
+public final class DrfRawModel extends RawModel {
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
     private int _ntrees;
+    private int _effective_n_classes;
     private boolean _binomial_double_trees;
+    private byte[][] _compressed_trees;
+
 
     public DrfRawModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(cr, info, columns, domains);
         _ntrees = (int) info.get("n_trees");
         _binomial_double_trees = info.get("binomial_double_trees").equals("true");
+        _effective_n_classes = _nclasses == 2 && !_binomial_double_trees? 1 : _nclasses;
+        _compressed_trees = new byte[_ntrees * _effective_n_classes][];
     }
 
     public final double[] score0(double[] data) {
@@ -37,14 +42,16 @@ public class DrfRawModel extends RawModel {
     // and remaining columns hold a probability distribution for classifiers.
     public final double[] score0(double[] data, double[] preds) {
         java.util.Arrays.fill(preds, 0);
-        boolean isRegressionModel = _nclasses == 1;
-        boolean isBinomialModel = _nclasses == 2 && !_binomial_double_trees;
-        int effectiveNClasses = isBinomialModel? 1 : _nclasses;
-        for (int i = 0; i < effectiveNClasses; i++) {
-            int k = isRegressionModel? 0 : i + 1;
+        for (int i = 0; i < _effective_n_classes; i++) {
+            int k = _nclasses == 1? 0 : i + 1;
             for (int j = 0; j < _ntrees; j++) {
                 try {
-                    byte[] tree = _reader.getBinaryFile(String.format("trees/t%02d_%03d.bin", i, j));
+                    int itree = i * _ntrees + j;
+                    byte[] tree = _compressed_trees[itree];
+                    if (tree == null) {
+                        tree = _reader.getBinaryFile(String.format("trees/t%02d_%03d.bin", i, j));
+                        _compressed_trees[itree] = tree;
+                    }
                     preds[k] += scoreTree(tree, data);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -55,6 +62,7 @@ public class DrfRawModel extends RawModel {
             }
         }
         // Correct the predictions -- see `DRFModel.toJavaUnifyPreds`
+        boolean isBinomialModel = _nclasses == 2 && !_binomial_double_trees;
         if (_nclasses == 1) {
             // Regression
             preds[0] /= _ntrees;
@@ -84,9 +92,9 @@ public class DrfRawModel extends RawModel {
     }
 
     @SuppressWarnings("ConstantConditions")
-    private double scoreTree(byte[] _bits, double[] data, boolean computeLeafAssignment) {
-        ByteBufferWrapper ab = new ByteBufferWrapper(_bits);
-        BastardIcedBitSet ibs = null;  // Lazily set on hitting first group test
+    private double scoreTree(byte[] tree, double[] row, boolean computeLeafAssignment) {
+        ByteBufferWrapper ab = new ByteBufferWrapper(tree);
+        GenmodelBitSet ibs = null;  // Lazily set on hitting first group test
         long bitsRight = 0;
         int level = 0;
         while (true) {
@@ -99,7 +107,7 @@ public class DrfRawModel extends RawModel {
             final boolean left = naSplitDir == NsdLeft;
             int equal = (nodeType&12) >> 2;
             assert (equal >= 0 && equal <= 3) :
-                "illegal equal value " + equal + " in bitpile " + Arrays.toString(_bits);
+                "illegal equal value " + equal + " in bitpile " + Arrays.toString(tree);
 
             float splitVal = -1;
             if (!naVsRest) {
@@ -109,9 +117,9 @@ public class DrfRawModel extends RawModel {
                     splitVal = ab.get4f(); // Get the float to compare
                 } else {
                     // Bitset test
-                    if (ibs == null) ibs = new BastardIcedBitSet(0);
-                    if (equal == 2) ibs.fill2(_bits, ab);
-                    else ibs.fill3(_bits, ab);
+                    if (ibs == null) ibs = new GenmodelBitSet(0);
+                    if (equal == 2) ibs.fill2(tree, ab);
+                    else ibs.fill3(tree, ab);
                 }
             }
 
@@ -127,11 +135,11 @@ public class DrfRawModel extends RawModel {
                 case 16: skip = _nclasses < 256? 1 : 2;  break; // Small leaf
                 case 48: skip = 4;  break; // skip the prediction
                 default:
-                    assert false : "illegal lmask value " + lmask + " in bitpile " + Arrays.toString(_bits);
+                    assert false : "illegal lmask value " + lmask + " in bitpile " + Arrays.toString(tree);
             }
 
             assert equal != 1;  // no longer supported
-            double d = data[colId];
+            double d = row[colId];
             if (Double.isNaN(d) && !naLeft || // NA goes right
                 !naVsRest && equal == 0 && d >= splitVal ||  // greater or equals goes right
                 !naVsRest && (equal == 2 || equal == 3) && ibs.contains((int)d)  // if contained in bitset, go right

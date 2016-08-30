@@ -1,19 +1,22 @@
 package hex.genmodel.utils;
 
 /**
- * BastardIcedBitSet - bastardized copy of water.utils.IcedBitSet
+ * GenmodelBitSet - bitset that "lives" on top of an external byte array. It does not necessarily span the entire
+ * byte array, and thus essentially provides a "bitset-view" on the underlying data stream.
+ *
+ * This is a bastardized copy of water.utils.IcedBitSet
  */
-public class BastardIcedBitSet {
+public class GenmodelBitSet {
     private byte[] _val;  // Holder of the bits, perhaps also holding other unrelated data
     private int _byteoff; // Number of bytes skipped before starting to count bits
-    private int _nbits;   // Number of bits-in-a-row
+    private int _nbits;   // Number of bits in this bitset
     private int _bitoff;  // Number of bits discarded from beginning (inclusive min)
 
-    public BastardIcedBitSet(int nbits) {
+    public GenmodelBitSet(int nbits) {
         this(nbits, 0);
     }
 
-    public BastardIcedBitSet(int nbits, int bitoff) {
+    public GenmodelBitSet(int nbits, int bitoff) {
         // For small bitsets, just use a no-offset fixed-length format
         if (bitoff + nbits <= 32) {
             bitoff = 0;

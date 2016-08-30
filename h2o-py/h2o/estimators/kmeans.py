@@ -11,6 +11,7 @@ class H2OKMeansEstimator(H2OEstimator):
     """
     K-means
 
+    Performs k-means clustering on an H2O dataset.
 
     Parameters
     ----------

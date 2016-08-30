@@ -754,30 +754,31 @@ def download_pojo(model, path="", get_jar=True):
     :param model: the model whose scoring POJO should be retrieved.
     :param path: an absolute path to the directory where POJO should be saved.
     :param get_jar: retrieve the h2o-genmodel.jar also.
+    :returns: location of the downloaded POJO file.
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
     assert_is_type(get_jar, bool)
 
-    java = api("GET /3/Models.java/%s" % model.model_id)
-
-    # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
-    # TODO: clients should extract Java class name from header.
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    pojoname = regex.sub("_", model.model_id)
-
+    filepath = "<stdout>"
     if path == "":
+        java = api("GET /3/Models.java/%s" % model.model_id)
         print(java)
     else:
+        # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
+        # TODO: clients should extract Java class name from header.
+        regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+        pojoname = regex.sub("_", model.model_id)
         filepath = os.path.join(path, pojoname + ".java")
-        with open(filepath, "wb") as f:
-            f.write(java.encode("utf-8"))
-    if get_jar and path != "":
-        url = h2oconn.make_url("h2o-genmodel.jar")
-        filename = path + "/" + "h2o-genmodel.jar"
-        response = urlopen()(url)
-        with open(filename, "wb") as f:
-            f.write(response.read())
+        api("GET /3/Models.java/%s" % model.model_id, save_to=filepath)
+
+        if get_jar:
+            url = h2oconn.make_url("h2o-genmodel.jar")
+            filename = path + "/" + "h2o-genmodel.jar"
+            response = urlopen()(url)
+            with open(filename, "wb") as f:
+                f.write(response.read())
+        return filepath
 
 
 def download_csv(data, filename):
