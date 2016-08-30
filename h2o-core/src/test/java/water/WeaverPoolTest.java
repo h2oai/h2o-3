@@ -25,7 +25,11 @@ public class WeaverPoolTest extends TestUtil {
     broadCast(name, bytecode);
     try {
       ((MRTask)Class.forName("A").newInstance()).doAllNodes();
-    } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+    } catch (ClassNotFoundException e) {
+      e.printStackTrace();
+    } catch (InstantiationException e) {
+      e.printStackTrace();
+    } catch (IllegalAccessException e) {
       e.printStackTrace();
     }
   }
@@ -37,7 +41,9 @@ public class WeaverPoolTest extends TestUtil {
         cp.insertClassPath( new ByteArrayClassPath(name,b));
         try {
           cp.get(name).toClass();
-        } catch (CannotCompileException | NotFoundException e) {
+        } catch (CannotCompileException e) {
+          e.printStackTrace();
+        } catch (NotFoundException e) {
           e.printStackTrace();
         }
       }
