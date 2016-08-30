@@ -1,14 +1,17 @@
 package hex.genmodel.tools;
 
 import hex.ModelCategory;
+import hex.genmodel.GenModel;
+import hex.genmodel.RawModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
+import au.com.bytecode.opencsv.CSVReader;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * Simple driver program for reading a CSV file and making predictions.
@@ -18,95 +21,41 @@ import java.io.FileWriter;
  * See the top-of-tree master version of this file <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-genmodel/src/main/java/hex/genmodel/tools/PredictCsv.java" target="_blank">here on github</a>.
  */
 public class PredictCsv {
-  private static String modelClassName;
-  private static String inputCSVFileName;
-  private static String outputCSVFileName;
-  private static int haveHeaders = -1;
+  private String modelName;
 
-  private static void usage() {
-    System.out.println("");
-    System.out.println("usage:  java [...java args...] hex.genmodel.tools.PredictCsv --header --model modelClassName --input inputCSVFileName --output outputCSVFileName");
-    System.out.println("");
-    System.out.println("        model class name is something like GBMModel_blahblahblahblah.");
-    System.out.println("");
-    System.out.println("        inputCSVFileName is the test data set.");
-    System.out.println("        Specifying --header is required for h2o-3.");
-    System.out.println("");
-    System.out.println("        outputCSVFileName is the prediction data set (one row per test data set row).");
-    System.out.println("");
-    System.exit(1);
+  private String inputCSVFileName;
+
+  private String outputCSVFileName;
+
+  private boolean useDecimalOutput = false;
+
+  // Model instance
+  private EasyPredictModelWrapper model;
+
+  public static void main(String[] args) {
+    // Parse command line arguments
+    PredictCsv main = new PredictCsv();
+    main.parseArgs(args);
+
+    // Run the main program
+    try {
+      main.run();
+    } catch (Exception e) {
+      e.printStackTrace();
+      System.exit(2);
+    }
+    // Predictions were successfully generated.
+    System.exit(0);
   }
 
-  private static void parseArgs(String[] args) {
-    for (int i = 0; i < args.length; i++) {
-      String s = args[i];
-      switch (s) {
-        case "--model":
-          i++;
-          if (i >= args.length) usage();
-          modelClassName = args[i];
-          break;
-        case "--input":
-          i++;
-          if (i >= args.length) usage();
-          inputCSVFileName = args[i];
-          break;
-        case "--output":
-          i++;
-          if (i >= args.length) usage();
-          outputCSVFileName = args[i];
-          break;
-        case "--header":
-          haveHeaders = 1;
-          break;
-        default:
-          System.out.println("ERROR: Bad parameter: " + s);
-          usage();
-      }
-    }
 
-    if (haveHeaders != 1) {
-      System.out.println("ERROR: header not specified");
-      usage();
-    }
-
-    if (modelClassName == null) {
-      System.out.println("ERROR: model not specified");
-      usage();
-    }
-
-    if (inputCSVFileName == null) {
-      System.out.println("ERROR: input not specified");
-      usage();
-    }
-
-    if (outputCSVFileName == null) {
-      System.out.println("ERROR: output not specified");
-      usage();
-    }
-  }
-
-  /**
-   * This CSV header row parser is as bare bones as it gets.
-   * Doesn't handle funny quoting, spacing, or other issues.
-   */
-  private static String[] parseHeaderRow(String line) {
-    return line.trim().split(",");
-  }
-
-  /**
-   * This CSV parser is as bare bones as it gets.
-   * Our test data doesn't have funny quoting, spacing, or other issues.
-   * Can't handle cases where the number of data columns is less than the number of header columns.
-   */
-  private static RowData parseDataRow(String line, String[] inputColumnNames) {
-    String[] inputData = line.trim().split(",");
-
+  private static RowData formatDataRow(String[] splitLine, String[] inputColumnNames) {
     // Assemble the input values for the row.
     RowData row = new RowData();
-    for (int i = 0; i < inputColumnNames.length; i++) {
+    int maxI = Math.min(inputColumnNames.length, splitLine.length);
+    for (int i = 0; i < maxI; i++) {
       String columnName = inputColumnNames[i];
-      String cellData = inputData[i];
+      String cellData = splitLine[i];
 
       switch (cellData) {
         case "":
@@ -123,29 +72,17 @@ public class PredictCsv {
     return row;
   }
 
-  static String myDoubleToString(double d) {
+  private String myDoubleToString(double d) {
     if (Double.isNaN(d)) {
       return "NA";
     }
-
-    return Double.toHexString(d);
+    return useDecimalOutput? Double.toString(d) : Double.toHexString(d);
   }
 
-  /**
-   * CSV reader and predictor test program.
-   *
-   * @param args Command-line args.
-   * @throws Exception
-   */
-  public static void main(String[] args) throws Exception {
-    parseArgs(args);
-
-    hex.genmodel.GenModel rawModel;
-    rawModel = (hex.genmodel.GenModel) Class.forName(modelClassName).newInstance();
-    EasyPredictModelWrapper model = new EasyPredictModelWrapper(rawModel);
+  private void run() throws Exception {
     ModelCategory category = model.getModelCategory();
 
-    BufferedReader input = new BufferedReader(new FileReader(inputCSVFileName));
+    CSVReader reader = new CSVReader(new FileReader(inputCSVFileName));
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
 
     // Emit outputCSV column names.
@@ -178,28 +115,33 @@ public class PredictCsv {
     output.write("\n");
 
     // Loop over inputCSV one row at a time.
+    //
+    // TODO: performance of scoring can be considerably improved if instead of scoring each row at a time we passed
+    //       all the rows to the score function, in which case it can evaluate each tree for each row, avoiding
+    //       multiple rounds of fetching each tree from the filesystem.
+    //
     int lineNum = 0;
-    String line;
-    String[] inputColumnNames = null;
     try {
-      while ((line = input.readLine()) != null) {
+      String[] inputColumnNames = null;
+      String[] splitLine;
+      while ((splitLine = reader.readNext()) != null) {
         lineNum++;
 
         // Handle the header.
         if (lineNum == 1) {
-          inputColumnNames = parseHeaderRow(line);
+          inputColumnNames = splitLine;
           continue;
         }
 
         // Parse the CSV line.  Don't handle quoted commas.  This isn't a parser test.
-        RowData row = parseDataRow(line, inputColumnNames);
+        RowData row = formatDataRow(splitLine, inputColumnNames);
 
         // Do the prediction.
         // Emit the result to the output file.
         switch (category) {
           case AutoEncoder: {
-            AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
-            throw new Exception("TODO");
+            throw new UnsupportedOperationException();
+            // AutoEncoderModelPrediction p = model.predictAutoEncoder(row);
             // break;
           }
 
@@ -257,9 +199,69 @@ public class PredictCsv {
 
     // Clean up.
     output.close();
-    input.close();
+    reader.close();
+  }
 
-    // Predictions were successfully generated.  Calling program can now compare them with something.
-    System.exit(0);
+
+  private void loadModel(String modelName) {
+    try {
+      GenModel genModel = RawModel.load(modelName);
+      model = new EasyPredictModelWrapper(genModel);
+    } catch (IOException e) {
+      // In the old code we used --model parameter to indicate POJO name. This is why if we cannot load the model
+      // `modelName` we attempt to load its POJO -- in case the user is still using deprecated API.
+      loadPojo(modelName);
+      System.out.println("\n\nDEPRECATED  Please use --pojo parameter to load the model's POJO.\n\n\n");
+    }
+  }
+
+  private void loadPojo(String className) {
+    try {
+      GenModel gm = (GenModel) Class.forName(className).newInstance();
+      model = new EasyPredictModelWrapper(gm);
+    } catch (Exception e) {
+      e.printStackTrace();
+      usage();
+    }
+  }
+
+  private static void usage() {
+    System.out.println("");
+    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PredictCsv --model modelName");
+    System.out.println("             --pojo pojoName --input inputFile --output outputFile --decimal");
+    System.out.println("");
+    System.out.println("     --model   The model to train. This can be either zip file or a folder ");
+    System.out.println("               containing raw model's data.");
+    System.out.println("     --pojo    Name of the java class containing the model's POJO. Either this ");
+    System.out.println("               parameter or --model must be specified.");
+    System.out.println("     --input   CSV file containing the test data set to score.");
+    System.out.println("     --output  Name of the output CSV file with computed predictions.");
+    System.out.println("     --decimal Use decimal numbers in the output (default is to use hexdemical).");
+    System.out.println("");
+    System.exit(1);
+  }
+
+  private void parseArgs(String[] args) {
+    for (int i = 0; i < args.length; i++) {
+      String s = args[i];
+      if (s.equals("--header")) continue;
+      if (s.equals("--decimal"))
+        useDecimalOutput = true;
+      else {
+        i++;
+        if (i >= args.length) usage();
+        String sarg = args[i];
+        switch (s) {
+          case "--model":  loadModel(sarg); break;
+          case "--pojo":   loadPojo(sarg); break;
+          case "--input":  inputCSVFileName = sarg; break;
+          case "--output": outputCSVFileName = sarg; break;
+          default:
+            System.out.println("ERROR: Unknown command line argument: " + s);
+            usage();
+        }
+
+      }
+    }
   }
 }

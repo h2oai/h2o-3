@@ -148,9 +148,10 @@ class H2OEstimator(ModelBase):
                 else: raise ValueError("y must be a single column reference")
             self._estimator_type = "classifier" if training_frame[y].isfactor() else "regressor"
         if x is None:
-            x = set(training_frame.ncol)
+            x = set(training_frame.names)
             if is_type(y, int): x -= {training_frame.names[y]}
             if is_type(y, str): x -= {y}
+            x = list(x)
         parms["x"] = x
         parms["y"] = y
         parms["training_frame"] = training_frame

@@ -1,6 +1,7 @@
 package water.util;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Random;
 
 /**
  * Shared static code to support modeling, prediction, and scoring.

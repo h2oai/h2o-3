@@ -5,6 +5,7 @@ import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -12,6 +13,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.*;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -176,7 +178,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public String toStringTree ( int tnum, int knum ) { return ctree(tnum,knum).toString(this); }
   }
 
-  public SharedTreeModel(Key selfKey, P parms, O output) { super(selfKey,parms,output); }
+  public SharedTreeModel(Key selfKey, P parms, O output) {
+    super(selfKey, parms, output);
+  }
 
   public Frame scoreLeafNodeAssignment(Frame frame, Key destination_key) {
     Frame adaptFrm = new Frame(frame);
@@ -302,19 +306,54 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return super.writeAll_impl(ab);
   }
 
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     for( Key<CompressedTree> ks[] : _output._treeKeys )
       for( Key<CompressedTree> k : ks )
         ab.getKey(k,fs);
     return super.readAll_impl(ab,fs);
   }
 
+  @Override
+  public Model<M, P, O>.RawDataStreamWriter getRawDataStream() {
+    return new RawDataStreamWriter();
+  }
+
+  public class RawDataStreamWriter extends Model<M, P, O>.RawDataStreamWriter {
+    @Override
+    protected void writeExtraModelInfo() throws IOException {
+      writeln("n_trees = " + _output._ntrees);
+      writeln("n_features = " + _output.nfeatures());
+      writeln("supervised = true");
+    }
+
+    @Override
+    protected void writeModelData() throws IOException {
+      assert _output._treeKeys.length == _output._ntrees;
+      int nclasses = _output.nclasses();
+      int ntreesPerClass = binomialOpt() && nclasses == 2? 1 : nclasses;
+      for (int i = 0; i < _output._ntrees; i++) {
+        for (int j = 0; j < ntreesPerClass; j++) {
+          Value ctVal = DKV.get(_output._treeKeys[i][j]);
+          if (ctVal == null)
+            throw new H2OKeyNotFoundArgumentException("CompressedTree " + _output._treeKeys[i][j] + " not found");
+          CompressedTree ct = ctVal.get();
+          assert ct._nclass == nclasses;
+          // assume ct._seed is useless and need not be persisted
+          writeBinaryFile(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
+        }
+      }
+    }
+  }
+
+
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected boolean toJavaCheckTooBig() {
     // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
     return _output==null || _output._treeStats._num_trees * _output._treeStats._mean_leaves > 1000000;
   }
+
   protected boolean binomialOpt() { return true; }
+
   @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
@@ -322,6 +361,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     sb.ip("public int nclasses() { return "+_output.nclasses()+"; }").nl();
     return sb;
   }
+
   @Override protected void toJavaPredictBody(SBPrintStream body,
                                              CodeGeneratorPipeline classCtx,
                                              CodeGeneratorPipeline fileCtx,
@@ -344,15 +384,15 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
           out.nl();
           toJavaForestName(out.ip("class "), mname, treeIdx).p(" {").nl().ii(1);
           out.ip("public static void score0(double[] fdata, double[] preds) {").nl().ii(1);
-          for( int c=0; c<nclass; c++ )
-            if( !binomialOpt() || !(c==1 && nclass==2) ) // Binomial optimization
+          for (int c = 0; c < nclass; c++)
+            if (!(binomialOpt() && c == 1 && nclass == 2)) // Binomial optimization
               toJavaTreeName(out.ip("preds[").p(nclass==1?0:c+1).p("] += "), mname, treeIdx, c).p(".score0(fdata);").nl();
           out.di(1).ip("}").nl(); // end of function
           out.di(1).ip("}").nl(); // end of forest class
 
           // Generate the pre-tree classes afterwards
           for (int c = 0; c < nclass; c++) {
-            if( !binomialOpt() || !(c==1 && nclass==2) ) { // Binomial optimization
+            if (!(binomialOpt() && c == 1 && nclass == 2)) { // Binomial optimization
               String javaClassName = toJavaTreeName(new SB(), mname, treeIdx, c).toString();
               CompressedTree ct = _output.ctree(treeIdx, c);
               SB sb = new SB();
@@ -366,12 +406,15 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
     toJavaUnifyPreds(body);
   }
-  abstract protected void toJavaUnifyPreds( SBPrintStream body);
+
+  abstract protected void toJavaUnifyPreds(SBPrintStream body);
 
   protected <T extends JCodeSB> T toJavaTreeName(final T sb, String mname, int t, int c ) {
     return (T) sb.p(mname).p("_Tree_").p(t).p("_class_").p(c);
   }
+
   protected <T extends JCodeSB> T toJavaForestName(final T sb, String mname, int t ) {
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
+
 }

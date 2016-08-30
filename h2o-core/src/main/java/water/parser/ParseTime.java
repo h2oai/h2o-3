@@ -302,7 +302,10 @@ public abstract class ParseTime {
     }
 
     // extract halfday of day, if present
-    if( buf[i] == ' ' ) ++i;
+    if( buf[i] == ' ' ) {
+      ++i;
+      if( i==end ) return new DateTime(yyyy, MM, dd, HH, mm, ss, getTimezone()).getMillis() + SSS;
+    }
     if( (buf[i] == 'A' || buf[i] == 'P') && buf[i+1] == 'M') {
       if (HH < 1 || HH > 12) return Long.MIN_VALUE;
       // convert 1-12 hours into 0-23
