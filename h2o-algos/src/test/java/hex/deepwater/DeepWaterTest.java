@@ -414,7 +414,7 @@ public class DeepWaterTest extends TestUtil {
         if (tr != null) tr.remove();
       }
     }
-    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-6);
+    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-6*values[0]);
   }
 
   @Test
@@ -441,7 +441,7 @@ public class DeepWaterTest extends TestUtil {
         if (tr!=null) tr.remove();
       }
     }
-    for (int i=1;i<REPS;++i) Assert.assertNotEquals(values[0],values[i],1e-6);
+    for (int i=1;i<REPS;++i) Assert.assertNotEquals(values[0],values[i],1e-6*values[0]);
   }
 
   @Test
@@ -468,7 +468,7 @@ public class DeepWaterTest extends TestUtil {
         if (tr!=null) tr.remove();
       }
     }
-    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-6);
+    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-6*values[0]);
   }
 
   @Test
@@ -505,7 +505,7 @@ public class DeepWaterTest extends TestUtil {
         pred1 = m.score(tr);
         pred1.remove(0).remove();
         ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred1, tr.vec(p._response_column));
-        Assert.assertEquals(mm._logloss, ((ModelMetricsMultinomial)m._output._training_metrics)._logloss, 1e-6);
+        Assert.assertEquals(mm._logloss, ((ModelMetricsMultinomial)m._output._training_metrics)._logloss, 1e-6*mm._logloss);
         Assert.assertTrue(m.model_info()._imageTrain==null);
 
         // do it again
@@ -608,8 +608,8 @@ public class DeepWaterTest extends TestUtil {
         ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
         Log.info("Restored LL: " + mm2.logloss());
 
-        Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-6); //make sure scoring is self-consistent
-        Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-6);
+        Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-6*mm1.logloss()); //make sure scoring is self-consistent
+        Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-6*mm1.logloss());
 
       } finally {
         if (m1 !=null) m1.delete();
