@@ -1166,10 +1166,21 @@ public class NewChunk extends Chunk {
       floatOverflow = l < Integer.MIN_VALUE+1 || l > Integer.MAX_VALUE;
       xmin = Math.min(xmin,x);
     }
+
     if(sparse){ // sparse?  then compare vs implied 0s
       if( min > 0 ) { min = 0; llo=0; xlo=0; }
       if( max < 0 ) { max = 0; lhi=0; xhi=0; }
       xmin = Math.min(xmin,0);
+    }
+    if(xhi < xmin) {
+      StringBuilder sb = new StringBuilder("[");
+      for(int i = 0; i < _sparseLen; ++i) {
+        long l = _ms.get(i);
+        int x = _xs.get(i);
+        sb.append(l + "e" + x + ", ");
+      }
+      sb.append("]");
+      throw new IllegalStateException("xhi < xmin, values = " + sb.toString());
     }
     // Constant column?
     if( _naCnt==0 && (min==max)) {
