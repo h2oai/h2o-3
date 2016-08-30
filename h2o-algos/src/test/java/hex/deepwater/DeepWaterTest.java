@@ -197,7 +197,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void memoryLeakTest() throws IOException {
+  public void memoryLeakTest() {
     DeepWaterModel m = null;
     Frame tr = null;
     int counter=3;
@@ -221,7 +221,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testTrainSamplesPerIteration0() throws IOException {
+  public void testTrainSamplesPerIteration0() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -240,7 +240,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testTrainSamplesPerIteration_auto() throws IOException {
+  public void testTrainSamplesPerIteration_auto() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -258,7 +258,7 @@ public class DeepWaterTest extends TestUtil {
     }
   }
   @Test
-  public void testTrainSamplesPerIteration_neg1() throws IOException {
+  public void testTrainSamplesPerIteration_neg1() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -277,7 +277,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testTrainSamplesPerIteration_32() throws IOException {
+  public void testTrainSamplesPerIteration_32() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -300,7 +300,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testTrainSamplesPerIteration_1000() throws IOException {
+  public void testTrainSamplesPerIteration_1000() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -321,7 +321,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testOverWriteWithBestModel() throws IOException {
+  public void testOverWriteWithBestModel() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -351,7 +351,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testConvergenceInceptionColor() throws IOException {
+  public void testConvergenceInceptionColor() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -370,7 +370,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testConvergenceInceptionGrayScale() throws IOException {
+  public void testConvergenceInceptionGrayScale() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -391,7 +391,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testReproInitialDistribution() throws IOException {
+  public void testReproInitialDistribution() {
     final int REPS=3;
     double[] values=new double[REPS];
     for (int i=0;i<REPS;++i) {
@@ -418,7 +418,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testReproInitialDistributionNegativeTest() throws IOException {
+  public void testReproInitialDistributionNegativeTest() {
     final int REPS=3;
     double[] values=new double[REPS];
     for (int i=0;i<REPS;++i) {
@@ -445,7 +445,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testReproTraining() throws IOException {
+  public void testReproTraining() {
     final int REPS=3;
     double[] values=new double[REPS];
     for (int i=0;i<REPS;++i) {
@@ -522,7 +522,6 @@ public class DeepWaterTest extends TestUtil {
         pred3 = m.score(tr);
         pred3.remove(0).remove();
         Assert.assertTrue(isIdenticalUpToRelTolerance(pred2, pred3, 1e-6));
-
       } finally {
         if (m!=null) m.delete();
         if (tr!=null) tr.remove();
@@ -534,7 +533,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void deepWaterCV() throws IOException {
+  public void deepWaterCV() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -561,7 +560,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testRestoreState() throws IOException {
+  public void testRestoreState() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network == DeepWaterParameters.Network.user) continue;
 
