@@ -13,14 +13,14 @@ configurations {
 
 dependencies {
     // Dependency on shared model support which is served by web backend as a file
-    publishedJars project(':h2o-genmodel')
+    publishedJars project(path: ':h2o-genmodel', configuration: 'shadow')
 }
 
-def getOsSpecificCommandLine(args) {
+static def getOsSpecificCommandLine(args) {
   return Os.isFamily(Os.FAMILY_WINDOWS) ? [ 'cmd', '/c' ] + args : args
 }
 
-def checkPrerequisite(name) {
+static def checkPrerequisite(name) {
   def prefix = Os.isFamily(Os.FAMILY_WINDOWS) ? 'cmd /c ' : ''
   def command = prefix + name + ' -v'
   def proc
@@ -29,7 +29,7 @@ def checkPrerequisite(name) {
     if (proc != null) {
       proc.waitFor()
     }
-  } catch(e) {
+  } catch(ignored) {
     return -1
   }
   if (proc == null || (proc != null && proc.exitValue() != 0)) {
@@ -40,7 +40,7 @@ def checkPrerequisite(name) {
 
 task checkClientPrerequisites << {
   def nodeInstallationInstruction = """\
- 
+
 To install node.js, try one of these:
 
 Mac OS:
@@ -55,10 +55,9 @@ Windows:
 Use the official installer at http://nodejs.org/download/
 
 """
-  
+
   def nodeFailureMessage = "Could not detect a node.js installation on this system.\nInstall node.js and try again.\n" + nodeInstallationInstruction
-  def npmFailureMessage = "Could not find command 'npm'.\nRe-install node.js and try again.\n" + nodeInstallationInstruction
-  
+
   if (checkPrerequisite('node') != 0) {
     if (Os.isFamily(Os.FAMILY_MAC)) {
       if (checkPrerequisite('/usr/local/bin/node') != 0) {
@@ -69,6 +68,7 @@ Use the official installer at http://nodejs.org/download/
     }
   }
 
+//  def npmFailureMessage = "Could not find command 'npm'.\nRe-install node.js and try again.\n" + nodeInstallationInstruction
 //  if (checkPrerequisite('npm') != 0) {
 //    if (Os.isFamily(Os.FAMILY_MAC)) {
 //      if (checkPrerequisite('/usr/local/bin/npm') != 0) {

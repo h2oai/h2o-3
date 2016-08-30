@@ -26,8 +26,8 @@ def std_coef_plot_test():
   cars_glm.train(x=predictors, y=response_col, training_frame=cars_train, validation_frame=cars_valid)
 
   # Plot GLM standardized coefficient magnitudes and check that num_of_features accepts input
-  cars_glm.std_coef_plot()
-  cars_glm.std_coef_plot(num_of_features=2)
+  cars_glm.std_coef_plot(server=True)
+  cars_glm.std_coef_plot(num_of_features=2, server=True)
 
 
 if __name__ == "__main__":

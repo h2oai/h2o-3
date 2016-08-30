@@ -218,7 +218,7 @@ class Test_glm_grid_search:
         print("Time taken to build a base barebone model is {0}".format(run_time))
 
         summary_list = model._model_json["output"]["model_summary"]
-        num_iteration = summary_list.cell_values[0][summary_list.col_header.index('number_of_iterations')]
+        num_iteration = summary_list.cell_values["number_of_iterations"][0]
 
         if num_iteration == 0:
             self.min_runtime_per_epoch = run_time
@@ -380,7 +380,7 @@ class Test_glm_grid_search:
                     manual_run_runtime += model_runtime
 
                     summary_list = manual_model._model_json['output']['model_summary']
-                    iteration_num = summary_list.cell_values[0][summary_list.col_header.index('number_of_iterations')]
+                    iteration_num = summary_list.cell_values["number_of_iterations"][0]
 
                     if model_params["max_runtime_secs"] > 0:
                         # shortest possible time it takes to build this model

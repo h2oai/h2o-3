@@ -31,6 +31,21 @@ The `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/
    `Sparkling Water <https://github.com/h2oai/sparkling-water>`__.
 
 
+Supported File Formats
+----------------------
+
+H2O currently supports the following file types:
+
+- CSV (delimited) files
+- ORC*
+- SVMLite
+- ARFF
+- XLS
+- XLST
+- Avro (without multifile parsing or column type modification)
+
+*Note that ORC is available only if H2O is running as a Hadoop job. 
+
 
 New Users
 ---------
@@ -355,6 +370,11 @@ To check which version of H2O is installed in R, use
 -  `Connecting RStudio to Sparkling Water <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/Connecting_RStudio_to_Sparkling_Water.md>`_: This illustrated tutorial
    describes how to use RStudio to connect to Sparkling Water.
 
+
+**Note**: If you are running R on Linux, then you must install ``libcurl``, which allows H2O to communicate with R. We also recommend disabling SElinux and any firewalls, at least initially until you have confirmed H2O can initialize.
+
+- On Ubuntu, run: ``apt-get install libcurl4-openssl-dev``
+- On CentOs, run: ``yum install libcurl-devel``
 
 Ensembles
 ---------

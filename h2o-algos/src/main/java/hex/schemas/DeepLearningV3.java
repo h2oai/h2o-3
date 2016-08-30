@@ -13,18 +13,18 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
 
     // Determines the order of parameters in the GUI
     static public String[] fields = new String[] {
-				"model_id",
-				"training_frame",
-				"validation_frame",
+                                "model_id",
+                                "training_frame",
+                                "validation_frame",
         "nfolds",
         "keep_cross_validation_predictions",
         "keep_cross_validation_fold_assignment",
         "fold_assignment",
         "fold_column",
-				"response_column",
-				"ignored_columns",
-				"ignore_const_cols",
-				"score_each_iteration",
+                                "response_column",
+                                "ignored_columns",
+                                "ignore_const_cols",
+                                "score_each_iteration",
         "weights_column",
         "offset_column",
         "balance_classes",
@@ -314,7 +314,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * This parameter is only active if adaptive learning rate is disabled.
      */
     @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
-        help = "Learning rate decay factor between layers (N-th layer: rate·rate_decayᴺ⁻¹).")
+        help = "Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1).")
     public double rate_decay;
 
 
@@ -639,7 +639,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public boolean reproducible;
 
     @API(level = API.Level.expert, direction=API.Direction.INOUT,
-        help = "Whether to export Neural Network weights and biases to H₂O Frames.")
+        help = "Whether to export Neural Network weights and biases to H2O Frames.")
     public boolean export_weights_and_biases;
 
     @API(level = API.Level.expert, direction=API.Direction.INOUT,

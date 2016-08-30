@@ -1,0 +1,45 @@
+//
+// H2O Orc Parser
+//
+description = "H2O Orc Parser"
+
+dependencies {
+  compile project(":h2o-core")
+  // Only PersistHDFS API
+  compile(project(":h2o-persist-hdfs")) {
+    transitive = false
+  }
+
+  // Note: What is connection between hive-exec version and hadoop-version and orc version?
+  // Note: In this case we are using hive version which is compatible with $orcDefaultHadoopClientVersion
+  // Note: for newest version it should be replaces by hive-orc
+  compile("org.apache.hive:hive-exec:$orcDefaultHiveExecVersion") {
+    transitive = false
+  }
+  // For compilation we need common
+  compile("org.apache.hadoop:hadoop-common:$orcDefaultHadoopClientVersion") {
+    transitive = false
+  }
+
+  testCompile "junit:junit:${junitVersion}"
+  testCompile project(path: ":h2o-core", configuration: "testArchives")
+  // We need correct version of MapRe Hadoop to run JUnits
+  testRuntime("org.apache.hadoop:hadoop-client:$orcDefaultHadoopClientVersion") {
+      exclude module: "jasper-runtime"
+      exclude module: "jasper-compiler"
+      exclude module: "curator-client"
+      exclude module: "curator-recipes"
+      exclude module: "servlet-api"
+      exclude module: "zookeper"
+  }
+}
+
+apply from: "${rootDir}/gradle/dataCheck.gradle"
+
+test {
+  dependsOn ":h2o-core:testJar"
+  dependsOn smalldataCheck, cpLibs, jar, testJar, testMultiNode
+
+  // Defeat task 'test' by running no tests.
+  exclude '**'
+}

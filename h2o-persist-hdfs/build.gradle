@@ -1,9 +1,13 @@
+
 description = "H2O Persist HDFS"
 
 dependencies {
-  compile project(":h2o-core")
-  compile('net.java.dev.jets3t:jets3t:0.6.1')
-  compile("org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0") {
-      transitive = true
-  }
+    compile project(":h2o-core")
+    compile('net.java.dev.jets3t:jets3t:0.6.1')
+    def hadoopVersion = project.hasProperty("doIncludeOrc") && project.doIncludeOrc == "true" ?
+                        orcDefaultHadoopClientVersion : defaultHadoopClientVersion
+    compile("org.apache.hadoop:hadoop-client:$hadoopVersion") {
+        // Pull all dependencies to allow run directly from IDE or command line
+        transitive = true
+    }
 }

@@ -89,8 +89,7 @@ Defining a GBM Model
 
 -  **learn\_rate**: Specify the learning rate. The range is 0.0 to 1.0.
 
--  **distribution**: Specify the loss function. The options are auto,
-   bernoulli, multinomial, gaussian, poisson, gamma, or tweedie.
+-  **distribution**: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, or tweedie.
 
        -  If the distribution is **multinomial**, the response column
           must be categorical.
@@ -102,20 +101,11 @@ Defining a GBM Model
           be numeric.
        -  If the distribution is **gaussian**, the response column must
           be numeric.
-       -  If the distribution is **multinomial**, the response column
-          must be categorical.
-       -  If the distribution is **poisson**, the response column must
+       -  If the distribution is **laplace**, the response column must
           be numeric.
-       -  If the distribution is **gamma**, the response column must be
-          numeric.
-       -  If the distribution is **tweedie**, the response column must
+       -  If the distribution is **quantile**, the response column must
           be numeric.
-       -  If the distribution is **gaussian**, the response column must
-          be numeric.
-       -  If the distribution is **laplace**, the data must be numeric
-          and continuous (**Int**).
-       -  If the distribution is **quantile**, the data must be numeric
-          and continuous (**Int**).
+          
 
 -  **sample\_rate**: Specify the row sampling rate (x-axis). The range
    is 0.0 to 1.0. Higher values may improve training accuracy. Test
@@ -326,7 +316,7 @@ FAQ
 
 -  **What if there are a large number of columns?**
 
-  DRF models are best for datasets with fewer than a few thousand columns.
+  GBM models are best for datasets with fewer than a few thousand columns.
 
 -  **What if there are a large number of categorical factor levels?**
 
@@ -336,7 +326,7 @@ FAQ
    produce a different model with two different validation data sets, or
    the same model?**
 
-  The same model will be generated.
+  Unless early stopping is turned on (it's disabled by default), then supplying two different validation sets will not change the model, resulting in the same model for both trials. However, if early stopping is turned on and two different validation sets are provided during the training process, that can lead to two different models. The use of a validation set in combination with early stopping can cause the model to stop training earlier (or later), depending on the validation set. Early stopping uses the validation set to determine when to stop building more trees. 
 
 -  **How deterministic is GBM?**
 

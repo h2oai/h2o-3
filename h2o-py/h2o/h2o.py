@@ -6,6 +6,7 @@ h2o -- module for using H2O services.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+
 import os
 import re
 import warnings
@@ -13,26 +14,27 @@ import warnings
 from h2o.backend import H2OConnection
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
-from .expr import ExprNode
-from .job import H2OJob
-from .frame import H2OFrame
-from .model.model_base import ModelBase
-from .estimators.estimator_base import H2OEstimator
+from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_tmp_key, quoted, urlopen
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
+from .estimators.estimator_base import H2OEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
 from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
+from .expr import ExprNode
+from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
+from .job import H2OJob
+from .model.model_base import ModelBase
 from .transforms.decomposition import H2OPCA
 from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import U, assert_is_type, assert_satisfies, is_type, numeric
-from h2o.utils.shared_utils import quoted, is_list_of_lists, gen_header, py_tmp_key, urlopen, deprecated
+from .utils.compatibility import PY3
 warnings.simplefilter("always", DeprecationWarning)
 
 
@@ -69,11 +71,11 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     return h2oconn
 
 
-def api(endpoint, data=None, json=None, filename=None):
+def api(endpoint, data=None, json=None, filename=None, save_to=None):
     """Perform a REST API request to a previously connected server."""
     # type checks are performed in H2OConnection class
     _check_connection()
-    return h2oconn.request(endpoint, data=data, json=json, filename=filename)
+    return h2oconn.request(endpoint, data=data, json=json, filename=filename, save_to=save_to)
 
 
 
@@ -161,13 +163,30 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     assert_is_type(strict_version_check, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool})
+
+    def get_mem_size(mmint, mmgb):
+        if not mmint:  # treat 0 and "" as if they were None
+            if mmgb is None: return None
+            return mmgb << 30
+        if is_type(mmint, int):
+            # If the user gives some small number just assume it's in Gigabytes...
+            if mmint < 1000: return mmint << 30
+            return mmint
+        if is_type(mmint, str):
+            last = mmint[-1].upper()
+            num = mmint[:-1]
+            if not (num.isdigit() and last in "MGT"):
+                raise H2OValueError("Wrong format for a *_memory_size argument: %s (should be a number followed by "
+                                    "a suffix 'M', 'G' or 'T')" % mmint)
+            if last == "T": return int(num) << 40
+            if last == "G": return int(num) << 30
+            if last == "M": return int(num) << 20
+
     scheme = "https" if https else "http"
     proxy = proxy[scheme] if proxy is not None and scheme in proxy else \
         kwargs["proxies"][scheme] if "proxies" in kwargs and scheme in kwargs["proxies"] else None
-    mmax = int(max_mem_size) if max_mem_size is not None else \
-        kwargs["max_mem_size_GB"] << 30 if "max_mem_size_GB" in kwargs else None
-    mmin = int(min_mem_size) if min_mem_size is not None else \
-        kwargs["min_mem_size_GB"] << 30 if "min_mem_size_GB" in kwargs else None
+    mmax = get_mem_size(max_mem_size, kwargs.get("max_mem_size_GB"))
+    mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
@@ -197,20 +216,21 @@ def lazy_import(path):
 
     :param path: A path to a data file (remote or local).
     """
-    if is_type(path, list, tuple, set):
-        return [_import(p)[0] for p in path]
-    else:
+    assert_is_type(path, str, [str])
+    if is_type(path, str):
         return _import(path)
+    else:
+        return [_import(p)[0] for p in path]
 
 
 def _import(path):
     assert_is_type(path, str)
     j = api("GET /3/ImportFiles", data={"path": path})
-    if j['fails']: raise ValueError("ImportFiles of " + path + " failed on " + str(j['fails']))
-    return j['destination_frames']
+    if j["fails"]: raise ValueError("ImportFiles of " + path + " failed on " + str(j["fails"]))
+    return j["destination_frames"]
 
 
-def upload_file(path, destination_frame="", header=0, sep="", col_names=None, col_types=None,
+def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
@@ -219,10 +239,10 @@ def upload_file(path, destination_frame="", header=0, sep="", col_names=None, co
 
     :param path: A path specifying the location of the data to upload.
     :param destination_frame:  The unique hex key assigned to the imported file. If none is given, a key will
-        automatically be generated.
+        be automatically generated.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
-        this character. If sep = "", the parser will automatically detect the separator.
+        this character. If not provided, the parser will automatically detect the separator.
     :param col_names: A list of column names for the file.
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
@@ -252,14 +272,14 @@ def upload_file(path, destination_frame="", header=0, sep="", col_names=None, co
     assert_is_type(path, str)
     assert_is_type(destination_frame, str)
     assert_is_type(header, -1, 0, 1)
-    assert_is_type(sep, str)
+    assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
-def import_file(path=None, destination_frame="", parse=True, header=0, sep="", col_names=None, col_types=None,
+def import_file(path=None, destination_frame="", parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Import a dataset that is already on the cluster.
@@ -274,7 +294,7 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep="", c
     :param parse: If True, the file should be parsed after import.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
-        this character. If sep = "", the parser will automatically detect the separator.
+        this character. If not provided, the parser will automatically detect the separator.
     :param col_names: A list of column names for the file.
     :param col_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
@@ -301,7 +321,7 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep="", c
     assert_is_type(destination_frame, str)
     assert_is_type(parse, bool)
     assert_is_type(header, -1, 0, 1)
-    assert_is_type(sep, str)
+    assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
@@ -386,18 +406,18 @@ def import_sql_select(connection_url, select_query, username, password, optimize
         >>> password = "abc123"
         >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
     """
-    assert_is_type(connection, str)
+    assert_is_type(connection_url, str)
     assert_is_type(select_query, str)
     assert_is_type(username, str)
     assert_is_type(password, str)
     assert_is_type(optimize, bool)
-    p = {"connection": connection, "select_query": select_query, "username": username, "password": password,
+    p = {"connection_url": connection_url, "select_query": select_query, "username": username, "password": password,
          "optimize": optimize}
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
 
-def parse_setup(raw_frames, destination_frame="", header=0, separator="", column_names=None,
+def parse_setup(raw_frames, destination_frame="", header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
@@ -412,9 +432,9 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator="", column
         automatically be generated.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param separator: The field separator character. Values on each line of the file are separated by
-        this character. If sep = "", the parser will automatically detect the separator.
-    :param col_names: A list of column names for the file.
-    :param col_types: A list of types or a dictionary of column names to types to specify whether columns
+        this character. If not provided, the parser will automatically detect the separator.
+    :param column_names: A list of column names for the file.
+    :param column_types: A list of types or a dictionary of column names to types to specify whether columns
         should be forced to a certain type upon import parsing. If a list, the types for elements that are
         one will be guessed. The possible types a column may have are:
         * "unknown" - this will force the column to be parsed as all NA
@@ -436,9 +456,9 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator="", column
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
     assert_is_type(raw_frames, str, [str])
-    assert_is_type(destination_frame, str)
+    assert_is_type(destination_frame, None, str)
     assert_is_type(header, -1, 0, 1)
-    assert_is_type(separator, str)
+    assert_is_type(separator, None, I(str, lambda s: len(s) == 1))
     assert_is_type(column_names, [str], None)
     assert_is_type(column_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
@@ -447,22 +467,13 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator="", column
     if is_type(raw_frames, str): raw_frames = [raw_frames]
 
     # temporary dictionary just to pass the following information to the parser: header, separator
-    kwargs = {}
-    # set header
-    if header != (-1, 0, 1):
-        if header not in (-1, 0, 1): raise ValueError("header should be -1, 0, or 1")
-        kwargs["check_header"] = header
-
-    # set separator
+    kwargs = {"check_header": header, "source_frames": [quoted(frame_id) for frame_id in raw_frames]}
     if separator:
-        if not is_type(separator, str) or len(separator) != 1:
-            raise ValueError("separator should be a single character string; got %r" % separator)
         kwargs["separator"] = ord(separator)
 
-    kwargs["source_frames"] = [quoted(id) for id in raw_frames]
     j = api("POST /3/ParseSetup", data=kwargs)
     if "warnings" in j and j["warnings"]:
-        for w in j['warnings']:
+        for w in j["warnings"]:
             warnings.warn(w)
     # TODO: really should be url encoding...
     # TODO: clean up all this
@@ -608,16 +619,16 @@ def get_grid(grid_id):
     """
     assert_is_type(grid_id, str)
     grid_json = api("GET /99/Grids/%s" % grid_id)
-    models = [get_model(key['name']) for key in grid_json['model_ids']]
+    models = [get_model(key["name"]) for key in grid_json["model_ids"]]
     # get first model returned in list of models from grid search to get model class (binomial, multinomial, etc)
-    first_model_json = api("GET /3/Models/%s" % grid_json['model_ids'][0]['name'])['models'][0]
+    first_model_json = api("GET /3/Models/%s" % grid_json["model_ids"][0]["name"])["models"][0]
     gs = H2OGridSearch(None, {}, grid_id)
     gs._resolve_grid(grid_id, grid_json, first_model_json)
     gs.models = models
     hyper_params = {param: set() for param in gs.hyper_names}
     for param in gs.hyper_names:
         for model in models:
-            hyper_params[param].add(model.full_parameters[param]['actual_value'][0])
+            hyper_params[param].add(model.full_parameters[param]["actual_value"][0])
     hyper_params = {str(param): list(vals) for param, vals in hyper_params.items()}
     gs.hyper_params = hyper_params
     gs.model = model.__class__()
@@ -683,14 +694,12 @@ def remove(x):
         elif isinstance(xi, H2OEstimator):
             api("DELETE /3/DKV/%s" % xi.model_id)
             xi._id = None
-        elif is_type(xi, str):
+        else:
             # string may be a Frame key name part of a rapids session... need to call rm thru rapids here
             try:
                 rapids("(rm {})".format(xi))
             except:
                 api("DELETE /3/DKV/%s" % xi)
-        else:
-            raise ValueError('input to h2o.remove must one of: H2OFrame, H2OEstimator, or string')
 
 
 def remove_all():
@@ -761,8 +770,7 @@ def download_pojo(model, path="", get_jar=True):
         print(java)
     else:
         filepath = os.path.join(path, pojoname + ".java")
-        print("Filepath: {}".format(filepath))
-        with open(filepath, 'wb') as f:
+        with open(filepath, "wb") as f:
             f.write(java.encode("utf-8"))
     if get_jar and path != "":
         url = h2oconn.make_url("h2o-genmodel.jar")
@@ -785,7 +793,7 @@ def download_csv(data, filename):
     assert_is_type(data, H2OFrame)
     assert_is_type(filename, str)
     url = h2oconn.make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(data.frame_id)
-    with open(filename, 'wb') as f:
+    with open(filename, "wb") as f:
         f.write(urlopen()(url).read())
 
 
@@ -811,14 +819,14 @@ def download_all_logs(dirname=".", filename=None):
         else:
             headers = response.headers.headers
         for h in headers:
-            if 'filename=' in h:
+            if "filename=" in h:
                 filename = h.split("filename=")[1].strip()
                 break
     path = os.path.join(dirname, filename)
     response = opener(url).read()
 
     print("Writing H2O logs to " + path)
-    with open(path, 'wb') as f:
+    with open(path, "wb") as f:
         f.write(response)
     return path
 
@@ -855,22 +863,28 @@ def load_model(path):
     """
     assert_is_type(path, str)
     res = api("POST /99/Models.bin/%s" % "", data={"dir": path})
-    return get_model(res['models'][0]['model_id']['name'])
+    return get_model(res["models"][0]["model_id"]["name"])
 
 
-
-def export_file(frame, path, force=False):
+def export_file(frame, path, force=False, parts=1):
     """
     Export a given H2OFrame to a path on the machine this python session is currently connected to.
 
     :param frame: the Frame to save to disk.
     :param path: the path to the save point on disk.
     :param force: if True, overwrite any preexisting file with the same path
+    :param parts: enables export to multiple 'part' files instead of just a single file.
+        Convenient for large datasets that take too long to store in a single file.
+        Use parts=-1 to instruct H2O to determine the optimal number of part files or
+        specify your desired maximum number of part files. Path needs to be a directory
+        when exporting to multiple files.
+        Default is to export to a single file (parts=1).
     """
     assert_is_type(frame, H2OFrame)
     assert_is_type(path, str)
     assert_is_type(force, bool)
-    H2OJob(api("GET /3/Frames/%s/export/%s/overwrite/%s" % (frame.frame_id, path, str(force).lower())),
+    assert_is_type(parts, int)
+    H2OJob(api("POST /3/Frames/%s/export" % (frame.frame_id), data={"path": path, "num_parts": parts, "force": force}),
            "Export File").poll()
 
 
@@ -880,23 +894,26 @@ def cluster():
 
 
 
-def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_range=100,
-                 categorical_fraction=0.2, factors=100, integer_fraction=0.2, integer_range=100,
-                 binary_fraction=0.1, binary_ones_fraction=0.02, time_fraction=0, string_fraction=0,
-                 missing_fraction=0.01, response_factors=2, has_response=False, seed=None, seed_for_column_types=None):
+def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
+                 real_fraction=None, categorical_fraction=None, integer_fraction=None,
+                 binary_fraction=None, time_fraction=None, string_fraction=None,
+                 value=0, real_range=100, factors=100, integer_range=100,
+                 binary_ones_fraction=0.02, missing_fraction=0.01,
+                 has_response=False, response_factors=2, positive_response=False,
+                 seed=None, seed_for_column_types=None):
     """
-    Create a new frame with random data in H2O.
+    Create a new frame with random data.
 
-    Creates a data frame in H2O with real-valued, categorical, integer,
-    and binary columns specified by the user.
+    Creates a data frame in H2O with real-valued, categorical, integer, and binary columns specified by the user.
 
-    :param id: the destination key. If empty, this will be auto-generated by H2O.
+    :param frame_id: the destination key. If empty, this will be auto-generated.
     :param rows: the number of rows of data to generate.
     :param cols: the number of columns of data to generate. Excludes the response column if has_response is True.
     :param randomize: If True, data values will be randomly generated. This must be True if either
         categorical_fraction or integer_fraction is non-zero.
     :param value: if randomize is False, then all real-valued entries will be set to this value.
     :param real_range: the range of randomly generated real values.
+    :param real_fraction: the fraction of columns that are real-valued.
     :param categorical_fraction: the fraction of total columns that are categorical.
     :param factors: the number of (unique) factor levels in each categorical column.
     :param integer_fraction: the fraction of total columns that are integer-valued.
@@ -906,61 +923,96 @@ def create_frame(id=None, rows=10000, cols=10, randomize=True, value=0, real_ran
     :param time_fraction: the fraction of randomly created date/time columns.
     :param string_fraction: the fraction of randomly created string columns.
     :param missing_fraction: the fraction of total entries in the data frame that are set to NA.
-    :param response_factors: if has_response is True, then this is the number of factor levels in the response column.
     :param has_response: A logical value indicating whether an additional response column should be prepended to the
         final H2O data frame. If set to True, the total number of columns will be ``cols + 1``.
+    :param response_factors: if has_response is True, then this variable controls the type of the "response" column:
+        setting response_factors to 1 will generate real-valued response, any value greater or equal than 2 will
+        create categorical response with that many categories.
+    :param positive_reponse: when response variable is present and of real type, this will control whether it
+        contains positive values only, or both positive and negative.
     :param seed: a seed used to generate random values when ``randomize`` is True.
     :param seed_for_column_types: a seed used to generate random column types when ``randomize`` is True.
 
     :returns: an :class:`H2OFrame` object
     """
-    assert_is_type(id, str, None)
-    assert_is_type(rows, int)
-    assert_is_type(cols, int)
+    t_fraction = U(None, BoundNumeric(0, 1))
+    assert_is_type(frame_id, str, None)
+    assert_is_type(rows, BoundInt(1))
+    assert_is_type(cols, BoundInt(1))
     assert_is_type(randomize, bool)
     assert_is_type(value, numeric)
-    assert_is_type(real_range, numeric)
-    assert_is_type(factors, int)
-    assert_is_type(integer_range, int)
-    assert_is_type(categorical_fraction, numeric)
-    assert_is_type(integer_fraction, numeric)
-    assert_is_type(binary_fraction, numeric)
-    assert_is_type(time_fraction, numeric)
-    assert_is_type(string_fraction, numeric)
-    assert_is_type(missing_fraction, numeric)
-    assert_is_type(response_factors, int, None)
+    assert_is_type(real_range, BoundNumeric(0))
+    assert_is_type(real_fraction, t_fraction)
+    assert_is_type(categorical_fraction, t_fraction)
+    assert_is_type(integer_fraction, t_fraction)
+    assert_is_type(binary_fraction, t_fraction)
+    assert_is_type(time_fraction, t_fraction)
+    assert_is_type(string_fraction, t_fraction)
+    assert_is_type(missing_fraction, t_fraction)
+    assert_is_type(binary_ones_fraction, t_fraction)
+    assert_is_type(factors, BoundInt(1))
+    assert_is_type(integer_range, BoundInt(1))
     assert_is_type(has_response, bool)
+    assert_is_type(response_factors, None, BoundInt(1))
+    assert_is_type(positive_response, bool)
     assert_is_type(seed, int, None)
     assert_is_type(seed_for_column_types, int, None)
-    assert_satisfies(categorical_fraction, 0 <= categorical_fraction <= 1)
-    assert_satisfies(integer_fraction, 0 <= integer_fraction <= 1)
-    assert_satisfies(binary_fraction, 0 <= binary_fraction <= 1)
-    assert_satisfies(time_fraction, 0 <= time_fraction <= 1)
-    assert_satisfies(string_fraction, 0 <= string_fraction <= 1)
-    assert_satisfies(missing_fraction, 0 <= missing_fraction <= 1)
-    assert_satisfies(binary_ones_fraction, 0 <= binary_ones_fraction <= 1)
     if (categorical_fraction or integer_fraction) and not randomize:
         raise H2OValueError("`randomize` should be True when either categorical or integer columns are used.")
-    if categorical_fraction + integer_fraction + binary_fraction + time_fraction + string_fraction > 1:
+
+    # The total column fraction that the user has specified explicitly. This sum should not exceed 1. We will respect
+    # all explicitly set fractions, and will auto-select the remaining fractions.
+    frcs = [real_fraction, categorical_fraction, integer_fraction, binary_fraction, time_fraction, string_fraction]
+    wgts = [0.5, 0.2, 0.2, 0.1, 0.0, 0.0]
+    sum_explicit_fractions = sum(0 if f is None else f for f in frcs)
+    count_explicit_fractions = sum(0 if f is None else 1 for f in frcs)
+    remainder = 1 - sum_explicit_fractions
+    if sum_explicit_fractions >= 1 + 1e-10:
         raise H2OValueError("Fractions of binary, integer, categorical, time and string columns should add up "
                             "to a number less than 1.")
-    parms = {"dest": py_tmp_key(append=h2oconn.session_id) if id is None else id,
+    elif sum_explicit_fractions >= 1 - 1e-10:
+        # The fractions already add up to almost 1. No need to do anything (the server will absorb the tiny
+        # remainder into the real_fraction column).
+        pass
+    else:
+        # sum_explicit_fractions < 1  =>  distribute the remainder among the columns that were not set explicitly
+        if count_explicit_fractions == 6:
+            raise H2OValueError("Fraction of binary, integer, categorical, time and string columns add up to a "
+                                "number less than 1.")
+        # Each column type receives a certain part (proportional to column's "weight") of the remaining fraction.
+        sum_implicit_weights = sum(wgts[i] if frcs[i] is None else 0 for i in range(6))
+        for i, f in enumerate(frcs):
+            if frcs[i] is not None: continue
+            if sum_implicit_weights == 0:
+                frcs[i] = remainder
+            else:
+                frcs[i] = remainder * wgts[i] / sum_implicit_weights
+            remainder -= frcs[i]
+            sum_implicit_weights -= wgts[i]
+    for i, f in enumerate(frcs):
+        if f is None:
+            frcs[i] = 0
+    real_fraction, categorical_fraction, integer_fraction, binary_fraction, time_fraction, string_fraction = frcs
+
+    parms = {"dest": frame_id if frame_id else py_tmp_key(append=h2oconn.session_id),
              "rows": rows,
              "cols": cols,
              "randomize": randomize,
-             "value": value,
-             "real_range": real_range,
              "categorical_fraction": categorical_fraction,
-             "factors": factors,
              "integer_fraction": integer_fraction,
-             "integer_range": integer_range,
              "binary_fraction": binary_fraction,
-             "binary_ones_fraction": binary_ones_fraction,
              "time_fraction": time_fraction,
              "string_fraction": string_fraction,
+             # "real_fraction" is not provided, the backend computes it as 1 - sum(5 other fractions)
+             "value": value,
+             "real_range": real_range,
+             "factors": factors,
+             "integer_range": integer_range,
+             "binary_ones_fraction": binary_ones_fraction,
              "missing_fraction": missing_fraction,
-             "response_factors": response_factors,
              "has_response": has_response,
+             "response_factors": response_factors,
+             "positive_response": positive_response,
              "seed": -1 if seed is None else seed,
              "seed_for_column_types": -1 if seed_for_column_types is None else seed_for_column_types,
              }

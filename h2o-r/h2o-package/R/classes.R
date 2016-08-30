@@ -209,6 +209,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$MSE)                                             )  cat("\nMSE: (Extract with `h2o.mse`)", tm$MSE)
   if( !is.null(tm$RMSE)                                             )  cat("\nRMSE: (Extract with `h2o.rmse`)", tm$RMSE)
   if( !is.null(tm$mae)                                             )  cat("\nMAE: (Extract with `h2o.mae`)", tm$mae)
+  if( !is.null(tm$rmsle)                                             )  cat("\nRMSLE: (Extract with `h2o.rmsle`)", tm$rmsle)
   if( !is.null(tm$logloss)                                         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
   if( !is.null(tm$mean_per_class_error)                            )  cat("\nMean Per-Class Error:", tm$mean_per_class_error)
   if( !is.null(tm$AUC)                                             )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
@@ -436,6 +437,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   cat("MSE:  ", object@metrics$MSE, "\n", sep="")
   cat("RMSE:  ", object@metrics$RMSE, "\n", sep="")
   cat("MAE:  ", object@metrics$mae, "\n", sep="")
+  cat("RMSLE:  ", object@metrics$rmsle, "\n", sep="")
   cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
   if(exists(object@algorithm) && object@algorithm == "glm") {
     if (!is.na(h2o.r2(object))) cat("R^2 :  ", h2o.r2(object), "\n", sep="")

@@ -100,6 +100,7 @@ def test_asserts():
     assert_error(A(), None, B)
     assert_error(A, A)
     assert_error(A, lambda aa: issubclass(aa, B))
+    assert_error(135, I(int, lambda x: 0 <= x <= 100))
     assert_error({"foo": 1, "bar": "2"}, {"foo": int, "bar": U(int, float, None)})
     assert_error(3, 0, 2, 4)
     assert_error(None, numeric)
@@ -114,6 +115,12 @@ def test_asserts():
     assert_error(False, h2oframe, pandas_dataframe, numpy_ndarray)
     assert_error([[2.0, 3.1, 0], [2, 4.4, 1.1], [-1, 0]],
                  I([[numeric]], lambda v: all(len(vi) == len(v[0]) for vi in v)))
+    try:
+        # Cannot use `assert_error` here because typechecks module cannot detect args in (*args, *kwargs)
+        assert_is_type(10000000, I(int, lambda port: 1 <= port <= 65535))
+        assert False, "Failed to throw an exception"
+    except H2OTypeError as e:
+        assert "integer & 1 <= port <= 65535" in str(e), "Bad error message: '%s'" % e
 
     url_regex = r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?$"
     assert_matches("Hello, world!", r"^(\w+), (\w*)!$")

@@ -95,7 +95,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="stop early when there is no more relative improvement on train or validation (if provided)")
     public boolean early_stopping;
 
-    @API(help = "number of lambdas to be used in a search", level = Level.critical)
+    @API(help = "Number of lambdas to be used in a search." +
+    " Default indicates: If alpha is zero, with lambda search" +
+    " set to True, the value of nlamdas is set to 30 (fewer lambdas" +
+    " are needed for ridge regression) otherwise it is set to 100.", level = Level.critical)
     public int nlambdas;
 
     @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical)
@@ -113,10 +116,16 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver ", level = Level.expert)
     public double beta_epsilon;
 
-    @API(help = "converge if  objective value changes less than this", level = Level.expert)
+    @API(help = "Converge if  objective value changes less than this."+ " Default indicates: If lambda_search"+
+    " is set to True the value of objective_epsilon is set to .0001. If the lambda_search is set to False and" +
+    " lambda is equal to zero, the value of objective_epsilon is set to .000001, for any other value of lambda the" +
+    " default value of objective_epsilon is set to .0001.", level = Level.expert)
     public double objective_epsilon;
 
-    @API(help = "converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver", level = Level.expert)
+    @API(help = "Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver."+
+    " Default indicates: If lambda_search is set to False and lambda is equal to zero, the default value" +
+    " of gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True," +
+    " the conditional values above are 1E-8 and 1E-6 respectively.", level = Level.expert)
     public double gradient_epsilon;
 
     @API(help="likelihood divider in objective value computation, default is 1/nobs")
@@ -137,13 +146,18 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
 
-    @API(help = "min lambda used in lambda search, specified as a ratio of lambda_max", level = Level.expert)
+    @API(help = "Min lambda used in lambda search, specified as a ratio of lambda_max." +
+    " Default indicates: if the number of observations is greater than the number of variables then lambda_min_ratio" +
+    " is set to 0.0001; if the number of observations is less than the number of variables then lambda_min_ratio" +
+    " is set to 0.01.", level = Level.expert)
     public double lambda_min_ratio;
 
     @API(help = "beta constraints", direction = API.Direction.INPUT /* Not required, to allow initial params validation: , required=true */)
     public FrameKeyV3 beta_constraints;
 
-    @API(help="Maximum number of active predictors during computation. Use as a stopping criterium to prevent expensive model building with many predictors.", direction = Direction.INPUT, level = Level.expert)
+    @API(help="Maximum number of active predictors during computation. Use as a stopping criterion" +
+    " to prevent expensive model building with many predictors." + " Default indicates: If the IRLSM solver is used," +
+    " the value of max_active_predictors is set to 7000 otherwise it is set to 100000000.", direction = Direction.INPUT, level = Level.expert)
     public int max_active_predictors = -1;
 
     @API(help="A list of predictor column indices to interact. All pairwise combinations will be computed for the list.", direction=Direction.INPUT, level=Level.expert)

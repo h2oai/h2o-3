@@ -1,8 +1,0 @@
-ext {
-  notYarn = true
-  hadoopVersion = 'mapr3.1.1'
-  hadoopMavenArtifactVersion = '1.0.3-mapr-3.1.1'
-  maprExtraDependency = 'org.json:org.json:chargebee-1.0'
-}
-
-apply from: '../assemblyjar.gradle'

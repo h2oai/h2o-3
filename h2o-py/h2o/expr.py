@@ -321,7 +321,8 @@ class H2OCache(object):
             # token NaN, so the default python json decoder does not convert them
             # to math.nan.  Do that now.
             else:
-                c['data'] = [float('nan') if x == "NaN" else x for x in c['data']]
+                if c['data'] and (len(c['data']) > 0):  # orc file parse can return frame with zero rows
+                    c['data'] = [float('nan') if x == "NaN" else x for x in c['data']]
             self._data[c.pop('label')] = c  # Label used as the Key
         return self
 

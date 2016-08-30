@@ -25,6 +25,17 @@ dependencies {
   if (project.hasProperty("maprExtraDependency")) {
     compile(project.property("maprExtraDependency"))
   }
+  if (orcSupported) {
+    compile(project(":h2o-orc-parser")) {
+      // We do not get any dependencies but directly rely on provided environment
+      transitive = false
+    }
+
+    // Here we depends on hive-exec, but it is Hadoop version specific
+    compile("org.apache.hive:hive-exec:$orcHiveExecVersion") {
+      transitive = false
+    }
+  }
 }
 
 
@@ -46,6 +57,7 @@ shadowJar {
   manifest {
     attributes 'Main-Class': 'water.hadoop.h2odriver'
   }
+  zip64 true
 }
 
 artifacts {

@@ -72,6 +72,7 @@ public class ScoringInfo extends Iced {
       case MSE:               { return cross_validation ? scored_xval._mse : validation ? scored_valid._mse : scored_train._mse; }
       case RMSE:               { return cross_validation ? scored_xval._rmse : validation ? scored_valid._rmse : scored_train._rmse; }
       case MAE:               { return cross_validation ? scored_xval._mae : validation ? scored_valid._mae : scored_train._mae; }
+      case RMSLE:               { return cross_validation ? scored_xval._rmsle : validation ? scored_valid._rmsle : scored_train._rmsle; }
       case deviance:          { return cross_validation ? scored_xval._mean_residual_deviance : validation ? scored_valid._mean_residual_deviance : scored_train._mean_residual_deviance; }
       case logloss:           { return cross_validation ? scored_xval._logloss : validation ? scored_valid._logloss : scored_train._logloss; }
       case misclassification: { return cross_validation ? scored_xval._classError : validation ? scored_valid._classError : scored_train._classError; }

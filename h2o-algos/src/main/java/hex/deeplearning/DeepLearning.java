@@ -476,95 +476,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       }
       return model;
     }
-    /**
-     * Compute the actual train_samples_per_iteration size from the user-given parameter
-     * @param mp Model parameter (DeepLearning object)
-     * @param numRows number of training rows
-     * @param model DL model
-     * @return The total number of training rows to be processed per iteration (summed over on all nodes)
-     */
-    private long computeTrainSamplesPerIteration(final DeepLearningParameters mp, final long numRows, final DeepLearningModel model) {
-      long tspi = mp._train_samples_per_iteration;
-      assert(tspi == 0 || tspi == -1 || tspi == -2 || tspi >= 1);
-      if (tspi == 0 || (!mp._replicate_training_data && tspi == -1) ) {
-        tspi = numRows;
-        if (!mp._quiet_mode) Log.info("Setting train_samples_per_iteration (" + mp._train_samples_per_iteration + ") to one epoch: #rows (" + tspi + ").");
-      }
-      else if (tspi == -1) {
-        tspi = (mp._single_node_mode ? 1 : H2O.CLOUD.size()) * numRows;
-        if (!mp._quiet_mode) Log.info("Setting train_samples_per_iteration (" + mp._train_samples_per_iteration + ") to #nodes x #rows (" + tspi + ").");
-      } else if (tspi == -2) {
-        // automatic tuning based on CPU speed, network speed and model size
 
-        // measure cpu speed
-        double total_gflops = 0;
-        for (H2ONode h2o : H2O.CLOUD._memary) {
-          HeartBeat hb = h2o._heartbeat;
-          total_gflops += hb._gflops; //can be NaN if not yet run
-        }
-        if (mp._single_node_mode) total_gflops /= H2O.CLOUD.size();
-        if (Double.isNaN(total_gflops)) {
-          total_gflops = Linpack.run(H2O.SELF._heartbeat._cpus_allowed) * (mp._single_node_mode ? 1 : H2O.CLOUD.size());
-        }
-        assert(!Double.isNaN(total_gflops));
-
-        final long model_size = model.model_info().size();
-        int[] msg_sizes = new int[]{ 1, (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
-        double[] microseconds_collective = new double[msg_sizes.length];
-        NetworkTest.NetworkTester nt = new NetworkTest.NetworkTester(msg_sizes,null,microseconds_collective,model_size>1e6 ? 1 : 5 /*repeats*/,false,true /*only collectives*/);
-        nt.compute2();
-
-        //length of the network traffic queue based on log-tree rollup (2 log(nodes))
-        int network_queue_length = mp._single_node_mode || H2O.CLOUD.size() == 1? 1 : 2*(int)Math.floor(Math.log(H2O.CLOUD.size())/Math.log(2));
-
-        // heuristics
-        double flops_overhead_per_row = 50;
-        if (mp._activation == DeepLearningParameters.Activation.Maxout || mp._activation == DeepLearningParameters.Activation.MaxoutWithDropout) {
-          flops_overhead_per_row *= 8;
-        } else if (mp._activation == DeepLearningParameters.Activation.Tanh || mp._activation == DeepLearningParameters.Activation.TanhWithDropout) {
-          flops_overhead_per_row *= 5;
-        }
-
-        // target fraction of comm vs cpu time: 5%
-        double fraction = mp._single_node_mode || H2O.CLOUD.size() == 1 ? 1e-3 : mp._target_ratio_comm_to_comp; //one single node mode, there's no model averaging effect, so less need to shorten the M/R iteration
-
-        // estimate the time for communication (network) and training (compute)
-        model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 1e5 /* add 100ms for multi-node MR overhead */) + network_queue_length * microseconds_collective[1];
-        double time_per_row_us  = (flops_overhead_per_row * model_size + 10000 * model.model_info().units[0]) / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
-        assert(!Double.isNaN(time_per_row_us));
-
-        // compute the optimal number of training rows per iteration
-        // fraction := time_comm_us / (time_comm_us + tspi * time_per_row_us)  ==>  tspi = (time_comm_us/fraction - time_comm_us)/time_per_row_us
-        tspi = (long)((model.time_for_communication_us / fraction - model.time_for_communication_us)/ time_per_row_us);
-
-        tspi = Math.min(tspi, (mp._single_node_mode ? 1 : H2O.CLOUD.size()) * numRows * 10); //not more than 10x of what train_samples_per_iteration=-1 would do
-
-        // If the number is close to a multiple of epochs, use that -> prettier scoring
-        if (tspi > numRows && Math.abs(tspi % numRows)/(double)numRows < 0.2)  tspi -= tspi % numRows;
-        tspi = Math.min(tspi, (long)(mp._epochs * numRows / 10)); //limit to number of epochs desired, but at least 10 iterations total
-        if (H2O.CLOUD.size() == 1 || mp._single_node_mode) {
-          tspi = Math.min(tspi, 10*(int)(1e6/time_per_row_us)); //in single-node mode, only run for at most 10 seconds
-        }
-        tspi = Math.max(1, tspi); //at least 1 row
-        tspi = Math.min(100000*H2O.CLOUD.size(), tspi); //at most 100k rows per node for initial guess - can always relax later on
-
-        if (!mp._quiet_mode) {
-          Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
-          Log.info("Estimated compute power : " + Math.round(total_gflops*100)/100 + " GFlops");
-          Log.info("Estimated time for comm : " + PrettyPrint.usecs((long) model.time_for_communication_us));
-          Log.info("Estimated time per row  : " + ((long)time_per_row_us > 0 ? PrettyPrint.usecs((long) time_per_row_us) : time_per_row_us + " usecs"));
-          Log.info("Estimated training speed: " + (int)(1e6/time_per_row_us) + " rows/sec");
-          Log.info("Setting train_samples_per_iteration (" + mp._train_samples_per_iteration + ") to auto-tuned value: " + tspi);
-        }
-
-      } else {
-        // limit user-given value to number of epochs desired
-        tspi = Math.max(1, Math.min(tspi, (long) (mp._epochs * numRows)));
-      }
-      assert(tspi != 0 && tspi != -1 && tspi != -2 && tspi >= 1);
-      model.tspiGuess = tspi;
-      return tspi;
-    }
 
     /**
      * Compute the fraction of rows that need to be used for training during one iteration
@@ -582,5 +494,94 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     private float rowFraction(Frame train, DeepLearningParameters p, DeepLearningModel m) {
       return computeRowUsageFraction(train.numRows(), m.actual_train_samples_per_iteration, p._replicate_training_data);
     }
+  }
+
+  /**
+   * Compute the actual train_samples_per_iteration size from the user-given parameter
+   * @param mp Model parameter (DeepLearning object)
+   * @param numRows number of training rows
+   * @param model DL model
+   * @return The total number of training rows to be processed per iteration (summed over on all nodes)
+   */
+  static long computeTrainSamplesPerIteration(final DeepLearningParameters mp, final long numRows, final DeepLearningModel model) {
+    long tspi = mp._train_samples_per_iteration;
+    assert(tspi == 0 || tspi == -1 || tspi == -2 || tspi >= 1);
+    if (tspi == 0 || (!mp._replicate_training_data && tspi == -1) ) {
+      tspi = numRows;
+      if (!mp._quiet_mode) Log.info("Setting train_samples_per_iteration (" + mp._train_samples_per_iteration + ") to one epoch: #rows (" + tspi + ").");
+    }
+    else if (tspi == -1) {
+      tspi = (mp._single_node_mode ? 1 : H2O.CLOUD.size()) * numRows;
+      if (!mp._quiet_mode) Log.info("Setting train_samples_per_iteration (" + mp._train_samples_per_iteration + ") to #nodes x #rows (" + tspi + ").");
+    } else if (tspi == -2) {
+      // automatic tuning based on CPU speed, network speed and model size
+
+      // measure cpu speed
+      double total_gflops = 0;
+      for (H2ONode h2o : H2O.CLOUD._memary) {
+        HeartBeat hb = h2o._heartbeat;
+        total_gflops += hb._gflops; //can be NaN if not yet run
+      }
+      if (mp._single_node_mode) total_gflops /= H2O.CLOUD.size();
+      if (Double.isNaN(total_gflops)) {
+        total_gflops = Linpack.run(H2O.SELF._heartbeat._cpus_allowed) * (mp._single_node_mode ? 1 : H2O.CLOUD.size());
+      }
+      assert(!Double.isNaN(total_gflops));
+
+      final long model_size = model.model_info().size();
+      int[] msg_sizes = new int[]{ 1, (int)(model_size*4) == (model_size*4) ? (int)(model_size*4) : Integer.MAX_VALUE };
+      double[] microseconds_collective = new double[msg_sizes.length];
+      NetworkTest.NetworkTester nt = new NetworkTest.NetworkTester(msg_sizes,null,microseconds_collective,model_size>1e6 ? 1 : 5 /*repeats*/,false,true /*only collectives*/);
+      nt.compute2();
+
+      //length of the network traffic queue based on log-tree rollup (2 log(nodes))
+      int network_queue_length = mp._single_node_mode || H2O.CLOUD.size() == 1? 1 : 2*(int)Math.floor(Math.log(H2O.CLOUD.size())/Math.log(2));
+
+      // heuristics
+      double flops_overhead_per_row = 50;
+      if (mp._activation == DeepLearningParameters.Activation.Maxout || mp._activation == DeepLearningParameters.Activation.MaxoutWithDropout) {
+        flops_overhead_per_row *= 8;
+      } else if (mp._activation == DeepLearningParameters.Activation.Tanh || mp._activation == DeepLearningParameters.Activation.TanhWithDropout) {
+        flops_overhead_per_row *= 5;
+      }
+
+      // target fraction of comm vs cpu time: 5%
+      double fraction = mp._single_node_mode || H2O.CLOUD.size() == 1 ? 1e-3 : mp._target_ratio_comm_to_comp; //one single node mode, there's no model averaging effect, so less need to shorten the M/R iteration
+
+      // estimate the time for communication (network) and training (compute)
+      model.time_for_communication_us = (H2O.CLOUD.size() == 1 ? 1e4 /* add 10ms for single-node */ : 1e5 /* add 100ms for multi-node MR overhead */) + network_queue_length * microseconds_collective[1];
+      double time_per_row_us  = (flops_overhead_per_row * model_size + 10000 * model.model_info().units[0]) / (total_gflops * 1e9) / H2O.SELF._heartbeat._cpus_allowed * 1e6;
+      assert(!Double.isNaN(time_per_row_us));
+
+      // compute the optimal number of training rows per iteration
+      // fraction := time_comm_us / (time_comm_us + tspi * time_per_row_us)  ==>  tspi = (time_comm_us/fraction - time_comm_us)/time_per_row_us
+      tspi = (long)((model.time_for_communication_us / fraction - model.time_for_communication_us)/ time_per_row_us);
+
+      tspi = Math.min(tspi, (mp._single_node_mode ? 1 : H2O.CLOUD.size()) * numRows * 10); //not more than 10x of what train_samples_per_iteration=-1 would do
+
+      // If the number is close to a multiple of epochs, use that -> prettier scoring
+      if (tspi > numRows && Math.abs(tspi % numRows)/(double)numRows < 0.2)  tspi -= tspi % numRows;
+      tspi = Math.min(tspi, (long)(mp._epochs * numRows / 10)); //limit to number of epochs desired, but at least 10 iterations total
+      if (H2O.CLOUD.size() == 1 || mp._single_node_mode) {
+        tspi = Math.min(tspi, 10*(int)(1e6/time_per_row_us)); //in single-node mode, only run for at most 10 seconds
+      }
+      tspi = Math.max(1, tspi); //at least 1 row
+      tspi = Math.min(100000*H2O.CLOUD.size(), tspi); //at most 100k rows per node for initial guess - can always relax later on
+
+      if (!mp._quiet_mode) {
+        Log.info("Auto-tuning parameter 'train_samples_per_iteration':");
+        Log.info("Estimated compute power : " + Math.round(total_gflops*100)/100 + " GFlops");
+        Log.info("Estimated time for comm : " + PrettyPrint.usecs((long) model.time_for_communication_us));
+        Log.info("Estimated time per row  : " + ((long)time_per_row_us > 0 ? PrettyPrint.usecs((long) time_per_row_us) : time_per_row_us + " usecs"));
+        Log.info("Estimated training speed: " + (int)(1e6/time_per_row_us) + " rows/sec");
+        Log.info("Setting train_samples_per_iteration (" + mp._train_samples_per_iteration + ") to auto-tuned value: " + tspi);
+      }
+
+    } else {
+      // limit user-given value to number of epochs desired
+      tspi = Math.max(1, Math.min(tspi, (long) (mp._epochs * numRows)));
+    }
+    assert(tspi != 0 && tspi != -1 && tspi != -2 && tspi >= 1);
+    return tspi;
   }
 }

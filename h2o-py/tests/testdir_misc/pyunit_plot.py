@@ -5,9 +5,6 @@ from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 def plot_test():
-    kwargs = {}
-    kwargs['server'] = True
-
     air = h2o.import_file(pyunit_utils.locate("smalldata/airlines/AirlinesTrain.csv.zip"))
 
     # Constructing test and train sets by sampling (20/80)
@@ -22,14 +19,14 @@ def plot_test():
     air_gbm.train(x=myX, y=myY, training_frame=air_train, validation_frame=air_valid)
 
     # Plot ROC for training and validation sets
-    air_gbm.plot(type="roc", train=True, **kwargs)
-    air_gbm.plot(type="roc", valid=True, **kwargs)
+    air_gbm.plot(type="roc", train=True, server=True)
+    air_gbm.plot(type="roc", valid=True, server=True)
 
     air_test = h2o.import_file(pyunit_utils.locate("smalldata/airlines/AirlinesTest.csv.zip"))
     perf = air_gbm.model_performance(air_test)
 
-    #Plot ROC for test set
-    perf.plot(type="roc", **kwargs)
+    # Plot ROC for test set
+    perf.plot(type="roc", server=True)
 
 
 

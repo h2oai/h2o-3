@@ -19,7 +19,7 @@ public class CreateFrame extends Iced {
   public final Job<Frame> _job;
   public long rows = 10000;
   public int cols = 10;
-  public long seed = new Random().nextLong();
+  public long seed = -1;
   public long seed_for_column_types = -1;
   public boolean randomize = true;
   public long value = 0;
@@ -41,8 +41,10 @@ public class CreateFrame extends Iced {
   public CreateFrame() { this(Key.<Frame>make()); }
 
   public Job<Frame> execImpl() {
-    if (seed_for_column_types==-1) seed_for_column_types = seed;
-    if (integer_fraction + binary_fraction + categorical_fraction + time_fraction + string_fraction > 1) throw new IllegalArgumentException("Integer, binary, categorical, time and string fractions must add up to <= 1.");
+    if (seed == -1) seed = new Random().nextLong();
+    if (seed_for_column_types == -1) seed_for_column_types = seed;
+    if (integer_fraction + binary_fraction + categorical_fraction + time_fraction + string_fraction > 1.00000001)
+      throw new IllegalArgumentException("Integer, binary, categorical, time and string fractions must add up to <= 1.");
     if (missing_fraction < 0 || missing_fraction > 1) throw new IllegalArgumentException("Missing fraction must be between 0 and 1.");
     if (integer_fraction < 0 || integer_fraction > 1) throw new IllegalArgumentException("Integer fraction must be between 0 and 1.");
     if (binary_fraction < 0 || binary_fraction > 1) throw new IllegalArgumentException("Binary fraction must be between 0 and 1.");
@@ -54,15 +56,15 @@ public class CreateFrame extends Iced {
     if (response_factors < 1) throw new IllegalArgumentException("Response factors must be either 1 (real-valued response), or >=2 (factor levels).");
     if (response_factors > 1024) throw new IllegalArgumentException("Response factors must be <= 1024.");
     if (factors > 1000000) throw new IllegalArgumentException("Number of factors must be <= 1,000,000).");
-    if (cols <= 0 || rows <= 0) throw new IllegalArgumentException("Must have number of rows > 0 and columns > 1.");
+    if (cols <= 0 || rows <= 0) throw new IllegalArgumentException("Must have number of rows > 0 and columns > 0.");
 
     // estimate byte size of the frame
     double byte_estimate = randomize ? rows * cols * (
             binary_fraction * 1./8 //bits
-                    + categorical_fraction * (factors < 128 ? 1 : factors < 32768 ? 2 : 4)
-                    + integer_fraction * (integer_range < 128 ? 1 : integer_range < 32768 ? 2 : integer_range < (1<<31) ? 4 : 8)
-                    + time_fraction * 8
-                    + (1-integer_fraction - binary_fraction - categorical_fraction - time_fraction - string_fraction) * 8 ) //reals
+            + categorical_fraction * (factors < 128 ? 1 : factors < 32768 ? 2 : 4)
+            + integer_fraction * (integer_range < 128 ? 1 : integer_range < 32768 ? 2 : integer_range < (1<<31) ? 4 : 8)
+            + time_fraction * 8
+            + (1-integer_fraction - binary_fraction - categorical_fraction - time_fraction - string_fraction) * 8 ) //reals
             + rows //response is
             : 0; // all constants - should be small
 

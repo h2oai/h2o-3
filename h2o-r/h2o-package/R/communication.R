@@ -612,6 +612,11 @@ h2o.clusterInfo <- function() {
   assign("IS_CLIENT", is_client, .pkg.env)
   m <- ": \n"
   if( is_client ) m <- " (in client mode): \n"
+  
+  if (is.null(res$build_too_old)) {
+    res$build_too_old <- TRUE
+    res$build_age <- "PREHISTORIC"
+  }
 
   cat(paste0("R is connected to the H2O cluster", m))
   cat("    H2O cluster uptime:        ", .readableTime(as.numeric(res$cloud_uptime_millis)), "\n")

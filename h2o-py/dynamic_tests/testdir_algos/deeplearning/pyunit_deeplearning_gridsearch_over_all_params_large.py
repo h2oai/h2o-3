@@ -169,7 +169,7 @@ class Test_deeplearning_grid_search:
         print("Time taken to build a base barebone model is {0}".format(self.model_run_time))
 
         summary_list = model._model_json["output"]["scoring_history"]
-        num_iterations = summary_list.cell_values[2][summary_list.col_header.index('iterations')]
+        num_iterations = summary_list["iterations"][2]
 
         if num_iterations == 0:
             self.min_runtime_per_iteration = self.model_run_time
@@ -315,7 +315,7 @@ class Test_deeplearning_grid_search:
                 if len(summary_list.cell_values) < 3:
                     num_iterations = 1
                 else:
-                    num_iterations = summary_list.cell_values[2][summary_list.col_header.index('iterations')]
+                    num_iterations = summary_list["iterations"][2]
 
                 if max_runtime > 0:
                     # shortest possible time it takes to build this model

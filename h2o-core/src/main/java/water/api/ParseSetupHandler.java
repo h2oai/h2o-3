@@ -9,7 +9,9 @@ import water.DKV;
 import water.Key;
 import water.api.schemas3.ParseSetupV3;
 import water.exceptions.H2OIllegalArgumentException;
+import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.util.DistributedException;
 import water.util.PojoUtils;
 
 import static water.parser.DefaultParserProviders.GUESS_INFO;
@@ -33,9 +35,17 @@ public class ParseSetupHandler extends Handler {
     if (p.na_strings != null)
       for(int i = 0; i < p.na_strings.length; i++)
         if (p.na_strings[i] != null && p.na_strings[i].length == 0) p.na_strings[i] = null;
-
-    ParseSetup ps = ParseSetup.guessSetup(fkeys, new ParseSetup(p));
-
+    ParseSetup ps;
+    try{
+      ps = ParseSetup.guessSetup(fkeys, new ParseSetup(p));
+    } catch(Throwable ex) {
+      Throwable ex2 = ex;
+      if(ex instanceof DistributedException)
+        ex2 = ex.getCause();
+      if(ex2 instanceof ParseDataset.H2OParseException)
+        throw new H2OIllegalArgumentException(ex2.getMessage());
+      throw ex;
+    }
     if(ps._errs != null && ps._errs.length > 0) {
       p.warnings = new String[ps._errs.length];
       for (int i = 0; i < ps._errs.length; ++i)
