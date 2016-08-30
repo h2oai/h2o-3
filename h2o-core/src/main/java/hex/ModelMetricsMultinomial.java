@@ -139,8 +139,8 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     Frame predsLabel = new Frame(perClassProbs);
     predsLabel.add("labels", _labels2);
     MetricBuilderMultinomial mb = new MultinomialMetrics((_labels2.domain())).doAll(predsLabel)._mb;
-    _labels.remove();
     ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mb.makeModelMetrics(null, predsLabel, null, null);
+    _labels.remove();
     _labels2.remove();
     mm._description = "Computed on user-given predictions and labels.";
     return mm;
