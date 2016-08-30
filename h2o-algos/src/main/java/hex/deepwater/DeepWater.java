@@ -235,6 +235,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             mi.set_processed_local(model.model_info().get_processed_local());
             model.set_model_info(mi);
             model.update(_job);
+            assert(model.model_info()._imageTrain==null);
             model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, true);
             if (!_parms._quiet_mode) {
               Log.info("  Note: best model was at " + (float) best_model.epoch_counter + " (out of " + (float) model.epoch_counter + ") epochs.");

@@ -332,6 +332,8 @@ public class DeepWaterTest extends TestUtil {
       p._rate = 0.01;
       p._momentum_start = 0.5;
       p._momentum_stable = 0.5;
+//      p._network = DeepWaterParameters.Network.lenet;
+      p._network = DeepWaterParameters.Network.inception_bn; //FAILS
 
       // score a lot
       p._train_samples_per_iteration = p._mini_batch_size;
@@ -489,7 +491,7 @@ public class DeepWaterTest extends TestUtil {
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
         p._network = network;
-        p._mini_batch_size = 16;
+        p._mini_batch_size = 4;
         p._epochs = 0.1;
         p._seed = 1234;
         p._score_training_samples = 0;
@@ -512,7 +514,7 @@ public class DeepWaterTest extends TestUtil {
         Assert.assertTrue(isIdenticalUpToRelTolerance(pred1, pred2, 1e-6));
 
         // move stuff back and forth a bit
-        int count=10;
+        int count=3;
         while(count-->0) {
           m.model_info().javaToNative();
           m.model_info().nativeToJava();
@@ -577,7 +579,7 @@ public class DeepWaterTest extends TestUtil {
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._network = network;
         p._response_column = "C2";
-        p._mini_batch_size = 16;
+        p._mini_batch_size = 8;
         p._train_samples_per_iteration = p._mini_batch_size;
         p._rate = 0e-3;
         p._seed = 12345;
