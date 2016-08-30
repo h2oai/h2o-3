@@ -2,12 +2,12 @@ package hex.genmodel;
 
 import hex.genmodel.algos.DrfRawModel;
 import hex.genmodel.utils.ParseUtils;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipFile;
 
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 
 /**
@@ -199,7 +199,7 @@ abstract public class RawModel extends GenModel {
 
         @Override
         public byte[] getBinaryFile(String filename) throws IOException {
-            ZipArchiveEntry za = zf.getEntry(filename);
+            ZipEntry za = zf.getEntry(filename);
             if (za == null)
                 throw new IOException("Tree file " + filename + " not found");
             byte[] out = new byte[(int) za.getSize()];
