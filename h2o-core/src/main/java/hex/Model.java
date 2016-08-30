@@ -1007,12 +1007,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
     public ModelMetrics.MetricBuilder _mb;
     final double[] _mean;  // Column means of test frame
-    final boolean _computeMetrics;  // Column means of test frame
-    final boolean _hasWeights;
-    final boolean _makePreds;
-    final Job _j;
+    final public boolean _computeMetrics;  // Column means of test frame
+    final public boolean _hasWeights;
+    final public boolean _makePreds;
+    final public Job _j;
 
-    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
+    public BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
       _j = j;
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
