@@ -39,7 +39,6 @@ public abstract class TreeVisitor<T extends Exception> {
     if( col==65535 ) { leaf2(nodeType); return; }
     int equal = (nodeType&12) >> 2;
     int naSplitDirInt = _ts.get1();
-    DHistogram.NASplitDir naSplitDir = DHistogram.NASplitDir.values()[naSplitDirInt];
 
     float fcmp = -1;
     if (naSplitDirInt != DhnasdNaVsRest) {
