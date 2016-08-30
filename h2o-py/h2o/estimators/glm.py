@@ -637,3 +637,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         m._resolve_model(model_json["model_id"]["name"], model_json)
         return m
 
+    # overrides superclass
+    def _compute_algo(self):
+        return "glm"
+
