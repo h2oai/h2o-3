@@ -1530,8 +1530,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
 
-      int nfeatures = dvecs.length;
-      double features[] = MemoryManager.malloc8d(nfeatures);
+      double features[] = MemoryManager.malloc8d(genmodel._names.length);
       double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
@@ -1540,7 +1539,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
 
         // Native Java API
-        for (int col = 0; col < nfeatures; col++) // Build feature set
+        for (int col = 0; col < features.length; col++) // Build feature set
           features[col] = dvecs[col].at(row);
         genmodel.score0(features, predictions);            // POJO predictions
         for (int col = 0; col < pvecs.length; col++) { // Compare predictions
@@ -1559,7 +1558,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       RowData rowData = new RowData();
       for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
         if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
-        for( int col=0; col<features.length; col++ ) {
+        for (int col = 0; col < features.length; col++) {
           double val = dvecs[col].at(row);
           rowData.put(
                   genmodel._names[col],
