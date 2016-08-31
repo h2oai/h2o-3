@@ -14,11 +14,11 @@ From Python
 
 To use H2O in Python, follow the instructions on the `Python download page <http://www.h2o.ai/download/h2o/python>`_.
 
-  **Note**: OS X El Capitan users must include the ``--user`` flag when starting H2O from Python. For example:
+**Note**: When installing H2O from ``pip`` in OS X El Capitan, users must include the ``--user`` flag. For example:
 
-  ::
+::
 	
-	pip install http://h2o-release.s3.amazonaws.com/h2o/rel-turing/3/Python/h2o-3.10.0.3-py2.py3-none-any.whl --user
+	pip install --user http://h2o-release.s3.amazonaws.com/h2o/rel-turing/3/Python/h2o-3.10.0.3-py2.py3-none-any.whl
 
 On Spark
 --------
@@ -34,13 +34,7 @@ From the Command Line
 .. todo:: provide examples for most common clusters
 
 You can use Terminal (OS X) or the Command Prompt (Windows) to launch
-H2O 3.0. 
-
-  **Note**: OS X El Capitan users must include the ``--user`` flag when starting H2O from the command line. For example:
-
-  ::
-
-		java -jar h2o.jar --user
+H2O. 
 
 When you launch from the command line, you can include
 additional instructions to H2O 3.0, such as how many nodes to launch,
