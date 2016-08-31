@@ -120,7 +120,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     /** More indepth tree stats */
     final public TreeStats _treeStats;
 
-    /** Trees get big, so store each one seperately in the DKV. */
+    /** Trees get big, so store each one separately in the DKV. */
     public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
     public ScoreKeeper _scored_train[/*ntrees+1*/];
@@ -313,6 +313,11 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return super.readAll_impl(ab,fs);
   }
 
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Serialization into the "zipped" format
+  //--------------------------------------------------------------------------------------------------------------------
+
   @Override
   public Model<M, P, O>.RawDataStreamWriter getRawDataStream() {
     return new RawDataStreamWriter();
@@ -346,6 +351,10 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   }
 
 
+  //--------------------------------------------------------------------------------------------------------------------
+  // Serialization into a POJO
+  //--------------------------------------------------------------------------------------------------------------------
+
   // Override in subclasses to provide some top-level model-specific goodness
   @Override protected boolean toJavaCheckTooBig() {
     // If the number of leaves in a forest is more than N, don't try to render it in the browser as POJO code.
@@ -357,8 +366,8 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
-    sb.ip("public int nfeatures() { return "+_output.nfeatures()+"; }").nl();
-    sb.ip("public int nclasses() { return "+_output.nclasses()+"; }").nl();
+    sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
+    sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
     return sb;
   }
 

@@ -1,6 +1,7 @@
 package hex.genmodel;
 
 import hex.genmodel.algos.DrfRawModel;
+import hex.genmodel.algos.GbmRawModel;
 import hex.genmodel.utils.ParseUtils;
 
 import java.io.*;
@@ -29,7 +30,7 @@ abstract public class RawModel extends GenModel {
      * Primary factory method for constructing RawModel instances.
      *
      * @param file Name of the zip file (or folder) with the model's data. This should be the data retrieved via
-     *             `GET /3/Models/{model_id}/data` endpoint.
+     *             the `GET /3/Models/{model_id}/data` endpoint.
      * @return New `RawModel` object.
      * @throws IOException if `file` does not exist, or cannot be read, or does not represent a valid model.
      */
@@ -45,11 +46,15 @@ abstract public class RawModel extends GenModel {
         if (algo == null)
             throw new IOException("Model file does not contain information about the model's algorithm.");
 
-        // Create and return the class instance
-        if (algo.equals("Distributed Random Forest"))
-            return new DrfRawModel(cr, info, columns, domains);
-        else
-            throw new IOException("Unknown algorithm " + algo + " in model's info.");
+        // Create and return a subclass instance
+        switch (algo) {
+            case "Distributed Random Forest":
+                return new DrfRawModel(cr, info, columns, domains);
+            case "Gradient Boosting Method":
+                return new GbmRawModel(cr, info, columns, domains);
+            default:
+                throw new IOException("Unsupported algorithm " + algo + " in model's info.");
+        }
     }
 
     @Override public String getUUID() { return _uuid; }
