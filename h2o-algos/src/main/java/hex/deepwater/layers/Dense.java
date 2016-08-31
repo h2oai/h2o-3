@@ -11,7 +11,6 @@ import java.util.List;
 
 /**
  * Created by fmilo on 8/16/16.
- */
 public class Dense implements Layer {
 
     final ParameterBuilder _params = new ParameterBuilder()
@@ -83,3 +82,4 @@ public class Dense implements Layer {
 
 
 }
+*/

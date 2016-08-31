@@ -185,7 +185,6 @@ public class TensorflowTest extends TestUtil {
                 continue;
             }
 
-            current_batch_size = 0;
             int[] predictions = inferDigit(sess, batch, batch_size);
             for (int i = 0; i < predictions.length; i++) {
                 if (predictions[i] != batch_labels[i]) {

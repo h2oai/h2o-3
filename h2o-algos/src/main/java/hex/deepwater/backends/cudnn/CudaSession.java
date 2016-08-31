@@ -37,5 +37,6 @@ public class CudaSession {
         }
 
         // allocate all the tensors that are not by_ref
+        return 0;
     }
 }
