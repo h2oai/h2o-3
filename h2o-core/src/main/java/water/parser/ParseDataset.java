@@ -900,10 +900,11 @@ public final class ParseDataset {
       // All output into a fresh pile of NewChunks, one per column
       Parser p = localSetup.parser(_jobKey);
       // assume 2x inflation rate
-      if (compressed && localSetup._parse_type.isParallelParseSupported) {
+      if (localSetup._parse_type.isParallelParseSupported) {
         p.streamParseZip(is, dout, bvs);
       } else {
-        p.streamParse(is, dout);
+        throw H2O.unimpl();
+//        p.streamParse(is, dout);
       }
       // Parse all internal "chunks", until we drain the zip-stream dry.  Not
       // real chunks, just flipping between 32K buffers.  Fills up the single

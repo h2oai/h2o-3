@@ -54,22 +54,26 @@ public class ByteVec extends Vec {
     }
   }
 
-  /** Open a stream view over the underlying data  */
+  /**
+   * Open a stream view over the underlying data
+   */
   public InputStream openStream(final Key job_key) {
-    return new InputStream() {
-      final long [] sz = new long[1];
+    InputStream is = new InputStream() {
+      final long[] sz = new long[1];
       private int _cidx, _pidx, _sz;
       private C1NChunk _c0;
-      @Override public int available() {
-        if( _c0 == null || _sz >= _c0._len) {
-          sz[0] += _c0 != null? _c0._len :0;
-          if( _cidx >= nChunks() ) return 0;
+
+      @Override
+      public int available() {
+        if (_c0 == null || _sz >= _c0._len) {
+          sz[0] += _c0 != null ? _c0._len : 0;
+          if (_cidx >= nChunks()) return 0;
           _c0 = chunkForChunkIdx(_cidx++);
           _sz = C1NChunk._OFF;
           if (job_key != null)
-            Job.update(_c0._len,job_key);
+            Job.update(_c0._len, job_key);
         }
-        return _c0._len -_sz;
+        return _c0._len - _sz;
       }
       @Override public void close() { _cidx = nChunks(); _c0 = null; _sz = 0;}
       @Override public int read() throws IOException {
