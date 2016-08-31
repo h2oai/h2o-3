@@ -78,37 +78,37 @@ class ModelMetricsHandler extends Handler {
    *  */
   public static final class ModelMetricsListSchemaV3 extends RequestSchemaV3<ModelMetricsList, ModelMetricsListSchemaV3> {
     // Input fields
-    @API(help = "Key of Model of interest (optional)", json = true)
-    public KeyV3.ModelKeyV3 model;
+    @API(help = "Key of Model of interest (optional)")
+    public KeyV3.ModelKeyV3<Model> model;
 
-    @API(help = "Key of Frame of interest (optional)", json = true)
+    @API(help = "Key of Frame of interest (optional)")
     public KeyV3.FrameKeyV3 frame;
 
-    @API(help = "Key of predictions frame, if predictions are requested (optional)", json = true, required = false, direction = API.Direction.INOUT)
+    @API(help = "Key of predictions frame, if predictions are requested (optional)", direction = API.Direction.INOUT)
     public KeyV3.FrameKeyV3 predictions_frame;
 
-    @API(help = "Compute reconstruction error (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
+    @API(help = "Compute reconstruction error (optional, only for Deep Learning AutoEncoder models)", json = false)
     public boolean reconstruction_error;
 
-    @API(help = "Compute reconstruction error per feature (optional, only for Deep Learning AutoEncoder models)", json = false, required = false)
+    @API(help = "Compute reconstruction error per feature (optional, only for Deep Learning AutoEncoder models)", json = false)
     public boolean reconstruction_error_per_feature;
 
-    @API(help = "Extract Deep Features for given hidden layer (optional, only for Deep Learning models)", json = false, required = false)
+    @API(help = "Extract Deep Features for given hidden layer (optional, only for Deep Learning models)", json = false)
     public int deep_features_hidden_layer;
 
-    @API(help = "Reconstruct original training frame (optional, only for GLRM models)", json = false, required = false)
+    @API(help = "Reconstruct original training frame (optional, only for GLRM models)", json = false)
     public boolean reconstruct_train;
 
-    @API(help = "Project GLRM archetypes back into original feature space (optional, only for GLRM models)", json = false, required = false)
+    @API(help = "Project GLRM archetypes back into original feature space (optional, only for GLRM models)", json = false)
     public boolean project_archetypes;
 
-    @API(help = "Reverse transformation applied during training to model output (optional, only for GLRM models)", json = false, required = false)
+    @API(help = "Reverse transformation applied during training to model output (optional, only for GLRM models)", json = false)
     public boolean reverse_transform;
 
-    @API(help = "Return the leaf node assignment (optional, only for DRF/GBM models)", json = false, required = false)
+    @API(help = "Return the leaf node assignment (optional, only for DRF/GBM models)", json = false)
     public boolean leaf_node_assignment;
 
-    @API(help = "Retrieve all members for a given exemplar (optional, only for Aggregator models)", json = false, required = false)
+    @API(help = "Retrieve all members for a given exemplar (optional, only for Aggregator models)", json = false)
     public int exemplar_index;
 
     // Output fields
@@ -117,8 +117,8 @@ class ModelMetricsHandler extends Handler {
 
     @Override public ModelMetricsHandler.ModelMetricsList fillImpl(ModelMetricsList mml) {
       // TODO: check for type!
-      mml._model = (null == this.model || null == this.model.key() ? null : this.model.key().get());
-      mml._frame = (null == this.frame || null == this.frame.key() ? null : this.frame.key().get());
+      mml._model = (this.model == null || this.model.key() == null ? null : this.model.key().get());
+      mml._frame = (this.frame == null || this.frame.key() == null ? null : this.frame.key().get());
       mml._predictions_name = (null == this.predictions_frame || null == this.predictions_frame.key() ? null : this.predictions_frame.key().toString());
       mml._reconstruction_error = this.reconstruction_error;
       mml._reconstruction_error_per_feature = this.reconstruction_error_per_feature;

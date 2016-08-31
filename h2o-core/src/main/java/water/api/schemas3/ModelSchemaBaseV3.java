@@ -15,11 +15,11 @@ import water.api.schemas3.KeyV3.FrameKeyV3;
  * </ul>
  *
  */
-public class ModelSchemaBaseV3<M extends water.Iced, S extends ModelSchemaBaseV3<M, S>> extends SchemaV3<M, S> {
+public class ModelSchemaBaseV3<M extends hex.Model<M,?,?>, S extends ModelSchemaBaseV3<M, S>> extends SchemaV3<M, S> {
 
   // Input fields
   @API(help="Model key", required=true, direction=API.Direction.INOUT)
-  public ModelKeyV3 model_id;
+  public ModelKeyV3<M> model_id;
 
   // Output fields
   @API(help="The algo name for this Model.", direction=API.Direction.OUTPUT)
@@ -40,8 +40,8 @@ public class ModelSchemaBaseV3<M extends water.Iced, S extends ModelSchemaBaseV3
 
   public ModelSchemaBaseV3() {}
 
-  public ModelSchemaBaseV3(Model m) {
-    this.model_id = new ModelKeyV3(m._key);
+  public ModelSchemaBaseV3(M m) {
+    this.model_id = new ModelKeyV3<>(m._key);
     this.algo = m._parms.algoName().toLowerCase();
     this.algo_full_name = m._parms.fullName();
     this.data_frame = new FrameKeyV3(m._parms._train);

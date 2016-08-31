@@ -8,6 +8,10 @@ import water.Iced;
  */
 //TODO: Separate into family/link
 public class Distribution extends Iced {
+
+  /**
+   * NOTE: changes in this enum must be synchronized with `hex.genmodel.utils.DistributionFamily`.
+   */
   public enum Family {
     AUTO,         //model-specific behavior
     bernoulli,    //binomial classification (nclasses == 2)

@@ -18,7 +18,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends Model<M,P,O> implements Model.LeafNodeAssignment {
+public abstract class SharedTreeModel<
+        M extends SharedTreeModel<M, P, O>,
+        P extends SharedTreeModel.SharedTreeParameters,
+        O extends SharedTreeModel.SharedTreeOutput
+        > extends Model<M, P, O> implements Model.LeafNodeAssignment {
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
 
@@ -178,7 +182,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     public String toStringTree ( int tnum, int knum ) { return ctree(tnum,knum).toString(this); }
   }
 
-  public SharedTreeModel(Key selfKey, P parms, O output) {
+  public SharedTreeModel(Key<M> selfKey, P parms, O output) {
     super(selfKey, parms, output);
   }
 
@@ -186,13 +190,13 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
     int classTrees = 0;
-    for (int i=0;i<_output._treeKeys[0].length;++i) {
+    for (int i = 0; i < _output._treeKeys[0].length; ++i) {
       if (_output._treeKeys[0][i] != null) classTrees++;
     }
     final int outputcols = _output._treeKeys.length * classTrees;
     final String[] names = new String[outputcols];
-    int col=0;
-    for( int tidx=0; tidx<_output._treeKeys.length; tidx++ ) {
+    int col = 0;
+    for (int tidx = 0; tidx < _output._treeKeys.length; tidx++) {
       Key[] keys = _output._treeKeys[tidx];
       for (int c = 0; c < keys.length; c++) {
         if (keys[c] != null) {
@@ -212,9 +216,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
           int col=0;
           for( int tidx=0; tidx<_output._treeKeys.length; tidx++ ) {
             Key[] keys = _output._treeKeys[tidx];
-            for (int c = 0; c < keys.length; c++) {
-              if (keys[c] != null) {
-                String pred = DKV.get(keys[c]).<CompressedTree>get().getDecisionPath(input);
+            for (Key key : keys) {
+              if (key != null) {
+                String pred = DKV.get(key).<CompressedTree>get().getDecisionPath(input);
                 output[col++] = pred;
               }
             }
@@ -244,11 +248,12 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
   }
 
   @Override protected double[] score0(double data[], double[] preds, double weight, double offset) {
-    return score0(data,preds,weight,offset,_output._treeKeys.length);
+    return score0(data, preds, weight, offset, _output._treeKeys.length);
   }
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
     return score0(data, preds, 1.0, 0.0);
   }
+
   protected double[] score0(double[] data, double[] preds, double weight, double offset, int ntrees) {
     // Prefetch trees into the local cache if it is necessary
     // Invoke scoring
@@ -257,6 +262,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
       score0(data, preds, tidx);
     return preds;
   }
+
   // Score per line per tree
   private void score0(double data[], double preds[], int treeIdx) {
     Key[] keys = _output._treeKeys[treeIdx];
@@ -271,7 +277,7 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
 
   /** Performs deep clone of given model.  */
   protected M deepClone(Key<M> result) {
-    M newModel = (M)IcedUtils.deepCopy(this);
+    M newModel = IcedUtils.deepCopy(self());
     newModel._key = result;
     // Do not clone model metrics
     newModel._output.clearModelMetrics();
@@ -313,6 +319,9 @@ public abstract class SharedTreeModel<M extends SharedTreeModel<M,P,O>, P extend
     return super.readAll_impl(ab,fs);
   }
 
+  // `M` is really the type of `this`
+  @SuppressWarnings("unchecked")
+  private M self() { return (M)this; }
 
   //--------------------------------------------------------------------------------------------------------------------
   // Serialization into the "zipped" format

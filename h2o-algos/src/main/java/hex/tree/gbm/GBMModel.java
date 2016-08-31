@@ -41,10 +41,12 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
-    public GBMOutput( GBM b) { super(b); }
+    public GBMOutput(GBM b) { super(b); }
   }
 
-  public GBMModel(Key selfKey, GBMParameters parms, GBMOutput output ) { super(selfKey,parms,output); }
+  public GBMModel(Key<GBMModel> selfKey, GBMParameters parms, GBMOutput output) {
+    super(selfKey,parms,output);
+  }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
@@ -109,9 +111,8 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     protected void writeExtraModelInfo() throws IOException {
       super.writeExtraModelInfo();
       writeln("distribution = " + _parms._distribution);
-      writeln("tweedie_power = " + _parms._tweedie_power);
-      writeln("quantile_alpha = " + _parms._quantile_alpha);
       writeln("init_f = " + _output._init_f);
+      writeln("offset_column = " + null);  // Not known yet
     }
   }
 }
