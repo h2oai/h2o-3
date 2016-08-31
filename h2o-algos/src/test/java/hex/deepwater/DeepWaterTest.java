@@ -5,10 +5,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.AutoBuffer;
-import water.Futures;
-import water.Key;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.gpu.ImagePred;
@@ -334,7 +331,6 @@ public class DeepWaterTest extends TestUtil {
       p._momentum_stable = 0.5;
       p._stopping_rounds = 0;
       p._network = DeepWaterParameters.Network.lenet;
-      // FIXME
 //      p._network = DeepWaterParameters.Network.inception_bn; //FAILS
 
       // score a lot
@@ -447,6 +443,60 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
+  public void testSettingModelInfo() {
+    for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
+      if (network == DeepWaterParameters.Network.user) continue;
+      if (network == DeepWaterParameters.Network.auto) continue;
+
+      DeepWaterModel m1 = null;
+      DeepWaterModel m2 = null;
+      Frame tr = null;
+      try {
+        DeepWaterParameters p = new DeepWaterParameters();
+        p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+        p._response_column = "C2";
+        p._network = network;
+        p._mini_batch_size = 4;
+        p._epochs = 0.01;
+        p._seed = 1234;
+        p._score_training_samples = 0;
+        p._train_samples_per_iteration = p._mini_batch_size;
+        // first model
+        Job j1 = new DeepWater(p).trainModel();
+        m1 = (DeepWaterModel)j1.get();
+        int h1 = Arrays.hashCode(m1.model_info()._modelparams);
+        m1.doScoring(tr,null,j1._key,m1.iterations,true);
+        double l1 = m1.loss();
+
+        // second model (different seed)
+        p._seed = 4321;
+        Job j2 = new DeepWater(p).trainModel();
+        m2 = (DeepWaterModel)j2.get();
+        m2.doScoring(tr,null,j2._key,m2.iterations,true);
+//        double l2 = m2.loss();
+        int h2 = Arrays.hashCode(m2.model_info()._modelparams);
+
+        // turn the second model into the first model
+        m2.removeNativeState();
+        DeepWaterModelInfo mi = m1.model_info().deep_clone();
+        m2.set_model_info(mi);
+        m2.doScoring(tr,null,j2._key,m2.iterations,true);
+        double l3 = m2.loss();
+        int h3 = Arrays.hashCode(m2.model_info()._modelparams);
+
+        Log.info("Checking assertions for network: " + network);
+        Assert.assertNotEquals(h1, h2);
+        Assert.assertEquals(h1, h3);
+        Assert.assertEquals(l1, l3, 1e-6*l1);
+      } finally {
+        if (m1!=null) m1.delete();
+        if (m2!=null) m2.delete();
+        if (tr!=null) tr.remove();
+      }
+    }
+  }
+
+  @Test
   public void testReproTraining() {
     final int REPS=3;
     double[] values=new double[REPS];
@@ -477,24 +527,21 @@ public class DeepWaterTest extends TestUtil {
   public void deepWaterLoadSaveTest() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network == DeepWaterParameters.Network.user) continue;
+      if (network == DeepWaterParameters.Network.auto) continue;
 
       // FIXME
       if (network == DeepWaterParameters.Network.resnet) continue; //FAILS
       if (network == DeepWaterParameters.Network.inception_bn) continue; //FAILS
-      if (network == DeepWaterParameters.Network.auto) continue; //FAILS
 
       DeepWaterModel m = null;
       Frame tr = null;
-      Frame pred1 = null;
-      Frame pred2 = null;
-      Frame pred3 = null;
       try {
         DeepWaterParameters p = new DeepWaterParameters();
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
         p._network = network;
         p._mini_batch_size = 4;
-        p._epochs = 0.1;
+        p._epochs = 0.01;
         p._seed = 1234;
         p._score_training_samples = 0;
         p._train_samples_per_iteration = p._mini_batch_size;
@@ -503,33 +550,24 @@ public class DeepWaterTest extends TestUtil {
 
         Assert.assertTrue(m.model_info()._imageTrain==null);
 
-        // regular prediction
-        pred1 = m.score(tr);
-        pred1.remove(0).remove();
-        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred1, tr.vec(p._response_column));
-        Assert.assertEquals(mm._logloss, ((ModelMetricsMultinomial)m._output._training_metrics)._logloss, 1e-6*mm._logloss);
-        Assert.assertTrue(m.model_info()._imageTrain==null);
+        int hashCodeNetwork = java.util.Arrays.hashCode(m.model_info()._network);
+        int hashCodeParams = java.util.Arrays.hashCode(m.model_info()._modelparams);
+        Log.info("Hash code for original network: " + hashCodeNetwork);
+        Log.info("Hash code for original parameters: " + hashCodeParams);
 
-        // do it again
-        pred2 = m.score(tr);
-        pred2.remove(0).remove();
-        Assert.assertTrue(isIdenticalUpToRelTolerance(pred1, pred2, 1e-6));
-
-        // move stuff back and forth a bit
-        int count=3;
-        while(count-->0) {
-          m.model_info().javaToNative();
-          m.model_info().nativeToJava();
-        }
-        pred3 = m.score(tr);
-        pred3.remove(0).remove();
-        Assert.assertTrue(isIdenticalUpToRelTolerance(pred2, pred3, 1e-6));
+        // move stuff back and forth
+        m.removeNativeState();
+        m.model_info().javaToNative();
+        m.model_info().nativeToJava();
+        int hashCodeNetwork2 = java.util.Arrays.hashCode(m.model_info()._network);
+        int hashCodeParams2 = java.util.Arrays.hashCode(m.model_info()._modelparams);
+        Log.info("Hash code for restored network: " + hashCodeNetwork2);
+        Log.info("Hash code for restored parameters: " + hashCodeParams2);
+        Assert.assertEquals(hashCodeNetwork, hashCodeNetwork2);
+        Assert.assertEquals(hashCodeParams, hashCodeParams2);
       } finally {
         if (m!=null) m.delete();
         if (tr!=null) tr.remove();
-        if (pred1!=null) pred1.remove();
-        if (pred2!=null) pred2.remove();
-        if (pred3!=null) pred3.remove();
       }
     }
   }
@@ -565,11 +603,7 @@ public class DeepWaterTest extends TestUtil {
   public void testRestoreState() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network == DeepWaterParameters.Network.user) continue;
-
-      // FIXME
-      if (network == DeepWaterParameters.Network.resnet) continue; //FAILS
-      if (network == DeepWaterParameters.Network.inception_bn) continue; //FAILS
-      if (network == DeepWaterParameters.Network.auto) continue; //FAILS
+      if (network == DeepWaterParameters.Network.auto) continue;
 
       DeepWaterModel m1 = null;
       DeepWaterModel m2 = null;
@@ -580,11 +614,12 @@ public class DeepWaterTest extends TestUtil {
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._network = network;
         p._response_column = "C2";
-        p._mini_batch_size = 8;
+        p._mini_batch_size = 4;
         p._train_samples_per_iteration = p._mini_batch_size;
         p._rate = 0e-3;
         p._seed = 12345;
-        p._epochs = 0.1;
+        p._epochs = 0.01;
+        p._quiet_mode = true;
         m1 = new DeepWater(p).trainModel().get();
 
         Log.info("Scoring the original model.");

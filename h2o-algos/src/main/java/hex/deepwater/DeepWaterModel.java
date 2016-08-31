@@ -312,7 +312,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         this.scoringInfo = err2;
       }
       _output.errors = last_scored();
-      Timer t = new Timer();
       _output._scoring_history = DeepWaterScoringInfo.createScoringHistoryTable(this.scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
       _output._variable_importances = calcVarImp(last_scored().variable_importances);
       _output._model_summary = model_info.createSummaryTable();
@@ -348,7 +347,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       return false;
     }
     progressUpdate(jobKey, keep_running);
-    update(jobKey);
+    //update(jobKey);
     return keep_running;
   }
 
@@ -577,6 +576,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   @Override
   protected Futures remove_impl(Futures fs) {
     cleanUpCache(fs);
+    removeNativeState();
     return super.remove_impl(fs);
   }
 
