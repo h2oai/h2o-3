@@ -159,6 +159,10 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Network architecture.
         Default: "auto"
 
+      backend : "auto" | "mxnet" | "caffe" | "tensorflow"
+        Deep Learning Backend.
+        Default: "auto"
+
       width : int
         Width of image.
         Default: 0
@@ -199,8 +203,9 @@ class H2ODeepWaterEstimator(H2OEstimator):
                      "score_interval", "score_training_samples", "score_validation_samples", "score_duty_cycle",
                      "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
                      "replicate_training_data", "single_node_mode", "shuffle_training_data", "mini_batch_size",
-                     "clip_gradient", "network", "width", "height", "channels", "device_id", "network_definition_file",
-                     "network_parameters_file", "mean_image_file", "export_native_model_prefix"]:
+                     "clip_gradient", "network", "backend", "width", "height", "channels", "device_id",
+                     "network_definition_file", "network_parameters_file", "mean_image_file",
+                     "export_native_model_prefix"]:
             pname = name[:-1] if name[-1] == '_' else name
             self._parms[pname] = kwargs[name] if name in kwargs else None
 
@@ -483,6 +488,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @network.setter
     def network(self, value):
         self._parms["network"] = value
+
+    @property
+    def backend(self):
+        return self._parms["backend"]
+
+    @backend.setter
+    def backend(self, value):
+        self._parms["backend"] = value
 
     @property
     def width(self):
