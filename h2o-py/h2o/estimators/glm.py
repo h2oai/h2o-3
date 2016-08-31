@@ -105,7 +105,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Default: True
 
       nlambdas : int
-        number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
+        Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
         the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
         Default: -1
 
@@ -138,7 +138,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Default: -1
 
       objective_epsilon : float
-        converge if  objective value changes less than this. Default indicates: If lambda_search is set to True the
+        Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True the
         value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to zero,
         the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
         objective_epsilon is set to .0001.
@@ -149,7 +149,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Default: 0.0001
 
       gradient_epsilon : float
-        converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
+        Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
         indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
         is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
         values above are 1E-8 and 1E-6 respectively.
@@ -165,7 +165,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Default: -1.0
 
       lambda_min_ratio : float
-        min lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
+        Min lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
         observations is greater than the number of variables then lambda_min_ratio is set to 0.0001; if the number of
         observations is less than the number of variables then lambda_min_ratio is set to 0.01.
         Default: -1.0

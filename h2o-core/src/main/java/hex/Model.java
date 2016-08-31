@@ -5,8 +5,6 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipArchiveOutputStream;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.StreamWriter;
@@ -23,6 +21,8 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -1176,11 +1176,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public class RawDataStreamWriter extends StreamWriter {
     private StringBuilder tmpfile;
     private String tmpname;
-    private ZipArchiveOutputStream zos;
+    private ZipOutputStream zos;
 
     @Override
     public void writeTo(OutputStream os) {
-      zos = new ZipArchiveOutputStream(os);
+      zos = new ZipOutputStream(os);
       try {
         writeModelInfo();
         writeDomains();
@@ -1268,11 +1268,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     protected void writeBinaryFile(String filename, byte[] bytes) throws IOException {
-      ZipArchiveEntry archiveEntry = new ZipArchiveEntry(filename);
+      ZipEntry archiveEntry = new ZipEntry(filename);
       archiveEntry.setSize(bytes.length);
-      zos.putArchiveEntry(archiveEntry);
+      zos.putNextEntry(archiveEntry);
       zos.write(bytes);
-      zos.closeArchiveEntry();
+      zos.closeEntry();
     }
   }
 

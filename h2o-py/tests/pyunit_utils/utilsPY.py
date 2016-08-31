@@ -169,16 +169,16 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
     # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
     # TODO: clients should extract Java class name from header.
     regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    pojoname = regex.sub("_",model._id)
+    pojoname = regex.sub("_", model._id)
 
     print("Downloading Java prediction model code from H2O")
-    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",pojoname))
+    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "results", pojoname))
     os.mkdir(tmpdir)
-    h2o.download_pojo(model,path=tmpdir)
-    h2o_genmodel_jar = os.path.join(tmpdir,"h2o-genmodel.jar")
+    h2o.download_pojo(model, path=tmpdir)
+    h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
     print("h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar))
-    java_file = os.path.join(tmpdir,pojoname+".java")
+    java_file = os.path.join(tmpdir, pojoname + ".java")
     assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
     print("java code saved in {0}".format(java_file))
 
@@ -191,19 +191,19 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         predictions = model.predict(test)
         predictions.summary()
         predictions.head()
-        out_h2o_csv = os.path.join(tmpdir,"out_h2o.csv")
+        out_h2o_csv = os.path.join(tmpdir, "out_h2o.csv")
         h2o.download_csv(predictions, out_h2o_csv)
         assert os.path.exists(out_h2o_csv), "Expected file {0} to exist, but it does not.".format(out_h2o_csv)
         print("H2O Predictions saved in {0}".format(out_h2o_csv))
 
         print("Setting up for Java POJO")
-        in_csv = os.path.join(tmpdir,"in.csv")
+        in_csv = os.path.join(tmpdir, "in.csv")
         h2o.download_csv(test[x], in_csv)
 
         # hack: the PredictCsv driver can't handle quoted strings, so remove them
-        f = open(in_csv, 'r+')
+        f = open(in_csv, "r+")
         csv = f.read()
-        csv = re.sub('\"', '', csv)
+        csv = re.sub('\"', "", csv)
         f.seek(0)
         f.write(csv)
         f.truncate()
@@ -212,7 +212,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         print("Input CSV to PredictCsv saved in {0}".format(in_csv))
 
         print("Running PredictCsv Java Program")
-        out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
+        out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
                     "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
@@ -233,13 +233,14 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
 
         # Value
         for r in range(hr):
-            hp = predictions[r,0]
+            hp = predictions[r, 0]
             if equality == "numeric":
-                pp = float.fromhex(predictions2[r,0])
-                assert abs(hp - pp) < 1e-4, "Expected predictions to be the same (within 1e-4) for row {0}, but got {1} and {2}".format(r,hp, pp)
+                pp = float.fromhex(predictions2[r, 0])
+                assert abs(hp - pp) < 1e-4, \
+                    "Expected predictions to be the same (within 1e-4) for row %d, but got %r and %r" % (r, hp, pp)
             elif equality == "class":
-                pp = predictions2[r,0]
-                assert hp == pp, "Expected predictions to be the same for row {0}, but got {1} and {2}".format(r,hp, pp)
+                pp = predictions2[r, 0]
+                assert hp == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
             else:
                 raise ValueError
 
@@ -251,13 +252,13 @@ def javamunge(assembly, pojoname, test, compile_only=False):
       The test set should be used to compare the output here and the output of the POJO.
     """
     print("Downloading munging POJO code from H2O")
-    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results", pojoname))
+    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "results", pojoname))
     os.mkdir(tmpdir)
     assembly.to_pojo(pojoname, path=tmpdir, get_jar=True)
     h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
     print("h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar))
-    java_file = os.path.join(tmpdir,pojoname+".java")
+    java_file = os.path.join(tmpdir, pojoname + ".java")
     assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
     print("java code saved in {0}".format(java_file))
 
@@ -268,7 +269,7 @@ def javamunge(assembly, pojoname, test, compile_only=False):
     if not compile_only:
 
         print("Setting up for Java POJO")
-        in_csv = os.path.join(tmpdir,"in.csv")
+        in_csv = os.path.join(tmpdir, "in.csv")
         h2o.download_csv(test, in_csv)
         assert os.path.exists(in_csv), "Expected file {0} to exist, but it does not.".format(in_csv)
         print("Input CSV to mungedCSV saved in {0}".format(in_csv))
@@ -276,13 +277,13 @@ def javamunge(assembly, pojoname, test, compile_only=False):
         print("Predicting in H2O")
         munged = assembly.fit(test)
         munged.head()
-        out_h2o_csv = os.path.join(tmpdir,"out_h2o.csv")
+        out_h2o_csv = os.path.join(tmpdir, "out_h2o.csv")
         h2o.download_csv(munged, out_h2o_csv)
         assert os.path.exists(out_h2o_csv), "Expected file {0} to exist, but it does not.".format(out_h2o_csv)
         print("Munged frame saved in {0}".format(out_h2o_csv))
 
         print("Running PredictCsv Java Program")
-        out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
+        out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
                     "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.MungeCsv", "--header", "--munger", pojoname,

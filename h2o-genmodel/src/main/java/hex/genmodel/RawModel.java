@@ -1,13 +1,14 @@
 package hex.genmodel;
 
 import hex.genmodel.algos.DrfRawModel;
+import hex.genmodel.algos.GbmRawModel;
 import hex.genmodel.utils.ParseUtils;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipFile;
 
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 
 /**
@@ -15,10 +16,10 @@ import java.util.Map;
  */
 abstract public class RawModel extends GenModel {
     protected ContentReader _reader;
-    private hex.ModelCategory _category;
-    private String _uuid;
-    private boolean _supervised;
-    private int _nfeatures;
+    protected hex.ModelCategory _category;
+    protected String _uuid;
+    protected boolean _supervised;
+    protected int _nfeatures;
     protected int _nclasses;
     protected boolean _balanceClasses;
     protected double _defaultThreshold;
@@ -27,8 +28,9 @@ abstract public class RawModel extends GenModel {
 
     /**
      * Primary factory method for constructing RawModel instances.
+     *
      * @param file Name of the zip file (or folder) with the model's data. This should be the data retrieved via
-     *             `GET /3/Models/{model_id}/data` endpoint.
+     *             the `GET /3/Models/{model_id}/data` endpoint.
      * @return New `RawModel` object.
      * @throws IOException if `file` does not exist, or cannot be read, or does not represent a valid model.
      */
@@ -44,11 +46,15 @@ abstract public class RawModel extends GenModel {
         if (algo == null)
             throw new IOException("Model file does not contain information about the model's algorithm.");
 
-        // Create and return the class instance
-        if (algo.equals("Distributed Random Forest"))
-            return new DrfRawModel(cr, info, columns, domains);
-        else
-            throw new IOException("Unknown algorithm " + algo + " in model's info.");
+        // Create and return a subclass instance
+        switch (algo) {
+            case "Distributed Random Forest":
+                return new DrfRawModel(cr, info, columns, domains);
+            case "Gradient Boosting Method":
+                return new GbmRawModel(cr, info, columns, domains);
+            default:
+                throw new IOException("Unsupported algorithm " + algo + " in model's info.");
+        }
     }
 
     @Override public String getUUID() { return _uuid; }
@@ -62,7 +68,7 @@ abstract public class RawModel extends GenModel {
     // (Private) initialization
     //------------------------------------------------------------------------------------------------------------------
 
-    public RawModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
+    protected RawModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(columns, domains);
         _reader = cr;
         _uuid = (String) info.get("uuid");
@@ -198,7 +204,7 @@ abstract public class RawModel extends GenModel {
 
         @Override
         public byte[] getBinaryFile(String filename) throws IOException {
-            ZipArchiveEntry za = zf.getEntry(filename);
+            ZipEntry za = zf.getEntry(filename);
             if (za == null)
                 throw new IOException("Tree file " + filename + " not found");
             byte[] out = new byte[(int) za.getSize()];
