@@ -395,7 +395,7 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
- Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default.
+ Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level. Optionally, Deep Learning can skip all rows with any missing values.
 
 -  **How does the algorithm handle missing values during testing?**
 
