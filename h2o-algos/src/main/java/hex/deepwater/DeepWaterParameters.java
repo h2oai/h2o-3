@@ -241,6 +241,9 @@ public class DeepWaterParameters extends Model.Parameters {
       if (!new File(_network_parameters_file).exists())
         dl.error("_network_parameters_file", "network_parameters_file " + _network_parameters_file + " not found.");
     }
+    if (_backend != Backend.auto && _backend != Backend.mxnet) {
+      dl.error("_backend", "only the mxnet backend is supported right now.");
+    }
 
     if (_checkpoint!=null) {
       DeepWaterModel other = (DeepWaterModel) _checkpoint.get();
@@ -351,6 +354,8 @@ public class DeepWaterParameters extends Model.Parameters {
             "_use_all_factor_levels",
             "_standardize",
             "_autoencoder",
+            "_network",
+            "_backend",
             "_rate",
             "_rate_annealing",
             "_rate_decay",
