@@ -277,11 +277,11 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-  Missing values affect tree split points. NAs always “go left”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math.
+  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 
 -  **How does the algorithm handle missing values during testing?**
 
-  During scoring, missing values "always go left" at any decision point in a tree. Due to dynamic binning in DRF, a row with a missing value typically ends up in the "leftmost bin" - with other outliers.
+  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
 
 -  **What happens if the response has missing values?**
 

@@ -15,6 +15,15 @@ compute node trains a copy of the global model parameters on its local
 data with multi-threading (asynchronously), and contributes periodically
 to the global model via model averaging across the network.
 
+Quick Start
+~~~~~~~~~~~~
+* H2O + TensorFlow on AWS GPU Tutorial (Python Notebook) `[Blog] <http://blog.h2o.ai/2016/07/h2o-tensorflow-on-aws-gpu/>`__ `[Github] <https://github.com/h2oai/sparkling-water/blob/master/py/examples/notebooks/TensorFlowDeepLearning.ipynb>`__
+* The Definitive Performance Tuning Guide for H2O Deep Learning `[Blog] <http://blog.h2o.ai/2015/08/deep-learning-performance-august/>`__
+* Deep learning in H2O with Arno Candel (Overview) `[Youtube] <https://www.youtube.com/watch?v=zGdXaRug7LI/>`__
+* Top 10 tips and tricks `[Youtube] <https://www.youtube.com/watch?v=LM255qs8Zsk/>`__
+* NYC Tour Deep Learning Panel: Tensorflow, Mxnet, Caffe `[Youtube] <https://www.youtube.com/watch?v=KWdkVoKJG3U/>`__
+* Deep Water project: `[Github] <http://github.com/h2oai/deepwater/>`__
+
 Defining a Deep Learning Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -386,7 +395,7 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
- Deep Learning performs mean-imputation for missing numericals and creates a separate factor level for missing categoricals by default.
+ Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level. Optionally, Deep Learning can skip all rows with any missing values.
 
 -  **How does the algorithm handle missing values during testing?**
 

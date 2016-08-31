@@ -6,22 +6,26 @@ import water.genmodel.IGeneratedModel;
 import java.io.Serializable;
 import java.util.*;
 
-/** This is a helper class to support Java generated models. */
+/**
+ * This is a helper class to support Java generated models.
+ */
 public abstract class GenModel implements IGenModel, IGeneratedModel, Serializable {
 
   /** Column names; last is response for supervised models */
   public final String[] _names;
 
-  /** Categorical/factor/enum mappings, per column.  Null for non-enum cols.
+  /** Categorical (factor/enum) mappings, per column.  Null for non-enum cols.
    *  Columns match the post-init cleanup columns.  The last column holds the
    *  response col enums for SupervisedModels.  */
   public final String[][] _domains;
 
 
-  public GenModel( String[] names, String[][] domains ) { _names = names; _domains = domains; }
+  public GenModel(String[] names, String[][] domains) {
+    _names = names;
+    _domains = domains;
+  }
 
   @Override public boolean isSupervised() {
-    // FIXME: can be derived directly from model category?
     return false;
   }
   @Override public int nfeatures() {

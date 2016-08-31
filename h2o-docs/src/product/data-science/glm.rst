@@ -243,7 +243,7 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level. Optionally, glm can skip all rows with any missing values.
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level. Optionally, glm can skip all rows with any missing values.
 
 -  **How does the algorithm handle missing values during testing?** 
 

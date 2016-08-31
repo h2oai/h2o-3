@@ -34,7 +34,7 @@ public class Distribution extends Iced {
     distribution = params._distribution;
     tweediePower = params._tweedie_power;
     quantileAlpha = params._quantile_alpha;
-    huberDelta = 1; //should be updated to huber_alpha quantile of absolute error of predictions via settier
+    huberDelta = 1; //should be updated to huber_alpha quantile of absolute error of predictions via setter
     assert(tweediePower >1 && tweediePower <2);
   }
   static public double MIN_LOG = -19;
