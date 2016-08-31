@@ -49,8 +49,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "clip_gradient",
         "network",
         "backend",
-        "width",
-        "height",
+        "image_shape",
         "channels",
         "device_id",
         "network_definition_file",
@@ -298,11 +297,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, values = {"auto","mxnet","caffe","tensorflow"}, help = "Deep Learning Backend.")
     public DeepWaterParameters.Backend backend;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Width of image.")
-    public int width;
-
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Height of image.")
-    public int height;
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Width and height of image.")
+    public int[] image_shape;
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Number of (color) channels.")
     public int channels;
