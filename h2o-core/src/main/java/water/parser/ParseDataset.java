@@ -809,10 +809,8 @@ public final class ParseDataset {
 
       byte[] zips = vec.getFirstBytes();
       ZipUtil.Compression cpr = ZipUtil.guessCompressionMethod(zips);
-
       if (localSetup._check_header == ParseSetup.HAS_HEADER) //check for header on local file
         localSetup._check_header = localSetup.parser(_jobKey).fileHasHeader(ZipUtil.unzipBytes(zips,cpr, localSetup._chunk_size), localSetup);
-
       // Parse the file
       try {
         switch( cpr ) {
@@ -824,7 +822,7 @@ public final class ParseDataset {
               _chunk2ParseNodeMap[chunkStartIdx + i] = vec.chunkKey(i).home_node().index();
           } else {
             InputStream bvs = vec.openStream(_jobKey);
-            _dout[_lo] = streamParse(bvs, localSetup, false, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            _dout[_lo] = streamParse(bvs, localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             _errors = _dout[_lo].removeErrors();
             chunksAreLocal(vec,chunkStartIdx,key);
           }
@@ -836,7 +834,7 @@ public final class ParseDataset {
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
-            _dout[_lo] = streamParse(zis,localSetup, true, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
+            _dout[_lo] = streamParse(zis,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             _errors = _dout[_lo].removeErrors();
             // check for more files in archive
             ZipEntry ze2 = zis.getNextEntry();
@@ -850,7 +848,7 @@ public final class ParseDataset {
         case GZIP: {
           InputStream bvs = vec.openStream(_jobKey);
           // Zipped file; no parallel decompression;
-          _dout[_lo] = streamParse(new GZIPInputStream(bvs), localSetup, true, makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
+          _dout[_lo] = streamParse(new GZIPInputStream(bvs), localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()),bvs);
           _errors = _dout[_lo].removeErrors();
           // set this node as the one which processed all the chunks
           chunksAreLocal(vec,chunkStartIdx,key);
@@ -895,16 +893,15 @@ public final class ParseDataset {
     // ------------------------------------------------------------------------
     // Zipped file; no parallel decompression; decompress into local chunks,
     // parse local chunks; distribute chunks later.
-    private FVecParseWriter streamParse(final InputStream is, final ParseSetup localSetup, boolean compressed,
-                                        FVecParseWriter dout, InputStream bvs) throws IOException {
+    private FVecParseWriter streamParse(final InputStream is, final ParseSetup localSetup,FVecParseWriter dout, InputStream bvs) throws IOException {
       // All output into a fresh pile of NewChunks, one per column
       Parser p = localSetup.parser(_jobKey);
+
       // assume 2x inflation rate
-      if (compressed && localSetup._parse_type.isParallelParseSupported) {
+      if(localSetup._parse_type.isParallelParseSupported())
         p.streamParseZip(is, dout, bvs);
-      } else {
-        p.streamParse(is, dout);
-      }
+      else
+        p.streamParse(is,dout);
       // Parse all internal "chunks", until we drain the zip-stream dry.  Not
       // real chunks, just flipping between 32K buffers.  Fills up the single
       // very large NewChunk.
