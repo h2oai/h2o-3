@@ -65,18 +65,6 @@ public abstract class Parser extends Iced {
   // Parse this one Chunk (in parallel with other Chunks)
   protected abstract ParseWriter parseChunk(int cidx, final ParseReader din, final ParseWriter dout);
 
-  ParseWriter streamParse( final InputStream is, final ParseWriter dout) throws IOException {
-    if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
-    StreamData din = new StreamData(is);
-    int cidx=0;
-    // FIXME leaving _jobKey == null until sampling is done, this mean entire zip files
-    // FIXME are parsed for parseSetup
-    while( is.available() > 0 && (_jobKey == null || _jobKey.get().stop_requested()) )
-      parseChunk(cidx++, din, dout);
-    parseChunk(cidx, din, dout);     // Parse the remaining partial 32K buffer
-    return dout;
-  }
-
   // ------------------------------------------------------------------------
   // Zipped file; no parallel decompression; decompress into local chunks,
   // parse local chunks; distribute chunks later.
