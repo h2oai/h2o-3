@@ -1235,7 +1235,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if (domain == null) continue;
         startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
         for (String category : domain) {
-          writeln(category.replaceAll("\n", "\u21B5"));  // replace newlines with "↵" characters
+          writeln(category.replaceAll("\n", "\\n"));  // replace newlines with "\n" escape sequences
         }
         finishWritingTextFile();
       }
