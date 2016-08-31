@@ -490,14 +490,14 @@ public class DeepWaterParameters extends Model.Parameters {
         }
       }
       if (fromParms._network == Network.auto) {
-        if (!fromParms._quiet_mode)
-          Log.info("_network: Using inception_bn model by default.");
         toParms._network = Network.inception_bn;
+        if (!fromParms._quiet_mode)
+          Log.info("_network: Using " + toParms._network + " model by default.");
       }
       if (fromParms._backend == DeepWaterParameters.Backend.auto) {
-        if (!fromParms._quiet_mode)
-          Log.info("_backend: Using the mxnet backend by default.");
         toParms._backend = DeepWaterParameters.Backend.mxnet;
+        if (!fromParms._quiet_mode)
+          Log.info("_backend: Using the " + toParms._backend + " backend by default.");
       }
       if (fromParms._autoencoder && fromParms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
         if (!fromParms._quiet_mode)
