@@ -30,7 +30,7 @@ features:
 Quick Start
 ~~~~~~~~~~~~
 * Quick GBM using H2O Flow (Lending Club Dataset) `[Youtube] <https://www.youtube.com/watch?v=1R9iBBCxhE8>`__
-* Simplest getting started R script `[Github] <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/gbm-randomforest>`__
+* Simplest getting started R script `[Github] <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/gbm-randomforest/GBM_RandomForest_Example.R>`__
 * GBM Tuning Guide in Python & R `[Blog] <http://blog.h2o.ai/2016/06/h2o-gbm-tuning-tutorial-for-r/>`__ 
 * GBM & Random Forest Video Overview `[Youtube] <https://www.youtube.com/watch?v=9wn1f-30_ZY>`__
 * GBM and other algos in R (Citi Bike Dataset) `[Youtube] <https://www.youtube.com/watch?v=_ig6ZmBfhH8/>`__ `[Github] <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.citi.bike.small.R/>`__ 
