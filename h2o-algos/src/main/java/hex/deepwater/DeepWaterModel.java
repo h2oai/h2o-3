@@ -581,7 +581,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
 
   void exportNativeModel(String path, int iteration) {
-    if (_parms._backend==DeepWaterParameters.Backend.mxnet) {
+    if (get_params()._backend==DeepWaterParameters.Backend.mxnet) {
       model_info()._imageTrain.saveModel(path + ".json"); //independent of iterations
       model_info()._imageTrain.saveParam(path + "." + iteration + ".params");
     } else throw H2O.unimpl();

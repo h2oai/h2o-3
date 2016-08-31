@@ -48,6 +48,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "mini_batch_size",
         "clip_gradient",
         "network",
+        "backend",
         "width",
         "height",
         "channels",

@@ -4,7 +4,6 @@ import hex.*;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
-import static water.gpu.util.img2pixels;
 import water.util.Log;
 import static water.util.MRUtils.sampleFrame;
 import water.util.PrettyPrint;
@@ -246,6 +245,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
       }
       catch(Throwable t) {
         if (!(t instanceof Job.JobCancelledException)) t.printStackTrace();
+        throw t;
       }
       finally {
         if (cache) model.cleanUpCache();
