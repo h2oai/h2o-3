@@ -52,7 +52,9 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public double _clip_gradient = 10.0;
-  public int _width=0, _height=0, _channels=3, _device_id=0;
+  public int _device_id=0;
+  public int[] _image_shape = new int[]{0,0}; //width x height
+  public int _channels = 3;
 
   public Network _network = Network.auto;
   public Backend _backend = Backend.auto;
@@ -214,13 +216,14 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_clip_gradient<=0)
       dl.error("_clip_gradient", "Clip gradient must be >= 0");
 
-    if (_width<0)
-      dl.error("_width", "Width must be >=1 or automatic (0).");
-    if (_height<0)
-      dl.error("_height", "Height must be >=1 or automatic (0).");
-
+    if (_image_shape.length != 2)
+      dl.error("_image_shape", "image_shape must have 2 dimensions (width, height)");
+    if (_image_shape[0]<0)
+      dl.error("_image_shape", "image_shape[0] must be >=1 or automatic (0).");
+    if (_image_shape[1]<0)
+      dl.error("_image_shape", "image_shape[1] must be >=1 or automatic (0).");
     if (_channels!=1 && _channels!=3)
-      dl.error("_channels", "Number of channels must be either 1 or 3.");
+      dl.error("_channels", "channels must be either 1 or 3.");
 
     if (expensive && !classification)
       dl.error("_response_column", "Only classification is supported right now.");
@@ -249,12 +252,8 @@ public class DeepWaterParameters extends Model.Parameters {
       DeepWaterModel other = (DeepWaterModel) _checkpoint.get();
       if (other == null)
         dl.error("_width", "Invalid checkpoint provided: width mismatch.");
-      if (_width != other.model_info()._width)
+      if (!Arrays.equals(_image_shape, other.get_params()._image_shape))
         dl.error("_width", "Invalid checkpoint provided: width mismatch.");
-      if (_height != other.model_info()._height)
-        dl.error("_height", "Invalid checkpoint provided: height mismatch.");
-      if (_channels != other.model_info()._channels)
-        dl.error("_channels", "Invalid checkpoint provided: channels mismatch.");
     }
 
     if (!_autoencoder) {

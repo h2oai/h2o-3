@@ -84,8 +84,8 @@ final public class DeepWaterModelInfo extends Iced {
       }
     }
     else {
-      _width=parameters._width;
-      _height=parameters._height;
+      _width=parameters._image_shape[0];
+      _height=parameters._image_shape[1];
       _channels=parameters._channels;
       if (_width==0 || _height==0) {
         switch(parameters._network) {
