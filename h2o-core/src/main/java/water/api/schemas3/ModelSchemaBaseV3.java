@@ -1,6 +1,5 @@
 package water.api.schemas3;
 
-import hex.Model;
 import water.api.API;
 import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.api.schemas3.KeyV3.FrameKeyV3;

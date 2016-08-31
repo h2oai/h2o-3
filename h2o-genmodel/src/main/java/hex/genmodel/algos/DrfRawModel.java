@@ -2,7 +2,6 @@ package hex.genmodel.algos;
 
 import hex.genmodel.GenModel;
 
-import java.io.IOException;
 import java.util.Map;
 
 /**
