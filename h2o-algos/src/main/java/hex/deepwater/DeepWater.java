@@ -8,11 +8,12 @@ import water.util.Log;
 import static water.util.MRUtils.sampleFrame;
 import water.util.PrettyPrint;
 
+import java.util.Arrays;
+
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
 public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,DeepWaterModelOutput> {
-  public static boolean DEBUG = true;
 
   /** Main constructor from Deep Learning parameters */
   public DeepWater(DeepWaterParameters parms ) { super(parms); init(false); }
@@ -224,7 +225,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         // replace the model with the best model so far (if it's better)
         if (!stop_requested() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepWaterModel best_model = DKV.getGet(model.actual_best_model_key);
-          if (best_model != null && best_model.loss() < model.loss() ) {
+          if (best_model != null && best_model.loss() < model.loss() && Arrays.equals(best_model.model_info()._network, model.model_info()._network)) {
             if (!_parms._quiet_mode)
               Log.info("Setting the model to be the best model so far (based on scoring history).");
             model.removeNativeState(); //remove native state
@@ -242,10 +243,6 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             assert(best_model.loss() == model.loss());
           }
         }
-      }
-      catch(Throwable t) {
-        if (!(t instanceof Job.JobCancelledException)) t.printStackTrace();
-        throw t;
       }
       finally {
         if (cache) model.cleanUpCache();

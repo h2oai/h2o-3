@@ -6,7 +6,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.gpu.ImageTrain;
 import water.util.*;
 
-import static hex.deepwater.DeepWater.DEBUG;
 import static hex.deepwater.DeepWaterParameters.Network.auto;
 import static hex.deepwater.DeepWaterParameters.Network.inception_bn;
 import static hex.deepwater.DeepWaterParameters.Network.user;
@@ -171,7 +170,7 @@ final public class DeepWaterModelInfo extends Iced {
   }
 
   public void nativeToJava() {
-    Log.info("Native state -> Java.");
+    Log.info("Native backend -> Java.");
     long now = System.currentTimeMillis();
     if (_imageTrain==null) throw new RuntimeException("Internal error - Lost connection to native code.");
     Path path = null;
@@ -179,9 +178,9 @@ final public class DeepWaterModelInfo extends Iced {
     if (_network==null) {
       try {
         path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
-        Log.info("saveModel");
+        Log.info("backend is saving the model architecture.");
         _imageTrain.saveModel(path.toString());
-        Log.info("readAllBytes");
+        Log.info("done.");
         _network = Files.readAllBytes(path);
       } catch (IOException e) {
         e.printStackTrace();
@@ -190,11 +189,10 @@ final public class DeepWaterModelInfo extends Iced {
     // always overwrite the parameters (weights/biases)
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
-      Log.info("saveParam");
+      Log.info("backend is saving the parameters.");
       _imageTrain.saveParam(path.toString());
-      Log.info("readAllBytes");
+      Log.info("done.");
       _modelparams = Files.readAllBytes(path);
-      if (DEBUG) Log.info("Hash code for newly saved parameters: " + java.util.Arrays.hashCode(_modelparams));
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
@@ -230,16 +228,6 @@ final public class DeepWaterModelInfo extends Iced {
     if (network==null || parameters==null) return;
     Log.info("Java state -> native backend.");
 
-    int hashCodeNetwork=0;
-    int hashCodeParams=0;
-    if (DEBUG) {
-      Log.info("Original state in Java.");
-      hashCodeNetwork = java.util.Arrays.hashCode(network);
-      Log.info("Hash code for original network: " + hashCodeNetwork);
-      hashCodeParams = java.util.Arrays.hashCode(parameters);
-      Log.info("Hash code for original parameters: " + hashCodeParams);
-    }
-
     Path path = null;
     // only overwrite the network definition if it's null
     try {
@@ -258,22 +246,11 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, parameters);
-      if (DEBUG) assert (hashCodeParams == java.util.Arrays.hashCode(Files.readAllBytes(path)));
       _imageTrain.loadParam(path.toString());
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
 
-    if (DEBUG) {
-      Log.info("Bringing back to Java.");
-      nativeToJava();
-      int hashCodeNetwork2 = java.util.Arrays.hashCode(_network);
-      Log.info("Hash code for restored network: " + hashCodeNetwork2);
-      int hashCodeParams2 = java.util.Arrays.hashCode(_modelparams);
-      Log.info("Hash code for restored parameters: " + hashCodeParams2);
-      assert (hashCodeNetwork == hashCodeNetwork2);
-      assert (hashCodeParams == hashCodeParams2);
-    }
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }
