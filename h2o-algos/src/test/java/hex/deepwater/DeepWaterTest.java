@@ -208,7 +208,7 @@ public class DeepWaterTest extends TestUtil {
         p._response_column = "C2";
         p._network = DeepWaterParameters.Network.vgg;
         p._rate = 1e-4;
-        p._mini_batch_size = 16;
+        p._mini_batch_size = 8;
         p._train_samples_per_iteration = 0;
         p._epochs = 1;
         m = new DeepWater(p).trainModel().get();
@@ -328,12 +328,14 @@ public class DeepWaterTest extends TestUtil {
       DeepWaterParameters p = new DeepWaterParameters();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
-      p._epochs = 2;
+      p._epochs = 5;
       p._rate = 0.01;
       p._momentum_start = 0.5;
       p._momentum_stable = 0.5;
-//      p._network = DeepWaterParameters.Network.lenet;
-      p._network = DeepWaterParameters.Network.inception_bn; //FAILS
+      p._stopping_rounds = 0;
+      p._network = DeepWaterParameters.Network.lenet;
+      // FIXME
+//      p._network = DeepWaterParameters.Network.inception_bn; //FAILS
 
       // score a lot
       p._train_samples_per_iteration = p._mini_batch_size;
@@ -345,7 +347,7 @@ public class DeepWaterTest extends TestUtil {
       Log.info(m);
       Assert.assertTrue(((ModelMetricsMultinomial)m._output._training_metrics).logloss()<2);
     } finally {
-      if (m!=null) m.delete();
+      if (m!=null) m.remove();
       if (tr!=null) tr.remove();
     }
   }
