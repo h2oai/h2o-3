@@ -82,5 +82,6 @@ h2o.metalearn <- function(object,  #object must be an "h2o.ensemble" model fit w
   # Should we update the runtime$total?
   # For now, just leave as is
   fit$metafit <- metafit
+  fit$metalearner <- metalearner
   return(fit)
 }
