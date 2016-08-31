@@ -75,13 +75,23 @@ public class ByteVec extends Vec {
         }
         return _c0._len - _sz;
       }
-      @Override public void close() { _cidx = nChunks(); _c0 = null; _sz = 0;}
-      @Override public int read() throws IOException {
-        return available() == 0 ? -1 : 0xFF&_c0._mem[_sz++];
+
+      @Override
+      public void close() {
+        _cidx = nChunks();
+        _c0 = null;
+        _sz = 0;
       }
-      @Override public int read(byte[] b, int off, int len) {
-        if( b==null ) { // Back-channel read of cidx
-          if ( _cidx > _pidx) { // Remove prev chunk from memory
+
+      @Override
+      public int read() throws IOException {
+        return available() == 0 ? -1 : 0xFF & _c0._mem[_sz++];
+      }
+
+      @Override
+      public int read(byte[] b, int off, int len) {
+        if (b == null) { // Back-channel read of cidx
+          if (_cidx > _pidx) { // Remove prev chunk from memory
             Value v = Value.STORE_get(chunkKey(_pidx++));
             if (v != null && v.isPersisted()) {
               v.freePOJO();           // Eagerly toss from memory
@@ -91,13 +101,14 @@ public class ByteVec extends Vec {
           return _cidx;
         }
         int sz = available();
-        if( sz == 0 )
+        if (sz == 0)
           return -1;
-        len = Math.min(len,sz);
-        System.arraycopy(_c0._mem,_sz,b,off,len);
+        len = Math.min(len, sz);
+        System.arraycopy(_c0._mem, _sz, b, off, len);
         _sz += len;
         return len;
       }
     };
+    return is;
   }
 }
