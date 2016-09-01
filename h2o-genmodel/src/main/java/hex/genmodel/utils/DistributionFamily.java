@@ -11,34 +11,34 @@ public enum DistributionFamily {
   bernoulli {
     @Override public double link(double f) { return log(f/(1 - f)); }
     @Override public double linkInv(double f) { return 1 / (1 + exp(-f)); }
-    @Override public String linkInvString(String f) { return "1/(1+Math.min(1e19, Math.exp(-"+f+")))"; }
+    @Override public String linkInvString(String f) { return "1/(1 + Math.min(1e19, Math.exp(-"+f+")))"; }
   },
   modified_huber {
     @Override public double link(double f) { return log(f/(1 - f)); }
     @Override public double linkInv(double f) { return 1 / (1 + exp(-f)); }
-    @Override public String linkInvString(String f) { return "1/(1+Math.min(1e19, Math.exp(-"+f+")))"; }
+    @Override public String linkInvString(String f) { return "1/(1 + Math.min(1e19, Math.exp(-"+f+")))"; }
   },
   multinomial {
     @Override public double link(double f) { return log(f); }
     @Override public double linkInv(double f) { return exp(f); }
-    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+")"; }
+    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+"))"; }
   },
   gaussian {
   },
   poisson {
     @Override public double link(double f) { return log(f); }
     @Override public double linkInv(double f) { return exp(f); }
-    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+")"; }
+    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+"))"; }
   },
   gamma {
     @Override public double link(double f) { return log(f); }
     @Override public double linkInv(double f) { return exp(f); }
-    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+")"; }
+    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+"))"; }
   },
   tweedie {
     @Override public double link(double f) { return log(f); }
     @Override public double linkInv(double f) { return exp(f); }
-    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+")"; }
+    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+"))"; }
   },
   huber,
   laplace,
