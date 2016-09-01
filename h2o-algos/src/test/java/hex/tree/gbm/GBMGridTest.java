@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -52,7 +53,7 @@ public class GBMGridTest extends TestUtil {
       final Double[] illegalLearnRateOpts = new Double[]{-1.0};
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
         put("_ntrees", new Integer[]{1, 2});
-        put("_distribution", new Distribution.Family[]{Distribution.Family.multinomial});
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
         put("_max_depth", new Integer[]{1, 2, 5});
         put("_learn_rate", ArrayUtils.join(legalLearnRateOpts, illegalLearnRateOpts));
       }};
@@ -137,7 +138,7 @@ public class GBMGridTest extends TestUtil {
 
       // Setup random hyperparameter search space
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
-        put("_distribution", new Distribution.Family[]{Distribution.Family.gaussian});
+        put("_distribution", new DistributionFamily[]{DistributionFamily.gaussian});
         put("_ntrees", new Integer[]{5, 5});
         put("_max_depth", new Integer[]{2, 2});
         put("_learn_rate", new Double[]{.1, .1});
@@ -189,7 +190,7 @@ public class GBMGridTest extends TestUtil {
 
       // Setup random hyperparameter search space
       HashMap<String, Object[]> hyperParms = new HashMap<>();
-      hyperParms.put("_distribution", new Distribution.Family[]{Distribution.Family.gaussian});
+      hyperParms.put("_distribution", new DistributionFamily[]{DistributionFamily.gaussian});
 
       // Construct random grid search space
       Random rng = new Random();
@@ -247,7 +248,7 @@ public class GBMGridTest extends TestUtil {
       // Pick a random model from the grid
       HashMap<String, Object[]> randomHyperParms = new HashMap<>();
       randomHyperParms
-          .put("_distribution", new Distribution.Family[]{Distribution.Family.gaussian});
+          .put("_distribution", new DistributionFamily[]{DistributionFamily.gaussian});
 
       Integer ntreeVal = ntreesSpace[rng.nextInt(ntreesSpace.length)];
       randomHyperParms.put("_ntrees", new Integer[]{ntreeVal});
@@ -261,7 +262,7 @@ public class GBMGridTest extends TestUtil {
       //TODO: GBMModel gbmFromGrid = (GBMModel) g2.model(randomHyperParms).get();
 
       // Rebuild it with it's parameters
-      params._distribution = Distribution.Family.gaussian;
+      params._distribution = DistributionFamily.gaussian;
       params._ntrees = ntreeVal;
       params._max_depth = maxDepthVal;
       params._learn_rate = learnRateVal;
