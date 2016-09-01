@@ -163,13 +163,9 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Deep Learning Backend.
         Default: "auto"
 
-      width : int
-        Width of image.
-        Default: 0
-
-      height : int
-        Height of image.
-        Default: 0
+      image_shape : list(int)
+        Width and height of image.
+        Default: [0, 0]
 
       channels : int
         Number of (color) channels.
@@ -203,7 +199,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
                      "score_interval", "score_training_samples", "score_validation_samples", "score_duty_cycle",
                      "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
                      "replicate_training_data", "single_node_mode", "shuffle_training_data", "mini_batch_size",
-                     "clip_gradient", "network", "backend", "width", "height", "channels", "device_id",
+                     "clip_gradient", "network", "backend", "image_shape", "channels", "device_id",
                      "network_definition_file", "network_parameters_file", "mean_image_file",
                      "export_native_model_prefix"]:
             pname = name[:-1] if name[-1] == '_' else name
@@ -498,20 +494,12 @@ class H2ODeepWaterEstimator(H2OEstimator):
         self._parms["backend"] = value
 
     @property
-    def width(self):
-        return self._parms["width"]
+    def image_shape(self):
+        return self._parms["image_shape"]
 
-    @width.setter
-    def width(self, value):
-        self._parms["width"] = value
-
-    @property
-    def height(self):
-        return self._parms["height"]
-
-    @height.setter
-    def height(self, value):
-        self._parms["height"] = value
+    @image_shape.setter
+    def image_shape(self, value):
+        self._parms["image_shape"] = value
 
     @property
     def channels(self):
