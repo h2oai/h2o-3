@@ -294,6 +294,7 @@ public class DeepWaterTest extends TestUtil {
   @Test public void testConvergenceInceptionColor() { runInception(3); }
   @Test public void testConvergenceInceptionGrayScale() { runInception(1); }
 
+  @Ignore
   @Test
   public void testReproInitialDistribution() {
     final int REPS=3;
@@ -348,60 +349,71 @@ public class DeepWaterTest extends TestUtil {
     for (int i=1;i<REPS;++i) Assert.assertNotEquals(values[0],values[i],1e-6*values[0]);
   }
 
+  @Ignore
   @Test
-  public void testSettingModelInfo() {
+  public void testSettingModelInfoAll() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
-      if (network == DeepWaterParameters.Network.user) continue;
-      if (network == DeepWaterParameters.Network.auto) continue;
-
-      DeepWaterModel m1 = null;
-      DeepWaterModel m2 = null;
-      Frame tr = null;
-      try {
-        DeepWaterParameters p = new DeepWaterParameters();
-        p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
-        p._response_column = "C2";
-        p._network = network;
-        p._mini_batch_size = 4;
-        p._epochs = 0.01;
-        p._seed = 1234;
-        p._score_training_samples = 0;
-        p._train_samples_per_iteration = p._mini_batch_size;
-        // first model
-        Job j1 = new DeepWater(p).trainModel();
-        m1 = (DeepWaterModel)j1.get();
-        int h1 = Arrays.hashCode(m1.model_info()._modelparams);
-        m1.doScoring(tr,null,j1._key,m1.iterations,true);
-        double l1 = m1.loss();
-
-        // second model (different seed)
-        p._seed = 4321;
-        Job j2 = new DeepWater(p).trainModel();
-        m2 = (DeepWaterModel)j2.get();
-        m2.doScoring(tr,null,j2._key,m2.iterations,true);
-//        double l2 = m2.loss();
-        int h2 = Arrays.hashCode(m2.model_info()._modelparams);
-
-        // turn the second model into the first model
-        m2.removeNativeState();
-        DeepWaterModelInfo mi = m1.model_info().deep_clone();
-        m2.set_model_info(mi);
-        m2.doScoring(tr,null,j2._key,m2.iterations,true);
-        double l3 = m2.loss();
-        int h3 = Arrays.hashCode(m2.model_info()._modelparams);
-
-        Log.info("Checking assertions for network: " + network);
-        Assert.assertNotEquals(h1, h2);
-        Assert.assertEquals(h1, h3);
-        Assert.assertEquals(l1, l3, 1e-6*l1);
-      } finally {
-        if (m1!=null) m1.delete();
-        if (m2!=null) m2.delete();
-        if (tr!=null) tr.remove();
-      }
+      if (network== DeepWaterParameters.Network.user) continue;
+      if (network== DeepWaterParameters.Network.auto) continue;
+      testSettingModelInfo(network);
     }
   }
 
+  @Test public void testSettingModelInfoAlexnet() { testSettingModelInfo(DeepWaterParameters.Network.alexnet); }
+  @Test public void testSettingModelInfoLenet() { testSettingModelInfo(DeepWaterParameters.Network.lenet); }
+  @Test public void testSettingModelInfoVGG() { testSettingModelInfo(DeepWaterParameters.Network.vgg); }
+  @Ignore @Test public void testSettingModelInfoInception() { testSettingModelInfo(DeepWaterParameters.Network.inception_bn); }
+  @Ignore @Test public void testSettingModelInfoResnet() { testSettingModelInfo(DeepWaterParameters.Network.resnet); }
+
+  void testSettingModelInfo(DeepWaterParameters.Network network) {
+    DeepWaterModel m1 = null;
+    DeepWaterModel m2 = null;
+    Frame tr = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._response_column = "C2";
+      p._network = network;
+      p._mini_batch_size = 4;
+      p._epochs = 0.01;
+      p._seed = 1234;
+      p._score_training_samples = 0;
+      p._train_samples_per_iteration = p._mini_batch_size;
+      // first model
+      Job j1 = new DeepWater(p).trainModel();
+      m1 = (DeepWaterModel)j1.get();
+      int h1 = Arrays.hashCode(m1.model_info()._modelparams);
+      m1.doScoring(tr,null,j1._key,m1.iterations,true);
+      double l1 = m1.loss();
+
+      // second model (different seed)
+      p._seed = 4321;
+      Job j2 = new DeepWater(p).trainModel();
+      m2 = (DeepWaterModel)j2.get();
+      m2.doScoring(tr,null,j2._key,m2.iterations,true);
+//        double l2 = m2.loss();
+      int h2 = Arrays.hashCode(m2.model_info()._modelparams);
+
+      // turn the second model into the first model
+      m2.removeNativeState();
+      DeepWaterModelInfo mi = m1.model_info().deep_clone();
+      m2.set_model_info(mi);
+      m2.doScoring(tr,null,j2._key,m2.iterations,true);
+      double l3 = m2.loss();
+      int h3 = Arrays.hashCode(m2.model_info()._modelparams);
+
+      Log.info("Checking assertions for network: " + network);
+      Assert.assertNotEquals(h1, h2);
+      Assert.assertEquals(h1, h3);
+      Assert.assertEquals(l1, l3, 1e-6*l1);
+    } finally {
+      if (m1!=null) m1.delete();
+      if (m2!=null) m2.delete();
+      if (tr!=null) tr.remove();
+    }
+  }
+
+  @Ignore
   @Test
   public void testReproTraining() {
     final int REPS=3;
@@ -440,8 +452,8 @@ public class DeepWaterTest extends TestUtil {
   @Test public void deepWaterLoadSaveTestAlexnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.alexnet); }
   @Test public void deepWaterLoadSaveTestLenet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.lenet); }
   @Test public void deepWaterLoadSaveTestVGG() { deepWaterLoadSaveTest(DeepWaterParameters.Network.vgg); }
-  @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(DeepWaterParameters.Network.inception_bn); }
-  @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.resnet); }
+  @Ignore @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(DeepWaterParameters.Network.inception_bn); }
+  @Ignore @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.resnet); }
 
   void deepWaterLoadSaveTest(DeepWaterParameters.Network network) {
     DeepWaterModel m = null;
@@ -514,8 +526,8 @@ public class DeepWaterTest extends TestUtil {
   @Test public void testRestoreStateAlexnet() { testRestoreState(DeepWaterParameters.Network.alexnet); }
   @Test public void testRestoreStateLenet() { testRestoreState(DeepWaterParameters.Network.lenet); }
   @Test public void testRestoreStateVGG() { testRestoreState(DeepWaterParameters.Network.vgg); }
-  @Test public void testRestoreStateInception() { testRestoreState(DeepWaterParameters.Network.inception_bn); }
-  @Test public void testRestoreStateResnet() { testRestoreState(DeepWaterParameters.Network.resnet); }
+  @Ignore @Test public void testRestoreStateInception() { testRestoreState(DeepWaterParameters.Network.inception_bn); }
+  @Ignore @Test public void testRestoreStateResnet() { testRestoreState(DeepWaterParameters.Network.resnet); }
 
   public void testRestoreState(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
