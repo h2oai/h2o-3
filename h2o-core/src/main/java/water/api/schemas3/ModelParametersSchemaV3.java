@@ -1,6 +1,6 @@
 package water.api.schemas3;
 
-import hex.Distribution;
+import hex.genmodel.utils.Distribution.Family;
 import hex.Model;
 import hex.ScoreKeeper;
 import water.*;
@@ -62,7 +62,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public boolean parallelize_cross_validation;
 
   @API(help = "Distribution function", values = { "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber" }, level = API.Level.secondary, gridable = true)
-  public Distribution.Family distribution;
+  public Family distribution;
 
   @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
           help = "Tweedie power for Tweedie regression, must be between 1 and 2.")

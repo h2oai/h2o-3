@@ -5,6 +5,7 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
+import hex.genmodel.utils.Distribution.Family;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.StreamWriter;
@@ -138,7 +139,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public CategoricalEncodingScheme _categorical_encoding = CategoricalEncodingScheme.AUTO;
 
-    public Distribution.Family _distribution = Distribution.Family.AUTO;
+    public Family _distribution = Family.AUTO;
     public double _tweedie_power = 1.5;
     public double _quantile_alpha = 0.5;
     public double _huber_alpha = 0.9;

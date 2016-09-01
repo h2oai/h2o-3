@@ -1,6 +1,7 @@
 package hex.deeplearning;
 
 import hex.*;
+import hex.genmodel.utils.Distribution.Family;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.util.LinearAlgebraUtils;
@@ -178,7 +179,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
     _dist = new Distribution(get_params());
-    assert(_dist.distribution != Distribution.Family.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(_dist.distribution != Family.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
     time_of_start_ms = cp.time_of_start_ms;
     total_training_time_ms = cp.total_training_time_ms;
@@ -224,7 +225,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
     _dist = new Distribution(get_params());
-    assert(_dist.distribution != Distribution.Family.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(_dist.distribution != Family.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
     if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
@@ -364,7 +365,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (m.length() > 0) Log.info(m);
 
         // For GainsLift and Huber, we need the full predictions to compute the model metrics
-        boolean needPreds = _output.nclasses() == 2 /* gains/lift table requires predictions */ || get_params()._distribution==Distribution.Family.huber;
+        boolean needPreds = _output.nclasses() == 2 /* gains/lift table requires predictions */ ||
+                            get_params()._distribution == Family.huber;
 
         // Scoring on training data
         hex.ModelMetrics mtrain;
@@ -373,12 +375,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           // allocate predictions since they are needed
           preds = score(fTrain);
           mtrain = ModelMetrics.getFromDKV(this, fTrain);
-          if (get_params()._distribution == Distribution.Family.huber) {
+          if (get_params()._distribution == Family.huber) {
             Vec absdiff = new MathUtils.ComputeAbsDiff().doAll(1, (byte)3,
                 new Frame(new String[]{"a","p"}, new Vec[]{fTrain.vec(get_params()._response_column), preds.anyVec()})
             ).outputFrame().anyVec();
             double huberDelta = MathUtils.computeWeightedQuantile(fTrain.vec(get_params()._weights_column), absdiff, get_params()._huber_alpha);
-            if (model_info().gradientCheck==null) _dist.setHuberDelta(huberDelta);
+            if (model_info().gradientCheck == null) _dist.setHuberDelta(huberDelta);
           }
         } else {
           // no need to allocate predictions
@@ -696,7 +698,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, new double[]{offset}, n);
     double[] out = neurons[neurons.length - 1]._a[mb].raw();
 
-    if (get_params()._distribution== Distribution.Family.modified_huber) {
+    if (get_params()._distribution == Family.modified_huber) {
       preds[0] = -1;
       preds[2] = _dist.linkInv(out[0]);
       preds[1] = 1-preds[2];
@@ -776,11 +778,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @param layer index of the hidden layer for which to extract the features
    * @return Frame containing the deep features (#cols = hidden[layer])
    */
-   
+
    public Frame scoreDeepFeatures(Frame frame, final int layer) {
      return  scoreDeepFeatures(frame, layer, null);
    }
-  
+
   public Frame scoreDeepFeatures(Frame frame, final int layer, final Job job) {
     if (layer < 0 || layer >= model_info().get_params()._hidden.length)
       throw new H2OIllegalArgumentException("hidden layer (index) to extract must be between " + 0 + " and " + (model_info().get_params()._hidden.length-1),"");
@@ -1213,7 +1215,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       pureMatVec(bodySb);
       bodySb.i(1).p("}").nl();
     }
-    if (_output.isClassifier() && _parms._distribution!= Distribution.Family.modified_huber) {
+    if (_output.isClassifier() && _parms._distribution != Family.modified_huber) {
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       // softmax
       bodySb.i(2).p("double max = ACTIVATION[i][0];").nl();
@@ -1243,7 +1245,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         bodySb.i(2).p("preds[1] = ACTIVATION[i][0];").nl();
       }
       bodySb.i(2).p("preds[1] = " + _dist.linkInvString("preds[1]") + ";").nl();
-      if (_parms._distribution== Distribution.Family.modified_huber){
+      if (_parms._distribution == Family.modified_huber){
         bodySb.i(2).p("preds[2] = preds[1];").nl();
         bodySb.i(2).p("preds[1] = 1-preds[2];").nl();
       }
@@ -1314,15 +1316,15 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public double missingColumnsType() {
       return _sparse ? 0 : Double.NaN;
     }
-  
+
     /**
      * If enabled, store the best model under the destination key of this model at the end of training.
      * Only applicable if training is not cancelled.
      */
     public boolean _overwrite_with_best_model = true;
-  
+
     public boolean _autoencoder = false;
-  
+
     public boolean _use_all_factor_levels = true;
 
     /**
@@ -1342,7 +1344,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * once, and can improve generalization.
      */
     public Activation _activation = Activation.Rectifier;
-  
+
     /**
      * The number and size of each hidden layer in the model.
      * For example, if a user specifies "100,200,100" a model with 3 hidden
@@ -1350,7 +1352,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * neurons.
      */
     public int[] _hidden = new int[]{200, 200};
-  
+
     /**
      * The number of passes over the training dataset to be carried out.
      * It is recommended to start with lower values for initial experiments.
@@ -1358,7 +1360,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * of selected models.
      */
     public double _epochs = 10;
-  
+
     /**
      * The number of training data rows to be processed per iteration. Note that
      * independent of this parameter, each row is used immediately to update the model
@@ -1375,7 +1377,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * of -2 turns on automatic mode (auto-tuning).
      */
     public long _train_samples_per_iteration = -2;
-  
+
     public double _target_ratio_comm_to_comp = 0.05;
 
   /*Adaptive Learning Rate*/
@@ -1399,7 +1401,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * slower than necessary.
      */
     public boolean _adaptive_rate = true;
-  
+
     /**
      * The first of two hyper parameters for adaptive learning rate (ADADELTA).
      * It is similar to momentum and relates to the memory to prior weight updates.
@@ -1407,7 +1409,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * This parameter is only active if adaptive learning rate is enabled.
      */
     public double _rho = 0.99;
-  
+
     /**
      * The second of two hyper parameters for adaptive learning rate (ADADELTA).
      * It is similar to learning rate annealing during initial training
@@ -1416,7 +1418,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * This parameter is only active if adaptive learning rate is enabled.
      */
     public double _epsilon = 1e-8;
-  
+
   /*Learning Rate*/
     /**
      * When adaptive learning rate is disabled, the magnitude of the weight
@@ -1433,7 +1435,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * This parameter is only active if adaptive learning rate is disabled.
      */
     public double _rate = .005;
-  
+
     /**
      * Learning rate annealing reduces the learning rate to "freeze" into
      * local minima in the optimization landscape.  The annealing rate is the
@@ -1442,7 +1444,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * This parameter is only active if adaptive learning rate is disabled.
      */
     public double _rate_annealing = 1e-6;
-  
+
     /**
      * The learning rate decay parameter controls the change of learning rate across layers.
      * For example, assume the rate parameter is set to 0.01, and the rate_decay parameter is set to 0.5.
@@ -1452,14 +1454,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * This parameter is only active if adaptive learning rate is disabled.
      */
     public double _rate_decay = 1.0;
-  
+
   /*Momentum*/
     /**
      * The momentum_start parameter controls the amount of momentum at the beginning of training.
      * This parameter is only active if adaptive learning rate is disabled.
      */
     public double _momentum_start = 0;
-  
+
     /**
      * The momentum_ramp parameter controls the amount of learning for which momentum increases
      * (assuming momentum_stable is larger than momentum_start). The ramp is measured in the number
@@ -1467,14 +1469,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * This parameter is only active if adaptive learning rate is disabled.
      */
     public double _momentum_ramp = 1e6;
-  
+
     /**
      * The momentum_stable parameter controls the final momentum value reached after momentum_ramp training samples.
      * The momentum used for training will remain the same for training beyond reaching that point.
      * This parameter is only active if adaptive learning rate is disabled.
      */
     public double _momentum_stable = 0;
-  
+
     /**
      * The Nesterov accelerated gradient descent method is a modification to
      * traditional gradient descent for convex functions. The method relies on
@@ -1482,27 +1484,27 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * minimizes the residuals in fewer iterations of the descent.
      */
     public boolean _nesterov_accelerated_gradient = true;
-  
+
   /*Regularization*/
     /**
      * A fraction of the features for each training row to be omitted from training in order
      * to improve generalization (dimension sampling).
      */
     public double _input_dropout_ratio = 0.0;
-  
+
     /**
      * A fraction of the inputs for each hidden layer to be omitted from training in order
      * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
      */
     public double[] _hidden_dropout_ratios;
-  
+
     /**
      * A regularization method that constrains the absolute value of the weights and
      * has the net effect of dropping some weights (setting them to zero) from a model
      * to reduce complexity and avoid overfitting.
      */
     public double _l1 = 0.0;
-  
+
     /**
      * A regularization method that constrains the sum of the squared
      * weights. This method introduces bias into parameter estimates, but
@@ -1510,14 +1512,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * reduced.
      */
     public double _l2 = 0.0;
-  
+
     /**
      * A maximum on the sum of the squared incoming weights into
      * any one neuron. This tuning parameter is especially useful for unbound
      * activation functions such as Rectifier.
      */
     public float _max_w2 = Float.POSITIVE_INFINITY;
-  
+
   /*Initialization*/
     /**
      * The distribution from which initial weights are to be drawn. The default
@@ -1527,7 +1529,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * distribution with a mean of 0 and given standard deviation.
      */
     public InitialWeightDistribution _initial_weight_distribution = InitialWeightDistribution.UniformAdaptive;
-  
+
     /**
      * The scale of the distribution function for Uniform or Normal distributions.
      * For Uniform, the values are drawn uniformly from -initial_weight_scale...initial_weight_scale.
@@ -1557,20 +1559,20 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * output classes, not just for the actual class).
      */
     public Loss _loss = Automatic;
-  
+
   /*Scoring*/
     /**
      * The minimum time (in seconds) to elapse between model scoring. The actual
      * interval is determined by the number of training samples per iteration and the scoring duty cycle.
      */
     public double _score_interval = 5;
-  
+
     /**
      * The number of training dataset points to be used for scoring. Will be
      * randomly sampled. Use 0 for selecting the entire training dataset.
      */
     public long _score_training_samples = 10000l;
-  
+
     /**
      * The number of validation dataset points to be used for scoring. Can be
      * randomly sampled or stratified (if "balance classes" is set and "score
@@ -1578,74 +1580,74 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * training dataset.
      */
     public long _score_validation_samples = 0l;
-  
+
     /**
      * Maximum fraction of wall clock time spent on model scoring on training and validation samples,
      * and on diagnostics such as computation of feature importances (i.e., not on training).
      */
     public double _score_duty_cycle = 0.1;
-  
+
     /**
      * The stopping criteria in terms of classification error (1-accuracy) on the
      * training data scoring dataset. When the error is at or below this threshold,
      * training stops.
      */
     public double _classification_stop = 0;
-  
+
     /**
      * The stopping criteria in terms of regression error (MSE) on the training
      * data scoring dataset. When the error is at or below this threshold, training
      * stops.
      */
     public double _regression_stop = 1e-6;
-  
+
     /**
      * Enable quiet mode for less output to standard output.
      */
     public boolean _quiet_mode = false;
-  
+
     /**
      * Method used to sample the validation dataset for scoring, see Score Validation Samples above.
      */
     public ClassSamplingMethod _score_validation_sampling = ClassSamplingMethod.Uniform;
-  
+
   /*Misc*/
     /**
      * Gather diagnostics for hidden layers, such as mean and RMS values of learning
      * rate, momentum, weights and biases.
      */
     public boolean _diagnostics = true;
-  
+
     /**
      * Whether to compute variable importances for input features.
      * The implemented method (by Gedeon) considers the weights connecting the
      * input features to the first two hidden layers.
      */
     public boolean _variable_importances = false;
-  
+
     /**
      * Enable fast mode (minor approximation in back-propagation), should not affect results significantly.
      */
     public boolean _fast_mode = true;
-  
+
     /**
      * Increase training speed on small datasets by splitting it into many chunks
      * to allow utilization of all cores.
      */
     public boolean _force_load_balance = true;
-  
+
     /**
      * Replicate the entire training dataset onto every node for faster training on small datasets.
      */
     public boolean _replicate_training_data = true;
-  
+
     /**
      * Run on a single node for fine-tuning of model parameters. Can be useful for
      * checkpoint resumes after training on multiple nodes for fast initial
      * convergence.
      */
     public boolean _single_node_mode = false;
-  
+
     /**
      * Enable shuffling of training data (on each node). This option is
      * recommended if training data is replicated on N nodes, and the number of training samples per iteration
@@ -1654,33 +1656,33 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * times the dataset size or larger).
      */
     public boolean _shuffle_training_data = false;
-  
+
     public MissingValuesHandling _missing_values_handling = MissingValuesHandling.MeanImputation;
-  
+
     public boolean _sparse = false;
-  
+
     public boolean _col_major = false;
-  
+
     public double _average_activation = 0;
-  
+
     public double _sparsity_beta = 0;
-  
+
     /**
      * Max. number of categorical features, enforced via hashing (Experimental)
      */
     public int _max_categorical_features = Integer.MAX_VALUE;
-  
+
     /**
      * Force reproducibility on small data (will be slow - only uses 1 thread)
      */
     public boolean _reproducible = false;
-  
+
     public boolean _export_weights_and_biases = false;
-  
+
     public boolean _elastic_averaging = false;
     public double _elastic_averaging_moving_rate = 0.9;
     public double _elastic_averaging_regularization = 1e-3;
-  
+
     // stochastic gradient descent: mini-batch size = 1
     // batch gradient descent: mini-batch size = # training rows
     public int _mini_batch_size = 1;
@@ -1688,22 +1690,22 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public enum MissingValuesHandling {
       Skip, MeanImputation
     }
-  
+
     public enum ClassSamplingMethod {
       Uniform, Stratified
     }
-  
+
     public enum InitialWeightDistribution {
       UniformAdaptive, Uniform, Normal
     }
-  
+
     /**
      * Activation functions
      */
     public enum Activation {
       Tanh, TanhWithDropout, Rectifier, RectifierWithDropout, Maxout, MaxoutWithDropout, ExpRectifier, ExpRectifierWithDropout
     }
-  
+
     /**
      * Loss functions
      * Absolute, Quadratic, Huber, Quantile for regression
@@ -1712,7 +1714,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public enum Loss {
       Automatic, Quadratic, CrossEntropy, ModifiedHuber, Huber, Absolute, Quantile
     }
-  
+
     /**
      * Validate model parameters
      * @param dl DL Model Builder (Driver)
@@ -1726,11 +1728,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
       if (!_diagnostics)
         dl.warn("_diagnostics", "Deprecated option: Diagnostics are always enabled.");
-  
+
       if (!_autoencoder) {
         if (_valid == null)
           dl.hide("_score_validation_samples", "score_validation_samples requires a validation frame.");
-  
+
         if (classification) {
           dl.hide("_regression_stop", "regression_stop is used only with regression.");
         } else {
@@ -1880,7 +1882,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
       }
       if (expensive) dl.checkDistributions();
-  
+
       if (_score_training_samples < 0)
         dl.error("_score_training_samples", "Number of training samples for scoring must be >= 0 (0 for all).");
       if (_score_validation_samples < 0)
@@ -1898,7 +1900,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         dl.error("_sparsity_beta", "Sparsity beta can only be used for autoencoder.");
       if (classification && dl.hasOffsetCol())
         dl.error("_offset_column", "Offset is only supported for regression.");
-  
+
       // reason for the error message below is that validation might not have the same horizontalized features as the training data (or different order)
       if (_autoencoder && _activation == Activation.Maxout)
         dl.error("_activation", "Maxout activation is not supported for auto-encoder.");
@@ -1939,7 +1941,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         dl.error("_stopping_metric", "Stopping metric must either be AUTO or MSE for autoencoder.");
       }
     }
-  
+
     static class Sanity {
       // the following parameters can be modified when restarting from a checkpoint
       transient static private final String[] cp_modifiable = new String[]{
@@ -1990,7 +1992,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_mini_batch_size",
               "_pretrained_autoencoder"
       };
-  
+
       // the following parameters must not be modified when restarting from a checkpoint
       transient static private final String[] cp_not_modifiable = new String[]{
               "_drop_na20_cols",
@@ -2020,7 +2022,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_huber_alpha",
               "_tweedie_power"
       };
-  
+
       static void checkCompleteness() {
         for (Field f : DeepLearningParameters.class.getDeclaredFields())
           if (!ArrayUtils.contains(cp_not_modifiable, f.getName())
@@ -2033,7 +2035,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             throw H2O.unimpl("Please add " + f.getName() + " to either cp_modifiable or cp_not_modifiable");
           }
       }
-  
+
       /**
        * Check that checkpoint continuation is possible
        *
@@ -2056,7 +2058,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (!Arrays.equals(newP._ignored_columns, oldP._ignored_columns)) {
           throw new H2OIllegalArgumentException("Ignored columns must be the same as for the checkpointed model.");
         }
-  
+
         //compare the user-given parameters before and after and check that they are not changed
         for (Field fBefore : oldP.getClass().getFields()) {
           if (ArrayUtils.contains(cp_not_modifiable, fBefore.getName())) {
@@ -2076,7 +2078,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           }
         }
       }
-  
+
       /**
        * Update the parameters from checkpoint to user-specified
        *
@@ -2107,7 +2109,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           }
         }
       }
-  
+
       /**
        * Take user-given parameters and turn them into usable, fully populated parameters (e.g., to be used by Neurons during training)
        *
@@ -2191,38 +2193,38 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
             Log.info("_stopping_metric: Automatically setting stopping_metric to MSE for autoencoder.");
           toParms._stopping_metric = ScoreKeeper.StoppingMetric.MSE;
         }
-  
+
         // Automatically set the distribution
-        if (fromParms._distribution == Distribution.Family.AUTO) {
+        if (fromParms._distribution == Family.AUTO) {
           // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/Quadratic/Huber/Absolute
           if (nClasses > 1) {
-            toParms._distribution = nClasses == 2 ? Distribution.Family.bernoulli : Distribution.Family.multinomial;
+            toParms._distribution = nClasses == 2 ? Family.bernoulli : Family.multinomial;
           }
           else {
             //regression/autoencoder
             switch(fromParms._loss) {
               case Automatic:
               case Quadratic:
-                toParms._distribution = Distribution.Family.gaussian;
+                toParms._distribution = Family.gaussian;
                 break;
               case Absolute:
-                toParms._distribution = Distribution.Family.laplace;
+                toParms._distribution = Family.laplace;
                 break;
               case Quantile:
-                toParms._distribution = Distribution.Family.quantile;
+                toParms._distribution = Family.quantile;
                 break;
               case Huber:
-                toParms._distribution = Distribution.Family.huber;
+                toParms._distribution = Family.huber;
                 break;
               case ModifiedHuber:
-                toParms._distribution = Distribution.Family.modified_huber;
+                toParms._distribution = Family.modified_huber;
                 break;
               default:
                 throw H2O.unimpl();
             }
           }
         }
-  
+
         if (fromParms._loss == Automatic) {
           switch (toParms._distribution) {
             // regression
@@ -2269,7 +2271,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
       }
     }
-  
+
   }
 }
 

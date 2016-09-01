@@ -2,23 +2,13 @@ package hex;
 
 import water.H2O;
 import water.Iced;
+import hex.genmodel.utils.Distribution.Family;
 
 /**
  * Distribution functions to be used by ML Algos
  */
 //TODO: Separate into family/link
 public class Distribution extends Iced {
-
-  /**
-   * NOTE: changes in this enum must be synchronized with `hex.genmodel.utils.DistributionFamily`.
-   */
-  public enum Family {
-    AUTO,         //model-specific behavior
-    bernoulli,    //binomial classification (nclasses == 2)
-    modified_huber, //modified huber: quadratically smoothed hinge loss for 0/1 outcome
-    multinomial,  //classification (nclasses >= 2)
-    gaussian, poisson, gamma, tweedie, huber, laplace, quantile //regression
-  }
 
   // Default constructor for non-Tweedie and non-Quantile families
   public Distribution(Family family) {
@@ -31,9 +21,6 @@ public class Distribution extends Iced {
     huberDelta = Double.NaN;
   }
 
-  /**
-   * @param params
-   */
   public Distribution(Model.Parameters params) {
     distribution = params._distribution;
     tweediePower = params._tweedie_power;

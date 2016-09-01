@@ -1,6 +1,6 @@
 package hex.tree;
 
-import hex.Distribution;
+import hex.genmodel.utils.Distribution.Family;
 import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.fvec.C0DChunk;
@@ -40,12 +40,12 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   final int   _leaf; // Number of active leaves (per tree)
   // Histograms for every tree, split & active column
   final DHistogram _hcs[/*tree-relative node-id*/][/*column*/];
-  final Distribution.Family _family;
+  final Family _family;
   final int _weightIdx;
   final int _workIdx;
   final int _nidIdx;
 
-  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], Distribution.Family family, int weightIdx, int workIdx, int nidIdx) {
+  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], Family family, int weightIdx, int workIdx, int nidIdx) {
     super(cc);
     _k    = k;
     _ncols= ncols;

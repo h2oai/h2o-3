@@ -1,6 +1,7 @@
 package water.api;
 
 import hex.*;
+import hex.genmodel.utils.Distribution.Family;
 import water.*;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -233,7 +234,7 @@ class ModelMetricsHandler extends Handler {
     public String _predictions_frame;
     public String _actuals_frame;
     public String[] _domain;
-    public Distribution.Family _distribution;
+    public Family _distribution;
     public ModelMetrics _model_metrics;
   }
 
@@ -248,7 +249,7 @@ class ModelMetricsHandler extends Handler {
     public String[] domain;
 
     @API(help="Distribution (for regression).", direction=API.Direction.INOUT, values = { "gaussian", "poisson", "gamma", "laplace" })
-    public Distribution.Family distribution;
+    public Family distribution;
 
     @API(help="Model Metrics.", direction=API.Direction.OUTPUT)
     public ModelMetricsBaseV3 model_metrics;

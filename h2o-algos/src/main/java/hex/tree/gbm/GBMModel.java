@@ -2,16 +2,9 @@ package hex.tree.gbm;
 
 import hex.Distribution;
 import hex.Model;
-import hex.quantile.Quantile;
-import hex.quantile.QuantileModel;
+import hex.genmodel.utils.Distribution.Family;
 import hex.tree.SharedTreeModel;
-import hex.tree.drf.DRFModel;
-import water.DKV;
-import water.Job;
 import water.Key;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.Log;
 import water.util.SBPrintStream;
 
 import java.io.IOException;
@@ -54,11 +47,11 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
    *  subclass scoring logic. */
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset, int ntrees) {
     super.score0(data, preds, weight, offset, ntrees);    // These are f_k(x) in Algorithm 10.4
-    if (_parms._distribution == Distribution.Family.bernoulli || _parms._distribution == Distribution.Family.modified_huber) {
+    if (_parms._distribution == Family.bernoulli || _parms._distribution == Family.modified_huber) {
       double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
       preds[2] = new Distribution(_parms).linkInv(f);
       preds[1] = 1.0 - preds[2];
-    } else if (_parms._distribution == Distribution.Family.multinomial) { // Kept the initial prediction for binomial
+    } else if (_parms._distribution == Family.multinomial) { // Kept the initial prediction for binomial
       if (_output.nclasses() == 2) { //1-tree optimization for binomial
         preds[1] += _output._init_f + offset; //offset is not yet allowed, but added here to be future-proof
         preds[2] = -preds[1];
@@ -75,7 +68,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   @Override protected void toJavaUnifyPreds(SBPrintStream body) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
-    if( _parms._distribution == Distribution.Family.bernoulli || _parms._distribution == Distribution.Family.modified_huber) {
+    if( _parms._distribution == Family.bernoulli || _parms._distribution == Family.modified_huber) {
       body.ip("preds[2] = preds[1] + ").p(_output._init_f).p(";").nl();
       body.ip("preds[2] = " + new Distribution(_parms).linkInvString("preds[2]") + ";").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
