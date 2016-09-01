@@ -294,6 +294,7 @@ public class DeepWaterTest extends TestUtil {
   @Test public void testConvergenceInceptionColor() { runInception(3); }
   @Test public void testConvergenceInceptionGrayScale() { runInception(1); }
 
+  //FIXME
   @Ignore
   @Test
   public void testReproInitialDistribution() {
@@ -349,9 +350,8 @@ public class DeepWaterTest extends TestUtil {
     for (int i=1;i<REPS;++i) Assert.assertNotEquals(values[0],values[i],1e-6*values[0]);
   }
 
-  @Ignore
-  @Test
-  public void testSettingModelInfoAll() {
+  // Pure convenience wrapper
+  @Ignore @Test public void testSettingModelInfoAll() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network== DeepWaterParameters.Network.user) continue;
       if (network== DeepWaterParameters.Network.auto) continue;
@@ -362,7 +362,9 @@ public class DeepWaterTest extends TestUtil {
   @Test public void testSettingModelInfoAlexnet() { testSettingModelInfo(DeepWaterParameters.Network.alexnet); }
   @Test public void testSettingModelInfoLenet() { testSettingModelInfo(DeepWaterParameters.Network.lenet); }
   @Test public void testSettingModelInfoVGG() { testSettingModelInfo(DeepWaterParameters.Network.vgg); }
+  //FIXME
   @Ignore @Test public void testSettingModelInfoInception() { testSettingModelInfo(DeepWaterParameters.Network.inception_bn); }
+  //FIXME
   @Ignore @Test public void testSettingModelInfoResnet() { testSettingModelInfo(DeepWaterParameters.Network.resnet); }
 
   void testSettingModelInfo(DeepWaterParameters.Network network) {
@@ -413,6 +415,7 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
+  //FIXME
   @Ignore
   @Test
   public void testReproTraining() {
@@ -441,8 +444,8 @@ public class DeepWaterTest extends TestUtil {
     for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-6*values[0]);
   }
 
-  @Ignore
-  @Test public void deepWaterLoadSaveTestAll() {
+  // Pure convenience wrapper
+  @Ignore @Test public void deepWaterLoadSaveTestAll() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network== DeepWaterParameters.Network.auto) continue;
       if (network== DeepWaterParameters.Network.user) continue;
@@ -452,7 +455,9 @@ public class DeepWaterTest extends TestUtil {
   @Test public void deepWaterLoadSaveTestAlexnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.alexnet); }
   @Test public void deepWaterLoadSaveTestLenet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.lenet); }
   @Test public void deepWaterLoadSaveTestVGG() { deepWaterLoadSaveTest(DeepWaterParameters.Network.vgg); }
+  //FIXME
   @Ignore @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(DeepWaterParameters.Network.inception_bn); }
+  //FIXME
   @Ignore @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.resnet); }
 
   void deepWaterLoadSaveTest(DeepWaterParameters.Network network) {
@@ -514,8 +519,8 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  @Ignore
-  @Test public void testRestoreStateAll() {
+  // Pure convenience wrapper
+  @Ignore @Test public void testRestoreStateAll() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network== DeepWaterParameters.Network.user) continue;
       if (network== DeepWaterParameters.Network.auto) continue;
@@ -526,7 +531,9 @@ public class DeepWaterTest extends TestUtil {
   @Test public void testRestoreStateAlexnet() { testRestoreState(DeepWaterParameters.Network.alexnet); }
   @Test public void testRestoreStateLenet() { testRestoreState(DeepWaterParameters.Network.lenet); }
   @Test public void testRestoreStateVGG() { testRestoreState(DeepWaterParameters.Network.vgg); }
+  //FIXME
   @Ignore @Test public void testRestoreStateInception() { testRestoreState(DeepWaterParameters.Network.inception_bn); }
+  //FIXME
   @Ignore @Test public void testRestoreStateResnet() { testRestoreState(DeepWaterParameters.Network.resnet); }
 
   public void testRestoreState(DeepWaterParameters.Network network) {
