@@ -362,9 +362,9 @@ public class DeepWaterTest extends TestUtil {
   @Test public void testSettingModelInfoAlexnet() { testSettingModelInfo(DeepWaterParameters.Network.alexnet); }
   @Test public void testSettingModelInfoLenet() { testSettingModelInfo(DeepWaterParameters.Network.lenet); }
   @Test public void testSettingModelInfoVGG() { testSettingModelInfo(DeepWaterParameters.Network.vgg); }
-  //FIXME
+  //FIXME - passes only with rate=0
   @Ignore @Test public void testSettingModelInfoInception() { testSettingModelInfo(DeepWaterParameters.Network.inception_bn); }
-  //FIXME
+  //FIXME - passes only with rate=0
   @Ignore @Test public void testSettingModelInfoResnet() { testSettingModelInfo(DeepWaterParameters.Network.resnet); }
 
   void testSettingModelInfo(DeepWaterParameters.Network network) {
@@ -378,6 +378,7 @@ public class DeepWaterTest extends TestUtil {
       p._network = network;
       p._mini_batch_size = 4;
       p._epochs = 0.01;
+//      p._rate = 0; //needed pass the test for inception/resnet
       p._seed = 1234;
       p._score_training_samples = 0;
       p._train_samples_per_iteration = p._mini_batch_size;
@@ -392,8 +393,8 @@ public class DeepWaterTest extends TestUtil {
       p._seed = 4321;
       Job j2 = new DeepWater(p).trainModel();
       m2 = (DeepWaterModel)j2.get();
-      m2.doScoring(tr,null,j2._key,m2.iterations,true);
-//        double l2 = m2.loss();
+//      m2.doScoring(tr,null,j2._key,m2.iterations,true);
+//      double l2 = m2.loss();
       int h2 = Arrays.hashCode(m2.model_info()._modelparams);
 
       // turn the second model into the first model
