@@ -1,6 +1,5 @@
 GBM
 --------------
-
 Introduction
 ~~~~~~~~~~~~
 
@@ -27,6 +26,16 @@ features:
 -  N-fold cross-validation
 -  Support for more distribution functions (such as Gamma, Poisson, and
    Tweedie)
+
+Quick Start
+~~~~~~~~~~~~
+* Quick GBM using H2O Flow (Lending Club Dataset) `[Youtube] <https://www.youtube.com/watch?v=1R9iBBCxhE8>`__
+* Simplest getting started R script `[Github] <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/gbm-randomforest/GBM_RandomForest_Example.R>`__
+* GBM Tuning Guide in Python & R `[Blog] <http://blog.h2o.ai/2016/06/h2o-gbm-tuning-tutorial-for-r/>`__ 
+* GBM & Random Forest Video Overview `[Youtube] <https://www.youtube.com/watch?v=9wn1f-30_ZY>`__
+* GBM and other algos in R (Citi Bike Dataset) `[Youtube] <https://www.youtube.com/watch?v=_ig6ZmBfhH8/>`__ `[Github] <https://github.com/h2oai/h2o-3/blob/master/h2o-r/demos/rdemo.citi.bike.small.R/>`__ 
+* Prof. Trevor Hasite - Gradient Boosting Machine Learning `[Youtube] <https://www.youtube.com/watch?v=wPqtzj5VZus/>`__
+
 
 Defining a GBM Model
 ~~~~~~~~~~~~~~~~~~~~
@@ -286,11 +295,11 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-  Missing values affect tree split points. NAs always “go right”, and hence affect the split-finding math (since the corresponding response for the row still matters). If the response is missing, then the row won't affect the split-finding math. No new node is created. Instead, the observation is treated as if it had the maximum feature value of all observations in the node to be split. Note that the missing value might not be separated from the largest value itself. For example, if a node contains feature values of 0,1,2,3,4,5, then the missing value is counted as a 5. No matter what split decision is then made, the value 5 and the missing values won’t be separated. The 5 and the missing stay together, even in splits down the tree.
+  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 
 -  **How does the algorithm handle missing values during testing?**
 
-  During scoring, missing values "always go right" at any decision point in a tree. Due to dynamic binning in GBM, a row with a missing value typically ends up in the "rightmost bin" - with other outliers.
+  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
 
 -  **What happens if the response has missing values?**
 

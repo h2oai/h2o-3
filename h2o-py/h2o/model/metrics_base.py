@@ -534,7 +534,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         assert_is_type(thresholds_list, [numeric])
         assert_satisfies(thresholds_list, all(0 <= t <= 1 for t in thresholds_list))
 
-        if not all(m in ["min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity", "accuracy",
+        if not all(m.lower() in ["min_per_class_accuracy", "absolute_mcc", "precision", "recall", "specificity", "accuracy",
                          "f0point5", "f2", "f1", "mean_per_class_accuracy"] for m in metrics_list):
             raise ValueError(
                 "The only allowable metrics are min_per_class_accuracy, absolute_mcc, precision, accuracy, f0point5, "
@@ -581,9 +581,9 @@ class H2OBinomialModelMetrics(MetricsBase):
         crit2d = self._metric_json['max_criteria_and_metric_scores']
 
         for e in crit2d.cell_values:
-            if e[0] == "max " + metric:
+            if e[0] == "max " + metric.lower():
                 return e[1]
-        raise ValueError("No metric " + str(metric))
+        raise ValueError("No metric " + str(metric.lower()))
 
     def find_idx_by_threshold(self, threshold):
         """

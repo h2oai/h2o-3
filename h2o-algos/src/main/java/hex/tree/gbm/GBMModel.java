@@ -1,9 +1,11 @@
 package hex.tree.gbm;
 
 import hex.Distribution;
+import hex.Model;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.tree.SharedTreeModel;
+import hex.tree.drf.DRFModel;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -11,6 +13,8 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.util.SBPrintStream;
+
+import java.io.IOException;
 
 public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
 
@@ -91,5 +95,23 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     if (_parms._balance_classes)
       body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
     body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
+  }
+
+
+  @Override
+  public Model<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput>.RawDataStreamWriter getRawDataStream() {
+    return new GBMModel.RawDataStreamWriter();
+  }
+
+  public class RawDataStreamWriter
+          extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput>.RawDataStreamWriter {
+    @Override
+    protected void writeExtraModelInfo() throws IOException {
+      super.writeExtraModelInfo();
+      writeln("distribution = " + _parms._distribution);
+      writeln("tweedie_power = " + _parms._tweedie_power);
+      writeln("quantile_alpha = " + _parms._quantile_alpha);
+      writeln("init_f = " + _output._init_f);
+    }
   }
 }
