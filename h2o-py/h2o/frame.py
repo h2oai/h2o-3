@@ -1394,25 +1394,6 @@ class H2OFrame(object):
                 return H2OFrame._expr(expr=ExprNode("quantile", merged, prob, combine_method, weights_column))
         return H2OFrame._expr(expr=ExprNode("quantile", self, prob, combine_method, weights_column))
 
-    def cbind(self, data):
-        """
-        Append data to this H2OFrame column-wise.
-
-        Parameters
-        ----------
-          data : H2OFrame
-            H2OFrame to be column bound to the right of this H2OFrame.
-
-        Returns
-        -------
-          H2OFrame of the combined datasets.
-        """
-        fr = H2OFrame._expr(expr=ExprNode("cbind", self, data), cache=self._ex._cache)
-        fr._ex._cache.ncols = self.ncol + data.ncol
-        fr._ex._cache.names = None  # invalidate for possibly duplicate names
-        fr._ex._cache.types = None  # invalidate for possibly duplicate names
-        return fr
-
     def concat(self, frames, axis=1):
         """
         Append multiple data to this H2OFrame column-wise or row wise.
@@ -1436,34 +1417,56 @@ class H2OFrame(object):
             raise ValueError(
                 "Input list of frames is of length one. Better to use cbind or rbind for one frame/column.")
 
-        df = self
-
         if axis == 1:
-            for i in frames:
-                df = df.cbind(i)
+            df = self.cbind(frames)
         else:
-            for i in frames:
-                df = df.rbind(i)
+            df = self.rbind(frames)
         return df
 
-    def rbind(self, data):
+    def cbind(self, data):
         """
-        Combine H2O Datasets by rows.
-
-        Takes a sequence of H2O data sets and combines them by rows.
+        Append data to this H2OFrame column-wise.
 
         Parameters
         ----------
-          data : H2OFrame
+          data : list
+            List of H2OFrame's to be column bound to the right of this H2OFrame.
 
         Returns
         -------
-          Returns this H2OFrame with data appended row-wise.
+          Returns this H2OFrame with all frames in data appended column-wise.
         """
-        if not isinstance(data, H2OFrame): raise ValueError(
-            "`data` must be an H2OFrame, but got {0}".format(type(data)))
-        fr = H2OFrame._expr(expr=ExprNode("rbind", self, data), cache=self._ex._cache)
-        fr._ex._cache.nrows = self.nrow + data.nrow
+        for frames in data:
+            if not isinstance(frames, H2OFrame):
+                raise ValueError("`frames` must be an H2OFrame, but got {0}".format(type(frames)))
+            fr = H2OFrame._expr(expr=ExprNode("cbind", self, frames), cache=self._ex._cache)
+            self = fr #Update frame with new columns
+        for frames in data:
+            fr._ex._cache.ncols = self.ncol + frames.ncol #Update column count
+        fr._ex._cache.names = None  # invalidate for possibly duplicate names
+        fr._ex._cache.types = None  # invalidate for possibly duplicate names
+        return fr
+
+    def rbind(self, data):
+        """
+        Append data to this H2OFrame row-wise.
+
+        Parameters
+        ----------
+          data : list
+            List of H2OFrame's to be combined with current frame row-wise.
+
+        Returns
+        -------
+          Returns this H2OFrame with all frames in data appended row-wise.
+        """
+        for frames in data:
+            if not isinstance(frames, H2OFrame):
+                raise ValueError("`frames` must be an H2OFrame, but got {0}".format(type(frames)))
+            fr = H2OFrame._expr(expr=ExprNode("rbind", self, frames), cache=self._ex._cache)
+            self = fr #Update frame with new rows
+        for frames in data:
+            fr._ex._cache.nrows = self.nrow + frames.nrow #Update row count
         return fr
 
     def split_frame(self, ratios=None, destination_frames=None, seed=None):
