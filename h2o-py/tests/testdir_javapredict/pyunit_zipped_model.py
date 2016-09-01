@@ -16,14 +16,16 @@ import tempfile
 import time
 
 import colorama
+import tabulate
 from tests import pyunit_utils
 import h2o
 from h2o.estimators import H2ORandomForestEstimator, H2OGradientBoostingEstimator
 
 # These variables can be tweaked to increase / reduce stress on the test. However when submitting to GitHub
 # please keep these reasonably low, so that the test wouldn't take exorbitant amounts of time.
-NTREES = 100
-DEPTH = 10
+NTREES = 50
+DEPTH = 5
+NTESTROWS = 10000
 
 def test_zipped_rf_model():
     """
@@ -42,15 +44,20 @@ def test_zipped_rf_model():
     else:
         target_dir = os.path.expanduser("~/Downloads/")
 
+    report = []
     for estimator in [H2ORandomForestEstimator, H2OGradientBoostingEstimator]:
+        print(colorama.Fore.LIGHTYELLOW_EX + "\n#================================================")
+        print("#  Estimator: " + estimator.__name__)
+        print("#================================================\n" + colorama.Fore.RESET)
+        estimator_name = "GBM" if estimator == H2OGradientBoostingEstimator else "DRF"
         for problem in ["binomial", "multinomial", "regression"]:
             print("========================")
             print("%s problem" % problem.capitalize())
             print("========================")
             df = random_dataset(problem, verbose=False)
             print("Created dataset with %d rows x %d columns" % (df.nrow, df.ncol))
-            test = df[:1000, :]
-            train = df[1000:, :]
+            test = df[:NTESTROWS, :]
+            train = df[NTESTROWS:, :]
             test2 = test.rbind(test)
 
             time0 = time.time()
@@ -84,21 +91,6 @@ def test_zipped_rf_model():
             h2o.download_csv(test2, test2_file)
             print("Time taken = %.3fs" % (time.time() - time0))
 
-            print("\nScoring the model locally and saving to file ", end="")
-            times = [time.time()]
-            local_pred_file = os.path.join(target_dir, "predL_%s.csv" % test.frame_id)
-            local_pred_file2 = os.path.join(target_dir, "predL_%s.csv" % test2.frame_id)
-            print(local_pred_file)
-            for inpfile, outfile in [(test_file, local_pred_file), (test2_file, local_pred_file2)]:
-                ret = subprocess.call(["java", "-cp", genmodel_jar,
-                                       "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m",
-                                       "hex.genmodel.tools.PredictCsv",
-                                       "--input", inpfile, "--output", outfile, "--model", model_file, "--decimal"])
-                assert ret == 0, "GenModel finished with return code %d" % ret
-                times.append(time.time())
-            print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
-                  (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
-
             print("\nScoring the model remotely and downloading to file ", end="")
             times = [time.time()]
             h2o_pred_file = os.path.join(target_dir, "predR_%s.csv" % test.frame_id)
@@ -110,6 +102,24 @@ def test_zipped_rf_model():
                 times.append(time.time())
             print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
                   (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
+            report.append((estimator_name, problem, "Server", times[1] - times[0], times[2] - times[1]))
+
+            print("\nScoring the model locally and saving to file ", end="")
+            times = [time.time()]
+            local_pred_file = os.path.join(target_dir, "predL_%s.csv" % test.frame_id)
+            local_pred_file2 = os.path.join(target_dir, "predL_%s.csv" % test2.frame_id)
+            print(local_pred_file)
+            for inpfile, outfile in [(test_file, local_pred_file), (test2_file, local_pred_file2)]:
+                load_csv(inpfile)
+                ret = subprocess.call(["java", "-cp", genmodel_jar,
+                                       "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m",
+                                       "hex.genmodel.tools.PredictCsv",
+                                       "--input", inpfile, "--output", outfile, "--model", model_file, "--decimal"])
+                assert ret == 0, "GenModel finished with return code %d" % ret
+                times.append(time.time())
+            print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
+                  (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
+            report.append((estimator_name, problem, "Zipped", times[1] - times[0], times[2] - times[1]))
 
             if pojo_size <= 1000 << 20:  # 1000 Mb
                 time0 = time.time()
@@ -124,6 +134,7 @@ def test_zipped_rf_model():
                 times = [time.time()]
                 cp_sep = ";" if sys.platform == "win32" else ":"
                 for inpfile, outfile in [(test_file, pojo_pred_file), (test2_file, pojo_pred_file2)]:
+                    load_csv(inpfile)
                     java_cmd = ["java", "-cp", cp_sep.join([genmodel_jar, target_dir]),
                                 "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m", "-XX:MaxPermSize=256m",
                                 "hex.genmodel.tools.PredictCsv",
@@ -133,6 +144,8 @@ def test_zipped_rf_model():
                     times.append(time.time())
                 print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
                       (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
+                report.append((estimator_name, problem, "POJO", times[1] - times[0], times[2] - times[1]))
+
 
             print("\nChecking whether the predictions coincide...")
             time0 = time.time()
@@ -157,6 +170,12 @@ def test_zipped_rf_model():
             print("Time taken = %.3fs" % (time.time() - time0))
             print(colorama.Fore.LIGHTGREEN_EX + "\nPredictions match!\n" + colorama.Fore.RESET)
 
+    print(colorama.Fore.LIGHTYELLOW_EX + "\n\n#================================================")
+    print("#  Timing report")
+    print("#================================================\n" + colorama.Fore.RESET)
+    print(tabulate.tabulate(report,
+          headers=["Model", "Problem type", "Scorer", "10000 rows", "20000 rows"],
+          floatfmt=".3f"), end="\n\n\n")
 
 def random_dataset(response_type, verbose=True):
     """Create and return a random dataset."""
@@ -171,7 +190,7 @@ def random_dataset(response_type, verbose=True):
     response_factors = (1 if response_type == "regression" else
                         2 if response_type == "binomial" else
                         random.randint(10, 30))
-    df = h2o.create_frame(rows=random.randint(5000, 15000), cols=random.randint(20, 100),
+    df = h2o.create_frame(rows=random.randint(15000, 25000) + NTESTROWS, cols=random.randint(20, 100),
                           missing_fraction=random.uniform(0, 0.05),
                           has_response=True, response_factors=response_factors, positive_response=True,
                           **fractions)
