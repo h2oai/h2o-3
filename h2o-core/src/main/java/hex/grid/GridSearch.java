@@ -75,11 +75,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
 
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
+    assert hyperSpaceWalker != null : "Grid search needs to know how to walk around hyper space!";
+    _hyperSpaceWalker = hyperSpaceWalker;
     _result = gkey;
     String algoName = hyperSpaceWalker.getParams().algoName();
     _job = new Job<>(gkey, Grid.class.getName(), algoName + " Grid Search");
-    assert hyperSpaceWalker != null : "Grid search needs to know to how walk around hyper space!";
-    _hyperSpaceWalker = hyperSpaceWalker;
     // Note: do not validate parameters of created model builders here!
     // Leave it to launch time, and just mark the corresponding model builder job as failed.
   }
