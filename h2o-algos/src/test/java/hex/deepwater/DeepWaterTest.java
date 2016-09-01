@@ -247,6 +247,7 @@ public class DeepWaterTest extends TestUtil {
       p._rate = 1e-3;
       p._epochs = 1;
       p._train_samples_per_iteration = -2;
+      p._stopping_rounds = 0;
       m = new DeepWater(p).trainModel().get();
       Assert.assertTrue(m.iterations>1);
     } finally {
@@ -265,6 +266,7 @@ public class DeepWaterTest extends TestUtil {
       p._rate = 1e-3;
       p._epochs = 1;
       p._train_samples_per_iteration = -1;
+      p._stopping_rounds = 0;
       m = new DeepWater(p).trainModel().get();
       Assert.assertTrue(m.iterations==1);
     } finally {
@@ -286,6 +288,7 @@ public class DeepWaterTest extends TestUtil {
       p._score_duty_cycle = 1;
       p._score_interval = 1;
       p._train_samples_per_iteration = p._mini_batch_size;
+      p._stopping_rounds = 0;
       m = new DeepWater(p).trainModel().get();
       Assert.assertTrue(m.iterations==9);
       Assert.assertTrue(m.epoch_counter>1);
@@ -307,6 +310,7 @@ public class DeepWaterTest extends TestUtil {
       p._rate = 1e-3;
       p._epochs = 1;
       p._train_samples_per_iteration = 1000;
+      p._stopping_rounds = 0;
       m = new DeepWater(p).trainModel().get();
       Assert.assertTrue(m.iterations==1);
       Assert.assertTrue(m.epoch_counter>3);
