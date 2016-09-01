@@ -1,7 +1,5 @@
 package hex.genmodel.utils;
 
-import static java.lang.Math.exp;
-import static java.lang.Math.log;
 
 /**
  * Used to be `hex.Distribution.Family`.
@@ -11,34 +9,34 @@ public enum DistributionFamily {
   bernoulli {
     @Override public double link(double f) { return log(f/(1 - f)); }
     @Override public double linkInv(double f) { return 1 / (1 + exp(-f)); }
-    @Override public String linkInvString(String f) { return "1/(1 + Math.min(1e19, Math.exp(-"+f+")))"; }
+    @Override public String linkInvString(String f) { return "1./(1. + " + expString("-("+f+")") + ")"; }
   },
   modified_huber {
     @Override public double link(double f) { return log(f/(1 - f)); }
     @Override public double linkInv(double f) { return 1 / (1 + exp(-f)); }
-    @Override public String linkInvString(String f) { return "1/(1 + Math.min(1e19, Math.exp(-"+f+")))"; }
+    @Override public String linkInvString(String f) { return "1./(1. + " + expString("-("+f+")") + ")"; }
   },
   multinomial {
     @Override public double link(double f) { return log(f); }
     @Override public double linkInv(double f) { return exp(f); }
-    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+"))"; }
+    @Override public String linkInvString(String f) { return expString(f); }
   },
   gaussian {
   },
   poisson {
     @Override public double link(double f) { return log(f); }
     @Override public double linkInv(double f) { return exp(f); }
-    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+"))"; }
+    @Override public String linkInvString(String f) { return expString(f); }
   },
   gamma {
     @Override public double link(double f) { return log(f); }
     @Override public double linkInv(double f) { return exp(f); }
-    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+"))"; }
+    @Override public String linkInvString(String f) { return expString(f); }
   },
   tweedie {
     @Override public double link(double f) { return log(f); }
     @Override public double linkInv(double f) { return exp(f); }
-    @Override public String linkInvString(String f) { return "Math.min(1e19, Math.exp("+f+"))"; }
+    @Override public String linkInvString(String f) { return expString(f); }
   },
   huber,
   laplace,
@@ -71,4 +69,16 @@ public enum DistributionFamily {
     return f;
   }
 
+
+  public static double exp(double x) {
+    return Math.min(1e19, Math.exp(x));
+  }
+
+  public static String expString(String x) {
+    return "Math.min(1e19, Math.exp(" + x + "))";
+  }
+
+  public static double log(double x) {
+    return x <= 0 ? -19 : Math.max(-19, Math.log(x));
+  }
 }
