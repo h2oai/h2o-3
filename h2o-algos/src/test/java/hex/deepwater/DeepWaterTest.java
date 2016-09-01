@@ -502,61 +502,70 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  @Test
-  public void testRestoreState() {
+  @Ignore
+  @Test public void testRestoreStateAll() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
-      if (network == DeepWaterParameters.Network.user) continue;
-      if (network == DeepWaterParameters.Network.auto) continue;
+      if (network== DeepWaterParameters.Network.user) continue;
+      if (network== DeepWaterParameters.Network.auto) continue;
+      testRestoreState(network);
+    }
+  }
 
-      DeepWaterModel m1 = null;
-      DeepWaterModel m2 = null;
-      Frame tr = null;
-      Frame pred = null;
-      try {
-        DeepWaterParameters p = new DeepWaterParameters();
-        p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
-        p._network = network;
-        p._response_column = "C2";
-        p._mini_batch_size = 4;
-        p._train_samples_per_iteration = p._mini_batch_size;
-        p._rate = 0e-3;
-        p._seed = 12345;
-        p._epochs = 0.01;
-        p._quiet_mode = true;
-        m1 = new DeepWater(p).trainModel().get();
+  @Test public void testRestoreStateAlexnet() { testRestoreState(DeepWaterParameters.Network.alexnet); }
+  @Test public void testRestoreStateLenet() { testRestoreState(DeepWaterParameters.Network.lenet); }
+  @Test public void testRestoreStateVGG() { testRestoreState(DeepWaterParameters.Network.vgg); }
+  @Test public void testRestoreStateInception() { testRestoreState(DeepWaterParameters.Network.inception_bn); }
+  @Test public void testRestoreStateResnet() { testRestoreState(DeepWaterParameters.Network.resnet); }
 
-        Log.info("Scoring the original model.");
-        pred = m1.score(tr);
-        pred.remove(0).remove();
-        ModelMetricsMultinomial mm1 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
-        Log.info("Original LL: " + ((ModelMetricsMultinomial) m1._output._training_metrics).logloss());
-        Log.info("Scored   LL: " + mm1.logloss());
-        pred.remove();
+  public void testRestoreState(DeepWaterParameters.Network network) {
+    DeepWaterModel m1 = null;
+    DeepWaterModel m2 = null;
+    Frame tr = null;
+    Frame pred = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._network = network;
+      p._response_column = "C2";
+      p._mini_batch_size = 4;
+      p._train_samples_per_iteration = p._mini_batch_size;
+      p._rate = 0e-3;
+      p._seed = 12345;
+      p._epochs = 0.01;
+      p._quiet_mode = true;
+      m1 = new DeepWater(p).trainModel().get();
 
-        Log.info("Keeping the raw byte[] of the model.");
-        byte[] raw = new AutoBuffer().put(m1).buf();
+      Log.info("Scoring the original model.");
+      pred = m1.score(tr);
+      pred.remove(0).remove();
+      ModelMetricsMultinomial mm1 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
+      Log.info("Original LL: " + ((ModelMetricsMultinomial) m1._output._training_metrics).logloss());
+      Log.info("Scored   LL: " + mm1.logloss());
+      pred.remove();
 
-        Log.info("Removing the model from the DKV.");
-        m1.remove();
+      Log.info("Keeping the raw byte[] of the model.");
+      byte[] raw = new AutoBuffer().put(m1).buf();
 
-        Log.info("Restoring the model from the raw byte[].");
-        m2 = new AutoBuffer(raw).get();
+      Log.info("Removing the model from the DKV.");
+      m1.remove();
 
-        Log.info("Scoring the restored model.");
-        pred = m2.score(tr);
-        pred.remove(0).remove();
-        ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
-        Log.info("Restored LL: " + mm2.logloss());
+      Log.info("Restoring the model from the raw byte[].");
+      m2 = new AutoBuffer(raw).get();
 
-        Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-6*mm1.logloss()); //make sure scoring is self-consistent
-        Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-6*mm1.logloss());
+      Log.info("Scoring the restored model.");
+      pred = m2.score(tr);
+      pred.remove(0).remove();
+      ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
+      Log.info("Restored LL: " + mm2.logloss());
 
-      } finally {
-        if (m1 !=null) m1.delete();
-        if (m2!=null) m2.delete();
-        if (tr!=null) tr.remove();
-        if (pred!=null) pred.remove();
-      }
+      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-6*mm1.logloss()); //make sure scoring is self-consistent
+      Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-6*mm1.logloss());
+
+    } finally {
+      if (m1 !=null) m1.delete();
+      if (m2!=null) m2.delete();
+      if (tr!=null) tr.remove();
+      if (pred!=null) pred.remove();
     }
   }
 }
