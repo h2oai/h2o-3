@@ -24,9 +24,9 @@ hyperparameter.
 
 .. code:: json
 
-    { 
-      "ntrees":[1,5], 
-      "learn_rate":[0.1,0.01] 
+    {
+      "ntrees":[1,5],
+      "learn_rate":[0.1,0.01]
     }
 
 An optional ``search_criteria`` dictionary specifies options for
@@ -39,14 +39,14 @@ models). An example is:
 
 .. code:: json
 
-    { 
-      "strategy": "RandomDiscrete", 
-      "max_runtime_secs": 600, 
-      "max_models": 100, 
-      "stopping_metric": "AUTO", 
-      "stopping_tolerance": 0.00001, 
-      "stopping_rounds": 5, 
-      "seed": 123456 
+    {
+      "strategy": "RandomDiscrete",
+      "max_runtime_secs": 600,
+      "max_models": 100,
+      "stopping_metric": "AUTO",
+      "stopping_tolerance": 0.00001,
+      "stopping_rounds": 5,
+      "seed": 123456
     }
 
 With grid search, each model is built sequentially, allowing users to
@@ -57,7 +57,7 @@ Supported Grid Search Hyperparameters
 
 The following hyperparameters are supported by grid search.
 
-Common Hyperparameters 
+Common Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~
 
 -  ``validation_frame``
@@ -74,7 +74,7 @@ Common Hyperparameters
 Shared Tree Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-**Note**: The Shared Tree hyperparameters apply to DRF and GBM. 
+**Note**: The Shared Tree hyperparameters apply to DRF and GBM.
 
 -  ``balance_classes``
 -  ``class_sampling_factors``
@@ -319,9 +319,9 @@ Random Hyper-Parameter Grid Search Example
     col_sample_rate_per_tree_opts = seq(0.3,1,0.05)
     #nbins_cats_opts = seq(100,10000,100) ## no categorical features in this dataset
 
-    hyper_params = list( ntrees = ntrees_opts, 
-                         max_depth = max_depth_opts, 
-                         min_rows = min_rows_opts, 
+    hyper_params = list( ntrees = ntrees_opts,
+                         max_depth = max_depth_opts,
+                         min_rows = min_rows_opts,
                          learn_rate = learn_rate_opts,
                          sample_rate = sample_rate_opts,
                          col_sample_rate = col_sample_rate_opts,
@@ -333,28 +333,28 @@ Random Hyper-Parameter Grid Search Example
     ## Search a random subset of these hyper-parmameters (max runtime and max models are enforced, and the search will stop after we don't improve much over the best 5 random models)
     search_criteria = list(strategy = "RandomDiscrete", max_runtime_secs = 600, max_models = 100, stopping_metric = "AUTO", stopping_tolerance = 0.00001, stopping_rounds = 5, seed = 123456)
 
-    gbm.grid <- h2o.grid("gbm", 
+    gbm.grid <- h2o.grid("gbm",
                          grid_id = "mygrid",
-                         x = predictors, 
-                         y = response, 
-                         
+                         x = predictors,
+                         y = response,
+
                          # faster to use a 80/20 split
                          training_frame = trainSplit,
                          validation_frame = validSplit,
                          nfolds = 0,
-                         
+
                          # alternatively, use N-fold cross-validation
                          #training_frame = train,
                          #nfolds = 5,
-                         
+
                          distribution="gaussian", ## best for MSE loss, but can try other distributions ("laplace", "quantile")
-                         
-                         ## stop as soon as mse doesn't improve by more than 0.1% on the validation set, 
+
+                         ## stop as soon as mse doesn't improve by more than 0.1% on the validation set,
                          ## for 2 consecutive scoring events
                          stopping_rounds = 2,
                          stopping_tolerance = 1e-3,
                          stopping_metric = "MSE",
-                         
+
                          score_tree_interval = 100, ## how often to score (affects early stopping)
                          seed = 123456, ## seed to control the sampling of the Cartesian hyper-parameter space
                          hyper_params = hyper_params,
@@ -479,7 +479,7 @@ Example
 
     HashMap<String, Object[]> hyperParms = new HashMap<>();
     hyperParms.put("_ntrees", new Integer[]{1, 2});
-    hyperParms.put("_distribution", new Distribution.Family[]{Distribution.Family.multinomial});
+    hyperParms.put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
     hyperParms.put("_max_depth", new Integer[]{1, 2, 5});
     hyperParms.put("_learn_rate", new Float[]{0.01f, 0.1f, 0.3f});
 
@@ -488,7 +488,7 @@ Example
     params._train = fr._key;
     params._response_column = "cylinders";
     // Trigger new grid search job, block for results and get the resulting grid object
-    GridSearch gs = 
+    GridSearch gs =
      GridSearch.startGridSearch(params, hyperParms, GBM_MODEL_FACTORY, new HyperSpaceSearchCriteria.CartesianSearchCriteria());
     Grid grid = (Grid) gs.get();
 
@@ -507,17 +507,17 @@ To add support for PCA grid search:
 
 1. Add the PCA model build factory into the ``hex.grid.ModelFactories``
    class:
-  
+
   ::
 
-	class ModelFactories { 
-	 /* ... */ 
+	class ModelFactories {
+	 /* ... */
 	 public static ModelFactory<PCAModel.PCAParameters>
-	   PCA_MODEL_FACTORY = 
+	   PCA_MODEL_FACTORY =
 	   new ModelFactory<PCAModel.PCAParametners>() {
 	     @Override
 	     public String getModelName() {
-	       return "PCA"; 
+	       return "PCA";
 	     }
 	     @Override
 	     public ModelBuilder buildModel(PCAModel.PCAParameters params) {
@@ -529,7 +529,7 @@ To add support for PCA grid search:
 2. Add the PCA REST end-point schema:
 
   ::
-	
+
 	public class PCAGridSearchV99 extends GridSearchSchema<PCAGridSearchHandler.PCAGrid,
 	 PCAGridSearchV99,
 	 PCAModel.PCAParameters,
@@ -539,13 +539,13 @@ To add support for PCA grid search:
 3. Add the PCA REST end-point handler:
 
    ::
- 
+
     public class PCAGridSearchHandler
      extends GridSearchHandler<PCAGridSearchHandler.PCAGrid,
      PCAGridSearchV99,
      PCAModel.PCAParameters,
      PCAV3.PCAParametersV3> {
- 	 
+
        public PCAGridSearchV99 train(int version, PCAGridSearchV99 gridSearchSchema) {
          return super.do_train(version, gridSearchSchema);
        }
@@ -562,13 +562,13 @@ To add support for PCA grid search:
            super(null, null, null, null);
          }
        }
-    } 
+    }
 
 4. Register the REST end-point in the register factory
    ``hex.api.Register``:
 
   ::
-  
+
     public class Register extends AbstractRegister {
       @Override
       public void register() {
@@ -577,7 +577,7 @@ To add support for PCA grid search:
         // ...
       }
     }
-  	 
+
 Grid Testing
 ------------
 
@@ -628,4 +628,4 @@ Additional Documentation
 -  `H2O Algos Java Developer Documentation <../h2o-algos/javadoc/index.html>`_: The definitive Java API guide
    for the algorithms used by H2O.
 
--  `Hyperparameter Optimization in H2O <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/random%20hyperparmeter%20search%20and%20roadmap.md>`_: A guide to Grid Search and Random Search in H2O. 
+-  `Hyperparameter Optimization in H2O <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/random%20hyperparmeter%20search%20and%20roadmap.md>`_: A guide to Grid Search and Random Search in H2O.
