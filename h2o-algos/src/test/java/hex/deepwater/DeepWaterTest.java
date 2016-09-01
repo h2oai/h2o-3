@@ -217,7 +217,7 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  void testSamplesPerIteration(int samples) {
+  void testSamplesPerIteration(int samples, int expected) {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -228,18 +228,18 @@ public class DeepWaterTest extends TestUtil {
       p._epochs = 1;
       p._train_samples_per_iteration = samples;
       m = new DeepWater(p).trainModel().get();
-      Assert.assertTrue(m.iterations==1);
+      Assert.assertEquals(expected,m.iterations);
     } finally {
       if (m!=null) m.delete();
       if (tr!=null) tr.remove();
     }
   }
 
-  @Test public void testTrainSamplesPerIteration0() { testSamplesPerIteration(0); }
-  @Test public void testTrainSamplesPerIteration_auto() { testSamplesPerIteration(-2); }
-  @Test public void testTrainSamplesPerIteration_neg1() { testSamplesPerIteration(-1); }
-  @Test public void testTrainSamplesPerIteration_32() { testSamplesPerIteration(32); }
-  @Test public void testTrainSamplesPerIteration_1000() { testSamplesPerIteration(1000); }
+  @Test public void testTrainSamplesPerIteration0() { testSamplesPerIteration(0,1); }
+  @Test public void testTrainSamplesPerIteration_auto() { testSamplesPerIteration(-2,3); }
+  @Test public void testTrainSamplesPerIteration_neg1() { testSamplesPerIteration(-1,1); }
+  @Test public void testTrainSamplesPerIteration_32() { testSamplesPerIteration(32,9); }
+  @Test public void testTrainSamplesPerIteration_1000() { testSamplesPerIteration(1000,1); }
 
   @Test
   public void testOverWriteWithBestModel() {
