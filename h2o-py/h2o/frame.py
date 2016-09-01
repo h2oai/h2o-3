@@ -1436,13 +1436,17 @@ class H2OFrame(object):
         -------
           Returns this H2OFrame with all frames in data appended column-wise.
         """
-        for frames in data:
-            if not isinstance(frames, H2OFrame):
-                raise ValueError("`frames` must be an H2OFrame, but got {0}".format(type(frames)))
-            fr = H2OFrame._expr(expr=ExprNode("cbind", self, frames), cache=self._ex._cache)
-            self = fr #Update frame with new columns
-        for frames in data:
-            fr._ex._cache.ncols = self.ncol + frames.ncol #Update column count
+        if not isinstance(data,list):
+            fr = H2OFrame._expr(expr=ExprNode("cbind", self, data), cache=self._ex._cache)
+            fr._ex._cache.ncols = self.ncol + data.ncol #Update column count
+        else:
+            for frames in data:
+                if not isinstance(frames, H2OFrame):
+                    raise ValueError("`frames` must be an H2OFrame, but got {0}".format(type(frames)))
+                fr = H2OFrame._expr(expr=ExprNode("cbind", self, frames), cache=self._ex._cache)
+                self = fr #Update frame with new columns
+            for frames in data:
+                fr._ex._cache.ncols = self.ncol + frames.ncol #Update column count
         fr._ex._cache.names = None  # invalidate for possibly duplicate names
         fr._ex._cache.types = None  # invalidate for possibly duplicate names
         return fr
@@ -1460,13 +1464,17 @@ class H2OFrame(object):
         -------
           Returns this H2OFrame with all frames in data appended row-wise.
         """
-        for frames in data:
-            if not isinstance(frames, H2OFrame):
-                raise ValueError("`frames` must be an H2OFrame, but got {0}".format(type(frames)))
-            fr = H2OFrame._expr(expr=ExprNode("rbind", self, frames), cache=self._ex._cache)
-            self = fr #Update frame with new rows
-        for frames in data:
-            fr._ex._cache.nrows = self.nrow + frames.nrow #Update row count
+        if not isinstance(data,list):
+            fr = H2OFrame._expr(expr=ExprNode("rbind", self, data), cache=self._ex._cache)
+            fr._ex._cache.nrows = self.nrow + data.nrow #Update row count
+        else:
+            for frames in data:
+                if not isinstance(frames, H2OFrame):
+                    raise ValueError("`frames` must be an H2OFrame, but got {0}".format(type(frames)))
+                fr = H2OFrame._expr(expr=ExprNode("rbind", self, frames), cache=self._ex._cache)
+                self = fr #Update frame with new rows
+            for frames in data:
+                fr._ex._cache.nrows = self.nrow + frames.nrow #Update row count
         return fr
 
     def split_frame(self, ratios=None, destination_frames=None, seed=None):
