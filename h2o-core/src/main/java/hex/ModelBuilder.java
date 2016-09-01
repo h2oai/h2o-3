@@ -1,6 +1,6 @@
 package hex;
 
-import hex.genmodel.utils.Distribution.Family;
+import hex.genmodel.utils.DistributionFamily;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -429,7 +429,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       mbs[i] = cvModel.scoreMetrics(adaptFr);
       if (nclasses() == 2 /* need holdout predictions for gains/lift table */ ||
               _parms._keep_cross_validation_predictions ||
-              (_parms._distribution==Family.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
+              (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
         cvModel.predictScoreImpl(cvValid, adaptFr, predName, null);
       }
@@ -467,7 +467,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       predKeys[i] = Key.make("prediction_" + cvModelKey.toString()); //must be the same as in cv_scoreCVModels above
     }
     Frame holdoutPreds = null;
-    if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution == Family.huber)) {
+    if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution == DistributionFamily.huber)) {
       Key cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
       if (_parms._keep_cross_validation_predictions) //only show the user if they asked for it
         mainModel._output._cross_validation_holdout_predictions_frame_id = cvhp;
@@ -788,7 +788,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
     }
-    if (_parms._distribution != Family.tweedie) {
+    if (_parms._distribution != DistributionFamily.tweedie) {
       hide("_tweedie_power", "Only for Tweedie Distribution.");
     }
     if (_parms._tweedie_power <= 1 || _parms._tweedie_power >= 2) {
@@ -817,10 +817,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if(isSupervised()) {
       if(_response != null) {
-        if (_parms._distribution != Family.tweedie) {
+        if (_parms._distribution != DistributionFamily.tweedie) {
           hide("_tweedie_power", "Tweedie power is only used for Tweedie distribution.");
         }
-        if (_parms._distribution != Family.quantile) {
+        if (_parms._distribution != DistributionFamily.quantile) {
           hide("_quantile_alpha", "Quantile (alpha) is only used for Quantile regression.");
         }
         if (expensive) checkDistributions();
@@ -1017,21 +1017,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   public void checkDistributions() {
-    if (_parms._distribution == Family.poisson) {
+    if (_parms._distribution == DistributionFamily.poisson) {
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Poisson distribution.");
-    } else if (_parms._distribution == Family.gamma) {
+    } else if (_parms._distribution == DistributionFamily.gamma) {
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Gamma distribution.");
-    } else if (_parms._distribution == Family.tweedie) {
+    } else if (_parms._distribution == DistributionFamily.tweedie) {
       if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
         error("_tweedie_power", "Tweedie power must be between 1 and 2.");
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Tweedie distribution.");
-    } else if (_parms._distribution == Family.quantile) {
+    } else if (_parms._distribution == DistributionFamily.quantile) {
       if (_parms._quantile_alpha > 1 || _parms._quantile_alpha < 0)
         error("_quantile_alpha", "Quantile alpha must be between 0 and 1.");
-    } else if (_parms._distribution == Family.huber) {
+    } else if (_parms._distribution == DistributionFamily.huber) {
       if (_parms._huber_alpha <0 || _parms._huber_alpha>1)
         error("_huber_alpha", "Huber alpha must be between 0 and 1.");
     }

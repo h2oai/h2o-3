@@ -1,6 +1,6 @@
 package hex;
 
-import hex.genmodel.utils.Distribution.Family;
+import hex.genmodel.utils.DistributionFamily;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
@@ -47,20 +47,20 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
    * @param actual A Vec containing the actual target values
    * @return ModelMetrics object
    */
-  static public ModelMetricsRegression make(Vec predicted, Vec actual, Family family) {
+  static public ModelMetricsRegression make(Vec predicted, Vec actual, DistributionFamily family) {
     if (predicted == null || actual == null)
       throw new IllegalArgumentException("Missing actual or predicted targets for regression metrics!");
     if (!predicted.isNumeric())
       throw new IllegalArgumentException("Predicted values must be numeric for regression metrics.");
     if (!actual.isNumeric())
       throw new IllegalArgumentException("Actual values must be numeric for regression metrics.");
-    if (family == Family.quantile || family == Family.tweedie || family == Family.huber)
+    if (family == DistributionFamily.quantile || family == DistributionFamily.tweedie || family == DistributionFamily.huber)
       throw new IllegalArgumentException("Unsupported distribution family, requires additional parameters which cannot be specified right now.");
     Frame predsActual = new Frame(predicted);
     predsActual.add("actual", actual);
     MetricBuilderRegression mb = new RegressionMetrics(family).doAll(predsActual)._mb;
     ModelMetricsRegression mm = (ModelMetricsRegression)mb.makeModelMetrics(null, predsActual, null, null);
-    mm._description = "Computed on user-given predictions and targets, distribution: " + (family ==null?Family.gaussian.toString(): family.toString()) + ".";
+    mm._description = "Computed on user-given predictions and targets, distribution: " + (family ==null? DistributionFamily.gaussian.toString(): family.toString()) + ".";
     return mm;
   }
 
@@ -70,8 +70,8 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   private static class RegressionMetrics extends MRTask<RegressionMetrics> {
     public MetricBuilderRegression _mb;
     final Distribution _distribution;
-    RegressionMetrics(Family family) {
-      _distribution = family ==null ? new Distribution(Family.gaussian) : new Distribution(family);
+    RegressionMetrics(DistributionFamily family) {
+      _distribution = family ==null ? new Distribution(DistributionFamily.gaussian) : new Distribution(family);
     }
     @Override public void map(Chunk[] chks) {
       _mb = new MetricBuilderRegression(_distribution);
@@ -112,7 +112,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       _abserror += w*Math.abs(err);
       _rmslerror += w*err_msle;
       assert !Double.isNaN(_sumsqe);
-      if (m != null && m._parms._distribution != Family.huber)
+      if (m != null && m._parms._distribution != DistributionFamily.huber)
         _sumdeviance += m.deviance(w, yact[0], ds[0]);
       else if (_dist!=null)
         _sumdeviance += _dist.deviance(w, yact[0], ds[0]);
@@ -137,7 +137,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       double rmsle = Math.sqrt(_rmslerror/_wcount); //Root Mean Squared Log Error
       if (adaptedFrame ==null) adaptedFrame = f;
       double meanResDeviance = 0;
-      if (m != null && m._parms._distribution == Family.huber) {
+      if (m != null && m._parms._distribution == DistributionFamily.huber) {
         assert(_sumdeviance==0); // should not yet be computed
         if (preds != null) {
           Vec actual = adaptedFrame.vec(m._parms._response_column);

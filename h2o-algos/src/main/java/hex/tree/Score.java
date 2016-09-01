@@ -2,7 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
-import hex.genmodel.utils.Distribution.Family;
+import hex.genmodel.utils.DistributionFamily;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -79,7 +79,7 @@ public class Score extends MRTask<Score> {
 
   // Run after the doAll scoring to convert the MetricsBuilder to a ModelMetrics
   ModelMetricsSupervised makeModelMetrics(SharedTreeModel model, Frame fr) {
-    Frame preds = (model._output.nclasses()==2 && _computeGainsLift) || model._parms._distribution == Family.huber ? model.score(fr) : null;
+    Frame preds = (model._output.nclasses()==2 && _computeGainsLift) || model._parms._distribution == DistributionFamily.huber ? model.score(fr) : null;
     ModelMetricsSupervised mms = (ModelMetricsSupervised) _mb.makeModelMetrics(model, fr, null, preds);
     if (preds != null) preds.remove();
     return mms;

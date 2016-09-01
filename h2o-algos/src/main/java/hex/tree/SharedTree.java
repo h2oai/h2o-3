@@ -2,7 +2,7 @@ package hex.tree;
 
 import hex.*;
 import hex.genmodel.GenModel;
-import hex.genmodel.utils.Distribution.Family;
+import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import jsr166y.CountedCompleter;
@@ -424,13 +424,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final Frame _fr2;
     final boolean _build_tree_one_node;
     final float[] _improvPerVar;      // Squared Error improvement per variable per split
-    final Family _family;
+    final DistributionFamily _family;
     final int _weightIdx;
     final int _workIdx;
     final int _nidIdx;
 
     boolean _did_split;
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, Family family, int weightIdx, int workIdx, int nidIdx) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family, int weightIdx, int workIdx, int nidIdx) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -834,8 +834,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     private double _denom;
 
     public  double initialValue() {
-      if (_dist.distribution == Family.multinomial)
-        return -0.5*new Distribution(Family.bernoulli).link(_num/_denom);
+      if (_dist.distribution == DistributionFamily.multinomial)
+        return -0.5*new Distribution(DistributionFamily.bernoulli).link(_num/_denom);
       else return _dist.link(_num / _denom);
     }
     @Override public void map(Chunk response, Chunk weight, Chunk offset) {

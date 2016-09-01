@@ -2,7 +2,7 @@ package hex;
 
 import water.H2O;
 import water.Iced;
-import hex.genmodel.utils.Distribution.Family;
+import hex.genmodel.utils.DistributionFamily;
 
 /**
  * Distribution functions to be used by ML Algos
@@ -11,11 +11,11 @@ import hex.genmodel.utils.Distribution.Family;
 public class Distribution extends Iced {
 
   // Default constructor for non-Tweedie and non-Quantile families
-  public Distribution(Family family) {
+  public Distribution(DistributionFamily family) {
     distribution = family;
-    assert(family != Family.tweedie);
-    assert(family != Family.quantile);
-    assert(family != Family.huber);
+    assert(family != DistributionFamily.tweedie);
+    assert(family != DistributionFamily.quantile);
+    assert(family != DistributionFamily.huber);
     tweediePower = 1.5;
     quantileAlpha = 0.5;
     huberDelta = Double.NaN;
@@ -31,7 +31,7 @@ public class Distribution extends Iced {
   static public double MIN_LOG = -19;
   static public double MAX = 1e19;
 
-  public final Family distribution;
+  public final DistributionFamily distribution;
   public final double tweediePower; //tweedie power
   public final double quantileAlpha; //for quantile regression
   public double huberDelta;
@@ -153,24 +153,7 @@ public class Distribution extends Iced {
    * @return link(f)
    */
   public double link(double f) {
-    switch (distribution) {
-      case AUTO:
-      case gaussian:
-      case huber:
-      case laplace:
-      case quantile:
-        return f;
-      case modified_huber:
-      case bernoulli:
-        return log(f/(1-f));
-      case multinomial:
-      case poisson:
-      case gamma:
-      case tweedie:
-        return log(f);
-      default:
-        throw H2O.unimpl();
-    }
+    return distribution.link(f);
   }
 
   /**
@@ -179,24 +162,7 @@ public class Distribution extends Iced {
    * @return linkInv(f)
    */
   public double linkInv(double f) {
-    switch (distribution) {
-      case AUTO:
-      case gaussian:
-      case huber:
-      case laplace:
-      case quantile:
-        return f;
-      case modified_huber:
-      case bernoulli:
-        return 1 / (1 + exp(-f));
-      case multinomial:
-      case poisson:
-      case gamma:
-      case tweedie:
-        return exp(f);
-      default:
-        throw H2O.unimpl();
-    }
+    return distribution.linkInv(f);
   }
 
   /**
@@ -205,24 +171,7 @@ public class Distribution extends Iced {
    * @return String that turns into compilable expression of linkInv(f)
    */
   public String linkInvString(String f) {
-    switch (distribution) {
-      case AUTO:
-      case gaussian:
-      case huber:
-      case laplace:
-      case quantile:
-        return f;
-      case bernoulli:
-      case modified_huber:
-        return "1/(1+" + expString("-" + f) + ")";
-      case multinomial:
-      case poisson:
-      case gamma:
-      case tweedie:
-        return expString(f);
-      default:
-        throw H2O.unimpl();
-    }
+    return distribution.linkInvString(f);
   }
 
   /**

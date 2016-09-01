@@ -1,7 +1,7 @@
 package hex.deeplearning;
 
 import hex.*;
-import hex.genmodel.utils.Distribution.Family;
+import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.util.LinearAlgebraUtils;
@@ -179,7 +179,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
     assert(get_params() != cp.model_info().get_params()); //make sure we have a clone
     _dist = new Distribution(get_params());
-    assert(_dist.distribution != Family.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
     time_of_start_ms = cp.time_of_start_ms;
     total_training_time_ms = cp.total_training_time_ms;
@@ -225,7 +225,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
     _dist = new Distribution(get_params());
-    assert(_dist.distribution != Family.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
     if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
@@ -366,7 +366,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
         // For GainsLift and Huber, we need the full predictions to compute the model metrics
         boolean needPreds = _output.nclasses() == 2 /* gains/lift table requires predictions */ ||
-                            get_params()._distribution == Family.huber;
+                            get_params()._distribution == DistributionFamily.huber;
 
         // Scoring on training data
         hex.ModelMetrics mtrain;
@@ -375,7 +375,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           // allocate predictions since they are needed
           preds = score(fTrain);
           mtrain = ModelMetrics.getFromDKV(this, fTrain);
-          if (get_params()._distribution == Family.huber) {
+          if (get_params()._distribution == DistributionFamily.huber) {
             Vec absdiff = new MathUtils.ComputeAbsDiff().doAll(1, (byte)3,
                 new Frame(new String[]{"a","p"}, new Vec[]{fTrain.vec(get_params()._response_column), preds.anyVec()})
             ).outputFrame().anyVec();
@@ -698,7 +698,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, new double[]{offset}, n);
     double[] out = neurons[neurons.length - 1]._a[mb].raw();
 
-    if (get_params()._distribution == Family.modified_huber) {
+    if (get_params()._distribution == DistributionFamily.modified_huber) {
       preds[0] = -1;
       preds[2] = _dist.linkInv(out[0]);
       preds[1] = 1-preds[2];
@@ -1215,7 +1215,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       pureMatVec(bodySb);
       bodySb.i(1).p("}").nl();
     }
-    if (_output.isClassifier() && _parms._distribution != Family.modified_huber) {
+    if (_output.isClassifier() && _parms._distribution != DistributionFamily.modified_huber) {
       bodySb.i(1).p("if (i == ACTIVATION.length-1) {").nl();
       // softmax
       bodySb.i(2).p("double max = ACTIVATION[i][0];").nl();
@@ -1245,7 +1245,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         bodySb.i(2).p("preds[1] = ACTIVATION[i][0];").nl();
       }
       bodySb.i(2).p("preds[1] = " + _dist.linkInvString("preds[1]") + ";").nl();
-      if (_parms._distribution == Family.modified_huber){
+      if (_parms._distribution == DistributionFamily.modified_huber){
         bodySb.i(2).p("preds[2] = preds[1];").nl();
         bodySb.i(2).p("preds[1] = 1-preds[2];").nl();
       }
@@ -2195,29 +2195,29 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
 
         // Automatically set the distribution
-        if (fromParms._distribution == Family.AUTO) {
+        if (fromParms._distribution == DistributionFamily.AUTO) {
           // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/Quadratic/Huber/Absolute
           if (nClasses > 1) {
-            toParms._distribution = nClasses == 2 ? Family.bernoulli : Family.multinomial;
+            toParms._distribution = nClasses == 2 ? DistributionFamily.bernoulli : DistributionFamily.multinomial;
           }
           else {
             //regression/autoencoder
             switch(fromParms._loss) {
               case Automatic:
               case Quadratic:
-                toParms._distribution = Family.gaussian;
+                toParms._distribution = DistributionFamily.gaussian;
                 break;
               case Absolute:
-                toParms._distribution = Family.laplace;
+                toParms._distribution = DistributionFamily.laplace;
                 break;
               case Quantile:
-                toParms._distribution = Family.quantile;
+                toParms._distribution = DistributionFamily.quantile;
                 break;
               case Huber:
-                toParms._distribution = Family.huber;
+                toParms._distribution = DistributionFamily.huber;
                 break;
               case ModifiedHuber:
-                toParms._distribution = Family.modified_huber;
+                toParms._distribution = DistributionFamily.modified_huber;
                 break;
               default:
                 throw H2O.unimpl();

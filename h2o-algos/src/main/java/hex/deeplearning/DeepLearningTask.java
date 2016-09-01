@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
-import hex.Distribution;
-import hex.genmodel.utils.Distribution.Family;
+import hex.genmodel.utils.DistributionFamily;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.DataInfo;
 import hex.FrameTask;
@@ -280,7 +279,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       }
     }
     if(!params._autoencoder) {
-      if (minfo._classification && minfo.get_params()._distribution != Family.modified_huber)
+      if (minfo._classification && minfo.get_params()._distribution != DistributionFamily.modified_huber)
         neurons[neurons.length - 1] = new Neurons.Softmax(minfo.units[minfo.units.length - 1]);
       else
         neurons[neurons.length - 1] = new Neurons.Linear();

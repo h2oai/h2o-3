@@ -1,6 +1,6 @@
 package hex.tree.drf;
 
-import hex.genmodel.utils.Distribution.Family;
+import hex.genmodel.utils.DistributionFamily;
 import hex.ModelCategory;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
@@ -59,9 +59,9 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       if( _parms._mtries != -1 && !(1 <= _parms._mtries && _parms._mtries < ncols /*ncols includes the response*/))
         error("_mtries","Computed mtries should be -1 or in interval [1,"+ncols+"[ but it is " + _parms._mtries);
     }
-    if (_parms._distribution == Family.AUTO) {
-      if (_nclass == 1) _parms._distribution = Family.gaussian;
-      if (_nclass >= 2) _parms._distribution = Family.multinomial;
+    if (_parms._distribution == DistributionFamily.AUTO) {
+      if (_nclass == 1) _parms._distribution = DistributionFamily.gaussian;
+      if (_nclass >= 2) _parms._distribution = DistributionFamily.multinomial;
     }
     if (_parms._sample_rate == 1f && _valid == null && _parms._nfolds == 0)
       warn("_sample_rate", "Sample rate is 100% and no validation dataset and no cross-validation. There are no out-of-bag data to compute error estimates on the training data!");
