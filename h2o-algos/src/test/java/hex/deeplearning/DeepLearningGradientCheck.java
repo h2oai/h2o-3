@@ -407,7 +407,7 @@ public class DeepLearningGradientCheck extends TestUtil {
             DistributionFamily.tweedie,
             DistributionFamily.bernoulli,
             DistributionFamily.modified_huber,
-//              Distribution.Family.multinomial, //no gradient/deviance implemented
+//              DistributionFamily.multinomial, //no gradient/deviance implemented
     }) {
       DeepLearningParameters p = new DeepLearningParameters();
       p._distribution = dist;
