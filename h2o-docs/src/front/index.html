@@ -5,16 +5,73 @@
 <head>
     <title>H2O and Sparkling Water Documentation</title>
     <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-
-    <link rel="stylesheet" href="static/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/vendor/bootstrap.min.css">
+    <link rel="stylesheet" href="assets/stylesheets/custom.css">
+    <link rel="stylesheet" href="assets/stylesheets/screen.css">
+    <link rel="stylesheet" href="assets/stylesheets/octicons.css">
+    <link rel="stylesheet" href="assets/stylesheets/icomoon.css">
+    <link rel="stylesheet" href="demo-files/demo.css">
+    <link rel="stylesheet" href="assets/stylesheets/ionicons.min.css">
+    <link rel="stylesheet" href="assets/stylesheets/font-awesome.min.css">
+    <link rel="stylesheet" href="assets/stylesheets/owl.theme.css">
+    <link rel="stylesheet" href="assets/stylesheets/owl.carousel.css">
     <script src="static/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script src="https://widget.intercom.io/widget/yhuzput7" async="" type="text/javascript"></script>
+    <script async="" src="https://s.ytimg.com/yts/jsbin/www-widgetapi-vflxBao7t/www-widgetapi.js" id="www-widgetapi-script" type="text/javascript"></script>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="assets/images/favicon.ico">
 </head>
 
 <body>
-<div style="background-color:#fbe91f; padding:30px 30px 56px; width:100%; height:80px;">
-    <a href="http://www.h2o.ai"><img style="height:30px; width:auto; padding: 0;" src="static/H2O_logo.png"/></a>
-</div>
+<header class="site-header">
+    <nav role="navigation" class="navbar navbar-default blog-nav">
+        <div class="container" style="background-color:#fbe91f; padding:30px 30px 56px; width:100%; height:80px;">
+            <a href="http://www.h2o.ai"><img style="height:30px; width:auto; padding: 0; margin-left: 20pt" src="assets/images/H2O_logo.png"/></a>
+         <!-- Brand and toggle get grouped for better mobile display -->
+            <ul class="nav navbar-nav navbar-right">
+                <li class="dropdown">
+                    <a style="letter-spacing:.8px;" class="dropdown-toggle" data-toggle="dropdown" href="#" id="Community-link">
+                        COMMUNITY
+                    </a>
+                    <a class="dropdown-toggle mobile-dropdown" data-toggle="dropdown" href="#" id="Community-link">
+                        <b class="caret"></b>
+                    </a>
+                    <ul id="Community-link-menu" class="dropdown-menu arrow_box" aria-labelledby="Community-link">
+                        <li><a href="/events/" id="Events-link">EVENTS</a></li>
+                        <li><a href="http://learn.h2o.ai/" target="_blank" id="Training-link">TRAINING</a></li>
+                        <li><a href="http://open.h2o.ai/" id="Conference-link">H2O OPEN TOUR</a></li>
+                        <li><a href="https://groups.google.com/forum/#!forum/h2ostream" id="GoogleGroups-link">GOOGLE STREAM</a></li>
+                        <li><a href="https://gitter.im/h2oai/h2o-3" id="Gitter-link">GITTER</a></li>
+                    </ul>
+                </li>
+                <li>
+                    <a style="letter-spacing:.8px;" href="http://blog.h2o.ai" id="Blog-link">BLOG</a>
+                </li>
+                <li class="dropdown">
+                    <a style="letter-spacing:.8px;" class="dropdown-toggle" data-toggle="dropdown" href="http://docs.h2o.ai/?_ga=1.236269441.1688833655.1460492027" id="Documentation-link">
+                        DOCUMENTATION
+                    </a>
+                    <a class="dropdown-toggle mobile-dropdown" data-toggle="dropdown" href="#" id="Documentation-link">
+                        <b class="caret"></b>
+                    </a>
+                    <ul id="Documentation-link-menu" class="dropdown-menu arrow_box" aria-labelledby="Documentation-link">
+                        <li><a href="/docs/" id="General-Docs-link">GENERAL DOCS</a></li>
+                        <li><a href="http://github.com/0xdata/h2o-dev/" id="Github-link">GITHUB</a></li>
+                        <li><a href="/resources" id="Resources-link" title="Mentions">RESOURCES</a></li>
+                        <li><a href="http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Rdoc.html" id="R-Docs-link">R</a></li>
+                        <li><a href="http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Pydoc.html" id="Python-Docs-link">PYTHON</a></li>
+                        <li><a href="https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md" id="Sparkling-Water-docs-link">SPARKLING WATER</a></li>
+                    </ul>
+                </li>
+            </ul>
+        </div>
+    </nav>
+</header>
+
 <div class="section">
   <div class="container">
     <div class="row">
@@ -36,13 +93,11 @@
           <h3>H2O</h3>
           <a href="h2o-docs/faq.html#h2o">What is H2O?</a>
           <br>
-          <a href="https://github.com/h2oai/h2o-3/blob/master/LICENSE">Open Source License (Apache V2)</a>
-          <br>
-          <a href="http://h2o.ai/download/h2o/choose">Download H2O</a>
-          <br>
           <a href="h2o-docs/index.html">H2O User Guide</a>
           <br>
           <a href="https://github.com/h2oai/h2o-3/blob/master/Changes.md">Recent Changes</a>
+          <br>
+          <a href="https://github.com/h2oai/h2o-3/blob/master/LICENSE">Open Source License (Apache V2)</a>
           <br>
           <hr>
           <a href="h2o-docs/quick-start-videos.html#h2o-quick-start-with-flow">Quick Start Video - Flow Web UI</a>
@@ -50,6 +105,9 @@
           <a href="h2o-docs/quick-start-videos.html#h2o-quick-start-with-r">Quick Start Video - R</a>
           <br>
           <a href="h2o-docs/quick-start-videos.html#h2o-quick-start-with-python">Quick Start Video - Python</a>
+          <br>
+          <hr>
+          <a href="http://h2o.ai/download/h2o/choose">Download H2O</a>
           <br>
           <br>
         </div>
@@ -60,17 +118,21 @@
           <h3>Sparkling Water</h3>
           <a href="h2o-docs/faq.html#sparkling-water">What is Sparkling Water?</a>
           <br>
-          <a href="https://github.com/h2oai/sparkling-water/blob/master/LICENSE">Open Source License (Apache V2)</a>
+          <a href="https://github.com/h2oai/sparkling-water/blob/master/README.md">Sparkling Water Readme</a>
           <br>
-          <a href="http://h2o.ai/download/sparkling-water/choose">Download Sparkling Water</a>
+          <a href="https://github.com/h2oai/sparkling-water/blob/master/py/README.rst">PySparkling Readme</a>
           <br>
           <a href="h2o-docs/booklets/SparklingWaterBooklet.pdf">Sparkling Water Booklet</a>
           <br>
-          <a href="https://github.com/h2oai/sparkling-water/blob/master/py/README.rst">PySparkling Readme</a>
+          <a href="https://github.com/h2oai/sparkling-water/blob/master/LICENSE">Open Source License (Apache V2)</a>
+          <br>
           <hr>
           <a href="h2o-docs/quick-start-videos.html#h2o-quick-start-with-sparkling-water">Quick Start Video - Scala</a>
           <br>
           Quick Start Video - Python
+          <br>
+          <hr>
+          <a href="http://h2o.ai/download/sparkling-water/choose">Download Sparkling Water</a>
           <br>
           <br>
         </div>
@@ -81,7 +143,9 @@
           <h3>Questions and Answers</h3>
           <a href="h2o-docs/faq.html">FAQ</a>
           <br>
-          <a href="https://groups.google.com/forum/#!forum/h2ostream">h2ostream Community Forum</a>
+          <a href="https://community.h2o.ai/index.html">H2O Community Forum</a>
+          <br>
+          <a href="https://groups.google.com/forum/#!forum/h2ostream">h2ostream Google Group</a>
           <br>
           <a href="http://jira.h2o.ai">Issue Tracking (JIRA)</a>
           <br>
@@ -345,43 +409,35 @@
     </div>
 
     <div class="row">
-      <div class="col-md-6">
+      <div class="col-md-4">
         <div class="well well-sm">
           <h3>API Reference</h3>
-          <div class="row">
-            <div class="col-md-6">
-              <a href="h2o-r/h2o_package.pdf">R Package Docs</a>
-              <br>
-              <a href="h2o-py/docs/index.html">Python Module Docs</a>
-              <br>
-              <a href="h2o-docs/rest-api-reference.html">REST API Endpoint reference</a>
-              <br>
-              <a href="h2o-docs/rest-api-reference.html#schema-reference">REST API Schema reference</a>
-            </div>
-            <div class="col-md-6">
-              <a href="h2o-genmodel/javadoc/index.html">POJO Model Javadoc</a>
-              <br>
-              <a href="https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md">Sparkling Water API</a>
-              <br>
-              <a href="h2o-algos/javadoc/index.html">H2O Algorithms Javadoc</a>
-            </div>
-          </div>
+          <a href="h2o-r/h2o_package.pdf">R Package Docs</a>
           <br>
+          <a href="h2o-py/docs/index.html">Python Module Docs</a>
+          <br>
+          <a href="h2o-docs/rest-api-reference.html">REST API Endpoint reference</a>
+          <br>
+          <a href="h2o-docs/rest-api-reference.html#schema-reference">REST API Schema reference</a> <br>
+          <a href="h2o-genmodel/javadoc/index.html">POJO Model Javadoc</a>
+          <br>
+          <a href="https://github.com/h2oai/sparkling-water/blob/master/DEVEL.md">Sparkling Water API</a>
+          <br>
+          <a href="h2o-algos/javadoc/index.html">H2O Algorithms Javadoc</a>
         </div>
       </div>
-
       <div class="col-md-3">
         <div class="well well-sm">
-          <h3>Devel Docs</h3>
+          <h3>Developer Docs</h3>
           <a href="https://github.com/h2oai/h2o-3/blob/master/README.md">H2O Readme</a>
           <br>
           <a href="h2o-core/javadoc/index.html">H2O Core Javadoc</a>
           <br>
           <a href="h2o-scala/scaladoc/index.html">H2O Scaladoc</a>
           <br>
-          <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-r/README.md">R Package Devel Docs</a>
+          <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-r/README.md">R Package Developer Docs</a>
           <br>
-          <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/README.rst">Python Module Devel Docs</a>
+          <a href="https://github.com/h2oai/h2o-3/blob/master/h2o-py/README.rst">Python Module Developer Docs</a>
           <br>
           <a href="https://github.com/h2oai/sparkling-water/blob/master/README.md">Sparkling Water Readme</a>
           <br>
@@ -390,7 +446,6 @@
           <br>
         </div>
       </div>
-
       <div class="col-md-3">
         <div class="well well-sm">
           <h3>Contributing</h3>
@@ -444,4 +499,33 @@
     
 </div>
 <hr style="border-top: 4px solid #fbe91f; position: static; bottom: 0; margin:0; padding:0;">
-</body>
+<footer class="site-footer">
+    <div class="container">
+        <div class="row">
+            <div class="col-xs-12">
+                <nav class="footer-nav">
+                    <ul class="nav navbar-nav">
+                        <li><a href="/download/" title="Download">Download</a></li>
+                        <li><a href="/news/" title="News">News</a></li>
+                        <li><a href="/events/" title="Events">Events</a></li>
+                        <li><a href="http://blog.h2o.ai" title="Blog">Blog</a></li>
+                        <li><a href="/enterprise-support/" title="Support">Support</a></li>
+                        <li><a href="/partners/" title="Partners">Partners</a></li>
+                        <li><a href="/careers/" title="Careers">Careers</a></li>
+                        <li><a href="/about/" title="About">About</a></li>
+                        <li><a href="/company/contact">Contact</a></li></ul></nav>
+                  <nav class="social-nav pull-right">
+                    <ul class="nav nav-pills">
+                        <li><a href="https://github.com/h2oai" title="GitHub"><span class="icon icon-github"></span></a></li>
+                        <li><a href="https://twitter.com/h2oai" title="Twitter" class="twitter"><i class="icon icon-twitter"></i></a></li>
+                        <li><a href="https://www.youtube.com/user/0xdata?feature=c4-feed-u" title="YouTube" class="youtube"><i class="icon icon-youtube"></i></a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</footer>
+    <script src="demo-files/liga.js"></script>
+	<script src="demo-files/demo.js"></script>
+    </body>
+</html>
