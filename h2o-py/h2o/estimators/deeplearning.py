@@ -374,6 +374,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
       >>> model = H2ODeepLearningEstimator()
       >>> model.train(x=range(4), y=4, training_frame=fr)
     """
+
+    algo = "deeplearning"
+
     def __init__(self, **kwargs):
         super(H2ODeepLearningEstimator, self).__init__()
         self._parms = {}

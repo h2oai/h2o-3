@@ -210,6 +210,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Default: 1.79769313486e+308
 
     """
+
+    algo = "gbm"
+
     def __init__(self, **kwargs):
         super(H2OGradientBoostingEstimator, self).__init__()
         self._parms = {}

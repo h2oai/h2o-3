@@ -65,14 +65,14 @@ reserved_words = {
 # ----------------------------------------------------------------------------------------------------------------------
 #   Generate per-model classes
 # ----------------------------------------------------------------------------------------------------------------------
-def gen_module(schema, name):
-    classname = algo_to_classname(name)
-    extra_imports = extra_imports_for(name)
-    help_preamble = help_preamble_for(name)
-    help_epilogue = help_epilogue_for(name)
-    init_extra = init_extra_for(name)
-    class_extra = class_extra_for(name)
-    module_extra = module_extra_for(name)
+def gen_module(schema, algo):
+    classname = algo_to_classname(algo)
+    extra_imports = extra_imports_for(algo)
+    help_preamble = help_preamble_for(algo)
+    help_epilogue = help_epilogue_for(algo)
+    init_extra = init_extra_for(algo)
+    class_extra = class_extra_for(algo)
+    module_extra = module_extra_for(algo)
 
     yield "#!/usr/bin/env python"
     yield "# -*- encoding: utf-8 -*-"
@@ -110,6 +110,9 @@ def gen_module(schema, name):
     if help_epilogue:
         yield "    %s" % reindent_block(help_epilogue, 4)
     yield "    \"\"\""
+    yield ""
+    yield '    algo = "%s"' % algo
+    yield ""
     yield "    def __init__(self, **kwargs):"
     yield "        super(%s, self).__init__()" % classname
     yield "        self._parms = {}"

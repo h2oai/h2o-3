@@ -117,6 +117,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Default: 0.0
 
     """
+
+    algo = "naivebayes"
+
     def __init__(self, **kwargs):
         super(H2ONaiveBayesEstimator, self).__init__()
         self._parms = {}
