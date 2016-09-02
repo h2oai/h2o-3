@@ -1,9 +1,6 @@
 package hex.example;
 
-import hex.Distribution;
-import hex.Model;
-import hex.ModelMetrics;
-import hex.ModelMetricsSupervised;
+import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.QuantileModel;
 import hex.quantile.Quantile;
 import hex.glm.GLM;
@@ -68,11 +65,11 @@ public class WorkFlowTest extends TestUtil {
       // 1- Load datasets
       Frame data = load_files("data.hex",files);
       if( data == null ) return;
-  
-  
+
+
       // -------------------------------------------------
       // 2- light data munging
-  
+
       // Convert start time to: Day since the Epoch
       Vec startime = data.vec("starttime");
       data.add(new TimeSplit().doIt(startime));
@@ -93,7 +90,7 @@ public class WorkFlowTest extends TestUtil {
       job2.remove();
       System.out.println(Arrays.deepToString(quantile._output._quantiles));
       quantile.remove();
-      
+
 
       // Split into train, test and holdout sets
       Key[] keys = new Key[]{Key.make("train.hex"),Key.make("test.hex"),Key.make("hold.hex")};
@@ -105,7 +102,7 @@ public class WorkFlowTest extends TestUtil {
       bph.remove();
       System.out.println(train);
       System.out.println(test );
-  
+
 
       // -------------------------------------------------
       // 3- build model on train; using test as validation
@@ -119,22 +116,22 @@ public class WorkFlowTest extends TestUtil {
       gbm_parms._score_each_iteration = false; // default is false
       // SupervisedModel.Parameters
       gbm_parms._response_column = "bikes";
-      
+
       // SharedTreeModel.Parameters
       gbm_parms._ntrees = 500;        // default is 50, 1000 is 0.90, 10000 is 0.91
       gbm_parms._max_depth = 6;       // default is 5
       gbm_parms._min_rows = 10;       // default
       gbm_parms._nbins = 20;          // default
-      
+
       // GBMModel.Parameters
-      gbm_parms._distribution = Distribution.Family.gaussian; // default
+      gbm_parms._distribution = DistributionFamily.gaussian; // default
       gbm_parms._learn_rate = 0.1f;   // default
 
       // Train model; block for results
       Job<GBMModel> job = new GBM(gbm_parms).trainModel();
       GBMModel gbm = job.get();
       job.remove();
-      
+
       // ---
       // Build a GLM model also
       GLMModel.GLMParameters glm_parms = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.gaussian);
@@ -144,15 +141,15 @@ public class WorkFlowTest extends TestUtil {
       glm_parms._score_each_iteration = false; // default is false
       // SupervisedModel.Parameters
       glm_parms._response_column = "bikes";
-  
+
       // GLMModel.Parameters
       glm_parms._use_all_factor_levels = true;
-  
+
       // Train model; block for results
       Job<GLMModel> glm_job = new GLM(glm_parms).trainModel();
       GLMModel glm = glm_job.get();
       glm_job.remove();
-  
+
       // -------------------------------------------------
       // 4- Score on holdout set & report
       gbm.score(train).remove();
@@ -245,8 +242,8 @@ public class WorkFlowTest extends TestUtil {
         for( int sid = 0; sid < _num_sid; sid++ ) {
           int bikecnt = _bikes[idx(day,sid)];
           if( bikecnt == 0 ) continue;
-          if( ncs[0] == null )  
-            for( int c=0; c<ncols; c++ ) 
+          if( ncs[0] == null )
+            for( int c=0; c<ncols; c++ )
               ncs[c] = new NewChunk(avecs[c],chunknum);
           ncs[0].addNum(sid);
           ncs[1].addNum(bikecnt);

@@ -25,6 +25,7 @@ abstract public class RawModel extends GenModel {
     protected double _defaultThreshold;
     protected double[] _priorClassDistrib;
     protected double[] _modelClassDistrib;
+    protected String _offsetColumn;
 
     /**
      * Primary factory method for constructing RawModel instances.
@@ -53,15 +54,20 @@ abstract public class RawModel extends GenModel {
             case "Gradient Boosting Method":
                 return new GbmRawModel(cr, info, columns, domains);
             default:
-                throw new IOException("Unsupported algorithm " + algo + " in model's info.");
+                throw new IOException("Unsupported algorithm " + algo + " for raw models.");
         }
     }
 
-    @Override public String getUUID() { return _uuid; }
-    @Override public hex.ModelCategory getModelCategory() { return _category; }
+    //--------------------------------------------------------------------------------------------------------------------
+    // IGenModel interface
+    //--------------------------------------------------------------------------------------------------------------------
+
     @Override public boolean isSupervised() { return _supervised; }
     @Override public int nfeatures() { return _nfeatures; }
     @Override public int nclasses() { return _nclasses; }
+    @Override public hex.ModelCategory getModelCategory() { return _category; }
+
+    @Override public String getUUID() { return _uuid; }
 
 
     //------------------------------------------------------------------------------------------------------------------
@@ -80,6 +86,7 @@ abstract public class RawModel extends GenModel {
         _defaultThreshold = (double) info.get("default_threshold");
         _priorClassDistrib = (double[]) info.get("prior_class_distrib");
         _modelClassDistrib = (double[]) info.get("model_class_distrib");
+        _offsetColumn = (String) info.get("offset_column");
     }
 
     static private Map<String, Object> parseModelInfo(ContentReader reader) throws IOException {

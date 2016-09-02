@@ -5,6 +5,7 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
+import hex.genmodel.utils.DistributionFamily;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.StreamWriter;
@@ -138,7 +139,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public FoldAssignmentScheme _fold_assignment = FoldAssignmentScheme.AUTO;
     public CategoricalEncodingScheme _categorical_encoding = CategoricalEncodingScheme.AUTO;
 
-    public Distribution.Family _distribution = Distribution.Family.AUTO;
+    public DistributionFamily _distribution = DistributionFamily.AUTO;
     public double _tweedie_power = 1.5;
     public double _quantile_alpha = 0.5;
     public double _huber_alpha = 0.9;
@@ -1531,7 +1532,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
 
-      double features   [] = MemoryManager.malloc8d(genmodel._names.length);
+      double features[] = MemoryManager.malloc8d(genmodel._names.length);
       double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
@@ -1559,7 +1560,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       RowData rowData = new RowData();
       for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
         if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
-        for( int col=0; col<features.length; col++ ) {
+        for (int col = 0; col < features.length; col++) {
           double val = dvecs[col].at(row);
           rowData.put(
                   genmodel._names[col],

@@ -91,9 +91,9 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     public FrameKeyV3(Key<Frame> key) { super(key); }
   }
 
-  public static class ModelKeyV3 extends KeyV3<Iced, ModelKeyV3, Model> {
+  public static class ModelKeyV3<T extends Model> extends KeyV3<Iced, ModelKeyV3<T>, T> {
     public ModelKeyV3() {}
-    public ModelKeyV3(Key<? extends Model> key) { super(key); }
+    public ModelKeyV3(Key<T> key) { super(key); }
   }
 
   public static class GridKeyV3 extends KeyV3<Iced, GridKeyV3, Grid> {

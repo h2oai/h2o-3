@@ -2,6 +2,7 @@ package hex;
 
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
@@ -49,7 +50,7 @@ public class XValPredictionsCheck extends TestUtil {
       parms._ntrees = 1;
       parms._max_depth = 1;
       parms._fold_column = "foldId";
-      parms._distribution = Distribution.Family.multinomial;
+      parms._distribution = DistributionFamily.multinomial;
       parms._keep_cross_validation_predictions=true;
       GBM job = new GBM(parms);
       GBMModel gbm = job.trainModel().get();
@@ -63,7 +64,7 @@ public class XValPredictionsCheck extends TestUtil {
       parmsDRF._ntrees = 1;
       parmsDRF._max_depth = 1;
       parmsDRF._fold_column = "foldId";
-      parmsDRF._distribution = Distribution.Family.multinomial;
+      parmsDRF._distribution = DistributionFamily.multinomial;
       parmsDRF._keep_cross_validation_predictions=true;
       DRF drfJob = new DRF(parmsDRF);
       DRFModel drf = drfJob.trainModel().get();

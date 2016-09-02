@@ -49,7 +49,7 @@ import java.util.Map;
  * // Define hyper-space to search
  * HashMap<String,Object[]> hyperParms = new HashMap<>();
  * hyperParms.put("_ntrees", new Integer[]{1, 2});
- * hyperParms.put("_distribution",new Distribution.Family[] {Distribution.Family.multinomial});
+ * hyperParms.put("_distribution",new DistributionFamily[] {DistributionFamily.multinomial});
  * hyperParms.put("_max_depth",new Integer[]{1,2,5});
  * hyperParms.put("_learn_rate",new Float[]{0.01f,0.1f,0.3f});
  *

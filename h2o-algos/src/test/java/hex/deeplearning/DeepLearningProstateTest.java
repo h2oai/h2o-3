@@ -4,6 +4,7 @@ import hex.ConfusionMatrix;
 import hex.Distribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
+import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -79,21 +80,21 @@ public class DeepLearningProstateTest extends TestUtil {
             }) {
               if (!classification && (loss == DeepLearningParameters.Loss.CrossEntropy || loss == DeepLearningParameters.Loss.ModifiedHuber))
                 continue;
-              for (Distribution.Family dist : new Distribution.Family[]{
-                  Distribution.Family.AUTO,
-                  Distribution.Family.laplace,
-                  Distribution.Family.huber,
-                  Distribution.Family.modified_huber,
-                  Distribution.Family.bernoulli,
-                  Distribution.Family.gaussian,
-                  Distribution.Family.poisson,
-                  Distribution.Family.tweedie,
-                  Distribution.Family.gamma
+              for (DistributionFamily dist : new DistributionFamily[]{
+                  DistributionFamily.AUTO,
+                  DistributionFamily.laplace,
+                  DistributionFamily.huber,
+                  DistributionFamily.modified_huber,
+                  DistributionFamily.bernoulli,
+                  DistributionFamily.gaussian,
+                  DistributionFamily.poisson,
+                  DistributionFamily.tweedie,
+                  DistributionFamily.gamma
               }) {
-                if (classification && dist != Distribution.Family.multinomial && dist != Distribution.Family.bernoulli && dist != Distribution.Family.modified_huber)
+                if (classification && dist != DistributionFamily.multinomial && dist != DistributionFamily.bernoulli && dist != DistributionFamily.modified_huber)
                   continue;
                 if (!classification) {
-                  if (dist == Distribution.Family.multinomial || dist == Distribution.Family.bernoulli || dist == Distribution.Family.modified_huber)
+                  if (dist == DistributionFamily.multinomial || dist == DistributionFamily.bernoulli || dist == DistributionFamily.modified_huber)
                     continue;
                 }
                 boolean cont =false;

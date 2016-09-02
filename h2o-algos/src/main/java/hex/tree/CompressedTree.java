@@ -2,11 +2,14 @@ package hex.tree;
 
 import java.util.Random;
 
+import hex.genmodel.algos.TreeBasedModel;
 import water.*;
 import water.util.IcedBitSet;
 import water.util.SB;
 
-// --------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// Note: this description seems to be out-of-date
+//
 // Highly compressed tree encoding:
 //    tree: 1B nodeType, 2B colId, 4B splitVal, left-tree-size, left, right
 //    nodeType: (from lsb):
@@ -18,7 +21,9 @@ import water.util.SB;
 //        1 bit  (128) right leaf type flag (0: subtree, 1: small cat, 2: big cat, 3: float)
 //    left, right: tree | prediction
 //    prediction: 4 bytes of float (or 1 or 2 bytes of class prediction)
-public class CompressedTree extends Keyed {
+//
+
+public class CompressedTree extends Keyed<CompressedTree> {
   final byte [] _bits;
   final int _nclass;     // Number of classes being predicted (for an integer prediction tree)
   final long _seed;
@@ -30,34 +35,20 @@ public class CompressedTree extends Keyed {
     _seed = seed;
   }
 
-  /**
-   * Highly efficient (critical path) tree scoring
-   *
-   * WARNING: If you making any changes to this code, you should synchronize them with the class
-   * `hex.genmodel.algos.DrfRawModel` in package `h2o_genmodel`.
-   */
   public double score(final double row[]) {
-    return score(row, false);
-  }
-  public double score(final double row[], boolean computeLeafAssignment) {
-    return hex.genmodel.algos.TreeBasedModel.scoreTree(_bits, row, _nclass, computeLeafAssignment);
+    return TreeBasedModel.scoreTree(_bits, row, _nclass, false);
   }
 
-  public String getDecisionPath(final double row[] ) {
-    double d = score(row, true);
-    return hex.genmodel.algos.TreeBasedModel.getDecisionPath(d);
+  public String getDecisionPath(final double row[]) {
+    double d = TreeBasedModel.scoreTree(_bits, row, _nclass, true);
+    return TreeBasedModel.getDecisionPath(d);
   }
 
-
-  public Random rngForChunk( int cidx ) {
+  public Random rngForChunk(int cidx) {
     Random rand = new Random(_seed);
-    for( int i=0; i<cidx; i++ ) rand.nextLong();
+    for (int i = 0; i < cidx; i++) rand.nextLong();
     long seed = rand.nextLong();
     return new Random(seed);
-  }
-
-  @Override protected long checksum_impl() {
-    throw new UnsupportedOperationException();
   }
 
   public String toString(SharedTreeModel.SharedTreeOutput tm) {
@@ -66,11 +57,11 @@ public class CompressedTree extends Keyed {
     new TreeVisitor<RuntimeException>(this) {
       @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, int naSplitDirInt) {
         if (naSplitDirInt == DhnasdNaVsRest)
-          sb.p("!Double.isNaN("+sb.i().p(names[col]).p(")"));
+          sb.p("!Double.isNaN(" + sb.i().p(names[col]).p(")"));
         else if (naSplitDirInt == DhnasdNaLeft)
-          sb.p("Double.isNaN("+sb.i().p(names[col]).p(") || "));
+          sb.p("Double.isNaN(" + sb.i().p(names[col]).p(") || "));
         else if (equal==1)
-          sb.p("!Double.isNaN("+sb.i().p(names[col]).p(") && "));
+          sb.p("!Double.isNaN(" + sb.i().p(names[col]).p(") && "));
         if (naSplitDirInt != DhnasdNaVsRest) {
           sb.i().p(names[col]).p(' ');
           if (equal == 0) sb.p("< ").p(fcmp);
@@ -79,8 +70,12 @@ public class CompressedTree extends Keyed {
         }
         sb.ii(1).nl();
       }
-      @Override protected void post( int col, float fcmp, int equal ) { sb.di(1); }
-      @Override protected void leaf( float pred ) { sb.i().p("return ").p(pred).nl(); }
+      @Override protected void post(int col, float fcmp, int equal) {
+        sb.di(1);
+      }
+      @Override protected void leaf(float pred) {
+        sb.i().p("return ").p(pred).nl();
+      }
     }.visit();
     return sb.toString();
   }
@@ -88,4 +83,9 @@ public class CompressedTree extends Keyed {
   public static Key<CompressedTree> makeTreeKey(int treeId, int clazz) {
     return Key.makeSystem("tree_" + treeId + "_" + clazz + "_" + Key.rand());
   }
+
+  @Override protected long checksum_impl() {
+    throw new UnsupportedOperationException();
+  }
+
 }

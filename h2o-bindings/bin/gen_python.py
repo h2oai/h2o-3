@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
-from builtins import range
-from builtins import str
-import re
 import bindings as bi
 
 # We specify these not as real types, but as parameter annotations in the docstrings
