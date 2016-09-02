@@ -32,5 +32,11 @@ public class FVecParseReader implements ParseReader {
   @Override public long getGlobalByteOffset(){
     return _goffset;
   }
+  /**
+   * Exposes directly the underlying chunk. This function is safe to be used only
+   * in implementations of Parsers that cannot be used in a streaming context.
+   * Use with caution.
+   * @return underlying Chunk
+   */
   public Chunk getChunk() { return _chk; }
 }
