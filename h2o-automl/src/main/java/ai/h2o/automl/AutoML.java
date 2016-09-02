@@ -254,7 +254,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     public AutoMLKeyV3(Key<AutoML> key) { super(key); }
   }
 
-//  @Override public Class<AutoMLKeyV3> makeSchema() { return AutoMLKeyV3.class; }
+  @Override public Class<AutoMLKeyV3> makeSchema() { return AutoMLKeyV3.class; }
 
   private class AutoMLDoneException extends H2OAbstractRuntimeException {
     public AutoMLDoneException() { this("done","done"); }
