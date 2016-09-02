@@ -71,5 +71,6 @@ public abstract class Keyed<T extends Keyed> extends Iced<T> {
     return (_checksum=x);
   }
 
+  // TODO: REMOVE THIS!  It's not necessary; we can do it with reflection.
   public Class<? extends KeyV3> makeSchema() { throw H2O.fail("Override in subclasses which can be the result of a Job"); }
 }
