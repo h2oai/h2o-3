@@ -2,6 +2,9 @@
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
 import bindings as bi
+import sys
+PY3 = sys.version_info[0] == 3
+str_type = str if PY3 else (str, unicode)
 
 # We specify these not as real types, but as parameter annotations in the docstrings
 class PythonTypeTranslator(bi.TypeTranslator):
@@ -28,7 +31,7 @@ def translate_type(h2o_type, values=None):
 
 def stringify(v):
     if v == "Infinity": return u'∞'
-    if isinstance(v, str): return '"' + v + '"'
+    if isinstance(v, str_type): return '"' + v + '"'
     return str(v)
 
 def reindent_block(string, new_indent):
