@@ -17,10 +17,7 @@ class H2OKMeansEstimator(H2OEstimator):
     K-means
 
     Performs k-means clustering on an H2O dataset.
-<<<<<<< 697b45fc22974b7962dcc802aa1490366d67df42
     """
-=======
->>>>>>> Fix merge.
 
     algo = "kmeans"
 

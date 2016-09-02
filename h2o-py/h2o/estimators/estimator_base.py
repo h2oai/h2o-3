@@ -245,6 +245,7 @@ class H2OEstimator(ModelBase):
     def _compute_algo(self):
         name = self.__class__.__name__
         if name == "H2ODeepLearningEstimator": return "deeplearning"
+        if name == "H2ODeepWaterEstimator": return "deepwater"
         if name == "H2OAutoEncoderEstimator": return "deeplearning"
         if name == "H2OGradientBoostingEstimator": return "gbm"
         if name == "H2OGeneralizedLinearEstimator": return "glm"
