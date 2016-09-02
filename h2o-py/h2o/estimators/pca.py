@@ -71,6 +71,9 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Default: 0.0
 
     """
+
+    algo = "pca"
+
     def __init__(self, **kwargs):
         super(H2OPrincipalComponentAnalysisEstimator, self).__init__()
         self._parms = {}

@@ -216,6 +216,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
     MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices.
     """
+
+    algo = "glm"
+
     def __init__(self, **kwargs):
         super(H2OGeneralizedLinearEstimator, self).__init__()
         self._parms = {}

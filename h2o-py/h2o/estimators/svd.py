@@ -70,6 +70,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Default: 0.0
 
     """
+
+    algo = "svd"
+
     def __init__(self, **kwargs):
         super(H2OSingularValueDecompositionEstimator, self).__init__()
         self._parms = {}
