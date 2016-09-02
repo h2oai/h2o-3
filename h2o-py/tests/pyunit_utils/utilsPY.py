@@ -2742,9 +2742,9 @@ def compare_frame_summary(frame1_summary, frame2_summary, compareNames=False, co
 
             if isinstance(val1, list) or isinstance(val1, dict):
                 if isinstance(val1, dict):
-                    assert cmp(val1, val2) == 0, "failed column summary comparison for column {0} and summary " \
-                                                 "type {1}, frame 1 value is {2}, frame 2 value is " \
-                                                 "{3}".format(col_index, str(key_val), val1, val2)
+                    assert val1 == val2, "failed column summary comparison for column {0} and summary " \
+                                         "type {1}, frame 1 value is {2}, frame 2 value is " \
+                                         "{3}".format(col_index, str(key_val), val1, val2)
                 else:
                     if len(val1) > 0:
                         # find if elements are float
@@ -2764,9 +2764,9 @@ def compare_frame_summary(frame1_summary, frame2_summary, compareNames=False, co
                                                                             "{3}".format(col_index, str(key_val),
                                                                                          val1[ind], val2[ind])
                         else:
-                            assert cmp(val1, val2) == 0, "failed column summary comparison for column {0} and summary" \
-                                                         " type {1}, frame 1 value is {2}, frame 2 value is " \
-                                                         "{3}".format(col_index, str(key_val), val1, val2)
+                            assert val1 == val2, "failed column summary comparison for column {0} and summary" \
+                                                 " type {1}, frame 1 value is {2}, frame 2 value is " \
+                                                 "{3}".format(col_index, str(key_val), val1, val2)
             else:
                 if isinstance(val1, float):
                     assert abs(val1-val2) < 1e-5, "failed column summary comparison for column {0} and summary type " \
