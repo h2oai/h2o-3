@@ -1,10 +1,14 @@
 package water.parser;
 
+import water.H2O;
+import water.Iced;
+import water.Job;
+import water.Key;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
-
-import water.*;
+import java.util.Arrays;
+import java.util.zip.ZipInputStream;
 
 /** A collection of utility classes for parsing.
  *
@@ -83,30 +87,57 @@ public abstract class Parser extends Iced {
     // All output into a fresh pile of NewChunks, one per column
     if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
     StreamData din = new StreamData(is);
-    int cidx=0;
+    int cidx = 0;
     StreamParseWriter nextChunk = dout;
-    int zidx = bvs.read(null,0,0); // Back-channel read of chunk index
-    assert zidx==1;
-    while( is.available() > 0 ) {
-      int xidx = bvs.read(null,0,0); // Back-channel read of chunk index
-      if( xidx > zidx ) {  // Advanced chunk index of underlying ByteVec stream?
+    int zidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
+    assert zidx == 1;
+//    int count = 0;
+
+    while (is.available() > 0) {
+      int xidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
+      if (xidx > zidx) {  // Advanced chunk index of underlying ByteVec stream?
         zidx = xidx;       // Record advancing of chunk
         nextChunk.close(); // Match output chunks to input zipfile chunks
-        if( dout != nextChunk ) {
+        if (dout != nextChunk) {
           dout.reduce(nextChunk);
           if (_jobKey != null && _jobKey.get().stop_requested()) break;
         }
         nextChunk = nextChunk.nextChunk();
       }
+
+      if (cidx == 0) {
+        // assume column names must appear in the first file.  It can appear elsewhere as well.
+        if (this._setup._check_header == ParseSetup.HAS_HEADER) { //check for header on local file
+          this._setup._check_header =
+                  this._setup.parser(_jobKey).fileHasHeader(ZipUtil.unzipForHeader(din.getChunkData(cidx),
+                          this._setup._chunk_size), this._setup);
+        }
+      }
+
       parseChunk(cidx++, din, nextChunk);
+
+      if (is.available() <= 0) {
+        parseChunk(cidx, din, nextChunk);     // Parse the remaining partial 32K buffer
+
+        if (is instanceof  java.util.zip.ZipInputStream)
+          ((ZipInputStream) is).getNextEntry();   // move to next file if it exists
+
+        if (is.available() > 0) {
+          din = new StreamData(is);
+          cidx = 0;
+        }
+      }
     }
-    parseChunk(cidx, din, nextChunk);     // Parse the remaining partial 32K buffer
+
     nextChunk.close();
+    bvs.close();
+    is.close();
+
     if( dout != nextChunk ) dout.reduce(nextChunk);
     return dout;
   }
 
-  /** Class implementing DataIn from a Stream (probably a GZIP stream)
+  /** Class implementing DataIns from a Stream (probably a GZIP stream)
    *  Implements a classic double-buffer reader.
    */
   final static class StreamData implements ParseReader {
