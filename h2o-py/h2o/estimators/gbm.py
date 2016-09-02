@@ -603,3 +603,6 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def max_abs_leafnode_pred(self, value):
         self._parms["max_abs_leafnode_pred"] = value
 
+    # overrides superclass
+    def _compute_algo(self):
+        return "gbm"

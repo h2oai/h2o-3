@@ -1088,6 +1088,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
     def elastic_averaging_regularization(self, value):
         self._parms["elastic_averaging_regularization"] = value
 
+    # overrides superclass
+    def _compute_algo(self):
+        return "deeplearning"
+
 class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     """
     Examples

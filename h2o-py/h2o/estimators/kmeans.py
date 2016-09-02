@@ -229,3 +229,7 @@ class H2OKMeansEstimator(H2OEstimator):
     def max_runtime_secs(self, value):
         self._parms["max_runtime_secs"] = value
 
+    # overrides superclass
+    def _compute_algo(self):
+        return "kmeans"
+

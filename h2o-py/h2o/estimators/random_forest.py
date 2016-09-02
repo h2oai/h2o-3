@@ -526,3 +526,7 @@ class H2ORandomForestEstimator(H2OEstimator):
     def histogram_type(self, value):
         self._parms["histogram_type"] = value
 
+    # overrides superclass
+    def _compute_algo(self):
+        return "drf"
+

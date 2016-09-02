@@ -243,19 +243,9 @@ class H2OEstimator(ModelBase):
         H2OEstimator.mixin(self, model_class)
         self.__dict__.update(m.__dict__.copy())
 
-    # TODO: replace with a property which is overriden in subclasses
     def _compute_algo(self):
-        name = self.__class__.__name__
-        if name == "H2ODeepLearningEstimator": return "deeplearning"
-        if name == "H2OAutoEncoderEstimator": return "deeplearning"
-        if name == "H2OGradientBoostingEstimator": return "gbm"
-        if name == "H2OGeneralizedLinearEstimator": return "glm"
-        if name == "H2OGeneralizedLowRankEstimator": return "glrm"
-        if name == "H2OKMeansEstimator": return "kmeans"
-        if name == "H2ONaiveBayesEstimator": return "naivebayes"
-        if name == "H2ORandomForestEstimator": return "drf"
-        if name == "H2OPCA": return "pca"
-        if name == "H2OSVD": return "svd"
+        """Overridden in subclasses"""
+        raise NotImplementedError()
 
     @staticmethod
     def mixin(obj, cls):
