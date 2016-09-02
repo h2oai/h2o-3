@@ -99,7 +99,7 @@ class Test_glm_grid_search:
     lambda_scale = 50           # scale the lambda values to be higher than 0 to 1
     alpha_scale = 1.2           # scale alpha into bad ranges
     time_scale = 3              # maximum runtime scale
-    extra_time_fraction = 0.1   # since timing is never perfect, give some extra time on top of maximum runtime limit
+    extra_time_fraction = 0.5   # since timing is never perfect, give some extra time on top of maximum runtime limit
     min_runtime_per_epoch = 0   # minimum run time found.  Determined later
 
     families = ['gaussian', 'binomial', 'multinomial']    # distribution family to perform grid search over
@@ -218,7 +218,7 @@ class Test_glm_grid_search:
         print("Time taken to build a base barebone model is {0}".format(run_time))
 
         summary_list = model._model_json["output"]["model_summary"]
-        num_iteration = summary_list.cell_values["number_of_iterations"][0]
+        num_iteration = summary_list.cell_values[0][summary_list.col_header.index("number_of_iterations")]
 
         if num_iteration == 0:
             self.min_runtime_per_epoch = run_time
@@ -299,6 +299,11 @@ class Test_glm_grid_search:
 
         pyunit_utils.write_hyper_parameters_json(self.current_dir, self.sandbox_dir, self.json_filename,
                                                  self.final_hyper_params)
+
+    def tear_down(self):
+        pyunit_utils.remove_files(os.path.join(self.current_dir, self.json_filename))
+        pyunit_utils.remove_files(os.path.join(self.current_dir, self.json_filename_bad))
+
 
     def test1_glm_grid_search_over_params(self):
         """
@@ -546,15 +551,15 @@ class Test_glm_grid_search:
             else:
                 print("test3_duplicated_parameter_specification passed: Java error exception should not have "
                       "been thrown and did not!")
-        except:
+        except Exception as e:
             if error_number[0] == 1:
                 self.test_failed += 1
                 self.test_failed_array[self.test_num] = 1
-                print("test3_duplicated_parameter_specification failed: Java error exception should not "
-                      "have been thrown! ")
+                print("test3_duplicated_parameter_specification failed: Java error exception ({0}) should not "
+                      "have been thrown! ".format(e))
             else:
-                print("test3_duplicated_parameter_specification passed: Java error exception should "
-                      "have been thrown and did.")
+                print("test3_duplicated_parameter_specification passed: Java error exception ({0}) should "
+                      "have been thrown and did.".format(e))
 
 
 def test_grid_search_for_glm_over_all_params():
@@ -571,6 +576,9 @@ def test_grid_search_for_glm_over_all_params():
 
     if test_glm_grid.test_failed:  # exit with error if any tests have failed
         sys.exit(1)
+    else:   # remove json files if everything passes
+        test_glm_grid.tear_down()
+
 
 
 if __name__ == "__main__":
