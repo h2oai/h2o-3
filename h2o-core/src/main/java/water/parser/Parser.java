@@ -1,10 +1,16 @@
 package water.parser;
 
+import water.H2O;
+import water.Iced;
+import water.Job;
+import water.Key;
+
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Arrays;
+import java.util.zip.ZipInputStream;
 
-import water.*;
+import static water.parser.DefaultParserProviders.GUESS_INFO;
 
 /** A collection of utility classes for parsing.
  *
@@ -83,30 +89,120 @@ public abstract class Parser extends Iced {
     // All output into a fresh pile of NewChunks, one per column
     if (!_setup._parse_type.isParallelParseSupported) throw H2O.unimpl();
     StreamData din = new StreamData(is);
-    int cidx=0;
+    int cidx = 0;
     StreamParseWriter nextChunk = dout;
-    int zidx = bvs.read(null,0,0); // Back-channel read of chunk index
-    assert zidx==1;
-    while( is.available() > 0 ) {
-      int xidx = bvs.read(null,0,0); // Back-channel read of chunk index
-      if( xidx > zidx ) {  // Advanced chunk index of underlying ByteVec stream?
+    int zidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
+    assert zidx == 1;
+    boolean goodFile = true;       // whether to sparse a file or not.  Some zip directory may contain
+                                    // junk info or dataset from other bigger datasets by mistake
+//    int count = 0;
+
+    while (is.available() > 0) {
+      int xidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
+      if (xidx > zidx) {  // Advanced chunk index of underlying ByteVec stream?
         zidx = xidx;       // Record advancing of chunk
         nextChunk.close(); // Match output chunks to input zipfile chunks
-        if( dout != nextChunk ) {
+        if (dout != nextChunk) {
           dout.reduce(nextChunk);
           if (_jobKey != null && _jobKey.get().stop_requested()) break;
         }
         nextChunk = nextChunk.nextChunk();
       }
-      parseChunk(cidx++, din, nextChunk);
+
+      if (cidx == 0) {
+        // We perform guess setup again and make sure that the files contain parts of the same dataset.  By that,
+        // we mean same number of columns, same column types.  This check is performed to make sure users may have
+        // added one extra file by mistake.  Instead of throwing an error, we just won't parse it.  Will generate
+        // a warning to user about this.  However, we do assume that you zip the same file types inside a directory.
+        // This is the best Tomas and I have come up with.  It is not perfect but
+        // it should work.  In addition, we still require that only the first file in the zip directory has header
+        // in them if the user wants to add the header names inside the dataset.  This is required so that flow and
+        // python/R clients respond the same way.  Again, this is not perfect.
+        byte[] headerBytes;
+
+        try { // reading system file will cause a null pointer exception here.
+          headerBytes = ZipUtil.unzipForHeader(din.getChunkData(cidx), this._setup._chunk_size);
+          ParseSetup ps = ParseSetup.guessSetup(null, headerBytes, GUESS_INFO, ParseSetup.GUESS_SEP,
+                  ParseSetup.GUESS_COL_CNT, this._setup._single_quotes, ParseSetup.GUESS_HEADER,
+                  null, null, null, null);
+
+          // check to make sure datasets in file belong to the same dataset
+          // just check for number for number of columns here.  Ignore the column type, user can force it
+          if (this._setup._number_columns == ps._number_columns)
+            goodFile = true;
+          else {
+            String warning = "Your zip file contains a file that belong to another dataset with different " +
+                    "number of column.  Number of columns for files that have been parsed = "+
+                    this._setup._number_columns + ".  Number of columns in new file = "+ps._number_columns+
+                    ".  This new file is skipped and not parsed.";
+            dout.addError(new ParseWriter.ParseErr(warning, -1, -1L, -2L));
+            goodFile = false;
+          }
+
+          // assume column names must appear in the first file.  If column names appear in first and other
+          // files, they will be recognized.  Otherwise, if no column name ever appear in the first file, the other
+          // column names in the other files will not be recognized.
+
+          if (goodFile) {
+            if (ps._check_header == ParseSetup.HAS_HEADER) {
+              if (this._setup._column_names != null) {
+            // found header in later files, only incorporate it if the column names are the same as before
+            String[] thisColumnName = this._setup.getColumnNames();
+            String[] psColumnName = ps.getColumnNames();
+            Boolean sameColumnNames = true;
+            for (int index = 0; index < this._setup._number_columns; index++) {
+              if (!(thisColumnName[index].equals(psColumnName[index]))) {
+                sameColumnNames = false;
+                break;
+              }
+            }
+
+            if (sameColumnNames)
+              this._setup.setCheckHeader(ps._check_header);
+          }
+            } else {  // take care of the case where the last file has header but this file does not.
+              this._setup.setCheckHeader(ps._check_header);
+            }
+          }
+/*          if (this._setup._check_header == ParseSetup.HAS_HEADER) { //check for header on local file
+            this._setup._check_header =
+                    this._setup.parser(_jobKey).fileHasHeader(ZipUtil.unzipForHeader(din.getChunkData(cidx),
+                            this._setup._chunk_size), this._setup);
+          }*/
+        } catch (Exception e) { // something is wrong parsing this file, do not parse in this case
+          String warning = "Your zip file contains a file that we cannot read for some reason";
+          dout.addError(new ParseWriter.ParseErr(warning, -1, -1L, -2L));
+          goodFile = false;
+        }
+      }
+
+      if (goodFile)
+        parseChunk(cidx++, din, nextChunk);
+
+      if (is.available() <= 0) {
+
+        if (goodFile)
+          parseChunk(cidx, din, nextChunk);     // Parse the remaining partial 32K buffer
+
+        if (is instanceof  java.util.zip.ZipInputStream)
+          ((ZipInputStream) is).getNextEntry();   // move to next file if it exists
+
+        if (is.available() > 0) {
+          din = new StreamData(is);
+          cidx = 0;
+        }
+      }
     }
-    parseChunk(cidx, din, nextChunk);     // Parse the remaining partial 32K buffer
+
     nextChunk.close();
+    bvs.close();
+    is.close();
+
     if( dout != nextChunk ) dout.reduce(nextChunk);
     return dout;
   }
 
-  /** Class implementing DataIn from a Stream (probably a GZIP stream)
+  /** Class implementing DataIns from a Stream (probably a GZIP stream)
    *  Implements a classic double-buffer reader.
    */
   final static class StreamData implements ParseReader {
