@@ -1059,6 +1059,25 @@ public class Vec extends Keyed<Vec> {
   }
 
   /**
+   * Turn this Vec into a TwoDimTable of a 1-column Frame
+   * @param off index of first element to include
+   * @param len number of elements to include
+   * @return TwoDimTable that can be toString()'ed, etc.
+   */
+  public TwoDimTable toTwoDimTable(int off, int len) {
+    return new Frame(this).toTwoDimTable(off, len);
+  }
+
+  /**
+   * Turn this Vec into a TwoDimTable of a 1-column Frame
+   * @return TwoDimTable that can be toString()'ed, etc.
+   */
+  public TwoDimTable toTwoDimTable() {
+    int len = (int)Math.min(Integer.MAX_VALUE, length());
+    return new Frame(this).toTwoDimTable(0,len);
+  }
+
+  /**
    * Convenience method for converting to a categorical vector.
    * @return A categorical vector based on the contents of the original vector.
    */
