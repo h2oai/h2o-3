@@ -151,7 +151,7 @@
     }
 
     .blog-nav .mobile-dropdown{
-        padding-top: 25px !important;
+        padding-top: 6px !important;
     }
 }
 @media (max-width: 767px) {
@@ -161,8 +161,8 @@
     }
     .mobile-dropdown{
         position: absolute !important;
-        top: 0;
-        left: 64%;
+        top: -16px;
+        left: 48%;
     }
     .site-nav .nav>li>a {
         display: inline-block !important;
@@ -173,8 +173,17 @@
     .site-nav .nav>li>a#download-link{
         padding:10px;
     }
+    
     .blog-nav .mobile-dropdown{
         padding-top: 18px !important;
+    }
+    
+    .nav {
+        padding-top: 30px;
+    }
+    
+    .caret {
+        display: none;
     }
 }
 
