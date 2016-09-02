@@ -3,6 +3,7 @@ package hex.deepwater;
 import hex.*;
 import static hex.ModelMetrics.calcVarImp;
 import hex.genmodel.GenModel;
+import hex.genmodel.utils.DistributionFamily;
 import hex.schemas.DeepWaterModelV3;
 import water.*;
 import static water.H2O.technote;
@@ -108,7 +109,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     model_info = new DeepWaterModelInfo(parms, destKey, nClasses);
     model_info_key = Key.make(H2O.SELF);
     _dist = new Distribution(get_params());
-    assert(_dist.distribution != Distribution.Family.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
     if (parms._nfolds != 0) actual_best_model_key = null;
     if (!parms._autoencoder) {
@@ -227,7 +228,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       if (m.length() > 0) Log.info(m);
 
       // For GainsLift and Huber, we need the full predictions to compute the model metrics
-      boolean needPreds = _output.nclasses() == 2 /* gains/lift table requires predictions */ || get_params()._distribution==Distribution.Family.huber;
+      boolean needPreds = _output.nclasses() == 2 /* gains/lift table requires predictions */ || get_params()._distribution==DistributionFamily.huber;
 
       // Scoring on training data
       ModelMetrics mtrain;
