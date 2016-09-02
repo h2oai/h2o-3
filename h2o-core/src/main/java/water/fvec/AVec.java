@@ -1,11 +1,14 @@
 package water.fvec;
 
+import jsr166y.CountedCompleter;
 import water.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
 import java.util.Arrays;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
  *
@@ -118,32 +121,52 @@ import java.util.UUID;
  */
 public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
 
-  private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
+  static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
 
-  public RollupStatsAry getRollupStats(boolean computeHisto){
+  public final RollupStats getRollups(int colId) { return getRollups()._rs[colId];}
+  public final RollupStats getRollups(int colId, boolean computeHisto) { return getRollups(computeHisto)._rs[colId];}
+
+  public final RollupStatsAry getRollups(){ return getRollups(false);}
+  public final RollupStatsAry getRollups(boolean computeHisto){
     Key rsKey = rollupStatsKey();
     RollupStatsAry res = DKV.getGet(rsKey);
     while(res == null || !res.isReady() || computeHisto && !res.hasHisto()) {
-      if(res != null && res.isMutating())
-        throw new IllegalArgumentException("Can not access rollups while vec is being modified. (1)");
-      try {
-        RPC rpcNew = new RPC(rsKey.home_node(),new ComputeRollupsTask(this, computeHisto));
-        RPC rpcOld = _pendingRollups.putIfAbsent(rsKey, rpcNew);
-        if(rpcOld == null) {  // no prior pending task, need to send this one
-          rpcNew.call().get();
-          _pendingRollups.remove(rsKey);
-        } else // rollups computation is already in progress, wait for it to finish
-          rpcOld.get();
-      } catch( Throwable t ) {
-        System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
-        throw new RuntimeException(t);
-      }
+      launchComputeRollupsTask(rsKey,computeHisto).get();
       // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
       res = DKV.getGet(rsKey);
     }
     return res;
   }
 
+  /**
+   * Check if we have local cached copy of basic Vec stats (including histogram if requested) and if not start task to compute and fetch them;
+   * useful when launching a bunch of them in parallel to avoid single threaded execution later (e.g. for-loop accessing min/max of every vec in a frame).
+   *
+   * Does *not* guarantee rollup stats will be cached locally when done since there may be racy changes to vec which will flush local caches.
+   *
+   * @param fs Futures allow to wait for this task to finish.
+   * @param computeHisto Also compute histogram, requires second pass over data amd is not computed by default.
+   *
+   */
+  public final Futures startRollupStats(boolean computeHisto, Futures fs){
+    final Key rsKey = rollupStatsKey();
+    RollupStatsAry res = DKV.getGet(rsKey);
+    if(res == null || !res.isReady() || computeHisto && !res.hasHisto()) {
+      if(res != null && res.isMutating())
+        throw new IllegalArgumentException("Can not access rollups while vec is being modified. (1)");
+      fs.add(launchComputeRollupsTask(rsKey,computeHisto));
+    }
+    return fs;
+  }
+
+  private final RPC launchComputeRollupsTask(final Key rsKey, boolean computeHisto){
+    RPC rpcNew = new RPC(rsKey.home_node(),new ComputeRollupsTask(this, computeHisto));
+    RPC rpcOld = _pendingRollups.putIfAbsent(rsKey, rpcNew);
+    if(rpcOld == null) {  // no prior pending task, need to send this one
+      return rpcNew.call();
+    } else // rollups computation is already in progress, wait for it to finish
+      return rpcOld;
+  }
 
   public int vecId(){return VectorGroup.getVecId(_key._kb);}
 
@@ -171,24 +194,6 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
 //  public abstract boolean hasCol(int id);
 
 
-  /**
-   * Check if we have local cached copy of basic Vec stats (including histogram if requested) and if not start task to compute and fetch them;
-   * useful when launching a bunch of them in parallel to avoid single threaded execution later (e.g. for-loop accessing min/max of every vec in a frame).
-   *
-   * Does *not* guarantee rollup stats will be cached locally when done since there may be racy changes to vec which will flush local caches.
-   *
-   * @param fs Futures allow to wait for this task to finish.
-   * @param doHisto Also compute histogram, requires second pass over data amd is not computed by default.
-   *
-   */
-  public abstract Futures startRollupStats(Futures fs, boolean doHisto, int... colIds);
-
-
-  public final RollupStats getRollups(int colId){return getRollups(colId,false);}
-
-
-
-  public abstract RollupStats getRollups(int colId, boolean histo);
   public abstract void setDomain(int vec, String[] domain);
 
   public abstract void setType(int i, byte type);

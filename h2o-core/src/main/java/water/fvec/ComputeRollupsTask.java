@@ -25,6 +25,8 @@ final class ComputeRollupsTask extends DTask<ComputeRollupsTask> {
     _computeHisto = computeHisto;
   }
 
+  @Override public void onAck(){AVec._pendingRollups.remove(_rsKey);}
+
   private Value makeComputing(){
     RollupStatsAry newRs = RollupStatsAry.makeComputing();
     CountedCompleter cc = getCompleter(); // should be null or RPCCall
