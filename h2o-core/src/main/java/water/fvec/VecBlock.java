@@ -1,14 +1,9 @@
 package water.fvec;
 
 import water.*;
-import water.util.ArrayUtils;
 import water.util.IcedBitSet;
-import water.util.UnsafeUtils;
 
 import java.util.Arrays;
-import java.util.BitSet;
-import java.util.concurrent.CountedCompleter;
-import java.util.concurrent.RecursiveAction;
 
 /**
  * Created by tomas on 7/8/16.
@@ -125,18 +120,18 @@ public class VecBlock extends AVec<ChunkBlock> {
 
   private transient Key _rollupStatsKey;
 
-  private static class SetMutating extends TAtomic<RollupStatsBlock> {
+  private static class SetMutating extends TAtomic<RollupStatsAry> {
     final int _N;
     final int [] _ids;
 
     SetMutating(int N, int... ids) {_ids = ids; _N = N;}
 
     @Override
-    protected RollupStatsBlock atomic(RollupStatsBlock old) {
+    protected RollupStatsAry atomic(RollupStatsAry old) {
       if(old == null) {
         RollupStats [] rs = new RollupStats[_N];
         for(int i:_ids) rs[i] = RollupStats.makeMutating();
-        return new RollupStatsBlock(rs);
+        return new RollupStatsAry(rs);
       }
       for(int i:_ids) old._rs[i] = RollupStats.makeMutating();
       return old;
@@ -150,7 +145,7 @@ public class VecBlock extends AVec<ChunkBlock> {
 
   @Override
   public void preWriting(int... colIds) {
-    RollupStatsBlock rbs = DKV.getGet(rollupStatsKey());
+    RollupStatsAry rbs = DKV.getGet(rollupStatsKey());
     boolean allreadyLocked = true;
     if(rbs != null){
       for(int i:colIds) {

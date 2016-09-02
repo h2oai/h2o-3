@@ -12,17 +12,23 @@ import java.util.Arrays;
 /**
  * Created by tomas on 7/12/16.
  */
-public class RollupStatsBlock extends Iced {
+public class RollupStatsAry extends Iced {
 
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
   private static final int MAX_SIZE = 1000; // Standard bin count; categoricals can have more bins
 
+
+  public static RollupStatsAry makeComputing(){
+    RollupStatsAry rs = new RollupStatsAry();
+    rs._isComputing = true;
+    return rs;
+  }
   RollupStats[] _rs;
 
-  public RollupStatsBlock(){}
+  public RollupStatsAry(){}
 
-  public RollupStatsBlock(VecAry vecs){
+  public RollupStatsAry(VecAry vecs){
     _rs = new RollupStats[vecs.len()];
     for(int i = 0; i < _rs.length; ++i)
       _rs[i] = new RollupStats(0);
@@ -33,7 +39,7 @@ public class RollupStatsBlock extends Iced {
 
   volatile boolean _isComputing;
 
-  public RollupStatsBlock(RollupStats[] rs) {
+  public RollupStatsAry(RollupStats[] rs) {
     _rs = rs;
   }
 
@@ -67,39 +73,12 @@ public class RollupStatsBlock extends Iced {
     RollupStats [] ary = _rs;
     return ary != null && ary[i].isMutating();
   }
-
-  public static RollupStats get(VecBlock vb, int i) {
-    return get(vb,i,false);
-  }
-
+  
   private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
 
-  public static RollupStats get(VecBlock vb, int i, boolean computeHisto) {
-    if (DKV.get(vb._key) == null || !vb.hasVec(i))
-      throw new RuntimeException("Rollups not possible, because Vec was deleted: " + vb._key + ", vec id = " + i);
-    final Key rskey = vb.rollupStatsKey();
-    RollupStatsBlock rs = DKV.getGet(rskey);
 
-    while (rs == null || (!rs.isReady(i) || (computeHisto && !rs.hasHisto(i)))) {
-      if (rs != null && rs.isMutating(i))
-        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (1)");
-      // 1. compute only once
-      try {
-        RPC rpcNew = new RPC(rskey.home_node(), new ComputeRollupsBlockTask(vb, computeHisto));
-        RPC rpcOld = _pendingRollups.putIfAbsent(rskey, rpcNew);
-        if (rpcOld == null) {  // no prior pending task, need to send this one
-          rpcNew.call().get();
-          _pendingRollups.remove(rskey);
-        } else // rollups computation is already in progress, wait for it to finish
-          rpcOld.get();
-      } catch (Throwable t) {
-        System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: " + t);
-        throw new RuntimeException(t);
-      }
-      // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
-      rs = DKV.getGet(rskey);
-    }
-    return rs._rs[i];
+  public boolean isMutating() {
+    return false;
   }
 
   public static class RollMRBlock extends MRTask<RollMRBlock> {
@@ -129,7 +108,7 @@ public class RollupStatsBlock extends Iced {
     long [][] _bins; // output
 
 
-    HistoMRBlock(RollupStatsBlock rs, int [] toCompute, int [] nbins ) {
+    HistoMRBlock(RollupStatsAry rs, int [] toCompute, int [] nbins ) {
       _base = new double[toCompute.length];
       _stride = new double[toCompute.length];
       _nbins = new int[toCompute.length];
@@ -186,15 +165,15 @@ public class RollupStatsBlock extends Iced {
     }
 
 
-    private Value makeComputing(RollupStatsBlock rs){
-      RollupStatsBlock newRs = (RollupStatsBlock) rs.clone();
+    private Value makeComputing(RollupStatsAry rs){
+      RollupStatsAry newRs = (RollupStatsAry) rs.clone();
       newRs._isComputing = true;
       CountedCompleter cc = getCompleter(); // should be null or RPCCall
       if(cc != null) assert cc.getCompleter() == null;
       newRs._tsk = cc == null?this:cc;
       return new Value(_rsKey,newRs);
     }
-    private void installResponse(Value nnn, RollupStatsBlock rs) {
+    private void installResponse(Value nnn, RollupStatsAry rs) {
       Futures fs = new Futures();
       Value old = DKV.DputIfMatch(_rsKey, new Value(_rsKey, rs), nnn, fs);
       assert rs.isReady();
@@ -211,7 +190,7 @@ public class RollupStatsBlock extends Iced {
       final VecBlock vb = DKV.getGet(_vecKey);
       while(true) {
         Value v = DKV.get(_rsKey);
-        RollupStatsBlock rs = (v == null) ? null : v.<RollupStatsBlock>get();
+        RollupStatsAry rs = (v == null) ? null : v.<RollupStatsAry>get();
         // Fetched current rs from the DKV, rs can be:
         //   a) computed
         //        a.1) has histo or histo not required => do nothing
@@ -244,7 +223,7 @@ public class RollupStatsBlock extends Iced {
 //            throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (3)");
         } else { // d) => compute the rollups
           int [] toCompute = rs.toComputeRollups();
-          rs = (RollupStatsBlock) rs.clone();
+          rs = (RollupStatsAry) rs.clone();
           final Value nnn = makeComputing(rs);
           Futures fs = new Futures();
           Value oldv = DKV.DputIfMatch(_rsKey, nnn, v, fs);
@@ -265,8 +244,8 @@ public class RollupStatsBlock extends Iced {
       tryComplete();
     }
 
-    final void computeHisto(RollupStatsBlock rs, VecBlock vb, final Value nnn) {
-      rs = (RollupStatsBlock) rs.clone();
+    final void computeHisto(RollupStatsAry rs, VecBlock vb, final Value nnn) {
+      rs = (RollupStatsAry) rs.clone();
       // All NAs or non-math; histogram has zero bins
       int [] toCompute = rs.toComputeHisto();
 

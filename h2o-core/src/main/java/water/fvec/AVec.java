@@ -118,6 +118,33 @@ import java.util.UUID;
  */
 public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
 
+  private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
+
+  public RollupStatsAry getRollupStats(boolean computeHisto){
+    Key rsKey = rollupStatsKey();
+    RollupStatsAry res = DKV.getGet(rsKey);
+    while(res == null || !res.isReady() || computeHisto && !res.hasHisto()) {
+      if(res != null && res.isMutating())
+        throw new IllegalArgumentException("Can not access rollups while vec is being modified. (1)");
+      try {
+        RPC rpcNew = new RPC(rsKey.home_node(),new ComputeRollupsTask(this, computeHisto));
+        RPC rpcOld = _pendingRollups.putIfAbsent(rsKey, rpcNew);
+        if(rpcOld == null) {  // no prior pending task, need to send this one
+          rpcNew.call().get();
+          _pendingRollups.remove(rsKey);
+        } else // rollups computation is already in progress, wait for it to finish
+          rpcOld.get();
+      } catch( Throwable t ) {
+        System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
+        throw new RuntimeException(t);
+      }
+      // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
+      res = DKV.getGet(rsKey);
+    }
+    return res;
+  }
+
+
   public int vecId(){return VectorGroup.getVecId(_key._kb);}
 
   /** Element-start per chunk, i.e. the row layout.  Defined in the
@@ -158,6 +185,9 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
 
 
   public final RollupStats getRollups(int colId){return getRollups(colId,false);}
+
+
+
   public abstract RollupStats getRollups(int colId, boolean histo);
   public abstract void setDomain(int vec, String[] domain);
 
