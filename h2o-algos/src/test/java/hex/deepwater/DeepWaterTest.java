@@ -217,7 +217,7 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  void testSamplesPerIteration(int samples, int expected) {
+  void trainSamplesPerIteration(int samples, int expected) {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -235,14 +235,14 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  @Test public void testTrainSamplesPerIteration0() { testSamplesPerIteration(0,1); }
-  @Test public void testTrainSamplesPerIteration_auto() { testSamplesPerIteration(-2,3); }
-  @Test public void testTrainSamplesPerIteration_neg1() { testSamplesPerIteration(-1,1); }
-  @Test public void testTrainSamplesPerIteration_32() { testSamplesPerIteration(32,9); }
-  @Test public void testTrainSamplesPerIteration_1000() { testSamplesPerIteration(1000,1); }
+  @Test public void trainSamplesPerIteration0() { trainSamplesPerIteration(0,1); }
+  @Test public void trainSamplesPerIteration_auto() { trainSamplesPerIteration(-2,3); }
+  @Test public void trainSamplesPerIteration_neg1() { trainSamplesPerIteration(-1,1); }
+  @Test public void trainSamplesPerIteration_32() { trainSamplesPerIteration(32,9); }
+  @Test public void trainSamplesPerIteration_1000() { trainSamplesPerIteration(1000,1); }
 
   @Test
-  public void testOverWriteWithBestModel() {
+  public void overWriteWithBestModel() {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
@@ -291,13 +291,13 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  @Test public void testConvergenceInceptionColor() { runInception(3); }
-  @Test public void testConvergenceInceptionGrayScale() { runInception(1); }
+  @Test public void convergenceInceptionColor() { runInception(3); }
+  @Test public void convergenceInceptionGrayScale() { runInception(1); }
 
   //FIXME
   @Ignore
   @Test
-  public void testReproInitialDistribution() {
+  public void reproInitialDistribution() {
     final int REPS=3;
     double[] values=new double[REPS];
     for (int i=0;i<REPS;++i) {
@@ -324,7 +324,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void testReproInitialDistributionNegativeTest() {
+  public void reproInitialDistributionNegativeTest() {
     final int REPS=3;
     double[] values=new double[REPS];
     for (int i=0;i<REPS;++i) {
@@ -351,23 +351,23 @@ public class DeepWaterTest extends TestUtil {
   }
 
   // Pure convenience wrapper
-  @Ignore @Test public void testSettingModelInfoAll() {
+  @Ignore @Test public void settingModelInfoAll() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network== DeepWaterParameters.Network.user) continue;
       if (network== DeepWaterParameters.Network.auto) continue;
-      testSettingModelInfo(network);
+      settingModelInfo(network);
     }
   }
 
-  @Test public void testSettingModelInfoAlexnet() { testSettingModelInfo(DeepWaterParameters.Network.alexnet); }
-  @Test public void testSettingModelInfoLenet() { testSettingModelInfo(DeepWaterParameters.Network.lenet); }
-  @Test public void testSettingModelInfoVGG() { testSettingModelInfo(DeepWaterParameters.Network.vgg); }
+  @Test public void settingModelInfoAlexnet() { settingModelInfo(DeepWaterParameters.Network.alexnet); }
+  @Test public void settingModelInfoLenet() { settingModelInfo(DeepWaterParameters.Network.lenet); }
+  @Test public void settingModelInfoVGG() { settingModelInfo(DeepWaterParameters.Network.vgg); }
   //FIXME - passes only with rate=0
-  @Ignore @Test public void testSettingModelInfoInception() { testSettingModelInfo(DeepWaterParameters.Network.inception_bn); }
+  @Ignore @Test public void settingModelInfoInception() { settingModelInfo(DeepWaterParameters.Network.inception_bn); }
   //FIXME - passes only with rate=0
-  @Ignore @Test public void testSettingModelInfoResnet() { testSettingModelInfo(DeepWaterParameters.Network.resnet); }
+  @Ignore @Test public void settingModelInfoResnet() { settingModelInfo(DeepWaterParameters.Network.resnet); }
 
-  void testSettingModelInfo(DeepWaterParameters.Network network) {
+  void settingModelInfo(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
     DeepWaterModel m2 = null;
     Frame tr = null;
@@ -419,7 +419,7 @@ public class DeepWaterTest extends TestUtil {
   //FIXME
   @Ignore
   @Test
-  public void testReproTraining() {
+  public void reproTraining() {
     final int REPS=3;
     double[] values=new double[REPS];
     for (int i=0;i<REPS;++i) {
@@ -521,23 +521,23 @@ public class DeepWaterTest extends TestUtil {
   }
 
   // Pure convenience wrapper
-  @Ignore @Test public void testRestoreStateAll() {
+  @Ignore @Test public void restoreStateAll() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {
       if (network== DeepWaterParameters.Network.user) continue;
       if (network== DeepWaterParameters.Network.auto) continue;
-      testRestoreState(network);
+      restoreState(network);
     }
   }
 
-  @Test public void testRestoreStateAlexnet() { testRestoreState(DeepWaterParameters.Network.alexnet); }
-  @Test public void testRestoreStateLenet() { testRestoreState(DeepWaterParameters.Network.lenet); }
-  @Test public void testRestoreStateVGG() { testRestoreState(DeepWaterParameters.Network.vgg); }
+  @Test public void restoreStateAlexnet() { restoreState(DeepWaterParameters.Network.alexnet); }
+  @Test public void restoreStateLenet() { restoreState(DeepWaterParameters.Network.lenet); }
+  @Test public void restoreStateVGG() { restoreState(DeepWaterParameters.Network.vgg); }
   //FIXME
-  @Ignore @Test public void testRestoreStateInception() { testRestoreState(DeepWaterParameters.Network.inception_bn); }
+  @Ignore @Test public void restoreStateInception() { restoreState(DeepWaterParameters.Network.inception_bn); }
   //FIXME
-  @Ignore @Test public void testRestoreStateResnet() { testRestoreState(DeepWaterParameters.Network.resnet); }
+  @Ignore @Test public void restoreStateResnet() { restoreState(DeepWaterParameters.Network.resnet); }
 
-  public void testRestoreState(DeepWaterParameters.Network network) {
+  public void restoreState(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
     DeepWaterModel m2 = null;
     Frame tr = null;
