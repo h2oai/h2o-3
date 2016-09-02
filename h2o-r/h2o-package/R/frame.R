@@ -680,6 +680,7 @@ h2o.unique <- function(x) .newExpr("unique", x)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
+#' h2o.median(prostate.hex)
 #' }
 #' @export
 h2o.median <- function(x, na.rm = TRUE) .eval.scalar(.newExpr("median",x,na.rm))
