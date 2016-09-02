@@ -258,6 +258,7 @@ public class ParseSetup extends Iced {
    * @return ParseSetup settings from looking at all files
    */
   public static ParseSetup guessSetup( Key[] fkeys, ParseSetup userSetup ) {
+
     //Guess setup of each file and collect results
     GuessSetupTsk t = new GuessSetupTsk(userSetup);
     t.doAll(fkeys).getResult();
@@ -328,11 +329,14 @@ public class ParseSetup extends Iced {
         _empty = false;
 
         // get file size
-        float decompRatio = ZipUtil.decompressionRatio(bv);
-        if (decompRatio > 1.0)
-          _totalParseSize += bv.length() * decompRatio; // estimate file size
-        else  // avoid numerical distortion of file size when not compressed
-          _totalParseSize += bv.length();
+//        float decompRatio = ZipUtil.decompressionRatio(bv);
+//        if (decompRatio > 1.0)
+//          _totalParseSize += bv.length() * decompRatio; // estimate file size
+//        else  // avoid numerical distortion of file size when not compressed
+
+        // since later calculation of chunk size and later number of chunks do not consider the
+        // compression ratio, we should not do that here either.  Quick fix proposed by Tomas.  Sleek!
+        _totalParseSize += bv.length();
 
         // Check for supported encodings
         checkEncoding(bits);
