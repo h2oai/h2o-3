@@ -203,15 +203,6 @@ public class Vec extends AVec<SingleChunk> {
    */
   public Vec( Key<AVec> key, int rowLayout) { this(key, rowLayout, null, T_NUM); }
 
-  @Override
-  public Futures startRollupStats(Futures fs, boolean doHisto, int... colIds) {
-    if(colIds.length != 1 || colIds[0] != 0) throw new IllegalArgumentException();
-    throw H2O.unimpl();
-  }
-
-
-
-
   /** Build a numeric-type or categorical-type Vec; the caller understands Chunk
    *  layout (via the {@code espc} array); categorical Vecs need to pass the
    *  domain.
@@ -228,11 +219,6 @@ public class Vec extends AVec<SingleChunk> {
     assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
     _type = type;
     _domain = domain;
-  }
-
-  @Override
-  public RollupStats getRollups(int colId, boolean histo) {
-    throw H2O.unimpl(); // TODO
   }
 
   @Override public void setBad(int colId) {

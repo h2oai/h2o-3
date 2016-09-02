@@ -1,14 +1,11 @@
 package water.fvec;
 
-import jsr166y.CountedCompleter;
 import water.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
 import java.util.Arrays;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 /** A distributed vector/array/column of uniform data.
  *

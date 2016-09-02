@@ -144,11 +144,10 @@ final class ComputeRollupsTask extends DTask<ComputeRollupsTask> {
   private static final int MAX_NBINS = 1000; // Standard bin count; categoricals can have more bins
   final void computeHisto(final RollupStats [] rsa, AVec vec, final Value nnn) {
     // All NAs or non-math; histogram has zero bins
-
     int [] nbins = new int[vec.numCols()];
     for(int i = 0; i < nbins.length; ++i) {
       RollupStats rs = rsa[i];
-      if (rs._naCnt == vec.length() || vec.isUUID(i)) {
+      if (vec.isString(i) || vec.isUUID(i) || vec.isBad(i)) {
         nbins[i] = 0;
         continue;
       }

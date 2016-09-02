@@ -27,25 +27,10 @@ public class VecBlock extends AVec<ChunkBlock> {
     return 0;
   }
 
-//  public boolean hasVec(int id) {
-//    if(_nVecs < id || id < 0) return false;
-//    return _removedVecs == null || Arrays.binarySearch(_removedVecs,id) < 0;
-//  }
-
 
   @Override
-  public int numCols(){return _nVecs - (_removedVecs == null?0:_removedVecs.length);}
+  public int numCols(){return _nVecs;}
 
-//  @Override
-//  public boolean hasCol(int id) {
-//    if(numCols() < id || id < 0) return false;
-//    return _removedVecs == null || Arrays.binarySearch(_removedVecs,id) < 0;
-//  }
-
-  public RollupStats getRollups(int vecId, boolean histo) {
-//    if(!hasVec(vecId)) throw new NullPointerException("vec has been removed");
-    throw H2O.unimpl(); // TODO
-  }
 
   @Override
   public synchronized void setDomain(int vec, String[] domain) {
