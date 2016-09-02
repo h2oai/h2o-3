@@ -12,6 +12,8 @@ import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
+import hex.genmodel.utils.DistributionFamily;
+
 /**
  * Parameters for a Deep Water image classification model
  */
@@ -209,7 +211,7 @@ public class DeepWaterParameters extends Model.Parameters {
    * @param expensive (whether or not this is the "final" check)
    */
   void validate(DeepWater dl, boolean expensive) {
-    boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _distribution == Distribution.Family.bernoulli || _distribution == Distribution.Family.multinomial;
+    boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _distribution == DistributionFamily.bernoulli || _distribution == DistributionFamily.bernoulli;
     if (_mini_batch_size < 1)
       dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
 
@@ -505,10 +507,10 @@ public class DeepWaterParameters extends Model.Parameters {
       }
 
       // Automatically set the distribution
-      if (fromParms._distribution == Distribution.Family.AUTO) {
+      if (fromParms._distribution == DistributionFamily.AUTO) {
         // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/Quadratic/Huber/Absolute
         if (nClasses > 1) {
-          toParms._distribution = nClasses == 2 ? Distribution.Family.bernoulli : Distribution.Family.multinomial;
+          toParms._distribution = nClasses == 2 ? DistributionFamily.bernoulli : DistributionFamily.multinomial;
         }
       }
     }
