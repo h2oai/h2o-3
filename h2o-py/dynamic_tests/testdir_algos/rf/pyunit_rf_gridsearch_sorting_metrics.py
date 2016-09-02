@@ -41,7 +41,7 @@ class Test_rf_gridsearch_sorting_metrics:
     diff = 1e-10            # comparison threshold
 
     curr_time = str(round(time.time()))     # store current timestamp, used as part of filenames.
-    seed = round(time.time())
+    seed = int(round(time.time()))
 
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
     training1_filename = "smalldata/gridsearch/multinomial_training1_set.csv"

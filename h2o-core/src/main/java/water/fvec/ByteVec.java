@@ -1,14 +1,13 @@
 package water.fvec;
 
+import water.Job;
+import water.Key;
+import water.Value;
+import water.exceptions.H2OIllegalArgumentException;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-
-import water.Key;
-import water.Job;
-import water.exceptions.H2OIllegalArgumentException;
-import water.Value;
-import water.H2O;
 
 /**
  * A vector of plain Bytes.
