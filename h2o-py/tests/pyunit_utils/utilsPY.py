@@ -1514,7 +1514,7 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
             return coeffs
     elif what_param == 'best_lambda':
         lambda_str = model._model_json["output"]["model_summary"].cell_values[0][4].split('=')
-        return float(lambda_str[-1])
+        return float(str(lambda_str[-2]).split(',')[0])
     elif what_param == 'confusion_matrix':
         if 'multinomial' in family_type.lower():
             return model._model_json["output"]["training_metrics"]._metric_json["cm"]["table"]
