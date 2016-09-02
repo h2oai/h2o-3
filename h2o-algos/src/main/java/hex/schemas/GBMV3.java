@@ -57,7 +57,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "col_sample_rate_per_tree",
       "min_split_improvement",
       "histogram_type",
-      "max_abs_leafnode_pred"
+      "max_abs_leafnode_pred",
+      "adaptive_rate"
     };
 
     // Input fields
@@ -72,6 +73,9 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 
     @API(help="Maximum absolute value of a leaf node prediction", level = API.Level.expert, gridable = true)
     public double max_abs_leafnode_pred;
+
+    @API(help="Whether to enable adaptive learning rate", level = API.Level.critical, gridable = true)
+    public boolean adaptive_rate;
 
   }
 }

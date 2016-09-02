@@ -9,6 +9,7 @@ import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
 import hex.tree.DTree.UndecidedNode;
+import org.omg.CORBA.OBJ_ADAPTER;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
@@ -500,7 +501,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // Grow the model by K-trees
       _model._output.addKTrees(ktrees);
 
-      boolean converged = effective_learning_rate() < 1e-6;
+      boolean converged = true;
+      for (int k = 0; k < _nclass; k++) {
+        if (effective_learning_rate(k,false) >= 1e-6) {
+          converged=false;
+          break;
+        }
+      }
       if (converged) {
         Log.warn("Effective learning rate dropped below 1e-6 (" + _parms._learn_rate + " * " + _parms._learn_rate_annealing + "^" + (_model._output._ntrees-1) + ") - stopping the model now.");
       }
@@ -639,7 +646,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       final DTree tree = ktrees[0];
       for (int i = 0; i < sqt._quantiles.length; i++) {
         if (Double.isNaN(sqt._quantiles[i])) continue; //no active rows for this NID
-        double val = effective_learning_rate() * sqt._quantiles[i];
+        double val = effective_learning_rate(0,i==0) * sqt._quantiles[i];
         assert !Double.isNaN(val) && !Double.isInfinite(val);
         if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
         if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
@@ -744,7 +751,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       for (int i = 0; i < sqt._quantiles.length; i++) {
         double huber = (sqt._quantiles[i] /*median*/ + huberGamma[i]);
         if (Double.isNaN(sqt._quantiles[i])) continue; //no active rows for this NID
-        double val = effective_learning_rate() * huber;
+        double val = effective_learning_rate(0,i==0) * huber;
         assert !Double.isNaN(val) && !Double.isInfinite(val);
         if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
         if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
@@ -754,8 +761,29 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       diffMinusMedianDiff.remove();
     }
 
-    private double effective_learning_rate() {
-      return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
+
+    double ada_dx, ada_g;
+    private double computeAdaDeltaRateForWeight(int c, boolean update) {
+      boolean first = ada_dx==0 && ada_g==0;
+      double grad = update ? -2*vec_work(_train, c).mean() : 0; //mean residual (gradient)
+      double rho = _parms._rho;
+      double eps = _parms._epsilon;
+      final double grad2 = grad * grad;
+      if (update) ada_g = rho * ada_g + (1 - rho) * grad2;
+      double rate = Math.sqrt((ada_dx + eps) / (ada_g + eps));
+      if (update) ada_dx = rho * ada_dx + (1 - rho) * rate * rate * grad2;
+      rate = Math.sqrt((ada_dx + eps) / (ada_g + eps)); //custom: not in original paper - to make it the same whether update=true or false
+      rate = Math.min(_parms._learn_rate, rate);
+      if (update) Log.info("ADADELTA: gradient: " + grad + ", rate: " + rate);
+      return rate;
+    }
+
+    private double effective_learning_rate(int c, boolean update) {
+      if (_parms._adaptive_rate) {
+        return computeAdaDeltaRateForWeight(c, update);
+      } else {
+        return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees - 1));
+      }
     }
 
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp) {
@@ -765,7 +793,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (tree == null) continue;
         if (DEV_DEBUG) for (int i=0;i<ktrees[k]._len-leafs[k];++i) System.out.println(ktrees[k].node(leafs[k]+i).toString());
         for (int i = 0; i < tree._len - leafs[k]; i++) {
-          double gf = effective_learning_rate() * m1class * gp.gamma(k, i);
+          double gf = effective_learning_rate(k,i==0) * m1class * gp.gamma(k, i);
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
