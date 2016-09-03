@@ -178,7 +178,8 @@ public class Weaver {
       if( ctc!=null ) {
         ctc.defrost();
         ctc.detach();
-        _pool.get(implClazzName(name)).detach();  // drop the Icer
+        CtClass icer = _pool.getOrNull(implClazzName(name));
+        if( icer!=null ) icer.detach(); // drop the Icer
         _pool.removeClassPath(CLASSPATHS.get(name));
         TypeMap.drop(name);  // drop the icer from the typemap
       }
