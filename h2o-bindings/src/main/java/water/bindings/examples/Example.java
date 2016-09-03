@@ -169,7 +169,8 @@ public class Example {
             ModelMetricsListSchemaV3 predictions = predictionsService.predict(modelKey.name,
                                                                               trainingFrame.name,
                                                                               "predictions",
-                                                                              false, false, -1, false, false, false, false, -1, null).execute().body();
+                                                                              null,
+                                                                              false, false, -1, false, false, false, false, -1, false, null).execute().body();
             System.out.println("predictions: " + predictions);
 
         }

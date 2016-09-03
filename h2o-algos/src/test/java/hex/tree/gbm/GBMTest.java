@@ -20,9 +20,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
 
-import static hex.genmodel.utils.DistributionFamily.gaussian;
-import static hex.genmodel.utils.DistributionFamily.huber;
-import static hex.genmodel.utils.DistributionFamily.laplace;
+import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static water.fvec.FVecTest.makeByteVec;
@@ -2652,6 +2650,50 @@ public class GBMTest extends TestUtil {
       if (tfr != null) tfr.delete();
       if (gbm != null) gbm.deleteCrossValidationModels();
       if (gbm != null) gbm.delete();
+    }
+  }
+
+  @Test
+  public void testDeviances() {
+    for (DistributionFamily dist : DistributionFamily.values()) {
+      Frame tfr = null;
+      Frame res = null;
+      Frame preds = null;
+      GBMModel gbm = null;
+
+      try {
+        tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = tfr._key;
+        String resp = tfr.lastVecName();
+        if (dist==modified_huber || dist==bernoulli || dist==multinomial) {
+          resp = dist==multinomial?"rad":"chas";
+          Vec v = tfr.remove(resp);
+          tfr.add(resp, v.toCategoricalVec());
+          v.remove();
+          DKV.put(tfr);
+        }
+        parms._response_column = resp;
+        parms._distribution = dist;
+
+        gbm = new GBM(parms).trainModel().get();
+        preds = gbm.score(tfr);
+
+        res = gbm.computeDeviances(tfr,preds,"myDeviances");
+        double meanDeviance = res.anyVec().mean();
+        if (gbm._output.nclasses()==2)
+          Assert.assertEquals(meanDeviance,((ModelMetricsBinomial) gbm._output._training_metrics)._logloss,1e-6*Math.abs(meanDeviance));
+        else if (gbm._output.nclasses()>2)
+          Assert.assertEquals(meanDeviance,((ModelMetricsMultinomial) gbm._output._training_metrics)._logloss,1e-6*Math.abs(meanDeviance));
+        else
+          Assert.assertEquals(meanDeviance,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-6*Math.abs(meanDeviance));
+
+      } finally {
+        if (tfr != null) tfr.delete();
+        if (res != null) res.delete();
+        if (preds != null) preds.delete();
+        if (gbm != null) gbm.delete();
+      }
     }
   }
 
