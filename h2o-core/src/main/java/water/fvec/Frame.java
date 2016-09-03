@@ -457,10 +457,14 @@ public class Frame extends Lockable<Frame> {
   /** The {@code Vec.byteSize} of all Vecs
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
-    Vec[] vecs = bulkRollups();
-    long sum=0;
-    for (Vec vec : vecs) sum += vec.byteSize();
-    return sum;
+    try {
+      Vec[] vecs = bulkRollups();
+      long sum = 0;
+      for (Vec vec : vecs) sum += vec.byteSize();
+      return sum;
+    } catch(RuntimeException ex) {
+      return 0;
+    }
   }
 
   /** 64-bit checksum of the checksums of the vecs.  SHA-265 checksums of the

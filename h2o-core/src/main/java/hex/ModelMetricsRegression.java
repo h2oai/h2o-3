@@ -1,6 +1,7 @@
 package hex;
 
 import hex.genmodel.utils.DistributionFamily;
+import water.AutoBuffer;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
@@ -141,26 +142,38 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
         assert(_sumdeviance==0); // should not yet be computed
         if (preds != null) {
           Vec actual = adaptedFrame.vec(m._parms._response_column);
-          Vec absdiff = new MRTask() {
-            @Override public void map(Chunk[] cs, NewChunk[] nc) {
-              for (int i=0; i<cs[0].len(); ++i)
-                nc[0].addNum(Math.abs(cs[0].atd(i) - cs[1].atd(i)));
-            }
-          }.doAll(1, (byte)3, new Frame(new String[]{"preds","actual"}, new Vec[]{preds.anyVec(),actual})).outputFrame().anyVec();
-          Distribution dist = new Distribution(m._parms);
           Vec weight = adaptedFrame.vec(m._parms._weights_column);
+
           //compute huber delta based on huber alpha quantile on absolute prediction error
-          double huberDelta = MathUtils.computeWeightedQuantile(weight, absdiff, m._parms._huber_alpha);
-          absdiff.remove();
-          dist.setHuberDelta(huberDelta);
-          meanResDeviance = new MeanResidualDeviance(dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
+          double huberDelta = computeHuberDelta(actual, preds.anyVec(), weight, m._parms._huber_alpha);
+
+          // make a deep copy of the model's current distribution state (huber delta)
+          _dist = new AutoBuffer().put(m._dist).flipForReading().get();
+          _dist.setHuberDelta(huberDelta);
+
+          meanResDeviance = new MeanResidualDeviance(_dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
         }
       } else {
-          meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
+        meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       }
       ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance);
       if (m!=null) m._output.addModelMetrics(mm);
       return mm;
     }
+  }
+
+  public static double computeHuberDelta(Vec actual, Vec preds, Vec weight, double huberAlpha) {
+    Vec absdiff = new MRTask() {
+      @Override
+      public void map(Chunk[] cs, NewChunk[] nc) {
+        for (int i = 0; i < cs[0].len(); ++i)
+          nc[0].addNum(Math.abs(cs[0].atd(i) - cs[1].atd(i)));
+      }
+    }.doAll(1, (byte) 3, new Frame(new String[]{"preds", "actual"}, new Vec[]{preds, actual})).outputFrame().anyVec();
+    // make a deep copy of the model's current distribution state (huber delta)
+    //compute huber delta based on huber alpha quantile on absolute prediction error
+    double hd = MathUtils.computeWeightedQuantile(weight, absdiff, huberAlpha);
+    absdiff.remove();
+    return hd;
   }
 }

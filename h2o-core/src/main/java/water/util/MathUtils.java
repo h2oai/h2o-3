@@ -677,4 +677,13 @@ public class MathUtils {
     int resLo = compareUnsigned(loA, loB);
     return resHi != 0 ? resHi : resLo;
   }
+
+  /**
+   * Logloss
+   * @param err prediction error (between 0 and 1)
+   * @return logloss
+   */
+  public static double logloss(double err) {
+    return -Math.log(Math.max(1e-15, 1.0-err));
+  }
 }
