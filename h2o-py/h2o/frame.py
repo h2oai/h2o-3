@@ -650,16 +650,6 @@ class H2OFrame(object):
     def trigamma(self):
         return H2OFrame._expr(expr=ExprNode("trigamma", self), cache=self._ex._cache)
 
-    def diff(self):
-        """Computes the lag1 diff on a numeric column.
-
-        Returns
-        -------
-          The lag1 difference for a numeric column (expects operation to occur over H2OFrame
-          of a single column).
-        """
-        return H2OFrame._expr(expr=ExprNode("difflag1", self))
-
     @staticmethod
     def mktime(year=1970, month=0, day=0, hour=0, minute=0, second=0, msec=0):
         """All units are zero-based (including months and days).
@@ -2331,6 +2321,16 @@ class H2OFrame(object):
         """
         fr = H2OFrame._expr(expr=ExprNode("na.omit", self), cache=self._ex._cache)
         fr._ex._cache.nrows = -1
+        return fr
+
+    def difflag1(self):
+        """Conduct a lag 1 transform on a numeric H2OFrame column
+
+        Returns
+        -------
+          H2OFrame column with a lag 1 transform
+        """
+        fr = H2OFrame._expr(expr=ExprNode("difflag1", self), cache=self._ex._cache)
         return fr
 
     def isna(self):
