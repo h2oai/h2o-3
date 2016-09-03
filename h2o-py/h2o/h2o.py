@@ -481,7 +481,8 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
     if column_names is not None:
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
         if len(column_names) != len(j["column_types"]): raise ValueError(
-            "length of col_names should be equal to the number of columns")
+            "length of col_names should be equal to the number of columns: %d vs %d"
+            % (len(column_names), len(j["column_types"])))
         j["column_names"] = column_names
     if column_types is not None:
         if isinstance(column_types, dict):
