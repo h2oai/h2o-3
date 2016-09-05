@@ -116,9 +116,16 @@ import java.util.UUID;
  *
  * @author Cliff Click
  */
-public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
+public class AVec<T extends AVec.ChunkAry> extends Keyed<AVec> {
 
   static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
+
+  String [][] _domains;
+  byte [] _types; // Vec Type
+
+  public AVec(Key<AVec> aVecKey, int rowLayout, String[] domain) {
+    this(aVecKey,rowLayout,new String[][]{domain}, new byte[]{domain == null?T_NUM:T_CAT});
+  }
 
   public final RollupStats getRollups(int colId) { return getRollups()._rs[colId];}
   public final RollupStats getRollups(int colId, boolean computeHisto) { return getRollups(computeHisto)._rs[colId];}
@@ -188,41 +195,55 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
     _espc = ESPC.espc(this);
   }
 
-//  public abstract boolean hasCol(int id);
+  public AVec(Key<AVec> key, int rowLayout, String[][] domains, byte[] types) {
+    this(key,rowLayout);
+    _domains = domains;
+    _types = types;
+  }
 
-
-  public abstract void setDomain(int vec, String[] domain);
-
-  public abstract void setType(int i, byte type);
-
-  public abstract Futures removeVecs(int[] ints, Futures fs);
-
-  public static abstract class AChunk<T extends AChunk<T>> extends Iced<T> {
+  public static class ChunkAry extends Iced<ChunkAry> {
     transient long _start = -1;
     transient AVec _vec = null;
     transient int _cidx = -1;
-    public abstract Chunk getChunk(int i);
-    public abstract  Chunk[] getChunks();
-    public abstract  Chunk[] getChunks(Chunk [] chks, int off, int... ids);
+    Chunk [] _cs;
 
-
-    public abstract Futures close(Futures fs);
-
-    public void setWrite(Chunk chunk) {
-      throw H2O.unimpl();
+    public ChunkAry(){}
+    public ChunkAry(AVec av, Chunk ...cs){
+      this(cs);
+      _vec = av;
+    }
+    public ChunkAry(Chunk... cs){
+      _cs = cs;
+      for (Chunk c:cs) c._achunk = this;
     }
 
-    public abstract Futures updateChunk(int chunkIdx,Chunk c, Futures fs);
+    public Chunk getChunk(int i){return _cs[i];};
+    public Chunk[] getChunks(){return _cs;}
 
+    public Futures close(Futures fs){
+      boolean modified = false;
+      for(int i = 0; i < _cs.length; ++i) {
+        Chunk c = _cs[i];
+        if(c._chk2 != null) {
+          _cs[i] = c._chk2.compress();
+          modified = true;
+        }
+      }
+      _writing = false;
+      if(modified) DKV.put(_vec.chunkKey(_cidx),this,fs);
+      return fs;
+    }
+
+    volatile boolean _writing;
+    public void setWrite(){
+      if(!_writing) {
+        _vec.preWriting();
+        _writing = true;
+      }
+    }
   }
 
   public final long[] espc() { if( _espc==null ) _espc = ESPC.espc(this); return _espc; }
-
-  public abstract void setBad(int colId);
-
-  public boolean isBinary(int colId){
-    return getRollups(colId).isBinary();
-  }
 
   /** Number of elements in the vector; returned as a {@code long} instead of
    *  an {@code int} because Vecs support more than 2^32 elements. Overridden
@@ -245,7 +266,7 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
   public long chunk2StartElem(int cidx) { return espc()[cidx]; }
 
   /** Number of rows in chunk. Does not fetch chunk content. */
-  protected final int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
+  public final int chunkLen(int cidx) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
   public final boolean checkCompatible( AVec v ) {
@@ -254,14 +275,14 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
             (VectorGroup.sameGroup(this, v) || length() < 1e3);
   }
 
-  /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
-  boolean readable() { return true ; }
   /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
   boolean writable() { return true; }
 
+  public String [] domain(int i){return _domains[i];}
+  public void setDomain(int vec, String[] domain){_domains[vec] = domain;}
+  public byte type(int colId){return _types[colId];}
+  public void setType(int i, byte type){_types[i] = type;}
 
-
-  public abstract String [] domain(int i);
 
 
   // Vec internal type
@@ -277,7 +298,6 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
 
   public static final boolean DO_HISTOGRAMS = true;
 
-  public abstract byte type(int colId);
 
   public final double sparseRatio(int colId) {return getRollups(colId)._nzCnt/(double)length();}
   /** True if this is a UUID column.
@@ -403,11 +423,27 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
    *  establishing dataset identity.
    *  @return Checksum of the Vec's content  */
   protected final long checksum_impl(int colId) { return getRollups(colId)._checksum;}
+
   @Override public final long checksum_impl() {
     long res = checksum_impl(0);
-    for(int i = 1; 1 < numCols(); ++i)
+    for(int i = 1; i < numCols(); ++i)
       res ^= checksum_impl(i);
     return res;
+  }
+
+
+  private static class SetMutating extends TAtomic<RollupStatsAry> {
+    final int _N;
+    final int [] _ids;
+
+    SetMutating(int N, int... ids) {_ids = ids; _N = N;}
+
+    @Override
+    protected RollupStatsAry atomic(RollupStatsAry old) {
+      if(old.isMutating()) return old;
+      return RollupStatsAry.makeMutating();
+    }
+
   }
 
 
@@ -416,11 +452,18 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
    *  not meaningful while the Vec is being actively modified.  Can be called
    *  repeatedly.  Per-chunk row-counts will not be changing, just row
    *  contents. */
-  public abstract void preWriting(int... colIds);
+  public final void preWriting() {
+    RollupStatsAry rbs = DKV.getGet(rollupStatsKey());
+    if(rbs == null || !rbs.isMutating())
+      new SetMutating(numCols()).invoke(rollupStatsKey());
+  }
 
   /** Stop writing into this Vec.  Rollup stats will again (lazily) be
    *  computed. */
-  public abstract Futures postWrite( Futures fs );
+  public final Futures postWrite( Futures fs ){
+    DKV.remove(rollupStatsKey(),fs);
+    return fs;
+  }
 
   // ======= Key and Chunk Management ======
 
@@ -904,6 +947,16 @@ public abstract class AVec<T extends AVec.AChunk<T>> extends Keyed<AVec> {
     return new VecAry(this).makeCompatible(new VecAry(vec),true).getAVecRaw(0);
   }
 
-  public abstract AVec doCopy();
-
+  public AVec doCopy(){
+    final AVec v = new AVec(group().addVec(),_rowLayout,_domains,_types);
+    new MRTask(){
+      @Override public void map(Chunk [] chks){
+        chks = chks.clone();
+        for(int i = 0; i < chks.length; ++i)
+          chks[i] = chks[i].deepCopy();
+        DKV.put(v.chunkKey(chks[0].cidx()), new ChunkAry(chks), _fs);
+      }
+    }.doAll(new VecAry(this));
+    return v;
+  }
 }

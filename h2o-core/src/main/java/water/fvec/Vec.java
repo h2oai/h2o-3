@@ -151,7 +151,7 @@ import java.util.UUID;
  *
  * @author Cliff Click
  */
-public class Vec extends AVec<SingleChunk> {
+public class Vec extends AVec<AVec.ChunkAry> {
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
   byte _type;                   // Vec Type
   // String domain, only for Categorical columns
@@ -191,11 +191,6 @@ public class Vec extends AVec<SingleChunk> {
     _type = t;
   }
 
-  @Override
-  public Futures removeVecs(int[] ids, Futures fs) {
-    if(ids.length != 1 || ids[0] != 0) throw new ArrayIndexOutOfBoundsException();
-    return remove(fs);
-  }
 
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
@@ -221,74 +216,9 @@ public class Vec extends AVec<SingleChunk> {
     _domain = domain;
   }
 
-  @Override public void setBad(int colId) {
-    if(colId != 0) throw new ArrayIndexOutOfBoundsException();
-    _type = T_BAD;
-  }
 
 
-  // ======= Create zero/constant Vecs ======
-  /** Make a new zero-filled vec **/
-  public static Vec makeZero( long len, boolean redistribute ) {
-    return makeCon(0L,len,redistribute);
-  }
-  /** Make a new zero-filled vector with the given row count.
-   *  @return New zero-filled vector with the given row count. */
-  public static Vec makeZero( long len ) { return makeCon(0d,len); }
 
-  /** Make a new constant vector with the given row count, and redistribute the data
-   * evenly around the cluster.
-   * @param x The value with which to fill the Vec.
-   * @param len Number of rows.
-   * @return New cosntant vector with the given len.
-   */
-  public static Vec makeCon(double x, long len) {
-    return makeCon(x,len,true);
-  }
-
-  /** Make a new constant vector with the given row count.
-   *  @return New constant vector with the given row count. */
-  public static Vec makeCon(double x, long len, boolean redistribute) {
-    int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
-    return makeCon(x,len,log_rows_per_chunk,redistribute);
-  }
-
-  /** Make a new constant vector with the given row count, and redistribute the data evenly
-   *  around the cluster.
-   *  @return New constant vector with the given row count. */
-  public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
-    return makeCon(x,len,log_rows_per_chunk,true);
-  }
-
-  /**
-   * Make a new constant vector with minimal number of chunks. Used for importing SQL tables.
-   *  @return New constant vector with the given row count. */
-  public static Vec makeCon(long totSize, long len) {
-    int safetyInflationFactor = 8;
-    int nchunks = (int) Math.max(safetyInflationFactor * totSize / Value.MAX , 1);
-    long[] espc = new long[nchunks+1];
-    espc[0] = 0;
-    for( int i=1; i<nchunks; i++ )
-      espc[i] = espc[i-1]+len/nchunks;
-    espc[nchunks] = len;
-    VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(0,vg, AVec.ESPC.rowLayout(vg._key,espc));
-  }
-
-  /** Make a new constant vector with the given row count.
-   *  @return New constant vector with the given row count. */
-  public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
-    int chunks0 = (int)Math.max(1,len>>log_rows_per_chunk); // redistribute = false
-    int chunks1 = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len); // redistribute = true
-    int nchunks = (redistribute && chunks0 < chunks1 && len > 10*chunks1) ? chunks1 : chunks0;
-    long[] espc = new long[nchunks+1];
-    espc[0] = 0;
-    for( int i=1; i<nchunks; i++ )
-      espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
-    espc[nchunks] = len;
-    VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(x,vg, ESPC.rowLayout(vg._key,espc));
-  }
 
   public VecAry makeDoubles(int n, double [] values) {
     Key [] keys = group().addVecs(n);
@@ -337,217 +267,6 @@ public class Vec extends AVec<SingleChunk> {
     return v;
   }
 
-  public static Vec makeCon( final long l, String[] domain, VectorGroup group, int rowLayout ) {
-    final Vec v0 = new Vec(group.addVec(), rowLayout, domain);
-    final int nchunks = v0.nChunks();
-    new MRTask() {              // Body of all zero chunks
-      @Override protected void setupLocal() {
-        for( int i=0; i<nchunks; i++ ) {
-          Key k = v0.chunkKey(i);
-          if( k.home() ) DKV.put(k,new C0LChunk(l,v0.chunkLen(i)),_fs);
-        }
-      }
-    }.doAllNodes();
-    DKV.put(v0._key, v0);        // Header last
-    return v0;
-  }
-
-  public static Vec makeCon( final double d, String[] domain, VectorGroup group, int rowLayout ) {
-    final Vec v0 = new Vec(group.addVec(), rowLayout, domain);
-    final int nchunks = v0.nChunks();
-    new MRTask() {              // Body of all zero chunks
-      @Override protected void setupLocal() {
-        for( int i=0; i<nchunks; i++ ) {
-          Key k = v0.chunkKey(i);
-          if( k.home() ) DKV.put(k,new C0DChunk(d,v0.chunkLen(i)),_fs);
-        }
-      }
-    }.doAllNodes();
-    DKV.put(v0._key, v0);        // Header last
-    return v0;
-  }
-
-  public static Vec makeVec(double [] vals, Key<AVec> vecKey){
-    Vec v = new Vec(vecKey, AVec.ESPC.rowLayout(vecKey,new long[]{0,vals.length}));
-    SingleChunk sc = new SingleChunk(v,0);
-    NewChunk nc = new NewChunk(sc,0);
-    Futures fs = new Futures();
-    for(double d:vals)
-      nc.addNum(d);
-    nc.close(fs);
-    DKV.put(v._key, v, fs);
-    fs.blockForPending();
-    return v;
-  }
-
-  // allow missing (NaN) categorical values
-  public static Vec makeVec(double [] vals, String [] domain, Key<AVec> vecKey){
-    Vec v = new Vec(vecKey, AVec.ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
-    NewChunk nc = new NewChunk(new SingleChunk(v,0),0);
-    Futures fs = new Futures();
-    for(double d:vals) {
-      assert(Double.isNaN(d) || (long)d == d);
-      nc.addNum(d);
-    }
-    nc.close(fs);
-    DKV.put(v._key, v, fs);
-    fs.blockForPending();
-    return v;
-  }
-  // Warning: longs are lossily converted to doubles in nc.addNum(d)
-  public static Vec makeVec(long [] vals, String [] domain, Key<AVec> vecKey){
-    Vec v = new Vec(vecKey, AVec.ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
-    NewChunk nc = new NewChunk(new SingleChunk(v,0),0);
-    Futures fs = new Futures();
-    for(long d:vals)
-      nc.addNum(d);
-    nc.close(fs);
-    DKV.put(v._key, v, fs);
-    fs.blockForPending();
-    return v;
-  }
-
-  public static Vec[] makeCons(double x, long len, int n) {
-    Vec[] vecs = new Vec[n];
-    for( int i=0; i<n; i++ )
-      vecs[i] = makeCon(x,len,true);
-    return vecs;
-  }
-
-  /** Make a new vector with the same size and data layout as the current one,
-   *  and initialized to the given constant value.
-   *  @return A new vector with the same size and data layout as the current one,
-   *  and initialized to the given constant value.  */
-  public Vec makeCon( final double d ) { return makeCon(d, group(), _rowLayout); }
-
-  private static Vec makeCon( final double d, VectorGroup group, int rowLayout ) {
-    if( (long)d==d ) return makeCon((long)d, null, group, rowLayout);
-    final Vec v0 = new Vec(group.addVec(), rowLayout, null, T_NUM);
-    final int nchunks = v0.nChunks();
-    new MRTask() {              // Body of all zero chunks
-      @Override protected void setupLocal() {
-        for( int i=0; i<nchunks; i++ ) {
-          Key k = v0.chunkKey(i);
-          if( k.home() ) DKV.put(k,new C0DChunk(d,v0.chunkLen(i)),_fs);
-        }
-      }
-    }.doAllNodes();
-    DKV.put(v0._key, v0);        // Header last
-    return v0;
-  }
-
-
-
-
-  /** A Vec from an array of doubles
-   *  @param rows Data
-   *  @return The Vec  */
-  public static VecAry makeCon(Key<AVec> k, double ...rows) {
-    k = k==null?Vec.VectorGroup.VG_LEN1.addVec():k;
-    Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k, T_NUM);
-    NewChunk chunk = new NewChunk(new SingleChunk(avec,0), 0);
-    for( double r : rows ) chunk.addNum(r);
-    chunk.close(fs);
-    VecAry vec = avec.layout_and_close(fs);
-    fs.blockForPending();
-    return vec;
-  }
-
-  /** Make a new vector initialized to increasing integers, starting with 1.
-   *  @return A new vector initialized to increasing integers, starting with 1. */
-  public static Vec makeSeq( long len, boolean redistribute) {
-    return (Vec) new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for( Chunk c : cs )
-          for( int r = 0; r < c._len; r++ )
-            c.set(r, r + 1 + c.start());
-      }
-    }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
-  }
-
-  /** Make a new vector initialized to increasing integers, starting with `min`.
-   *  @return A new vector initialized to increasing integers, starting with `min`.
-   */
-  public static Vec makeSeq(final long min, long len) {
-    return (Vec) new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for (Chunk c : cs)
-          for (int r = 0; r < c._len; r++)
-            c.set(r, r + min + c.start());
-      }
-    }.doAll(makeZero(len)).vecs().getAVecRaw(0);
-  }
-
-  /** Make a new vector initialized to increasing integers, starting with `min`.
-   *  @return A new vector initialized to increasing integers, starting with `min`.
-   */
-  public static Vec makeSeq(final long min, long len, boolean redistribute) {
-    return (Vec) new MRTask() {
-      @Override public void map(Chunk c) {
-        for (int r = 0; r < c._len; r++)
-          c.set(r, r + min + c.start());
-      }
-    }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
-  }
-
-  /** Make a new vector initialized to increasing integers mod {@code repeat}.
-   *  @return A new vector initialized to increasing integers mod {@code repeat}.
-   */
-  public static Vec makeRepSeq( long len, final long repeat ) {
-    return (Vec) new MRTask() {
-      @Override public void map(Chunk c) {
-        for( int r = 0; r < c._len; r++ )
-          c.set(r, (r + c.start()) % repeat);
-      }
-    }.doAll(makeZero(len)).vecs().getAVecRaw(0);
-  }
-
-  public Vec makeZero() {return makeCon(0);}
-
-
-  private static class SetMutating extends TAtomic<RollupStats> {
-    @Override protected RollupStats atomic(RollupStats rs) {
-      return rs != null && rs.isMutating() ? null : RollupStats.makeMutating();
-    }
-  }
-
-
-  /** Begin writing into this Vec.  Immediately clears all the rollup stats
-   *  ({@link #min}, {@link #max}, {@link #mean}, etc) since such values are
-   *  not meaningful while the Vec is being actively modified.  Can be called
-   *  repeatedly.  Per-chunk row-counts will not be changing, just row
-   *  contents. */
-  @Override public void preWriting(int... colIds) {
-    if( !writable() ) throw new IllegalArgumentException("Vector not writable");
-    if(colIds != null && (colIds.length != 1 || colIds[0] != 0))
-      throw new ArrayIndexOutOfBoundsException();
-    final Key rskey = rollupStatsKey();
-    Value val = DKV.get(rskey);
-    if( val != null ) {
-      RollupStats rs = val.get(RollupStats.class);
-      if( rs.isMutating() ) return; // Vector already locked against rollups
-    }
-    // Set rollups to "vector isMutating" atomically.
-    new Vec.SetMutating().invoke(rskey);
-  }
-
-  /** Stop writing into this Vec.  Rollup stats will again (lazily) be
-   *  computed. */
-  @Override public Futures postWrite( Futures fs ) {
-    // Get the latest rollups *directly* (do not compute them!).
-    if (writable()) { // skip this for immutable vecs (like FileVec)
-      final Key rskey = rollupStatsKey();
-      Value val = DKV.get(rollupStatsKey());
-      if (val != null) {
-        RollupStats rs = val.get(RollupStats.class);
-        if (rs.isMutating())  // Vector was mutating, is now allowed for rollups
-          DKV.remove(rskey, fs);// Removing will cause them to be rebuilt, on demand
-      }
-    }
-    return fs;                  // Flow-coding
-  }
-
 
   // ======= Direct Data Accessors ======
 
@@ -580,27 +299,7 @@ public class Vec extends AVec<SingleChunk> {
    *  throw if not a String */
   public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).getChunk(0).atStr_abs(bStr, i); }
 
-  /** A more efficient way to read randomly to a Vec - still single-threaded,
-   *  but much faster than Vec.at(i).  Limited to single-threaded
-   *  single-machine reads.
-   *
-   * Usage:
-   * Vec.Reader vr = vec.new Reader();
-   * x = vr.at(0);
-   * y = vr.at(1);
-   * z = vr.at(2);
-   */
-  public final class Reader {
-    private SingleChunk _cache;
-    private SingleChunk chk(long i) {
-      SingleChunk c = _cache;
-      return (c != null && c._start <= i && i < c._start+ c._c._len) ? c : (_cache = chunkForRow(i));
-    }
-    public final long    at8( long i ) { return chk(i)._c. at8_abs(i); }
-    public final double   at( long i ) { return chk(i)._c. at_abs(i); }
-    public final boolean isNA(long i ) { return chk(i)._c. isNA_abs(i); }
-    public final long length() { return Vec.this.length(); }
-  }
+
 
 //  /** Write element the slow way, as a long.  There is no way to write a
 //   *  missing value with this call.  Under rare circumstances this can throw:

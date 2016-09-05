@@ -2,7 +2,6 @@ package water.parser;
 
 import water.Futures;
 import water.fvec.AppendableVec;
-import water.fvec.ChunkBlock;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 

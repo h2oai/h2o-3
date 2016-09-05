@@ -119,6 +119,7 @@ public abstract class Chunk extends Iced<Chunk> {
     _mem = bytes;initFromBytes();
   }
 
+
 //  public Futures close( int cidx, Futures fs ) {
 //    if( this  instanceof NewChunk ) _chk2 = this;
 //    if( _chk2 == null ) return fs;          // No change?
@@ -212,21 +213,18 @@ public abstract class Chunk extends Iced<Chunk> {
 
   /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
   transient Chunk _chk2;
+
+  public Chunk compress(){return this;}
   /** Exposed for internal testing only.  Not a publically visible API. */
   public Chunk chk2() { return _chk2; }
 
   /** Owning Vec; a read-only field */
-  transient AVec.AChunk _achunk;
-  transient int _vidx = -1;
+  transient AVec.ChunkAry _achunk;
 
   /** Owning Vec */
   public AVec vec() { return _achunk._vec; }
 
-  public Futures close(Futures fs){
-    if( _chk2 == null ) return fs;          // No change?
-    if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).compress();
-    return _achunk.updateChunk(_vidx,_chk2,fs);
-  }
+  public Futures close(Futures fs){return _achunk.close(fs);}
 
   /** The Big Data.  Frequently set in the subclasses, but not otherwise a publically writable field. */
   byte[] _mem;
@@ -519,7 +517,7 @@ public abstract class Chunk extends Iced<Chunk> {
   private void setWrite() {
     if( _chk2 != null ) return; // Already setWrite
     assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";
-    _achunk.setWrite(this);
+    _achunk.setWrite();
     _chk2 = clone();     // Flag this chunk as having been written into
     assert _chk2._chk2 == null; // Clone has NOT been written into
   }

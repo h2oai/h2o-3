@@ -590,4 +590,198 @@ public class VecUtils {
       return dom;
     }
   }
+
+  public static AVec makeCon(final long l, String[] domain, AVec.VectorGroup group, int rowLayout ) {
+    final AVec v0 = new AVec(group.addVec(), rowLayout, domain);
+    final int nchunks = v0.nChunks();
+    new MRTask() {              // Body of all zero chunks
+      @Override protected void setupLocal() {
+        for( int i=0; i<nchunks; i++ ) {
+          Key k = v0.chunkKey(i);
+          if( k.home() ) DKV.put(k,new C0LChunk(l,v0.chunkLen(i)),_fs);
+        }
+      }
+    }.doAllNodes();
+    DKV.put(v0._key, v0);        // Header last
+    return v0;
+  }
+
+  public static AVec makeCon(final double d, String[] domain, AVec.VectorGroup group, int rowLayout ) {
+    final AVec v0 = new AVec(group.addVec(), rowLayout, domain);
+    final int nchunks = v0.nChunks();
+    new MRTask() {              // Body of all zero chunks
+      @Override protected void setupLocal() {
+        for( int i=0; i<nchunks; i++ ) {
+          Key k = v0.chunkKey(i);
+          if( k.home() ) DKV.put(k,new C0DChunk(d,v0.chunkLen(i)),_fs);
+        }
+      }
+    }.doAllNodes();
+    DKV.put(v0._key, v0);        // Header last
+    return v0;
+  }
+
+  public static AVec makeVec(double [] vals, Key<AVec> vecKey){
+    return makeVec(vals,vecKey,null);
+  }
+
+  public static AVec makeVec(double [] vals, Key<AVec> vecKey, String [] domain){
+    AVec v = new AVec(vecKey, AVec.ESPC.rowLayout(vecKey,new long[]{0,vals.length}), domain);
+    NewChunk nc;
+    AVec.ChunkAry sc = new AVec.ChunkAry(v, new Chunk[]{ nc = new NewChunk()});
+    Futures fs = new Futures();
+    for(double d:vals)
+      nc.addNum(d);
+    sc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
+  public static AVec makeVec(long [] vals, Key<AVec> vecKey){
+    return makeVec(vals,vecKey,null);
+  }
+  public static AVec makeVec(long [] vals, Key<AVec> vecKey, String [] domain){
+    AVec v = new AVec(vecKey, AVec.ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
+    NewChunk nc;
+    AVec.ChunkAry sc = new AVec.ChunkAry(v, new Chunk[]{ nc = new NewChunk()});
+    Futures fs = new Futures();
+    for(long l:vals)
+      nc.addNum(l,0);
+    sc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
+  // ======= Create zero/constant Vecs ======
+  /** Make a new zero-filled vec **/
+  public static Vec makeZero( long len, boolean redistribute ) {
+    return makeCon(0L,len,redistribute);
+  }
+  /** Make a new zero-filled vector with the given row count.
+   *  @return New zero-filled vector with the given row count. */
+  public static Vec makeZero( long len ) { return makeCon(0d,len); }
+
+  /** Make a new constant vector with the given row count, and redistribute the data
+   * evenly around the cluster.
+   * @param x The value with which to fill the Vec.
+   * @param len Number of rows.
+   * @return New cosntant vector with the given len.
+   */
+  public static Vec makeCon(double x, long len) {
+    return makeCon(x,len,true);
+  }
+
+  /** Make a new constant vector with the given row count.
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(double x, long len, boolean redistribute) {
+    int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
+    return makeCon(x,len,log_rows_per_chunk,redistribute);
+  }
+
+  /** Make a new constant vector with the given row count, and redistribute the data evenly
+   *  around the cluster.
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk) {
+    return makeCon(x,len,log_rows_per_chunk,true);
+  }
+
+  /**
+   * Make a new constant vector with minimal number of chunks. Used for importing SQL tables.
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(long totSize, long len) {
+    int safetyInflationFactor = 8;
+    int nchunks = (int) Math.max(safetyInflationFactor * totSize / Value.MAX , 1);
+    long[] espc = new long[nchunks+1];
+    espc[0] = 0;
+    for( int i=1; i<nchunks; i++ )
+      espc[i] = espc[i-1]+len/nchunks;
+    espc[nchunks] = len;
+    AVec.VectorGroup vg = AVec.VectorGroup.VG_LEN1;
+    return makeCon(0,vg, AVec.ESPC.rowLayout(vg._key,espc));
+  }
+
+  /** Make a new constant vector with the given row count.
+   *  @return New constant vector with the given row count. */
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
+    int chunks0 = (int)Math.max(1,len>>log_rows_per_chunk); // redistribute = false
+    int chunks1 = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len); // redistribute = true
+    int nchunks = (redistribute && chunks0 < chunks1 && len > 10*chunks1) ? chunks1 : chunks0;
+    long[] espc = new long[nchunks+1];
+    espc[0] = 0;
+    for( int i=1; i<nchunks; i++ )
+      espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
+    espc[nchunks] = len;
+    AVec.VectorGroup vg = AVec.VectorGroup.VG_LEN1;
+    return makeCon(x,vg, AVec.ESPC.rowLayout(vg._key,espc));
+  }
+
+
+
+  public static AVec makeCons(double x, long len, int n) {
+    Key vecKey = AVec.VectorGroup.VG_LEN1.addVec();
+    byte [] types = new byte[n];
+    Arrays.fill(types,AVec.T_NUM);
+    AVec v = new AVec(vecKey, AVec.ESPC.rowLayout(vecKey, new long[]{0, (int)len}), null,types);
+    Chunk [] cs = new Chunk[n];
+    for(int i = 0; i < cs.length; ++i)
+      cs[i] = new C0DChunk(x,(int)len);
+    DKV.put(v.chunkKey(0),new AVec.ChunkAry(cs));
+    DKV.put(v);
+    return v;
+  }
+
+
+
+  /** Make a new vector initialized to increasing integers, starting with 1.
+   *  @return A new vector initialized to increasing integers, starting with 1. */
+  public static Vec makeSeq( long len, boolean redistribute) {
+    return (Vec) new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        for( Chunk c : cs )
+          for( int r = 0; r < c._len; r++ )
+            c.set(r, r + 1 + c.start());
+      }
+    }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
+  }
+
+  /** Make a new vector initialized to increasing integers, starting with `min`.
+   *  @return A new vector initialized to increasing integers, starting with `min`.
+   */
+  public static Vec makeSeq(final long min, long len) {
+    return (Vec) new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        for (Chunk c : cs)
+          for (int r = 0; r < c._len; r++)
+            c.set(r, r + min + c.start());
+      }
+    }.doAll(makeZero(len)).vecs().getAVecRaw(0);
+  }
+
+  /** Make a new vector initialized to increasing integers, starting with `min`.
+   *  @return A new vector initialized to increasing integers, starting with `min`.
+   */
+  public static Vec makeSeq(final long min, long len, boolean redistribute) {
+    return (Vec) new MRTask() {
+      @Override public void map(Chunk c) {
+        for (int r = 0; r < c._len; r++)
+          c.set(r, r + min + c.start());
+      }
+    }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
+  }
+
+  /** Make a new vector initialized to increasing integers mod {@code repeat}.
+   *  @return A new vector initialized to increasing integers mod {@code repeat}.
+   */
+  public static Vec makeRepSeq( long len, final long repeat ) {
+    return (Vec) new MRTask() {
+      @Override public void map(Chunk c) {
+        for( int r = 0; r < c._len; r++ )
+          c.set(r, (r + c.start()) % repeat);
+      }
+    }.doAll(makeZero(len)).vecs().getAVecRaw(0);
+  }
+
+
 }

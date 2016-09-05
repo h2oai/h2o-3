@@ -3,7 +3,6 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
-import water.util.ArrayUtils;
 import water.util.DistributedException;
 import water.util.PrettyPrint;
 
@@ -243,7 +242,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   }
 
 
-  public void map( AVec.AChunk c ) { }
+  public void map( AVec.ChunkAry c ) { }
   /** Override with your map implementation.  This overload is given a single
    *  <strong>local</strong> input Chunk.  It is meant for map/reduce jobs that use a
    *  single column in a input Frame.  All map variants are called, but only one is
@@ -597,14 +596,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         VecAry.ChunkAry chunkAry = _vecs.getChunks(_lo);
         Chunk [] bvs = chunkAry.chks();
         NewChunk [] ncs = null;
-        AVec.AChunk [] aChunks = null;
+        AVec.ChunkAry[] aChunks = null;
         if(_output_types != null) {
           final AVec.VectorGroup vg = _vecs.group();
           int noutpus = 0;
           for(byte [] x:_output_types) noutpus += x.length;
           ncs = new NewChunk[noutpus];
           _appendables = new AppendableVec[_output_types.length];
-          aChunks = new AVec.AChunk[_output_types.length];
+          aChunks = new AVec.ChunkAry[_output_types.length];
           int k = 0;
           for(int i = 0; i < _appendables.length; ++i){
             _appendables[i] = new AppendableVec(vg.vecKey(_vid), _output_types[i]);
@@ -643,7 +642,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           _profile._closestart = System.currentTimeMillis();
         _vecs.close();
         if( _output_types != null)
-          for(AVec.AChunk a:aChunks) a.close(_fs);
+          for(AVec.ChunkAry a:aChunks) a.close(_fs);
       }
     }
     if(_profile!=null)

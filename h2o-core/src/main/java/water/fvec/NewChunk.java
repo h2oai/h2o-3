@@ -269,30 +269,27 @@ public class NewChunk extends Chunk {
   public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
 
   public NewChunk( ){this(false);}
-  public NewChunk(boolean sparse){this(null,-1,sparse);}
-  public NewChunk( AVec av, int cidx) {
-    this(new SingleChunk(av,cidx),0,false);
-    assert av.numCols() == 1;
+  public NewChunk(boolean sparse){
+    this(null,sparse);
+    _chk2 = this;
   }
 
-  public NewChunk( AVec.AChunk c, int vidx) {this(c,vidx,false);}
 
-  public NewChunk( AVec.AChunk c, int vidx, boolean sparse) {
+  public NewChunk(AVec.ChunkAry c) {this(c,false);}
+
+  public NewChunk(AVec.ChunkAry c, boolean sparse) {
     _achunk = c;
-    _vidx = vidx;
     _ms = new Mantissas(4);
     _xs = new Exponents(4);
     if(sparse) _id = new int[4];
   }
 
   public NewChunk(double [] ds) {
-    _vidx = -1;
     _achunk = null;
     setDoubles(ds);
   }
-  public NewChunk(AVec.AChunk c, int vidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
+  public NewChunk(AVec.ChunkAry c, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
     _achunk = c;
-    _vidx = vidx;
     _ms = new Mantissas(mantissa.length);
     _xs = new Exponents(exponent.length);
     for(int i = 0; i < mantissa.length; ++i) {
@@ -304,20 +301,22 @@ public class NewChunk extends Chunk {
     if (_ms != null && _sparseLen==0) set_sparseLen(set_len(mantissa.length));
     if (_ds != null && _sparseLen==0) set_sparseLen(set_len(_ds.length));
     if (_id != null && _sparseLen==0) set_sparseLen(_id.length);
+    _chk2 = this;
   }
   // Constructor used when inflating a Chunk.
-  public NewChunk( Chunk c ) {this(c._achunk, c._vidx);}
+  public NewChunk( Chunk c ) {this(c._achunk);}
 
   // Constructor used when inflating a Chunk.
   public NewChunk( Chunk c, double [] vals) {
-    _achunk = c._achunk; _vidx = c._vidx;
+    _achunk = c._achunk;
     _ds = vals;
     _sparseLen = _len = _ds.length;
+    _chk2 = this;
   }
 
   // Pre-sized newchunks.
-  public NewChunk( AVec.AChunk c, int vidx, int len ) {
-    this(c,vidx);
+  public NewChunk(AVec.ChunkAry c,int len ) {
+    this(c);
     _ds = new double[len];
     Arrays.fill(_ds, Double.NaN);
     set_sparseLen(set_len(len));
@@ -673,7 +672,6 @@ public class NewChunk extends Chunk {
   
   // Append all of 'nc' onto the current NewChunk.  Kill nc.
   public void add( NewChunk nc ) {
-    assert _vidx >= 0;
     assert _sparseLen <= _len;
     assert nc._sparseLen <= nc._len :"_sparseLen = " + nc._sparseLen + ", _len = " + nc._len;
     if( nc._len == 0 ) return;
@@ -1591,7 +1589,5 @@ public class NewChunk extends Chunk {
     throw H2O.unimpl();
   }
 
-  @Override
-  public Futures close(Futures fs) {return _achunk.updateChunk(_vidx,compress(),fs);}
 
 }

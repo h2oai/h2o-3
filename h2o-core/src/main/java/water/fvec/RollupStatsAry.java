@@ -14,16 +14,27 @@ import java.util.Arrays;
  */
 public class RollupStatsAry extends Iced {
 
+  public long byteSize(){
+    long res = 0;
+    for(RollupStats rs:_rs)
+      res += rs._size;
+    return res;
+  }
   // Expensive histogram & percentiles
   // Computed in a 2nd pass, on-demand, by calling computeHisto
   private static final int MAX_SIZE = 1000; // Standard bin count; categoricals can have more bins
 
-
   public static RollupStatsAry makeComputing(){
-    RollupStatsAry rs = new RollupStatsAry();
-    rs._isComputing = true;
-    return rs;
+    RollupStatsAry res = new RollupStatsAry();
+    res._isComputing = true;
+    return res;
   }
+  public static RollupStatsAry makeMutating(){
+    RollupStatsAry res = new RollupStatsAry();
+    res._isMutating = true;
+    return res;
+  }
+
   RollupStats[] _rs;
 
   public RollupStatsAry(){}
@@ -38,6 +49,7 @@ public class RollupStatsAry extends Iced {
   volatile transient ForkJoinTask _tsk;
 
   volatile boolean _isComputing;
+  volatile boolean _isMutating;
 
   public RollupStatsAry(RollupStats[] rs) {
     _rs = rs;

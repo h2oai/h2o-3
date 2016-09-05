@@ -124,7 +124,7 @@ public class AppendableVec extends AVec {
     return 0;
   }
 
-  @Override public AChunk chunkForChunkIdx(int cidx) {throw new UnsupportedOperationException();}
+  @Override public ChunkAry chunkForChunkIdx(int cidx) {throw new UnsupportedOperationException();}
 
 
   public synchronized void closeChunk(int cidx, int len) {

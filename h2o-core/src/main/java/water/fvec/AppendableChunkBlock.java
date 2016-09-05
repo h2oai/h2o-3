@@ -5,7 +5,7 @@ import water.Futures;
 /**
  * Created by tomas on 8/4/16.
  */
-public class AppendableChunkBlock extends AVec.AChunk<AppendableChunkBlock> {
+public class AppendableChunkBlock extends AVec.ChunkAry<AppendableChunkBlock> {
   NewChunk [] _ncs;
 
 

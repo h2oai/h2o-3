@@ -8,7 +8,6 @@ public class C16Chunk extends Chunk {
   public static final long _HI_NA = 0;
   C16Chunk( byte[] bs ) {
     _mem=bs;
-    _vidx = -1;
     _achunk = null;
     set_len(_mem.length>>4);
   }

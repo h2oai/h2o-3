@@ -5,7 +5,6 @@ import water.parser.BufferedString;
 import water.util.*;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.util.*;
 
 /**
@@ -412,23 +411,19 @@ public class VecAry extends Iced {
   }
 
   public VecAry deepCopy() {
-    final VecBlock vb = new VecBlock(group().addVec(),rowLayout(),len(),domains(),types());
+    final AVec av = new AVec(group().addVec(),rowLayout(),len(),domains(),types());
     new MRTask(){
       @Override public void map(Chunk [] chks) {
         chks = chks.clone();
         for(int i = 0; i < chks.length; ++i)
           chks[i] = chks[i].deepCopy();
-        new ChunkBlock(vb,chks[0].cidx(),chks).close(_fs);
+        new ChunkBlock(av,chks[0].cidx(),chks).close(_fs);
       }
     }.doAll(this);
-    DKV.put(vb._key,vb);
-    return new VecAry(vb);
+    DKV.put(av._key,av);
+    return new VecAry(av);
   }
 
-
-  public void setBad(int i) {
-    _vecs.get(_vids[2*i]).setBad(_vids[2*i+1]);
-  }
 
   public void setDomain(int i, String[] domain) {
     _vecs.get(_vids[2*i]).setDomain(_vids[2*i+1],domain);
@@ -624,6 +619,7 @@ public class VecAry extends Iced {
   }
 
   public void set(long i, int j, double d) {
+
     Chunk c = getChunk(elem2ChunkIdx(i),j);
     c.set_abs(i,d);
     c.close(new Futures()).blockForPending();
@@ -676,10 +672,10 @@ public class VecAry extends Iced {
     return -1;
   }
 
-  public void startRollupStats(Futures fs, boolean b) {
+  public void startRollupStats(boolean computeHisto, Futures fs) {
     VecsPerBlock vpb = vecsPerBlock();
     for(int i = 0; i < vpb._blocks.length; ++i)
-      vpb._blocks[i].startRollupStats(fs,b,vpb._vecs[i]);
+      vpb._blocks[i].startRollupStats(computeHisto,fs);
   }
 
 
@@ -780,18 +776,8 @@ public class VecAry extends Iced {
   }
 
   public Futures remove(Futures fs) {
-    int i = 0;
-    while(i < _vids.length) {
-      int b = _vids[i];
-      AVec av = _vecs.get(_vids[i]);
-      int [] ids = new int[av.numCols()];
-      int k = 0;
-      while(i < _vids.length && _vids[i] == b) {
-        ids[k++] = _vids[i+1];
-        i += 2;
-      }
-      av.removeVecs(Arrays.copyOf(ids,k),fs);
-    }
+    for(AVec av:vecsPerBlock()._blocks)
+      av.remove(fs);
     return fs;
   }
 
@@ -913,18 +899,18 @@ public class VecAry extends Iced {
 
   private transient int _chunkId = -1;
   private transient int _blockId = 0;
-  private transient AVec.AChunk _chk = null;
+  private transient AVec.ChunkAry _chk = null;
 
   public class ChunkAry {
-    private final AVec.AChunk [] _chks;
+    private final AVec.ChunkAry[] _chks;
     public final int _cidx;
 
     public ChunkAry(int cidx) {
       _cidx = cidx;
-      _chks = new AVec.AChunk[_vecs._max-_vecs._min+1];
+      _chks = new AVec.ChunkAry[_vecs._max-_vecs._min+1];
     }
 
-    private AVec.AChunk achunk(int j) {
+    private AVec.ChunkAry achunk(int j) {
       if(_chks[j] == null) {
         _chks[j] = _vecs.get(j).chunkForChunkIdx(_cidx);
       }
@@ -945,7 +931,7 @@ public class VecAry extends Iced {
       int k = 0;
       while(i < _vids.length) {
         int b = _vids[i];
-        AVec.AChunk ac = achunk(i);
+        AVec.ChunkAry ac = achunk(i);
         if(ac instanceof SingleChunk) {
           res[k++] = ((SingleChunk)ac)._c;
           i+= 2;
@@ -993,7 +979,7 @@ public class VecAry extends Iced {
     }
     VecsPerBlock vpb = vecsPerBlock();
     for(int i = 0; i < vpb._blocks.length; ++i)
-      vpb._blocks[i].preWriting(vpb._vecs[i]);
+      vpb._blocks[i].preWriting();
   }
 
   /** Stop writing into thiposs Vec.  Rollup stats will again (lazily) be
@@ -1013,7 +999,7 @@ public class VecAry extends Iced {
     final int n = cons.length;
     final AVec av = n == 1
         ?new Vec(group().addVec(),rowLayout(),null, Vec.T_NUM)
-        :new VecBlock(group().addVec(),rowLayout(), n, null,ArrayUtils.expandByteAry(Vec.T_NUM,n));
+        :new AVec(group().addVec(),rowLayout(), n, null,ArrayUtils.expandByteAry(Vec.T_NUM,n));
     new MRTask() {
       public void setupLocal() {
         for(int i = 0; i < av.nChunks(); ++i) {
@@ -1021,7 +1007,7 @@ public class VecAry extends Iced {
           if(av.chunkKey(i).home()) {
             // int numCols, int len, int [] nzChunks, Chunk [] chunks, double sparseElem
             int len = (int) (espc[i + 1] - espc[i]);
-            AVec.AChunk aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(cons[0], len)):new ChunkBlock(av,i,n, len, cons);
+            AVec.ChunkAry aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(cons[0], len)):new ChunkBlock(av,i,n, len, cons);
             aChunk.close(_fs);
           }
         }
@@ -1034,7 +1020,7 @@ public class VecAry extends Iced {
   public VecAry makeCons(final int n, final double con, String[][] domains, byte[] types) {
     final AVec av = n == 1
         ?new Vec(group().addVec(),rowLayout(),domains == null?null:domains[0], types[0])
-        :new VecBlock(group().addVec(),rowLayout(), n, domains,types);
+        :new AVec(group().addVec(),rowLayout(), n, domains,types);
     new MRTask() {
       public void setupLocal() {
         for(int i = 0; i < av.nChunks(); ++i) {
@@ -1042,7 +1028,7 @@ public class VecAry extends Iced {
           if(av.chunkKey(i).home()) {
             // int numCols, int len, int [] nzChunks, Chunk [] chunks, double sparseElem
             int len = (int) (espc[i + 1] - espc[i]);
-            AVec.AChunk aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(con, len)):new ChunkBlock(av,i,n, len, con);
+            AVec.ChunkAry aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(con, len)):new ChunkBlock(av,i,n, len, con);
             aChunk.close(_fs);
           }
         }

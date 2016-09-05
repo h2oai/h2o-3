@@ -275,7 +275,6 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public final void initFromBytes () {
-    _vidx = -1;
     _achunk = null;
     set_len(UnsafeUtils.get4(_mem,0));
     _ridsz = _mem[4];

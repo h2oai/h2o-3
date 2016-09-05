@@ -31,7 +31,6 @@ public class CStrChunk extends Chunk {
   }
 
   public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] strIdx, boolean isAllASCII) {
-    _vidx = -1;
     _achunk = null;
     _valstart = _OFF + (idxLen<<2);
     _isAllASCII = isAllASCII;
@@ -72,7 +71,6 @@ public class CStrChunk extends Chunk {
   }
 
   @Override protected final void initFromBytes () {
-    _vidx = -1;
     _achunk = null;
     _valstart = UnsafeUtils.get4(_mem,0);
     byte b = UnsafeUtils.get1(_mem,4);
