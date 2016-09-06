@@ -148,8 +148,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
     if (_parms._max_abs_leafnode_pred <= 0)
       error("_max_abs_leafnode_pred", "max_abs_leafnode_pred must be larger than 0.");
-    if (_parms._noise_bandwidth < 0)
-      error("_noise_bandwidth", "noise_bandwidth must be >= 0.");
+    if (_parms._pred_noise_bandwidth < 0)
+      error("_pred_noise_bandwidth", "pred_noise_bandwidth must be >= 0.");
   }
 
   // ----------------------
@@ -910,9 +910,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           final Chunk y   = chk_resp(chks);
           final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
           double factor = 1;
-          if (_parms._noise_bandwidth!=0) {
+          if (_parms._pred_noise_bandwidth !=0) {
             _rand.setSeed(k * _parms._ntrees + _ntrees); //bandwidth is a function of tree number and class, same for all rows/nodes
-            factor += _rand.nextGaussian() * _parms._noise_bandwidth;
+            factor += _rand.nextGaussian() * _parms._pred_noise_bandwidth;
           }
           for( int row=0; row<nids._len; row++ ) {
             int nid = (int)nids.at8(row);

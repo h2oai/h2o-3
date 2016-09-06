@@ -3,7 +3,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.GBM.ecology.random.noise <- function() {
   df <- h2o.uploadFile(locate("smalldata/gbm_test/ecology_model.csv"))
-  model <- h2o.gbm(x = 3:13, y = "Angaus", training_frame = df), noise_bandwith=0.5)
+  model <- h2o.gbm(x = 3:13, y = "Angaus", training_frame = df), pred_noise_bandwith=0.5)
   print(model)
 }
 

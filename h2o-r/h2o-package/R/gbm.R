@@ -72,7 +72,7 @@
 #' @param histogram_type What type of histogram to use for finding optimal split points
 #'        Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin".
 #' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction.  Defaults to 1.79769313486e+308.
-#' @param noise_bandwidth Bandwidth (sigma) of gaussian multiplicative noise for tree contributions. Default is 0.
+#' @param pred_noise_bandwidth Bandwidth (sigma) of gaussian multiplicative noise for tree contributions. Default is 0.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' \donttest{
@@ -132,7 +132,7 @@ h2o.gbm <- function(x, y, training_frame,
                     min_split_improvement = 1e-05,
                     histogram_type = c("AUTO","UniformAdaptive","Random","QuantilesGlobal","RoundRobin"),
                     max_abs_leafnode_pred,
-                    noise_bandwidth=0
+                    pred_noise_bandwidth=0
                     )
 {
    #If x is missing, then assume user wants to use all columns as features.
@@ -239,7 +239,7 @@ h2o.gbm <- function(x, y, training_frame,
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
   if(!missing(histogram_type)) parms$histogram_type <- histogram_type
   if(!missing(max_abs_leafnode_pred)) parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
-  if(!missing(noise_bandwidth)) parms$noise_bandwidth <- noise_bandwidth
+  if(!missing(pred_noise_bandwidth)) parms$pred_noise_bandwidth <- pred_noise_bandwidth
 
   .h2o.modelJob('gbm', parms)
 }

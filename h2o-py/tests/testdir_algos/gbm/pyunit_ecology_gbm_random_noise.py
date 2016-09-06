@@ -11,7 +11,7 @@ from h2o.estimators.gbm import H2OGradientBoostingEstimator
 def ecologyGBM_random_noise():
 
   ecology_train = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
-  gbm_h2o = H2OGradientBoostingEstimator(noise_bandwidth=0.5)
+  gbm_h2o = H2OGradientBoostingEstimator(pred_noise_bandwidth=0.5)
   gbm_h2o.train(x=list(range(2,ecology_train.ncol)), y="Angaus", training_frame=ecology_train)
   print(gbm_h2o)
 
