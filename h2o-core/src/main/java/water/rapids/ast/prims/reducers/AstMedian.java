@@ -7,7 +7,7 @@ import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.vals.ValNum;
+import water.rapids.vals.ValNums;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 
@@ -30,17 +30,17 @@ public class AstMedian extends AstPrimitive {
   }  // (median fr method)
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNums apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     boolean narm = asts[2].exec(env).getNum() == 1;
-    if (!narm && (fr.anyVec().length() == 0 || fr.anyVec().naCnt() > 0)) return new ValNum(Double.NaN);
-    // does linear interpolation for even sample sizes by default
-    return new ValNum(median(fr, QuantileModel.CombineMethod.INTERPOLATE));
+    double[] ds = new double[fr.numCols()];
+    Vec[] vecs = fr.vecs();
+    for (int i = 0; i < fr.numCols(); i++)
+      ds[i] = (!vecs[i].isNumeric() || vecs[i].length() == 0 || (!narm && vecs[i].naCnt() > 0)) ? Double.NaN : median(vecs[i], QuantileModel.CombineMethod.INTERPOLATE);
+    return new ValNums(ds);
   }
 
   public static double median(Frame fr, QuantileModel.CombineMethod combine_method) {
-    if (fr.numCols() != 1 || !fr.anyVec().isNumeric())
-      throw new IllegalArgumentException("median only works on a single numeric column");
     // Frame needs a Key for Quantile, might not have one from rapids
     Key tk = null;
     if (fr._key == null) {

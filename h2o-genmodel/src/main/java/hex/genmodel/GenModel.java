@@ -19,98 +19,128 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  response col enums for SupervisedModels.  */
   public final String[][] _domains;
 
+  /** Name of the column with offsets (used for certain types of models). */
+  public String _offsetColumn;
+
 
   public GenModel(String[] names, String[][] domains) {
     _names = names;
     _domains = domains;
+    _offsetColumn = null;
   }
 
+  //--------------------------------------------------------------------------------------------------------------------
+  // IGenModel interface
+  //--------------------------------------------------------------------------------------------------------------------
+
+  /** Returns true for supervised models. */
   @Override public boolean isSupervised() {
     return false;
   }
+
+  /** Returns number of input features. */
   @Override public int nfeatures() {
     return _names.length;
   }
+
+  /** Returns number of output classes for classifiers, 1 for regression models, and 0 for unsupervised models. */
   @Override public int nclasses() {
     return 0;
   }
+
+  /** Returns this model category. */
+  @Override abstract public ModelCategory getModelCategory();
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // IGeneratedModel interface
+  //--------------------------------------------------------------------------------------------------------------------
+
+  @Override abstract public String getUUID();
+
+  /** Returns number of columns used as input for training (i.e., exclude response and offset columns). */
   @Override public int getNumCols() {
     return nfeatures();
   }
+
+  /** The names of all columns used, including response and offset columns. */
+  @Override public String[] getNames() {
+    return _names;
+  }
+
+  /** The name of the response column. */
+  @Override public String getResponseName() {
+    return _names[getResponseIdx()];
+  }
+
+  /** Returns the index of the response column inside getDomains(). */
   @Override public int getResponseIdx() {
     if (!isSupervised())
       throw new UnsupportedOperationException("Cannot provide response index for unsupervised models.");
     return _domains.length - 1;
   }
-  @Override public String getResponseName() {
-    throw new UnsupportedOperationException("getResponseName is not supported in h2o-dev!");
-  }
-  @Override public int getNumResponseClasses() {
-    if (isClassifier())
-      return nclasses();
-    else
-      throw new UnsupportedOperationException("Cannot provide number of response classes for non-classifiers.");
-  }
-  @Override public String[] getNames() {
-    return _names;
-  }
-  @Override public int getColIdx(String name) {
-    String[] names = getNames();
-    for (int i=0; i<names.length; i++) if (names[i].equals(name)) return i;
-    return -1;
-  }
+
+  /** Get number of classes in the given column.
+   * Return number greater than zero if the column is categorical or -1 if the column is numeric. */
   @Override public int getNumClasses(int colIdx) {
     String[] domval = getDomainValues(colIdx);
-    return domval!=null?domval.length:-1;
-  }
-  @Override public String[] getDomainValues(String name) {
-    int colIdx = getColIdx(name);
-    return colIdx != -1 ? getDomainValues(colIdx) : null;
-  }
-  @Override public String[] getDomainValues(int i) {
-    return getDomainValues()[i];
-  }
-  @Override public int mapEnum(int colIdx, String enumValue) {
-    String[] domain = getDomainValues(colIdx);
-    if (domain==null || domain.length==0) return -1;
-    for (int i=0; i<domain.length;i++) if (enumValue.equals(domain[i])) return i;
-    return -1;
-  }
-  @Override
-  public String[][] getDomainValues() {
-    return _domains;
+    return domval != null? domval.length : -1;
   }
 
+  /** Return a number of classes in response column. */
+  @Override public int getNumResponseClasses() {
+    if (!isClassifier())
+      throw new UnsupportedOperationException("Cannot provide number of response classes for non-classifiers.");
+    return nclasses();
+  }
+
+  /** Returns true if this model represents a classifier, else it is used for regression. */
   @Override public boolean isClassifier() {
     ModelCategory cat = getModelCategory();
     return cat == ModelCategory.Binomial || cat == ModelCategory.Multinomial;
   }
 
+  /** Returns true if this model represents an AutoEncoder. */
   @Override public boolean isAutoEncoder() {
-    ModelCategory cat = getModelCategory();
-    return cat == ModelCategory.AutoEncoder;
+    return getModelCategory() == ModelCategory.AutoEncoder;
   }
 
+  /** Gets domain of the given column. */
+  @Override public String[] getDomainValues(String name) {
+    int colIdx = getColIdx(name);
+    return colIdx != -1 ? getDomainValues(colIdx) : null;
+  }
+
+  /** Returns domain values for the i-th column. */
+  @Override public String[] getDomainValues(int i) {
+    return getDomainValues()[i];
+  }
+
+  /** Returns domain values for all columns, including the response column. */
+  @Override public String[][] getDomainValues() {
+    return _domains;
+  }
+
+  /** Returns index of a column with given name, or -1 if the column is not found. */
+  @Override public int getColIdx(String name) {
+    String[] names = getNames();
+    for (int i = 0; i < names.length; i++) if (names[i].equals(name)) return i;
+    return -1;
+  }
+
+  /** Maps given column's categorical to the integer used by this model (returns -1 if mapping not found). */
+  @Override public int mapEnum(int colIdx, String enumValue) {
+    String[] domain = getDomainValues(colIdx);
+    if (domain != null)
+      for (int i = 0; i < domain.length; i++)
+        if (enumValue.equals(domain[i]))
+          return i;
+    return -1;
+  }
+
+  /** Returns the expected size of preds array which is passed to `predict(double[], double[])` function. */
   @Override public int getPredsSize() {
-    return isClassifier() ? 1 + getNumResponseClasses() : 2;
-  }
-
-  /** ??? */
-  public String getHeader() { return null; }
-
-  /** Takes a HashMap mapping column names to doubles.
-   *  <p>
-   *  Looks up the column names needed by the model, and places the doubles into
-   *  the data array in the order needed by the model. Missing columns use NaN.
-   *  </p>
-   */
-  public double[] map( Map<String, Double> row, double data[] ) {
-    String[] colNames = _names;
-    for( int i=0; i<nfeatures(); i++ ) {
-      Double d = row.get(colNames[i]);
-      data[i] = d==null ? Double.NaN : d;
-    }
-    return data;
+    return isClassifier()? 1 + getNumResponseClasses() : 2;
   }
 
   @Override
@@ -123,30 +153,52 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     throw new UnsupportedOperationException("Unsupported operation - use score0 method!");
   }
 
+
+  //--------------------------------------------------------------------------------------------------------------------
+
+  /** Takes a HashMap mapping column names to doubles.
+   *  <p>
+   *  Looks up the column names needed by the model, and places the doubles into
+   *  the data array in the order needed by the model. Missing columns use NaN.
+   *  </p>
+   */
+  public double[] map(Map<String, Double> row, double data[]) {
+    for (int i = 0; i < nfeatures(); i++) {
+      Double d = row.get(_names[i]);
+      data[i] = d==null ? Double.NaN : d;
+    }
+    return data;
+  }
+
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  This call
    *  exactly matches the hex.Model.score0, but uses the light-weight
    *  GenModel class. */
-  abstract public double[] score0( double[] data, double[] preds );
+  abstract public double[] score0(double[] row, double[] preds);
+
+  public double[] score0(double[] row, double offset, double[] preds) {
+    throw new UnsupportedOperationException("`offset` column is not supported");
+  }
 
   // Does the mapping lookup for every row, no allocation.
   // data and preds arrays are pre-allocated and can be re-used for every row.
-  public double[] score0( Map<String, Double> row, double data[], double preds[] ) {
-    return score0(map(row,data),preds);
+  public double[] score0(Map<String, Double> row, double data[], double preds[]) {
+    Double offset = _offsetColumn == null? null : row.get(_offsetColumn);
+    return score0(map(row, data), offset == null? 0.0 : offset, preds);
   }
 
   // Does the mapping lookup for every row.
   // preds array is pre-allocated and can be re-used for every row.
   // Allocates a double[] for every row.
-  public double[] score0( Map<String, Double> row, double preds[] ) {
-    return score0(map(row,new double[nfeatures()]),preds);
+  public double[] score0(Map<String, Double> row, double preds[]) {
+    return score0(row, new double[nfeatures()], preds);
   }
 
   // Does the mapping lookup for every row.
   // Allocates a double[] and a float[] for every row.
-  public double[] score0( Map<String, Double> row ) {
-    return score0(map(row,new double[nfeatures()]),new double[nclasses()+1]);
+  public double[] score0(Map<String, Double> row) {
+    return score0(row, new double[nfeatures()], new double[nclasses()+1]);
   }
 
   /**
@@ -387,7 +439,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   // Build a class distribution from a log scale; find the top prediction
   public static void GBM_rescale(double[] preds) {
     double sum = log_rescale(preds);
-    for( int k=1; k<preds.length; k++ ) preds[k] /= sum;
+    for (int k = 1; k < preds.length; k++)
+      preds[k] /= sum;
   }
 
   // --------------------------------------------------------------------------
@@ -399,4 +452,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public static double GLM_tweedieInv( double x, double tweedie_link_power ) {
     return tweedie_link_power == 0?Math.max(2e-16,Math.exp(x)):Math.pow(x, 1.0/ tweedie_link_power);
   }
+
+
+
+
+  /** ??? */
+  public String getHeader() { return null; }
+
 }

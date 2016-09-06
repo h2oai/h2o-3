@@ -130,7 +130,7 @@ class H2OEstimator(ModelBase):
         assert_is_type(training_frame, H2OFrame)
         assert_is_type(y, None, int, str)
         assert_is_type(x, None, int, str, [str, int], {str, int})
-        algo = self._compute_algo()
+        algo = self.algo
         algo_params = locals()
         parms = self._parms.copy()
         if "__class__" in parms:  # FIXME: hackt for PY3
@@ -170,8 +170,7 @@ class H2OEstimator(ModelBase):
         training_frame = algo_params.pop("training_frame")
         validation_frame = algo_params.pop("validation_frame", None)
         is_auto_encoder = "autoencoder" in algo_params and algo_params["autoencoder"]
-        algo = self._compute_algo()
-        is_unsupervised = is_auto_encoder or algo == "pca" or algo == "svd" or algo == "kmeans" or algo == "glrm"
+        is_unsupervised = is_auto_encoder or self.algo in {"pca", "svd", "kmeans", "glrm"}
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None: raise ValueError("Missing response")
         self._model_build(x, y, training_frame, validation_frame, algo_params)
@@ -193,10 +192,9 @@ class H2OEstimator(ModelBase):
                                   [quoted(col) for col in kwargs["interactions"]])
         kwargs = {k: H2OEstimator._keyify_if_h2oframe(kwargs[k]) for k in kwargs}
         rest_ver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else 3
-        algo = self._compute_algo()
 
-        model = H2OJob(h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, algo), data=kwargs),
-                       job_type=(algo + " Model Build"))
+        model = H2OJob(h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=kwargs),
+                       job_type=(self.algo + " Model Build"))
 
         if self._future:
             self._job = model

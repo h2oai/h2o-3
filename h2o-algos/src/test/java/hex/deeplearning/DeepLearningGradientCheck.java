@@ -6,6 +6,7 @@ import hex.DataInfo;
 import hex.Distribution;
 import hex.FrameTask;
 import hex.ModelMetricsRegression;
+import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -57,18 +58,18 @@ public class DeepLearningGradientCheck extends TestUtil {
       int failedcount=0;
       double maxRelErr = 0;
       double meanRelErr = 0;
-      for (Distribution.Family dist : new Distribution.Family[]{
-              Distribution.Family.gaussian,
-              Distribution.Family.laplace,
-              Distribution.Family.quantile,
-              Distribution.Family.huber,
-              Distribution.Family.modified_huber,
-              Distribution.Family.gamma,
-              Distribution.Family.poisson,
-              Distribution.Family.AUTO,
-              Distribution.Family.tweedie,
-              Distribution.Family.multinomial,
-              Distribution.Family.bernoulli,
+      for (DistributionFamily dist : new DistributionFamily[]{
+              DistributionFamily.gaussian,
+              DistributionFamily.laplace,
+              DistributionFamily.quantile,
+              DistributionFamily.huber,
+              DistributionFamily.modified_huber,
+              DistributionFamily.gamma,
+              DistributionFamily.poisson,
+              DistributionFamily.AUTO,
+              DistributionFamily.tweedie,
+              DistributionFamily.multinomial,
+              DistributionFamily.bernoulli,
       }) {
         for (DeepLearningParameters.Activation act : new DeepLearningParameters.Activation[]{
 //            DeepLearningParameters.Activation.ExpRectifier,
@@ -89,15 +90,15 @@ public class DeepLearningGradientCheck extends TestUtil {
                       1
               }) {
                 if (response.equals("Class")) {
-                  if (dist != Distribution.Family.multinomial && dist != Distribution.Family.AUTO)
+                  if (dist != DistributionFamily.multinomial && dist != DistributionFamily.AUTO)
                     continue;
                 }
                 else if (response.equals("Binary")) {
-                  if (dist != Distribution.Family.modified_huber && dist != Distribution.Family.bernoulli && dist != Distribution.Family.AUTO)
+                  if (dist != DistributionFamily.modified_huber && dist != DistributionFamily.bernoulli && dist != DistributionFamily.AUTO)
                     continue;
                 }
                 else {
-                  if (dist == Distribution.Family.multinomial || dist == Distribution.Family.modified_huber || dist == Distribution.Family.bernoulli) continue;
+                  if (dist == DistributionFamily.multinomial || dist == DistributionFamily.modified_huber || dist == DistributionFamily.bernoulli) continue;
                 }
 
                 DeepLearningParameters parms = new DeepLearningParameters();
@@ -395,18 +396,18 @@ public class DeepLearningGradientCheck extends TestUtil {
 
   @Test public void checkDistributionGradients() {
     Random rng = new Random(0xDECAF);
-    for (Distribution.Family dist : new Distribution.Family[]{
-            Distribution.Family.AUTO,
-            Distribution.Family.gaussian,
-            Distribution.Family.laplace,
-            Distribution.Family.quantile,
-            Distribution.Family.huber,
-            Distribution.Family.gamma,
-            Distribution.Family.poisson,
-            Distribution.Family.tweedie,
-            Distribution.Family.bernoulli,
-            Distribution.Family.modified_huber,
-//              Distribution.Family.multinomial, //no gradient/deviance implemented
+    for (DistributionFamily dist : new DistributionFamily[]{
+            DistributionFamily.AUTO,
+            DistributionFamily.gaussian,
+            DistributionFamily.laplace,
+            DistributionFamily.quantile,
+            DistributionFamily.huber,
+            DistributionFamily.gamma,
+            DistributionFamily.poisson,
+            DistributionFamily.tweedie,
+            DistributionFamily.bernoulli,
+            DistributionFamily.modified_huber,
+//              DistributionFamily.multinomial, //no gradient/deviance implemented
     }) {
       DeepLearningParameters p = new DeepLearningParameters();
       p._distribution = dist;

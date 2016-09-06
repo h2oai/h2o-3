@@ -2,6 +2,7 @@ package hex.deeplearning;
 
 
 import hex.*;
+import hex.genmodel.utils.DistributionFamily;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -20,7 +21,7 @@ import water.util.*;
 import java.io.File;
 import java.util.Arrays;
 
-import static hex.Distribution.Family.*;
+import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -1013,7 +1014,7 @@ public class DeepLearningTest extends TestUtil {
     Frame tfr = null, vfr = null, fr2 = null;
     DeepLearningModel dl = null;
 
-    for (Distribution.Family dist : new Distribution.Family[] {
+    for (DistributionFamily dist : new DistributionFamily[] {
         AUTO,
         gaussian,
         poisson,

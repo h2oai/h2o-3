@@ -76,7 +76,6 @@ public abstract class Parser extends Iced {
     parseChunk(cidx, din, dout);     // Parse the remaining partial 32K buffer
     return dout;
   }
-
   // ------------------------------------------------------------------------
   // Zipped file; no parallel decompression; decompress into local chunks,
   // parse local chunks; distribute chunks later.

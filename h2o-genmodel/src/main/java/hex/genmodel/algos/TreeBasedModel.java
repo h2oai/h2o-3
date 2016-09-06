@@ -5,6 +5,7 @@ import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 import hex.genmodel.utils.NaSplitDir;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -19,12 +20,9 @@ public abstract class TreeBasedModel extends RawModel {
     protected int _ntrees;
     protected byte[][] _compressed_trees;
 
-    protected TreeBasedModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
-        super(cr, info, columns, domains);
-        _ntrees = (int) info.get("n_trees");
-    }
-
     /**
+     * Highly efficient (critical path) tree scoring
+     *
      * Given a tree (in the form of a byte array) and the row of input data, compute either this tree's
      * predicted value when `computeLeafAssignment` is false, or the the decision path within the tree (but no more
      * than 64 levels) when `computeLeafAssignment` is true.
@@ -35,7 +33,7 @@ public abstract class TreeBasedModel extends RawModel {
     public static double scoreTree(final byte[] tree, final double[] row, final int nclasses,
                                    boolean computeLeafAssignment) {
         ByteBufferWrapper ab = new ByteBufferWrapper(tree);
-        GenmodelBitSet ibs = null;  // Lazily set on hitting first group test
+        GenmodelBitSet bs = null;  // Lazily set on hitting first group test
         long bitsRight = 0;
         int level = 0;
         while (true) {
@@ -45,51 +43,49 @@ public abstract class TreeBasedModel extends RawModel {
             int naSplitDir = ab.get1U();
             final boolean naVsRest = naSplitDir == NsdNaVsRest;
             final boolean leftward = naSplitDir == NsdNaLeft || naSplitDir == NsdLeft;
-            int equal = (nodeType & 12);  // Can be one of 0, 4, 8, 12
+            int lmask = (nodeType & 51);
+            int equal = (nodeType & 12);  // Can be one of 0, 8, 12
+            assert equal != 4;  // no longer supported
 
             float splitVal = -1;
             if (!naVsRest) {
                 // Extract value or group to split on
-                if (equal <= 4) {
+                if (equal == 0) {
                     // Standard float-compare test (either < or ==)
                     splitVal = ab.get4f();  // Get the float to compare
                 } else {
                     // Bitset test
-                    if (ibs == null) ibs = new GenmodelBitSet(0);
+                    if (bs == null) bs = new GenmodelBitSet(0);
                     if (equal == 8)
-                        ibs.fill2(tree, ab);
+                        bs.fill2(tree, ab);
                     else
-                        ibs.fill3(tree, ab);
+                        bs.fill3(tree, ab);
                 }
             }
 
-            // Compute the amount to skip.
-            int lmask = nodeType & 0x33;
-            int rmask = (nodeType & 0xC0) >> 2;
-            int skip = 0;
-            switch(lmask) {
-                case 0:  skip = ab.get1U();  break;
-                case 1:  skip = ab.get2();  break;
-                case 2:  skip = ab.get3();  break;
-                case 3:  skip = ab.get4();  break;
-                case 16: skip = nclasses < 256? 1 : 2;  break;  // Small leaf
-                case 48: skip = 4;  break;  // skip the prediction
-                default:
-                    assert false : "illegal lmask value " + lmask + " in bitpile " + Arrays.toString(tree);
+            double d = row[colId];
+            if (Double.isNaN(d)? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains((int)d))) {
+                // go RIGHT
+                switch (lmask) {
+                    case 0:  ab.skip(ab.get1U());  break;
+                    case 1:  ab.skip(ab.get2());  break;
+                    case 2:  ab.skip(ab.get3());  break;
+                    case 3:  ab.skip(ab.get4());  break;
+                    case 16: ab.skip(nclasses < 256? 1 : 2);  break;  // Small leaf
+                    case 48: ab.skip(4);  break;  // skip the prediction
+                    default:
+                        assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
+                }
+                if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
+                lmask = (nodeType & 0xC0) >> 2;  // Replace leftmask with the rightmask
+            } else {
+                // go LEFT
+                if (lmask <= 3)
+                    ab.skip(lmask + 1);
             }
 
-            assert equal != 4;  // no longer supported
-            double d = row[colId];
-            if (Double.isNaN(d)? !leftward
-                               : !naVsRest && (equal == 0? d >= splitVal : ibs.contains((int)d))) {
-                // go RIGHT
-                ab.skip(skip);
-                if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
-                lmask = rmask; // And set the leaf bits into common place
-            }   // if LEFT don't do anything
-
             level++;
-            if ((lmask & 16) == 16) {
+            if ((lmask & 16) != 0) {
                 if (computeLeafAssignment) {
                     bitsRight |= 1 << level;  // mark the end of the tree
                     return Double.longBitsToDouble(bitsRight);
@@ -116,4 +112,41 @@ public abstract class TreeBasedModel extends RawModel {
         return sb.substring(0, pos);
     }
 
+
+    //------------------------------------------------------------------------------------------------------------------
+    // Private
+    //------------------------------------------------------------------------------------------------------------------
+
+    protected TreeBasedModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
+        super(cr, info, columns, domains);
+        _ntrees = (int) info.get("n_trees");
+        _compressed_trees = new byte[_ntrees * _nclasses][];
+    }
+
+    /**
+     * Score all trees and fill in the `preds` array.
+     */
+    protected void scoreAllTrees(double[] row, double[] preds, int nClassesToScore) {
+        java.util.Arrays.fill(preds, 0);
+        for (int i = 0; i < nClassesToScore; i++) {
+            int k = _nclasses == 1? 0 : i + 1;
+            for (int j = 0; j < _ntrees; j++) {
+                preds[k] += scoreTree(fetchTree(i, j), row, _nclasses);
+            }
+        }
+    }
+
+    private byte[] fetchTree(int classIdx, int treeIdx) {
+        try {
+            int itree = classIdx * _ntrees + treeIdx;
+            byte[] tree = _compressed_trees[itree];
+            if (tree == null) {
+                tree = _reader.getBinaryFile(String.format("trees/t%02d_%03d.bin", classIdx, treeIdx));
+                _compressed_trees[itree] = tree;
+            }
+            return tree;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

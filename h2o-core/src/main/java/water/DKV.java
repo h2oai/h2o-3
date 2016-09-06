@@ -185,7 +185,6 @@ public abstract class DKV {
   static public void prefetch( String key_name ) {        get(Key.make(key_name),false); }
 
   static private Value get( Key key, boolean blocking ) {
-    if (key == null) return null;
     // Read the Cloud once per put-attempt, to keep a consistent snapshot.
     H2O cloud = H2O.CLOUD;
     Value val = Value.STORE_get(key);

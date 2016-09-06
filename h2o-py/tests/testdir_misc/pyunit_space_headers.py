@@ -19,7 +19,7 @@ def space_headers():
 
     h2o_median = f["start station id"].median()
 
-    assert h2o_median == 444, "Expected median for \"start station id\" to be 444, but got {0}".format(h2o_median)
+    assert h2o_median[0] == 444, "Expected median for \"start station id\" to be 444, but got {0}".format(h2o_median)
 
 
 

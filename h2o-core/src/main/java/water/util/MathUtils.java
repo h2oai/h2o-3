@@ -45,7 +45,7 @@ public class MathUtils {
     QuantileModel kmm = job.get();
     double value = kmm._output._quantiles[0/*col*/][0/*quantile*/];
     assert(!Double.isNaN(value));
-    Log.info("weighted " + alpha + "-quantile: " + value);
+    Log.debug("weighted " + alpha + "-quantile: " + value);
     job.remove();
     kmm.remove();
     DKV.remove(tempFrame._key);
