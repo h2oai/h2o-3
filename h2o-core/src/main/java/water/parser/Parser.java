@@ -124,10 +124,11 @@ public abstract class Parser extends Iced {
 
       parseChunk(cidx++, din, nextChunk);
 
-      if ((is.available() <= 0) && (is instanceof java.util.zip.ZipInputStream)) {
+      if (is.available() <= 0) {
         parseChunk(cidx, din, nextChunk);     // Parse the remaining partial 32K buffer
 
-        ((ZipInputStream) is).getNextEntry();   // move to next file if it exists
+        if (is instanceof  java.util.zip.ZipInputStream)
+          ((ZipInputStream) is).getNextEntry();   // move to next file if it exists
 
         if (is.available() > 0) {
           din = new StreamData(is);
@@ -136,9 +137,6 @@ public abstract class Parser extends Iced {
         }
       }
     }
-
-    if (!(is instanceof java.util.zip.ZipInputStream))
-        parseChunk(cidx, din, nextChunk);     // Parse the remaining partial 32K buffer
 
     nextChunk.close();
     bvs.close();

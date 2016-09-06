@@ -26,7 +26,7 @@ public class ClientParserZipGzipTest extends TestUtil {
     Frame one_zip_directory = parse_test_file("smalldata/parser/hexdev_497/airlines_small_csv.zip");
 
       // airlines_small_csv is a folder that contains the 4 csv files not compressed.
-    Frame one_csv_directory = parse_test_folder("smalldata/parser/hexdev_497/airlines_small_csv/all_airlines.csv");
+    Frame one_csv_directory = parse_test_file("smalldata/parser/hexdev_497/airlines_small_csv/all_airlines.csv");
 
       // H2O frames built from both sources should be equal.  Verify that here.
     assertTrue(TestUtil.isBitIdentical(one_zip_directory, one_csv_directory));
