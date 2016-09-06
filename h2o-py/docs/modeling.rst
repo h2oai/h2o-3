@@ -56,3 +56,10 @@ Modeling In H2O
 .. autoclass:: h2o.estimators.naive_bayes.H2ONaiveBayesEstimator
   :members:
   :show-inheritance:
+
+:mod:`H2OGridSearch`
+-----------------------------
+.. automodule:: h2o.grid.grid_search
+  :members:
+  :undoc-members:
+  :show-inheritance:
