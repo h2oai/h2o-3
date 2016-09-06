@@ -11,7 +11,6 @@ dependencies {
   // Parquet support
   // Use the same version as Spark 1.5-2.0
   compile("org.apache.parquet:parquet-hadoop:1.7.0")
-  compile("org.apache.parquet:parquet-avro:1.7.0")
   compile("org.apache.hadoop:hadoop-common:$parquetHadoopVersion") {
     transitive = false
   }

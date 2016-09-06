@@ -15,7 +15,7 @@ import water.parser.ParserProvider;
 public class ParquetParserProvider extends ParserProvider {
 
   /* Setup for this parser */
-  static ParserInfo PARQUET_INFO = new ParserInfo("PARQUET", DefaultParserProviders.MAX_CORE_PRIO + 30, true, true);
+  static ParserInfo PARQUET_INFO = new ParserInfo("PARQUET", DefaultParserProviders.MAX_CORE_PRIO + 30, true, false);
 
   @Override
   public ParserInfo info() {
@@ -35,8 +35,9 @@ public class ParquetParserProvider extends ParserProvider {
   }
 
   @Override
-  public ParseSetup createParserSetup(Key[] inputs, ParseSetup requiredSetup) {
-    return requiredSetup;
+  public ParseSetup createParserSetup(Key[] inputs, ParseSetup requestedSetup) {
+    // pass through for now
+    return requestedSetup;
   }
 
 }
