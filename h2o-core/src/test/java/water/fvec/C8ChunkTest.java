@@ -52,7 +52,7 @@ public class C8ChunkTest extends TestUtil {
   @Test public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
     water.Key key = Vec.newKey();
-    VecAry vec = new VecAry(new Vec(key, AVec.ESPC.rowLayout(key,new long[]{0,15})).makeZero());
+    VecAry vec = new VecAry(new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15})).makeZero());
     long[] vals = new long[]{Long.MIN_VALUE+1, 1, 0, 2, 0, 51, 0, 33, 0, 21234, 3422, 3767, 0, 0, Long.MAX_VALUE};
     try(VecAry.Writer w = vec.open()) {
       for (int i = 0; i < vals.length; ++i) w.set(i,0,vals[i]);

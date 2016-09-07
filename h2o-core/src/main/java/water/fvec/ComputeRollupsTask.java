@@ -18,14 +18,15 @@ final class ComputeRollupsTask extends DTask<ComputeRollupsTask> {
   final Key _rsKey;
   final boolean _computeHisto;
 
-  public ComputeRollupsTask(AVec v, boolean computeHisto){
+  public ComputeRollupsTask(Vec v, boolean computeHisto){
     super((byte)(Thread.currentThread() instanceof H2O.FJWThr ? currThrPriority()+1 : H2O.MIN_HI_PRIORITY-3));
     _vecKey = v._key;
     _rsKey = v.rollupStatsKey();
     _computeHisto = computeHisto;
   }
 
-  @Override public void onAck(){AVec._pendingRollups.remove(_rsKey);}
+  @Override public void onAck(){
+    Vec._pendingRollups.remove(_rsKey);}
 
   private Value makeComputing(){
     RollupStatsAry newRs = RollupStatsAry.makeComputing();
@@ -142,7 +143,7 @@ final class ComputeRollupsTask extends DTask<ComputeRollupsTask> {
   }
 
   private static final int MAX_NBINS = 1000; // Standard bin count; categoricals can have more bins
-  final void computeHisto(final RollupStats [] rsa, AVec vec, final Value nnn) {
+  final void computeHisto(final RollupStats [] rsa, Vec vec, final Value nnn) {
     // All NAs or non-math; histogram has zero bins
     int [] nbins = new int[vec.numCols()];
     for(int i = 0; i < nbins.length; ++i) {

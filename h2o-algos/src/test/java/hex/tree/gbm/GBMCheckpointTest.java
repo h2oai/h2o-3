@@ -10,7 +10,6 @@ import water.Key;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.VecUtils;
 

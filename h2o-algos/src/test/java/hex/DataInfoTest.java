@@ -9,7 +9,6 @@ import water.TestUtil;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.InteractionWrappedVec;
-import water.fvec.Vec;
 
 
 // test cases:
@@ -56,7 +55,7 @@ public class DataInfoTest extends TestUtil {
       Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2), true, true,true);
       int len=0;
       for(int i = 0; i < interactions.vecs().len(); ++i )
-       len += ((InteractionWrappedVec)interactions.vecs().getAVecForCol(i)).expandedLength();
+       len += ((InteractionWrappedVec)interactions.vecs().getVecForCol(i)).expandedLength();
       interactions.delete();
       Assert.assertTrue(len==290+132+10);
 
@@ -111,7 +110,7 @@ public class DataInfoTest extends TestUtil {
       Frame interactions = Model.makeInteractions(fr, false, Model.InteractionPair.generatePairwiseInteractionsFromList(8, 16, 2), false, true, true);
       int len=0;
       for(int i = 0; i < interactions.vecs().len(); ++i )
-        len += ((InteractionWrappedVec)interactions.vecs().getAVecForCol(i)).expandedLength();
+        len += ((InteractionWrappedVec)interactions.vecs().getVecForCol(i)).expandedLength();
       interactions.delete();
       Assert.assertTrue(len==426);
 

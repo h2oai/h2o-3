@@ -10,7 +10,6 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.UploadFileVec;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.parser.ParseDataset;
 import water.rapids.Rapids;

@@ -3,9 +3,7 @@ package water.api.schemas3;
 import water.Iced;
 import water.api.API;
 import water.api.schemas3.KeyV3.FrameKeyV3;
-import water.fvec.ByteVec;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 
 /**

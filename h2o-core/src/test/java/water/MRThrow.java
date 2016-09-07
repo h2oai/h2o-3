@@ -7,7 +7,6 @@ import java.util.concurrent.ExecutionException;
 import jsr166y.CountedCompleter;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
-import water.fvec.Vec;
 
 public class MRThrow extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5);}

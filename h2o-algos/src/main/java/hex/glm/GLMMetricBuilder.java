@@ -11,7 +11,6 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMWeightsFun;
 import water.H2O;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.MathUtils;

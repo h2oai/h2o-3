@@ -14,7 +14,7 @@ import java.util.Arrays;
  * vector which may do compression; the final 'close' will return some other
  * Vec type.  NEW Vectors do NOT support reads!
  */
-public class AppendableVec extends AVec {
+public class AppendableVec extends Vec {
   // Temporary ESPC, for uses which do not know the number of Chunks up front.
   public long _tmp_espc[];
   // Allow Chunks to have their final Chunk index (set at closing) offset by
@@ -25,10 +25,10 @@ public class AppendableVec extends AVec {
   final int [] _blocks;
 
 
-  public AppendableVec( Key<AVec> key, byte... type ) { this(key, new int[]{type.length}, new long[4], type, 0);}
-  public AppendableVec( Key<AVec> key, int [] blocks, byte... type ) { this(key, blocks, new long[4], type, 0); }
+  public AppendableVec(Key<Vec> key, byte... type ) { this(key, new int[]{type.length}, new long[4], type, 0);}
+  public AppendableVec(Key<Vec> key, int [] blocks, byte... type ) { this(key, blocks, new long[4], type, 0); }
 
-  public AppendableVec( Key<AVec> key, int [] blocks, long[] tmp_espc, byte [] type, int chunkOff) {
+  public AppendableVec(Key<Vec> key, int [] blocks, long[] tmp_espc, byte [] type, int chunkOff) {
     super( key, -1/*no rowLayout yet*/);
     _tmp_espc = tmp_espc;
     _chunkOff = chunkOff;
@@ -43,16 +43,14 @@ public class AppendableVec extends AVec {
   // reads, plus computes rows-per-chunk, min/max/mean, etc.
   public VecAry closeVecs(String[][] domains, int rowLayout, Futures fs) {
     // Compute #chunks
-    AVec [] vecs = new AVec[_blocks.length];
+    Vec[] vecs = new Vec[_blocks.length];
     int nchunk = _tmp_espc.length;
     int off = 0;
     VectorGroup vg = group();
     int vecStart = VectorGroup.getVecId(_key._kb);
     for(int i = 0; i < _blocks.length; ++i) {
-      Key<AVec> k = vg.vecKey(vecStart+i);
-      vecs[i] = (_blocks[i] == 1)
-          ?new Vec(k, rowLayout, domains[off], _types[off])
-          :new VecBlock(k, rowLayout, _blocks[i],Arrays.copyOfRange(domains,off,off+_blocks[i]), Arrays.copyOfRange(_types,off,off+_blocks[i]));
+      Key<Vec> k = vg.vecKey(vecStart+i);
+      vecs[i] = new Vec(k, rowLayout, _blocks[i],Arrays.copyOfRange(domains,off,off+_blocks[i]), Arrays.copyOfRange(_types,off,off+_blocks[i]));
       DKV.put(vecs[i]._key,vecs[i],fs);       // Inject the header into the K/V store
       off += _blocks[i];
       DKV.remove(vecs[i].chunkKey(_key,nchunk,i),fs); // remove potential trailing key
@@ -91,7 +89,7 @@ public class AppendableVec extends AVec {
   public VecAry layout_and_close(Futures fs, String [][] domains) { return closeVecs(domains, compute_rowLayout(_key,_tmp_espc),fs); }
 
 
-  public static int compute_rowLayout(Key<AVec> k, long [] tmp_espc) {
+  public static int compute_rowLayout(Key<Vec> k, long [] tmp_espc) {
     int nchunk = tmp_espc.length;
     while( nchunk > 1 && tmp_espc[nchunk-1] == 0 )
       nchunk--;
@@ -104,7 +102,7 @@ public class AppendableVec extends AVec {
       x += tmp_espc[i];        // Raise total elem count
     }
     espc[nchunk]=x;             // Total element count in last
-    return AVec.ESPC.rowLayout(k,espc);
+    return Vec.ESPC.rowLayout(k,espc);
   }
 
 
@@ -124,7 +122,7 @@ public class AppendableVec extends AVec {
     return 0;
   }
 
-  @Override public ChunkAry chunkForChunkIdx(int cidx) {throw new UnsupportedOperationException();}
+  @Override public Chunks chunkForChunkIdx(int cidx) {throw new UnsupportedOperationException();}
 
 
   public synchronized void closeChunk(int cidx, int len) {
@@ -136,30 +134,18 @@ public class AppendableVec extends AVec {
   }
 
   @Override
-  public AVec doCopy() {
+  public Vec doCopy() {
     throw new UnsupportedOperationException("AppendableVec does not support copy.");
   }
 
   // None of these are supposed to be called while building the new vector
   @Override public Value chunkIdx( int cidx ) { throw H2O.fail(); }
 
-  @Override
-  public boolean hasCol(int id) {
-    return false;
-  }
 
-  @Override
-  public RollupStats getRollups(int colId, boolean histo) {
-    throw new UnsupportedOperationException();
-  }
 
   @Override
   public void setDomain(int vec, String[] domain) {throw new UnsupportedOperationException();}
 
-  @Override
-  public void setBad(int colId) {
-
-  }
 
   @Override public long length() { throw H2O.fail(); }
   @Override public int nChunks() { throw H2O.fail(); }
@@ -167,11 +153,7 @@ public class AppendableVec extends AVec {
   @Override public long chunk2StartElem( int cidx ) { throw H2O.fail(); }
   @Override public long byteSize() {return 0;}
 
-  @Override
-  public void preWriting(int... colIds) {}
 
-  @Override
-  public Futures postWrite(Futures fs) {return fs;}
 
 
   @Override public String toString() { return "[AppendableVec, unknown size]"; }

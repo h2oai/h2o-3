@@ -4,7 +4,6 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.*;
-import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
@@ -591,8 +590,8 @@ public class VecUtils {
     }
   }
 
-  public static AVec makeCon(final long l, String[] domain, AVec.VectorGroup group, int rowLayout ) {
-    final AVec v0 = new AVec(group.addVec(), rowLayout, domain);
+  public static Vec makeCon(final long l, String[] domain, Vec.VectorGroup group, int rowLayout ) {
+    final Vec v0 = new Vec(group.addVec(), rowLayout, domain);
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
@@ -606,8 +605,8 @@ public class VecUtils {
     return v0;
   }
 
-  public static AVec makeCon(final double d, String[] domain, AVec.VectorGroup group, int rowLayout ) {
-    final AVec v0 = new AVec(group.addVec(), rowLayout, domain);
+  public static Vec makeCon(final double d, String[] domain, Vec.VectorGroup group, int rowLayout ) {
+    final Vec v0 = new Vec(group.addVec(), rowLayout, domain);
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
@@ -621,14 +620,14 @@ public class VecUtils {
     return v0;
   }
 
-  public static AVec makeVec(double [] vals, Key<AVec> vecKey){
+  public static Vec makeVec(double [] vals, Key<Vec> vecKey){
     return makeVec(vals,vecKey,null);
   }
 
-  public static AVec makeVec(double [] vals, Key<AVec> vecKey, String [] domain){
-    AVec v = new AVec(vecKey, AVec.ESPC.rowLayout(vecKey,new long[]{0,vals.length}), domain);
+  public static Vec makeVec(double [] vals, Key<Vec> vecKey, String [] domain){
+    Vec v = new Vec(vecKey, Vec.ESPC.rowLayout(vecKey,new long[]{0,vals.length}), domain);
     NewChunk nc;
-    AVec.ChunkAry sc = new AVec.ChunkAry(v, new Chunk[]{ nc = new NewChunk()});
+    Vec.Chunks sc = new Vec.Chunks(v, new Chunk[]{ nc = new NewChunk()});
     Futures fs = new Futures();
     for(double d:vals)
       nc.addNum(d);
@@ -638,13 +637,13 @@ public class VecUtils {
     return v;
   }
 
-  public static AVec makeVec(long [] vals, Key<AVec> vecKey){
+  public static Vec makeVec(long [] vals, Key<Vec> vecKey){
     return makeVec(vals,vecKey,null);
   }
-  public static AVec makeVec(long [] vals, Key<AVec> vecKey, String [] domain){
-    AVec v = new AVec(vecKey, AVec.ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
+  public static Vec makeVec(long [] vals, Key<Vec> vecKey, String [] domain){
+    Vec v = new Vec(vecKey, Vec.ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
     NewChunk nc;
-    AVec.ChunkAry sc = new AVec.ChunkAry(v, new Chunk[]{ nc = new NewChunk()});
+    Vec.Chunks sc = new Vec.Chunks(v, new Chunk[]{ nc = new NewChunk()});
     Futures fs = new Futures();
     for(long l:vals)
       nc.addNum(l,0);
@@ -698,8 +697,8 @@ public class VecUtils {
     for( int i=1; i<nchunks; i++ )
       espc[i] = espc[i-1]+len/nchunks;
     espc[nchunks] = len;
-    AVec.VectorGroup vg = AVec.VectorGroup.VG_LEN1;
-    return makeCon(0,vg, AVec.ESPC.rowLayout(vg._key,espc));
+    Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
+    return makeCon(0,vg, Vec.ESPC.rowLayout(vg._key,espc));
   }
 
   /** Make a new constant vector with the given row count.
@@ -713,21 +712,21 @@ public class VecUtils {
     for( int i=1; i<nchunks; i++ )
       espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
-    AVec.VectorGroup vg = AVec.VectorGroup.VG_LEN1;
-    return makeCon(x,vg, AVec.ESPC.rowLayout(vg._key,espc));
+    Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
+    return makeCon(x,vg, Vec.ESPC.rowLayout(vg._key,espc));
   }
 
 
 
-  public static AVec makeCons(double x, long len, int n) {
-    Key vecKey = AVec.VectorGroup.VG_LEN1.addVec();
+  public static Vec makeCons(double x, long len, int n) {
+    Key vecKey = Vec.VectorGroup.VG_LEN1.addVec();
     byte [] types = new byte[n];
-    Arrays.fill(types,AVec.T_NUM);
-    AVec v = new AVec(vecKey, AVec.ESPC.rowLayout(vecKey, new long[]{0, (int)len}), null,types);
+    Arrays.fill(types, Vec.T_NUM);
+    Vec v = new Vec(vecKey, Vec.ESPC.rowLayout(vecKey, new long[]{0, (int)len}), null,types);
     Chunk [] cs = new Chunk[n];
     for(int i = 0; i < cs.length; ++i)
       cs[i] = new C0DChunk(x,(int)len);
-    DKV.put(v.chunkKey(0),new AVec.ChunkAry(cs));
+    DKV.put(v.chunkKey(0),new Vec.Chunks(cs));
     DKV.put(v);
     return v;
   }
@@ -743,7 +742,7 @@ public class VecUtils {
           for( int r = 0; r < c._len; r++ )
             c.set(r, r + 1 + c.start());
       }
-    }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
+    }.doAll(makeZero(len, redistribute)).vecs().getVecRaw(0);
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.
@@ -756,7 +755,7 @@ public class VecUtils {
           for (int r = 0; r < c._len; r++)
             c.set(r, r + min + c.start());
       }
-    }.doAll(makeZero(len)).vecs().getAVecRaw(0);
+    }.doAll(makeZero(len)).vecs().getVecRaw(0);
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.
@@ -768,7 +767,7 @@ public class VecUtils {
         for (int r = 0; r < c._len; r++)
           c.set(r, r + min + c.start());
       }
-    }.doAll(makeZero(len, redistribute)).vecs().getAVecRaw(0);
+    }.doAll(makeZero(len, redistribute)).vecs().getVecRaw(0);
   }
 
   /** Make a new vector initialized to increasing integers mod {@code repeat}.
@@ -780,7 +779,7 @@ public class VecUtils {
         for( int r = 0; r < c._len; r++ )
           c.set(r, (r + c.start()) % repeat);
       }
-    }.doAll(makeZero(len)).vecs().getAVecRaw(0);
+    }.doAll(makeZero(len)).vecs().getVecRaw(0);
   }
 
 

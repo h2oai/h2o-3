@@ -83,6 +83,9 @@ public final class RollupStats extends Iced {
   boolean isMutating() { return _naCnt==-2; }
   // Check for: Rollups currently being computed
   private boolean isComputing() { return _naCnt==-1; }
+
+  boolean isRemoved(){return _naCnt == -3;}
+  public void setRemoved() { _naCnt = -3;}
   // Check for: Rollups available
   boolean isReady() { return _naCnt>=0; }
 
@@ -342,4 +345,5 @@ public final class RollupStats extends Iced {
   public double[] pctiles() {
     return _pctiles;
   }
+
 }

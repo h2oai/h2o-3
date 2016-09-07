@@ -12,7 +12,6 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.parser.ParseDataset;
 import water.rapids.Rapids;

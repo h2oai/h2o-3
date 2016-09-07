@@ -8,7 +8,6 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 
 public class ParseFolderTestBig extends TestUtil {

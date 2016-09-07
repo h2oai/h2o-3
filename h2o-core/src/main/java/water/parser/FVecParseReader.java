@@ -1,15 +1,14 @@
 package water.parser;
 
-import water.fvec.AVec;
-import water.fvec.Chunk;
 import water.fvec.Vec;
+import water.fvec.Chunk;
 
 /**
  * Parser data in taking data from fluid vec chunk.
  *  @author tomasnykodym
  */
 public class FVecParseReader implements ParseReader {
-  final AVec _vec;
+  final Vec _vec;
   Chunk _chk;
   int _idx;
   final long _firstLine;

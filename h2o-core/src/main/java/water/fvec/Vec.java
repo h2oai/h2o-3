@@ -1,7 +1,7 @@
 package water.fvec;
 
 import water.*;
-import water.parser.BufferedString;
+import water.nbhm.NonBlockingHashMap;
 import water.util.*;
 
 import java.util.Arrays;
@@ -32,21 +32,7 @@ import java.util.UUID;
  *  manipulations and is fairly slow for writing; when touching ALL the data
  *  you are much better off using e.g. {@link MRTask}.
  *
- *   <p>The main API is {@link #at}, {@link #set}, and {@link #isNA}:<br>
- *   <table class='table table-striped table-bordered' border="1" summary="">
- *   <tr><th>     Returns       </th><th>    Call      </th><th>  Missing?  </th><th>Notes</th>
- *   <tr><td>  {@code double}   </td><td>{@link #at}   </td><td>{@code NaN} </td><td></td>
- *   <tr><td>  {@code long}     </td><td>{@link #at8}  </td><td>   throws   </td><td></td>
- *   <tr><td>  {@code long}     </td><td>{@link #at16l}</td><td>   throws   </td><td>Low  half of 128-bit UUID</td>
- *   <tr><td>  {@code long}     </td><td>{@link #at16h}</td><td>   throws   </td><td>High half of 128-bit UUID</td>
- *   <tr><td>{@link BufferedString}</td><td>{@link #atStr}</td><td>{@code null}</td><td>Updates BufferedString in-place and returns it for flow-coding</td>
- *   <tr><td>  {@code boolean}  </td><td>{@link #isNA} </td><td>{@code true}</td><td></td>
- *   <tr><td>        </td><td>{@link #set(long,double)}</td><td>{@code NaN} </td><td></td>
- *   <tr><td>        </td><td>{@link #set(long,float)} </td><td>{@code NaN} </td><td>Limited precision takes less memory</td>
- *   <tr><td>        </td><td>{@link #set(long,long)}  </td><td>Cannot set  </td><td></td>
- *   <tr><td>        </td><td>{@link #set(long,String)}</td><td>{@code null}</td><td>Convenience wrapper for String</td>
- *   <tr><td>        </td><td>{@link #setNA(long)}     </td><td>            </td><td></td>
- *   </table>
+
  *
  *  <p>Example manipulating some individual elements:<pre>
  *    double r1 = vec.at(0x123456789L);  // Access element 0x1234567889 as a double
@@ -55,19 +41,7 @@ import java.util.UUID;
  *    vec.set(2,r1+r3);                  // Set element #2, as a double
  *  </pre>
  *
- *  <p>Vecs have a loosely enforced <em>type</em>: one of numeric, {@link UUID}
- *  or {@link String}.  Numeric types are further broken down into integral
- *  ({@code long}) and real ({@code double}) types.  The {@code categorical} type is
- *  an integral type, with a String mapping side-array.  Most of the math
- *  algorithms will treat categoricals as small dense integers, and most categorical
- *  printouts will use the String mapping.  Time is another special integral
- *  type: it is represented as milliseconds since the unix epoch, and is mostly
- *  treated as an integral type when doing math but it has special time-based
- *  printout formatting.  All types support the notion of a missing element; for
- *  real types this is always NaN.  It is an error to attempt to fetch a
- *  missing integral type, and {@link #isNA} must be called first.  Integral
- *  types are losslessly compressed.  Real types may lose 1 or 2 ULPS due to
- *  compression.
+
  *
  *  <p>Reading elements as doubles, or checking for an element missing is
  *  always safe.  Reading a missing integral type throws an exception, since
@@ -82,16 +56,7 @@ import java.util.UUID;
  *  The cast from a Double.NaN to a long produces a zero!  This code will
  *  silently replace a missing value with a zero.
  *
- *  <p>Vecs have a lazily computed {@link RollupStats} object and Key.  The
- *  RollupStats give fast access to the common metrics: {@link #min}, {@link
- *  #max}, {@link #mean}, {@link #sigma}, the count of missing elements ({@link
- *  #naCnt}) and non-zeros ({@link #nzCnt}), amongst other stats.  They are
- *  cleared if the Vec is modified and lazily recomputed after the modified Vec
- *  is closed.  Clearing the RollupStats cache is fairly expensive for
- *  individual {@link #set} calls but is easy to amortize over a large count of
- *  writes; i.e., batch writing is efficient.  This is normally handled by the
- *  MRTask framework; the {@link Vec.Writer} framework allows
- *  <em>single-threaded</em> efficient batch writing for smaller Vecs.
+
  *
  *  <p>Example usage of common stats:<pre>
  *    double mean = vec.mean();  // Vec's mean; first touch computes and caches rollups
@@ -126,7 +91,7 @@ import java.util.UUID;
  *  existing Vec and initialized to e.g. zero.  Such Vecs are often used as
  *  temps, and usually immediately set to interest values in a later MRTask
  *  pass.
- * 
+ *
  *  <p>Example creation of temp Vecs:<pre>
  *    Vec tmp0 = vec.makeZero();         // New Vec with same VectorGroup and layout as vec, filled with zero
  *    Vec tmp1 = vec.makeCon(mean);      // Filled with 'mean'
@@ -151,270 +116,546 @@ import java.util.UUID;
  *
  * @author Cliff Click
  */
-public class Vec extends AVec<AVec.ChunkAry> {
-  // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
-  byte _type;                   // Vec Type
-  // String domain, only for Categorical columns
-  private String[] _domain;
+public class Vec extends Keyed<Vec> {
+
+  static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
+
+  String [][] _domains;
+  byte [] _types; // Vec Type
 
 
-  /** Returns the categorical toString mapping array, or null if not an categorical column.
-   *  Not a defensive clone (to expensive to clone; coding error to change the
-   *  contents).
-   *  @return the categorical / factor / categorical mapping array, or null if not a categorical column */
-  public String[] domain(int i) {
-    if(i != 0) throw new ArrayIndexOutOfBoundsException();
-    return _domain;
-  }   // made no longer final so that InteractionWrappedVec which are _type==T_NUM but have a categorical interaction
-
-  @Override
-  public byte type(int colId) {
-    if(colId != 0) throw new ArrayIndexOutOfBoundsException(colId);
-    return _type;
+  public Vec(Key<Vec> key, int rowLayout, byte[] types, String[][] domains) {
+    _key = key;
+    _rowLayout = rowLayout;
+    _espc = ESPC.espc(this);
+    _domains = domains;
+    _types = types;
   }
 
-  /** Set the categorical/factor names.  No range-checking on the actual
-   *  underlying numeric domain; user is responsible for maintaining a mapping
-   *  which is coherent with the Vec contents. */
-  public final void setDomain(int i, String[] domain) {
-    if(i != 0) throw new ArrayIndexOutOfBoundsException();
-    _domain = domain;
-    if( domain != null ) _type = T_CAT;
-  }
+  public Vec(Key<Vec> key, int rowLayout, byte... types) {this(key,rowLayout,types, null);}
 
-  /** Set the categorical/factor names.  No range-checking on the actual
-   *  underlying numeric domain; user is responsible for maintaining a mapping
-   *  which is coherent with the Vec contents. */
-  @Override
-  public void setType(int i, byte t) {
-    if(i != 0) throw new ArrayIndexOutOfBoundsException();
-    _type = t;
+  public Vec(Key<Vec> aVecKey, int rowLayout, String[] domain) {
+    this(aVecKey,rowLayout,new byte[]{domain == null?T_NUM:T_CAT}, new String[][]{domain});
   }
 
 
-
-  /** Build a numeric-type Vec; the caller understands Chunk layout (via the
-   *  {@code espc} array).
-   */
-  public Vec( Key<AVec> key, int rowLayout) { this(key, rowLayout, null, T_NUM); }
-
-  /** Build a numeric-type or categorical-type Vec; the caller understands Chunk
-   *  layout (via the {@code espc} array); categorical Vecs need to pass the
-   *  domain.
-   */
-  Vec( Key<AVec> key, int rowLayout, String[] domain) { this(key,rowLayout,domain, (domain==null?T_NUM:T_CAT)); }
-
-  /** Main default constructor; the caller understands Chunk layout (via the
-   *  {@code espc} array), plus categorical/factor the {@code domain} (or null for
-   *  non-categoricals), and the Vec type. */
-  public Vec( Key<AVec> key, int rowLayout, String[] domain, byte type ) {
-    super(key,rowLayout);
-    assert key._kb[0]==Key.VEC;
-    assert domain==null || type==T_CAT;
-    assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
-    _type = type;
-    _domain = domain;
+  public final RollupStats getRollups(int colId) {
+    return getRollups(colId,false);
+  }
+  public final RollupStats getRollups(int colId, boolean computeHisto) {
+    RollupStats rs = getRollups(computeHisto)._rs[colId];
+    if(rs.isRemoved())
+      throw new IllegalArgumentException("Accessing rollups of removed vec");
+    if(rs.isMutating()) {
+      throw new IllegalArgumentException("Can not access rollups while vec is being modified.");
+    }
+    return rs;
   }
 
-
-
-
-
-  public VecAry makeDoubles(int n, double [] values) {
-    Key [] keys = group().addVecs(n);
-    Vec [] res = new Vec[n];
-    for(int i = 0; i < n; ++i)
-      res[i] = new Vec(keys[i],_rowLayout);
-    fillDoubleChunks(this,res, values);
-    Futures fs = new Futures();
-    for(Vec v:res)
-      DKV.put(v,fs);
-    fs.blockForPending();
-    System.out.println("made vecs " + Arrays.toString(res));
-    return  new VecAry(res);
+  public final RollupStatsAry getRollups(){ return getRollups(false);}
+  public final RollupStatsAry getRollups(boolean computeHisto){
+    if(!readable())
+      throw new IllegalArgumentException("Can not access rollups of non-readable vec");
+    Key rsKey = rollupStatsKey();
+    RollupStatsAry res = DKV.getGet(rsKey);
+    while(res == null || !res.isReady() || computeHisto && !res.hasHisto()) {
+      if(res != null && res.isMutating())
+        throw new IllegalArgumentException("Can not access rollups while vec is being modified. (1)");
+      launchComputeRollupsTask(rsKey,computeHisto).get();
+      // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
+      res = DKV.getGet(rsKey);
+    }
+    return res;
   }
 
-
-  private static void fillDoubleChunks(Vec v, final Vec[] ds, final double [] values){
-    new MRTask(){
-      public void map(Chunk c){
-        for(int i = 0; i < ds.length; ++i)
-          DKV.put(ds[i].chunkKey(c.cidx()),new C0DChunk(values[i],c._len << 3));
-      }
-    }.doAll(new VecAry(v));
-  }
-
-  /** A new vector which is a copy of {@code this} one.
-   *  @return a copy of the vector.  */
-  public Vec makeCopy() { return makeCopy(domain(0)); }
-
-  public Vec makeCopy(String[] domain) {
-    Vec v = doCopy();
-    v.setDomain(0,domain);
-    DKV.put(v);
-    return v;
-  }
-
-  @Override
-  public Vec doCopy(){
-    final Vec v = new Vec(group().addVec(),_rowLayout);
-    new MRTask(){
-      @Override public void map(Chunk c){
-        Chunk c2 = c.deepCopy();
-        DKV.put(v.chunkKey(c.cidx()), c2, _fs);
-      }
-    }.doAll(new VecAry(this));
-    return v;
-  }
-
-
-  // ======= Direct Data Accessors ======
-
-  /** Fetch element the slow way, as a long.  Floating point values are
-   *  silently rounded to an integer.  Throws if the value is missing. 
-   *  @return {@code i}th element as a long, or throw if missing */
-  public final long  at8( long i ) {return chunkForRow(i).getChunk(0).at8_abs(i);}
-
-  /** Fetch element the slow way, as a double, or Double.NaN is missing.
-   *  @return {@code i}th element as a double, or Double.NaN if missing */
-  public final double at( long i ) { return chunkForRow(i).getChunk(0).at_abs(i); }
-  /** Fetch the missing-status the slow way. 
-   *  @return the missing-status the slow way */
-  public final boolean isNA(long row){ return chunkForRow(row).getChunk(0).isNA_abs(row); }
-
-  /** Fetch element the slow way, as the low half of a UUID.  Throws if the
-   *  value is missing or not a UUID.
-   *  @return {@code i}th element as a UUID low half, or throw if missing */
-  public final long  at16l( long i ) { return chunkForRow(i).getChunk(0).at16l_abs(i); }
-  /** Fetch element the slow way, as the high half of a UUID.  Throws if the
-   *  value is missing or not a UUID.
-   *  @return {@code i}th element as a UUID high half, or throw if missing */
-  public final long  at16h( long i ) { return chunkForRow(i).getChunk(0).at16h_abs(i); }
-
-  /** Fetch element the slow way, as a {@link BufferedString} or null if missing.
-   *  Throws if the value is not a String.  BufferedStrings are String-like
-   *  objects than can be reused in-place, which is much more efficient than
-   *  constructing Strings.
-   *  @return {@code i}th element as {@link BufferedString} or null if missing, or
-   *  throw if not a String */
-  public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).getChunk(0).atStr_abs(bStr, i); }
-
-
-
-//  /** Write element the slow way, as a long.  There is no way to write a
-//   *  missing value with this call.  Under rare circumstances this can throw:
-//   *  if the long does not fit in a double (value is larger magnitude than
-//   *  2^52), AND float values are stored in Vec.  In this case, there is no
-//   *  common compatible data representation.  */
-//  public final void set( long i, long l) {
-//    chunkForRow(i).set_abs(i,l);
-//
-//    postWrite(closeChunk(ck.cidx(), ck,  new Futures())).blockForPending();
-//  }
-//
-//  /** Write element the slow way, as a double.  Double.NaN will be treated as a
-//   *  set of a missing element. */
-//  public final void set( long i, double d) {
-//    Chunk ck = chunkForRow(i);
-//    ck.set(ck.rowInChunk(i), d);
-//    postWrite(closeChunk(ck.cidx(),ck, new Futures())).blockForPending();
-//  }
-//
-//  /** Write element the slow way, as a float.  Float.NaN will be treated as a
-//   *  set of a missing element. */
-//  public final void set( long i, float  f) {
-//    Chunk ck = chunkForRow(i);
-//    ck.set(ck.rowInChunk(i), f);
-//    postWrite(closeChunk(ck.cidx(), ck, new Futures())).blockForPending();
-//  }
-//
-//  /** Set the element as missing the slow way.  */
-//  final void setNA( long i ) {
-//    Chunk ck = chunkForRow(i);
-//    ck.setNA(ck.rowInChunk(i));
-//    postWrite(closeChunk(ck.cidx(),ck, new Futures())).blockForPending();
-//  }
-//
-//  /** Write element the slow way, as a String.  {@code null} will be treated as a
-//   *  set of a missing element. */
-//  public final void set( long i, String str) {
-//    Chunk ck = chunkForRow(i);
-//    ck.set((int)(i - ck.start()), str);
-//    postWrite(closeChunk(ck.cidx(),ck, new Futures())).blockForPending();
-//  }
-
-  /** A more efficient way to write randomly to a Vec - still single-threaded,
-   *  still slow, but much faster than Vec.set().  Limited to single-threaded
-   *  single-machine writes.
+  /**
+   * Check if we have local cached copy of basic Vec stats (including histogram if requested) and if not start task to compute and fetch them;
+   * useful when launching a bunch of them in parallel to avoid single threaded execution later (e.g. for-loop accessing min/max of every vec in a frame).
    *
-   * Usage:
-   * try( Vec.Writer vw = vec.open() ) {
-   *   vw.set(0, 3.32);
-   *   vw.set(1, 4.32);
-   *   vw.set(2, 5.32);
-   * }
+   * Does *not* guarantee rollup stats will be cached locally when done since there may be racy changes to vec which will flush local caches.
+   *
+   * @param fs Futures allow to wait for this task to finish.
+   * @param computeHisto Also compute histogram, requires second pass over data amd is not computed by default.
+   *
    */
-//  public final class Writer implements java.io.Closeable {
-//    private Chunk _cache;
-//    long _start;
-//    private Chunk chk(long i) {
-//      Chunk c = _cache;
-//      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
-//    }
-//    private Writer() { preWriting(); }
-//    public final void set( long i, long   l) {
-//      Chunk c = chk(i);
-//      c.set(c.rowInChunk(i), l);
-//    }
-//    public final void set( long i, double d) {
-//      Chunk c = chk(i);
-//      c.set(c.rowInChunk(i), d);
-//    }
-//    public final void set( long i, float  f) {
-//      Chunk c = chk(i);
-//      c.set(c.rowInChunk(i), f);
-//    }
-//    public final void setNA( long i        ) {
-//      Chunk c = chk(i);
-//      c.setNA(c.rowInChunk(i));
-//    }
-//    public final void set( long i,String str){
-//      Chunk c = chk(i);
-//      c.set(c.rowInChunk(i), str);
-//    }
-//    public Futures close(Futures fs) { return postWrite(closeLocal(fs)); }
-//    public void close() { close(new Futures()).blockForPending(); }
-//  }
+  public final Futures startRollupStats(boolean computeHisto, Futures fs){
+    final Key rsKey = rollupStatsKey();
+    RollupStatsAry res = DKV.getGet(rsKey);
+    if(res == null || !res.isReady() || computeHisto && !res.hasHisto()) {
+      if(res != null && res.isMutating())
+        throw new IllegalArgumentException("Can not access rollups while vec is being modified. (1)");
+      fs.add(launchComputeRollupsTask(rsKey,computeHisto));
+    }
+    return fs;
+  }
+
+  private final RPC launchComputeRollupsTask(final Key rsKey, boolean computeHisto){
+    RPC rpcNew = new RPC(rsKey.home_node(),new ComputeRollupsTask(this, computeHisto));
+    RPC rpcOld = _pendingRollups.putIfAbsent(rsKey, rpcNew);
+    if(rpcOld == null) {  // no prior pending task, need to send this one
+      return rpcNew.call();
+    } else // rollups computation is already in progress, wait for it to finish
+      return rpcOld;
+  }
+
+  public int vecId(){return VectorGroup.getVecId(_key._kb);}
+
+  /** Element-start per chunk, i.e. the row layout.  Defined in the
+   *  VectorGroup.  This field is dead/ignored in subclasses that are
+   *  guaranteed to have fixed-sized chunks such as file-backed Vecs. */
+  protected int _rowLayout;
+  public int rowLayout(){return _rowLayout;}
+  // Carefully set in the constructor and read_impl to be pointer-equals to a
+  // common copy one-per-node.  These arrays can get both *very* common
+  // (one-per-Vec at least, sometimes one-per-Chunk), and very large (one per
+  // Chunk, could run into the millions).
+  private transient long _espc[];
+  private Key _rollupStatsKey;
+
+
+
+  public static class Chunks extends Iced<Chunks> {
+    transient long _start = -1;
+    transient Vec _vec = null;
+    transient int _cidx = -1;
+    Chunk [] _cs;
+
+    public Chunks(){}
+    public Chunks(Vec av, Chunk ...cs){
+      this(cs);
+      _vec = av;
+    }
+    public Chunks(Chunk... cs){
+      _cs = cs;
+      for (Chunk c:cs) c._achunk = this;
+    }
+
+    public Chunk getChunk(int i){return _cs[i];};
+    public Chunk[] getChunks(){return _cs;}
+
+    public Futures close(Futures fs){
+      boolean modified = false;
+      for(int i = 0; i < _cs.length; ++i) {
+        Chunk c = _cs[i];
+        if(c._chk2 != null) {
+          _cs[i] = c._chk2.compress();
+          modified = true;
+        }
+      }
+      _writing = false;
+      if(modified) DKV.put(_vec.chunkKey(_cidx),this,fs);
+      return fs;
+    }
+
+    volatile boolean _writing;
+    public void setWrite(){
+      if(!_writing) {
+        _vec.preWriting();
+        _writing = true;
+      }
+    }
+  }
+
+  public final long[] espc() { if( _espc==null ) _espc = ESPC.espc(this); return _espc; }
+
+  /** Number of elements in the vector; returned as a {@code long} instead of
+   *  an {@code int} because Vecs support more than 2^32 elements. Overridden
+   *  by subclasses that compute length in an alternative way, such as
+   *  file-backed Vecs.
+   *  @return Number of elements in the vector */
+  public long length() { espc(); return _espc[_espc.length-1]; }
+
+  public int numCols(){
+    RollupStatsAry rs = getRollups();
+    return rs.numCols();
+  }
+
+  /** Number of chunks, returned as an {@code int} - Chunk count is limited by
+   *  the max size of a Java {@code long[]}.  Overridden by subclasses that
+   *  compute chunks in an alternative way, such as file-backed Vecs.
+   *  @return Number of chunks */
+  public int nChunks() { return espc().length-1; }
+
+  /** Convert a chunk-index into a starting row #.  For constant-sized chunks
+   *  this is a little shift-and-add math.  For variable-sized chunks this is a
+   *  table lookup. */
+  public long chunk2StartElem(int cidx) { return espc()[cidx]; }
+
+  /** Number of rows in chunk. Does not fetch chunk content. */
+  public final int chunkLen(int cidx) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
+
+  /** Check that row-layouts are compatible. */
+  public final boolean checkCompatible( Vec v ) {
+    // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
+    return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
+            (VectorGroup.sameGroup(this, v) || length() < 1e3);
+  }
+
+  /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
+  boolean writable() { return true; }
+  boolean readable() { return true; }
+
+  public String [] domain(int i){return _domains[i];}
+  public void setDomain(int vec, String[] domain){_domains[vec] = domain;}
+  public byte type(int colId){return _types[colId];}
+  public void setType(int i, byte type){_types[i] = type;}
+
+
+
+  // Vec internal type
+  public static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
+  public static final byte T_UUID =  1; // UUID
+  public static final byte T_STR  =  2; // String
+  public static final byte T_NUM  =  3; // Numeric, but not categorical or time
+  public static final byte T_CAT  =  4; // Integer, with a categorical/factor String mapping
+  public static final byte T_TIME =  5; // Long msec since the Unix Epoch - with a variety of display/parse options
+  public static final String[] TYPE_STR=new String[] { "BAD", "UUID", "String", "Numeric", "Enum", "Time", "Time", "Time"};
+
+  public static String getTypeString(byte type) {return TYPE_STR[type];}
+
+  public static final boolean DO_HISTOGRAMS = true;
+
+
+  public final double sparseRatio(int colId) {return getRollups(colId)._nzCnt/(double)length();}
+  /** True if this is a UUID column.
+   *  @return true if this is a UUID column.  */
+  public final boolean isUUID   (int colId){ return type(colId)==T_UUID; }
+  /** True if this is a String column.
+   *  @return true if this is a String column.  */
+  public final boolean isString (int colId){ return type(colId)==T_STR; }
+  /** True if this is a numeric column, excluding categorical and time types.
+   *  @return true if this is a numeric column, excluding categorical and time types  */
+  public final boolean isNumeric(int colId){ return type(colId)==T_NUM; }
+  /** True if this is a time column.  All time columns are also {@link #isInt}, but
+   *  not vice-versa.
+   *  @return true if this is a time column.  */
+  public final boolean isTime   (int colId){ return type(colId)==T_TIME; }
+
+  public final boolean isInt(int colId){return getRollups(colId)._isInt; }
+  /** Size of compressed vector data. */
+  public long byteSize(){
+    long res = 0;
+    for(int i = 0; i < numCols(); ++i)
+      res += getRollups(i)._size;
+    return res;
+  }
+
+  /** Vecs's mode
+   * @return Vec's mode */
+  public int mode(int colId) {
+    if (!isCategorical(colId)) throw H2O.unimpl();
+    long[] bins = bins(colId);
+    return ArrayUtils.maxIndex(bins);
+  }
+
+
+  /** Default percentiles for approximate (single-pass) quantile computation (histogram-based). */
+  public static final double PERCENTILES[] = {0.001,0.01,0.1,0.2,0.25,0.3,1.0/3.0,0.4,0.5,0.6,2.0/3.0,0.7,0.75,0.8,0.9,0.99,0.999};
+  /** A simple and cheap histogram of the Vec, useful for getting a broad
+   *  overview of the data.  Each bin is row-counts for the bin's range.  The
+   *  bin's range is computed from {@link #base} and {@link #stride}.  The
+   *  histogram is computed on first use and cached thereafter.
+   *  @return A set of histogram bins, or null for String columns */
+  public long[] bins(int colId) { return getRollups(colId,true)._bins; }
+
+  public long[] lazy_bins(int colId) { return getRollups(colId)._bins; }
+
+  // ======= Rollup Stats ======
+
+  /** Vec's minimum value
+   *  @return Vec's minimum value */
+  public double min(int colId)  { return mins(colId)[0]; }
+  /** Vec's 5 smallest values
+   *  @return Vec's 5 smallest values */
+  public double[] mins(int colId){ return getRollups(colId)._mins; }
+  /** Vec's maximum value
+   *  @return Vec's maximum value */
+  public double max(int colId)  { return maxs(colId)[0]; }
+  /** Vec's 5 largest values
+   *  @return Vec's 5 largeest values */
+  public double[] maxs(int colId){ return getRollups(colId)._maxs; }
+  /** True if the column contains only a constant value and it is not full of NAs
+   *  @return True if the column is constant */
+  public final boolean isConst(int colId) { return min(colId) == max(colId); }
+  /** True if the column contains only NAs
+   *  @return True if the column contains only NAs */
+  public final boolean isBad(int colId) { return naCnt(colId)==length(); }
+  /** Vecs's mean
+   *  @return Vec's mean */
+  public double mean(int colId) {
+    return getRollups(colId)._mean; }
+  /** Vecs's standard deviation
+   *  @return Vec's standard deviation */
+  public double sigma(int colId){ return getRollups(colId)._sigma; }
+
+  /** Count of missing elements
+   *  @return Count of missing elements */
+  public long  naCnt(int colId) { return getRollups(colId)._naCnt; }
+  /** Count of non-zero elements
+   *  @return Count of non-zero elements */
+  public long  nzCnt(int colId) { return getRollups(colId)._nzCnt; }
+  /** Count of positive infinities
+   *  @return Count of positive infinities */
+  public long  pinfs(int colId) { return getRollups(colId)._pinfs; }
+  /** Count of negative infinities
+   *  @return Count of negative infinities */
+  public long  ninfs(int colId) { return getRollups(colId)._ninfs; }
+
+
+  /** The {@code base} for a simple and cheap histogram of the Vec, useful
+   *  for getting a broad overview of the data.  This returns the base of
+   *  {@code bins()[0]}.
+   *  @return the base of {@code bins()[0]} */
+  public double base(int colId)      { return getRollups(colId).h_base(); }
+  /** The {@code stride} for a a simple and cheap histogram of the Vec, useful
+   *  for getting a broad overview of the data.  This returns the stride
+   *  between any two bins.
+   *  @return the stride between any two bins */
+  public double stride(int colId)    { return  getRollups(colId).h_stride(); }
+
+  /** A simple and cheap percentiles of the Vec, useful for getting a broad
+   *  overview of the data.  The specific percentiles are take from {@link #PERCENTILES}.
+   *  @return A set of percentiles */
+  public double[] pctiles(int colId) { return  getRollups(colId)._pctiles;   }
+
+  /** True if this is an categorical column.  All categorical columns are also
+   *  {@link #isInt}, but not vice-versa.
+   *  @return true if this is an categorical column.  */
+  public final boolean isCategorical(int colId) {
+    return type(colId)==T_CAT;
+  }
+
+  public final int cardinality(int colId) {
+    String [] dom = domain(colId);
+    return dom == null?-1:dom.length;
+  }
+
+  // Filled in lazily and racily... but all writers write the exact identical Key
+  public Key rollupStatsKey() {
+    if( _rollupStatsKey==null ) _rollupStatsKey=chunkKey(-2);
+    return _rollupStatsKey;
+  }
+
+  /** A high-quality 64-bit checksum of the Vec's content, useful for
+   *  establishing dataset identity.
+   *  @return Checksum of the Vec's content  */
+  protected final long checksum_impl(int colId) { return getRollups(colId)._checksum;}
+
+  @Override public final long checksum_impl() {
+    long res = checksum_impl(0);
+    for(int i = 1; i < numCols(); ++i)
+      res ^= checksum_impl(i);
+    return res;
+  }
+
+
+  private static class SetMutating extends TAtomic<RollupStatsAry> {
+//    final int _N;
+//    final int [] _ids;
 //
-//  /** Create a writer for bulk serial writes into this Vec.
-//   *  @return A Writer for bulk serial writes */
-//  public final Writer open() { return new Writer(); }
-//
-//  /** Close all chunks that are local (not just the ones that are homed)
-//   *  This should only be called from a Writer object */
-//  private Futures closeLocal(Futures fs) {
-//    int nc = nChunks();
-//    for( int i=0; i<nc; i++ )
-//      if( H2O.containsKey(chunkKey(i)) )
-//        closeChunk(i,chunkForChunkIdx(i),fs);
-//    return fs;                  // Flow-coding
-//  }
-//
-//  /** Pretty print the Vec: {@code [#elems, min/mean/max]{chunks,...}}
-//   *  @return Brief string representation of a Vec */
-//  @Override public String toString() {
-//    RollupStats rs = RollupStats.getOrNull(this,rollupStatsKey());
-//    String s = "["+length()+(rs == null ? ", {" : ","+rs._mins[0]+"/"+rs._mean+"/"+rs._maxs[0]+", "+PrettyPrint.bytes(rs._size)+", {");
-//    int nc = nChunks();
-//    for( int i=0; i<nc; i++ ) {
-//      s += chunkKey(i).home_node()+":"+chunk2StartElem(i)+":";
-//      // CNC: Bad plan to load remote data during a toString... messes up debug printing
-//      // Stupidly chunkForChunkIdx loads all data locally
-//      // s += chunkForChunkIdx(i).getClass().getSimpleName().replaceAll("Chunk","")+", ";
-//    }
-//    return s+"}]";
-//  }
-//
+//    SetMutating(int N, int... ids) {_ids = ids; _N = N;}
+
+    @Override
+    protected RollupStatsAry atomic(RollupStatsAry old) {
+      if(old.isMutating()) return old;
+      return RollupStatsAry.makeMutating();
+    }
+
+  }
+
+  private static class MarkRemoved extends TAtomic<RollupStatsAry> {
+    int [] _ids;
+    int _rem;
+
+    MarkRemoved(int... ids) {_ids = ids; }
+
+    @Override
+    protected RollupStatsAry atomic(RollupStatsAry old) {
+      int [] ids = new int[_ids.length];
+      int k = 0;
+      for(int x:_ids) {
+        if(!old._rs[x].isRemoved()) {
+          ids[k++] = x;
+          old._rs[x].setRemoved();
+        }
+      }
+      int rem = 0;
+      for(RollupStats rs:old._rs)
+        if(!rs.isRemoved()) rem++;
+      _rem = rem;
+      if(k < ids.length)
+        _ids = Arrays.copyOf(ids,k);
+      return old;
+    }
+
+  }
+
+
+  /** Begin writing into this Vec.  Immediately clears all the rollup stats
+   *  ({@link #min}, {@link #max}, {@link #mean}, etc) since such values are
+   *  not meaningful while the Vec is being actively modified.  Can be called
+   *  repeatedly.  Per-chunk row-counts will not be changing, just row
+   *  contents. */
+  public final void preWriting() {
+    RollupStatsAry rbs = DKV.getGet(rollupStatsKey());
+    if(rbs == null || !rbs.isMutating())
+      new SetMutating().invoke(rollupStatsKey());
+  }
+
+  /** Stop writing into this Vec.  Rollup stats will again (lazily) be
+   *  computed. */
+  public final Futures postWrite( Futures fs ){
+    DKV.remove(rollupStatsKey(),fs);
+    return fs;
+  }
+
+  // ======= Key and Chunk Management ======
+
+  /** Convert a row# to a chunk#.  For constant-sized chunks this is a little
+   *  shift-and-add math.  For variable-sized chunks this is a binary search,
+   *  with a sane API (JDK has an insane API).  Overridden by subclasses that
+   *  compute chunks in an alternative way, such as file-backed Vecs. */
+   public int elem2ChunkIdx(long i) {
+    if( !(0 <= i && i < length()) ) throw new ArrayIndexOutOfBoundsException("0 <= "+i+" < "+length());
+    long[] espc = espc();       // Preload
+    int lo=0, hi = nChunks();
+    while( lo < hi-1 ) {
+      int mid = (hi+lo)>>>1;
+      if( i < espc[mid] ) hi = mid;
+      else                lo = mid;
+    }
+    while( espc[lo+1] == i ) lo++;
+    return lo;
+  }
+
+  /** Get a Vec Key from Chunk Key, without loading the Chunk.
+   *  @return the Vec Key for the Chunk Key */
+  public static Key getVecKey( Key chk_key ) {
+    assert chk_key._kb[0]==Key.CHK;
+    byte [] bits = chk_key._kb.clone();
+    bits[0] = Key.VEC;
+    UnsafeUtils.set4(bits, 6, -1); // chunk#
+    return Key.make(bits);
+  }
+
+  /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
+   *  @return Chunk Key from a chunk-index */
+  public final Key chunkKey(int cidx) {
+    return chunkKey(_key,cidx, 0);
+  }
+
+  /** Get a Chunk Key from a chunk-index and a Vec Key, without needing the
+   *  actual Vec object.  Basically the index-to-key map.
+   *  @return Chunk Key from a chunk-index and Vec Key */
+  public static Key chunkKey(Key veckey, int cidx ) {
+    byte [] bits = veckey._kb.clone();
+    bits[0] = Key.CHK;
+    UnsafeUtils.set4(bits, 6, cidx); // chunk#
+    return Key.make(bits);
+  }
+
+  /** Get a Chunk Key from a chunk-index and a Vec Key, without needing the
+   *  actual Vec object.  Basically the index-to-key map.
+   *  @return Chunk Key from a chunk-index and Vec Key */
+  public static Key chunkKey(Key veckey, int cidx, int vidx) {
+    byte [] bits = veckey._kb.clone();
+    bits[0] = Key.CHK;
+    VectorGroup.setVecId(bits,vidx + VectorGroup.getVecId(bits));
+    UnsafeUtils.set4(bits, 6, cidx); // chunk#
+    return Key.make(bits);
+  }
+
+  public static void setChunkId(Key<Vec> key, int cidx) {
+    UnsafeUtils.set4(key._kb, 6, cidx); // chunk#
+  }
+
+
+  /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
+   *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
+   *  on every Chunk index on the same node will probably trigger an OOM!  */
+  public Value chunkIdx(int cidx) {
+    Value val = DKV.get(chunkKey(cidx));
+    assert checkMissing(cidx,val) : "Missing chunk " + chunkKey(cidx);
+    return val;
+  }
+
+
+  private boolean checkMissing(int cidx, Value val) {
+    if( val != null ) return true;
+    Log.err("Error: Missing chunk " + cidx + " for " + _key);
+    return false;
+  }
+
+  /** Make a new random Key that fits the requirements for a Vec key. 
+   *  @return A new random Vec Key */
+  public static Key<Vec> newKey(){return newKey(Key.make());}
+
+  /** Internally used to help build Vec and Chunk Keys; public to help
+   *  PersistNFS build file mappings.  Not intended as a public field. */
+  public static final int KEY_PREFIX_LEN = 4+4+1+1;
+  /** Make a new Key that fits the requirements for a Vec key, based on the
+   *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
+  static Key<Vec> newKey(Key k) {
+    byte [] kb = k._kb;
+    byte [] bits = MemoryManager.malloc1(kb.length + KEY_PREFIX_LEN);
+    bits[0] = Key.VEC;
+    bits[1] = -1;         // Not homed
+    UnsafeUtils.set4(bits,2,0);   // new group, so we're the first vector
+    UnsafeUtils.set4(bits,6,-1);  // 0xFFFFFFFF in the chunk# area
+    System.arraycopy(kb, 0, bits, 4 + 4 + 1 + 1, kb.length);
+    return Key.make(bits);
+  }
+
+  /** Make a ESPC-group key.  */
+  private static Key espcKey(Key key) { 
+    byte [] bits = key._kb.clone();
+    bits[0] = Key.GRP;
+    UnsafeUtils.set4(bits, 2, -1);
+    UnsafeUtils.set4(bits, 6, -2);
+    return Key.make(bits);
+  }
+
+  /** Make a Vector-group key.  */
+  protected final Key groupKey(){
+    byte [] bits = _key._kb.clone();
+    bits[0] = Key.GRP;
+    UnsafeUtils.set4(bits, 2, -1);
+    UnsafeUtils.set4(bits, 6, -1);
+    return Key.make(bits);
+  }
+
+  /** Get the group this vector belongs to.  In case of a group with only one
+   *  vector, the object actually does not exist in KV store.  This is the ONLY
+   *  place VectorGroups are fetched.
+   *  @return VectorGroup this vector belongs to */
+  public final VectorGroup group() {
+    Key gKey = groupKey();
+    Value v = DKV.get(gKey);
+    // if no group exists we have to create one
+    return v==null ? new VectorGroup(gKey,1) : (VectorGroup)v.get();
+  }
+
+  /** The Chunk for a chunk#.  Warning: this pulls the data locally; using this
+   *  call on every Chunk index on the same node will probably trigger an OOM!
+   *  @return Chunk for a chunk# */
+  public Chunks chunkForChunkIdx(int cidx) {
+    Chunks c = chunkIdx(cidx).get();        // Chunk# to chunk data
+    long cstart = c._start;             // Read once, since racily filled in
+    int tcidx = c._cidx;
+    Vec v = c._vec;
+    if( cstart != -1 && v != null && tcidx == cidx)
+      return c;                       // Already filled-in
+    assert cstart == -1 || v == null || tcidx == -1; // Was not filled in (everybody racily writes the same start value)
+    c._vec = this;             // Fields not filled in by unpacking from Value
+    c._start = chunk2StartElem(cidx);          // Fields not filled in by unpacking from Value
+    c._cidx = cidx;
+    return c;
+  }
+
+  /** The Chunk for a row#.  Warning: this pulls the data locally; using this
+   *  call on every Chunk index on the same node will probably trigger an OOM!
+   *  @return Chunk for a row# */
+  public final Chunks chunkForRow(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
 
   /** True if two Vecs are equal.  Checks for equal-Keys only (so it is fast)
    *  and not equal-contents.
@@ -448,5 +689,345 @@ public class Vec extends AVec<AVec.ChunkAry> {
     Key kr = chunkKey(vkey,-2); // Rollup Stats
     H2O.raw_remove(kr);
     H2O.raw_remove(vkey);
+  }
+
+  // ======= Whole Vec Transformations ======
+
+  /** Make a Vec adapting this cal vector to the 'to' categorical Vec.  The adapted
+   *  CategoricalWrappedVec has 'this' as it's masterVec, but returns results in the 'to'
+   *  domain (or just past it, if 'this' has elements not appearing in the 'to'
+   *  domain). */
+  public CategoricalWrappedVec adaptTo( String[] domain ) {
+    return new CategoricalWrappedVec(group().addVec(),_rowLayout,domain,new VecAry(this));
+  }
+
+  /** Class representing the group of vectors.
+   *
+   *  Vectors from the same group have same distribution of chunks among nodes.
+   *  Each vector is member of exactly one group.  Default group of one vector
+   *  is created for each vector.  Group of each vector can be retrieved by
+   *  calling group() method;
+   *  
+   *  The expected mode of operation is that user wants to add new vectors
+   *  matching the source.  E.g. parse creates several vectors (one for each
+   *  column) which are all colocated and are colocated with the original
+   *  bytevector.
+   *  
+   *  To do this, user should first ask for the set of keys for the new vectors
+   *  by calling addVecs method on the target group.
+   *  
+   *  Vectors in the group will have the same keys except for the prefix which
+   *  specifies index of the vector inside the group.  The only information the
+   *  group object carries is its own key and the number of vectors it
+   *  contains (deleted vectors still count).
+   *  
+   *  Because vectors (and chunks) share the same key-pattern with the group,
+   *  default group with only one vector does not have to be actually created,
+   *  it is implicit.
+   *  
+   *  @author tomasnykodym
+   */
+  public static class VectorGroup extends Keyed<VectorGroup> {
+    /** The common shared vector group for very short vectors */
+    public static final VectorGroup VG_LEN1 = new VectorGroup();
+    // The number of Vec keys handed out by the this VectorGroup already.
+    // Updated by overwriting in a TAtomic.
+    final int _len;
+
+    // New empty VectorGroup (no Vecs handed out)
+    public VectorGroup() { super(init_key()); _len = 0; }
+
+    static private Key init_key() { 
+      byte[] bits = new byte[26];
+      bits[0] = Key.GRP;
+      bits[1] = -1;
+      UnsafeUtils.set4(bits, 2, -1);
+      UnsafeUtils.set4(bits, 6, -1);
+      UUID uu = UUID.randomUUID();
+      UnsafeUtils.set8(bits,10,uu.getLeastSignificantBits());
+      UnsafeUtils.set8(bits,18,uu. getMostSignificantBits());
+      return Key.make(bits);
+    }
+
+    // Clone an old vector group, setting a new len
+    private VectorGroup(Key key, int newlen) { super(key); _len = newlen; }
+
+    /** Returns Vec Key from Vec id#.  Does NOT allocate a Key id#
+     *  @return Vec Key from Vec id# */
+    public Key<Vec> vecKey(int vecId) {
+      byte [] bits = _key._kb.clone();
+      bits[0] = Key.VEC;
+      UnsafeUtils.set4(bits,2,vecId);
+      return Key.make(bits);
+    }
+
+    public VecAry makeCons(int rowLayout, int len, long cons) {
+      throw H2O.unimpl();
+    }
+
+    public static int getVecId(byte [] bits) {return UnsafeUtils.get4(bits,2);}
+    public static void setVecId(byte [] bits, int id) { UnsafeUtils.set4(bits,2,id);}
+
+    /** Task to atomically add vectors into existing group.
+     *  @author tomasnykodym   */
+    private final static class AddVecs2GroupTsk extends TAtomic<VectorGroup> {
+      final Key _key;
+      int _n;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
+      private AddVecs2GroupTsk(Key key, int n){_key = key; _n = n;}
+      @Override protected VectorGroup atomic(VectorGroup old) {
+        int n = _n;             // how many
+        // If the old group is missing, assume it is the default group-of-self
+        // (having 1 ID already allocated for self), not a new group with
+        // zero prior vectors.
+        _n = old==null ? 1 : old._len; // start of allocated key run
+        return new VectorGroup(_key, n+_n);
+      }
+    }
+
+    /** Reserve a range of keys and return index of first new available key
+     *  @return Vec id# of a range of Vec keys in this group */
+    public int reserveKeys(final int n) {
+      AddVecs2GroupTsk tsk = new AddVecs2GroupTsk(_key, n);
+      tsk.invoke(_key);
+      return tsk._n;
+    }
+
+    /** Gets the next n keys of this group.
+     *  @param n number of keys to make
+     *  @return arrays of unique keys belonging to this group.  */
+    public Key<Vec>[] addVecs(final int n) {
+      int nn = reserveKeys(n);
+      Key<Vec>[] res = (Key<Vec>[])new Key[n];
+      for( int i = 0; i < n; ++i )
+        res[i] = vecKey(i + nn);
+      return res;
+    }
+    /** Shortcut for {@code addVecs(1)}.
+     *  @see #addVecs(int)
+     *  @return a new Vec Key in this group   */
+    public Key<Vec> addVec() { return addVecs(1)[0]; }
+
+    // -------------------------------------------------
+    static boolean sameGroup(Vec v1, Vec v2) {
+      byte[] bits1 = v1._key._kb;
+      byte[] bits2 = v2._key._kb;
+      if( bits1.length != bits2.length )
+        return false;
+      int res  = 0;
+      for( int i = KEY_PREFIX_LEN; i < bits1.length; i++ )
+        res |= bits1[i] ^ bits2[i];
+      return res == 0;
+    }
+
+    /** Pretty print the VectorGroup
+     *  @return String representation of a VectorGroup */
+    @Override public String toString() {
+      return "VecGrp "+_key.toString()+", next free="+_len;
+    }
+    // Return current VectorGroup index; used for tests
+    public int len() { return _len; }
+
+    /** True if two VectorGroups are equal 
+     *  @return True if two VectorGroups are equal */
+    @Override public boolean equals( Object o ) {
+      return o instanceof VectorGroup && ((VectorGroup)o)._key.equals(_key);
+    }
+    /** VectorGroups's hashcode
+     *  @return VectorGroups's hashcode */
+    @Override public int hashCode() { return _key.hashCode(); }
+    @Override protected long checksum_impl() { throw H2O.fail(); }
+    // Fail to remove a VectorGroup unless you also remove all related Vecs,
+    // Chunks, Rollups (and any Frame that uses them), etc.
+    @Override protected Futures remove_impl( Futures fs ) { throw H2O.fail(); }
+    /** Write out K/V pairs */
+  }
+
+  // ---------------------------------------
+  // Unify ESPC arrays on the local node as much as possible.  This is a
+  // similar problem to what TypeMap solves: sometimes I have a rowLayout index
+  // and want the matching ESPC array, and sometimes I have the ESPC array and
+  // want an index.  The operation is frequent and must be cached locally, but
+  // must be globally consistent.  Hence a "miss" in the local cache means we
+  // need to fetch from global state, and sometimes update the global state
+  // before fetching.
+
+  public static class ESPC extends Keyed<ESPC> {
+    static private NonBlockingHashMap<Key,ESPC> ESPCS = new NonBlockingHashMap<>();
+
+    // Array of Row Layouts (Element Start Per Chunk) ever seen by this
+    // VectorGroup.  Shared here, amongst all Vecs using the same row layout
+    // (instead of each of 1000's of Vecs having a copy, each of which is
+    // nChunks long - could be millions).
+    //
+    // Element-start per chunk.  Always zero for chunk 0.  One more entry than
+    // chunks, so the last entry is the total number of rows.
+    public final long[][] _espcs;
+
+    private ESPC(Key key, long[][] espcs) { super(key); _espcs = espcs;}
+    // Fetch from the local cache
+    private static ESPC getLocal( Key kespc ) {
+      ESPC local = ESPCS.get(kespc);
+      if( local != null ) return local;
+      ESPCS.putIfAbsent(kespc,new ESPC(kespc,new long[0][])); // Racey, not sure if new or old is returned
+      return ESPCS.get(kespc);
+    }
+
+    // Fetch from remote, and unify as needed
+    private static ESPC getRemote( ESPC local, Key kespc ) {
+      final ESPC remote = DKV.getGet(kespc);
+      if( remote == null || remote == local ) return local; // No change
+
+      // Something New?  If so, we need to unify the sharable arrays with a
+      // "smashing merge".  Every time a remote instance of a ESPC is updated
+      // (to add new ESPC layouts), and it is pulled locally, the new copy
+      // brings with it a complete copy of all ESPC arrays - most of which
+      // already exist locally in the old ESPC instance.  Since these arrays
+      // are immutable and monotonically growing, it's safe (and much more
+      // efficient!) to make the new copy use the old copies arrays where
+      // possible.
+      long[][] local_espcs = local ._espcs;
+      long[][] remote_espcs= remote._espcs;
+      // Spin attempting to move the larger remote value into the local cache
+      while( true ) {
+        // Is the remote stale, and the local value already larger?  Can happen
+        // if the local is racily updated by another thread, after this thread
+        // reads the remote value (which then gets invalidated, and updated to
+        // a new larger value).
+        if( local_espcs.length >= remote_espcs.length ) return local;
+        // Use my (local, older, more heavily shared) ESPCs where possible.
+        // I.e., the standard remote read will create new copies of all ESPC
+        // arrays, but the *local* copies are heavily shared.  All copies are
+        // equal, but using the same shared copies cuts down on copies.
+        System.arraycopy(local._espcs, 0, remote._espcs, 0, local._espcs.length);
+        // Here 'remote' is larger than 'local' (but with a shared common prefix).
+        // Attempt to update local cache with the larger value
+        ESPC res = ESPCS.putIfMatch(kespc,remote,local);  // Update local copy with larger
+        // if res==local, then update succeeded, table has 'remote' (the larger object).
+        if( res == local ) return remote;
+        // if res!=local, then update failed, and returned 'res' is probably
+        // larger than either remote or local
+        local = res;
+        local_espcs = res._espcs;
+        assert remote_espcs== remote._espcs; // unchanging final field
+      }
+    }
+
+    /** Get the ESPC for a Vec.  Called once per new construction or read_impl.  */
+    public static long[] espc( Vec v ) {
+      final int r = v._rowLayout;
+      if( r == -1 ) return null; // Never was any row layout
+      // Check the local cache
+      final Key kespc = espcKey(v._key);
+      ESPC local = getLocal(kespc);
+      if( r < local._espcs.length ) return local._espcs[r];
+      // Now try to refresh the local cache from the remote cache
+      final ESPC remote = getRemote( local, kespc);
+      if( r < remote._espcs.length ) return remote._espcs[r];
+      throw H2O.fail("Vec "+v._key+" asked for layout "+r+", but only "+remote._espcs.length+" layouts defined");
+    }
+
+    // Check for a prior matching ESPC
+    private static int find_espc( long[] espc, long[][] espcs ) {
+      // Check for a local pointer-hit first:
+      for( int i=0; i<espcs.length; i++ ) if( espc==espcs[i] ) return i;
+      // Check for a local deep equals next:
+      for( int i=0; i<espcs.length; i++ )
+        if( espc.length==espcs[i].length && Arrays.equals(espc,espcs[i]) ) 
+          return i;
+      return -1;                // No match
+    }
+
+    /** Get the shared ESPC index for this layout.  Will return an old layout
+     *  if one matches, otherwise will atomically update the ESPC to set
+     *  a new layout.  The expectation is that new layouts are rare: once per
+     *  parse, and perhaps from filtering MRTasks, or data-shuffling.  */
+    public static int rowLayout( Key key, final long[] espc ) {
+      Key kespc = espcKey(key);
+      ESPC local = getLocal(kespc);
+      int idx = find_espc(espc,local._espcs);
+      if( idx != -1 ) return idx;
+
+      // See if the ESPC is in the LOCAL DKV - if not it might have been
+      // invalidated, and a refetch might get a new larger ESPC with the
+      // desired layout.
+      if( !H2O.containsKey(kespc) ) {
+        local = getRemote(local,kespc);      // Fetch remote, merge as needed
+        idx = find_espc(espc, local._espcs); // Retry
+        if( idx != -1 ) return idx;
+      }
+      
+      // Send the ESPC over to the ESPC master, and request it get
+      // inserted.
+      new TAtomic<ESPC>() {
+        @Override public ESPC atomic( ESPC old ) {
+          if( old == null ) return new ESPC(_key,new long[][]{espc});
+          long[][] espcs = old._espcs;
+          int idx = find_espc(espc,espcs);
+          if( idx != -1 ) return null; // Abort transaction, idx exists; client needs to refresh
+          int len = espcs.length;
+          espcs = Arrays.copyOf(espcs,len+1);
+          espcs[len] = espc;    // Insert into array
+          return new ESPC(_key,espcs);
+        }
+      }.invoke(kespc);
+      // Refetch from master, try again
+      ESPC reloaded = getRemote(local,kespc); // Fetch remote, merge as needed
+      idx = find_espc(espc,reloaded._espcs);  // Retry
+      assert idx != -1;                       // Must work now (or else the install failed!)
+      return idx;
+    }
+    public static void clear() { ESPCS.clear(); }
+    @Override protected long checksum_impl() { throw H2O.fail(); }
+  }
+
+  /** Always makes a copy of the given vector which shares the same group as
+   *  this Vec.  This can be expensive operation since it can force copy of
+   *  data among nodes.
+   *
+   * @param vec vector which is intended to be copied
+   * @return a copy of vec which shared the same {@link VectorGroup} with this vector
+   */
+  public final Vec align(final Vec vec) {
+    return new VecAry(this).makeCompatible(new VecAry(vec),true).getVecRaw(0);
+  }
+
+  public Vec doCopy(){
+    final Vec v = new Vec(group().addVec(),_rowLayout,_types,_domains);
+    new MRTask(){
+      @Override public void map(Chunk [] chks){
+        chks = chks.clone();
+        for(int i = 0; i < chks.length; ++i)
+          chks[i] = chks[i].deepCopy();
+        DKV.put(v.chunkKey(chks[0].cidx()), new Chunks(chks), _fs);
+      }
+    }.doAll(new VecAry(this));
+    return v;
+  }
+
+  public void removeVecs(int... ids) {
+    MarkRemoved mrm = new MarkRemoved(ids); mrm.invoke(rollupStatsKey());
+    ids = mrm._ids;
+    if(ids.length == 0) return;
+    if(mrm._rem == 0) {
+      remove();
+      return;
+    }
+    final int [] removed = ids.clone();
+    RollupStatsAry rsary = getRollups();
+    final IcedBitSet bitSet = new IcedBitSet(rsary._rs.length);
+    for(int x:ids) {
+      if(rsary._rs[x].isRemoved())
+        throw new IllegalArgumentException("double remove of column " + x);
+      bitSet.set(x);
+    }
+    new MRTask(){
+      @Override public void map(Chunk [] chks){
+        chks = chks.clone();
+        for(int i = 0; i < chks.length; ++i)
+          chks[i] = bitSet.contains(i)?null:chks[i];
+        DKV.put(chunkKey(chks[0].cidx()), new Chunks(chks), _fs);
+      }
+    }.doAll(new VecAry(this));
+
   }
 }

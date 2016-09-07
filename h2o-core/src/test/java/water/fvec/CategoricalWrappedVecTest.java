@@ -20,7 +20,7 @@ public class CategoricalWrappedVecTest extends TestUtil {
     try {
       v1 = parse_test_file("smalldata/junit/mixcat_train.csv");
       v2 = parse_test_file("smalldata/junit/mixcat_test.csv");
-      CategoricalWrappedVec vv = (CategoricalWrappedVec) v2.vecs(0).adaptTo(v1.vecs().domain(0)).getAVecRaw(0);
+      CategoricalWrappedVec vv = (CategoricalWrappedVec) v2.vecs(0).adaptTo(v1.vecs().domain(0)).getVecRaw(0);
       Assert.assertArrayEquals("Mapping differs",new int[]{0,1,3},vv._map);
       Assert.assertArrayEquals("Mapping differs",new String[]{"A","B","C","D"},vv.domain(0));
       vv.remove();

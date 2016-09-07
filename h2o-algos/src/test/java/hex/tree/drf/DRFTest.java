@@ -14,7 +14,6 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.Log;

@@ -20,7 +20,6 @@ import water.Job;
 import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.test.util.GridTestUtils;
 import water.util.ArrayUtils;

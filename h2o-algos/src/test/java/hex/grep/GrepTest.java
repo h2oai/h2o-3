@@ -7,7 +7,6 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 
 import java.io.File;

@@ -1,9 +1,6 @@
 package water.util;
 
-import water.DKV;
-import water.Futures;
-import water.Key;
-import water.MemoryManager;
+import water.*;
 import water.fvec.*;
 
 import java.text.DecimalFormat;
@@ -1540,5 +1537,48 @@ public class ArrayUtils {
     }
     assert j == res.length;
     return res;
+  }
+
+  public static final class IntAry extends Iced {
+    private int [] _vals;
+    private int _len;
+
+    public IntAry() {this(4);}
+    public IntAry(int sz) {
+      _vals = new int[sz];
+    }
+    public int len(){return _len;}
+
+    public int get(int i) {
+      if(i >= _len) throw new ArrayIndexOutOfBoundsException(i);
+      return _vals[i];
+    }
+
+    public void set(int i, int val) {
+      if(i >= _len) throw new ArrayIndexOutOfBoundsException(i);
+      _vals[i] = val;
+    }
+
+    public void add(int i) {
+      if(_vals.length == _len)
+        _vals = Arrays.copyOf(_vals,Math.max(1,_len*2));
+      _vals[_len++] = i;
+    }
+
+    public int [] toArray(){return Arrays.copyOf(_vals,_len);}
+
+    public final AutoBuffer write_impl(AutoBuffer ab) {
+      if(_vals.length != _len)
+        ab.putA4(Arrays.copyOf(_vals,_len));
+      else
+        ab.putA4(_vals);
+      return ab;
+    }
+
+    public final IntAry read_impl(AutoBuffer ab) {
+      _vals = ab.getA4();
+      _len = _vals.length;
+      return this;
+    }
   }
 }

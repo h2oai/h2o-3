@@ -2,12 +2,9 @@ package hex;
 
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
-
-import java.awt.color.ICC_ColorSpace;
 
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;

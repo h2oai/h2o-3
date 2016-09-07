@@ -9,7 +9,6 @@ import water.exceptions.H2OCategoricalLevelNotFoundArgumentException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;

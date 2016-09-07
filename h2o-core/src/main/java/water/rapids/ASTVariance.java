@@ -128,7 +128,7 @@ class ASTVariance extends ASTPrim {
         }
         //set Frame
         Vec[] res = new Vec[ncoly];
-        Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+        Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
         for (int y = 0; y < ncoly; y++) {
           res[y] = Vec.makeVec(res_array[y], keys[y]);
         }
@@ -146,7 +146,7 @@ class ASTVariance extends ASTPrim {
 
       // Gather all the Xs-vs-Y covariance arrays; divide by rows
       Vec[] res = new Vec[ncoly];
-      Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+      Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
       for (int y = 0; y < ncoly; y++)
         res[y] = Vec.makeVec(ArrayUtils.div(cvs[y].getResult()._covs, (fry.numRows() - 1)), keys[y]);
       
@@ -180,7 +180,7 @@ class ASTVariance extends ASTPrim {
         }
         //set Frame
         Vec[] res = new Vec[ncoly];
-        Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+        Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
         for (int y = 0; y < ncoly; y++) {
           res[y] = Vec.makeVec(res_array[y], keys[y]);
         }
@@ -201,7 +201,7 @@ class ASTVariance extends ASTPrim {
 
       // Gather all the Xs-vs-Y covariance arrays; divide by rows
       Vec[] res = new Vec[ncoly];
-      Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+      Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
       for (int y = 0; y < ncoly; y++)
         res[y] = Vec.makeVec(ArrayUtils.div(cvs._covs[y], (fry.numRows() - 1 - NACount)), keys[y]);
 

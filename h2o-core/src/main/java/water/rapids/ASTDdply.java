@@ -119,7 +119,7 @@ class ASTDdply extends ASTPrim {
       Futures fs = new Futures();
       Vec [] grps = new Vec[_appendables.length];
       for(int i = 0; i < grps.length; ++i)
-        grps[i] = (Vec)_appendables[i].layout_and_close(fs).getAVecRaw(0);
+        grps[i] = (Vec)_appendables[i].layout_and_close(fs).getVecRaw(0);
       fs.blockForPending();
       return grps;
     }
@@ -144,7 +144,7 @@ class ASTDdply extends ASTPrim {
       // 1-row Frame as a double[] of results for this group.
 
       // Make the subset Frame Vecs, no chunks yet
-      Key<AVec>[] groupKeys = _gVec.group().addVecs(_data.numCols());
+      Key<Vec>[] groupKeys = _gVec.group().addVecs(_data.numCols());
       final Vec[] groupVecs = new Vec[_data.numCols()];
       Futures fs = new Futures();
       for( int i=0; i<_data.numCols(); i++ )

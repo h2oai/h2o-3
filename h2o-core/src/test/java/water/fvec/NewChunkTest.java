@@ -30,7 +30,7 @@ public class NewChunkTest extends TestUtil {
     av._tmp_espc[0] = K; //HACK
 
     Futures fs = new Futures();
-    vec = (Vec) av.layout_and_close(fs).getAVecRaw(0);
+    vec = (Vec) av.layout_and_close(fs).getVecRaw(0);
     fs.blockForPending();
     assert(DKV.get(vec._key)!=null); //only the vec header is in DKV, the chunk is not
   }
@@ -52,7 +52,7 @@ public class NewChunkTest extends TestUtil {
   }
 
   private static class NewChunkTestCpy extends NewChunk {
-    NewChunkTestCpy(AVec av, int cidx) {super(av, cidx);}
+    NewChunkTestCpy(Vec av, int cidx) {super(av, cidx);}
     public NewChunkTestCpy() { super(false); }
     int mantissaSize() {return _ms._vals1 != null?1:_ms._vals4 != null?4:8;}
     int exponentSize() {return _xs._vals1 != null?1:_xs._vals4 != null?4:0;}

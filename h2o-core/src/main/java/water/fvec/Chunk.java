@@ -219,10 +219,10 @@ public abstract class Chunk extends Iced<Chunk> {
   public Chunk chk2() { return _chk2; }
 
   /** Owning Vec; a read-only field */
-  transient AVec.ChunkAry _achunk;
+  transient Vec.Chunks _achunk;
 
   /** Owning Vec */
-  public AVec vec() { return _achunk._vec; }
+  public Vec vec() { return _achunk._vec; }
 
   public Futures close(Futures fs){return _achunk.close(fs);}
 
@@ -432,7 +432,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link Vec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -448,7 +448,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link Vec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -464,7 +464,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link Vec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *
@@ -479,7 +479,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  <p>As with all the {@code set} calls, if the value written does not fit
    *  in the current compression scheme, the Chunk will be inflated into a
    *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link AVec#closeChunk} call) and written back to the DKV.
+   *  compressed (after a {@link Vec#closeChunk} call) and written back to the DKV.
    *  i.e., there is some interesting cost if Chunk compression-types need to
    *  change.
    *

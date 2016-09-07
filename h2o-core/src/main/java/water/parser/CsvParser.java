@@ -1,8 +1,6 @@
 package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
-import org.apache.http.ParseException;
-import water.fvec.Vec;
 import water.fvec.FileVec;
 import water.Key;
 import java.io.ByteArrayInputStream;

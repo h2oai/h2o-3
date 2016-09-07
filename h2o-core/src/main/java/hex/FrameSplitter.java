@@ -119,7 +119,7 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
     for (int i=0; i<nsplits; i++) {
       // vectors for j-th split
       Key vkey = Vec.newKey();
-      int rowLayout = AVec.ESPC.rowLayout(vkey,espcPerSplit[i]);
+      int rowLayout = Vec.ESPC.rowLayout(vkey,espcPerSplit[i]);
       t[i] = new VecAry(new Vec(vkey,rowLayout)).makeCons(num, 0, domains, types);
     }
     return t;

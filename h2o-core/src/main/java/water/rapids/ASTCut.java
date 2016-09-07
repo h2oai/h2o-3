@@ -4,7 +4,6 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
-import water.fvec.Vec;
 import water.util.MathUtils;
 
 import java.util.Arrays;

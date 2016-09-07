@@ -1,9 +1,8 @@
 package water.rapids;
 
 import water.*;
-import water.fvec.AVec;
-import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.Frame;
 import water.fvec.VecAry;
 import water.nbhm.*;
 import water.util.Log;
@@ -28,7 +27,7 @@ public class Session {
   // Ref-cnts per-Vec.  Always positive; zero is removed from the table;
   // negative is an error.  At the end of any given Rapids expression the
   // counts should match all the Vecs in the FRAMES set.
-  NonBlockingHashMap<Key<AVec>,Integer> REFCNTS = new NonBlockingHashMap<>();
+  NonBlockingHashMap<Key<Vec>,Integer> REFCNTS = new NonBlockingHashMap<>();
 
   // Frames tracked by this Session and alive to the next Rapids call.  When
   // the whole session ends, these frames can be removed from the DKV.  These
@@ -40,7 +39,7 @@ public class Session {
   // will always copy these Vecs before mutating or deleting.  Total visible
   // refcnts are effectively the normal refcnts plus 1 for being in the GLOBALS
   // set.
-  NonBlockingHashSet<Key<AVec>> GLOBALS = new NonBlockingHashSet<>();
+  NonBlockingHashSet<Key<Vec>> GLOBALS = new NonBlockingHashSet<>();
 
   public Session() { cluster_init(); }
 
@@ -77,8 +76,8 @@ public class Session {
     if( returning != null && returning.isFrame() ) {
       Frame fr = returning.getFrame();
       VecAry vecs = fr.vecs();
-      Key<AVec> [] ks = vecs.keys();
-      for( Key<AVec> k:ks) {
+      Key<Vec> [] ks = vecs.keys();
+      for( Key<Vec> k:ks) {
         _addRefCnt(k,-1); // Returning frame has refcnt +1, lower it now; should go to zero internal refcnts.
         if( GLOBALS.contains(k) ) // Copy if shared with globals
           vecs.replaceWithCopy(k);
@@ -97,7 +96,7 @@ public class Session {
       GLOBALS.clear();
       Futures fs = new Futures();
       for( Frame fr : FRAMES.values() ) {
-        for( Key<AVec> vec : fr.vecs().keys() ) {
+        for( Key<Vec> vec : fr.vecs().keys() ) {
           Integer I = REFCNTS.get(vec);
           int i = (I==null ? 0 : I)-1;
           if( i > 0 ) REFCNTS.put(vec,i); 
@@ -116,32 +115,32 @@ public class Session {
 
   // Internal ref cnts (not counting globals - which only ever keep things
   // alive, and have a virtual +1 to refcnts always)
-  private int _getRefCnt( Key<AVec> vec ) {
+  private int _getRefCnt( Key<Vec> vec ) {
     Integer I = REFCNTS.get(vec);
     assert I==null || I > 0;   // No zero or negative counts
     return I==null ? 0 : I;
   }
-  private int _putRefCnt( Key<AVec> k, int i ) {
+  private int _putRefCnt(Key<Vec> k, int i ) {
     assert i >= 0;              // No negative counts
     if( i > 0 ) REFCNTS.put(k,i);
     else REFCNTS.remove(k);
     return i;
   }
   // Bump internal count, not counting globals
-  private int _addRefCnt( Key<AVec> vec, int i ) { return _putRefCnt(vec,_getRefCnt(vec)+i); }
+  private int _addRefCnt(Key<Vec> vec, int i ) { return _putRefCnt(vec,_getRefCnt(vec)+i); }
 
   // External refcnt: internal refcnt plus 1 for being global
-  int getRefCnt( Key<AVec> vec ) {
+  int getRefCnt( Key<Vec> vec ) {
     return _getRefCnt(vec)+ (GLOBALS.contains(vec) ? 1 : 0);
   }
 
   // RefCnt +i this Vec; Global Refs can be alive with zero internal counts
-  int addRefCnt( Key<AVec> vec, int i ) { return _addRefCnt(vec, i) + (GLOBALS.contains(vec) ? 1 : 0); }
+  int addRefCnt(Key<Vec> vec, int i ) { return _addRefCnt(vec, i) + (GLOBALS.contains(vec) ? 1 : 0); }
 
   // RefCnt +i all Vecs this Frame.
   Frame addRefCnt( Frame fr, int i ) {
     if( fr != null )  // Allow and ignore null Frame, easier calling convention
-      for(Key<AVec> k:fr.vecs().keys())
+      for(Key<Vec> k:fr.vecs().keys())
         _addRefCnt(k,i);
     return fr;                  // Flow coding
   }
@@ -149,7 +148,7 @@ public class Session {
   // Found in the DKV, if not a tracked TEMP make it a global
   Frame addGlobals( Frame fr ) {
     if( !FRAMES.containsKey(fr._key) )
-      for( Key<AVec> k: fr.vecs().keys() ) GLOBALS.add(k);
+      for( Key<Vec> k: fr.vecs().keys() ) GLOBALS.add(k);
     return fr;                  // Flow coding
   }
 
@@ -171,7 +170,7 @@ public class Session {
     if( fr == null ) return;
     Futures fs = new Futures();
     if( !FRAMES.containsKey(fr._key) ) { // In globals and not temps?
-      for( Key<AVec> vec : fr.vecs().keys() ) {
+      for( Key<Vec> vec : fr.vecs().keys() ) {
         GLOBALS.remove(vec);         // Not a global anymore
         if( REFCNTS.get(vec)==null ) // If not shared with temps
           vec.remove(fs);            // Remove unshared dead global
@@ -188,7 +187,7 @@ public class Session {
   // Passed in a Futures which is returned, and set to non-null if something
   // gets deleted.
   Futures downRefCnt( Frame fr, Futures fs ) {
-    for( Key<AVec> k: fr.vecs().keys() )    // Refcnt -1 all Vecs
+    for( Key<Vec> k: fr.vecs().keys() )    // Refcnt -1 all Vecs
       if( addRefCnt(k,-1) == 0 ) {
         if( fs == null ) fs = new Futures();
         Keyed.remove(k,fs);
@@ -207,7 +206,7 @@ public class Session {
     Frame fr = DKV.getGet(id);
     if( fr != null ) {          // Prior frame exists
 
-      for( Key<AVec> vec : fr.vecs().keys() ) {
+      for( Key<Vec> vec : fr.vecs().keys() ) {
         if( GLOBALS.remove(vec) && _getRefCnt(vec) == 0 )
           vec.remove(fs);       // Remove unused global vec
       }
@@ -217,7 +216,7 @@ public class Session {
     // global Vecs - because global Vecs get side-effected by unrelated
     // operations.
     VecAry svecs = (VecAry) src.vecs().clone();
-    for( Key<AVec> k:svecs.keys())
+    for( Key<Vec> k:svecs.keys())
       if( GLOBALS.contains(k) )
         svecs.replaceWithCopy(k);
     // Make and install new global Frame
@@ -234,7 +233,7 @@ public class Session {
   VecAry copyOnWrite( Frame fr, int[] cols ) {
     Vec did_copy = null;        // Did a copy?
     VecAry vecs = fr.vecs();
-    for( Key<AVec> k:vecs.keys()) {
+    for( Key<Vec> k:vecs.keys()) {
       int refcnt = getRefCnt(k);
       assert refcnt > 0;
       if( refcnt > 1 )          // If refcnt is 1, we allow the update to take in-place
@@ -249,20 +248,20 @@ public class Session {
   String sanity_check_refs( Val returning ) {
     // Compute refcnts from tracked frames only.  Since we are between Rapids
     // calls the only tracked Vecs should be those from tracked frames.
-    NonBlockingHashMap<Key<AVec>,Integer> refcnts = new NonBlockingHashMap<>();
+    NonBlockingHashMap<Key<Vec>,Integer> refcnts = new NonBlockingHashMap<>();
     for( Frame fr : FRAMES.values() )
-      for( Key<AVec> k : fr.vecs().keys() ) {
+      for( Key<Vec> k : fr.vecs().keys() ) {
         Integer I = refcnts.get(k);
         refcnts.put(k,I==null ? 1 : I+1);
       }
     if( returning != null && returning.isFrame() ) // One more (nameless) returning frame
-      for( Key<AVec> vec : returning.getFrame().vecs().keys() ) {
+      for( Key<Vec> vec : returning.getFrame().vecs().keys() ) {
         Integer I = refcnts.get(vec);
         refcnts.put(vec,I==null ? 1 : I+1);
       }
     // Compare computed refcnts to cached REFCNTS.  Every computed refcnt and
     // Vec is in REFCNTS with equal counts.
-    for( Key<AVec> vec : refcnts.keySet() ) {
+    for( Key<Vec> vec : refcnts.keySet() ) {
       Integer I = REFCNTS.get(vec);
       if( I==null )
         return "REFCNTS missing vec "+vec;

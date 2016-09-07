@@ -3,7 +3,6 @@ package hex;
 import org.junit.*;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 

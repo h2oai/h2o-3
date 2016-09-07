@@ -1,7 +1,6 @@
 package water.fvec;
 
 import water.AutoBuffer;
-import water.H2O;
 import water.Key;
 import water.DKV;
 import water.util.ArrayUtils;
@@ -38,7 +37,7 @@ public class CategoricalWrappedVec extends WrappedVec {
 
   /** Constructor just to generate the map and domain; used in tests or when
    *  mixing categorical columns */
-  private CategoricalWrappedVec(Key key) { super(key, AVec.ESPC.rowLayout(key, new long[]{0}), null, null); }
+  private CategoricalWrappedVec(Key key) { super(key, Vec.ESPC.rowLayout(key, new long[]{0}), null, null); }
   public static int[] computeMap(String[] from, String[] to) {
     Key key = Vec.newKey();
     CategoricalWrappedVec tmp = new CategoricalWrappedVec(key);

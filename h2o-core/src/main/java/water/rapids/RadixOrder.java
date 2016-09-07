@@ -2,12 +2,9 @@ package water.rapids;
 
 import water.*;
 import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.Pair;
 import water.util.PrettyPrint;
 
 import java.util.Arrays;

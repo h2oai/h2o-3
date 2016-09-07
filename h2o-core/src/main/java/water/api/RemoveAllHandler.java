@@ -5,7 +5,7 @@ import water.H2O;
 import water.Job;
 import water.MRTask;
 import water.api.schemas3.RemoveAllV3;
-import water.fvec.AVec;
+import water.fvec.Vec;
 import water.util.Log;
 
 // Best-effort cluster brain-wipe and reset.
@@ -26,7 +26,7 @@ public class RemoveAllHandler extends Handler {
     fs.blockForPending();
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(H2O.MIN_HI_PRIORITY){
-      @Override public void setupLocal() {  H2O.raw_clear();  AVec.ESPC.clear(); }
+      @Override public void setupLocal() {  H2O.raw_clear();  Vec.ESPC.clear(); }
     }.doAllNodes();
     // Wipe the backing store without regard as well
     H2O.getPM().getIce().cleanUp();

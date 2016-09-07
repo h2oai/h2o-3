@@ -1,7 +1,7 @@
 package water;
 
 import org.testng.annotations.*;
-import water.fvec.AVec;
+import water.fvec.Vec;
 import water.util.Log;
 
 import java.io.*;
@@ -254,7 +254,7 @@ public class AccuracyTestingSuite {
     for( Job j : Job.jobs() ) { j.stop(); j.remove(fs); }
     fs.blockForPending();
     new MRTask(){
-      @Override public void setupLocal() {  H2O.raw_clear();  AVec.ESPC.clear(); }
+      @Override public void setupLocal() {  H2O.raw_clear();  Vec.ESPC.clear(); }
     }.doAllNodes();
     H2O.getPM().getIce().cleanUp();
   }

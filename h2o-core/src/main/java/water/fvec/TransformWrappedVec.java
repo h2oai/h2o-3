@@ -53,7 +53,7 @@ public class TransformWrappedVec extends WrappedVec {
         for(int i=0;i<c._len;++i)
           nc.addNum(c.atd(i));
       }
-    }.doAll(1,Vec.T_NUM,new VecAry(this)).outputVecs(null).getAVecRaw(0);
+    }.doAll(1,Vec.T_NUM,new VecAry(this)).outputVecs(null).getVecRaw(0);
     remove();
     return v;
   }

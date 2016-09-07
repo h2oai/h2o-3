@@ -64,9 +64,6 @@ public class Frame extends Lockable<Frame> {
     _vecs.reload();
   }
 
-  public void setVec(String name, VecAry vec) {
-    _vecs.setVec(_names.getId(name),vec);
-  }
 
   public void restructure(Names names, VecAry vvecs) {
     _names = names;
@@ -301,7 +298,7 @@ public class Frame extends Lockable<Frame> {
     _names = new Names();
   }
 
-  public Frame( AVec... vecs ){ this((Key)null, new VecAry(vecs));}
+  public Frame( Vec... vecs ){ this((Key)null, new VecAry(vecs));}
   public Frame( Key key, Names names, VecAry vecs) {
     super(key);
     _vecs = vecs;

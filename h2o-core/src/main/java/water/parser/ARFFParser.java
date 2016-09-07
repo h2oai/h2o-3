@@ -2,7 +2,6 @@ package water.parser;
 
 import java.util.ArrayList;
 import water.Key;
-import water.fvec.Vec;
 
 import static water.parser.DefaultParserProviders.ARFF_INFO;
 

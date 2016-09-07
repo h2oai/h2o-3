@@ -90,7 +90,7 @@ public class TestUtil extends Iced {
     assertTrue("No keys leaked, leaked_keys = " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(){
-      @Override public void setupLocal() {  H2O.raw_clear();  AVec.ESPC.clear(); }
+      @Override public void setupLocal() {  H2O.raw_clear();  Vec.ESPC.clear(); }
     }.doAllNodes();
     _initial_keycnt = H2O.store_size();
   }

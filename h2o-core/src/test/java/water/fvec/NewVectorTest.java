@@ -23,7 +23,7 @@ public class NewVectorTest extends TestUtil {
       NewChunk nv = new NewChunk(new SingleChunk(av,0),0, ls, xs, id, null);
       Chunk bv = nv.compress();
       Futures fs = new Futures();
-      vec = (Vec) av.layout_and_close(fs).getAVecRaw(0);
+      vec = (Vec) av.layout_and_close(fs).getVecRaw(0);
       fs.blockForPending();
       // Compression returns the expected compressed-type:
       assertTrue( "Found chunk class "+bv.getClass()+" but expected "+C, C.isInstance(bv) );
@@ -99,7 +99,7 @@ public class NewVectorTest extends TestUtil {
       int xs[] = new int[]{0,0,0,0}; // A 4-row chunk
       NewChunk nv = new NewChunk(new SingleChunk(av,0),0,ls,xs,null,null);
       nv.close(fs);
-      vec = (Vec) av.layout_and_close(fs).getAVecRaw(0);
+      vec = (Vec) av.layout_and_close(fs).getVecRaw(0);
       fs.blockForPending();
       assertEquals(nv._len, vec.length());
       // Compression returns the expected constant-compression-type:

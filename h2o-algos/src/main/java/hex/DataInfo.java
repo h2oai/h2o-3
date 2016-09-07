@@ -252,7 +252,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if( _interactions==null ) {
       interactionIds = new ArrayList<>();
       for(int i=0;i<tvecs.len();++i)
-        if( tvecs.getAVecForCol(i) instanceof InteractionWrappedVec ) interactionIds.add(i);
+        if( tvecs.getVecForCol(i) instanceof InteractionWrappedVec ) interactionIds.add(i);
       if( interactionIds.size() > 0 ) {
         _interactionVecs = new int[interactionIds.size()];
         for (int i = 0; i < _interactionVecs.length; ++i)
@@ -263,7 +263,7 @@ public class DataInfo extends Keyed<DataInfo> {
     for(int i = 0; i < ncats; ++i) {
       names[i] = train._names.getName(cats[i]);
       _catMissing[i] = missingBucket; //needed for test time
-      if( tvecs2.getAVecForCol(i) instanceof InteractionWrappedVec ) {
+      if( tvecs2.getVecForCol(i) instanceof InteractionWrappedVec ) {
         if( _interactions!=null ) _interactions[interactionIdx].vecIdx=i;
         _interactionVecs[interactionIdx++]=i;  // i (and not cats[i]) because this is the index in _adaptedFrame
         _catOffsets[i + 1] = (len += tvecs2.domain(i).length + (missingBucket ? 1 : 0));
@@ -278,18 +278,18 @@ public class DataInfo extends Keyed<DataInfo> {
     boolean isIWV; // is InteractionWrappedVec?
     for(int i = 0; i < nnums; ++i) {
       names[i+ncats] = train._names.getName(nums[i]);
-      isIWV = tvecs2.getAVecForCol(i+ncats) instanceof InteractionWrappedVec;
+      isIWV = tvecs2.getVecForCol(i+ncats) instanceof InteractionWrappedVec;
       if( isIWV ) {
         if( null!=_interactions ) _interactions[interactionIdx].vecIdx=i+ncats;
         _interactionVecs[interactionIdx++]=i+ncats;
       }
-      _numOffsets[i+1] = (len+= (isIWV ? ((InteractionWrappedVec) tvecs2.getAVecForCol(i+ncats)).expandedLength() : 1));
+      _numOffsets[i+1] = (len+= (isIWV ? ((InteractionWrappedVec) tvecs2.getVecForCol(i+ncats)).expandedLength() : 1));
       _permutation[i+ncats] = nums[i];
     }
     _numMeans = new double[numNums()];
     int meanIdx=0;
     for(int i=0;i<nnums;++i) {
-      AVec v = train.vecs().getAVecForCol(nums[i]);
+      Vec v = train.vecs().getVecForCol(nums[i]);
       if( v instanceof InteractionWrappedVec ) {
         InteractionWrappedVec iwv = (InteractionWrappedVec)v;
         double[] means = iwv.getMeans();
@@ -403,7 +403,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _interactions = null;
     ArrayList<Integer> interactionVecs = new ArrayList<>();
     for(int i=0;i<fr.numCols();++i)
-      if( fr.vecs().getAVecForCol(i) instanceof InteractionWrappedVec ) interactionVecs.add(i);
+      if( fr.vecs().getVecForCol(i) instanceof InteractionWrappedVec ) interactionVecs.add(i);
 
     if( interactionVecs.size() > 0 ) {
       _interactionVecs = new int[interactionVecs.size()];
@@ -588,11 +588,11 @@ public class DataInfo extends Keyed<DataInfo> {
     VecAry vecs = _adaptedFrame.vecs();
     for (int i = 0; i < n; ++i) {
 
-      boolean isIWV = _adaptedFrame.vecs().getAVecForCol(vecStart + i) instanceof InteractionWrappedVec;
+      boolean isIWV = _adaptedFrame.vecs().getVecForCol(vecStart + i) instanceof InteractionWrappedVec;
       switch (t) {
         case STANDARDIZE:
           if( isIWV ) {
-            InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vecs().getAVecForCol(vecStart + i);
+            InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vecs().getVecForCol(vecStart + i);
             for(int offset=0;offset<iwv.expandedLength();++offset) {
               normMul[idx+offset] = iwv.getMul(offset+(_useAllFactorLevels?0:1));
               normSub[idx+offset] = iwv.getSub(offset+(_useAllFactorLevels?0:1));
@@ -652,7 +652,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public boolean isInteractionVec(int colid) {
     if( null==_interactions && null==_interactionVecs ) return false;
     if( _adaptedFrame!=null )
-      return _adaptedFrame.vecs().getAVecForCol(colid) instanceof InteractionWrappedVec;
+      return _adaptedFrame.vecs().getVecForCol(colid) instanceof InteractionWrappedVec;
     else
       return Arrays.binarySearch(_interactionVecs,colid) >= 0;
   }
@@ -703,7 +703,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
     // first do all of the expanded categorical names
     for(int i = 0; i < _cats; ++i) {
-      for (int j = (_useAllFactorLevels || vecs.getAVecForCol(i) instanceof InteractionWrappedVec) ? 0 : 1; j < vecs.domain(i).length; ++j) {
+      for (int j = (_useAllFactorLevels || vecs.getVecForCol(i) instanceof InteractionWrappedVec) ? 0 : 1; j < vecs.domain(i).length; ++j) {
         int jj = getCategoricalId(i, j);
         if(jj < 0)
           continue;
@@ -711,8 +711,8 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       if (_catMissing[i] && getCategoricalId(i,_catModes[i]) >=0)
         res[k++] = _adaptedFrame._names.getName(i) + ".missing(NA)";
-      if( vecs.getAVecForCol(i) instanceof InteractionWrappedVec ) {
-        InteractionWrappedVec iwv = (InteractionWrappedVec)vecs.getAVecForCol(i);
+      if( vecs.getVecForCol(i) instanceof InteractionWrappedVec ) {
+        InteractionWrappedVec iwv = (InteractionWrappedVec)vecs.getVecForCol(i);
         if( null!=iwv.missingDomains() ) {
           for(String s: iwv.missingDomains() )
             res[k++] = s+".missing(NA)";
@@ -727,7 +727,7 @@ public class DataInfo extends Keyed<DataInfo> {
       for (int i = 0; i <= _nums; i++) {
         InteractionWrappedVec v;
         if( i+_cats >= n || k >=n ) break;
-        if (vecs.getAVecForCol(i+_cats) instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs.getAVecForCol(i+_cats)).domain(0) != null)) { // in this case, get the categoricalOffset
+        if (vecs.getVecForCol(i+_cats) instanceof InteractionWrappedVec && ((v = (InteractionWrappedVec) vecs.getVecForCol(i+_cats)).domain(0) != null)) { // in this case, get the categoricalOffset
           for (int j = _useAllFactorLevels?0:1; j < v.domain(0).length; ++j) {
             if (getCategoricalIdFromInteraction(_cats+i, j) < 0)
               continue;
@@ -924,7 +924,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public final int getCategoricalIdFromInteraction(int cid, int val) {
     InteractionWrappedVec v;
-    if( (v=(InteractionWrappedVec)_adaptedFrame.vecs().getAVecForCol(cid)).isCategorical(0) ) return getCategoricalId(cid,val);
+    if( (v=(InteractionWrappedVec)_adaptedFrame.vecs().getVecForCol(cid)).isCategorical(0) ) return getCategoricalId(cid,val);
     assert v.domain(0)!=null : "No domain levels found for interactions! cid: " + cid + " val: " + val;
     cid -= _cats;
     if( val >= _numOffsets[cid+1] ) { // previously unseen interaction (aka new domain level)
@@ -966,7 +966,7 @@ public class DataInfo extends Keyed<DataInfo> {
     int numValsIdx=0; // since we're dense, need a second index to track interaction nums
     for( int i=0;i<n;i++) {
       if( isInteractionVec(_cats + i) ) {  // categorical-categorical interaction is handled as plain categorical (above)... so if we have interactions either v1 is categorical, v2 is categorical, or neither are categorical
-        InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vecs().getAVecForCol(_cats+i);
+        InteractionWrappedVec iwv = (InteractionWrappedVec)_adaptedFrame.vecs().getVecForCol(_cats+i);
         int interactionOffset = getInteractionOffset(chunks,_cats+i,rid);
         for(int offset=0;offset<iwv.expandedLength();++offset) {
           if( i < _intLvls.length && _intLvls[i]!=null && Arrays.binarySearch(_intLvls[i],offset) < 0 ) continue; // skip the filtered out interactions

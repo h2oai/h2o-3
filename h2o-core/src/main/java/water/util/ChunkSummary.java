@@ -4,7 +4,6 @@ import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.CategoricalWrappedVec;
-import water.fvec.Vec;
 
 /**
  * Simple summary of how many chunks of each type are in a Frame

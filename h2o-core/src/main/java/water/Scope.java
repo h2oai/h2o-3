@@ -1,8 +1,7 @@
 package water;
 
-import water.fvec.AVec;
-import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.Frame;
 import water.fvec.VecAry;
 
 import java.util.*;
@@ -84,7 +83,7 @@ public class Scope {
   static public Frame track( Frame fr ) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
-    for( Key<AVec> k: fr.vecs().keys()) track_impl(scope, k);
+    for( Key<Vec> k: fr.vecs().keys()) track_impl(scope, k);
     track_impl(scope, fr._key);
     return fr;
   }
@@ -95,12 +94,12 @@ public class Scope {
       scope._keys.peek().add(key);            // Track key
   }
 
-  static public void untrack( Key<AVec>[] keys ) {
+  static public void untrack( Key<Vec>[] keys ) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if( scope == null ) return;           // Not tracking this thread
     if( scope._keys.size() == 0 ) return; // Tracked in the past, but no scope now
     HashSet<Key> xkeys = scope._keys.peek();
-    for( Key<AVec> key : keys ) xkeys.remove(key); // Untrack key
+    for( Key<Vec> key : keys ) xkeys.remove(key); // Untrack key
   }
 
 }

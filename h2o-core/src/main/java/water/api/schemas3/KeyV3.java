@@ -7,7 +7,6 @@ import water.api.API;
 import water.rapids.Assembly;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Constructor;

@@ -4,7 +4,6 @@ import com.google.common.util.concurrent.AtomicDouble;
 import sun.misc.Unsafe;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.nbhm.UtilUnsafe;
 import water.util.*;

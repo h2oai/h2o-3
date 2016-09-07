@@ -45,7 +45,7 @@ public class DMatrix  {
       sum += s;
     }
     Key key = Vec.newKey();
-    int rowLayout = AVec.ESPC.rowLayout(key,espc);
+    int rowLayout = Vec.ESPC.rowLayout(key,espc);
     return transpose(src, new Frame(new VecAry(new Vec(key,rowLayout)).makeZeros((int)src.numRows())));
   }
 
@@ -90,7 +90,7 @@ public class DMatrix  {
         final int fi = i;
         final NewChunk[] tgtChunks = new NewChunk[chks[0]._len];
         for (int j = 0; j < tgtChunks.length; ++j)
-          tgtChunks[j] = new NewChunk(new SingleChunk(tgt.vecs().getAVecForCol(j + colStart),fi),j);
+          tgtChunks[j] = new NewChunk(new SingleChunk(tgt.vecs().getVecForCol(j + colStart),fi),j);
         for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
           NewChunk nc = chks[c].inflate();
           if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?

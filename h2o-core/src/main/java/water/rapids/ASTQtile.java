@@ -5,7 +5,6 @@ import hex.quantile.QuantileModel;
 import water.DKV;
 import water.Job;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 
 /**

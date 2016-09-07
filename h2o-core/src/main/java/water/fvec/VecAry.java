@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.util.*;
 
@@ -21,17 +22,149 @@ import java.util.*;
 public class VecAry extends Iced {
   // AVecs stored as a group key + vecIds
 
+
   private final class VecSet {
+    private int [] _vecIds;
+    private Vec [] _vecs;
+
+    public VecSet(){
+      _vecIds = new int[0];
+      _vecs = new Vec[0];
+    }
+
+    VecSet(int [] vids) {
+      ArrayUtils.IntAry blocks = new ArrayUtils.IntAry();
+      blocks.add(vids[0]);
+      boolean sorted = true; // assuming already sorted is common case
+      for(int i = 2 ; i < vids.length; i += 2)
+        if(vids[i] != vids[i-2]) {
+          blocks.add(vids[i]);
+          if(vids[i] < vids[i-2])
+            sorted = false;
+        }
+      int [] vecIds = blocks.toArray();
+      if(!sorted) { // not sorted,  sort and look for dups again
+        Arrays.sort(vecIds);
+        int [] uniqs = new int[vecIds.length];
+        int j = 1;
+        uniqs[0] = vecIds[0];
+        for(int i = 1; i < vecIds.length; ++i) {
+          if(vecIds[i] != vecIds[i-1])
+            uniqs[j++] = vecIds[i];
+        }
+        if(j < uniqs.length)
+          vecIds = Arrays.copyOf(uniqs,j);
+      }
+      _vecIds = vecIds;
+      _vecs = new Vec[_vecIds.length];
+    }
+
+    public VecSet(Vec... vs) {
+      Vec [] vecs = vs.clone();
+      int [] vecIds = new int[vecs.length];
+      int prev = Integer.MIN_VALUE;
+      boolean sorted = true;
+      for(int i = 0; i < vecIds.length; ++i) {
+        int x = vecIds[i] = vecs[i].vecId();
+        if(x < prev){
+          sorted = false;
+          break;
+        }
+        prev = x;
+      }
+      if(!sorted) { // sorted should be the common case
+        // sort
+        Arrays.sort(vecs, new Comparator<Vec>() {
+          @Override
+          public int compare(Vec o1, Vec o2) {return o1.vecId() - o2.vecId();}
+        });
+        for(int i = 0; i < vecIds.length; ++i)
+          vecIds[i] = vecs[i].vecId();
+      }
+      _vecs = vecs;
+      _vecIds = vecIds;
+    }
+    public Vec get(int i){
+      int vid = Arrays.binarySearch(_vecIds,i);
+      if(vid < 0) throw new NoSuchElementException("vec id " + i + " not in the set");
+      if(_vecs[vid] == null)
+        _vecs[vid] = fetchVec(vid);
+      return _vecs[vid];
+    }
+
+    public Vec [] vecs(){return _vecs;}
+
+    public void add(VecSet vs2) {
+      ArrayUtils.IntAry vecIds = new ArrayUtils.IntAry(_vecIds.length + vs2._vecIds.length);
+      ArrayList<Vec> vecs = new ArrayList<>();
+      int i = 0, j = 0;
+      synchronized(this) {
+        while (i < _vecIds.length && j < vs2._vecIds.length) {
+          if (_vecIds[i] < vs2._vecIds[j]) {
+            vecIds.add(_vecIds[i]);
+            vecs.add(_vecs[i]);
+            i++;
+          } else if (_vecIds[i] > vs2._vecIds[j]) {
+            vecIds.add(vs2._vecIds[j]);
+            vecs.add(vs2._vecs[j]);
+            j++;
+          } else {
+            vecIds.add(_vecIds[i]);
+            vecs.add(_vecs[i] != null ? _vecs[i] : vs2._vecs[j]);
+            i++;
+            j++;
+          }
+        }
+        _vecIds = vecIds.toArray();
+        _vecs = vecs.toArray(new Vec[_vids.length]);
+      }
+    }
+
+    public void add(Vec v) {
+      int vid = v.vecId();
+      int j = Arrays.binarySearch(_vecIds,vid);
+      if(j < 0) {
+        synchronized(this) {
+          j = -j - 1;
+          _vecIds = Arrays.copyOf(_vecIds, _vecIds.length + 1);
+          _vecs = Arrays.copyOf(_vecs, _vecs.length + 1);
+          for (int i = _vecIds.length - 1; i > j; --i) {
+            _vecIds[i] = _vecIds[i - 1];
+            _vecs[i] = _vecs[i - 1];
+          }
+          _vecIds[j] = vid;
+          _vecs[j] = v;
+        }
+      }
+    }
+    public int size() {return _vecIds.length;}
+
+    public void remove(int vid) {
+      int x = Arrays.binarySearch(_vecIds, vid);
+      if(x >= 0) {
+        int [] vecIds = new int[_vecIds.length-1];
+        Vec [] vecs = new Vec[_vecs.length-1];
+        System.arraycopy(_vecIds,0,vecIds,0,x);
+        System.arraycopy(_vecs,0,vecs,0,x);
+        System.arraycopy(_vecIds,x+1,vecIds,x,_vecIds.length-x-1);
+        System.arraycopy(_vecs,x+1,vecs,x,_vecs.length-x-1);
+        _vecs = vecs;
+        _vecIds = vecIds;
+      }
+    }
+  }
+
+  private final class VecSet3 {
     final int _min;
     final int _max;
-    final AVec[] _vs;
+    final Vec[] _vs;
 
-    public VecSet(AVec... vs) {
+    public VecSet3(Vec... vs) {
       if (vs != null && vs.length != 0)
         _vgTemplate = vs[0].groupKey();
       int min = Integer.MAX_VALUE;
       int max = Integer.MIN_VALUE;
-      for (AVec a : vs) {
+      for (Vec a : vs) {
         int id = a.vecId();
         if (id < min) min = id;
         if (id > max) max = id;
@@ -41,7 +174,7 @@ public class VecAry extends Iced {
       _max = max;
     }
 
-    public VecSet(int min, int max, AVec[] vs) {
+    public VecSet3(int min, int max, Vec[] vs) {
       _min = min;
       _max = max;
       _vs = vs;
@@ -50,70 +183,70 @@ public class VecAry extends Iced {
     }
 
 
-    public boolean contains(VecSet s) {
+    public boolean contains(VecSet3 s) {
       return _min <= s._min && s._max <= _max;
     }
 
-    public VecSet add(VecSet s) {
+    public VecSet3 add(VecSet3 s) {
       if (contains(s)) return this;
       if (s.contains(this)) return s;
       if (s._min < _min) {
         assert s._max < _max;
-        AVec[] vs = new AVec[_max - s._min + 1];
+        Vec[] vs = new Vec[_max - s._min + 1];
         // TODO
-        return new VecSet(s._min, _max, vs);
+        return new VecSet3(s._min, _max, vs);
       } else {
         assert s._max > _max;
         assert s._min > _min;
-        AVec[] vs = new AVec[s._max - _min + 1];
+        Vec[] vs = new Vec[s._max - _min + 1];
         // TODO
-        return new VecSet(_min, s._max, vs);
+        return new VecSet3(_min, s._max, vs);
       }
     }
 
-    public VecSet set(AVec v) {
+    public VecSet3 set(Vec v) {
       int id = v.vecId();
       if (_vs == null) {
         _vgTemplate = v.groupKey();
-        return new VecSet(id, id, new AVec[]{v});
+        return new VecSet3(id, id, new Vec[]{v});
       }
       if (id < _min) {
-        AVec[] vs = new AVec[_max - id];
+        Vec[] vs = new Vec[_max - id];
         int off = _min - id;
         for (int i = 0; i < _vs.length; ++i)
           vs[off + i] = _vs[i];
         vs[0] = v;
-        return new VecSet(id, _max, vs);
+        return new VecSet3(id, _max, vs);
       } else if (id > _max) {
-        AVec[] vs = new AVec[id - _min];
+        Vec[] vs = new Vec[id - _min];
         for (int i = 0; i < _vs.length; ++i)
           vs[i] = _vs[i];
         vs[vs.length - 1] = v;
-        return new VecSet(_min, id, vs);
+        return new VecSet3(_min, id, vs);
       }
       _vs[id - _min] = v;
       return this;
     }
 
-    public AVec anyVec() {
+    public Vec anyVec() {
       return _vs[0];
     }
 
-    public AVec get(int vecId) {
+    public Vec get(int vecId) {
       if (_max < vecId || vecId < _min)
         return null;
       int i = vecId - _min;
-      AVec res = _vs[i];
+      Vec res = _vs[i];
       if (res == null)
         res = _vs[i] = fetchVec(vecId);
       return res;
     }
 
-    public VecSet subset(int min, int max) {
-      return new VecSet(min, max, Arrays.copyOfRange(_vs, min - _min, _max - max + 1));
+    public VecSet3 subset(int min, int max) {
+      return new VecSet3(min, max, Arrays.copyOfRange(_vs, min - _min, _max - max + 1));
     }
 
-    public VecSet subset(int[] vids) {
+    public VecSet3 subset(int[] vids) {
       int min = Integer.MAX_VALUE;
       int max = Integer.MIN_VALUE;
       for (int i = 0; i < vids.length; i += 2) {
@@ -128,7 +261,7 @@ public class VecAry extends Iced {
       return _max - _min + 1;
     }
 
-    public VecSet remove(int[] vids_rem, int[] vids_new) {
+    public VecSet3 remove(int[] vids_rem, int[] vids_new) {
       for (int i = 0; i < vids_rem.length; i += 2)
         _vs[i] = null;
       int min = Integer.MAX_VALUE;
@@ -138,16 +271,16 @@ public class VecAry extends Iced {
         if (x < min) min = x;
         if (x > max) max = x;
       }
-      AVec[] vs = _vs;
+      Vec[] vs = _vs;
       if (min > _min || max < _max) {
         int start = min - _min;
         int end = _max + (max - _max);
-        return new VecSet(min, max, Arrays.copyOfRange(_vs, start, end));
+        return new VecSet3(min, max, Arrays.copyOfRange(_vs, start, end));
       }
       return this;
     }
   }
-  private VecSet _vecs = new VecSet(-1,-1,null);
+  private VecSet _vecs = new VecSet();
   private Key _vgTemplate;
   private transient ThreadLocal<Key> _vg = new ThreadLocal<Key>();
 
@@ -157,9 +290,9 @@ public class VecAry extends Iced {
       _vg.set(res = Key.make(_vgTemplate._kb.clone()));
     return res;
   }
-  private AVec fetchVec(int i) {
+  private Vec fetchVec(int i) {
     Key k = vg();
-    AVec.VectorGroup.setVecId(k._kb,i);
+    Vec.VectorGroup.setVecId(k._kb,i);
     return DKV.getGet(k);
   }
 
@@ -177,7 +310,7 @@ public class VecAry extends Iced {
   int [] _vids; // each element is 2 ints, vector (block) id withint the VG, vec id within the block
 
   private static class VecsPerBlock {
-    AVec  [] _blocks;
+    Vec[] _blocks;
     int [][] _vecs;
   }
   private VecsPerBlock vecsPerBlock() {
@@ -194,29 +327,17 @@ public class VecAry extends Iced {
   }
 
   public VecAry(){}
-  private VecAry(VecSet vs, int [] vids){
-    _vecs = vs;
+  private VecAry(int [] vids){
     _vids = vids;
+    _vecs = new VecSet(_vids);
   }
 
-  private void _addAVec(AVec v) {
-    VecSet vs = _vecs.set(v);
-    while(vs != _vecs && !UnsafeUtils.compareAndSet(this,_vecSetOffset,_vecs,vs))
-      vs = _vecs.set(v);
-  }
-
-  private void _addAVecs(VecSet vs) {
-    VecSet vecs = _vecs;
-    while(!vecs.contains(vs) && !UnsafeUtils.compareAndSet(this,_vecSetOffset,vecs,vecs.add(vs)))
-      vecs = _vecs;
-  }
-
-  public VecAry(AVec... vs){
+  public VecAry(Vec... vs){
     _vecs = new VecSet(vs);
     _vids = new int[vs.length*2];
     int k = 0;
-    for(AVec v:vs) {
-      int i = AVec.VectorGroup.getVecId(v._key._kb);
+    for(Vec v:vs) {
+      int i = Vec.VectorGroup.getVecId(v._key._kb);
       for(int j = 0; j < v.numCols(); ++j) {
         _vids[k++] = i;
         _vids[k++] = j;
@@ -229,9 +350,9 @@ public class VecAry extends Iced {
     for(VecAry v:vs) addVecs(v);
   }
 
-  public VecAry(AVec v, int [] ids){
+  public VecAry(Vec v, int [] ids){
     _vecs = new VecSet(v);
-    int i = AVec.VectorGroup.getVecId(v._key._kb);
+    int i = Vec.VectorGroup.getVecId(v._key._kb);
     _vids = new int[ids.length*2];
     int k = 0;
     for(int j:ids) {
@@ -243,30 +364,21 @@ public class VecAry extends Iced {
   public VecAry(VecAry v) {
     _vids = v._vids.clone();}
 
-  public VecAry addVec(AVec... vs) {
-    for(AVec v:vs) {
-      _addAVec(v);
-      int k = _vids.length;
-      _vids = Arrays.copyOf(_vids, _vids.length + v.numCols() * 2);
-      int id = v.vecId();
-      for (int i = 0; i < v.numCols(); ++i) {
-        _vids[k++] = id;
-        _vids[k++] = i;
-      }
-    }
+  public VecAry addVec(Vec... vs) {
+    addVecs(new VecAry(vs));
     return this;
   }
 
   public VecAry addVecs(VecAry vs) {
-    _addAVecs(vs._vecs);
+    _vecs.add(vs._vecs);
     _vids = ArrayUtils.add(_vids,vs._vids);
     return this;
   }
 
-  public AVec getAVecRaw(int i) {return _vecs.get(i);}
+  public Vec getVecRaw(int i) {return _vecs.get(i);}
 
-
-  public AVec getAVecForCol(int i) {return _vecs.get(_vids[i<<1]);}
+  public Vec anyVec(){return getVecForCol(0);}
+  public Vec getVecForCol(int i) {return _vecs.get(_vids[i<<1]);}
 
   public boolean isInt(int col) {
     return _vecs.get(_vids[2*col]).isInt(_vids[2*col + 1]);
@@ -277,8 +389,8 @@ public class VecAry extends Iced {
   }
 
   public long[] espc() {
-    VecSet vs = _vecs;
-    return vs._vs == null?null:vs._vs[0].espc();
+    if(_vecs.size() == 0) return null;
+    return getVecForCol(0).espc();
   }
 
   public String[][] domains() {
@@ -287,7 +399,7 @@ public class VecAry extends Iced {
     int k = 0;
     while(i < _vids.length) {
       int b = _vids[i];
-      AVec av = _vecs.get(_vids[i]);
+      Vec av = _vecs.get(_vids[i]);
       while(i < _vids.length && _vids[i] == b) {
         res[k++] = av.domain(_vids[i+1]);
         i += 2;
@@ -310,7 +422,7 @@ public class VecAry extends Iced {
     int k = 0;
     while(i < _vids.length) {
       int b = _vids[i];
-      AVec av = _vecs.get(_vids[i]);
+      Vec av = _vecs.get(_vids[i]);
       while(i < _vids.length && _vids[i] == b) {
         res[k++] = av.type(_vids[i+1]);
         i += 2;
@@ -362,7 +474,7 @@ public class VecAry extends Iced {
     int i = 0;
     while(i < _vids.length) {
       int b = _vids[i];
-      AVec av = _vecs.get(_vids[i]);
+      Vec av = _vecs.get(_vids[i]);
       res += av.byteSize();
       while(i < _vids.length && _vids[i] == b)
         i += 2;
@@ -371,10 +483,10 @@ public class VecAry extends Iced {
   }
 
   public boolean isRawBytes() {
-    return _vecs._min == _vecs._max && _vecs.get(0) instanceof ByteVec;
+    return _vecs.size() == 1 && anyVec() instanceof ByteVec;
   }
 
-  public void reload() {Arrays.fill(_vecs._vs,null);}
+  public void reload() {Arrays.fill(_vecs._vecs,null);}
 
   public VecAry makeCompatible(VecAry vecAry, boolean b) {
     if(!b  && vecAry.isCompatible(this))
@@ -384,14 +496,14 @@ public class VecAry extends Iced {
 
   public boolean isHomedLocally(int lo) {
     Key k = vg();
-    AVec.setChunkId(k,lo);
+    Vec.setChunkId(k,lo);
     return k.home();
   }
 
   public void close(){close(new Futures()).blockForPending();}
 
   public Futures close(Futures fs) {
-    AVec [] vecs = _vecs._vs;
+    Vec[] vecs = _vecs._vecs;
     for(int i = 0; i < vecs.length; ++i)
       if(vecs[i] != null)
         vecs[i].postWrite(fs);
@@ -411,13 +523,13 @@ public class VecAry extends Iced {
   }
 
   public VecAry deepCopy() {
-    final AVec av = new AVec(group().addVec(),rowLayout(),len(),domains(),types());
+    final Vec av = new Vec(group().addVec(),rowLayout(),types(),domains());
     new MRTask(){
       @Override public void map(Chunk [] chks) {
         chks = chks.clone();
         for(int i = 0; i < chks.length; ++i)
           chks[i] = chks[i].deepCopy();
-        new ChunkBlock(av,chks[0].cidx(),chks).close(_fs);
+        DKV.put(av.chunkKey(chks[0].cidx()),new Vec.Chunks(chks));
       }
     }.doAll(this);
     DKV.put(av._key,av);
@@ -443,16 +555,16 @@ public class VecAry extends Iced {
 
   public boolean isNumeric(int i) {return type(i) == Vec.T_NUM;}
 
-  public Key<AVec>[] keys() {
+  public Key<Vec>[] keys() {
     TreeSet<Integer> ks = new TreeSet<>();
     for(int i = 0; i < _vids.length; i += 2)
       ks.add(_vids[i]);
-    Key<AVec> [] res = new Key[ks.size()];
+    Key<Vec> [] res = new Key[ks.size()];
     int j = 0;
     Key k = vg();
     for(int i:ks) {
       byte [] kb = k._kb.clone();
-      AVec.VectorGroup.setVecId(kb,i);
+      Vec.VectorGroup.setVecId(kb,i);
       res[j++] = Key.make(kb);
     }
     return res;
@@ -468,22 +580,29 @@ public class VecAry extends Iced {
   public VecAry setVec(int id, VecAry vec) {
     if(vec.len() != 1) throw new IllegalArgumentException();
     if(len() == id) return addVecs(vec);
+    int oldVid = _vids[2*id];
     VecAry res = new VecAry(_vecs.get(_vids[2*id]),new int[]{_vids[2*id+1]});
-    _addAVec(vec.getAVecRaw(0));
+    _vecs.add(vec.anyVec());
     _vids[2*id+0] = vec._vids[0];
     _vids[2*id+1] = vec._vids[1];
+    boolean vecOut = true;
+    for(int i = 0; i < _vids.length; i += 2)
+      if(_vids[i] == oldVid) {
+        vecOut = false;
+        break;
+      }
+    if(vecOut) _vecs.remove(oldVid);
     return res;
   }
 
   public VecAry replaceVecs(VecAry vecs, int... cols) {
     VecAry res = getVecs(cols);
-    _addAVecs(vecs._vecs);
     for(int i = 0; i < cols.length; i++) {
       int x = 2*cols[i];
       _vids[x+0] = vecs._vids[i*2+0];
       _vids[x+1] = vecs._vids[i*2+1];
     }
-    reload();
+    _vecs = new VecSet(_vids);
     return res;
   }
 
@@ -495,7 +614,7 @@ public class VecAry extends Iced {
     return res;
   }
 
-  public int rowLayout() {return _vecs.get(_vecs._min)._rowLayout;}
+  public int rowLayout() {return anyVec().rowLayout();}
 
   public VecAry makeCopy(String[] domains){
     if(len() != 1) throw new IllegalArgumentException();
@@ -519,7 +638,7 @@ public class VecAry extends Iced {
     int k = 0;
     while(i < _vids.length) {
       int b = _vids[i];
-      AVec av = _vecs.get(_vids[i]);
+      Vec av = _vecs.get(_vids[i]);
       while(i < _vids.length && _vids[i] == b) {
         av.setDomain(_vids[i+1],domains[k]);
         av.setType(_vids[i+1],types[k]);
@@ -549,12 +668,12 @@ public class VecAry extends Iced {
   }
 
   /**
-   * Copy out all vecs in this ary which are supported by the given AVec.
+   * Copy out all vecs in this ary which are supported by the given Vec.
    * Used for reference counting on AVecs.
    * @param k
    */
-  public void replaceWithCopy(Key<AVec> k) {
-    int id = AVec.VectorGroup.getVecId(k._kb);
+  public void replaceWithCopy(Key<Vec> k) {
+    int id = Vec.VectorGroup.getVecId(k._kb);
     ArrayList<Integer> idList = new ArrayList<>();
     for(int i = 0; i < _vids.length; i += 2)
       if(_vids[i] == id) idList.add(_vids[i+1]);
@@ -564,7 +683,7 @@ public class VecAry extends Iced {
       ids[i] = idList.get(i);
     Arrays.sort(ids);
     VecAry v = new VecAry(_vecs.get(id),ids).deepCopy();
-    int newId = v.getAVecRaw(0).vecId();
+    int newId = v.getVecRaw(0).vecId();
     for(int i = 0; i < _vids.length; i += 2) {
       if(_vids[i] == id) {
         _vids[i] = newId;
@@ -575,7 +694,7 @@ public class VecAry extends Iced {
 
   public int homeNode(int c) {
     Key k = vg();
-    AVec.setChunkId(k,c);
+    Vec.setChunkId(k,c);
     return k.home_node().index();
   }
 
@@ -702,8 +821,8 @@ public class VecAry extends Iced {
     private void nukeCache(){
       _cache.close(new Futures()).blockForPending();
       if(_dontCache && !isHomedLocally(_cache._cidx))
-        for (int i = 0; i < _cache._chks.length; ++i)
-          if (_cache._chks[i] != null) H2O.raw_remove(_cache._chks[i]._vec.chunkKey(_cache._cidx));
+        for (int i = 0; i < _cache._blocks.length; ++i)
+          if (_cache._blocks[i] != null) H2O.raw_remove(_cache._blocks[i]._vec.chunkKey(_cache._cidx));
       _cache = null;
     }
     protected Chunk chk(long rowId, int vecId) {
@@ -715,7 +834,7 @@ public class VecAry extends Iced {
         _start = espc()[cidx];
         _end = espc()[cidx+1];
       }
-      return _cache.getChnunk(vecId);
+      return _cache.getChunk(vecId);
     }
 
     public final long at8(long rowId, int vecId) {return chk(rowId, vecId).at8((int) (rowId - _start));}
@@ -776,8 +895,9 @@ public class VecAry extends Iced {
   }
 
   public Futures remove(Futures fs) {
-    for(AVec av:vecsPerBlock()._blocks)
-      av.remove(fs);
+    VecsPerBlock vecsPerBlock = vecsPerBlock();
+    for(int i = 0; i < vecsPerBlock._blocks.length; ++i)
+      vecsPerBlock._blocks[i].removeVecs(vecsPerBlock._vecs[i]);
     return fs;
   }
 
@@ -788,19 +908,19 @@ public class VecAry extends Iced {
       vids[j++] = _vids[2*i];
       vids[j++] = _vids[2*i+1];
     }
-    return new VecAry(_vecs.subset(vids),vids);
+    return new VecAry(vids);
   }
 
   public int len(){
     return _vids.length >> 1;
   }
 
-  public AVec.VectorGroup group() {
-    return _vecs.anyVec().group();
+  public Vec.VectorGroup group() {
+    return anyVec().group();
   }
 
   public int nChunks() {
-    return _vecs.anyVec().nChunks();
+    return anyVec().nChunks();
   }
 
   public boolean isCompatible(VecAry vecs) {
@@ -841,7 +961,7 @@ public class VecAry extends Iced {
 
   public VecAry subRange(int startIdx, int endIdx) {
     int [] vids = Arrays.copyOfRange(_vids,2*startIdx,2*endIdx+2);
-    return new VecAry(_vecs.subset(vids),vids);
+    return new VecAry(vids);
   }
 
   public VecAry removeVecs(int... id) {
@@ -859,8 +979,8 @@ public class VecAry extends Iced {
       }
     }
     _vids = vids_new;
-    VecAry res = new VecAry(_vecs.subset(vids_new),vids_new);
-    _vecs = _vecs.remove(vids_rem, vids_new);
+    VecAry res = new VecAry(vids_new);
+    _vecs = new VecSet(_vids);
     return res;
   }
 
@@ -878,8 +998,8 @@ public class VecAry extends Iced {
       vids_new[k++] = _vids[i+1];
     }
     _vids = vids_new;
-    VecAry res = new VecAry(_vecs.subset(vids_new),vids_new);
-    _vecs = _vecs.remove(vids_rem, vids_new);
+    VecAry res = new VecAry(vids_rem);
+    _vecs = new VecSet(vids_new);
     return res;
   }
 
@@ -899,56 +1019,35 @@ public class VecAry extends Iced {
 
   private transient int _chunkId = -1;
   private transient int _blockId = 0;
-  private transient AVec.ChunkAry _chk = null;
+  private transient Vec.Chunks _chk = null;
 
-  public class ChunkAry {
-    private final AVec.ChunkAry[] _chks;
+  public class ChunkAry extends Vec.Chunks {
+    private final Vec.Chunks[] _blocks;
     public final int _cidx;
 
     public ChunkAry(int cidx) {
       _cidx = cidx;
-      _chks = new AVec.ChunkAry[_vecs._max-_vecs._min+1];
-    }
-
-    private AVec.ChunkAry achunk(int j) {
-      if(_chks[j] == null) {
-        _chks[j] = _vecs.get(j).chunkForChunkIdx(_cidx);
-      }
-      return _chks[j];
-    }
-
-    public Chunk getChnunk(int vecId) {
-      int idx = vecId << 1;
-      int b = _vids[idx+0];
-      int v = _vids[idx+1];
-      return achunk(b).getChunk(v);
-    }
-
-
-    public Chunk [] chks(){
-      Chunk [] res = new Chunk [len()];
-      int i = 0;
-      int k = 0;
-      while(i < _vids.length) {
-        int b = _vids[i];
-        AVec.ChunkAry ac = achunk(i);
-        if(ac instanceof SingleChunk) {
-          res[k++] = ((SingleChunk)ac)._c;
-          i+= 2;
-        } else  {
-          Chunk [] chks = ac.getChunks();
-          while(i < _vids.length && _vids[i] == b) {
-            res[k++] = chks[_vids[i+1]];
-            i += 2;
-          }
+      _blocks = new Vec.Chunks[_vecs.size()];
+      for(int i = 0; i < _blocks.length; ++i)
+        _blocks[i] = _vecs.get(_vecs._vecIds[i]).chunkForChunkIdx(cidx);
+      Chunk [] cs = new Chunk [len()];
+      Vec.Chunks block = null;
+      int blockId = -1;
+      for(int i = 0; i < _vids.length; i += 2) {
+        int bid = _vids[i];
+        if(bid != blockId) {
+          blockId = bid;
+          block = _blocks[Arrays.binarySearch(_vecs._vecIds, _vids[i])];
         }
+        cs[i >> 1] = block.getChunk(_vids[i + 1]);
       }
-      return res;
+      _cs = cs;
     }
 
+    @Override
     public Futures close(Futures fs){
-      for(int i = 0; i < _chks.length; ++i)
-        if(_chks[i] != null) _chks[i].close(fs);
+      for(int i = 0; i < _blocks.length; ++i)
+        if(_blocks[i] != null) _blocks[i].close(fs);
       return fs;
     }
   }
@@ -958,7 +1057,7 @@ public class VecAry extends Iced {
     ChunkAry cary = _chunkCache;
     if(_chunkCache == null || _chunkCache._cidx != chunkId)
       _chunkCache = cary = getChunks(chunkId);
-    return cary.getChnunk(vecId);
+    return cary.getChunk(vecId);
   }
 
   public ChunkAry getChunks(int cidx) {return getChunks(cidx,true);}
@@ -997,9 +1096,9 @@ public class VecAry extends Iced {
 
   public VecAry makeCons(final double... cons) {
     final int n = cons.length;
-    final AVec av = n == 1
+    final Vec av = n == 1
         ?new Vec(group().addVec(),rowLayout(),null, Vec.T_NUM)
-        :new AVec(group().addVec(),rowLayout(), n, null,ArrayUtils.expandByteAry(Vec.T_NUM,n));
+        :new Vec(group().addVec(),rowLayout(), n, null,ArrayUtils.expandByteAry(Vec.T_NUM,n));
     new MRTask() {
       public void setupLocal() {
         for(int i = 0; i < av.nChunks(); ++i) {
@@ -1007,7 +1106,7 @@ public class VecAry extends Iced {
           if(av.chunkKey(i).home()) {
             // int numCols, int len, int [] nzChunks, Chunk [] chunks, double sparseElem
             int len = (int) (espc[i + 1] - espc[i]);
-            AVec.ChunkAry aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(cons[0], len)):new ChunkBlock(av,i,n, len, cons);
+            Vec.Chunks aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(cons[0], len)):new ChunkBlock(av,i,n, len, cons);
             aChunk.close(_fs);
           }
         }
@@ -1018,9 +1117,9 @@ public class VecAry extends Iced {
   }
   // Make a bunch of compatible zero Vectors
   public VecAry makeCons(final int n, final double con, String[][] domains, byte[] types) {
-    final AVec av = n == 1
+    final Vec av = n == 1
         ?new Vec(group().addVec(),rowLayout(),domains == null?null:domains[0], types[0])
-        :new AVec(group().addVec(),rowLayout(), n, domains,types);
+        :new Vec(group().addVec(),rowLayout(), n, domains,types);
     new MRTask() {
       public void setupLocal() {
         for(int i = 0; i < av.nChunks(); ++i) {
@@ -1028,7 +1127,7 @@ public class VecAry extends Iced {
           if(av.chunkKey(i).home()) {
             // int numCols, int len, int [] nzChunks, Chunk [] chunks, double sparseElem
             int len = (int) (espc[i + 1] - espc[i]);
-            AVec.ChunkAry aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(con, len)):new ChunkBlock(av,i,n, len, con);
+            Vec.Chunks aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(con, len)):new ChunkBlock(av,i,n, len, con);
             aChunk.close(_fs);
           }
         }
@@ -1068,30 +1167,4 @@ public class VecAry extends Iced {
     }.doAll(randVec);
     return randVec;
   }
-
-//  public static class SingleVecAry extends VecAry {
-//    private Key _blockKey;
-//    private int _vecId; // id within the block
-//    private transient AVec _vec;
-//
-//    protected AVec vec() {
-//      if(_vec != null)return _vec;
-//      return _vec = DKV.getGet(_blockKey);
-//    }
-//  }
-//
-//  public static class SingleVecAry extends VecAry {
-//    private Key _blockKey;
-//    private int _vecId; // id within the block
-//    private transient AVec _vec;
-//
-//    protected AVec vec() {
-//      if(_vec != null)return _vec;
-//      return _vec = DKV.getGet(_blockKey);
-//    }
-//  }
-
-
-
-
 }

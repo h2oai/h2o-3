@@ -3,7 +3,7 @@ package water;
 import java.util.Arrays;
 
 import water.api.schemas3.*;
-import water.fvec.AVec;
+import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
@@ -27,7 +27,7 @@ public class TypeMap {
     water.fvec.C1NChunk.class.getName(),// used as constant in parser
     water.fvec.Frame.class.getName(),   // used in TypeaheadKeys & Exec2
     water.fvec.Vec.VectorGroup.class.getName(), // Used in TestUtil
-    AVec.ESPC.class.getName(), // Used in TestUtil
+    Vec.ESPC.class.getName(), // Used in TestUtil
 
     // Status pages looked at without locking the cloud
     water.api.Schema.class.getName(),

@@ -3,9 +3,7 @@ package hex.grep;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.*;
-import water.fvec.ByteVec;
 import water.fvec.Chunk;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.Log;
 

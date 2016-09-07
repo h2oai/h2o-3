@@ -7,7 +7,6 @@ import org.junit.*;
 import java.io.File;
 
 import water.*;
-import water.fvec.Vec;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 

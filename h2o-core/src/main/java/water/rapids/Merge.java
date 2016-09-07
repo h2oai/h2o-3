@@ -356,7 +356,7 @@ public class Merge {
 
 
     Key key = Vec.newKey();
-    VecAry vecs = new VecAry(new Vec(key, AVec.ESPC.rowLayout(key, espc))).makeCons(numColsInResult, 0, doms, types);
+    VecAry vecs = new VecAry(new Vec(key, Vec.ESPC.rowLayout(key, espc))).makeCons(numColsInResult, 0, doms, types);
     // to delete ... String[] names = ArrayUtils.append(leftFrame.names(), ArrayUtils.select(rightFrame.names(),  ArrayUtils.seq(numJoinCols, rightFrame.numCols() - 1)));
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 

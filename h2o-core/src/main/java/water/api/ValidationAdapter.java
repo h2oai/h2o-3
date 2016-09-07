@@ -1,9 +1,5 @@
 package water.api;
 
-import hex.Model;
-import water.fvec.Frame;
-import water.fvec.Vec;
-
 public class ValidationAdapter {
 
 //  public ValidationAdapter(Frame validation, boolean classification) {

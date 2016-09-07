@@ -6,7 +6,6 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 public class H2OScaler extends Transform<H2OScaler> {

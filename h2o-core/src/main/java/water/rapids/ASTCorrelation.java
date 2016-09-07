@@ -117,7 +117,7 @@ class ASTCorrelation extends ASTPrim {
 
             // Gather all the Xs-vs-Y correlation arrays and build out final Frame of correlations.
             Vec[] res = new Vec[ncoly];
-            Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+            Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
             for (int y = 0; y < ncoly; y++)
                 res[y] = Vec.makeVec(cvs[y].getResult()._cors, keys[y]);
 
@@ -141,7 +141,7 @@ class ASTCorrelation extends ASTPrim {
 
             // Gather all the Xs-vs-Y covariance arrays; divide by rows
             Vec[] res = new Vec[ncoly];
-            Key<AVec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+            Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
             for (int y = 0; y < ncoly; y++)
                 res[y] = Vec.makeVec(ArrayUtils.div(cvs._cors[y], (fry.numRows() - 1 - NACount)), keys[y]);
             return new ValFrame(new Frame(null,fry._names, new VecAry(res)));

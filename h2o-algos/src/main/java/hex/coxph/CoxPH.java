@@ -8,7 +8,6 @@ import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.*;
 import java.util.Arrays;

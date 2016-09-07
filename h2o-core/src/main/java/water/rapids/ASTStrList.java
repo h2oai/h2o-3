@@ -3,7 +3,6 @@ package water.rapids;
 import water.DKV;
 import water.H2O;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.VecUtils;
 

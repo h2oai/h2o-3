@@ -3,14 +3,12 @@ package water.persist;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.api.ImportFilesHandler;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
 import water.fvec.VecAry;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 
 import static junit.framework.TestCase.assertEquals;
 
@@ -40,7 +38,7 @@ public class PersistS3Test extends TestUtil {
     try {
       Key k = H2O.getPM().anyURIToKey(new URI("s3://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
       Frame fr = DKV.getGet(k);
-      FileVec v = (FileVec) fr.vecs().getAVecRaw(0);
+      FileVec v = (FileVec) fr.vecs().getVecRaw(0);
       // make sure we have some chunks
       int chunkSize = (int) (v.length() / 3);
       v.setChunkSize(fr, chunkSize);

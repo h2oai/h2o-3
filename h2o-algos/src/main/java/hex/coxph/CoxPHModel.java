@@ -11,7 +11,6 @@ import hex.schemas.CoxPHModelV3;
 import water.Key;
 import water.MemoryManager;
 import water.api.schemas3.ModelSchemaV3;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 
 /**

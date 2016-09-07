@@ -3,7 +3,6 @@ package water.parser;
 import water.Futures;
 import water.fvec.AppendableVec;
 import water.fvec.NewChunk;
-import water.fvec.Vec;
 
 import java.util.Arrays;
 

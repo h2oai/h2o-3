@@ -5,9 +5,8 @@ import water.*;
 import water.api.ModelsHandler.Models;
 import water.api.schemas3.*;
 import water.exceptions.*;
-import water.fvec.AVec;
-import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.Frame;
 import water.fvec.VecAry;
 import water.util.Log;
 
@@ -160,8 +159,8 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
       throw new H2OKeyNotFoundArgumentException(param_name, key.toString());
 
     Iced ice = v.get();
-    if( ice instanceof AVec)
-      return new Frame((Key)null,(Frame.Names)null,new VecAry((AVec)ice));
+    if( ice instanceof Vec)
+      return new Frame((Key)null,(Frame.Names)null,new VecAry((Vec)ice));
 
     if (! (ice instanceof Frame))
       throw new H2OKeyWrongTypeArgumentException(param_name, key.toString(), Frame.class, ice.getClass());

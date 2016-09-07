@@ -59,7 +59,7 @@ public class C4ChunkTest extends TestUtil {
   @Test public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
     water.Key key = Vec.newKey();
-    VecAry vec = new VecAry(new Vec(key, AVec.ESPC.rowLayout(key,new long[]{0,15})).makeZero());
+    VecAry vec = new VecAry(new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15})).makeZero());
     int[] vals = new int[]{0, 3, 0, 6, 0, 0, 0, Integer.MIN_VALUE+1, 0, 12, Integer.MAX_VALUE, 32767, 0, 0, 19};
     try(VecAry.Writer w = vec.open()) {
       for (int i = 0; i < vals.length; ++i) w.set(i, 0, vals[i]);

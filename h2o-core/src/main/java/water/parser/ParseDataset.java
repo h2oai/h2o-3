@@ -49,7 +49,7 @@ public final class ParseDataset {
     Iced ice = DKV.getGet(key);
     if(ice == null)
       throw new H2OIllegalArgumentException("Missing data","Did not find any data under key " + key);
-    return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs().getAVecRaw(0));
+    return (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs().getVecRaw(0));
   }
   static String [] getColumnNames(int ncols, String[] colNames) {
     if(colNames == null) { // no names, generate
@@ -83,7 +83,7 @@ public final class ParseDataset {
         Log.info("Parse chunk size " + setup._chunk_size);
       }
     }
-    final AVec.VectorGroup vg = v.group();
+    final Vec.VectorGroup vg = v.group();
     final ParseDataset pds = new ParseDataset(dest);
     new Frame(pds._job._result,new String[0],new VecAry()).delete_and_lock(pds._job); // Write-Lock BEFORE returning
     return pds._job.start(new H2OCountedCompleter() {
@@ -224,7 +224,7 @@ public final class ParseDataset {
     if( fkeys.length == 0) { job.stop();  return pds;  }
 
     job.update(0, "Ingesting files.");
-    AVec.VectorGroup vg = getByteVec(fkeys[0]).group();
+    Vec.VectorGroup vg = getByteVec(fkeys[0]).group();
     MultiFileParseTask mfpt = pds._mfpt = new MultiFileParseTask(vg,setup,job._key,fkeys,deleteOnDone);
     mfpt.doAll(fkeys);
     Log.trace("Done ingesting files.");
@@ -583,7 +583,7 @@ public final class ParseDataset {
   // the parallelism on each node.
   private static class MultiFileParseTask extends MRTask<MultiFileParseTask> {
     private final ParseSetup _parseSetup; // The expected column layout
-    private final AVec.VectorGroup _vg;    // vector group of the target dataset
+    private final Vec.VectorGroup _vg;    // vector group of the target dataset
     private final int _vecIdStart;    // Start of available vector keys
     // Shared against all concurrent unrelated parses, a map to the node-local
     // categorical lists for each concurrent parse.
@@ -606,7 +606,7 @@ public final class ParseDataset {
     int _reservedKeys;
     private ParseWriter.ParseErr[] _errors = new ParseWriter.ParseErr[0];
 
-    MultiFileParseTask(AVec.VectorGroup vg, ParseSetup setup, Key<Job> jobKey, Key[] fkeys, boolean deleteOnDone ) {
+    MultiFileParseTask(Vec.VectorGroup vg, ParseSetup setup, Key<Job> jobKey, Key[] fkeys, boolean deleteOnDone ) {
       _vg = vg; _parseSetup = setup;
       _vecIdStart = _vg.reserveKeys(_reservedKeys = _parseSetup._parse_type.equals(SVMLight_INFO) ? 100000000 : setup._number_columns);
       _deleteOnDone = deleteOnDone;
@@ -697,7 +697,7 @@ public final class ParseDataset {
       }
     }
 
-    static FVecParseWriter makeDout(AVec.VectorGroup vg, int vecIdStart, Key cKey, ParseSetup localSetup, int chunkOff, int nchunks) {
+    static FVecParseWriter makeDout(Vec.VectorGroup vg, int vecIdStart, Key cKey, ParseSetup localSetup, int chunkOff, int nchunks) {
       AppendableVec av = new AppendableVec(vg.vecKey(vecIdStart),localSetup._blocks,MemoryManager.malloc8(nchunks), localSetup._column_types,chunkOff);
       return localSetup._parse_type.equals(SVMLight_INFO)
         ? new SVMLightFVecParseWriter(vg, vecIdStart,chunkOff,av)
@@ -821,7 +821,7 @@ public final class ParseDataset {
       private final ParseSetup _setup;
       private final int _vecIdStart;
       private final int _startChunkIdx; // for multifile parse, offset of the first chunk in the final dataset
-      private final AVec.VectorGroup _vg;
+      private final Vec.VectorGroup _vg;
       private FVecParseWriter _dout;
       private final Key _cKey;  // Parse-local-categoricals key
       private final Key<Job> _jobKey;
@@ -831,7 +831,7 @@ public final class ParseDataset {
       private transient long [] _espc;
       final int _nchunks;
 
-      DistributedParse(AVec.VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey, int nchunks) {
+      DistributedParse(Vec.VectorGroup vg, ParseSetup setup, int vecIdstart, int startChunkIdx, MultiFileParseTask mfpt, Key srckey, int nchunks) {
         super(null);
         _vg = vg;
         _setup = setup;

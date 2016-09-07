@@ -3,14 +3,12 @@ package hex.tree.drf;
 import hex.tree.CompressedTree;
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 
 import static water.ModelSerializationTest.assertTreeEquals;

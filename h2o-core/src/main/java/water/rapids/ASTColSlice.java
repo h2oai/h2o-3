@@ -1,13 +1,10 @@
 package water.rapids;
 
-import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.*;
 import water.parser.BufferedString;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.jar.Attributes;
 
 /** Column slice; allows R-like syntax.
  *  Numbers past the largest column are an error.
@@ -352,8 +349,8 @@ class ASTRBind extends ASTPrim {
         domains[k][e.getValue()] = e.getKey();
     }
 
-    Key<AVec> key = fr.vecs().group().addVec();
-    int rowLayout = AVec.ESPC.rowLayout(key,espc);
+    Key<Vec> key = fr.vecs().group().addVec();
+    int rowLayout = Vec.ESPC.rowLayout(key,espc);
     // TODO: make result one block?
     final VecBlock vb = new VecBlock(key,rowLayout,fr.numCols(),fr.vecs().domains(),fr.vecs().types());
     Futures fs = new Futures();

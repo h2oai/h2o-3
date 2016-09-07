@@ -48,7 +48,7 @@ public class AvroParserProvider implements ParserProvider {
     Key firstInput = inputs[0];
     Iced ice = DKV.getGet(firstInput);
     if (ice == null) throw new H2OIllegalArgumentException("Missing data", "Did not find any data under key " + firstInput);
-    ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs().getAVecRaw(0));
+    ByteVec bv = (ByteVec)(ice instanceof ByteVec ? ice : ((Frame)ice).vecs().getVecRaw(0));
     byte [] bits = bv.getFirstBytes();
 
     try {

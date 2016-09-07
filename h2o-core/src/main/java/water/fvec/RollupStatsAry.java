@@ -93,6 +93,14 @@ public class RollupStatsAry extends Iced {
     return false;
   }
 
+  public int numCols() {
+    int res = 0;
+    for(RollupStats rs:_rs)
+      if(rs.isRemoved())
+        res++;
+    return res;
+  }
+
   public static class RollMRBlock extends MRTask<RollMRBlock> {
     RollupStats[] _rs;
 

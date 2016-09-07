@@ -10,12 +10,9 @@ import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 
 import static water.parser.ParserTest.makeByteVec;
-
-import java.util.Arrays;
 
 public class ParserTestARFF extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5); }

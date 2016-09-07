@@ -21,7 +21,6 @@ import static org.junit.Assert.*;
 
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 
 /**

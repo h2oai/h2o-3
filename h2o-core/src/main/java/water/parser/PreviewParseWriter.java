@@ -1,7 +1,6 @@
 package water.parser;
 
 import water.Iced;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 

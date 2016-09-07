@@ -5,7 +5,6 @@ import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.*;
 import water.util.TwoDimTable;

@@ -242,7 +242,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   }
 
 
-  public void map( AVec.ChunkAry c ) { }
+  public void map( Vec.Chunks c ) { }
   /** Override with your map implementation.  This overload is given a single
    *  <strong>local</strong> input Chunk.  It is meant for map/reduce jobs that use a
    *  single column in a input Frame.  All map variants are called, but only one is
@@ -383,7 +383,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** Invokes the map/reduce computation over the given Frame.  This call is
    *  blocking.  */
   public final T doAll( VecAry vecs, boolean run_local) { return doAll(null, vecs, run_local); }
-  public final T doAll( AVec... vecs ) { return doAll(null, new VecAry(vecs), false); }
+  public final T doAll( Vec... vecs ) { return doAll(null, new VecAry(vecs), false); }
   public final T doAll( VecAry vecs ) { return doAll(null,vecs, false); }
   public final T doAll( byte[] types, VecAry vecs) {return doAll(new byte[][]{types},vecs,false);}
   public final T doAll( byte[][] types, VecAry vecs) {return doAll(types,vecs,false);}
@@ -429,7 +429,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @return this
    */
   public final T dfork(VecAry vecs){ return dfork(null,vecs,false); }
-  public final T dfork(AVec... vecs){ return dfork(null,new VecAry(vecs),false); }
+  public final T dfork(Vec... vecs){ return dfork(null,new VecAry(vecs),false); }
 
   /** Fork the task in strictly non-blocking fashion.
    *  Same functionality as dfork, but does not raise priority, so user is should
@@ -596,14 +596,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         VecAry.ChunkAry chunkAry = _vecs.getChunks(_lo);
         Chunk [] bvs = chunkAry.chks();
         NewChunk [] ncs = null;
-        AVec.ChunkAry[] aChunks = null;
+        Vec.Chunks[] aChunks = null;
         if(_output_types != null) {
-          final AVec.VectorGroup vg = _vecs.group();
+          final Vec.VectorGroup vg = _vecs.group();
           int noutpus = 0;
           for(byte [] x:_output_types) noutpus += x.length;
           ncs = new NewChunk[noutpus];
           _appendables = new AppendableVec[_output_types.length];
-          aChunks = new AVec.ChunkAry[_output_types.length];
+          aChunks = new Vec.Chunks[_output_types.length];
           int k = 0;
           for(int i = 0; i < _appendables.length; ++i){
             _appendables[i] = new AppendableVec(vg.vecKey(_vid), _output_types[i]);
@@ -642,7 +642,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           _profile._closestart = System.currentTimeMillis();
         _vecs.close();
         if( _output_types != null)
-          for(AVec.ChunkAry a:aChunks) a.close(_fs);
+          for(Vec.Chunks a:aChunks) a.close(_fs);
       }
     }
     if(_profile!=null)

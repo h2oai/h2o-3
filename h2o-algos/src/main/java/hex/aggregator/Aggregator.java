@@ -6,7 +6,6 @@ import hex.ModelCategory;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 

@@ -1,6 +1,5 @@
 package water.init;
 
-import water.fvec.Vec;
 import water.*;
 import water.util.*;
 

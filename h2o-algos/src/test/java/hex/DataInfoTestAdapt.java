@@ -9,7 +9,6 @@ import water.MRTask;
 import water.TestUtil;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import java.util.Random;
 // data info tests with interactions

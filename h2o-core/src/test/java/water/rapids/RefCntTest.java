@@ -7,7 +7,6 @@ import water.Key;
 import water.TestUtil;
 import water.DKV;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 public class RefCntTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }

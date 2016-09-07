@@ -265,7 +265,7 @@ class ASTLevels extends ASTPrim {
     for(int i=0;i<f.numCols();++i )
       if( vecs.isCategorical(i) )
         if( max < vecs.domain(i).length ) max = vecs.domain(i).length;
-    final int rowLayout = AVec.ESPC.rowLayout(key,new long[]{0,max});
+    final int rowLayout = Vec.ESPC.rowLayout(key,new long[]{0,max});
     byte [] types = new byte[f.numCols()];
     Arrays.fill(types,Vec.T_NUM);
     AppendableVec av = new AppendableVec(key,types);

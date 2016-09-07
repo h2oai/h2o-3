@@ -2,7 +2,6 @@ package water.fvec;
 
 import com.google.common.base.Charsets;
 import water.AutoBuffer;
-import water.Futures;
 import water.H2O;
 import water.MemoryManager;
 import water.parser.BufferedString;
@@ -275,9 +274,9 @@ public class NewChunk extends Chunk {
   }
 
 
-  public NewChunk(AVec.ChunkAry c) {this(c,false);}
+  public NewChunk(Vec.Chunks c) {this(c,false);}
 
-  public NewChunk(AVec.ChunkAry c, boolean sparse) {
+  public NewChunk(Vec.Chunks c, boolean sparse) {
     _achunk = c;
     _ms = new Mantissas(4);
     _xs = new Exponents(4);
@@ -288,7 +287,7 @@ public class NewChunk extends Chunk {
     _achunk = null;
     setDoubles(ds);
   }
-  public NewChunk(AVec.ChunkAry c, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
+  public NewChunk(Vec.Chunks c, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
     _achunk = c;
     _ms = new Mantissas(mantissa.length);
     _xs = new Exponents(exponent.length);
@@ -315,7 +314,7 @@ public class NewChunk extends Chunk {
   }
 
   // Pre-sized newchunks.
-  public NewChunk(AVec.ChunkAry c,int len ) {
+  public NewChunk(Vec.Chunks c, int len ) {
     this(c);
     _ds = new double[len];
     Arrays.fill(_ds, Double.NaN);

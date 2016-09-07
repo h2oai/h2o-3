@@ -4,7 +4,6 @@ import java.io.*;
 import java.util.Arrays;
 
 import water.Key;
-import water.fvec.Vec;
 import water.util.PrettyPrint;
 
 import static water.parser.DefaultParserProviders.SVMLight_INFO;

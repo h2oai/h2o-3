@@ -5,8 +5,6 @@ import org.apache.avro.Schema;
 import java.util.Arrays;
 import java.util.List;
 
-import water.fvec.Vec;
-
 /**
  * Utilities to work with Avro schema.
  */

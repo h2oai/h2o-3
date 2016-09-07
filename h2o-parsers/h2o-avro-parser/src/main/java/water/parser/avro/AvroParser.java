@@ -16,11 +16,9 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.List;
 
-import water.H2O;
 import water.Job;
 import water.Key;
 
-import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseReader;
 import water.parser.ParseSetup;

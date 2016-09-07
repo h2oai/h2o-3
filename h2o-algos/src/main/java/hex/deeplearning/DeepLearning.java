@@ -9,7 +9,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.init.Linpack;
 import water.init.NetworkTest;

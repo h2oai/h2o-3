@@ -8,7 +8,6 @@ import java.util.*;
 import water.*;
 import water.fvec.FileVec;
 import water.fvec.S3FileVec;
-import water.fvec.Vec;
 import water.util.Log;
 import water.util.RIStream;
 import com.amazonaws.*;

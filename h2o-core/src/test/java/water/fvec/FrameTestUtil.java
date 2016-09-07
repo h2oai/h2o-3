@@ -22,7 +22,7 @@ public class FrameTestUtil {
     }
     VecAry vecs = av.layout_and_close(fs);
     fs.blockForPending();
-    return (Vec) vecs.getAVecRaw(0);
+    return (Vec) vecs.getVecRaw(0);
   }
 
   public static void assertValues(Frame f, String[] expValues) {

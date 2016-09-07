@@ -4,7 +4,6 @@ import org.apache.commons.lang.ArrayUtils;
 import water.DKV;
 import water.H2O;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.rapids.*;
 
 public class H2OColOp extends Transform<H2OColOp> {

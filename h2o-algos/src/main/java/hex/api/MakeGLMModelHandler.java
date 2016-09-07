@@ -72,13 +72,13 @@ public class MakeGLMModelHandler extends Handler {
       int idx=0;
       String[] coefNames = dinfo.coefNames();
       for(int i : dinfo._interactionVecs)
-        noutputs+= ( offsetIds[idx++] = ((InteractionWrappedVec)dinfo._adaptedFrame.vecs().getAVecForCol(i)).expandedLength());
+        noutputs+= ( offsetIds[idx++] = ((InteractionWrappedVec)dinfo._adaptedFrame.vecs().getVecForCol(i)).expandedLength());
       String[] names = new String[noutputs];
       int offset=idx=0;
       int namesIdx=0;
       VecAry vecs = dinfo._adaptedFrame.vecs();
       for(int i=0;i<dinfo._adaptedFrame.numCols();++i) {
-        AVec v = dinfo._adaptedFrame.vecs().getAVecForCol(i);
+        Vec v = dinfo._adaptedFrame.vecs().getVecForCol(i);
         if( v instanceof InteractionWrappedVec ) { // ding! start copying coefNames into names while offset < colIds[idx+1]
           colIds[idx] = offset;
           for(int nid=0;nid<offsetIds[idx];++nid)

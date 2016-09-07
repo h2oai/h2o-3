@@ -4,7 +4,6 @@ import water.Iced;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
-import water.fvec.Vec;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
