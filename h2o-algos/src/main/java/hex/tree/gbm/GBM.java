@@ -909,17 +909,18 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           final Chunk ct   = chk_tree(chks, k);
           final Chunk y   = chk_resp(chks);
           final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-          double factor = 1;
-          if (_parms._pred_noise_bandwidth !=0) {
-            _rand.setSeed((0xDECAF + _parms._seed) ^ (0xFAAAAAAB + k * _parms._ntrees + _ntrees)); //bandwidth is a function of tree number and class, same for all rows/nodes
-            factor += _rand.nextGaussian() * _parms._pred_noise_bandwidth;
-          }
+          long baseseed = (0xDECAF + _parms._seed) * (0xFAAAAAAB + k * _parms._ntrees + _model._output._ntrees);
           for( int row=0; row<nids._len; row++ ) {
             int nid = (int)nids.at8(row);
             nids.set(row, ScoreBuildHistogram.FRESH);
             if( nid < 0 ) continue;
             if (y.isNA(row)) continue;
             if (weights.atd(row)==0) continue;
+            double factor = 1;
+            if (_parms._pred_noise_bandwidth !=0) {
+              _rand.setSeed(baseseed + nid); //bandwidth is a function of tree number, class and node id (but same for all rows in that node)
+              factor += _rand.nextGaussian() * _parms._pred_noise_bandwidth;
+            }
             // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
             // <tree_klazz> fields from tree prediction
             ct.set(row, (float)(ct.atd(row) + factor * ((LeafNode)tree.node(nid))._pred ));
