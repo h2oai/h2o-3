@@ -320,7 +320,7 @@ public class DeepWaterTest extends TestUtil {
         if (tr != null) tr.remove();
       }
     }
-    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-6*values[0]);
+    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-5*values[0]);
   }
 
   @Test
@@ -347,7 +347,7 @@ public class DeepWaterTest extends TestUtil {
         if (tr!=null) tr.remove();
       }
     }
-    for (int i=1;i<REPS;++i) Assert.assertNotEquals(values[0],values[i],1e-6*values[0]);
+    for (int i=1;i<REPS;++i) Assert.assertNotEquals(values[0],values[i],1e-5*values[0]);
   }
 
   // Pure convenience wrapper
@@ -362,10 +362,8 @@ public class DeepWaterTest extends TestUtil {
   @Test public void settingModelInfoAlexnet() { settingModelInfo(DeepWaterParameters.Network.alexnet); }
   @Test public void settingModelInfoLenet() { settingModelInfo(DeepWaterParameters.Network.lenet); }
   @Test public void settingModelInfoVGG() { settingModelInfo(DeepWaterParameters.Network.vgg); }
-  //FIXME - passes only with rate=0
-  @Ignore @Test public void settingModelInfoInception() { settingModelInfo(DeepWaterParameters.Network.inception_bn); }
-  //FIXME - passes only with rate=0
-  @Ignore @Test public void settingModelInfoResnet() { settingModelInfo(DeepWaterParameters.Network.resnet); }
+  @Test public void settingModelInfoInception() { settingModelInfo(DeepWaterParameters.Network.inception_bn); }
+  @Test public void settingModelInfoResnet() { settingModelInfo(DeepWaterParameters.Network.resnet); }
 
   void settingModelInfo(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
@@ -408,7 +406,7 @@ public class DeepWaterTest extends TestUtil {
       Log.info("Checking assertions for network: " + network);
       Assert.assertNotEquals(h1, h2);
       Assert.assertEquals(h1, h3);
-      Assert.assertEquals(l1, l3, 1e-6*l1);
+      Assert.assertEquals(l1, l3, 1e-5*l1);
     } finally {
       if (m1!=null) m1.delete();
       if (m2!=null) m2.delete();
@@ -442,7 +440,7 @@ public class DeepWaterTest extends TestUtil {
         if (tr!=null) tr.remove();
       }
     }
-    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-6*values[0]);
+    for (int i=1;i<REPS;++i) Assert.assertEquals(values[0],values[i],1e-5*values[0]);
   }
 
   // Pure convenience wrapper
@@ -456,10 +454,8 @@ public class DeepWaterTest extends TestUtil {
   @Test public void deepWaterLoadSaveTestAlexnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.alexnet); }
   @Test public void deepWaterLoadSaveTestLenet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.lenet); }
   @Test public void deepWaterLoadSaveTestVGG() { deepWaterLoadSaveTest(DeepWaterParameters.Network.vgg); }
-  //FIXME
-  @Ignore @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(DeepWaterParameters.Network.inception_bn); }
-  //FIXME
-  @Ignore @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.resnet); }
+  @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(DeepWaterParameters.Network.inception_bn); }
+  @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.resnet); }
 
   void deepWaterLoadSaveTest(DeepWaterParameters.Network network) {
     DeepWaterModel m = null;
@@ -532,10 +528,8 @@ public class DeepWaterTest extends TestUtil {
   @Test public void restoreStateAlexnet() { restoreState(DeepWaterParameters.Network.alexnet); }
   @Test public void restoreStateLenet() { restoreState(DeepWaterParameters.Network.lenet); }
   @Test public void restoreStateVGG() { restoreState(DeepWaterParameters.Network.vgg); }
-  //FIXME
-  @Ignore @Test public void restoreStateInception() { restoreState(DeepWaterParameters.Network.inception_bn); }
-  //FIXME
-  @Ignore @Test public void restoreStateResnet() { restoreState(DeepWaterParameters.Network.resnet); }
+  @Test public void restoreStateInception() { restoreState(DeepWaterParameters.Network.inception_bn); }
+  @Test public void restoreStateResnet() { restoreState(DeepWaterParameters.Network.resnet); }
 
   public void restoreState(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
@@ -578,8 +572,8 @@ public class DeepWaterTest extends TestUtil {
       ModelMetricsMultinomial mm2 = ModelMetricsMultinomial.make(pred, tr.vec(p._response_column));
       Log.info("Restored LL: " + mm2.logloss());
 
-      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-6*mm1.logloss()); //make sure scoring is self-consistent
-      Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-6*mm1.logloss());
+      Assert.assertEquals(((ModelMetricsMultinomial) m1._output._training_metrics).logloss(), mm1.logloss(), 1e-5*mm1.logloss()); //make sure scoring is self-consistent
+      Assert.assertEquals(mm1.logloss(), mm2.logloss(), 1e-5*mm1.logloss());
 
     } finally {
       if (m1 !=null) m1.delete();
