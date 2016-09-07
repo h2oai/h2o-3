@@ -67,11 +67,11 @@ public class TypeMap {
 
   };
   // Class name -> ID mapping
-  public static final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
+  static private final NonBlockingHashMap<String, Integer> MAP = new NonBlockingHashMap<>();
   // ID -> Class name mapping
   static String[] CLAZZES;
   // ID -> pre-allocated Golden Instance of Icer
-  public static Icer[] GOLD;
+  static private Icer[] GOLD;
   // Unique IDs
   static private int IDS;
   // JUnit helper flag
