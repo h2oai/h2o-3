@@ -210,7 +210,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Default: 1.79769313486e+308
 
       pred_noise_bandwidth : float
-        Bandwidth (sigma) of gaussian multiplicative noise for tree predictions
+        Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions
         Default: 0.0
 
     """

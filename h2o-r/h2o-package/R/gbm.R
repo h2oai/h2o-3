@@ -72,7 +72,7 @@
 #' @param histogram_type What type of histogram to use for finding optimal split points
 #'        Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin".
 #' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction.  Defaults to 1.79769313486e+308.
-#' @param pred_noise_bandwidth Bandwidth (sigma) of gaussian multiplicative noise for tree contributions. Default is 0.
+#' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. Default is 0.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' \donttest{
