@@ -262,7 +262,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           model.unlock(_job);
           if (model.actual_best_model_key != null) {
             assert (model.actual_best_model_key != model._key);
-            ((DeepWaterModel)model.actual_best_model_key.get()).delete();
+            DKV.remove(model.actual_best_model_key); //don't call model.delete() as many things are shared with the main model
           }
         }
       }
