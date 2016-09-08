@@ -140,6 +140,10 @@ Defining a GBM Model
 	
 	  etc. 
 
+-  **max\_abs\_leafnode\_pred**: This option limits the maximum absolute value of a leaf node prediction. The default is Double.MAX VALUE.
+
+-  **pred\_noise\_bandwidth**: The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. If this parameter is specified with a value greater than 0, then every leaf node prediction is randomly scaled by a number drawn from a Normal distribution centered around 1 with a bandwidth given by this parameter. The default is 0 (disabled). 
+
 -  **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
 -  **histogram_type**: By default (AUTO) GBM bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
@@ -431,7 +435,7 @@ Next layer in the tree for the left-split has value from 1 to 100 (not
 1000!) and so re-bins in units of 5: {1,1,2,4},{8},{},{16},{lots of
 empty bins}{100} (the RH split has the single value 1000).
 
-And so on: important dense ranges with split essentially logrithmeticaly
+And so on: important dense ranges with split essentially logarithmically
 at each layer.
 
 **What should I do if my variables are long skewed in the tail and might
