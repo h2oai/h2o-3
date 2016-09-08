@@ -31,8 +31,8 @@ final public class DeepWaterModelInfo extends Iced {
   int _channels;
   int _classes;
   int _deviceID;
-  byte[] _network;
-  byte[] _modelparams;
+  byte[] _network; // model definition (graph)
+  byte[] _modelparams; // internal state of native backend (weights/biases/helpers)
   float[] _meanData; //mean pixel value of the training data
 
   public TwoDimTable summaryTable;
