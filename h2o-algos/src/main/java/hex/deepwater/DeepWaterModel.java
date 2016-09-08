@@ -569,7 +569,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   void removeNativeState() {
     if (model_info()._imageTrain!=null) {
-      water.gpu.deepwater.MXNotifyShutdown();
       model_info()._imageTrain.delete();
       model_info()._imageTrain = null;
     }
