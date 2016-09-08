@@ -507,8 +507,10 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{binomial\_double\_trees}}: For binary classification: Builds twice as many trees (one per class), which can result in better accuracy. 
 \item {\texttt{quantile\_alpha}}: Desired quantile for quantile regression (from 0.0 to 1.0) when \texttt{distribution = "quantile"}.  The default is 0.5 (median, same as \texttt{distribution = "laplace"}).
 \item {\texttt{tweedie\_power}}: A numeric specifying the power for the Tweedie function when \texttt{distribution = "tweedie"}.  The default is 1.5.
+\item \texttt{huber\_alpha}: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1.
 \item {\texttt{checkpoint}}: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 \item {\texttt{keep\_cross\_validation\_predictions}}: Specify whether to keep the predictions of the cross-validation models.   The default is {\texttt{FALSE}}.
+\item {\texttt{keep\_cross\_validation\_fold\_assignment}}: Specify whether to preserve the fold assignment.   The default is {\texttt{FALSE}}.
 \item {\texttt{class\_sampling\_factors}}: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires \texttt{balance\_classes}.
 \item {\texttt{max\_after\_balance\_size}}: Maximum relative size of the training data after balancing class counts; can be less than 1.0.  The default is 5.
 \item \texttt{model\_id}: The unique ID assigned to the generated model. If not specified, an ID is generated automatically.
