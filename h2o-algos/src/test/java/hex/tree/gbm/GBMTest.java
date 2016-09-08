@@ -2628,4 +2628,31 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testHuberNoise() {
+    Frame tfr = null;
+    GBMModel gbm = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = tfr.lastVecName();
+      parms._seed = 0xdecaf;
+      parms._distribution = huber;
+      parms._huber_alpha = 0.9; //that's the default
+      parms._pred_noise_bandwidth = 0.2;
+
+      gbm = new GBM(parms).trainModel().get();
+
+      Assert.assertEquals(4.8056900203,((ModelMetricsRegression)gbm._output._training_metrics)._MSE,1e-5);
+      Assert.assertEquals(2.0080997,((ModelMetricsRegression) gbm._output._training_metrics)._mean_residual_deviance,1e-4);
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (gbm != null) gbm.deleteCrossValidationModels();
+      if (gbm != null) gbm.delete();
+    }
+  }
+
 }

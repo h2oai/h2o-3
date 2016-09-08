@@ -209,6 +209,10 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Maximum absolute value of a leaf node prediction
         Default: 1.79769313486e+308
 
+      pred_noise_bandwidth : float
+        Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions
+        Default: 0.0
+
     """
 
     algo = "gbm"
@@ -226,7 +230,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                      "learn_rate", "learn_rate_annealing", "distribution", "quantile_alpha", "tweedie_power",
                      "huber_alpha", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                      "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                     "histogram_type", "max_abs_leafnode_pred"]:
+                     "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth"]:
             pname = name[:-1] if name[-1] == '_' else name
             self._parms[pname] = kwargs[name] if name in kwargs else None
 
@@ -605,4 +609,12 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @max_abs_leafnode_pred.setter
     def max_abs_leafnode_pred(self, value):
         self._parms["max_abs_leafnode_pred"] = value
+
+    @property
+    def pred_noise_bandwidth(self):
+        return self._parms["pred_noise_bandwidth"]
+
+    @pred_noise_bandwidth.setter
+    def pred_noise_bandwidth(self, value):
+        self._parms["pred_noise_bandwidth"] = value
 
