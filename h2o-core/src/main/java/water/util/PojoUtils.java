@@ -442,8 +442,10 @@ public class PojoUtils {
       // If our target is an integer type, cast.
       if (f.getType().isPrimitive() && f.getType() != value.getClass()) {
         // Log.debug("type conversion");
-        if (f.getType() == int.class) f.set(o, ((Double)value).intValue());
-        else if (f.getType() == long.class) f.set(o, ((Double)value).longValue());
+        if (f.getType() == int.class && (value.getClass() == Double.class || value.getClass() == Float.class))
+          f.set(o, ((Double)value).intValue());
+        else if (f.getType() == long.class && (value.getClass() == Double.class || value.getClass() == Float.class))
+          f.set(o, ((Double)value).longValue());
         else {
           // Double -> double, Integer -> int will work:
           f.set(o, value);
