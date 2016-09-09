@@ -4,7 +4,29 @@
 
 apply plugin: 'me.champeau.gradle.jmh'
 
+def resultsFilename() {
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
+    String date = new Date().format("yyyyMMddHHmmss", TimeZone.getTimeZone("UTC"))
+    return "${bv.getLastCommitHash()}.${date}.csv"
+}
+
 // Setup JMH
 jmh {
-    jmhVersion = '1.12'
+    // Include only selected tests for benchmarking
+    // include = 'water.KeyEqualsBench'
+    jmhVersion = '1.15'
+    resultsFile = project.file("${project.buildDir}/reports/jmh/${resultsFilename()}")
+    duplicateClassesStrategy = 'warn'
+    resultFormat = 'SCSV'
+    // Attach different profilers (gc, stack summary, ...)
+    // See: http://java-performance.info/introduction-jmh-profilers/
+    //profilers = ['stack']
+    //profilers = ['hs_comp']
 }
+
+dependencies {
+    jmh group: 'commons-io' , name: 'commons-io', version: '2.4'
+}
+
+task ubench
+ubench.dependsOn "jmh"
