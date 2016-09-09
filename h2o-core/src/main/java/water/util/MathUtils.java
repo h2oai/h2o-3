@@ -684,6 +684,7 @@ public class MathUtils {
    * @return logloss
    */
   public static double logloss(double err) {
-    return -Math.log(Math.max(1e-15, 1.0-err));
+    return Math.min(MAXLL, -Math.log(1.0-err));
   }
+  final static double MAXLL = -Math.log(1e-15); //34.53878
 }
