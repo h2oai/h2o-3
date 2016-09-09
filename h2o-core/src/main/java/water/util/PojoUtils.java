@@ -1,16 +1,18 @@
 package water.util;
 
 import water.*;
-import water.api.schemas3.FrameV3;
-import water.api.schemas3.KeyV3;
 import water.api.Schema;
 import water.api.SchemaServer;
+import water.api.schemas3.FrameV3;
+import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -435,7 +437,21 @@ public class PojoUtils {
   public static void setField(Object o, String fieldName, Object value) {
     try {
       Field f = o.getClass().getField(fieldName);
-      f.set(o, value);
+
+      // If it doesn't know any better, Gson deserializes all numeric types as doubles.
+      // If our target is an integer type, cast.
+      if (f.getType().isPrimitive() && f.getType() != value.getClass()) {
+        // Log.debug("type conversion");
+        if (f.getType() == int.class) f.set(o, ((Double)value).intValue());
+        else if (f.getType() == long.class) f.set(o, ((Double)value).longValue());
+        else {
+          // Double -> double, Integer -> int will work:
+          f.set(o, value);
+        }
+      } else {
+        // not casting a primitive type
+        f.set(o, value);
+      }
     } catch (NoSuchFieldException e) {
       throw new IllegalArgumentException("Field " + fieldName + " not found!", e);
     } catch (IllegalAccessException e) {
@@ -464,6 +480,44 @@ public class PojoUtils {
     } catch (IllegalAccessException e) {
       throw new IllegalArgumentException("Cannot get value of the field: '" + name + "/" + destName + "' on object " + o);
     }
+  }
+
+  /**
+   * Take a object which potentially has default values for some fields and set
+   * only those fields which are in the supplied JSON string.  NOTE: Doesn't handle array fields yet.
+   */
+  public static Object fillFromJson(Object o, String json) {
+    Map<String, Object> setFields = (new com.google.gson.Gson()).fromJson(json, HashMap.class);
+
+    return fillFromMap(o, setFields);
+  }
+
+  /**
+   * Fill the fields of an Object from the corresponding fields in a Map.
+   * @see #fillFromJson(Object, String)
+   */
+  private static Object fillFromMap(Object o, Map<String, Object> setFields) {
+    for (String key : setFields.keySet()) {
+      // TODO: doesn't handle arrays yet!
+      Object value = setFields.get(key);
+      if (value instanceof Map) {
+        // handle nested objects
+        try {
+          Field f = o.getClass().getField(key);
+          f.setAccessible(true);
+          fillFromMap(f.get(o), (Map<String, Object>)value);
+        }
+        catch (NoSuchFieldException e) {
+          throw new IllegalArgumentException("Field not found: '" + key + "' on object " + o);
+        } catch (IllegalAccessException e) {
+          throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
+        }
+      } else {
+        // scalar or String
+        setField(o, key, value);
+      }
+    }
+  return o;
   }
 
   /**
