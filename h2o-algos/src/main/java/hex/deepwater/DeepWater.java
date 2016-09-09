@@ -8,6 +8,7 @@ import water.util.Log;
 import static water.util.MRUtils.sampleFrame;
 import water.util.PrettyPrint;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 /**
@@ -19,6 +20,17 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   public DeepWater(DeepWaterParameters parms ) { super(parms); init(false); }
   public DeepWater(DeepWaterParameters parms, Key<DeepWaterModel> key ) { super(parms,key); init(false); }
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
+
+  static {
+    try {
+      final boolean GPU = System.getenv("CUDA_PATH")!=null;
+      if (GPU) water.gpu.util.loadCudaLib();
+      water.gpu.util.loadNativeLib("mxnet");
+      water.gpu.util.loadNativeLib("Native");
+    } catch (IOException e) {
+      throw new IllegalArgumentException("Couldn't load native DL libraries");
+    }
+  }
 
 //  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
@@ -208,7 +220,6 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
                   new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepWaterTask (model.model_info(), rowFraction(train, mp, model), _job).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
           long before = System.currentTimeMillis();
-          model.model_info().nativeToJava();
           if (_parms._export_native_model_prefix!=null) {
             Log.info("Saving model state.");
             model.exportNativeModel(_parms._export_native_model_prefix, model.iterations);
@@ -228,6 +239,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           if (best_model != null && best_model.loss() < model.loss() && Arrays.equals(best_model.model_info()._network, model.model_info()._network)) {
             if (!_parms._quiet_mode)
               Log.info("Setting the model to be the best model so far (based on scoring history).");
+            model.model_info().nativeToJava();
             model.removeNativeState(); //remove native state
             DeepWaterModelInfo mi = best_model.model_info().deep_clone();
             // Don't cheat - count full amount of training samples, since that's the amount of training it took to train (without finding anything better)
@@ -235,7 +247,6 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             mi.set_processed_local(model.model_info().get_processed_local());
             model.set_model_info(mi);
             model.update(_job);
-            assert(model.model_info()._imageTrain==null);
             model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, true);
             if (!_parms._quiet_mode) {
               Log.info("  Note: best model was at " + (float) best_model.epoch_counter + " (out of " + (float) model.epoch_counter + ") epochs.");
@@ -245,6 +256,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         }
       }
       finally {
+        if (model.model_info()._imageTrain!=null) model.model_info().nativeToJava();
         if (cache) model.cleanUpCache();
         model.removeNativeState();
         //TODO: refactor DL the same way
