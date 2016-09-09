@@ -22,9 +22,6 @@ import java.util.Collections;
 
 /**
  * Parquet parser for H2O distributed parsing subsystem.
- *
- * The implementation relies on Avro compatibility layer. We use Parquet's support to read data as Avro's
- * GenericRecords and re-use the existing Avro parser implementation to store the data to Chunks.
  */
 public class ParquetParser extends Parser {
 
