@@ -254,13 +254,14 @@ public class DeepWaterTest extends TestUtil {
       p._momentum_start = 0.5;
       p._momentum_stable = 0.5;
       p._stopping_rounds = 0;
+      p._image_shape = new int[]{28,28};
       p._network = DeepWaterParameters.Network.lenet;
 //      p._network = DeepWaterParameters.Network.inception_bn; //FAILS
 
       // score a lot
       p._train_samples_per_iteration = p._mini_batch_size;
       p._score_duty_cycle = 1;
-      p._score_interval = 0;
+      p._score_interval = 1e-3; //FIXME - hangs with 0
       p._overwrite_with_best_model = true;
 
       m = new DeepWater(p).trainModel().get();
@@ -581,6 +582,118 @@ public class DeepWaterTest extends TestUtil {
       if (tr!=null) tr.remove();
       if (pred!=null) pred.remove();
     }
+  }
+
+  @Test
+  public void trainLoop() throws InterruptedException {
+    try {
+      if (GPU) util.loadCudaLib();
+      util.loadNativeLib("mxnet");
+      util.loadNativeLib("Native");
+    } catch(Throwable t) {}
+
+    int batch_size = 64;
+    int classes = 10;
+    ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
+    m.buildNet(classes, batch_size, "lenet");
+
+    float[] data = new float[28*28*1*batch_size];
+    float[] labels = new float[batch_size];
+    int count=0;
+    while(count++<1000) {
+      Log.info("Iteration: " + count);
+      m.train(data, labels);
+    }
+  }
+
+  @Test
+  public void saveLoop() {
+    try {
+      if (GPU) util.loadCudaLib();
+      util.loadNativeLib("mxnet");
+      util.loadNativeLib("Native");
+    } catch(Throwable t) {}
+
+    int batch_size = 64;
+    int classes = 10;
+    ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
+    m.buildNet(classes, batch_size, "lenet");
+
+    int count=0;
+    while(count++<1000) {
+      Log.info("Iteration: " + count);
+      m.saveParam("/tmp/testParam");
+    }
+  }
+
+  @Test
+  public void predictLoop() {
+    try {
+      if (GPU) util.loadCudaLib();
+      util.loadNativeLib("mxnet");
+      util.loadNativeLib("Native");
+    } catch(Throwable t) {}
+
+    int batch_size = 64;
+    int classes = 10;
+    ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
+    m.buildNet(classes, batch_size, "lenet");
+
+    float[] data = new float[28*28*1*batch_size];
+    int count=0;
+    while(count++<1000) {
+      Log.info("Iteration: " + count);
+      m.predict(data);
+    }
+  }
+
+  @Test
+  public void trainPredictLoop() {
+    try {
+      if (GPU) util.loadCudaLib();
+      util.loadNativeLib("mxnet");
+      util.loadNativeLib("Native");
+    } catch(Throwable t) {}
+
+    int batch_size = 64;
+    int classes = 10;
+    ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
+    m.buildNet(classes, batch_size, "lenet");
+
+    float[] data = new float[28*28*1*batch_size];
+    float[] labels = new float[batch_size];
+    int count=0;
+    while(count++<1000) {
+      Log.info("Iteration: " + count);
+      m.train(data,labels);
+      float[] p = m.predict(data);
+    }
+  }
+
+  @Test
+  public void scoreLoop() {
+    DeepWaterParameters p = new DeepWaterParameters();
+    Frame tr;
+    p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+    p._network = DeepWaterParameters.Network.lenet;
+    p._response_column = "C2";
+    p._mini_batch_size = 4;
+    p._train_samples_per_iteration = p._mini_batch_size;
+    p._rate = 0e-3;
+    p._seed = 12345;
+    p._epochs = 0.01;
+    p._quiet_mode = true;
+    DeepWater j= new DeepWater(p);
+    DeepWaterModel m = j.trainModel().get();
+
+    int count=0;
+    while(count++<100) {
+      Log.info("Iteration: " + count);
+      // turn the second model into the first model
+      m.doScoring(tr,null,j._job._key,m.iterations,true);
+    }
+    tr.remove();
+    m.remove();
   }
 }
 
