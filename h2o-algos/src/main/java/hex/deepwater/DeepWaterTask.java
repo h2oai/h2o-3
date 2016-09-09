@@ -114,13 +114,8 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     }
 
     try {
-      long start = System.currentTimeMillis();
       DeepWaterImageIterator img_iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, width, height, channels, _localmodel.get_params()._cache_data);
-      long end = System.currentTimeMillis();
-      if(!_localmodel.get_params()._quiet_mode)
-          Log.info("Time to make Iter: " + PrettyPrint.msecs(end-start, true));
-
-      start = System.currentTimeMillis();
+      long start = System.currentTimeMillis();
       long nativetime =0;
       Futures fs = new Futures();
       NativeTrainTask ntt = null;
@@ -139,7 +134,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
         _localmodel.add_processed_local(batchSize);
       }
       nativetime +=ntt._timeInMillis;
-      end = System.currentTimeMillis();
+      long end = System.currentTimeMillis();
       if(!_localmodel.get_params()._quiet_mode) {
         Log.info("Time for one iteration: " + PrettyPrint.msecs(end - start, true));
         Log.info("Time for Native training : " + PrettyPrint.msecs(nativetime, true));
