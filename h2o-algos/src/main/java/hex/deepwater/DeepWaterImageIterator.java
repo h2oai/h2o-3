@@ -11,7 +11,6 @@ import java.util.Arrays;
 public class DeepWaterImageIterator {
 
   public DeepWaterImageIterator(ArrayList<String> img_lst, ArrayList<Float> lable_lst, float[] meanData, int batch_size, int width, int height, int channels, boolean cache) throws IOException {
-    assert _label_lst ==null || img_lst.size() == lable_lst.size();
     _img_lst = img_lst;
     _label_lst = lable_lst;
     _meanData = meanData;
@@ -128,6 +127,7 @@ public class DeepWaterImageIterator {
       _start_index = _start_index + _batch_size;
       return true;
     } else {
+      fs.blockForPending();
       return false;
     }
   }
@@ -138,15 +138,15 @@ public class DeepWaterImageIterator {
   public float[] getLabel() { return _label[_which ^1]; }
 
   private int _which; //0 or 1
-  private int _val_num;
+  final private int _val_num;
   private int _start_index;
-  private int _batch_size;
-  private int _width, _height, _channels;
-  private float[][] _data;
-  private float[] _meanData; //mean image
-  private float[][] _label;
-  private String[][] _file;
-  private ArrayList<String> _img_lst;
-  private ArrayList<Float> _label_lst;
+  final private int _batch_size;
+  final private int _width, _height, _channels;
+  final private float[][] _data;
+  final private float[] _meanData; //mean image
+  final private float[][] _label;
+  final private String[][] _file;
+  final private ArrayList<String> _img_lst;
+  final private ArrayList<Float> _label_lst;
   private final boolean _cache;
 }

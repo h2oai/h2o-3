@@ -249,7 +249,7 @@ public class DeepWaterTest extends TestUtil {
       DeepWaterParameters p = new DeepWaterParameters();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
-      p._epochs = 5;
+      p._epochs = 50;
       p._rate = 0.01;
       p._momentum_start = 0.5;
       p._momentum_stable = 0.5;
@@ -261,7 +261,7 @@ public class DeepWaterTest extends TestUtil {
       // score a lot
       p._train_samples_per_iteration = p._mini_batch_size;
       p._score_duty_cycle = 1;
-      p._score_interval = 1e-3; //FIXME - hangs with 0
+      p._score_interval = 0;
       p._overwrite_with_best_model = true;
 
       m = new DeepWater(p).trainModel().get();

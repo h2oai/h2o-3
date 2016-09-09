@@ -251,7 +251,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             if (!_parms._quiet_mode) {
               Log.info("  Note: best model was at " + (float) best_model.epoch_counter + " (out of " + (float) model.epoch_counter + ") epochs.");
             }
-            assert(best_model.loss() == model.loss());
+            assert(Math.abs(best_model.loss() - model.loss())<1e-5*Math.abs(model.loss()));
           }
         }
       }
