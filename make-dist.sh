@@ -10,7 +10,7 @@ set -x
 
 # Set common variables.
 TOPDIR=$(cd `dirname $0` && pwd)
-HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4 cdh5.5 cdh5.6 cdh5.7 hdp2.1 hdp2.2 hdp2.3 hdp2.4 mapr3.1 mapr4.0 mapr5.0 mapr5.1"
+HADOOP_VERSIONS="cdh5.2 cdh5.3 cdh5.4 cdh5.5 cdh5.6 cdh5.7 cdh5.8 hdp2.1 hdp2.2 hdp2.3 hdp2.4 mapr3.1 mapr4.0 mapr5.0 mapr5.1"
 
 function make_zip_common {
   PROJECT_BASE=$1
