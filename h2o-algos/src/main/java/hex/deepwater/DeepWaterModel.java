@@ -83,17 +83,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
-  static {
-    final boolean GPU = System.getenv("CUDA_PATH")!=null;
-    try {
-      if (GPU) util.loadCudaLib();
-      util.loadNativeLib("mxnet");
-      util.loadNativeLib("Native");
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Couldn't load native DL libraries");
-    }
-  }
-
   /**
    * Regular constructor (from scratch)
    * @param destKey destination key
@@ -327,6 +316,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
                         (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
         ) ) {
           _bestLoss = loss();
+          model_info.nativeToJava();
           putMeAsBestModel(actual_best_model_key);
         }
         // print the freshly scored model to ASCII
