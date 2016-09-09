@@ -9,7 +9,7 @@ else
 fi
 
 # Clean out any old sandbox, make a new one
-OUTDIR=sandbox.multi
+OUTDIR=sandbox.single
 rm -fr $OUTDIR; mkdir -p $OUTDIR
 
 # Check for os
@@ -21,8 +21,6 @@ case "`uname`" in
 esac
 
 function cleanup () {
-  kill -9 ${PID_11} ${PID_21} ${PID_31} ${PID_41} ${PID_51} 1> /dev/null 2>&1
-  wait 1> /dev/null 2>&1
   RC="`paste $OUTDIR/status.* | sed 's/\s*//g'`"
   if [ $RC != "00000" ]; then
     cat $OUTDIR/out.*
@@ -53,7 +51,7 @@ fi
 #   build/classes/test - Test h2o core classes
 #   build/resources/main - Main resources (e.g. page.html)
 
-MAX_MEM="-Xmx4g"
+MAX_MEM="-Xmx3g"
 
 # Check if coverage should be run
 if [ $JACOCO_ENABLED = true ]
@@ -90,7 +88,7 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # If randomness is desired, replace sort with the unix 'shuf'
 # Use /usr/bin/sort because of cygwin on windows. 
 # Windows has sort.exe which you don't want. Fails? (is it a lineend issue)
-(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BOOT | grep -v $JUNIT_TESTS_BIG | /usr/bin/sort > $OUTDIR/tests.txt
+(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BOOT | grep -v $JUNIT_TESTS_BIG | /usr/bin/sort | grep -v AAA_PreCloudLock > $OUTDIR/tests.txt
 
 # Output the comma-separated list of ignored/dooonly tests
 # Ignored tests trump do-only tests
@@ -100,11 +98,10 @@ echo $DOONLY > $OUTDIR/tests.doonly.txt
 # Launch 4 helper JVMs.  All output redir'd at the OS level to sandbox files.
 CLUSTER_NAME=junit_cluster_$$
 CLUSTER_BASEPORT=44000
-$JVM water.H2O -name $CLUSTER_NAME.1 -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.1.1 2>&1 & PID_11=$!
-$JVM water.H2O -name $CLUSTER_NAME.2 -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.2.1 2>&1 & PID_21=$!
-$JVM water.H2O -name $CLUSTER_NAME.3 -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.3.1 2>&1 & PID_31=$!
-$JVM water.H2O -name $CLUSTER_NAME.4 -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.4.1 2>&1 & PID_41=$!
-$JVM water.H2O -name $CLUSTER_NAME.5 -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.5.1 2>&1 & PID_51=$!
+#$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+#$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+#$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+#$JVM water.H2O -name $CLUSTER_NAME -baseport $CLUSTER_BASEPORT -ga_opt_out 1> $OUTDIR/out.4 2>&1 & PID_4=$!
 
 # If coverage is being run, then pass a system variable flag so that timeout limits are increased.
 if [ $JACOCO_ENABLED = true ]
@@ -117,11 +114,11 @@ fi
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running h2o-algos junit tests...
 
-($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.1 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt | sed -n '1~5p'` 2>&1 ; echo $? > $OUTDIR/status.1) 1> $OUTDIR/out.1 2>&1 & PID_1=$!
-($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.2 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt | sed -n '2~5p'` 2>&1 ; echo $? > $OUTDIR/status.2) 1> $OUTDIR/out.2 2>&1 & PID_2=$!
-($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.3 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt | sed -n '3~5p'` 2>&1 ; echo $? > $OUTDIR/status.3) 1> $OUTDIR/out.3 2>&1 & PID_3=$!
-($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.4 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt | sed -n '4~5p'` 2>&1 ; echo $? > $OUTDIR/status.4) 1> $OUTDIR/out.4 2>&1 & PID_4=$!
-($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.5 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt | sed -n '5~5p'` 2>&1 ; echo $? > $OUTDIR/status.5) 1> $OUTDIR/out.5 2>&1 & PID_5=$!
+($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.1 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER `cat $OUTDIR/tests.txt | sed -n '1~5p'` 2>&1 ; echo $? > $OUTDIR/status.1) 1> $OUTDIR/out.1 2>&1 & PID_1=$!
+($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.2 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER `cat $OUTDIR/tests.txt | sed -n '2~5p'` 2>&1 ; echo $? > $OUTDIR/status.2) 1> $OUTDIR/out.2 2>&1 & PID_2=$!
+($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.3 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER `cat $OUTDIR/tests.txt | sed -n '3~5p'` 2>&1 ; echo $? > $OUTDIR/status.3) 1> $OUTDIR/out.3 2>&1 & PID_3=$!
+($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.4 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER `cat $OUTDIR/tests.txt | sed -n '4~5p'` 2>&1 ; echo $? > $OUTDIR/status.4) 1> $OUTDIR/out.4 2>&1 & PID_4=$!
+($JVM -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME.5 -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER `cat $OUTDIR/tests.txt | sed -n '5~5p'` 2>&1 ; echo $? > $OUTDIR/status.5) 1> $OUTDIR/out.5 2>&1 & PID_5=$!
 
 wait ${PID_1} ${PID_2} ${PID_3} ${PID_4} ${PID_5} 1> /dev/null 2>&1
 grep EXECUTION $OUTDIR/out.* | sed -e "s/.*TEST \(.*\) EXECUTION TIME: \(.*\) (Wall.*/\2 \1/" | sort -gr | head -n 10 >> $OUTDIR/out.0

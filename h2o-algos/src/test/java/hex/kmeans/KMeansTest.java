@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
