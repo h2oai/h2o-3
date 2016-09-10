@@ -24,13 +24,14 @@ function cleanup () {
   kill -9 ${PID_11} ${PID_21} ${PID_31} ${PID_41} ${PID_51} 1> /dev/null 2>&1
   wait 1> /dev/null 2>&1
   RC="`paste $OUTDIR/status.* | sed 's/\s*//g'`"
-  if [ $RC != "00000" ]; then
+  if [ "$RC" != "00000" ]; then
     cat $OUTDIR/out.*
     echo h2o-algos junit tests FAILED
+    exit 1
   else
     echo h2o-algos junit tests PASSED
+    exit 0
   fi
-  exit $RC
 }
 
 trap cleanup SIGTERM SIGINT
