@@ -256,7 +256,6 @@ public class DeepWaterTest extends TestUtil {
       p._stopping_rounds = 0;
       p._image_shape = new int[]{28,28};
       p._network = DeepWaterParameters.Network.lenet;
-//      p._network = DeepWaterParameters.Network.inception_bn; //FAILS
 
       // score a lot
       p._train_samples_per_iteration = p._mini_batch_size;
@@ -694,6 +693,32 @@ public class DeepWaterTest extends TestUtil {
     }
     tr.remove();
     m.remove();
+  }
+
+  @Test public void imageToPixels() throws IOException {
+    // load the cuda lib in CUDA_PATH, optional. theoretically we can find them if they are in LD_LIBRARY_PATH
+    if (GPU) util.loadCudaLib();
+    util.loadNativeLib("mxnet");
+    util.loadNativeLib("Native");
+
+    final File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
+    final float[] dest = new float[28*28*3];
+    int count=0;
+    Futures fs = new Futures();
+    while(count++<10000)
+      fs.add(H2O.submitTask(
+          new H2O.H2OCountedCompleter() {
+            @Override
+            public void compute2() {
+              try {
+                util.img2pixels(imgFile.toString(), 28, 28, 3, dest, 0, null);
+              } catch (IOException e) {
+                e.printStackTrace();
+              }
+              tryComplete();
+            }
+          }));
+    fs.blockForPending();
   }
 }
 
