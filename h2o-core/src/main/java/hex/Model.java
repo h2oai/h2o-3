@@ -955,7 +955,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final int respIdx=predictions.find(_parms._response_column);
     final int weightIdx=predictions.find(_parms._weights_column);
 
-    final Distribution myDist = new AutoBuffer().put(_dist).flipForReading().get();
+    final Distribution myDist = _dist == null ? null : IcedUtils.deepCopy(_dist);
     if (myDist != null && myDist.distribution == DistributionFamily.huber) {
       myDist.setHuberDelta(hex.ModelMetricsRegression.computeHuberDelta(
               valid.vec(_parms._response_column), //actual

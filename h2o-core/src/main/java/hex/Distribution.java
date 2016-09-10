@@ -8,7 +8,7 @@ import hex.genmodel.utils.DistributionFamily;
  * Distribution functions to be used by ML Algos
  */
 //TODO: Separate into family/link
-public class Distribution extends Iced {
+public class Distribution extends Iced<Distribution> {
 
   // Default constructor for non-Tweedie and non-Quantile families
   public Distribution(DistributionFamily family) {

@@ -2,6 +2,7 @@ package hex;
 
 import hex.genmodel.utils.DistributionFamily;
 import water.AutoBuffer;
+import water.IcedUtils;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
@@ -148,7 +149,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
           double huberDelta = computeHuberDelta(actual, preds.anyVec(), weight, m._parms._huber_alpha);
 
           // make a deep copy of the model's current distribution state (huber delta)
-          _dist = new AutoBuffer().put(m._dist).flipForReading().get();
+          _dist = IcedUtils.deepCopy(m._dist);
           _dist.setHuberDelta(huberDelta);
 
           meanResDeviance = new MeanResidualDeviance(_dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
