@@ -206,8 +206,8 @@ public class DeepWaterTest extends TestUtil {
         p._network = DeepWaterParameters.Network.vgg;
         p._rate = 1e-4;
         p._mini_batch_size = 8;
-        p._train_samples_per_iteration = 0;
-        p._epochs = 1;
+        p._train_samples_per_iteration = 8;
+        p._epochs = 1e-3;
         m = new DeepWater(p).trainModel().get();
         Log.info(m);
       } finally {
