@@ -463,7 +463,8 @@ public class Frame extends Lockable<Frame> {
       for (Vec vec : vecs) sum += vec.byteSize();
       return sum;
     } catch(RuntimeException ex) {
-      return 0;
+      Log.debug("Failure to obtain byteSize() - missing chunks?");
+      return -1;
     }
   }
 
