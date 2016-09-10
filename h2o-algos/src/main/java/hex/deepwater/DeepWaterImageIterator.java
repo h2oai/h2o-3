@@ -127,7 +127,6 @@ public class DeepWaterImageIterator {
       _start_index = _start_index + _batch_size;
       return true;
     } else {
-      fs.blockForPending();
       return false;
     }
   }
