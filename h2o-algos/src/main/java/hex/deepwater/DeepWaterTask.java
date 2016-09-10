@@ -133,6 +133,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(batchSize);
       }
+      fs.blockForPending();
       nativetime +=ntt._timeInMillis;
       long end = System.currentTimeMillis();
       if(!_localmodel.get_params()._quiet_mode) {
