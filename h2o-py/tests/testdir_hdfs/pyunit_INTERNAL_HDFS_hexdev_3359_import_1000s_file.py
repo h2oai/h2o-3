@@ -22,21 +22,14 @@ def hdfs_orc_parser():
     if hadoop_namenode_is_accessible:
         hdfs_name_node = pyunit_utils.hadoop_namenode()
 
-        if pyunit_utils.cannaryHDFSTest(hdfs_name_node, "/datasets/orc_parser/orc/orc_split_elim.orc"):
-            print("Your hive-exec version is too old.  Orc parser test {0} is "
-                  "skipped.".format("pyunit_INTERNAL_HDFS_hexdex_29_import_types_orc.py"))
-            pass
-        else:
-            hdfs_csv_file = "/datasets/hexdev_3359"
-            url_csv = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_csv_file)
+        hdfs_csv_file = "/datasets/hexdev_3359"
+        url_csv = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_csv_file)
 
-            h2oframe_csv = h2o.import_file(url_csv)
+        h2oframe_csv = h2o.import_file(url_csv)
 
-            # compare the two frames
-            if not(h2oframe_csv.nrow == 100000000):
-                print("Data should contain 100000000 rows but we parsed: {0} rows!".format(h2oframe_csv.nrow))
-            assert h2oframe_csv.nrow==100000000, "H2O frame parsed incorrectly!  Number of rows != 100000000."
-
+        # compare the two frames
+        if not(h2oframe_csv.nrow == 100000000):
+            print("Data should contain 100000000 rows but we parsed: {0} rows!".format(h2oframe_csv.nrow))
     else:
         raise EnvironmentError
 
