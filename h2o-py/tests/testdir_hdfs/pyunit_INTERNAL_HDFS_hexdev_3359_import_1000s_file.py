@@ -30,6 +30,8 @@ def hdfs_orc_parser():
         # compare the two frames
         if not(h2oframe_csv.nrow == 100000000):
             print("Data should contain 100000000 rows but we parsed: {0} rows!".format(h2oframe_csv.nrow))
+        else:
+            print("Parsing 2000 files correctly!  Great!")
     else:
         raise EnvironmentError
 
