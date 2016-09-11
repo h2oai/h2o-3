@@ -9,4 +9,4 @@ pyunit_INTERNAL_HDFS_prostate_orc.py
 pyunit_INTERNAL_HDFS_timestamp_date_orc.py
 pyunit_INTERNAL_HDFS_import_folder_orc.py
 pyunit_INTERNAL_HDFS_baddata_orc.py
-pyunit_INTERNAL_HDFS_hexdev_3359_import_1000s_file.py
+pyunit_INTERNAL_HDFS_pubdev_3359_import_1000s_file.py
