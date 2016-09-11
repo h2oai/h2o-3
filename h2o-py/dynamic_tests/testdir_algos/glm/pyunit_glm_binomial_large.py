@@ -84,6 +84,11 @@ class TestGLMBinomial:
     max_col_count_ratio = 500   # set max row count to be multiples of col_count to avoid overfitting
     min_col_count_ratio = 100    # set min row count to be multiples of col_count to avoid overfitting
 
+    ###### for debugging
+#    max_col_count = 5         # set maximum values of train/test row and column counts
+#    max_col_count_ratio = 50   # set max row count to be multiples of col_count to avoid overfitting
+#    min_col_count_ratio = 10
+
     max_p_value = 2             # set maximum predictor value
     min_p_value = -2            # set minimum predictor value
 
@@ -129,7 +134,7 @@ class TestGLMBinomial:
     total_test_number = 7   # total number of tests being run for GLM Binomial family
 
     ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed, only for Gaussian
-    allowed_diff = 5e-2   # tolerance of comparison for logloss/prediction accuracy, okay to be loose.  Condition
+    allowed_diff = 0.1   # tolerance of comparison for logloss/prediction accuracy, okay to be loose.  Condition
                           # to run the codes are different
 
     duplicate_col_counts = 5    # maximum number of times to duplicate a column
@@ -199,7 +204,7 @@ class TestGLMBinomial:
     valid_data = []     # store validation data set
     training_data_grid = []     # store combined training and validation data set for cross validation
 
-    best_alpha = -1     # store best alpha value found
+    best_alpha = 0.5     # store best alpha value found
     best_grid_logloss = -1   # store lowest MSE found from grid search
 
     test_failed_array = [0]*total_test_number   # denote test results for all tests run.  1 error, 0 pass
@@ -376,52 +381,83 @@ class TestGLMBinomial:
         we can re-run the failed test.
         """
 
-        if self.test_failed:    # some tests have failed.  Need to save data sets for later re-runs
-            # create Rsandbox directory to keep data sets and weight information
-            self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
+        remove_files = []
 
-            # Do not want to save all data sets.  Only save data sets that are needed for failed tests
-            if sum(self.test_failed_array[0:4]):
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.validation_data_file, self.validation_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
+        # create Rsandbox directory to keep data sets and weight information
+        self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
 
-            if sum(self.test_failed_array[0:6]):
-                pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file, self.weight_filename)
+        # Do not want to save all data sets.  Only save data sets that are needed for failed tests
+        if sum(self.test_failed_array[0:4]):
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.validation_data_file, self.validation_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
+        else:   # remove those files instead of moving them
+            remove_files.append(self.training_data_file)
+            remove_files.append(self.validation_data_file)
+            remove_files.append(self.test_data_file)
 
-            if self.test_failed_array[4]:
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_duplicate, self.test_filename_duplicate)
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_duplicate,
-                                        self.training_filename_duplicate)
+        if sum(self.test_failed_array[0:6]):
+            pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file, self.weight_filename)
+        else:
+            remove_files.append(self.weight_data_file)
 
-            if self.test_failed_array[5]:
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_nans, self.training_filename_nans)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_nans, self.test_filename_nans)
+        if self.test_failed_array[3]:
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_duplicate, self.test_filename_duplicate)
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_duplicate,
+                                    self.training_filename_duplicate)
+        else:
+            remove_files.append(self.training_data_file_duplicate)
+            remove_files.append(self.test_data_file_duplicate)
 
-            if self.test_failed_array[6]:
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_enum_nans,
-                                        self.training_filename_enum_nans)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_enum_nans, self.test_filename_enum_nans)
-                pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file_enum, self.weight_filename_enum)
+        if self.test_failed_array[4]:
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_nans, self.training_filename_nans)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_nans, self.test_filename_nans)
+        else:
+            remove_files.append(self.training_data_file_nans)
+            remove_files.append(self.test_data_file_nans)
 
-            if self.test_failed_array[7]:
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_enum_nans_true_one_hot,
-                                        self.training_filename_enum_nans_true_one_hot)
-                pyunit_utils.move_files(self.sandbox_dir, self.validation_data_file_enum_nans_true_one_hot,
-                                        self.validation_filename_enum_nans_true_one_hot)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_enum_nans_true_one_hot,
-                                        self.test_filename_enum_nans_true_one_hot)
-                pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file_enum, self.weight_filename_enum)
+        if self.test_failed_array[5]:
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_enum_nans,
+                                    self.training_filename_enum_nans)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_enum_nans, self.test_filename_enum_nans)
+            pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file_enum, self.weight_filename_enum)
+        else:
+            remove_files.append(self.training_data_file_enum_nans)
+            remove_files.append(self.training_data_file_enum)
+            remove_files.append(self.test_data_file_enum_nans)
+            remove_files.append(self.test_data_file_enum)
+            remove_files.append(self.validation_data_file_enum_nans)
+            remove_files.append(self.validation_data_file_enum)
+            remove_files.append(self.weight_data_file_enum)
 
-        else:   # all tests have passed.  Delete sandbox if if was not wiped before
+        if self.test_failed_array[6]:
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_enum_nans_true_one_hot,
+                                    self.training_filename_enum_nans_true_one_hot)
+            pyunit_utils.move_files(self.sandbox_dir, self.validation_data_file_enum_nans_true_one_hot,
+                                    self.validation_filename_enum_nans_true_one_hot)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_enum_nans_true_one_hot,
+                                    self.test_filename_enum_nans_true_one_hot)
+            pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file_enum, self.weight_filename_enum)
+        else:
+            remove_files.append(self.training_data_file_enum_nans_true_one_hot)
+            remove_files.append(self.training_data_file_enum_true_one_hot)
+            remove_files.append(self.validation_data_file_enum_nans_true_one_hot)
+            remove_files.append(self.validation_data_file_enum_true_one_hot)
+            remove_files.append(self.test_data_file_enum_nans_true_one_hot)
+            remove_files.append(self.test_data_file_enum_true_one_hot)
+
+        if not(self.test_failed):   # all tests have passed.  Delete sandbox if if was not wiped before
             pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, False)
 
         # remove any csv files left in test directory, do not remove them, shared computing resources
-        #pyunit_utils.remove_csv_files(self.current_dir, ".csv")
+        if len(remove_files) > 0:
+            for file in remove_files:
+                pyunit_utils.remove_files(file)
+
 
     def test1_glm_no_regularization(self):
         """
@@ -1448,7 +1484,7 @@ def test_glm_binomial():
     test_glm_binomial.test5_missing_values()
     test_glm_binomial.test6_enum_missing_values()
     test_glm_binomial.test7_missing_enum_values_lambda_search()
-    # test_glm_binomial.teardown()
+    test_glm_binomial.teardown()
 
     sys.stdout.flush()
 
