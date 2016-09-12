@@ -7,14 +7,14 @@ import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import com.fasterxml.jackson.module.jsonSchema.types.ObjectSchema;
 import water.api.Handler;
 import water.automl.api.schemas3.AutoMLJSONSchemaV3;
-import water.automl.api.schemas3.AutoMLBuilderV3;
+import water.automl.api.schemas3.AutoMLBuildSpecV3;
 
 
 public class AutoMLJSONSchemaHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public AutoMLJSONSchemaV3 getJSONSchema(int version, AutoMLJSONSchemaV3 args) {
 
-    Class clazz = AutoMLBuilderV3.class;
+    Class clazz = AutoMLBuildSpecV3.class;
     ObjectMapper m = new ObjectMapper();
 
     SchemaFactoryWrapper visitor = new SchemaFactoryWrapper();

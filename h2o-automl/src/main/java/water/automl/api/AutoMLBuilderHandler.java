@@ -6,20 +6,20 @@ import water.DKV;
 import water.Key;
 import water.api.Handler;
 import water.api.schemas3.JobV3;
-import water.automl.api.schemas3.AutoMLBuilderV3;
+import water.automl.api.schemas3.AutoMLBuildSpecV3;
 import water.fvec.Frame;
 
 
 public class AutoMLBuilderHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public AutoMLBuilderV3 build(int version, AutoMLBuilderV3 args) {
-    Frame frame = DKV.getGet(args.dataset_path);
+  public AutoMLBuildSpecV3 build(int version, AutoMLBuildSpecV3 args) {
+    Frame frame = DKV.getGet(args.dataset);
     AutoML aml;
     if( null==frame )
       aml = AutoML.makeAutoML(Key.<AutoML>make(),
-              args.dataset_path,
+              args.dataset,
               args.datasets_to_join,
-              args.target_name,
+              args.response_column.column_name,
               args.loss,
               args.max_time,
               -1,
