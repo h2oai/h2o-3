@@ -1,4 +1,4 @@
-package water.automl;
+package water.automl.api.schemas3;
 
 import ai.h2o.automl.AutoML;
 import water.Iced;

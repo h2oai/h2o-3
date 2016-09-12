@@ -1,4 +1,4 @@
-package water.automl;
+package water.automl.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -6,9 +6,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import com.fasterxml.jackson.module.jsonSchema.types.ObjectSchema;
 import water.api.Handler;
+import water.automl.api.schemas3.AutoMLJSONSchemaV3;
+import water.automl.api.schemas3.AutoMLBuilderV3;
 
 
 public class AutoMLJSONSchemaHandler extends Handler {
+  @SuppressWarnings("unused") // called through reflection by RequestServer
   public AutoMLJSONSchemaV3 getJSONSchema(int version, AutoMLJSONSchemaV3 args) {
 
     Class clazz = AutoMLBuilderV3.class;
