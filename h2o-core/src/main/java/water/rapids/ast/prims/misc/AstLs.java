@@ -53,7 +53,7 @@ public class AstLs extends AstPrimitive {
     keys.close(fs);
     Vec c0 = av.layout_and_close(fs);   // c0 is the row index vec
     fs.blockForPending();
-    return new ValFrame(new Frame(Key.make("h2o_ls"), new String[]{"key"}, new Vec[]{c0}));
+    return new ValFrame(new Frame(Key.<Frame>make("h2o_ls"), new String[]{"key"}, new Vec[]{c0}));
   }
 }
 

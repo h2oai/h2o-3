@@ -1014,7 +1014,7 @@ public class GLMTest  extends TestUtil {
     Vec v11 = Vec.makeVec(d8, vg_1.addVec());
     Vec v12 = Vec.makeVec(d9, vg_1.addVec());
 
-    Frame f = new Frame(Key.make("TestData"), null, new Vec[]{v01, v02, v03, v04, v05, v05, v06, v07, v08, v09, v10, v11, v12});
+    Frame f = new Frame(Key.<Frame>make("TestData"), null, new Vec[]{v01, v02, v03, v04, v05, v05, v06, v07, v08, v09, v10, v11, v12});
     DKV.put(f);
     DataInfo dinfo = new DataInfo(f, null, 1, true, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
     GLMParameters params = new GLMParameters(Family.gaussian);

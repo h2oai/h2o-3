@@ -579,7 +579,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
       }.doAll(len, Vec.T_NUM, adaptedFr).outputFrame();
 
-      Frame of = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), names, f.vecs());
+      Frame of = new Frame((null == destination_key ? Key.<Frame>make() : Key.<Frame>make(destination_key)), names, f.vecs());
       DKV.put(of);
       makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
       return of;
@@ -890,7 +890,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @return Threshold in MSE value for a point to be above the quantile
    */
   public double calcOutlierThreshold(Vec mse, double quantile) {
-    Frame mse_frame = new Frame(Key.make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
+    Frame mse_frame = new Frame(Key.<Frame>make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
     DKV.put(mse_frame._key, mse_frame);
 
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();

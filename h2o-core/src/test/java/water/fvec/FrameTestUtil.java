@@ -13,7 +13,7 @@ import water.parser.BufferedString;
 public class FrameTestUtil {
 
   public static Frame createFrame(String fname, long[] chunkLayout, String[][] data) {
-    Frame f = new Frame(Key.make(fname));
+    Frame f = new Frame(Key.<Frame>make(fname));
     f.preparePartialFrame(new String[]{"C0"});
     f.update();
     // Create chunks
@@ -39,7 +39,7 @@ public class FrameTestUtil {
 
   public static Frame createFrame(String fname, long[] chunkLayout) {
     // Create a frame
-    Frame f = new Frame(Key.make(fname));
+    Frame f = new Frame(Key.<Frame>make(fname));
     f.preparePartialFrame(new String[]{"C0"});
     f.update();
     byte[] types = new byte[] {Vec.T_NUM};

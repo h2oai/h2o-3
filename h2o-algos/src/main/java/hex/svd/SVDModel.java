@@ -99,12 +99,12 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
   }
 
   /** Write out K/V pairs */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     ab.putKey(_output._u_key);
     ab.putKey(_output._v_key);
     return super.writeAll_impl(ab);
   }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     ab.getKey(_output._u_key,fs);
     ab.getKey(_output._v_key,fs);
     return super.readAll_impl(ab,fs);
@@ -156,7 +156,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     int x = _output._names.length, y = adaptFrm.numCols();
     Frame f = adaptFrm.extractFrame(x, y); // this will call vec_impl() and we cannot call the delete() below just yet
 
-    f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+    f = new Frame(Key.<Frame>make(destination_key), f.names(), f.vecs());
     DKV.put(f);
     makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
     return f;

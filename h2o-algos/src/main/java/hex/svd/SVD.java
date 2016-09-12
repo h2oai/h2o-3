@@ -243,7 +243,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // 4) Extract and save final Q_j from [A,Q] frame
         qfrm = ayqfrm.extractFrame(ncolA + _parms._nv, ayqfrm.numCols());
-        qfrm = new Frame(Key.make(), qfrm.names(), qfrm.vecs());
+        qfrm = new Frame(Key.<Frame>make(), qfrm.names(), qfrm.vecs());
         DKV.put(qfrm);
       } finally {
         if( yinfo != null ) yinfo.remove();

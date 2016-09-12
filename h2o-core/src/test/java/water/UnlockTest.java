@@ -14,8 +14,8 @@ public class UnlockTest extends TestUtil {
     // Put chunks into KV store
     Frame f = new TestUtil().parse_test_file("smalldata/junit/syn_2659x1049.csv.gz");
     // Create two lockable frames in KV store
-    Frame fr1 = new Frame(Key.make(), f.names(), f.vecs());
-    Frame fr2 = new Frame(Key.make(), f.names(), f.vecs());
+    Frame fr1 = new Frame(Key.<Frame>make(), f.names(), f.vecs());
+    Frame fr2 = new Frame(Key.<Frame>make(), f.names(), f.vecs());
     // Lock the frames against writes
     fr1.delete_and_lock();
     fr2.delete_and_lock();
