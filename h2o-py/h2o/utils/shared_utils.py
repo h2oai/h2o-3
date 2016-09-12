@@ -309,6 +309,8 @@ def deprecated(message):
     assert message, "`message` argument in @deprecated is required."
 
     def deprecated_decorator(fun):
+        return fun
+
         def decorator_invisible(*args, **kwargs):
             stack = extract_stack()
             assert len(stack) >= 2 and stack[-1][2] == "decorator_invisible", "Got confusing stack... %r" % stack

@@ -41,17 +41,17 @@ class BackwardsCompatibleMeta(type):
         bc = type.__getattribute__(cls, "_bc")
         if name in bc["a"]:
             if name in bc["sv"]:
-                print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
+                # print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
                 return bc["sv"][name]
             if name in bc["sm"]:
-                print("Warning: Method %s in class %s is deprecated." % (name, cls.__name__))
+                # print("Warning: Method %s in class %s is deprecated." % (name, cls.__name__))
                 return bc["sm"][name]
         return type.__getattribute__(cls, name)
 
     def __setattr__(cls, name, value):
         bc = cls.__dict__["_bc"]
         if name in bc["sv"]:
-            print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
+            # print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
             bc["sv"][name] = value
         else:
             cls.__dict__[name] = value
