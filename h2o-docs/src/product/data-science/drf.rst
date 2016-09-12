@@ -99,6 +99,8 @@ Defining a DRF Model
    details, refer to "Stochastic Gradient Boosting" (`Friedman,
    1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
+-  **sample\_rate\_per\_class**: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. If this option is specified along with **sample_rate**, then only the first option that DRF encounters will be used.
+
 -  **col\_sample\_rate**: Specify the column sampling rate (y-axis). The
    range is 0.0 to 1.0. Higher values may improve training accuracy.
    Test accuracy improves when either columns or rows are sampled. For
@@ -195,7 +197,7 @@ Defining a DRF Model
    previously-trained model. Use this option to build a new model as a
    continuation of a previously-generated model.
 
--  **col\_sample_rate\_change\_per\_level**: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
+-  **col\_sample\_rate\_change\_per\_level**: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
 
 	 level 1: **col\_sample_rate**
 	
@@ -209,7 +211,9 @@ Defining a DRF Model
 
 -  **col\_sample\_rate\_per\_tree**: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0.
 
--  **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
+-  **min\_split\_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
+
+- **random\_split_points**: By default DRF bins from min...max in steps of (max-min)/N. When this option is enabled, DRF will instead sample N-1 points from min...max and use the sorted list of those for split finding.
 
 -  **histogram_type**: By default (AUTO) DRF bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 
@@ -221,9 +225,10 @@ Defining a DRF Model
 
     **Note**: H2O supports extremely randomized trees via ``histogram_type="Random"``. In extremely randomized trees (Extra-Trees), randomness goes one step further in the way splits are computed. As in Random Forests, a random subset of candidate features is used, but instead of looking for the best split, thresholds (for the split) are drawn at random for each candidate feature, and the best of these randomly-generated thresholds is picked as the splitting rule. This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.
 
-
 -  **keep\_cross\_validation\_predictions**: Enable this option to keep the
    cross-validation prediction.
+
+-  **keep\_cross\_validation\_fold\_assignment**: Enable this option to preserve the cross-validation fold assignment.
 
 -  **class\_sampling\_factors**: Specify the per-class (in
    lexicographical order) over/under-sampling ratios. By default, these

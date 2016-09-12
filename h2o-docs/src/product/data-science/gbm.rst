@@ -98,6 +98,8 @@ Defining a GBM Model
 
 -  **learn\_rate**: Specify the learning rate. The range is 0.0 to 1.0.
 
+-  **learn\_rate\_annealing**:  Specifies to reduce the **learn_rate** by this factor after every tree. So for *N* trees, GBM starts with **learn_rate** and ends with **learn_rate** * **learn\_rate\_annealing**^*N*. For example, instead of using **learn_rate=0.01**, you can now try **learn_rate=0.05** and **learn\_rate\_annealing=0.99**. This method would converge much faster with almost the same accuracy. Use caution not to overfit. 
+
 -  **distribution**: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, or tweedie.
 
        -  If the distribution is **multinomial**, the response column
@@ -122,6 +124,8 @@ Defining a GBM Model
    details, refer to "Stochastic Gradient Boosting" (`Friedman,
    1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
+-  **sample\_rate\_per\_class**: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. If this option is specified along with **sample_rate**, then only the first option that GBM encounters will be used.
+
 -  **col\_sample\_rate**: Specify the column sampling rate (y-axis). The
    range is 0.0 to 1.0. Higher values may improve training accuracy.
    Test accuracy improves when either columns or rows are sampled. For
@@ -140,7 +144,13 @@ Defining a GBM Model
 	
 	  etc. 
 
--  **min\_split_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
+-  **max\_abs\_leafnode\_pred**: When building a GBM classification model, this option reduces overfitting by limiting the maximum absolute value of a leaf node prediction. This option defaults to Double.MAX_VALUE.
+
+-  **pred\_noise\_bandwidth**: The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. If this parameter is specified with a value greater than 0, then every leaf node prediction is randomly scaled by a number drawn from a Normal distribution centered around 1 with a bandwidth given by this parameter. The default is 0 (disabled). 
+
+-  **min\_split\_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
+
+-  **random\_split_points**: By default GBM bins from min...max in steps of (max-min)/N. When this option is enabled, GBM will instead sample N-1 points from min...max and use the sorted list of those for split finding.
 
 -  **histogram_type**: By default (AUTO) GBM bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 
@@ -241,12 +251,16 @@ Defining a GBM Model
    than 2. For more information, refer to `Tweedie
    distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
+-  **huber\_alpha**: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1.
+
 -  **checkpoint**: Enter a model key associated with a
    previously-trained model. Use this option to build a new model as a
    continuation of a previously-generated model.
 
 -  **keep\_cross\_validation\_predictions**: Enable this option to keep the
    cross-validation predictions.
+
+-  **keep\_cross\_validation\_fold\_assignment**: Enable this option to preserve the cross-validation fold assignment. 
 
 -  **class\_sampling\_factors**: Specify the per-class (in
    lexicographical order) over/under-sampling ratios. By default, these
@@ -431,7 +445,7 @@ Next layer in the tree for the left-split has value from 1 to 100 (not
 1000!) and so re-bins in units of 5: {1,1,2,4},{8},{},{16},{lots of
 empty bins}{100} (the RH split has the single value 1000).
 
-And so on: important dense ranges with split essentially logrithmeticaly
+And so on: important dense ranges with split essentially logarithmically
 at each layer.
 
 **What should I do if my variables are long skewed in the tail and might

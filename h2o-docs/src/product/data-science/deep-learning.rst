@@ -180,6 +180,8 @@ recommended, as model performance can vary greatly.
     
    For more information, refer to `Tweedie distribution <https://en.wikipedia.org/wiki/Tweedie_distribution>`__.
 
+-  **huber\_alpha**: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1.
+
 -  **score\_interval**: Specify the shortest time interval (in seconds)
    to wait between model scoring.
 
