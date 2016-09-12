@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.AutoBuffer;
+import water.IcedUtils;
 import water.TestUtil;
 
 import java.util.Arrays;
@@ -45,8 +46,7 @@ public class CUDChunkTest extends TestUtil {
     Assert.assertTrue(cc.isNA(vals.length));
     Assert.assertTrue(cc.isNA_abs(vals.length));
 
-    Chunk cc2 = new CUDChunk();
-    cc2.read(cc.write(new AutoBuffer()).flipForReading());
+    Chunk cc2 = IcedUtils.deepCopy(cc);
     Assert.assertEquals(cc._len, cc2._len);
     Assert.assertEquals(vals.length + 1, cc2._len);
     Assert.assertTrue(cc2 instanceof CUDChunk);

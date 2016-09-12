@@ -7,6 +7,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.MathUtils;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
@@ -205,10 +206,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         updateHits(w,iact,ds,_hits,m != null?m._output._priorClassDist:_priorDistribution);
 
       // Compute log loss
-      final double eps = 1e-15;
-      _logloss -= w*Math.log(Math.max(eps, 1-err));
-
-
+      _logloss += w*MathUtils.logloss(err);
       return ds;                // Flow coding
     }
 

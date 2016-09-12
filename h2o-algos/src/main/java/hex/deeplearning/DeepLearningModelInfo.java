@@ -18,7 +18,7 @@ import java.util.Random;
  * This class contains the state of the Deep Learning model
  * This will be shared: one per node
  */
-final public class DeepLearningModelInfo extends Iced {
+final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
 
   public TwoDimTable summaryTable;
 
@@ -260,11 +260,6 @@ final public class DeepLearningModelInfo extends Iced {
     rms_bias = new double[units.length-1];
     mean_weight = new double[units.length-1];
     rms_weight = new double[units.length-1];
-  }
-
-  // deep clone all weights/biases
-  DeepLearningModelInfo deep_clone() {
-    return new AutoBuffer().put(this).flipForReading().get();
   }
 
   /**
@@ -762,7 +757,7 @@ final public class DeepLearningModelInfo extends Iced {
     assert(pa > 0 && pa <= 1);
     DeepLearningModelInfo elasticAverage = DKV.getGet(nodeAverageModel.elasticAverageModelInfoKey()); //get latest version from DKV
     if (elasticAverage == null || pa == 1) {
-      elasticAverage = nodeAverageModel.deep_clone();
+      elasticAverage = IcedUtils.deepCopy(nodeAverageModel);
     } else {
       nodeAverageModel.mult(pa);
       elasticAverage.mult(1 - pa);
