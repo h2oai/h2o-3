@@ -374,7 +374,7 @@ public class DeepWaterTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
-      p._mini_batch_size = 4;
+      p._mini_batch_size = 2;
       p._epochs = 0.01;
 //      p._rate = 0; //needed pass the test for inception/resnet
       p._seed = 1234;
@@ -465,7 +465,7 @@ public class DeepWaterTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
-      p._mini_batch_size = 4;
+      p._mini_batch_size = 2;
       p._epochs = 0.01;
       p._seed = 1234;
       p._score_training_samples = 0;
@@ -541,7 +541,7 @@ public class DeepWaterTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._network = network;
       p._response_column = "C2";
-      p._mini_batch_size = 4;
+      p._mini_batch_size = 2;
       p._train_samples_per_iteration = p._mini_batch_size;
       p._rate = 0e-3;
       p._seed = 12345;
