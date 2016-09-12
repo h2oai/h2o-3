@@ -15,7 +15,7 @@ import java.util.zip.ZipFile;
  * Prediction model based on the persisted binary data.
  */
 abstract public class RawModel extends GenModel {
-    protected ContentReader _reader;
+    protected transient ContentReader _reader;
     protected hex.ModelCategory _category;
     protected String _uuid;
     protected boolean _supervised;
@@ -25,7 +25,6 @@ abstract public class RawModel extends GenModel {
     protected double _defaultThreshold;
     protected double[] _priorClassDistrib;
     protected double[] _modelClassDistrib;
-    protected String _offsetColumn;
 
     /**
      * Primary factory method for constructing RawModel instances.
