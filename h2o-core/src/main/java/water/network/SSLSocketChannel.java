@@ -146,19 +146,13 @@ class SSLSocketChannel implements ByteChannel {
 
         channel.read(netInBuffer);
 
-        SSLEngineResult unwrapResult = null;
+        SSLEngineResult unwrapResult;
         peerAppData.clear();
 
         do {
             netInBuffer.flip();
 
-            try {
-                unwrapResult = sslEngine.unwrap(netInBuffer, peerAppData);
-            } catch (SSLException e) {
-                Log.err("Failed SSL handshake! SSL and nonSSL mixed clouds are not supported.");
-                Log.err(e);
-                H2O.exit(1);
-            }
+            unwrapResult = sslEngine.unwrap(netInBuffer, peerAppData);
 
             netInBuffer.compact();
 
@@ -175,8 +169,7 @@ class SSLSocketChannel implements ByteChannel {
                 case BUFFER_OVERFLOW: {
                     int applicationBufferSize = sslEngine.getSession().getApplicationBufferSize();
                     if (applicationBufferSize > peerAppData.capacity()) {
-                        int appSize = applicationBufferSize;
-                        ByteBuffer b = ByteBuffer.allocate(appSize + peerAppData.position());
+                        ByteBuffer b = ByteBuffer.allocate(applicationBufferSize + peerAppData.position());
                         peerAppData.flip();
                         b.put(peerAppData);
                         peerAppData = b;
@@ -355,5 +348,9 @@ class SSLSocketChannel implements ByteChannel {
 
     boolean isHandshakeComplete() {
         return handshakeComplete;
+    }
+
+    private void resetSSLEngine() {
+
     }
 }
