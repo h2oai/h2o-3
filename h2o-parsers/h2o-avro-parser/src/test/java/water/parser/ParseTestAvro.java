@@ -51,7 +51,7 @@ public class ParseTestAvro extends TestUtil {
     };
 
     for (int i = 0; i < assertions.length; ++i) {
-      assertFrameAsserion(assertions[i]);
+      assertFrameAssertion(assertions[i]);
     }
   }
 
@@ -62,7 +62,7 @@ public class ParseTestAvro extends TestUtil {
           @Override protected File prepareFile() throws IOException { return AvroFileGenerator.generatePrimitiveTypes(file, nrows()); }
 
           @Override
-          void check(Frame f) {
+          public void check(Frame f) {
             assertArrayEquals("Column names need to match!", ar("CString", "CBytes", "CInt", "CLong", "CFloat", "CDouble", "CBoolean", "CNull"), f.names());
             assertArrayEquals("Column types need to match!", ar(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_BAD), f.types());
 
@@ -83,7 +83,7 @@ public class ParseTestAvro extends TestUtil {
     };
 
     for (int i = 0; i < assertions.length; ++i) {
-      assertFrameAsserion(assertions[i]);
+      assertFrameAssertion(assertions[i]);
     }
   }
 
@@ -94,7 +94,7 @@ public class ParseTestAvro extends TestUtil {
           @Override protected File prepareFile() throws IOException { return AvroFileGenerator.generateUnionTypes(file, nrows()); }
 
           @Override
-          void check(Frame f) {
+          public void check(Frame f) {
             assertArrayEquals("Column names need to match!", ar("CUString", "CUBytes", "CUInt", "CULong", "CUFloat", "CUDouble", "CUBoolean"), f.names());
             assertArrayEquals("Column types need to match!", ar(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM), f.types());
             int nrows = nrows();
@@ -117,7 +117,7 @@ public class ParseTestAvro extends TestUtil {
     };
 
     for (int i = 0; i < assertions.length; ++i) {
-      assertFrameAsserion(assertions[i]);
+      assertFrameAssertion(assertions[i]);
     }
   }
 
@@ -130,7 +130,7 @@ public class ParseTestAvro extends TestUtil {
           }
 
           @Override
-          void check(Frame f) {
+          public void check(Frame f) {
             assertArrayEquals("Column names need to match!", ar("CEnum", "CUEnum"), f.names());
             assertArrayEquals("Column types need to match!", ar(Vec.T_CAT, Vec.T_CAT), f.types());
             assertArrayEquals("Category names need to match in CEnum!", categories[0], f.vec("CEnum").domain());
@@ -149,71 +149,10 @@ public class ParseTestAvro extends TestUtil {
     };
 
     for (int i = 0; i < assertions.length; ++i) {
-      assertFrameAsserion(assertions[i]);
+      assertFrameAssertion(assertions[i]);
     }
   }
 
-  private static void assertFrameAsserion(FrameAssertion frameAssertion) {
-    int[] dim = frameAssertion.dim;
-    Frame frame = null;
-    try {
-      frame = frameAssertion.prepare();
-      assertEquals("Frame has to have expected number of columns", dim[0], frame.numCols());
-      assertEquals("Frame has to have expected number of rows", dim[1], frame.numRows());
-      frameAssertion.check(frame);
-    } finally {
-      frameAssertion.done(frame);
-      if (frame != null)
-        frame.delete();
-    }
-  }
-
-  private static abstract class FrameAssertion {
-    final String file;
-    final int[] dim; // columns X rows
-    public FrameAssertion(String file, int[] dim) {
-      this.file = file;
-      this.dim = dim;
-    }
-
-    public Frame prepare() {
-      return TestUtil.parse_test_file(file);
-    }
-
-    public void done(Frame frame) {}
-
-    void check(Frame frame) {}
-
-    public final int nrows() { return dim[1]; }
-    public final int ncols() { return dim[0]; }
-  }
-
-  private static abstract class GenFrameAssertion extends FrameAssertion {
-
-    public GenFrameAssertion(String file, int[] dim) {
-      super(file, dim);
-    }
-    File generatedFile;
-
-    protected abstract File prepareFile() throws IOException;
-
-    @Override
-    public Frame prepare() {
-      try {
-        File f = generatedFile = prepareFile();
-        System.out.println("File generated into: " + f.getCanonicalPath());
-        return TestUtil.parse_test_file(f.getCanonicalPath());
-      } catch (IOException e) {
-        throw new RuntimeException("Cannot created test file: " + file, e);
-      }
-    }
-
-    @Override
-    public void done(Frame frame) {
-      generatedFile.deleteOnExit();
-      if (generatedFile != null) generatedFile.delete();
-    }
-  }
 }
 
 /* A test file generator.
