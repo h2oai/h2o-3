@@ -349,8 +349,4 @@ class SSLSocketChannel implements ByteChannel {
     boolean isHandshakeComplete() {
         return handshakeComplete;
     }
-
-    private void resetSSLEngine() {
-
-    }
 }
