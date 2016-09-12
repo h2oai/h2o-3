@@ -68,7 +68,7 @@ class BackwardsCompatibleBase(object):
 
     def __getattr__(self, item):
         if item in self._bcin:
-            print("Warning: Method %s in class %s is deprecated." % (item, self.__class__.__name__))
+            # print("Warning: Method %s in class %s is deprecated." % (item, self.__class__.__name__))
             return self._bcin[item]
         # Make sure that we look up any names not found on the instance also in the class
         return getattr(self.__class__, item)
