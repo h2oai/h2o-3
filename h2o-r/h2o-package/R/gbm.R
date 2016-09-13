@@ -1,6 +1,6 @@
-#' Gradient Boosted Machines
+#' Gradient Boosting Machine
 #'
-#' Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
+#' Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.
 #'
 #' The default distribution function will guess the model type
 #' based on the response column type. In order to run properly, the response column must be an numeric for "gaussian" or an

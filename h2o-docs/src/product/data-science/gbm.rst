@@ -3,12 +3,7 @@ GBM
 Introduction
 ~~~~~~~~~~~~
 
-Gradient Boosted Regression and Gradient Boosted Classification are
-forward learning ensemble methods. The guiding heuristic is that good
-predictive results can be obtained through increasingly refined
-approximations. H2O's GBM sequentially builds regression trees on all
-the features of the dataset in a fully distributed way - each tree is
-built in parallel.
+Gradient Boosting Machine (for Regression and Classification) is a forward learning ensemble method. The guiding heuristic is that good predictive results can be obtained through increasingly refined approximations. H2O's GBM sequentially builds regression trees on all the features of the dataset in a fully distributed way - each tree is built in parallel.
 
 The current version of GBM is fundamentally the same as in previous
 versions of H2O (same algorithmic steps, same histogramming techniques),
@@ -420,7 +415,7 @@ potentially shrunk to the discrete integer range, which affects the
 split points.
 
 For more information about the GBM algorithm, refer to the `Gradient
-Boosted Machines booklet <http://h2o.ai/resources>`__.
+Boosting Machine booklet <http://h2o.ai/resources>`__.
 
 Binning In GBM
 ~~~~~~~~~~~~~~
