@@ -23,6 +23,7 @@ import water.rapids.ast.prims.search.AstWhich;
 import water.rapids.ast.prims.string.*;
 import water.rapids.ast.prims.time.*;
 import water.rapids.ast.prims.math.*;
+import water.rapids.ast.prims.timeseries.*;
 
 import java.util.HashMap;
 
@@ -181,7 +182,6 @@ public abstract class AstRoot extends Iced<AstRoot> {
     init(new AstAsDate());
     init(new AstDay());
     init(new AstDayOfWeek());
-    init(new AstDiffLag1());
     init(new AstGetTimeZone());
     init(new AstHour());
     init(new AstListTimeZones());
@@ -193,6 +193,9 @@ public abstract class AstRoot extends Iced<AstRoot> {
     init(new AstSetTimeZone());
     init(new AstWeek());
     init(new AstYear());
+
+    //Time Series
+    init(new AstDiffLag1());
 
     // Advanced Math
     init(new AstCorrelation());
