@@ -233,7 +233,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
         logloss = _logloss / _wcount;
       }
       ModelMetricsMultinomial mm = new ModelMetricsMultinomial(m, f, _count, mse, _domain, sigma, cm,   hr,   logloss);
-      if (m!=null) m._output.addModelMetrics(mm);
+      if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
   }

@@ -339,6 +339,23 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  public synchronized ModelMetrics addModelMetrics(final ModelMetrics mm) {
+    DKV.put(mm);
+    final Key k = mm._key;
+    new TAtomic<Model>() {
+      @Override
+      protected Model atomic(Model old) {
+        for( Key key : old._output._model_metrics )
+          if( k.equals(key) ) return old;
+        old._output._model_metrics = Arrays.copyOf(old._output._model_metrics, old._output._model_metrics.length + 1);
+        old._output._model_metrics[old._output._model_metrics.length - 1] = k;
+        return old;
+      }
+    }.invoke(_key);
+    _output._model_metrics = _key.get()._output._model_metrics;
+    return mm;                // Flow coding
+  }
+
   public void addWarning(String s){
     _warnings = Arrays.copyOf(_warnings,_warnings.length+1);
     _warnings[_warnings.length-1] = s;
@@ -514,14 +531,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public boolean isAutoencoder() { return false; } // Override in DeepLearning and so on.
 
-    public synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
-      DKV.put(mm);
-      for( Key key : _model_metrics ) // Dup removal
-        if( key==mm._key ) return mm;
-      _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
-      _model_metrics[_model_metrics.length - 1] = mm._key;
-      return mm;                // Flow coding
-    }
     public synchronized void clearModelMetrics() { _model_metrics = new Key[0]; }
 
     protected long checksum_impl() {
@@ -557,7 +566,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   protected String[][] scoringDomains() { return _output._domains; }
 
-  public ModelMetrics addMetrics(ModelMetrics mm) { return _output.addModelMetrics(mm); }
+  public ModelMetrics addMetrics(ModelMetrics mm) { return addModelMetrics(mm); }
 
   public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
 
