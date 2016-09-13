@@ -1,25 +1,16 @@
 package water.network;
 
-import hex.Distribution;
-import hex.Model;
-import hex.ModelMetricsBinomial;
-import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
 import org.junit.Ignore;
-import water.DKV;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.util.Log;
-import water.util.MathUtils;
 
 import java.util.Date;
 
-import static hex.Distribution.Family.bernoulli;
-import static org.junit.Assert.assertEquals;
+import static hex.genmodel.utils.DistributionFamily.gaussian;
 
 /**
  * This class is used to capture TCP packets while training a model
@@ -57,7 +48,7 @@ public class SSLEncryptionTest extends TestUtil {
             fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = fr._key;
-            parms._distribution = Distribution.Family.gaussian;
+            parms._distribution = gaussian;
             parms._response_column = fr._names[1]; // Row in col 0, dependent in col 1, predictor in col 2
             parms._ntrees = 1;
             parms._max_depth = 1;
