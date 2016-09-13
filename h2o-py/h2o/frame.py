@@ -1412,56 +1412,54 @@ class H2OFrame(object):
 
     def cbind(self, data):
         """
-        Append data to this H2OFrame column-wise.
+        Append data to this frame column-wise.
 
-        Parameters
-        ----------
-          data : list
-            List of H2OFrame's to be column bound to the right of this H2OFrame.
-
-        Returns
-        -------
-          Returns this H2OFrame with all frames in data appended column-wise.
+        :param data: an H2OFrame or a list of H2OFrame's to be column bound to the this frame on the right. You can
+            also cbind a number, in which case it will get converted into a constant column.
+        :returns: new H2OFrame with all frames in data appended column-wise.
         """
-        if not isinstance(data,list):
-            fr = H2OFrame._expr(expr=ExprNode("cbind", self, data), cache=self._ex._cache)
-            fr._ex._cache.ncols = self.ncol + data.ncol #Update column count
+        assert_is_type(data, H2OFrame, numeric, [H2OFrame, numeric])
+        frames = [data] if not isinstance(data, list) else data
+        new_cols = list(self.columns)
+        new_types = dict(self.types)
+        for frame in frames:
+            if isinstance(frame, H2OFrame):
+                if frame.nrow != self.nrow:
+                    raise H2OValueError("Cannot bind a dataframe with %d rows to a data frame with %d rows: "
+                                        "the number of rows should match" % (frame.nrow, self.nrow))
+                new_cols += frame.columns
+                new_types.update(frame.types)
+            else:
+                new_cols += [None]
+        unique_cols = set(new_cols)
+        fr = H2OFrame._expr(expr=ExprNode("cbind", self, *frames), cache=self._ex._cache)
+        fr._ex._cache.ncols = len(new_cols)
+        if len(new_cols) == len(unique_cols) and None not in unique_cols:
+            fr._ex._cache.names = new_cols
+            fr._ex._cache.types = new_types
         else:
-            for frames in data:
-                if not isinstance(frames, H2OFrame):
-                    raise ValueError("`frames` must be an H2OFrame, but got {0}".format(type(frames)))
-                fr = H2OFrame._expr(expr=ExprNode("cbind", self, frames), cache=self._ex._cache)
-                self = fr #Update frame with new columns
-            for frames in data:
-                fr._ex._cache.ncols = self.ncol + frames.ncol #Update column count
-        fr._ex._cache.names = None  # invalidate for possibly duplicate names
-        fr._ex._cache.types = None  # invalidate for possibly duplicate names
+            # Invalidate names and types since they contain duplicate / unknown names, and the server will choose those.
+            fr._ex._cache.names = None
+            fr._ex._cache.types = None
         return fr
 
     def rbind(self, data):
         """
-        Append data to this H2OFrame row-wise.
+        Append data to this frame row-wise.
 
-        Parameters
-        ----------
-          data : list
-            List of H2OFrame's to be combined with current frame row-wise.
-
-        Returns
-        -------
-          Returns this H2OFrame with all frames in data appended row-wise.
+        :param data: an H2OFrame or a list of H2OFrame's to be combined with current frame row-wise.
+        :returns: this H2OFrame with all frames in data appended row-wise.
         """
-        if not isinstance(data,list):
-            fr = H2OFrame._expr(expr=ExprNode("rbind", self, data), cache=self._ex._cache)
-            fr._ex._cache.nrows = self.nrow + data.nrow #Update row count
-        else:
-            for frames in data:
-                if not isinstance(frames, H2OFrame):
-                    raise ValueError("`frames` must be an H2OFrame, but got {0}".format(type(frames)))
-                fr = H2OFrame._expr(expr=ExprNode("rbind", self, frames), cache=self._ex._cache)
-                self = fr #Update frame with new rows
-            for frames in data:
-                fr._ex._cache.nrows = self.nrow + frames.nrow #Update row count
+        assert_is_type(data, H2OFrame, [H2OFrame])
+        frames = [data] if not isinstance(data, list) else data
+        for frame in frames:
+            if frame.ncol != self.ncol:
+                raise H2OValueError("Cannot row-bind a dataframe with %d columns to a data frame with %d columns: "
+                                    "the columns must match" % (frame.ncol, self.ncol))
+            if frame.columns != self.columns or frame.types != self.types:
+                raise H2OValueError("Column names and types must match for rbind() to work")
+        fr = H2OFrame._expr(expr=ExprNode("rbind", self, *frames), cache=self._ex._cache)
+        fr._ex._cache.nrows = self.nrow + sum(frame.nrow for frame in frames)
         return fr
 
     def split_frame(self, ratios=None, destination_frames=None, seed=None):
