@@ -22,7 +22,7 @@ import java.util.Random;
 public class DeepLearningGradientCheck extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
-  static final float MAX_TOLERANCE = 1e-2f;
+  static final float MAX_TOLERANCE = 2e-2f;
   static final float MAX_FAILED_COUNT = 30;
   static final float SAMPLE_RATE = 0.01f;
 
