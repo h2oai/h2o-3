@@ -9,7 +9,7 @@ from .estimator_base import H2OEstimator
 
 class H2OGradientBoostingEstimator(H2OEstimator):
     """
-    Gradient Boosting Method
+    Gradient Boosting Machine
 
     Builds gradient boosted trees on a parsed data set, for regression or classification.
     The default distribution function will guess the model type based on the response column type.

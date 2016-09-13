@@ -3,12 +3,7 @@ GBM
 Introduction
 ~~~~~~~~~~~~
 
-Gradient Boosted Regression and Gradient Boosted Classification are
-forward learning ensemble methods. The guiding heuristic is that good
-predictive results can be obtained through increasingly refined
-approximations. H2O's GBM sequentially builds regression trees on all
-the features of the dataset in a fully distributed way - each tree is
-built in parallel.
+Gradient Boosting Machine (for Regression and Classification) is a forward learning ensemble method. The guiding heuristic is that good predictive results can be obtained through increasingly refined approximations. H2O's GBM sequentially builds regression trees on all the features of the dataset in a fully distributed way - each tree is built in parallel.
 
 The current version of GBM is fundamentally the same as in previous
 versions of H2O (same algorithmic steps, same histogramming techniques),
@@ -353,7 +348,7 @@ FAQ
 
 -  **How deterministic is GBM?**
 
-  The ``nfolds`` and ``balance_classes`` parameters use the seed directly. Otherwise, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). Any observed variations in the AUC curve should be the same up to at least three to four significant digits.
+  As long as you set the seed, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). This means that if you set a seed, your results will be reproducible even if, for example, you change the number of nodes in your cluster, change the way you ingest data, or change the number of files your data lives in, among many other examples.
 
 -  **When fitting a random number between 0 and 1 as a single feature,
    the training ROC curve is consistent with ``random`` for low tree
@@ -420,7 +415,7 @@ potentially shrunk to the discrete integer range, which affects the
 split points.
 
 For more information about the GBM algorithm, refer to the `Gradient
-Boosted Machines booklet <http://h2o.ai/resources>`__.
+Boosting Machine booklet <http://h2o.ai/resources>`__.
 
 Binning In GBM
 ~~~~~~~~~~~~~~
