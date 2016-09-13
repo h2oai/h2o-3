@@ -589,4 +589,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   public SocketChannelFactory getSocketFactory() {
     return _socketFactory;
   }
+
+  public H2OSecurityManager getSecurityManager() {
+    return _security;
+  }
 }

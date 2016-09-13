@@ -69,8 +69,13 @@ public class TCPReceiverThread extends Thread {
         int chanType = bb.get(); // 1 - small , 2 - big
         int port = bb.getChar();
         int sentinel = (0xFF) & bb.get();
-        if(sentinel != 0xef)
-          throw H2O.fail("missing eom sentinel when opening new tcp channel");
+        if(sentinel != 0xef) {
+          if(H2O.SELF.getSecurityManager().securityEnabled) {
+            throw new IOException("Missing EOM sentinel when opening new SSL tcp channel.");
+          } else {
+            throw H2O.fail("missing eom sentinel when opening new tcp channel");
+          }
+        }
         // todo compare against current cloud, refuse the con if no match
         InetAddress inetAddress = sock.socket().getInetAddress();
         H2ONode h2o = H2ONode.intern(inetAddress,port);
