@@ -255,10 +255,6 @@ final public class DeepWaterModelInfo extends Iced {
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }
 
-  DeepWaterModelInfo deep_clone() {
-    return new AutoBuffer().put(this).flipForReading().get();
-  }
-
   /**
    * Create a summary table
    * @return TwoDimTable with the summary of the model
