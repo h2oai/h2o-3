@@ -1,5 +1,6 @@
 package water;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -282,8 +283,8 @@ public class TestUtil extends Iced {
    * @param na_string
    * @return
    */
-  protected Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
-    File folder = find_test_file(fname);
+  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
+    File folder = find_test_file_static(fname);
     assert folder != null && folder.isDirectory():"Folder "+fname+" is not a directory.";
     File[] files = folder.listFiles();
     Arrays.sort(files);
@@ -537,16 +538,22 @@ public class TestUtil extends Iced {
       try {
         File f = generatedFile = prepareFile();
         System.out.println("File generated into: " + f.getCanonicalPath());
-        return TestUtil.parse_test_file(f.getCanonicalPath());
+        if (f.isDirectory()) {
+          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null);
+        } else {
+          return parse_test_file(f.getCanonicalPath());
+        }
       } catch (IOException e) {
-        throw new RuntimeException("Cannot created test file: " + file, e);
+        throw new RuntimeException("Cannot prepare test frame from file: " + file, e);
       }
     }
 
     @Override
     public void done(Frame frame) {
-      generatedFile.deleteOnExit();
-      if (generatedFile != null) generatedFile.delete();
+      if (generatedFile != null) {
+        generatedFile.deleteOnExit();
+        FileUtils.deleteQuietly(generatedFile);
+      }
     }
   }
 

@@ -52,13 +52,35 @@ public class ParseTestParquet extends TestUtil {
     }
   }
 
+  @Test
+  public void testParseMulti() {
+    final int nFiles = 10;
+    FrameAssertion assertion = new GenFrameAssertion("testParseMulti-$.parquet", TestUtil.ari(9, 100)) {
+      @Override protected File prepareFile() throws IOException {
+        File dir = Files.createTempDir();
+        for (int i = 0; i < nFiles; i++) {
+          String fName = file.replace("$", String.valueOf(i));
+          File f = ParquetFileGenerator.generateAvroPrimitiveTypes(dir, fName, nrows() / nFiles, new Date());
+          File crcF = new File(f.getCanonicalPath().replace(fName, "." + fName + ".crc"));
+          if (crcF.exists() && (! crcF.delete())) throw new IllegalStateException("Unable to delete Parquet CRC for file: " + f);
+        }
+        return dir;
+      }
+      @Override public void check(Frame f) {
+        assertArrayEquals("Column names need to match!", ar("myboolean", "myint", "mylong", "myfloat", "mydouble", "mydate", "myuuid", "mystring", "myenum"), f.names());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
+      }
+    };
+    assertFrameAssertion(assertion);
+  }
+
   /**
    * Test parsing of Parquet file originally made from Avro records (avro < 1.8, before introduction of logical types)
    */
   @Test
   public void testParseAvroPrimitiveTypes() {
     FrameAssertion assertion = new GenFrameAssertion("avroPrimitiveTypes.parquet", TestUtil.ari(9, 100)) {
-      @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateAvroPrimitiveTypes(file, nrows(), new Date()); }
+      @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateAvroPrimitiveTypes(Files.createTempDir(), file, nrows(), new Date()); }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("myboolean", "myint", "mylong", "myfloat", "mydouble", "mydate", "myuuid", "mystring", "myenum"), f.names());
         assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
@@ -81,8 +103,7 @@ public class ParseTestParquet extends TestUtil {
 
 class ParquetFileGenerator {
 
-  static File generateAvroPrimitiveTypes(String filename, int nrows, Date date) throws IOException {
-    File parentDir = Files.createTempDir();
+  static File generateAvroPrimitiveTypes(File parentDir, String filename, int nrows, Date date) throws IOException {
     File f = new File(parentDir, filename);
     Schema schema = new Schema.Parser().parse(Resources.getResource("PrimitiveAvro.avsc").openStream());
     AvroParquetWriter<GenericRecord> writer = new AvroParquetWriter<GenericRecord>(new Path(f.getPath()), schema);
