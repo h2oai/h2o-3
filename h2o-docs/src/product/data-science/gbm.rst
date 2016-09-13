@@ -348,7 +348,7 @@ FAQ
 
 -  **How deterministic is GBM?**
 
-  The ``nfolds`` and ``balance_classes`` parameters use the seed directly. Otherwise, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). Any observed variations in the AUC curve should be the same up to at least three to four significant digits.
+  As long as you set the seed, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). This means that if you set a seed, your results will be reproducible even if, for example, you change the number of nodes in your cluster, change the way you ingest data, or change the number of files your data lives in, among many other examples.
 
 -  **When fitting a random number between 0 and 1 as a single feature,
    the training ROC curve is consistent with ``random`` for low tree
