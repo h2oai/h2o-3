@@ -13,7 +13,7 @@ build.local.conf
 flatfile*
 ice
 pytest_flatfile-*
-sandbox
+sandbox*/
 syn_datasets
 build/
 lib/
@@ -97,3 +97,9 @@ src-gen/
 h2o-docs/src/booklets/v2_2015/source/.Rapp.history
 
 h2o-docs/src/booklets/v2_2015/source/R_Vignette_code_examples/.Rapp.history
+
+h2o-docs/src/booklets/v2_2015/source/GBMBooklet.synctex.gz
+
+h2o-docs/src/booklets/v2_2015/source/GBMBooklet.synctex.gz
+
+h2o-docs/src/booklets/v2_2015/source/DeepLearningBooklet.synctex.gz

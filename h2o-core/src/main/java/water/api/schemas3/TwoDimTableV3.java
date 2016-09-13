@@ -172,19 +172,19 @@ public class TwoDimTableV3 extends SchemaV3<TwoDimTable, TwoDimTableV3> {
     for (int r=0; r<data[0].length; ++r) {
       for (int c=0; c<data.length; ++c) {
         try {
-          if (columns[c].format == "string") {
+          if (columns[c].format.equals("string")) {  // switch(String) is not java1.6 compliant!
             strCellValues[r][c] = (String)data[c][r].get();
           }
-          else if (columns[c].format == "double") {
+          else if (columns[c].format.equals("double")) {
             dblCellValues[r][c] = (Double)data[c][r].get();
           }
-          else if (columns[c].format == "float") {
+          else if (columns[c].format.equals("float")) {
             dblCellValues[r][c] = (Float)data[c][r].get();
           }
-          else if (columns[c].format == "int") {
+          else if (columns[c].format.equals("int")) {
             dblCellValues[r][c] = (Integer)data[c][r].get();
           }
-          else if (columns[c].format == "long") {
+          else if (columns[c].format.equals("long")) {
             dblCellValues[r][c] = (Long)data[c][r].get();
           }
           else throw H2O.fail();
@@ -203,9 +203,11 @@ public class TwoDimTableV3 extends SchemaV3<TwoDimTable, TwoDimTableV3> {
     ab.put1(',');
     ab.putJSONStr("columns").put1(':');
     ab.put1('[');
-    for (int i=0; i< columns.length; ++i) {
-      columns[i].writeJSON(ab);
-      if (i < columns.length - 1) ab.put1(',');
+    if( columns!=null ) {
+      for (int i = 0; i < columns.length; ++i) {
+        columns[i].writeJSON(ab);
+        if (i < columns.length - 1) ab.put1(',');
+      }
     }
     ab.put1(']');
     ab.put1(',');
@@ -213,20 +215,22 @@ public class TwoDimTableV3 extends SchemaV3<TwoDimTable, TwoDimTableV3> {
     ab.put1(',');
     ab.putJSONStr("data").put1(':');
     ab.put1('[');
-    for (int i=0; i<data.length; ++i) {
-      ab.put1('[');
-      for (int j=0; j<data[i].length; ++j) {
-        if (data[i][j] == null || data[i][j].get() == null) {
-          ab.putJNULL();
-        } else {
-          data[i][j].writeUnwrappedJSON(ab);
+    if( data!=null ) {
+      for (int i = 0; i < data.length; ++i) {
+        ab.put1('[');
+        for (int j = 0; j < data[i].length; ++j) {
+          if (data[i][j] == null || data[i][j].get() == null) {
+            ab.putJNULL();
+          } else {
+            data[i][j].writeUnwrappedJSON(ab);
+          }
+          if (j < data[i].length - 1) ab.put1(',');
         }
-        if (j < data[i].length-1) ab.put1(',');
+        ab.put1(']');
+        if (i < data.length - 1) ab.put1(',');
       }
-      ab.put1(']');
-      if (i < data.length-1) ab.put1(',');
     }
-    ab.put1(']');
+      ab.put1(']');
     return ab;
   }
 }

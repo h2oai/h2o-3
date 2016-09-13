@@ -680,6 +680,7 @@ h2o.unique <- function(x) .newExpr("unique", x)
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath, destination_frame = "prostate.hex")
+#' h2o.median(prostate.hex)
 #' }
 #' @export
 h2o.median <- function(x, na.rm = TRUE) .eval.scalar(.newExpr("median",x,na.rm))
@@ -3237,8 +3238,10 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
     if( breaks=="Doane"   ) breaks <- "doane"
     if( breaks=="FD"      ) breaks <- "fd"
     if( breaks=="Scott"   ) breaks <- "scott"
+    h <- as.data.frame(.newExpr("hist", chk.H2OFrame(x), .quote(breaks)))
+  } else {
+    h <- as.data.frame(.newExpr("hist", chk.H2OFrame(x), breaks))
   }
-  h <- as.data.frame(.newExpr("hist", chk.H2OFrame(x), .quote(breaks)))
   counts <- stats::na.omit(h[,2])
   mids <- stats::na.omit(h[,4])
   histo <- list()

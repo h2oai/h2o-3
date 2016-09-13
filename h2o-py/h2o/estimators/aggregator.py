@@ -43,6 +43,9 @@ class H2OAggregatorEstimator(H2OEstimator):
         Default: AUTO
 
     """
+
+    algo = "aggregator"
+
     def __init__(self, **kwargs):
         super(H2OAggregatorEstimator, self).__init__()
         self._parms = {}

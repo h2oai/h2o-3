@@ -44,13 +44,13 @@ import java.util.HashMap;
  *  then enforces {@link Chunk} row alignment across Vecs (or at least enforces
  *  a low-cost access model).  Parallel and distributed execution touching all
  *  the data in a Frame relies on this alignment to get good performance.
- *  
+ *
  *  <p>Example: Make a Frame from a CSV file:<pre>
  *  File file = ...
  *  NFSFileVec nfs = NFSFileVec.make(file); // NFS-backed Vec, lazily read on demand
  *  Frame fr = water.parser.ParseDataset.parse(Key.make("myKey"),nfs._key);
  *  </pre>
- * 
+ *
  *  <p>Example: Find and remove the Vec called "unique_id" from the Frame,
  *  since modeling with a unique_id can lead to overfitting:
  *  <pre>
@@ -92,7 +92,7 @@ public class Frame extends Lockable<Frame> {
    * @param vecs
    * @param noChecks
    */
-  public Frame( Key key, Vec vecs[], boolean noChecks) {
+  public Frame(Key key, Vec vecs[], boolean noChecks) {
     super(key);
     assert noChecks;
     _vecs = vecs;
@@ -156,7 +156,7 @@ public class Frame extends Lockable<Frame> {
   // versions of "C123" style names where the next name is +1 over the prior
   // name.  All other names take the O(n^2) lookup.
   private int pint( String name ) {
-    try { return Integer.valueOf(name.substring(1)); } 
+    try { return Integer.valueOf(name.substring(1)); }
     catch( NumberFormatException fe ) { }
     return 0;
   }
@@ -219,7 +219,7 @@ public class Frame extends Lockable<Frame> {
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
 
-  /** Returns the first readable vector. 
+  /** Returns the first readable vector.
    *  @return the first readable Vec */
   public final Vec anyVec() {
     Vec c0 = _col0; // single read
@@ -274,7 +274,7 @@ public class Frame extends Lockable<Frame> {
     return vecs;
   }
 
-  /** Convenience to accessor for last Vec 
+  /** Convenience to accessor for last Vec
    *  @return last Vec */
   public Vec lastVec() { vecs(); return _vecs [_vecs.length -1]; }
   /** Convenience to accessor for last Vec name
@@ -283,10 +283,10 @@ public class Frame extends Lockable<Frame> {
 
   /** Force a cache-flush and reload, assuming vec mappings were altered
    *  remotely, or that the _vecs array was shared and now needs to be a
-   *  defensive copy. 
+   *  defensive copy.
    *  @return the new instance of the Frame's Vec[] */
   public final Vec[] reloadVecs() { _vecs=null; return vecs(); }
-  
+
   /** Returns the Vec by given index, implemented by code: {@code vecs()[idx]}.
    *  @param idx idx of column
    *  @return this frame idx-th vector, never returns <code>null</code> */
@@ -457,10 +457,15 @@ public class Frame extends Lockable<Frame> {
   /** The {@code Vec.byteSize} of all Vecs
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
-    Vec[] vecs = bulkRollups();
-    long sum=0;
-    for (Vec vec : vecs) sum += vec.byteSize();
-    return sum;
+    try {
+      Vec[] vecs = bulkRollups();
+      long sum = 0;
+      for (Vec vec : vecs) sum += vec.byteSize();
+      return sum;
+    } catch(RuntimeException ex) {
+      Log.debug("Failure to obtain byteSize() - missing chunks?");
+      return -1;
+    }
   }
 
   /** 64-bit checksum of the checksums of the vecs.  SHA-265 checksums of the
@@ -653,7 +658,10 @@ public class Frame extends Lockable<Frame> {
         cnames[ccv] = names[i];
         vecs[i] = cvecs[ccv++] = anyVec().makeCon(c);
       }
-    return new Frame[] { new Frame(Key.make("subframe"+Key.make().toString()), names,vecs), ccv>0 ?  new Frame(Key.make("subframe"+Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null };
+    return new Frame[] {
+      new Frame(Key.make("subframe" + Key.make().toString()), names, vecs),
+      ccv > 0? new Frame(Key.make("subframe" + Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null
+    };
   }
 
   /** Allow rollups for all written-into vecs; used by {@link MRTask} once
@@ -707,7 +715,7 @@ public class Frame extends Lockable<Frame> {
       ab.putKey(k);
     return super.writeAll_impl(ab);
   }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     for( Key k : _keys )
       ab.getKey(k,fs);
     return super.readAll_impl(ab,fs);
@@ -736,7 +744,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Split this Frame; return a subframe created from the given column interval, and
-   *  remove those columns from this Frame. 
+   *  remove those columns from this Frame.
    *  @param startIdx index of first column (inclusive)
    *  @param endIdx index of the last column (exclusive)
    *  @return a new Frame containing specified interval of columns */
@@ -746,11 +754,11 @@ public class Frame extends Lockable<Frame> {
     return f;
   }
 
-  /** Removes the column with a matching name.  
+  /** Removes the column with a matching name.
    *  @return The removed column */
   public Vec remove( String name ) { return remove(find(name)); }
 
-  public Frame remove( String[] names ) { 
+  public Frame remove( String[] names ) {
     for( String name : names )
       remove(find(name));
     return this;
@@ -788,7 +796,7 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
-  /**  Removes a numbered column. 
+  /**  Removes a numbered column.
    *  @return the removed column */
   public final Vec remove( int idx ) {
     int len = _names.length;
@@ -1157,7 +1165,7 @@ public class Frame extends Lockable<Frame> {
         for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_CAT:
-        coltypes[i] = "string"; 
+        coltypes[i] = "string";
         for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_TIME:
@@ -1166,7 +1174,7 @@ public class Frame extends Lockable<Frame> {
         for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : fmt.print(vec.at8(off+j)); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_NUM:
-        coltypes[i] = vec.isInt() ? "long" : "double"; 
+        coltypes[i] = vec.isInt() ? "long" : "double";
         for( int j=0; j<len; j++ ) { dblCells[j+H][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+H][i] = null; }
         break;
       case Vec.T_UUID:
@@ -1442,7 +1450,8 @@ public class Frame extends Lockable<Frame> {
     }
 
     private static Chunk[] firstChunks(Frame fr) {
-      if (fr.anyVec().nChunks() == 0) {
+      Vec anyvec = fr.anyVec();
+      if (anyvec == null || anyvec.nChunks() == 0 || anyvec.length() == 0) {
         return null;
       }
       Chunk[] chks = new Chunk[fr.vecs().length];
@@ -1453,10 +1462,7 @@ public class Frame extends Lockable<Frame> {
     }
 
     public CSVStream(Chunk[] chks, String[] names, int nChunks, boolean hex_string) {
-      if ((chks == null) && (nChunks != 0)) {
-        // Empty Frame
-        throw new IllegalArgumentException("If chunks are not defined, number of chunks to export need to be 0.");
-      }
+      if (chks == null) nChunks = 0;
       _lastChkIdx = (chks != null) ? chks[0].cidx() + nChunks - 1 : -1;
       _hex_string = hex_string;
       StringBuilder sb = new StringBuilder();
@@ -1577,7 +1583,7 @@ public class Frame extends Lockable<Frame> {
 
   @Override public Class<KeyV3.FrameKeyV3> makeSchema() { return KeyV3.FrameKeyV3.class; }
 
-  /** Sort rows of a frame, using the set of columns as keys.  
+  /** Sort rows of a frame, using the set of columns as keys.
    *  @return Copy of frame, sorted */
   public Frame sort( int[] cols ) { return Merge.sort(this,cols); }
 }

@@ -7,7 +7,7 @@ H2O Documentation
 =================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    intro
    h2o

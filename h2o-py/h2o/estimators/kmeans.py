@@ -83,6 +83,9 @@ class H2OKMeansEstimator(H2OEstimator):
         Default: 0.0
 
     """
+
+    algo = "kmeans"
+
     def __init__(self, **kwargs):
         super(H2OKMeansEstimator, self).__init__()
         self._parms = {}

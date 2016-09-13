@@ -347,9 +347,10 @@ public abstract class SharedTreeModel<
       int ntreesPerClass = binomialOpt() && nclasses == 2? 1 : nclasses;
       for (int i = 0; i < _output._ntrees; i++) {
         for (int j = 0; j < ntreesPerClass; j++) {
-          Value ctVal = DKV.get(_output._treeKeys[i][j]);
+          Key<CompressedTree> key = _output._treeKeys[i][j];
+          Value ctVal = key != null? DKV.get(key) : null;
           if (ctVal == null)
-            throw new H2OKeyNotFoundArgumentException("CompressedTree " + _output._treeKeys[i][j] + " not found");
+            throw new H2OKeyNotFoundArgumentException("CompressedTree " + key + " not found");
           CompressedTree ct = ctVal.get();
           assert ct._nclass == nclasses;
           // assume ct._seed is useless and need not be persisted

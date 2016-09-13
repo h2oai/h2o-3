@@ -132,6 +132,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Default: 0.0
 
     """
+
+    algo = "glrm"
+
     def __init__(self, **kwargs):
         super(H2OGeneralizedLowRankEstimator, self).__init__()
         self._parms = {}

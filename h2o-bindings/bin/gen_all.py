@@ -18,13 +18,16 @@ results_dir = "../build/logs"
 if not os.path.exists(results_dir):
     os.makedirs(results_dir)
 
+# Allow override of the H2O jarfile so we can use this with projects which extend h2o.jar
+h2o_jarfile = os.getenv('H2O_JARFILE', '../../build/h2o.jar')
+
 # Start H2O cloud
 print("Starting H2O cloud...")
 cloud = run.H2OCloud(
     cloud_num=0,
     use_client=False,
     nodes_per_cloud=1,
-    h2o_jar=os.path.abspath("../../build/h2o.jar"),
+    h2o_jar=os.path.abspath(h2o_jarfile),
     base_port=48000,
     xmx="4g",
     cp="",

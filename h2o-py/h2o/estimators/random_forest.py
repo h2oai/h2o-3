@@ -182,6 +182,9 @@ class H2ORandomForestEstimator(H2OEstimator):
         Default: AUTO
 
     """
+
+    algo = "drf"
+
     def __init__(self, **kwargs):
         super(H2ORandomForestEstimator, self).__init__()
         self._parms = {}

@@ -139,7 +139,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                     p.delete();
                   }
 
-                  DeepLearningModelInfo modelInfo = dl.model_info().deep_clone(); //golden version
+                  DeepLearningModelInfo modelInfo = IcedUtils.deepCopy(dl.model_info()); //golden version
 //                Log.info(modelInfo.toStringAll());
                   long before = dl.model_info().checksum_impl();
 
@@ -148,7 +148,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                   // loop over every row in the dataset and check that the predictions
                   for (int rId = 0; rId < tfr.numRows(); rId+=1 /*miniBatchSize*/) {
                     // start from scratch - with a clean model
-                    dl.set_model_info(modelInfo.deep_clone());
+                    dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                     final DataInfo di = dl.model_info().data_info();
 
@@ -176,7 +176,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                         if (true) {
 
                           // start from scratch - with a clean model
-                          dl.set_model_info(modelInfo.deep_clone());
+                          dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                           // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
                           Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
@@ -202,7 +202,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           assert (before != dl.model_info().checksum_impl());
 
                           // reset the model back to the trained model
-                          dl.set_model_info(modelInfo.deep_clone());
+                          dl.set_model_info(IcedUtils.deepCopy(modelInfo));
                           assert (before == dl.model_info().checksum_impl());
 
                           double bpropGradient = DeepLearningModelInfo.gradientCheck.gradient;
@@ -268,7 +268,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           if (rng.nextFloat() >= SAMPLE_RATE) continue;
 
                           // start from scratch - with a clean model
-                          dl.set_model_info(modelInfo.deep_clone());
+                          dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                           // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
                           Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
@@ -294,7 +294,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           assert (before != dl.model_info().checksum_impl());
 
                           // reset the model back to the trained model
-                          dl.set_model_info(modelInfo.deep_clone());
+                          dl.set_model_info(IcedUtils.deepCopy(modelInfo));
                           assert (before == dl.model_info().checksum_impl());
 
                           double bpropGradient = DeepLearningModelInfo.gradientCheck.gradient;

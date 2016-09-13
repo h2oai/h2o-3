@@ -49,6 +49,11 @@
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.7.0.zip"
         },
         {
+            "distribution" : "cdh5.8.0",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-cdh5.8.0.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-cdh5.8.0.zip"
+        },
+        {
             "distribution" : "hdp2.1",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-hdp2.1.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp2.1.zip"

@@ -22,7 +22,6 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
   public static class Exemplar extends Iced<Exemplar> {
     Exemplar(double[] d, long id) { data=d; gid=id; _cnt=1; }
-    Exemplar deepClone() { return new AutoBuffer().put(this).flipForReading().get(); }
     final double[] data;
     final long gid;
 
@@ -335,7 +334,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 //          Log.info("Reduce: Reassigning " + counts[r] + " rows from " + exemplars[r].gid + " to " + _exemplars[closestExemplarIndex].gid);
           _mapping.set(exemplars[r].gid, _exemplars[closestExemplarIndex].gid);
         } else {
-          _exemplars = Exemplar.addExemplar(_exemplars, mrt._exemplars[r].deepClone());
+          _exemplars = Exemplar.addExemplar(_exemplars, IcedUtils.deepCopy(mrt._exemplars[r]));
         }
       }
       mrt._exemplars = null;

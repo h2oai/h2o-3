@@ -1,16 +1,6 @@
 FAQ
 ===
 
-H2O
----
-
-**What is H2O?**
-
-H2O is an open-source platform for scalable and distributed machine
-learning, and set of algorithms implemented on that platform.
-
---------------
-
 General Troubleshooting Tips
 ----------------------------
 

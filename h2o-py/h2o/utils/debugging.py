@@ -26,6 +26,9 @@ def err(msg=""):
     """Helper function for printing to stderr."""
     print(msg, file=sys.stderr)
 
+# In case any other module installs its own exception hook, try to play nicely and use that when appropriate
+_prev_except_hook = sys.excepthook
+
 
 def _except_hook(exc_type, exc_value, exc_tb):
     """
@@ -84,15 +87,19 @@ def _except_hook(exc_type, exc_value, exc_tb):
                    frame of the outermost expression being evaluated). We need to walk down the list (by repeatedly
                    moving to exc_tb.tb_next) in order to find the execution frame where the actual exception occurred.
     """
+    if isinstance(exc_value, H2OSoftError):
+        _handle_soft_error(exc_type, exc_value, exc_tb)
+    else:
+        _prev_except_hook(exc_type, exc_value, exc_tb)
+
+    # Everythin else is disabled for now, because it generates too much output due to bugs in H2OFrame implementation
+    return
+
     import linecache
     if not exc_tb:  # Happens on SyntaxError exceptions
         sys.__excepthook__(exc_type, exc_value, exc_tb)
         return
     get_tb.tb = exc_tb
-
-    if isinstance(exc_value, H2OSoftError):
-        _handle_soft_error(exc_type, exc_value, exc_tb)
-        return
 
     err("\n================================ EXCEPTION INFO ================================\n")
     if exc_type != type(exc_value):

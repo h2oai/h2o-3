@@ -5,6 +5,7 @@ class H2OPCA(H2OEstimator):
     """
     Principal Component Analysis
     """
+    algo = "pca"
 
     def __init__(self, model_id=None, k=None, max_iterations=None, seed=None,
                  transform=("NONE", "DEMEAN", "DESCALE", "STANDARDIZE", "NORMALIZE"),
@@ -82,6 +83,7 @@ class H2OPCA(H2OEstimator):
 
 class H2OSVD(H2OEstimator):
     """Singular Value Decomposition"""
+    algo = "svd"
 
     def __init__(self, nv=None, max_iterations=None, transform=None, seed=None,
                  use_all_factor_levels=None, svd_method=None):

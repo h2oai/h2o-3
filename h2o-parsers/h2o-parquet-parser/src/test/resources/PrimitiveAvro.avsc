@@ -1,0 +1,42 @@
+{
+  "name" : "myrecord",
+  "namespace": "org.apache.parquet.avro",
+  "type" : "record",
+  "fields" : [ {
+    "name" : "mynull",
+    "type" : "null"
+  }, {
+    "name" : "myboolean",
+    "type" : "boolean"
+  }, {
+    "name" : "myint",
+    "type" : "int"
+  }, {
+    "name" : "mylong",
+    "type" : "long"
+  }, {
+    "name" : "myfloat",
+    "type" : "float"
+  }, {
+    "name" : "mydouble",
+    "type" : "double"
+  }, {
+    "name" : "mydate",
+    "type" : "string"
+  }, {
+    "name" : "myuuid",
+    "type" : "string"
+  },
+  {
+    "name" : "mystring",
+    "type" : "string"
+  }, {
+    "name" : "myenum",
+    "type" : {
+      "type" : "enum",
+      "name" : "ignored",
+      "namespace" : "",
+      "symbols" : [ "a", "b" ]
+    }
+  } ]
+}
