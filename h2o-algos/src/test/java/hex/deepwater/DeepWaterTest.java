@@ -397,7 +397,7 @@ public class DeepWaterTest extends TestUtil {
 
       // turn the second model into the first model
       m2.removeNativeState();
-      DeepWaterModelInfo mi = m1.model_info().deep_clone();
+      DeepWaterModelInfo mi = IcedUtils.deepCopy(m1.model_info());
       m2.set_model_info(mi);
       m2.doScoring(tr,null,j2._key,m2.iterations,true);
       double l3 = m2.loss();
