@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutionException;
 
 public class GLRMCategoricalTest extends TestUtil {
   public final double TOLERANCE = 1e-6;
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   private static String colFormat(String[] cols, String format) {
     int[] idx = new int[cols.length];

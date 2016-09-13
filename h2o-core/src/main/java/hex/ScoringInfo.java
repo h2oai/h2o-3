@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Lightweight scoring history snapshot, for things like displaying the scoring history.
  */
-public class ScoringInfo extends Iced {
+public class ScoringInfo extends Iced<ScoringInfo> {
   public long time_stamp_ms;          //absolute time the model metrics were computed
   public long total_training_time_ms; //total training time until this scoring event (including checkpoints)
   public long total_scoring_time_ms; //total scoring time until this scoring event (including checkpoints)
@@ -315,12 +315,5 @@ public class ScoringInfo extends Iced {
       row++;
     }
     return table;
-  }
-
-  public ScoringInfo deep_clone() {
-    AutoBuffer ab = new AutoBuffer();
-    this.write(ab);
-    ab.flipForReading();
-    return (ScoringInfo) new ScoringInfo().read(ab);
   }
 }

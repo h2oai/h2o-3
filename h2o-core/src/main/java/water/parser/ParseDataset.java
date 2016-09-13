@@ -958,6 +958,7 @@ public final class ParseDataset {
         switch(_setup._parse_type.name()) {
         case "ARFF":
         case "CSV":
+        case "PARQUET":
           Categorical [] categoricals = categoricals(_cKey, _setup._number_columns);
           dout = new FVecParseWriter(_vg,_startChunkIdx + in.cidx(), categoricals, _setup._column_types,
                   _setup._chunk_size, avs); //TODO: use _setup._domains instead of categoricals

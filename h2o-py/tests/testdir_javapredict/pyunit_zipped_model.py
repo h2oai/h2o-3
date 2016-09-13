@@ -25,7 +25,7 @@ from h2o.estimators import H2ORandomForestEstimator, H2OGradientBoostingEstimato
 # please keep these reasonably low, so that the test wouldn't take exorbitant amounts of time.
 NTREES = 50
 DEPTH = 5
-NTESTROWS = 10000
+NTESTROWS = 1000
 
 def test_zipped_rf_model():
     """
@@ -61,7 +61,7 @@ def test_zipped_rf_model():
             test2 = test.rbind(test)
 
             time0 = time.time()
-            print("\n\nTraining Random Forest model...")
+            print("\n\nTraining %s model..." % estimator.__name__)
             model = estimator(ntrees=NTREES, max_depth=DEPTH)
             model.train(training_frame=train)
             print(model.summary())

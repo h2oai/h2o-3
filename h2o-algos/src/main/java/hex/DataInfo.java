@@ -135,13 +135,6 @@ public class DataInfo extends Keyed<DataInfo> {
   public String[] _coefNames;
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
-  public DataInfo deep_clone() {
-    AutoBuffer ab = new AutoBuffer();
-    this.write(ab);
-    ab.flipForReading();
-    return new DataInfo().read(ab);
-  }
-
   // Modify the train & valid frames directly; sort the categorical columns
   // up front according to size; compute the mean/sigma for each column for
   // later normalization.
@@ -339,7 +332,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public DataInfo scoringInfo(Frame adaptFrame){
-    DataInfo res = deep_clone();
+    DataInfo res = IcedUtils.deepCopy(this);
     res._normMul = null;
     res._normRespSub = null;
     res._normRespMul = null;
@@ -460,7 +453,7 @@ public class DataInfo extends Keyed<DataInfo> {
     assert _activeCols==null;
     assert _predictor_transform != null;
     assert  _response_transform != null;
-    if(cols == null)return deep_clone();  // keep all columns
+    if(cols == null)return IcedUtils.deepCopy(this);  // keep all columns
     int hasIcpt = (cols.length > 0 && cols[cols.length-1] == fullN())?1:0;
     int i = 0, j = 0, ignoredCnt = 0;
     //public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, double [] normRespSub, double [] normRespMul){

@@ -3,6 +3,7 @@ package water.fvec;
 import org.junit.*;
 
 import water.AutoBuffer;
+import water.IcedUtils;
 import water.TestUtil;
 import water.parser.BufferedString;
 
@@ -34,8 +35,7 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertTrue(cc.isNA(vals.length + l));
       Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
-      Chunk cc2 = new CStrChunk();
-      cc2.read(cc.write(new AutoBuffer()).flipForReading());
+      Chunk cc2 = IcedUtils.deepCopy(cc);
       Assert.assertEquals(vals.length + 1 + l, cc2._len);
       Assert.assertTrue(cc2 instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc2.isNA(0));

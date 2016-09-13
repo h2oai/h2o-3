@@ -208,6 +208,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
                                      auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True)
     if strict_version_check:
         version_check()
+    h2oconn.cluster.show_status()
 
 
 def lazy_import(path):

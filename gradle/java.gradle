@@ -53,3 +53,17 @@ plugins.withType(org.gradle.api.publish.maven.plugins.MavenPublishPlugin) {
         toPublish javadocJar
     }
 }
+
+
+clean {
+    doLast {
+        def sandboxes = projectDir.list()
+        sandboxes.each { fname ->
+            if (fname.startsWith("sandbox")) {
+                delete file(fname)
+            }
+        }
+    }
+}
+
+

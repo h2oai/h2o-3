@@ -17,6 +17,7 @@ import water.util.Timer;
 import water.util.TwoDimTable;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -485,4 +486,68 @@ public class TestUtil extends Iced {
     }
     @Override public void reduce( Cmp1 cmp ) { _unequal |= cmp._unequal; }
   }
+
+  public static void assertFrameAssertion(FrameAssertion frameAssertion) {
+    int[] dim = frameAssertion.dim;
+    Frame frame = null;
+    try {
+      frame = frameAssertion.prepare();
+      assertEquals("Frame has to have expected number of columns", dim[0], frame.numCols());
+      assertEquals("Frame has to have expected number of rows", dim[1], frame.numRows());
+      frameAssertion.check(frame);
+    } finally {
+      frameAssertion.done(frame);
+      if (frame != null)
+        frame.delete();
+    }
+  }
+
+  public static abstract class FrameAssertion {
+    protected final String file;
+    private final int[] dim; // columns X rows
+
+    public FrameAssertion(String file, int[] dim) {
+      this.file = file;
+      this.dim = dim;
+    }
+
+    public Frame prepare() {
+      return TestUtil.parse_test_file(file);
+    }
+
+    public void done(Frame frame) {}
+
+    public void check(Frame frame) {}
+
+    public final int nrows() { return dim[1]; }
+    public final int ncols() { return dim[0]; }
+  }
+
+  public static abstract class GenFrameAssertion extends FrameAssertion {
+
+    public GenFrameAssertion(String file, int[] dim) {
+      super(file, dim);
+    }
+    File generatedFile;
+
+    protected abstract File prepareFile() throws IOException;
+
+    @Override
+    public Frame prepare() {
+      try {
+        File f = generatedFile = prepareFile();
+        System.out.println("File generated into: " + f.getCanonicalPath());
+        return TestUtil.parse_test_file(f.getCanonicalPath());
+      } catch (IOException e) {
+        throw new RuntimeException("Cannot created test file: " + file, e);
+      }
+    }
+
+    @Override
+    public void done(Frame frame) {
+      generatedFile.deleteOnExit();
+      if (generatedFile != null) generatedFile.delete();
+    }
+  }
+
 }

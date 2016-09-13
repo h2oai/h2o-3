@@ -945,6 +945,8 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 \item {\texttt{quantile\_alpha}}: Desired quantile for quantile regression (from 0.0 to 1.0) when \texttt{distribution = "quantile"}.  The default is 0.5 (median, same as \texttt{distribution = "laplace"}).
 \item \texttt{tweedie\_power}: Specifies the Tweedie power when \texttt{distribution} is  \texttt{tweedie}. The range is from 1.0 to 2.0. 
 
+\item \texttt{huber\_alpha}: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1. 
+
 \item \texttt{score\_interval}: Specifies the minimum time (in seconds) between model scoring. The actual interval is determined by the number of training samples per iteration and the scoring duty cycle. To use all training set samples, specify \texttt{0}. The default is 5.
 
 \item \texttt{score\_training\_samples}: Specifies the number of training samples to randomly sample for scoring. To select the entire training dataset, specify \texttt{0}.  The default is 10000.

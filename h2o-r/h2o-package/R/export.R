@@ -10,7 +10,7 @@
 #' This file may be on the H2O instace's local filesystem, or to HDFS (preface
 #' the path with hdfs://) or to S3N (preface the path with s3n://).
 #'
-#' In the case of existing files \code{forse = TRUE} will overwrite the file.
+#' In the case of existing files \code{force = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
 #'
 #' @param data An H2OFrame object.

@@ -11,13 +11,13 @@ dependencies {
   // Parquet support
   // Use the same version as Spark 1.5-2.0
   compile("org.apache.parquet:parquet-hadoop:1.7.0")
-  compile("org.apache.parquet:parquet-avro:1.7.0")
   compile("org.apache.hadoop:hadoop-common:$parquetHadoopVersion") {
     transitive = false
   }
 
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
+  testCompile("org.apache.parquet:parquet-avro:1.7.0")
   // We need correct version of MapRe Hadoop to run JUnits
   testCompile("org.apache.hadoop:hadoop-client:$parquetHadoopVersion")
 }

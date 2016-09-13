@@ -41,17 +41,17 @@ class BackwardsCompatibleMeta(type):
         bc = type.__getattribute__(cls, "_bc")
         if name in bc["a"]:
             if name in bc["sv"]:
-                print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
+                # print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
                 return bc["sv"][name]
             if name in bc["sm"]:
-                print("Warning: Method %s in class %s is deprecated." % (name, cls.__name__))
+                # print("Warning: Method %s in class %s is deprecated." % (name, cls.__name__))
                 return bc["sm"][name]
         return type.__getattribute__(cls, name)
 
     def __setattr__(cls, name, value):
         bc = cls.__dict__["_bc"]
         if name in bc["sv"]:
-            print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
+            # print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
             bc["sv"][name] = value
         else:
             cls.__dict__[name] = value
@@ -68,7 +68,7 @@ class BackwardsCompatibleBase(object):
 
     def __getattr__(self, item):
         if item in self._bcin:
-            print("Warning: Method %s in class %s is deprecated." % (item, self.__class__.__name__))
+            # print("Warning: Method %s in class %s is deprecated." % (item, self.__class__.__name__))
             return self._bcin[item]
         # Make sure that we look up any names not found on the instance also in the class
         return getattr(self.__class__, item)
