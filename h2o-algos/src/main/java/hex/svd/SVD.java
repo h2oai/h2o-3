@@ -146,7 +146,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
         RandSubInit rtsk = new RandSubInit(_job._key, dinfo, gt);
         rtsk.doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
-        yqfrm = rtsk.outputFrame(Key.make(), null, null);   // Alternates between Y and Q from Y = QR
+        yqfrm = rtsk.outputFrame(Key.<Frame>make(), null, null);   // Alternates between Y and Q from Y = QR
 
         // Make input frame [A,Q] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
         // Note: If A is n by p (p = num cols with categoricals expanded), then \tilde{Q} is p by k and Q is n by k
@@ -199,7 +199,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         double[][] gt = ArrayUtils.gaussianArray(_parms._nv, _ncolExp, _parms._seed);
         RandSubInit rtsk = new RandSubInit(_job._key, dinfo, gt);
         rtsk.doAll(_parms._nv, Vec.T_NUM, dinfo._adaptedFrame);
-        ybig = rtsk.outputFrame(Key.make(), null, null);
+        ybig = rtsk.outputFrame(Key.<Frame>make(), null, null);
 
         // Make input frame [A,Q,Y] where A = read-only training data, Y = A \tilde{Q}, Q from Y = QR factorization
         // Note: If A is n by p (p = num cols with categoricals expanded), then \tilde{Q} is p by k and Q is n by k

@@ -215,7 +215,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param domains The domains of the columns in the resulting Frame.
    * @return null if _noutputs is 0, otherwise returns a Frame.
    */
-  public Frame outputFrame(Key key, String [] names, String [][] domains){
+  public Frame outputFrame(Key<Frame> key, String [] names, String [][] domains){
     Futures fs = new Futures();
     Frame res = closeFrame(key, names, domains, fs);
     if( key != null ) DKV.put(res,fs);
@@ -279,7 +279,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   public void map( Chunk cs[], NewChunk nc1, NewChunk nc2 ) { }
   public void map( Chunk cs[], NewChunk [] ncs ) { }
 
-  /** Override with your map implementation.  Used when doAll is called with 
+  /** Override with your map implementation.  Used when doAll is called with
    *  an array of Keys, and called once-per-Key on the Key's Home node */
   public void map( Key key ) { }
 
@@ -528,7 +528,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       _nrite = remote_compute( nmid,_nhi);
       if(_profile!=null) _profile._rpcRdone  = System.currentTimeMillis();
     } else {
-      if(_profile!=null) 
+      if(_profile!=null)
         _profile._rpcLstart = _profile._rpcRstart = _profile._rpcRdone = System.currentTimeMillis();
     }
 
@@ -556,7 +556,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       addToPendingCount(1); // Not complete until the RPC returns
       // Set self up as needing completion by this RPC: when the ACK comes back
       // we'll get a wakeup.
-      // Note the subtle inter-play of onCompletion madness here: 
+      // Note the subtle inter-play of onCompletion madness here:
       // - when run on the remote, the RPCCall (NOT RPC!) is completed by the
       //   last map/compute2 call, signals end of the remote work, and ACK's
       //   back the result. i.e., last-map calls RPCCall.onCompletion.
@@ -760,7 +760,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     // early and begins post-task processing (generally cleanup from the
     // exception) but the work is still on-going - often trying to use the same
     // Keys as are being cleaned-up!
-    
+
     // Since blocking can throw (generally the same exception, again and again)
     // catch & ignore, keeping only the first one we already got.
     RPC<T> nl = _nleft; if( nl != null ) try { nl.get(); } catch( Throwable ignore ) { } _nleft = null;
@@ -768,8 +768,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return true;
   }
 
-  // Make copy, setting final-field completer and clearing out a bunch of fields 
-  private T copyAndInit() { 
+  // Make copy, setting final-field completer and clearing out a bunch of fields
+  private T copyAndInit() {
     T x = clone();
     x._topGlobal = false;
     x.setCompleter(this); // Set completer, what used to be a final field

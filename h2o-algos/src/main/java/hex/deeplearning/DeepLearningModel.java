@@ -579,7 +579,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
       }.doAll(len, Vec.T_NUM, adaptedFr).outputFrame();
 
-      Frame of = new Frame((null == destination_key ? Key.<Frame>make() : Key.<Frame>make(destination_key)), names, f.vecs());
+      Frame of = new Frame(Key.<Frame>make(destination_key), names, f.vecs());
       DKV.put(of);
       makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
       return of;
