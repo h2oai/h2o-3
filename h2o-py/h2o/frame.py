@@ -424,112 +424,117 @@ class H2OFrame(object):
         """Logical not applied to each element of the frame."""
         return H2OFrame._expr(expr=ExprNode("not", self), cache=self._ex._cache)
 
-    # ops
-    def __add__(self, i):
-        return H2OFrame._expr(expr=ExprNode("+", self, i), cache=self._ex._cache)
 
-    def __sub__(self, i):
-        return H2OFrame._expr(expr=ExprNode("-", self, i), cache=self._ex._cache)
+    def _unop(self, op):
+        return H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
 
-    def __mul__(self, i):
-        return H2OFrame._expr(expr=ExprNode("*", self, i), cache=self._ex._cache)
 
-    def __div__(self, i):
-        return H2OFrame._expr(expr=ExprNode("/", self, i), cache=self._ex._cache)
+    # Binary operations
+    def __add__(self, rhs):
+        return _binop(self, "+", rhs)
 
-    def __truediv__(self, i):
-        return H2OFrame._expr(expr=ExprNode("/", self, i), cache=self._ex._cache)
+    def __sub__(self, rhs):
+        return _binop(self, "-", rhs)
 
-    def __floordiv__(self, i):
-        return H2OFrame._expr(expr=ExprNode("intDiv", self, i), cache=self._ex._cache)
+    def __mul__(self, rhs):
+        return _binop(self, "*", rhs)
 
-    def __mod__(self, i):
-        return H2OFrame._expr(expr=ExprNode("%", self, i), cache=self._ex._cache)
+    def __div__(self, rhs):
+        return _binop(self, "/", rhs)
 
-    def __or__(self, i):
-        return H2OFrame._expr(expr=ExprNode("|", self, i), cache=self._ex._cache)
+    def __truediv__(self, rhs):
+        return _binop(self, "/", rhs)
 
-    def __and__(self, i):
-        return H2OFrame._expr(expr=ExprNode("&", self, i), cache=self._ex._cache)
+    def __floordiv__(self, rhs):
+        return _binop(self, "intDiv", rhs)
 
-    def __ge__(self, i):
-        return H2OFrame._expr(expr=ExprNode(">=", self, i), cache=self._ex._cache)
+    def __mod__(self, rhs):
+        return _binop(self, "%", rhs)
 
-    def __gt__(self, i):
-        return H2OFrame._expr(expr=ExprNode(">", self, i), cache=self._ex._cache)
+    def __or__(self, rhs):
+        return _binop(self, "|", rhs)
 
-    def __le__(self, i):
-        return H2OFrame._expr(expr=ExprNode("<=", self, i), cache=self._ex._cache)
+    def __and__(self, rhs):
+        return _binop(self, "&", rhs)
 
-    def __lt__(self, i):
-        return H2OFrame._expr(expr=ExprNode("<", self, i), cache=self._ex._cache)
+    def __ge__(self, rhs):
+        return _binop(self, ">=", rhs)
 
-    def __eq__(self, i):
-        if i is None: i = float("nan")
-        return H2OFrame._expr(expr=ExprNode("==", self, i), cache=self._ex._cache)
+    def __gt__(self, rhs):
+        return _binop(self, ">", rhs)
 
-    def __ne__(self, i):
-        if i is None: i = float("nan")
-        return H2OFrame._expr(expr=ExprNode("!=", self, i), cache=self._ex._cache)
+    def __le__(self, rhs):
+        return _binop(self, "<=", rhs)
 
-    def __pow__(self, i):
-        return H2OFrame._expr(expr=ExprNode("^", self, i), cache=self._ex._cache)
+    def __lt__(self, rhs):
+        return _binop(self, "<", rhs)
 
-    def __contains__(self, i):
-        return all((t == self).any() for t in i) if _is_list(i) else (i == self).any()
+    def __eq__(self, rhs):
+        if rhs is None: rhs = float("nan")
+        return _binop(self, "==", rhs)
+
+    def __ne__(self, rhs):
+        if rhs is None: rhs = float("nan")
+        return _binop(self, "!=", rhs)
+
+    def __pow__(self, rhs):
+        return _binop(self, "^", rhs)
+
+    def __contains__(self, lhs):
+        return all((t == self).any() for t in lhs) if _is_list(lhs) else (lhs == self).any()
 
     # rops
-    def __rmod__(self, i):
-        return H2OFrame._expr(expr=ExprNode("%", i, self), cache=self._ex._cache)
+    def __rmod__(self, lhs):
+        return _binop(lhs, "%", self)
 
-    def __radd__(self, i):
-        return self.__add__(i)
+    def __radd__(self, lhs):
+        return _binop(lhs, "+", self)
 
-    def __rsub__(self, i):
-        return H2OFrame._expr(expr=ExprNode("-", i, self), cache=self._ex._cache)
+    def __rsub__(self, lhs):
+        return _binop(lhs, "-", self)
 
-    def __rand__(self, i):
-        return self.__and__(i)
+    def __rand__(self, lhs):
+        return _binop(lhs, "&", self)
 
-    def __ror__(self, i):
-        return self.__or__(i)
+    def __ror__(self, lhs):
+        return _binop(lhs, "|", self)
 
-    def __rtruediv__(self, i):
-        return H2OFrame._expr(expr=ExprNode("/", i, self), cache=self._ex._cache)
+    def __rtruediv__(self, lhs):
+        return _binop(lhs, "/", self)
 
-    def __rdiv__(self, i):
-        return H2OFrame._expr(expr=ExprNode("/", i, self), cache=self._ex._cache)
+    def __rdiv__(self, lhs):
+        return _binop(lhs, "/", self)
 
-    def __rfloordiv__(self, i):
-        return H2OFrame._expr(expr=ExprNode("intDiv", i, self), cache=self._ex._cache)
+    def __rfloordiv__(self, lhs):
+        return _binop(lhs, "intDiv", self)
 
-    def __rmul__(self, i):
-        return self.__mul__(i)
+    def __rmul__(self, lhs):
+        return _binop(lhs, "*", self)
 
-    def __rpow__(self, i):
-        return H2OFrame._expr(expr=ExprNode("^", i, self), cache=self._ex._cache)
+    def __rpow__(self, lhs):
+        return _binop(lhs, "^", self)
 
     # unops
     def __abs__(self):
-        return H2OFrame._expr(expr=ExprNode("abs", self), cache=self._ex._cache)
+        return self._unop("abs")
 
     def __invert__(self):
-        return H2OFrame._expr(expr=ExprNode("!!", self), cache=self._ex._cache)
+        return self._unop("!!")
 
     def __nonzero__(self):
-        if self.nrow > 1 or self.ncol > 1:
-            raise ValueError(
-                'This operation is not supported on an H2OFrame. Try using parantheses. '
+        if self.nrows > 1 or self.ncols > 1:
+            raise H2OValueError(
+                'This operation is not supported on an H2OFrame. Try using parentheses. '
                 'Did you mean & (logical and), | (logical or), or ~ (logical not)?')
         else:
             return self.__len__()
 
     def __int__(self):
-        if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
+        if self.shape != (1, 1): raise H2OValueError("Not a 1x1 Frame")
         return int(self.flatten())
 
     def __float__(self):
-        if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
+        if self.shape != (1, 1): raise H2OValueError("Not a 1x1 Frame")
         return float(self.flatten())
 
     def flatten(self):
@@ -550,97 +555,97 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("x", self, matrix))
 
     def cos(self):
-        return H2OFrame._expr(expr=ExprNode("cos", self), cache=self._ex._cache)
+        return self._unop("cos")
 
     def sin(self):
-        return H2OFrame._expr(expr=ExprNode("sin", self), cache=self._ex._cache)
+        return self._unop("sin")
 
     def tan(self):
-        return H2OFrame._expr(expr=ExprNode("tan", self), cache=self._ex._cache)
+        return self._unop("tan")
 
     def acos(self):
-        return H2OFrame._expr(expr=ExprNode("acos", self), cache=self._ex._cache)
+        return self._unop("acos")
 
     def asin(self):
-        return H2OFrame._expr(expr=ExprNode("asin", self), cache=self._ex._cache)
+        return self._unop("asin")
 
     def atan(self):
-        return H2OFrame._expr(expr=ExprNode("atan", self), cache=self._ex._cache)
+        return self._unop("atan")
 
     def cosh(self):
-        return H2OFrame._expr(expr=ExprNode("cosh", self), cache=self._ex._cache)
+        return self._unop("cosh")
 
     def sinh(self):
-        return H2OFrame._expr(expr=ExprNode("sinh", self), cache=self._ex._cache)
+        return self._unop("sinh")
 
     def tanh(self):
-        return H2OFrame._expr(expr=ExprNode("tanh", self), cache=self._ex._cache)
+        return self._unop("tanh")
 
     def acosh(self):
-        return H2OFrame._expr(expr=ExprNode("acosh", self), cache=self._ex._cache)
+        return self._unop("acosh")
 
     def asinh(self):
-        return H2OFrame._expr(expr=ExprNode("asinh", self), cache=self._ex._cache)
+        return self._unop("asinh")
 
     def atanh(self):
-        return H2OFrame._expr(expr=ExprNode("atanh", self), cache=self._ex._cache)
+        return self._unop("atanh")
 
     def cospi(self):
-        return H2OFrame._expr(expr=ExprNode("cospi", self), cache=self._ex._cache)
+        return self._unop("cospi")
 
     def sinpi(self):
-        return H2OFrame._expr(expr=ExprNode("sinpi", self), cache=self._ex._cache)
+        return self._unop("sinpi")
 
     def tanpi(self):
-        return H2OFrame._expr(expr=ExprNode("tanpi", self), cache=self._ex._cache)
+        return self._unop("tanpi")
 
     def abs(self):
-        return H2OFrame._expr(expr=ExprNode("abs", self), cache=self._ex._cache)
+        return self._unop("abs")
 
     def sign(self):
-        return H2OFrame._expr(expr=ExprNode("sign", self), cache=self._ex._cache)
+        return self._unop("sign")
 
     def sqrt(self):
-        return H2OFrame._expr(expr=ExprNode("sqrt", self), cache=self._ex._cache)
+        return self._unop("sqrt")
 
     def trunc(self):
-        return H2OFrame._expr(expr=ExprNode("trunc", self), cache=self._ex._cache)
+        return self._unop("trunc")
 
     def ceil(self):
-        return H2OFrame._expr(expr=ExprNode("ceiling", self), cache=self._ex._cache)
+        return self._unop("ceiling")
 
     def floor(self):
-        return H2OFrame._expr(expr=ExprNode("floor", self), cache=self._ex._cache)
+        return self._unop("floor")
 
     def log(self):
-        return H2OFrame._expr(expr=ExprNode("log", self), cache=self._ex._cache)
+        return self._unop("log")
 
     def log10(self):
-        return H2OFrame._expr(expr=ExprNode("log10", self), cache=self._ex._cache)
+        return self._unop("log10")
 
     def log1p(self):
-        return H2OFrame._expr(expr=ExprNode("log1p", self), cache=self._ex._cache)
+        return self._unop("log1p")
 
     def log2(self):
-        return H2OFrame._expr(expr=ExprNode("log2", self), cache=self._ex._cache)
+        return self._unop("log2")
 
     def exp(self):
-        return H2OFrame._expr(expr=ExprNode("exp", self), cache=self._ex._cache)
+        return self._unop("exp")
 
     def expm1(self):
-        return H2OFrame._expr(expr=ExprNode("expm1", self), cache=self._ex._cache)
+        return self._unop("expm1")
 
     def gamma(self):
-        return H2OFrame._expr(expr=ExprNode("gamma", self), cache=self._ex._cache)
+        return self._unop("gamma")
 
     def lgamma(self):
-        return H2OFrame._expr(expr=ExprNode("lgamma", self), cache=self._ex._cache)
+        return self._unop("lgamma")
 
     def digamma(self):
-        return H2OFrame._expr(expr=ExprNode("digamma", self), cache=self._ex._cache)
+        return self._unop("digamma")
 
     def trigamma(self):
-        return H2OFrame._expr(expr=ExprNode("trigamma", self), cache=self._ex._cache)
+        return self._unop("trigamma")
 
     @staticmethod
     def mktime(year=1970, month=0, day=0, hour=0, minute=0, second=0, msec=0):
@@ -2569,3 +2574,28 @@ class H2OFrame(object):
     @frame_id.setter
     def frame_id(self, value):
         self.id = value
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# Helpers
+#-----------------------------------------------------------------------------------------------------------------------
+
+def _binop(lhs, op, rhs):
+    assert_is_type(lhs, str, numeric, H2OFrame)
+    assert_is_type(rhs, str, numeric, H2OFrame)
+    if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame):
+        lrows, lcols = lhs.shape
+        rrows, rcols = rhs.shape
+        if lrows == rrows:
+            if lcols != rcols and lcols > 1 and rcols > 1:  # The server also accepts 0 and 1 columns
+                raise H2OValueError("Attempting to operate on incompatible frames: number of columns "
+                                    "must match; got %d columns on the left and %d columns on the right"
+                                    % (lcols, rcols))
+        else:
+            if lcols != rcols or (lrows > 1 and rrows > 1):
+                raise H2OValueError("Attempting to operate on incompatible frames: number of rows does not "
+                                    "match: got %d rows on the left and %d rows on the right"
+                                    % (lrows, rrows))
+    cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
+    return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)
