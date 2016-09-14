@@ -15,11 +15,12 @@ MKDIR=mkdir
 SEP=:
 case "`uname`" in
     CYGWIN* )
-      MKDIR="mkdir.exe"
+      MKDIR=mkdir.exe
       SEP=";"
       ;;
 esac
-rm -fr $OUTDIR; $MKDIR -p $OUTDIR
+rm -fr $OUTDIR
+$MKDIR -p $OUTDIR
 
 function cleanup () {
   kill -9 ${PID_11} ${PID_21} ${PID_31} ${PID_41} ${PID_51} 1> /dev/null 2>&1

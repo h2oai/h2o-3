@@ -15,19 +15,12 @@ MKDIR=mkdir
 SEP=:
 case "`uname`" in
     CYGWIN* )
-      MKDIR="mkdir.exe"
+      MKDIR=mkdir.exe
       SEP=";"
       ;;
 esac
-rm -fr $OUTDIR; $MKDIR -p $OUTDIR
-
-# Check for os
-SEP=:
-case "`uname`" in
-    CYGWIN* )
-      SEP=";"
-      ;;
-esac
+rm -fr $OUTDIR
+$MKDIR -p $OUTDIR
 
 function cleanup () {
   RC="`paste $OUTDIR/status.* | sed 's/[[:blank:]]//g'`"
