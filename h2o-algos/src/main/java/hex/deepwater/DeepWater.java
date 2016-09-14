@@ -41,10 +41,10 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   /** Types of models we can build with DeepWater  */
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{
-            ModelCategory.Regression,
+//            ModelCategory.Regression,
             ModelCategory.Binomial,
             ModelCategory.Multinomial,
-            ModelCategory.AutoEncoder
+//            ModelCategory.AutoEncoder
     };
   }
 
@@ -230,7 +230,6 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           }
           model.time_for_iteration_overhead_ms = System.currentTimeMillis()-before;
           if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
-          logNvidiaStats();
           if (!model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false)) break; //finished training (or early stopping or convergence)
           if (timeout()) { //stop after scoring
             _job.update((long) (mp._epochs * train.numRows())); // mark progress as completed
