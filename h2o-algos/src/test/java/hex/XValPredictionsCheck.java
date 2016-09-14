@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
  * original frame.
  */
 public class XValPredictionsCheck extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testXValPredictions() {
     final int nfolds = 3;
