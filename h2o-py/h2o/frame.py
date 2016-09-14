@@ -36,6 +36,9 @@ from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, 
                                   pandas_dataframe, U)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
+__all__ = ("H2OFrame", )
+
+
 
 class H2OFrame(object):
     """
@@ -59,8 +62,7 @@ class H2OFrame(object):
 
     @staticmethod
     def _expr(expr, cache=None):
-        # TODO: 1) make `cache` parameter part of `expr`
-        # TODO: 2) merge this method with `__init__`
+        # TODO: merge this method with `__init__`
         fr = H2OFrame()
         fr._ex = expr
         if cache is not None:
@@ -154,92 +156,6 @@ class H2OFrame(object):
         self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings)
         os.remove(tmp_path)  # delete the tmp file
 
-
-    #-------------------------------------------------------------------------------------------------------------------
-    #
-    #-------------------------------------------------------------------------------------------------------------------
-
-
-
-    @property
-    def columns(self):
-        """Same as :meth:`names`."""
-        return self.names
-
-    @columns.setter
-    def columns(self, value):
-        self.set_names(value)
-
-    @property
-    def col_names(self):
-        """Same as :meth:`names`."""
-        return self.names
-
-    @col_names.setter
-    def col_names(self, value):
-        self.set_names(value)
-
-    @property
-    def names(self):
-        """The list of column names, one name per H2OVec."""
-        if not self._ex._cache.names_valid():
-            self._ex._cache.flush()
-            self._frame(True)
-        return self._ex._cache.names
-
-    @names.setter
-    def names(self, value):
-        self.set_names(value)
-
-    @property
-    def nrow(self):
-        """The number of rows in the H2OFrame."""
-        if not self._ex._cache.nrows_valid():
-            self._ex._cache.flush()
-            self._frame(True)
-        return self._ex._cache.nrows
-
-    @property
-    def ncol(self):
-        """The number of columns in the H2OFrame."""
-        if not self._ex._cache.ncols_valid():
-            self._ex._cache.flush()
-            self._frame(True)
-        return self._ex._cache.ncols
-
-    @property
-    def dim(self):
-        """The number of rows and columns in the H2OFrame as a list [nrows, ncols]."""
-        # TODO: merge with :meth:`shape`?
-        return [self.nrow, self.ncol]
-
-    @property
-    def shape(self):
-        """The number of rows and columns in the H2OFrame as a tuple (nrows, ncols)."""
-        return self.nrow, self.ncol
-
-    @property
-    def types(self):
-        """The dictionary of column_name-type pairs."""
-        if not self._ex._cache.types_valid():
-            self._ex._cache.flush()
-            self._frame(True)
-        return self._ex._cache.types
-
-    @property
-    def frame_id(self):
-        """The name of the frame."""
-        return self._frame()._ex._cache._id
-
-    @frame_id.setter
-    def frame_id(self, value):
-        if self._ex._cache._id is None:
-            h2o.assign(self, value)
-        else:
-            oldname = self.frame_id
-            self._ex._cache._id = value
-            h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, value))
-
     @staticmethod
     def get_frame(frame_id):
         """
@@ -254,6 +170,73 @@ class H2OFrame(object):
         except EnvironmentError:
             return None
         return fr
+
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Frame properties
+    #-------------------------------------------------------------------------------------------------------------------
+
+    @property
+    def names(self):
+        """The list of column names."""
+        if not self._ex._cache.names_valid():
+            self._ex._cache.flush()
+            self._frame(True)
+        return self._ex._cache.names
+
+    @names.setter
+    def names(self, value):
+        self.set_names(value)
+
+    @property
+    def nrows(self):
+        """Number of rows in the dataframe."""
+        if not self._ex._cache.nrows_valid():
+            self._ex._cache.flush()
+            self._frame(True)
+        return self._ex._cache.nrows
+
+    @property
+    def ncols(self):
+        """Number of columns in the dataframe."""
+        if not self._ex._cache.ncols_valid():
+            self._ex._cache.flush()
+            self._frame(True)
+        return self._ex._cache.ncols
+
+    @property
+    def shape(self):
+        """Number of rows and columns in the dataframe as a tuple (nrows, ncols)."""
+        return self.nrows, self.ncols
+
+    @property
+    def types(self):
+        """The dictionary of column name/type pairs."""
+        if not self._ex._cache.types_valid():
+            self._ex._cache.flush()
+            self._frame(True)
+        return self._ex._cache.types
+
+    @property
+    def id(self):
+        """The name of the frame."""
+        return self._frame()._ex._cache._id
+
+    @id.setter
+    def id(self, newid):
+        if self._ex._cache._id is None:
+            h2o.assign(self, newid)
+        else:
+            oldname = self.id
+            self._ex._cache._id = newid
+            h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, newid))
+
+    def type(self, name):
+        """The type for a named column."""
+        return self.types[name]
+
+
+
 
     def _import_parse(self, path, destination_frame, header, separator, column_names, column_types, na_strings):
         if is_type(path, str) and "://" not in path:
@@ -317,10 +300,6 @@ class H2OFrame(object):
         """
         return ExprNode("filterNACols", self, frac)._eager_scalar()
 
-    def type(self, name):
-        """The type for a named column."""
-        return self.types[name]
-
     def __iter__(self):
         return (self[i] for i in range(self.ncol))
 
@@ -332,9 +311,6 @@ class H2OFrame(object):
             ncols = "%d %s" % (self.ncol, "column" if self.ncol == 1 else "columns")
             return "%s\n\n[%s x %s]" % (table, nrows, ncols)
         return ""
-
-    def __len__(self):
-        return self.nrow
 
     def __repr__(self):
         if sys.gettrace() is None:
@@ -419,8 +395,8 @@ class H2OFrame(object):
         -------
           An H2OFrame.
         """
-        nrows = min(self.nrow, rows)
-        ncols = min(self.ncol, cols)
+        nrows = min(self.nrows, rows)
+        ncols = min(self.ncols, cols)
         return self[:nrows, :ncols]
 
     def tail(self, rows=10, cols=200):
@@ -439,9 +415,9 @@ class H2OFrame(object):
         -------
           An H2OFrame.
         """
-        nrows = min(self.nrow, rows)
-        ncols = min(self.ncol, cols)
-        start_idx = self.nrow - nrows
+        nrows = min(self.nrows, rows)
+        ncols = min(self.ncols, cols)
+        start_idx = self.nrows - nrows
         return self[start_idx:start_idx + nrows, :ncols]
 
     def logical_negation(self):
@@ -547,6 +523,14 @@ class H2OFrame(object):
                 'Did you mean & (logical and), | (logical or), or ~ (logical not)?')
         else:
             return self.__len__()
+
+    def __int__(self):
+        if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
+        return int(self.flatten())
+
+    def __float__(self):
+        if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
+        return float(self.flatten())
 
     def flatten(self):
         return ExprNode("flatten", self)._eager_scalar()
@@ -1248,14 +1232,6 @@ class H2OFrame(object):
                     for ch in src._children:
                         if self.is_src_in_self(ch): return True
         return False
-
-    def __int__(self):
-        if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
-        return int(self.flatten())
-
-    def __float__(self):
-        if self.ncol != 1 or self.nrow != 1: raise ValueError("Not a 1x1 Frame")
-        return float(self.flatten())
 
     def drop(self, index, axis=1):
         """
@@ -2539,3 +2515,57 @@ class H2OFrame(object):
         assert_satisfies(fun, fun.__name__ == "<lambda>")
         res = _bytecode_decompile_lambda(fun.__code__)
         return H2OFrame._expr(expr=ExprNode("apply", self, 1 + (axis == 0), *res))
+
+
+    #-------------------------------------------------------------------------------------------------------------------
+    # Synonyms + Deprecated
+    #-------------------------------------------------------------------------------------------------------------------
+    # Here we have all methods that are provided as alternative names to some other names defined above. This also
+    # includes methods that we rename as part of the deprecation process (but keeping the old name for the sake of
+    # backward compatibility). We gather them all down here to have a slightly cleaner code.
+
+    @property
+    def columns(self):
+        """Same as ``self.names``."""
+        return self.names
+
+    @columns.setter
+    def columns(self, value):
+        self.set_names(value)
+
+    @property
+    def col_names(self):
+        """Same as ``self.names``."""
+        return self.names
+
+    @col_names.setter
+    def col_names(self, value):
+        self.set_names(value)
+
+    def __len__(self):
+        """Number of rows in the dataframe, same as ``self.nrows``."""
+        return self.nrows
+
+    @property
+    def nrow(self):
+        """Same as ``self.nrows``."""
+        return self.nrows
+
+    @property
+    def ncol(self):
+        """Same as ``self.ncols``."""
+        return self.ncols
+
+    @property
+    def dim(self):
+        """Same as ``list(self.shape())``."""
+        return [self.nrow, self.ncol]
+
+    @property
+    def frame_id(self):
+        """Same as ``frame.id``."""
+        return self.id
+
+    @frame_id.setter
+    def frame_id(self, value):
+        self.id = value
