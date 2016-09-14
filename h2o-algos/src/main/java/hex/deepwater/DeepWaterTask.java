@@ -138,7 +138,7 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
       long end = System.currentTimeMillis();
       if(!_localmodel.get_params()._quiet_mode) {
         Log.info("Time for one iteration: " + PrettyPrint.msecs(end - start, true));
-        Log.info("Time for Native training : " + PrettyPrint.msecs(nativetime, true));
+        Log.info("Time for native training : " + PrettyPrint.msecs(nativetime, true));
       }
 
     } catch (IOException e) {
