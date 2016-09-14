@@ -262,19 +262,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       ModelBuilder<M, P, O> cvModelBuilders[] = cv_makeFramesAndBuilders(N,weights);
 
-      // Step 4: Run all the CV models and launch the main model
-      H2O.H2OCountedCompleter mainMB = cv_buildModels(N, cvModelBuilders);
+      // Step 4: Run all the CV models
+      cv_buildModels(N, cvModelBuilders);
 
       // Step 5: Score the CV models
       ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
 
-      // wait for completion of the main model
-      if (mainMB!=null) mainMB.join();
+      // Step 6: Build the main model
+      buildMainModel();
 
-      // Step 6: Combine cross-validation scores; compute main model x-val
+      // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
       cv_mainModelScores(N, mbs, cvModelBuilders);
-
 
       // Step 7: Clean up potentially created temp frames
       for (ModelBuilder mb : cvModelBuilders)
@@ -392,7 +391,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 4: Run all the CV models and launch the main model
-  public H2O.H2OCountedCompleter cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
+  public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
     H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
     int nRunning=0;
     for( int i=0; i<N; ++i ) {
@@ -405,14 +404,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
       submodel_tasks[i].join();
-    // Now do the main model
-    if( _job.stop_requested() ) return null;
+    cv_computeAndSetOptimalParameters(cvModelBuilders);
+  }
+
+  private void buildMainModel() {
+    if (_job.stop_requested()) return;
     assert _job.isRunning();
     Log.info("Building main model.");
     _start_time = System.currentTimeMillis();
-    modifyParmsForCrossValidationMainModel(cvModelBuilders); //tell the main model that it shouldn't stop early either
-    H2O.H2OCountedCompleter mainMB = H2O.submitTask(trainModelImpl()); //non-blocking: start the main
-    return mainMB;
+    H2O.H2OCountedCompleter mm = H2O.submitTask(trainModelImpl());
+    mm.join();  // wait for completion
   }
 
   // Step 5: Score the CV models
@@ -431,7 +432,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               _parms._keep_cross_validation_predictions ||
               (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
-        cvModel.predictScoreImpl(cvValid, adaptFr, predName, null);
+        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job);
+        DKV.put(cvModel);
       }
       // free resources as early as possible
       if (adaptFr != null) {
@@ -500,9 +502,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
-   *  For example, the model might need to be told to not do early stopping.
+   *  Also allow the cv models to be modified after all of them have been built.
+   *  For example, the model might need to be told to not do early stopping. CV models might have their lambda value modified, etc.
    */
-  public void modifyParmsForCrossValidationMainModel(ModelBuilder<M, P, O>[] cvModelBuilders) { }
+  public void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) { }
 
   /** @return Whether n-fold cross-validation is done  */
   public boolean nFoldCV() {

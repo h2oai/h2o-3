@@ -339,6 +339,39 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  static private class Replacer extends TAtomic<Model> {
+    final Key _k;
+    public Key[] _res;
+    Replacer(Key k) { _k=k; }
+    @Override
+    protected Model atomic(Model old) {
+      if (old==null) return null;
+      incrementModelMetrics(old._output, _k);
+      _res = old._output._model_metrics;
+      return old;
+    }
+  }
+
+  public synchronized ModelMetrics addModelMetrics(final ModelMetrics mm) {
+    DKV.put(mm);
+    final Key k = mm._key;
+    Replacer r = new Replacer(k);
+    r.invoke(_key);
+    Key[] res = r._res;
+    if (res==null)
+      incrementModelMetrics(_output, k);
+    else
+      _output._model_metrics = res;
+    return mm;
+  }
+
+  static void incrementModelMetrics(Output out, Key k) {
+    for (Key key : out._model_metrics)
+      if (k.equals(key)) return;
+    out._model_metrics = Arrays.copyOf(out._model_metrics, out._model_metrics.length + 1);
+    out._model_metrics[out._model_metrics.length - 1] = k;
+  }
+
   public void addWarning(String s){
     _warnings = Arrays.copyOf(_warnings,_warnings.length+1);
     _warnings[_warnings.length-1] = s;
@@ -514,14 +547,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     public boolean isAutoencoder() { return false; } // Override in DeepLearning and so on.
 
-    public synchronized ModelMetrics addModelMetrics(ModelMetrics mm) {
-      DKV.put(mm);
-      for( Key key : _model_metrics ) // Dup removal
-        if( key==mm._key ) return mm;
-      _model_metrics = Arrays.copyOf(_model_metrics, _model_metrics.length + 1);
-      _model_metrics[_model_metrics.length - 1] = mm._key;
-      return mm;                // Flow coding
-    }
     public synchronized void clearModelMetrics() { _model_metrics = new Key[0]; }
 
     protected long checksum_impl() {
@@ -557,7 +582,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   protected String[][] scoringDomains() { return _output._domains; }
 
-  public ModelMetrics addMetrics(ModelMetrics mm) { return _output.addModelMetrics(mm); }
+  public ModelMetrics addMetrics(ModelMetrics mm) { return addModelMetrics(mm); }
 
   public abstract ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain);
 

@@ -35,7 +35,6 @@ public class XValPredictionsCheck extends TestUtil {
   @Test public void testXValPredictions() {
     final int nfolds = 3;
     Frame tfr = null;
-    Scope.enter();
     try {
       // Load data, hack frames
       tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
@@ -55,7 +54,6 @@ public class XValPredictionsCheck extends TestUtil {
       GBM job = new GBM(parms);
       GBMModel gbm = job.trainModel().get();
       checkModel(gbm, foldId.anyVec(),3);
-
 
       // DRF
       DRFModel.DRFParameters parmsDRF = new DRFModel.DRFParameters();
@@ -94,7 +92,6 @@ public class XValPredictionsCheck extends TestUtil {
 
     } finally {
       if (tfr != null) tfr.remove();
-      Scope.exit();
     }
   }
 

@@ -158,7 +158,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
         meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       }
       ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance);
-      if (m!=null) m._output.addModelMetrics(mm);
+      if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
   }

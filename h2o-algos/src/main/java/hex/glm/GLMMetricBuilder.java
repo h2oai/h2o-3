@@ -202,7 +202,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       ModelMetricsRegression metricsRegression = (ModelMetricsRegression) metrics;
       metrics = new ModelMetricsRegressionGLM(m, f, metricsRegression._nobs, metricsRegression._MSE, metricsRegression._sigma, metricsRegression._mean_absolute_error, metricsRegression._root_mean_squared_log_error, residualDeviance(), residualDeviance()/_wcount, null_devince, _aic, nullDOF(), resDOF());
     }
-    return gm._output.addModelMetrics(metrics); // Update the metrics in-place with the GLM version
+    return gm.addModelMetrics(metrics); // Update the metrics in-place with the GLM version
   }
 
 }
