@@ -339,21 +339,37 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  static private class Replacer extends TAtomic<Model> {
+    final Key _k;
+    public Key[] _res;
+    Replacer(Key k) { _k=k; }
+    @Override
+    protected Model atomic(Model old) {
+      if (old==null) return null;
+      incrementModelMetrics(old._output, _k);
+      _res = old._output._model_metrics;
+      return old;
+    }
+  }
+
   public synchronized ModelMetrics addModelMetrics(final ModelMetrics mm) {
     DKV.put(mm);
     final Key k = mm._key;
-    new TAtomic<Model>() {
-      @Override
-      protected Model atomic(Model old) {
-        for( Key key : old._output._model_metrics )
-          if( k.equals(key) ) return old;
-        old._output._model_metrics = Arrays.copyOf(old._output._model_metrics, old._output._model_metrics.length + 1);
-        old._output._model_metrics[old._output._model_metrics.length - 1] = k;
-        return old;
-      }
-    }.invoke(_key);
-    _output._model_metrics = _key.get()._output._model_metrics;
-    return mm;                // Flow coding
+    Replacer r = new Replacer(k);
+    r.invoke(_key);
+    Key[] res = r._res;
+    if (res==null)
+      incrementModelMetrics(_output, k);
+    else
+      _output._model_metrics = res;
+    return mm;
+  }
+
+  static void incrementModelMetrics(Output out, Key k) {
+    for (Key key : out._model_metrics)
+      if (k.equals(key)) return;
+    out._model_metrics = Arrays.copyOf(out._model_metrics, out._model_metrics.length + 1);
+    out._model_metrics[out._model_metrics.length - 1] = k;
   }
 
   public void addWarning(String s){

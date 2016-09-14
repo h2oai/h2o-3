@@ -404,7 +404,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
       submodel_tasks[i].join();
-    modifyParmsForCrossValidationMainModel(cvModelBuilders);
+    cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
 
   private void buildMainModel() {
@@ -502,9 +502,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
-   *  For example, the model might need to be told to not do early stopping.
+   *  Also allow the cv models to be modified after all of them have been built.
+   *  For example, the model might need to be told to not do early stopping. CV models might have their lambda value modified, etc.
    */
-  public void modifyParmsForCrossValidationMainModel(ModelBuilder<M, P, O>[] cvModelBuilders) { }
+  public void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) { }
 
   /** @return Whether n-fold cross-validation is done  */
   public boolean nFoldCV() {
