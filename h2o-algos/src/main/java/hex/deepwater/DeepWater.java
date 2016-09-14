@@ -21,10 +21,14 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   public DeepWater(DeepWaterParameters parms, Key<DeepWaterModel> key ) { super(parms,key); init(false); }
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
 
+  static public void logNvidiaStats() { try { Log.info(water.gpu.util.getNvidiaStats()); } catch (IOException e) {} }
   static {
     try {
       final boolean GPU = System.getenv("CUDA_PATH")!=null;
-      if (GPU) water.gpu.util.loadCudaLib();
+      if (GPU) {
+        water.gpu.util.loadCudaLib();
+        logNvidiaStats();
+      }
       water.gpu.util.loadNativeLib("mxnet");
       water.gpu.util.loadNativeLib("Native");
     } catch (IOException e) {
@@ -226,6 +230,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           }
           model.time_for_iteration_overhead_ms = System.currentTimeMillis()-before;
           if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
+          logNvidiaStats();
           if (!model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false)) break; //finished training (or early stopping or convergence)
           if (timeout()) { //stop after scoring
             _job.update((long) (mp._epochs * train.numRows())); // mark progress as completed
