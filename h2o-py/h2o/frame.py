@@ -2241,6 +2241,22 @@ class H2OFrame(object):
         else:
             return frame
 
+    def isax(self, num_words, max_cardinality, **kwargs):
+        """ Compute the iSAX http://www.cs.ucr.edu/~eamonn/iSAX_2.0.pdf index for DataFrame which is
+        assumed to be numeric time series data
+        Parameters
+        ----------
+          num_words : int
+            Number of iSAX words for the timeseries. ie granularity along the time series
+          max_cardinality : int
+            Maximum cardinality of the iSAX word. Each word can have less than the max
+        Returns
+        -------
+          An H2OFrame with the name of time series, string representation of iSAX word, followed by binary representation
+        """
+        frame = H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality))._frame()
+        return frame
+
     def sub(self, pattern, replacement, ignore_case=False):
         """Substitute the first occurrence of pattern in a string with replacement.
 

@@ -197,6 +197,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
 
     //Time Series
     init(new AstDiffLag1());
+    init(new AstISax());
 
     // Advanced Math
     init(new AstCorrelation());
