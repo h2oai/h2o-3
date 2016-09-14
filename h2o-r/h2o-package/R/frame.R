@@ -1511,7 +1511,7 @@ is.character <- function(x) {
 #'          Anything bigger than 20 rows will require asking the server (first 20 rows are cached on the client).
 #' @param ... Further arguments to be passed from or to other methods.
 #' @export
-print.H2OFrame <- function(x,n, ...) {
+print.H2OFrame <- function(x,n=6L, ...) {
   print(head(x,n))
   rowString = if (nrow(x) > 1) " rows x " else " row x "
   colString = if (ncol(x) > 1) " columns]" else " column]"
