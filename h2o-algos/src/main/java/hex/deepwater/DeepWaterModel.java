@@ -6,6 +6,8 @@ import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.schemas.DeepWaterModelV3;
 import water.*;
+
+import static hex.deepwater.DeepWater.logNvidiaStats;
 import static water.H2O.technote;
 import water.api.schemas3.ModelSchemaV3;
 import water.fvec.Chunk;
@@ -194,6 +196,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     if( !keep_running || get_params()._score_each_iteration ||
         (sinceLastScore > get_params()._score_interval *1000 //don't score too often
             &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
+      logNvidiaStats();
       jobKey.get().update(0,"Scoring on " + fTrain.numRows() + " training samples" +(fValid != null ? (", " + fValid.numRows() + " validation samples") : ""));
       final boolean printme = !get_params()._quiet_mode;
       _timeLastScoreStart = System.currentTimeMillis();
