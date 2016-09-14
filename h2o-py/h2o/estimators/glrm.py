@@ -38,39 +38,40 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
       loading_name : str
         Frame key to save resulting X
 
-      transform : NONE | STANDARDIZE | NORMALIZE | DEMEAN | DESCALE
+      transform : "NONE" | "STANDARDIZE" | "NORMALIZE" | "DEMEAN" | "DESCALE"
         Transformation of training data
-        Default: NONE
+        Default: "NONE"
 
       k : int, required
         Rank of matrix approximation
         Default: 1
 
-      loss : Quadratic | Absolute | Huber | Poisson | Hinge | Logistic | Periodic
+      loss : "Quadratic" | "Absolute" | "Huber" | "Poisson" | "Hinge" | "Logistic" | "Periodic"
         Numeric loss function
-        Default: Quadratic
+        Default: "Quadratic"
 
-      loss_by_col : list(Quadratic | Absolute | Huber | Poisson | Hinge | Logistic | Periodic | Categorical | Ordinal)
+      loss_by_col : list("Quadratic" | "Absolute" | "Huber" | "Poisson" | "Hinge" | "Logistic" | "Periodic" |
+                    "Categorical" | "Ordinal")
         Loss function by column (override)
 
       loss_by_col_idx : list(int)
         Loss function by column index (override)
 
-      multi_loss : Categorical | Ordinal
+      multi_loss : "Categorical" | "Ordinal"
         Categorical loss function
-        Default: Categorical
+        Default: "Categorical"
 
       period : int
         Length of period (only used with periodic loss function)
         Default: 1
 
-      regularization_x : None | Quadratic | L2 | L1 | NonNegative | OneSparse | UnitOneSparse | Simplex
+      regularization_x : "None" | "Quadratic" | "L2" | "L1" | "NonNegative" | "OneSparse" | "UnitOneSparse" | "Simplex"
         Regularization function for X matrix
-        Default: None
+        Default: "None"
 
-      regularization_y : None | Quadratic | L2 | L1 | NonNegative | OneSparse | UnitOneSparse | Simplex
+      regularization_y : "None" | "Quadratic" | "L2" | "L1" | "NonNegative" | "OneSparse" | "UnitOneSparse" | "Simplex"
         Regularization function for Y matrix
-        Default: None
+        Default: "None"
 
       gamma_x : float
         Regularization weight on X matrix
@@ -100,14 +101,14 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         RNG seed for initialization
         Default: -1
 
-      init : Random | SVD | PlusPlus | User
+      init : "Random" | "SVD" | "PlusPlus" | "User"
         Initialization mode
-        Default: PlusPlus
+        Default: "PlusPlus"
 
-      svd_method : GramSVD | Power | Randomized
+      svd_method : "GramSVD" | "Power" | "Randomized"
         Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and
         unstable)
-        Default: Randomized
+        Default: "Randomized"
 
       user_y : str
         User-specified initial Y

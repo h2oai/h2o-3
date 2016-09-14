@@ -40,10 +40,10 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Whether to keep the cross-validation fold assignment.
         Default: False
 
-      fold_assignment : AUTO | Random | Modulo | Stratified
+      fold_assignment : "AUTO" | "Random" | "Modulo" | "Stratified"
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
-        Default: AUTO
+        Default: "AUTO"
 
       fold_column : VecSpecifier
         Column with cross-validation fold index assignment per observation.
@@ -95,9 +95,10 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Final momentum after the ramp is over (try 0.99).
         Default: 0.99
 
-      distribution : AUTO | bernoulli | multinomial | gaussian | poisson | gamma | tweedie | laplace | quantile | huber
+      distribution : "AUTO" | "bernoulli" | "multinomial" | "gaussian" | "poisson" | "gamma" | "tweedie" | "laplace" |
+                     "quantile" | "huber"
         Distribution function
-        Default: AUTO
+        Default: "AUTO"
 
       score_interval : float
         Shortest time interval (in seconds) between model scoring.
@@ -120,10 +121,10 @@ class H2ODeepWaterEstimator(H2OEstimator):
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
         Default: 5
 
-      stopping_metric : AUTO | deviance | logloss | MSE | AUC | lift_top_group | r2 | misclassification |
-                        mean_per_class_error
+      stopping_metric : "AUTO" | "deviance" | "logloss" | "MSE" | "AUC" | "lift_top_group" | "r2" | "misclassification"
+                        | "mean_per_class_error"
         Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)
-        Default: AUTO
+        Default: "AUTO"
 
       stopping_tolerance : float
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
@@ -154,13 +155,13 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Clip gradients once their absolute value is larger than this value.
         Default: 10.0
 
-      network : auto | user | lenet | alexnet | vgg | vgg16 | googlenet | inception_bn | resnet
+      network : "auto" | "user" | "lenet" | "alexnet" | "vgg" | "vgg16" | "googlenet" | "inception_bn" | "resnet"
         Network architecture.
-        Default: auto
+        Default: "auto"
 
-      backend : auto | mxnet | caffe | tensorflow
+      backend : "auto" | "mxnet" | "caffe" | "tensorflow"
         Deep Learning Backend.
-        Default: auto
+        Default: "auto"
 
       image_shape : list(int)
         Width and height of image.
@@ -187,6 +188,9 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Path (prefix) where to export the native model after every iteration.
 
     """
+
+    algo = "deepwater"
+
     def __init__(self, **kwargs):
         super(H2ODeepWaterEstimator, self).__init__()
         self._parms = {}

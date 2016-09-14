@@ -34,13 +34,13 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
         Default: False
 
-      transform : NONE | STANDARDIZE | NORMALIZE | DEMEAN | DESCALE
+      transform : "NONE" | "STANDARDIZE" | "NORMALIZE" | "DEMEAN" | "DESCALE"
         Transformation of training data
-        Default: NONE
+        Default: "NONE"
 
-      svd_method : GramSVD | Power | Randomized
+      svd_method : "GramSVD" | "Power" | "Randomized"
         Method for computing SVD (Caution: Power and Randomized are currently experimental and unstable)
-        Default: GramSVD
+        Default: "GramSVD"
 
       nv : int
         Number of right singular vectors

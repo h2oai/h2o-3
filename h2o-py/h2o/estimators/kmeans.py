@@ -36,10 +36,10 @@ class H2OKMeansEstimator(H2OEstimator):
         Whether to keep the cross-validation fold assignment.
         Default: False
 
-      fold_assignment : AUTO | Random | Modulo | Stratified
+      fold_assignment : "AUTO" | "Random" | "Modulo" | "Stratified"
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
-        Default: AUTO
+        Default: "AUTO"
 
       fold_column : VecSpecifier
         Column with cross-validation fold index assignment per observation.
@@ -74,9 +74,9 @@ class H2OKMeansEstimator(H2OEstimator):
         RNG Seed
         Default: -1
 
-      init : Random | PlusPlus | Furthest | User
+      init : "Random" | "PlusPlus" | "Furthest" | "User"
         Initialization mode
-        Default: Furthest
+        Default: "Furthest"
 
       max_runtime_secs : float
         Maximum allowed runtime in seconds for model training. Use 0 to disable.

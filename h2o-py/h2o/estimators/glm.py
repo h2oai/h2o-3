@@ -42,10 +42,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Whether to keep the cross-validation fold assignment.
         Default: False
 
-      fold_assignment : AUTO | Random | Modulo | Stratified
+      fold_assignment : "AUTO" | "Random" | "Modulo" | "Stratified"
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
-        Default: AUTO
+        Default: "AUTO"
 
       fold_column : VecSpecifier
         Column with cross-validation fold index assignment per observation.
@@ -72,9 +72,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
         weights are not allowed.
 
-      family : gaussian | binomial | multinomial | poisson | gamma | tweedie
+      family : "gaussian" | "binomial" | "multinomial" | "poisson" | "gamma" | "tweedie"
         Family. Use binomial for classification with logistic regression, others are for regression problems.
-        Default: gaussian
+        Default: "gaussian"
 
       tweedie_variance_power : float
         Tweedie variance power
@@ -84,11 +84,11 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Tweedie link power
         Default: 1.0
 
-      solver : AUTO | IRLSM | L_BFGS | COORDINATE_DESCENT_NAIVE | COORDINATE_DESCENT
+      solver : "AUTO" | "IRLSM" | "L_BFGS" | "COORDINATE_DESCENT_NAIVE" | "COORDINATE_DESCENT"
         AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
         number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many columns.
         Coordinate descent is experimental (beta).
-        Default: AUTO
+        Default: "AUTO"
 
       alpha : list(float)
         distribution of regularization between L1 and L2.
@@ -113,9 +113,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Standardize numeric columns to have zero mean and unit variance
         Default: True
 
-      missing_values_handling : Skip | MeanImputation
+      missing_values_handling : "Skip" | "MeanImputation"
         Handling of missing values. Either Skip or MeanImputation.
-        Default: MeanImputation
+        Default: "MeanImputation"
 
       compute_p_values : bool
         request p-values computation, p-values work only with IRLSM solver and no regularization
@@ -155,9 +155,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         values above are 1E-8 and 1E-6 respectively.
         Default: -1.0
 
-      link : family_default | identity | logit | log | inverse | tweedie
+      link : "family_default" | "identity" | "logit" | "log" | "inverse" | "tweedie"
 
-        Default: family_default
+        Default: "family_default"
 
       prior : float
         prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean

@@ -43,10 +43,10 @@ class H2ORandomForestEstimator(H2OEstimator):
         Score the model after every so many trees. Disabled if set to 0.
         Default: 0
 
-      fold_assignment : AUTO | Random | Modulo | Stratified
+      fold_assignment : "AUTO" | "Random" | "Modulo" | "Stratified"
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
-        Default: AUTO
+        Default: "AUTO"
 
       fold_column : VecSpecifier
         Column with cross-validation fold index assignment per observation.
@@ -125,10 +125,10 @@ class H2ORandomForestEstimator(H2OEstimator):
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
         Default: 0
 
-      stopping_metric : AUTO | deviance | logloss | MSE | AUC | lift_top_group | r2 | misclassification |
-                        mean_per_class_error
+      stopping_metric : "AUTO" | "deviance" | "logloss" | "MSE" | "AUC" | "lift_top_group" | "r2" | "misclassification"
+                        | "mean_per_class_error"
         Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)
-        Default: AUTO
+        Default: "AUTO"
 
       stopping_tolerance : float
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
@@ -177,9 +177,9 @@ class H2ORandomForestEstimator(H2OEstimator):
         Minimum relative improvement in squared error reduction for a split to happen
         Default: 1e-05
 
-      histogram_type : AUTO | UniformAdaptive | Random | QuantilesGlobal | RoundRobin
+      histogram_type : "AUTO" | "UniformAdaptive" | "Random" | "QuantilesGlobal" | "RoundRobin"
         What type of histogram to use for finding optimal split points
-        Default: AUTO
+        Default: "AUTO"
 
     """
 

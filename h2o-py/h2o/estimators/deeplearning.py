@@ -37,10 +37,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Whether to keep the cross-validation fold assignment.
         Default: False
 
-      fold_assignment : AUTO | Random | Modulo | Stratified
+      fold_assignment : "AUTO" | "Random" | "Modulo" | "Stratified"
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
-        Default: AUTO
+        Default: "AUTO"
 
       fold_column : VecSpecifier
         Column with cross-validation fold index assignment per observation.
@@ -107,9 +107,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.
         Default: True
 
-      activation : Tanh | TanhWithDropout | Rectifier | RectifierWithDropout | Maxout | MaxoutWithDropout
+      activation : "Tanh" | "TanhWithDropout" | "Rectifier" | "RectifierWithDropout" | "Maxout" | "MaxoutWithDropout"
         Activation function.
-        Default: Rectifier
+        Default: "Rectifier"
 
       hidden : list(int)
         Hidden layer sizes (e.g. [100, 100]).
@@ -192,9 +192,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Constraint for squared sum of incoming weights per unit (e.g. for Rectifier).
         Default: ∞
 
-      initial_weight_distribution : UniformAdaptive | Uniform | Normal
+      initial_weight_distribution : "UniformAdaptive" | "Uniform" | "Normal"
         Initial weight distribution.
-        Default: UniformAdaptive
+        Default: "UniformAdaptive"
 
       initial_weight_scale : float
         Uniform: -value...value, Normal: stddev.
@@ -206,13 +206,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
       initial_biases : list(str)
         A list of H2OFrame ids to initialize the bias vectors of this model with.
 
-      loss : Automatic | CrossEntropy | Quadratic | Huber | Absolute | Quantile
+      loss : "Automatic" | "CrossEntropy" | "Quadratic" | "Huber" | "Absolute" | "Quantile"
         Loss function.
-        Default: Automatic
+        Default: "Automatic"
 
-      distribution : AUTO | bernoulli | multinomial | gaussian | poisson | gamma | tweedie | laplace | quantile | huber
+      distribution : "AUTO" | "bernoulli" | "multinomial" | "gaussian" | "poisson" | "gamma" | "tweedie" | "laplace" |
+                     "quantile" | "huber"
         Distribution function
-        Default: AUTO
+        Default: "AUTO"
 
       quantile_alpha : float
         Desired quantile for Quantile regression, must be between 0 and 1.
@@ -255,10 +256,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
         Default: 5
 
-      stopping_metric : AUTO | deviance | logloss | MSE | AUC | lift_top_group | r2 | misclassification |
-                        mean_per_class_error
+      stopping_metric : "AUTO" | "deviance" | "logloss" | "MSE" | "AUC" | "lift_top_group" | "r2" | "misclassification"
+                        | "mean_per_class_error"
         Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)
-        Default: AUTO
+        Default: "AUTO"
 
       stopping_tolerance : float
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
@@ -268,9 +269,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
         Default: 0.0
 
-      score_validation_sampling : Uniform | Stratified
+      score_validation_sampling : "Uniform" | "Stratified"
         Method used to sample validation dataset for scoring.
-        Default: Uniform
+        Default: "Uniform"
 
       diagnostics : bool
         Enable diagnostics for hidden layers.
@@ -301,9 +302,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         close to #nodes x #rows, of if using balance_classes).
         Default: False
 
-      missing_values_handling : Skip | MeanImputation
+      missing_values_handling : "Skip" | "MeanImputation"
         Handling of missing values. Either Skip or MeanImputation.
-        Default: MeanImputation
+        Default: "MeanImputation"
 
       quiet_mode : bool
         Enable quiet mode for less output to standard output.
@@ -346,9 +347,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Mini-batch size (smaller leads to better fit, larger can speed up and generalize better).
         Default: 1
 
-      categorical_encoding : AUTO | Enum | OneHotInternal | OneHotExplicit | Binary | Eigen
+      categorical_encoding : "AUTO" | "Enum" | "OneHotInternal" | "OneHotExplicit" | "Binary" | "Eigen"
         Encoding scheme for categorical features
-        Default: AUTO
+        Default: "AUTO"
 
       elastic_averaging : bool
         Elastic averaging between compute nodes can improve distributed model convergence. #Experimental

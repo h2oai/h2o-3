@@ -34,13 +34,13 @@ class H2OAggregatorEstimator(H2OEstimator):
         Radius scaling
         Default: 1.0
 
-      transform : NONE | STANDARDIZE | NORMALIZE | DEMEAN | DESCALE
+      transform : "NONE" | "STANDARDIZE" | "NORMALIZE" | "DEMEAN" | "DESCALE"
         Transformation of training data
-        Default: NORMALIZE
+        Default: "NORMALIZE"
 
-      categorical_encoding : AUTO | Enum | OneHotInternal | OneHotExplicit | Binary | Eigen
+      categorical_encoding : "AUTO" | "Enum" | "OneHotInternal" | "OneHotExplicit" | "Binary" | "Eigen"
         Encoding scheme for categorical features
-        Default: AUTO
+        Default: "AUTO"
 
     """
 

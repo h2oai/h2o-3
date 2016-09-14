@@ -34,13 +34,13 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
         Default: False
 
-      transform : NONE | STANDARDIZE | NORMALIZE | DEMEAN | DESCALE
+      transform : "NONE" | "STANDARDIZE" | "NORMALIZE" | "DEMEAN" | "DESCALE"
         Transformation of training data
-        Default: NONE
+        Default: "NONE"
 
-      pca_method : GramSVD | Power | Randomized | GLRM
+      pca_method : "GramSVD" | "Power" | "Randomized" | "GLRM"
         Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable)
-        Default: GramSVD
+        Default: "GramSVD"
 
       k : int, required
         Rank of matrix approximation

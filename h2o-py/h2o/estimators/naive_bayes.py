@@ -31,10 +31,10 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Seed for pseudo random number generator (only used for cross-validation and fold_assignment="Random" or "AUTO")
         Default: -1
 
-      fold_assignment : AUTO | Random | Modulo | Stratified
+      fold_assignment : "AUTO" | "Random" | "Modulo" | "Stratified"
         Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will stratify
         the folds based on the response variable, for classification problems.
-        Default: AUTO
+        Default: "AUTO"
 
       fold_column : VecSpecifier
         Column with cross-validation fold index assignment per observation.
