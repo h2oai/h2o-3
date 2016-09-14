@@ -190,7 +190,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         }
       }
       ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl);
-      if (m!=null) m._output.addModelMetrics(mm);
+      if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
     public String toString(){

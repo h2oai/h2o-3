@@ -21,7 +21,7 @@ public class ModelMetricsAggregator extends ModelMetricsUnsupervised {
 
     @Override
     public ModelMetrics makeModelMetrics(Model m, Frame f, Frame adaptedFrame, Frame preds) {
-      return m._output.addModelMetrics(new hex.aggregator.ModelMetricsAggregator(m, f));
+      return m.addModelMetrics(new hex.aggregator.ModelMetricsAggregator(m, f));
     }
   }
 }

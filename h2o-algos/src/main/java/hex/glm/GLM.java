@@ -100,7 +100,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    *   4. unlock the n-folds models (they are changed here, so the unlocking happens here)
    */
   @Override
-  public void modifyParmsForCrossValidationMainModel(ModelBuilder[] cvModelBuilders) {
+  public void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders) {
     if(_parms._lambda_search) {
       _xval_test_deviances = new double[_parms._lambda.length];
       _xval_test_sd = new double [_parms._lambda.length];

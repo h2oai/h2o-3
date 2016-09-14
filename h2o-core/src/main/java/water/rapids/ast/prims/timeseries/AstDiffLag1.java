@@ -1,4 +1,4 @@
-package water.rapids.ast.prims.time;
+package water.rapids.ast.prims.timeseries;
 
 import water.MRTask;
 import water.fvec.Chunk;
@@ -13,10 +13,7 @@ import water.rapids.ast.AstRoot;
 import water.util.ArrayUtils;
 
 /**
- * R 'diff' command.
- * <p/>
- * This method is purely for the console right now.  Print stuff into the string buffer.
- * JSON response is not configured at all.
+ * Compute a difference of a time series where lag = 1
  */
 public class AstDiffLag1 extends AstPrimitive {
   @Override
@@ -36,7 +33,7 @@ public class AstDiffLag1 extends AstPrimitive {
 
   @Override
   public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    Frame fr = stk.track(asts[2].exec(env).getFrame());
+    Frame fr = stk.track(asts[1].exec(env).getFrame());
     if (fr.numCols() != 1)
       throw new IllegalArgumentException("Expected a single column for diff. Got: " + fr.numCols() + " columns.");
     if (!fr.anyVec().isNumeric())
@@ -52,7 +49,7 @@ public class AstDiffLag1 extends AstPrimitive {
         for (int row = 1; row < c._len; ++row)
           nc.addNum(c.atd(row) - c.atd(row - 1));
       }
-    }.doAll(fr).outputFrame());
+    }.doAll(fr.types(), fr).outputFrame(fr.names(), fr.domains()));
   }
 
   private static class GetLastElemPerChunkTask extends MRTask<GetLastElemPerChunkTask> {
