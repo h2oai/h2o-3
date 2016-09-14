@@ -10,7 +10,16 @@ fi
 
 # Clean out any old sandbox, make a new one
 OUTDIR=sandbox/single
-rm -fr $OUTDIR; mkdir -p $OUTDIR
+
+MKDIR=mkdir
+SEP=:
+case "`uname`" in
+    CYGWIN* )
+      MKDIR="mkdir.exe"
+      SEP=";"
+      ;;
+esac
+rm -fr $OUTDIR; $MKDIR -p $OUTDIR
 
 # Check for os
 SEP=:
