@@ -53,6 +53,6 @@ class FrameOpsTest extends TestUtil {
 }
 
 object FrameOpsTest extends TestUtil {
-  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(5)
+  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(1)
 }
 
