@@ -66,6 +66,11 @@ class H2ODeepWaterEstimator(H2OEstimator):
         How many times the dataset should be iterated (streamed), can be fractional.
         Default: 10.0
 
+      train_samples_per_iteration : int
+        Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all
+        available data (e.g., replicated training data), -2: automatic.
+        Default: -2
+
       target_ratio_comm_to_comp : float
         Target ratio of communication overhead to computation. Only for multi-node operation and
         train_samples_per_iteration = -2 (auto-tuning).
@@ -197,10 +202,10 @@ class H2ODeepWaterEstimator(H2OEstimator):
         for name in ["model_id", "checkpoint", "training_frame", "validation_frame", "nfolds",
                      "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                      "fold_column", "response_column", "ignored_columns", "score_each_iteration",
-                     "overwrite_with_best_model", "epochs", "target_ratio_comm_to_comp", "seed", "rate",
-                     "rate_annealing", "momentum_start", "momentum_ramp", "momentum_stable", "distribution",
-                     "score_interval", "score_training_samples", "score_validation_samples", "score_duty_cycle",
-                     "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
+                     "overwrite_with_best_model", "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp",
+                     "seed", "rate", "rate_annealing", "momentum_start", "momentum_ramp", "momentum_stable",
+                     "distribution", "score_interval", "score_training_samples", "score_validation_samples",
+                     "score_duty_cycle", "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
                      "replicate_training_data", "single_node_mode", "shuffle_training_data", "mini_batch_size",
                      "clip_gradient", "network", "backend", "image_shape", "channels", "device_id",
                      "network_definition_file", "network_parameters_file", "mean_image_file",
@@ -311,6 +316,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @epochs.setter
     def epochs(self, value):
         self._parms["epochs"] = value
+
+    @property
+    def train_samples_per_iteration(self):
+        return self._parms["train_samples_per_iteration"]
+
+    @train_samples_per_iteration.setter
+    def train_samples_per_iteration(self, value):
+        self._parms["train_samples_per_iteration"] = value
 
     @property
     def target_ratio_comm_to_comp(self):
