@@ -207,7 +207,7 @@ def gen_module(schema, algo):
             # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
             yield "        assert_is_type(%s, None, numeric, [numeric])" % pname
         elif pname in {"checkpoint", "pretrained_autoencoder"}:
-            yield "        assert_is_type(%s, None, H2OEstimator)" % pname
+            yield "        assert_is_type(%s, None, str, H2OEstimator)" % pname
         else:
             yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
         yield "        self._parms[\"%s\"] = %s" % (sname, pname)

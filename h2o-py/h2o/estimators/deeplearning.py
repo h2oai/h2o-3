@@ -294,7 +294,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @checkpoint.setter
     def checkpoint(self, checkpoint):
-        assert_is_type(checkpoint, None, H2OEstimator)
+        assert_is_type(checkpoint, None, str, H2OEstimator)
         self._parms["checkpoint"] = checkpoint
 
 
@@ -305,7 +305,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @pretrained_autoencoder.setter
     def pretrained_autoencoder(self, pretrained_autoencoder):
-        assert_is_type(pretrained_autoencoder, None, H2OEstimator)
+        assert_is_type(pretrained_autoencoder, None, str, H2OEstimator)
         self._parms["pretrained_autoencoder"] = pretrained_autoencoder
 
 

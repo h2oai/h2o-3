@@ -496,7 +496,7 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @checkpoint.setter
     def checkpoint(self, checkpoint):
-        assert_is_type(checkpoint, None, H2OEstimator)
+        assert_is_type(checkpoint, None, str, H2OEstimator)
         self._parms["checkpoint"] = checkpoint
 
 
