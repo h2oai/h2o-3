@@ -401,6 +401,12 @@ Example:
 
     java -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
 
+Example (on MacOS):
+
+::
+
+    java -Djava.security.krb5.realm="0XDATA.LOC" -Djava.security.krb5.kdc="ldap.0xdata.loc" -jar h2o.jar -kerberos_login -login_conf kerb.conf -user_name kerb_principal
+
 H2O on Hadoop
 '''''''''''''
 

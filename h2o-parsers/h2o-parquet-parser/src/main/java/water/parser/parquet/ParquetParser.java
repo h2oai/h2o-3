@@ -7,6 +7,7 @@ import org.apache.parquet.hadoop.VecParquetReader;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
+import org.apache.parquet.schema.OriginalType;
 import org.apache.parquet.schema.Type;
 import water.Job;
 import water.Key;
@@ -97,9 +98,9 @@ public class ParquetParser extends Parser {
     public byte[] guessTypes() {
       byte[] types = super.guessTypes();
       for (int i = 0; i < types.length; i++) {
-        if (_roughTypes[i] == Vec.T_NUM) {
-          // don't convert Parquet numeric type to non-numeric type in H2O
-          types[i] = Vec.T_NUM;
+        if ((_roughTypes[i] == Vec.T_NUM) || (_roughTypes[i] == Vec.T_TIME)) {
+          // don't convert Parquet numeric/time type to non-numeric type in H2O
+          types[i] = _roughTypes[i];
         } else if ((_roughTypes[i] == Vec.T_BAD) && (types[i] == Vec.T_NUM)) {
           // don't convert Parquet non-numeric type to a numeric type in H2O
           types[i] = Vec.T_STR;
@@ -149,12 +150,14 @@ public class ParquetParser extends Parser {
       Type parquetType = messageType.getType(i);
       assert parquetType.isPrimitive();
       switch (parquetType.asPrimitiveType().getPrimitiveTypeName()) {
-        case INT64:
         case INT32:
         case BOOLEAN:
         case FLOAT:
         case DOUBLE:
           types[i] = Vec.T_NUM;
+          break;
+        case INT64:
+          types[i] = OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) ? Vec.T_TIME : Vec.T_NUM;
           break;
         default:
           types[i] = Vec.T_BAD;
