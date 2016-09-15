@@ -168,7 +168,8 @@ def gen_module(schema, algo):
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
     yield "        for pname, pvalue in kwargs.items():"
     yield "            if pname == 'model_id':"
-    yield '                self._id = pvalue'
+    yield "                self._id = pvalue"
+    yield '                self._parms["model_id"] = pvalue'
     yield "            elif pname in names_list:"
     yield "                # Using setattr(...) will invoke type-checking of the arguments"
     yield "                setattr(self, pname, pvalue)"

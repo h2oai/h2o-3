@@ -30,6 +30,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
+                self._parms["model_id"] = pvalue
             elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
