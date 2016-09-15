@@ -200,14 +200,14 @@ def gen_module(schema, algo):
         yield "    def %s(self, %s):" % (pname, pname)
         if pname in {"training_frame", "validation_frame", "user_x", "user_y", "user_points", "beta_constraints"}:
             assert param["ptype"] == "str"
-            yield "        assert_is_type(%s, None, str, H2OFrame)" % pname
+            yield "        assert_is_type(%s, None, H2OFrame)" % pname
         elif pname in {"initial_weights", "initial_biases"}:
-            yield "        assert_is_type(%s, none, [str, H2OFrame])" % pname
+            yield "        assert_is_type(%s, none, [H2OFrame])" % pname
         elif pname in {"alpha", "lambda_"} and ptype == "[numeric]":
             # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
             yield "        assert_is_type(%s, None, numeric, [numeric])" % pname
         elif pname in {"checkpoint", "pretrained_autoencoder"}:
-            yield "        assert_is_type(%s, None, str, H2OEstimator)" % pname
+            yield "        assert_is_type(%s, None, H2OEstimator)" % pname
         else:
             yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
         yield "        self._parms[\"%s\"] = %s" % (sname, pname)

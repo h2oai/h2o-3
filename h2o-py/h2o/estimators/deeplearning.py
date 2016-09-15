@@ -75,7 +75,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, str, H2OFrame)
+        assert_is_type(training_frame, None, H2OFrame)
         self._parms["training_frame"] = training_frame
 
 
@@ -86,7 +86,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, str, H2OFrame)
+        assert_is_type(validation_frame, None, H2OFrame)
         self._parms["validation_frame"] = validation_frame
 
 
@@ -294,7 +294,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @checkpoint.setter
     def checkpoint(self, checkpoint):
-        assert_is_type(checkpoint, None, str, H2OEstimator)
+        assert_is_type(checkpoint, None, H2OEstimator)
         self._parms["checkpoint"] = checkpoint
 
 
@@ -305,7 +305,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @pretrained_autoencoder.setter
     def pretrained_autoencoder(self, pretrained_autoencoder):
-        assert_is_type(pretrained_autoencoder, None, str, H2OEstimator)
+        assert_is_type(pretrained_autoencoder, None, H2OEstimator)
         self._parms["pretrained_autoencoder"] = pretrained_autoencoder
 
 
@@ -637,7 +637,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @initial_weights.setter
     def initial_weights(self, initial_weights):
-        assert_is_type(initial_weights, none, [str, H2OFrame])
+        assert_is_type(initial_weights, none, [H2OFrame])
         self._parms["initial_weights"] = initial_weights
 
 
@@ -648,7 +648,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @initial_biases.setter
     def initial_biases(self, initial_biases):
-        assert_is_type(initial_biases, none, [str, H2OFrame])
+        assert_is_type(initial_biases, none, [H2OFrame])
         self._parms["initial_biases"] = initial_biases
 
 

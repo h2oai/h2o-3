@@ -44,7 +44,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @training_frame.setter
     def training_frame(self, training_frame):
-        assert_is_type(training_frame, None, str, H2OFrame)
+        assert_is_type(training_frame, None, H2OFrame)
         self._parms["training_frame"] = training_frame
 
 
@@ -55,7 +55,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @validation_frame.setter
     def validation_frame(self, validation_frame):
-        assert_is_type(validation_frame, None, str, H2OFrame)
+        assert_is_type(validation_frame, None, H2OFrame)
         self._parms["validation_frame"] = validation_frame
 
 
