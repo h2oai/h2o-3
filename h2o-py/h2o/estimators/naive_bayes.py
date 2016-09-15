@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
+from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, numeric
 
 
@@ -37,9 +38,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                       "eps_prob", "compute_metrics", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname in kwargs:
-            sname = pname[:-1] if pname[-1] == '_' else pname
             if pname in names_list:
-                self._parms[sname] = kwargs[pname]
+                # Using setattr(...) will invoke type-checking of the arguments
+                setattr(self, pname, kwargs[pname])
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -49,9 +50,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("nfolds")
 
     @nfolds.setter
-    def nfolds(self, value):
-        assert_is_type(value, int)
-        self._parms["nfolds"] = value
+    def nfolds(self, nfolds):
+        assert_is_type(nfolds, None, int)
+        self._parms["nfolds"] = nfolds
 
 
     @property
@@ -63,9 +64,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("seed")
 
     @seed.setter
-    def seed(self, value):
-        assert_is_type(value, int)
-        self._parms["seed"] = value
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
 
     @property
@@ -78,10 +79,10 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("fold_assignment")
 
     @fold_assignment.setter
-    def fold_assignment(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "auto", "random", "modulo", "stratified")
-        self._parms["fold_assignment"] = value
+    def fold_assignment(self, fold_assignment):
+        fold_assignment = re.sub(r"[^a-z]+", "", fold_assignment.lower())
+        assert_is_type(fold_assignment, None, "auto", "random", "modulo", "stratified")
+        self._parms["fold_assignment"] = fold_assignment
 
 
     @property
@@ -90,9 +91,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("fold_column")
 
     @fold_column.setter
-    def fold_column(self, value):
-        assert_is_type(value, str)
-        self._parms["fold_column"] = value
+    def fold_column(self, fold_column):
+        assert_is_type(fold_column, None, str)
+        self._parms["fold_column"] = fold_column
 
 
     @property
@@ -101,9 +102,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("keep_cross_validation_predictions")
 
     @keep_cross_validation_predictions.setter
-    def keep_cross_validation_predictions(self, value):
-        assert_is_type(value, bool)
-        self._parms["keep_cross_validation_predictions"] = value
+    def keep_cross_validation_predictions(self, keep_cross_validation_predictions):
+        assert_is_type(keep_cross_validation_predictions, None, bool)
+        self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
 
 
     @property
@@ -112,9 +113,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("keep_cross_validation_fold_assignment")
 
     @keep_cross_validation_fold_assignment.setter
-    def keep_cross_validation_fold_assignment(self, value):
-        assert_is_type(value, bool)
-        self._parms["keep_cross_validation_fold_assignment"] = value
+    def keep_cross_validation_fold_assignment(self, keep_cross_validation_fold_assignment):
+        assert_is_type(keep_cross_validation_fold_assignment, None, bool)
+        self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
 
 
     @property
@@ -123,9 +124,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("training_frame")
 
     @training_frame.setter
-    def training_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["training_frame"] = value
+    def training_frame(self, training_frame):
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property
@@ -134,9 +135,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
-    def validation_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["validation_frame"] = value
+    def validation_frame(self, validation_frame):
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
 
     @property
@@ -145,9 +146,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("response_column")
 
     @response_column.setter
-    def response_column(self, value):
-        assert_is_type(value, str)
-        self._parms["response_column"] = value
+    def response_column(self, response_column):
+        assert_is_type(response_column, None, str)
+        self._parms["response_column"] = response_column
 
 
     @property
@@ -156,9 +157,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
-    def ignored_columns(self, value):
-        assert_is_type(value, [str])
-        self._parms["ignored_columns"] = value
+    def ignored_columns(self, ignored_columns):
+        assert_is_type(ignored_columns, None, [str])
+        self._parms["ignored_columns"] = ignored_columns
 
 
     @property
@@ -167,9 +168,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
-    def ignore_const_cols(self, value):
-        assert_is_type(value, bool)
-        self._parms["ignore_const_cols"] = value
+    def ignore_const_cols(self, ignore_const_cols):
+        assert_is_type(ignore_const_cols, None, bool)
+        self._parms["ignore_const_cols"] = ignore_const_cols
 
 
     @property
@@ -178,9 +179,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
-    def score_each_iteration(self, value):
-        assert_is_type(value, bool)
-        self._parms["score_each_iteration"] = value
+    def score_each_iteration(self, score_each_iteration):
+        assert_is_type(score_each_iteration, None, bool)
+        self._parms["score_each_iteration"] = score_each_iteration
 
 
     @property
@@ -191,9 +192,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("balance_classes")
 
     @balance_classes.setter
-    def balance_classes(self, value):
-        assert_is_type(value, bool)
-        self._parms["balance_classes"] = value
+    def balance_classes(self, balance_classes):
+        assert_is_type(balance_classes, None, bool)
+        self._parms["balance_classes"] = balance_classes
 
 
     @property
@@ -205,9 +206,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("class_sampling_factors")
 
     @class_sampling_factors.setter
-    def class_sampling_factors(self, value):
-        assert_is_type(value, [float])
-        self._parms["class_sampling_factors"] = value
+    def class_sampling_factors(self, class_sampling_factors):
+        assert_is_type(class_sampling_factors, None, [float])
+        self._parms["class_sampling_factors"] = class_sampling_factors
 
 
     @property
@@ -219,9 +220,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("max_after_balance_size")
 
     @max_after_balance_size.setter
-    def max_after_balance_size(self, value):
-        assert_is_type(value, float)
-        self._parms["max_after_balance_size"] = value
+    def max_after_balance_size(self, max_after_balance_size):
+        assert_is_type(max_after_balance_size, None, float)
+        self._parms["max_after_balance_size"] = max_after_balance_size
 
 
     @property
@@ -230,9 +231,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("max_confusion_matrix_size")
 
     @max_confusion_matrix_size.setter
-    def max_confusion_matrix_size(self, value):
-        assert_is_type(value, int)
-        self._parms["max_confusion_matrix_size"] = value
+    def max_confusion_matrix_size(self, max_confusion_matrix_size):
+        assert_is_type(max_confusion_matrix_size, None, int)
+        self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
 
 
     @property
@@ -244,9 +245,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("max_hit_ratio_k")
 
     @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, value):
-        assert_is_type(value, int)
-        self._parms["max_hit_ratio_k"] = value
+    def max_hit_ratio_k(self, max_hit_ratio_k):
+        assert_is_type(max_hit_ratio_k, None, int)
+        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
 
 
     @property
@@ -255,9 +256,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("laplace")
 
     @laplace.setter
-    def laplace(self, value):
-        assert_is_type(value, numeric)
-        self._parms["laplace"] = value
+    def laplace(self, laplace):
+        assert_is_type(laplace, None, numeric)
+        self._parms["laplace"] = laplace
 
 
     @property
@@ -266,9 +267,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("min_sdev")
 
     @min_sdev.setter
-    def min_sdev(self, value):
-        assert_is_type(value, numeric)
-        self._parms["min_sdev"] = value
+    def min_sdev(self, min_sdev):
+        assert_is_type(min_sdev, None, numeric)
+        self._parms["min_sdev"] = min_sdev
 
 
     @property
@@ -277,9 +278,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("eps_sdev")
 
     @eps_sdev.setter
-    def eps_sdev(self, value):
-        assert_is_type(value, numeric)
-        self._parms["eps_sdev"] = value
+    def eps_sdev(self, eps_sdev):
+        assert_is_type(eps_sdev, None, numeric)
+        self._parms["eps_sdev"] = eps_sdev
 
 
     @property
@@ -288,9 +289,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("min_prob")
 
     @min_prob.setter
-    def min_prob(self, value):
-        assert_is_type(value, numeric)
-        self._parms["min_prob"] = value
+    def min_prob(self, min_prob):
+        assert_is_type(min_prob, None, numeric)
+        self._parms["min_prob"] = min_prob
 
 
     @property
@@ -299,9 +300,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("eps_prob")
 
     @eps_prob.setter
-    def eps_prob(self, value):
-        assert_is_type(value, numeric)
-        self._parms["eps_prob"] = value
+    def eps_prob(self, eps_prob):
+        assert_is_type(eps_prob, None, numeric)
+        self._parms["eps_prob"] = eps_prob
 
 
     @property
@@ -310,9 +311,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("compute_metrics")
 
     @compute_metrics.setter
-    def compute_metrics(self, value):
-        assert_is_type(value, bool)
-        self._parms["compute_metrics"] = value
+    def compute_metrics(self, compute_metrics):
+        assert_is_type(compute_metrics, None, bool)
+        self._parms["compute_metrics"] = compute_metrics
 
 
     @property
@@ -321,8 +322,8 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
-    def max_runtime_secs(self, value):
-        assert_is_type(value, numeric)
-        self._parms["max_runtime_secs"] = value
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
 
 

@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
+from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, numeric
 
 
@@ -18,6 +19,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     Build a supervised Deep Neural Network model
     Builds a feed-forward multilayer artificial neural network on an H2OFrame
+
     Examples
     --------
       >>> import h2o
@@ -57,9 +59,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
                       "elastic_averaging_moving_rate", "elastic_averaging_regularization"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname in kwargs:
-            sname = pname[:-1] if pname[-1] == '_' else pname
             if pname in names_list:
-                self._parms[sname] = kwargs[pname]
+                # Using setattr(...) will invoke type-checking of the arguments
+                setattr(self, pname, kwargs[pname])
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
         if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True
@@ -70,9 +72,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("training_frame")
 
     @training_frame.setter
-    def training_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["training_frame"] = value
+    def training_frame(self, training_frame):
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property
@@ -81,9 +83,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
-    def validation_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["validation_frame"] = value
+    def validation_frame(self, validation_frame):
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
 
     @property
@@ -92,9 +94,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("nfolds")
 
     @nfolds.setter
-    def nfolds(self, value):
-        assert_is_type(value, int)
-        self._parms["nfolds"] = value
+    def nfolds(self, nfolds):
+        assert_is_type(nfolds, None, int)
+        self._parms["nfolds"] = nfolds
 
 
     @property
@@ -103,9 +105,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("keep_cross_validation_predictions")
 
     @keep_cross_validation_predictions.setter
-    def keep_cross_validation_predictions(self, value):
-        assert_is_type(value, bool)
-        self._parms["keep_cross_validation_predictions"] = value
+    def keep_cross_validation_predictions(self, keep_cross_validation_predictions):
+        assert_is_type(keep_cross_validation_predictions, None, bool)
+        self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
 
 
     @property
@@ -114,9 +116,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("keep_cross_validation_fold_assignment")
 
     @keep_cross_validation_fold_assignment.setter
-    def keep_cross_validation_fold_assignment(self, value):
-        assert_is_type(value, bool)
-        self._parms["keep_cross_validation_fold_assignment"] = value
+    def keep_cross_validation_fold_assignment(self, keep_cross_validation_fold_assignment):
+        assert_is_type(keep_cross_validation_fold_assignment, None, bool)
+        self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
 
 
     @property
@@ -129,10 +131,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("fold_assignment")
 
     @fold_assignment.setter
-    def fold_assignment(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "auto", "random", "modulo", "stratified")
-        self._parms["fold_assignment"] = value
+    def fold_assignment(self, fold_assignment):
+        fold_assignment = re.sub(r"[^a-z]+", "", fold_assignment.lower())
+        assert_is_type(fold_assignment, None, "auto", "random", "modulo", "stratified")
+        self._parms["fold_assignment"] = fold_assignment
 
 
     @property
@@ -141,9 +143,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("fold_column")
 
     @fold_column.setter
-    def fold_column(self, value):
-        assert_is_type(value, str)
-        self._parms["fold_column"] = value
+    def fold_column(self, fold_column):
+        assert_is_type(fold_column, None, str)
+        self._parms["fold_column"] = fold_column
 
 
     @property
@@ -152,9 +154,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("response_column")
 
     @response_column.setter
-    def response_column(self, value):
-        assert_is_type(value, str)
-        self._parms["response_column"] = value
+    def response_column(self, response_column):
+        assert_is_type(response_column, None, str)
+        self._parms["response_column"] = response_column
 
 
     @property
@@ -163,9 +165,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
-    def ignored_columns(self, value):
-        assert_is_type(value, [str])
-        self._parms["ignored_columns"] = value
+    def ignored_columns(self, ignored_columns):
+        assert_is_type(ignored_columns, None, [str])
+        self._parms["ignored_columns"] = ignored_columns
 
 
     @property
@@ -174,9 +176,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
-    def ignore_const_cols(self, value):
-        assert_is_type(value, bool)
-        self._parms["ignore_const_cols"] = value
+    def ignore_const_cols(self, ignore_const_cols):
+        assert_is_type(ignore_const_cols, None, bool)
+        self._parms["ignore_const_cols"] = ignore_const_cols
 
 
     @property
@@ -185,9 +187,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
-    def score_each_iteration(self, value):
-        assert_is_type(value, bool)
-        self._parms["score_each_iteration"] = value
+    def score_each_iteration(self, score_each_iteration):
+        assert_is_type(score_each_iteration, None, bool)
+        self._parms["score_each_iteration"] = score_each_iteration
 
 
     @property
@@ -200,9 +202,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("weights_column")
 
     @weights_column.setter
-    def weights_column(self, value):
-        assert_is_type(value, str)
-        self._parms["weights_column"] = value
+    def weights_column(self, weights_column):
+        assert_is_type(weights_column, None, str)
+        self._parms["weights_column"] = weights_column
 
 
     @property
@@ -213,9 +215,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("offset_column")
 
     @offset_column.setter
-    def offset_column(self, value):
-        assert_is_type(value, str)
-        self._parms["offset_column"] = value
+    def offset_column(self, offset_column):
+        assert_is_type(offset_column, None, str)
+        self._parms["offset_column"] = offset_column
 
 
     @property
@@ -226,9 +228,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("balance_classes")
 
     @balance_classes.setter
-    def balance_classes(self, value):
-        assert_is_type(value, bool)
-        self._parms["balance_classes"] = value
+    def balance_classes(self, balance_classes):
+        assert_is_type(balance_classes, None, bool)
+        self._parms["balance_classes"] = balance_classes
 
 
     @property
@@ -240,9 +242,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("class_sampling_factors")
 
     @class_sampling_factors.setter
-    def class_sampling_factors(self, value):
-        assert_is_type(value, [float])
-        self._parms["class_sampling_factors"] = value
+    def class_sampling_factors(self, class_sampling_factors):
+        assert_is_type(class_sampling_factors, None, [float])
+        self._parms["class_sampling_factors"] = class_sampling_factors
 
 
     @property
@@ -254,9 +256,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("max_after_balance_size")
 
     @max_after_balance_size.setter
-    def max_after_balance_size(self, value):
-        assert_is_type(value, float)
-        self._parms["max_after_balance_size"] = value
+    def max_after_balance_size(self, max_after_balance_size):
+        assert_is_type(max_after_balance_size, None, float)
+        self._parms["max_after_balance_size"] = max_after_balance_size
 
 
     @property
@@ -265,9 +267,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("max_confusion_matrix_size")
 
     @max_confusion_matrix_size.setter
-    def max_confusion_matrix_size(self, value):
-        assert_is_type(value, int)
-        self._parms["max_confusion_matrix_size"] = value
+    def max_confusion_matrix_size(self, max_confusion_matrix_size):
+        assert_is_type(max_confusion_matrix_size, None, int)
+        self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
 
 
     @property
@@ -279,9 +281,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("max_hit_ratio_k")
 
     @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, value):
-        assert_is_type(value, int)
-        self._parms["max_hit_ratio_k"] = value
+    def max_hit_ratio_k(self, max_hit_ratio_k):
+        assert_is_type(max_hit_ratio_k, None, int)
+        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
 
 
     @property
@@ -290,9 +292,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("checkpoint")
 
     @checkpoint.setter
-    def checkpoint(self, value):
-        assert_is_type(value, str)
-        self._parms["checkpoint"] = value
+    def checkpoint(self, checkpoint):
+        assert_is_type(checkpoint, None, str)
+        self._parms["checkpoint"] = checkpoint
 
 
     @property
@@ -301,9 +303,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("pretrained_autoencoder")
 
     @pretrained_autoencoder.setter
-    def pretrained_autoencoder(self, value):
-        assert_is_type(value, str)
-        self._parms["pretrained_autoencoder"] = value
+    def pretrained_autoencoder(self, pretrained_autoencoder):
+        assert_is_type(pretrained_autoencoder, None, str)
+        self._parms["pretrained_autoencoder"] = pretrained_autoencoder
 
 
     @property
@@ -314,9 +316,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("overwrite_with_best_model")
 
     @overwrite_with_best_model.setter
-    def overwrite_with_best_model(self, value):
-        assert_is_type(value, bool)
-        self._parms["overwrite_with_best_model"] = value
+    def overwrite_with_best_model(self, overwrite_with_best_model):
+        assert_is_type(overwrite_with_best_model, None, bool)
+        self._parms["overwrite_with_best_model"] = overwrite_with_best_model
 
 
     @property
@@ -328,9 +330,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("use_all_factor_levels")
 
     @use_all_factor_levels.setter
-    def use_all_factor_levels(self, value):
-        assert_is_type(value, bool)
-        self._parms["use_all_factor_levels"] = value
+    def use_all_factor_levels(self, use_all_factor_levels):
+        assert_is_type(use_all_factor_levels, None, bool)
+        self._parms["use_all_factor_levels"] = use_all_factor_levels
 
 
     @property
@@ -342,9 +344,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("standardize")
 
     @standardize.setter
-    def standardize(self, value):
-        assert_is_type(value, bool)
-        self._parms["standardize"] = value
+    def standardize(self, standardize):
+        assert_is_type(standardize, None, bool)
+        self._parms["standardize"] = standardize
 
 
     @property
@@ -356,10 +358,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("activation")
 
     @activation.setter
-    def activation(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "tanh", "tanhwithdropout", "rectifier", "rectifierwithdropout", "maxout", "maxoutwithdropout")
-        self._parms["activation"] = value
+    def activation(self, activation):
+        activation = re.sub(r"[^a-z]+", "", activation.lower())
+        assert_is_type(activation, None, "tanh", "tanhwithdropout", "rectifier", "rectifierwithdropout", "maxout", "maxoutwithdropout")
+        self._parms["activation"] = activation
 
 
     @property
@@ -368,9 +370,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("hidden")
 
     @hidden.setter
-    def hidden(self, value):
-        assert_is_type(value, [int])
-        self._parms["hidden"] = value
+    def hidden(self, hidden):
+        assert_is_type(hidden, None, [int])
+        self._parms["hidden"] = hidden
 
 
     @property
@@ -379,9 +381,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("epochs")
 
     @epochs.setter
-    def epochs(self, value):
-        assert_is_type(value, numeric)
-        self._parms["epochs"] = value
+    def epochs(self, epochs):
+        assert_is_type(epochs, None, numeric)
+        self._parms["epochs"] = epochs
 
 
     @property
@@ -393,9 +395,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("train_samples_per_iteration")
 
     @train_samples_per_iteration.setter
-    def train_samples_per_iteration(self, value):
-        assert_is_type(value, int)
-        self._parms["train_samples_per_iteration"] = value
+    def train_samples_per_iteration(self, train_samples_per_iteration):
+        assert_is_type(train_samples_per_iteration, None, int)
+        self._parms["train_samples_per_iteration"] = train_samples_per_iteration
 
 
     @property
@@ -407,9 +409,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("target_ratio_comm_to_comp")
 
     @target_ratio_comm_to_comp.setter
-    def target_ratio_comm_to_comp(self, value):
-        assert_is_type(value, numeric)
-        self._parms["target_ratio_comm_to_comp"] = value
+    def target_ratio_comm_to_comp(self, target_ratio_comm_to_comp):
+        assert_is_type(target_ratio_comm_to_comp, None, numeric)
+        self._parms["target_ratio_comm_to_comp"] = target_ratio_comm_to_comp
 
 
     @property
@@ -421,9 +423,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("seed")
 
     @seed.setter
-    def seed(self, value):
-        assert_is_type(value, int)
-        self._parms["seed"] = value
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
 
     @property
@@ -432,9 +434,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("adaptive_rate")
 
     @adaptive_rate.setter
-    def adaptive_rate(self, value):
-        assert_is_type(value, bool)
-        self._parms["adaptive_rate"] = value
+    def adaptive_rate(self, adaptive_rate):
+        assert_is_type(adaptive_rate, None, bool)
+        self._parms["adaptive_rate"] = adaptive_rate
 
 
     @property
@@ -443,9 +445,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("rho")
 
     @rho.setter
-    def rho(self, value):
-        assert_is_type(value, numeric)
-        self._parms["rho"] = value
+    def rho(self, rho):
+        assert_is_type(rho, None, numeric)
+        self._parms["rho"] = rho
 
 
     @property
@@ -456,9 +458,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("epsilon")
 
     @epsilon.setter
-    def epsilon(self, value):
-        assert_is_type(value, numeric)
-        self._parms["epsilon"] = value
+    def epsilon(self, epsilon):
+        assert_is_type(epsilon, None, numeric)
+        self._parms["epsilon"] = epsilon
 
 
     @property
@@ -467,9 +469,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("rate")
 
     @rate.setter
-    def rate(self, value):
-        assert_is_type(value, numeric)
-        self._parms["rate"] = value
+    def rate(self, rate):
+        assert_is_type(rate, None, numeric)
+        self._parms["rate"] = rate
 
 
     @property
@@ -478,9 +480,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("rate_annealing")
 
     @rate_annealing.setter
-    def rate_annealing(self, value):
-        assert_is_type(value, numeric)
-        self._parms["rate_annealing"] = value
+    def rate_annealing(self, rate_annealing):
+        assert_is_type(rate_annealing, None, numeric)
+        self._parms["rate_annealing"] = rate_annealing
 
 
     @property
@@ -491,9 +493,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("rate_decay")
 
     @rate_decay.setter
-    def rate_decay(self, value):
-        assert_is_type(value, numeric)
-        self._parms["rate_decay"] = value
+    def rate_decay(self, rate_decay):
+        assert_is_type(rate_decay, None, numeric)
+        self._parms["rate_decay"] = rate_decay
 
 
     @property
@@ -502,9 +504,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("momentum_start")
 
     @momentum_start.setter
-    def momentum_start(self, value):
-        assert_is_type(value, numeric)
-        self._parms["momentum_start"] = value
+    def momentum_start(self, momentum_start):
+        assert_is_type(momentum_start, None, numeric)
+        self._parms["momentum_start"] = momentum_start
 
 
     @property
@@ -513,9 +515,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("momentum_ramp")
 
     @momentum_ramp.setter
-    def momentum_ramp(self, value):
-        assert_is_type(value, numeric)
-        self._parms["momentum_ramp"] = value
+    def momentum_ramp(self, momentum_ramp):
+        assert_is_type(momentum_ramp, None, numeric)
+        self._parms["momentum_ramp"] = momentum_ramp
 
 
     @property
@@ -524,9 +526,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("momentum_stable")
 
     @momentum_stable.setter
-    def momentum_stable(self, value):
-        assert_is_type(value, numeric)
-        self._parms["momentum_stable"] = value
+    def momentum_stable(self, momentum_stable):
+        assert_is_type(momentum_stable, None, numeric)
+        self._parms["momentum_stable"] = momentum_stable
 
 
     @property
@@ -535,9 +537,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("nesterov_accelerated_gradient")
 
     @nesterov_accelerated_gradient.setter
-    def nesterov_accelerated_gradient(self, value):
-        assert_is_type(value, bool)
-        self._parms["nesterov_accelerated_gradient"] = value
+    def nesterov_accelerated_gradient(self, nesterov_accelerated_gradient):
+        assert_is_type(nesterov_accelerated_gradient, None, bool)
+        self._parms["nesterov_accelerated_gradient"] = nesterov_accelerated_gradient
 
 
     @property
@@ -546,9 +548,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("input_dropout_ratio")
 
     @input_dropout_ratio.setter
-    def input_dropout_ratio(self, value):
-        assert_is_type(value, numeric)
-        self._parms["input_dropout_ratio"] = value
+    def input_dropout_ratio(self, input_dropout_ratio):
+        assert_is_type(input_dropout_ratio, None, numeric)
+        self._parms["input_dropout_ratio"] = input_dropout_ratio
 
 
     @property
@@ -560,9 +562,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("hidden_dropout_ratios")
 
     @hidden_dropout_ratios.setter
-    def hidden_dropout_ratios(self, value):
-        assert_is_type(value, [numeric])
-        self._parms["hidden_dropout_ratios"] = value
+    def hidden_dropout_ratios(self, hidden_dropout_ratios):
+        assert_is_type(hidden_dropout_ratios, None, [numeric])
+        self._parms["hidden_dropout_ratios"] = hidden_dropout_ratios
 
 
     @property
@@ -574,9 +576,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("l1")
 
     @l1.setter
-    def l1(self, value):
-        assert_is_type(value, numeric)
-        self._parms["l1"] = value
+    def l1(self, l1):
+        assert_is_type(l1, None, numeric)
+        self._parms["l1"] = l1
 
 
     @property
@@ -588,9 +590,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("l2")
 
     @l2.setter
-    def l2(self, value):
-        assert_is_type(value, numeric)
-        self._parms["l2"] = value
+    def l2(self, l2):
+        assert_is_type(l2, None, numeric)
+        self._parms["l2"] = l2
 
 
     @property
@@ -599,9 +601,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("max_w2")
 
     @max_w2.setter
-    def max_w2(self, value):
-        assert_is_type(value, float)
-        self._parms["max_w2"] = value
+    def max_w2(self, max_w2):
+        assert_is_type(max_w2, None, float)
+        self._parms["max_w2"] = max_w2
 
 
     @property
@@ -612,10 +614,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("initial_weight_distribution")
 
     @initial_weight_distribution.setter
-    def initial_weight_distribution(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "uniformadaptive", "uniform", "normal")
-        self._parms["initial_weight_distribution"] = value
+    def initial_weight_distribution(self, initial_weight_distribution):
+        initial_weight_distribution = re.sub(r"[^a-z]+", "", initial_weight_distribution.lower())
+        assert_is_type(initial_weight_distribution, None, "uniformadaptive", "uniform", "normal")
+        self._parms["initial_weight_distribution"] = initial_weight_distribution
 
 
     @property
@@ -624,9 +626,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("initial_weight_scale")
 
     @initial_weight_scale.setter
-    def initial_weight_scale(self, value):
-        assert_is_type(value, numeric)
-        self._parms["initial_weight_scale"] = value
+    def initial_weight_scale(self, initial_weight_scale):
+        assert_is_type(initial_weight_scale, None, numeric)
+        self._parms["initial_weight_scale"] = initial_weight_scale
 
 
     @property
@@ -635,9 +637,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("initial_weights")
 
     @initial_weights.setter
-    def initial_weights(self, value):
-        assert_is_type(value, [str])
-        self._parms["initial_weights"] = value
+    def initial_weights(self, initial_weights):
+        assert_is_type(initial_weights, None, [str])
+        self._parms["initial_weights"] = initial_weights
 
 
     @property
@@ -646,9 +648,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("initial_biases")
 
     @initial_biases.setter
-    def initial_biases(self, value):
-        assert_is_type(value, [str])
-        self._parms["initial_biases"] = value
+    def initial_biases(self, initial_biases):
+        assert_is_type(initial_biases, None, [str])
+        self._parms["initial_biases"] = initial_biases
 
 
     @property
@@ -660,10 +662,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("loss")
 
     @loss.setter
-    def loss(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "automatic", "crossentropy", "quadratic", "huber", "absolute", "quantile")
-        self._parms["loss"] = value
+    def loss(self, loss):
+        loss = re.sub(r"[^a-z]+", "", loss.lower())
+        assert_is_type(loss, None, "automatic", "crossentropy", "quadratic", "huber", "absolute", "quantile")
+        self._parms["loss"] = loss
 
 
     @property
@@ -675,10 +677,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("distribution")
 
     @distribution.setter
-    def distribution(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber")
-        self._parms["distribution"] = value
+    def distribution(self, distribution):
+        distribution = re.sub(r"[^a-z]+", "", distribution.lower())
+        assert_is_type(distribution, None, "auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber")
+        self._parms["distribution"] = distribution
 
 
     @property
@@ -687,9 +689,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("quantile_alpha")
 
     @quantile_alpha.setter
-    def quantile_alpha(self, value):
-        assert_is_type(value, numeric)
-        self._parms["quantile_alpha"] = value
+    def quantile_alpha(self, quantile_alpha):
+        assert_is_type(quantile_alpha, None, numeric)
+        self._parms["quantile_alpha"] = quantile_alpha
 
 
     @property
@@ -698,9 +700,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("tweedie_power")
 
     @tweedie_power.setter
-    def tweedie_power(self, value):
-        assert_is_type(value, numeric)
-        self._parms["tweedie_power"] = value
+    def tweedie_power(self, tweedie_power):
+        assert_is_type(tweedie_power, None, numeric)
+        self._parms["tweedie_power"] = tweedie_power
 
 
     @property
@@ -712,9 +714,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("huber_alpha")
 
     @huber_alpha.setter
-    def huber_alpha(self, value):
-        assert_is_type(value, numeric)
-        self._parms["huber_alpha"] = value
+    def huber_alpha(self, huber_alpha):
+        assert_is_type(huber_alpha, None, numeric)
+        self._parms["huber_alpha"] = huber_alpha
 
 
     @property
@@ -723,9 +725,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("score_interval")
 
     @score_interval.setter
-    def score_interval(self, value):
-        assert_is_type(value, numeric)
-        self._parms["score_interval"] = value
+    def score_interval(self, score_interval):
+        assert_is_type(score_interval, None, numeric)
+        self._parms["score_interval"] = score_interval
 
 
     @property
@@ -734,9 +736,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("score_training_samples")
 
     @score_training_samples.setter
-    def score_training_samples(self, value):
-        assert_is_type(value, int)
-        self._parms["score_training_samples"] = value
+    def score_training_samples(self, score_training_samples):
+        assert_is_type(score_training_samples, None, int)
+        self._parms["score_training_samples"] = score_training_samples
 
 
     @property
@@ -745,9 +747,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("score_validation_samples")
 
     @score_validation_samples.setter
-    def score_validation_samples(self, value):
-        assert_is_type(value, int)
-        self._parms["score_validation_samples"] = value
+    def score_validation_samples(self, score_validation_samples):
+        assert_is_type(score_validation_samples, None, int)
+        self._parms["score_validation_samples"] = score_validation_samples
 
 
     @property
@@ -758,9 +760,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("score_duty_cycle")
 
     @score_duty_cycle.setter
-    def score_duty_cycle(self, value):
-        assert_is_type(value, numeric)
-        self._parms["score_duty_cycle"] = value
+    def score_duty_cycle(self, score_duty_cycle):
+        assert_is_type(score_duty_cycle, None, numeric)
+        self._parms["score_duty_cycle"] = score_duty_cycle
 
 
     @property
@@ -771,9 +773,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("classification_stop")
 
     @classification_stop.setter
-    def classification_stop(self, value):
-        assert_is_type(value, numeric)
-        self._parms["classification_stop"] = value
+    def classification_stop(self, classification_stop):
+        assert_is_type(classification_stop, None, numeric)
+        self._parms["classification_stop"] = classification_stop
 
 
     @property
@@ -784,9 +786,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("regression_stop")
 
     @regression_stop.setter
-    def regression_stop(self, value):
-        assert_is_type(value, numeric)
-        self._parms["regression_stop"] = value
+    def regression_stop(self, regression_stop):
+        assert_is_type(regression_stop, None, numeric)
+        self._parms["regression_stop"] = regression_stop
 
 
     @property
@@ -798,9 +800,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("stopping_rounds")
 
     @stopping_rounds.setter
-    def stopping_rounds(self, value):
-        assert_is_type(value, int)
-        self._parms["stopping_rounds"] = value
+    def stopping_rounds(self, stopping_rounds):
+        assert_is_type(stopping_rounds, None, int)
+        self._parms["stopping_rounds"] = stopping_rounds
 
 
     @property
@@ -813,10 +815,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("stopping_metric")
 
     @stopping_metric.setter
-    def stopping_metric(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "auto", "deviance", "logloss", "mse", "auc", "lifttopgroup", "r", "misclassification", "meanperclasserror")
-        self._parms["stopping_metric"] = value
+    def stopping_metric(self, stopping_metric):
+        stopping_metric = re.sub(r"[^a-z]+", "", stopping_metric.lower())
+        assert_is_type(stopping_metric, None, "auto", "deviance", "logloss", "mse", "auc", "lifttopgroup", "r", "misclassification", "meanperclasserror")
+        self._parms["stopping_metric"] = stopping_metric
 
 
     @property
@@ -828,9 +830,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("stopping_tolerance")
 
     @stopping_tolerance.setter
-    def stopping_tolerance(self, value):
-        assert_is_type(value, numeric)
-        self._parms["stopping_tolerance"] = value
+    def stopping_tolerance(self, stopping_tolerance):
+        assert_is_type(stopping_tolerance, None, numeric)
+        self._parms["stopping_tolerance"] = stopping_tolerance
 
 
     @property
@@ -839,9 +841,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
-    def max_runtime_secs(self, value):
-        assert_is_type(value, numeric)
-        self._parms["max_runtime_secs"] = value
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
 
 
     @property
@@ -852,10 +854,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("score_validation_sampling")
 
     @score_validation_sampling.setter
-    def score_validation_sampling(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "uniform", "stratified")
-        self._parms["score_validation_sampling"] = value
+    def score_validation_sampling(self, score_validation_sampling):
+        score_validation_sampling = re.sub(r"[^a-z]+", "", score_validation_sampling.lower())
+        assert_is_type(score_validation_sampling, None, "uniform", "stratified")
+        self._parms["score_validation_sampling"] = score_validation_sampling
 
 
     @property
@@ -864,9 +866,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("diagnostics")
 
     @diagnostics.setter
-    def diagnostics(self, value):
-        assert_is_type(value, bool)
-        self._parms["diagnostics"] = value
+    def diagnostics(self, diagnostics):
+        assert_is_type(diagnostics, None, bool)
+        self._parms["diagnostics"] = diagnostics
 
 
     @property
@@ -875,9 +877,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("fast_mode")
 
     @fast_mode.setter
-    def fast_mode(self, value):
-        assert_is_type(value, bool)
-        self._parms["fast_mode"] = value
+    def fast_mode(self, fast_mode):
+        assert_is_type(fast_mode, None, bool)
+        self._parms["fast_mode"] = fast_mode
 
 
     @property
@@ -889,9 +891,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("force_load_balance")
 
     @force_load_balance.setter
-    def force_load_balance(self, value):
-        assert_is_type(value, bool)
-        self._parms["force_load_balance"] = value
+    def force_load_balance(self, force_load_balance):
+        assert_is_type(force_load_balance, None, bool)
+        self._parms["force_load_balance"] = force_load_balance
 
 
     @property
@@ -903,9 +905,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("variable_importances")
 
     @variable_importances.setter
-    def variable_importances(self, value):
-        assert_is_type(value, bool)
-        self._parms["variable_importances"] = value
+    def variable_importances(self, variable_importances):
+        assert_is_type(variable_importances, None, bool)
+        self._parms["variable_importances"] = variable_importances
 
 
     @property
@@ -917,9 +919,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("replicate_training_data")
 
     @replicate_training_data.setter
-    def replicate_training_data(self, value):
-        assert_is_type(value, bool)
-        self._parms["replicate_training_data"] = value
+    def replicate_training_data(self, replicate_training_data):
+        assert_is_type(replicate_training_data, None, bool)
+        self._parms["replicate_training_data"] = replicate_training_data
 
 
     @property
@@ -928,9 +930,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("single_node_mode")
 
     @single_node_mode.setter
-    def single_node_mode(self, value):
-        assert_is_type(value, bool)
-        self._parms["single_node_mode"] = value
+    def single_node_mode(self, single_node_mode):
+        assert_is_type(single_node_mode, None, bool)
+        self._parms["single_node_mode"] = single_node_mode
 
 
     @property
@@ -942,9 +944,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("shuffle_training_data")
 
     @shuffle_training_data.setter
-    def shuffle_training_data(self, value):
-        assert_is_type(value, bool)
-        self._parms["shuffle_training_data"] = value
+    def shuffle_training_data(self, shuffle_training_data):
+        assert_is_type(shuffle_training_data, None, bool)
+        self._parms["shuffle_training_data"] = shuffle_training_data
 
 
     @property
@@ -956,10 +958,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("missing_values_handling")
 
     @missing_values_handling.setter
-    def missing_values_handling(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "skip", "meanimputation")
-        self._parms["missing_values_handling"] = value
+    def missing_values_handling(self, missing_values_handling):
+        missing_values_handling = re.sub(r"[^a-z]+", "", missing_values_handling.lower())
+        assert_is_type(missing_values_handling, None, "skip", "meanimputation")
+        self._parms["missing_values_handling"] = missing_values_handling
 
 
     @property
@@ -968,9 +970,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("quiet_mode")
 
     @quiet_mode.setter
-    def quiet_mode(self, value):
-        assert_is_type(value, bool)
-        self._parms["quiet_mode"] = value
+    def quiet_mode(self, quiet_mode):
+        assert_is_type(quiet_mode, None, bool)
+        self._parms["quiet_mode"] = quiet_mode
 
 
     @property
@@ -979,9 +981,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("autoencoder")
 
     @autoencoder.setter
-    def autoencoder(self, value):
-        assert_is_type(value, bool)
-        self._parms["autoencoder"] = value
+    def autoencoder(self, autoencoder):
+        assert_is_type(autoencoder, None, bool)
+        self._parms["autoencoder"] = autoencoder
 
 
     @property
@@ -990,9 +992,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("sparse")
 
     @sparse.setter
-    def sparse(self, value):
-        assert_is_type(value, bool)
-        self._parms["sparse"] = value
+    def sparse(self, sparse):
+        assert_is_type(sparse, None, bool)
+        self._parms["sparse"] = sparse
 
 
     @property
@@ -1004,9 +1006,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("col_major")
 
     @col_major.setter
-    def col_major(self, value):
-        assert_is_type(value, bool)
-        self._parms["col_major"] = value
+    def col_major(self, col_major):
+        assert_is_type(col_major, None, bool)
+        self._parms["col_major"] = col_major
 
 
     @property
@@ -1015,9 +1017,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("average_activation")
 
     @average_activation.setter
-    def average_activation(self, value):
-        assert_is_type(value, numeric)
-        self._parms["average_activation"] = value
+    def average_activation(self, average_activation):
+        assert_is_type(average_activation, None, numeric)
+        self._parms["average_activation"] = average_activation
 
 
     @property
@@ -1026,9 +1028,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("sparsity_beta")
 
     @sparsity_beta.setter
-    def sparsity_beta(self, value):
-        assert_is_type(value, numeric)
-        self._parms["sparsity_beta"] = value
+    def sparsity_beta(self, sparsity_beta):
+        assert_is_type(sparsity_beta, None, numeric)
+        self._parms["sparsity_beta"] = sparsity_beta
 
 
     @property
@@ -1037,9 +1039,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("max_categorical_features")
 
     @max_categorical_features.setter
-    def max_categorical_features(self, value):
-        assert_is_type(value, int)
-        self._parms["max_categorical_features"] = value
+    def max_categorical_features(self, max_categorical_features):
+        assert_is_type(max_categorical_features, None, int)
+        self._parms["max_categorical_features"] = max_categorical_features
 
 
     @property
@@ -1048,9 +1050,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("reproducible")
 
     @reproducible.setter
-    def reproducible(self, value):
-        assert_is_type(value, bool)
-        self._parms["reproducible"] = value
+    def reproducible(self, reproducible):
+        assert_is_type(reproducible, None, bool)
+        self._parms["reproducible"] = reproducible
 
 
     @property
@@ -1059,9 +1061,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("export_weights_and_biases")
 
     @export_weights_and_biases.setter
-    def export_weights_and_biases(self, value):
-        assert_is_type(value, bool)
-        self._parms["export_weights_and_biases"] = value
+    def export_weights_and_biases(self, export_weights_and_biases):
+        assert_is_type(export_weights_and_biases, None, bool)
+        self._parms["export_weights_and_biases"] = export_weights_and_biases
 
 
     @property
@@ -1072,9 +1074,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("mini_batch_size")
 
     @mini_batch_size.setter
-    def mini_batch_size(self, value):
-        assert_is_type(value, int)
-        self._parms["mini_batch_size"] = value
+    def mini_batch_size(self, mini_batch_size):
+        assert_is_type(mini_batch_size, None, int)
+        self._parms["mini_batch_size"] = mini_batch_size
 
 
     @property
@@ -1086,10 +1088,10 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
-    def categorical_encoding(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "auto", "enum", "onehotinternal", "onehotexplicit", "binary", "eigen")
-        self._parms["categorical_encoding"] = value
+    def categorical_encoding(self, categorical_encoding):
+        categorical_encoding = re.sub(r"[^a-z]+", "", categorical_encoding.lower())
+        assert_is_type(categorical_encoding, None, "auto", "enum", "onehotinternal", "onehotexplicit", "binary", "eigen")
+        self._parms["categorical_encoding"] = categorical_encoding
 
 
     @property
@@ -1101,9 +1103,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("elastic_averaging")
 
     @elastic_averaging.setter
-    def elastic_averaging(self, value):
-        assert_is_type(value, bool)
-        self._parms["elastic_averaging"] = value
+    def elastic_averaging(self, elastic_averaging):
+        assert_is_type(elastic_averaging, None, bool)
+        self._parms["elastic_averaging"] = elastic_averaging
 
 
     @property
@@ -1112,9 +1114,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("elastic_averaging_moving_rate")
 
     @elastic_averaging_moving_rate.setter
-    def elastic_averaging_moving_rate(self, value):
-        assert_is_type(value, numeric)
-        self._parms["elastic_averaging_moving_rate"] = value
+    def elastic_averaging_moving_rate(self, elastic_averaging_moving_rate):
+        assert_is_type(elastic_averaging_moving_rate, None, numeric)
+        self._parms["elastic_averaging_moving_rate"] = elastic_averaging_moving_rate
 
 
     @property
@@ -1125,9 +1127,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
         return self._parms.get("elastic_averaging_regularization")
 
     @elastic_averaging_regularization.setter
-    def elastic_averaging_regularization(self, value):
-        assert_is_type(value, numeric)
-        self._parms["elastic_averaging_regularization"] = value
+    def elastic_averaging_regularization(self, elastic_averaging_regularization):
+        assert_is_type(elastic_averaging_regularization, None, numeric)
+        self._parms["elastic_averaging_regularization"] = elastic_averaging_regularization
 
 
 

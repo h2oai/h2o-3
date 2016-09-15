@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
+from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, numeric
 import h2o
 
@@ -19,6 +20,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     Fits a generalized linear model, specified by a response variable, a set of predictors, and a
     description of the error distribution.
+
     Returns
     -------
     A subclass of ModelBase is returned. The specific subclass depends on the machine learning task at hand
@@ -46,9 +48,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                       "max_confusion_matrix_size", "max_hit_ratio_k", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname in kwargs:
-            sname = pname[:-1] if pname[-1] == '_' else pname
             if pname in names_list:
-                self._parms[sname] = kwargs[pname]
+                # Using setattr(...) will invoke type-checking of the arguments
+                setattr(self, pname, kwargs[pname])
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -58,9 +60,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("training_frame")
 
     @training_frame.setter
-    def training_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["training_frame"] = value
+    def training_frame(self, training_frame):
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property
@@ -69,9 +71,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
-    def validation_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["validation_frame"] = value
+    def validation_frame(self, validation_frame):
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
 
     @property
@@ -80,9 +82,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("nfolds")
 
     @nfolds.setter
-    def nfolds(self, value):
-        assert_is_type(value, int)
-        self._parms["nfolds"] = value
+    def nfolds(self, nfolds):
+        assert_is_type(nfolds, None, int)
+        self._parms["nfolds"] = nfolds
 
 
     @property
@@ -91,9 +93,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("seed")
 
     @seed.setter
-    def seed(self, value):
-        assert_is_type(value, int)
-        self._parms["seed"] = value
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
 
     @property
@@ -102,9 +104,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("keep_cross_validation_predictions")
 
     @keep_cross_validation_predictions.setter
-    def keep_cross_validation_predictions(self, value):
-        assert_is_type(value, bool)
-        self._parms["keep_cross_validation_predictions"] = value
+    def keep_cross_validation_predictions(self, keep_cross_validation_predictions):
+        assert_is_type(keep_cross_validation_predictions, None, bool)
+        self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
 
 
     @property
@@ -113,9 +115,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("keep_cross_validation_fold_assignment")
 
     @keep_cross_validation_fold_assignment.setter
-    def keep_cross_validation_fold_assignment(self, value):
-        assert_is_type(value, bool)
-        self._parms["keep_cross_validation_fold_assignment"] = value
+    def keep_cross_validation_fold_assignment(self, keep_cross_validation_fold_assignment):
+        assert_is_type(keep_cross_validation_fold_assignment, None, bool)
+        self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
 
 
     @property
@@ -128,10 +130,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("fold_assignment")
 
     @fold_assignment.setter
-    def fold_assignment(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "auto", "random", "modulo", "stratified")
-        self._parms["fold_assignment"] = value
+    def fold_assignment(self, fold_assignment):
+        fold_assignment = re.sub(r"[^a-z]+", "", fold_assignment.lower())
+        assert_is_type(fold_assignment, None, "auto", "random", "modulo", "stratified")
+        self._parms["fold_assignment"] = fold_assignment
 
 
     @property
@@ -140,9 +142,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("fold_column")
 
     @fold_column.setter
-    def fold_column(self, value):
-        assert_is_type(value, str)
-        self._parms["fold_column"] = value
+    def fold_column(self, fold_column):
+        assert_is_type(fold_column, None, str)
+        self._parms["fold_column"] = fold_column
 
 
     @property
@@ -151,9 +153,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("response_column")
 
     @response_column.setter
-    def response_column(self, value):
-        assert_is_type(value, str)
-        self._parms["response_column"] = value
+    def response_column(self, response_column):
+        assert_is_type(response_column, None, str)
+        self._parms["response_column"] = response_column
 
 
     @property
@@ -162,9 +164,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
-    def ignored_columns(self, value):
-        assert_is_type(value, [str])
-        self._parms["ignored_columns"] = value
+    def ignored_columns(self, ignored_columns):
+        assert_is_type(ignored_columns, None, [str])
+        self._parms["ignored_columns"] = ignored_columns
 
 
     @property
@@ -173,9 +175,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
-    def ignore_const_cols(self, value):
-        assert_is_type(value, bool)
-        self._parms["ignore_const_cols"] = value
+    def ignore_const_cols(self, ignore_const_cols):
+        assert_is_type(ignore_const_cols, None, bool)
+        self._parms["ignore_const_cols"] = ignore_const_cols
 
 
     @property
@@ -184,9 +186,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
-    def score_each_iteration(self, value):
-        assert_is_type(value, bool)
-        self._parms["score_each_iteration"] = value
+    def score_each_iteration(self, score_each_iteration):
+        assert_is_type(score_each_iteration, None, bool)
+        self._parms["score_each_iteration"] = score_each_iteration
 
 
     @property
@@ -197,9 +199,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("offset_column")
 
     @offset_column.setter
-    def offset_column(self, value):
-        assert_is_type(value, str)
-        self._parms["offset_column"] = value
+    def offset_column(self, offset_column):
+        assert_is_type(offset_column, None, str)
+        self._parms["offset_column"] = offset_column
 
 
     @property
@@ -212,9 +214,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("weights_column")
 
     @weights_column.setter
-    def weights_column(self, value):
-        assert_is_type(value, str)
-        self._parms["weights_column"] = value
+    def weights_column(self, weights_column):
+        assert_is_type(weights_column, None, str)
+        self._parms["weights_column"] = weights_column
 
 
     @property
@@ -226,10 +228,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("family")
 
     @family.setter
-    def family(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie")
-        self._parms["family"] = value
+    def family(self, family):
+        family = re.sub(r"[^a-z]+", "", family.lower())
+        assert_is_type(family, None, "gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie")
+        self._parms["family"] = family
 
 
     @property
@@ -238,9 +240,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("tweedie_variance_power")
 
     @tweedie_variance_power.setter
-    def tweedie_variance_power(self, value):
-        assert_is_type(value, numeric)
-        self._parms["tweedie_variance_power"] = value
+    def tweedie_variance_power(self, tweedie_variance_power):
+        assert_is_type(tweedie_variance_power, None, numeric)
+        self._parms["tweedie_variance_power"] = tweedie_variance_power
 
 
     @property
@@ -249,9 +251,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("tweedie_link_power")
 
     @tweedie_link_power.setter
-    def tweedie_link_power(self, value):
-        assert_is_type(value, numeric)
-        self._parms["tweedie_link_power"] = value
+    def tweedie_link_power(self, tweedie_link_power):
+        assert_is_type(tweedie_link_power, None, numeric)
+        self._parms["tweedie_link_power"] = tweedie_link_power
 
 
     @property
@@ -265,10 +267,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("solver")
 
     @solver.setter
-    def solver(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "auto", "irlsm", "lbfgs", "coordinatedescentnaive", "coordinatedescent")
-        self._parms["solver"] = value
+    def solver(self, solver):
+        solver = re.sub(r"[^a-z]+", "", solver.lower())
+        assert_is_type(solver, None, "auto", "irlsm", "lbfgs", "coordinatedescentnaive", "coordinatedescent")
+        self._parms["solver"] = solver
 
 
     @property
@@ -277,9 +279,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("alpha")
 
     @alpha.setter
-    def alpha(self, value):
-        assert_is_type(value, [numeric])
-        self._parms["alpha"] = value
+    def alpha(self, alpha):
+        assert_is_type(alpha, None, numeric, [numeric])
+        self._parms["alpha"] = alpha
 
 
     @property
@@ -288,9 +290,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("lambda")
 
     @lambda_.setter
-    def lambda_(self, value):
-        assert_is_type(value, [numeric])
-        self._parms["lambda"] = value
+    def lambda_(self, lambda_):
+        assert_is_type(lambda_, None, numeric, [numeric])
+        self._parms["lambda"] = lambda_
 
 
     @property
@@ -301,9 +303,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("lambda_search")
 
     @lambda_search.setter
-    def lambda_search(self, value):
-        assert_is_type(value, bool)
-        self._parms["lambda_search"] = value
+    def lambda_search(self, lambda_search):
+        assert_is_type(lambda_search, None, bool)
+        self._parms["lambda_search"] = lambda_search
 
 
     @property
@@ -314,9 +316,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("early_stopping")
 
     @early_stopping.setter
-    def early_stopping(self, value):
-        assert_is_type(value, bool)
-        self._parms["early_stopping"] = value
+    def early_stopping(self, early_stopping):
+        assert_is_type(early_stopping, None, bool)
+        self._parms["early_stopping"] = early_stopping
 
 
     @property
@@ -329,9 +331,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("nlambdas")
 
     @nlambdas.setter
-    def nlambdas(self, value):
-        assert_is_type(value, int)
-        self._parms["nlambdas"] = value
+    def nlambdas(self, nlambdas):
+        assert_is_type(nlambdas, None, int)
+        self._parms["nlambdas"] = nlambdas
 
 
     @property
@@ -340,9 +342,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("standardize")
 
     @standardize.setter
-    def standardize(self, value):
-        assert_is_type(value, bool)
-        self._parms["standardize"] = value
+    def standardize(self, standardize):
+        assert_is_type(standardize, None, bool)
+        self._parms["standardize"] = standardize
 
 
     @property
@@ -354,10 +356,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("missing_values_handling")
 
     @missing_values_handling.setter
-    def missing_values_handling(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "skip", "meanimputation")
-        self._parms["missing_values_handling"] = value
+    def missing_values_handling(self, missing_values_handling):
+        missing_values_handling = re.sub(r"[^a-z]+", "", missing_values_handling.lower())
+        assert_is_type(missing_values_handling, None, "skip", "meanimputation")
+        self._parms["missing_values_handling"] = missing_values_handling
 
 
     @property
@@ -368,9 +370,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("compute_p_values")
 
     @compute_p_values.setter
-    def compute_p_values(self, value):
-        assert_is_type(value, bool)
-        self._parms["compute_p_values"] = value
+    def compute_p_values(self, compute_p_values):
+        assert_is_type(compute_p_values, None, bool)
+        self._parms["compute_p_values"] = compute_p_values
 
 
     @property
@@ -379,9 +381,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("remove_collinear_columns")
 
     @remove_collinear_columns.setter
-    def remove_collinear_columns(self, value):
-        assert_is_type(value, bool)
-        self._parms["remove_collinear_columns"] = value
+    def remove_collinear_columns(self, remove_collinear_columns):
+        assert_is_type(remove_collinear_columns, None, bool)
+        self._parms["remove_collinear_columns"] = remove_collinear_columns
 
 
     @property
@@ -390,9 +392,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("intercept")
 
     @intercept.setter
-    def intercept(self, value):
-        assert_is_type(value, bool)
-        self._parms["intercept"] = value
+    def intercept(self, intercept):
+        assert_is_type(intercept, None, bool)
+        self._parms["intercept"] = intercept
 
 
     @property
@@ -401,9 +403,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("non_negative")
 
     @non_negative.setter
-    def non_negative(self, value):
-        assert_is_type(value, bool)
-        self._parms["non_negative"] = value
+    def non_negative(self, non_negative):
+        assert_is_type(non_negative, None, bool)
+        self._parms["non_negative"] = non_negative
 
 
     @property
@@ -412,9 +414,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
-    def max_iterations(self, value):
-        assert_is_type(value, int)
-        self._parms["max_iterations"] = value
+    def max_iterations(self, max_iterations):
+        assert_is_type(max_iterations, None, int)
+        self._parms["max_iterations"] = max_iterations
 
 
     @property
@@ -428,9 +430,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("objective_epsilon")
 
     @objective_epsilon.setter
-    def objective_epsilon(self, value):
-        assert_is_type(value, numeric)
-        self._parms["objective_epsilon"] = value
+    def objective_epsilon(self, objective_epsilon):
+        assert_is_type(objective_epsilon, None, numeric)
+        self._parms["objective_epsilon"] = objective_epsilon
 
 
     @property
@@ -442,9 +444,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("beta_epsilon")
 
     @beta_epsilon.setter
-    def beta_epsilon(self, value):
-        assert_is_type(value, numeric)
-        self._parms["beta_epsilon"] = value
+    def beta_epsilon(self, beta_epsilon):
+        assert_is_type(beta_epsilon, None, numeric)
+        self._parms["beta_epsilon"] = beta_epsilon
 
 
     @property
@@ -458,9 +460,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("gradient_epsilon")
 
     @gradient_epsilon.setter
-    def gradient_epsilon(self, value):
-        assert_is_type(value, numeric)
-        self._parms["gradient_epsilon"] = value
+    def gradient_epsilon(self, gradient_epsilon):
+        assert_is_type(gradient_epsilon, None, numeric)
+        self._parms["gradient_epsilon"] = gradient_epsilon
 
 
     @property
@@ -471,10 +473,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("link")
 
     @link.setter
-    def link(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "familydefault", "identity", "logit", "log", "inverse", "tweedie")
-        self._parms["link"] = value
+    def link(self, link):
+        link = re.sub(r"[^a-z]+", "", link.lower())
+        assert_is_type(link, None, "familydefault", "identity", "logit", "log", "inverse", "tweedie")
+        self._parms["link"] = link
 
 
     @property
@@ -486,9 +488,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("prior")
 
     @prior.setter
-    def prior(self, value):
-        assert_is_type(value, numeric)
-        self._parms["prior"] = value
+    def prior(self, prior):
+        assert_is_type(prior, None, numeric)
+        self._parms["prior"] = prior
 
 
     @property
@@ -501,9 +503,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("lambda_min_ratio")
 
     @lambda_min_ratio.setter
-    def lambda_min_ratio(self, value):
-        assert_is_type(value, numeric)
-        self._parms["lambda_min_ratio"] = value
+    def lambda_min_ratio(self, lambda_min_ratio):
+        assert_is_type(lambda_min_ratio, None, numeric)
+        self._parms["lambda_min_ratio"] = lambda_min_ratio
 
 
     @property
@@ -512,9 +514,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("beta_constraints")
 
     @beta_constraints.setter
-    def beta_constraints(self, value):
-        assert_is_type(value, str)
-        self._parms["beta_constraints"] = value
+    def beta_constraints(self, beta_constraints):
+        assert_is_type(beta_constraints, None, str)
+        self._parms["beta_constraints"] = beta_constraints
 
 
     @property
@@ -527,9 +529,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("max_active_predictors")
 
     @max_active_predictors.setter
-    def max_active_predictors(self, value):
-        assert_is_type(value, int)
-        self._parms["max_active_predictors"] = value
+    def max_active_predictors(self, max_active_predictors):
+        assert_is_type(max_active_predictors, None, int)
+        self._parms["max_active_predictors"] = max_active_predictors
 
 
     @property
@@ -541,9 +543,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("interactions")
 
     @interactions.setter
-    def interactions(self, value):
-        assert_is_type(value, [str])
-        self._parms["interactions"] = value
+    def interactions(self, interactions):
+        assert_is_type(interactions, None, [str])
+        self._parms["interactions"] = interactions
 
 
     @property
@@ -554,9 +556,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("balance_classes")
 
     @balance_classes.setter
-    def balance_classes(self, value):
-        assert_is_type(value, bool)
-        self._parms["balance_classes"] = value
+    def balance_classes(self, balance_classes):
+        assert_is_type(balance_classes, None, bool)
+        self._parms["balance_classes"] = balance_classes
 
 
     @property
@@ -568,9 +570,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("class_sampling_factors")
 
     @class_sampling_factors.setter
-    def class_sampling_factors(self, value):
-        assert_is_type(value, [float])
-        self._parms["class_sampling_factors"] = value
+    def class_sampling_factors(self, class_sampling_factors):
+        assert_is_type(class_sampling_factors, None, [float])
+        self._parms["class_sampling_factors"] = class_sampling_factors
 
 
     @property
@@ -582,9 +584,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("max_after_balance_size")
 
     @max_after_balance_size.setter
-    def max_after_balance_size(self, value):
-        assert_is_type(value, float)
-        self._parms["max_after_balance_size"] = value
+    def max_after_balance_size(self, max_after_balance_size):
+        assert_is_type(max_after_balance_size, None, float)
+        self._parms["max_after_balance_size"] = max_after_balance_size
 
 
     @property
@@ -593,9 +595,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("max_confusion_matrix_size")
 
     @max_confusion_matrix_size.setter
-    def max_confusion_matrix_size(self, value):
-        assert_is_type(value, int)
-        self._parms["max_confusion_matrix_size"] = value
+    def max_confusion_matrix_size(self, max_confusion_matrix_size):
+        assert_is_type(max_confusion_matrix_size, None, int)
+        self._parms["max_confusion_matrix_size"] = max_confusion_matrix_size
 
 
     @property
@@ -607,9 +609,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("max_hit_ratio_k")
 
     @max_hit_ratio_k.setter
-    def max_hit_ratio_k(self, value):
-        assert_is_type(value, int)
-        self._parms["max_hit_ratio_k"] = value
+    def max_hit_ratio_k(self, max_hit_ratio_k):
+        assert_is_type(max_hit_ratio_k, None, int)
+        self._parms["max_hit_ratio_k"] = max_hit_ratio_k
 
 
     @property
@@ -618,9 +620,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
-    def max_runtime_secs(self, value):
-        assert_is_type(value, numeric)
-        self._parms["max_runtime_secs"] = value
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
 
 
 

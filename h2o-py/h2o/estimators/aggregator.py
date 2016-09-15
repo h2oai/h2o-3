@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
+from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, numeric
 
 
@@ -27,9 +28,9 @@ class H2OAggregatorEstimator(H2OEstimator):
                       "radius_scale", "transform", "categorical_encoding"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname in kwargs:
-            sname = pname[:-1] if pname[-1] == '_' else pname
             if pname in names_list:
-                self._parms[sname] = kwargs[pname]
+                # Using setattr(...) will invoke type-checking of the arguments
+                setattr(self, pname, kwargs[pname])
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -39,9 +40,9 @@ class H2OAggregatorEstimator(H2OEstimator):
         return self._parms.get("training_frame")
 
     @training_frame.setter
-    def training_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["training_frame"] = value
+    def training_frame(self, training_frame):
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property
@@ -50,9 +51,9 @@ class H2OAggregatorEstimator(H2OEstimator):
         return self._parms.get("response_column")
 
     @response_column.setter
-    def response_column(self, value):
-        assert_is_type(value, str)
-        self._parms["response_column"] = value
+    def response_column(self, response_column):
+        assert_is_type(response_column, None, str)
+        self._parms["response_column"] = response_column
 
 
     @property
@@ -61,9 +62,9 @@ class H2OAggregatorEstimator(H2OEstimator):
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
-    def ignored_columns(self, value):
-        assert_is_type(value, [str])
-        self._parms["ignored_columns"] = value
+    def ignored_columns(self, ignored_columns):
+        assert_is_type(ignored_columns, None, [str])
+        self._parms["ignored_columns"] = ignored_columns
 
 
     @property
@@ -72,9 +73,9 @@ class H2OAggregatorEstimator(H2OEstimator):
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
-    def ignore_const_cols(self, value):
-        assert_is_type(value, bool)
-        self._parms["ignore_const_cols"] = value
+    def ignore_const_cols(self, ignore_const_cols):
+        assert_is_type(ignore_const_cols, None, bool)
+        self._parms["ignore_const_cols"] = ignore_const_cols
 
 
     @property
@@ -83,9 +84,9 @@ class H2OAggregatorEstimator(H2OEstimator):
         return self._parms.get("radius_scale")
 
     @radius_scale.setter
-    def radius_scale(self, value):
-        assert_is_type(value, numeric)
-        self._parms["radius_scale"] = value
+    def radius_scale(self, radius_scale):
+        assert_is_type(radius_scale, None, numeric)
+        self._parms["radius_scale"] = radius_scale
 
 
     @property
@@ -97,10 +98,10 @@ class H2OAggregatorEstimator(H2OEstimator):
         return self._parms.get("transform")
 
     @transform.setter
-    def transform(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "none", "standardize", "normalize", "demean", "descale")
-        self._parms["transform"] = value
+    def transform(self, transform):
+        transform = re.sub(r"[^a-z]+", "", transform.lower())
+        assert_is_type(transform, None, "none", "standardize", "normalize", "demean", "descale")
+        self._parms["transform"] = transform
 
 
     @property
@@ -112,9 +113,9 @@ class H2OAggregatorEstimator(H2OEstimator):
         return self._parms.get("categorical_encoding")
 
     @categorical_encoding.setter
-    def categorical_encoding(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "auto", "enum", "onehotinternal", "onehotexplicit", "binary", "eigen")
-        self._parms["categorical_encoding"] = value
+    def categorical_encoding(self, categorical_encoding):
+        categorical_encoding = re.sub(r"[^a-z]+", "", categorical_encoding.lower())
+        assert_is_type(categorical_encoding, None, "auto", "enum", "onehotinternal", "onehotexplicit", "binary", "eigen")
+        self._parms["categorical_encoding"] = categorical_encoding
 
 

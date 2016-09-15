@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
+from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, numeric
 
 
@@ -30,9 +31,9 @@ class H2OKMeansEstimator(H2OEstimator):
                       "seed", "init", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname in kwargs:
-            sname = pname[:-1] if pname[-1] == '_' else pname
             if pname in names_list:
-                self._parms[sname] = kwargs[pname]
+                # Using setattr(...) will invoke type-checking of the arguments
+                setattr(self, pname, kwargs[pname])
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -42,9 +43,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("training_frame")
 
     @training_frame.setter
-    def training_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["training_frame"] = value
+    def training_frame(self, training_frame):
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property
@@ -53,9 +54,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
-    def validation_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["validation_frame"] = value
+    def validation_frame(self, validation_frame):
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
 
     @property
@@ -64,9 +65,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("nfolds")
 
     @nfolds.setter
-    def nfolds(self, value):
-        assert_is_type(value, int)
-        self._parms["nfolds"] = value
+    def nfolds(self, nfolds):
+        assert_is_type(nfolds, None, int)
+        self._parms["nfolds"] = nfolds
 
 
     @property
@@ -75,9 +76,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("keep_cross_validation_predictions")
 
     @keep_cross_validation_predictions.setter
-    def keep_cross_validation_predictions(self, value):
-        assert_is_type(value, bool)
-        self._parms["keep_cross_validation_predictions"] = value
+    def keep_cross_validation_predictions(self, keep_cross_validation_predictions):
+        assert_is_type(keep_cross_validation_predictions, None, bool)
+        self._parms["keep_cross_validation_predictions"] = keep_cross_validation_predictions
 
 
     @property
@@ -86,9 +87,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("keep_cross_validation_fold_assignment")
 
     @keep_cross_validation_fold_assignment.setter
-    def keep_cross_validation_fold_assignment(self, value):
-        assert_is_type(value, bool)
-        self._parms["keep_cross_validation_fold_assignment"] = value
+    def keep_cross_validation_fold_assignment(self, keep_cross_validation_fold_assignment):
+        assert_is_type(keep_cross_validation_fold_assignment, None, bool)
+        self._parms["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
 
 
     @property
@@ -101,10 +102,10 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("fold_assignment")
 
     @fold_assignment.setter
-    def fold_assignment(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "auto", "random", "modulo", "stratified")
-        self._parms["fold_assignment"] = value
+    def fold_assignment(self, fold_assignment):
+        fold_assignment = re.sub(r"[^a-z]+", "", fold_assignment.lower())
+        assert_is_type(fold_assignment, None, "auto", "random", "modulo", "stratified")
+        self._parms["fold_assignment"] = fold_assignment
 
 
     @property
@@ -113,9 +114,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("fold_column")
 
     @fold_column.setter
-    def fold_column(self, value):
-        assert_is_type(value, str)
-        self._parms["fold_column"] = value
+    def fold_column(self, fold_column):
+        assert_is_type(fold_column, None, str)
+        self._parms["fold_column"] = fold_column
 
 
     @property
@@ -124,9 +125,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
-    def ignored_columns(self, value):
-        assert_is_type(value, [str])
-        self._parms["ignored_columns"] = value
+    def ignored_columns(self, ignored_columns):
+        assert_is_type(ignored_columns, None, [str])
+        self._parms["ignored_columns"] = ignored_columns
 
 
     @property
@@ -135,9 +136,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
-    def ignore_const_cols(self, value):
-        assert_is_type(value, bool)
-        self._parms["ignore_const_cols"] = value
+    def ignore_const_cols(self, ignore_const_cols):
+        assert_is_type(ignore_const_cols, None, bool)
+        self._parms["ignore_const_cols"] = ignore_const_cols
 
 
     @property
@@ -146,9 +147,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
-    def score_each_iteration(self, value):
-        assert_is_type(value, bool)
-        self._parms["score_each_iteration"] = value
+    def score_each_iteration(self, score_each_iteration):
+        assert_is_type(score_each_iteration, None, bool)
+        self._parms["score_each_iteration"] = score_each_iteration
 
 
     @property
@@ -157,9 +158,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("k")
 
     @k.setter
-    def k(self, value):
-        assert_is_type(value, int)
-        self._parms["k"] = value
+    def k(self, k):
+        assert_is_type(k, None, int)
+        self._parms["k"] = k
 
 
     @property
@@ -168,9 +169,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("user_points")
 
     @user_points.setter
-    def user_points(self, value):
-        assert_is_type(value, str)
-        self._parms["user_points"] = value
+    def user_points(self, user_points):
+        assert_is_type(user_points, None, str)
+        self._parms["user_points"] = user_points
 
 
     @property
@@ -179,9 +180,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
-    def max_iterations(self, value):
-        assert_is_type(value, int)
-        self._parms["max_iterations"] = value
+    def max_iterations(self, max_iterations):
+        assert_is_type(max_iterations, None, int)
+        self._parms["max_iterations"] = max_iterations
 
 
     @property
@@ -190,9 +191,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("standardize")
 
     @standardize.setter
-    def standardize(self, value):
-        assert_is_type(value, bool)
-        self._parms["standardize"] = value
+    def standardize(self, standardize):
+        assert_is_type(standardize, None, bool)
+        self._parms["standardize"] = standardize
 
 
     @property
@@ -201,9 +202,9 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("seed")
 
     @seed.setter
-    def seed(self, value):
-        assert_is_type(value, int)
-        self._parms["seed"] = value
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
 
     @property
@@ -212,10 +213,10 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("init")
 
     @init.setter
-    def init(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "random", "plusplus", "furthest", "user")
-        self._parms["init"] = value
+    def init(self, init):
+        init = re.sub(r"[^a-z]+", "", init.lower())
+        assert_is_type(init, None, "random", "plusplus", "furthest", "user")
+        self._parms["init"] = init
 
 
     @property
@@ -224,8 +225,8 @@ class H2OKMeansEstimator(H2OEstimator):
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
-    def max_runtime_secs(self, value):
-        assert_is_type(value, numeric)
-        self._parms["max_runtime_secs"] = value
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
 
 

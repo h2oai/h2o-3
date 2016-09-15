@@ -143,6 +143,7 @@ def gen_module(schema, algo):
     yield "import re"
     yield "from h2o.estimators.estimator_base import H2OEstimator"
     yield "from h2o.exceptions import H2OValueError"
+    yield "from h2o.frame import H2OFrame"
     yield "from h2o.utils.typechecks import assert_is_type, numeric"
     if extra_imports:
         yield reindent_block(extra_imports, 0) + ""
@@ -168,9 +169,9 @@ def gen_module(schema, algo):
                                                 indent=(" " * 22), indent_first=False)
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
     yield "        for pname in kwargs:"
-    yield "            sname = pname[:-1] if pname[-1] == '_' else pname"
     yield "            if pname in names_list:"
-    yield "                self._parms[sname] = kwargs[pname]"
+    yield "                # Using setattr(...) will invoke type-checking of the arguments"
+    yield "                setattr(self, pname, kwargs[pname])"
     yield "            else:"
     yield '                raise H2OValueError("Unknown parameter %s" % pname)'
     if init_extra:
@@ -178,6 +179,7 @@ def gen_module(schema, algo):
     yield ""
     for param in schema["parameters"]:
         pname = param["pname"]
+        ptype = param["ptype"]
         if pname == "model_id": continue  # The getter is already defined in ModelBase
         sname = pname[:-1] if pname[-1] == '_' else pname
         phelp = param["dtype"] + ": " + param["help"]
@@ -194,13 +196,19 @@ def gen_module(schema, algo):
         yield "        return self._parms.get(\"%s\")" % sname
         yield ""
         yield "    @%s.setter" % pname
-        yield "    def %s(self, value):" % pname
+        yield "    def %s(self, %s):" % (pname, pname)
         if param["values"]:  # enum
-            yield '        simple_val = re.sub(r"[^a-z]+", "", value.lower())'
-            yield '        assert_is_type(simple_val, %s)' % param["ptype"]
+            yield '        %s = re.sub(r"[^a-z]+", "", %s.lower())' % (pname, pname)
+            yield '        assert_is_type(%s, None, %s)' % (pname, ptype)
+        elif pname.endswith("_frame"):
+            assert param["ptype"] == "str"
+            yield "        assert_is_type(%s, None, str, H2OFrame)" % pname
+        elif pname in {"alpha", "lambda_"} and ptype == "[numeric]":
+            # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
+            yield "        assert_is_type(%s, None, numeric, [numeric])" % pname
         else:
-            yield "        assert_is_type(value, %s)" % param["ptype"]
-        yield "        self._parms[\"%s\"] = value" % sname
+            yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
+        yield "        self._parms[\"%s\"] = %s" % (sname, pname)
         yield ""
         yield ""
     if class_extra:

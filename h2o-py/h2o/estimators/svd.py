@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
+from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, numeric
 
 
@@ -28,9 +29,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
                       "u_name", "use_all_factor_levels", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname in kwargs:
-            sname = pname[:-1] if pname[-1] == '_' else pname
             if pname in names_list:
-                self._parms[sname] = kwargs[pname]
+                # Using setattr(...) will invoke type-checking of the arguments
+                setattr(self, pname, kwargs[pname])
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -40,9 +41,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("training_frame")
 
     @training_frame.setter
-    def training_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["training_frame"] = value
+    def training_frame(self, training_frame):
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property
@@ -51,9 +52,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
-    def validation_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["validation_frame"] = value
+    def validation_frame(self, validation_frame):
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
 
     @property
@@ -62,9 +63,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
-    def ignored_columns(self, value):
-        assert_is_type(value, [str])
-        self._parms["ignored_columns"] = value
+    def ignored_columns(self, ignored_columns):
+        assert_is_type(ignored_columns, None, [str])
+        self._parms["ignored_columns"] = ignored_columns
 
 
     @property
@@ -73,9 +74,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
-    def ignore_const_cols(self, value):
-        assert_is_type(value, bool)
-        self._parms["ignore_const_cols"] = value
+    def ignore_const_cols(self, ignore_const_cols):
+        assert_is_type(ignore_const_cols, None, bool)
+        self._parms["ignore_const_cols"] = ignore_const_cols
 
 
     @property
@@ -84,9 +85,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
-    def score_each_iteration(self, value):
-        assert_is_type(value, bool)
-        self._parms["score_each_iteration"] = value
+    def score_each_iteration(self, score_each_iteration):
+        assert_is_type(score_each_iteration, None, bool)
+        self._parms["score_each_iteration"] = score_each_iteration
 
 
     @property
@@ -97,10 +98,10 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("transform")
 
     @transform.setter
-    def transform(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "none", "standardize", "normalize", "demean", "descale")
-        self._parms["transform"] = value
+    def transform(self, transform):
+        transform = re.sub(r"[^a-z]+", "", transform.lower())
+        assert_is_type(transform, None, "none", "standardize", "normalize", "demean", "descale")
+        self._parms["transform"] = transform
 
 
     @property
@@ -112,10 +113,10 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("svd_method")
 
     @svd_method.setter
-    def svd_method(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "gramsvd", "power", "randomized")
-        self._parms["svd_method"] = value
+    def svd_method(self, svd_method):
+        svd_method = re.sub(r"[^a-z]+", "", svd_method.lower())
+        assert_is_type(svd_method, None, "gramsvd", "power", "randomized")
+        self._parms["svd_method"] = svd_method
 
 
     @property
@@ -124,9 +125,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("nv")
 
     @nv.setter
-    def nv(self, value):
-        assert_is_type(value, int)
-        self._parms["nv"] = value
+    def nv(self, nv):
+        assert_is_type(nv, None, int)
+        self._parms["nv"] = nv
 
 
     @property
@@ -135,9 +136,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
-    def max_iterations(self, value):
-        assert_is_type(value, int)
-        self._parms["max_iterations"] = value
+    def max_iterations(self, max_iterations):
+        assert_is_type(max_iterations, None, int)
+        self._parms["max_iterations"] = max_iterations
 
 
     @property
@@ -146,9 +147,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("seed")
 
     @seed.setter
-    def seed(self, value):
-        assert_is_type(value, int)
-        self._parms["seed"] = value
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
 
     @property
@@ -157,9 +158,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("keep_u")
 
     @keep_u.setter
-    def keep_u(self, value):
-        assert_is_type(value, bool)
-        self._parms["keep_u"] = value
+    def keep_u(self, keep_u):
+        assert_is_type(keep_u, None, bool)
+        self._parms["keep_u"] = keep_u
 
 
     @property
@@ -168,9 +169,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("u_name")
 
     @u_name.setter
-    def u_name(self, value):
-        assert_is_type(value, str)
-        self._parms["u_name"] = value
+    def u_name(self, u_name):
+        assert_is_type(u_name, None, str)
+        self._parms["u_name"] = u_name
 
 
     @property
@@ -179,9 +180,9 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("use_all_factor_levels")
 
     @use_all_factor_levels.setter
-    def use_all_factor_levels(self, value):
-        assert_is_type(value, bool)
-        self._parms["use_all_factor_levels"] = value
+    def use_all_factor_levels(self, use_all_factor_levels):
+        assert_is_type(use_all_factor_levels, None, bool)
+        self._parms["use_all_factor_levels"] = use_all_factor_levels
 
 
     @property
@@ -190,8 +191,8 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
-    def max_runtime_secs(self, value):
-        assert_is_type(value, numeric)
-        self._parms["max_runtime_secs"] = value
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
 
 

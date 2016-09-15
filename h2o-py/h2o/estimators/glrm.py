@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
+from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, numeric
 
 
@@ -32,9 +33,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                       "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname in kwargs:
-            sname = pname[:-1] if pname[-1] == '_' else pname
             if pname in names_list:
-                self._parms[sname] = kwargs[pname]
+                # Using setattr(...) will invoke type-checking of the arguments
+                setattr(self, pname, kwargs[pname])
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
         self._parms["_rest_version"] = 3
@@ -45,9 +46,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("training_frame")
 
     @training_frame.setter
-    def training_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["training_frame"] = value
+    def training_frame(self, training_frame):
+        assert_is_type(training_frame, None, str, H2OFrame)
+        self._parms["training_frame"] = training_frame
 
 
     @property
@@ -56,9 +57,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("validation_frame")
 
     @validation_frame.setter
-    def validation_frame(self, value):
-        assert_is_type(value, str)
-        self._parms["validation_frame"] = value
+    def validation_frame(self, validation_frame):
+        assert_is_type(validation_frame, None, str, H2OFrame)
+        self._parms["validation_frame"] = validation_frame
 
 
     @property
@@ -67,9 +68,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("ignored_columns")
 
     @ignored_columns.setter
-    def ignored_columns(self, value):
-        assert_is_type(value, [str])
-        self._parms["ignored_columns"] = value
+    def ignored_columns(self, ignored_columns):
+        assert_is_type(ignored_columns, None, [str])
+        self._parms["ignored_columns"] = ignored_columns
 
 
     @property
@@ -78,9 +79,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("ignore_const_cols")
 
     @ignore_const_cols.setter
-    def ignore_const_cols(self, value):
-        assert_is_type(value, bool)
-        self._parms["ignore_const_cols"] = value
+    def ignore_const_cols(self, ignore_const_cols):
+        assert_is_type(ignore_const_cols, None, bool)
+        self._parms["ignore_const_cols"] = ignore_const_cols
 
 
     @property
@@ -89,9 +90,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("score_each_iteration")
 
     @score_each_iteration.setter
-    def score_each_iteration(self, value):
-        assert_is_type(value, bool)
-        self._parms["score_each_iteration"] = value
+    def score_each_iteration(self, score_each_iteration):
+        assert_is_type(score_each_iteration, None, bool)
+        self._parms["score_each_iteration"] = score_each_iteration
 
 
     @property
@@ -100,9 +101,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("loading_name")
 
     @loading_name.setter
-    def loading_name(self, value):
-        assert_is_type(value, str)
-        self._parms["loading_name"] = value
+    def loading_name(self, loading_name):
+        assert_is_type(loading_name, None, str)
+        self._parms["loading_name"] = loading_name
 
 
     @property
@@ -113,10 +114,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("transform")
 
     @transform.setter
-    def transform(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "none", "standardize", "normalize", "demean", "descale")
-        self._parms["transform"] = value
+    def transform(self, transform):
+        transform = re.sub(r"[^a-z]+", "", transform.lower())
+        assert_is_type(transform, None, "none", "standardize", "normalize", "demean", "descale")
+        self._parms["transform"] = transform
 
 
     @property
@@ -125,9 +126,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("k")
 
     @k.setter
-    def k(self, value):
-        assert_is_type(value, int)
-        self._parms["k"] = value
+    def k(self, k):
+        assert_is_type(k, None, int)
+        self._parms["k"] = k
 
 
     @property
@@ -139,10 +140,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("loss")
 
     @loss.setter
-    def loss(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic")
-        self._parms["loss"] = value
+    def loss(self, loss):
+        loss = re.sub(r"[^a-z]+", "", loss.lower())
+        assert_is_type(loss, None, "quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic")
+        self._parms["loss"] = loss
 
 
     @property
@@ -154,10 +155,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("loss_by_col")
 
     @loss_by_col.setter
-    def loss_by_col(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, ["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal"])
-        self._parms["loss_by_col"] = value
+    def loss_by_col(self, loss_by_col):
+        loss_by_col = re.sub(r"[^a-z]+", "", loss_by_col.lower())
+        assert_is_type(loss_by_col, None, ["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal"])
+        self._parms["loss_by_col"] = loss_by_col
 
 
     @property
@@ -166,9 +167,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("loss_by_col_idx")
 
     @loss_by_col_idx.setter
-    def loss_by_col_idx(self, value):
-        assert_is_type(value, [int])
-        self._parms["loss_by_col_idx"] = value
+    def loss_by_col_idx(self, loss_by_col_idx):
+        assert_is_type(loss_by_col_idx, None, [int])
+        self._parms["loss_by_col_idx"] = loss_by_col_idx
 
 
     @property
@@ -177,10 +178,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("multi_loss")
 
     @multi_loss.setter
-    def multi_loss(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "categorical", "ordinal")
-        self._parms["multi_loss"] = value
+    def multi_loss(self, multi_loss):
+        multi_loss = re.sub(r"[^a-z]+", "", multi_loss.lower())
+        assert_is_type(multi_loss, None, "categorical", "ordinal")
+        self._parms["multi_loss"] = multi_loss
 
 
     @property
@@ -189,9 +190,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("period")
 
     @period.setter
-    def period(self, value):
-        assert_is_type(value, int)
-        self._parms["period"] = value
+    def period(self, period):
+        assert_is_type(period, None, int)
+        self._parms["period"] = period
 
 
     @property
@@ -203,10 +204,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("regularization_x")
 
     @regularization_x.setter
-    def regularization_x(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "none", "quadratic", "l", "l", "nonnegative", "onesparse", "unitonesparse", "simplex")
-        self._parms["regularization_x"] = value
+    def regularization_x(self, regularization_x):
+        regularization_x = re.sub(r"[^a-z]+", "", regularization_x.lower())
+        assert_is_type(regularization_x, None, "none", "quadratic", "l", "l", "nonnegative", "onesparse", "unitonesparse", "simplex")
+        self._parms["regularization_x"] = regularization_x
 
 
     @property
@@ -218,10 +219,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("regularization_y")
 
     @regularization_y.setter
-    def regularization_y(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "none", "quadratic", "l", "l", "nonnegative", "onesparse", "unitonesparse", "simplex")
-        self._parms["regularization_y"] = value
+    def regularization_y(self, regularization_y):
+        regularization_y = re.sub(r"[^a-z]+", "", regularization_y.lower())
+        assert_is_type(regularization_y, None, "none", "quadratic", "l", "l", "nonnegative", "onesparse", "unitonesparse", "simplex")
+        self._parms["regularization_y"] = regularization_y
 
 
     @property
@@ -230,9 +231,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("gamma_x")
 
     @gamma_x.setter
-    def gamma_x(self, value):
-        assert_is_type(value, numeric)
-        self._parms["gamma_x"] = value
+    def gamma_x(self, gamma_x):
+        assert_is_type(gamma_x, None, numeric)
+        self._parms["gamma_x"] = gamma_x
 
 
     @property
@@ -241,9 +242,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("gamma_y")
 
     @gamma_y.setter
-    def gamma_y(self, value):
-        assert_is_type(value, numeric)
-        self._parms["gamma_y"] = value
+    def gamma_y(self, gamma_y):
+        assert_is_type(gamma_y, None, numeric)
+        self._parms["gamma_y"] = gamma_y
 
 
     @property
@@ -252,9 +253,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
-    def max_iterations(self, value):
-        assert_is_type(value, int)
-        self._parms["max_iterations"] = value
+    def max_iterations(self, max_iterations):
+        assert_is_type(max_iterations, None, int)
+        self._parms["max_iterations"] = max_iterations
 
 
     @property
@@ -263,9 +264,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("max_updates")
 
     @max_updates.setter
-    def max_updates(self, value):
-        assert_is_type(value, int)
-        self._parms["max_updates"] = value
+    def max_updates(self, max_updates):
+        assert_is_type(max_updates, None, int)
+        self._parms["max_updates"] = max_updates
 
 
     @property
@@ -274,9 +275,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("init_step_size")
 
     @init_step_size.setter
-    def init_step_size(self, value):
-        assert_is_type(value, numeric)
-        self._parms["init_step_size"] = value
+    def init_step_size(self, init_step_size):
+        assert_is_type(init_step_size, None, numeric)
+        self._parms["init_step_size"] = init_step_size
 
 
     @property
@@ -285,9 +286,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("min_step_size")
 
     @min_step_size.setter
-    def min_step_size(self, value):
-        assert_is_type(value, numeric)
-        self._parms["min_step_size"] = value
+    def min_step_size(self, min_step_size):
+        assert_is_type(min_step_size, None, numeric)
+        self._parms["min_step_size"] = min_step_size
 
 
     @property
@@ -296,9 +297,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("seed")
 
     @seed.setter
-    def seed(self, value):
-        assert_is_type(value, int)
-        self._parms["seed"] = value
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
 
     @property
@@ -307,10 +308,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("init")
 
     @init.setter
-    def init(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "random", "svd", "plusplus", "user")
-        self._parms["init"] = value
+    def init(self, init):
+        init = re.sub(r"[^a-z]+", "", init.lower())
+        assert_is_type(init, None, "random", "svd", "plusplus", "user")
+        self._parms["init"] = init
 
 
     @property
@@ -322,10 +323,10 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("svd_method")
 
     @svd_method.setter
-    def svd_method(self, value):
-        simple_val = re.sub(r"[^a-z]+", "", value.lower())
-        assert_is_type(simple_val, "gramsvd", "power", "randomized")
-        self._parms["svd_method"] = value
+    def svd_method(self, svd_method):
+        svd_method = re.sub(r"[^a-z]+", "", svd_method.lower())
+        assert_is_type(svd_method, None, "gramsvd", "power", "randomized")
+        self._parms["svd_method"] = svd_method
 
 
     @property
@@ -334,9 +335,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("user_y")
 
     @user_y.setter
-    def user_y(self, value):
-        assert_is_type(value, str)
-        self._parms["user_y"] = value
+    def user_y(self, user_y):
+        assert_is_type(user_y, None, str)
+        self._parms["user_y"] = user_y
 
 
     @property
@@ -345,9 +346,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("user_x")
 
     @user_x.setter
-    def user_x(self, value):
-        assert_is_type(value, str)
-        self._parms["user_x"] = value
+    def user_x(self, user_x):
+        assert_is_type(user_x, None, str)
+        self._parms["user_x"] = user_x
 
 
     @property
@@ -356,9 +357,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("expand_user_y")
 
     @expand_user_y.setter
-    def expand_user_y(self, value):
-        assert_is_type(value, bool)
-        self._parms["expand_user_y"] = value
+    def expand_user_y(self, expand_user_y):
+        assert_is_type(expand_user_y, None, bool)
+        self._parms["expand_user_y"] = expand_user_y
 
 
     @property
@@ -367,9 +368,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("impute_original")
 
     @impute_original.setter
-    def impute_original(self, value):
-        assert_is_type(value, bool)
-        self._parms["impute_original"] = value
+    def impute_original(self, impute_original):
+        assert_is_type(impute_original, None, bool)
+        self._parms["impute_original"] = impute_original
 
 
     @property
@@ -378,9 +379,9 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("recover_svd")
 
     @recover_svd.setter
-    def recover_svd(self, value):
-        assert_is_type(value, bool)
-        self._parms["recover_svd"] = value
+    def recover_svd(self, recover_svd):
+        assert_is_type(recover_svd, None, bool)
+        self._parms["recover_svd"] = recover_svd
 
 
     @property
@@ -389,8 +390,8 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
-    def max_runtime_secs(self, value):
-        assert_is_type(value, numeric)
-        self._parms["max_runtime_secs"] = value
+    def max_runtime_secs(self, max_runtime_secs):
+        assert_is_type(max_runtime_secs, None, numeric)
+        self._parms["max_runtime_secs"] = max_runtime_secs
 
 
