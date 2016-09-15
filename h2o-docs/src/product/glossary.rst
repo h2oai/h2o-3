@@ -117,7 +117,7 @@ Glossary
 .. _epoch:
 
 **Epoch**
-	A measure of the number of times all of the training vectors are passed forward and backward once to update the weights. For batch training all of the training samples pass through the learning algorithm simultaneously in one epoch before weights are updated. For sequential training all of the weights are updated after each training vector is sequentially passed through the training algorithm. (See also `Batch size`_ and `iteration`_.)
+	One epoch corresponds to one full pass over the training data. In H2O, when sampling of observations is the default behavior, training for one epoch corresponds to training for as many observations as there are in the training data.  For example, if the training data has 10000 observations, and the Deep Learning model has been trained for 234350 observations (sampled from the training set), then we will report that the model was trained for 23.435 epochs.
 
 .. _factor:
 
