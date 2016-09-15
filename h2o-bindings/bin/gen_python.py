@@ -200,6 +200,8 @@ def gen_module(schema, algo):
         if pname in {"training_frame", "validation_frame", "user_x", "user_y", "user_points"}:
             assert param["ptype"] == "str"
             yield "        assert_is_type(%s, None, str, H2OFrame)" % pname
+        elif pname in {"initial_weights", "initial_biases"}:
+            yield "        assert_is_type(%s, none, [str, H2OFrame])" % pname
         elif pname in {"alpha", "lambda_"} and ptype == "[numeric]":
             # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
             yield "        assert_is_type(%s, None, numeric, [numeric])" % pname
