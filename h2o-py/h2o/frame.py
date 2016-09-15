@@ -965,8 +965,7 @@ class H2OFrame(object):
             print("$ {} {}: ".format(cn[i], ' ' * (width - max(0, len(cn[i])))), end=' ')
             if isfactor[i]:
                 nl = numlevels[i]
-                print("Factor w/ {} level(s) {}: ".format(nl, '"' + '","'.join(lvls[i]) + '"'), end=' ')
-                print(" ".join(list(map(lambda x: str(lvls[i].index(x)), list(zip(*df))[i]))))
+                print("Factor w/ {} level(s) {} ".format(nl, '"' + '","'.join(lvls[i]) + '"'), end='\n')
             else:
                 print("num {}".format(" ".join(it[0] for it in h2o.as_list(self[:10, i], False)[1:])))
 
