@@ -33,7 +33,6 @@ def test_glm_params():
     model.family = "GAUSSIAN"
     model.family = "Twee-die"
     model.family = "'poIssoN'"
-    assert model.family == "poisson", "Unexpected model family: %s" % model.family
     model.tweedie_variance_power = 1
     model.tweedie_link_power = 2
     model.solver = "CoordinateDescentNaive"
