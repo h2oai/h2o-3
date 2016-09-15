@@ -957,7 +957,7 @@ class H2OFrame(object):
         nr = self.nrow
         nc = self.ncol
         width = max([len(c) for c in cn])
-        isfactor = [c.isfactor() for c in self]
+        isfactor = self.isfactor()
         numlevels = self.nlevels()
         lvls = self.levels()
         print("self._newExpr '{}': \t {} obs. of {} variables(s)".format(self.frame_id, nr, nc))
