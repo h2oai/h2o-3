@@ -637,7 +637,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @initial_weights.setter
     def initial_weights(self, initial_weights):
-        assert_is_type(initial_weights, none, [H2OFrame])
+        assert_is_type(initial_weights, None, [H2OFrame])
         self._parms["initial_weights"] = initial_weights
 
 
@@ -648,7 +648,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @initial_biases.setter
     def initial_biases(self, initial_biases):
-        assert_is_type(initial_biases, none, [H2OFrame])
+        assert_is_type(initial_biases, None, [H2OFrame])
         self._parms["initial_biases"] = initial_biases
 
 
