@@ -24,6 +24,7 @@ def python_vignette():
     story22 = [pyunit_utils.locate("Python_Vignette_code_examples/python_find_missing_data_in_frame.py")]
     story23 = [pyunit_utils.locate("Python_Vignette_code_examples/python_find_rows_missing_data_for_a_column.py")]
 <<<<<<< HEAD
+<<<<<<< HEAD
     story24 = [pyunit_utils.locate("Python_Vignette_code_examples/python_grid_search.py")]
     story25 = [pyunit_utils.locate("Python_Vignette_code_examples/python_group_and_apply_function.py")]
     story26 = [pyunit_utils.locate("Python_Vignette_code_examples/python_group_by_multiple_columns.py")]
@@ -53,6 +54,29 @@ def python_vignette():
     story50 = [pyunit_utils.locate("Python_Vignette_code_examples/python_view_top_and_bottom_of_frame.py")]
 
     approved_py_code_examples = story1+story2+story3+story4+story5+story6+story7+story8+story9+story10+story11+story12+story13+story14+story15+story16+story17+story18+story19+story20+story21+story22+story23+story24+story25+story26+story27+story28+story29+story30+story31+story32+story33+story34+story35+story36+story37+story38+story39+story40+story41+story42+story43+story44+story45+story46+story47+story48+story49+story50
+=======
+    story24 = [pyunit_utils.locate("Python_Vignette_code_examples/python_group_and_apply_function.py")]
+    story25 = [pyunit_utils.locate("Python_Vignette_code_examples/python_group_by_multiple_columns.py")]
+    story26 = [pyunit_utils.locate("Python_Vignette_code_examples/python_histogramming_data.py")]
+    story27 = [pyunit_utils.locate("Python_Vignette_code_examples/python_initializeh2o_example.py")]
+    story28 = [pyunit_utils.locate("Python_Vignette_code_examples/python_injest_time_natively.py")]
+    story29 = [pyunit_utils.locate("Python_Vignette_code_examples/python_join_results.py")]
+    story30 = [pyunit_utils.locate("Python_Vignette_code_examples/python_merge_frames_by_column_name.py")]
+    story31 = [pyunit_utils.locate("Python_Vignette_code_examples/python_replace_first_l_with_x.py")]
+    story32 = [pyunit_utils.locate("Python_Vignette_code_examples/python_retain_common_categories.py")]
+    story33 = [pyunit_utils.locate("Python_Vignette_code_examples/python_select_column_index.py")]
+    story34 = [pyunit_utils.locate("Python_Vignette_code_examples/python_select_column_name.py")]
+    story35 = [pyunit_utils.locate("Python_Vignette_code_examples/python_select_multiple_column_names.py")]
+    story36 = [pyunit_utils.locate("Python_Vignette_code_examples/python_select_multiple_columns_by_index.py")]
+    story37 = [pyunit_utils.locate("Python_Vignette_code_examples/python_select_rows_boolean.py")]
+    story38 = [pyunit_utils.locate("Python_Vignette_code_examples/python_select_rows_by_slicing.py")]
+    story39 = [pyunit_utils.locate("Python_Vignette_code_examples/python_show_column_types.py")]
+    story40 = [pyunit_utils.locate("Python_Vignette_code_examples/python_split_using_regex.py")]
+    story41 = [pyunit_utils.locate("Python_Vignette_code_examples/python_view_categorical_levels_in_column.py")]
+    story42 = [pyunit_utils.locate("Python_Vignette_code_examples/python_view_top_and_bottom_of_frame.py")]
+
+    approved_py_code_examples = story1+story2+story3+story4+story5+story6+story7+story8+story9+story10+story11+story12+story13+story14+story15+story16+story17+story18+story19+story20+story21+story22+story23+story24+story25+story26+story27+story28+story29+story30+story31+story32+story33+story34+story35+story36+story37+story38+story39+story40+story41+story42
+>>>>>>> master
 =======
     story24 = [pyunit_utils.locate("Python_Vignette_code_examples/python_group_and_apply_function.py")]
     story25 = [pyunit_utils.locate("Python_Vignette_code_examples/python_group_by_multiple_columns.py")]
@@ -123,6 +147,7 @@ def python_vignette():
     pybooklet_utils.check_story("story41",story41)
     pybooklet_utils.check_story("story42",story42)
 <<<<<<< HEAD
+<<<<<<< HEAD
     pybooklet_utils.check_story("story43",story43)
     pybooklet_utils.check_story("story44",story44)
     pybooklet_utils.check_story("story45",story45)
@@ -131,6 +156,8 @@ def python_vignette():
     pybooklet_utils.check_story("story48",story48)
     pybooklet_utils.check_story("story49",story49)
     pybooklet_utils.check_story("story50",story50)
+=======
+>>>>>>> master
 =======
 >>>>>>> master
 
