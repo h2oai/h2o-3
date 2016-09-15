@@ -29,12 +29,12 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
-                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)
+                self._id = pvalue
             elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
-                raise H2OValueError("Unknown parameter %s" % pname)
+                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
     @property
     def training_frame(self):

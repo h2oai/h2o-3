@@ -168,12 +168,12 @@ def gen_module(schema, algo):
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
     yield "        for pname, pvalue in kwargs.items():"
     yield "            if pname == 'model_id':"
-    yield '                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)'
+    yield '                self._id = pvalue'
     yield "            elif pname in names_list:"
     yield "                # Using setattr(...) will invoke type-checking of the arguments"
     yield "                setattr(self, pname, pvalue)"
     yield "            else:"
-    yield '                raise H2OValueError("Unknown parameter %s" % pname)'
+    yield '                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))'
     if init_extra:
         yield "        " + reindent_block(init_extra, 8)
     yield ""
