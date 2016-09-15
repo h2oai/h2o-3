@@ -1,7 +1,7 @@
 package hex.genmodel;
 
-import hex.genmodel.algos.DrfRawModel;
-import hex.genmodel.algos.GbmRawModel;
+import hex.genmodel.algos.DrfModel;
+import hex.genmodel.algos.GbmModel;
 import hex.genmodel.utils.ParseUtils;
 
 import java.io.*;
@@ -14,7 +14,7 @@ import java.util.zip.ZipFile;
 /**
  * Prediction model based on the persisted binary data.
  */
-abstract public class RawModel extends GenModel {
+abstract public class MojoModel extends GenModel {
     protected transient ContentReader _reader;
     protected hex.ModelCategory _category;
     protected String _uuid;
@@ -27,14 +27,14 @@ abstract public class RawModel extends GenModel {
     protected double[] _modelClassDistrib;
 
     /**
-     * Primary factory method for constructing RawModel instances.
+     * Primary factory method for constructing MojoModel instances.
      *
      * @param file Name of the zip file (or folder) with the model's data. This should be the data retrieved via
-     *             the `GET /3/Models/{model_id}/data` endpoint.
-     * @return New `RawModel` object.
+     *             the `GET /3/Models/{model_id}/mojo` endpoint.
+     * @return New `MojoModel` object.
      * @throws IOException if `file` does not exist, or cannot be read, or does not represent a valid model.
      */
-    static public RawModel load(String file) throws IOException {
+    static public MojoModel load(String file) throws IOException {
         File f = new File(file);
         if (!f.exists())
             throw new FileNotFoundException("File " + file + " cannot be found.");
@@ -49,9 +49,9 @@ abstract public class RawModel extends GenModel {
         // Create and return a subclass instance
         switch (algo) {
             case "Distributed Random Forest":
-                return new DrfRawModel(cr, info, columns, domains);
+                return new DrfModel(cr, info, columns, domains);
             case "Gradient Boosting Method":
-                return new GbmRawModel(cr, info, columns, domains);
+                return new GbmModel(cr, info, columns, domains);
             default:
                 throw new IOException("Unsupported algorithm " + algo + " for raw models.");
         }
@@ -73,7 +73,7 @@ abstract public class RawModel extends GenModel {
     // (Private) initialization
     //------------------------------------------------------------------------------------------------------------------
 
-    protected RawModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
+    protected MojoModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(columns, domains);
         _reader = cr;
         _uuid = (String) info.get("uuid");

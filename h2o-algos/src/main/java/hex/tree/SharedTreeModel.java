@@ -328,11 +328,11 @@ public abstract class SharedTreeModel<
   //--------------------------------------------------------------------------------------------------------------------
 
   @Override
-  public Model<M, P, O>.RawDataStreamWriter getRawDataStream() {
-    return new RawDataStreamWriter();
+  public Model.MojoStreamWriter getMojoStream() {
+    return new MojoStreamWriter();
   }
 
-  public class RawDataStreamWriter extends Model<M, P, O>.RawDataStreamWriter {
+  public class MojoStreamWriter extends Model.MojoStreamWriter {
     @Override
     protected void writeExtraModelInfo() throws IOException {
       writeln("n_trees = " + _output._ntrees);

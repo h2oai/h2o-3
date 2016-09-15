@@ -1,7 +1,6 @@
 package hex.tree.gbm;
 
 import hex.Distribution;
-import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
@@ -96,12 +95,12 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
 
   @Override
-  public Model<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput>.RawDataStreamWriter getRawDataStream() {
-    return new GBMModel.RawDataStreamWriter();
+  public SharedTreeModel.MojoStreamWriter getMojoStream() {
+    return new MojoStreamWriter();
   }
 
-  public class RawDataStreamWriter
-          extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput>.RawDataStreamWriter {
+  public class MojoStreamWriter
+          extends SharedTreeModel.MojoStreamWriter {
     @Override
     protected void writeExtraModelInfo() throws IOException {
       super.writeExtraModelInfo();
