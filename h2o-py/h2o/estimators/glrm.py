@@ -336,7 +336,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @user_y.setter
     def user_y(self, user_y):
-        assert_is_type(user_y, None, str)
+        assert_is_type(user_y, None, str, H2OFrame)
         self._parms["user_y"] = user_y
 
 
@@ -347,7 +347,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @user_x.setter
     def user_x(self, user_x):
-        assert_is_type(user_x, None, str)
+        assert_is_type(user_x, None, str, H2OFrame)
         self._parms["user_x"] = user_x
 
 

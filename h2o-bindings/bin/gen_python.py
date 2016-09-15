@@ -200,7 +200,7 @@ def gen_module(schema, algo):
         if param["values"]:  # enum
             yield '        %s = re.sub(r"[^a-z]+", "", %s.lower())' % (pname, pname)
             yield '        assert_is_type(%s, None, %s)' % (pname, ptype)
-        elif pname.endswith("_frame"):
+        elif pname in {"training_frame", "validation_frame", "user_x", "user_y", "user_points"}:
             assert param["ptype"] == "str"
             yield "        assert_is_type(%s, None, str, H2OFrame)" % pname
         elif pname in {"alpha", "lambda_"} and ptype == "[numeric]":

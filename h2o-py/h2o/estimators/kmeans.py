@@ -170,7 +170,7 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @user_points.setter
     def user_points(self, user_points):
-        assert_is_type(user_points, None, str)
+        assert_is_type(user_points, None, str, H2OFrame)
         self._parms["user_points"] = user_points
 
 
