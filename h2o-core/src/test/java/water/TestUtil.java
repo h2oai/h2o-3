@@ -285,7 +285,7 @@ public class TestUtil extends Iced {
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);
-    assert folder != null && folder.isDirectory():"Folder "+fname+" is not a directory.";
+    assert folder != null && folder.isDirectory():"Folder "+fname+" is not a directory: folder="+folder;
     File[] files = folder.listFiles();
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
