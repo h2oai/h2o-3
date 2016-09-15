@@ -951,7 +951,7 @@ class H2OFrame(object):
             expr=ExprNode("stratified_kfold_column", self, n_folds, seed))._frame()  # want this to be eager!
 
     def structure(self):
-        """Similar to R's str method: compactly display the structure of this H2OFrame."""
+        """Compactly display the internal structure of an H2OFrame"""
         df = self.as_data_frame(use_pandas=False)
         cn = df.pop(0)
         nr = self.nrow
@@ -960,7 +960,7 @@ class H2OFrame(object):
         isfactor = self.isfactor()
         numlevels = self.nlevels()
         lvls = self.levels()
-        print("self._newExpr '{}': \t {} obs. of {} variables(s)".format(self.frame_id, nr, nc))
+        print("H2OFrame: '{}' \nDimensions: {} obs. of {} variables".format(self.frame_id, nr, nc))
         for i in range(nc):
             print("$ {} {}: ".format(cn[i], ' ' * (width - max(0, len(cn[i])))), end=' ')
             if isfactor[i]:
