@@ -54,7 +54,7 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public double _clip_gradient = 10.0;
-  public boolean _gpu = false;
+  public boolean _gpu = true;
   public int _device_id=0;
   public int[] _image_shape = new int[]{0,0}; //width x height
   public int _channels = 3;
