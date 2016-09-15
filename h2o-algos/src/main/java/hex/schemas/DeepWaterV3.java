@@ -25,7 +25,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
 				"score_each_iteration",
         "overwrite_with_best_model",
         "epochs",
-//        "train_samples_per_iteration",
+        "train_samples_per_iteration",
         "target_ratio_comm_to_comp",
         "seed",
         "rate",
