@@ -154,12 +154,9 @@ public abstract class Parser extends Iced {
 
   private class StreamInfo {
     int _zidx;
-    StreamParseWriter _dout;
     StreamParseWriter _nextChunk;
-
-    StreamInfo(int zidx, StreamParseWriter dout, StreamParseWriter nextChunk) {
+    StreamInfo(int zidx, StreamParseWriter nextChunk) {
       this._zidx = zidx;
-      this._dout = dout;
       this._nextChunk = nextChunk;
     }
   }
@@ -183,7 +180,7 @@ public abstract class Parser extends Iced {
     StreamData din = new StreamData(is);
     // only check header for 2nd file onward since guess setup is already done on first file.
     if ((fileIndex > 0) && (!checkFileNHeader(is, dout, din, cidx)))
-      return new StreamInfo(zidx, dout, nextChunk);  // header is bad, quit now
+      return new StreamInfo(zidx, nextChunk);  // header is bad, quit now
     while (is.available() > 0) {
       int xidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
       if (xidx > zidx) {  // Advanced chunk index of underlying ByteVec stream?
@@ -198,7 +195,7 @@ public abstract class Parser extends Iced {
       parseChunk(cidx++, din, nextChunk);
     }
     parseChunk(cidx, din, nextChunk);
-    return new StreamInfo(zidx, dout, nextChunk);
+    return new StreamInfo(zidx, nextChunk);
   }
 
 
@@ -212,9 +209,10 @@ public abstract class Parser extends Iced {
     int zidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
     assert zidx == 1;
     int fileIndex = 0;  // count files being passed.  0 is first file, 1 is second and so on...
-    StreamInfo streamInfo = new StreamInfo(0, dout, nextChunk);
+    StreamInfo streamInfo = new StreamInfo(zidx, nextChunk);
     while (is.available() > 0) {  // loop over all files in zip file
-      streamInfo = readOneFile(is, streamInfo._dout, bvs, streamInfo._nextChunk, streamInfo._zidx, fileIndex++); // read one file in
+      streamInfo = readOneFile(is, dout, bvs, streamInfo._nextChunk, streamInfo._zidx, fileIndex++); // read one file in
+//      streamInfo = readOneFile(is, dout, bvs, nextChunk, streamInfo._zidx, fileIndex++); // read one file in
       if (is.available() <= 0) {  // done reading one file, get the next one or quit if at the end
         getNextFile(is);
       }
@@ -222,8 +220,8 @@ public abstract class Parser extends Iced {
     streamInfo._nextChunk.close();
     bvs.close();
     is.close();
-    if( streamInfo._dout != nextChunk ) streamInfo._dout.reduce(nextChunk);
-    return streamInfo._dout;
+    if( dout != nextChunk ) dout.reduce(nextChunk);
+    return dout;
   }
 
   /** Class implementing DataIns from a Stream (probably a GZIP stream)
