@@ -31,6 +31,7 @@ final public class DeepWaterModelInfo extends Iced {
   int _channels;
   int _classes;
   int _deviceID;
+  boolean _gpu;
   byte[] _network; // model definition (graph)
   byte[] _modelparams; // internal state of native backend (weights/biases/helpers)
   float[] _meanData; //mean pixel value of the training data
@@ -74,6 +75,7 @@ final public class DeepWaterModelInfo extends Iced {
     _model_id = model_id;
     DeepWaterParameters.Sanity.modifyParms(parameters, parameters, _classes); //sanitize the model_info's parameters
     _deviceID=parameters._device_id;
+    _gpu=parameters._gpu;
 
     if (parameters._checkpoint!=null) {
       try {
@@ -113,7 +115,7 @@ final public class DeepWaterModelInfo extends Iced {
       }
       try {
         assert _imageTrain==null;
-        _imageTrain = new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed());
+        _imageTrain = new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
         if (parameters._network != user) {
           String network = parameters._network == auto ? inception_bn.toString() : parameters._network.toString();
           Log.info("Creating a fresh model of the following network type: " + network);
@@ -260,7 +262,25 @@ final public class DeepWaterModelInfo extends Iced {
    * @return TwoDimTable with the summary of the model
    */
   TwoDimTable createSummaryTable() {
-    return null;
+    TwoDimTable table = new TwoDimTable(
+        "Status of Deep Learning Model",
+        (!get_params()._autoencoder ? ("predicting " + get_params()._response_column + ", ") : "") +
+            (get_params()._autoencoder ? "auto-encoder" :
+                _classification ? (_classes + "-class classification") : "regression")
+            + ", "
+            + PrettyPrint.bytes(size()) + ", "
+            + String.format("%,d", get_processed_global()) + " training samples, "
+            + "mini-batch size " + String.format("%,d", get_params()._mini_batch_size),
+        new String[1], //rows
+        new String[]{"Rate", "Momentum" },
+        new String[]{"double", "double" },
+        new String[]{"%5f", "%5f"},
+        "");
+
+    table.set(0, 0, get_params().rate(get_processed_global()));
+    table.set(0, 1, get_params().momentum(get_processed_global()));
+    summaryTable = table;
+    return summaryTable;
   }
 
   /**

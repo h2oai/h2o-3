@@ -559,6 +559,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
 
     @property
+    def gpu(self):
+        return self._parms["gpu"]
+
+    @gpu.setter
+    def gpu(self, value):
+        self._parms["gpu"] = value
+
+    @property
     def device_id(self):
         """int: Device ID (which GPU). (Default: 0)"""
         return self._parms.get("device_id")

@@ -51,6 +51,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "backend",
         "image_shape",
         "channels",
+        "gpu",
         "device_id",
         "network_definition_file",
         "network_parameters_file",
@@ -302,6 +303,9 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Number of (color) channels.")
     public int channels;
+
+    @API(level = API.Level.expert, direction=API.Direction.INOUT, help = "Whether to use a GPU (if available).")
+    public boolean gpu;
 
     @API(level = API.Level.expert, direction=API.Direction.INOUT, help = "Device ID (which GPU).")
     public int device_id;

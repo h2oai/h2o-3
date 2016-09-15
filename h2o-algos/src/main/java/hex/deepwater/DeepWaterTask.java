@@ -124,8 +124,8 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
         float[] data = img_iter.getData();
         float[] labels = img_iter.getLabel();
         long n = _localmodel.get_processed_total();
-        if(!_localmodel.get_params()._quiet_mode)
-            Log.info("Trained " + n + " samples. Training on " + Arrays.toString(img_iter.getFiles()));
+//        if(!_localmodel.get_params()._quiet_mode)
+//            Log.info("Trained " + n + " samples. Training on " + Arrays.toString(img_iter.getFiles()));
         _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double)n));
         _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double)n));
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
