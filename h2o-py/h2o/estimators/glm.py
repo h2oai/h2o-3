@@ -511,7 +511,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @beta_constraints.setter
     def beta_constraints(self, beta_constraints):
-        assert_is_type(beta_constraints, None, str)
+        assert_is_type(beta_constraints, None, str, H2OFrame)
         self._parms["beta_constraints"] = beta_constraints
 
 
