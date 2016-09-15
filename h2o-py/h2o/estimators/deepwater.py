@@ -176,6 +176,10 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Number of (color) channels.
         Default: 3
 
+      gpu : bool
+        Whether to use a GPU (if available).
+        Default: True
+
       device_id : int
         Device ID (which GPU).
         Default: 0
@@ -207,7 +211,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
                      "distribution", "score_interval", "score_training_samples", "score_validation_samples",
                      "score_duty_cycle", "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
                      "replicate_training_data", "single_node_mode", "shuffle_training_data", "mini_batch_size",
-                     "clip_gradient", "network", "backend", "image_shape", "channels", "device_id",
+                     "clip_gradient", "network", "backend", "image_shape", "channels", "gpu", "device_id",
                      "network_definition_file", "network_parameters_file", "mean_image_file",
                      "export_native_model_prefix"]:
             pname = name[:-1] if name[-1] == '_' else name
@@ -524,6 +528,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @channels.setter
     def channels(self, value):
         self._parms["channels"] = value
+
+    @property
+    def gpu(self):
+        return self._parms["gpu"]
+
+    @gpu.setter
+    def gpu(self, value):
+        self._parms["gpu"] = value
 
     @property
     def device_id(self):
