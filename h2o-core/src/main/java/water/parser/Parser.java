@@ -130,11 +130,9 @@ public abstract class Parser extends Iced {
               break;
             }
           }
-          if (sameColumnNames)
+          if (sameColumnNames)  // only recognize current file header if it has the same column names as previous files
             this._setup.setCheckHeader(ps._check_header);
         }
-      } else {  // take care of the case where the last file has header but this file does not.
-        this._setup.setCheckHeader(ps._check_header);
       }
     }
     return true;  // everything is fine
@@ -154,6 +152,18 @@ public abstract class Parser extends Iced {
     }
   }
 
+  private class StreamInfo {
+    int _zidx;
+    StreamParseWriter _dout;
+    StreamParseWriter _nextChunk;
+
+    StreamInfo(int zidx, StreamParseWriter dout, StreamParseWriter nextChunk) {
+      this._zidx = zidx;
+      this._dout = dout;
+      this._nextChunk = nextChunk;
+    }
+  }
+
   /**
    * This method reads in one zip file.  Before reading the file, it will check if the current file has the same
    * number of columns and separator type as the previous files it has parssed.  If they do not match, no file will
@@ -167,12 +177,13 @@ public abstract class Parser extends Iced {
    * @return
    * @throws IOException
    */
-  private int readOneFile(final InputStream is, final StreamParseWriter dout, InputStream bvs,
-                          StreamParseWriter nextChunk, int zidx) throws IOException {
+  private StreamInfo readOneFile(final InputStream is, final StreamParseWriter dout, InputStream bvs,
+                          StreamParseWriter nextChunk, int zidx, int fileIndex) throws IOException {
     int cidx = 0;
     StreamData din = new StreamData(is);
-    if (!checkFileNHeader(is, dout, din, cidx))
-      return zidx;  // header is bad, quit now
+    // only check header for 2nd file onward since guess setup is already done on first file.
+    if ((fileIndex > 0) && (!checkFileNHeader(is, dout, din, cidx)))
+      return new StreamInfo(zidx, dout, nextChunk);  // header is bad, quit now
     while (is.available() > 0) {
       int xidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
       if (xidx > zidx) {  // Advanced chunk index of underlying ByteVec stream?
@@ -187,7 +198,7 @@ public abstract class Parser extends Iced {
       parseChunk(cidx++, din, nextChunk);
     }
     parseChunk(cidx, din, nextChunk);
-    return zidx;
+    return new StreamInfo(zidx, dout, nextChunk);
   }
 
 
@@ -200,17 +211,19 @@ public abstract class Parser extends Iced {
     StreamParseWriter nextChunk = dout;
     int zidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
     assert zidx == 1;
+    int fileIndex = 0;  // count files being passed.  0 is first file, 1 is second and so on...
+    StreamInfo streamInfo = new StreamInfo(0, dout, nextChunk);
     while (is.available() > 0) {  // loop over all files in zip file
-      zidx = readOneFile(is, dout, bvs, nextChunk, zidx); // read one file in
+      streamInfo = readOneFile(is, streamInfo._dout, bvs, streamInfo._nextChunk, streamInfo._zidx, fileIndex++); // read one file in
       if (is.available() <= 0) {  // done reading one file, get the next one or quit if at the end
         getNextFile(is);
       }
     }
-    nextChunk.close();
+    streamInfo._nextChunk.close();
     bvs.close();
     is.close();
-    if( dout != nextChunk ) dout.reduce(nextChunk);
-    return dout;
+    if( streamInfo._dout != nextChunk ) streamInfo._dout.reduce(nextChunk);
+    return streamInfo._dout;
   }
 
   /** Class implementing DataIns from a Stream (probably a GZIP stream)
