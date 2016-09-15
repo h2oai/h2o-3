@@ -375,17 +375,25 @@ class H2OFrame(object):
         else:
             print(self._ex._cache._tabulate("simple", True))
 
-    def describe(self):
-        """Generate an in-depth description of this H2OFrame. Everything in summary(), plus the data layout."""
-        # Force a fetch of 10 rows; the chunk & distribution summaries are not
-        # cached, so must be pulled.  While we're at it, go ahead and fill in
-        # the default caches if they are not already filled in
+    def describe(self,chunk_summary=False):
+        """
+        Generate an in-depth description of this H2OFrame.
+
+        Parameters
+        ----------
+        chunk_summary : bool, default=False
+            Retrieve the chunk summary along with the distribution summary
+        """
 
         res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
         self._ex._cache._fill_data(res)
-        print("Rows:{:,}".format(self.nrow), "Cols:{:,}".format(self.ncol))
-        res["chunk_summary"].show()
-        res["distribution_summary"].show()
+        print("Rows:{}".format(self.nrow))
+        print("Cols:{}".format(self.ncol))
+
+        #The chunk & distribution summaries are not cached, so must be pulled if chunk_summary=True.
+        if chunk_summary:
+            res["chunk_summary"].show()
+            res["distribution_summary"].show()
         print("\n")
         self.summary()
 
