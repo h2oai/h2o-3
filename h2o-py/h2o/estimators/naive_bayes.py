@@ -6,11 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, numeric
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
 class H2ONaiveBayesEstimator(H2OEstimator):
@@ -37,10 +36,12 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                       "max_confusion_matrix_size", "max_hit_ratio_k", "laplace", "min_sdev", "eps_sdev", "min_prob",
                       "eps_prob", "compute_metrics", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-        for pname in kwargs:
-            if pname in names_list:
+        for pname, pvalue in kwargs.items():
+            if pname == 'model_id':
+                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)
+            elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, kwargs[pname])
+                setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -80,8 +81,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @fold_assignment.setter
     def fold_assignment(self, fold_assignment):
-        fold_assignment = re.sub(r"[^a-z]+", "", fold_assignment.lower())
-        assert_is_type(fold_assignment, None, "auto", "random", "modulo", "stratified")
+        assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
 
 

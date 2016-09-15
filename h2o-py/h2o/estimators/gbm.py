@@ -6,11 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, numeric
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
 class H2OGradientBoostingEstimator(H2OEstimator):
@@ -40,10 +39,12 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                       "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-        for pname in kwargs:
-            if pname in names_list:
+        for pname, pvalue in kwargs.items():
+            if pname == 'model_id':
+                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)
+            elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, kwargs[pname])
+                setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -135,8 +136,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @fold_assignment.setter
     def fold_assignment(self, fold_assignment):
-        fold_assignment = re.sub(r"[^a-z]+", "", fold_assignment.lower())
-        assert_is_type(fold_assignment, None, "auto", "random", "modulo", "stratified")
+        assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
 
 
@@ -389,8 +389,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        stopping_metric = re.sub(r"[^a-z]+", "", stopping_metric.lower())
-        assert_is_type(stopping_metric, None, "auto", "deviance", "logloss", "mse", "auc", "lifttopgroup", "r", "misclassification", "meanperclasserror")
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification", "mean_per_class_error"))
         self._parms["stopping_metric"] = stopping_metric
 
 
@@ -476,8 +475,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @distribution.setter
     def distribution(self, distribution):
-        distribution = re.sub(r"[^a-z]+", "", distribution.lower())
-        assert_is_type(distribution, None, "auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber")
+        assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
 
 
@@ -606,8 +604,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @histogram_type.setter
     def histogram_type(self, histogram_type):
-        histogram_type = re.sub(r"[^a-z]+", "", histogram_type.lower())
-        assert_is_type(histogram_type, None, "auto", "uniformadaptive", "random", "quantilesglobal", "roundrobin")
+        assert_is_type(histogram_type, None, Enum("auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"))
         self._parms["histogram_type"] = histogram_type
 
 

@@ -6,11 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, numeric
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
 class H2OKMeansEstimator(H2OEstimator):
@@ -30,10 +29,12 @@ class H2OKMeansEstimator(H2OEstimator):
                       "ignore_const_cols", "score_each_iteration", "k", "user_points", "max_iterations", "standardize",
                       "seed", "init", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-        for pname in kwargs:
-            if pname in names_list:
+        for pname, pvalue in kwargs.items():
+            if pname == 'model_id':
+                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)
+            elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, kwargs[pname])
+                setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -103,8 +104,7 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @fold_assignment.setter
     def fold_assignment(self, fold_assignment):
-        fold_assignment = re.sub(r"[^a-z]+", "", fold_assignment.lower())
-        assert_is_type(fold_assignment, None, "auto", "random", "modulo", "stratified")
+        assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
 
 
@@ -214,8 +214,7 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @init.setter
     def init(self, init):
-        init = re.sub(r"[^a-z]+", "", init.lower())
-        assert_is_type(init, None, "random", "plusplus", "furthest", "user")
+        assert_is_type(init, None, Enum("random", "plus_plus", "furthest", "user"))
         self._parms["init"] = init
 
 

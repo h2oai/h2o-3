@@ -92,6 +92,9 @@ As you have noticed, we define a number of special classes to facilitate type co
     pandas_dataframe  # Same as pandas.DataFrame
     numpy_ndarray     # Same as numpy.ndarray
 
+    # An enum. This is similar to a mere union of strings, except that we match case-insensitively
+    Enum("case1", "case2", ...)
+
 
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
@@ -108,7 +111,7 @@ from h2o.exceptions import H2OTypeError, H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import PY2, viewitems
 
-__all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNumeric",
+__all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNumeric", "Enum",
            "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
            "assert_is_type", "assert_matches", "assert_satisfies", "is_type")
 
@@ -381,6 +384,28 @@ class _LazyClass(MagicType):
         """Return string representing the name of this type."""
         return self._name
 
+
+_enum_mangle_pattern = re.compile(r"[^a-z]+")
+def _enum_mangle(var):
+    return _enum_mangle_pattern.sub("", var.lower())
+
+class Enum(MagicType):
+    """
+    Enum-like type, however values are matched case-insensitively.
+    """
+
+    def __init__(self, *consts):
+        """Initialize the Enum."""
+        self._consts = set(_enum_mangle(c) for c in consts)
+
+    def check(self, var):
+        """Check whether the provided value is a valid enum constant."""
+        if not isinstance(var, _str_type): return False
+        return _enum_mangle(var) in self._consts
+
+    def name(self, src=None):
+        """Return string representing the name of this type."""
+        return "Enum[%s]" % ", ".join('"%s"' % c for c in self._consts)
 
 
 

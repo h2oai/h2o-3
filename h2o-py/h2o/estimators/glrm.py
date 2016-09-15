@@ -6,11 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, numeric
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
 class H2OGeneralizedLowRankEstimator(H2OEstimator):
@@ -32,10 +31,12 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                       "svd_method", "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd",
                       "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-        for pname in kwargs:
-            if pname in names_list:
+        for pname, pvalue in kwargs.items():
+            if pname == 'model_id':
+                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)
+            elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, kwargs[pname])
+                setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
         self._parms["_rest_version"] = 3
@@ -115,8 +116,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @transform.setter
     def transform(self, transform):
-        transform = re.sub(r"[^a-z]+", "", transform.lower())
-        assert_is_type(transform, None, "none", "standardize", "normalize", "demean", "descale")
+        assert_is_type(transform, None, Enum("none", "standardize", "normalize", "demean", "descale"))
         self._parms["transform"] = transform
 
 
@@ -141,8 +141,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @loss.setter
     def loss(self, loss):
-        loss = re.sub(r"[^a-z]+", "", loss.lower())
-        assert_is_type(loss, None, "quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic")
+        assert_is_type(loss, None, Enum("quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic"))
         self._parms["loss"] = loss
 
 
@@ -156,8 +155,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @loss_by_col.setter
     def loss_by_col(self, loss_by_col):
-        loss_by_col = re.sub(r"[^a-z]+", "", loss_by_col.lower())
-        assert_is_type(loss_by_col, None, ["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal"])
+        assert_is_type(loss_by_col, None, [Enum("quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical", "ordinal")])
         self._parms["loss_by_col"] = loss_by_col
 
 
@@ -179,8 +177,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @multi_loss.setter
     def multi_loss(self, multi_loss):
-        multi_loss = re.sub(r"[^a-z]+", "", multi_loss.lower())
-        assert_is_type(multi_loss, None, "categorical", "ordinal")
+        assert_is_type(multi_loss, None, Enum("categorical", "ordinal"))
         self._parms["multi_loss"] = multi_loss
 
 
@@ -205,8 +202,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @regularization_x.setter
     def regularization_x(self, regularization_x):
-        regularization_x = re.sub(r"[^a-z]+", "", regularization_x.lower())
-        assert_is_type(regularization_x, None, "none", "quadratic", "l", "l", "nonnegative", "onesparse", "unitonesparse", "simplex")
+        assert_is_type(regularization_x, None, Enum("none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"))
         self._parms["regularization_x"] = regularization_x
 
 
@@ -220,8 +216,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @regularization_y.setter
     def regularization_y(self, regularization_y):
-        regularization_y = re.sub(r"[^a-z]+", "", regularization_y.lower())
-        assert_is_type(regularization_y, None, "none", "quadratic", "l", "l", "nonnegative", "onesparse", "unitonesparse", "simplex")
+        assert_is_type(regularization_y, None, Enum("none", "quadratic", "l2", "l1", "non_negative", "one_sparse", "unit_one_sparse", "simplex"))
         self._parms["regularization_y"] = regularization_y
 
 
@@ -309,8 +304,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @init.setter
     def init(self, init):
-        init = re.sub(r"[^a-z]+", "", init.lower())
-        assert_is_type(init, None, "random", "svd", "plusplus", "user")
+        assert_is_type(init, None, Enum("random", "svd", "plus_plus", "user"))
         self._parms["init"] = init
 
 
@@ -324,8 +318,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @svd_method.setter
     def svd_method(self, svd_method):
-        svd_method = re.sub(r"[^a-z]+", "", svd_method.lower())
-        assert_is_type(svd_method, None, "gramsvd", "power", "randomized")
+        assert_is_type(svd_method, None, Enum("gram_s_v_d", "power", "randomized"))
         self._parms["svd_method"] = svd_method
 
 

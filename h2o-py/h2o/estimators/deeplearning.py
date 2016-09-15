@@ -6,11 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, numeric
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
 class H2ODeepLearningEstimator(H2OEstimator):
@@ -58,10 +57,12 @@ class H2ODeepLearningEstimator(H2OEstimator):
                       "export_weights_and_biases", "mini_batch_size", "categorical_encoding", "elastic_averaging",
                       "elastic_averaging_moving_rate", "elastic_averaging_regularization"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-        for pname in kwargs:
-            if pname in names_list:
+        for pname, pvalue in kwargs.items():
+            if pname == 'model_id':
+                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)
+            elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, kwargs[pname])
+                setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
         if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True
@@ -132,8 +133,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @fold_assignment.setter
     def fold_assignment(self, fold_assignment):
-        fold_assignment = re.sub(r"[^a-z]+", "", fold_assignment.lower())
-        assert_is_type(fold_assignment, None, "auto", "random", "modulo", "stratified")
+        assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
 
 
@@ -359,8 +359,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @activation.setter
     def activation(self, activation):
-        activation = re.sub(r"[^a-z]+", "", activation.lower())
-        assert_is_type(activation, None, "tanh", "tanhwithdropout", "rectifier", "rectifierwithdropout", "maxout", "maxoutwithdropout")
+        assert_is_type(activation, None, Enum("tanh", "tanh_with_dropout", "rectifier", "rectifier_with_dropout", "maxout", "maxout_with_dropout"))
         self._parms["activation"] = activation
 
 
@@ -615,8 +614,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @initial_weight_distribution.setter
     def initial_weight_distribution(self, initial_weight_distribution):
-        initial_weight_distribution = re.sub(r"[^a-z]+", "", initial_weight_distribution.lower())
-        assert_is_type(initial_weight_distribution, None, "uniformadaptive", "uniform", "normal")
+        assert_is_type(initial_weight_distribution, None, Enum("uniform_adaptive", "uniform", "normal"))
         self._parms["initial_weight_distribution"] = initial_weight_distribution
 
 
@@ -663,8 +661,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @loss.setter
     def loss(self, loss):
-        loss = re.sub(r"[^a-z]+", "", loss.lower())
-        assert_is_type(loss, None, "automatic", "crossentropy", "quadratic", "huber", "absolute", "quantile")
+        assert_is_type(loss, None, Enum("automatic", "cross_entropy", "quadratic", "huber", "absolute", "quantile"))
         self._parms["loss"] = loss
 
 
@@ -678,8 +675,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @distribution.setter
     def distribution(self, distribution):
-        distribution = re.sub(r"[^a-z]+", "", distribution.lower())
-        assert_is_type(distribution, None, "auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber")
+        assert_is_type(distribution, None, Enum("auto", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"))
         self._parms["distribution"] = distribution
 
 
@@ -816,8 +812,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        stopping_metric = re.sub(r"[^a-z]+", "", stopping_metric.lower())
-        assert_is_type(stopping_metric, None, "auto", "deviance", "logloss", "mse", "auc", "lifttopgroup", "r", "misclassification", "meanperclasserror")
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification", "mean_per_class_error"))
         self._parms["stopping_metric"] = stopping_metric
 
 
@@ -855,8 +850,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @score_validation_sampling.setter
     def score_validation_sampling(self, score_validation_sampling):
-        score_validation_sampling = re.sub(r"[^a-z]+", "", score_validation_sampling.lower())
-        assert_is_type(score_validation_sampling, None, "uniform", "stratified")
+        assert_is_type(score_validation_sampling, None, Enum("uniform", "stratified"))
         self._parms["score_validation_sampling"] = score_validation_sampling
 
 
@@ -959,8 +953,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @missing_values_handling.setter
     def missing_values_handling(self, missing_values_handling):
-        missing_values_handling = re.sub(r"[^a-z]+", "", missing_values_handling.lower())
-        assert_is_type(missing_values_handling, None, "skip", "meanimputation")
+        assert_is_type(missing_values_handling, None, Enum("skip", "mean_imputation"))
         self._parms["missing_values_handling"] = missing_values_handling
 
 
@@ -1089,8 +1082,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @categorical_encoding.setter
     def categorical_encoding(self, categorical_encoding):
-        categorical_encoding = re.sub(r"[^a-z]+", "", categorical_encoding.lower())
-        assert_is_type(categorical_encoding, None, "auto", "enum", "onehotinternal", "onehotexplicit", "binary", "eigen")
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
         self._parms["categorical_encoding"] = categorical_encoding
 
 

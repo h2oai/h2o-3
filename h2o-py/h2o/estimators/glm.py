@@ -6,11 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, numeric
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 import h2o
 
 
@@ -47,10 +46,12 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                       "balance_classes", "class_sampling_factors", "max_after_balance_size",
                       "max_confusion_matrix_size", "max_hit_ratio_k", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-        for pname in kwargs:
-            if pname in names_list:
+        for pname, pvalue in kwargs.items():
+            if pname == 'model_id':
+                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)
+            elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, kwargs[pname])
+                setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -131,8 +132,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @fold_assignment.setter
     def fold_assignment(self, fold_assignment):
-        fold_assignment = re.sub(r"[^a-z]+", "", fold_assignment.lower())
-        assert_is_type(fold_assignment, None, "auto", "random", "modulo", "stratified")
+        assert_is_type(fold_assignment, None, Enum("auto", "random", "modulo", "stratified"))
         self._parms["fold_assignment"] = fold_assignment
 
 
@@ -229,8 +229,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @family.setter
     def family(self, family):
-        family = re.sub(r"[^a-z]+", "", family.lower())
-        assert_is_type(family, None, "gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie")
+        assert_is_type(family, None, Enum("gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie"))
         self._parms["family"] = family
 
 
@@ -268,8 +267,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @solver.setter
     def solver(self, solver):
-        solver = re.sub(r"[^a-z]+", "", solver.lower())
-        assert_is_type(solver, None, "auto", "irlsm", "lbfgs", "coordinatedescentnaive", "coordinatedescent")
+        assert_is_type(solver, None, Enum("auto", "irlsm", "l_bfgs", "coordinate_descent_naive", "coordinate_descent"))
         self._parms["solver"] = solver
 
 
@@ -357,8 +355,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @missing_values_handling.setter
     def missing_values_handling(self, missing_values_handling):
-        missing_values_handling = re.sub(r"[^a-z]+", "", missing_values_handling.lower())
-        assert_is_type(missing_values_handling, None, "skip", "meanimputation")
+        assert_is_type(missing_values_handling, None, Enum("skip", "mean_imputation"))
         self._parms["missing_values_handling"] = missing_values_handling
 
 
@@ -474,8 +471,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @link.setter
     def link(self, link):
-        link = re.sub(r"[^a-z]+", "", link.lower())
-        assert_is_type(link, None, "familydefault", "identity", "logit", "log", "inverse", "tweedie")
+        assert_is_type(link, None, Enum("family_default", "identity", "logit", "log", "inverse", "tweedie"))
         self._parms["link"] = link
 
 

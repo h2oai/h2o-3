@@ -25,7 +25,8 @@ class PythonTypeTranslatorForCheck(bi.TypeTranslator):
         self.make_array2 = lambda vtype: "[[%s]]" % vtype
         self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
         self.make_key = lambda itype, schema: "str"
-        self.make_enum = lambda schema, values: ", ".join(stringify(v) for v in values) if values else schema
+        self.make_enum = lambda schema, values: \
+            "Enum(%s)" % ", ".join(stringify(v) for v in values) if values else schema
 
 type_adapter1 = PythonTypeTranslatorForCheck()
 def translate_type_for_check(h2o_type, values=None):
@@ -118,19 +119,17 @@ def gen_module(schema, algo):
     for param in schema["parameters"]:
         assert (param["type"][:4] == "enum") == bool(param["values"]), "Values are expected for enum types only"
         if param["values"]:
-            doc_values = [normalize_enum_constant(p) for p in param["values"]]
-            chk_values = [pattern.sub("", p) for p in doc_values]
+            enum_values = [normalize_enum_constant(p) for p in param["values"]]
             if param["default_value"]:
                 param["default_value"] = normalize_enum_constant(param["default_value"])
         else:
-            doc_values = None
-            chk_values = None
+            enum_values = None
         pname = param["name"]
         if pname in reserved_words: pname += "_"
         param_names.append(pname)
         param["pname"] = pname
-        param["ptype"] = translate_type_for_check(param["type"], chk_values)
-        param["dtype"] = translate_type_for_doc(param["type"], doc_values)
+        param["ptype"] = translate_type_for_check(param["type"], enum_values)
+        param["dtype"] = translate_type_for_doc(param["type"], enum_values)
 
     yield "#!/usr/bin/env python"
     yield "# -*- encoding: utf-8 -*-"
@@ -140,11 +139,10 @@ def gen_module(schema, algo):
     yield "#"
     yield "from __future__ import absolute_import, division, print_function, unicode_literals"
     yield ""
-    yield "import re"
     yield "from h2o.estimators.estimator_base import H2OEstimator"
     yield "from h2o.exceptions import H2OValueError"
     yield "from h2o.frame import H2OFrame"
-    yield "from h2o.utils.typechecks import assert_is_type, numeric"
+    yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
     if extra_imports:
         yield reindent_block(extra_imports, 0) + ""
     yield ""
@@ -168,10 +166,12 @@ def gen_module(schema, algo):
     yield "        names_list = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
                                                 indent=(" " * 22), indent_first=False)
     yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
-    yield "        for pname in kwargs:"
-    yield "            if pname in names_list:"
+    yield "        for pname, pvalue in kwargs.items():"
+    yield "            if pname == 'model_id':"
+    yield '                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)'
+    yield "            elif pname in names_list:"
     yield "                # Using setattr(...) will invoke type-checking of the arguments"
-    yield "                setattr(self, pname, kwargs[pname])"
+    yield "                setattr(self, pname, pvalue)"
     yield "            else:"
     yield '                raise H2OValueError("Unknown parameter %s" % pname)'
     if init_extra:
@@ -197,10 +197,7 @@ def gen_module(schema, algo):
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
-        if param["values"]:  # enum
-            yield '        %s = re.sub(r"[^a-z]+", "", %s.lower())' % (pname, pname)
-            yield '        assert_is_type(%s, None, %s)' % (pname, ptype)
-        elif pname in {"training_frame", "validation_frame", "user_x", "user_y", "user_points"}:
+        if pname in {"training_frame", "validation_frame", "user_x", "user_y", "user_points"}:
             assert param["ptype"] == "str"
             yield "        assert_is_type(%s, None, str, H2OFrame)" % pname
         elif pname in {"alpha", "lambda_"} and ptype == "[numeric]":

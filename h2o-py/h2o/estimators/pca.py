@@ -6,11 +6,10 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import re
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
-from h2o.utils.typechecks import assert_is_type, numeric
+from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
 class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
@@ -28,10 +27,12 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
                       "score_each_iteration", "transform", "pca_method", "k", "max_iterations", "use_all_factor_levels",
                       "compute_metrics", "impute_missing", "seed", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
-        for pname in kwargs:
-            if pname in names_list:
+        for pname, pvalue in kwargs.items():
+            if pname == 'model_id':
+                raise H2OValueError("Model id cannot be set; got model_id = %s" % pvalue)
+            elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
-                setattr(self, pname, kwargs[pname])
+                setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s" % pname)
 
@@ -99,8 +100,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @transform.setter
     def transform(self, transform):
-        transform = re.sub(r"[^a-z]+", "", transform.lower())
-        assert_is_type(transform, None, "none", "standardize", "normalize", "demean", "descale")
+        assert_is_type(transform, None, Enum("none", "standardize", "normalize", "demean", "descale"))
         self._parms["transform"] = transform
 
 
@@ -114,8 +114,7 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
 
     @pca_method.setter
     def pca_method(self, pca_method):
-        pca_method = re.sub(r"[^a-z]+", "", pca_method.lower())
-        assert_is_type(pca_method, None, "gramsvd", "power", "randomized", "glrm")
+        assert_is_type(pca_method, None, Enum("gram_s_v_d", "power", "randomized", "glrm"))
         self._parms["pca_method"] = pca_method
 
 
