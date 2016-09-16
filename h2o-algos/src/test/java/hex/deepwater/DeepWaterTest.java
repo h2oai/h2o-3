@@ -1,5 +1,6 @@
 package hex.deepwater;
 
+import hex.Model;
 import hex.ModelMetricsMultinomial;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -719,6 +720,28 @@ public class DeepWaterTest extends TestUtil {
             }
           }));
     fs.blockForPending();
+  }
+
+  @Ignore
+  @Test
+  public void prostate() {
+    DeepWaterParameters p = new DeepWaterParameters();
+    Frame tr;
+    p._train = (tr=parse_test_file("smalldata/prostate/prostate.csv"))._key;
+    p._network = DeepWaterParameters.Network.lenet;
+    p._response_column = "CAPSULE";
+    Vec v = tr.remove(p._response_column);
+    tr.add(p._response_column, v.toCategoricalVec());
+    v.remove();
+    DKV.put(tr);
+    p._mini_batch_size = 4;
+    p._train_samples_per_iteration = p._mini_batch_size;
+    p._problem_type = DeepWaterParameters.ProblemType.csv_classification;
+    p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+    DeepWater j= new DeepWater(p);
+    DeepWaterModel m = j.trainModel().get();
+    tr.remove();
+    m.remove();
   }
 }
 
