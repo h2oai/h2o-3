@@ -1,7 +1,7 @@
 # Deep Water Python Tests
 
 ### What can Deep Water do?
-* Train user-defined or pre-defined deeplearning models for image classification
+* Train user-defined or pre-defined deeplearning models for image classification from Flow, R, Python, Java, Scala or REST API
 * Train on a single GPU (requires CUDA) or CPU (requires BLAS) 
 * Uses the MXNet backend transparently
 * Behave just like any other H2O model (Flow, cross-validation, early stopping, hyper-parameter search, etc.)
