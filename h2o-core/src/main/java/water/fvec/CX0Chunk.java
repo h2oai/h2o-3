@@ -11,9 +11,12 @@ public final class CX0Chunk extends CXIChunk {
   // Sparse constructor
   protected CX0Chunk(int len, byte [] buf, boolean sparseNA){super(len,0,buf,sparseNA);}
 
-  @Override protected final long at8_impl(int idx) {return getId(findOffset(idx)) == idx?1:0;}
-  @Override protected final double atd_impl(int idx) { return at8_impl(idx); }
-  @Override protected final boolean isNA_impl( int i ) { return false; }
+  @Override
+  public final long at8_impl(int idx) {return getId(findOffset(idx)) == idx?1:0;}
+  @Override
+  public final double atd_impl(int idx) { return at8_impl(idx); }
+  @Override
+  public final boolean isNA_impl(int i) { return false; }
   @Override double min() { return 0; }
   @Override double max() { return 1; }
   @Override public boolean hasNA() { return false; }

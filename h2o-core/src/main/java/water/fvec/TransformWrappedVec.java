@@ -47,24 +47,10 @@ public class TransformWrappedVec extends WrappedVec {
     this(v.group().addVec(), v._rowLayout, fun, new VecAry(v));
   }
 
-  public Vec makeVec() {
-    Vec v  = (Vec) new MRTask() {
-      @Override public void map(Chunk c, NewChunk nc) {
-        for(int i=0;i<c._len;++i)
-          nc.addNum(c.atd(i));
-      }
-    }.doAll(1,Vec.T_NUM,new VecAry(this)).outputVecs(null).getVecRaw(0);
-    remove();
-    return v;
-  }
 
-
-
-  @Override public SingleChunk chunkForChunkIdx(int cidx) {
-    Chunk[] cs = _masterVec.getChunks(cidx).chks();
-    SingleChunk sc = new SingleChunk(this,cidx);
-    sc._c = new TransformWrappedChunk(_fun, sc, cs);
-    return sc;
+  @Override
+  protected Chunk makeChunk(int cidx) {
+    return new TransformWrappedChunk(_fun, _masterVec.getChunks(cidx));
   }
 
   @Override public Vec doCopy() {
@@ -73,23 +59,23 @@ public class TransformWrappedVec extends WrappedVec {
 
   public static class TransformWrappedChunk extends Chunk {
     public final AST _fun;
-    public final transient Chunk _c[];
+    public final transient Chunks _c;
 
     private final AST[] _asts;
     private final Env _env;
 
-    TransformWrappedChunk(AST fun, SingleChunk sc, Chunk... c) {
+    TransformWrappedChunk(AST fun, Chunks  c) {
       // set all the chunk fields
-      _c = c; set_len(_c[0]._len);
-      _achunk = sc;
+      _c = c;
       _fun=fun;
-      _asts = new AST[1+_c.length];
+      _asts = new AST[1+_c.numCols()];
       _asts[0]=_fun;
       for(int i=1;i<_asts.length;++i)
         _asts[i] = makeNum(0);
       _env = new Env(null);
     }
-
+    @Override
+    public int len() {return _c.numRows();}
 
     @Override
     public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
@@ -103,9 +89,9 @@ public class TransformWrappedVec extends WrappedVec {
 
     // applies the function to a row of doubles
     @Override public double atd_impl(int idx) {
-      if( null==_fun ) return _c[0].atd(idx);  // simple wrapping of 1 vec
+      if( null==_fun ) return _c.atd(idx,0);  // simple wrapping of 1 vec
       for(int i=1;i<_asts.length;++i)
-        ((ASTParameter)_asts[i]).setNum(_c[i-1].atd(idx)); // = makeNum(_c[i-1].atd(idx));
+        ((ASTParameter)_asts[i]).setNum(_c.atd(idx,i-1)); // = makeNum(_c[i-1].atd(idx));
       return _fun.apply(_env,_env.stk(),_asts).getNum();   // Make the call per-row
     }
 

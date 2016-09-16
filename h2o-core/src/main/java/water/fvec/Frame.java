@@ -534,18 +534,18 @@ public class Frame extends Lockable<Frame> {
           lrows[i] *=-1;
         Arrays.sort(lrows);
         return new MRTask(){
-          @Override public void map(Chunk [] chks, NewChunk [] ncs) {
-            int len = chks[0]._len;
-            long start = chks[0].start();
-            int j = Arrays.binarySearch(lrows,chks[0].start());
+          @Override public void map(Chunks chks, Chunks.AppendableChunks ncs) {
+            int len = chks.numRows();
+            long start = chks.start();
+            int j = Arrays.binarySearch(lrows,start);
             if(j < 0) j = -j -1;
             int head = (int)(j - start); // 0:head are all in
             // add head
-            for(int i = 0; i < chks.length; ++i)
-              chks[i].add2NewChunk(ncs[i],0,head);
-            int k = Arrays.binarySearch(lrows,chks[0].start()+len);
+            for(int i = 0; i < chks.numCols(); ++i)
+              chks.getChunk(i).add2NewChunk(ncs.getChunk(i),0,head);
+            int k = Arrays.binarySearch(lrows,start+len);
             if(k < 0) k = -k -1;
-            int tail = (int)(k - start); // tail:len are all in
+            int tail = (int)(k - start); // tail:numRows are all in
             // head:tail some are out
             if(head < tail) {
               int [] rowIds = new int[tail-head];
@@ -555,11 +555,11 @@ public class Frame extends Lockable<Frame> {
                 else rowIds[y++] = x;
               }
               rowIds = Arrays.copyOf(rowIds,y);
-              for(int i = 0; i < chks.length; ++i)
-                chks[i].add2NewChunk(ncs[i],rowIds);
+              for(int i = 0; i < chks.numCols(); ++i)
+                chks.getChunk(i).add2NewChunk(ncs.getChunk(i),rowIds);
             }
-            for(int i = 0; i < chks.length; ++i)
-              chks[i].add2NewChunk(ncs[i],tail,len);
+            for(int i = 0; i < chks.numCols(); ++i)
+              chks.getChunk(i).add2NewChunk(ncs.getChunk(i),tail,len);
           }
         }.doAll(ArrayUtils.select(_vecs.types(),cols),_vecs).outputFrame(new Names(_names.getNames(cols)),ArrayUtils.select(_vecs.domains(),cols));
       }
@@ -573,7 +573,7 @@ public class Frame extends Lockable<Frame> {
   }
 
 
-  // Convert len rows starting at off to a 2-d ascii table
+  // Convert numRows rows starting at off to a 2-d ascii table
   @Override public String toString( ) { return toString(0,20); }
 
   public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
@@ -648,13 +648,13 @@ public class Frame extends Lockable<Frame> {
    *  Last column is a bit vec indicating whether or not to take the row.
    */
   public static class DeepSelect extends MRTask<DeepSelect> {
-    @Override public void map( Chunk chks[], NewChunk [] ncs) {
-      Chunk pred = chks[chks.length - 1];
-      int[] ids = new int[pred._len];
+    @Override public void map( Chunks chks,Chunks.AppendableChunks ncs) {
+      Chunk pred = chks.getChunk(chks.numCols() - 1);
+      int[] ids = new int[chks.numRows()];
       int selected = pred.nonzeros(ids);
       ids = Arrays.copyOf(ids,selected);
-      for(int i = 0; i < chks.length; ++i)
-        chks[i].add2NewChunk(ncs[i],ids);
+      for(int i = 0; i < chks.numCols(); ++i)
+        chks.getChunk(i).add2NewChunk(ncs.getChunk(i),ids);
     }
   }
 

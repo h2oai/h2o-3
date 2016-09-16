@@ -38,9 +38,12 @@ public class C16Chunk extends Chunk {
     return nc;
   }
 
-  @Override protected final long   at8_impl( int i ) { throw new IllegalArgumentException("at8_abs but 16-byte UUID");  }
-  @Override protected final double atd_impl( int i ) { throw new IllegalArgumentException("atd but 16-byte UUID");  }
-  @Override protected final boolean isNA_impl( int i ) { return UnsafeUtils.get8(_mem,(i<<4))==_LO_NA && UnsafeUtils.get8(_mem,(i<<4)+8)==_HI_NA; }
+  @Override
+  public final long   at8_impl(int i) { throw new IllegalArgumentException("at8_abs but 16-byte UUID");  }
+  @Override
+  public final double atd_impl(int i) { throw new IllegalArgumentException("atd but 16-byte UUID");  }
+  @Override
+  public final boolean isNA_impl(int i) { return UnsafeUtils.get8(_mem,(i<<4))==_LO_NA && UnsafeUtils.get8(_mem,(i<<4)+8)==_HI_NA; }
   @Override protected long at16l_impl(int idx) { 
     long lo = UnsafeUtils.get8(_mem,(idx<<4)  );
     long hi = UnsafeUtils.get8(_mem,(idx<<4)+8);

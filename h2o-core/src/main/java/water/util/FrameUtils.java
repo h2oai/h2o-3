@@ -66,21 +66,11 @@ public class FrameUtils {
     final int N;
     public double [] res;
     public Vec2ArryTsk(int N){this.N = N;}
-    @Override public void setupLocal(){
-      res = MemoryManager.malloc8d(N);
-    }
-    @Override public void map(Chunk c){
-      final int off = (int)c.start();
-      for(int i = 0; i < c._len; i = c.nextNZ(i))
-        res[off+i] = c.atd(i);
+    @Override public void map(Chunks c){
+      res = c.getDoubles(0,new double[c.numRows()]);
     }
     @Override public void reduce(Vec2ArryTsk other){
-      if(res != other.res) {
-        for(int i = 0; i < res.length; ++i) {
-          assert res[i] == 0 || other.res[i] == 0;
-          res[i] += other.res[i]; // assuming only one nonzero
-        }
-      }
+      res = ArrayUtils.append(res,other.res);
     }
   }
 
@@ -93,21 +83,12 @@ public class FrameUtils {
     final int N;
     public int [] res;
     public Vec2IntArryTsk(int N){this.N = N;}
-    @Override public void setupLocal(){
-      res = MemoryManager.malloc4(N);
-    }
-    @Override public void map(Chunk c){
-      final int off = (int)c.start();
-      for(int i = 0; i < c._len; i = c.nextNZ(i))
-        res[off+i] = (int)c.at8(i);
+
+    @Override public void map(Chunks c){
+      res = c.getIntegers(0,new int[c.numRows()],0);
     }
     @Override public void reduce(Vec2IntArryTsk other){
-      if(res != other.res) {
-        for(int i = 0; i < res.length; ++i) {
-          assert res[i] == 0 || other.res[i] == 0;
-          res[i] += other.res[i]; // assuming only one nonzero
-        }
-      }
+      res = ArrayUtils.append(res,other.res);
     }
   }
 
@@ -167,15 +148,15 @@ public class FrameUtils {
         int[] _categorySizes;
         public BinaryConverter(int[] categorySizes) { _categorySizes = categorySizes; }
 
-        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
           int targetColOffset = 0;
-          for (int iCol = 0; iCol < cs.length; ++iCol) {
-            Chunk col = cs[iCol];
+          for (int iCol = 0; iCol < cs.numCols(); ++iCol) {
+
             int numTargetColumns = _categorySizes[iCol];
-            for (int iRow = 0; iRow < col._len; ++iRow) {
-              long val = col.isNA(iRow)? 0 : 1 + col.at8(iRow);
+            for (int iRow = 0; iRow < cs.numRows(); ++iRow) {
+              long val = cs.isNA(iRow,iCol)? 0 : 1 + cs.at8(iRow,iCol);
               for (int j = 0; j < numTargetColumns; ++j) {
-                ncs[targetColOffset + j].addNum(val & 1, 0);
+                ncs.addNum(targetColOffset + j,val & 1, 0);
                 val >>>= 1;
               }
               assert val == 0 : "";
@@ -253,12 +234,12 @@ public class FrameUtils {
       @Override
       public void compute2() {
         new MRTask() {
-          @Override public void map (Chunk[]cs){
+          @Override public void map (Chunks cs){
             final Random rng = RandomUtils.getRNG(0);
-            for (int c = 0; c < cs.length; c++) {
-              for (int r = 0; r < cs[c]._len; r++) {
-                rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
-                if (rng.nextDouble() < _fraction) cs[c].setNA(r);
+            for (int c = 0; c < cs.numCols(); c++) {
+              for (int r = 0; r < cs.numRows(); r++) {
+                rng.setSeed(_seed + 1234 * c ^ 1723 * (cs.start() + r));
+                if (rng.nextDouble() < _fraction) cs.setNA(r,c);
               }
             }
             _job.update(1);
@@ -280,22 +261,7 @@ public class FrameUtils {
     }
   }
 
-  /**
-   * compute fraction of sparse chunks in this array.
-   * @param chks
-   * @return
-   */
-  public static double sparseRatio(Chunk [] chks) {
-    double cnt = 0;
-    double reg = 1.0/chks.length;
-    for(Chunk c :chks)
-      if(c.isSparseNA()){
-        cnt += c.sparseLenNA()/(double)c.len();
-      } else if(c.isSparseZero()){
-        cnt += c.sparseLenZero()/(double)c.len();
-      } else cnt += 1;
-    return cnt * reg;
-  }
+
 
   public static double sparseRatio(Frame fr) {
     double reg = 1.0/fr.numCols();
@@ -306,26 +272,6 @@ public class FrameUtils {
     return res * reg;
   }
 
-  public static class WeightedMean extends MRTask<WeightedMean> {
-    private double _wresponse;
-    private double _wsum;
-    public  double weightedMean() {
-      return _wsum == 0 ? 0 : _wresponse / _wsum;
-    }
-    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
-      for (int i=0;i<response._len;++i) {
-        if (response.isNA(i)) continue;
-        double w = weight.atd(i);
-        if (w == 0) continue;
-        _wresponse += w*(response.atd(i)-offset.atd(i));
-        _wsum += w;
-      }
-    }
-    @Override public void reduce(WeightedMean mrt) {
-      _wresponse += mrt._wresponse;
-      _wsum += mrt._wsum;
-    }
-  }
 
   public static class ExportTask extends H2O.H2OCountedCompleter<ExportTask> {
     final InputStream _csv;

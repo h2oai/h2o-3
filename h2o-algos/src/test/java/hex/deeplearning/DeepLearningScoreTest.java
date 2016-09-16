@@ -29,8 +29,8 @@ public class DeepLearningScoreTest extends TestUtil {
     RebalanceDataSet rb = new RebalanceDataSet(fr.vecs(),(int)(fr.numRows()+1));
     H2O.submitTask(rb);
     Frame rebalanced = new Frame(null,fr._names,rb.getResult());
-    // Assert that there is at least one 0-len chunk
-    assertZeroLengthChunk("Rebalanced dataset should contain at least one 0-len chunk!", rebalanced.vecs());
+    // Assert that there is at least one 0-numRows chunk
+    assertZeroLengthChunk("Rebalanced dataset should contain at least one 0-numRows chunk!", rebalanced.vecs());
 
     DeepLearningModel dlModel = null;
     try {

@@ -12,23 +12,29 @@ public class C1SChunk extends Chunk {
   public double scale() { return _scale; }
   private transient long _bias;
   @Override public boolean hasFloat(){ return _scale != (long)_scale; }
-  C1SChunk( byte[] bs, long bias, double scale ) { _mem=bs;
-    _achunk = null;
-    set_len(_mem.length-_OFF);
+  C1SChunk( byte[] bs, long bias, double scale ) {
+    _mem=bs;
     _bias = bias; _scale = scale;
     UnsafeUtils.set8d(_mem, 0, scale);
     UnsafeUtils.set8 (_mem,8,bias );
   }
-  @Override protected final long at8_impl( int i ) {
+
+  @Override
+  public int len() { return (_mem.length - _OFF) >> 0;}
+
+  @Override
+  public final long at8_impl(int i) {
     long res = 0xFF&_mem[i+_OFF];
     if( res == C1Chunk._NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)((res+_bias)*_scale);
   }
-  @Override protected final double atd_impl( int i ) {
+  @Override
+  public final double atd_impl(int i) {
     long res = 0xFF&_mem[i+_OFF];
     return (res == C1Chunk._NA)?Double.NaN:(res+_bias)*_scale;
   }
-  @Override protected final boolean isNA_impl( int i ) { return (0xFF&_mem[i+_OFF]) == C1Chunk._NA; }
+  @Override
+  public final boolean isNA_impl(int i) { return (0xFF&_mem[i+_OFF]) == C1Chunk._NA; }
   @Override boolean set_impl(int i, long l) {
     long res = (long)(l/_scale)-_bias; // Compressed value
     double d = (res+_bias)*_scale;     // Reverse it
@@ -45,8 +51,6 @@ public class C1SChunk extends Chunk {
   //public String  pformat0() { return hasFloat() ? "% 8.2e" : super.pformat0(); }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
   @Override public final void initFromBytes () {
-    _achunk = null;
-    set_len(_mem.length-_OFF);
     _scale= UnsafeUtils.get8d(_mem,0);
     _bias = UnsafeUtils.get8 (_mem,8);
   }

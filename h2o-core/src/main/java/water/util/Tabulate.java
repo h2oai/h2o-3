@@ -158,20 +158,19 @@ public class Tabulate extends Keyed<Tabulate> {
       _sp._response_data = new double[_sp.res(0)][2];
     }
 
+
     @Override
-    public void map(Chunk x, Chunk y) {
-      map(x,y,new C0DChunk(1, x.len()));
-    }
-    @Override
-    public void map(Chunk x, Chunk y, Chunk w) {
-      for (int r=0; r<x.len(); ++r) {
-        int xbin = _sp.bin(0, x.atd(r));
-        int ybin = _sp.bin(1, y.atd(r));
-        double weight = w.atd(r);
+    public void map(Chunks cs) {
+      double weight = 1;
+      boolean hasWeight = cs.numCols() == 3;
+      for (int r=0; r<cs.numRows(); ++r) {
+        int xbin = _sp.bin(0, cs.atd(r,0));
+        int ybin = _sp.bin(1, cs.atd(r,1));
+        if(hasWeight)weight = cs.atd(r,2);
         if (Double.isNaN(weight)) continue;
         AtomicUtils.DoubleArray.add(_sp._count_data[xbin], ybin, weight); //increment co-occurrence count by w
-        if (!y.isNA(r)) {
-          AtomicUtils.DoubleArray.add(_sp._response_data[xbin], 0, weight * y.atd(r)); //add to mean response for x
+        if (!cs.isNA(r,1)) {
+          AtomicUtils.DoubleArray.add(_sp._response_data[xbin], 0, weight * cs.atd(r,1)); //add to mean response for x
           AtomicUtils.DoubleArray.add(_sp._response_data[xbin], 1, weight); //increment total for x
         }
       }

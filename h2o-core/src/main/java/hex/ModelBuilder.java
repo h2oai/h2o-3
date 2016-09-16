@@ -298,18 +298,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   // Step 2: Make 2*N binary weight vectors
   public VecAry cv_makeWeights( final int N, VecAry foldAssignment ) {
     String origWeightsName = _parms._weights_column;
-    VecAry origWeight  = origWeightsName != null ? train().vecs(origWeightsName) : train().vecs().makeCon(1);
+    VecAry origWeight  = origWeightsName != null ? train().vecs(origWeightsName) : train().vecs().makeCons(1);
     VecAry folds_and_weights = new VecAry().addVecs(foldAssignment).addVecs(origWeight);
     VecAry weights = new MRTask() {
-        @Override public void map(Chunk chks[], NewChunk nchks[]) {
-          Chunk fold = chks[0], orig = chks[1];
-          for( int row=0; row< orig._len; row++ ) {
-            int foldIdx = (int)fold.at8(row) % N;
-            double w = orig.atd(row);
+        @Override public void map(Chunks chks, Chunks.AppendableChunks nchks) {
+          Chunk fold = chks.getChunk(0), orig = chks.getChunk(1);
+          for( int row=0; row< chks.numRows(); row++ ) {
+            int foldIdx = fold.at4_impl(row) % N;
+            double w = orig.atd_impl(row);
             for( int f = 0; f < N; f++ ) {
               boolean holdout = foldIdx == f;
-              nchks[2*f+0].addNum(holdout ? 0 : w);
-              nchks[2*f+1].addNum(holdout ? w : 0);
+              nchks.getChunk(2*f+0).addNum(holdout ? 0 : w);
+              nchks.getChunk(2*f+1).addNum(holdout ? w : 0);
             }
           }
         }
@@ -1012,13 +1012,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private static class HoldoutPredictionCombiner extends MRTask<HoldoutPredictionCombiner> {
     int _folds, _cols;
     public HoldoutPredictionCombiner(int folds, int cols) { _folds=folds; _cols=cols; }
-    @Override public void map(Chunk[] cs, NewChunk[] nc) {
+    @Override public void map(Chunks cs, Chunks.AppendableChunks nc) {
       for (int c=0;c<_cols;++c) {
-        double [] vals = new double[cs[0].len()];
+        double [] vals = new double[cs.numRows()];
         for (int f=0;f<_folds;++f)
-          for (int row = 0; row < cs[0].len(); ++row)
-            vals[row] += cs[f * _cols + c].atd(row);
-        nc[c].setDoubles(vals);
+          for (int row = 0; row < cs.numRows(); ++row)
+            vals[row] += cs.atd(row,f * _cols + c);
+        nc.getChunk(c).setDoubles(vals);
       }
     }
   }

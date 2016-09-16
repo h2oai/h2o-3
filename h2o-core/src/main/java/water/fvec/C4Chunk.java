@@ -8,17 +8,21 @@ import water.util.UnsafeUtils;
  */
 public class C4Chunk extends Chunk {
   static protected final long _NA = Integer.MIN_VALUE;
-  C4Chunk( byte[] bs ) { _mem=bs; set_len(_mem.length>>2); }
-  @Override protected final long at8_impl( int i ) {
+  static protected final int _OFF=0;
+  C4Chunk( byte[] bs ) { _mem=bs; }
+  @Override
+  public final long at8_impl(int i) {
     long res = UnsafeUtils.get4(_mem,i<<2);
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return res;
   }
-  @Override protected final double atd_impl( int i ) {
+  @Override
+  public final double atd_impl(int i) {
     long res = UnsafeUtils.get4(_mem, i << 2);
     return res == _NA?Double.NaN:res;
   }
-  @Override protected final boolean isNA_impl( int i ) { return UnsafeUtils.get4(_mem,i<<2) == _NA; }
+  @Override
+  public final boolean isNA_impl(int i) { return UnsafeUtils.get4(_mem,i<<2) == _NA; }
   @Override boolean set_impl(int idx, long l) {
     if( !(Integer.MIN_VALUE < l && l <= Integer.MAX_VALUE) ) return false;
     UnsafeUtils.set4(_mem,idx<<2,(int)l);
@@ -27,11 +31,12 @@ public class C4Chunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set4(_mem,(idx<<2),(int)_NA); return true; }
-  @Override public final void initFromBytes () {
-    set_len(_mem.length>>2);
-    assert _mem.length == _len <<2;
-  }
+  @Override public final void initFromBytes () {}
   @Override public boolean hasFloat() {return false;}
+
+
+  @Override
+  public int len() { return (_mem.length - _OFF) >> 2;}
 
 
   /**

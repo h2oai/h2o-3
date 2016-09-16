@@ -449,25 +449,25 @@ class XlsParser extends Parser {
               int option = data.get1(spos);
               spos += 1;
       //        if (asciiEncoding && (option == 0)) {
-      //          len = min(charsLeft, limitpos - spos); // min(charsLeft, conlength);
-      //          retstr .= substr(data, spos, len);
-      //          charsLeft -= len;
+      //          numRows = min(charsLeft, limitpos - spos); // min(charsLeft, conlength);
+      //          retstr .= substr(data, spos, numRows);
+      //          charsLeft -= numRows;
       //          asciiEncoding = true;
       //        }
       //        elseif (!asciiEncoding && (option != 0)) {
-      //          len = min(charsLeft * 2, limitpos - spos); // min(charsLeft, conlength);
-      //          retstr .= substr(data, spos, len);
-      //          charsLeft -= len/2;
+      //          numRows = min(charsLeft * 2, limitpos - spos); // min(charsLeft, conlength);
+      //          retstr .= substr(data, spos, numRows);
+      //          charsLeft -= numRows/2;
       //          asciiEncoding = false;
       //        }
       //        elseif (!asciiEncoding && (option == 0)) {
       //          // Bummer - the string starts off as Unicode, but after the
       //          // continuation it is in straightforward ASCII encoding
-      //          len = min(charsLeft, limitpos - spos); // min(charsLeft, conlength);
-      //          for (j = 0; j < len; j++) {
+      //          numRows = min(charsLeft, limitpos - spos); // min(charsLeft, conlength);
+      //          for (j = 0; j < numRows; j++) {
       //            retstr .= data[spos + j].chr(0);
       //          }
-      //          charsLeft -= len;
+      //          charsLeft -= numRows;
       //          asciiEncoding = false;
       //        }
       //        else{
@@ -476,12 +476,12 @@ class XlsParser extends Parser {
       //            newstr = retstr[j].chr(0);
       //          }
       //          retstr = newstr;
-      //          len = min(charsLeft * 2, limitpos - spos); // min(charsLeft, conlength);
-      //          retstr .= substr(data, spos, len);
-      //          charsLeft -= len/2;
+      //          numRows = min(charsLeft * 2, limitpos - spos); // min(charsLeft, conlength);
+      //          retstr .= substr(data, spos, numRows);
+      //          charsLeft -= numRows/2;
       //          asciiEncoding = false;
       //        }
-      //        spos += len;
+      //        spos += numRows;
               throw H2O.unimpl();
             }
           }
@@ -754,9 +754,9 @@ class XlsParser extends Parser {
           //    extendedRunLength =this->_GetInt4d(this->_data, xpos);
           //    xpos += 4;
           //  }
-          //  len = (asciiEncoding)?numChars : numChars*2;
-          //  retstr =substr(_data, xpos, len);
-          //  xpos += len;
+          //  numRows = (asciiEncoding)?numChars : numChars*2;
+          //  retstr =substr(_data, xpos, numRows);
+          //  xpos += numRows;
           //  retstr = (asciiEncoding)? retstr : this->_encodeUTF16(retstr);
           //}
           //elseif (version == SPREADSHEET_EXCEL_READER_BIFF7){

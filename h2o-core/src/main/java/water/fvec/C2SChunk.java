@@ -12,21 +12,25 @@ public class C2SChunk extends Chunk {
   public double scale() { return _scale; }
   private transient long _bias;
   public boolean hasFloat(){ return _scale != (long)_scale; }
-  C2SChunk( byte[] bs, long bias, double scale ) { _mem=bs; set_len((_mem.length-_OFF)>>1);
+  C2SChunk( byte[] bs, long bias, double scale ) {
+    _mem=bs;
     _bias = bias; _scale = scale;
     UnsafeUtils.set8d(_mem, 0, scale);
     UnsafeUtils.set8 (_mem,8,bias );
   }
-  @Override protected final long at8_impl( int i ) {
+  @Override
+  public final long at8_impl(int i) {
     long res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
     if( res == C2Chunk._NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)((res + _bias)*_scale);
   }
-  @Override protected final double atd_impl( int i ) {
+  @Override
+  public final double atd_impl(int i) {
     long res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
     return (res == C2Chunk._NA)?Double.NaN:(res + _bias)*_scale;
   }
-  @Override protected final boolean isNA_impl( int i ) { return UnsafeUtils.get2(_mem,(i<<1)+_OFF) == C2Chunk._NA; }
+  @Override
+  public final boolean isNA_impl(int i) { return UnsafeUtils.get2(_mem,(i<<1)+_OFF) == C2Chunk._NA; }
   @Override boolean set_impl(int idx, long l) {
     long res = (long)(l/_scale)-_bias; // Compressed value
     double d = (res+_bias)*_scale;     // Reverse it
@@ -48,10 +52,12 @@ public class C2SChunk extends Chunk {
 
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }
   @Override public final void initFromBytes () {
-    set_len((_mem.length-_OFF)>>1);
     _scale= UnsafeUtils.get8d(_mem,0);
     _bias = UnsafeUtils.get8 (_mem,8);
   }
+
+  @Override
+  public int len() { return (_mem.length - _OFF) >> 1;}
 
   /**
    * Dense bulk interface, fetch values from the given range

@@ -250,6 +250,7 @@ public class NewChunk extends Chunk {
   public int _sslen;                   // Next offset into _ss for placing next String
 
   public int _sparseLen;
+  public int _len;
   int set_sparseLen(int l) {
     return this._sparseLen = l;
   }
@@ -268,58 +269,19 @@ public class NewChunk extends Chunk {
   public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
 
   public NewChunk( ){this(false);}
-  public NewChunk(boolean sparse){
-    this(null,sparse);
-    _chk2 = this;
+  public NewChunk( int len ){this(len, false);}
+
+  @Override
+  public int len() {return _len;}
+
+  public NewChunk(boolean sparse) {this(4,sparse);}
+  public NewChunk(int len, boolean sparse) {
+    _ms = new Mantissas(len);
+    _xs = new Exponents(len);
+    if(sparse) _id = new int[len];
   }
 
-
-  public NewChunk(Vec.Chunks c) {this(c,false);}
-
-  public NewChunk(Vec.Chunks c, boolean sparse) {
-    _achunk = c;
-    _ms = new Mantissas(4);
-    _xs = new Exponents(4);
-    if(sparse) _id = new int[4];
-  }
-
-  public NewChunk(double [] ds) {
-    _achunk = null;
-    setDoubles(ds);
-  }
-  public NewChunk(Vec.Chunks c, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
-    _achunk = c;
-    _ms = new Mantissas(mantissa.length);
-    _xs = new Exponents(exponent.length);
-    for(int i = 0; i < mantissa.length; ++i) {
-      _ms.set(i,mantissa[i]);
-      _xs.set(i,exponent[i]);
-    }
-    _id = indices;
-    _ds = doubles;
-    if (_ms != null && _sparseLen==0) set_sparseLen(set_len(mantissa.length));
-    if (_ds != null && _sparseLen==0) set_sparseLen(set_len(_ds.length));
-    if (_id != null && _sparseLen==0) set_sparseLen(_id.length);
-    _chk2 = this;
-  }
-  // Constructor used when inflating a Chunk.
-  public NewChunk( Chunk c ) {this(c._achunk);}
-
-  // Constructor used when inflating a Chunk.
-  public NewChunk( Chunk c, double [] vals) {
-    _achunk = c._achunk;
-    _ds = vals;
-    _sparseLen = _len = _ds.length;
-    _chk2 = this;
-  }
-
-  // Pre-sized newchunks.
-  public NewChunk(Vec.Chunks c, int len ) {
-    this(c);
-    _ds = new double[len];
-    Arrays.fill(_ds, Double.NaN);
-    set_sparseLen(set_len(len));
-  }
+  public NewChunk(double [] ds) {setDoubles(ds);}
 
   public NewChunk setSparseRatio(int s) {
     _sparseRatio = s;
@@ -534,7 +496,7 @@ public class NewChunk extends Chunk {
         }
         _ms.set(_sparseLen, val);
         _xs.set(_sparseLen, exp);
-        assert _id == null || _id.length == _ms.len() : "id.len = " + _id.length + ", ms.len = " + _ms.len() + ", old ms.len = " + len + ", sparseLen = " + slen;
+        assert _id == null || _id.length == _ms.len() : "id.numRows = " + _id.length + ", ms.numRows = " + _ms.len() + ", old ms.numRows = " + len + ", sparseLen = " + slen;
         if (_id != null) _id[_sparseLen] = _len;
         _sparseLen++;
       }
@@ -621,13 +583,13 @@ public class NewChunk extends Chunk {
         set_sparseLen(_sparseLen + 1);
       }
     }
-    set_len(_len + 1);
+    _len++;
     assert _sparseLen <= _len;
   }
 
   public void addStr(Chunk c, int row) {
-    if( c.isNA(row) ) addNA();
-    else { addStr(c.atStr(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
+    if( c.isNA_impl(row) ) addNA();
+    else { addStr(c.atStr_impl(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
   }
 
 
@@ -643,8 +605,8 @@ public class NewChunk extends Chunk {
   }
 
   public void addUUID( Chunk c, int row ) {
-    if( c.isNA(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
-    else addUUID(c.at16l(row),c.at16h(row));
+    if( c.isNA_impl(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
+    else addUUID(c.at16l_impl(row),c.at16h_impl(row));
   }
 
   public final boolean isUUID(){return _ms != null && _ds != null; }
@@ -654,7 +616,7 @@ public class NewChunk extends Chunk {
 
   public void addZeros(int n){
     if(!sparseZero()) for(int i = 0; i < n; ++i)addNum(0,0);
-    else set_len(_len + n);
+    else _len += n;
   }
   
   public void addNAs(int n) {
@@ -662,11 +624,11 @@ public class NewChunk extends Chunk {
       for (int i = 0; i <n; ++i) {
         addNA();
         if(sparseNA()) {
-          set_len(_len + n - i -1);
+          _len += n - i -1;
           return;
         }
       }
-    else set_len(_len + n);
+    else _len += n;
   }
   
   // Append all of 'nc' onto the current NewChunk.  Kill nc.
@@ -682,7 +644,7 @@ public class NewChunk extends Chunk {
       _is = nc._is; nc._is = null;
       _ss = nc._ss; nc._ss = null;
       set_sparseLen(nc._sparseLen);
-      set_len(nc._len);
+      _len = nc._len;
       return;
     }
     if(nc.sparseZero() != sparseZero() || nc.sparseNA() != sparseNA()){ // for now, just make it dense
@@ -702,8 +664,8 @@ public class NewChunk extends Chunk {
     } else assert nc._id == null;
 
     set_sparseLen(_sparseLen + nc._sparseLen);
-    set_len(_len + nc._len);
-    nc._ms = null;  nc._xs = null; nc._id = null; nc.set_sparseLen(nc.set_len(0));
+    _len += nc._len;
+    nc._ms = null;  nc._xs = null; nc._id = null; nc.set_sparseLen(0); nc._len = 0;
     assert _sparseLen <= _len;
   }
 
@@ -739,14 +701,14 @@ public class NewChunk extends Chunk {
         }
         if((nzs+1)*_sparseRatio < _len) {
           set_sparse(nzs,Compress.ZERO);
-          assert _sparseLen == 0 || _sparseLen <= _ds.length:"_sparseLen = " + _sparseLen + ", _ds.length = " + _ds.length + ", nzs = " + nzs +  ", len = " + _len;
+          assert _sparseLen == 0 || _sparseLen <= _ds.length:"_sparseLen = " + _sparseLen + ", _ds.length = " + _ds.length + ", nzs = " + nzs +  ", numRows = " + _len;
           assert _id.length == _ds.length;
           assert _sparseLen <= _len;
           return;
         }
         else if((nonnas+1)*_sparseRatio < _len) {
           set_sparse(nonnas,Compress.NA);
-          assert _sparseLen == 0 || _sparseLen <= _ds.length:"_sparseLen = " + _sparseLen + ", _ds.length = " + _ds.length + ", nonnas = " + nonnas +  ", len = " + _len;
+          assert _sparseLen == 0 || _sparseLen <= _ds.length:"_sparseLen = " + _sparseLen + ", _ds.length = " + _ds.length + ", nonnas = " + nonnas +  ", numRows = " + _len;
           assert _id.length == _ds.length;
           assert _sparseLen <= _len;
           return;
@@ -830,7 +792,7 @@ public class NewChunk extends Chunk {
         int nonnas = _sparseLen - ((_missing != null)?_missing.cardinality():0);
         if((nonnas+1)*_sparseRatio < _len) {
           set_sparse(nonnas,Compress.NA);
-          assert _id.length == _ms.len():"id.len = " + _id.length + ", ms.len = " + _ms.len();
+          assert _id.length == _ms.len():"id.numRows = " + _id.length + ", ms.numRows = " + _ms.len();
           assert _sparseLen <= _len;
           return;        
         } else if((nzs+1)*_sparseRatio < _len) { // note order important here
@@ -981,8 +943,7 @@ public class NewChunk extends Chunk {
   // Return the data so compressed.
   public Chunk compress() {
     Chunk res = compress2();
-    byte type = type();
-    assert _len == res._len : "NewChunk has length "+_len+", compressed Chunk has "+res._len;
+    assert _len == res.len() : "NewChunk has length "+_len+", compressed Chunk has "+res.len();
     // Force everything to null after compress to free up the memory.  Seems
     // like a non-issue in the land of GC, but the NewChunk *should* be dead
     // after this, but might drag on.  The arrays are large, and during a big

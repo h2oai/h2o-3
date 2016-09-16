@@ -1,6 +1,7 @@
 package water.rapids;
 
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.Frame;
 import water.Iced;
 
@@ -81,9 +82,9 @@ class ValFrame extends Val {
     if( _fr.numRows()!=1 )
       throw new IllegalArgumentException("Trying to get a single row from a multirow frame: " + _fr.numRows() + "!=1");
     double res[] = new double[_fr.numCols()];
-    Chunk[] chks = _fr.vecs().getChunks(0).chks();
-    for(int i=0;i<chks.length;++i)
-      res[i] = chks[i].atd(0);
+    Chunks chks = _fr.vecs().getChunks(0);
+    for(int i=0;i<chks.numCols();++i)
+      res[i] = chks.atd(0,i);
     return res;
   }
   @Override boolean isFrame() { return true; }

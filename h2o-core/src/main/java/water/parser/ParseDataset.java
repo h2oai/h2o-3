@@ -292,7 +292,7 @@ public final class ParseDataset {
       }
     }
     Futures fs = new Futures();
-    fr = new Frame(job._result, setup._column_names, av.layout_and_close(fs,domains));
+    fr = new Frame(job._result, setup._column_names, new VecAry(av.closeVec(fs,domains)));
     fr.update(job);
     // Check for job cancellation
     if ( job.stop_requested() ) return pds;
@@ -399,32 +399,29 @@ public final class ParseDataset {
       _chunk2ParseNodeMap = chunk2ParseNodeMap;
     }
 
-    @Override public void map(Chunk [] chks){
-      CategoricalUpdateMap temp = DKV.getGet(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + _chunk2ParseNodeMap[chks[0].cidx()]));
+    @Override public void map(Chunks chks){
+      CategoricalUpdateMap temp = DKV.getGet(Key.make(_parseCatMapsKey.toString() + "parseCatMapNode" + _chunk2ParseNodeMap[chks.cidx()]));
       if ( temp == null || temp.map == null)
         throw new H2OIllegalValueException("Missing categorical update map",this);
       int[][] _parse2GlobalCatMaps = temp.map;
-
       //update the chunk with the new map
-      final int cidx = chks[0].cidx();
-      for(int i = 0; i < chks.length; ++i) {
-        Chunk chk = chks[i];
-        if (!(chk instanceof CStrChunk)) {
-          for( int j = 0; j < chk._len; ++j){
-            if( chk.isNA(j) )continue;
-            final int old = (int) chk.at8(j);
-            if (old < 0 || (_parse2GlobalCatMaps[i] != null && old >= _parse2GlobalCatMaps[i].length))
-              chk.reportBrokenCategorical(i, j, old, _parse2GlobalCatMaps[i], _vecs.domain(i).length);
-            if(_parse2GlobalCatMaps[i] != null && _parse2GlobalCatMaps[i][old] < 0)
-              throw new H2OParseException("Error in unifying categorical values. This is typically "
-                  +"caused by unrecognized characters in the data.\n The problem categorical value "
-                  +"occurred in the " + PrettyPrint.withOrdinalIndicator(i+1)+ " categorical col, "
-                  +PrettyPrint.withOrdinalIndicator(chk.start() + j) +" row.");
-            if (_parse2GlobalCatMaps[i] != null)
-              chk.set(j, _parse2GlobalCatMaps[i][old]);
-          }
-          Log.trace("Updated domains for "+PrettyPrint.withOrdinalIndicator(i+1)+ " categorical column.");
+      final int cidx = chks.cidx();
+      double [] vals = new double[chks.numRows()];
+      for(int i = 0; i < chks.numCols(); ++i) {
+        chks.getDoubles(i,vals);
+        for(int j = 0; j < vals.length; ++j) {
+          if( !Double.isNaN(vals[j]))continue;
+          final int old = (int)vals[j];
+          if(_parse2GlobalCatMaps[i] != null && _parse2GlobalCatMaps[i][old] < 0)
+            throw new H2OParseException("Error in unifying categorical values. This is typically "
+                +"caused by unrecognized characters in the data.\n The problem categorical value "
+                +"occurred in the " + PrettyPrint.withOrdinalIndicator(i+1)+ " categorical col, "
+                +PrettyPrint.withOrdinalIndicator(chks.start() + j) +" row.");
+          if (_parse2GlobalCatMaps[i] != null)
+            vals[j] = _parse2GlobalCatMaps[i][old];
         }
+        chks.set(i,vals);
+        Log.trace("Updated domains for "+PrettyPrint.withOrdinalIndicator(i+1)+ " categorical column.");
       }
     }
     @Override public void postGlobal() {
@@ -487,7 +484,7 @@ public final class ParseDataset {
                 int x = tCat.compareTo(oCat);
                 // this < or equal to other
                 if (x <= 0) {
-                  UnsafeUtils.set4(mergedDom, mbi, tDomLen); //Store str len
+                  UnsafeUtils.set4(mergedDom, mbi, tDomLen); //Store str numRows
                   mbi += 4;
                   for (int j = 0; j < tDomLen; j++)
                     mergedDom[mbi++] = thisDom[tbi++];
@@ -503,7 +500,7 @@ public final class ParseDataset {
                     oi++;
                   }
                 } else { // other < this
-                  UnsafeUtils.set4(mergedDom, mbi, oDomLen); //Store str len
+                  UnsafeUtils.set4(mergedDom, mbi, oDomLen); //Store str numRows
                   mbi += 4;
                   for (int j = 0; j < oDomLen; j++)
                     mergedDom[mbi++] = otherDom[obi++];
@@ -549,7 +546,7 @@ public final class ParseDataset {
       UnsafeUtils.set4(packedDom, 0, domain.length); //Store domain size
       int i = 4;
       for(BufferedString dom : domain) {
-        UnsafeUtils.set4(packedDom, i, dom.length()); //Store str len
+        UnsafeUtils.set4(packedDom, i, dom.length()); //Store str numRows
         i += 4;
         byte[] buf = dom.getBuffer();
         for(int j=0; j < buf.length; j++) //Store str chars
@@ -650,7 +647,7 @@ public final class ParseDataset {
       // Preallocated a bunch of Keys, but if we didn't get enough (for very
       // wide SVMLight) we need to get more here.
       if( nCols > _reservedKeys ) throw H2O.unimpl();
-      AppendableVec res = new AppendableVec(_vg.vecKey(_vecIdStart),_parseSetup._blocks,espc, _parseSetup._column_types, 0);
+      AppendableVec res = new AppendableVec(_vg.vecKey(_vecIdStart),espc, _parseSetup._column_types, 0);
       if(_parseSetup._parse_type.equals(SVMLight_INFO)) {
         _parseSetup._number_columns = nCols;
         _parseSetup._column_types = new byte[nCols];
@@ -698,9 +695,9 @@ public final class ParseDataset {
     }
 
     static FVecParseWriter makeDout(Vec.VectorGroup vg, int vecIdStart, Key cKey, ParseSetup localSetup, int chunkOff, int nchunks) {
-      AppendableVec av = new AppendableVec(vg.vecKey(vecIdStart),localSetup._blocks,MemoryManager.malloc8(nchunks), localSetup._column_types,chunkOff);
+      AppendableVec av = new AppendableVec(vg.vecKey(vecIdStart),MemoryManager.malloc8(nchunks), localSetup._column_types,chunkOff);
       return localSetup._parse_type.equals(SVMLight_INFO)
-        ? new SVMLightFVecParseWriter(vg, vecIdStart,chunkOff,av)
+        ? new SVMLightFVecParseWriter(vg, vecIdStart, chunkOff, av)
         : new FVecParseWriter(vg, chunkOff, categoricals(cKey, localSetup._number_columns), localSetup._column_types, av);
     }
 
@@ -848,9 +845,9 @@ public final class ParseDataset {
         _visited = new NonBlockingSetInt();
         _espc = MemoryManager.malloc8(_nchunks);
       }
-      @Override public void map( Chunk in ) {
+      @Override public void map( Chunks in ) {
         if( _jobKey.get().stop_requested() ) return;
-        FVecParseReader din = new FVecParseReader(in);
+        FVecParseReader din = new FVecParseReader(in.getChunk(0));
         FVecParseWriter dout = makeDout(_vg,_vecIdStart,_cKey,_setup,_startChunkIdx,_nchunks);
         // Get a parser
         Parser p = _setup.parser(_jobKey);
@@ -859,9 +856,9 @@ public final class ParseDataset {
         if(_dout.hasErrors())
           for(ParseWriter.ParseErr err:_dout._errs)
             err._file = _srckey.toString();
-        Job.update(in._len, _jobKey); // Record bytes parsed
+        Job.update(in.numRows(), _jobKey); // Record bytes parsed
         // remove parsed data right away
-        freeMem(in);
+        freeMem(_vecs.anyVec(),in.cidx());
       }
 
       /**
@@ -870,14 +867,13 @@ public final class ParseDataset {
        * is that each chunk parse typically needs to read the remaining bytes of the
        * current row from the next chunk.  Thus each task typically touches two chunks.
        *
-       * @param in - chunk to be marked and possibly freed
+       * @param cidx - chunk to be marked and possibly freed
        */
-      private void freeMem(Chunk in) {
-        int cidx = in.cidx();
+      private void freeMem(Vec vec, int cidx) {
         for(int i=0; i < 2; i++) {  // iterate over this chunk and the next one
           cidx += i;
           if (!_visited.add(cidx)) { // Second visit
-            Value v = Value.STORE_get(in.vec().chunkKey(cidx));
+            Value v = Value.STORE_get(vec.chunkKey(cidx));
             if (v == null || !v.isPersisted()) return; // Not found, or not on disk somewhere
             v.freePOJO();           // Eagerly toss from memory
             v.freeMem();

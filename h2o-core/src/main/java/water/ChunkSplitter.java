@@ -37,7 +37,7 @@ public class ChunkSplitter {
 
       if(src.isSparseNA()) dst.addNAs(remain);
       else dst.addZeros(remain);
-      assert dst._len == oc._len : "NewChunk.dst.len = " + dst._len + ", oc._len = " + oc._len;
+      assert dst._len == oc._len : "NewChunk.dst.numRows = " + dst._len + ", oc._len = " + oc._len;
       return dst;
     } catch(RuntimeException t){
       Log.err("gor exception in chunkSplitter, ic = " + ic + ", oc = " + oc + " startRow = " + startRow + " nrows = " + nrows);

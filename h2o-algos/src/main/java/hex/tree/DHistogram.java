@@ -103,7 +103,7 @@ public final class DHistogram extends Iced {
       assert hist[i]._min < hist[i]._maxEx && hist[i].nbins() > 1 : "broken histo range "+ hist[i];
       cols[len++] = i;        // Gather active column
     }
-//    cols = Arrays.copyOfRange(cols, len, hist.length);
+//    cols = Arrays.copyOfRange(cols, numRows, hist.length);
     return cols;
   }
 

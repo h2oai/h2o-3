@@ -17,12 +17,12 @@ public class CXIChunk extends Chunk {
   protected static final int _OFF = 6;
   private transient int _lastOff = _OFF;
 
+  private transient  int _len;
   private static final long [] NAS = {C1Chunk._NA,C2Chunk._NA,C4Chunk._NA,C8Chunk._NA};
 
   protected CXIChunk(int len, int valsz, byte [] buf, boolean sparseNA){
     super(buf,!sparseNA,sparseNA);
     assert (valsz == 0 || valsz == 1 || valsz == 2 || valsz == 4 || valsz == 8);
-    set_len(len);
     int log = 0;
     while((1 << log) < valsz)++log;
     assert valsz == 0 || (1 << log) == valsz;
@@ -50,7 +50,7 @@ public class CXIChunk extends Chunk {
       for(int i = from; i < to; ++i)
         vals[i-from] = fill;
       for(int i= nextNZ(from-1); i < to; i = nextNZ(i))
-        vals[i-from] = atd(i);
+        vals[i-from] = atd_impl(i);
     }
     return vals;
   }
@@ -98,6 +98,9 @@ public class CXIChunk extends Chunk {
     return nc;
   }
 
+
+  @Override
+  public int len() {return _len;}
 
   @Override public int asSparseDoubles(double [] vals, int[] ids, double NA) {
     if(vals.length < _sparseLen)throw new IllegalArgumentException();
@@ -191,7 +194,8 @@ public class CXIChunk extends Chunk {
   @Override boolean set_impl(int idx, float f ) { return false; }
   @Override boolean setNA_impl(int idx)         { return false; }
 
-  @Override protected long at8_impl(int idx) {
+  @Override
+  public long at8_impl(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx) {
       if(_sparseNA) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -202,7 +206,8 @@ public class CXIChunk extends Chunk {
       throw new IllegalArgumentException("at8_abs but value is missing");
     return v;
   }
-  @Override protected double atd_impl(int idx) {
+  @Override
+  public double atd_impl(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx)
       return _sparseNA?Double.NaN:0;
@@ -210,7 +215,8 @@ public class CXIChunk extends Chunk {
     return (v == NAS[_valsz_log])?Double.NaN:v;
   }
 
-  @Override protected boolean isNA_impl( int i ) {
+  @Override
+  public boolean isNA_impl(int i) {
     int off = findOffset(i);
     int j = getId(off);
     return _sparseNA && i != j || i == j && getIValue(off) == NAS[_valsz_log];
@@ -275,8 +281,7 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public final void initFromBytes () {
-    _achunk = null;
-    set_len(UnsafeUtils.get4(_mem,0));
+    _len = (UnsafeUtils.get4(_mem,0));
     _ridsz = _mem[4];
     _valsz = _mem[5];
     int x = _valsz;

@@ -2,6 +2,7 @@ package hex;
 
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.NewChunk;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
@@ -100,10 +101,10 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * Extracts the values, applies regularization to numerics, adds appropriate offsets to categoricals,
    * and adapts response according to the CaseMode/CaseValue if set.
    */
-  @Override public final void map(Chunk [] chunks, NewChunk [] outputs) {
+  @Override public final void map(Chunks chunks, Chunks.AppendableChunks outputs) {
     if(_jobKey.get() != null && _jobKey.get().stop_requested()) throw new Job.JobCancelledException();
-    final int nrows = chunks[0]._len;
-    final long offset = chunks[0].start();
+    final int nrows = chunks.numRows();
+    final long offset = chunks.start();
     boolean doWork = chunkInit();
     if (!doWork) return;
     final boolean obs_weights = _dinfo._weights
@@ -114,7 +115,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     DataInfo.Row row = null;
     DataInfo.Row[] rows = null;
     if (_sparse)
-      rows = _dinfo.extractSparseRows(chunks);
+      rows = _dinfo.extractSparseRows(chunks.getChunks());
     else
       row = _dinfo.newDenseRow();
     double[] weight_map = null;
@@ -124,7 +125,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       weight_map = new double[nrows];
       double weight_sum = 0;
       for (int i = 0; i < nrows; ++i) {
-        row = _sparse ? rows[i] : _dinfo.extractDenseRow(chunks, i, row);
+        row = _sparse ? rows[i] : _dinfo.extractDenseRow(chunks.getChunks(), i, row);
         weight_sum += row.weight;
         weight_map[i] = weight_sum;
         assert (i == 0 || row.weight == 0 || weight_map[i] > weight_map[i - 1]);
@@ -187,16 +188,16 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         }
         assert(r >= 0 && r<=nrows);
 
-        row = _sparse ? rows[r] : _dinfo.extractDenseRow(chunks, r, row);
+        row = _sparse ? rows[r] : _dinfo.extractDenseRow(chunks.getChunks(), r, row);
         if(row.isBad() || row.weight == 0) {
           num_skipped_rows++;
           continue;
         } else {
           assert(row.weight > 0); //check that we never process a row that was held out via row.weight = 0
           seed = offset + rep * nrows + r;
-          if (outputs != null && outputs.length > 0) {
+          if (outputs != null && outputs.numCols() > 0) {
             assert(miniBatchSize==0);
-            processRow(seed, row, outputs);
+            processRow(seed, row, outputs.getChunks());
           }
           else {
             if (miniBatchSize > 0) { //DL
@@ -231,12 +232,12 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     public ExtractDenseRow(DataInfo di, long globalRowId) { _di = di;  _gid = globalRowId; }
 
     @Override
-    public void map(Chunk[] cs) {
+    public void map(Chunks cs) {
       // fill up _row with the data of row with global id _gid
-      long start = cs[0].start();
-      if (start <= _gid && cs[0].start()+cs[0].len() > _gid) {
+      long start = cs.start();
+      if (start <= _gid && start+cs.numRows() > _gid) {
         _row = _di.newDenseRow();
-        _di.extractDenseRow(cs, (int)(_gid-cs[0].start()), _row);
+        _di.extractDenseRow(cs.getChunks(), (int)(_gid-start), _row);
       }
     }
 

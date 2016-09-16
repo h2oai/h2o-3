@@ -92,6 +92,7 @@ public class InteractionWrappedVec extends WrappedVec {
     return sigma==0?1:1./sigma;
   }
 
+
   private static class GetMeanTask extends MRTask<GetMeanTask> {
     private double  _d[];    // means, NA skipped
     private double _sigma[]; // sds, NA skipped
@@ -100,19 +101,19 @@ public class InteractionWrappedVec extends WrappedVec {
     private final int _len;
     GetMeanTask(int len) { _len=len; }
 
-    @Override public void map(Chunk c) {
+    @Override public void map(Chunks c) {
       _d = new double[_len];
       _sigma = new double[_len];
-      InteractionWrappedChunk cc = (InteractionWrappedChunk)c;
+      InteractionWrappedChunk cc = (InteractionWrappedChunk)c.getChunk(0);
       Chunk lC = cc._c[0]; Chunk rC = cc._c[1];  // get the "left" chk and the "rite" chk
-      if( cc._c2IsCat ) { lC=rC; rC=cc._c[0]; }  // left is always cat
+      if( cc._vecs.isCategorical(1) ) { lC=rC; rC=cc._c[0]; }  // left is always cat
       long rows=0;
-      for(int rid=0;rid<c._len;++rid) {
-        if( lC.isNA(rid) || rC.isNA(rid) ) continue; // skipmissing
-        int idx = (int)lC.at8(rid);
+      for(int rid=0;rid<c.numRows();++rid) {
+        if( lC.isNA_impl(rid) || rC.isNA_impl(rid) ) continue; // skipmissing
+        int idx = (int)lC.at8_impl(rid);
         rows++;
         for(int i=0;i<_d.length;++i) {
-          double x = i==idx?rC.atd(rid):0;
+          double x = i==idx?rC.atd_impl(rid):0;
           double delta = x - _d[i];
           _d[i] += delta / rows;
           _sigma[i] += delta * (x - _d[i]);
@@ -161,7 +162,7 @@ public class InteractionWrappedVec extends WrappedVec {
         CombineDomainTask t =new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums, _useAllFactorLevels,_skipMissing).doAll(_masterVec);
         setDomain(0,t._dom);
         _bins=t._bins;
-        _type = Vec.T_CAT; // vec is T_NUM up to this point
+        _types = new byte[]{Vec.T_CAT}; // vec is T_NUM up to this point
         _missingDomains=t._missingDom;
       } else
         t = standardize?new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length):null;
@@ -191,11 +192,11 @@ public class InteractionWrappedVec extends WrappedVec {
       _skipMissing = skipMissing;
     }
 
-    @Override public void map(Chunk[] c) {
+    @Override public void map(Chunks c) {
       _perChkMap = new IcedHashMap<>();
       if( !_useAllLvls ) _perChkMapMissing = new IcedHashMap<>();
-      Chunk left = c[0];
-      Chunk rite = c[1];
+      Chunk left = c.getChunk(0);
+      Chunk rite = c.getChunk(1);
       String k;
       HashSet<String> A = _leftLimit == null ? null : new HashSet<String>();
       HashSet<String> B = _riteLimit == null ? null : new HashSet<String>();
@@ -204,10 +205,10 @@ public class InteractionWrappedVec extends WrappedVec {
       int lval,rval;
       String l,r;
       boolean leftIsNA, riteIsNA;
-      for (int i = 0; i < left._len; ++i)
-        if( (!((leftIsNA=left.isNA(i)) | (riteIsNA=rite.isNA(i)))) ) {
-          lval = (int)left.at8(i);
-          rval = (int)rite.at8(i);
+      for (int i = 0; i < c.numRows(); ++i)
+        if( (!((leftIsNA=left.isNA_impl(i)) | (riteIsNA=rite.isNA_impl(i)))) ) {
+          lval = (int)left.at8_impl(i);
+          rval = (int)rite.at8_impl(i);
           if( !_useAllLvls && ( 0==lval || 0==rval )) {
             _perChkMapMissing.putIfAbsent(_left[lval] + "_" + _rite[rval],"");
             continue;
@@ -221,7 +222,7 @@ public class InteractionWrappedVec extends WrappedVec {
         } else if( !_skipMissing ) {
           if( !(leftIsNA && riteIsNA) ) {  // not both missing
             if( leftIsNA ) {
-              r = _rite[rval=(int)rite.at8(i)];
+              r = _rite[rval=(int)rite.at8_impl(i)];
               if( !_useAllLvls && 0==rval ) {
                 _perChkMapMissing.putIfAbsent("NA_" + _rite[rval],"");
                 continue;
@@ -230,7 +231,7 @@ public class InteractionWrappedVec extends WrappedVec {
               if( null!=_perChkMap.putIfAbsent((k="NA_"+r), new IcedLong(1)) )
                 _perChkMap.get(k)._val++;
             } else {
-              l = _left[lval=(int)left.at8(i)];
+              l = _left[lval=(int)left.at8_impl(i)];
               if( !_useAllLvls && 0==lval ) {
                 _perChkMapMissing.putIfAbsent(_left[lval] + "_NA","");
                 continue;
@@ -272,25 +273,34 @@ public class InteractionWrappedVec extends WrappedVec {
     }
   }
 
-  @Override public SingleChunk chunkForChunkIdx(int cidx) {
-    return new SingleChunk(this,cidx,new InteractionWrappedChunk(_masterVec.getChunks(cidx).chks()));
+  @Override
+  protected Chunk makeChunk(int cidx) {
+    return new InteractionWrappedChunk(new VecAry(_masterVec).addVec(this),_masterVec.getChunks(cidx));
   }
+
 
   @Override public Vec doCopy() {throw new UnsupportedOperationException();}
 
 
   public static class InteractionWrappedChunk extends Chunk {
     public final transient Chunk _c[];
-    public final boolean _c1IsCat; // left chunk is categorical
-    public final boolean _c2IsCat; // rite chunk is categorical
-    public final boolean _isCat;   // this vec is categorical
-    InteractionWrappedChunk(Chunk[] c) {
-      // set all the chunk fields
-      _c = c; set_len(_c[0]._len);
-      _c1IsCat=_c[0].vec().isCategorical(0);
-      _c2IsCat=_c[1].vec().isCategorical(0);
-      _isCat = vec().isCategorical(0);
+    VecAry _vecs;
+
+
+    public int getRaw(int rid, boolean useAllFactors) {
+      int res = 0;
+      if(      _vecs.isCategorical(0) ) return (int)_c[0].at8_impl(rid);
+      else if( _vecs.isCategorical(1) ) return (int)_c[1].at8_impl(rid);
+      return res - (useAllFactors?0:1);
     }
+    InteractionWrappedChunk(VecAry vecs,Chunks c) {
+      // set all the chunk fields
+      _c = c.getChunks();
+      _vecs = vecs;
+    }
+
+    @Override
+    public int len() {return _c[0].len();}
 
     @Override
     public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
@@ -303,13 +313,12 @@ public class InteractionWrappedVec extends WrappedVec {
     }
 
     @Override public double atd_impl(int idx) {
-      if( _isCat )
-        if( isNA_impl(idx) ) return Double.NaN;
-      return _isCat ? Arrays.binarySearch(vec().domain(0), getKey(idx)) : ( _c1IsCat?1: (_c[0].atd(idx))) * ( _c2IsCat?1: (_c[1].atd(idx)) );
+      if( isNA_impl(idx) ) return Double.NaN;
+      return _vecs.isCategorical(2) ? Arrays.binarySearch(_vecs.domain(2), getKey(idx)) : ( _vecs.isCategorical(0)?1: (_c[0].atd_impl(idx))) * (_vecs.isCategorical(1)?1: (_c[1].atd_impl(idx)) );
     }
-    @Override public long at8_impl(int idx)   { return _isCat ? Arrays.binarySearch(vec().domain(0), getKey(idx)) : ( _c1IsCat?1:_c[0].at8(idx) ) * ( _c2IsCat?1:_c[1].at8(idx) ); }
-    private String getKey(int idx) { return _c[0].vec().domain(0)[(int)_c[0].at8(idx)] + "_" + _c[1].vec().domain(0)[(int)_c[1].at8(idx)]; }
-    @Override public boolean isNA_impl(int idx) { return _c[0].isNA(idx) || _c[1].isNA(idx); }
+    @Override public long at8_impl(int idx)   { return _vecs.isCategorical(2) ? Arrays.binarySearch(_vecs.domain(2), getKey(idx)) : ( _vecs.isCategorical(0)?1:_c[0].at8_impl(idx) ) * ( _vecs.isCategorical(1)?1:_c[1].at8_impl(idx) ); }
+    private String getKey(int idx) { return _vecs.domain(0)[_c[0].at4_impl(idx)] + "_" + _vecs.domain(1)[_c[1].at4_impl(idx)]; }
+    @Override public boolean isNA_impl(int idx) { return _c[0].isNA_impl(idx) || _c[1].isNA_impl(idx); }
     // Returns true if the masterVec is missing, false otherwise
     @Override public boolean set_impl(int idx, long l)   { return false; }
     @Override public boolean set_impl(int idx, double d) { return false; }

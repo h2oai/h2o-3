@@ -102,30 +102,30 @@ public final class RollupStats extends Iced {
   private static RollupStats makeComputing() { return new RollupStats(-1); }
   static RollupStats makeMutating () { return new RollupStats(-2); }
 
-  public static RollupStats computeRollups(Chunk c, boolean isUUID, boolean isString) {
+  public static RollupStats computeRollups( long start, Chunk c, boolean isUUID, boolean isString) {
     RollupStats rs = new RollupStats(0);
-    rs._size = c.byteSize();
+    int len = c.len();
+    rs._size = c._mem.length;
     BufferedString tmpStr = new BufferedString();
     if (isString) rs._isInt = false;
     // Checksum support
     long checksum = 0;
-    long start = c.start();
     long l = 81985529216486895L;
 
     // Check for popular easy cases: All Constant
     double min=c.min(), max=c.max();
     if( min==max  ) {              // All constant or all NaN
       double d = min;             // It's the min, it's the max, it's the alpha and omega
-      rs._checksum = (c.hasFloat()?Double.doubleToRawLongBits(d):(long)d)*c._len;
+      rs._checksum = (c.hasFloat()?Double.doubleToRawLongBits(d):(long)d)*len;
       Arrays.fill(rs._mins, d);
       Arrays.fill(rs._maxs, d);
       if( d == Double.POSITIVE_INFINITY) rs._pinfs++;
       else if( d == Double.NEGATIVE_INFINITY) rs._ninfs++;
       else {
-        if( Double.isNaN(d)) rs._naCnt=c._len;
-        else if( d != 0 ) rs._nzCnt=c._len;
+        if( Double.isNaN(d)) rs._naCnt=len;
+        else if( d != 0 ) rs._nzCnt=len;
         rs._mean = d;
-        rs._rows=c._len;
+        rs._rows=len;
       }
       rs._isInt = ((long)d) == d;
       rs._sigma = 0;               // No variance for constants
@@ -136,20 +136,20 @@ public final class RollupStats extends Iced {
     if ((c instanceof C0DChunk && c.isNA_impl(0))) {
       rs._sigma=0; //count of non-NAs * variance of non-NAs
       rs._mean = 0; //sum of non-NAs (will get turned into mean)
-      rs._naCnt=c._len;
+      rs._naCnt=len;
       rs._nzCnt=0;
       return rs;
     }
 
     // Check for popular easy cases: Boolean, possibly sparse, possibly NaN
     if( min==0 && max==1 ) {
-      int zs = c._len-c.sparseLenZero(); // Easy zeros
+      int zs = len-c.sparseLenZero(); // Easy zeros
       int nans = 0;
       // Hard-count sparse-but-zero (weird case of setting a zero over a non-zero)
-      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) )
-        if( c.isNA(i) ) nans++;
-        else if( c.at8(i)==0 ) zs++;
-      int os = c._len-zs-nans;  // Ones
+      for( int i=c.nextNZ(-1); i< len; i=c.nextNZ(i) )
+        if( c.isNA_impl(i) ) nans++;
+        else if( c.at8_impl(i)==0 ) zs++;
+      int os = len-zs-nans;  // Ones
       rs._nzCnt += os;
       rs._naCnt += nans;
       for( int i=0; i<Math.min(rs._mins.length,zs); i++ ) { min(rs._mins,0); max(rs._maxs,0); }
@@ -163,10 +163,10 @@ public final class RollupStats extends Iced {
 
     // Walk the non-zeros
     if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
-        if( c.isNA(i) ) rs._naCnt++;
+      for( int i=c.nextNZ(-1); i< len; i=c.nextNZ(i) ) {
+        if( c.isNA_impl(i) ) rs._naCnt++;
         else {
-          long lo = c.at16l(i), hi = c.at16h(i);
+          long lo = c.at16l_impl(i), hi = c.at16h_impl(i);
           if (lo != 0 || hi != 0)rs._nzCnt++;
           l = lo ^ 37*hi;
         }
@@ -175,11 +175,11 @@ public final class RollupStats extends Iced {
       }
 
     } else if( isString ) { // String columns do not compute min/max/mean/sigma
-      for (int i = c.nextNZ(-1); i < c._len; i = c.nextNZ(i)) {
-        if (c.isNA(i)) rs._naCnt++;
+      for (int i = c.nextNZ(-1); i < len; i = c.nextNZ(i)) {
+        if (c.isNA_impl(i)) rs._naCnt++;
         else {
           rs._nzCnt++;
-          l = c.atStr(tmpStr, i).hashCode();
+          l = c.atStr_impl(tmpStr, i).hashCode();
         }
         if (l != 0) // ignore 0s in checksum to be consistent with sparse chunks
           checksum ^= (17 * (start + i)) ^ 23 * l;
@@ -216,7 +216,7 @@ public final class RollupStats extends Iced {
       // _sigma is the mean of non-zero rows
       // handle the zeros
       if( c.isSparseZero() ) {
-        int zeros = c._len - c.sparseLenZero();
+        int zeros = len - c.sparseLenZero();
         if (zeros > 0) {
           for( int i=0; i<Math.min(rs._mins.length,zeros); i++ ) { min(rs._mins,0); max(rs._maxs,0); }
           double zeromean = 0;

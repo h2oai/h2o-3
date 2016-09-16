@@ -155,7 +155,7 @@ final class ComputeRollupsTask extends DTask<ComputeRollupsTask> {
       // Constant: use a single bin
       double span = rs._maxs[0] - rs._mins[0];
       final long rows = vec.length() - rs._naCnt;
-      assert rows > 0 : "rows = " + rows + ", vec.len() = " + vec.length() + ", naCnt = " + rs._naCnt;
+      assert rows > 0 : "rows = " + rows + ", vec.numRows() = " + vec.length() + ", naCnt = " + rs._naCnt;
       if (span == 0) {
         nbins[i] = 1;
         continue;

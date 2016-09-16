@@ -141,10 +141,10 @@ public class WordCountTest extends TestUtil {
   
   
   // A word, and a count of occurences.  Typically the '_cs' buf is shared
-  // amongst many VStr's, all using different off/len pairs.
+  // amongst many VStr's, all using different off/numRows pairs.
   private static class VStr implements Comparable<VStr> {
     byte[] _cs;                 // shared array of chars holding words
-    short _off,_len;            // offset & len of this word
+    short _off,_len;            // offset & numRows of this word
     VStr(byte[]cs, short off) { assert off>=0:off; _cs=cs; _off=off; _len=0; _cnt=1; }
     // append a char; return wasted pad space
     public VStr append( int c ) {

@@ -757,7 +757,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if(vec == null && isOffset)
         throw new IllegalArgumentException("Test/Validation dataset is missing offset vector '" + offset + "'");
       if(vec == null && isWeights && computeMetrics && expensive) {
-        vec = test.vecs().makeCon(1);
+        vec = test.vecs().makeCons(1);
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
       }
@@ -767,10 +767,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if( expensive ) {
           if (isFold) {
             str = "Test/Validation dataset is missing fold column '" + name + "': substituting in a column of 0s";
-            vec = test.vecs().makeCon(0);
+            vec = test.vecs().makeCons(0);
           } else {
             str = "Test/Validation dataset is missing training column '" + name + "': substituting in a column of NAs";
-            vec = test.vecs().makeCon(missing);
+            vec = test.vecs().makeCons(missing);
             convNaN++;
           }
           vec.setDomain(0,domains[i]);
@@ -971,10 +971,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasWeights = testHasWeights;
     }
 
-    @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
+    @Override public void map( Chunks chks, Chunks.AppendableChunks cpreds) {
       if (isCancelled() || _j != null && _j.stop_requested()) return;
-      Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : new C0DChunk(1, chks[0]._len);
-      Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : new C0DChunk(0, chks[0]._len);
+      Chunk weightsChunk = _hasWeights && _computeMetrics ? chks.getChunk(_output.weightsIdx()) : new C0DChunk(1, chks.numRows());
+      Chunk offsetChunk = _output.hasOffset() ? chks.getChunk(_output.offsetIdx()) : new C0DChunk(0, chks.numRows());
       Chunk responseChunk = null;
       double [] tmp = new double[_output.nfeatures()];
       float [] actual = null;
@@ -982,35 +982,35 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (_computeMetrics) {
         if (isSupervised()) {
           actual = new float[1];
-          responseChunk = chks[_output.responseIdx()];
+          responseChunk = chks.getChunk(_output.responseIdx());
         } else
-          actual = new float[chks.length];
+          actual = new float[chks.numCols()];
       }
       double[] preds = _mb._work;  // Sized for the union of test and train classes
-      int len = chks[0]._len;
+      int len = chks.numRows();
       for (int row = 0; row < len; row++) {
-        double weight = weightsChunk.atd(row);
+        double weight = weightsChunk.atd_impl(row);
         if (weight == 0) {
           if (_makePreds) {
             for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-              cpreds[c].addNum(0);
+              cpreds.getChunk(c).addNum(0);
           }
           continue;
         }
-        double offset = offsetChunk.atd(row);
+        double offset = offsetChunk.atd_impl(row);
         double [] p = score0(chks, weight, offset, row, tmp, preds);
         if (_computeMetrics) {
           if(isSupervised()) {
-            actual[0] = (float)responseChunk.atd(row);
+            actual[0] = (float)responseChunk.atd_impl(row);
           } else {
             for(int i = 0; i < actual.length; ++i)
-              actual[i] = (float)chks[i].atd(row);
+              actual[i] = (float)chks.atd(row,i);
           }
           _mb.perRow(preds, actual, weight, offset, Model.this);
         }
         if (_makePreds) {
           for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-            cpreds[c].addNum(p[c]);
+            cpreds.getChunk(c).addNum(p[c]);
         }
       }
       if ( _j != null) _j.update(1);
@@ -1024,14 +1024,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
+  public double[] score0( Chunks chks, int row_in_chunk, double[] tmp, double[] preds ) {
     return score0(chks, 1, 0, row_in_chunk, tmp, preds);
   }
 
-  public double[] score0( Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+  public double[] score0( Chunks chks, double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )
-      tmp[i] = chks[i].atd(row_in_chunk);
+      tmp[i] = chks.atd(row_in_chunk,i);
     double [] scored = score0(tmp, preds, weight, offset);
     if(isSupervised()) {
       // Correct probabilities obtained from training on oversampled data back to original distribution
@@ -1438,7 +1438,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       interactionNames[idx] = fr.name(ip._v1) + "_" + fr.name(ip._v2);
       InteractionWrappedVec iwv =new InteractionWrappedVec(vecs.group().addVec(), vecs.rowLayout(), ip._v1Enums, ip._v2Enums, useAllFactorLevels, skipMissing, standardize, fr.vecs(ip._v1,ip._v2));
 //      if(!valid) ip.setDomain(iwv.domain());
-      interactionVecs.addVecs(iwv);
+      interactionVecs.addVecs(new VecAry(iwv));
     }
     return new Frame(null, interactionNames, interactionVecs);
   }

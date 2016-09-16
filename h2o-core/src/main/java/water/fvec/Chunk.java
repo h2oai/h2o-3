@@ -118,22 +118,8 @@ public abstract class Chunk extends Iced<Chunk> {
     _sparseNA = sparseNA;
     _mem = bytes;initFromBytes();
   }
+  public abstract int len();
 
-
-//  public Futures close( int cidx, Futures fs ) {
-//    if( this  instanceof NewChunk ) _chk2 = this;
-//    if( _chk2 == null ) return fs;          // No change?
-//    if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).compress();
-//
-//    DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
-//    return fs;
-//  }
-
-  public final Chunk getChunk(int i) {
-    if(i != 0) throw new ArrayIndexOutOfBoundsException(i);
-    return this;
-  }
-  public final Chunk[] getChunks(){return new Chunk[]{this};}
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
    * @param vals holds extracted values, length must be >= this.sparseLen()
@@ -142,11 +128,12 @@ public abstract class Chunk extends Iced<Chunk> {
    */
   public int asSparseDoubles(double[] vals, int[] ids){return asSparseDoubles(vals,ids,Double.NaN);}
   public int asSparseDoubles(double [] vals, int [] ids, double NA) {
+    int len = len();
     if(vals.length < sparseLen())
       throw new IllegalArgumentException();
-    getDoubles(vals,0,_len);
-    for(int i = 0; i < _len; ++i) ids[i] = i;
-    return len();
+    getDoubles(vals,0,len);
+    for(int i = 0; i < len; ++i) ids[i] = i;
+    return len;
   }
 
   /**
@@ -158,7 +145,7 @@ public abstract class Chunk extends Iced<Chunk> {
   public double [] getDoubles(double[] vals, int from, int to){ return getDoubles(vals,from,to, Double.NaN);}
   public double [] getDoubles(double [] vals, int from, int to, double NA){
     for(int i = from; i < to; ++i) {
-      vals[i - from] = atd(i);
+      vals[i - from] = atd_impl(i);
       if(Double.isNaN(vals[i-from]))
         vals[i - from] = NA;
     }
@@ -166,15 +153,8 @@ public abstract class Chunk extends Iced<Chunk> {
   }
 
   public int [] getIntegers(int [] vals, int from, int to, int NA){
-    for(int i = from; i < to; ++i) {
-      double d = atd(i);
-      if(Double.isNaN(d))
-        vals[i] = NA;
-      else {
-        vals[i] = (int)d;
-        if(vals[i] != d) throw new IllegalArgumentException("Calling getIntegers on non-integer column");
-      }
-    }
+    for(int i = from; i < to; ++i)
+      vals[i] = isNA_impl(i)?NA:at4_impl(i);
     return vals;
   }
 
@@ -186,7 +166,7 @@ public abstract class Chunk extends Iced<Chunk> {
    */
   public double[] getDoubles(double [] vals, int [] ids){
     int j = 0;
-    for(int i:ids) vals[j++] = atd(i);
+    for(int i:ids) vals[j++] = atd_impl(i);
     return vals;
   }
 
@@ -205,26 +185,13 @@ public abstract class Chunk extends Iced<Chunk> {
    *    ...chunk.atd(row)...
    *  </pre>
    **/
-  public transient int _len;
   /** Internal set of _len.  Used by lots of subclasses.  Not a publically visible API. */
-  int set_len(int len) { return _len = len; }
   /** Read-only length of chunk (number of rows). */
-  public int len() { return _len; }
 
   /** Normally==null, changed if chunk is written to.  Not a publically readable or writable field. */
-  transient Chunk _chk2;
 
   public Chunk compress(){return this;}
   /** Exposed for internal testing only.  Not a publically visible API. */
-  public Chunk chk2() { return _chk2; }
-
-  /** Owning Vec; a read-only field */
-  transient Vec.Chunks _achunk;
-
-  /** Owning Vec */
-  public Vec vec() { return _achunk._vec; }
-
-  public Futures close(Futures fs){return _achunk.close(fs);}
 
   /** The Big Data.  Frequently set in the subclasses, but not otherwise a publically writable field. */
   byte[] _mem;
@@ -239,23 +206,19 @@ public abstract class Chunk extends Iced<Chunk> {
    *  NPE.  Not intended for public use. */
   public final void crushBytes() { _mem=null; }
 
+  /**
+   *  Get indeces of non-zero values stored in this chunk
+   *  @return array of chunk-relative indices of values stored in this chunk. */
+  public int nonzeros(int [] res) {
+    int k = 0;
+    int len = len();
+    for( int i = 0; i < len; ++i)
+      if(atd_impl(i) != 0)
+        res[k++] = i;
+    return k;
+  }
 
-
-  /** Load a {@code double} value using chunk-relative row numbers.  Returns Double.NaN
-   *  if value is missing.
-   *  @return double value at the given row, or NaN if the value is missing */
-  public final double atd(int i) { return _chk2 == null ? atd_impl(i) : _chk2. atd_impl(i); }
-
-
-  /** Load a {@code long} value using chunk-relative row numbers.  Floating
-   *  point values are silently rounded to a long.  Throws if the value is
-   *  missing.
-   *  @return long value at the given row, or throw if the value is missing */
-  public final long at8(int i) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
-
-  public final int at4(int i) {return _chk2 == null ? at4_impl(i) : _chk2. at4_impl(i);}
-
-  protected int at4_impl(int i) {
+  public int at4_impl(int i) {
     long l = at8_impl(i);
     int res = (int)l;
     if(res != l) throw new IllegalArgumentException(l + " does not fit in int");
@@ -263,164 +226,19 @@ public abstract class Chunk extends Iced<Chunk> {
   }
 
 
-  final long at8_abs(long i) {
-    long s = start();
-    long x = i - (s > 0 ? s : 0);
-    if( 0 <= x && x < _len) return at8((int) x);
-    throw new ArrayIndexOutOfBoundsException(""+ s + " <= "+i+" < "+( s+ _len));
-  }
-
-  /** Load a {@code double} value using absolute row numbers.  Returns
-   *  Double.NaN if value is missing.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #atd} since it range-checks within a chunk.
-   *  @return double value at the given row, or NaN if the value is missing */
-  final double at_abs(long i) {
-    long s = start();
-    long x = i - (s>0 ? s : 0);
-    if( 0 <= x && x < _len) return atd((int) x);
-    throw new ArrayIndexOutOfBoundsException(""+s+" <= "+i+" < "+(s+ _len));
-  }
-
-  final void set_abs(long i, double d) {
-    long s = start();
-    long x = i - (s>0 ? s : 0);
-    if( 0 <= x && x < _len)
-      set((int) x,d);
-    else
-      throw new ArrayIndexOutOfBoundsException(""+s+" <= "+i+" < "+(s+ _len));
-  }
-
-  /** Missing value status.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #isNA} since it range-checks within a chunk.
-   *  @return true if the value is missing */
-  final boolean isNA_abs(long i) {
-    long s = start();
-    long x = i - (s>0 ? s : 0);
-    if( 0 <= x && x < _len) return isNA((int) x);
-    throw new ArrayIndexOutOfBoundsException(""+ s+" <= "+i+" < "+(s+ _len));
-  }
-
-  /** Low half of a 128-bit UUID, or throws if the value is missing.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #at16l} since it range-checks within a chunk.
-   *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
-  final long at16l_abs(long i) {
-    long s = start();
-    long x = i - (s>0 ? s : 0);
-    if( 0 <= x && x < _len) return at16l((int) x);
-    throw new ArrayIndexOutOfBoundsException(""+s+" <= "+i+" < "+(s+ _len));
-  }
-
-  /** High half of a 128-bit UUID, or throws if the value is missing.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #at16h} since it range-checks within a chunk.
-   *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
-  final long at16h_abs(long i) {
-    long s = start();
-    long x = i - (s>0 ? s : 0);
-    if( 0 <= x && x < _len) return at16h((int) x);
-    throw new ArrayIndexOutOfBoundsException("" + s + " <= " + i + " < " + ( s + _len));
-  }
-
-  /** String value using absolute row numbers, or null if missing.
-   *
-   *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
-   *  leading to lower quality JIT'd code (similar issue to using iterator
-   *  objects).
-   *
-   *  <p>Slightly slower than {@link #atStr} since it range-checks within a chunk.
-   *  @return String value using absolute row numbers, or null if missing. */
-  final BufferedString atStr_abs(BufferedString bStr, long i) {
-    long s = start();
-    long x = i - (s>0 ? s : 0);
-    if( 0 <= x && x < _len) return atStr(bStr, (int) x);
-    throw new ArrayIndexOutOfBoundsException(""+ s+" <= "+i+" < "+(s+ _len));
-  }
-
-
-
   public final NewChunk add2NewChunk(NewChunk nc, int from, int to){
-    if(_chk2 != null) return _chk2.add2NewChunk(nc,from, to);
-    else return add2NewChunk_impl(nc, from,to);
+    return add2NewChunk_impl(nc, from,to);
   }
 
   public final NewChunk add2NewChunk(NewChunk nc, int [] lines){
-    if(_chk2 != null) return _chk2.add2NewChunk_impl(nc,lines);
-    else return add2NewChunk_impl(nc, lines);
+    return add2NewChunk_impl(nc, lines);
   }
   public abstract NewChunk add2NewChunk_impl(NewChunk nc, int from, int to);
   public abstract NewChunk add2NewChunk_impl(NewChunk nc, int [] lines);
 
-  public void replaceWith(Chunk c) {
-    setWrite();
-    _chk2 = c;
-  }
 
-  public int sparseLenZero() {return _sparseZero?sparseLen():_len;}
-
-  public double sparseLenNA() {
-    return _sparseNA?sparseLen():_len;
-  }
-
-  public long start() {return _achunk._start;}
-
-
-
-  public static final class NumVal {
-    boolean isNa;
-    boolean isDouble;
-    public long mts; // mantissa
-    public int  exp; // exponent
-    public double dval;
-  }
-
-
-  /** Missing value status using chunk-relative row numbers.
-   *
-   *  @return true if the value is missing */
-  public final boolean isNA(int i) { return _chk2 == null ?isNA_impl(i) : _chk2.isNA_impl(i); }
-
-  /** Low half of a 128-bit UUID, or throws if the value is missing.
-   *
-   *  @return Low half of a 128-bit UUID, or throws if the value is missing.  */
-  public final long at16l(int i) { return _chk2 == null ? at16l_impl(i) : _chk2.at16l_impl(i); }
-
-  /** High half of a 128-bit UUID, or throws if the value is missing.
-   *
-   *  @return High half of a 128-bit UUID, or throws if the value is missing.  */
-  public final long at16h(int i) { return _chk2 == null ? at16h_impl(i) : _chk2.at16h_impl(i); }
-
-
-//  public final int rowInChunk(long l) {
-//    return (int)(l - _achunk._start);
-//  }
-  /** String value using chunk-relative row numbers, or null if missing.
-   *
-   *  @return String value or null if missing. */
-  public final BufferedString atStr(BufferedString bStr, int i) { return _chk2 == null ? atStr_impl(bStr, i) : _chk2.atStr_impl(bStr, i); }
+  public int sparseLenZero() {return _sparseZero?sparseLen():len();}
+  public int sparseLenNA() {return _sparseNA?sparseLen():len();}
 
 
   /** Write a {@code long} using absolute row numbers.  There is no way to
@@ -514,125 +332,15 @@ public abstract class Chunk extends Iced<Chunk> {
     return c2;
   }
 
-  private void setWrite() {
-    if( _chk2 != null ) return; // Already setWrite
-    assert !(this instanceof NewChunk) : "Cannot direct-write into a NewChunk, only append";
-    _achunk.setWrite();
-    _chk2 = clone();     // Flag this chunk as having been written into
-    assert _chk2._chk2 == null; // Clone has NOT been written into
-  }
 
-  /** Write a {@code long} with check-relative indexing.  There is no way to
-   *  write a missing value with this call.  Under rare circumstances this can
-   *  throw: if the long does not fit in a double (value is larger magnitude
-   *  than 2^52), AND float values are stored in Vector.  In this case, there
-   *  is no common compatible data representation.
-   *
-   *  <p>As with all the {@code set} calls, if the value written does not fit
-   *  in the current compression scheme, the Chunk will be inflated into a
-   *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
-   *  i.e., there is some interesting cost if Chunk compression-types need to
-   *  change.
-   *  @return the set value
-   */
-  public final long set(int idx, long l) {
-    setWrite();
-    if( _chk2.set_impl(idx,l) ) return l;
-    (_chk2 = inflate()).set_impl(idx,l);
-    return l;
-  }
-
-  public final double [] set(double [] d){
-    assert d.length == _len && _chk2 == null;
-    _chk2 = new NewChunk(this,d);
-    return d;
-  }
-  /** Write a {@code double} with check-relative indexing.  NaN will be treated
-   *  as a missing value.
-   *
-   *  <p>As with all the {@code set} calls, if the value written does not fit
-   *  in the current compression scheme, the Chunk will be inflated into a
-   *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
-   *  i.e., there is some interesting cost if Chunk compression-types need to
-   *  change.
-   *  @return the set value
-   */
-  public final double set(int idx, double d) {
-    setWrite();
-    if( _chk2.set_impl(idx,d) ) return d;
-    (_chk2 = inflate()).set_impl(idx,d);
-    return d;
-  }
-
-  /** Write a {@code float} with check-relative indexing.  NaN will be treated
-   *  as a missing value.
-   *
-   *  <p>As with all the {@code set} calls, if the value written does not fit
-   *  in the current compression scheme, the Chunk will be inflated into a
-   *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
-   *  i.e., there is some interesting cost if Chunk compression-types need to
-   *  change.
-   *  @return the set value
-   */
-  public final float set(int idx, float f) {
-    setWrite();
-    if( _chk2.set_impl(idx,f) ) return f;
-    (_chk2 = inflate()).set_impl(idx,f);
-    return f;
-  }
-
-  /** Set a value as missing.
-   *
-   *  <p>As with all the {@code set} calls, if the value written does not fit
-   *  in the current compression scheme, the Chunk will be inflated into a
-   *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
-   *  i.e., there is some interesting cost if Chunk compression-types need to
-   *  change.
-   *  @return the set value
-   */
-  public final boolean setNA(int idx) {
-    setWrite();
-    if( _chk2.setNA_impl(idx) ) return true;
-    (_chk2 = inflate()).setNA_impl(idx);
-    return true;
-  }
-
-  /** Write a {@code String} with check-relative indexing.  {@code null} will
-   *  be treated as a missing value.
-   *
-   *  <p>As with all the {@code set} calls, if the value written does not fit
-   *  in the current compression scheme, the Chunk will be inflated into a
-   *  NewChunk and the value written there.  Later, the NewChunk will be
-   *  compressed (after a {@link #close} call) and written back to the DKV.
-   *  i.e., there is some interesting cost if Chunk compression-types need to
-   *  change.
-   *  @return the set value
-   */
-  public final String set(int idx, String str) {
-    setWrite();
-    if( _chk2.set_impl(idx,str) ) return str;
-    (_chk2 = inflate()).set_impl(idx,str);
-    return str;
-  }
-
-  /** @return Chunk index */
-  public int cidx() {
-    int cidx = _achunk._cidx;
-    assert cidx != -1 : "Chunk idx was not properly loaded!";
-    return cidx;
-  }
 
   /** Chunk-specific readers.  Not a public API */
-  abstract double   atd_impl(int idx);
-  abstract long     at8_impl(int idx);
-  abstract boolean isNA_impl(int idx);
+  public abstract double   atd_impl(int idx);
+  public abstract long     at8_impl(int idx);
+  public abstract boolean isNA_impl(int idx);
   long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
   long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  BufferedString atStr_impl(BufferedString bStr, int idx) { throw new IllegalArgumentException("Not a String"); }
+  public BufferedString atStr_impl(BufferedString bStr, int idx) { throw new IllegalArgumentException("Not a String"); }
 
   /** Chunk-specific writer.  Returns false if the value does not fit in the
    *  current compression scheme.  */
@@ -653,22 +361,22 @@ public abstract class Chunk extends Iced<Chunk> {
 
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
-   *  @return At least as large as the count of non-zeros, but may be significantly smaller than the {@link #_len} */
-  public int sparseLen() {return _len;}
+   *  @return At least as large as the count of non-zeros, but may be significantly smaller than the {@link #len()} */
+  public int sparseLen() {return len();}
 
   public int nextNZ(int rid){ return rid + 1;}
 
-  /**
-   *  Get indeces of non-zero values stored in this chunk
-   *  @return array of chunk-relative indices of values stored in this chunk. */
-  public int nonzeros(int [] res) {
-    int k = 0;
-    for( int i = 0; i < _len; ++i)
-      if(atd(i) != 0)
-        res[k++] = i;
-    return k;
-  }
-  
+//  /**
+//   *  Get indeces of non-zero values stored in this chunk
+//   *  @return array of chunk-relative indices of values stored in this chunk. */
+//  public int nonzeros(int [] res) {
+//    int k = 0;
+//    for( int i = 0; i < _len; ++i)
+//      if(atd(i) != 0)
+//        res[k++] = i;
+//    return k;
+//  }
+//
   //NA sparse methods:
   
 
@@ -683,19 +391,13 @@ public abstract class Chunk extends Iced<Chunk> {
   double max() { return Double.NaN; }
 
 
-  public final NewChunk inflate(){return add2NewChunk(new NewChunk(this),0,_len);}
+  public final NewChunk inflate(){return add2NewChunk(new NewChunk(len()),0,len());}
 
 
   /** @return String version of a Chunk, currently just the class name */
   @Override public String toString() { return getClass().getSimpleName(); }
 
-  /** In memory size in bytes of the compressed Chunk plus embedded array. */
-  public long byteSize() {
-    long s= _mem == null ? 0 : _mem.length;
-    s += (2+5)*8 + 12; // 2 hdr words, 5 other words, @8bytes each, plus mem array hdr
-    if( _chk2 != null ) s += _chk2.byteSize();
-    return s;
-  }
+
 
   /** Custom serializers implemented by Chunk subclasses: the _mem field
    *  contains ALL the fields already. */
@@ -732,45 +434,4 @@ public abstract class Chunk extends Iced<Chunk> {
   /** Fixed-width format printing support.  Filled in by the subclasses. */
   public byte precision() { return -1; } // Digits after the decimal, or -1 for "all"
 
-//  protected String pformat0() {
-//    long min = (long)_vec.min();
-//    if( min < 0 ) return "% "+pformat_len0()+"d";
-//    return "%"+pformat_len0()+"d";
-//  }
-//  protected int pformat_len0() {
-//    int len=0;
-//    long min = (long)_vec.min();
-//    if( min < 0 ) len++;
-//    long max = Math.max(Math.abs(min),Math.abs((long)_vec.max()));
-//    throw H2O.unimpl();
-//    //for( int i=1; i<DParseTask.powers10i.length; i++ )
-//    //  if( max < DParseTask.powers10i[i] )
-//    //    return i+len;
-//    //return 20;
-//  }
-//  protected int pformat_len0( double scale, int lg ) {
-//    double dx = Math.log10(scale);
-//    int x = (int)dx;
-//    throw H2O.unimpl();
-//    //if( DParseTask.pow10i(x) != scale ) throw H2O.unimpl();
-//    //int w=1/*blank/sign*/+lg/*compression limits digits*/+1/*dot*/+1/*e*/+1/*neg exp*/+2/*digits of exp*/;
-//    //return w;
-//  }
-
-  /** Used by the parser to help report various internal bugs.  Not intended for public use. */
-  public final void reportBrokenCategorical(int i, int j, long l, int[] cmap, int levels) {
-    StringBuilder sb = new StringBuilder("Categorical renumber task, column # " + i + ": Found OOB index " + l + " (expected 0 - " + cmap.length + ", global domain has " + levels + " levels) pulled from " + getClass().getSimpleName() +  "\n");
-    int k = 0;
-    for(; k < Math.min(5,_len); ++k)
-      sb.append("at8_abs[" + (k+_achunk._start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
-    k = Math.max(k,j-2);
-    sb.append("...\n");
-    for(; k < Math.min(_len,j+2); ++k)
-      sb.append("at8_abs[" + (k+_achunk._start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
-    sb.append("...\n");
-    k = Math.max(k,_len-5);
-    for(; k < _len; ++k)
-      sb.append("at8_abs[" + (k+_achunk._start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
-    throw new RuntimeException(sb.toString());
-  }
 }

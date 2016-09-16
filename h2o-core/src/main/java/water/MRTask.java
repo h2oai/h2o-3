@@ -193,7 +193,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     return outputVecs(0,domains,fs);
   }
   public VecAry outputVecs(int i, String[][] domains, Futures fs) {
-    return _appendables[i].layout_and_close(fs,domains);
+    return new VecAry(_appendables[i].closeVec(fs,domains));
   }
 
 
@@ -242,46 +242,15 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   }
 
 
-  public void map( Vec.Chunks c ) { }
+
   /** Override with your map implementation.  This overload is given a single
    *  <strong>local</strong> input Chunk.  It is meant for map/reduce jobs that use a
    *  single column in a input Frame.  All map variants are called, but only one is
    *  expected to be overridden. */
-  public void map( Chunk c ) { }
-  public void map( Chunk c, NewChunk nc ) { }
-  public void map(Chunk c1, Chunk c2, NewChunk nc){}
-  public void map(Chunk c1, Chunk c2, NewChunk nc1, NewChunk nc2){}
+  public void map(Chunks c ) { }
+  public void map(Chunks c, Chunks.AppendableChunks nc) { }
+  public void map(Chunks c, Chunks.AppendableChunks [] ncs) { }
 
-  /** Override with your map implementation.  This overload is given two
-   *  <strong>local</strong> Chunks.  All map variants are called, but only one
-   *  is expected to be overridden. */
-  public void map( Chunk c0, Chunk c1 ) { }
-  //public void map( Chunk c0, Chunk c1, NewChunk nc) { }
-  //public void map( Chunk c0, Chunk c1, NewChunk nc1, NewChunk nc2 ) { }
-
-  /** Override with your map implementation.  This overload is given three
-   * <strong>local</strong> input Chunks.  All map variants are called, but only one
-   * is expected to be overridden. */
-  public void map( Chunk c0, Chunk c1, Chunk c2 ) { }
-  //public void map( Chunk c0, Chunk c1, Chunk c2, NewChunk nc ) { }
-  //public void map( Chunk c0, Chunk c1, Chunk c2, NewChunkp nc1, NewChunk nc2 ) { }
-
-  /** Override with your map implementation.  This overload is given an array
-   *  of <strong>local</strong> input Chunks, for Frames with arbitrary column
-   *  numbers.  All map variants are called, but only one is expected to be
-   *  overridden. */
-  public void map( Chunk cs[] ) { }
-
-  /** The handy method to generate a new vector based on existing vectors.
-   *
-   * Note: This method is used by Sparkling Water examples.
-   *
-   * @param cs  input vectors
-   * @param nc  output vector
-   */
-  public void map( Chunk cs[], NewChunk nc ) { }
-  public void map( Chunk cs[], NewChunk nc1, NewChunk nc2 ) { }
-  public void map( Chunk cs[], NewChunk [] ncs ) { }
 
   /** Override with your map implementation.  Used when doAll is called with 
    *  an array of Keys, and called once-per-Key on the Key's Home node */
@@ -594,55 +563,40 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         // Make decompression chunk headers for these chunks
 
         VecAry.ChunkAry chunkAry = _vecs.getChunks(_lo);
-        Chunk [] bvs = chunkAry.chks();
-        NewChunk [] ncs = null;
-        Vec.Chunks[] aChunks = null;
+        Chunk [] bvs = chunkAry.getChunks();
+        Chunks.AppendableChunks[] aChunks = null;
         if(_output_types != null) {
           final Vec.VectorGroup vg = _vecs.group();
           int noutpus = 0;
           for(byte [] x:_output_types) noutpus += x.length;
-          ncs = new NewChunk[noutpus];
           _appendables = new AppendableVec[_output_types.length];
-          aChunks = new Vec.Chunks[_output_types.length];
+          aChunks = new Chunks.AppendableChunks[_output_types.length];
           int k = 0;
           for(int i = 0; i < _appendables.length; ++i){
             _appendables[i] = new AppendableVec(vg.vecKey(_vid), _output_types[i]);
-            aChunks[i] = _output_types[i].length == 1?new SingleChunk(_appendables[i],_lo):new ChunkBlock(_appendables[i],_lo,_output_types[i].length);
-            for(int j = 0; j < _output_types[i].length; ++j)
-              ncs[k++] = new NewChunk(aChunks[i],j);
+            aChunks[i] = _appendables[i].chunkForChunkIdx(_lo);
           }
         }
         // Call all the various map() calls that apply
         if(_profile!=null)
           _profile._userstart = System.currentTimeMillis();
 
-        switch(_vecs.len()) {
-          case 1: map(bvs[0]); break;
-          case 2: map(bvs[0],bvs[1]); break;
-          case 3: map(bvs[0], bvs[1], bvs[2]); break;
-          default:
-            map(bvs);
-            break;
-        }
-        if( _output_types != null && _output_types.length == 1) { // convenience versions for cases with single output.
-          if( ncs == null ) throw H2O.fail(); // Silence IdeaJ warnings
-          switch(_vecs.len()) {
-            case 1: map(bvs[0],ncs[0]); break;
-            case 2: map(bvs[0],bvs[1], ncs[0]); break;
-            case 3: map(bvs[0],bvs[1], ncs[0]); break;
-            default:
-              map(bvs,ncs[0]);
-              break;
-          }
-        }
-        map(bvs,ncs);
+
+        if( _output_types != null) { // convenience versions for cases with single output.
+          if( aChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
+          if(aChunks.length == 1)
+            map(chunkAry,aChunks[0]);
+          else
+            map(chunkAry, aChunks);
+        } else
+          map(chunkAry);
         _res = self();          // Save results since called map() at least once!
         // Further D/K/V put any new vec results.
         if(_profile!=null)
           _profile._closestart = System.currentTimeMillis();
         _vecs.close();
         if( _output_types != null)
-          for(Vec.Chunks a:aChunks) a.close(_fs);
+          for(Chunks a:aChunks) a.close(_fs);
       }
     }
     if(_profile!=null)

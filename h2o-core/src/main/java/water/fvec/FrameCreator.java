@@ -9,9 +9,8 @@ import water.util.FrameUtils;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
-
-import static water.fvec.Vec.makeCon;
 import water.util.RandomUtils;
+import water.util.VecUtils;
 
 /**
  * Helper to make up a Frame from scratch, with random content
@@ -86,7 +85,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
                  +(float)bincols          *_createFrame.rows*1*_createFrame.binary_ones_fraction //sparse uses a fraction of one byte (or even less)
                  +(float)(realcols+timecols+stringcols) *_createFrame.rows*8), //8 bytes for real and time (long) values
             _createFrame.cols, _createFrame.cols*4, Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false, true);
-    _v = makeCon(_createFrame.value, _createFrame.rows, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
+    _v = VecUtils.makeCon(_createFrame.value, _createFrame.rows, (int)Math.ceil(Math.log1p(rows_per_chunk)),false);
   }
 
   public int nChunks() { return _v.nChunks(); }
@@ -105,7 +104,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       if (_createFrame.has_response) {
         types[0] = _createFrame.response_factors == 1 ? Vec.T_NUM : Vec.T_CAT;
       }
-      vecs = new VecAry(_v).makeZeros(totcols, _domain, types);
+      vecs = new VecAry(_v).makeCons(0,types,_domain);
     } else {
       vecs = new VecAry(_v).makeCons(totcols,_createFrame.value);
     }
@@ -163,7 +162,7 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       rng.setSeed(rng.nextLong());
     }
 
-    @Override public void map (Chunk[]cs){
+    @Override public void map (Chunks cs){
       Job<Frame> job = _createFrame._job;
       if (job.stop_requested()) return;
       if (!_createFrame.randomize) return;
@@ -171,59 +170,59 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
 
       // response
       if(_createFrame.has_response) {
-        for (int r = 0; r < cs[0]._len; r++) {
-          setSeed(rng, 0, cs[0].start() + r);
+        for (int r = 0; r < cs.numRows(); r++) {
+          setSeed(rng, 0, cs.start() + r);
           if (_createFrame.response_factors > 1)
-            cs[0].set(r, (int) (rng.nextDouble() * _createFrame.response_factors)); //classification
+            cs.set(r, 0, (int) (rng.nextDouble() * _createFrame.response_factors)); //classification
           else if (_createFrame.positive_response)
-            cs[0].set(r, _createFrame.real_range * rng.nextDouble()); //regression with positive response
+            cs.set(r, 0, _createFrame.real_range * rng.nextDouble()); //regression with positive response
           else
-            cs[0].set(r, _createFrame.real_range * (1 - 2 * rng.nextDouble())); //regression
+            cs.set(r, 0, _createFrame.real_range * (1 - 2 * rng.nextDouble())); //regression
         }
       }
       job.update(1);
       for (int c : _cat_cols) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c].start() + r);
-          cs[c].set(r, (int)(rng.nextDouble() * _createFrame.factors));
+        for (int r = 0; r < cs.numRows(); r++) {
+          setSeed(rng, c, cs.start() + r);
+          cs.set(r, c, (int)(rng.nextDouble() * _createFrame.factors));
         }
       }
       job.update(1);
       for (int c : _int_cols) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c].start() + r);
-          cs[c].set(r, -_createFrame.integer_range + (long)(rng.nextDouble()*(2*_createFrame.integer_range+1)));
+        for (int r = 0; r < cs.numRows(); r++) {
+          setSeed(rng, c, cs.start() + r);
+          cs.set(r, c, -_createFrame.integer_range + (long)(rng.nextDouble()*(2*_createFrame.integer_range+1)));
         }
       }
       job.update(1);
       for (int c : _real_cols) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c].start() + r);
-          cs[c].set(r, _createFrame.real_range * (1 - 2 * rng.nextDouble()));
+        for (int r = 0; r < cs.numRows(); r++) {
+          setSeed(rng, c, cs.start() + r);
+          cs.set(r, c, _createFrame.real_range * (1 - 2 * rng.nextDouble()));
         }
       }
       job.update(1);
       for (int c : _bin_cols) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c].start() + r);
-          cs[c].set(r, rng.nextFloat() > _createFrame.binary_ones_fraction ? 0 : 1);
+        for (int r = 0; r < cs.numRows(); r++) {
+          setSeed(rng, c, cs.start() + r);
+          cs.set(r, c, rng.nextFloat() > _createFrame.binary_ones_fraction ? 0 : 1);
         }
       }
       job.update(1);
       for (int c : _time_cols) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c].start() + r);
-          cs[c].set(r, Math.abs(rng.nextLong() % (50L*365*24*3600*1000))); //make a random moment in time between 1970 and 2020
+        for (int r = 0; r < cs.numRows(); r++) {
+          setSeed(rng, c, cs.start() + r);
+          cs.set(r, c, Math.abs(rng.nextLong() % (50L*365*24*3600*1000))); //make a random moment in time between 1970 and 2020
         }
       }
       job.update(1);
       byte[] by = new byte[8];
       for (int c : _string_cols) {
-        for (int r = 0; r < cs[c]._len; r++) {
-          setSeed(rng, c, cs[c].start() + r);
+        for (int r = 0; r < cs.numRows(); r++) {
+          setSeed(rng, c, cs.start() + r);
           for (int i=0;i<by.length;++i)
             by[i] = (byte)(65+rng.nextInt(25));
-          cs[c].set(r, new String(by));
+          cs.set(r, c, new String(by));
         }
       }
       job.update(1);

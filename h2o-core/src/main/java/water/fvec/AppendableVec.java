@@ -17,49 +17,31 @@ import java.util.Arrays;
 public class AppendableVec extends Vec {
   // Temporary ESPC, for uses which do not know the number of Chunks up front.
   public long _tmp_espc[];
+  public int _maxCidx;
   // Allow Chunks to have their final Chunk index (set at closing) offset by
   // this much.  Used by the Parser to fold together multi-file AppendableVecs.
   public final int _chunkOff;
 
   final byte [] _types;
-  final int [] _blocks;
 
 
-  public AppendableVec(Key<Vec> key, byte... type ) { this(key, new int[]{type.length}, new long[4], type, 0);}
-  public AppendableVec(Key<Vec> key, int [] blocks, byte... type ) { this(key, blocks, new long[4], type, 0); }
+  public AppendableVec(Key<Vec> key, byte... type ) { this(key, new long[4], type, 0);}
 
-  public AppendableVec(Key<Vec> key, int [] blocks, long[] tmp_espc, byte [] type, int chunkOff) {
+  public AppendableVec(Key<Vec> key, long[] tmp_espc, byte [] type, int chunkOff) {
     super( key, -1/*no rowLayout yet*/);
     _tmp_espc = tmp_espc;
     _chunkOff = chunkOff;
     _types = type;
-    _blocks = blocks == null?new int[_types.length]:blocks;
-  }
-  public VecAry closeVecs(String[] domains, int rowLayout, Futures fs) {
-    return closeVecs(new String[][]{domains},rowLayout,fs);
   }
 
   // "Close" out a NEW vector - rewrite it to a plain Vec that supports random
   // reads, plus computes rows-per-chunk, min/max/mean, etc.
-  public VecAry closeVecs(String[][] domains, int rowLayout, Futures fs) {
+  public Vec closeVec(Futures fs) {return closeVec(fs, null);}
+  public Vec closeVec(Futures fs,String[][] domains) {
     // Compute #chunks
-    Vec[] vecs = new Vec[_blocks.length];
-    int nchunk = _tmp_espc.length;
-    int off = 0;
-    VectorGroup vg = group();
-    int vecStart = VectorGroup.getVecId(_key._kb);
-    for(int i = 0; i < _blocks.length; ++i) {
-      Key<Vec> k = vg.vecKey(vecStart+i);
-      vecs[i] = new Vec(k, rowLayout, _blocks[i],Arrays.copyOfRange(domains,off,off+_blocks[i]), Arrays.copyOfRange(_types,off,off+_blocks[i]));
-      DKV.put(vecs[i]._key,vecs[i],fs);       // Inject the header into the K/V store
-      off += _blocks[i];
-      DKV.remove(vecs[i].chunkKey(_key,nchunk,i),fs); // remove potential trailing key
-      while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 ) {
-        nchunk--;
-        DKV.remove(vecs[i].chunkKey(_key,nchunk,i),fs); // remove potential trailing key
-      }
-    }
-    return new VecAry(vecs);
+    Vec v = new Vec(_key, compute_rowLayout(),_types,domains);
+    DKV.put(_key,v,fs);       // Inject the header into the K/V store
+    return v;
   }
 
   // Class 'reduce' call on new vectors; to combine the roll-up info.
@@ -76,33 +58,26 @@ public class AppendableVec extends Vec {
     for( int i=0; i<e1.length; i++ )      // Copy non-zero elements over
       if( _tmp_espc[i]==0 && e1[i] != 0 ) // Read-filter (old code unconditionally did a R-M-W cycle)
         _tmp_espc[i] = e1[i];             // Only write if needed
+    _maxCidx = Math.max(_maxCidx,nv._maxCidx);
   }
 
-
-  public VecAry layout_and_close(Futures fs) {
-    return layout_and_close(fs, (String[][])null);
-  }
-  public VecAry layout_and_close(Futures fs, String [] domain) {
-    assert _types.length==1;
-    return layout_and_close(fs, new String[][]{domain});
-  }
-  public VecAry layout_and_close(Futures fs, String [][] domains) { return closeVecs(domains, compute_rowLayout(_key,_tmp_espc),fs); }
-
-
-  public static int compute_rowLayout(Key<Vec> k, long [] tmp_espc) {
-    int nchunk = tmp_espc.length;
-    while( nchunk > 1 && tmp_espc[nchunk-1] == 0 )
+  private int compute_rowLayout() {
+    int nchunk = _maxCidx;
+    Futures fs = new Futures(); // never block, don't have to
+    while( nchunk > 1 && _tmp_espc[nchunk-1] == 0 ) {
       nchunk--;
+      DKV.remove(chunkKey(nchunk),fs);
+    }
     // Compute elems-per-chunk.
     // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
     long espc[] = new long[nchunk+1]; // Shorter array
     long x=0;                   // Total row count so far
     for( int i=0; i<nchunk; i++ ) {
       espc[i] = x;              // Start elem# for chunk i
-      x += tmp_espc[i];        // Raise total elem count
+      x += _tmp_espc[i];        // Raise total elem count
     }
     espc[nchunk]=x;             // Total element count in last
-    return Vec.ESPC.rowLayout(k,espc);
+    return Vec.ESPC.rowLayout(_key,espc);
   }
 
 
@@ -122,14 +97,24 @@ public class AppendableVec extends Vec {
     return 0;
   }
 
-  @Override public Chunks chunkForChunkIdx(int cidx) {throw new UnsupportedOperationException();}
-
+  @Override public Chunks.AppendableChunks chunkForChunkIdx(int cidx) {
+    NewChunk [] ncs = new NewChunk[numCols()];
+    for(int i = 0; i < ncs.length; ++i)
+      ncs[i] = new NewChunk();
+    Chunks.AppendableChunks cs = new Chunks.AppendableChunks(ncs);
+    cs._cidx = cidx;
+    cs._vec = this;
+    cs._start = -1;
+    return cs;
+  }
 
   public synchronized void closeChunk(int cidx, int len) {
+    cidx -= _chunkOff;
     if(_tmp_espc == null)
       _tmp_espc = new long[cidx+1];
     else if(_tmp_espc.length <= cidx)
-      _tmp_espc = Arrays.copyOf(_tmp_espc,cidx+1);
+      _tmp_espc = Arrays.copyOf(_tmp_espc, cidx + 1);
+    _maxCidx = Math.max(_maxCidx,cidx);
     _tmp_espc[cidx] = len;
   }
 
@@ -141,8 +126,6 @@ public class AppendableVec extends Vec {
   // None of these are supposed to be called while building the new vector
   @Override public Value chunkIdx( int cidx ) { throw H2O.fail(); }
 
-
-
   @Override
   public void setDomain(int vec, String[] domain) {throw new UnsupportedOperationException();}
 
@@ -153,16 +136,6 @@ public class AppendableVec extends Vec {
   @Override public long chunk2StartElem( int cidx ) { throw H2O.fail(); }
   @Override public long byteSize() {return 0;}
 
-
-
-
   @Override public String toString() { return "[AppendableVec, unknown size]"; }
 
-  public void setNCols(int newColCnt) {
-    throw H2O.unimpl();
-  }
-
-  public VecAry closeVecs(int rowLayout, Futures fs) {
-    return closeVecs((String[])null,rowLayout,fs);
-  }
 }

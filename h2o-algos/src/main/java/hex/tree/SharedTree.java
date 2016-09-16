@@ -12,6 +12,7 @@ import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.Frame;
 import water.fvec.VecAry;
 import water.util.*;
@@ -270,7 +271,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         // One Tree per class, each tree needs a NIDs.  For empty classes use a -1
         // NID signifying an empty regression tree.
         for( int i=0; i<_nclass; i++ )
-          _train.add("NIDs_"+domain[i], _response.makeCon(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
+          _train.add("NIDs_"+domain[i], _response.makeCons(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
 
         // Append number of trees participating in on-the-fly scoring
         _train.add("OUT_BAG_TREES", _response.makeZero());
@@ -500,7 +501,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   public Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
   protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
-  public Chunk chk_resp(Chunk chks[]) { return chks[idx_resp()]; }
+//  public Chunk chk_resp(Chunk chks) { return chks.getChunk[idx_resp()]; }
   public Chunk chk_tree(Chunk chks[], int c) { return chks[idx_tree(c)]; }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
   protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
@@ -513,9 +514,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected final VecAry vec_nids( Frame fr, int c) { return fr.vecs(idx_nids(c)); }
   protected final VecAry vec_oobt( Frame fr, int c) { return fr.vecs(idx_nids(c)); }
 
-  protected double[] data_row( Chunk chks[], int row, double[] data) {
+  protected double[] data_row( Chunks chks, int row, double[] data) {
     assert data.length == _ncols;
-    for(int f=0; f<_ncols; f++) data[f] = chks[f].atd(row);
+    for(int f=0; f<_ncols; f++) data[f] = chks.atd(row,f);
     return data;
   }
 
@@ -527,11 +528,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  abstract protected double score1( Chunk chks[], double offset, double weight, double fs[/*nclass*/], int row );
+  abstract protected double score1(Chunks chks, double offset, double weight, double fs[/*nclass*/], int row );
 
   // Call builder specific score code and then correct probabilities
   // if it is necessary.
-  void score2(Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
+  void score2(Chunks chks, double weight, double offset, double fs[/*nclass*/], int row ) {
     double sum = score1(chks, weight, offset, fs, row);
     if( isClassifier()) {
       if( !Double.isInfinite(sum) && sum>0f && sum!=1f) ArrayUtils.div(fs, sum);
@@ -810,8 +811,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
    */
   protected double getInitialValue() {
     VecAry v = new VecAry(_response);
-    v.addVecs(hasWeightCol()?_weights:v.makeCon(1));
-    v.addVecs(hasOffsetCol()?_weights:v.makeCon(0));
+    v.addVecs(hasWeightCol()?_weights:v.makeCons(1));
+    v.addVecs(hasOffsetCol()?_weights:v.makeCons(0));
     return new InitialValue(_parms).doAll(v).initialValue();
   }
 
@@ -827,13 +828,13 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         return -0.5*new Distribution(Distribution.Family.bernoulli).link(_num/_denom);
       else return _dist.link(_num / _denom);
     }
-    @Override public void map(Chunk response, Chunk weight, Chunk offset) {
-      for (int i=0;i<response._len;++i) {
-        if (response.isNA(i)) continue;
-        double w = weight.atd(i);
+    @Override public void map(Chunks chks) { // response, weight, offset
+      for (int i=0;i<chks.numRows();++i) {
+        double y = chks.atd(i,0);
+        if(Double.isNaN(y))continue;
+        double w = chks.atd(i,1);
         if (w == 0) continue;
-        double y = response.atd(i);
-        double o = offset.atd(i);
+        double o = chks.atd(i,2);
         _num += _dist.initFNum(w,o,y);
         _denom += _dist.initFDenom(w,o);
       }

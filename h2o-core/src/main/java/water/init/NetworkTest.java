@@ -1,6 +1,7 @@
 package water.init;
 
 import water.*;
+import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Random;
@@ -143,7 +144,7 @@ public class NetworkTest extends Iced {
   private static double send_recv_collective(int msg_size, int repeats) {
     byte[] payload = new byte[msg_size];
     new Random().nextBytes(payload);
-    Vec v = Vec.makeZero(1); //trivial Vec: 1 element with value 0.
+    Vec v = VecUtils.makeZero(1); //trivial Vec: 1 element with value 0.
 
     Timer t = new Timer();
     for (int l = 0; l < repeats; ++l) {

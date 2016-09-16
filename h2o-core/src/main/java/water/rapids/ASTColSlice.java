@@ -3,6 +3,7 @@ package water.rapids;
 import water.*;
 import water.fvec.*;
 import water.parser.BufferedString;
+import water.util.VecUtils;
 
 import java.util.*;
 
@@ -128,12 +129,13 @@ class ASTRowSlice extends ASTPrim {
       final long[] ls = rows;
 
       returningFrame = new MRTask(){
-        @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+        @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
           if( nums.cnt()==0 ) return;
           if( ls != null && ls.length == 0 ) return;
-          long start = cs[0].start();
-          long end   = start + cs[0]._len;
+          long start = cs.start();
+          long end   = start + cs.numRows();
           long min = ls==null?(long)nums.min():ls[0], max = ls==null?(long)nums.max()-1:ls[ls.length-1]; // exclusive max to inclusive max when stride == 1
+          BufferedString bs = new BufferedString();
           //     [ start, ...,  end ]     the chunk
           //1 []                          nums out left:  nums.max() < start
           //2                         []  nums out rite:  nums.min() > end
@@ -142,19 +144,20 @@ class ASTRowSlice extends ASTPrim {
           //5                   [ nums ]  nums run rite:  start <= nums.min() && end < nums.max()
           if( !(max<start || min>end) ) {   // not situation 1 or 2 above
             long startOffset = (min > start ? min : start);  // situation 4 and 5 => min > start;
-            for( int i=(int)(startOffset-start); i<cs[0]._len; ++i) {
+            for( int i=(int)(startOffset-start); i<cs.numRows(); ++i) {
               if( (ls==null && nums.has(start+i)) || (ls!=null && Arrays.binarySearch(ls,start+i) >= 0 )) {
-                for(int c=0;c<cs.length;++c) {
-                  if(      cs[c] instanceof CStrChunk ) ncs[c].addStr(cs[c], i);
-                  else if( cs[c] instanceof C16Chunk  ) ncs[c].addUUID(cs[c],i);
-                  else if( cs[c].isNA(i)              ) ncs[c].addNA();
-                  else                                  ncs[c].addNum(cs[c].atd(i));
+                for(int c=0;c<cs.numCols();++c) {
+                  if(cs.isNA(i,c)) ncs.getChunk(c).addNA();
+                  else if(_vecs.type(c) == Vec.T_STR) ncs.getChunk(c).addStr(cs.atStr(bs,i,c));
+                  else if( _vecs.type(c) == Vec.T_UUID  ) ncs.getChunk(c).addUUID(cs.at16l(i,c),cs.at16h(i,c));
+                  else ncs.getChunk(c).addNum(cs.atd(i,c));
                 }
               }
             }
           }
         }
       }.doAll(fr.vecs().types(), fr.vecs()).outputFrame(fr._names,fr.vecs().domains());
+
     } else if( (asts[2] instanceof ASTNum) ) {
       long[] rows = new long[]{(long)(((ASTNum)asts[2])._v.getNum())};
       returningFrame = fr.deepSlice(rows,null);
@@ -180,10 +183,10 @@ class ASTFlatten extends ASTPrim {
     Chunk c = vec.getChunk(0,0);
     switch (vec.type(0)) {
       case Vec.T_BAD:
-      case Vec.T_NUM:  return new ValNum(c.atd(0));
-      case Vec.T_TIME: return new ValNum(c.at8(0));
-      case Vec.T_STR:  return new ValStr(c.atStr(new BufferedString(),0).toString());
-      case Vec.T_CAT:  return new ValStr(vec.domain(0)[c.at4(0)]);
+      case Vec.T_NUM:  return new ValNum(c.atd_impl(0));
+      case Vec.T_TIME: return new ValNum(c.at8_impl(0));
+      case Vec.T_STR:  return new ValStr(c.atStr_impl(new BufferedString(),0).toString());
+      case Vec.T_CAT:  return new ValStr(vec.domain(0)[c.at4_impl(0)]);
       default: throw H2O.unimpl("The type of vector: " + vec.typesStr()[0] + " is not supported by " + str());
     }
   }
@@ -252,7 +255,7 @@ class ASTCBind extends ASTPrim {
       case Val.NUM:  
         // Auto-expand scalars to fill every row
         double d = vals[i].getNum();
-        fr.add(Double.toString(d),fr.vecs().makeCon(d));
+        fr.add(Double.toString(d),fr.vecs().makeCons(d));
         break;
       default: throw H2O.unimpl();
       }
@@ -287,7 +290,7 @@ class ASTRBind extends ASTPrim {
     // No Frame, just a pile-o-scalars?
     Vec zz = null;              // The zero-length vec for the zero-frame frame
     if( fr==null ) {            // Zero-length, 1-column, default name
-      fr = new Frame(zz=Vec.makeZero(0));
+      fr = new Frame(zz= VecUtils.makeZero(0));
       if( asts.length == 1 ) return new ValFrame(fr);
     }
 
@@ -303,7 +306,7 @@ class ASTRBind extends ASTPrim {
       Val val = vals[i];        // Save values computed for pass 2
       Frame fr0 = val.isFrame() ? val.getFrame()
         // Scalar: auto-expand into a 1-row frame
-        : (tmp_frs[i] = new Frame(null,fr._names, new VecAry(Vec.makeCons(val.getNum(),1L,fr.numCols()))));
+        : (tmp_frs[i] = new Frame(null,fr._names, new VecAry(VecUtils.makeCons(val.getNum(),1L,fr.numCols()))));
       // Check that all frames are compatible
       if( fr.numCols() != fr0.numCols() ) 
         throw new IllegalArgumentException("rbind frames must have all the same columns, found "+fr.numCols()+" and "+fr0.numCols()+" columns.");
@@ -352,7 +355,7 @@ class ASTRBind extends ASTPrim {
     Key<Vec> key = fr.vecs().group().addVec();
     int rowLayout = Vec.ESPC.rowLayout(key,espc);
     // TODO: make result one block?
-    final VecBlock vb = new VecBlock(key,rowLayout,fr.numCols(),fr.vecs().domains(),fr.vecs().types());
+    final Vec v = new Vec(key,rowLayout,fr.vecs().types(),fr.vecs().domains());
     Futures fs = new Futures();
     int coff = 0;
     final int [] coffs = new int[tmp_frs.length+1];
@@ -363,37 +366,37 @@ class ASTRBind extends ASTPrim {
       final int off = coff;
       fs.add(new MRTask() {
         @Override
-        public void map(Chunk[] chks) {
-          chks = chks.clone();
-          for(int i = 0; i < chks.length; ++i)
-            chks[i] = chks[i].clone();
-          DKV.put(vb.chunkKey(off+chks[0].cidx()), new ChunkBlock(chks), _fs, true);
+        public void map(Chunks chks) {
+          Chunks res = new Chunks(chks.getChunks().clone());
+          Chunk [] chkary = res.getChunks();
+          for(int i = 0; i < chks.numCols(); ++i)
+            chkary[i] = chks.getChunk(i).deepCopy();
+          DKV.put(v.chunkKey(off+chks.cidx()), res, _fs, true);
         }
       }.dfork(frs[i].vecs()));
       coffs[i+1] = (coff += tmp_frs[i].vecs().nChunks());
     }
     fs.blockForPending();
-    DKV.put(vb._key,vb);
+    DKV.put(v);
     // 2) the data is in the DKV, now fix the categoricals
     new MRTask(){
       @Override
-      public void map(Chunk [] chks) {
-        int cidx = chks[0].cidx();
+      public void map(Chunks chks) {
+        int cidx = chks.cidx();
         int mapId = 0;
         while(cidx < coffs[mapId+1]) mapId++;
         int [][] map = cmaps[mapId];
-        for(int i = 0; i < chks.length; ++i) {
+        for(int i = 0; i < chks.numCols(); ++i) {
           if(map[i] != null) {
-            Chunk c = chks[i];
-            for(int j = 0; j < c.len(); ++j)
-              c.set(j,map[i][c.at4(j)]);
+            for(int j = 0; j < chks.numRows(); ++j)
+              chks.set(j,i,map[i][chks.at4(j,i)]);
           }
         }
       }
     }.doAll(fr.vecs());
     for(int i = 0; i < tmp_frs.length; ++i)
       if(tmp_frs[i] != null) tmp_frs[i].delete();
-    return new ValFrame(new Frame(null,fr._names,new VecAry(vb)));
+    return new ValFrame(new Frame(null,fr._names,new VecAry(v)));
   }
 
 }

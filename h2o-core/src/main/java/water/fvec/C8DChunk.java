@@ -8,15 +8,20 @@ import water.util.UnsafeUtils;
  * The empty-compression function, where data is in 'double's.
  */
 public class C8DChunk extends Chunk {
-  C8DChunk( byte[] bs ) { _mem=bs; set_len(_mem.length>>3); }
+  static protected final int _OFF = 0;
 
-  @Override protected final long   at8_impl( int i ) {
+  C8DChunk( byte[] bs ) { _mem=bs; }
+
+  @Override
+  public final long   at8_impl(int i) {
     double res = UnsafeUtils.get8d(_mem, i << 3);
     if( Double.isNaN(res) ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)res;
   }
-  @Override protected final double   atd_impl( int i ) { return              UnsafeUtils.get8d(_mem,i<<3) ; }
-  @Override protected final boolean isNA_impl( int i ) { return Double.isNaN(UnsafeUtils.get8d(_mem,i<<3)); }
+  @Override
+  public final double   atd_impl(int i) { return              UnsafeUtils.get8d(_mem,i<<3) ; }
+  @Override
+  public final boolean isNA_impl(int i) { return Double.isNaN(UnsafeUtils.get8d(_mem,i<<3)); }
   @Override boolean set_impl(int idx, long l) { return false; }
 
   /**
@@ -41,10 +46,11 @@ public class C8DChunk extends Chunk {
   // 3.3333333e33
 //  public int pformat_len0() { return 22; }
 //  public String pformat0() { return "% 21.15e"; }
-  @Override public final void initFromBytes () {
-    set_len(_mem.length>>3);
-    assert _mem.length == _len <<3;
-  }
+  @Override public final void initFromBytes () {}
+
+
+  @Override
+  public int len() {return _mem.length >> 3;}
 
   @Override
   public double [] getDoubles(double [] vals, int from, int to){
@@ -88,7 +94,7 @@ public class C8DChunk extends Chunk {
 
   @Override
   public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
-    nc.alloc_doubles(_len);
+    nc.alloc_doubles(len());
     for( int i:lines)
       nc.addNum(UnsafeUtils.get8d(_mem,(i<<3)));
     return nc;

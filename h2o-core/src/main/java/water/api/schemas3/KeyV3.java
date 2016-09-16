@@ -3,6 +3,7 @@ package water.api.schemas3;
 import hex.Model;
 import hex.grid.Grid;
 import water.*;
+import water.fvec.Vec;
 import water.api.API;
 import water.rapids.Assembly;
 import water.exceptions.H2OIllegalArgumentException;

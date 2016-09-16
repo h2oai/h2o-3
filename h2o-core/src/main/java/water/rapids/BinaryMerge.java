@@ -343,7 +343,7 @@ public class BinaryMerge extends DTask<BinaryMerge> {
         int chkIdx = _leftVec.elem2ChunkIdx(globalRowNumber); //binary search in espc
         _timings[15] += (System.nanoTime() - t00)/1e9;
         _perNodeNumLeftRowsToFetch[_leftChunkNode[chkIdx]]++;  // the key is the same within this left dup range, but still need to fetch left non-join columns
-        if (len==0) continue;  // _allLeft must be true if len==0
+        if (len==0) continue;  // _allLeft must be true if numRows==0
 
         // TODO:  initial MSB splits should split down to small enough chunk size - but would that require more passes and if so, how long?  Code simplification benefits would be welcome!
         long outLoc = j - (_leftFrom + 1);   // outOffset is 0 here in the standard scaling up high cardinality test

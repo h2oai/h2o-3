@@ -38,12 +38,14 @@ public class CUDChunk extends Chunk {
     for (int i=0; i<len; ++i)
       UnsafeUtils.set1(_mem, 8 + (numUniques << 3) + i, hs.get(Double.doubleToLongBits(UnsafeUtils.get8d(bs, i << 3))));
   }
-  @Override protected final long   at8_impl( int i ) {
+  @Override
+  public final long   at8_impl(int i) {
     double res = atd_impl(i);
     if( Double.isNaN(res) ) throw new IllegalArgumentException("at8_impl but value is missing");
     return (long)res;
   }
-  @Override protected final double   atd_impl( int i ) {
+  @Override
+  public final double   atd_impl(int i) {
     int whichUnique = (UnsafeUtils.get1(_mem, 8 + (numUniques << 3) + i)+128);
     return Double.longBitsToDouble(UnsafeUtils.get8(_mem, 8 + (whichUnique << 3)));
   }
@@ -77,7 +79,8 @@ public class CUDChunk extends Chunk {
     return nc;
   }
 
-  @Override protected final boolean isNA_impl( int i ) { return Double.isNaN(atd_impl(i)); }
+  @Override
+  public final boolean isNA_impl(int i) { return Double.isNaN(atd_impl(i)); }
   @Override boolean set_impl(int idx, long l) { return false; }
   @Override boolean set_impl(int i, double d) {
     for (int j = 0; j < numUniques; ++j) {

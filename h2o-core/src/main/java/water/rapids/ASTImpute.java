@@ -121,13 +121,13 @@ public class ASTImpute extends ASTPrim {
         throw H2O.unimpl("No ffill or bfill imputation supported");
 //        new MRTask() {
 //          @Override public void map(Chunk[] cs) {
-//            int len=cs[0]._len; // end of this chk
+//            int numRows=cs[0]._len; // end of this chk
 //            long start=cs[0].start();  // absolute beginning of chk s.t. start-1 bleeds into previous chk
-//            long absEnd = start+len;   // absolute end of the chk s.t. absEnd+1 bleeds into next chk
+//            long absEnd = start+numRows;   // absolute end of the chk s.t. absEnd+1 bleeds into next chk
 //            for(int c=0;c<cs.length;++c )
 //              for(int r=0;r<cs[0]._len;++r ) {
 //                if( cs[c].isNA(r) ) {
-//                  if( r > 0 && r < len-1 ) {
+//                  if( r > 0 && r < numRows-1 ) {
 //                    cs[c].set(r,ffill?)
 //                  }
 //                }

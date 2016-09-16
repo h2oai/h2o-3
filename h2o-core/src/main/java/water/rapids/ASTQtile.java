@@ -1,11 +1,13 @@
 package water.rapids;
 
+import water.fvec.Vec;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import water.DKV;
 import water.Job;
 import water.fvec.Frame;
 import water.fvec.VecAry;
+import water.util.VecUtils;
 
 /**
  * Quantiles: 
@@ -47,13 +49,13 @@ class ASTQtile extends ASTPrim {
     if (parms._weights_column != null) ncols--;
     Vec[] vecs = new Vec[1 /*1 more for the probs themselves*/ + ncols];
     String[] names = new String[vecs.length];
-    vecs [0] = (Vec) Vec.makeCon(null,parms._probs).getAVecRaw(0);
+    vecs [0] = VecUtils.makeVec(parms._probs);
     names[0] = "Probs";
     int w=0;
     for( int i=0; i<vecs.length-1; ++i ) {
       if (fr._names.getName(i).equals(parms._weights_column)) w=1;
       assert(w==0 || w==1);
-      vecs [i+1] = (Vec) Vec.makeCon(null,q._output._quantiles[i]).getAVecRaw(0);
+      vecs [i+1] = VecUtils.makeVec(q._output._quantiles[i]);
       names[i+1] = fr._names.getName(w+i)+"Quantiles";
     }
     q.delete();

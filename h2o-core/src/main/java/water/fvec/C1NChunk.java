@@ -8,24 +8,27 @@ import water.*;
  */
 public class C1NChunk extends Chunk {
   protected static final int _OFF=0;
-  public C1NChunk(byte[] bs) { _mem=bs; set_len(_mem.length); }
-  @Override protected final long   at8_impl( int i ) { return 0xFF&_mem[i]; }
-  @Override protected final double atd_impl( int i ) { return 0xFF&_mem[i]; }
-  @Override protected final boolean isNA_impl( int i ) { return false; }
+  public C1NChunk(byte[] bs) { _mem=bs; }
+  @Override
+  public final long   at8_impl(int i) { return 0xFF&_mem[i]; }
+  @Override
+  public final double atd_impl(int i) { return 0xFF&_mem[i]; }
+  @Override
+  public final boolean isNA_impl(int i) { return false; }
   @Override boolean set_impl(int i, long l  ) { return false; }
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { return false; }
 
-  // Custom serializers: the _mem field contains ALL the fields already.
-  // Init _start to -1, so we know we have not filled in other fields.
-  // Leave _vec & _chk2 null, leave _len unknown.
-  @Override protected final void initFromBytes () {
+  @Override
+  protected void initFromBytes() {}
 
-    set_len(_mem.length);
-  }
+
   @Override public boolean hasFloat() {return false;}
   @Override public boolean hasNA() { return false; }
+
+  @Override
+  public int len() {return _mem.length - _OFF;}
 
   /**
    * Dense bulk interface, fetch values from the given range

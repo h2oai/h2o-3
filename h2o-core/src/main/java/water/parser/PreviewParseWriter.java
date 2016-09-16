@@ -1,5 +1,5 @@
 package water.parser;
-
+import water.fvec.Vec;
 import water.Iced;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;

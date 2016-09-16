@@ -16,5 +16,14 @@ abstract class WrappedVec extends Vec {
   }
   public VecAry masterVec() { return _masterVec; }
   // Map from chunk-index to Chunk.  These wrappers are making custom Chunks
-  abstract public SingleChunk chunkForChunkIdx(int cidx);
+
+  abstract protected Chunk makeChunk(int cidx);
+
+  @Override public final Chunks chunkForChunkIdx(int cidx) {
+    Chunks cs = new Chunks(makeChunk(cidx));
+    cs._cidx = cidx;
+    cs._start = chunk2StartElem(cidx);
+    cs._vec = this;
+    return cs;
+  }
 }

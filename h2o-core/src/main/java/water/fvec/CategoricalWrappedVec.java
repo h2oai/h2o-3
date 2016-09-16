@@ -45,9 +45,8 @@ public class CategoricalWrappedVec extends WrappedVec {
     return tmp._map;
   }
 
-  @Override public SingleChunk chunkForChunkIdx(int cidx) {
-    return new SingleChunk(this,cidx,new CategoricalWrappedChunk(_masterVec.getChunk(cidx,0), this));
-  }
+  @Override protected Chunk makeChunk(int cidx){return new CategoricalWrappedChunk(_masterVec.getChunk(cidx,0),this);}
+
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
    *  the 'from' domain not in the 'to' domain are mapped past the end of the
@@ -146,26 +145,29 @@ public class CategoricalWrappedVec extends WrappedVec {
     final transient int   _p;
 
     CategoricalWrappedChunk(Chunk c, CategoricalWrappedVec vec) {
-      _c  = c; set_len(_c._len);
+      _c  = c;
       _map = vec._map; _p = vec._p;
     }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
     // master Chunk, so no AIOOBE.  Missing values in the master Chunk return
     // the usual NaN.
-    @Override protected double atd_impl(int idx) { return _c.isNA_impl(idx) ? Double.NaN : at8_impl(idx); }
+    @Override
+    public double atd_impl(int idx) { return _c.isNA_impl(idx) ? Double.NaN : at8_impl(idx); }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
     // master Chunk, so no AIOOBE.  Missing values in the master Chunk throw
     // the normal missing-value exception when loading from the master.
-    @Override protected long at8_impl(int idx) {
+    @Override
+    public long at8_impl(int idx) {
       int at8 = (int)_c.at8_impl(idx);
       if( at8 >= 0 ) return _map[at8];
       else return _map[-1*at8+_p];
     }
 
     // Returns true if the masterVec is missing, false otherwise
-    @Override protected boolean isNA_impl(int idx) { return _c.isNA_impl(idx); }
+    @Override
+    public boolean isNA_impl(int idx) { return _c.isNA_impl(idx); }
     @Override boolean set_impl(int idx, long l)   { return false; }
     @Override boolean set_impl(int idx, double d) { return false; }
     @Override boolean set_impl(int idx, float f)  { return false; }
@@ -175,15 +177,18 @@ public class CategoricalWrappedVec extends WrappedVec {
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
 
     @Override
+    public int len() {return _c.len();}
+
+    @Override
     public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
       for(int i = from; i < to; ++i)
-        nc.addNum(at4(i));
+        nc.addNum(at4_impl(i));
       return nc;
     }
 
     @Override
     public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
-      for(int i:lines) nc.addNum(at4(i));
+      for(int i:lines) nc.addNum(at4_impl(i));
       return nc;
     }
 

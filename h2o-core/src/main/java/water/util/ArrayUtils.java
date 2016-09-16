@@ -974,6 +974,16 @@ public class ArrayUtils {
     return c;
   }
 
+  static public int[] append( int[] a, int[] b ) {
+    if( a==null ) return b;
+    if( b==null ) return a;
+    if( a.length==0 ) return b;
+    if( b.length==0 ) return a;
+    int[] c = Arrays.copyOf(a,a.length+b.length);
+    System.arraycopy(b,0,c,a.length,b.length);
+    return c;
+  }
+
   static public double[] append( double[] a, double[] b ) {
     if( a==null ) return b;
     if( b==null ) return a;
@@ -1302,16 +1312,13 @@ public class ArrayUtils {
     assert names == null || names.length == rows[0].length;
     Futures fs = new Futures();
     Key k = Vec.VectorGroup.VG_LEN1.addVec();
-    int rowLayout = -1;
     AppendableVec vec = new AppendableVec(k, Vec.T_NUM);
     NewChunk [] chunks = new NewChunk[rows.length];
-    ChunkBlock cb = new ChunkBlock(vec,0,rows.length);
-    for( int c = 0; c < chunks.length; c++ ) {
-      NewChunk chunk = (chunks[c] = new NewChunk(cb,c));
-      for (double[] row : rows) chunk.addNum(row[c]);
-    }
+    Chunks.AppendableChunks cb = new Chunks.AppendableChunks(chunks);
+    for( int c = 0; c < chunks.length; c++ )
+      chunks[c] = new NewChunk(rows[c]);
     cb.close(fs);
-    VecAry vecs = vec.layout_and_close(fs);
+    VecAry vecs = new VecAry(vec.closeVec(fs));
     fs.blockForPending();
     Frame fr = new Frame(key, names, vecs);
     if( key != null ) DKV.put(key, fr);
@@ -1461,7 +1468,7 @@ public class ArrayUtils {
     return encodeAsLong(b, 0, b.length);
   }
   public static long encodeAsLong(byte[] b, int off, int len) {
-    assert len <= 8 : "Cannot encode more then 8 bytes into long: len = " + len;
+    assert len <= 8 : "Cannot encode more then 8 bytes into long: numRows = " + len;
     long r = 0;
     int shift = 0;
     for(int i = 0; i < len; i++) {
@@ -1472,7 +1479,7 @@ public class ArrayUtils {
   }
 
   public static int encodeAsInt(byte[] b, int off, int len) {
-    assert len <= 4 : "Cannot encode more then 4 bytes into int: len = " + len;
+    assert len <= 4 : "Cannot encode more then 4 bytes into int: numRows = " + len;
     int r = 0;
     int shift = 0;
     for(int i = 0; i < len; i++) {

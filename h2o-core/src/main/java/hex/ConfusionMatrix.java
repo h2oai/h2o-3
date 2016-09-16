@@ -4,6 +4,7 @@ import water.Iced;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
@@ -45,14 +46,15 @@ public class ConfusionMatrix extends Iced {
     final int _len;
     double _arr[/*actuals*/][/*predicted*/];
     CMBuilder(int len) { _len = len; }
-    @Override public void map( Chunk ca, Chunk cp ) {
+    // @Override public void map( Chunk ca, Chunk cp ) {
+    @Override public void map( Chunks cs) {
       // After adapting frames, the Actuals have all the levels in the
       // prediction results, plus any extras the model was never trained on.
       // i.e., Actual levels are at least as big as the predicted levels.
       _arr = new double[_len][_len];
-      for( int i=0; i < ca._len; i++ )
-        if( !ca.isNA(i) )
-          _arr[(int)ca.at8(i)][(int)cp.at8(i)]++;
+      for( int i=0; i < cs.numRows(); i++ )
+        if( !cs.isNA(i,0) )
+          _arr[cs.at4(i,0)][cs.at4(i,1)]++;
     }
     @Override public void reduce( CMBuilder cm ) { ArrayUtils.add(_arr,cm._arr); }
   }

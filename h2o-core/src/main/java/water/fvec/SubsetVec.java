@@ -17,12 +17,9 @@ public class SubsetVec extends WrappedVec {
     return _rows;
   }
 
-  // A subset chunk
-  @Override public SingleChunk chunkForChunkIdx(int cidx) {
-    Chunk crows = rows().chunkForChunkIdx(cidx)._c;
-    SingleChunk sc = new SingleChunk(this,cidx);
-    sc._c = new SubsetChunk(crows,sc,_masterVec);
-    return sc;
+  @Override protected Chunk makeChunk(int cidx){
+    Chunk crows = rows().chunkForChunkIdx(cidx).getChunk(0);
+    return new SubsetChunk(crows,_masterVec);
   }
 
   @Override public Futures remove_impl(Futures fs) {
@@ -44,21 +41,22 @@ public class SubsetVec extends WrappedVec {
   static class SubsetChunk extends Chunk {
     final Chunk _crows;
     final VecAry.Reader _masterVec;
-    protected SubsetChunk(Chunk crows, SingleChunk sc, VecAry masterVec) {
-      _achunk = sc;
+    protected SubsetChunk(Chunk crows,VecAry masterVec) {
       _masterVec = masterVec.reader(false);
-      _len = crows._len;
       _crows  = crows;
     }
-    @Override protected double atd_impl(int idx) {
+    @Override
+    public double atd_impl(int idx) {
       long rownum = _crows.at8_impl(idx);
       return _masterVec.at(rownum,0);
     }
-    @Override protected long   at8_impl(int idx) {
+    @Override
+    public long   at8_impl(int idx) {
       long rownum = _crows.at8_impl(idx);
       return _masterVec.at8(rownum,0);
     }
-    @Override protected boolean isNA_impl(int idx) {
+    @Override
+    public boolean isNA_impl(int idx) {
       long rownum = _crows.at8_impl(idx);
       return _masterVec.isNA(rownum,0);
     }
@@ -67,6 +65,9 @@ public class SubsetVec extends WrappedVec {
     @Override boolean set_impl(int idx, double d) { return false; }
     @Override boolean set_impl(int idx, float f)  { return false; }
     @Override boolean setNA_impl(int idx)         { return false; }
+
+    @Override
+    public int len() {return _crows.len();}
 
     @Override
     public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {throw H2O.unimpl();}

@@ -2,6 +2,7 @@ package water.parser;
 
 import water.Futures;
 import water.fvec.AppendableVec;
+import water.fvec.Vec;
 import water.fvec.NewChunk;
 
 import java.util.Arrays;
@@ -49,7 +50,7 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
     int oldColCnt = _vec.numCols();
     if(newColCnt > oldColCnt){
       _nvs   = Arrays.copyOf(_nvs, newColCnt);
-      _vec.setNCols(newColCnt);
+//      _vec.setNCols(newColCnt); // TODO
       for(int i = oldColCnt; i < newColCnt; ++i)
         _nvs[i] = new NewChunk(true);
       _nCols = newColCnt;

@@ -28,23 +28,25 @@ public class CBSChunk extends Chunk {
       }
     }
     _mem = bytes;
-    set_len(((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
+
   }
   public CBSChunk(byte[] bs, byte gap, byte bpv) {
     assert gap < 8; assert bpv == 1 || bpv == 2;
     _mem = bs; _gap = gap; _bpv = bpv;
-    set_len(((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
   }
-  @Override protected long at8_impl(int idx) {
+  @Override
+  public long at8_impl(int idx) {
     byte b = atb(idx);
     if( b == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return b;
   }
-  @Override protected double atd_impl(int idx) {
+  @Override
+  public double atd_impl(int idx) {
     byte b = atb(idx);
     return b == _NA ? Double.NaN : b;
   }
-  @Override protected final boolean isNA_impl( int i ) { return atb(i)==_NA; }
+  @Override
+  public final boolean isNA_impl(int i) { return atb(i)==_NA; }
   protected byte atb(int idx) {
     int vpb = 8 / _bpv;  // values per byte (= 8 / bits_per_value)
     int bix = _OFF + idx / vpb; // byte index
@@ -78,7 +80,7 @@ public class CBSChunk extends Chunk {
   /** Reads 2bit from given b in given offset. */
   public static byte read2b(byte b, int off) { return (byte) ((b >> (6-off)) & 0x3); }
 
-  /** Returns compressed len of the given array length if the value if represented by bpv-bits. */
+  /** Returns compressed numRows of the given array length if the value if represented by bpv-bits. */
   public static int clen(int values, int bpv) {
     int len = (values*bpv) >> 3;
     return values*bpv % 8 == 0 ? len : len + 1;
@@ -89,13 +91,15 @@ public class CBSChunk extends Chunk {
   @Override protected final void initFromBytes () {
     _gap   = _mem[0];
     _bpv   = _mem[1];
-    set_len(((_mem.length - _OFF)*8 - _gap) / _bpv);
   }
 
   @Override
   public boolean hasFloat() {return false;}
 
 
+  @Override
+  public int len() {return ((_mem.length - _OFF)*8 - _gap) / _bpv;
+  }
 
   /**
    * Dense bulk interface, fetch values from the given range

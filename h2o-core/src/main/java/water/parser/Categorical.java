@@ -106,9 +106,9 @@ public final class Categorical extends Iced {
 //    if( ab.get1() == 1 ) return this; // Killed?
 //    _maxId = ab.get4();
 //    _map = new NonBlockingHashMap<>();
-//    int len;
-//    while( (len = ab.get2()) != 65535 ) // Read until end-of-map marker
-//      _map.put(new BufferedString(ab.getA1(len)),ab.get4());
+//    int numRows;
+//    while( (numRows = ab.get2()) != 65535 ) // Read until end-of-map marker
+//      _map.put(new BufferedString(ab.getA1(numRows)),ab.get4());
 //    return this;
 //  }
 }

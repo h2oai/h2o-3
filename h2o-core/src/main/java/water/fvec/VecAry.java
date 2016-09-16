@@ -1,7 +1,6 @@
 package water.fvec;
 
 import water.*;
-import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.util.*;
 
@@ -83,6 +82,9 @@ public class VecAry extends Iced {
       }
       _vecs = vecs;
       _vecIds = vecIds;
+    }
+    public int blockId(int vid) {
+      return Arrays.binarySearch(_vecIds, vid);
     }
     public Vec get(int i){
       int vid = Arrays.binarySearch(_vecIds,i);
@@ -525,17 +527,16 @@ public class VecAry extends Iced {
   public VecAry deepCopy() {
     final Vec av = new Vec(group().addVec(),rowLayout(),types(),domains());
     new MRTask(){
-      @Override public void map(Chunk [] chks) {
-        chks = chks.clone();
-        for(int i = 0; i < chks.length; ++i)
-          chks[i] = chks[i].deepCopy();
-        DKV.put(av.chunkKey(chks[0].cidx()),new Vec.Chunks(chks));
+      @Override public void map(Chunks chks) {
+        Chunks chks2 = new Chunks(chks.getChunks().clone());
+        for(int i = 0; i < chks2._cs.length; ++i)
+          chks._cs[i] = chks._cs[i].deepCopy();
+        DKV.put(av.chunkKey(chks.cidx()),chks2);
       }
     }.doAll(this);
     DKV.put(av._key,av);
     return new VecAry(av);
   }
-
 
   public void setDomain(int i, String[] domain) {
     _vecs.get(_vids[2*i]).setDomain(_vids[2*i+1],domain);
@@ -707,8 +708,6 @@ public class VecAry extends Iced {
     return j == res.length?res:Arrays.copyOf(res,j);
   }
 
-
-
   public double[] sigmas() {
     double [] res = new double[len()];
     RollupStats[] rolls = getRollups();
@@ -721,40 +720,31 @@ public class VecAry extends Iced {
     return (double)nzCnt(i)/numRows();
   }
 
-  public VecAry makeCons(int totcols, double value) {
-    byte [] types = new byte[totcols];
-    Arrays.fill(types,Vec.T_NUM);
-    return makeCons(totcols,value,null,types);
-  }
-
   public boolean isNA(long i, int j) {
-    return getChunk(elem2ChunkIdx(i),j).isNA_abs(i);
+    return getChunks(elem2ChunkIdx(i)).isNA_abs(i,j);
   }
-
-
 
   public double at(long i, int j) {
-    return getChunk(elem2ChunkIdx(i),j).at_abs(i);
+    return getChunks(elem2ChunkIdx(i)).at_abs(i,j);
   }
 
   public void set(long i, int j, double d) {
-
-    Chunk c = getChunk(elem2ChunkIdx(i),j);
-    c.set_abs(i,d);
-    c.close(new Futures()).blockForPending();
+    Chunks cs = getChunks(elem2ChunkIdx(i));
+    cs.set_abs(i,j,d);
+    cs.close(new Futures()).blockForPending();
     postWrite(new Futures()).blockForPending();
   }
 
   public BufferedString atStr(BufferedString str, long row, int vecId) {
     int b = _vids[2*vecId];
     int v = _vids[2*vecId+1];
-    return _vecs.get(b).chunkForRow(row).getChunk(v).atStr_abs(str,row);
+    return _vecs.get(b).chunkForRow(row).atStr_abs(str,row, v);
   }
 
   public long at8(long row, int vecId) {
     int b = _vids[2*vecId];
     int v = _vids[2*vecId+1];
-    return _vecs.get(b).chunkForRow(row).getChunk(v).at8_abs(row);
+    return _vecs.get(b).chunkForRow(row).at8_abs(row,v);
   }
 
   public int at4(long rowId, int vecId) {
@@ -767,13 +757,13 @@ public class VecAry extends Iced {
   public long at16l(int row, int vecId) {
     int b = _vids[2*vecId];
     int v = _vids[2*vecId+1];
-    return _vecs.get(b).chunkForRow(row).getChunk(v).at16l_abs(row);
+    return _vecs.get(b).chunkForRow(row).at16l_abs(row,v);
   }
 
   public long at16h(int row, int vecId) {
     int b = _vids[2*vecId];
     int v = _vids[2*vecId+1];
-    return _vecs.get(b).chunkForRow(row).getChunk(v).at16h_abs(row);
+    return _vecs.get(b).chunkForRow(row).at16h_abs(row,v);
   }
 
   public VecAry makeCopy() {return makeCopy((String[][])null);}
@@ -813,21 +803,26 @@ public class VecAry extends Iced {
     private final boolean _dontCache;
     public Reader(boolean dontChache) {
       _dontCache = dontChache;}
-    protected ChunkAry _cache = null;
+    protected Chunks _cache = null;
 
     long _start = Long.MAX_VALUE;
     long _end = Long.MIN_VALUE;
 
-    private void nukeCache(){
-      _cache.close(new Futures()).blockForPending();
-      if(_dontCache && !isHomedLocally(_cache._cidx))
-        for (int i = 0; i < _cache._blocks.length; ++i)
-          if (_cache._blocks[i] != null) H2O.raw_remove(_cache._blocks[i]._vec.chunkKey(_cache._cidx));
-      _cache = null;
+    protected Chunks chks(long rowId) {
+      Chunks res = _cache;
+      if(_cache == null ||  _end <= rowId || rowId < _start) {
+        if(_cache != null ) _cache.removeLocalCache();
+        int cidx = Arrays.binarySearch(espc(),rowId);
+        if(cidx < 0) cidx = (-cidx-2);
+        _cache = res = getChunks(elem2ChunkIdx(rowId));
+        _start = espc()[cidx];
+        _end = espc()[cidx+1];
+      }
+      return _cache;
     }
     protected Chunk chk(long rowId, int vecId) {
       if(_cache == null ||  _end <= rowId || rowId < _start) {
-        if(_cache != null ) nukeCache();
+        if(_cache != null ) _cache.removeLocalCache();
         int cidx = Arrays.binarySearch(espc(),rowId);
         if(cidx < 0) cidx = (-cidx-2);
         _cache = getChunks(elem2ChunkIdx(rowId));
@@ -837,18 +832,18 @@ public class VecAry extends Iced {
       return _cache.getChunk(vecId);
     }
 
-    public final long at8(long rowId, int vecId) {return chk(rowId, vecId).at8((int) (rowId - _start));}
+    public final long at8(long rowId, int vecId) {return chks(rowId).at8((int) (rowId - _start),vecId);}
     public final double at(long rowId, int vecId) {
-      return chk(rowId, vecId).atd((int) (rowId - _start));
+      return chks(rowId).atd((int) (rowId - _start),vecId);
     }
     public long at16l(long rowId, int vecId) {
-      return chk(rowId, vecId).at16l((int) (rowId - _start));
+      return chks(rowId).at16l((int) (rowId - _start),vecId);
     }
     public long at16h(long rowId, int vecId) {
-      return chk(rowId, vecId).at16h((int) (rowId - _start));
+      return chks(rowId).at16h((int) (rowId - _start),vecId);
     }
     public final boolean isNA(long rowId, int vecId) {
-      return chk(rowId, vecId).isNA((int) (rowId - _start));
+      return chks(rowId).isNA((int) (rowId - _start),vecId);
     }
 
     public final long length() {
@@ -856,14 +851,17 @@ public class VecAry extends Iced {
     }
 
     public BufferedString atStr(BufferedString tmpStr, long rowId, int vecId) {
-      return chk(rowId, vecId).atStr(tmpStr, (int) (rowId - _start));
+      return chks(rowId).atStr(tmpStr, (int) (rowId - _start), vecId);
     }
     public String factor(long rowId, int vecId) {
-      return domain(vecId)[chk(rowId, vecId).at4((int) (rowId - _start))];
+      return domain(vecId)[chks(rowId).at4((int) (rowId - _start),vecId)];
     }
 
     public Futures close(Futures fs){
-      nukeCache();
+      if(_cache != null) {
+        _cache.removeLocalCache();
+        _cache = null;
+      }
       return fs;
     }
     @Override
@@ -872,12 +870,12 @@ public class VecAry extends Iced {
 
   public final class Writer extends Reader implements Closeable {
     public Writer(boolean dontCache) {super(dontCache);}
-    public void set  (long rowId, int vecId, long val)   { chk(rowId,vecId).set((int)(rowId-_start), val); }
-    public void set  ( long rowId, int vecId, double val) { chk(rowId,vecId).set((int)(rowId-_start), val); }
+    public void set  (long rowId, int vecId, long val)   { chks(rowId).set((int)(rowId-_start),vecId, val); }
+    public void set  ( long rowId, int vecId, double val) { chks(rowId).set((int)(rowId-_start),vecId, val); }
     public void set(long rowId, int vecId, String s) {
-      chk(rowId,vecId).set((int)(rowId-_start), s);
+      chks(rowId).set((int)(rowId-_start),vecId, s);
     }
-    public void setNA( long rowId, int vecId) { chk(rowId,vecId).setNA((int)(rowId-_start)); }
+    public void setNA( long rowId, int vecId) { chks(rowId).setNA((int)(rowId-_start),vecId); }
     public Futures close(Futures fs){
       super.close(fs);
       return postWrite(fs);
@@ -1019,29 +1017,37 @@ public class VecAry extends Iced {
 
   private transient int _chunkId = -1;
   private transient int _blockId = 0;
-  private transient Vec.Chunks _chk = null;
+  private transient Chunks _chk = null;
 
-  public class ChunkAry extends Vec.Chunks {
-    private final Vec.Chunks[] _blocks;
+  public class ChunkAry extends Chunks {
+    private final Chunks[] _blocks;
     public final int _cidx;
+
 
     public ChunkAry(int cidx) {
       _cidx = cidx;
-      _blocks = new Vec.Chunks[_vecs.size()];
+      _blocks = new Chunks[_vecs.size()];
       for(int i = 0; i < _blocks.length; ++i)
         _blocks[i] = _vecs.get(_vecs._vecIds[i]).chunkForChunkIdx(cidx);
-      Chunk [] cs = new Chunk [len()];
-      Vec.Chunks block = null;
+      Chunk [] cs = new Chunk [numRows()];
+      Chunks block = null;
       int blockId = -1;
       for(int i = 0; i < _vids.length; i += 2) {
         int bid = _vids[i];
         if(bid != blockId) {
           blockId = bid;
-          block = _blocks[Arrays.binarySearch(_vecs._vecIds, _vids[i])];
+          block = _blocks[_vecs.blockId(_vids[i])];
         }
         cs[i >> 1] = block.getChunk(_vids[i + 1]);
       }
       _cs = cs;
+    }
+
+    public void removeLocalCache(){
+      int cidx = cidx();
+      if(isHomedLocally(cidx))
+        for(Chunks cs:_blocks)
+          H2O.raw_remove(cs._vec.chunkKey(cidx));
     }
 
     @Override
@@ -1049,6 +1055,18 @@ public class VecAry extends Iced {
       for(int i = 0; i < _blocks.length; ++i)
         if(_blocks[i] != null) _blocks[i].close(fs);
       return fs;
+    }
+
+    protected void setWrite(int j) {
+      if(_chk2 == null)_chk2 = new Chunk[numRows()];
+      if(_chk2[j] == null) {
+        int b = _vecs.blockId(_vids[2*j]);
+        if(_blocks[b]._chk2 == null) {
+          _blocks[b]._vec.preWriting();
+          _blocks[b]._chk2 = _chk2; // use just a marker so we do not call preWriting multiple times
+        }
+        _chk2[j] = _cs[j];
+      }
     }
   }
 
@@ -1094,74 +1112,80 @@ public class VecAry extends Iced {
     return fs;
   }
 
+  public VecAry makeCons(int totcols, double value) {
+    double [] vals = new double[totcols];
+    Arrays.fill(vals,value);
+    return makeCons(vals);
+  }
   public VecAry makeCons(final double... cons) {
     final int n = cons.length;
-    final Vec av = n == 1
-        ?new Vec(group().addVec(),rowLayout(),null, Vec.T_NUM)
-        :new Vec(group().addVec(),rowLayout(), n, null,ArrayUtils.expandByteAry(Vec.T_NUM,n));
+    final Vec v = new Vec(group().addVec(),rowLayout(),ArrayUtils.expandByteAry(Vec.T_NUM,n));
     new MRTask() {
-      public void setupLocal() {
-        for(int i = 0; i < av.nChunks(); ++i) {
-          final long [] espc = espc();
-          if(av.chunkKey(i).home()) {
-            // int numCols, int len, int [] nzChunks, Chunk [] chunks, double sparseElem
-            int len = (int) (espc[i + 1] - espc[i]);
-            Vec.Chunks aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(cons[0], len)):new ChunkBlock(av,i,n, len, cons);
-            aChunk.close(_fs);
-          }
-        }
+      public void map(Chunks cs) {
+        int len = cs.numRows();
+        Chunk [] newCs = new Chunk[cons.length];
+        for(int i = 0; i < cons.length; ++i)
+          newCs[i] = new C0DChunk(cons[i], len);
+        DKV.put(v.chunkKey(cs.cidx()),new Chunks(newCs));
       }
-    }.doAllNodes();
-    DKV.put(av._key,av);
-    return new VecAry(av);
+    }.doAll(this);
+    DKV.put(v._key,v);
+    return new VecAry(v);
+  }
+  public VecAry makeCons(final long... cons) {
+    final int n = cons.length;
+    final Vec v = new Vec(group().addVec(),rowLayout(),ArrayUtils.expandByteAry(Vec.T_NUM,n));
+    new MRTask() {
+      public void map(Chunks  cs) {
+        int len = cs.numRows();
+        Chunk [] newCs = new Chunk[cons.length];
+        for(int i = 0; i < cons.length; ++i)
+          newCs[i] = new C0LChunk(cons[i], len);
+        DKV.put(v.chunkKey(cs.cidx()),new Chunks(newCs));
+      }
+    }.doAll(this);
+    DKV.put(v._key,v);
+    return new VecAry(v);
   }
   // Make a bunch of compatible zero Vectors
-  public VecAry makeCons(final int n, final double con, String[][] domains, byte[] types) {
-    final Vec av = n == 1
-        ?new Vec(group().addVec(),rowLayout(),domains == null?null:domains[0], types[0])
-        :new Vec(group().addVec(),rowLayout(), n, domains,types);
+  public VecAry makeCons(final double con, byte[] types, String[][] domains) {
+    final int n = types.length;
+    final Vec v = new Vec(group().addVec(),rowLayout(),types,domains);
     new MRTask() {
-      public void setupLocal() {
-        for(int i = 0; i < av.nChunks(); ++i) {
-          final long [] espc = espc();
-          if(av.chunkKey(i).home()) {
-            // int numCols, int len, int [] nzChunks, Chunk [] chunks, double sparseElem
-            int len = (int) (espc[i + 1] - espc[i]);
-            Vec.Chunks aChunk = n == 1?new SingleChunk(av,i,new C0DChunk(con, len)):new ChunkBlock(av,i,n, len, con);
-            aChunk.close(_fs);
-          }
-        }
+      public void map(Chunks cs) {
+        int len = cs.numRows();
+        Chunk [] newCs = new Chunk[n];
+        for(int i = 0; i < n; ++i)
+          newCs[i] = new C0DChunk(con, len);
+        DKV.put(v.chunkKey(cs.cidx()),new Chunks(newCs));
       }
-    }.doAllNodes();
-    DKV.put(av._key,av);
-    return new VecAry(av);
+    }.doAll(this);
+    DKV.put(v._key,v);
+    return new VecAry(v);
   }
 
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to zero.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to zero.  */
-  public VecAry makeZero() { return new VecAry(Vec.makeCon(0, null, group(), rowLayout())); }
-  public VecAry makeCon(long con) { return new VecAry(Vec.makeCon(con, null, group(), rowLayout())); }
-  public VecAry makeCon(double con) { return new VecAry(Vec.makeCon(con, null, group(), rowLayout())); }
+  public VecAry makeZero() {return makeCons(0);}
 
   /** A new vector with the same size and data layout as the current one, and
    *  initialized to zero, with the given categorical domain.
    *  @return A new vector with the same size and data layout as the current
    *  one, and initialized to zero, with the given categorical domain. */
-  public VecAry makeZero(String[] domain) { return new VecAry(Vec.makeCon(0, domain, group(), rowLayout())); }
-  public VecAry makeZeros(int n){return makeZeros(n,null,null);}
-  public VecAry makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n, 0, domain, types);}
+  public VecAry makeZero(String[] domain) { return makeCons(0,new byte[]{domain == null?Vec.T_NUM:Vec.T_CAT}, new String[][]{domain});}
+  public VecAry makeZeros(int n){return makeCons(new double[n]);}
 
   /** Make a new vector initialized to random numbers with the given seed */
   public VecAry makeRand( final long seed ) {
     VecAry randVec = makeZero();
     new MRTask() {
-      @Override public void map(Chunk c){
+      @Override public void map(Chunks c){
         Random rng = new RandomUtils.PCGRNG(c.start(),1);
-        for(int i = 0; i < c._len; ++i) {
+        for(int i = 0; i < c.numRows(); ++i) {
           rng.setSeed(seed+c.start()+i); // Determinstic per-row
-          c.set(i, rng.nextFloat());
+          c.set(i,0, rng.nextFloat());
         }
       }
     }.doAll(randVec);

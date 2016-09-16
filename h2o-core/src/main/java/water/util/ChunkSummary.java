@@ -4,6 +4,7 @@ import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.CategoricalWrappedVec;
+import water.fvec.Chunks;
 
 /**
  * Simple summary of how many chunks of each type are in a Frame
@@ -87,20 +88,20 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
   private double chunk_count_per_col_per_node_stddev;
 
   @Override
-  public void map(Chunk[] cs) {
+  public void map(Chunks cs) {
     chunk_counts = new long[chunkTypes.length];
     chunk_byte_sizes = new long[chunkTypes.length];
     byte_size_per_node = new long[H2O.CLOUD.size()];
     row_count_per_node = new long[H2O.CLOUD.size()];
     chunk_count_per_col_per_node = new long[H2O.CLOUD.size()];
-    for( Chunk c : cs ) {       // Can be a big loop, for high column counts
+    for( int c = 0; c < cs.numCols(); ++c ) {       // Can be a big loop, for high column counts
       // Pull out the class name; trim a trailing "Chunk"
-      String cname = c.getClass().getSimpleName();
+      String cname = cs.getChunk(c).getClass().getSimpleName();
       int nlen = cname.length();
       assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';
       String sname = cname.substring(0,nlen-5);
       if (sname.equals("CategoricalWrapped")) {
-        Chunk ec = ((CategoricalWrappedVec.CategoricalWrappedChunk)c)._c;
+        Chunk ec = ((CategoricalWrappedVec.CategoricalWrappedChunk)cs.getChunk(c))._c;
         cname = ec.getClass().getSimpleName();
         nlen = cname.length();
         assert nlen > 5 && cname.charAt(nlen-5)=='C' && cname.charAt(nlen-1)=='k';
@@ -113,11 +114,12 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
           break;
       if( j==chunkTypes.length ) throw H2O.fail("Unknown Chunk Type: " + sname);
       chunk_counts[j]++;
-      chunk_byte_sizes[j] += c.byteSize();
-      byte_size_per_node[H2O.SELF.index()] += c.byteSize();
+      int bsz = cs.getChunk(c).getBytes().length;
+      chunk_byte_sizes[j] += bsz;
+      byte_size_per_node[H2O.SELF.index()] += bsz;
     }
-    row_count_per_node[H2O.SELF.index()] += cs[0].len();
-    total_row_count +=  cs[0].len();
+    row_count_per_node[H2O.SELF.index()] += cs.numRows();
+    total_row_count +=  cs.numRows();
     chunk_count_per_col_per_node[H2O.SELF.index()]++;
     total_chunk_count_per_col++;
   }

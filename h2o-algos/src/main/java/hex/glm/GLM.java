@@ -406,7 +406,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (hasWeightCol() || skippingRows) { // need to re-compute means and sd
         boolean setWeights = skippingRows;// && _parms._lambda_search && _parms._alpha[0] > 0;
         if (setWeights) {
-          VecAry wc = _weights == null ? _dinfo._adaptedFrame.vecs().makeCon(1) : _weights.makeCopy();
+          VecAry wc = _weights == null ? _dinfo._adaptedFrame.vecs().makeCons(1) : _weights.makeCopy();
           _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
         }
 
@@ -1571,7 +1571,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       if (_parms._family == Family.multinomial) {
         if (_betaMultinomial == null) {
           int nclasses = beta.length / (_dinfo.fullN() + 1);
-          assert beta.length % (_dinfo.fullN() + 1) == 0:"beta len = " + beta.length + ", fullN +1  == " + (_dinfo.fullN()+1);
+          assert beta.length % (_dinfo.fullN() + 1) == 0:"beta numRows = " + beta.length + ", fullN +1  == " + (_dinfo.fullN()+1);
           _betaMultinomial = new double[nclasses][];
           for (int i = 0; i < nclasses; ++i)
             _betaMultinomial[i] = MemoryManager.malloc8d(_dinfo.fullN() + 1);

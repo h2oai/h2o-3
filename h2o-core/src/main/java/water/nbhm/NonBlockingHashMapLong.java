@@ -676,7 +676,7 @@ public class NonBlockingHashMapLong<TypeV>
     // end up deciding that the table is not full and inserting into the
     // current table, while a 'get' has decided the same key cannot be in this
     // table because of too many reprobes.  The invariant is:
-    //   slots.estimate_sum >= max_reprobe_cnt >= reprobe_limit(len)
+    //   slots.estimate_sum >= max_reprobe_cnt >= reprobe_limit(numRows)
     private final boolean tableFull( int reprobe_cnt, int len ) {
       return
         // Do the cheap check first: we allow some number of reprobes always
@@ -791,7 +791,7 @@ public class NonBlockingHashMapLong<TypeV>
       AtomicLongFieldUpdater.newUpdater(CHM.class, "_copyIdx");
 
     // Work-done reporting.  Used to efficiently signal when we can move to
-    // the new table.  From 0 to len(oldkvs) refers to copying from the old
+    // the new table.  From 0 to numRows(oldkvs) refers to copying from the old
     // table to the new.
     volatile long _copyDone= 0;
     static private final AtomicLongFieldUpdater<CHM> _copyDoneUpdater =

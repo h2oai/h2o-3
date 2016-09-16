@@ -76,14 +76,14 @@ public class VecUtils {
       }
 
       @Override
-      public void map(Chunk c, NewChunk nc) {
+      public void map(Chunks c, Chunks.AppendableChunks nc) {
         BufferedString bs = new BufferedString();
-        for (int row = 0; row < c.len(); row++) {
-          if (c.isNA(row)) {
-            nc.addNA();
+        for (int row = 0; row < c.numRows(); row++) {
+          if (c.isNA(row,0)) {
+            nc.addNA(0);
           } else {
-            c.atStr(bs, row);
-            nc.addCategorical(lookupTable.get(bs.bytesToString()));
+            c.atStr(bs, row,0);
+            nc.addNum(0,lookupTable.get(bs.bytesToString()));
           }
         }
       }
@@ -171,27 +171,26 @@ public class VecUtils {
     if(src.len() != 1) throw new IllegalArgumentException();
     if(!src.isString(0)) throw new H2OIllegalArgumentException("stringToNumeric conversion only works on string columns");
     VecAry res = new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if (chk instanceof C0DChunk) { // all NAs
-          for (int i=0; i < chk._len; i++)
-            newChk.addNA();
-        } else {
-          BufferedString tmpStr = new BufferedString();
-          for (int i=0; i < chk._len; i++) {
-            if (!chk.isNA(i)) {
-              tmpStr = chk.atStr(tmpStr, i);
-              switch (tmpStr.getNumericType()) {
-                case BufferedString.NA:
-                  newChk.addNA(); break;
-                case BufferedString.INT:
-                  newChk.addNum(Long.parseLong(tmpStr.toString()),0); break;
-                case BufferedString.REAL:
-                  newChk.addNum(Double.parseDouble(tmpStr.toString())); break;
-                default:
-                  throw new H2OIllegalValueException("Received unexpected type when parsing a string to a number.", this);
-              }
-            } else newChk.addNA();
-          }
+      @Override public void map(Chunks chk, Chunks.AppendableChunks newChk){
+        BufferedString tmpStr = new BufferedString();
+        for (int i=0; i < chk.numRows(); i++) {
+          if (!chk.isNA(i,0)) {
+            tmpStr = chk.atStr(tmpStr, i,0);
+            switch (tmpStr.getNumericType()) {
+              case BufferedString.NA:
+                newChk.addNA(0);
+                break;
+              case BufferedString.INT:
+                newChk.addNum(0,Long.parseLong(tmpStr.toString()), 0);
+                break;
+              case BufferedString.REAL:
+                newChk.addNum(0,Double.parseDouble(tmpStr.toString()));
+                break;
+              default:
+                throw new H2OIllegalValueException("Received unexpected type when parsing a string to a number.", this);
+            }
+          } else newChk.addNA(0);
+
         }
       }
     }.doAll(1,Vec.T_NUM, src).outputFrame().vecs();
@@ -232,10 +231,10 @@ public class VecUtils {
     }
     if( useDomain ) {
       new MRTask() {
-        @Override public void map(Chunk c) {
-          for (int i=0;i<c._len;++i)
-            if( !c.isNA(i) )
-              c.set(i, Integer.parseInt(src.domain(0)[(int)c.at8(i)]));
+        @Override public void map(Chunks c) {
+          for (int i=0;i<c.numRows();++i)
+            if( !c.isNA(i,0) )
+              c.set(i, 0, Integer.parseInt(src.domain(0)[c.at4(i,0)]));
         }
       }.doAll(newVec);
     }
@@ -296,12 +295,12 @@ public class VecUtils {
   private static class Categorical2StrChkTask extends MRTask<Categorical2StrChkTask> {
     final String[] _domain;
     Categorical2StrChkTask(String[] domain) { _domain=domain; }
-    @Override public void map(Chunk c, NewChunk nc) {
-      for(int i=0;i<c._len;++i)
-        if (!c.isNA(i))
-          nc.addStr(_domain == null ? "" + c.at8(i) : _domain[(int) c.at8(i)]);
+    @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
+      for(int i=0;i<c.numRows();++i)
+        if (!c.isNA(i,0))
+          nc.addStr(0,_domain == null ? "" + c.at4(i,0) : _domain[c.at4(i,0)]);
         else
-          nc.addNA();
+          nc.addNA(0);
     }
   }
 
@@ -321,17 +320,13 @@ public class VecUtils {
           + " using numericToStringVec() ",src);
     VecAry res = new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) { // all NAs
-          for (int i=0; i < chk._len; i++)
-            newChk.addNA();
-        } else {
-          for (int i=0; i < chk._len; i++) {
-            if (!chk.isNA(i))
-              newChk.addStr(PrettyPrint.number(chk, chk.atd(i), 4));
-            else
-              newChk.addNA();
-          }
+      public void map(Chunks chk, Chunks.AppendableChunks newChk) {
+        Chunk c = chk.getChunk(0);
+        for (int i = 0; i < chk.numRows(); i++) {
+          if (!chk.isNA(i,0))
+            newChk.addStr(0,PrettyPrint.number(c, chk.atd(i,0), 4));
+          else
+            newChk.addNA(0);
         }
       }
     }.doAll(1,Vec.T_STR, src).outputFrame().vecs();
@@ -351,17 +346,12 @@ public class VecUtils {
     if(src.len() != 1) throw new IllegalArgumentException();
     if( !src.isUUID(0) ) throw new H2OIllegalArgumentException("UUIDToStringVec() conversion only works on UUID columns");
     VecAry res = new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) { // all NAs
-          for (int i=0; i < chk._len; i++)
-            newChk.addNA();
-        } else {
-          for (int i=0; i < chk._len; i++) {
-            if (!chk.isNA(i))
-              newChk.addStr(PrettyPrint.UUID(chk.at16l(i), chk.at16h(i)));
-            else
-              newChk.addNA();
-          }
+      @Override public void map(Chunks chk, Chunks.AppendableChunks newChk) {
+        for (int i=0; i < chk.numRows(); i++) {
+          if (!chk.isNA(i,0))
+            newChk.addStr(0,PrettyPrint.UUID(chk.at16l(i,0), chk.at16h(i,0)));
+          else
+            newChk.addNA(0);
         }
       }
     }.doAll(1,Vec.T_STR,src).outputFrame().vecs();
@@ -379,15 +369,15 @@ public class VecUtils {
    * @param src a categorical {@link Vec}
    * @return a numeric {@link Vec}
    */
-  public static VecAry categoricalDomainsToNumeric(final VecAry src) {
+  public static VecAry categoricalDomainsToNumeric(VecAry src) {
     if(src.len() != 1) throw new IllegalArgumentException();
     if( !src.isCategorical(0) ) throw new H2OIllegalArgumentException("categoricalToNumeric() conversion only works on categorical columns");
     // check if the 1st lvl of the domain can be parsed as int
     return new MRTask() {
-        @Override public void map(Chunk c) {
-          for (int i=0;i<c._len;++i)
-            if( !c.isNA(i) )
-              c.set(i, Integer.parseInt(src.domain(0)[(int)c.at8(i)]));
+        @Override public void map(Chunks c) {
+          for (int i=0;i<c.numRows();++i)
+            if( !c.isNA(i,0) )
+              c.set(i, 0, Integer.parseInt(_vecs.domain(0)[c.at4(i,0)]));
         }
       }.doAll(1,Vec.T_NUM, src).outputFrame().vecs();
   }
@@ -399,10 +389,10 @@ public class VecUtils {
   public static class CollectDomain extends MRTask<CollectDomain> {
     transient NonBlockingHashMapLong<String> _uniques;
     @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
-    @Override public void map(Chunk ys) {
-      for( int row=0; row< ys._len; row++ )
-        if( !ys.isNA(row) )
-          _uniques.put(ys.at8(row), "");
+    @Override public void map(Chunks ys) {
+      for( int row=0; row< ys.numRows(); row++ )
+        if( !ys.isNA(row,0) )
+          _uniques.put(ys.at8(row,0), "");
     }
 
     @Override public void reduce(CollectDomain mrt) {
@@ -448,13 +438,13 @@ public class VecUtils {
   public static class DomainDedupe extends MRTask<DomainDedupe> {
     private final HashMap<Integer, Integer> _oldToNewDomainIndex;
     public DomainDedupe(HashMap<Integer, Integer> oldToNewDomainIndex) {_oldToNewDomainIndex = oldToNewDomainIndex; }
-    @Override public void map(Chunk c, NewChunk nc) {
-      for( int row=0; row < c._len; row++) {
-        if ( !c.isNA(row) ) {
-          int oldDomain = (int) c.at8(row);
-          nc.addNum(_oldToNewDomainIndex.get(oldDomain));
+    @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
+      for( int row=0; row < c.numRows(); row++) {
+        if ( !c.isNA(row,0) ) {
+          int oldDomain = c.at4(row,0);
+          nc.addNum(0,_oldToNewDomainIndex.get(oldDomain));
         } else {
-          nc.addNA();
+          nc.addNA(0);
         }
       }
     }
@@ -487,13 +477,12 @@ public class VecUtils {
       for(int i = 0; i < _vecs.len(); ++i)
         _u[i] = new boolean[(int)_vecs.max(i)];
     }
-    @Override public void map(Chunk [] chks) {
-      for(int i = 0 ; i < chks.length; ++i) {
-        Chunk ys = chks[i];
+    @Override public void map(Chunks chks) {
+      for(int i = 0 ; i < chks.numCols(); ++i) {
         boolean [] u = _u[i];
-        for (int row = 0; row < ys._len; row++)
-          if (!ys.isNA(row))
-            u[(int) ys.at8(row)] = true;
+        for (int row = 0; row < chks.numRows(); row++)
+          if (!chks.isNA(row,i))
+            u[chks.at4(row,i)] = true;
       }
     }
     @Override public void reduce(CollectDomainFast mrt) {
@@ -538,16 +527,16 @@ public class VecUtils {
   private static class CPTask extends MRTask<CPTask> {
     private final long[] _domain;
     CPTask(long[] domain) { _domain = domain;}
-    @Override public void map(Chunk c, NewChunk nc) {
-      for(int i=0;i<c._len;++i) {
-        if( c.isNA(i) ) { nc.addNA(); continue; }
+    @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
+      for(int i=0;i<c.numRows();++i) {
+        if( c.isNA(i,0) ) { nc.addNA(0); continue; }
         if( _domain == null )
-          nc.addNum(c.at8(i));
+          nc.addNum(0,c.at8(i,0));
         else {
-          long num = Arrays.binarySearch(_domain,c.at8(i));  // ~24 hits in worst case for 10M levels
+          long num = Arrays.binarySearch(_domain,c.at8(i,0));  // ~24 hits in worst case for 10M levels
           if( num < 0 )
             throw new IllegalArgumentException("Could not find the categorical value!");
-          nc.addNum(num);
+          nc.addNum(0,num);
         }
       }
     }
@@ -566,11 +555,11 @@ public class VecUtils {
     }
 
     @Override
-    public void map(Chunk c) {
+    public void map(Chunks c) {
       BufferedString bs = new BufferedString();
-      for (int i = 0; i < c.len(); i++) {
-        if (!c.isNA(i)) {
-          c.atStr(bs, i);
+      for (int i = 0; i < c.numRows(); i++) {
+        if (!c.isNA(i,0)) {
+          c.atStr(bs, i, 0);
           _uniques.put(bs.bytesToString(), _placeHolder);
         }
       }
@@ -620,14 +609,17 @@ public class VecUtils {
     return v0;
   }
 
+
+  public static Vec makeVec(double [] vals){return makeVec(vals,Vec.VectorGroup.VG_LEN1.addVec());}
   public static Vec makeVec(double [] vals, Key<Vec> vecKey){
     return makeVec(vals,vecKey,null);
   }
 
+
   public static Vec makeVec(double [] vals, Key<Vec> vecKey, String [] domain){
     Vec v = new Vec(vecKey, Vec.ESPC.rowLayout(vecKey,new long[]{0,vals.length}), domain);
     NewChunk nc;
-    Vec.Chunks sc = new Vec.Chunks(v, new Chunk[]{ nc = new NewChunk()});
+    Chunks sc = new Chunks(v, new Chunk[]{ nc = new NewChunk()});
     Futures fs = new Futures();
     for(double d:vals)
       nc.addNum(d);
@@ -643,7 +635,7 @@ public class VecUtils {
   public static Vec makeVec(long [] vals, Key<Vec> vecKey, String [] domain){
     Vec v = new Vec(vecKey, Vec.ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
     NewChunk nc;
-    Vec.Chunks sc = new Vec.Chunks(v, new Chunk[]{ nc = new NewChunk()});
+    Chunks sc = new Chunks(v, new Chunk[]{ nc = new NewChunk()});
     Futures fs = new Futures();
     for(long l:vals)
       nc.addNum(l,0);
@@ -666,7 +658,7 @@ public class VecUtils {
    * evenly around the cluster.
    * @param x The value with which to fill the Vec.
    * @param len Number of rows.
-   * @return New cosntant vector with the given len.
+   * @return New cosntant vector with the given numRows.
    */
   public static Vec makeCon(double x, long len) {
     return makeCon(x,len,true);
@@ -692,13 +684,35 @@ public class VecUtils {
   public static Vec makeCon(long totSize, long len) {
     int safetyInflationFactor = 8;
     int nchunks = (int) Math.max(safetyInflationFactor * totSize / Value.MAX , 1);
-    long[] espc = new long[nchunks+1];
+    final long[] espc = new long[nchunks+1];
     espc[0] = 0;
     for( int i=1; i<nchunks; i++ )
       espc[i] = espc[i-1]+len/nchunks;
     espc[nchunks] = len;
-    Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
-    return makeCon(0,vg, Vec.ESPC.rowLayout(vg._key,espc));
+    return makeCon(0,espc);
+  }
+
+  /**
+   * Make new Vec with required espc.
+   * @param con
+   * @param espc
+   * @return
+   */
+  public static Vec makeCon(final double con, final long [] espc) {
+    Vec.VectorGroup vg = espc[espc.length-1] < 10000?Vec.VectorGroup.VG_LEN1:new Vec.VectorGroup();
+    int rowLayout = Vec.ESPC.rowLayout(vg._key,espc);
+    final Vec v = new Vec(vg.addVec(),rowLayout,Vec.T_NUM);
+    new MRTask(){
+      @Override public void setupLocal(){
+        for(int i = 0; i < espc.length-1; ++i) {
+          Key k = v.chunkKey(i);
+          if(k.home())
+            DKV.put(k, new Chunks(new C0DChunk(con,(int)(espc[i+1]-espc[i]))));
+        }
+      }
+    }.doAllNodes();
+    DKV.put(v._key,v);
+    return v;
   }
 
   /** Make a new constant vector with the given row count.
@@ -712,8 +726,7 @@ public class VecUtils {
     for( int i=1; i<nchunks; i++ )
       espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
-    Vec.VectorGroup vg = Vec.VectorGroup.VG_LEN1;
-    return makeCon(x,vg, Vec.ESPC.rowLayout(vg._key,espc));
+    return makeCon(x, espc);
   }
 
 
@@ -722,11 +735,11 @@ public class VecUtils {
     Key vecKey = Vec.VectorGroup.VG_LEN1.addVec();
     byte [] types = new byte[n];
     Arrays.fill(types, Vec.T_NUM);
-    Vec v = new Vec(vecKey, Vec.ESPC.rowLayout(vecKey, new long[]{0, (int)len}), null,types);
+    Vec v = new Vec(vecKey, Vec.ESPC.rowLayout(vecKey, new long[]{0, (int)len}),types);
     Chunk [] cs = new Chunk[n];
     for(int i = 0; i < cs.length; ++i)
       cs[i] = new C0DChunk(x,(int)len);
-    DKV.put(v.chunkKey(0),new Vec.Chunks(cs));
+    DKV.put(v.chunkKey(0),new Chunks(cs));
     DKV.put(v);
     return v;
   }
@@ -735,12 +748,12 @@ public class VecUtils {
 
   /** Make a new vector initialized to increasing integers, starting with 1.
    *  @return A new vector initialized to increasing integers, starting with 1. */
-  public static Vec makeSeq( long len, boolean redistribute) {
+  public static Vec makeSeq( long len, final long min, boolean redistribute) {
     return (Vec) new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for( Chunk c : cs )
-          for( int r = 0; r < c._len; r++ )
-            c.set(r, r + 1 + c.start());
+      @Override public void map(Chunks cs) {
+        for( int c = 0; c < cs.numCols(); ++c )
+          for( int r = 0; r < cs.numRows(); r++ )
+            cs.set(r,c, r + min + cs.start());
       }
     }.doAll(makeZero(len, redistribute)).vecs().getVecRaw(0);
   }
@@ -748,38 +761,26 @@ public class VecUtils {
   /** Make a new vector initialized to increasing integers, starting with `min`.
    *  @return A new vector initialized to increasing integers, starting with `min`.
    */
-  public static Vec makeSeq(final long min, long len) {
-    return (Vec) new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for (Chunk c : cs)
-          for (int r = 0; r < c._len; r++)
-            c.set(r, r + min + c.start());
-      }
-    }.doAll(makeZero(len)).vecs().getVecRaw(0);
+  public static Vec makeSeq(long len) {
+    return makeSeq(len,1,false);
   }
 
-  /** Make a new vector initialized to increasing integers, starting with `min`.
-   *  @return A new vector initialized to increasing integers, starting with `min`.
-   */
-  public static Vec makeSeq(final long min, long len, boolean redistribute) {
-    return (Vec) new MRTask() {
-      @Override public void map(Chunk c) {
-        for (int r = 0; r < c._len; r++)
-          c.set(r, r + min + c.start());
-      }
-    }.doAll(makeZero(len, redistribute)).vecs().getVecRaw(0);
+  public static Vec makeSeq(long len, long min) {
+    return makeSeq(len,min,false);
   }
+
 
   /** Make a new vector initialized to increasing integers mod {@code repeat}.
    *  @return A new vector initialized to increasing integers mod {@code repeat}.
    */
   public static Vec makeRepSeq( long len, final long repeat ) {
     return (Vec) new MRTask() {
-      @Override public void map(Chunk c) {
-        for( int r = 0; r < c._len; r++ )
-          c.set(r, (r + c.start()) % repeat);
+      @Override public void map(Chunks cs) {
+        for( int c = 0; c < cs.numCols(); ++c )
+          for( int r = 0; r < cs.numRows(); r++ )
+            cs.set(r,c, (r + cs.start()) % repeat);
       }
-    }.doAll(makeZero(len)).vecs().getVecRaw(0);
+    }.doAll(makeZero(len, false)).vecs().getVecRaw(0);
   }
 
 

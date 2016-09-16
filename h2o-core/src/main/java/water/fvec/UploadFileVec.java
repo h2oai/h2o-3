@@ -8,26 +8,13 @@ import water.util.Log;
 /** Build a Vec by reading from an InputStream
  */
 public class UploadFileVec extends FileVec {
-  int _nchunks;
-  protected UploadFileVec(Key key) { super(key,-1,Value.ICE); }
+  protected UploadFileVec(Key key) { super(key,0,Value.ICE); }
 
-  @Override public boolean writable() { return _len==-1; }
+  @Override public boolean writable() { return false; }
 
-  public Futures addAndCloseChunk(Chunk c, Futures fs) {
-    assert _len==-1;            // Not closed
-    SingleChunk sc = new SingleChunk(this,_nchunks++);
-    sc._c = c;
-    return sc.close(fs);
-  }
-
-  // Close, and possible replace the prior chunk with a new, larger Chunk
-  public Futures close(C1NChunk c, int cidx, Futures fs) {
-    assert _len==-1;            // Not closed
-    SingleChunk sc = new SingleChunk(this,cidx);
-    sc._c = c;
-    sc.close(fs);
-    long l = _nchunks-1L;
-    _len = l*_chunkSize +c._len;
+  public Futures addAndCloseChunk(int cidx, Chunk c, Futures fs) {
+    _len += c.len();
+    DKV.put(chunkKey(cidx),new Chunks(c),fs);
     return fs;
   }
 
@@ -72,9 +59,9 @@ public class UploadFileVec extends FileVec {
       uv = new UploadFileVec(newVecKey);
       assert uv.writable();
       Futures fs = new Futures();
-      byte prev[] = null;
       byte bytebuf[] = new byte[FileVec.DFLT_CHUNK_SIZE];
       int bytesInChunkSoFar = 0;
+      int cidx = 0;
       while (true) {
         int rv = is.read(bytebuf, bytesInChunkSoFar, FileVec.DFLT_CHUNK_SIZE - bytesInChunkSoFar);
         if (rv < 0) break;
@@ -82,15 +69,14 @@ public class UploadFileVec extends FileVec {
         if( bytesInChunkSoFar == FileVec.DFLT_CHUNK_SIZE ) {
           // Write full chunk of size FileVec.CHUNK_SZ.
           C1NChunk c = new C1NChunk(bytebuf);
-          uv.addAndCloseChunk(c, fs);
-          prev = bytebuf;
+          uv.addAndCloseChunk(cidx++,c, fs);
           bytebuf = new byte[FileVec.DFLT_CHUNK_SIZE];
           bytesInChunkSoFar = 0;
         }
       }
       if(bytesInChunkSoFar > 0) { // last chunk can be a little smaller
         byte [] buf2 = Arrays.copyOf(bytebuf,bytesInChunkSoFar);
-        uv.close(new C1NChunk(buf2),uv._nchunks++,fs);
+        uv.addAndCloseChunk(cidx-1,new C1NChunk(buf2),fs);
       }
       if( stats != null ) {
         stats.total_chunks = uv.nChunks();

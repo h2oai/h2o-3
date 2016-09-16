@@ -946,7 +946,7 @@ public final class AutoBuffer {
     return ts;
   }
 
-  // Read the smaller of _bb.remaining() and len into buf.
+  // Read the smaller of _bb.remaining() and numRows into buf.
   // Return bytes read, which could be zero.
   int read( byte[] buf, int off, int len ) {
     int sz = Math.min(_bb.remaining(),len);

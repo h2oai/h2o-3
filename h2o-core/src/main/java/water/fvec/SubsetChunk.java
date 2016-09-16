@@ -7,12 +7,11 @@ import water.*;
 public class SubsetChunk extends Chunk {
   final Chunk _data;          // All the data
   final Chunk _rows;          // The selected rows
-  public SubsetChunk( Chunk data, Chunk rows, SingleChunk sc ) {
-    _data = data; _rows = rows; 
-    set_len(rows._len);
-    _achunk = sc;
+  public SubsetChunk( Chunk data, Chunk rows) {
+    _data = data; _rows = rows;
     _mem = new byte[0];
   }
+  public int len(){return _rows.len();}
 
   @Override
   public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
@@ -24,11 +23,14 @@ public class SubsetChunk extends Chunk {
     throw H2O.unimpl();
   }
 
-  @Override protected double atd_impl(int idx) { return _data.atd_impl((int)_rows.at8_impl(idx)); }
-  @Override protected long   at8_impl(int idx) { return _data.at8_impl((int)_rows.at8_impl(idx)); }
+  @Override
+  public double atd_impl(int idx) { return _data.atd_impl((int)_rows.at8_impl(idx)); }
+  @Override
+  public long   at8_impl(int idx) { return _data.at8_impl((int)_rows.at8_impl(idx)); }
 
   // Returns true if the masterVec is missing, false otherwise
-  @Override protected boolean isNA_impl(int idx) { return _data.isNA_impl((int)_rows.at8_impl(idx)); }
+  @Override
+  public boolean isNA_impl(int idx) { return _data.isNA_impl((int)_rows.at8_impl(idx)); }
   @Override boolean set_impl(int idx, long l)   { return false; }
   @Override boolean set_impl(int idx, double d) { return false; }
   @Override boolean set_impl(int idx, float f)  { return false; }

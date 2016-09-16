@@ -455,7 +455,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
 
     private void print(int d) {
       StringBuilder buf = new StringBuilder();
-      buf.append("NBSI - _bits.len=");
+      buf.append("NBSI - _bits.numRows=");
       NBSI x = this;
       while( x != null ) {
         buf.append(" "+x._bits.length);

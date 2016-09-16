@@ -5,12 +5,12 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.Log;
+import water.util.VecUtils;
 
 import java.math.BigDecimal;
 import java.sql.*;
 import java.util.concurrent.ArrayBlockingQueue;
 
-import static water.fvec.Vec.makeCon;
 
 public class SQLManager {
   
@@ -166,11 +166,11 @@ public class SQLManager {
                     +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
     final Vec _v;
     if (optimize) {
-      _v = makeCon(totSize, numRow);
+      _v = VecUtils.makeCon(totSize, numRow);
     } else {
       double rows_per_chunk = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
               Runtime.getRuntime().availableProcessors(), H2O.getCloudSize(), false, false);
-      _v = makeCon(0, numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+      _v = VecUtils.makeCon(0, numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
     }
     Log.info("Number of chunks: " + _v.nChunks());
     //create frame
@@ -236,68 +236,69 @@ public class SQLManager {
     }
 
     @Override
-    public void map(Chunk[] cs, NewChunk[] ncs) {
+    public void map(Chunks cs, Chunks.AppendableChunks ncs) {
       if (isCancelled() || _job != null && _job.stop_requested()) return;
       //fetch data from sql table with limit and offset
       Connection conn = null;
       Statement stmt = null;
       ResultSet rs = null;
-      Chunk c0 = cs[0];
+
       String sqlText = "SELECT " + _columns + " FROM " + _table;
       if (_needFetchClause)
-        sqlText += " OFFSET " + c0.start() + " ROWS FETCH NEXT " + c0._len + " ROWS ONLY";
+        sqlText += " OFFSET " + cs.start() + " ROWS FETCH NEXT " + cs.numRows() + " ROWS ONLY";
       else
-        sqlText += " LIMIT " + c0._len + " OFFSET " + c0.start();
+        sqlText += " LIMIT " + cs.numRows() + " OFFSET " + cs.start();
       try {
         conn = sqlConn.take();
         stmt = conn.createStatement();
         //set fetch size for best performance
-        stmt.setFetchSize(c0._len);
+        stmt.setFetchSize(cs.numRows());
         rs = stmt.executeQuery(sqlText);
         while (rs.next()) {
           for (int i = 0; i < _numCol; i++) {
+            NewChunk nci = ncs.getChunk(i);
             Object res = rs.getObject(i + 1);
-            if (res == null) ncs[i].addNA();
+            if (res == null) nci.addNA();
             else {
               switch (res.getClass().getSimpleName()) {
                 case "Double":
-                  ncs[i].addNum((double) res);
+                  nci.addNum((double) res);
                   break;
                 case "Integer":
-                  ncs[i].addNum((long) (int) res, 0);
+                  nci.addNum((long) (int) res, 0);
                   break;
                 case "Long":
-                  ncs[i].addNum((long) res, 0);
+                  nci.addNum((long) res, 0);
                   break;
                 case "Float":
-                  ncs[i].addNum((double) (float) res);
+                  nci.addNum((double) (float) res);
                   break;
                 case "Short":
-                  ncs[i].addNum((long) (short) res, 0);
+                  nci.addNum((long) (short) res, 0);
                   break;
                 case "Byte":
-                  ncs[i].addNum((long) (byte) res, 0);
+                  nci.addNum((long) (byte) res, 0);
                   break;
                 case "BigDecimal":
-                  ncs[i].addNum(((BigDecimal) res).doubleValue());
+                  nci.addNum(((BigDecimal) res).doubleValue());
                   break;
                 case "Boolean":
-                  ncs[i].addNum(((boolean) res ? 1 : 0), 0);
+                  nci.addNum(((boolean) res ? 1 : 0), 0);
                   break;
                 case "String":
-                  ncs[i].addStr(new BufferedString((String) res));
+                  nci.addStr(new BufferedString((String) res));
                   break;
                 case "Date":
-                  ncs[i].addNum(((Date) res).getTime(), 0);
+                  nci.addNum(((Date) res).getTime(), 0);
                   break;
                 case "Time":
-                  ncs[i].addNum(((Time) res).getTime(), 0);
+                  nci.addNum(((Time) res).getTime(), 0);
                   break;
                 case "Timestamp":
-                  ncs[i].addNum(((Timestamp) res).getTime(), 0);
+                  nci.addNum(((Timestamp) res).getTime(), 0);
                   break;
                 default:
-                  ncs[i].addNA();
+                  nci.addNA();
               }
             }
           }

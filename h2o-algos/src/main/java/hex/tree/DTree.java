@@ -3,6 +3,7 @@ package hex.tree;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.Frame;
 import water.util.*;
 
@@ -341,7 +342,7 @@ public class DTree extends Iced {
         assert _hs[idx]._min < _hs[idx]._maxEx && _hs[idx].nbins() > 1 : "broken histo range "+_hs[idx];
         cols[len++] = idx;        // Gather active column
       }
-//      Log.info("These columns can be split: " + Arrays.toString(Arrays.copyOfRange(cols, 0, len)));
+//      Log.info("These columns can be split: " + Arrays.toString(Arrays.copyOfRange(cols, 0, numRows)));
       int choices = len;        // Number of columns I can choose from
 
       int mtries = tree.actual_mtries();
@@ -352,11 +353,11 @@ public class DTree extends Iced {
           int idx2 = tree._rand.nextInt(len);
           int col = cols[idx2];     // The chosen column
           cols[idx2] = cols[--len]; // Compress out of array; do not choose again
-          cols[len] = col;          // Swap chosen in just after 'len'
+          cols[len] = col;          // Swap chosen in just after 'numRows'
         }
         assert len < choices;
       }
-//      Log.info("Picking these (mtry=" + mtries + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, len, choices)));
+//      Log.info("Picking these (mtry=" + mtries + ") columns to evaluate for splitting: " + Arrays.toString(Arrays.copyOfRange(cols, numRows, choices)));
       return Arrays.copyOfRange(cols, len, choices);
     }
 
@@ -531,8 +532,8 @@ public class DTree extends Iced {
       }
     }
 
-    public int getChildNodeID(Chunk chks[], int row ) {
-      double d = chks[_split._col].atd(row);
+    public int getChildNodeID(Chunks chks, int row ) {
+      double d = chks.atd(row,_split._col);
       int bin;
       if (!Double.isNaN(d)) {
         if (_split._nasplit == DHistogram.NASplitDir.NAvsREST)

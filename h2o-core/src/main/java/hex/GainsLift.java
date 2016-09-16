@@ -200,19 +200,23 @@ public class GainsLift extends Iced {
       _thresh = thresh.clone();
     }
 
-    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,new C0DChunk(1.0, ca.len())); }
-    @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
+    //@Override public void map( Chunk ca, Chunk cp) { map(ca,cp,new C0DChunk(1.0, ca.len())); }
+//    @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
+
+    @Override public void map( Chunks cs) {
       _events = new long[_thresh.length];
       _observations = new long[_thresh.length];
       _avg_response = 0;
-      final int len = Math.min(ca._len, cp._len);
+      double w = 1;
+      boolean hasWeigjt = cs.numCols() == 3;
+      final int len = cs.numRows();
       for( int i=0; i < len; i++ ) {
-        if (ca.isNA(i)) continue;
-        final int a = (int)ca.at8(i);
+        if (cs.isNA(i,0)) continue;
+        final int a = cs.at4(i,0);
         if (a != 0 && a != 1) throw new IllegalArgumentException("Invalid values in actualLabels: must be binary (0 or 1).");
-        if (cp.isNA(i)) continue;
-        final double pr = cp.atd(i);
-        final double w = cw.atd(i);
+        if (cs.isNA(i,1)) continue;
+        final double pr = cs.atd(i,1);
+        if(hasWeigjt)w = cs.atd(i,2);
         perRow(pr, a, w);
       }
     }

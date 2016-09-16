@@ -4,6 +4,7 @@ import java.util.Arrays;
 import water.Iced;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.VecAry;
 
 /** One-pass approximate AUC
@@ -191,11 +192,12 @@ public class AUC2 extends Iced {
     final int _nBins;
     AUCBuilder _bldr;
     AUC_Impl( int nBins ) { _nBins = nBins; }
-    @Override public void map( Chunk ps, Chunk as ) {
+//    @Override public void map( Chunks ps, Chunks as ) {
+    @Override public void map( Chunks cs) {
       AUCBuilder bldr = _bldr = new AUCBuilder(_nBins);
-      for( int row = 0; row < ps._len; row++ )
-        if( !ps.isNA(row) && !as.isNA(row) )
-          bldr.perRow(ps.atd(row),(int)as.at8(row),1);
+      for( int row = 0; row < cs.numRows(); row++ )
+        if( !cs.isNA(row,0) && !cs.isNA(row,1) )
+          bldr.perRow(cs.atd(row,0),(int)cs.at8(row,1),1);
     }
     @Override public void reduce( AUC_Impl auc ) { _bldr.reduce(auc._bldr); }
   }

@@ -236,20 +236,22 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
     }
 
     @Override
-    public void map(Chunk A, Chunk B) {
+    public void map(Chunks cs) {
       _unsortedMap = new IcedHashMap<>();
       // find unique interaction domain
       HashSet<Integer> restrictedA = _restrictedEnumA==null?null: new HashSet<Integer>(),
                        restrictedB = _restrictedEnumB==null?null: new HashSet<Integer>();
       if( restrictedA!=null ) for (int i: _restrictedEnumA) restrictedA.add(i);
       if( restrictedB!=null ) for (int i: _restrictedEnumB) restrictedB.add(i);
-      for (int r = 0; r < A._len; r++) {
-        int a = A.isNA(r) ? _missing : (int)A.at8(r);
+      final int A = 0;
+      final int B = 1;
+      for (int r = 0; r < cs.numRows(); r++) {
+        int a = cs.isNA(r,A) ? _missing : cs.at4(r,A);
         if( !_interactOnNA && a==_missing ) continue; // most readable way to express
         if( restrictedA!=null && !restrictedA.contains(a) ) continue; // not part of the limited set
         long ab;
         if (!_same) {
-          int b = B.isNA(r) ? _missing : (int)B.at8(r);
+          int b = cs.isNA(r,B) ? _missing : cs.at4(r,B);
           if( !_interactOnNA && b==_missing ) continue;
           if( restrictedB!=null && !restrictedB.contains(b) ) continue; // not part of the limited set
 
@@ -316,20 +318,21 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
     }
 
     @Override
-    public void map(Chunk A, Chunk B, Chunk C) {
+    public void map(Chunks cs) {
+      final int A = 0,B = 1, C = 2;
       // find unique interaction domain
-      for (int r = 0; r < A._len; r++) {
-        final int a = A.isNA(r) ? _missing : (int)A.at8(r);
+      for (int r = 0; r < cs.numRows(); r++) {
+        final int a = cs.isNA(r,A) ? _missing : cs.at4(r,A);
         long ab;
         if (!_same) {
-          final int b = B.isNA(r) ? _missing : (int) B.at8(r);
+          final int b = cs.isNA(r,B) ? _missing : cs.at4(r,B);
           ab = ((long) a << 32) | (b & 0xFFFFFFFFL); // key: combine both ints into a long
         } else {
           ab = (long)a;
         }
 
-        if (_same && A.isNA(r)) {
-          C.setNA(r);
+        if (_same && cs.isNA(r,A)) {
+          cs.setNA(r,C);
         } else {
           // find _domain index for given factor level ab
           int level = -1;
@@ -347,7 +350,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
             level = _vecs.domain(_vecs.len()-1).length-1;
             assert _vecs.domain(_vecs.len()-1)[level].equals(_other);
           }
-          C.set(r, level);
+          cs.set(r, C, level);
         }
       }
     }

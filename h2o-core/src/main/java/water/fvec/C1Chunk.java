@@ -9,17 +9,24 @@ import water.*;
 public class C1Chunk extends Chunk {
   static protected final int _OFF = 0;
   static protected final long _NA = 0xFF;
-  C1Chunk(byte[] bs) { _mem=bs; set_len(_mem.length); }
-  @Override protected final long at8_impl( int i ) {
+  C1Chunk(byte[] bs) { _mem=bs; }
+
+  @Override
+  public int len() { return (_mem.length - _OFF) >> 0;}
+
+  @Override
+  public final long at8_impl(int i) {
     long res = 0xFF&_mem[i+_OFF];
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return res;
   }
-  @Override protected final double atd_impl( int i ) {
+  @Override
+  public final double atd_impl(int i) {
     long res = 0xFF&_mem[i+_OFF];
     return (res == _NA)?Double.NaN:res;
   }
-  @Override protected final boolean isNA_impl( int i ) { return (0xFF&_mem[i+_OFF]) == _NA; }
+  @Override
+  public final boolean isNA_impl(int i) { return (0xFF&_mem[i+_OFF]) == _NA; }
   @Override boolean set_impl(int i, long l) {
     if( !(0 <= l && l < 255) ) return false;
     _mem[i+_OFF] = (byte)l;
@@ -29,7 +36,7 @@ public class C1Chunk extends Chunk {
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)_NA; return true; }
 
-  @Override public void initFromBytes(){set_len(_mem.length);}
+  @Override public void initFromBytes(){}
   @Override
   public boolean hasFloat() {return false;}
 

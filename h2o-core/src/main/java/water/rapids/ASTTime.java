@@ -8,6 +8,7 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.ParseTime;
 import water.parser.BufferedString;
+import water.util.VecUtils;
 
 import java.util.Set;
 
@@ -34,7 +35,7 @@ class ASTListTimeZones extends ASTPrim {
     String[] domain = ParseTime.listTimezones().split("\n");
     double ds[] = new double[domain.length];
     for( int i=0; i<domain.length; i++ ) ds[i] = i;
-    Vec vec = Vec.makeVec(ds,Vec.VectorGroup.VG_LEN1.addVec());
+    Vec vec = VecUtils.makeVec(ds,Vec.VectorGroup.VG_LEN1.addVec());
     vec.setDomain(0,domain);
     return new ValFrame(new Frame(new String[]{"Timezones"}, new VecAry(vec)));
   }
@@ -183,7 +184,7 @@ class ASTMktime extends ASTPrim {
     VecAry vecs = new VecAry();
     for( int i=0; i<7; i++ ) {
       if( fs[i] == null ) {
-        vecs.addVecs(x.vecs().makeCon(is[i]));
+        vecs.addVecs(x.vecs().makeCons(is[i]));
       } else {
         if( fs[i].numCols() != 1 ) throw new IllegalArgumentException("Expect single column");
         vecs.addVecs(fs[i].vecs());

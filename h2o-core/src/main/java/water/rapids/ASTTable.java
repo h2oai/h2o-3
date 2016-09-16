@@ -7,6 +7,7 @@ import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
+import water.util.VecUtils;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -59,15 +60,14 @@ class ASTTable extends ASTPrim {
     final long minVal = fastCnt._min; 
     
     // Second pass to build the result frame, skipping zeros
-    Vec dataLayoutVec = Vec.makeCon(0, cnts.length);
+    Vec dataLayoutVec = VecUtils.makeCon(0, cnts.length);
     Frame fr = new MRTask() {
-        @Override public void map(Chunk cs[], NewChunk nc0, NewChunk nc1) {
-          final Chunk c = cs[0];
-          for( int i = 0; i < c._len; ++i ) {
-            int idx = (int) (i + c.start());
+        @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+          for( int i = 0; i < cs.numRows(); ++i ) {
+            int idx = (int) (i + cs.start());
             if( cnts[idx] > 0 ) {
-              nc0.addNum(idx + minVal);
-              nc1.addNum(cnts[idx]);
+              ncs.addNum(0,idx + minVal);
+              ncs.addNum(1,cnts[idx]);
             }
           }
         }
@@ -82,11 +82,11 @@ class ASTTable extends ASTPrim {
     final long _min;  final int _span;
     long _cnts[];
     FastCnt( long min, int span ) { _min = min; _span = span; }
-    @Override public void map( Chunk c ) {
+    @Override public void map( Chunks c ) {
       _cnts = new long[_span];
-      for( int i=0; i<c._len; i++ ) 
-        if( !c.isNA(i) ) 
-          _cnts[(int)(c.at8(i)-_min)]++;
+      for( int i=0; i<c.numRows(); i++ )
+        if( !c.isNA(i,0) )
+          _cnts[(int)(c.at8(i,0)-_min)]++;
     }
     @Override public void reduce( FastCnt fc ) { ArrayUtils.add(_cnts,fc._cnts); }
   }
@@ -114,7 +114,7 @@ class ASTTable extends ASTPrim {
       // Get the column headers as sorted doubles
       double dcols[] = collectDomain(sc._col0s);
       Frame res = new Frame();
-      Vec rowlabel = Vec.makeVec(dcols,Vec.VectorGroup.VG_LEN1.addVec());
+      Vec rowlabel = VecUtils.makeVec(dcols,Vec.VectorGroup.VG_LEN1.addVec());
       rowlabel.setDomain(0,v1.domain(0));
       res.add(colnames[0],new VecAry(rowlabel));
       long cnts[] = new long[dcols.length];
@@ -124,7 +124,7 @@ class ASTTable extends ASTPrim {
         AtomicLong al = colx.get(lkey);
         cnts[col] = al.get();
       }
-      Vec vec = Vec.makeVec(cnts,null,Vec.VectorGroup.VG_LEN1.addVec());
+      Vec vec = VecUtils.makeVec(cnts,Vec.VectorGroup.VG_LEN1.addVec());
       res.add("Counts",new VecAry(vec));
       return new ValFrame(res);
     }
@@ -151,7 +151,7 @@ class ASTTable extends ASTPrim {
       // Now walk the columns one by one, building a Vec per column, building a
       // Frame result.  Rowlabel for first column.
       
-      Vec rowlabel = Vec.makeVec(drows,Vec.VectorGroup.VG_LEN1.addVec());
+      Vec rowlabel = VecUtils.makeVec(drows,Vec.VectorGroup.VG_LEN1.addVec());
       rowlabel.setDomain(0,v1.domain(0));
       res.add(colnames[0],new VecAry(rowlabel));
       long cnts[] = new long[drows.length];
@@ -161,7 +161,7 @@ class ASTTable extends ASTPrim {
           AtomicLong al = colx.get(Double.doubleToRawLongBits(drows[row]));
           cnts[row] = al == null ? 0 : al.get();
         }
-        Vec vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
+        Vec vec = VecUtils.makeVec(cnts, Vec.VectorGroup.VG_LEN1.addVec());
         res.add(v2.isCategorical(0) ? v2.domain(0)[col] : Double.toString(dcols[col]), new VecAry(vec));
       }
     } else {
@@ -195,13 +195,13 @@ class ASTTable extends ASTPrim {
         }
       }
       
-      Vec vec = Vec.makeVec(left_categ, Vec.VectorGroup.VG_LEN1.addVec());
+      Vec vec = VecUtils.makeVec(left_categ, Vec.VectorGroup.VG_LEN1.addVec());
       if( v1.isCategorical(0) ) vec.setDomain(0,v1.domain(0));
       res.add(colnames[0], new VecAry(vec));
-      vec = Vec.makeVec(right_categ, Vec.VectorGroup.VG_LEN1.addVec());
+      vec = VecUtils.makeVec(right_categ, Vec.VectorGroup.VG_LEN1.addVec());
       if( v2.isCategorical(0) ) vec.setDomain(0,v2.domain(0));
       res.add(colnames[1], new VecAry(vec));
-      vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
+      vec = VecUtils.makeVec(cnts, Vec.VectorGroup.VG_LEN1.addVec());
       res.add("Counts", new VecAry(vec));
     }
     return new ValFrame(res);
@@ -230,14 +230,12 @@ class ASTTable extends ASTPrim {
     transient NonBlockingHashMapLong<NonBlockingHashMapLong<AtomicLong>> _col0s;
     @Override public void setupLocal() {  _col0s = new NonBlockingHashMapLong<>();  }
 
-    @Override public void map( Chunk c0, Chunk c1 ) {
-      for( int i=0; i<c0._len; i++ ) {
-
-        double d0 = c0.atd(i);
+    @Override public void map( Chunks cs) {
+      for( int i=0; i<cs.numRows(); i++ ) {
+        double d0 = cs.atd(i,0);
         if( Double.isNaN(d0) ) continue;
         long l0 = Double.doubleToRawLongBits(d0);
-
-        double d1 = c1.atd(i);
+        double d1 = cs.atd(i,1);
         if( Double.isNaN(d1) ) continue;
         long l1 = Double.doubleToRawLongBits(d1);
 
@@ -331,19 +329,19 @@ class ASTUnique extends ASTPrim {
     if( fr.numCols()!=1 )
       throw new IllegalArgumentException("Unique applies to a single column only.");
     if( fr.vecs().isCategorical(0) ) {
-      v = Vec.makeSeq(0, (long)fr.vecs().domain(0).length, true);
+      v = VecUtils.makeSeq(0, (long)fr.vecs().domain(0).length, true);
       v.setDomain(0,fr.vecs().domain(0));
       DKV.put(v);
     } else {
       UniqTask t = new UniqTask().doAll(fr.vecs());
       int nUniq = t._uniq.size();
       final ASTGroup.G[] uniq = t._uniq.keySet().toArray(new ASTGroup.G[nUniq]);
-      v = Vec.makeZero(nUniq);
+      v = VecUtils.makeZero(nUniq);
       new MRTask() {
         @Override
-        public void map(Chunk c) {
-          int start = (int) c.start();
-          for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
+        public void map(Chunks cs) {
+          int start = (int) cs.start();
+          for (int i = 0; i < cs.numRows(); ++i) cs.set(i,0, uniq[i + start]._gs[0]);
         }
       }.doAll(v);
     }
@@ -352,10 +350,10 @@ class ASTUnique extends ASTPrim {
 
   private static class UniqTask extends MRTask<UniqTask> {
     IcedHashMap<ASTGroup.G, String> _uniq;
-    @Override public void map(Chunk[] c) {
+    @Override public void map(Chunks c) {
       _uniq=new IcedHashMap<>();
       ASTGroup.G g = new ASTGroup.G(1,null);
-      for(int i=0;i<c[0]._len;++i) {
+      for(int i=0;i< c.numRows();++i) {
         g.fill(i, c, new int[]{0});
         String s_old=_uniq.putIfAbsent(g,"");
         if( s_old==null ) g=new ASTGroup.G(1,null);

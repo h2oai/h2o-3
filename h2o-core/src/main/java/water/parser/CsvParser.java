@@ -2,6 +2,7 @@ package water.parser;
 
 import org.apache.commons.lang.math.NumberUtils;
 import water.fvec.FileVec;
+import water.fvec.Vec;
 import water.Key;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;

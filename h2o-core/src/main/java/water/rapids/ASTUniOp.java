@@ -5,6 +5,7 @@ import org.apache.commons.math3.special.Gamma;
 import org.apache.commons.math3.util.FastMath;
 import water.*;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.util.MathUtils;
 import water.util.VecUtils;
 
@@ -27,12 +28,10 @@ public abstract class ASTUniOp extends ASTPrim {
     case Val.FRM:
       Frame fr = val.getFrame();
       return new ValFrame(new MRTask() {
-          @Override public void map( Chunk cs[], NewChunk ncs[] ) {
-            for( int col=0; col<cs.length; col++ ) {
-              Chunk c = cs[col];
-              NewChunk nc = ncs[col];
-              for( int i=0; i<c._len; i++ )
-                nc.addNum(op(c.atd(i)));
+          @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+            for( int col=0; col<cs.numCols(); col++ ) {
+              for( int i=0; i<cs.numRows(); i++ )
+                ncs.addNum(col,op(cs.atd(i,col)));
             }
           }
         }.doAll(fr.numCols(), Vec.T_NUM, fr.vecs()).outputFrame());
@@ -99,12 +98,10 @@ class ASTIsNA  extends ASTPrim {
     case Val.FRM:
       Frame fr = val.getFrame();
       return new ValFrame(new MRTask() {
-          @Override public void map( Chunk cs[], NewChunk ncs[] ) {
-            for( int col=0; col<cs.length; col++ ) {
-              Chunk c = cs[col];
-              NewChunk nc = ncs[col];
-              for( int i=0; i<c._len; i++ )
-                nc.addNum(c.isNA(i) ? 1 : 0);
+          @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+            for( int col=0; col<cs.numCols(); col++ ) {
+              for( int i=0; i<cs.numRows(); i++ )
+                ncs.addNum(col,cs.isNA(i,col) ? 1 : 0);
             }
           }
         }.doAll(fr.numCols(), Vec.T_NUM, fr.vecs()).outputFrame());
@@ -128,20 +125,21 @@ class ASTNAOmit extends ASTPrim {
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame fr2 = new MRTask() {
-      private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
-        for(int i=0;i<cs.length;++i) {
-          if( cs[i] instanceof CStrChunk ) ncs[i].addStr(cs[i],row);
-          else if( cs[i] instanceof C16Chunk ) ncs[i].addUUID(cs[i],row);
-          else if( cs[i].hasFloat() ) ncs[i].addNum(cs[i].atd(row));
-          else ncs[i].addNum(cs[i].at8(row),0);
+      BufferedString _str;
+      private void copyRow(int row, Chunks cs, Chunks.AppendableChunks ncs) {
+        for(int i=0;i<cs.numCols();++i) {
+          if( _vecs.type(i) == Vec.T_STR ) ncs.addStr(i,cs.atStr(_str,row,i));
+          else if( _vecs.type(i) == Vec.T_UUID ) ncs.addUUID(i,cs.at16l(row,i),cs.at16h(row,i));
+          else ncs.addNum(i,cs.atd(row,i));
         }
       }
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+      @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+        _str = new BufferedString();
         int col;
-        for(int row=0;row<cs[0]._len;++row) {
-          for( col = 0; col < cs.length; ++col)
-            if( cs[col].isNA(row) ) break;
-          if( col==cs.length ) copyRow(row,cs,ncs);
+        for(int row=0;row<cs.numRows();++row) {
+          for( col = 0; col < cs.numCols(); ++col)
+            if( cs.isNA(row,col) ) break;
+          if( col==cs.numCols() ) copyRow(row,cs,ncs);
         }
       }
     }.doAll(fr.vecs().types(),fr.vecs()).outputFrame(fr._names,fr.vecs().domains());
@@ -188,13 +186,13 @@ class ASTStratifiedSplit extends ASTPrim {
     String[] dom = new String[]{"train","test"};
     return new ValFrame(new MRTask() {
       private boolean isTest(int row, long seed) { return getRNG(row+seed).nextDouble() <= testFrac; }
-      @Override public void map(Chunk y, NewChunk ss) { // 0-> train, 1-> test
+      @Override public void map(Chunks y, Chunks.AppendableChunks ss) { // 0-> train, 1-> test
         int start = (int)y.start();
         for(int classLabel=0; classLabel<nClass; ++classLabel) {
-          for(int row=0;row<y._len;++row) {
-            if( y.at8(row) == (classes==null?classLabel:classes[classLabel]) ) {
-              if( isTest(start+row,seeds[classLabel]) ) ss.addNum(1,0);
-              else                                      ss.addNum(0,0);
+          for(int row=0;row<y.numRows();++row) {
+            if( y.at8(row,0) == (classes==null?classLabel:classes[classLabel]) ) {
+              if( isTest(start+row,seeds[classLabel]) ) ss.addNum(0,1,0);
+              else                                      ss.addNum(0,0,0);
             }
           }
         }
@@ -265,22 +263,23 @@ class ASTLevels extends ASTPrim {
     for(int i=0;i<f.numCols();++i )
       if( vecs.isCategorical(i) )
         if( max < vecs.domain(i).length ) max = vecs.domain(i).length;
-    final int rowLayout = Vec.ESPC.rowLayout(key,new long[]{0,max});
+
     byte [] types = new byte[f.numCols()];
     Arrays.fill(types,Vec.T_NUM);
     AppendableVec av = new AppendableVec(key,types);
+    Chunks.AppendableChunks acs = av.chunkForChunkIdx(0);
     for( int i=0;i<f.numCols();++i ) {
-      NewChunk nc = new NewChunk(new SingleChunk(av,0),i);
+      NewChunk nc = acs.getChunk(i);
       String[] dom = vecs.domain(i);
       int numToPad = dom==null?max:max-dom.length;
       if( dom != null )
         for(int j=0;j<dom.length;++j) nc.addNum(j);
       for(int j=0;j<numToPad;++j)     nc.addNA();
-      nc.close(fs);
     }
-    VecAry newVecs = av.closeVecs(vecs.domains(),rowLayout,fs);
+    Vec newVec = av.closeVec(fs,vecs.domains());
+    acs.close(fs);
     fs.blockForPending();
-    Frame fr2 = new Frame((Key)null,newVecs);
+    Frame fr2 = new Frame((Key)null,new VecAry(newVec));
     return new ValFrame(fr2);
   }
 }
@@ -303,9 +302,9 @@ class ASTSetLevel extends ASTPrim {
     if (idx == -1) throw new IllegalArgumentException("Did not find level `" + lvl + "` in the column.");
     // COW semantics
     Frame fr2 = new MRTask() {
-      @Override public void map(Chunk c, NewChunk nc) {
-        for (int i=0;i<c._len;++i)
-          nc.addNum(idx);
+      @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
+        for (int i=0;i<c.numRows();++i)
+          nc.addNum(0,idx);
       }
     }.doAll(new byte[]{Vec.T_NUM}, fr.vecs()).outputFrame(null, fr._names, fr.vecs().domains());
     return new ValFrame(fr2);
@@ -337,15 +336,15 @@ class ASTReLevel extends ASTPrim {
     for(int i = 0; i < srcDom.length; ++i)
       if(i != idx)  dom[j++] = srcDom[i];
     return new ValFrame(new MRTask(){
-      @Override public void map(Chunk c, NewChunk nc) {
-        int [] vals = new int[c._len];
-        c.getIntegers(vals,0,c._len,-1);
+      @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
+        int [] vals = new int[c.numRows()];
+        c.getIntegers(0,vals,-1);
         for(int i = 0; i < vals.length; ++i)
-          if(vals[i] == -1) nc.addNA();
+          if(vals[i] == -1) nc.addNA(0);
           else if(vals[i] == idx)
-            nc.addNum(0);
+            nc.addNum(0,0);
           else
-            nc.addNum(vals[i]+(vals[i] < idx?1:0));
+            nc.addNum(0,vals[i]+(vals[i] < idx?1:0));
       }
     }.doAll(1,Vec.T_CAT,fr.vecs()).outputFrame(fr._names,new String[][]{dom}));
   }
@@ -373,12 +372,12 @@ class ASTSetDomain extends ASTPrim {
       if( dom.length != domains.length)
         throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + dom.length + " != " + domains.length);
       new MRTask() {
-        @Override public void map(Chunk c) {
-          for(int i=0;i<c._len;++i) {
-            if( !c.isNA(i) ) {
-              long num = Arrays.binarySearch(dom, c.at8(i));
+        @Override public void map(Chunks c) {
+          for(int i=0;i<c.numRows();++i) {
+            if( !c.isNA(i,0) ) {
+              long num = Arrays.binarySearch(dom, c.at4(i,0));
               if( num < 0 ) throw new IllegalArgumentException("Could not find the categorical value!");
-              c.set(i,num);
+              c.set(i,0,num);
             }
           }
         }
@@ -442,12 +441,12 @@ class ASTMatch extends ASTPrim {
     final double[] dblsTable = dblsTable2;
 
     Frame rez = new MRTask() {
-      @Override public void map(Chunk c, NewChunk n) {
+      @Override public void map(Chunks c, Chunks.AppendableChunks n) {
         String[] domain = _vecs.domain(0);
-        double x; int rows = c._len;
+        double x; int rows = c.numRows();
         for( int r = 0; r < rows; ++r) {
-          x = c.isNA(r) ? nomatch : (strsTable==null ? in(dblsTable, c.atd(r), nomatch) : in(strsTable, domain[(int)c.at8(r)], nomatch));
-          n.addNum(x);
+          x = c.isNA(r,0) ? nomatch : (strsTable==null ? in(dblsTable, c.atd(r,0), nomatch) : in(strsTable, domain[(int)c.at8(r,0)], nomatch));
+          n.addNum(0,x);
         }
       }
     }.doAll(new byte[]{Vec.T_NUM}, fr.vecs()).outputFrame();
@@ -488,13 +487,13 @@ class ASTWhich extends ASTPrim {
     // The 1-row version
     if( f.numRows()==1 && f.numCols() > 1) {
       AppendableVec v = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec(),Vec.T_NUM);
-      NewChunk nc = new NewChunk(new SingleChunk(v,0), 0);
-      Chunk [] chunks = f.vecs().getChunks(0).chks();
+      Chunks.AppendableChunks nc = v.chunkForChunkIdx(0);
+      Chunks chunks = f.vecs().getChunks(0);
       for( int i=0; i<f.numCols(); i++ ) 
-        if( chunks[i].at8(0)!=0 )
-          nc.addNum(i);
+        if( chunks.at8(0,0)!=0 )
+          nc.addNum(0,i);
       Futures fs = nc.close(new Futures());
-      VecAry vec = v.layout_and_close(fs);
+      VecAry vec = new VecAry(v.closeVec(fs));
       fs.blockForPending();
       return new ValFrame(new Frame((Key)null,vec));
     }
@@ -504,10 +503,10 @@ class ASTWhich extends ASTPrim {
     if( f.numCols() > 1 || !vec.isInt(0) )
       throw new IllegalArgumentException("which requires a single integer column");
     Frame f2 = new MRTask() {
-      @Override public void map(Chunk c, NewChunk nc) {
+      @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
         long start = c.start();
-        for(int i=0;i<c._len;++i)
-          if( c.at8(i)!=0 ) nc.addNum(start+i);
+        for(int i=0;i<c.numRows();++i)
+          if( c.at8(i,0)!=0 ) nc.addNum(0,start+i);
       }
     }.doAll(new byte[]{Vec.T_NUM},vec).outputFrame();
     return new ValFrame(f2);

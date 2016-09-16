@@ -116,7 +116,7 @@ import java.util.UUID;
  *
  * @author Cliff Click
  */
-public class Vec extends Keyed<Vec> {
+public class Vec<T extends Chunks> extends Keyed<Vec<T>> {
 
   static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
 
@@ -124,7 +124,7 @@ public class Vec extends Keyed<Vec> {
   byte [] _types; // Vec Type
 
 
-  public Vec(Key<Vec> key, int rowLayout, byte[] types, String[][] domains) {
+  public Vec(Key<Vec<T>> key, int rowLayout, byte[] types, String[][] domains) {
     _key = key;
     _rowLayout = rowLayout;
     _espc = ESPC.espc(this);
@@ -132,12 +132,11 @@ public class Vec extends Keyed<Vec> {
     _types = types;
   }
 
-  public Vec(Key<Vec> key, int rowLayout, byte... types) {this(key,rowLayout,types, null);}
+  public Vec(Key<Vec<T>> key, int rowLayout, byte... types) {this(key,rowLayout,types, null);}
 
-  public Vec(Key<Vec> aVecKey, int rowLayout, String[] domain) {
+  public Vec(Key<Vec<T>> aVecKey, int rowLayout, String[] domain) {
     this(aVecKey,rowLayout,new byte[]{domain == null?T_NUM:T_CAT}, new String[][]{domain});
   }
-
 
   public final RollupStats getRollups(int colId) {
     return getRollups(colId,false);
@@ -213,49 +212,6 @@ public class Vec extends Keyed<Vec> {
   private Key _rollupStatsKey;
 
 
-
-  public static class Chunks extends Iced<Chunks> {
-    transient long _start = -1;
-    transient Vec _vec = null;
-    transient int _cidx = -1;
-    Chunk [] _cs;
-
-    public Chunks(){}
-    public Chunks(Vec av, Chunk ...cs){
-      this(cs);
-      _vec = av;
-    }
-    public Chunks(Chunk... cs){
-      _cs = cs;
-      for (Chunk c:cs) c._achunk = this;
-    }
-
-    public Chunk getChunk(int i){return _cs[i];};
-    public Chunk[] getChunks(){return _cs;}
-
-    public Futures close(Futures fs){
-      boolean modified = false;
-      for(int i = 0; i < _cs.length; ++i) {
-        Chunk c = _cs[i];
-        if(c._chk2 != null) {
-          _cs[i] = c._chk2.compress();
-          modified = true;
-        }
-      }
-      _writing = false;
-      if(modified) DKV.put(_vec.chunkKey(_cidx),this,fs);
-      return fs;
-    }
-
-    volatile boolean _writing;
-    public void setWrite(){
-      if(!_writing) {
-        _vec.preWriting();
-        _writing = true;
-      }
-    }
-  }
-
   public final long[] espc() { if( _espc==null ) _espc = ESPC.espc(this); return _espc; }
 
   /** Number of elements in the vector; returned as a {@code long} instead of
@@ -299,7 +255,7 @@ public class Vec extends Keyed<Vec> {
   public void setDomain(int vec, String[] domain){_domains[vec] = domain;}
   public byte type(int colId){return _types[colId];}
   public void setType(int i, byte type){_types[i] = type;}
-
+  public void setBad(int col) {_types[col] = T_BAD;}
 
 
   // Vec internal type
@@ -447,6 +403,8 @@ public class Vec extends Keyed<Vec> {
       res ^= checksum_impl(i);
     return res;
   }
+
+
 
 
   private static class SetMutating extends TAtomic<RollupStatsAry> {
@@ -638,8 +596,8 @@ public class Vec extends Keyed<Vec> {
   /** The Chunk for a chunk#.  Warning: this pulls the data locally; using this
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a chunk# */
-  public Chunks chunkForChunkIdx(int cidx) {
-    Chunks c = chunkIdx(cidx).get();        // Chunk# to chunk data
+  public T chunkForChunkIdx(int cidx) {
+    T c = chunkIdx(cidx).get();        // Chunk# to chunk data
     long cstart = c._start;             // Read once, since racily filled in
     int tcidx = c._cidx;
     Vec v = c._vec;
@@ -749,7 +707,7 @@ public class Vec extends Keyed<Vec> {
       return Key.make(bits);
     }
 
-    // Clone an old vector group, setting a new len
+    // Clone an old vector group, setting a new numRows
     private VectorGroup(Key key, int newlen) { super(key); _len = newlen; }
 
     /** Returns Vec Key from Vec id#.  Does NOT allocate a Key id#
@@ -994,11 +952,11 @@ public class Vec extends Keyed<Vec> {
   public Vec doCopy(){
     final Vec v = new Vec(group().addVec(),_rowLayout,_types,_domains);
     new MRTask(){
-      @Override public void map(Chunk [] chks){
-        chks = chks.clone();
-        for(int i = 0; i < chks.length; ++i)
-          chks[i] = chks[i].deepCopy();
-        DKV.put(v.chunkKey(chks[0].cidx()), new Chunks(chks), _fs);
+      @Override public void map(Chunks chks){
+        Chunks chks2 = new Chunks(chks._cs.clone());
+        for(int i = 0; i < chks2._cs.length; ++i)
+          chks2._cs[i] = chks2._cs[i].deepCopy();
+        DKV.put(v.chunkKey(chks.cidx()), chks2, _fs);
       }
     }.doAll(new VecAry(this));
     return v;
@@ -1012,7 +970,6 @@ public class Vec extends Keyed<Vec> {
       remove();
       return;
     }
-    final int [] removed = ids.clone();
     RollupStatsAry rsary = getRollups();
     final IcedBitSet bitSet = new IcedBitSet(rsary._rs.length);
     for(int x:ids) {
@@ -1021,11 +978,10 @@ public class Vec extends Keyed<Vec> {
       bitSet.set(x);
     }
     new MRTask(){
-      @Override public void map(Chunk [] chks){
-        chks = chks.clone();
-        for(int i = 0; i < chks.length; ++i)
-          chks[i] = bitSet.contains(i)?null:chks[i];
-        DKV.put(chunkKey(chks[0].cidx()), new Chunks(chks), _fs);
+      @Override public void map(Chunks chks){
+        for(int i = 0; i < chks._cs.length; ++i)
+          if(bitSet.contains(i)) chks._cs[i] = null;
+        DKV.put(chunkKey(chks.cidx()), chks, _fs);
       }
     }.doAll(new VecAry(this));
 

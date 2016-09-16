@@ -2,6 +2,7 @@ package water.rapids;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
+import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.MemoryManager;
@@ -53,22 +54,21 @@ class ASTStrSplit extends ASTPrim {
 
     final String regex = splitRegEx;
     return new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk c = cs[0];
-        for (int i = 0; i < c._len; ++i) {
+      @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+        for (int i = 0; i < cs.numRows(); ++i) {
           int cnt = 0;
-          if( !c.isNA(i) ) {
-            int idx = (int) c.at8(i);
+          if( !cs.isNA(i,0) ) {
+            int idx = cs.at4(i,0);
             String s = old_domains[idx];
             String[] ss = s.split(regex);
             for (String s1 : ss) {
               int n_idx = Arrays.asList(new_domains[cnt]).indexOf(s1);
-              if (n_idx == -1) ncs[cnt++].addNA();
-              else ncs[cnt++].addNum(n_idx);
+              if (n_idx == -1) ncs.addNA(cnt++);
+              else ncs.addNum(cnt++,n_idx,0);
             }
           }
-          if (cnt < ncs.length)
-            for (; cnt < ncs.length; ++cnt) ncs[cnt].addNA();
+          if (cnt < ncs.numCols())
+            for (; cnt < ncs.numCols(); ++cnt) ncs.addNA(cnt);
         }
       }
     }.doAll(new_domains.length, Vec.T_CAT, vec).outputVecs(new_domains);
@@ -111,24 +111,17 @@ class ASTStrSplit extends ASTPrim {
   private VecAry strSplitStringCol(VecAry vec, final String splitRegEx) {
     final int newColCnt = (new CountSplits(splitRegEx)).doAll(vec)._maxSplits;
     return new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk chk = cs[0];
-        if (chk instanceof C0DChunk) // all NAs
-          for (int row = 0; row < chk.len(); row++)
-            for (int col = 0; col < ncs.length; col++)
-              ncs[col].addNA();
-        else {
-          BufferedString tmpStr = new BufferedString();
-          for (int row = 0; row < chk._len; ++row) {
-            int col = 0;
-            if (!chk.isNA(row)) {
-              String[] ss = chk.atStr(tmpStr, row).toString().split(splitRegEx);
-              for (String s : ss) // distribute strings among new cols
-                ncs[col++].addStr(s);
-            }
-            if (col < ncs.length) // fill remaining cols w/ NA
-              for (; col < ncs.length; col++) ncs[col].addNA();
+      @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+        BufferedString tmpStr = new BufferedString();
+        for (int row = 0; row < cs.numRows(); ++row) {
+          int col = 0;
+          if (!cs.isNA(row,0)) {
+            String[] ss = cs.atStr(tmpStr, row,0).toString().split(splitRegEx);
+            for (String s : ss) // distribute strings among new cols
+              ncs.addStr(col++,s);
           }
+          if (col < ncs.numCols()) // fill remaining cols w/ NA
+            for (; col < ncs.numCols(); col++) ncs.addNA(col);
         }
       }
     }.doAll(newColCnt, Vec.T_STR, vec).outputVecs(null);
@@ -144,11 +137,11 @@ class ASTStrSplit extends ASTPrim {
     int _maxSplits = 0;
 
     CountSplits(String regex) { _regex = regex; }
-    @Override public void map(Chunk chk) {
+    @Override public void map(Chunks chk) {
       BufferedString tmpStr = new BufferedString();
-      for( int row = 0; row < chk._len; row++ ) {
-        if (!chk.isNA(row)) {
-          int split = chk.atStr(tmpStr, row).toString().split(_regex).length;
+      for( int row = 0; row < chk.numRows(); row++ ) {
+        if (!chk.isNA(row,0)) {
+          int split = chk.atStr(tmpStr, row,0).toString().split(_regex).length;
           if (split > _maxSplits) _maxSplits = split;
         }
       }
@@ -201,13 +194,12 @@ class ASTCountMatches extends ASTPrim {
   private VecAry countMatchesCategoricalCol(VecAry vec, String[] pattern){
     final int[] matchCounts = countDomainMatches(vec.domain(0), pattern);
     return new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk c = cs[0];
-        for (int i = 0; i < c._len; ++i) {
-          if( !c.isNA(i) ) {
-            int idx = (int) c.at8(i);
-            ncs[0].addNum(matchCounts[idx]);
-          } else ncs[0].addNA();
+      @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+        for (int i = 0; i < cs.numRows(); ++i) {
+          if( !cs.isNA(i,0) ) {
+            int idx = cs.at4(i,0);
+            ncs.addNum(matchCounts[idx]);
+          } else ncs.addNA(0);
         }
       }
     }.doAll(1, Vec.T_NUM, vec).outputVecs(null);
@@ -224,20 +216,15 @@ class ASTCountMatches extends ASTPrim {
   private VecAry countMatchesStringCol(VecAry vec, String[] pat){
     final String[] pattern = pat;
     return new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk) {
-        if ( chk instanceof C0DChunk ) // all NAs
-          for( int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else {
-          BufferedString tmpStr = new BufferedString();
-          for( int i = 0; i < chk._len; ++i ) {
-            if( chk.isNA(i) ) newChk.addNA();
-            else {
-              int cnt = 0;
-              for (String aPattern : pattern)
-                cnt += StringUtils.countMatches(chk.atStr(tmpStr, i).toString(), aPattern);
-              newChk.addNum(cnt, 0);
-            }
+      @Override public void map(Chunks chk, Chunks.AppendableChunks ncs) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk.numRows(); ++i) {
+          if (chk.isNA(i, 0)) ncs.addNA(0);
+          else {
+            int cnt = 0;
+            for (String aPattern : pattern)
+              cnt += StringUtils.countMatches(chk.atStr(tmpStr, i).toString(), aPattern);
+            ncs.addNum(cnt);
           }
         }
       }
@@ -289,20 +276,13 @@ class ASTToLower extends ASTPrim {
 
   private VecAry toLowerStringCol(VecAry vec) {
     return new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if ( chk instanceof C0DChunk ) // all NAs
-          for (int i = 0; i < chk.len(); i++)
+      @Override public void map(Chunks chk, Chunks.AppendableChunks newChk){
+        BufferedString tmpStr = new BufferedString();
+        for(int i =0; i < chk.numRows(); i++) {
+          if (chk.isNA(i))
             newChk.addNA();
-        else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
-          ((CStrChunk) chk).asciiToLower(newChk);
-        } else { //UTF requires Java string methods for accuracy
-          BufferedString tmpStr = new BufferedString();
-          for(int i =0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else // Locale.ENGLISH to give the correct results for local insensitive strings
-              newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH));
-          }
+          else // Locale.ENGLISH to give the correct results for local insensitive strings
+            newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH));
         }
       }
     }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
@@ -352,20 +332,13 @@ class ASTToUpper extends ASTPrim {
 
   private VecAry toUpperStringCol(VecAry vec) {
     return new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if ( chk instanceof C0DChunk ) // all NAs
-          for (int i = 0; i < chk.len(); i++)
+      @Override public void map(Chunks chk, Chunks.AppendableChunks newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk.numRows(); i++) {
+          if (chk.isNA(i))
             newChk.addNA();
-        else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
-          ((CStrChunk) chk).asciiToUpper(newChk);
-        } else { //UTF requires Java string methods for accuracy
-          BufferedString tmpStr = new BufferedString();
-          for(int i =0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else // Locale.ENGLISH to give the correct results for local insensitive strings
-              newChk.addStr(chk.atStr(tmpStr, i).toString().toUpperCase(Locale.ENGLISH));
-          }
+          else // Locale.ENGLISH to give the correct results for local insensitive strings
+            newChk.addStr(chk.atStr(tmpStr, i).toString().toUpperCase(Locale.ENGLISH));
         }
       }
     }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
@@ -427,24 +400,16 @@ class ASTReplaceFirst extends ASTPrim {
     final String replacement = rep;
     final boolean ignoreCase = ic;
     return new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if ( chk instanceof C0DChunk ) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else {
-//        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
-//          ((CStrChunk) chk).asciiReplaceFirst(newChk);
-//        } else { //UTF requires Java string methods for accuracy
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else {
-              if (ignoreCase)
-                newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement));
-              else
-                newChk.addStr(chk.atStr(tmpStr, i).toString().replaceFirst(pattern, replacement));
-            }
+      @Override public void map(Chunks chk, Chunks.AppendableChunks ncs) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk.numRows(); i++) {
+          if (chk.isNA(i))
+            ncs.addNA();
+          else {
+            if (ignoreCase)
+              ncs.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement));
+            else
+              ncs.addStr(chk.atStr(tmpStr, i).toString().replaceFirst(pattern, replacement));
           }
         }
       }
@@ -509,24 +474,17 @@ class ASTReplaceAll extends ASTPrim {
     final String replacement = rep;
     final boolean ignoreCase = ic;
     return new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if ( chk instanceof C0DChunk ) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else {
-//        if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
-//          ((CStrChunk) chk).asciiReplaceAll(newChk);
-//        } else { //UTF requires Java string methods for accuracy
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else {
-              if (ignoreCase)
-                newChk.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement));
-              else
-                newChk.addStr(chk.atStr(tmpStr, i).toString().replaceAll(pattern, replacement));
-            }
+      @Override public void map(Chunks chk, Chunks.AppendableChunks ncs) {
+
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk.numRows(); i++) {
+          if (chk.isNA(i))
+            ncs.addNA();
+          else {
+            if (ignoreCase)
+              ncs.addStr(chk.atStr(tmpStr, i).toString().toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement));
+            else
+              ncs.addStr(chk.atStr(tmpStr, i).toString().replaceAll(pattern, replacement));
           }
         }
       }
@@ -590,17 +548,34 @@ class ASTTrim extends ASTPrim {
     return vec.makeCopy(doms);
   }
 
+
   private VecAry trimStringCol(VecAry vec) {
     return new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if ( chk instanceof C0DChunk ) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        // Java String.trim() only operates on ASCII whitespace
-        // so UTF-8 safe methods are not needed here.
-        else ((CStrChunk)chk).asciiTrim(newChk);
+      @Override public void map(Chunks chk, Chunks.AppendableChunks ncs) {
+        asciiTrim(chk, ncs);
       }
     }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
+  }
+
+public static void asciiTrim(Chunks cs, Chunks.AppendableChunks ncs) {
+  throw H2O.unimpl();
+  // copy existing data
+//  nc = add2NewChunk_impl(nc, 0, _len);
+//  //update offsets and byte array
+//  for (int i = 0; i < _len; i++) {
+//    int j = 0;
+//    int off = UnsafeUtils.get4(_mem, (i << 2) + _OFF);
+//    if (off != NA) {
+//      //UTF chars will appear as negative values. In Java spec, space is any char 0x20 and lower
+//      while (_mem[_valstart + off + j] > 0 && _mem[_valstart + off + j] < 0x21) j++;
+//      if (j > 0) nc.set_is(i, off + j);
+//      while (_mem[_valstart + off + j] != 0) j++; //Find end
+//      j--;
+//      while (_mem[_valstart + off + j] > 0 && _mem[_valstart + off + j] < 0x21) { //March back to find first non-space
+//        nc._ss[off + j] = 0; //Set new end
+//        j--;
+//      }
+//    }
   }
 }
 
@@ -646,14 +621,13 @@ class ASTStrLength extends ASTPrim {
           catLengths = new int[doms.length];
           for (int i = 0; i < doms.length; ++i) catLengths[i] = doms[i].length();
         }
-        @Override public void map(Chunk chk, NewChunk newChk){
+        @Override public void map(Chunks chk, Chunks.AppendableChunks newChk){
           // pre-allocate since the size is known
-          newChk.alloc_nums(chk._len);
-          for (int i =0; i < chk._len; i++)
+          for (int i =0; i < chk.numRows(); i++)
             if(chk.isNA(i))
               newChk.addNA();
             else
-              newChk.addNum(catLengths[(int)chk.atd(i)],0);
+              newChk.addNum(catLengths[(int)chk.atd(i)]);
         }
       }.doAll(1, Vec.T_NUM, vec).outputVecs(null);
     return res;

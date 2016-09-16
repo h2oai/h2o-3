@@ -1,5 +1,6 @@
 package water.parser;
 
+import water.DKV;
 import water.Futures;
 import water.Iced;
 import water.fvec.*;
@@ -56,7 +57,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter<FVecParse
   }
   @Override public FVecParseWriter close(Futures fs){
     if( _nvs == null ) return this; // Might call close twice
-    new ChunkBlock(_vec,_cidx,_nvs).close(fs);
+    Chunk [] cs = new Chunk[_nvs.length];
+    for(int i = 0; i < cs.length; ++i)
+      cs[i] = _nvs[i].compress();
+    DKV.put(_vec.chunkKey(_cidx),new Chunks(cs),fs);
     _nvs = null;  // Free for GC
     return this;
   }

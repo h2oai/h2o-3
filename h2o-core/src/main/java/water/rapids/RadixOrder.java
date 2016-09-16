@@ -2,6 +2,7 @@ package water.rapids;
 
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -44,21 +45,23 @@ class RadixCount extends MRTask<RadixCount> {
     _counts = new Long2DArray(_vecs.nChunks());
   }
 
-  @Override public void map( Chunk chk ) {
-    long tmp[] = _counts._val[chk.cidx()] = new long[256];
+  @Override public void map( Chunks chks ) {
+    Chunk chk = chks.getChunk(0);
+    int len = chks.numRows();
+    long tmp[] = _counts._val[chks.cidx()] = new long[256];
     // TO DO: assert chk instanceof integer or enum;  -- but how since many integers (C1,C2 etc)? // alternatively: chk.getClass().equals(C8Chunk.class)
     if (!(_isLeft && _vecs.isCategorical(0))) {
       if (_vecs.naCnt(0) == 0) {
         // There are no NA in this join column; hence branch-free loop. Most common case as should never really have NA in join columns.
-        for (int r=0; r<chk._len; r++) {
-          tmp[(int)((chk.at8(r)-_base+1) >> _shift)]++;
+        for (int r=0; r<len; r++) {
+          tmp[(int)((chk.at8_impl(r)-_base+1) >> _shift)]++;
           // TODO - use _mem directly. Hist the compressed bytes and then shift the histogram afterwards when reducing.
         }
       } else {
         // There are some NA in the column so have to branch. TODO: warn user NA are present in join column
-        for (int r=0; r<chk._len; r++) {
-          if (chk.isNA(r)) tmp[0]++;
-          else tmp[(int)((chk.at8(r)-_base+1) >> _shift)]++;
+        for (int r=0; r<len; r++) {
+          if (chk.isNA_impl(r)) tmp[0]++;
+          else tmp[(int)((chk.at8_impl(r)-_base+1) >> _shift)]++;
           // Done - we will join NA to NA as data.table does
           // TODO: allow NA-to-NA join to be turned off. Do that in bmerge as a simple low-cost switch.
           // Note that NA and the minimum may well both be in MSB 0 but most of the time we will not have NA in join columns
@@ -70,13 +73,13 @@ class RadixCount extends MRTask<RadixCount> {
       assert _id_maps[0].length > 0;
       assert _base==0;
       if (_vecs.naCnt(0) == 0) {
-        for (int r=0; r<chk._len; r++) {
-          tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
+        for (int r=0; r<len; r++) {
+          tmp[(_id_maps[0][(int)chk.at8_impl(r)]+1) >> _shift]++;
         }
       } else {
-        for (int r=0; r<chk._len; r++) {
-          if (chk.isNA(r)) tmp[0]++;
-          else tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
+        for (int r=0; r<len; r++) {
+          if (chk.isNA_impl(r)) tmp[0]++;
+          else tmp[(_id_maps[0][(int)chk.at8_impl(r)]+1) >> _shift]++;
         }
       }
     }
@@ -194,11 +197,11 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   }
 
 
-  @Override public void map(Chunk chk[]) {
+  @Override public void map(Chunks chks) {
     // System.out.println("Starting MoveByFirstByte.map() for chunk " + chk[0].cidx());
-    long myCounts[] = _counts[chk[0].cidx()]; //cumulative offsets into o and x
+    long myCounts[] = _counts[chks.cidx()]; //cumulative offsets into o and x
     if (myCounts == null) {
-      System.out.println("myCounts empty for chunk " + chk[0].cidx());
+      System.out.println("myCounts empty for chunk " + chks.cidx());
       return;
     }
 
@@ -210,11 +213,13 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // efficiency, although, it will be most cache efficient (holding one page of each column's _mem, plus a page of this_x, all contiguous.  At the
     // cost of more instructions.
     long t0 = System.nanoTime();
-    for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
+    int len = chks.numRows();
+    Chunk chk0 = chks.getChunk(0);
+    for (int r=0; r<len; r++) {    // tight, branch free and cache efficient (surprisingly)
       int MSBvalue = 0;  // default for NA
       long thisx = 0;
-      if (!chk[0].isNA(r)) {
-        thisx = chk[0].at8(r);
+      if (!chk0.isNA_impl(r)) {
+        thisx = chk0.at8_impl(r);
         if (_isLeft && _id_maps[0]!=null) thisx = _id_maps[0][(int)thisx] + 1;                   // TODO: restore branch-free again, go by column and retain original compression with no .at8()
         else thisx = thisx - _base[0] + 1;    // +1 leaving 0'th offset from base to mean NA   // may not be worth that as has to be global minimum so will rarely be able to use as raw, but when we can maybe can do in bulk
         MSBvalue = (int)(thisx >> _shift);   // NA are counted in the first bin
@@ -223,7 +228,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       int batch = (int) (target / _batchSize);
       int offset = (int) (target % _batchSize);
       assert _o[MSBvalue] != null;
-      _o[MSBvalue][batch][offset] = (long) r + chk[0].start();    // move i and the index.
+      _o[MSBvalue][batch][offset] = (long) r + chks.start();    // move i and the index.
 
       byte this_x[] = _x[MSBvalue][batch];
       offset *= _keySize; //can't overflow because batchsize was chosen above to be maxByteSize/max(keysize,8)
@@ -231,10 +236,10 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         this_x[offset + i] = (byte) (thisx & 0xFFL);
         thisx >>= 8;
       }
-      for (int c=1; c<chk.length; c++) {  // TO DO: left align subsequent
+      for (int c=1; c<chks.numCols(); c++) {  // TO DO: left align subsequent
         offset += _bytesUsed[c-1];     // advance offset by the previous field width
-        if (chk[c].isNA(r)) continue;  // NA is a zero field so skip over as java initializes memory to 0 for us always
-        thisx = chk[c].at8(r);         // TODO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
+        if (chks.isNA(r,c)) continue;  // NA is a zero field so skip over as java initializes memory to 0 for us always
+        thisx = chks.at8(r,c);         // TODO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
         if (_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx] + 1;
         else thisx = thisx - _base[c] + 1;
         for (int i = _bytesUsed[c] - 1; i >= 0; i--) {
@@ -535,7 +540,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     //_groups = groups;
     //_nGroup = nGroup;
     //_whichGroup = whichGroup;
-    //_groups[_whichGroup] = new long[(int)Math.min(MAXVECLONG, len) ];   // at most len groups (i.e. all groups are 1 row)
+    //_groups[_whichGroup] = new long[(int)Math.min(MAXVECLONG, numRows) ];   // at most numRows groups (i.e. all groups are 1 row)
     assert(_o != null);
     assert(_numRows > 0);
 
@@ -587,7 +592,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     return ((x[xi] & 0xFF) - (y[yi] & 0xFF)); // 0xFF for getting back from -1 to 255
   }
 
-  public void insert(long start, int len)   // only for small len so len can be type int
+  public void insert(long start, int len)   // only for small numRows so numRows can be type int
 /*  orders both x and o by reference in-place. Fast for small vectors, low overhead.
     don't be tempted to binsearch backwards here because have to shift anyway  */
   {
@@ -595,11 +600,11 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     int batch1 = (int) ((start+len-1) / _batchSize);
     long origstart = start;   // just for when straddle batch boundaries
     int len0 = 0;             // same
-    // _nGroup[_MSBvalue]++;  // TODO: reinstate.  This is at least 1 group (if all keys in this len items are equal)
+    // _nGroup[_MSBvalue]++;  // TODO: reinstate.  This is at least 1 group (if all keys in this numRows items are equal)
     byte _xbatch[];
     long _obatch[];
     if (batch1 != batch0) {
-      // small len straddles a batch boundary. Unlikely very often since len<=200
+      // small numRows straddles a batch boundary. Unlikely very often since numRows<=200
       assert batch0 == batch1-1;
       len0 = _batchSize - (int)(start % _batchSize);
       // copy two halves to contiguous temp memory, do the below, then split it back to the two halves afterwards.
@@ -646,7 +651,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
 
   public void run(long start, long len, int Byte) {
 
-    // System.out.println("run " + start + " " + len + " " + Byte);
+    // System.out.println("run " + start + " " + numRows + " " + Byte);
     if (len < 200) {               // N_SMALL=200 is guess based on limited testing. Needs calibrate().
       // Was 50 based on sum(1:50)=1275 worst -vs- 256 cummulate + 256 memset + allowance since reverse order is unlikely.
       insert(start, (int)len);   // when nalast==0, iinsert will be called only from within iradix.
@@ -663,7 +668,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     // thisHist reused and carefully set back to 0 below so we don't need to clear it now
     int idx = (int)(start%_batchSize)*_keySize + _keySize-Byte-1;
     int bin=-1;  // the last bin incremented. Just to see if there is only one bin with a count.
-    int nbatch = batch1-batch0+1;  // number of batches this span of len covers.  Usually 1.  Minimum 1.
+    int nbatch = batch1-batch0+1;  // number of batches this span of numRows covers.  Usually 1.  Minimum 1.
     int thisLen = (int)Math.min(len, _batchSize - start%_batchSize);
     for (int b=0; b<nbatch; b++) {
       byte _xbatch[] = _x[batch0+b];   // taking this outside the loop below does indeed make quite a big different (hotspot isn't catching this, then)
@@ -678,7 +683,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       // thisLen will be set to _batchSize for the middle batches when nbatch>=3
     }
     if (thisHist[bin] == len) {
-      // one bin has count len and the rest zero => next byte quick
+      // one bin has count numRows and the rest zero => next byte quick
       thisHist[bin] = 0;  // important, clear for reuse
       if (Byte == 0) ; // TODO: reinstate _nGroup[_MSBvalue]++;
       else run(start, len, Byte - 1);
