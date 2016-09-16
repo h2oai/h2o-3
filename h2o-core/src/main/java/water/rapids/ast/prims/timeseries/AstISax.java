@@ -1,19 +1,24 @@
 package water.rapids.ast.prims.timeseries;
 
 import org.apache.commons.math3.distribution.NormalDistribution;
+import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.nbhm.NonBlockingHashMap;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
+import water.util.IcedHashMap;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * The iSAX 2.0 algorithm is a time series indexing strategy that reduces the dimensionality of a time series along the time axis.
@@ -23,6 +28,7 @@ import java.util.ArrayList;
  * @author markchan & navdeepgill
  */
 public class AstISax extends AstPrimitive {
+    protected IcedHashMap<Integer,Integer[]> _domain_hm = new IcedHashMap<>();
     @Override
     public String[] args() { return new String[]{"ary", "numWords", "maxCardinality"}; }
 
@@ -37,6 +43,7 @@ public class AstISax extends AstPrimitive {
         // stack is [ ..., ary, numWords, maxCardinality]
         // handle the breaks
         Frame fr2;
+        Frame fr2_reduced;
         Frame fr3;
         Frame f = stk.track(asts[1].exec(env)).getFrame();
 
@@ -63,18 +70,44 @@ public class AstISax extends AstPrimitive {
         fr2 = new AstISax.ISaxTask(numWords, maxCardinality)
                 .doAll(numWords, Vec.T_NUM, f).outputFrame(null, columns.toArray(new String[numWords]), null);
 
+        // see if we can reduce the cardinality by checking all unique tokens in all series in a word
+        for (int i=0; i<fr2.numCols(); i++) {
+            List<Integer> intlist = new ArrayList<>();
+            String[] domains = fr2.vec(i).toCategoricalVec().domain();
+            for (String s: domains) intlist.add(Integer.valueOf(s));
+            _domain_hm.put(i,intlist.toArray(new Integer[domains.length]));
+            intlist = null;
+        }
+        fr2_reduced = new AstISax.ISaxReduceCard(_domain_hm).doAll(numWords, Vec.T_NUM,fr2)
+                .outputFrame(null,columns.toArray(new String[numWords]),null);
+        fr3 = new AstISax.ISaxStringTask(_domain_hm).doAll(1,Vec.T_STR,fr2_reduced)
+                .outputFrame(null,new String[]{"isax_index"},null);
 
-        fr3 = new AstISax.ISaxStringTask(maxCardinality).doAll(1,Vec.T_STR,fr2).outputFrame(null,new String[]{"isax_index"},null);
-
-        fr3.add(fr2);
+        fr2.delete();
+        fr3.add(fr2_reduced);
         return new ValFrame(fr3);
     }
 
-    public static class ISaxStringTask extends MRTask<AstISax.ISaxStringTask> {
-        String mc;
-        ISaxStringTask(int maxCardinality) {
-            mc = String.valueOf(maxCardinality);
+    public static class ISaxReduceCard extends MRTask<AstISax.ISaxReduceCard> {
+        private IcedHashMap<Integer,Integer[]> _domain_hm;
+        ISaxReduceCard(IcedHashMap<Integer,Integer[]> dm) { _domain_hm = dm; }
+
+        @Override
+        public void map(Chunk cs[], NewChunk nc[]){
+            for (int i = 0; i<cs.length; i++) {
+                for (int j = 0; j<cs[i].len(); j++) {
+                    // TODO: avoid this search if array from _domain_hm.get has length that is
+                    // the same as max cardinality!
+                    Integer idxOf = Arrays.binarySearch(_domain_hm.get(i),(int) cs[i].at8(j));
+                    nc[i].addNum(idxOf);
+
+                }
+            }
         }
+    }
+    public static class ISaxStringTask extends MRTask<AstISax.ISaxStringTask> {
+        IcedHashMap<Integer,Integer[]> _domain_hm;
+        ISaxStringTask(IcedHashMap<Integer,Integer[]> dm) { _domain_hm = dm; }
 
         @Override
         public void map(Chunk cs[], NewChunk nc[]) {
@@ -82,7 +115,7 @@ public class AstISax extends AstPrimitive {
             for (int c_i = 0; c_i < csize; c_i++) {
                 StringBuffer sb = new StringBuffer("");
                 for (int cs_i = 0; cs_i < cs.length; cs_i++) {
-                    sb.append(cs[cs_i].at8(c_i) + "^" + mc + "_");
+                    sb.append(cs[cs_i].at8(c_i) + "^" + _domain_hm.get(cs_i).length + "_");
                 }
                 nc[0].addStr(sb.toString().substring(0,sb.length()-1));
             }
