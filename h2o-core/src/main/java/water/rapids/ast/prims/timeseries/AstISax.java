@@ -1,5 +1,6 @@
 package water.rapids.ast.prims.timeseries;
 
+import com.sun.xml.internal.bind.v2.runtime.reflect.opt.FieldAccessor_Double;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import water.Key;
 import water.MRTask;
@@ -15,6 +16,8 @@ import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
+import water.util.IcedHashMapGeneric;
+import water.util.IcedInt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -28,7 +31,8 @@ import java.util.List;
  * @author markchan & navdeepgill
  */
 public class AstISax extends AstPrimitive {
-    protected IcedHashMap<Integer,Integer[]> _domain_hm = new IcedHashMap<>();
+    //protected IcedHashMap<IcedInt,IcedInt[]> _domain_hm = new IcedHashMap<>();
+    protected double[][] _domain_hm = null;
     @Override
     public String[] args() { return new String[]{"ary", "numWords", "maxCardinality"}; }
 
@@ -53,11 +57,13 @@ public class AstISax extends AstPrimitive {
 
         int numWords;
         int maxCardinality;
+        AstISax.ISaxTask isaxt;
 
         numWords = (int) n.exec(env).getNum();
         maxCardinality = (int) mc.exec(env).getNum();
 
-        AstISax.ISaxTask isaxt;
+
+
 
         ArrayList<String> columns = new ArrayList<String>();
         for (int i = 0; i < numWords; i++) {
@@ -66,18 +72,34 @@ public class AstISax extends AstPrimitive {
         Frame fr2 = new AstISax.ISaxTask(numWords, maxCardinality)
                 .doAll(numWords, Vec.T_NUM, f).outputFrame(null, columns.toArray(new String[numWords]), null);
 
+        _domain_hm = new double[numWords][maxCardinality];
+        for (double[] r : _domain_hm) Arrays.fill(r,Double.NaN);
         // see if we can reduce the cardinality by checking all unique tokens in all series in a word
         for (int i=0; i<fr2.numCols(); i++) {
-            List<Integer> intlist = new ArrayList<>();
+            List<IcedInt> intlist = new ArrayList<>();
             String[] domains = fr2.vec(i).toCategoricalVec().domain();
-            for (String s: domains){
-                intlist.add(Integer.valueOf(s));
+            for (int j = 0; j < domains.length; j++){
+                _domain_hm[i][j] = Double.valueOf(domains[j]);
+                //intlist.add(new IcedInt(Integer.valueOf(s)));
             }
-            _domain_hm.put(i,intlist.toArray(new Integer[domains.length]));
+            //_domain_hm.put(new IcedInt(i),intlist.toArray(new IcedInt[domains.length]));
         }
+
+        int[] maxCards = new int[numWords];
+        // get the cardinalities of each word
+        for (int i = 0; i < numWords; i++) {
+            int cnt = 0;
+            for (double d : _domain_hm[i]) {
+                if (Double.isNaN(d)) break;
+                else cnt++;
+            }
+            maxCards[i] = cnt;
+        }
+
+
         Frame fr2_reduced = new AstISax.ISaxReduceCard(_domain_hm,maxCardinality).doAll(numWords, Vec.T_NUM,fr2)
                 .outputFrame(null,columns.toArray(new String[numWords]),null);
-        Frame fr3 = new AstISax.ISaxStringTask(_domain_hm).doAll(1,Vec.T_STR,fr2_reduced)
+        Frame fr3 = new AstISax.ISaxStringTask(maxCards).doAll(1,Vec.T_STR,fr2_reduced)
                 .outputFrame(null,new String[]{"isax_index"},null);
 
         fr2.delete(); //Not needed anymore
@@ -86,9 +108,9 @@ public class AstISax extends AstPrimitive {
     }
 
     public static class ISaxReduceCard extends MRTask<AstISax.ISaxReduceCard> {
-        private IcedHashMap<Integer,Integer[]> _domain_hm;
+        double[][] _domain_hm;
         int maxCardinality;
-        ISaxReduceCard(IcedHashMap<Integer,Integer[]> dm, int mc) {
+        ISaxReduceCard(double[][] dm, int mc) {
             _domain_hm = dm;
             maxCardinality = mc;
         }
@@ -96,10 +118,11 @@ public class AstISax extends AstPrimitive {
         @Override
         public void map(Chunk cs[], NewChunk nc[]){
             for (int i = 0; i<cs.length; i++) {
+                boolean ltMaxCardFlag =  Double.isNaN(ArrayUtils.sum(_domain_hm[i]));
                 for (int j = 0; j<cs[i].len(); j++) {
                     int idxOf;
-                    if (_domain_hm.get(i).length < maxCardinality) {
-                        idxOf = Arrays.binarySearch(_domain_hm.get(i),(int) cs[i].at8(j));
+                    if (ltMaxCardFlag) {
+                        idxOf = Arrays.binarySearch(_domain_hm[i],(int) cs[i].at8(j));
                     } else {
                         idxOf = (int) cs[i].at8(j);
                     }
@@ -110,8 +133,8 @@ public class AstISax extends AstPrimitive {
         }
     }
     public static class ISaxStringTask extends MRTask<AstISax.ISaxStringTask> {
-        IcedHashMap<Integer,Integer[]> _domain_hm;
-        ISaxStringTask(IcedHashMap<Integer,Integer[]> dm) { _domain_hm = dm; }
+        int[] maxCards;
+        ISaxStringTask(int[] mc) { maxCards = mc; }
 
         @Override
         public void map(Chunk cs[], NewChunk nc[]) {
@@ -119,7 +142,7 @@ public class AstISax extends AstPrimitive {
             for (int c_i = 0; c_i < csize; c_i++) {
                 StringBuffer sb = new StringBuffer("");
                 for (int cs_i = 0; cs_i < cs.length; cs_i++) {
-                    sb.append(cs[cs_i].at8(c_i) + "^" + _domain_hm.get(cs_i).length + "_");
+                    sb.append(cs[cs_i].at8(c_i) + "^" + maxCards[cs_i] + "_");
                 }
                 nc[0].addStr(sb.toString().substring(0,sb.length()-1));
             }
