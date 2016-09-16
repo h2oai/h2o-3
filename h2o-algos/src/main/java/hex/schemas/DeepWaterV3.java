@@ -23,6 +23,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
 				"response_column",
 				"ignored_columns",
 				"score_each_iteration",
+        "categorical_encoding",
         "overwrite_with_best_model",
         "epochs",
         "train_samples_per_iteration",
