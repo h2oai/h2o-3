@@ -7,12 +7,6 @@ from h2o.estimators.deepwater import H2ODeepWaterEstimator
 
 import importlib
 
-"""
-Reference:
-
-Krizhevsky, Alex, Ilya Sutskever, and Geoffrey E. Hinton. "Imagenet classification with deep convolutional neural networks." Advances in neural information processing systems. 2012.
-"""
-
 def lenet(num_classes):
     import mxnet as mx
     data = mx.symbol.Variable('data')
