@@ -16,6 +16,7 @@ from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type
 
@@ -737,6 +738,9 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
+        if self.algo not in {"drf", "gbm"}:
+            raise H2OValueError("MOJOs are currently supported for Distributed Random Forest and "
+                                "Gradient Boosting Method models only.")
         if get_genmodel_jar:
             h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
         return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
