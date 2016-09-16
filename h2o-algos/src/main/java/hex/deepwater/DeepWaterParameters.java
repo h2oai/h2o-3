@@ -53,7 +53,7 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public enum ProblemType {
-    image_classification
+    image_classification, document_classification, csv_classification
   }
 
   public double _clip_gradient = 10.0;
@@ -239,6 +239,11 @@ public class DeepWaterParameters extends Model.Parameters {
       dl.warn("_image_shape", "image shape is ignored, only used for image_classification");
       dl.warn("_channels", "channels shape is ignored, only used for image_classification");
       dl.warn("_mean_image_file", "mean_image_file shape is ignored, only used for image_classification");
+      if (_problem_type==ProblemType.csv_classification) {
+        if (_categorical_encoding==CategoricalEncodingScheme.OneHotInternal || _categorical_encoding==CategoricalEncodingScheme.Enum) {
+          dl.error("_categorical_encoding", "categorical encoding scheme cannot be OneHotInternal or Enum: must have numeric columns as input.");
+        }
+      }
     }
 
     if (expensive && !classification)
