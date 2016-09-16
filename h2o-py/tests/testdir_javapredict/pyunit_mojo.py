@@ -69,14 +69,14 @@ def test_mojo_model():
 
             print("\nDownloading MOJO...")
             time0 = time.time()
-            mojo_file = h2o.api("GET /3/Models/%s/mojo" % model.model_id, save_to=target_dir)
+            mojo_file = model.download_mojo(target_dir)
             print("    => %s  (%d bytes)" % (mojo_file, os.stat(mojo_file).st_size))
             assert os.path.exists(mojo_file)
             print("Time taken = %.3fs" % (time.time() - time0))
 
             print("\nDownloading POJO...")
             time0 = time.time()
-            pojo_file = h2o.download_pojo(model, target_dir, get_jar=False)
+            pojo_file = model.download_pojo(target_dir)
             pojo_size = os.stat(pojo_file).st_size
             pojo_name = os.path.splitext(os.path.basename(pojo_file))[0]
             print("    => %s  (%d bytes)" % (pojo_file, pojo_size))
