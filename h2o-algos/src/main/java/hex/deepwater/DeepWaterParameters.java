@@ -294,12 +294,6 @@ public class DeepWaterParameters extends Model.Parameters {
         dl.error("_nfolds", "N-fold cross-validation is not supported for Autoencoder.");
       }
     }
-    if (_categorical_encoding==CategoricalEncodingScheme.Enum) {
-      dl.error("_categorical_encoding", "Cannot use Enum encoding for categoricals - need numbers!");
-    }
-    if (_categorical_encoding==CategoricalEncodingScheme.OneHotExplicit) {
-      dl.error("_categorical_encoding", "Won't use explicit Enum encoding for categoricals - it's much faster with OneHotInternal!");
-    }
     if (H2O.CLOUD.size() == 1 && _replicate_training_data)
       dl.hide("_replicate_training_data", "replicate_training_data is only valid with cloud size greater than 1.");
     if (_single_node_mode && (H2O.CLOUD.size() == 1 || !_replicate_training_data))

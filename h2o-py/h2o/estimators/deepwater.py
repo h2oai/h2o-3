@@ -189,6 +189,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
 
     @property
+    def categorical_encoding(self):
+        return self._parms["categorical_encoding"]
+
+    @categorical_encoding.setter
+    def categorical_encoding(self, value):
+        self._parms["categorical_encoding"] = value
+
+    @property
     def overwrite_with_best_model(self):
         """
         bool: If enabled, override the final model with the best model found during training. (Default: True)
