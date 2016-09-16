@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.Distribution;
+import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
@@ -8,7 +9,7 @@ import water.util.SBPrintStream;
 
 import java.io.IOException;
 
-public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
+public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;
@@ -95,12 +96,12 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
 
   @Override
-  public SharedTreeModel.MojoStreamWriter getMojoStream() {
-    return new MojoStreamWriter();
+  public Model<GBMModel, GBMParameters, GBMOutput>.MojoStreamWriter getMojoStream() {
+    return new GbmMojoStreamWriter();
   }
 
-  public class MojoStreamWriter
-          extends SharedTreeModel.MojoStreamWriter {
+  public class GbmMojoStreamWriter
+          extends SharedTreeModel<GBMModel, GBMParameters, GBMOutput>.TreeMojoStreamWriter {
     @Override
     protected void writeExtraModelInfo() throws IOException {
       super.writeExtraModelInfo();

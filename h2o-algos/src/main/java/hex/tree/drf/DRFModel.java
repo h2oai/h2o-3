@@ -1,5 +1,6 @@
 package hex.tree.drf;
 
+import hex.Model;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.util.MathUtils;
@@ -8,7 +9,7 @@ import water.util.SBPrintStream;
 import java.io.IOException;
 
 
-public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
+public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     public String algoName() { return "DRF"; }
@@ -77,12 +78,12 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
   }
 
   @Override
-  public SharedTreeModel.MojoStreamWriter getMojoStream() {
-    return new MojoStreamWriter();
+  public Model<DRFModel, DRFParameters, DRFOutput>.MojoStreamWriter getMojoStream() {
+    return new DrfMojoStreamWriter();
   }
 
-  public class MojoStreamWriter
-          extends SharedTreeModel.MojoStreamWriter {
+  public class DrfMojoStreamWriter
+          extends SharedTreeModel<DRFModel, DRFParameters, DRFOutput>.TreeMojoStreamWriter {
     @Override
     protected void writeExtraModelInfo() throws IOException {
       super.writeExtraModelInfo();
