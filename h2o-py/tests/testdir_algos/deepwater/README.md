@@ -17,3 +17,6 @@ https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/deepwater/imagenet/
 * Run with `CUDA_path=/usr/local/cuda java -jar h2o.jar`
 * Download dataset above (unpack contents into directory ./bigdata/laptop/deepwater/imagenet/<here>, relative to where h2o was launched)
 * Run python tests with `python ./pyunit_lenet_deepwater.py`
+
+### Example: Inception model (152-layers)
+![inception](./inception.png "Inception model")
