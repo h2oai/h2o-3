@@ -41,10 +41,9 @@ public class AstISax extends AstPrimitive {
     @Override
     public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
         // stack is [ ..., ary, numWords, maxCardinality]
-        Frame fr2;
-        Frame fr2_reduced;
-        Frame fr3;
         Frame f = stk.track(asts[1].exec(env)).getFrame();
+        AstRoot n = asts[2];
+        AstRoot mc = asts[3];
 
         for(Vec v : f.vecs()){
             if(!v.isNumeric()){
@@ -52,10 +51,8 @@ public class AstISax extends AstPrimitive {
             }
         }
 
-        AstRoot n = asts[2];
-        AstRoot mc = asts[3];
-        int numWords = -1;
-        int maxCardinality = -1;
+        int numWords;
+        int maxCardinality;
 
         numWords = (int) n.exec(env).getNum();
         maxCardinality = (int) mc.exec(env).getNum();
@@ -66,23 +63,24 @@ public class AstISax extends AstPrimitive {
         for (int i = 0; i < numWords; i++) {
             columns.add("c"+i);
         }
-        fr2 = new AstISax.ISaxTask(numWords, maxCardinality)
+        Frame fr2 = new AstISax.ISaxTask(numWords, maxCardinality)
                 .doAll(numWords, Vec.T_NUM, f).outputFrame(null, columns.toArray(new String[numWords]), null);
 
         // see if we can reduce the cardinality by checking all unique tokens in all series in a word
         for (int i=0; i<fr2.numCols(); i++) {
             List<Integer> intlist = new ArrayList<>();
             String[] domains = fr2.vec(i).toCategoricalVec().domain();
-            for (String s: domains) intlist.add(Integer.valueOf(s));
+            for (String s: domains){
+                intlist.add(Integer.valueOf(s));
+            }
             _domain_hm.put(i,intlist.toArray(new Integer[domains.length]));
-            intlist = null;
         }
-        fr2_reduced = new AstISax.ISaxReduceCard(_domain_hm,maxCardinality).doAll(numWords, Vec.T_NUM,fr2)
+        Frame fr2_reduced = new AstISax.ISaxReduceCard(_domain_hm,maxCardinality).doAll(numWords, Vec.T_NUM,fr2)
                 .outputFrame(null,columns.toArray(new String[numWords]),null);
-        fr3 = new AstISax.ISaxStringTask(_domain_hm).doAll(1,Vec.T_STR,fr2_reduced)
+        Frame fr3 = new AstISax.ISaxStringTask(_domain_hm).doAll(1,Vec.T_STR,fr2_reduced)
                 .outputFrame(null,new String[]{"isax_index"},null);
 
-        fr2.delete();
+        fr2.delete(); //Not needed anymore
         fr3.add(fr2_reduced);
         return new ValFrame(fr3);
     }
