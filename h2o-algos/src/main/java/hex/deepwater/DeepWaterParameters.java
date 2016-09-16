@@ -1,6 +1,5 @@
 package hex.deepwater;
 
-import hex.Distribution;
 import hex.Model;
 import hex.ScoreKeeper;
 import water.H2O;
@@ -50,21 +49,29 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public enum Backend {
-    auto, mxnet, caffe, tensorflow
+    mxnet, caffe, tensorflow
+  }
+
+  public enum ProblemType {
+    image_classification
   }
 
   public double _clip_gradient = 10.0;
   public boolean _gpu = true;
   public int _device_id=0;
-  public int[] _image_shape = new int[]{0,0}; //width x height
-  public int _channels = 3;
 
   public Network _network = Network.auto;
-  public Backend _backend = Backend.auto;
+  public Backend _backend = Backend.mxnet;
   public String _network_definition_file;
   public String _network_parameters_file;
-  public String _mean_image_file;
   public String _export_native_model_prefix;
+
+  public ProblemType _problem_type = ProblemType.image_classification;
+
+  // specific parameters for image_classification
+  public int[] _image_shape = new int[]{0,0}; //width x height
+  public int _channels = 3; //either 1 (monochrome) or 3 (RGB)
+  public String _mean_image_file; //optional file with mean image (backend specific)
 
   /**
    * If enabled, store the best model under the destination key of this model at the end of training.
@@ -219,14 +226,20 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_clip_gradient<=0)
       dl.error("_clip_gradient", "Clip gradient must be >= 0");
 
-    if (_image_shape.length != 2)
-      dl.error("_image_shape", "image_shape must have 2 dimensions (width, height)");
-    if (_image_shape[0]<0)
-      dl.error("_image_shape", "image_shape[0] must be >=1 or automatic (0).");
-    if (_image_shape[1]<0)
-      dl.error("_image_shape", "image_shape[1] must be >=1 or automatic (0).");
-    if (_channels!=1 && _channels!=3)
-      dl.error("_channels", "channels must be either 1 or 3.");
+    if (_problem_type == ProblemType.image_classification) {
+      if (_image_shape.length != 2)
+        dl.error("_image_shape", "image_shape must have 2 dimensions (width, height)");
+      if (_image_shape[0] < 0)
+        dl.error("_image_shape", "image_shape[0] must be >=1 or automatic (0).");
+      if (_image_shape[1] < 0)
+        dl.error("_image_shape", "image_shape[1] must be >=1 or automatic (0).");
+      if (_channels != 1 && _channels != 3)
+        dl.error("_channels", "channels must be either 1 or 3.");
+    } else {
+      dl.warn("_image_shape", "image shape is ignored, only used for image_classification");
+      dl.warn("_channels", "channels shape is ignored, only used for image_classification");
+      dl.warn("_mean_image_file", "mean_image_file shape is ignored, only used for image_classification");
+    }
 
     if (expensive && !classification)
       dl.error("_response_column", "Only classification is supported right now.");
@@ -247,7 +260,7 @@ public class DeepWaterParameters extends Model.Parameters {
       if (!new File(_network_parameters_file).exists())
         dl.error("_network_parameters_file", "network_parameters_file " + _network_parameters_file + " not found.");
     }
-    if (_backend != Backend.auto && _backend != Backend.mxnet) {
+    if (_backend != Backend.mxnet) {
       dl.error("_backend", "only the mxnet backend is supported right now.");
     }
 
@@ -495,11 +508,6 @@ public class DeepWaterParameters extends Model.Parameters {
         toParms._network = Network.inception_bn;
         if (!fromParms._quiet_mode)
           Log.info("_network: Using " + toParms._network + " model by default.");
-      }
-      if (fromParms._backend == DeepWaterParameters.Backend.auto) {
-        toParms._backend = DeepWaterParameters.Backend.mxnet;
-        if (!fromParms._quiet_mode)
-          Log.info("_backend: Using the " + toParms._backend + " backend by default.");
       }
       if (fromParms._autoencoder && fromParms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
         if (!fromParms._quiet_mode)
