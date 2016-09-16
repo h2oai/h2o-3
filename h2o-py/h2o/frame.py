@@ -218,12 +218,12 @@ class H2OFrame(object):
         return self._ex._cache.types
 
     @property
-    def id(self):
+    def frame_id(self):
         """The name of the frame."""
         return self._frame()._ex._cache._id
 
     @id.setter
-    def id(self, newid):
+    def frame_id(self, newid):
         if self._ex._cache._id is None:
             h2o.assign(self, newid)
         else:
@@ -2566,14 +2566,14 @@ class H2OFrame(object):
         """Same as ``list(self.shape())``."""
         return [self.nrow, self.ncol]
 
-    @property
-    def frame_id(self):
-        """Same as ``frame.id``."""
-        return self.id
+    #@property
+    #def frame_id(self):
+    #    """Same as ``frame.id``."""
+    #    return self.id
 
-    @frame_id.setter
-    def frame_id(self, value):
-        self.id = value
+    #@frame_id.setter
+    #def frame_id(self, value):
+    #    self.id = value
 
 
 
