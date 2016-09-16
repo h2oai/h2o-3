@@ -114,33 +114,34 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     }
 
     try {
-      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, width, height, channels, _localmodel.get_params()._cache_data);
-      long start = System.currentTimeMillis();
-      long nativetime =0;
-      Futures fs = new Futures();
-      NativeTrainTask ntt = null;
-      while(img_iter.Next(fs) && !_job.isStopping()) {
-        if (ntt!=null) nativetime +=ntt._timeInMillis;
-        float[] data = img_iter.getData();
-        float[] labels = img_iter.getLabel();
-        long n = _localmodel.get_processed_total();
+      if (_localmodel.get_params()._problem_type== DeepWaterParameters.ProblemType.image_classification) {
+        DeepWaterImageIterator img_iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, width, height, channels, _localmodel.get_params()._cache_data);
+        long start = System.currentTimeMillis();
+        long nativetime = 0;
+        Futures fs = new Futures();
+        NativeTrainTask ntt = null;
+        while (img_iter.Next(fs) && !_job.isStopping()) {
+          if (ntt != null) nativetime += ntt._timeInMillis;
+          float[] data = img_iter.getData();
+          float[] labels = img_iter.getLabel();
+          long n = _localmodel.get_processed_total();
 //        if(!_localmodel.get_params()._quiet_mode)
 //            Log.info("Trained " + n + " samples. Training on " + Arrays.toString(img_iter.getFiles()));
-        _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double)n));
-        _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double)n));
-        //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-        ntt = new NativeTrainTask(_localmodel._imageTrain, data, labels);
-        fs.add(H2O.submitTask(ntt));
-        _localmodel.add_processed_local(batchSize);
-      }
-      fs.blockForPending();
-      nativetime +=ntt._timeInMillis;
-      long end = System.currentTimeMillis();
-      if(!_localmodel.get_params()._quiet_mode) {
-        Log.info("Time for one iteration: " + PrettyPrint.msecs(end - start, true));
-        Log.info("Time for native training : " + PrettyPrint.msecs(nativetime, true));
-      }
-
+          _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double) n));
+          _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double) n));
+          //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
+          ntt = new NativeTrainTask(_localmodel._imageTrain, data, labels);
+          fs.add(H2O.submitTask(ntt));
+          _localmodel.add_processed_local(batchSize);
+        }
+        fs.blockForPending();
+        nativetime += ntt._timeInMillis;
+        long end = System.currentTimeMillis();
+        if (!_localmodel.get_params()._quiet_mode) {
+          Log.info("Time for one iteration: " + PrettyPrint.msecs(end - start, true));
+          Log.info("Time for native training : " + PrettyPrint.msecs(nativetime, true));
+        }
+      } else throw H2O.unimpl();
     } catch (IOException e) {
       e.printStackTrace();
     }

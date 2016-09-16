@@ -86,87 +86,91 @@ final public class DeepWaterModelInfo extends Iced {
       }
     }
     else {
-      _width=parameters._image_shape[0];
-      _height=parameters._image_shape[1];
-      _channels=parameters._channels;
-      if (_width==0 || _height==0) {
-        switch(parameters._network) {
-          case lenet:
-            _width = 28;
-            _height = 28;
-            break;
-          case auto:
-          case alexnet:
-          case inception_bn:
-          case googlenet:
-          case resnet:
-            _width = 224;
-            _height = 224;
-            break;
-          case vgg:
-            _width = 320;
-            _height = 320;
-            break;
-          case user:
-            throw new H2OIllegalArgumentException("Please specify width and height for user-given model definition.");
-          default:
-            throw H2O.unimpl("Unknown network type: " + parameters._network);
-        }
-      }
-      try {
-        assert _imageTrain==null;
-        _imageTrain = new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
-        if (parameters._network != user) {
-          String network = parameters._network == auto ? inception_bn.toString() : parameters._network.toString();
-          Log.info("Creating a fresh model of the following network type: " + network);
-          _imageTrain.buildNet(_classes, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
-        }
-        // load a network if specified
-        final String networkDef = parameters._network_definition_file;
-        if (networkDef != null && !networkDef.isEmpty()) {
-          File f = new File(networkDef);
-          if(!f.exists() || f.isDirectory()) {
-            Log.err("Network definition file " + f + " not found.");
-          } else {
-            Log.info("Loading the network from: " + f.getAbsolutePath());
-            _imageTrain.loadModel(f.getAbsolutePath());
-            Log.info("Setting the optimizer and initializing the first and last layer.");
-            _imageTrain.setOptimizer(_classes, parameters._mini_batch_size);
+      if (params._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+        _width=parameters._image_shape[0];
+        _height=parameters._image_shape[1];
+        _channels=parameters._channels;
+        if (_width==0 || _height==0) {
+          switch(parameters._network) {
+            case lenet:
+              _width = 28;
+              _height = 28;
+              break;
+            case auto:
+            case alexnet:
+            case inception_bn:
+            case googlenet:
+            case resnet:
+              _width = 224;
+              _height = 224;
+              break;
+            case vgg:
+              _width = 320;
+              _height = 320;
+              break;
+            case user:
+              throw new H2OIllegalArgumentException("Please specify width and height for user-given model definition.");
+            default:
+              throw H2O.unimpl("Unknown network type: " + parameters._network);
           }
         }
-        final String networkParms = parameters._network_parameters_file;
-        if (networkParms != null && !networkParms.isEmpty()) {
-          File f = new File(networkParms);
-          if(!f.exists() || f.isDirectory()) {
-            Log.err("Parameter file " + f + " not found.");
-          } else {
-            Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
-            _imageTrain.loadParam(f.getAbsolutePath());
+        try {
+          assert _imageTrain==null;
+          _imageTrain = new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+          if (parameters._network != user) {
+            String network = parameters._network == auto ? inception_bn.toString() : parameters._network.toString();
+            Log.info("Creating a fresh model of the following network type: " + network);
+            _imageTrain.buildNet(_classes, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
           }
-        } else {
-          Log.warn("No network parameters file specified. Starting from scratch.");
-        }
-
-        final String meanData = parameters._mean_image_file;
-        if (meanData != null && !meanData.isEmpty()) {
-          File f = new File(meanData);
-          if(!f.exists() || f.isDirectory()) {
-            Log.err("Mean image file " + f + " not found.");
-          } else {
-            Log.info("Loading the mean image data from: " + f.getAbsolutePath());
-            _meanData = loadNDArray(f.getAbsolutePath());
-            int dim = _channels*_width*_height;
-            if (_meanData.length != dim) {
-              throw new H2OIllegalArgumentException("Invalid mean image data format. Expected length: " + dim + ", but has length: " + _meanData.length);
+          // load a network if specified
+          final String networkDef = parameters._network_definition_file;
+          if (networkDef != null && !networkDef.isEmpty()) {
+            File f = new File(networkDef);
+            if(!f.exists() || f.isDirectory()) {
+              Log.err("Network definition file " + f + " not found.");
+            } else {
+              Log.info("Loading the network from: " + f.getAbsolutePath());
+              _imageTrain.loadModel(f.getAbsolutePath());
+              Log.info("Setting the optimizer and initializing the first and last layer.");
+              _imageTrain.setOptimizer(_classes, parameters._mini_batch_size);
             }
           }
-        } else {
-          Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
+          final String networkParms = parameters._network_parameters_file;
+          if (networkParms != null && !networkParms.isEmpty()) {
+            File f = new File(networkParms);
+            if(!f.exists() || f.isDirectory()) {
+              Log.err("Parameter file " + f + " not found.");
+            } else {
+              Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
+              _imageTrain.loadParam(f.getAbsolutePath());
+            }
+          } else {
+            Log.warn("No network parameters file specified. Starting from scratch.");
+          }
+
+          final String meanData = parameters._mean_image_file;
+          if (meanData != null && !meanData.isEmpty()) {
+            File f = new File(meanData);
+            if(!f.exists() || f.isDirectory()) {
+              Log.err("Mean image file " + f + " not found.");
+            } else {
+              Log.info("Loading the mean image data from: " + f.getAbsolutePath());
+              _meanData = loadNDArray(f.getAbsolutePath());
+              int dim = _channels*_width*_height;
+              if (_meanData.length != dim) {
+                throw new H2OIllegalArgumentException("Invalid mean image data format. Expected length: " + dim + ", but has length: " + _meanData.length);
+              }
+            }
+          } else {
+            Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
+          }
+          nativeToJava(); //store initial state as early as it's created
+        } catch(Throwable t) {
+          Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
+          throw t;
         }
-        nativeToJava(); //store initial state as early as it's created
-      } catch(Throwable t) {
-        Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
-        throw t;
+      } else {
+        throw new IllegalArgumentException("Only image classification is currently supported.");
       }
     }
   }
@@ -235,12 +239,14 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, network);
-      if (_imageTrain==null) {
-        _imageTrain = new ImageTrain(_width, _height, _channels, _deviceID, (int)get_params().getOrMakeRealSeed());
+      if (get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+        if (_imageTrain == null) {
+          _imageTrain = new ImageTrain(_width, _height, _channels, _deviceID, (int) get_params().getOrMakeRealSeed());
+        }
+        _imageTrain.loadModel(path.toString());
+        Log.info("Randomizing everything.");
+        _imageTrain.setOptimizer(_classes, get_params()._mini_batch_size); //randomizing initial state
       }
-      _imageTrain.loadModel(path.toString());
-      Log.info("Randomizing everything.");
-      _imageTrain.setOptimizer(_classes, get_params()._mini_batch_size); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
@@ -248,7 +254,9 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, parameters);
-      _imageTrain.loadParam(path.toString());
+      if (get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+        _imageTrain.loadParam(path.toString());
+      }
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
