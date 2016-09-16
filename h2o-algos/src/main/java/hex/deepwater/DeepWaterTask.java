@@ -12,7 +12,6 @@ import water.util.RandomUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
@@ -57,6 +56,18 @@ public class DeepWaterTask extends MRTask<DeepWaterTask> {
     _localmodel.set_processed_local(0);
     final int weightIdx =_fr.find(_localmodel.get_params()._weights_column);
     final int respIdx =_fr.find(_localmodel.get_params()._response_column);
+    assert(_fr.find(_localmodel.get_params()._fold_column)==-1);
+    assert(_fr.find(_localmodel.get_params()._offset_column)==-1);
+    int dataIdx = 0;
+    while (dataIdx==weightIdx || dataIdx==respIdx) dataIdx++;
+    if (_fr.vecs().length <= dataIdx)
+      throw new IllegalArgumentException("no data column found.");
+    else
+      Log.debug("Using column " + _fr.name(dataIdx) + " as " +
+          ((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) ? "image files"
+              :((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.document_classification) ? "document files"
+              : "arbitrary bytes")));
+
     final int batchSize = _localmodel.get_params()._mini_batch_size;
 
     // single-threaded logic

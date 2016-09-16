@@ -272,11 +272,11 @@ final public class DeepWaterModelInfo extends Iced {
   TwoDimTable createSummaryTable() {
     TwoDimTable table = new TwoDimTable(
         "Status of Deep Learning Model",
-        (!get_params()._autoencoder ? ("predicting " + get_params()._response_column + ", ") : "") +
+        get_params()._network.toString() + ": " + PrettyPrint.bytes(size()) + ", "
+        + (!get_params()._autoencoder ? ("predicting " + get_params()._response_column + ", ") : "") +
             (get_params()._autoencoder ? "auto-encoder" :
                 _classification ? (_classes + "-class classification") : "regression")
             + ", "
-            + PrettyPrint.bytes(size()) + ", "
             + String.format("%,d", get_processed_global()) + " training samples, "
             + "mini-batch size " + String.format("%,d", get_params()._mini_batch_size),
         new String[1], //rows
