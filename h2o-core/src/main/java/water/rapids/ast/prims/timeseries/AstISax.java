@@ -78,7 +78,7 @@ public class AstISax extends AstPrimitive {
             _domain_hm.put(i,intlist.toArray(new Integer[domains.length]));
             intlist = null;
         }
-        fr2_reduced = new AstISax.ISaxReduceCard(_domain_hm).doAll(numWords, Vec.T_NUM,fr2)
+        fr2_reduced = new AstISax.ISaxReduceCard(_domain_hm,maxCardinality).doAll(numWords, Vec.T_NUM,fr2)
                 .outputFrame(null,columns.toArray(new String[numWords]),null);
         fr3 = new AstISax.ISaxStringTask(_domain_hm).doAll(1,Vec.T_STR,fr2_reduced)
                 .outputFrame(null,new String[]{"isax_index"},null);
@@ -90,15 +90,22 @@ public class AstISax extends AstPrimitive {
 
     public static class ISaxReduceCard extends MRTask<AstISax.ISaxReduceCard> {
         private IcedHashMap<Integer,Integer[]> _domain_hm;
-        ISaxReduceCard(IcedHashMap<Integer,Integer[]> dm) { _domain_hm = dm; }
+        int maxCardinality;
+        ISaxReduceCard(IcedHashMap<Integer,Integer[]> dm, int mc) {
+            _domain_hm = dm;
+            maxCardinality = mc;
+        }
 
         @Override
         public void map(Chunk cs[], NewChunk nc[]){
             for (int i = 0; i<cs.length; i++) {
                 for (int j = 0; j<cs[i].len(); j++) {
-                    // TODO: avoid this search if array from _domain_hm.get has length that is
-                    // the same as max cardinality!
-                    Integer idxOf = Arrays.binarySearch(_domain_hm.get(i),(int) cs[i].at8(j));
+                    int idxOf;
+                    if (_domain_hm.get(i).length < maxCardinality) {
+                        idxOf = Arrays.binarySearch(_domain_hm.get(i),(int) cs[i].at8(j));
+                    } else {
+                        idxOf = (int) cs[i].at8(j);
+                    }
                     nc[i].addNum(idxOf);
 
                 }
