@@ -99,6 +99,7 @@ As you have noticed, we define a number of special classes to facilitate type co
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import importlib
+import io
 import re
 import sys
 import tokenize
@@ -497,7 +498,7 @@ def _retrieve_assert_arguments():
 
         # Read the source file and tokenize it, extracting the expressions.
         try:
-            with open(fr.f_code.co_filename, "r") as f:
+            with io.open(fr.f_code.co_filename, "r", encoding="utf-8") as f:
                 # Skip initial lines that are irrelevant
                 for i in range(fr.f_lineno - 1): next(f)
                 # Create tokenizer
