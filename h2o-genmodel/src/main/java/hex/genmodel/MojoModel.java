@@ -38,10 +38,22 @@ abstract public class MojoModel extends GenModel {
         File f = new File(file);
         if (!f.exists())
             throw new FileNotFoundException("File " + file + " cannot be found.");
-        ContentReader cr = f.isDirectory()? new FolderContentReader(file) : new ArchiveContentReader(file);
-        Map<String, Object> info = parseModelInfo(cr);
+        ContentReader cr = f.isDirectory()? new FolderContentReader(file)
+                                          : new ArchiveContentReader(file);
+        return load(cr);
+    }
+
+    /**
+     * Advanced way of constructing Mojo models by supplying a custom contentReader.
+     *
+     * @param contentReader any class that implements the {@link ContentReader} interface.
+     * @return New `MojoModel` object
+     * @throws IOException if the contentReader does
+     */
+    static public MojoModel load(ContentReader contentReader) throws IOException {
+        Map<String, Object> info = parseModelInfo(contentReader);
         String[] columns = (String[]) info.get("[columns]");
-        String[][] domains = parseModelDomains(cr, columns.length, info.get("[domains]"));
+        String[][] domains = parseModelDomains(contentReader, columns.length, info.get("[domains]"));
         String algo = (String) info.get("algorithm");
         if (algo == null)
             throw new IOException("Model file does not contain information about the model's algorithm.");
@@ -49,17 +61,18 @@ abstract public class MojoModel extends GenModel {
         // Create and return a subclass instance
         switch (algo) {
             case "Distributed Random Forest":
-                return new DrfModel(cr, info, columns, domains);
+                return new DrfModel(contentReader, info, columns, domains);
             case "Gradient Boosting Method":
-                return new GbmModel(cr, info, columns, domains);
+                return new GbmModel(contentReader, info, columns, domains);
             default:
                 throw new IOException("Unsupported algorithm " + algo + " for raw models.");
         }
     }
 
-    //--------------------------------------------------------------------------------------------------------------------
+
+    //------------------------------------------------------------------------------------------------------------------
     // IGenModel interface
-    //--------------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------------------------------------
 
     @Override public boolean isSupervised() { return _supervised; }
     @Override public int nfeatures() { return _nfeatures; }
@@ -159,7 +172,6 @@ abstract public class MojoModel extends GenModel {
         }
         return domains;
     }
-
 
 
     //------------------------------------------------------------------------------------------------------------------
