@@ -724,6 +724,16 @@ class ModelBase(backwards_compatible()):
         h2o.download_pojo(self, path)
 
 
+    def download_mojo(self, path="."):
+        """
+        Download the model in MOJO format.
+
+        :param path: the path where MOJO file should be saved.
+        :returns: name of the file written.
+        """
+        return h2o.api("GET /3/Model/%s/mojo" % self.model_id, save_to=path)
+
+
     @staticmethod
     def _get_metrics(o, train, valid, xval):
         # noinspection PyProtectedMember
