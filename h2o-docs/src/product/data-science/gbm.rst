@@ -95,7 +95,7 @@ Defining a GBM Model
 
 -  **learn\_rate\_annealing**:  Specifies to reduce the **learn_rate** by this factor after every tree. So for *N* trees, GBM starts with **learn_rate** and ends with **learn_rate** * **learn\_rate\_annealing**^*N*. For example, instead of using **learn_rate=0.01**, you can now try **learn_rate=0.05** and **learn\_rate\_annealing=0.99**. This method would converge much faster with almost the same accuracy. Use caution not to overfit. 
 
--  **distribution**: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, or tweedie.
+-  **distribution**: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie.
 
        -  If the distribution is **multinomial**, the response column
           must be categorical.
@@ -107,8 +107,10 @@ Defining a GBM Model
           be numeric.
        -  If the distribution is **gaussian**, the response column must
           be numeric.
-       -  If the distribution is **laplace**, the response column must
+       -  If the distribution is **huber**, the response column must
           be numeric.
+       -  If the distribution is **gamma**, the response column must be
+          numeric.
        -  If the distribution is **quantile**, the response column must
           be numeric.
           
