@@ -117,7 +117,7 @@ public abstract class TreeBasedModel extends MojoModel {
     // Private
     //------------------------------------------------------------------------------------------------------------------
 
-    protected TreeBasedModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
+    protected TreeBasedModel(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(cr, info, columns, domains);
         _ntrees = (int) info.get("n_trees");
         _compressed_trees = new byte[_ntrees * _nclasses][];

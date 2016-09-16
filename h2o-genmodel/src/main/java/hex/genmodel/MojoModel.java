@@ -15,7 +15,7 @@ import java.util.zip.ZipFile;
  * Prediction model based on the persisted binary data.
  */
 abstract public class MojoModel extends GenModel {
-    protected transient ContentReader _reader;
+    protected transient MojoReader _reader;
     protected hex.ModelCategory _category;
     protected String _uuid;
     protected boolean _supervised;
@@ -38,10 +38,22 @@ abstract public class MojoModel extends GenModel {
         File f = new File(file);
         if (!f.exists())
             throw new FileNotFoundException("File " + file + " cannot be found.");
-        ContentReader cr = f.isDirectory()? new FolderContentReader(file) : new ArchiveContentReader(file);
-        Map<String, Object> info = parseModelInfo(cr);
+        MojoReader cr = f.isDirectory()? new FolderMojoReader(file)
+                                       : new ArchiveMojoReader(file);
+        return load(cr);
+    }
+
+    /**
+     * Advanced way of constructing Mojo models by supplying a custom mojoReader.
+     *
+     * @param mojoReader a class that implements the {@link MojoReader} interface.
+     * @return New `MojoModel` object
+     * @throws IOException if the mojoReader does
+     */
+    static public MojoModel load(MojoReader mojoReader) throws IOException {
+        Map<String, Object> info = parseModelInfo(mojoReader);
         String[] columns = (String[]) info.get("[columns]");
-        String[][] domains = parseModelDomains(cr, columns.length, info.get("[domains]"));
+        String[][] domains = parseModelDomains(mojoReader, columns.length, info.get("[domains]"));
         String algo = (String) info.get("algorithm");
         if (algo == null)
             throw new IOException("Model file does not contain information about the model's algorithm.");
@@ -49,17 +61,18 @@ abstract public class MojoModel extends GenModel {
         // Create and return a subclass instance
         switch (algo) {
             case "Distributed Random Forest":
-                return new DrfModel(cr, info, columns, domains);
+                return new DrfModel(mojoReader, info, columns, domains);
             case "Gradient Boosting Method":
-                return new GbmModel(cr, info, columns, domains);
+                return new GbmModel(mojoReader, info, columns, domains);
             default:
                 throw new IOException("Unsupported algorithm " + algo + " for raw models.");
         }
     }
 
-    //--------------------------------------------------------------------------------------------------------------------
+
+    //------------------------------------------------------------------------------------------------------------------
     // IGenModel interface
-    //--------------------------------------------------------------------------------------------------------------------
+    //------------------------------------------------------------------------------------------------------------------
 
     @Override public boolean isSupervised() { return _supervised; }
     @Override public int nfeatures() { return _nfeatures; }
@@ -73,7 +86,7 @@ abstract public class MojoModel extends GenModel {
     // (Private) initialization
     //------------------------------------------------------------------------------------------------------------------
 
-    protected MojoModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
+    protected MojoModel(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(columns, domains);
         _reader = cr;
         _uuid = (String) info.get("uuid");
@@ -88,7 +101,7 @@ abstract public class MojoModel extends GenModel {
         _offsetColumn = (String) info.get("offset_column");
     }
 
-    static private Map<String, Object> parseModelInfo(ContentReader reader) throws IOException {
+    static private Map<String, Object> parseModelInfo(MojoReader reader) throws IOException {
         BufferedReader br = reader.getTextFile("model.ini");
         Map<String, Object> info = new HashMap<>();
         String line;
@@ -132,7 +145,7 @@ abstract public class MojoModel extends GenModel {
         return info;
     }
 
-    static private String[][] parseModelDomains(ContentReader reader, int n_columns, Object domains_assignment)
+    static private String[][] parseModelDomains(MojoReader reader, int n_columns, Object domains_assignment)
             throws IOException {
         String[][] domains = new String[n_columns][];
         // noinspection unchecked
@@ -161,20 +174,19 @@ abstract public class MojoModel extends GenModel {
     }
 
 
-
     //------------------------------------------------------------------------------------------------------------------
     // Utility classes for accessing model's data either from a zip file, or from a directory
     //------------------------------------------------------------------------------------------------------------------
 
-    public interface ContentReader {
+    public interface MojoReader {
         BufferedReader getTextFile(String filename) throws IOException;
         byte[] getBinaryFile(String filename) throws IOException;
     }
 
-    static private class FolderContentReader implements ContentReader {
+    static private class FolderMojoReader implements MojoReader {
         private String root;
 
-        public FolderContentReader(String folder) {
+        public FolderMojoReader(String folder) {
             root = folder;
         }
 
@@ -195,10 +207,10 @@ abstract public class MojoModel extends GenModel {
         }
     }
 
-    static private class ArchiveContentReader implements ContentReader {
+    static private class ArchiveMojoReader implements MojoReader {
         private ZipFile zf;
 
-        public ArchiveContentReader(String archivename) throws IOException {
+        public ArchiveMojoReader(String archivename) throws IOException {
             zf = new ZipFile(archivename);
         }
 
