@@ -41,17 +41,16 @@ public class AstISax extends AstPrimitive {
     @Override
     public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
         // stack is [ ..., ary, numWords, maxCardinality]
-        // handle the breaks
         Frame fr2;
         Frame fr2_reduced;
         Frame fr3;
         Frame f = stk.track(asts[1].exec(env)).getFrame();
 
-        int c = 0;
-        for (Vec v : f.vecs()) {
-            if (!v.isNumeric()) c++;
+        for(Vec v : f.vecs()){
+            if(!v.isNumeric()){
+                throw new IllegalArgumentException("iSAX only applies to numeric columns");
+            }
         }
-        if (c > 0) throw new IllegalArgumentException("iSAX only applies to numeric columns");
 
         AstRoot n = asts[2];
         AstRoot mc = asts[3];
