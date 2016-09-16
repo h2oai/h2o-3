@@ -9,7 +9,7 @@ import water.util.SBPrintStream;
 import java.io.IOException;
 
 
-public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
+public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     public String algoName() { return "DRF"; }
@@ -78,12 +78,12 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
   }
 
   @Override
-  public Model<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput>.RawDataStreamWriter getRawDataStream() {
-    return new RawDataStreamWriter();
+  public Model<DRFModel, DRFParameters, DRFOutput>.MojoStreamWriter getMojoStream() {
+    return new DrfMojoStreamWriter();
   }
 
-  public class RawDataStreamWriter
-          extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput>.RawDataStreamWriter {
+  public class DrfMojoStreamWriter
+          extends SharedTreeModel<DRFModel, DRFParameters, DRFOutput>.TreeMojoStreamWriter {
     @Override
     protected void writeExtraModelInfo() throws IOException {
       super.writeExtraModelInfo();

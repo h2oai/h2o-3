@@ -1,6 +1,6 @@
 package hex.genmodel.algos;
 
-import hex.genmodel.RawModel;
+import hex.genmodel.MojoModel;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 import hex.genmodel.utils.NaSplitDir;
@@ -10,10 +10,10 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * Common ancestor for {@link DrfRawModel} and {@link GbmRawModel}.
+ * Common ancestor for {@link DrfModel} and {@link GbmModel}.
  * See also: `hex.tree.SharedTreeModel` and `hex.tree.TreeVisitor` classes.
  */
-public abstract class TreeBasedModel extends RawModel {
+public abstract class TreeBasedModel extends MojoModel {
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();

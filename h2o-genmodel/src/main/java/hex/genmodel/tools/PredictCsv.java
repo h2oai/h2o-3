@@ -2,7 +2,7 @@ package hex.genmodel.tools;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
-import hex.genmodel.RawModel;
+import hex.genmodel.MojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
@@ -203,65 +203,65 @@ public class PredictCsv {
   }
 
 
-  private void loadModel(String modelName) {
+  private void loadModel(String modelName) throws Exception {
     try {
-      GenModel genModel = RawModel.load(modelName);
-      model = new EasyPredictModelWrapper(genModel);
+      loadMojo(modelName);
     } catch (IOException e) {
-      // In the old code we used --model parameter to indicate POJO name. This is why if we cannot load the model
-      // `modelName` we attempt to load its POJO -- in case the user is still using deprecated API.
-      loadPojo(modelName);
-      System.out.println("\n\nDEPRECATED  Please use --pojo parameter to load the model's POJO.\n\n\n");
+      loadPojo(modelName);  // may throw an exception too
     }
   }
 
-  private void loadPojo(String className) {
-    try {
-      GenModel gm = (GenModel) Class.forName(className).newInstance();
-      model = new EasyPredictModelWrapper(gm);
-    } catch (Exception e) {
-      e.printStackTrace();
-      usage();
-    }
+  private void loadPojo(String className) throws Exception {
+    GenModel genModel = (GenModel) Class.forName(className).newInstance();
+    model = new EasyPredictModelWrapper(genModel);
+  }
+
+  private void loadMojo(String modelName) throws IOException {
+    GenModel genModel = MojoModel.load(modelName);
+    model = new EasyPredictModelWrapper(genModel);
   }
 
   private static void usage() {
     System.out.println("");
-    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PredictCsv --model modelName");
+    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PredictCsv --mojo mojoName");
     System.out.println("             --pojo pojoName --input inputFile --output outputFile --decimal");
     System.out.println("");
-    System.out.println("     --model   The model to train. This can be either zip file or a folder ");
-    System.out.println("               containing raw model's data.");
+    System.out.println("     --mojo    Name of the zip file containing model's MOJO.");
     System.out.println("     --pojo    Name of the java class containing the model's POJO. Either this ");
     System.out.println("               parameter or --model must be specified.");
     System.out.println("     --input   CSV file containing the test data set to score.");
     System.out.println("     --output  Name of the output CSV file with computed predictions.");
-    System.out.println("     --decimal Use decimal numbers in the output (default is to use hexdemical).");
+    System.out.println("     --decimal Use decimal numbers in the output (default is to use hexademical).");
     System.out.println("");
     System.exit(1);
   }
 
   private void parseArgs(String[] args) {
-    for (int i = 0; i < args.length; i++) {
-      String s = args[i];
-      if (s.equals("--header")) continue;
-      if (s.equals("--decimal"))
-        useDecimalOutput = true;
-      else {
-        i++;
-        if (i >= args.length) usage();
-        String sarg = args[i];
-        switch (s) {
-          case "--model":  loadModel(sarg); break;
-          case "--pojo":   loadPojo(sarg); break;
-          case "--input":  inputCSVFileName = sarg; break;
-          case "--output": outputCSVFileName = sarg; break;
-          default:
-            System.out.println("ERROR: Unknown command line argument: " + s);
-            usage();
+    try {
+      for (int i = 0; i < args.length; i++) {
+        String s = args[i];
+        if (s.equals("--header")) continue;
+        if (s.equals("--decimal"))
+          useDecimalOutput = true;
+        else {
+          i++;
+          if (i >= args.length) usage();
+          String sarg = args[i];
+          switch (s) {
+            case "--model":  loadModel(sarg); break;
+            case "--mojo":   loadMojo(sarg); break;
+            case "--pojo":   loadPojo(sarg); break;
+            case "--input":  inputCSVFileName = sarg; break;
+            case "--output": outputCSVFileName = sarg; break;
+            default:
+              System.out.println("ERROR: Unknown command line argument: " + s);
+              usage();
+          }
         }
-
       }
+    } catch (Exception e) {
+      e.printStackTrace();
+      usage();
     }
   }
 }

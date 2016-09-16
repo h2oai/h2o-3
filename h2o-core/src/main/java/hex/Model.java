@@ -1210,6 +1210,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return _parms.checksum_impl() * _output.checksum_impl();
   }
 
+
   //====================================================================================================================
   /**
    * Serialize the model into a zipped file containing multiple raw data files. The structure of the zip will be
@@ -1249,7 +1250,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * The [info] section lists general model information; [columns] contains the list of all column names; and [domains]
    *
    */
-  public class RawDataStreamWriter extends StreamWriter {
+  public class MojoStreamWriter extends StreamWriter {
     private StringBuilder tmpfile;
     private String tmpname;
     private ZipOutputStream zos;
@@ -1288,6 +1289,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       writeExtraModelInfo();
       writeln("timestamp = " + new DateTime().toString());
       writeln("h2o_version = " + H2O.ABV.projectVersion());
+      writeln("mojo_version = 1.0");
       writeln("license = Apache License Version 2.0");
       writeln("");
       writeln("[columns]");
@@ -1352,8 +1354,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  public RawDataStreamWriter getRawDataStream() {
-    return new RawDataStreamWriter();
+  public MojoStreamWriter getMojoStream() {
+    return new MojoStreamWriter();
   }
 
 

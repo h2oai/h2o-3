@@ -9,7 +9,7 @@ import water.util.SBPrintStream;
 
 import java.io.IOException;
 
-public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
+public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;
@@ -96,12 +96,12 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
 
 
   @Override
-  public Model<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput>.RawDataStreamWriter getRawDataStream() {
-    return new GBMModel.RawDataStreamWriter();
+  public Model<GBMModel, GBMParameters, GBMOutput>.MojoStreamWriter getMojoStream() {
+    return new GbmMojoStreamWriter();
   }
 
-  public class RawDataStreamWriter
-          extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput>.RawDataStreamWriter {
+  public class GbmMojoStreamWriter
+          extends SharedTreeModel<GBMModel, GBMParameters, GBMOutput>.TreeMojoStreamWriter {
     @Override
     protected void writeExtraModelInfo() throws IOException {
       super.writeExtraModelInfo();
