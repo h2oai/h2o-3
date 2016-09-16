@@ -458,7 +458,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         _predFrame = new Frame(predVecs);
       }
 
-      DeepWaterImageIterator img_iter;
+      //TODO: should be a base class DeepWaterIterator
+      DeepWaterImageIterator iterator=null;
       try {
         Vec.Writer[] vw = new Vec.Writer[cols];
         if (_makePreds) {
@@ -470,15 +471,17 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         long row=0;
         int skippedIdx=0;
         int skippedRow=skipped.isEmpty()?-1:skipped.get(skippedIdx);
-        img_iter = new DeepWaterImageIterator(train_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, true);
+        if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+          iterator = new DeepWaterImageIterator(train_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, true);
+        } else throw H2O.unimpl();
         Futures fs=new Futures();
-        while(img_iter.Next(fs)) {
+        while(iterator.Next(fs)) {
           if (isCancelled() || _j != null && _j.stop_requested()) return;
-          float[] data = img_iter.getData();
-          float[] predFloats = model_info()._imageTrain.predict(data);
-//          Log.info("Scoring on " + batch_size + " samples (rows " + row + " and up): " + Arrays.toString(img_iter.getFiles()));
+            float[] data = iterator.getData();
+            float[] predFloats = model_info()._imageTrain.predict(data);
+//          Log.info("Scoring on " + batch_size + " samples (rows " + row + " and up): " + Arrays.toString(iterator.getFiles()));
 
-          // fill the pre-created output Frame
+            // fill the pre-created output Frame
           for (int j = 0; j < batch_size; ++j) {
             while (row==skippedRow) {
               assert(weightIdx == -1 ||_fr.vec(weightIdx).at(row)==0);
@@ -501,7 +504,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
                 GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
               preds[0] = hex.genmodel.GenModel.getPrediction(preds, _output._priorClassDist, null, defaultThreshold());
               if (_makePreds) {
-                //Log.info(img_iter.getFiles()[j] + " -> preds: " + Arrays.toString(preds));
+                //Log.info(iterator.getFiles()[j] + " -> preds: " + Arrays.toString(preds));
                 for (int i = 0; i <= classes; ++i)
                   vw[i].set(row, preds[i]);
               }
