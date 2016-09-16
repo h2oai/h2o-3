@@ -58,6 +58,10 @@ class H2ODeepWaterEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
         Default: False
 
+      categorical_encoding : "AUTO" | "Enum" | "OneHotInternal" | "OneHotExplicit" | "Binary" | "Eigen"
+        Encoding scheme for categorical features
+        Default: "OneHotInternal"
+
       overwrite_with_best_model : bool
         If enabled, override the final model with the best model found during training.
         Default: True
@@ -166,7 +170,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
       backend : "auto" | "mxnet" | "caffe" | "tensorflow"
         Deep Learning Backend.
-        Default: "auto"
+        Default: "mxnet"
 
       image_shape : list(int)
         Width and height of image.
@@ -206,14 +210,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
         for name in ["model_id", "checkpoint", "training_frame", "validation_frame", "nfolds",
                      "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                      "fold_column", "response_column", "ignored_columns", "score_each_iteration",
-                     "overwrite_with_best_model", "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp",
-                     "seed", "rate", "rate_annealing", "momentum_start", "momentum_ramp", "momentum_stable",
-                     "distribution", "score_interval", "score_training_samples", "score_validation_samples",
-                     "score_duty_cycle", "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
-                     "replicate_training_data", "single_node_mode", "shuffle_training_data", "mini_batch_size",
-                     "clip_gradient", "network", "backend", "image_shape", "channels", "gpu", "device_id",
-                     "network_definition_file", "network_parameters_file", "mean_image_file",
-                     "export_native_model_prefix"]:
+                     "categorical_encoding", "overwrite_with_best_model", "epochs", "train_samples_per_iteration",
+                     "target_ratio_comm_to_comp", "seed", "rate", "rate_annealing", "momentum_start", "momentum_ramp",
+                     "momentum_stable", "distribution", "score_interval", "score_training_samples",
+                     "score_validation_samples", "score_duty_cycle", "stopping_rounds", "stopping_metric",
+                     "stopping_tolerance", "max_runtime_secs", "replicate_training_data", "single_node_mode",
+                     "shuffle_training_data", "mini_batch_size", "clip_gradient", "network", "backend", "image_shape",
+                     "channels", "gpu", "device_id", "network_definition_file", "network_parameters_file",
+                     "mean_image_file", "export_native_model_prefix"]:
             pname = name[:-1] if name[-1] == '_' else name
             self._parms[pname] = kwargs[name] if name in kwargs else None
 
@@ -304,6 +308,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @score_each_iteration.setter
     def score_each_iteration(self, value):
         self._parms["score_each_iteration"] = value
+
+    @property
+    def categorical_encoding(self):
+        return self._parms["categorical_encoding"]
+
+    @categorical_encoding.setter
+    def categorical_encoding(self, value):
+        self._parms["categorical_encoding"] = value
 
     @property
     def overwrite_with_best_model(self):
