@@ -133,7 +133,8 @@ public abstract class Parser extends Iced {
           if (sameColumnNames)  // only recognize current file header if it has the same column names as previous files
             this._setup.setCheckHeader(ps._check_header);
         }
-      }
+      } else  // should refresh _setup with correct check_header
+        this._setup.setCheckHeader(ps._check_header);
     }
     return true;  // everything is fine
   }
