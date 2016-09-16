@@ -12,7 +12,7 @@ public final class DrfModel extends TreeBasedModel {
     private boolean _binomial_double_trees;
 
 
-    public DrfModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
+    public DrfModel(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(cr, info, columns, domains);
         _binomial_double_trees = (boolean) info.get("binomial_double_trees");
         _effective_n_classes = _nclasses == 2 && !_binomial_double_trees? 1 : _nclasses;
