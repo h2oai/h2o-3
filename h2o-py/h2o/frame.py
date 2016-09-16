@@ -222,7 +222,7 @@ class H2OFrame(object):
         """The name of the frame."""
         return self._frame()._ex._cache._id
 
-    @id.setter
+    @frame_id.setter
     def frame_id(self, newid):
         if self._ex._cache._id is None:
             h2o.assign(self, newid)
