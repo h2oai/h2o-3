@@ -351,12 +351,10 @@ class Test_deeplearning_grid_search:
 
             if self.test_failed == 0:
                 print("test_deeplearning_fieldnames for deeplearning has passed!")
-        except:
-            if len(grid_model) > 0:
-                print("test_deeplearning_fieldnames for deeplearning failed: exception was thrown for "
-                      "no reason.")
+        except Exception as e:
+            if self.possible_number_models > 0:
+                print("test_gbm_grid_search_over_params for GBM failed: exception {0}".format(e))
                 self.test_failed += 1
-
 
 def test_grid_search_for_deeplearning_over_all_params():
     """

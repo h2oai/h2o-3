@@ -318,12 +318,10 @@ class Test_rf_grid_search:
 
                 if self.test_failed == 0:
                     print("test_rf_gridsearch_sorting_metrics for random forest has passed!")
-        except:
+        except Exception as e:
             if self.possible_number_models > 0:
-                print("test_rf_gridsearch_sorting_metrics for random forest failed: exception was thrown for no"
-                      " reason.")
+                print("test_gbm_grid_search_over_params for GBM failed: exception {0}".format(e))
                 self.test_failed += 1
-
 
 def test_grid_search_for_rf_over_all_params():
     """

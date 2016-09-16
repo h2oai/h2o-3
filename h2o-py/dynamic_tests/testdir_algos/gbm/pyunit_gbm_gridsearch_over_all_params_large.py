@@ -102,7 +102,7 @@ class Test_gbm_grid_search:
 
     # parameters to be excluded from hyper parameter list even though they may be gridable
     exclude_parameter_lists = ['distribution', 'tweedie_power', 'validation_frame', 'response_column',
-                               'sample_rate_per_class']   # do not need these
+                               'sample_rate_per_class', "r2_stopping" ]   # do not need these
 
     # these are supposed to be gridable but are not really
     exclude_parameter_lists.extend(['class_sampling_factors', 'fold_column', 'weights_column', 'offset_column',
@@ -317,10 +317,6 @@ class Test_gbm_grid_search:
                     else:
                         max_runtime = 0
 
-                    if "r2_stopping" in params_list:
-                        model_params["r2_stopping"] = params_list["r2_stopping"]
-                        del params_list["r2_stopping"]
-
                     if "validation_frame" in params_list:
                         model_params["validation_frame"] = params_list["validation_frame"]
                         del params_list["validation_frame"]
@@ -378,10 +374,10 @@ class Test_gbm_grid_search:
 
                 if self.test_failed == 0:
                     print("test_gbm_grid_search_over_params for GBM has passed!")
-        except:
-            if self.possible_number_models > 0:
-                print("test_gbm_grid_search_over_params for GBM failed: exception was thrown for no reason.")
-                self.test_failed += 1
+        except Exception as e:
+             if self.possible_number_models > 0:
+                 print("test_gbm_grid_search_over_params for GBM failed: exception {0}".format(e))
+                 self.test_failed += 1
 
 
 def test_grid_search_for_gbm_over_all_params():

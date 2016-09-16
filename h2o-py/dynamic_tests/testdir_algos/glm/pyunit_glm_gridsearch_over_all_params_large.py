@@ -546,15 +546,15 @@ class Test_glm_grid_search:
             else:
                 print("test3_duplicated_parameter_specification passed: Java error exception should not have "
                       "been thrown and did not!")
-        except:
+        except Exception as e:
             if error_number[0] == 1:
                 self.test_failed += 1
                 self.test_failed_array[self.test_num] = 1
-                print("test3_duplicated_parameter_specification failed: Java error exception should not "
-                      "have been thrown! ")
+                print("test3_duplicated_parameter_specification failed: Java error exception {0} should not "
+                      "have been thrown! ".format(e))
             else:
-                print("test3_duplicated_parameter_specification passed: Java error exception should "
-                      "have been thrown and did.")
+                print("test3_duplicated_parameter_specification passed: Java error exception {0} should "
+                      "have been thrown and did.".format(e))
 
 
 def test_grid_search_for_glm_over_all_params():
