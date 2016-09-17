@@ -1,23 +1,17 @@
 package water.rapids.ast.prims.timeseries;
 
-import com.sun.xml.internal.bind.v2.runtime.reflect.opt.FieldAccessor_Double;
 import org.apache.commons.math3.distribution.NormalDistribution;
-import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.nbhm.NonBlockingHashMap;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
-import water.util.IcedHashMap;
-import water.util.IcedHashMapGeneric;
-import water.util.IcedInt;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,11 +21,12 @@ import java.util.List;
  * The iSAX 2.0 algorithm is a time series indexing strategy that reduces the dimensionality of a time series along the time axis.
  * For example, if a time series had 1000 unique values with data across 500 rows, reduce this data set to a time series that
  * uses 100 unique values, across 10 buckets along the time span.
+ * http://www.cs.ucr.edu/~eamonn/iSAX_2.0.pdf
+ * http://www.cs.ucr.edu/~eamonn/SAX.pdf
  *
  * @author markchan & navdeepgill
  */
 public class AstISax extends AstPrimitive {
-    //protected IcedHashMap<IcedInt,IcedInt[]> _domain_hm = new IcedHashMap<>();
     protected double[][] _domain_hm = null;
     @Override
     public String[] args() { return new String[]{"ary", "numWords", "maxCardinality"}; }
@@ -63,8 +58,6 @@ public class AstISax extends AstPrimitive {
         maxCardinality = (int) mc.exec(env).getNum();
 
 
-
-
         ArrayList<String> columns = new ArrayList<String>();
         for (int i = 0; i < numWords; i++) {
             columns.add("c"+i);
@@ -76,13 +69,10 @@ public class AstISax extends AstPrimitive {
         for (double[] r : _domain_hm) Arrays.fill(r,Double.NaN);
         // see if we can reduce the cardinality by checking all unique tokens in all series in a word
         for (int i=0; i<fr2.numCols(); i++) {
-            List<IcedInt> intlist = new ArrayList<>();
             String[] domains = fr2.vec(i).toCategoricalVec().domain();
             for (int j = 0; j < domains.length; j++){
                 _domain_hm[i][j] = Double.valueOf(domains[j]);
-                //intlist.add(new IcedInt(Integer.valueOf(s)));
             }
-            //_domain_hm.put(new IcedInt(i),intlist.toArray(new IcedInt[domains.length]));
         }
 
         int[] maxCards = new int[numWords];
