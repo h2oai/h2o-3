@@ -29,6 +29,7 @@ from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.compatibility import viewitems, viewvalues
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote)
@@ -37,6 +38,7 @@ from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, 
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
 __all__ = ("H2OFrame", )
+
 
 
 
@@ -171,6 +173,10 @@ class H2OFrame(object):
             return None
         return fr
 
+    def refresh(self):
+        """Reload frame information from the backend h2o server."""
+        self._ex._cache.flush()
+        self._frame(True)
 
     #-------------------------------------------------------------------------------------------------------------------
     # Frame properties
@@ -1000,7 +1006,8 @@ class H2OFrame(object):
                             verify=h2o.connection()._verify_ssl_cert, stream=True).text
 
     def __getitem__(self, item):
-        """Frame slicing. Supports R-like row and column slicing.
+        """
+        Frame slicing, supports row and column slicing.
 
         Parameters
         ----------
@@ -1148,16 +1155,16 @@ class H2OFrame(object):
         except:
             return [-1, item]
 
-    def __setitem__(self, b, c):
+    def __setitem__(self, item, value):
         """Replace or update column(s) in an H2OFrame.
 
         Parameters
         ----------
-          b : int, str
+          item : int, str
             A 0-based index or a column name.
 
-          c : int, H2OFrame, str
-            The value replacing 'b'
+          value : int, H2OFrame, str
+            The value replacing 'item'
 
         Returns
         -------
@@ -1165,25 +1172,25 @@ class H2OFrame(object):
         """
         # TODO: add far stronger type checks, so that we never run in a situation where the server has to
         #       tell us that we requested an illegal operation.
-        assert_is_type(b, str, int, tuple, list, ExprNode, H2OFrame)
-        assert_is_type(c, None, numeric, str, H2OFrame, ExprNode)
+        assert_is_type(item, str, int, tuple, list, H2OFrame)
+        assert_is_type(value, None, numeric, str, H2OFrame)
         col_expr = None
         row_expr = None
         colname = None  # When set, we are doing an append
 
-        if is_type(b, str):  # String column name, could be new or old
-            if b in self.names:
-                col_expr = self.names.index(b)  # Old, update
+        if is_type(item, str):  # String column name, could be new or old
+            if item in self.names:
+                col_expr = self.names.index(item)  # Old, update
             else:
                 col_expr = self.ncol
-                colname = b  # New, append
-        elif is_type(b, int):
-            assert_satisfies(b, -self.ncol <= b < self.ncol)
-            col_expr = b  # Column by number
-        elif isinstance(b, tuple):  # Both row and col specifiers
+                colname = item  # New, append
+        elif is_type(item, int):
+            assert_satisfies(item, -self.ncol <= item < self.ncol)
+            col_expr = item  # Column by number
+        elif isinstance(item, tuple):  # Both row and col specifiers
             # Need more type checks
-            row_expr = b[0]
-            col_expr = b[1]
+            row_expr = item[0]
+            col_expr = item[1]
             if is_type(col_expr, str):  # Col by name
                 if col_expr not in self.names:  # Append
                     colname = col_expr
@@ -1191,52 +1198,44 @@ class H2OFrame(object):
             elif isinstance(col_expr, slice):  # Col by slice
                 if col_expr.start is None and col_expr.stop is None:
                     col_expr = slice(0, self.ncol)  # Slice of all
-        elif isinstance(b, (ExprNode, H2OFrame)):
-            row_expr = b  # Row slicing
-        elif isinstance(b, list):
-            col_expr = b
+        elif isinstance(item, H2OFrame):
+            row_expr = item  # Row slicing
+        elif isinstance(item, list):
+            col_expr = item
 
-        src = float("nan") if c is None else c
-        src_in_self = self.is_src_in_self(src)
+        if value is None: value = float("nan")
+        value_is_own_subframe = isinstance(value, H2OFrame) and self._is_frame_in_self(value)
         old_cache = self._ex._cache
         if colname is None:
-            self._ex = ExprNode(":=", self, src, col_expr, row_expr)
+            self._ex = ExprNode(":=", self, value, col_expr, row_expr)
             self._ex._cache.fill_from(old_cache)
-            if isinstance(src, H2OFrame) and \
-                    src._ex._cache.types_valid() and \
+            if isinstance(value, H2OFrame) and \
+                    value._ex._cache.types_valid() and \
                     self._ex._cache.types_valid():
-                self._ex._cache._types.update(src._ex._cache.types)
+                self._ex._cache._types.update(value._ex._cache.types)
             else:
                 self._ex._cache.types = None
         else:
-            self._ex = ExprNode("append", self, src, colname)
+            self._ex = ExprNode("append", self, value, colname)
             self._ex._cache.fill_from(old_cache)
             self._ex._cache.names = self.names + [colname]
-            if self._ex._cache.types_valid() and isinstance(src, H2OFrame) and src._ex._cache.types_valid():
-                self._ex._cache._types[colname] = list(viewvalues(src._ex._cache.types))[0]
+            if self._ex._cache.types_valid() and isinstance(value, H2OFrame) and value._ex._cache.types_valid():
+                self._ex._cache._types[colname] = list(viewvalues(value._ex._cache.types))[0]
             else:
                 self._ex._cache.types = None
-        if isinstance(src, H2OFrame) and src_in_self:
-            src._ex = None  # wipe out to keep ref counts correct
-            # self._frame()  # setitem is eager
+        if value_is_own_subframe:
+            value._ex = None  # wipe out to keep ref counts correct
 
-    def is_src_in_self(self, src):
-        # src._ex._children[0]._children[0] is self._ex
-        if isinstance(src, H2OFrame):
-            if self._ex is src._ex:
-                return True
-            else:
-                if src._ex._children is not None:
-                    for ch in src._ex._children:
-                        if self.is_src_in_self(ch): return True
-        elif isinstance(src, ExprNode):
-            if self._ex is src:
-                return True
-            else:
-                if src._children is not None:
-                    for ch in src._children:
-                        if self.is_src_in_self(ch): return True
-        return False
+    def _is_frame_in_self(self, frame):
+        if self._ex is frame._ex: return True
+        if frame._ex._children is None: return False
+        return any(self._is_expr_in_self(ch) for ch in frame._ex._children)
+
+    def _is_expr_in_self(self, expr):
+        if self._ex is expr: return True
+        if expr._children is None: return False
+        return any(self._is_expr_in_self(ch) for ch in expr._children)
+
 
     def drop(self, index, axis=1):
         """
