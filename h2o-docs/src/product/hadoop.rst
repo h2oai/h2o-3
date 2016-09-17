@@ -11,6 +11,7 @@ Currently supported versions:
 -  CDH 5.5.3
 -  CDH 5.6.0
 -  CDH 5.7.0
+-  CDH 5.8.0
 -  HDP 2.1
 -  HDP 2.2
 -  HDP 2.3

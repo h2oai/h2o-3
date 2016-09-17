@@ -777,6 +777,15 @@ na.omit.H2OFrame <- function(object, ...){
   .newExpr("na.omit", object)
 }
 
+#' Conduct a lag 1 transform on a numeric H2OFrame column
+#'
+#' @rdname h2o.diff
+#' @param object H2OFrame object
+#' @export
+h2o.difflag1 <- function(object){
+  .newExpr("difflag1", object)
+}
+
 #' Compute DCT of an H2OFrame
 #'
 #' Compute the Discrete Cosine Transform of every row in the H2OFrame
@@ -1431,7 +1440,7 @@ h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.H2OFrame(x), leve
 #' tail(australia.hex, 10)
 #' }
 #' @export
-h2o.head <- function(x, ..., n=6L) {
+h2o.head <- function(x,n=6L,...) {
   stopifnot(length(n) == 1L)
   n <- if (n < 0L) max(nrow(x) + n, 0L)
        else        min(n, nrow(x))
@@ -1498,10 +1507,12 @@ is.character <- function(x) {
 #' Print An H2OFrame
 #'
 #' @param x An H2OFrame object
+#' @param n An (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
+#'          Anything bigger than 20 rows will require asking the server (first 20 rows are cached on the client).
 #' @param ... Further arguments to be passed from or to other methods.
 #' @export
-print.H2OFrame <- function(x, ...) {
-  print(head(x))
+print.H2OFrame <- function(x,n=6L, ...) {
+  print(head(x,n))
   rowString = if (nrow(x) > 1) " rows x " else " row x "
   colString = if (ncol(x) > 1) " columns]" else " column]"
   cat(paste0("\n[", nrow(x), rowString, ncol(x), colString), "\n")

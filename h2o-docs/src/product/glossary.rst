@@ -15,19 +15,11 @@ Glossary
  - anomaly detection (for comparing the reconstructed signal with the original to find differences that may be anomalies)
  - layer-by-layer pre-training (using stacked auto-encoders)
  
-**Backpropogation**
-	Uses a known, desired output for each input value to calculate the loss function gradient for training. If enabled, performed after each training sample in `Deep Learning`_.
- 
 **BAD**
 	A column type that contains only missing values.
 
 **Balance classes**
 	A parameter that oversamples the minority classes to balance the distribution. 
-
-.. _Batch size:
-
-**Batch size** 
-	The number of training examples in one forward/backward pass. The higher the batch size, the more memory space you'll need. (See also `epoch`_ and `iteration`_.)
 
 **Beta constraints**
 	A data.frame or H2OParsedData object with the columns [“names”, “lower_bounds”,”upper_bounds”, “beta_given”], where each row corresponds to a predictor in the GLM. “names” contains the predictor names, “lower_bounds” and “upper_bounds” are the lower and upper bounds of beta, and “beta_given” is some supplied starting values for beta.
@@ -39,9 +31,6 @@ Glossary
 
 **Binomial**
 	A variable with the value 0 or 1. Binomial variables assigned as 0 indicate that an event hasn’t occurred or that the observation lacks a feature, where 1 indicates occurrence or instance of an attribute.
-
-**Bins**
-	Bins are linear-sized from the observed min-to-max for the subset that is being split. Large bins are enforced for shallow tree depths. Based on the tree decisions, as the tree gets deeper, the bins are distributed symmetrically over the reduced range of each subset. 
 
 .. _categorical:
 
@@ -114,11 +103,6 @@ Glossary
 **Enumerator/enum**
 	A data type where the value is one of a defined set of named values known as “elements”, “members”, or “enumerators.” For example, *cat*, *dog*, & *mouse* are enumerators of the enumerated type *animal*.
 
-.. _epoch:
-
-**Epoch**
-	A measure of the number of times all of the training vectors are passed forward and backward once to update the weights. For batch training all of the training samples pass through the learning algorithm simultaneously in one epoch before weights are updated. For sequential training all of the weights are updated after each training vector is sequentially passed through the training algorithm. (See also `Batch size`_ and `iteration`_.)
-
 .. _factor:
 
 **Factor**
@@ -129,9 +113,6 @@ Glossary
 
 **Feature**
 	Synonym for attribute, predictor, or independent variable. Usually refers to the data observed on features given in the columns of a data set. 
-
-**Feed-forward**
-	Associates input with output for pattern recognition.
 
 **Flatfile**
 	A basic text file containing multiple IP addresses (one per line) used by H2O to configure a cluster. 
@@ -145,24 +126,10 @@ Glossary
 **HEX format**
 	Records made up of hexadecimal numbers representing machine language code or constant data. In H2O, data must be parsed into .hex format before you can perform operations on it. 
 
-**Hit ratio**
-	 (Multinomial only) The number of times the prediction was correct out of the total number of predictions. 
-
 .. _independent variable:
 
 **Independent variable**
 	The factors can be manipulated or controlled (also known as predictors). The opposite of a `dependent variable`_.
-
-**Instance**
-	Occurs each time H2O is started. This process builds a cluster of nodes (even if it is only a one-node cluster on a local machine). The instance begins when the cluster is formed and ends when the program is closed.
-
-**Integer**
-	A whole number (can be negative but cannot be a fraction). Can be represented in H2O as an ``int``, which is not a type but a property of the data. 
-
-.. _iteration:
-
-**Iteration**
-	Number of passes during training or testing, with each pass using [batch size] number of examples. (Note that a pass includes a forward pass and a backward pass. The forward pass and backward pass do not count as two different passes.) For example, if you have 1000 training examples, and your batch size is 500, then it will take 2 iterations to complete 1 epoch. (See also `Batch size`_ and `epoch`_.)
 
 **Job**
 	A task performed by H2O. For example, reading a data file, parsing a data file, or building a model. In the browser-based GUI of H2O, each job is listed in the **Admin** menu under **Jobs**.
@@ -228,14 +195,8 @@ Glossary
 **Response column**
 	Method of selecting the `dependent variable`_ in H2O.
 
-**Real**
-	A fractional number.
-
 **ROC Curve**
 	Graph representing the ratio of true positives to false negatives.
-
-**Scoring history**
-	Represents the error rate of the model as it is built.
 
 **Seed**
 	A starting point for randomization. Seed specification is used when machine learning models have a random component; it allows users to recreate the exact “random” conditions used in a model at a later time. 

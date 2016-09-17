@@ -768,7 +768,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     Frame res = new Frame(destination_key, names, mse.vecs());
     DKV.put(res);
-    _output.addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs()[0].mean() /*mean MSE*/));
+    addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs()[0].mean() /*mean MSE*/));
     return res;
   }
 

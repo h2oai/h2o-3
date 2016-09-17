@@ -68,8 +68,12 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_STR:
       case Vec.T_UUID:
       case Vec.T_TIME:
-        boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
-        return new StringConverter(_writer, colIdx, dictSupport);
+        if (parquetType.getOriginalType() == OriginalType.TIMESTAMP_MILLIS) {
+          return new TimestampConverter(colIdx, _writer);
+        } else {
+          boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
+          return new StringConverter(_writer, colIdx, dictSupport);
+        }
       case Vec.T_NUM:
         return new NumberConverter(colIdx, _writer);
       default:
@@ -157,6 +161,22 @@ class ChunkConverter extends GroupConverter {
     public void addBinary(Binary value) {
       _bs.set(value.toStringUsingUTF8().getBytes());
       _writer.addStrCol(_colIdx, _bs);
+    }
+  }
+
+  private static class TimestampConverter extends PrimitiveConverter {
+
+    private final int _colIdx;
+    private final ParseWriter _writer;
+
+    TimestampConverter(int _colIdx, ParseWriter _writer) {
+      this._colIdx = _colIdx;
+      this._writer = _writer;
+    }
+
+    @Override
+    public void addLong(long value) {
+      _writer.addNumCol(_colIdx, value, 0);
     }
   }
 
