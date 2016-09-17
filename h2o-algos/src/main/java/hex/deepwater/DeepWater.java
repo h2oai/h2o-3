@@ -1,6 +1,7 @@
 package hex.deepwater;
 
 import hex.*;
+import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
@@ -47,6 +48,8 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 //            ModelCategory.AutoEncoder
     };
   }
+
+  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
 
