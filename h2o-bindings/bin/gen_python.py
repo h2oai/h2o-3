@@ -2,14 +2,42 @@
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
 import bindings as bi
+import re
 import sys
 PY3 = sys.version_info[0] == 3
 str_type = str if PY3 else (str, unicode)
 
+
 # We specify these not as real types, but as parameter annotations in the docstrings
-class PythonTypeTranslator(bi.TypeTranslator):
+class PythonTypeTranslatorForCheck(bi.TypeTranslator):
     def __init__(self):
-        bi.TypeTranslator.__init__(self)
+        super(PythonTypeTranslatorForCheck, self).__init__()
+        self.types["byte"] = "int"
+        self.types["short"] = "int"
+        self.types["long"] = "int"
+        self.types["double"] = "numeric"
+        self.types["string"] = "str"
+        self.types["boolean"] = "bool"
+        self.types["Polymorphic"] = "object"
+        self.types["Object"] = "object"
+        self.types["VecSpecifier"] = "str"
+        self.make_array = lambda vtype: "[%s]" % vtype
+        self.make_array2 = lambda vtype: "[[%s]]" % vtype
+        self.make_map = lambda ktype, vtype: "{%s: %s}" % (ktype, vtype)
+        self.make_key = lambda itype, schema: "str"
+        self.make_enum = lambda schema, values: \
+            "Enum(%s)" % ", ".join(stringify(v) for v in values) if values else schema
+
+type_adapter1 = PythonTypeTranslatorForCheck()
+def translate_type_for_check(h2o_type, values=None):
+    schema = h2o_type.replace("[]", "")
+    return type_adapter1.translate(h2o_type, schema, values)
+
+
+# We specify these not as real types, but as parameter annotations in the docstrings
+class PythonTypeTranslatorForDoc(bi.TypeTranslator):
+    def __init__(self):
+        super(PythonTypeTranslatorForDoc, self).__init__()
         self.types["byte"] = "int"
         self.types["short"] = "int"
         self.types["long"] = "int"
@@ -18,16 +46,25 @@ class PythonTypeTranslator(bi.TypeTranslator):
         self.types["boolean"] = "bool"
         self.types["Polymorphic"] = "object"
         self.types["Object"] = "object"
-        self.make_array = lambda vtype: "list(%s)" % vtype
-        self.make_array2 = lambda vtype: "list(list(%s))" % vtype
-        self.make_map = lambda ktype, vtype: "Dictionary<%s,%s>" % (ktype, vtype)
+        self.types["VecSpecifier"] = "str"
+        self.make_array = lambda vtype: "List[%s]" % vtype
+        self.make_array2 = lambda vtype: "List[List[%s]]" % vtype
+        self.make_map = lambda ktype, vtype: "Dict[%s, %s]" % (ktype, vtype)
         self.make_key = lambda itype, schema: "str"
-        self.make_enum = lambda schema, values: " | ".join(stringify(v) for v in values) if values else schema
+        self.make_enum = lambda schema, values: \
+            "Enum[%s]" % ", ".join(stringify(v) for v in values) if values else schema
 
-type_adapter = PythonTypeTranslator()
-def translate_type(h2o_type, values=None):
+type_adapter2 = PythonTypeTranslatorForDoc()
+def translate_type_for_doc(h2o_type, values=None):
     schema = h2o_type.replace("[]", "")
-    return type_adapter.translate(h2o_type, schema, values)
+    return type_adapter2.translate(h2o_type, schema, values)
+
+
+def normalize_enum_constant(s):
+    """Return enum constant `s` converted to a canonical snake-case."""
+    if s.islower(): return s
+    if s.isupper(): return s.lower()
+    return "".join(ch if ch.islower() else "_" + ch.lower() for ch in s).strip("_")
 
 def stringify(v):
     if v == "Infinity": return u'∞'
@@ -45,9 +82,12 @@ def reindent_block(string, new_indent):
     remove_indent = max(line0_indent, line1_indent)
     out = ""
     for line in lines:
-        dedented = line.lstrip()
-        extra_indent = " " * (len(line) - len(dedented) - remove_indent)
-        out += add_indent + extra_indent + dedented + "\n"
+        dedented_line = line.lstrip()
+        if dedented_line:
+            extra_indent = " " * (len(line) - len(dedented_line) - remove_indent)
+            out += add_indent + extra_indent + dedented_line + "\n"
+        else:
+            out += "\n"
     return out.strip()
 
 
@@ -73,6 +113,23 @@ def gen_module(schema, algo):
     init_extra = init_extra_for(algo)
     class_extra = class_extra_for(algo)
     module_extra = module_extra_for(algo)
+    pattern = re.compile(r"[^a-z]+")
+
+    param_names = []
+    for param in schema["parameters"]:
+        assert (param["type"][:4] == "enum") == bool(param["values"]), "Values are expected for enum types only"
+        if param["values"]:
+            enum_values = [normalize_enum_constant(p) for p in param["values"]]
+            if param["default_value"]:
+                param["default_value"] = normalize_enum_constant(param["default_value"])
+        else:
+            enum_values = None
+        pname = param["name"]
+        if pname in reserved_words: pname += "_"
+        param_names.append(pname)
+        param["pname"] = pname
+        param["ptype"] = translate_type_for_check(param["type"], enum_values)
+        param["dtype"] = translate_type_for_doc(param["type"], enum_values)
 
     yield "#!/usr/bin/env python"
     yield "# -*- encoding: utf-8 -*-"
@@ -80,7 +137,12 @@ def gen_module(schema, algo):
     yield "# This file is auto-generated by h2o-3/h2o-bindings/bin/gen_python.py"
     yield "# Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)"
     yield "#"
-    yield "from .estimator_base import H2OEstimator"
+    yield "from __future__ import absolute_import, division, print_function, unicode_literals"
+    yield ""
+    yield "from h2o.estimators.estimator_base import H2OEstimator"
+    yield "from h2o.exceptions import H2OValueError"
+    yield "from h2o.frame import H2OFrame"
+    yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
     if extra_imports:
         yield reindent_block(extra_imports, 0) + ""
     yield ""
@@ -91,23 +153,8 @@ def gen_module(schema, algo):
     yield ""
     if help_preamble:
         yield "    %s" % reindent_block(help_preamble, 4)
-    yield ""
-    yield "    Parameters"
-    yield "    ----------"
-    param_names = []
-    for param in schema["parameters"]:
-        assert (param["type"][:4] == "enum") == bool(param["values"]), "Values are expected for enum types only"
-        ptype = translate_type(param["type"], param["values"])
-        name = param["name"]
-        if name in reserved_words: name += "_"
-        param_names.append(name)
-        if param["required"]: ptype += ", required"
-        yield "      %s : %s" % (name, bi.wrap(ptype, " " * (9 + len(name)), indent_first=False))
-        yield bi. wrap(param["help"], " " * 8)
-        if param["default_value"] is not None:
-            yield "        Default: %s" % stringify(param["default_value"])
-        yield ""
     if help_epilogue:
+        yield ""
         yield "    %s" % reindent_block(help_epilogue, 4)
     yield "    \"\"\""
     yield ""
@@ -116,32 +163,62 @@ def gen_module(schema, algo):
     yield "    def __init__(self, **kwargs):"
     yield "        super(%s, self).__init__()" % classname
     yield "        self._parms = {}"
-    yield "        for name in [" + bi.wrap(", ".join('"%s"' % p for p in param_names),
-                                            indent=(" " * 21), indent_first=False) + "]:"
-    yield "            pname = name[:-1] if name[-1] == '_' else name"
-    yield "            self._parms[pname] = kwargs[name] if name in kwargs else None"
+    yield "        names_list = {%s}" % bi.wrap(", ".join('"%s"' % p for p in param_names),
+                                                indent=(" " * 22), indent_first=False)
+    yield '        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")'
+    yield "        for pname, pvalue in kwargs.items():"
+    yield "            if pname == 'model_id':"
+    yield "                self._id = pvalue"
+    yield '                self._parms["model_id"] = pvalue'
+    yield "            elif pname in names_list:"
+    yield "                # Using setattr(...) will invoke type-checking of the arguments"
+    yield "                setattr(self, pname, pvalue)"
+    yield "            else:"
+    yield '                raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))'
     if init_extra:
         yield "        " + reindent_block(init_extra, 8)
     yield ""
     for param in schema["parameters"]:
-        name = param["name"]
-        if name == "model_id": continue  # The getter is already defined in ModelBase
-        prop = name
-        if name in reserved_words: prop += "_"
+        pname = param["pname"]
+        ptype = param["ptype"]
+        if pname == "model_id": continue  # The getter is already defined in ModelBase
+        sname = pname[:-1] if pname[-1] == '_' else pname
+        phelp = param["dtype"] + ": " + param["help"]
+        if param["default_value"] is not None:
+            phelp += " (Default: %s)" % stringify(param["default_value"])
         yield "    @property"
-        yield "    def %s(self):" % prop
-        yield "        return self._parms[\"%s\"]" % name
+        yield "    def %s(self):" % pname
+        if len(phelp) > 100:
+            yield '        """'
+            yield "        %s" % bi.wrap(phelp, indent=(" " * 8), indent_first=False)
+            yield '        """'
+        else:
+            yield '        """%s"""' % phelp
+        yield "        return self._parms.get(\"%s\")" % sname
         yield ""
-        yield "    @%s.setter" % prop
-        yield "    def %s(self, value):" % prop
-        yield "        self._parms[\"%s\"] = value" % name
+        yield "    @%s.setter" % pname
+        yield "    def %s(self, %s):" % (pname, pname)
+        if pname in {"training_frame", "validation_frame", "user_x", "user_y", "user_points", "beta_constraints"}:
+            assert param["ptype"] == "str"
+            yield "        assert_is_type(%s, None, H2OFrame)" % pname
+        elif pname in {"initial_weights", "initial_biases"}:
+            yield "        assert_is_type(%s, None, [H2OFrame, None])" % pname
+        elif pname in {"alpha", "lambda_"} and ptype == "[numeric]":
+            # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
+            yield "        assert_is_type(%s, None, numeric, [numeric])" % pname
+        elif pname in {"checkpoint", "pretrained_autoencoder"}:
+            yield "        assert_is_type(%s, None, str, H2OEstimator)" % pname
+        else:
+            yield "        assert_is_type(%s, None, %s)" % (pname, ptype)
+        yield "        self._parms[\"%s\"] = %s" % (sname, pname)
+        yield ""
         yield ""
     if class_extra:
+        yield ""
         yield "    " + reindent_block(class_extra, 4)
-        yield ""
     if module_extra:
-        yield reindent_block(module_extra, 0)
         yield ""
+        yield reindent_block(module_extra, 0)
 
 
 def algo_to_classname(algo):
@@ -214,10 +291,6 @@ def help_epilogue_for(algo):
 def init_extra_for(algo):
     if algo == "deeplearning":
         return "if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True"
-    if algo == "glm":
-        return """
-            if "Lambda" in kwargs:
-                self._parms["lambda"] = kwargs["Lambda"]"""
     if algo == "glrm":
         return """self._parms["_rest_version"] = 3"""
 
@@ -248,10 +321,10 @@ def class_extra_for(algo):
                     "lambdas": x["lambdas"],
                     "explained_deviance_train": x["explained_deviance_train"],
                     "explained_deviance_valid": x["explained_deviance_valid"],
-                    "coefficients": [dict(zip(ns,y)) for y in x["coefficients"]],
+                    "coefficients": [dict(zip(ns, y)) for y in x["coefficients"]],
                 }
                 if "coefficients_std" in x:
-                    res["coefficients_std"] = [dict(zip(ns,y)) for y in x["coefficients_std"]]
+                    res["coefficients_std"] = [dict(zip(ns, y)) for y in x["coefficients_std"]]
                 return res
 
             @staticmethod
@@ -263,8 +336,13 @@ def class_extra_for(algo):
                   @param coefs - dictionary containing model coefficients
                   @param threshold - (optional, only for binomial) decision threshold used for classification
                 \"\"\"
-                model_json = h2o.api("POST /3/MakeGLMModel", data={"model": model._model_json["model_id"]["name"],
-                    "names": list(coefs.keys()), "beta": list(coefs.values()), "threshold": threshold})
+                model_json = h2o.api(
+                    "POST /3/MakeGLMModel",
+                    data={"model": model._model_json["model_id"]["name"],
+                          "names": list(coefs.keys()),
+                          "beta": list(coefs.values()),
+                          "threshold": threshold}
+                )
                 m = H2OGeneralizedLinearEstimator()
                 m._resolve_model(model_json["model_id"]["name"], model_json)
                 return m"""
@@ -298,9 +376,9 @@ def gen_init(modules):
     for module, clz in modules:
         yield "from .%s import %s" % (module, clz)
     yield ""
-    yield "__all__ = ["
+    yield "__all__ = ("
     yield bi.wrap(", ".join('"%s"' % clz for _, clz in modules), indent="    ")
-    yield "]"
+    yield ")"
 
 # ----------------------------------------------------------------------------------------------------------------------
 #   MAIN:
@@ -319,7 +397,7 @@ def main():
 
     bi.write_to_file("__init__.py", gen_init(modules))
 
-    type_adapter.vprint_translation_map()
+    type_adapter1.vprint_translation_map()
 
 
 if __name__ == "__main__":
