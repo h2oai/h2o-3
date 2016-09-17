@@ -70,7 +70,8 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
-  @Override public void modifyParmsForCrossValidationMainModel(ModelBuilder[] cvModelBuilders) {
+  @Override
+  public void cv_computeAndSetOptimalParameters(ModelBuilder<DeepWaterModel, DeepWaterParameters, DeepWaterModelOutput>[] cvModelBuilders) {
     _parms._overwrite_with_best_model = false;
 
     if( _parms._stopping_rounds == 0 && _parms._max_runtime_secs == 0) return; // No exciting changes to stopping conditions
