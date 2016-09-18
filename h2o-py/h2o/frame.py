@@ -357,7 +357,7 @@ class H2OFrame(object):
         else:
             print(self._ex._cache._tabulate("simple", True))
 
-    def describe(self,chunk_summary=False):
+    def describe(self, chunk_summary=False):
         """
         Generate an in-depth description of this H2OFrame.
 
@@ -1093,11 +1093,6 @@ class H2OFrame(object):
         fr._ex._cache.types = new_types
         return fr
 
-    # def __getattr__(self, key):
-    #     if key in self.names:
-    #         return self[key]
-    #     raise AttributeError(".%s column not found in H2OFrame" % key)
-
     def _compute_ncol_update(self, item):  # computes new ncol, names, and types
         try:
             new_ncols = -1
@@ -1156,7 +1151,8 @@ class H2OFrame(object):
             return [-1, item]
 
     def __setitem__(self, item, value):
-        """Replace or update column(s) in an H2OFrame.
+        """
+        Replace, update or add column(s) in an H2OFrame.
 
         Parameters
         ----------
@@ -1165,10 +1161,6 @@ class H2OFrame(object):
 
           value : int, H2OFrame, str
             The value replacing 'item'
-
-        Returns
-        -------
-          Returns this H2OFrame.
         """
         # TODO: add far stronger type checks, so that we never run in a situation where the server has to
         #       tell us that we requested an illegal operation.
@@ -1180,12 +1172,12 @@ class H2OFrame(object):
 
         if is_type(item, str):  # String column name, could be new or old
             if item in self.names:
-                col_expr = self.names.index(item)  # Old, update
+                col_expr = self.names.index(item)  # Update an existing column
             else:
-                col_expr = self.ncol
+                col_expr = self.ncols
                 colname = item  # New, append
         elif is_type(item, int):
-            assert_satisfies(item, -self.ncol <= item < self.ncol)
+            assert_satisfies(item, -self.ncols <= item < self.ncols)
             col_expr = item  # Column by number
         elif isinstance(item, tuple):  # Both row and col specifiers
             # Need more type checks
@@ -1260,7 +1252,7 @@ class H2OFrame(object):
           H2OFrame with the respective dropped columns or rows. Returns a new H2OFrame.
         """
         if axis == 1:
-            if not isinstance(index,list):
+            if not isinstance(index, list):
                 #If input is a string, i.e., "C1":
                 if is_type(index, str):
                     #Check if index is an actual column(s) in the frame
@@ -1281,9 +1273,9 @@ class H2OFrame(object):
                 fr._ex._cache.types = {name: self.types[name] for name in fr._ex._cache.names}
                 return fr
 
-            elif isinstance(index,list):
+            elif isinstance(index, list):
                 #If input is an int array indicating a column index, i.e., [3] or [1,2,3]:
-                if is_type(index,[int]):
+                if is_type(index, [int]):
                     if max(index) > self.ncol:
                         raise H2OValueError("Column index selected to drop is not part of the frame: %r" % index)
                     if min(index) < 0:
@@ -1291,15 +1283,16 @@ class H2OFrame(object):
                     for i in range(len(index)):
                         index[i] = -(index[i] + 1)
                 #If index is a string array, i.e., ["C1", "C2"]
-                elif is_type(index,[str]):
+                elif is_type(index, [str]):
                     #Check if index is an actual column(s) in the frame
-                    if set(index).issubset(self.names) == False:
+                    if not set(index).issubset(self.names):
                         raise H2OValueError("Column(s) selected to drop are not in original frame: %r" % index)
                     for i in range(len(index)):
                         index[i] = -(self.names.index(index[i]) + 1)
                 fr = H2OFrame._expr(expr=ExprNode("cols", self, index), cache=self._ex._cache)
                 fr._ex._cache.ncols -= len(index)
-                fr._ex._cache.names = [i for i in self.names if self.names.index(i) not in list(map(lambda x: abs(x) - 1, index))]
+                fr._ex._cache.names = [i for i in self.names
+                                       if self.names.index(i) not in list(map(lambda x: abs(x) - 1, index))]
                 fr._ex._cache.types = {name: fr.types[name] for name in fr._ex._cache.names}
 
             else:
@@ -1308,7 +1301,7 @@ class H2OFrame(object):
                                  "a single string for dropping columns.")
             return fr
         elif axis == 0:
-            if is_type(index,[int]):
+            if is_type(index, [int]):
                 #Check if index is an actual column index in the frame
                 if max(index) > self.nrow:
                     raise H2OValueError("Row index selected to drop is not part of the frame: %r" % index)
