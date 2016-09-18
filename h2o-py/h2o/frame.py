@@ -1177,8 +1177,11 @@ class H2OFrame(object):
                 col_expr = self.ncols
                 colname = item  # New, append
         elif is_type(item, int):
-            assert_satisfies(item, -self.ncols <= item < self.ncols)
+            if not(-self.ncols <= item < self.ncols):
+                raise H2OValueError("Incorrect column index: %d" % item)
             col_expr = item  # Column by number
+            if col_expr < 0:
+                col_expr += self.ncols
         elif isinstance(item, tuple):  # Both row and col specifiers
             # Need more type checks
             row_expr = item[0]
@@ -1187,6 +1190,11 @@ class H2OFrame(object):
                 if col_expr not in self.names:  # Append
                     colname = col_expr
                     col_expr = self.ncol
+            elif is_type(col_expr, int):
+                if not(-self.ncols <= col_expr < self.ncols):
+                    raise H2OValueError("Incorrect column index: %d" % item)
+                if col_expr < 0:
+                    col_expr += self.ncols
             elif isinstance(col_expr, slice):  # Col by slice
                 if col_expr.start is None and col_expr.stop is None:
                     col_expr = slice(0, self.ncol)  # Slice of all
@@ -1224,6 +1232,7 @@ class H2OFrame(object):
         return any(self._is_expr_in_self(ch) for ch in frame._ex._children)
 
     def _is_expr_in_self(self, expr):
+        if not isinstance(expr, ExprNode): return False
         if self._ex is expr: return True
         if expr._children is None: return False
         return any(self._is_expr_in_self(ch) for ch in expr._children)
