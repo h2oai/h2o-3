@@ -14,6 +14,7 @@ import water.gpu.ImageTrain;
 import water.gpu.util;
 import water.util.Log;
 import water.util.RandomUtils;
+import water.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -26,24 +27,12 @@ import java.util.Random;
 
 public class DeepWaterTest extends TestUtil {
   @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); }
-
-  final boolean GPU = System.getenv("CUDA_PATH")!=null;
-
-  static String expandPath(String path) {
-    return path.replaceFirst("^~", System.getProperty("user.home"));
-  }
+  public static void stall() { stall_till_cloudsize(1); new MXNetLoader(); }
 
   // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
   @Ignore
   @Test
   public void inceptionPredictionMX() throws IOException {
-
-    // load the cuda lib in CUDA_PATH, optional. theoretically we can find them if they are in LD_LIBRARY_PATH
-    if (GPU) util.loadCudaLib();
-    util.loadNativeLib("mxnet");
-    util.loadNativeLib("Native");
-
     File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
     BufferedImage img = ImageIO.read(imgFile);
 
@@ -76,7 +65,7 @@ public class DeepWaterTest extends TestUtil {
     ImagePred m = new ImagePred();
 
     // the path to Inception model
-    m.setModelPath(expandPath("~/deepwater/backends/mxnet/Inception"));
+    m.setModelPath(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception"));
 
     m.loadInception();
 
@@ -87,11 +76,7 @@ public class DeepWaterTest extends TestUtil {
   @Ignore
   @Test
   public void inceptionFineTuning() throws IOException {
-    if (GPU) util.loadCudaLib();
-    util.loadNativeLib("mxnet");
-    util.loadNativeLib("Native");
-
-    String path = expandPath("~/kaggle/statefarm/input/");
+    String path = StringUtils.expandPath("~/kaggle/statefarm/input/");
     BufferedReader br = new BufferedReader(new FileReader(new File(path+"driver_imgs_list.csv")));
 
     ArrayList<Float> train_labels = new ArrayList<>();
@@ -111,7 +96,7 @@ public class DeepWaterTest extends TestUtil {
 
     ImageTrain m = new ImageTrain();
     m.buildNet(classes, batch_size, "inception_bn");
-    m.loadParam(expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
+    m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
 
     int max_iter = 6; //epochs
     int count = 0;
@@ -586,12 +571,6 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void trainLoop() throws InterruptedException {
-    try {
-      if (GPU) util.loadCudaLib();
-      util.loadNativeLib("mxnet");
-      util.loadNativeLib("Native");
-    } catch(Throwable t) {}
-
     int batch_size = 64;
     int classes = 10;
     ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
@@ -608,12 +587,6 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void saveLoop() {
-    try {
-      if (GPU) util.loadCudaLib();
-      util.loadNativeLib("mxnet");
-      util.loadNativeLib("Native");
-    } catch(Throwable t) {}
-
     int batch_size = 64;
     int classes = 10;
     ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
@@ -628,12 +601,6 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void predictLoop() {
-    try {
-      if (GPU) util.loadCudaLib();
-      util.loadNativeLib("mxnet");
-      util.loadNativeLib("Native");
-    } catch(Throwable t) {}
-
     int batch_size = 64;
     int classes = 10;
     ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
@@ -649,12 +616,6 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void trainPredictLoop() {
-    try {
-      if (GPU) util.loadCudaLib();
-      util.loadNativeLib("mxnet");
-      util.loadNativeLib("Native");
-    } catch(Throwable t) {}
-
     int batch_size = 64;
     int classes = 10;
     ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
@@ -697,11 +658,6 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test public void imageToPixels() throws IOException {
-    // load the cuda lib in CUDA_PATH, optional. theoretically we can find them if they are in LD_LIBRARY_PATH
-    if (GPU) util.loadCudaLib();
-    util.loadNativeLib("mxnet");
-    util.loadNativeLib("Native");
-
     final File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
     final float[] dest = new float[28*28*3];
     int count=0;
