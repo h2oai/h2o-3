@@ -685,7 +685,8 @@ class H2OFrame(object):
         -------
           H2OFrame of one column containing the date in millis since the epoch.
         """
-        return ExprNode("mktime", year, month, day, hour, minute, second, msec)._eager_frame()
+        return H2OFrame._expr(ExprNode("mktime", year, month, day, hour, minute, second, msec))
+
 
     def unique(self):
         """Extract the unique values in the column.
