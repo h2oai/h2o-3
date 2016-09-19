@@ -964,7 +964,7 @@ class H2OFrame(object):
                 nl = numlevels[i]
                 print("Factor w/ {} level(s) {} ".format(nl, '"' + '","'.join(lvls[i]) + '"'), end='\n')
             else:
-                print("num {}".format(" ".join(it[0] for it in h2o.as_list(self[:10, i], False)[1:])))
+                print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
     def as_data_frame(self, use_pandas=True):
         """Obtain the dataset as a python-local object.
