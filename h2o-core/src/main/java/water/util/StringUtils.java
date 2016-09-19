@@ -35,4 +35,13 @@ public class StringUtils {
     return s == null || s.length() == 0;
   }
 
+  /**
+   * Expand ~ to user.home
+   * @param path that can (but doesn't have to) contain a tilde (~)
+   * @return expanded path
+   */
+  public static String expandPath(String path) {
+    return path.replaceFirst("^~", System.getProperty("user.home"));
+  }
+
 }
