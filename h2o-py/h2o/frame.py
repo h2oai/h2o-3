@@ -792,12 +792,13 @@ class H2OFrame(object):
         oldname = self.names[col_index]
         old_cache = self._ex._cache
         self._ex = ExprNode("colnames=", self, col_index, name)  # Update-in-place, but still lazy
-        self._ex._cache = old_cache
-        self._ex._cache._names[col_index] = name
-        self._ex._cache._types[name] = self._ex._cache._types.pop(oldname)
-        # Invalidate the data; however we could have tried to update in place. Updating in-place is somewhat complicated
-        # by the fact that we use an OrderedDict underneath, and must somehow preserve the order of the keys...
-        self._ex._cache._data = None
+        self._ex._cache.fill_from(old_cache)
+        if self.names is None:
+            self._frame()._ex._cache.fill()
+        else:
+            self._ex._cache._names = self.names[:col] + [name] + self.names[col + 1:]
+            self._ex._cache._types[name] = self._ex._cache._types.pop(oldname)
+        return
 
 
     def as_date(self, format):
