@@ -1,5 +1,6 @@
 package water.api;
 
+import com.google.gson.Gson;
 import water.*;
 import water.api.schemas3.FrameV3;
 import water.api.schemas3.JobV3;
@@ -12,7 +13,10 @@ import water.fvec.Frame;
 import water.util.*;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.*;
+import java.lang.reflect.Array;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 
@@ -117,6 +121,8 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   private transient int _schema_version;
   private transient String _schema_name;
   private transient String _schema_type;
+
+  private transient static final Gson gson = H2oRestGsonHelper.createH2oCompatibleGson(); // stateless and thread safe
 
 
   /** Default constructor; triggers lazy schema registration.
@@ -479,6 +485,11 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         }
       }
       return a;
+    }
+
+    // Are we parsing an object from a string? NOTE: we might want to make this check more restrictive.
+    if (! fclz.isAssignableFrom(Schema.class) && s != null && s.startsWith("{") && s.endsWith("}")) {
+      return gson.fromJson(s, fclz);
     }
 
     if (fclz.equals(Key.class))
