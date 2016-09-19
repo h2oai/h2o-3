@@ -1219,6 +1219,7 @@ class H2OFrame(object):
             self._ex = ExprNode("append", self, value, colname)
             self._ex._cache.fill_from(old_cache)
             self._ex._cache.names = self.names + [colname]
+            self._ex._cache._ncols += 1
             if self._ex._cache.types_valid() and isinstance(value, H2OFrame) and value._ex._cache.types_valid():
                 self._ex._cache._types[colname] = list(viewvalues(value._ex._cache.types))[0]
             else:
