@@ -137,7 +137,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         }
         Log.info("Model category: " + (_parms._autoencoder ? "Auto-Encoder" : isClassifier() ? "Classification" : "Regression"));
         final long model_size = model.model_info().size();
-        Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
+        Log.info("Approximate number of model parameters (weights/biases/aux): " + String.format("%,d", model_size/4)); //Assuming floating point values
         model.write_lock(_job);
         _job.update(0,"Setting up training data...");
         final DeepWaterParameters mp = model.model_info().get_params();
