@@ -14,7 +14,7 @@ public class Register extends AbstractRegister{
 
     RequestServer.registerEndpoint("automl_build",
             "POST /3/AutoMLBuilder", AutoMLBuilderHandler.class, "build",
-            "Unlock all keys in the H2O distributed K/V store, to attempt to recover from a crash.");
+            "Start an AutoML build process.");
     RequestServer.registerEndpoint("automl_refresh",
             "GET /3/AutoML/{automl_id}", AutoMLHandler.class, "refresh",
             "Refresh the model key.");
