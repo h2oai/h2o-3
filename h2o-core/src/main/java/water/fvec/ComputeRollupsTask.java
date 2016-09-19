@@ -117,21 +117,21 @@ final class ComputeRollupsTask extends DTask<ComputeRollupsTask> {
       }
       _nbins = nbins;
     }
-    @Override public void map( Chunk [] cs ) {
+    @Override public void map( Chunks c ) {
       _bins = new long[_nbins.length][];
       for(int i = 0; i < _bins.length; ++i) {
         long [] bins = _bins[i] = new long[_nbins[i]];
         if(bins.length == 0) continue;
         double base = _base[i];
         double stride = _stride[i];
-        Chunk c = cs[i];
-        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
+
+        for (int r = c.nextNZ(-1); r < c.numRows(); r = c.nextNZ(r)) {
           double d = c.atd(r);
           if (!Double.isNaN(d)) bins[idx(d,base,stride,bins.length)]++;
         }
         // Sparse?  We skipped all the zeros; do them now
         if (c.isSparseZero())
-          _bins[i][idx(0.0,base,stride,bins.length)] += (c._len - c.sparseLenZero());
+          _bins[i][idx(0.0,base,stride,bins.length)] += (c.numRows() - c.sparseLenZero(0));
       }
     }
 

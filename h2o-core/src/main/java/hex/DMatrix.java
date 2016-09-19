@@ -82,36 +82,36 @@ public class DMatrix  {
   public static class TransposeTsk extends MRTask<TransposeTsk> {
     final Frame _tgt; // Target dataset, should be created up front, e.g. via Vec.makeZeros(n) call.
     public TransposeTsk(Frame tgt){ _tgt = tgt;}
-    public void map(final Chunk[] chks) {
-      final Frame tgt = _tgt;
-      final long [] espc = tgt.vecs().espc();
-      final int colStart = (int)chks[0].start();
-      for (int i = 0; i < espc.length - 1; ++i) {
-        final int fi = i;
-        final NewChunk[] tgtChunks = new NewChunk[chks[0]._len];
-        for (int j = 0; j < tgtChunks.length; ++j)
-          tgtChunks[j] = new NewChunk(new SingleChunk(tgt.vecs().getVecForCol(j + colStart),fi),j);
-        for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
-          NewChunk nc = chks[c].inflate();
-          if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?
-          Iterator<Value> it = nc.values();
-          while (it.hasNext()) {
-            Value v = it.next();
-            NewChunk t = tgtChunks[v.rowId0()];
-            t.addZeros(c - (int) espc[fi] - t.len());
-            v.add2Chunk(t);
-          }
-        }
-        for (int j = 0; j < tgtChunks.length; ++j) { // finalize the target chunks and close them
-          final int fj = j;
-          tgtChunks[fj].addZeros((int) (espc[fi + 1] - espc[fi]) - tgtChunks[fj]._len);
-          tgtChunks[fj].close(_fs);
-          tgtChunks[fj] = null;
-        }
-
+    public void map(final Chunks chks) {
+      throw H2O.unimpl();
+//      final Frame tgt = _tgt;
+//      final long [] espc = tgt.vecs().espc();
+//      final int colStart = (int)chks.start();
+//      for (int i = 0; i < espc.length - 1; ++i) {
+//        final int fi = i;
+//        final NewChunk[] tgtChunks = new NewChunk[chks[0]._len];
+//        for (int j = 0; j < tgtChunks.length; ++j)
+//          tgtChunks[j] = new NewChunk(new SingleChunk(tgt.vecs().getVecForCol(j + colStart),fi),j);
+//        for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
+//          NewChunk nc = chks[c].inflate();
+//          if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?
+//          Iterator<Value> it = nc.values();
+//          while (it.hasNext()) {
+//            Value v = it.next();
+//            NewChunk t = tgtChunks[v.rowId0()];
+//            t.addZeros(c - (int) espc[fi] - t.len());
+//            v.add2Chunk(t);
+//          }
+//        }
+//        for (int j = 0; j < tgtChunks.length; ++j) { // finalize the target chunks and close them
+//          final int fj = j;
+//          tgtChunks[fj].addZeros((int) (espc[fi + 1] - espc[fi]) - tgtChunks[fj]._len);
+//          tgtChunks[fj].close(_fs);
+//          tgtChunks[fj] = null;
+//        }
       }
     }
-  }
+//  }
 
 
   /**
@@ -202,14 +202,14 @@ public class DMatrix  {
     public GetNonZerosTsk(H2OCountedCompleter cmp){super(cmp);_maxsz = 10000000;}
     public GetNonZerosTsk(H2OCountedCompleter cmp, int maxsz){super(cmp); _maxsz = maxsz;}
 
-    @Override public void map(Chunk c){
+    @Override public void map(Chunks c){
       int istart = (int)c.start();
-      assert (c.start() + c._len) == (istart + c._len);
+      assert (c.start() + c.numRows()) == (istart + c.numRows());
       final int n = c.sparseLenZero();
       _idxs = MemoryManager.malloc4(n);
       _vals = MemoryManager.malloc8d(n);
       int j = 0;
-      for(int i = c.nextNZ(-1); i < c._len; i = c.nextNZ(i),++j) {
+      for(int i = c.nextNZ(-1); i < c.numRows(); i = c.nextNZ(i),++j) {
         _idxs[j] = i + istart;
         _vals[j] = c.atd(i);
       }
@@ -239,8 +239,9 @@ public class DMatrix  {
     }
 
 //    @Override public void setupLocal(){_fr.lastVec().preWriting();}
-    @Override public void map(Chunk [] chks) {
-      Chunk zChunk = chks[chks.length-1];
+    @Override public void map(Chunks chks) {
+      throw H2O.unimpl();
+      /*Chunk zChunk = chks[chks.length-1];
       double [] res = MemoryManager.malloc8d(chks[0]._len);
       for(int i = 0; i < _y.length; ++i) {
         final double yVal = _y[i];
@@ -254,7 +255,7 @@ public class DMatrix  {
       Chunk modChunk = new NewChunk(res).setSparseRatio(2).compress();
       if(_progressKey != null)
         new UpdateProgress(modChunk.getBytes().length,modChunk.frozenType()).fork(_progressKey);
-      DKV.put(zChunk.vec().chunkKey(zChunk.cidx()),modChunk,_fs);
+      DKV.put(zChunk.vec().chunkKey(zChunk.cidx()),modChunk,_fs);*/
     }
     @Override public void closeLocal(){
       _y = null; // drop inputs

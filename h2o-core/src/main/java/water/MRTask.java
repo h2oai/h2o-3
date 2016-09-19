@@ -406,6 +406,9 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    *  Because it does not raise priority, these can be tail-call chained together
    *  for any length.
    */
+  public final T dfork( byte[] types, VecAry vecs, boolean run_local) {
+    return dfork(new byte[][]{types},vecs,run_local);
+  }
   public final T dfork( byte[][] types, VecAry vecs, boolean run_local) {
     _topGlobal = true;
     _output_types = types;

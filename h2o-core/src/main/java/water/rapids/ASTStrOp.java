@@ -634,22 +634,23 @@ class ASTStrLength extends ASTPrim {
   }
 
   private VecAry lengthStringCol(VecAry vec) {
-    return new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if( chk instanceof C0DChunk ) { // All NAs
-          for( int i =0; i < chk._len; i++)
-            newChk.addNA();
-        } else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
-          ((CStrChunk) chk).asciiLength(newChk);
-        } else { //UTF requires Java string methods for accuracy
-          BufferedString tmpStr = new BufferedString();
-          for(int i =0; i < chk._len; i++){
-            if (chk.isNA(i))  newChk.addNA();
-            else              newChk.addNum(chk.atStr(tmpStr, i).toString().length(), 0);
-          }
-        }
-      }
-    }.doAll(new byte[]{Vec.T_NUM}, vec).outputVecs(null);
+    throw H2O.unimpl();
+//    return new MRTask() {
+//      @Override public void map(Chunk chk, NewChunk newChk){
+//        if( chk instanceof C0DChunk ) { // All NAs
+//          for( int i =0; i < chk._len; i++)
+//            newChk.addNA();
+//        } else if (((CStrChunk)chk)._isAllASCII) { // fast-path operations
+//          ((CStrChunk) chk).asciiLength(newChk);
+//        } else { //UTF requires Java string methods for accuracy
+//          BufferedString tmpStr = new BufferedString();
+//          for(int i =0; i < chk._len; i++){
+//            if (chk.isNA(i))  newChk.addNA();
+//            else              newChk.addNum(chk.atStr(tmpStr, i).toString().length(), 0);
+//          }
+//        }
+//      }
+//    }.doAll(new byte[]{Vec.T_NUM}, vec).outputVecs(null);
   }
 }
 
@@ -714,29 +715,19 @@ class ASTSubstring extends ASTPrim {
   private VecAry substringStringCol(VecAry vec, final int startIndex, final int endIndex) {
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else if (startIndex >= endIndex) {
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addStr("");
-        }
-        else if (((CStrChunk) chk)._isAllASCII) { // fast-path operations
-          ((CStrChunk) chk).asciiSubstring(newChk, startIndex, endIndex);
-        } 
-        else { //UTF requires Java string methods
+      public void map(Chunks chks, Chunks.AppendableChunks ncs) {
+        //UTF requires Java string methods
           BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
+          for (int i = 0; i < chks.numRows(); i++) {
+            if (chks.isNA(i))
+              ncs.addNA();
             else {
-              String str = chk.atStr(tmpStr, i).toString();
-              newChk.addStr(str.substring(startIndex < str.length() ? startIndex : str.length(), 
+              String str = chks.atStr(tmpStr, i).toString();
+              ncs.addStr(str.substring(startIndex < str.length() ? startIndex : str.length(),
                       endIndex < str.length() ? endIndex : str.length()));
             }
           }
-        }
+
       }
     }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
   }
@@ -805,20 +796,13 @@ class ASTLStrip extends ASTPrim {
   private VecAry lstripStringCol(VecAry vec, String set) {
     final String charSet = set;
     return new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if ( chk instanceof C0DChunk ) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else if (((CStrChunk)chk)._isAllASCII && StringUtils.isAsciiPrintable(charSet)) { // fast-path operations
-          ((CStrChunk) chk).asciiLStrip(newChk, charSet);
-        } else {
-          BufferedString tmpStr = new BufferedString();
-          for(int i = 0; i < chk.len(); i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else
-              newChk.addStr(StringUtils.stripStart(chk.atStr(tmpStr, i).toString(), charSet));
-          }
+      @Override public void map(Chunks chk, Chunks.AppendableChunks ncs) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk.numRows(); i++) {
+          if (chk.isNA(i))
+            ncs.addNA();
+          else
+            ncs.addStr(StringUtils.stripStart(chk.atStr(tmpStr, i).toString(), charSet));
         }
       }
     }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
@@ -888,20 +872,13 @@ class ASTRStrip extends ASTPrim {
   private VecAry rstripStringCol(VecAry vec, String set) {
     final String charSet = set;
     return new MRTask() {
-      @Override public void map(Chunk chk, NewChunk newChk){
-        if ( chk instanceof C0DChunk ) // all NAs
-          for (int i = 0; i < chk.len(); i++)
-            newChk.addNA();
-        else if (((CStrChunk)chk)._isAllASCII && StringUtils.isAsciiPrintable(charSet)) { // fast-path operations
-          ((CStrChunk) chk).asciiRStrip(newChk, charSet);
-        } else {
-          BufferedString tmpStr = new BufferedString();
-          for(int i = 0; i < chk.len(); i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else
-              newChk.addStr(StringUtils.stripEnd(chk.atStr(tmpStr, i).toString(), charSet));
-          }
+      @Override public void map(Chunks chk, Chunks.AppendableChunks ncs){
+        BufferedString tmpStr = new BufferedString();
+        for(int i = 0; i < chk.numRows(); i++) {
+          if (chk.isNA(i))
+            ncs.addNA();
+          else
+            ncs.addStr(StringUtils.stripEnd(chk.atStr(tmpStr, i).toString(), charSet));
         }
       }
     }.doAll(new byte[]{Vec.T_STR}, vec).outputVecs(null);
@@ -941,14 +918,13 @@ class ASTEntropy extends ASTPrim {
         catEntropies = new double[doms.length];
         for (int i = 0; i < doms.length; i++) catEntropies[i] = calcEntropy(doms[i]);
       }
-      @Override public void map(Chunk chk, NewChunk newChk) {
+      @Override public void map(Chunks chk, Chunks.AppendableChunks ncs) {
         //pre-allocate since the size is known
-        newChk.alloc_doubles(chk._len);
-        for (int i = 0; i < chk._len; i++)
+        for (int i = 0; i < chk.numRows(); i++)
           if (chk.isNA(i))
-            newChk.addNA();
+            ncs.addNA();
           else 
-            newChk.addNum(catEntropies[(int) chk.atd(i)]);
+            ncs.addNum(catEntropies[(int) chk.atd(i)]);
       }
     }.doAll(1, Vec.T_NUM, vec).outputVecs(null);
     return res;
@@ -957,20 +933,14 @@ class ASTEntropy extends ASTPrim {
   private VecAry entropyStringCol(VecAry vec) {
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) //all NAs
-          newChk.addNAs(chk.len());
-        else if (((CStrChunk) chk)._isAllASCII) //fast-path operations
-          ((CStrChunk) chk).asciiEntropy(newChk);
-        else { //UTF requires Java string methods
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else {
-              String str = chk.atStr(tmpStr, i).toString();
-              newChk.addNum(calcEntropy(str));
-            }
+      public void map(Chunks chk, Chunks.AppendableChunks newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk.numRows(); i++) {
+          if (chk.isNA(i))
+            newChk.addNA();
+          else {
+            String str = chk.atStr(tmpStr, i).toString();
+            newChk.addNum(calcEntropy(str));
           }
         }
       }
@@ -1044,10 +1014,9 @@ class ASTCountSubstringsWords extends ASTPrim {
       }
 
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
+      public void map(Chunks chk, Chunks.AppendableChunks newChk) {
         //pre-allocate since the size is known
-        newChk.alloc_doubles(chk._len);
-        for (int i = 0; i < chk._len; i++)
+        for (int i = 0; i < chk.numRows(); i++)
           if (chk.isNA(i))
             newChk.addNA();
           else
@@ -1060,18 +1029,14 @@ class ASTCountSubstringsWords extends ASTPrim {
   private VecAry countSubstringsWordsStringCol(VecAry vec, final HashSet<String> words) {
     return new MRTask() {
       @Override
-      public void map(Chunk chk, NewChunk newChk) {
-        if (chk instanceof C0DChunk) //all NAs
-          newChk.addNAs(chk.len());
-        else { //UTF requires Java string methods
-          BufferedString tmpStr = new BufferedString();
-          for (int i = 0; i < chk._len; i++) {
-            if (chk.isNA(i))
-              newChk.addNA();
-            else {
-              String str = chk.atStr(tmpStr, i).toString();
-              newChk.addNum(calcCountSubstringsWords(str, words));
-            }
+      public void map(Chunks chk, Chunks.AppendableChunks newChk) {
+        BufferedString tmpStr = new BufferedString();
+        for (int i = 0; i < chk.numRows(); i++) {
+          if (chk.isNA(i))
+            newChk.addNA();
+          else {
+            String str = chk.atStr(tmpStr, i).toString();
+            newChk.addNum(calcCountSubstringsWords(str, words));
           }
         }
       }

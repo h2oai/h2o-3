@@ -1,9 +1,9 @@
 package water.rapids;
 
 import water.MRTask;
-import water.fvec.Chunk;
+import water.fvec.Chunks;
+import water.fvec.Vec;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
 import water.util.MathUtils;
 
 import java.util.Arrays;
@@ -58,8 +58,8 @@ public class ASTCut extends ASTPrim {
     } else domains[0] = labels;
 
     Frame fr2 = new MRTask() {
-      @Override public void map(Chunk c, NewChunk nc) {
-        int rows = c._len;
+      @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
+        int rows = c.numRows();
         for (int r = 0; r < rows; ++r) {
           double x = c.atd(r);
           if (Double.isNaN(x) || (lowest && x <  cutz[0])

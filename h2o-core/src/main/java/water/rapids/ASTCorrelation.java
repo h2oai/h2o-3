@@ -4,6 +4,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 
@@ -45,11 +46,11 @@ class ASTCorrelation extends ASTPrim {
         VecAry vecxs = frx.vecs();
         VecAry vecys = fry.vecs();
         double xmean=0, ymean=0, xvar=0, yvar=0,xsd=0,ysd=0, ncols = frx.numCols(), NACount=0, xval, yval, ss=0;
-        Chunk [] chunkx = vecxs.getChunks(0,false).chks();
-        Chunk [] chunky = vecxs.getChunks(0,false).chks();
+        Chunks chunkx = vecxs.getChunks(0,false);
+        Chunks chunky = vecxs.getChunks(0,false);
         for( int r = 0; r < ncols; r++) {
-            xval = chunkx[r].atd(0);
-            yval = chunky[r].atd(0);
+            xval = chunkx.atd(0,r);
+            yval = chunky.atd(0,r);
             if (Double.isNaN(xval) || Double.isNaN(yval))
                 NACount++;
             else {
@@ -60,8 +61,8 @@ class ASTCorrelation extends ASTPrim {
         xmean /= (ncols - NACount); ymean /= (ncols - NACount);
 
         for( int r = 0; r < ncols; r++ ) {
-            xval = chunkx[r].atd(0);
-            yval = chunky[r].atd(0);
+            xval = chunkx.atd(0,r);
+            yval = chunky.atd(0,r);
             if (!(Double.isNaN(xval) || Double.isNaN(yval)))
                 //Compute variance of x and y vars
                 xvar += Math.pow(xval - xmean, 2);
@@ -79,8 +80,8 @@ class ASTCorrelation extends ASTPrim {
         }
 
         for( int r = 0; r < ncols; r++ ) {
-            xval = chunkx[r].atd(0);
-            yval = chunky[r].atd(0);
+            xval = chunkx.atd(0,r);
+            yval = chunky.atd(0,r);
             if (!(Double.isNaN(xval) || Double.isNaN(yval)))
                 ss += (xval - xmean) * (yval - ymean);
         }
@@ -119,7 +120,7 @@ class ASTCorrelation extends ASTPrim {
             Vec[] res = new Vec[ncoly];
             Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
             for (int y = 0; y < ncoly; y++)
-                res[y] = Vec.makeVec(cvs[y].getResult()._cors, keys[y]);
+                res[y] = VecUtils.makeVec(cvs[y].getResult()._cors, keys[y]);
 
             return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
 
@@ -143,7 +144,7 @@ class ASTCorrelation extends ASTPrim {
             Vec[] res = new Vec[ncoly];
             Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
             for (int y = 0; y < ncoly; y++)
-                res[y] = Vec.makeVec(ArrayUtils.div(cvs._cors[y], (fry.numRows() - 1 - NACount)), keys[y]);
+                res[y] = VecUtils.makeVec(ArrayUtils.div(cvs._cors[y], (fry.numRows() - 1 - NACount)), keys[y]);
             return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
         }
     }
@@ -152,24 +153,25 @@ class ASTCorrelation extends ASTPrim {
         double[] _cors;
         final double _xmeans[], _ymean;
         CorTaskEverything(double ymean, double[] xmeans) { _ymean = ymean;_xmeans = xmeans; }
-        @Override public void map( Chunk cs[] ) {
-            final int ncolsx = cs.length-1;
-            final Chunk cy = cs[0];
-            final int len = cy._len;
+        @Override public void map( Chunks cs ) {
+            final int ncolsx = cs.numCols()-1;
+            final int len = cs.numRows();
             _cors = new double[ncolsx];
             double sum;
             double varx;
             double vary;
+            final double r = 1/(len-1);
             for( int x=0; x<ncolsx; x++ ) {
                 sum = 0;
                 varx = 0;
                 vary = 0;
-                final Chunk cx = cs[x+1];
                 final double xmean = _xmeans[x];
                 for( int row=0; row<len; row++ ) {
-                    varx += ((cx.atd(row) - xmean) * (cx.atd(row) - xmean))/(len-1); //Compute variance for x
-                    vary += ((cy.atd(row) - _ymean) * (cy.atd(row) - _ymean))/(len-1); //Compute variance for y
-                    sum += ((cx.atd(row) - xmean) * (cy.atd(row) - _ymean))/(len-1); //Compute sum of square
+                    double xval = cs.atd(row,x+1) - xmean;
+                    double yval = cs.atd(row,0) - _ymean;
+                    varx += (xval * xval)*r; //Compute variance for x
+                    vary += (yval * yval)*r; //Compute variance for y
+                    sum += (xval * yval)*r; //Compute sum of square
                 }
                 _cors[x] = sum/(Math.sqrt(varx) * Math.sqrt(vary)); //Pearsons correlation coefficient
             }
@@ -181,7 +183,7 @@ class ASTCorrelation extends ASTPrim {
         long _NACount;
         int _ncolx, _ncoly;
         CorTaskCompleteObsMean(int ncoly, int ncolx) { _ncolx = ncolx; _ncoly = ncoly;}
-        @Override public void map( Chunk cs[] ) {
+        @Override public void map( Chunks cs ) {
             _xsum = new double[_ncolx];
             _ysum = new double[_ncoly];
 
@@ -190,7 +192,7 @@ class ASTCorrelation extends ASTPrim {
 
             double xval, yval;
             boolean add;
-            int len = cs[0]._len;
+            int len = cs.numRows();
             for (int row = 0; row < len; row++) {
                 add = true;
                 //reset existing arrays to 0. Will save on GC.
@@ -198,8 +200,7 @@ class ASTCorrelation extends ASTPrim {
                 Arrays.fill(yvals, 0);
 
                 for (int y = 0; y < _ncoly; y++) {
-                    final Chunk cy = cs[y];
-                    yval = cy.atd(row);
+                    yval = cs.atd(row,y);
                     //if any yval along a row is NA, discard the entire row
                     if (Double.isNaN(yval)) {
                         _NACount++;
@@ -210,8 +211,7 @@ class ASTCorrelation extends ASTPrim {
                 }
                 if (add) {
                     for (int x = 0; x < _ncolx; x++) {
-                        final Chunk cx = cs[x + _ncoly];
-                        xval = cx.atd(row);
+                        xval = cs.atd(row,x + _ncoly);
                         //if any xval along a row is NA, discard the entire row
                         if (Double.isNaN(xval)) {
                             _NACount++;
@@ -239,7 +239,7 @@ class ASTCorrelation extends ASTPrim {
         double[][] _cors;
         final double _xmeans[], _ymeans[];
         CorTaskCompleteObs(double[] ymeans, double[] xmeans) { _ymeans = ymeans; _xmeans = xmeans; }
-        @Override public void map( Chunk cs[] ) {
+        @Override public void map( Chunks cs ) {
             int ncolx = _xmeans.length;
             int ncoly = _ymeans.length;
             double[] xvals = new double[ncolx];
@@ -248,16 +248,14 @@ class ASTCorrelation extends ASTPrim {
             double[] _cors_y;
             double xval, yval, ymean;
             boolean add;
-            int len = cs[0]._len;
+            int len = cs.numRows();
             for (int row = 0; row < len; row++) {
                 add = true;
                 //reset existing arrays to 0. Will save on GC.
                 Arrays.fill(xvals, 0);
                 Arrays.fill(yvals, 0);
-
                 for (int y = 0; y < ncoly; y++) {
-                    final Chunk cy = cs[y];
-                    yval = cy.atd(row);
+                    yval = cs.atd(row,y);
                     //if any yval along a row is NA, discard the entire row
                     if (Double.isNaN(yval)) {
                         add = false;
@@ -267,8 +265,7 @@ class ASTCorrelation extends ASTPrim {
                 }
                 if (add) {
                     for (int x = 0; x < ncolx; x++) {
-                        final Chunk cx = cs[x + ncoly];
-                        xval = cx.atd(row);
+                        xval = cs.atd(row,x + ncoly);
                         //if any xval along a row is NA, discard the entire row
                         if (Double.isNaN(xval)) {
                             add = false;

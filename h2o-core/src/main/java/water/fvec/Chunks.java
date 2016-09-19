@@ -26,6 +26,7 @@ public class Chunks<T extends Chunk> extends Iced<Chunks<T>> {
   public int numRows() {return _numRows;}
   public int numCols() {return _cs.length;}
 
+  public int sparseLenZero() { return sparseLenZero(0);}
   public int sparseLenZero(int cidx) {
     return _cs[cidx].isSparseZero()?_cs[cidx].sparseLenZero(): _numRows;
   }
@@ -84,6 +85,17 @@ public class Chunks<T extends Chunk> extends Iced<Chunks<T>> {
     return _cs[i].isSparseNA();
   }
 
+  public void addColToNewChunk(AppendableChunks nc, int srcRowFrom, int srcRowTo, int srcCol, int tgtCol){
+    _cs[srcCol].add2NewChunk(nc.getChunk(tgtCol),srcRowFrom,srcRowTo);
+  }
+
+  public Vec vec(int i) {return _vec;}
+
+  public boolean isSparseZero() {return isSparseZero(0);}
+
+  public int nextNZ(int r) {return nextNZ(r,0);}
+  public int nextNZ(int r, int c) {return _cs[c].nextNZ(r);}
+
   public static class AppendableChunks extends Chunks<NewChunk> {
     public AppendableChunks(NewChunk [] chks) {
       _chk2 = chks;
@@ -103,7 +115,6 @@ public class Chunks<T extends Chunk> extends Iced<Chunks<T>> {
 
     public void addNum(long m){addNum(0,m);}
     public void addNum(int c, long m){_cs[c].addNum(m,0);}
-    public void addNum(long m, int e){addNum(0,m,e);}
     public void addNum(int c, long m, int e){_cs[c].addNum(m,e);}
     public void addNum(double d){addNum(0,d);}
     public void addNum(int c, double d){_cs[c].addNum(d);}
@@ -129,6 +140,7 @@ public class Chunks<T extends Chunk> extends Iced<Chunks<T>> {
    *  @return double value at the given row, or NaN if the value is missing */
   public final double atd(int i) { return atd(i,0);}
   public final double atd(int i, int j) {
+    if(j < 0) j += _cs.length;
     return _chk2 == null || _chk2[j] == null ? _cs[j].atd_impl(i) : _chk2[j].atd_impl(i);
   }
 

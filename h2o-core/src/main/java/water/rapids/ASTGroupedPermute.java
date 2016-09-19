@@ -3,13 +3,15 @@ package water.rapids;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.util.IcedHashMap;
 import water.util.Log;
+import water.util.VecUtils;
 
 import java.util.HashMap;
-
+import water.fvec.Vec;
 
 public class ASTGroupedPermute extends ASTPrim {
   //   .newExpr("grouped_permute", fr, permCol, permByCol, groupByCols, keepCol)
@@ -53,14 +55,14 @@ public class ASTGroupedPermute extends ASTPrim {
   }
 
   private static Frame buildOutput(final double[][][] a, String[] names, String[][] domains) {
-    Frame dVec = new Frame(Vec.makeSeq(0, a.length));
+    Frame dVec = new Frame(VecUtils.makeSeq(0, a.length));
     long s = System.currentTimeMillis();
     Frame res = new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        for(int i=0;i<cs[0]._len;++i)
-          for (double[] anAa : a[(int)cs[0].at8(i)])
+      @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+        for(int i=0;i<cs.numRows();++i)
+          for (double[] anAa : a[(int)cs.at8(i)])
             for (int k = 0; k < anAa.length; ++k)
-              ncs[k].addNum(anAa[k]);
+              ncs.addNum(k,anAa[k]);
       }
     }.doAll(5, Vec.T_NUM, dVec.vecs()).outputFrame(null, names, domains);
     Log.info("Elapsed time: " + (System.currentTimeMillis() - s) / 1000. + "s");
@@ -84,14 +86,14 @@ public class ASTGroupedPermute extends ASTPrim {
     }
 
     @Override public void setupLocal() { _grps = new IcedHashMap<>(); }
-    @Override public void map(Chunk[] chks) {
+    @Override public void map(Chunks chks) {
       String[] dom = _vecs.domain(_permuteBy);
       IcedHashMap<Long, IcedHashMap<Long, double[]>[]> grps = new IcedHashMap<>();
-      for (int row = 0; row < chks[0]._len; ++row) {
-        long jid = chks[_gbCols[0]].at8(row);
-        long rid = chks[_permuteCol].at8(row);
-        double[] aci = new double[]{rid,  chks[_amntCol].atd(row)};
-        int type = dom[(int) chks[_permuteBy].at8(row)].equals("D") ? 0 : 1;
+      for (int row = 0; row < chks.numRows(); ++row) {
+        long jid = chks.at8(row,_gbCols[0]);
+        long rid = chks.at8(row,_permuteCol);
+        double[] aci = new double[]{rid,  chks.atd(row,_amntCol)};
+        int type = dom[chks.at4(row,_permuteBy)].equals("D") ? 0 : 1;
         if( grps.containsKey(jid) ) {
           IcedHashMap<Long, double[]>[] dcWork = grps.get(jid);
           if(dcWork[type].putIfAbsent(rid, aci)!=null)

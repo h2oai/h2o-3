@@ -4,6 +4,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.*;
 import water.util.ArrayUtils;
+import water.util.VecUtils;
 
 import java.util.Arrays;
 
@@ -39,13 +40,13 @@ class ASTVariance extends ASTPrim {
     if( frx.numCols() != fry.numCols()) 
       throw new IllegalArgumentException("Single rows must have the same number of columns, found "+frx.numCols()+" and "+fry.numCols());
     VecAry vecxs = frx.vecs();
-    Chunk [] chunksx = vecxs.getChunks(0).chks();
+    Chunks chunksx = vecxs.getChunks(0);
     VecAry vecys = fry.vecs();
-    Chunk [] chunksy = vecys.getChunks(0).chks();
+    Chunks chunksy = vecys.getChunks(0);
     double xmean=0, ymean=0, ncols = frx.numCols(), NACount=0, xval, yval, ss=0;
     for( int r = 0; r < ncols; r++) {
-      xval = chunksx[r].atd(0);
-      yval = chunksy[r].atd(0);
+      xval = chunksx.atd(0,r);
+      yval = chunksy.atd(0,r);
       if (Double.isNaN(xval) || Double.isNaN(yval))
         NACount++;
       else {
@@ -61,8 +62,8 @@ class ASTVariance extends ASTPrim {
     }
     
     for( int r = 0; r < ncols; r++ ) {
-      xval = chunksx[r].atd(0);
-      yval = chunksy[r].atd(0);
+      xval = chunksx.atd(0,r);
+      yval = chunksy.atd(0,r);
       if (!(Double.isNaN(xval) || Double.isNaN(yval))) 
         ss += (xval - xmean) * (yval - ymean);
     }
@@ -130,7 +131,7 @@ class ASTVariance extends ASTPrim {
         Vec[] res = new Vec[ncoly];
         Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
         for (int y = 0; y < ncoly; y++) {
-          res[y] = Vec.makeVec(res_array[y], keys[y]);
+          res[y] = VecUtils.makeVec(res_array[y], keys[y]);
         }
         return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
       }
@@ -148,7 +149,7 @@ class ASTVariance extends ASTPrim {
       Vec[] res = new Vec[ncoly];
       Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
       for (int y = 0; y < ncoly; y++)
-        res[y] = Vec.makeVec(ArrayUtils.div(cvs[y].getResult()._covs, (fry.numRows() - 1)), keys[y]);
+        res[y] = VecUtils.makeVec(ArrayUtils.div(cvs[y].getResult()._covs, (fry.numRows() - 1)), keys[y]);
       
       return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
     }
@@ -182,7 +183,7 @@ class ASTVariance extends ASTPrim {
         Vec[] res = new Vec[ncoly];
         Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
         for (int y = 0; y < ncoly; y++) {
-          res[y] = Vec.makeVec(res_array[y], keys[y]);
+          res[y] = VecUtils.makeVec(res_array[y], keys[y]);
         }
         return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
       }
@@ -203,7 +204,7 @@ class ASTVariance extends ASTPrim {
       Vec[] res = new Vec[ncoly];
       Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
       for (int y = 0; y < ncoly; y++)
-        res[y] = Vec.makeVec(ArrayUtils.div(cvs._covs[y], (fry.numRows() - 1 - NACount)), keys[y]);
+        res[y] = VecUtils.makeVec(ArrayUtils.div(cvs._covs[y], (fry.numRows() - 1 - NACount)), keys[y]);
 
       return new ValFrame(new Frame(null,fry._names, new VecAry(res)));
     }
@@ -213,18 +214,16 @@ class ASTVariance extends ASTPrim {
     double[] _covs;
     final double _xmeans[], _ymean;
     CoVarTaskEverything(double ymean, double[] xmeans) { _ymean = ymean; _xmeans = xmeans; }
-    @Override public void map( Chunk cs[] ) {
-      final int ncolsx = cs.length-1;
-      final Chunk cy = cs[0];
-      final int len = cy._len;
+    @Override public void map( Chunks cs ) {
+      final int ncolsx = cs.numCols()-1;
+      final int len = cs.numRows();
       _covs = new double[ncolsx];
       double sum;
       for( int x=0; x<ncolsx; x++ ) {
         sum = 0;
-        final Chunk cx = cs[x+1];
         final double xmean = _xmeans[x];
         for( int row=0; row<len; row++ ) 
-          sum += (cx.atd(row)-xmean)*(cy.atd(row)-_ymean);
+          sum += (cs.atd(row,x+1)-xmean)*(cs.atd(row,0)-_ymean);
         _covs[x] = sum;
       }
     }
@@ -236,7 +235,7 @@ class ASTVariance extends ASTPrim {
     long _NACount;
     int _ncolx, _ncoly;
     CoVarTaskCompleteObsMean(int ncoly, int ncolx) { _ncolx = ncolx; _ncoly = ncoly;}
-    @Override public void map( Chunk cs[] ) {
+    @Override public void map( Chunks cs ) {
       _xsum = new double[_ncolx];
       _ysum = new double[_ncoly];
 
@@ -245,7 +244,7 @@ class ASTVariance extends ASTPrim {
 
       double xval, yval;
       boolean add;
-      int len = cs[0]._len;
+      int len = cs.numRows();
       for (int row = 0; row < len; row++) {
         add = true;
         //reset existing arrays to 0 rather than initializing new ones to save on garbage collection
@@ -253,8 +252,7 @@ class ASTVariance extends ASTPrim {
         Arrays.fill(yvals, 0);
 
         for (int y = 0; y < _ncoly; y++) {
-          final Chunk cy = cs[y];
-          yval = cy.atd(row);
+          yval = cs.atd(row,y);
           //if any yval along a row is NA, discard the entire row
           if (Double.isNaN(yval)) {
             _NACount++;
@@ -265,8 +263,7 @@ class ASTVariance extends ASTPrim {
         }
         if (add) {
           for (int x = 0; x < _ncolx; x++) {
-            final Chunk cx = cs[x + _ncoly];
-            xval = cx.atd(row);
+            xval = cs.atd(row,x + _ncoly);
             //if any xval along a row is NA, discard the entire row
             if (Double.isNaN(xval)) {
               _NACount++;
@@ -294,7 +291,7 @@ class ASTVariance extends ASTPrim {
     double[][] _covs;
     final double _xmeans[], _ymeans[];
     CoVarTaskCompleteObs(double[] ymeans, double[] xmeans) { _ymeans = ymeans; _xmeans = xmeans; }
-    @Override public void map( Chunk cs[] ) {
+    @Override public void map( Chunks cs ) {
       int ncolx = _xmeans.length;
       int ncoly = _ymeans.length;
       double[] xvals = new double[ncolx];
@@ -303,7 +300,7 @@ class ASTVariance extends ASTPrim {
       double[] _covs_y;
       double xval, yval, ymean;
       boolean add;
-      int len = cs[0]._len;
+      int len = cs.numRows();
       for (int row = 0; row < len; row++) {
         add = true;
         //reset existing arrays to 0 rather than initializing new ones to save on garbage collection
@@ -311,8 +308,7 @@ class ASTVariance extends ASTPrim {
         Arrays.fill(yvals, 0);
 
         for (int y = 0; y < ncoly; y++) {
-          final Chunk cy = cs[y];
-          yval = cy.atd(row);
+          yval = cs.atd(row,y);
           //if any yval along a row is NA, discard the entire row
           if (Double.isNaN(yval)) {
             add = false;
@@ -322,8 +318,7 @@ class ASTVariance extends ASTPrim {
         }
         if (add) {
           for (int x = 0; x < ncolx; x++) {
-            final Chunk cx = cs[x + ncoly];
-            xval = cx.atd(row);
+            xval = cs.atd(row,x+ncoly);
             //if any xval along a row is NA, discard the entire row
             if (Double.isNaN(xval)) {
               add = false;
@@ -352,21 +347,18 @@ class ASTVariance extends ASTPrim {
   private static class CoVarTaskCompleteObsMeanSym extends MRTask<CoVarTaskCompleteObsMeanSym> {
     double[] _ysum;
     long _NACount;
-    @Override public void map( Chunk cs[] ) {
-      int ncoly = cs.length;
+    @Override public void map( Chunks cs ) {
+      int ncoly = cs.numCols();
       _ysum = new double[ncoly];
-      
       double[] yvals = new double[ncoly];
       double yval;
       boolean add;
-      int len = cs[0]._len;
+      int len = cs.numRows();
       for (int row = 0; row < len; row++) {
         add = true;
         Arrays.fill(yvals, 0);
-        
         for (int y = 0; y < ncoly; y++) {
-          final Chunk cy = cs[y];
-          yval = cy.atd(row);
+          yval = cs.atd(row,y);
           //if any yval along a row is NA, discard the entire row
           if (Double.isNaN(yval)) {
             _NACount++;
@@ -391,22 +383,20 @@ class ASTVariance extends ASTPrim {
     double[][] _covs;
     final double _ymeans[];
     CoVarTaskCompleteObsSym(double[] ymeans) { _ymeans = ymeans; }
-    @Override public void map( Chunk cs[] ) {
+    @Override public void map( Chunks cs ) {
       int ncoly = _ymeans.length;
       double[] yvals = new double[ncoly];
       _covs = new double[ncoly][ncoly];
       double[] _covs_y;
       double yval, ymean;
       boolean add;
-      int len = cs[0]._len;
+      int len = cs.numRows();
       for (int row = 0; row < len; row++) {
         add = true;
         //reset existing arrays to 0 rather than initializing new ones to save on garbage collection
         Arrays.fill(yvals, 0);
-
         for (int y = 0; y < ncoly; y++) {
-          final Chunk cy = cs[y];
-          yval = cy.atd(row);
+          yval = cs.atd(row,y);
           //if any yval along a row is NA, discard the entire row
           if (Double.isNaN(yval)) {
             add = false;

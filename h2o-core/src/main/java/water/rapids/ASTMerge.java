@@ -195,21 +195,21 @@ public class ASTMerge extends ASTPrim {
     long[] _dups;         // dup rows stored here (includes _row); updated atomically.
     int _dupIdx;          // pointer into _dups array; updated atomically
     Row( int ncols ) { _keys = new long[ncols]; }
-    Row fill( final Chunk[] chks, final int[][] cat_maps, final int row ) {
+    Row fill( final Chunks chks, final int[][] cat_maps, final int row ) {
       // Precompute hash: columns are integer only (checked before we started
       // here).  NAs count as a zero for hashing.
       long l,hash = 0;
       for( int i=0; i<_keys.length; i++ ) {
-        if( chks[i].isNA(row) ) l = 0;
+        if( chks.isNA(row,i) ) l = 0;
         else {
-          l = chks[i].at8(row);
+          l = chks.at8(row,i);
           l = (cat_maps == null || cat_maps[i]==null) ? l : cat_maps[i][(int)l];
           hash += l;
         }
         _keys[i] = l;
       }
       _hash = (int)(hash^(hash>>32));
-      _row = chks[0].start()+row; // Payload: actual absolute row number
+      _row = chks.start()+row; // Payload: actual absolute row number
       return this;
     }
     @Override public int hashCode() { return _hash; }
@@ -257,10 +257,10 @@ public class ASTMerge extends ASTPrim {
       MERGE_SETS.put(_uniq,this);
     }
 
-    @Override public void map( Chunk chks[] ) {
+    @Override public void map( Chunks chks ) {
       final IcedHashMap<Row,String> rows = MERGE_SETS.get(_uniq)._rows; // Shared per-node HashMap
       if( rows == null ) return; // Missing: Aborted due to exceeding size
-      final int len = chks[0]._len;
+      final int len = chks.numRows();
       Row row = new Row(_ncols);
       for( int i=0; i<len; i++ )                    // For all rows
         if( add(rows,row.fill(chks,_id_maps,i)) ) { // Fill & attempt add row
@@ -296,19 +296,16 @@ public class ASTMerge extends ASTPrim {
     JoinTask( int ncols, IcedHashMap<Row,String> rows, Frame hashed, boolean allLeft, boolean allRite ) {
       _rows = rows; _ncols = ncols; _hashed = hashed; _allLeft = allLeft; _allRite = allRite;
     }
-    protected static void addElem(NewChunk nc, Chunk c, int row) {
-      if( c.isNA(row) )                 nc.addNA();
-      else if( c instanceof CStrChunk ) nc.addStr(c,row);
-      else if( c instanceof C16Chunk )  nc.addUUID(c,row);
-      else if( c.hasFloat() )           nc.addNum(c.atd(row));
-      else                              nc.addNum(c.at8(row),0);
+    protected static void addElem(Chunks.AppendableChunks nc, Chunks c, int row, int col) {
+      c.addColToNewChunk(nc, row, row+1, col,col);
     }
-    protected static void addElem(NewChunk nc, int id, byte type, VecAry.Reader r, long absRow, BufferedString bStr) {
+
+    protected static void addElem(Chunks.AppendableChunks ncs, int c, int id, byte type, VecAry.Reader r, long absRow, BufferedString bStr) {
       switch( type ) {
-      case Vec.T_NUM : nc.addNum(r.at(absRow,id)); break;
+      case Vec.T_NUM : ncs.addNum(c,r.at(absRow,id)); break;
       case Vec.T_CAT :
-      case Vec.T_TIME: if( r.isNA(absRow,id) ) nc.addNA(); else nc.addNum(r.at8(absRow,id)); break;
-      case Vec.T_STR : nc.addStr(r.atStr(bStr, absRow,id)); break;
+      case Vec.T_TIME: if( r.isNA(absRow,id) ) ncs.addNA(c); else ncs.addNum(c,r.at8(absRow,id)); break;
+      case Vec.T_STR : ncs.addStr(c,r.atStr(bStr, absRow,id)); break;
       default: throw H2O.unimpl();
       }
     }
@@ -322,25 +319,26 @@ public class ASTMerge extends ASTPrim {
       super(ncols, rows, hashed, true, allRite);
     }
 
-    @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+    @Override public void map(Chunks chks, Chunks.AppendableChunks ncs) {
       // Shared common hash map
       final IcedHashMap<Row,String> rows = _rows;
       VecAry hvecs = _hashed.vecs(); // Data source from hashed set
       VecAry.Reader hreader = hvecs.reader(false);
-      assert hvecs.len() == _ncols + nchks.length;
+      assert hvecs.len() == _ncols + ncs.numCols();
       Row row = new Row(_ncols);  // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
-      int len = chks[0]._len;
+      int len = chks.numRows();
       for( int i=0; i<len; i++ ) {
         Row hashed = rows.getk(row.fill(chks,null,i));
         if( hashed == null ) {  // Hashed is missing
-          for( NewChunk nc : nchks ) nc.addNA(); // All Left: keep row, use missing data
+          for(int j = 0; j < ncs.numCols(); ++j)
+            ncs.addNA(j); // All Left: keep row, use missing data
         } else {
           // Copy fields from matching hashed set into walked set
           final long absrow = hashed._row;
 
-          for( int c = 0; c < nchks.length; c++ )
-            addElem(nchks[c], _ncols + c, hvecs.type(_ncols + c), hreader,absrow,bStr);
+          for( int c = 0; c < ncs.numCols(); c++ )
+            addElem(ncs,c,  _ncols + c, hvecs.type(_ncols + c), hreader,absrow,bStr);
         }
       }
     }
@@ -365,7 +363,7 @@ public class ASTMerge extends ASTPrim {
       super(ncols, rows, hashed, allLeft, true);
     }
 
-    @Override public void map(Chunk[] chks, NewChunk[] nchks) {
+    @Override public void map(Chunks chks, Chunks.AppendableChunks nchks) {
       // Shared common hash map
       final IcedHashMap<Row,String> rows = _rows;
       VecAry hvecs = _hashed.vecs(); // Data source from hashed set
@@ -373,14 +371,14 @@ public class ASTMerge extends ASTPrim {
 //      assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
-      int len = chks[0]._len;
+      int len = chks.numRows();
       for( int i=0; i<len; i++ ) {
         Row hashed = _rows.getk(row.fill(chks, null, i));
         if( hashed == null ) {    // no rows, fill in chks, and pad NAs as needed...
           if( _allLeft ) {        // pad NAs to the right...
             int c=0;
-            for(; c< chks.length;++c) addElem(nchks[c],chks[c],i);
-            for(; c<nchks.length;++c) nchks[c].addNA();
+            for(; c< chks.numCols();++c) addElem(nchks,chks,i,c);
+            for(; c<nchks.numCols();++c) nchks.addNA(c);
           } // else no hashed and no _allLeft... skip (row is dropped)
         } else {
           if( hashed._dups!=null ) for(long absrow : hashed._dups ) addRow(nchks,chks,hvecs,i,  absrow   ,bStr, hvecsReader);
@@ -388,10 +386,10 @@ public class ASTMerge extends ASTPrim {
         }
       }
     }
-    void addRow(NewChunk[] nchks, Chunk[] chks, VecAry vecs, int relRow, long absRow, BufferedString bStr, VecAry.Reader reader) {
+    void addRow(Chunks.AppendableChunks nchks, Chunks chks, VecAry vecs, int relRow, long absRow, BufferedString bStr, VecAry.Reader reader) {
       int c=0;
-      for( ;c< chks.length;++c) addElem(nchks[c],chks[c],relRow);
-      for( ;c<nchks.length;++c) addElem(nchks[c],c - chks.length + _ncols,vecs.type(c - chks.length + _ncols),reader,absRow,bStr);
+      for( ;c< chks.numCols();++c) addElem(nchks,chks,relRow,c);
+      for( ;c<nchks.numCols();++c) addElem(nchks,c,c - chks.numCols() + _ncols,vecs.type(c - chks.numCols() + _ncols),reader,absRow,bStr);
     }
   }
 }

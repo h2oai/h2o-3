@@ -15,10 +15,13 @@ public class CStrChunk extends Chunk {
   public CStrChunk() {}
 
   @Override
+  public int len() {return ((_valstart-_OFF)>>2);}
+
+  @Override
   public NewChunk add2NewChunk_impl(NewChunk nc, int from, int to) {
     BufferedString bs = new BufferedString();
     for(int i = from; i < to; ++i)
-      nc.addStr(atStr(bs,i));
+      nc.addStr(atStr_impl(bs,i));
     return nc;
   }
 
@@ -26,16 +29,13 @@ public class CStrChunk extends Chunk {
   public NewChunk add2NewChunk_impl(NewChunk nc, int[] lines) {
     BufferedString bs = new BufferedString();
     for(int i:lines)
-      nc.addStr(atStr(bs,i));
+      nc.addStr(atStr_impl(bs,i));
     return nc;
   }
 
   public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] strIdx, boolean isAllASCII) {
-    _achunk = null;
     _valstart = _OFF + (idxLen<<2);
     _isAllASCII = isAllASCII;
-    set_len(idxLen);
-
     _mem = MemoryManager.malloc1(CStrChunk._OFF + idxLen*4 + sslen, false);
     UnsafeUtils.set4(_mem, 0, CStrChunk._OFF + idxLen * 4); // location of start of strings
     if (_isAllASCII) UnsafeUtils.set1(_mem, 4, (byte)1); // use byte to store _isAllASCII
@@ -71,11 +71,9 @@ public class CStrChunk extends Chunk {
   }
 
   @Override protected final void initFromBytes () {
-    _achunk = null;
     _valstart = UnsafeUtils.get4(_mem,0);
     byte b = UnsafeUtils.get1(_mem,4);
     _isAllASCII = b != 0;
-    set_len((_valstart-_OFF)>>2);
   }
 
 
@@ -90,7 +88,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiToLower(NewChunk nc) {
     // copy existing data
-    nc = add2NewChunk_impl(nc,0,_len);
+    nc = add2NewChunk_impl(nc,0,len());
     //update offsets and byte array
     for(int i= 0; i < nc._sslen; i++) {
       if (nc._ss[i] > 0x40 && nc._ss[i] < 0x5B) // check for capital letter
@@ -111,7 +109,7 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiToUpper(NewChunk nc) {
     // copy existing data
-    nc = add2NewChunk_impl(nc,0,_len);
+    nc = add2NewChunk_impl(nc,0,len());
     //update offsets and byte array
     for(int i= 0; i < nc._sslen; i++) {
       if (nc._ss[i] > 0x60 && nc._ss[i] < 0x7B) // check for capital letter
@@ -134,9 +132,9 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiTrim(NewChunk nc) {
     // copy existing data
-    nc = add2NewChunk_impl(nc,0,_len);
+    nc = add2NewChunk_impl(nc,0,len());
     //update offsets and byte array
-    for(int i=0; i < _len; i++) {
+    for(int i=0; i < len(); i++) {
       int j = 0;
       int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
       if (off != NA) {
@@ -166,10 +164,10 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiSubstring(NewChunk nc, int startIndex, int endIndex) {
     // copy existing data
-    nc = add2NewChunk_impl(nc,0,_len);
+    nc = add2NewChunk_impl(nc,0,len());
     
     //update offsets and byte array
-    for (int i = 0; i < _len; i++) {
+    for (int i = 0; i < len(); i++) {
       int off = UnsafeUtils.get4(_mem, (i << 2) + _OFF);
       if (off != NA) {
         int len = 0;
@@ -193,10 +191,10 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiLength(NewChunk nc) {
     //pre-allocate since size is known
-    nc.alloc_mantissa(_len);
-    nc.alloc_exponent(_len); // sadly, a waste
+    nc.alloc_mantissa(len());
+    nc.alloc_exponent(len()); // sadly, a waste
     // fill in lengths
-    for(int i=0; i < _len; i++) {
+    for(int i=0; i < len(); i++) {
       int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
       int len = 0;
       if (off != NA) {
@@ -208,8 +206,8 @@ public class CStrChunk extends Chunk {
   }
   
   public NewChunk asciiEntropy(NewChunk nc) {
-    nc.alloc_doubles(_len);
-    for (int i = 0; i < _len; i++) {
+    nc.alloc_doubles(len());
+    for (int i = 0; i < len(); i++) {
       int off = UnsafeUtils.get4(_mem, (i << 2) + _OFF);
       if (off != NA) {
         HashMap<Byte, Integer> freq = new HashMap<>();
@@ -244,9 +242,9 @@ public class CStrChunk extends Chunk {
    */
   public NewChunk asciiLStrip(NewChunk nc, String set) {
     // copy existing data
-    nc = add2NewChunk_impl(nc,0,_len);
+    nc = add2NewChunk_impl(nc,0,len());
     //update offsets and byte array
-    for(int i=0; i < _len; i++) {
+    for(int i=0; i < len(); i++) {
       int j = 0;
       int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
       if (off != NA) {
@@ -259,9 +257,9 @@ public class CStrChunk extends Chunk {
 
   public NewChunk asciiRStrip(NewChunk nc, String set) {
     // copy existing data
-    nc = add2NewChunk_impl(nc,0,_len);
+    nc = add2NewChunk_impl(nc,0,len());
     //update offsets and byte array
-    for(int i=0; i < _len; i++) {
+    for(int i=0; i < len(); i++) {
       int j = 0;
       int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
       if (off != NA) {

@@ -2,6 +2,7 @@ package water.rapids;
 
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.Frame;
 import water.fvec.VecAry;
 import water.util.VecUtils;
@@ -9,6 +10,7 @@ import water.util.VecUtils;
 import java.util.Random;
 
 import static water.util.RandomUtils.getRNG;
+import water.fvec.Vec;
 
 public class ASTKFold extends ASTPrim {
   @Override
@@ -19,9 +21,9 @@ public class ASTKFold extends ASTPrim {
 
   public static VecAry kfoldColumn(VecAry v, final int nfolds, final long seed) {
     new MRTask() {
-      @Override public void map(Chunk c) {
+      @Override public void map(Chunks c) {
         long start = c.start();
-        for( int i=0; i<c._len; ++i ) {
+        for( int i=0; i<c.numRows(); ++i ) {
           int fold = Math.abs(getRNG(start + seed + i).nextInt()) % nfolds;
           c.set(i,fold);
         }
@@ -32,9 +34,9 @@ public class ASTKFold extends ASTPrim {
 
   public static VecAry moduloKfoldColumn(VecAry v, final int nfolds) {
     new MRTask() {
-      @Override public void map(Chunk c) {
+      @Override public void map(Chunks c) {
         long start = c.start();
-        for( int i=0; i<c._len; ++i)
+        for( int i=0; i<c.numRows(); ++i)
           c.set(i, (int) ((start + i) % nfolds));
       }
     }.doAll(v);
@@ -78,19 +80,19 @@ public class ASTKFold extends ASTPrim {
       //
       //      Downside is this performs nfolds*nClass passes over each Chunk. For
       //      "reasonable" classification problems, this could be 100 passes per Chunk.
-      @Override public void map(Chunk[] y) {
-        long start = y[0].start();
+      @Override public void map(Chunks y) {
+        long start = y.start();
         for(int testFold=0; testFold < nfolds; ++testFold) {
           for(int classLabel = 0; classLabel < nClass; ++classLabel) {
-            for(int row=0;row<y[0]._len;++row ) {
+            for(int row=0;row<y.numRows();++row ) {
               // missing response gets spread around
-              if (y[0].isNA(row)) {
+              if (y.isNA(row)) {
                 if ((start+row)%nfolds == testFold)
-                  y[1].set(row,testFold);
+                  y.set(row,1,testFold);
               } else {
-                if( y[0].at8(row) == (classes==null?classLabel:classes[classLabel]) ) {
+                if( y.at4(row) == (classes==null?classLabel:classes[classLabel]) ) {
                   if( testFold == getFoldId(start+row,seeds[classLabel]) )
-                    y[1].set(row,testFold);
+                    y.set(row,1,testFold);
                 }
               }
             }

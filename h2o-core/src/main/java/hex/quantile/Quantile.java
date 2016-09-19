@@ -46,9 +46,9 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   private static class SumWeights extends MRTask<SumWeights> {
     double sum;
-    @Override public void map(Chunk c, Chunk w) { for (int i=0;i<c.len();++i)
+    @Override public void map(Chunks c) { for (int i=0;i<c.numRows();++i)
       if (!c.isNA(i)) {
-        double wt = w.atd(i);
+        double wt = c.atd(i,1);
 //          For now: let the user give small weights, results are probably not very good (same as for wtd.quantile in R)
 //          if (wt > 0 && wt < 1) throw new H2OIllegalArgumentException("Quantiles only accepts weights that are either 0 or >= 1.");
         sum += wt;
@@ -143,7 +143,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       Log.info("Computing quantiles for (up to) " + nstrata + " different strata.");
       _quantiles = new double[nstrata];
       _nids = new int[nstrata];
-      VecAry weights = _weights != null ? _weights : _response.makeCon(1);
+      VecAry weights = _weights != null ? _weights : _response.makeCons(1);
       for (int i=0;i<nstrata;++i) { //loop over nodes
         VecAry newWeights = weights.makeCopy();
         //only keep weights for this stratum (node), set rest to 0
@@ -174,11 +174,11 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     private static class KeepOnlyOneStrata extends MRTask<KeepOnlyOneStrata> {
       KeepOnlyOneStrata(int stratumToKeep) { this.stratumToKeep = stratumToKeep; }
       int stratumToKeep;
-      @Override public void map(Chunk strata, Chunk newW) {
-        for (int i=0; i<strata._len; ++i) {
+      @Override public void map(Chunks cs) { // strata, newW
+        for (int i=0; i<cs.numRows(); ++i) {
 //          Log.info("NID:" + ((int) strata.at8(i)));
-          if ((int) strata.at8(i) != stratumToKeep)
-            newW.set(i, 0);
+          if (cs.at4(i) != stratumToKeep)
+            cs.set(i,1,0);
         }
       }
     }
@@ -223,17 +223,19 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     }
 
     @Override
-    public void map(Chunk chk, Chunk weight) {
+    public void map(Chunks cs) {
       _bins = new double[_nbins];
       _mins = new double[_nbins];
       _maxs = new double[_nbins];
       Arrays.fill(_mins, Double.MAX_VALUE);
       Arrays.fill(_maxs, -Double.MAX_VALUE);
       double d;
-      for (int row = 0; row < chk._len; row++) {
-        double w = weight.atd(row);
+      double w = 1;
+      boolean hasWeights = cs.numCols() == 2;
+      for (int row = 0; row < cs.numRows(); row++) {
+        if(hasWeights) w = cs.atd(row,1);
         if (w == 0) continue;
-        if (!Double.isNaN(d = chk.atd(row))) {  // na.rm=true
+        if (!Double.isNaN(d = cs.atd(row))) {  // na.rm=true
           double idx = (d - _lb) / _step;
           if (!(0.0 <= idx && idx < _bins.length)) continue;
           int i = (int) idx;
@@ -247,10 +249,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
       }
     }
 
-    @Override
-    public void map(Chunk chk) {
-      map(chk, new C0DChunk(1, chk.len()));
-    }
+
 
     @Override
     public void reduce(Histo h) {

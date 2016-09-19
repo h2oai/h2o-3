@@ -120,7 +120,7 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
       // vectors for j-th split
       Key vkey = Vec.newKey();
       int rowLayout = Vec.ESPC.rowLayout(vkey,espcPerSplit[i]);
-      t[i] = new VecAry(new Vec(vkey,rowLayout)).makeCons(num, 0, domains, types);
+      t[i] = new VecAry(new Vec(vkey,rowLayout)).makeCons(0, types,domains);
     }
     return t;
   }
@@ -174,16 +174,17 @@ public class FrameSplitter extends H2OCountedCompleter<FrameSplitter> {
       assert pnrows <= 0;
       _psrow = (int) (pnrows + espc[_pcidx+1]-espc[_pcidx]);
     }
-    @Override public void map(Chunk[] cs) { // Output chunks
-      int coutidx = cs[0].cidx(); // Index of output Chunk
+    @Override public void map(Chunks cs) { // Output chunks
+      int coutidx = cs.cidx(); // Index of output Chunk
       int cinidx = _pcidx + coutidx;
       int startRow = coutidx > 0 ? 0 : _psrow; // where to start extracting
-      int nrows = cs[0]._len;
+      int nrows = cs.numRows();
       // For each output chunk extract appropriate rows for partIdx-th part
-      Chunk [] srcChunks = _srcVecs.getChunks(cinidx).chks();
-      for (int i=0; i<cs.length; i++) {
+      Chunks srcChunks = _srcVecs.getChunks(cinidx);
+      for (int i=0; i<cs.numCols(); i++) {
         // WARNING: this implementation does not preserve co-location of chunks so we are forcing here network transfer!
-        ChunkSplitter.extractChunkPart(srcChunks[i], cs[i], startRow, nrows, _fs);
+        throw H2O.unimpl();
+//        ChunkSplitter.extractChunkPart(srcChunks[i], cs[i], startRow, nrows, _fs);
       }
     }
   }

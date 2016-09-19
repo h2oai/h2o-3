@@ -356,7 +356,7 @@ public class Merge {
 
 
     Key key = Vec.newKey();
-    VecAry vecs = new VecAry(new Vec(key, Vec.ESPC.rowLayout(key, espc))).makeCons(numColsInResult, 0, doms, types);
+    VecAry vecs = new VecAry(new Vec(key, Vec.ESPC.rowLayout(key, espc))).makeCons(0,types, doms );
     // to delete ... String[] names = ArrayUtils.append(leftFrame.names(), ArrayUtils.select(rightFrame.names(),  ArrayUtils.seq(numJoinCols, rightFrame.numCols() - 1)));
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
@@ -393,12 +393,11 @@ public class Merge {
       _chunkBatch = chunkBatch;
     }
     @Override
-    public void map(Chunk[] cs) {
-      int chkIdx = cs[0].cidx();
+    public void map(Chunks cs) {
+      int chkIdx = cs.cidx();
       Futures fs = new Futures();
-      for (int i=0;i<cs.length;++i) {
-        Key destKey = cs[i].vec().chunkKey(chkIdx);
-        assert(cs[i].len() == _chunkSizes[chkIdx]);
+      Key destKey = _vecs.anyVec().chunkKey(chkIdx);
+      for (int i=0;i<cs.numCols();++i) {
         Key k = BinaryMerge.getKeyForMSBComboPerCol(/*_leftFrame, _rightFrame,*/ _chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]);
         Chunk ck = DKV.getGet(k);
         DKV.put(destKey, ck, fs, /*don't cache*/true);

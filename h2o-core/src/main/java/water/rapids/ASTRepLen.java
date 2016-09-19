@@ -3,6 +3,7 @@ package water.rapids;
 import water.Futures;
 import water.MRTask;
 import water.fvec.*;
+import water.util.VecUtils;
 
 
 class ASTRepLen extends ASTPrim {
@@ -16,16 +17,16 @@ class ASTRepLen extends ASTPrim {
     long length = (long) asts[2].exec(env).getNum();
     Frame ff;
     if( v instanceof ValFrame ) ff = stk.track(v).getFrame();
-    else return new ValFrame(new Frame(Vec.makeCon(v.getNum(), length)));
+    else return new ValFrame(new Frame(VecUtils.makeCon(v.getNum(), length)));
 
     final Frame fr = ff;
     if (fr.numCols() == 1) {
-      Vec vec = Vec.makeRepSeq(length, fr.numRows());
+      Vec vec = VecUtils.makeRepSeq(length, fr.numRows());
       new MRTask() {
         @Override
-        public void map(Chunk c) {
+        public void map(Chunks c) {
           VecAry.Reader reader = fr.vecs().reader(false);
-          for (int i = 0; i < c._len; ++i)
+          for (int i = 0; i < c.numRows(); ++i)
             c.set(i, reader.at((long) c.atd(i),0));
         }
       }.doAll(vec);
@@ -60,12 +61,12 @@ class ASTSeq extends ASTPrim {
       else if(n > Double.MAX_VALUE) throw new IllegalArgumentException("'by' argument is much too small");
       Futures fs = new Futures();
       AppendableVec av = new AppendableVec(Vec.newKey(),Vec.T_NUM);
-      NewChunk nc = new NewChunk(new SingleChunk(av,0), 0);
+      Chunks.AppendableChunks nc = av.chunkForChunkIdx(0);
       int len = (int)n + 1;
       for (int r = 0; r < len; r++) nc.addNum(from + r*by);
       // May need to adjust values = by > 0 ? min(values, to) : max(values, to)
       nc.close(fs);
-      VecAry vec = av.layout_and_close(fs);
+      VecAry vec = new VecAry(av.closeVec(fs));
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
     }
@@ -81,6 +82,6 @@ class ASTSeqLen extends ASTPrim {
   public Val apply(Env env, Env.StackHelp stk, AST asts[]) {
     int len = (int) Math.ceil(asts[1].exec(env).getNum());
     if (len <= 0) throw new IllegalArgumentException("Error in seq_len("+len+"): argument must be coercible to positive integer");
-    return new ValFrame(new Frame(Vec.makeSeq(len,true)));
+    return new ValFrame(new Frame(VecUtils.makeSeq(len,1,true)));
   }
 }

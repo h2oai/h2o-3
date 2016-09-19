@@ -125,7 +125,7 @@ class ASTRectangleAssign extends ASTPrim {
     // Bulk assign constant (probably zero) over a frame.  Directly set
     // columns: Copy-On-Write optimization happens here on the apply() exit.
     if( dst.numRows() == nrows && rows.isDense() ) {
-      VecAry vsrc = dst.vecs().makeCon(src);
+      VecAry vsrc = dst.vecs().makeCons(src);
       dst.vecs().replaceVecs(vsrc,cols);
       if( dst._key != null ) DKV.put(dst);
       return;
@@ -136,9 +136,9 @@ class ASTRectangleAssign extends ASTPrim {
     VecAry vecs2 = vecs.getVecs(cols); // Just the selected columns get updated
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new MRTask(){
-      @Override public void map(Chunk[] cs) {
-        long start = cs[0].start();
-        long end   = start + cs[0]._len;
+      @Override public void map(Chunks cs) {
+        long start = cs.start();
+        long end   = start + cs.numRows();
         long min = (long)rows.min(), max = (long)rows.max()-1; // exclusive max to inclusive max when stride == 1
         //     [ start, ...,  end ]     the chunk
         //1 []                          rows out left:  rows.max() < start
@@ -148,10 +148,10 @@ class ASTRectangleAssign extends ASTPrim {
         //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
         if( !(max<start || min>end) ) {   // not situation 1 or 2 above
           int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
-          for(int i=(int)(startOffset-start);i<cs[0]._len;++i)
+          for(int i=(int)(startOffset-start);i<cs.numRows();++i)
             if( rows.has(start+i) )
-              for( Chunk chk : cs )
-                chk.set(i,src);
+              for(int j = 0; j < cs.numCols();++j)
+                cs.set(i,j,src);
         }
       }
     }.doAll(vecs2);
@@ -208,14 +208,13 @@ class ASTRectangleAssign extends ASTPrim {
   private void assign_frame_scalar(Frame dst, final int[] cols, Frame rows, final double src, Session ses) {
     // TODO: COW without materializing vec and depending on assign_frame_frame
     Frame src2 = new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk bool = cs[cs.length-1];
-        for(int i=0; i<cs[0]._len; ++i) {
+      @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+        for(int i=0; i<cs.numRows(); ++i) {
           int nc=0;
-          if( bool.at8(i)==1 )
-            for(int c: cols) ncs[nc++].addNum(src);
+          if( cs.at4(i,-1)==1 )
+            for(int c: cols) ncs.addNum(nc++,src);
           else
-            for(int c: cols) ncs[nc++].addNum(cs[c].atd(i));
+            for(int c: cols) ncs.addNum(nc++,cs.atd(i,c));
         }
       }
     }.doAll(cols.length, Vec.T_NUM, new VecAry(dst.vecs(),rows.vecs())).outputFrame();
@@ -235,7 +234,7 @@ class ASTAppend extends ASTPrim {
     
     VecAry vec = dst.vecs();
     switch( vsrc.type() ) {
-    case Val.NUM: vec = vec.makeCon(vsrc.getNum()); break;
+    case Val.NUM: vec = vec.makeCons(vsrc.getNum()); break;
     case Val.STR: throw H2O.unimpl();
     case Val.FRM: 
       if( vsrc.getFrame().numCols() != 1 ) throw new IllegalArgumentException("Can only append one column");

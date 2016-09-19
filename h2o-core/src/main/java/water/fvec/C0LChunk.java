@@ -10,12 +10,12 @@ import java.util.Arrays;
  */
 public class C0LChunk extends Chunk {
   protected static final int _OFF=8+4;
-  private long _con;
+  private transient long _con;
+  private transient int _len;
+
   public C0LChunk(long con, int len) {
     _mem=new byte[_OFF];
-    _vidx = -1;
-    _achunk = null;
-    set_len(len);
+    _len = len;
     _con = con;
     UnsafeUtils.set8(_mem, 0, con);
     UnsafeUtils.set4(_mem,8,len);
@@ -37,10 +37,8 @@ public class C0LChunk extends Chunk {
   @Override double max() { return _con; }
 
   @Override public final void initFromBytes () {
-    _vidx = -1;
-    _achunk = null;
     _con = UnsafeUtils.get8(_mem,0);
-    set_len(UnsafeUtils.get4(_mem,8));
+    _len = (UnsafeUtils.get4(_mem,8));
   }
   @Override public boolean isSparseZero(){return _con == 0;}
   @Override public int sparseLenZero(){return _con == 0?0: _len;}
@@ -50,6 +48,9 @@ public class C0LChunk extends Chunk {
     for (int i = 0; i < _len; ++i) arr[i] = i;
     return _len;
   }
+  @Override
+  public int len() {return _len;}
+
   @Override public int asSparseDoubles(double [] vals, int [] ids, double NA){
     if(_con == 0) return 0;
     for(int i = 0; i < _len; ++i) {

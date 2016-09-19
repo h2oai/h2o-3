@@ -75,7 +75,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     }
     final int rowLayout = Vec.ESPC.rowLayout(_vg._key,espc);
     _dst = _vg.makeCons(rowLayout,_src.len(),0L);
-    new RebalanceTask(this,_src).dfork(_dst);
+    new RebalanceTask(this,_src).dfork(_src.types(),_dst);
   }
 
 
@@ -92,19 +92,17 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
 
     @Override public boolean logVerbose() { return false; }
 
-    @Override public void map(Chunk [] chks){
-      int n = chks[0]._len;
-      long start = chks[0].start();
-      for(int i = 0; i < chks.length; ++i)
-        chks[i] = new NewChunk(chks[i]);
+    @Override public void map(Chunks chks, Chunks.AppendableChunks ncs){
+      int n = chks.numRows();
+      long start = chks.start();
       int k = 0;
       while(k < n){
-        Chunk [] srcChks = _src.getChunks(_src.elem2ChunkIdx(start + k),false).chks();
-        long srcChunkStart = srcChks[0].start();
+        Chunks srcChks = _src.getChunks(_src.elem2ChunkIdx(start + k),false);
+        long srcChunkStart = srcChks.start();
         int srcFrom = (int)(start+ k - srcChunkStart);
-        final int srcTo = Math.min(srcChks[0]._len,srcFrom + n - k);
-        for(int i = 0; i < srcChks.length; ++i)
-          srcChks[i].add2NewChunk((NewChunk)chks[i],srcFrom,srcTo);
+        final int srcTo = Math.min(srcChks.numRows(),srcFrom + n - k);
+        for(int i = 0; i < srcChks.numCols(); ++i)
+          srcChks.addColToNewChunk(ncs,srcFrom,srcTo,i,i);
         k += srcTo - srcFrom;
       }
     }

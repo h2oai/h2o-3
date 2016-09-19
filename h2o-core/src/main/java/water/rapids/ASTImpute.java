@@ -5,6 +5,7 @@ import water.Freezable;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.fvec.Frame;
 import water.fvec.VecAry;
 import water.util.ArrayUtils;
@@ -153,14 +154,14 @@ public class ASTImpute extends ASTPrim {
         }
         new MRTask() {
           @Override
-          public void map(Chunk[] cs) {
-            int len = cs[0]._len;
+          public void map(Chunks cs) {
+            int len = cs.numRows();
             // run down each chk
-            for (int c = 0; c < cs.length; ++c)
+            for (int c = 0; c < cs.numCols(); ++c)
               if (!Double.isNaN(res[c]))
                 for (int row = 0; row < len; ++row)
-                  if (cs[c].isNA(row))
-                    cs[c].set(row, res[c]);
+                  if (cs.isNA(row,c))
+                    cs.set(row,c , res[c]);
           }
         }.doAll(fr.vecs());
         return new ValNums(res);
@@ -209,15 +210,15 @@ public class ASTImpute extends ASTPrim {
       }
       final int[] bycols = by2.expand4();
       new MRTask() {
-        @Override public void map( Chunk cs[] ) {
+        @Override public void map( Chunks cs ) {
           Set<Integer> _bycolz =  new HashSet<>();
           for(int b:bycols) _bycolz.add(b);
           ASTGroup.G g = new ASTGroup.G(bycols.length,null);
-          for( int row=0; row<cs[0]._len; row++ )
-            for(int c=0;c<cs.length;++c)
+          for( int row=0; row<cs.numRows(); row++ )
+            for(int c=0;c<cs.numCols();++c)
               if (!_bycolz.contains(c))
-                if( cs[c].isNA(row) )
-                  cs[c].set(row, ((IcedDouble)final_group_impute_map.get(g.fill(row, cs, bycols))[c])._val);
+                if( cs.isNA(row,c) )
+                  cs.set(row, c, ((IcedDouble)final_group_impute_map.get(g.fill(row, cs, bycols))[c])._val);
         }
       }.doAll(fr.vecs());
       return new ValFrame(imputes);
@@ -234,13 +235,13 @@ public class ASTImpute extends ASTPrim {
     private transient Set<Integer> _localbyColzSet;
     Gather( int[] byCols0, int[] byCols, int ncol, int imputeCol) { _byCols=byCols; _byCols0=byCols0; _ncol=ncol; _imputedCol=imputeCol; }
     @Override public void setupLocal() { _localbyColzSet=new HashSet<>(); for(int by: _byCols0) _localbyColzSet.add(by); }
-    @Override public void map(Chunk cs[]) {
+    @Override public void map(Chunks cs) {
       _group_impute_map = new IcedHashMap<>();
-      for(int row=0; row<cs[0]._len; ++row) {
+      for(int row=0; row<cs.numRows(); ++row) {
         IcedDouble[] imputes = new IcedDouble[_ncol];
         for(int c=0, z=_byCols.length;c<imputes.length;++c,++z) {  // z used to skip over the gby cols into the columns containing the aggregated columns
-          if( _imputedCol!=-1 ) imputes[c] = c==_imputedCol?new IcedDouble(cs[cs.length-1].atd(row)):new IcedDouble(Double.NaN);
-          else                  imputes[c] = _localbyColzSet.contains(c) ? new IcedDouble(Double.NaN) : new IcedDouble(cs[z].atd(row));
+          if( _imputedCol!=-1 ) imputes[c] = c==_imputedCol?new IcedDouble(cs.atd(row,-1)):new IcedDouble(Double.NaN);
+          else                  imputes[c] = _localbyColzSet.contains(c) ? new IcedDouble(Double.NaN) : new IcedDouble(cs.atd(row,z));
         }
         _group_impute_map.put(new ASTGroup.G(_byCols.length,null).fill(row,cs,_byCols), imputes);
       }

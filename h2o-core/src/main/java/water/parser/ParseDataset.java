@@ -847,7 +847,7 @@ public final class ParseDataset {
       }
       @Override public void map( Chunks in ) {
         if( _jobKey.get().stop_requested() ) return;
-        FVecParseReader din = new FVecParseReader(in.getChunk(0));
+        FVecParseReader din = new FVecParseReader(in);
         FVecParseWriter dout = makeDout(_vg,_vecIdStart,_cKey,_setup,_startChunkIdx,_nchunks);
         // Get a parser
         Parser p = _setup.parser(_jobKey);
