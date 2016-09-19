@@ -7,13 +7,13 @@ import static hex.genmodel.utils.DistributionFamily.*;
 import java.util.Map;
 
 /**
- * "Gradient Boosting Method" RawModel
+ * "Gradient Boosting Method" MojoModel
  */
-public final class GbmRawModel extends TreeBasedModel {
+public final class GbmModel extends TreeBasedModel {
     private DistributionFamily _family;
     private double _init_f;
 
-    public GbmRawModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
+    public GbmModel(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(cr, info, columns, domains);
         _family = DistributionFamily.valueOf((String) info.get("distribution"));
         _init_f = (double) info.get("init_f");

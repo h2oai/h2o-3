@@ -1,6 +1,6 @@
 package hex.genmodel.algos;
 
-import hex.genmodel.RawModel;
+import hex.genmodel.MojoModel;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
 import hex.genmodel.utils.NaSplitDir;
@@ -10,10 +10,10 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * Common ancestor for {@link DrfRawModel} and {@link GbmRawModel}.
+ * Common ancestor for {@link DrfModel} and {@link GbmModel}.
  * See also: `hex.tree.SharedTreeModel` and `hex.tree.TreeVisitor` classes.
  */
-public abstract class TreeBasedModel extends RawModel {
+public abstract class TreeBasedModel extends MojoModel {
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
@@ -117,7 +117,7 @@ public abstract class TreeBasedModel extends RawModel {
     // Private
     //------------------------------------------------------------------------------------------------------------------
 
-    protected TreeBasedModel(ContentReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
+    protected TreeBasedModel(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
         super(cr, info, columns, domains);
         _ntrees = (int) info.get("n_trees");
         _compressed_trees = new byte[_ntrees * _nclasses][];

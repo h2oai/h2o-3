@@ -7,6 +7,7 @@ This module implements the base model class.  All model things inherit from this
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import traceback
 import warnings
 
@@ -15,6 +16,7 @@ from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type
 
@@ -710,7 +712,7 @@ class ModelBase(backwards_compatible()):
         return list(m.values())[0] if len(m) == 1 else m
 
 
-    def download_pojo(self, path=""):
+    def download_pojo(self, path="", get_genmodel_jar=False):
         """
         Download the POJO for this model to the directory specified by path.
 
@@ -718,10 +720,30 @@ class ModelBase(backwards_compatible()):
 
         :param path:  An absolute path to the directory where POJO should be saved.
 
-        :returns: None
+        :returns: name of the POJO file written.
         """
+        assert_is_type(path, str)
+        assert_is_type(get_genmodel_jar, bool)
         path = path.rstrip("/")
-        h2o.download_pojo(self, path)
+        return h2o.download_pojo(self, path, get_jar=get_genmodel_jar)
+
+
+    def download_mojo(self, path=".", get_genmodel_jar=False):
+        """
+        Download the model in MOJO format.
+
+        :param path: the path where MOJO file should be saved.
+        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
+        :returns: name of the MOJO file written.
+        """
+        assert_is_type(path, str)
+        assert_is_type(get_genmodel_jar, bool)
+        if self.algo not in {"drf", "gbm"}:
+            raise H2OValueError("MOJOs are currently supported for Distributed Random Forest and "
+                                "Gradient Boosting Method models only.")
+        if get_genmodel_jar:
+            h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
+        return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
 
 
     @staticmethod

@@ -531,6 +531,7 @@ public class RequestServer extends HttpServlet {
         if (index == path.length - 2) {
           int v = Integer.parseInt(nextToken);
           for (String key : branches.keySet()) {
+            if (branches.get(key).leaf == null) continue;
             if (Integer.parseInt(key) <= v) {
               // We also create a new branch in the tree to memorize this new route path.
               RouteTree newBranch = new RouteTree(nextToken);

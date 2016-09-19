@@ -13,7 +13,7 @@ import sys
 from colorama import Style, Fore
 from types import ModuleType
 
-from h2o.exceptions import H2OSoftError
+from h2o.exceptions import H2OJobCancelled, H2OSoftError
 from h2o.utils.compatibility import *  # NOQA
 
 # Nothing to import; this module's only job is to install an exception hook for debugging.
@@ -87,6 +87,8 @@ def _except_hook(exc_type, exc_value, exc_tb):
                    frame of the outermost expression being evaluated). We need to walk down the list (by repeatedly
                    moving to exc_tb.tb_next) in order to find the execution frame where the actual exception occurred.
     """
+    if isinstance(exc_value, H2OJobCancelled):
+        return
     if isinstance(exc_value, H2OSoftError):
         _handle_soft_error(exc_type, exc_value, exc_tb)
     else:

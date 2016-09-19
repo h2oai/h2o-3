@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 """
-Test the "zipped" format of the model.
+Test the "MOJO" format of the model.
 
 This really is an integration test, not a unit test.
 """
@@ -27,12 +27,12 @@ NTREES = 50
 DEPTH = 5
 NTESTROWS = 1000
 
-def test_zipped_rf_model():
+def test_mojo_model():
     """
-    Test the correctness of the "zipped" model format.
+    Test the correctness of the "MOJO" model format.
 
     This test will create a random dataset, split into training/testing part, train a DRF model on it,
-    download the model's data, score the model remotely and fetch the predictions, score the model locally by
+    download the model's MOJO, score the model remotely and fetch the predictions, score the model locally by
     running the genmodel jar, and finally compare the prediction results.
     """
     genmodel_jar = os.path.abspath("../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar")
@@ -67,16 +67,16 @@ def test_zipped_rf_model():
             print(model.summary())
             print("Time taken = %.3fs" % (time.time() - time0))
 
-            print("\nSaving the model...")
+            print("\nDownloading MOJO...")
             time0 = time.time()
-            model_file = h2o.api("GET /3/Models/%s/data" % model.model_id, save_to=target_dir)
-            print("    => %s  (%d bytes)" % (model_file, os.stat(model_file).st_size))
-            assert os.path.exists(model_file)
+            mojo_file = model.download_mojo(target_dir)
+            print("    => %s  (%d bytes)" % (mojo_file, os.stat(mojo_file).st_size))
+            assert os.path.exists(mojo_file)
             print("Time taken = %.3fs" % (time.time() - time0))
 
             print("\nDownloading POJO...")
             time0 = time.time()
-            pojo_file = h2o.download_pojo(model, target_dir, get_jar=False)
+            pojo_file = model.download_pojo(target_dir)
             pojo_size = os.stat(pojo_file).st_size
             pojo_name = os.path.splitext(os.path.basename(pojo_file))[0]
             print("    => %s  (%d bytes)" % (pojo_file, pojo_size))
@@ -114,12 +114,12 @@ def test_zipped_rf_model():
                 ret = subprocess.call(["java", "-cp", genmodel_jar,
                                        "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m",
                                        "hex.genmodel.tools.PredictCsv",
-                                       "--input", inpfile, "--output", outfile, "--model", model_file, "--decimal"])
+                                       "--input", inpfile, "--output", outfile, "--mojo", mojo_file, "--decimal"])
                 assert ret == 0, "GenModel finished with return code %d" % ret
                 times.append(time.time())
             print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
                   (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
-            report.append((estimator_name, problem, "Zipped", times[1] - times[0], times[2] - times[1]))
+            report.append((estimator_name, problem, "Mojo", times[1] - times[0], times[2] - times[1]))
 
             if pojo_size <= 1000 << 20:  # 1000 Mb
                 time0 = time.time()
@@ -176,7 +176,7 @@ def test_zipped_rf_model():
     print("#  Timing report")
     print("#================================================\n" + colorama.Fore.RESET)
     print(tabulate.tabulate(report,
-          headers=["Model", "Problem type", "Scorer", "10000 rows", "20000 rows"],
+          headers=["Model", "Problem type", "Scorer", "%d rows" % NTESTROWS, "%d rows" % (2 * NTESTROWS)],
           floatfmt=".3f"), end="\n\n\n")
 
 def random_dataset(response_type, verbose=True):
@@ -221,6 +221,6 @@ def load_csv(csvfile):
 
 if __name__ == "__main__":
     colorama.init()
-    pyunit_utils.standalone_test(test_zipped_rf_model)
+    pyunit_utils.standalone_test(test_mojo_model)
 else:
-    test_zipped_rf_model()
+    test_mojo_model()

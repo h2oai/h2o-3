@@ -324,15 +324,10 @@ public abstract class SharedTreeModel<
   private M self() { return (M)this; }
 
   //--------------------------------------------------------------------------------------------------------------------
-  // Serialization into the "zipped" format
+  // Serialization into the "MOJO" format
   //--------------------------------------------------------------------------------------------------------------------
 
-  @Override
-  public Model<M, P, O>.RawDataStreamWriter getRawDataStream() {
-    return new RawDataStreamWriter();
-  }
-
-  public class RawDataStreamWriter extends Model<M, P, O>.RawDataStreamWriter {
+  public class TreeMojoStreamWriter extends Model<M, P, O>.MojoStreamWriter {
     @Override
     protected void writeExtraModelInfo() throws IOException {
       writeln("n_trees = " + _output._ntrees);

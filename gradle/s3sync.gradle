@@ -50,34 +50,43 @@ task syncBigdataServer {
 // sync is based on name, size, and the last modify date, currently md5 tags are ignored
 // note this drops the subdir name locally
 def syncData(subdir) {
-  def localDestDir = (new File("$rootDir")).getCanonicalPath() + File.separator + subdir.replaceAll("/", Matcher.quoteReplacement(File.separator)) + File.separator
-  def remoteFiles = new XmlSlurper().parseText(new URL('https://h2o-public-test-data.s3.amazonaws.com').getText())
-  FileTree localFiles= fileTree(dir: subdir) // local tree
   def trimLength = (subdir+File.separator).length()
+  def localDestDir = (new File("$rootDir")).getCanonicalPath() + File.separator + subdir.replaceAll("/", Matcher.quoteReplacement(File.separator)) + File.separator
   def dateFormatter = (new ISODateTimeFormat()).dateTime()
+  // Local files
+  FileTree localFiles= fileTree(dir: subdir) // local tree
+  // List of files which need to be downloaded
   def downloadList = new ArrayList<groovy.util.slurpersupport.NodeChild>()
 
-  remoteFiles.Contents.findAll{it.Key =~ subdir}.each { rfile ->
-    def match = false
-    def rname = localDestDir + rfile.Key.text().substring(trimLength).replaceAll("/", Matcher.quoteReplacement(File.separator))
-    def rsize = rfile.Size.text().toLong()
-    def rdate = (dateFormatter.parseDateTime(rfile.LastModified.text())).getMillis()
-    if (rsize != 0) { 
-      localFiles.findAll().each { lfile ->
-        def lname = lfile.path
-        def lsize = lfile.size()
-        def ldate = (new Date(lfile.lastModified())).getTime()
-        if (lname == rname && lsize == rsize && ldate == rdate)
+  boolean needMoreData = true
+  String lastKey = ""
+  while (needMoreData) {
+      def remoteFiles = new XmlSlurper().parseText(new URL("https://h2o-public-test-data.s3.amazonaws.com/?marker=$lastKey").getText())
+      needMoreData = remoteFiles.IsTruncated == "true"
+      remoteFiles.Contents.findAll{it.Key =~ subdir}.each { rfile ->
+        def match = false
+        def rname = localDestDir + rfile.Key.text().substring(trimLength).replaceAll("/", Matcher.quoteReplacement(File.separator))
+        def rsize = rfile.Size.text().toLong()
+        def rdate = (dateFormatter.parseDateTime(rfile.LastModified.text())).getMillis()
+        if (rsize != 0) {
+          localFiles.findAll().each { lfile ->
+            def lname = lfile.path
+            def lsize = lfile.size()
+            def ldate = (new Date(lfile.lastModified())).getTime()
+            if (lname == rname && lsize == rsize && ldate == rdate)
+              match = true
+          }
+        } else { //some software makes 0-byte "directory" files in S3, skip them
           match = true
+        }
+        if (match == false) {
+          downloadList.add(rfile)
+        }
+        lastKey = rfile.Key
       }
-    } else { //some software makes 0-byte "directory" files in S3, skip them
-	match = true
-    } 
-    if (match == false) {
-      downloadList.add(rfile)
-    }
   }
 
+  println("Going to download ${downloadList.size} files...")
   downloadList.each {
     def fpath = 'https://h2o-public-test-data.s3.amazonaws.com/'+it.Key
     def localDestPath = localDestDir + it.Key.text().substring(trimLength).replaceAll("/", Matcher.quoteReplacement(File.separator))

@@ -25,8 +25,8 @@ public class ParseTestMultiFileOrc extends TestUtil {
     int totalFilesTested = 0;
     int numberWrong = 0;
 
-    private String[] csvDirectories = {"smalldata/synthetic_perfect_separation"};
-    private String[] orcDirectories = {"smalldata/parser/orc/synthetic_perfect_separation"};
+    private String[] csvDirectories = {"smalldata/smalldata/synthetic_perfect_separation/"};
+    private String[] orcDirectories = {"smalldata/parser/orc/synthetic_perfect_separation/"};
 
     @BeforeClass
     static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup
