@@ -6,6 +6,7 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
+
 import static water.util.MRUtils.sampleFrame;
 import water.util.PrettyPrint;
 
@@ -18,24 +19,17 @@ import java.util.Arrays;
 public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,DeepWaterModelOutput> {
 
   /** Main constructor from Deep Learning parameters */
-  public DeepWater(DeepWaterParameters parms ) { super(parms); init(false); }
-  public DeepWater(DeepWaterParameters parms, Key<DeepWaterModel> key ) { super(parms,key); init(false); }
-  public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
+  public DeepWater(DeepWaterParameters parms ) { super(parms); init(false); backendLoader(); }
+  public DeepWater(DeepWaterParameters parms, Key<DeepWaterModel> key ) { super(parms,key); init(false); backendLoader(); }
+  public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); backendLoader(); }
+
+  private void backendLoader() {
+    if (_parms._backend== DeepWaterParameters.Backend.mxnet)
+      new MXNetLoader();
+    else throw H2O.unimpl();
+  }
 
   static public void logNvidiaStats() { try { Log.info(water.gpu.util.getNvidiaStats()); } catch (IOException e) {} }
-  static {
-    try {
-      final boolean GPU = System.getenv("CUDA_PATH")!=null;
-      if (GPU) {
-        water.gpu.util.loadCudaLib();
-        logNvidiaStats();
-      }
-      water.gpu.util.loadNativeLib("mxnet");
-      water.gpu.util.loadNativeLib("Native");
-    } catch (IOException e) {
-      throw new IllegalArgumentException("Couldn't load native DL libraries");
-    }
-  }
 
 //  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
