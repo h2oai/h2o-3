@@ -762,30 +762,43 @@ class H2OFrame(object):
         return self
 
     def set_name(self, col=None, name=None):
-        """Set the name of the column at the specified index.
-
-        Parameters
-        ----------
-          col : int, str
-            Index of the column whose name is to be set; may be skipped for 1-column frames
-
-          name : str
-            The new name of the column to set
-
-        Returns
-        -------
-          Returns self.
         """
-        if is_type(col, str): col = self.names.index(col)  # lookup the name
-        if not is_type(col, int) and self.ncol > 1: raise ValueError("`col` must be an index. Got: " + str(col))
-        if self.ncol == 1: col = 0
-        old_cache = self._ex._cache
-        self._ex = ExprNode("colnames=", self, col, name)  # Update-in-place, but still lazy
-        self._ex._cache.fill_from(old_cache)
-        if self.names is None:
-            self._frame()._ex._cache.fill()
+        Set the name of a column.
+
+        :param col: index or name of the column whose name is to be set; may be skipped for 1-column frames
+        :param name: the new name of the column
+        """
+        assert_is_type(col, None, int, str)
+        assert_is_type(name, str)
+        ncols = self.ncols
+
+        col_index = None
+        if is_type(col, int):
+            if not(-ncols <= col < ncols):
+                raise H2OValueError("Index %d is out of bounds for a frame with %d columns" % (col, ncols))
+            col_index = (col + ncols) % ncols  # handle negative indices
+        elif is_type(col, str):
+            if col not in self.names:
+                raise H2OValueError("Column %s doesn't exist in the frame." % col)
+            col_index = self.names.index(col)  # lookup the name
         else:
-            self._ex._cache.names = self.names[:col] + [name] + self.names[col + 1:]
+            assert col is None
+            if ncols != 1:
+                raise H2OValueError("The frame has %d columns; please specify which one to rename" % ncols)
+            col_index = 0
+        if name != self.names[col_index] and name in self.types:
+            raise H2OValueError("Column '%s' already exists in the frame" % name)
+
+        oldname = self.names[col_index]
+        old_cache = self._ex._cache
+        self._ex = ExprNode("colnames=", self, col_index, name)  # Update-in-place, but still lazy
+        self._ex._cache = old_cache
+        self._ex._cache._names[col_index] = name
+        self._ex._cache._types[name] = self._ex._cache._types.pop(oldname)
+        # Invalidate the data; however we could have tried to update in place. Updating in-place is somewhat complicated
+        # by the fact that we use an OrderedDict underneath, and must somehow preserve the order of the keys...
+        self._ex._cache._data = None
+
 
     def as_date(self, format):
         """Return the column with all elements converted to millis since the epoch.
