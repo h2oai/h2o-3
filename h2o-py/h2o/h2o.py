@@ -43,7 +43,7 @@ h2oconn = None
 
 
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cluster_name=None, verbose=True):
+            proxy=None, cluster_id=None, verbose=True):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -59,13 +59,13 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param auth: Either a (username, password) pair for basic authentication, or one of the requests.auth
                  authenticator objects.
     :param proxy: Proxy server address.
-    :param cluster_name: Name of the H2O cluster to connect to. This option is used from Steam only.
+    :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param verbose: Set to False to disable printing connection status messages.
     """
     global h2oconn
     h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
                                  verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
-                                 cluster_name=cluster_name, verbose=verbose)
+                                 cluster_id=cluster_id, verbose=verbose)
     if verbose:
         h2oconn.cluster.show_status()
     return h2oconn
@@ -119,7 +119,7 @@ def version_check():
               "version from http://h2o.ai/download/".format(ci.build_age))
 
 
-def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_name=None,
+def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_id=None,
          proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):
     """
@@ -132,7 +132,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     :param insecure:
     :param username:
     :param password:
-    :param cluster_name:
+    :param cluster_id:
     :param proxy:
     :param start_h2o:
     :param nthreads:
@@ -152,7 +152,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     assert_is_type(insecure, bool)
     assert_is_type(username, str, None)
     assert_is_type(password, str, None)
-    assert_is_type(cluster_name, str, None)
+    assert_is_type(cluster_id, int, None)
     assert_is_type(proxy, {str: str}, None)
     assert_is_type(start_h2o, bool, None)
     assert_is_type(nthreads, int)
@@ -194,7 +194,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
         print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https, verify_ssl_certificates=not insecure,
-                                     auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True,
+                                     auth=auth, proxy=proxy, cluster_id=cluster_id, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url}",
                                             "connected.", "not found."))
     except H2OConnectionError:
@@ -205,7 +205,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, port=port)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
-                                     auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True)
+                                     auth=auth, proxy=proxy, cluster_id=cluster_id, verbose=True)
     if strict_version_check:
         version_check()
     h2oconn.cluster.show_status()

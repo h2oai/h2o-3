@@ -59,7 +59,7 @@ setRefClass("H2OConnectionMutableState",
 #' @slot insecure Set this to TRUE to disable SSL certificate checking.
 #' @slot username Username to login with.
 #' @slot password Password to login with.
-#' @slot cluster_name Cluster to login to.
+#' @slot cluster_id Cluster to login to. Used for Steam connections
 #' @slot mutable An \code{H2OConnectionMutableState} object to hold the mutable state for the H2O connection.
 #' @aliases H2OConnection
 #' @export
@@ -67,7 +67,7 @@ setClass("H2OConnection",
          representation(ip="character", port="numeric", proxy="character",
                         https="logical", insecure="logical",
                         username="character", password="character",
-                        cluster_name="character",
+                        cluster_id="numeric",
                         mutable="H2OConnectionMutableState"),
          prototype(ip           = NA_character_,
                    port         = NA_integer_,
@@ -76,7 +76,7 @@ setClass("H2OConnection",
                    insecure     = FALSE,
                    username     = NA_character_,
                    password     = NA_character_,
-                   cluster_name = NA_character_,
+                   cluster_id   = NA_integer_,
                    mutable      = new("H2OConnectionMutableState")))
 
 setClassUnion("H2OConnectionOrNULL", c("H2OConnection", "NULL"))

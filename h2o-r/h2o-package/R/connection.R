@@ -24,7 +24,7 @@
 #' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
 #' @param username (Optional) Username to login with.
 #' @param password (Optional) Password to login with.
-#' @param cluster_name (Optional) Cluster to login to.
+#' @param cluster_id (Optional) Cluster to login to. Used for Steam connections.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -53,7 +53,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
                      enable_assertions = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
-                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_, cluster_name = NA_character_) {
+                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_, cluster_id = NA_integer_) {
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
@@ -96,8 +96,9 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     stop("`password` must be a character string or NA_character_")
   if (is.na(username) != is.na(password))
     stop("Must provide both `username` and `password`")
-  if (!is.character(cluster_name) || !nzchar(cluster_name))
-    stop("`cluster_name` must be a character string or NA_character_")
+  if (!is.na(cluster_id) && 
+      (!is.numeric(cluster_id) || cluster_id < 0))
+    stop("`cluster_id` must be an integer value greater than 0")
 
   if ((R.Version()$major == "3") && (R.Version()$minor == "1.0")) {
     stop("H2O is not compatible with R 3.1.0\n",
@@ -113,7 +114,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
 
   warnNthreads <- FALSE
   tmpConn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure, 
-    username = username, password = password, cluster_name = cluster_name)
+    username = username, password = password, cluster_id = cluster_id)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
@@ -154,7 +155,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
   }
 
   conn <- new("H2OConnection", ip = ip, port = port, proxy = proxy, https = https, insecure = insecure, 
-    username = username, password = password, cluster_name = cluster_name)
+    username = username, password = password, cluster_id = cluster_id)
   assign("SERVER", conn, .pkg.env)
   cat(" Connection successful!\n\n")
   h2o.clusterInfo()
