@@ -438,18 +438,26 @@ public class PojoUtils {
     try {
       Field f = o.getClass().getField(fieldName);
 
+      if (null == value) {
+        f.set(o, null);
+        return;
+      }
+
       // If it doesn't know any better, Gson deserializes all numeric types as doubles.
       // If our target is an integer type, cast.
       if (f.getType().isPrimitive() && f.getType() != value.getClass()) {
         // Log.debug("type conversion");
         if (f.getType() == int.class && (value.getClass() == Double.class || value.getClass() == Float.class))
-          f.set(o, ((Double)value).intValue());
+          f.set(o, ((Double) value).intValue());
         else if (f.getType() == long.class && (value.getClass() == Double.class || value.getClass() == Float.class))
-          f.set(o, ((Double)value).longValue());
+          f.set(o, ((Double) value).longValue());
         else {
           // Double -> double, Integer -> int will work:
           f.set(o, value);
         }
+      } else if (! f.getType().isPrimitive() && ! f.getType().isAssignableFrom(value.getClass())) {
+        // TODO: pull the auto-type-conversion stuff out of copyProperties so we don't have limited copy-paste code here
+        throw new IllegalArgumentException("setField can't yet convert a: " + value.getClass() + " to a: " + f.getType()); //
       } else {
         // not casting a primitive type
         f.set(o, value);
@@ -507,18 +515,40 @@ public class PojoUtils {
         try {
           Field f = o.getClass().getField(key);
           f.setAccessible(true);
-          fillFromMap(f.get(o), (Map<String, Object>)value);
-        }
-        catch (NoSuchFieldException e) {
+          Object subObj = f.getType().newInstance();
+          fillFromMap(subObj, (Map<String, Object>) value);
+          setField(o, key, subObj);
+        } catch (NoSuchFieldException e) {
           throw new IllegalArgumentException("Field not found: '" + key + "' on object " + o);
         } catch (IllegalAccessException e) {
           throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
+        } catch (InstantiationException e) {
+          try {
+            throw new IllegalArgumentException("Cannot create new child object of type: " + o.getClass().getField(key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
+          } catch (NoSuchFieldException ee) {
+            // Can't happen: we've already checked for this.
+            throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
+          }
         }
+
       } else {
-        // scalar or String
-        setField(o, key, value);
-      }
-    }
+        // Scalar or String, possibly with an automagic type conversion as copyProperties does.
+        // TODO: refactor the type conversions out of copyProperties so they all work, and remove
+        // this now-redundant code:
+        try {
+          Field f = o.getClass().getField(key);
+          f.setAccessible(true);
+
+          if (f.getType().isAssignableFrom(FrameV3.ColSpecifierV3.class)) {
+            setField(o, key, new FrameV3.ColSpecifierV3((String) value));
+          } else {
+            setField(o, key, value);
+          }
+        } catch (NoSuchFieldException e) {
+          throw new IllegalArgumentException("Field not found: '" + key + "' on object " + o);
+        }
+      } // else not a nested object
+    } // for all fields in the map
   return o;
   }
 
