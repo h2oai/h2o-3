@@ -258,15 +258,16 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  void runInception(int channels) {
+  void checkConvergence(int channels, DeepWaterParameters.Network network, int epochs) {
     DeepWaterModel m = null;
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
+      p._network = network;
       p._rate = 1e-3;
-      p._epochs = 30;
+      p._epochs = epochs;
       p._channels = channels;
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
@@ -277,8 +278,25 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  @Test public void convergenceInceptionColor() { runInception(3); }
-  @Test public void convergenceInceptionGrayScale() { runInception(1); }
+  @Test public void convergenceInceptionColor() { checkConvergence(3, DeepWaterParameters.Network.inception_bn, 30); }
+  @Test public void convergenceInceptionGrayScale() { checkConvergence(1, DeepWaterParameters.Network.inception_bn, 30); }
+
+  @Test public void convergenceGoogleNetColor() { checkConvergence(3, DeepWaterParameters.Network.googlenet, 50); }
+  @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 50); }
+
+  @Test public void convergenceLenetColor() { checkConvergence(3, DeepWaterParameters.Network.lenet, 100); }
+  @Test public void convergenceLenetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.lenet, 50); }
+
+  @Test public void convergenceVGGColor() { checkConvergence(3, DeepWaterParameters.Network.vgg, 50); }
+  @Test public void convergenceVGGGrayScale() { checkConvergence(1, DeepWaterParameters.Network.vgg, 50); }
+
+  @Test public void convergenceResnetColor() { checkConvergence(3, DeepWaterParameters.Network.resnet, 50); }
+  @Test public void convergenceResnetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.resnet, 50); }
+
+  @Ignore // FIXME - bad network definition?
+  @Test public void convergenceAlexnetColor() { checkConvergence(3, DeepWaterParameters.Network.alexnet, 50); }
+  @Ignore // FIXME - bad network definition?
+  @Test public void convergenceAlexnetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.alexnet, 50); }
 
   //FIXME
   @Ignore
