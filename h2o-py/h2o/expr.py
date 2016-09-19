@@ -120,7 +120,7 @@ class ExprNode(object):
     def _do_it(self, top):
         if not self._cache.is_empty():  # Data already computed and cached; could a "false-like" cached value
             return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
-        if self._cache._id is not None and not self._children:
+        if self._cache._id is not None:
             return self._cache._id  # Data already computed under ID, but not cached
         # assert isinstance(self._children,tuple)
         exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
