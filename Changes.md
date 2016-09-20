@@ -2,6 +2,56 @@
 
 ##H2O
 
+###Turing (3.10.0.7) - 9/19/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3300'>PUBDEV-3300</a>] -         NPE during categorical encoding with cross-validation (Windows 8 runit only??)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3306'>PUBDEV-3306</a>] -         H2OFrame arithmetic/statistical functions return inconsistent types
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3315'>PUBDEV-3315</a>] -         Multi file parse fails with NPE
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3374'>PUBDEV-3374</a>] -         h2o.hist() does not respect breaks
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3401'>PUBDEV-3401</a>] -         importFiles, with s3n, gives NullPointerException
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3409'>PUBDEV-3409</a>] -         Python Structure() Breaks When Applied to Entire Dataframe
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2707'>PUBDEV-2707</a>] -         Diff operation on column in H2O Frame
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-619'>HEXDEV-619</a>] -         calculate residuals  in h2o-3 and in flow and create a new frame with a new column that contains the residuals
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2785'>PUBDEV-2785</a>] -         Clean up Python booklet code in repo
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3296'>PUBDEV-3296</a>] -         In R, allow x to be missing (meaning take all columns except y) for all supervised algo&#39;s
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3329'>PUBDEV-3329</a>] -         median() should return a list of medians from an entire frame
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3334'>PUBDEV-3334</a>] -         Conduct rbind and cbind on multiple frames
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3387'>PUBDEV-3387</a>] -         Add argument to H2OFrame.print in R to specify number of rows
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3418'>PUBDEV-3418</a>] -         Suppress chunk summary in describe()
+</li>
+</ul>
+
 ###Turing (3.10.0.6) - 8/25/2016
 
 <h4>        Bug
