@@ -233,6 +233,17 @@ h2o.getModel <- function(model_id) {
 #' }
 #' @export
 h2o.download_pojo <- function(model, path="", getjar=NULL, get_jar=TRUE) {
+
+  if(!(is.character(path))){
+    stop("The 'path' variable should be of type character")
+  }
+  if(!(is.logical(get_jar))){
+    stop("The 'get_jar' variable should be of type logical/boolean")
+  }
+  if(path!="" && !(file.exists(path))){
+    stop(paste0("'path',",path,", to save pojo cannot be found."))
+  }
+
   model_id <- model@model_id
   java <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
 
