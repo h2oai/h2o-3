@@ -239,6 +239,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
     init(new AstLevels());
     init(new AstMerge());
     init(new AstNaOmit());
+    init(new AstFilterByType());
     init(new AstNcol());
     init(new AstNLevels());
     init(new AstNrow());

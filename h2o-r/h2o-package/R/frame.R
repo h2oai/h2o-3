@@ -780,6 +780,37 @@ h2o.na_omit <- function(object, ...){
 #' @export
 na.omit.H2OFrame <- h2o.na_omit
 
+#' Filter frame by column type
+#'
+#' @rdname filter_type
+#' @param object H2OFrame object
+#' @param type A character string indicating which column type to filter by. This must be one of the following:
+#'   "numeric"      - Numeric, but not categorical or time
+#'   "categorical"  - Integer, with a categorical/factor String mapping
+#'   "string"       - String column
+#'   "time"         - Long msec since the Unix Epoch - with a variety of display/parse options
+#'   "uuid"         - UUID
+#'   "bad"          - No none-NA rows (triple negative! all NAs or zero rows)
+#' @param ... Ignored
+#' @return A list of column indices that correspond to "type"
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' h2o.filter_type(prostate.hex,type="numeric")
+#' }
+#' @export
+h2o.filter_type <- function(object,type="numeric",...){
+  if(!is.H2OFrame(object)){
+    stop("h2o.filter_type only operates on H2OFrames.")
+  }
+  if(!is.character(type)){
+    stop("`type` variable should be of type character.")
+  }
+  .eval.scalar(.newExpr("filterByType", object,.quote(type))) + 1
+}
+
 #' Conduct a lag 1 transform on a numeric H2OFrame column
 #'
 #' @rdname h2o.diff
