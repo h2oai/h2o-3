@@ -1188,7 +1188,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     domains[0] = gs._domain;
-    return gs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names, domains);
+    return gs.outputFrame(Key.<Frame>make(destination_key),names, domains);
   }
 
   /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.

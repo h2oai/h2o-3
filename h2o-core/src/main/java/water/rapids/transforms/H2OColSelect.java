@@ -25,7 +25,7 @@ public class H2OColSelect extends Transform<H2OColSelect> {
 //    throw water.H2O.unimpl();
     Session ses = new Session();
     Frame fr = ses.exec(_ast,null).getFrame();
-    if( fr._key==null ) fr = new Frame(Key.make("H2OColSelect_"+f._key.toString()),fr.names(),fr.vecs());
+    if( fr._key==null ) fr = new Frame(Key.<Frame>make("H2OColSelect_"+f._key.toString()),fr.names(),fr.vecs());
     DKV.put(fr);
     return fr;
   }

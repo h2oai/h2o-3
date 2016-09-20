@@ -386,7 +386,7 @@ public class LinearAlgebraUtils {
   }
 
   public static Vec toEigen(Vec src) {
-    Frame train = new Frame(Key.make(), new String[]{"enum"}, new Vec[]{src});
+    Frame train = new Frame(Key.<Frame>make(), new String[]{"enum"}, new Vec[]{src});
     DataInfo dinfo = new DataInfo(train, null, 0, true /*_use_all_factor_levels*/, DataInfo.TransformType.NONE,
             DataInfo.TransformType.NONE, /* skipMissing */ false, /* imputeMissing */ true,
             /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);

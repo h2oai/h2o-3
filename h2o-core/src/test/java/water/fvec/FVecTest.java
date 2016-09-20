@@ -147,7 +147,7 @@ public class FVecTest extends TestUtil {
       // Add the temp to frame
       // Now total the temp col
       fr.delete();              // Remove all other columns
-      fr = new Frame(Key.make(),new String[]{"tmp"},new Vec[]{vz}); // Add just this one
+      fr = new Frame(Key.<Frame>make(), new String[]{"tmp"}, new Vec[]{vz}); // Add just this one
       sums = new Sum().doAll(fr)._sums;
       assertEquals(3949+3986,sums[0],EPSILON);
 
