@@ -306,6 +306,27 @@ class H2OFrame(object):
         """
         return ExprNode("filterNACols", self, frac)._eager_scalar()
 
+    def columns_by_type(self, coltype="numeric"):
+        """ Obtain a list of columns that are specified by `coltype`
+
+        Parameters
+        ----------
+        coltype : str
+            A character string indicating which column type to filter by. This must be one of the following:
+                "numeric"      - Numeric, but not categorical or time
+                "categorical"  - Integer, with a categorical/factor String mapping
+                "string"       - String column
+                "time"         - Long msec since the Unix Epoch - with a variety of display/parse options
+                "uuid"         - UUID
+                "bad"          - No none-NA rows (triple negative! all NAs or zero rows)
+        Returns
+        -------
+          A list of column indices that correspond to `coltype`
+        """
+        assert_is_type(coltype, "numeric", "categorical", "string", "time", "uuid", "bad")
+        assert_is_type(self,H2OFrame)
+        return ExprNode("columnsByType", self, coltype)._eager_scalar()
+
     def __iter__(self):
         return (self[i] for i in range(self.ncol))
 
