@@ -42,7 +42,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
    * @param fraction Fraction of rows of the training to train with
    */
   public DeepWaterTask(DeepWaterModelInfo inputModel, float fraction, Job job) {
-    super(job._key,inputModel._dataInfoKey.get());
+    super(job._key,inputModel._dataInfoKey!=null ? inputModel._dataInfoKey.get() : null);
     _sharedmodel = inputModel;
     _useFraction=fraction;
     _shuffle = model_info().get_params()._shuffle_training_data;
@@ -55,7 +55,6 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
   @Override protected void setupLocal(){
     long start = System.currentTimeMillis();
     assert(_localmodel == null);
-    super.setupLocal();
     _localmodel = _sharedmodel;
     _sharedmodel = null;
     _localmodel.set_processed_local(0);
