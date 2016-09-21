@@ -22,16 +22,16 @@ import java.util.Arrays;
  * http://www.cs.ucr.edu/~eamonn/iSAX_2.0.pdf
  * http://www.cs.ucr.edu/~eamonn/SAX.pdf
  *
- * Note: This approach assumes the frame has the form of TS x T where TS is a single time series and T is time:
+ * Note: This approach assumes the frame has the form of TS-i x T where TS-i is a single time series and T is time:
  *
- *    T_1, T_2, T_3, T_4, ... , T_N
- * TS_1 ...
- * TS_2 ...
- * TS_3 ...
+ *    T-1, T-2, T-3, T-4, ... , T-N
+ * TS-1 ...
+ * TS-2 ...
+ * TS-3 ...
  *  .
  *  .
  *  .
- * TS_N ...
+ * TS-N ...
  *
  * @author markchan & navdeepgill
  */
@@ -41,14 +41,13 @@ public class AstISax extends AstPrimitive {
     public String[] args() { return new String[]{"ary", "numWords", "maxCardinality"}; }
 
     @Override
-    public int nargs() { return 1 + 3; } // (isax x breaks)
+    public int nargs() { return 1 + 3; } // (ary isax numWords maxCardinality)
 
     @Override
     public String str() { return "isax"; }
 
     @Override
     public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-        // stack is [ ..., ary, numWords, maxCardinality]
         Frame f = stk.track(asts[1].exec(env)).getFrame();
         AstRoot n = asts[2];
         AstRoot mc = asts[3];
@@ -61,13 +60,11 @@ public class AstISax extends AstPrimitive {
 
         int numWords;
         int maxCardinality;
-        AstISax.ISaxTask isaxt;
 
         numWords = (int) n.exec(env).getNum();
         maxCardinality = (int) mc.exec(env).getNum();
 
-
-        ArrayList<String> columns = new ArrayList<String>();
+        ArrayList<String> columns = new ArrayList<>();
         for (int i = 0; i < numWords; i++) {
             columns.add("c"+i);
         }
