@@ -18,6 +18,6 @@ public class DeepWaterModelV3 extends ModelSchemaV3<DeepWaterModel, DeepWaterMod
   // Version&Schema-specific filling into the impl
   @Override public DeepWaterModel createImpl() {
     DeepWaterParameters parms = parameters.createImpl();
-    return new DeepWaterModel(Key.make() /*dest*/, parms, new DeepWaterModelOutput(null), 0);
+    return new DeepWaterModel(Key.make() /*dest*/, parms, new DeepWaterModelOutput(null), null, null, 0);
   }
 }

@@ -7,7 +7,7 @@ import water.util.UnsafeUtils;
  * The empty-compression function, where data is in 'float's.
  */
 public class C4FChunk extends Chunk {
-  C4FChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>2); }
+  public C4FChunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>2); }
   @Override protected final long at8_impl( int i ) {
     float res = UnsafeUtils.get4f(_mem, i << 2);
     if( Float.isNaN(res) ) throw new IllegalArgumentException("at8_abs but value is missing");
