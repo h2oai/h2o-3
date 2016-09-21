@@ -777,7 +777,7 @@ h2o.na_omit <- function(object, ...){
   .newExpr("na.omit", object)
 }
 
-#' @rdname naomit
+#' @rdname na.omit
 #' @export
 na.omit.H2OFrame <- h2o.na_omit
 
