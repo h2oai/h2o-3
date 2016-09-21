@@ -397,8 +397,13 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @param vecs Perform the computation on these vecs.
    * @return this
    */
-  public final T dfork(VecAry vecs){ return dfork(null,vecs,false); }
-  public final T dfork(Vec... vecs){ return dfork(null,new VecAry(vecs),false); }
+  public final T dfork(VecAry vecs){ return dfork(vecs,false); }
+  public final T dfork(byte[][] types, VecAry vecs){ return dfork(types,vecs,false); }
+  public final T dfork(byte[] types, VecAry vecs){ return dfork(new byte[][]{types},vecs,false); }
+  public final T dfork(Vec... vecs){ return dfork(new VecAry(vecs),false); }
+  public final T dfork(VecAry vecs, boolean runLocal){
+    return dfork((byte[])null,vecs,runLocal);
+  }
 
   /** Fork the task in strictly non-blocking fashion.
    *  Same functionality as dfork, but does not raise priority, so user is should

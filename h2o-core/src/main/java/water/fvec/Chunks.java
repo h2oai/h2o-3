@@ -113,8 +113,9 @@ public class Chunks<T extends Chunk> extends Iced<Chunks<T>> {
     public void addNA(){addNA(0);}
     public void addNA(int c){_cs[c].addNA();}
 
-    public void addNum(long m){addNum(0,m);}
-    public void addNum(int c, long m){_cs[c].addNum(m,0);}
+    public void addInteger(long m){addInteger(0,m);}
+    public void addInteger(int c, long m){_cs[c].addNum(m,0);}
+    public void addNum(long m, int e){addNum(0,m,e);}
     public void addNum(int c, long m, int e){_cs[c].addNum(m,e);}
     public void addNum(double d){addNum(0,d);}
     public void addNum(int c, double d){_cs[c].addNum(d);}

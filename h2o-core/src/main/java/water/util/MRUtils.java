@@ -25,16 +25,15 @@ public class MRUtils {
     if (fraction >= 1.f) return vecs;
     VecAry r = new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
+      public void map(Chunks cs, Chunks.AppendableChunks ncs) {
         final Random rng = getRNG(0);
         int count = 0;
-        for (int r = 0; r < cs[0]._len; r++) {
-          rng.setSeed(seed+r+cs[0].start());
-          if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
+        for (int r = 0; r < cs.numRows(); r++) {
+          rng.setSeed(seed+r+cs.start());
+          if (rng.nextFloat() < fraction || (count == 0 && r == cs.numRows()-1) ) {
             count++;
-            for (int i = 0; i < ncs.length; i++) {
-              ncs[i].addNum(cs[i].atd(r));
-            }
+            for (int i = 0; i < ncs.numCols(); i++)
+              ncs.addNum(i,cs.atd(r,i));
           }
         }
       }
@@ -55,13 +54,13 @@ public class MRUtils {
   public static VecAry shuffleVecsPerChunk(VecAry vecs, final long seed) {
     return new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        int[] idx = new int[cs[0]._len];
+      public void map(Chunks cs, Chunks.AppendableChunks ncs) {
+        int[] idx = new int[cs.numRows()];
         for (int r=0; r<idx.length; ++r) idx[r] = r;
         ArrayUtils.shuffleArray(idx, getRNG(seed));
         for (long anIdx : idx) {
-          for (int i = 0; i < ncs.length; i++) {
-            ncs[i].addNum(cs[i].atd((int) anIdx));
+          for (int i = 0; i < ncs.numCols(); i++) {
+            ncs.addNum(i,cs.atd((int) anIdx,i));
           }
         }
       }
@@ -97,26 +96,29 @@ public class MRUtils {
       final double sum = ArrayUtils.sum(_ys);
       return ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
     }
-    @Override public void map(Chunk ys) {
+    private void map_no_weights(Chunks ys) {
       _ys = new double[_nclass];
-      for( int i=0; i<ys._len; i++ )
+      for( int i=0; i<ys.numRows(); i++ )
         if (!ys.isNA(i))
           _ys[(int) ys.at8(i)]++;
     }
-    @Override public void map(Chunk ys, Chunk ws) {
+    @Override public void map(Chunks cs) {
       _ys = new double[_nclass];
-      for( int i=0; i<ys._len; i++ )
-        if (!ys.isNA(i))
-          _ys[(int) ys.at8(i)] += ws.atd(i);
+      if(cs.numCols() == 1)
+        map_no_weights(cs);
+      else
+        for( int i=0; i<cs.numRows(); i++ )
+          if (!cs.isNA(i))
+            _ys[cs.at4(i)] += cs.atd(i,1);
     }
     @Override public void reduce( ClassDist that ) { ArrayUtils.add(_ys,that._ys); }
   }
 
   public static class Dist extends MRTask<Dist> {
     private IcedHashMap<Double,Integer> _dist;
-    @Override public void map(Chunk ys) {
+    @Override public void map(Chunks ys) {
       _dist = new IcedHashMap<>();
-      for( int row=0; row< ys._len; row++ )
+      for( int row=0; row< ys.numRows(); row++ )
         if( !ys.isNA(row) ) {
           double v = ys.atd(row);
           Integer oldV = _dist.putIfAbsent(v,1);
@@ -253,12 +255,12 @@ public class MRUtils {
     //FIXME - this is doing uniform sampling, even if the weights are given
     VecAry r = new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
+      public void map(Chunks cs, Chunks.AppendableChunks ncs) {
         final Random rng = getRNG(seed);
-        for (int r = 0; r < cs[0]._len; r++) {
-          if (cs[labelId].isNA(r)) continue; //skip missing labels
-          rng.setSeed(cs[0].start()+r+seed);
-          final int label = (int)cs[labelId].at8(r);
+        for (int r = 0; r < cs.numRows(); r++) {
+          if (cs.isNA(r,labelId)) continue; //skip missing labels
+          rng.setSeed(cs.start()+r+seed);
+          final int label = cs.at4(r,labelId);
           assert(sampling_ratios.length > label && label >= 0);
           int sampling_reps;
           if (poisson) {
@@ -268,11 +270,9 @@ public class MRUtils {
             final float remainder = sampling_ratios[label] - (int)sampling_ratios[label];
             sampling_reps = (int)sampling_ratios[label] + (rng.nextFloat() < remainder ? 1 : 0);
           }
-          for (int i = 0; i < ncs.length; i++) {
-            for (int j = 0; j < sampling_reps; ++j) {
-              ncs[i].addNum(cs[i].atd(r));
-            }
-          }
+          for (int i = 0; i < ncs.numCols(); i++)
+            for (int j = 0; j < sampling_reps; ++j)
+              ncs.addNum(i,cs.atd(r,i));
         }
       }
     }.doAll(vecs.types(), vecs).outputVecs(vecs.domains());

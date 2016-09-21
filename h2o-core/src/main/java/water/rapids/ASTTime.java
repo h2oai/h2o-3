@@ -80,9 +80,9 @@ public abstract class ASTTime extends ASTPrim {
       Frame fr = stk.track(val).getFrame();
       if( fr.numCols() > 1 ) throw water.H2O.unimpl();
       return new ValFrame(new MRTask() {
-          @Override public void map( Chunk chk, NewChunk cres ) {
+          @Override public void map(Chunks chk, Chunks.AppendableChunks cres) {
             MutableDateTime mdt = new MutableDateTime(0,ParseTime.getTimezone());
-            for( int i=0; i<chk._len; i++ )
+            for( int i=0; i<chk.numRows(); i++ )
               cres.addNum(chk.isNA(i) ? Double.NaN : op(mdt,chk.at8(i)));
           }
         }.doAll(1, Vec.T_NUM, fr.vecs()).outputFrame(fr._names, factors()));
@@ -132,15 +132,15 @@ class ASTasDate extends ASTPrim {
     Frame fr2 = new MRTask() {
       private transient DateTimeFormatter _fmt;
       @Override public void setupLocal() { _fmt=ParseTime.forStrptimePattern(format).withZone(ParseTime.getTimezone()); }
-      @Override public void map( Chunk c, NewChunk nc ) {
+      @Override public void map( Chunks c, Chunks.AppendableChunks nc ) {
         //done on each node in lieu of rewriting DateTimeFormatter as Iced
         String date;
         BufferedString tmpStr = new BufferedString();
-        for( int i=0; i<c._len; ++i ) {
+        for( int i=0; i<c.numRows(); ++i ) {
           if( !c.isNA(i) ) {
             if( isStr ) date = c.atStr(tmpStr, i).toString();
             else        date = dom[(int)c.at8(i)];
-            nc.addNum(DateTime.parse(date,_fmt).getMillis(),0);
+            nc.addInteger(DateTime.parse(date,_fmt).getMillis());
           } else nc.addNA();
         }
       }
@@ -193,20 +193,19 @@ class ASTMktime extends ASTPrim {
 
     // Convert whole column to epoch msec
     Frame fr2 = new MRTask() {
-      @Override public void map( Chunk chks[], NewChunk nchks[] ) {
+      @Override public void map(Chunks chks, Chunks.AppendableChunks ncs) {
         MutableDateTime dt = new MutableDateTime(0);
-        NewChunk n = nchks[0];
-        int rlen = chks[0]._len;
-        for( int r=0; r<rlen; r++ ) {
+
+        for( int r=0; r<chks.numRows(); r++ ) {
           dt.setDateTime(
-                  (int)chks[0].at8(r),  // year
-                  (int)chks[1].at8(r)+1,// month
-                  (int)chks[2].at8(r)+1,// day
-                  (int)chks[3].at8(r),  // hour
-                  (int)chks[4].at8(r),  // minute
-                  (int)chks[5].at8(r),  // second
-                  (int)chks[6].at8(r)); // msec
-          n.addNum(dt.getMillis());
+                  chks.at4(r,0),  // year
+                  chks.at4(r,1)+1,// month
+                  chks.at4(r,2)+1,// day
+                  chks.at4(r,3),  // hour
+                  chks.at4(r,4),  // minute
+                  chks.at4(r,5),  // second
+                  chks.at4(r,6)); // msec
+          ncs.addNum(dt.getMillis());
         }
       }
     }.doAll(new byte[]{Vec.T_NUM},vecs).outputFrame(new Frame.Names("msec"),(String[][])null);

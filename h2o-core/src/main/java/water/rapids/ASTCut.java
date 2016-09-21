@@ -70,10 +70,10 @@ public class ASTCut extends ASTPrim {
             for (int i = 1; i < cutz.length; ++i) {
               if (rite) {
                 if (x <= cutz[i]) {
-                  nc.addNum(i - 1);
+                  nc.addInteger(i - 1);
                   break;
                 }
-              } else if (x < cutz[i]) { nc.addNum(i-1); break; }
+              } else if (x < cutz[i]) { nc.addInteger(i-1); break; }
             }
           }
         }

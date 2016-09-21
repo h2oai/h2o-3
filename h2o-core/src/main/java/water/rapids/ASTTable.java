@@ -66,8 +66,8 @@ class ASTTable extends ASTPrim {
           for( int i = 0; i < cs.numRows(); ++i ) {
             int idx = (int) (i + cs.start());
             if( cnts[idx] > 0 ) {
-              ncs.addNum(0,idx + minVal);
-              ncs.addNum(1,cnts[idx]);
+              ncs.addInteger(0,idx + minVal);
+              ncs.addInteger(1,cnts[idx]);
             }
           }
         }

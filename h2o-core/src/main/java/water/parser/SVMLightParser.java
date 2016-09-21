@@ -7,6 +7,7 @@ import water.Key;
 import water.util.PrettyPrint;
 
 import static water.parser.DefaultParserProviders.SVMLight_INFO;
+import water.fvec.Vec;
 
 class SVMLightParser extends Parser {
   private static final byte SKIP_TOKEN = 21;

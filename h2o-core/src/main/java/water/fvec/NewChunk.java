@@ -518,7 +518,7 @@ public class NewChunk extends Chunk {
       //if ds not big enough
       if(_sparseLen == _ds.length ) {
         append2slowd();
-        // call addNum again since append2slowd might have flipped to sparse
+        // call addInteger again since append2slowd might have flipped to sparse
         addNum(d);
         assert _sparseLen <= _len;
         return;

@@ -36,7 +36,8 @@ public class AppendableVec extends Vec {
 
   // "Close" out a NEW vector - rewrite it to a plain Vec that supports random
   // reads, plus computes rows-per-chunk, min/max/mean, etc.
-  public Vec closeVec(Futures fs) {return closeVec(fs, null);}
+  public Vec closeVec(Futures fs) {return closeVec(fs, (String[][])null);}
+  public Vec closeVec(Futures fs,String[] domain) {return closeVec(fs, new String[][]{domain});}
   public Vec closeVec(Futures fs,String[][] domains) {
     // Compute #chunks
     Vec v = new Vec(_key, compute_rowLayout(),_types,domains);

@@ -5,6 +5,7 @@ import water.DKV;
 import water.H2O;
 import water.fvec.Frame;
 import water.rapids.*;
+import water.fvec.Vec;
 
 public class H2OColOp extends Transform<H2OColOp> {
   protected final String _fun;

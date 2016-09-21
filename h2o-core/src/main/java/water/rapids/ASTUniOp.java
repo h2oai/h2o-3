@@ -101,7 +101,7 @@ class ASTIsNA  extends ASTPrim {
           @Override public void map(Chunks cs, Chunks.AppendableChunks ncs) {
             for( int col=0; col<cs.numCols(); col++ ) {
               for( int i=0; i<cs.numRows(); i++ )
-                ncs.addNum(col,cs.isNA(i,col) ? 1 : 0);
+                ncs.addInteger(col,cs.isNA(i,col) ? 1 : 0);
             }
           }
         }.doAll(fr.numCols(), Vec.T_NUM, fr.vecs()).outputFrame());
@@ -304,7 +304,7 @@ class ASTSetLevel extends ASTPrim {
     Frame fr2 = new MRTask() {
       @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
         for (int i=0;i<c.numRows();++i)
-          nc.addNum(0,idx);
+          nc.addInteger(0,idx);
       }
     }.doAll(new byte[]{Vec.T_NUM}, fr.vecs()).outputFrame(null, fr._names, fr.vecs().domains());
     return new ValFrame(fr2);
@@ -342,9 +342,9 @@ class ASTReLevel extends ASTPrim {
         for(int i = 0; i < vals.length; ++i)
           if(vals[i] == -1) nc.addNA(0);
           else if(vals[i] == idx)
-            nc.addNum(0,0);
+            nc.addInteger(0,0);
           else
-            nc.addNum(0,vals[i]+(vals[i] < idx?1:0));
+            nc.addInteger(0,vals[i]+(vals[i] < idx?1:0));
       }
     }.doAll(1,Vec.T_CAT,fr.vecs()).outputFrame(fr._names,new String[][]{dom}));
   }
@@ -491,7 +491,7 @@ class ASTWhich extends ASTPrim {
       Chunks chunks = f.vecs().getChunks(0);
       for( int i=0; i<f.numCols(); i++ ) 
         if( chunks.at8(0,0)!=0 )
-          nc.addNum(0,i);
+          nc.addInteger(0,i);
       Futures fs = nc.close(new Futures());
       VecAry vec = new VecAry(v.closeVec(fs));
       fs.blockForPending();
@@ -506,7 +506,7 @@ class ASTWhich extends ASTPrim {
       @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
         long start = c.start();
         for(int i=0;i<c.numRows();++i)
-          if( c.at8(i,0)!=0 ) nc.addNum(0,start+i);
+          if( c.at8(i,0)!=0 ) nc.addInteger(0,start+i);
       }
     }.doAll(new byte[]{Vec.T_NUM},vec).outputFrame();
     return new ValFrame(f2);

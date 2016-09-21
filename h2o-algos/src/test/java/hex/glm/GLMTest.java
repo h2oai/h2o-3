@@ -84,7 +84,7 @@ public class GLMTest  extends TestUtil {
 //            for (int id : ids) {
 //              if(x == id) ++x;
 //              nc.addZeros(id - x - 1);
-//              nc.addNum(1);
+//              nc.addInteger(1);
 //              sum2.incrementAndGet();
 //              x = id;
 //            }
@@ -182,7 +182,7 @@ public class GLMTest  extends TestUtil {
 //            for (int id : ids) {
 //              if(x == id) ++x;
 //              nc.addZeros(id - x - 1);
-//              nc.addNum(1);
+//              nc.addInteger(1);
 //              sum2.incrementAndGet();
 //              x = id;
 //            }

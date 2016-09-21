@@ -542,14 +542,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         names[i] = "reconstr_" + coefnames[i];
       }
       Frame f = new MRTask() {
-        @Override public void map( Chunk chks[], NewChunk recon[] ) {
+        @Override public void map(Chunks chks, Chunks.AppendableChunks ncs) {
           double tmp [] = new double[_output._names.len()];
           double preds[] = new double [len];
           final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-          for( int row=0; row<chks[0]._len; row++ ) {
+          for( int row=0; row<chks.numRows(); row++ ) {
             double p[] = score_autoencoder(chks, row, tmp, preds, neurons, true /*reconstruction*/, false /*reconstruction_error_per_feature*/);
             for( int c=0; c<len; c++ )
-              recon[c].addNum(p[c]);
+              ncs.addNum(c,p[c]);
           }
         }
       }.doAll(len, Vec.T_NUM, adaptedFr.vecs()).outputFrame();
@@ -708,16 +708,16 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     adaptTestForTrain(adaptFrm, true, false);
     final int outputcols = reconstruction_error_per_feature ? model_info.data_info.fullN() : 1;
     Frame mse = new MRTask() {
-      @Override public void map( Chunk chks[], NewChunk[] mse ) {
+      @Override public void map(Chunks chks, Chunks.AppendableChunks mse) {
         double tmp [] = new double[len];
         double out[] = new double[outputcols];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-        for( int row=0; row<chks[0]._len; row++ ) {
+        for( int row=0; row<chks.numRows(); row++ ) {
           for( int i=0; i<len; i++ )
-            tmp[i] = chks[i].atd(row);
+            tmp[i] = chks.atd(row,i);
           score_autoencoder(tmp, out, neurons, false /*reconstruction*/, reconstruction_error_per_feature);
           for (int i=0; i<outputcols; ++i)
-            mse[i].addNum(out[i]);
+            mse.addNum(i,out[i]);
         }
       }
     }.doAll(outputcols, Vec.T_NUM, adaptFrm.vecs()).outputFrame();
@@ -778,18 +778,18 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     final int mb=0;
     final int n=1;
     new MRTask() {
-      @Override public void map( Chunk chks[] ) {
+      @Override public void map( Chunks chks ) {
         if (isCancelled() || job !=null && job.stop_requested()) return;
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-        for( int row=0; row<chks[0]._len; row++ ) {
+        for( int row=0; row<chks.numRows(); row++ ) {
           for( int i=0; i<len; i++ )
-            tmp[i] = chks[i].atd(row);
+            tmp[i] = chks.atd(row,i);
           ((Neurons.Input)neurons[0]).setInput(-1, tmp, mb); //FIXME: No weights yet
           DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n);
           double[] out = neurons[layer+1]._a[mb].raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
-            chks[_output._names.len()+c].set(row,out[c]);
+            chks.set(row,_output._names.len()+c,out[c]);
         }
         if (job != null) job.update(1);
       }
@@ -805,11 +805,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
 
   // Make (potentially expanded) reconstruction
-  private double[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds, Neurons[] neurons, boolean reconstruction, boolean reconstruction_error_per_feature) {
+  private double[] score_autoencoder(Chunks chks, int row_in_chunk, double[] tmp, double[] preds, Neurons[] neurons, boolean reconstruction, boolean reconstruction_error_per_feature) {
     assert(get_params()._autoencoder);
     assert(tmp.length == _output._names.len());
     for (int i=0; i<tmp.length; i++ )
-      tmp[i] = chks[i].atd(row_in_chunk);
+      tmp[i] = chks.atd(row_in_chunk,i);
     score_autoencoder(tmp, preds, neurons, reconstruction, reconstruction_error_per_feature); // this fills preds, returns MSE error (ignored here)
     return preds;
   }

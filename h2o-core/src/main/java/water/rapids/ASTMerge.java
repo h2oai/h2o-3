@@ -304,7 +304,7 @@ public class ASTMerge extends ASTPrim {
       switch( type ) {
       case Vec.T_NUM : ncs.addNum(c,r.at(absRow,id)); break;
       case Vec.T_CAT :
-      case Vec.T_TIME: if( r.isNA(absRow,id) ) ncs.addNA(c); else ncs.addNum(c,r.at8(absRow,id)); break;
+      case Vec.T_TIME: if( r.isNA(absRow,id) ) ncs.addNA(c); else ncs.addInteger(c,r.at8(absRow,id)); break;
       case Vec.T_STR : ncs.addStr(c,r.atStr(bStr, absRow,id)); break;
       default: throw H2O.unimpl();
       }

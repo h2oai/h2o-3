@@ -83,7 +83,7 @@ public class VecUtils {
             nc.addNA(0);
           } else {
             c.atStr(bs, row,0);
-            nc.addNum(0,lookupTable.get(bs.bytesToString()));
+            nc.addInteger(0,lookupTable.get(bs.bytesToString()));
           }
         }
       }
@@ -442,7 +442,7 @@ public class VecUtils {
       for( int row=0; row < c.numRows(); row++) {
         if ( !c.isNA(row,0) ) {
           int oldDomain = c.at4(row,0);
-          nc.addNum(0,_oldToNewDomainIndex.get(oldDomain));
+          nc.addInteger(0,_oldToNewDomainIndex.get(oldDomain));
         } else {
           nc.addNA(0);
         }
@@ -531,12 +531,12 @@ public class VecUtils {
       for(int i=0;i<c.numRows();++i) {
         if( c.isNA(i,0) ) { nc.addNA(0); continue; }
         if( _domain == null )
-          nc.addNum(0,c.at8(i,0));
+          nc.addInteger(0,c.at8(i,0));
         else {
           long num = Arrays.binarySearch(_domain,c.at8(i,0));  // ~24 hits in worst case for 10M levels
           if( num < 0 )
             throw new IllegalArgumentException("Could not find the categorical value!");
-          nc.addNum(0,num);
+          nc.addInteger(0,num);
         }
       }
     }

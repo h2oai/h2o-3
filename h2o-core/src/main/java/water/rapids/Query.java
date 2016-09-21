@@ -3,6 +3,7 @@ package water.rapids;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.Chunks;
 import water.util.AtomicUtils;
 
 
@@ -133,10 +134,10 @@ class runSum extends MRTask<runSum> {
   long _g[];
   double _res[];
   runSum(long g[][], double res[]) { _g = g[0]; _res = res;}
-  @Override public void map(Chunk chk) {
+  @Override public void map(Chunks chk) {
     // TODO: if spans 2 MAXVEC in g.  Currently hard coded to g[0]
     int j = (int)chk.start();
-    for (int r=0; r<chk._len; r++) {
+    for (int r=0; r<chk.numRows(); r++) {
       AtomicUtils.DoubleArray.add(_res, (int) _g[j++], chk.at8(r));
     }
   }

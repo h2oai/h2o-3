@@ -29,14 +29,12 @@ abstract class ASTReducerOp extends ASTPrim {
 
   class RedOp extends MRTask<RedOp> {
     double _d;
-    @Override public void map( Chunk chks[] ) {
-      int rows = chks[0]._len;
-      for( int i = 0; i < chks.length; ++i ) {
-        Chunk C = chks[i];
+    @Override public void map( Chunks chks ) {
+      for( int i = 0; i < chks.numCols(); ++i ) {
         if( _vecs.isNumeric(i) ) throw new IllegalArgumentException("Numeric columns only");
         double sum = _d;
-        for( int r = 0; r < rows; r++ )
-          sum = op(sum, C.atd(r));
+        for( int r = 0; r < chks.numRows(); r++ )
+          sum = op(sum, chks.atd(r,i));
         _d = sum;
         if( Double.isNaN(sum) ) break; // Shortcut if the reduction is already NaN
       }
@@ -170,8 +168,8 @@ class ASTMad extends ASTPrim {
     if( f._key == null ) { DKV.put(tk = Key.make(), f = new Frame(tk, f._names, f.vecs())); }
     final double median = ASTMedian.median(f,cm);
     Frame abs_dev = new MRTask() {
-      @Override public void map(Chunk c, NewChunk nc) {
-        for(int i=0;i<c._len;++i)
+      @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
+        for(int i=0;i<c.numRows();++i)
           nc.addNum(Math.abs(c.at8(i)-median));
       }
     }.doAll(1, Vec.T_NUM, f.vecs()).outputFrame();
@@ -315,12 +313,11 @@ class ASTProd extends ASTPrim {
 
   private static class RedProd extends MRTask<RedProd> {
     double _d;
-    @Override public void map( Chunk chks[] ) {
-      int rows = chks[0]._len;
-      for (Chunk C : chks) {
+    @Override public void map( Chunks chks ) {
+      for (int i = 0; i < chks.numCols(); i++) {
         double prod=1.;
-        for (int r = 0; r < rows; r++)
-          prod *= C.atd(r);
+        for (int r = 0; r < chks.numRows(); r++)
+          prod *= chks.atd(r,i);
         _d = prod;
         if( Double.isNaN(prod) ) break;
       }
@@ -348,13 +345,13 @@ class ASTProdNA extends ASTPrim {
 
   private static class RedProd extends MRTask<RedProd> {
     double _d;
-    @Override public void map( Chunk chks[] ) {
-      int rows = chks[0]._len;
-      for (Chunk C : chks) {
+    @Override public void map( Chunks chks ) {
+      for (int i = 0; i < chks.numCols(); ++i) {
         double prod=1.;
-        for (int r = 0; r < rows; r++) {
-          if( C.isNA(r) ) continue;
-          prod *= C.atd(r);
+        for (int r = 0; r < chks.numRows(); r++) {
+          double d = chks.atd(r,i);
+          if( Double.isNaN(d) ) continue;
+          prod *= d;
         }
         _d = prod;
         if( Double.isNaN(prod) ) break;
@@ -384,10 +381,10 @@ abstract class ASTCumu extends ASTPrim {
     final double[] chkCumu = t._chkCumu;
     VecAry cumuVec = t.outputFrame().vecs();
     new MRTask() {
-      @Override public void map(Chunk c) {
+      @Override public void map(Chunks c) {
         if( c.cidx()!=0 ) {
           double d=chkCumu[c.cidx()-1];
-          for(int i=0;i<c._len;++i)
+          for(int i=0;i<c.numRows();++i)
             c.set(i, op(c.atd(i), d));
         }
       }
@@ -402,9 +399,9 @@ abstract class ASTCumu extends ASTPrim {
 
     CumuTask(int nchks, double init) { _nchks = nchks; _init=init; }
     @Override public void setupLocal() { _chkCumu = new double[_nchks]; }
-    @Override public void map(Chunk c, NewChunk nc) {
+    @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
       double acc=_init;
-      for(int i=0;i<c._len;++i)
+      for(int i=0;i<c.numRows();++i)
         nc.addNum(acc=op(acc,c.atd(i)));
       _chkCumu[c.cidx()]=acc;
     }

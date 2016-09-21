@@ -5,7 +5,6 @@ import org.apache.commons.lang.StringUtils;
 import water.H2O;
 import water.Key;
 import water.MRTask;
-import water.MemoryManager;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.VecUtils;
@@ -198,7 +197,7 @@ class ASTCountMatches extends ASTPrim {
         for (int i = 0; i < cs.numRows(); ++i) {
           if( !cs.isNA(i,0) ) {
             int idx = cs.at4(i,0);
-            ncs.addNum(matchCounts[idx]);
+            ncs.addInteger(matchCounts[idx]);
           } else ncs.addNA(0);
         }
       }
@@ -224,7 +223,7 @@ class ASTCountMatches extends ASTPrim {
             int cnt = 0;
             for (String aPattern : pattern)
               cnt += StringUtils.countMatches(chk.atStr(tmpStr, i).toString(), aPattern);
-            ncs.addNum(cnt);
+            ncs.addInteger(cnt);
           }
         }
       }
@@ -627,7 +626,7 @@ class ASTStrLength extends ASTPrim {
             if(chk.isNA(i))
               newChk.addNA();
             else
-              newChk.addNum(catLengths[(int)chk.atd(i)]);
+              newChk.addInteger(catLengths[(int)chk.atd(i)]);
         }
       }.doAll(1, Vec.T_NUM, vec).outputVecs(null);
     return res;
@@ -646,7 +645,7 @@ class ASTStrLength extends ASTPrim {
 //          BufferedString tmpStr = new BufferedString();
 //          for(int i =0; i < chk._len; i++){
 //            if (chk.isNA(i))  newChk.addNA();
-//            else              newChk.addNum(chk.atStr(tmpStr, i).toString().length(), 0);
+//            else              newChk.addInteger(chk.atStr(tmpStr, i).toString().length(), 0);
 //          }
 //        }
 //      }
@@ -1036,7 +1035,7 @@ class ASTCountSubstringsWords extends ASTPrim {
             newChk.addNA();
           else {
             String str = chk.atStr(tmpStr, i).toString();
-            newChk.addNum(calcCountSubstringsWords(str, words));
+            newChk.addInteger(calcCountSubstringsWords(str, words));
           }
         }
       }

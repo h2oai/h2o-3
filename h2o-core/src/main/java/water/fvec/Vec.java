@@ -138,6 +138,13 @@ public class Vec<T extends Chunks> extends Keyed<Vec<T>> {
     this(aVecKey,rowLayout,new byte[]{domain == null?T_NUM:T_CAT}, new String[][]{domain});
   }
 
+  public Vec(Key<Vec<T>> groupKey, int i, byte type) {
+    this(groupKey,i,new byte[]{type},(String[][])null);
+  }
+  public Vec(Key<Vec<T>> groupKey, int i, byte type, String[] domain) {
+    this(groupKey,i,new byte[]{type},new String[][]{domain});
+  }
+
   public final RollupStats getRollups(int colId) {
     return getRollups(colId,false);
   }

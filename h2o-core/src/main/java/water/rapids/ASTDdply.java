@@ -79,16 +79,16 @@ class ASTDdply extends ASTPrim {
       fcnames[i] = "ddply_C"+(i+1);
 
     MRTask mrfill = new MRTask() {
-      @Override public void map(Chunk[] c, NewChunk[] ncs) {
-        int start=(int)c[0].start();
-        for( int i=0;i<c[0]._len;++i) {
+      @Override public void map(Chunks c,Chunks.AppendableChunks ncs) {
+        int start=(int)c.start();
+        for( int i=0;i<c.numRows();++i) {
           ASTGroup.G g = grps[i+start];  // One Group per row
           int j;
           for( j=0; j<g._gs.length; j++ ) // The Group Key, as a row
-            ncs[j].addNum(g._gs[j]);
+            ncs.addNum(j,g._gs[j]);
           double[] res = remoteTasks[i+start]._result;
           for( int a=0; a<res0.length; a++ )
-            ncs[j++].addNum(res[a]);
+            ncs.addNum(j++,res[a]);
         }
       }
       };
@@ -105,12 +105,12 @@ class ASTDdply extends ASTPrim {
     final IcedHashMap<ASTGroup.G,String> _gss;
     final int[] _gbCols;
     BuildGroup( int[] gbCols, IcedHashMap<ASTGroup.G,String> gss ) { _gbCols = gbCols; _gss = gss; }
-    @Override public void map( Chunk[] cs, NewChunk[] ncs ) {
+    @Override public void map( Chunks cs, Chunks.AppendableChunks ncs ) {
       ASTGroup.G gWork = new ASTGroup.G(_gbCols.length,null); // Working Group
-      for( int row=0; row<cs[0]._len; row++ ) {
+      for( int row=0; row<cs.numRows(); row++ ) {
         gWork.fill(row,cs,_gbCols); // Fill the worker Group for the hashtable lookup
         int gnum = (int)_gss.getk(gWork)._dss[0][0]; // Existing group number
-        ncs[gnum].addNum(row);  // gather row-numbers per-chunk per-group
+        ncs.addInteger(gnum,row);  // gather row-numbers per-chunk per-group
       }
     }
     // Gather all the output Vecs.  Note that each Vec has a *different* number
@@ -119,7 +119,7 @@ class ASTDdply extends ASTPrim {
       Futures fs = new Futures();
       Vec [] grps = new Vec[_appendables.length];
       for(int i = 0; i < grps.length; ++i)
-        grps[i] = (Vec)_appendables[i].layout_and_close(fs).getVecRaw(0);
+        grps[i] = _appendables[i].closeVec(fs);
       fs.blockForPending();
       return grps;
     }
@@ -148,7 +148,7 @@ class ASTDdply extends ASTPrim {
       final Vec[] groupVecs = new Vec[_data.numCols()];
       Futures fs = new Futures();
       for( int i=0; i<_data.numCols(); i++ )
-        DKV.put(groupVecs[i] = new Vec(groupKeys[i], _gVec.rowLayout(), _gVec.domain(0), _gVec.type(0)), fs);
+        DKV.put(groupVecs[i] = new Vec(groupKeys[i], _gVec.rowLayout(), _gVec.type(0),_gVec.domain(0)), fs);
       fs.blockForPending();
       // Fill in the chunks
       new MRTask() {
@@ -158,7 +158,7 @@ class ASTDdply extends ASTPrim {
             if( data_vecs.isHomedLocally(i) ) {
               Chunk rowchk = _gVec.getChunk(i,0);
               for( int col=0; col<data_vecs.len(); col++ )
-                DKV.put( Vec.chunkKey(groupVecs[col]._key,i), new SubsetChunk(data_vecs.getChunk(i,col),rowchk,new SingleChunk(groupVecs[col],i)), _fs);
+                DKV.put( Vec.chunkKey(groupVecs[col]._key,i), new Chunks(new SubsetChunk(data_vecs.getChunk(i,col),rowchk)), _fs);
             }
         }
       }.doAllNodes();

@@ -6,6 +6,7 @@ import water.fvec.*;
 import water.nbhm.UtilUnsafe;
 import water.util.ArrayUtils;
 import water.util.MRUtils;
+import water.util.VecUtils;
 
 class ASTHist extends ASTPrim {
   @Override
@@ -59,20 +60,20 @@ class ASTHist extends ASTPrim {
     final double[] mids_true=t._mids;
     final double[] mids = new double[t._breaks.length-1];
     for(int i=1;i<brks.length;++i) mids[i-1] = .5*(t._breaks[i-1]+t._breaks[i]);
-    Vec layoutVec = Vec.makeZero(brks.length);
+    Vec layoutVec = VecUtils.makeZero(brks.length);
     fr2 = new MRTask() {
-      @Override public void map(Chunk[] c, NewChunk[] nc) {
-        int start = (int)c[0].start();
-        for(int i=0;i<c[0]._len;++i) {
-          nc[0].addNum(brks[i+start]);
+      @Override public void map(Chunks c, Chunks.AppendableChunks nc) {
+        int start = (int)c.start();
+        for(int i=0;i<c.numRows();++i) {
+          nc.addNum(0,brks[i+start]);
           if(i==0) {
-            nc[1].addNA();
-            nc[2].addNA();
-            nc[3].addNA();
+            nc.addNA(1);
+            nc.addNA(2);
+            nc.addNA(3);
           } else {
-            nc[1].addNum(cnts[(i-1)+start]);
-            nc[2].addNum(mids_true[(i-1)+start]);
-            nc[3].addNum(mids[(i-1)+start]);
+            nc.addInteger(1,cnts[(i-1)+start]);
+            nc.addNum(2,mids_true[(i-1)+start]);
+            nc.addNum(3,mids[(i-1)+start]);
           }
         }
       }
@@ -105,8 +106,8 @@ class ASTHist extends ASTPrim {
     final double _mean;
     ThirdMomTask(double mean) { _mean=mean; }
     @Override public void setupLocal() { _ss=0;_sc=0; }
-    @Override public void map(Chunk c) {
-      for( int i=0;i<c._len;++i ) {
+    @Override public void map(Chunks c) {
+      for( int i=0;i<c.numRows();++i ) {
         if( !c.isNA(i) ) {
           double d = c.atd(i) - _mean;
           double d2 = d*d;
@@ -158,9 +159,9 @@ class ASTHist extends ASTPrim {
       _h=h;
       _x0=x0;
     }
-    @Override public void map(Chunk c) {
+    @Override public void map(Chunks c) {
       // if _h==-1, then don't have fixed bin widths... must loop over bins to obtain the correct bin #
-      for( int i = 0; i < c._len; ++i ) {
+      for( int i = 0; i < c.numRows(); ++i ) {
         int x=1;
         if( c.isNA(i) ) continue;
         double r = c.atd(i);
