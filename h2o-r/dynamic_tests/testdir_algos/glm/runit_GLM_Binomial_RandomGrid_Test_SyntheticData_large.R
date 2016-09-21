@@ -190,7 +190,7 @@ test.GLM.Binomial.RandomGrid.Test.SyntheticData <- function() {
   Log.info("Maximum number of models that can be built is ")
   print(correct_model_number)
     
-  if ((total_model_built_time < search_criteria$max_runtime_secs * 1.1) || (length(model_ids) == 1)) {
+  if ((total_model_built_time < search_criteria$max_runtime_secs * 1.5) || (length(model_ids) == 1)) {
     test_failed_array[test_index] = 0
     Log.info("*************   test 3: PASSED.")
   } else {

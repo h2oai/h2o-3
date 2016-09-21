@@ -48,7 +48,7 @@ class Test_glrm_grid_search:
     max_grid_model = 100           # maximum number of grid models generated before adding max_runtime_secs
 
     curr_time = str(round(time.time()))     # store current timestamp, used as part of filenames.
-    seed = round(time.time())
+    seed = int(round(time.time()))
 
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
     training1_filenames = "smalldata/gridsearch/glrmdata1000x25.csv"
@@ -72,7 +72,7 @@ class Test_glrm_grid_search:
     max_real_number = 3         # maximum number of real grid values to generate
 
     time_scale = 2              # maximum runtime scale
-    extra_time_fraction = 0.1   # since timing is never perfect, give some extra time on top of maximum runtime limit
+    extra_time_fraction = 0.5   # since timing is never perfect, give some extra time on top of maximum runtime limit
     model_run_time = 0.0        # time taken to run a vanilla GLRM model.  Determined later.
 
     iter_scale = 10             # scale maximum number of iteration to be upto 100
@@ -299,7 +299,7 @@ class Test_glrm_grid_search:
                     manual_model_metrics = manual_model._model_json['output']['objective']
 
                     # just compare the mse in this case within tolerance:
-                    if not((type(grid_model_metrics) == str) or (type(manual_model_metrics) == str)):
+                    if not((type(grid_model_metrics) == unicode) or (type(manual_model_metrics) == unicode)):
                         if (abs(grid_model_metrics) > 0) and \
                                 abs(grid_model_metrics - manual_model_metrics) / grid_model_metrics > self.allowed_diff:
                             print("test_glrm_grid_search_over_params for GLRM warning: grid search model mdetric ({0}) "

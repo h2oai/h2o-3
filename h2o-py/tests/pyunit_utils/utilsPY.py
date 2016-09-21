@@ -686,10 +686,15 @@ def generate_weights_glm(csv_weight_filename, col_count, data_type, min_w_value,
             print("class_number must be >= 2!")
             sys.exit(1)
 
+        if isinstance(col_count, np.ndarray):
+            temp_col_count = col_count[0]
+        else:
+            temp_col_count = col_count
+
         if data_type == 1:     # generate random integer intercept/weight
-            weight = np.random.random_integers(min_w_value, max_w_value, [col_count+1, class_number])
+            weight = np.random.random_integers(min_w_value, max_w_value, [temp_col_count+1, class_number])
         elif data_type == 2:   # generate real intercept/weights
-            weight = np.random.uniform(min_w_value, max_w_value, [col_count+1, class_number])
+            weight = np.random.uniform(min_w_value, max_w_value, [temp_col_count+1, class_number])
         else:
             print("dataType must be 1 or 2 for now.")
             sys.exit(1)
@@ -985,7 +990,7 @@ def encode_enum_dataset(dataset, enum_level_vec, enum_col, true_one_hot, include
         if include_nans and np.any(enum_arrays[:, indc]):
             enum_col_num += 1
 
-        new_temp_enum = np.zeros((num_row, enum_col_num), dtype=np.int)
+        new_temp_enum = np.zeros((num_row, enum_col_num[0]))
         one_hot_matrix = one_hot_encoding(enum_col_num)
         last_col_index = enum_col_num-1
 
@@ -1514,7 +1519,7 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
             return coeffs
     elif what_param == 'best_lambda':
         lambda_str = model._model_json["output"]["model_summary"].cell_values[0][4].split('=')
-        return float(lambda_str[-1])
+        return float(str(lambda_str[-2]).split(',')[0])
     elif what_param == 'confusion_matrix':
         if 'multinomial' in family_type.lower():
             return model._model_json["output"]["training_metrics"]._metric_json["cm"]["table"]
