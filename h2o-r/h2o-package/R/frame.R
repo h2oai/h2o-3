@@ -777,9 +777,9 @@ h2o.na_omit <- function(object, ...){
   .newExpr("na.omit", object)
 }
 
-#' @rdname h2o.naomit
+#' @rdname naomit
 #' @export
-na.omit.H2OFrame <- h2o.naomit
+na.omit.H2OFrame <- h2o.na_omit
 
 #' Conduct a lag 1 transform on a numeric H2OFrame column
 #'
