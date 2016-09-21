@@ -2,8 +2,11 @@ package hex.deepwater;
 
 import hex.Model;
 import hex.ScoreKeeper;
+import hex.deeplearning.DeepLearningModel;
 import water.H2O;
 import water.exceptions.H2OIllegalArgumentException;
+import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -12,6 +15,8 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 
 import hex.genmodel.utils.DistributionFamily;
+
+import javax.imageio.ImageIO;
 
 /**
  * Parameters for a Deep Water image classification model
@@ -45,7 +50,8 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public enum Network {
-    auto, user, lenet, alexnet, vgg, googlenet, inception_bn, resnet
+    auto, user, lenet, alexnet, vgg, googlenet, inception_bn, resnet,
+    relu_10, relu_500_relu_500, relu_300_relu_300_relu_300 // fully-connected
   }
 
   public enum Backend {
@@ -53,7 +59,7 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public enum ProblemType {
-    image_classification, document_classification, csv_classification
+    auto, image_classification, text_classification, h2oframe_classification
   }
 
   public double _clip_gradient = 10.0;
@@ -66,7 +72,7 @@ public class DeepWaterParameters extends Model.Parameters {
   public String _network_parameters_file;
   public String _export_native_model_prefix;
 
-  public ProblemType _problem_type = ProblemType.image_classification;
+  public ProblemType _problem_type = ProblemType.auto;
 
   // specific parameters for image_classification
   public int[] _image_shape = new int[]{0,0}; //width x height
@@ -80,6 +86,21 @@ public class DeepWaterParameters extends Model.Parameters {
   public boolean _overwrite_with_best_model = true;
 
   public boolean _autoencoder = false;
+
+  public boolean _sparse = false;
+
+  public boolean _use_all_factor_levels = true;
+
+  public enum MissingValuesHandling {
+    Skip, MeanImputation
+  }
+
+  public MissingValuesHandling _missing_values_handling = MissingValuesHandling.MeanImputation;
+
+  /**
+   * If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.
+   */
+  public boolean _standardize = true;
 
   /**
    * The number of passes over the training dataset to be carried out.
@@ -210,8 +231,7 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public int _mini_batch_size = 32;
 
-  // internal only
-  public boolean _cache_data = true;
+  protected boolean _cache_data = true;
 
   /**
    * Validate model parameters
@@ -222,6 +242,13 @@ public class DeepWaterParameters extends Model.Parameters {
     boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _distribution == DistributionFamily.bernoulli || _distribution == DistributionFamily.bernoulli;
     if (_mini_batch_size < 1)
       dl.error("_mini_batch_size", "Mini-batch size must be >= 1");
+
+    if (_weights_column!=null && expensive) {
+      Vec w = (train().vec(_weights_column));
+      if (!w.isInt() || w.max() > 1 || w.min() < 0) {
+        dl.error("_weights_column", "only supporting weights of 0 or 1 right now");
+      }
+    }
 
     if (_clip_gradient<=0)
       dl.error("_clip_gradient", "Clip gradient must be >= 0");
@@ -239,11 +266,11 @@ public class DeepWaterParameters extends Model.Parameters {
       dl.warn("_image_shape", "image shape is ignored, only used for image_classification");
       dl.warn("_channels", "channels shape is ignored, only used for image_classification");
       dl.warn("_mean_image_file", "mean_image_file shape is ignored, only used for image_classification");
-      if (_problem_type==ProblemType.csv_classification) {
-        if (_categorical_encoding==CategoricalEncodingScheme.OneHotInternal || _categorical_encoding==CategoricalEncodingScheme.Enum) {
-          dl.error("_categorical_encoding", "categorical encoding scheme cannot be OneHotInternal or Enum: must have numeric columns as input.");
-        }
-      }
+//      if (_problem_type==ProblemType.numeric_classification) {
+//        if (_categorical_encoding==CategoricalEncodingScheme.OneHotInternal || _categorical_encoding==CategoricalEncodingScheme.Enum) {
+//          dl.error("_categorical_encoding", "categorical encoding scheme cannot be OneHotInternal or Enum: must have numeric columns as input.");
+//        }
+//      }
     }
 
     if (expensive && !classification)
@@ -490,6 +517,26 @@ public class DeepWaterParameters extends Model.Parameters {
         if (!fromParms._quiet_mode)
           Log.info("_overwrite_with_best_model: Disabling overwrite_with_best_model in combination with n-fold cross-validation.");
         toParms._overwrite_with_best_model = false;
+      }
+      // Automatically set the problem_type
+      if (fromParms._problem_type == ProblemType.auto) {
+        boolean image=false;
+        boolean text=false;
+        if (fromParms.train().vec(0).isString()) {
+          BufferedString bs = new BufferedString();
+          String first = fromParms.train().anyVec().atStr(bs, 0).toString();
+          try {
+            ImageIO.read(new File(first));
+            image=true;
+          } catch(Throwable t) {
+            text = true;
+          }
+        }
+        if (image) toParms._problem_type = ProblemType.image_classification;
+        else if (text) toParms._problem_type = ProblemType.text_classification;
+        else toParms._problem_type = ProblemType.h2oframe_classification;
+        if (!fromParms._quiet_mode)
+          Log.info("_problem_type: Automatically selecting problem_type: " + toParms._problem_type.toString());
       }
       if (fromParms._categorical_encoding==CategoricalEncodingScheme.AUTO) {
         if (!fromParms._quiet_mode)
