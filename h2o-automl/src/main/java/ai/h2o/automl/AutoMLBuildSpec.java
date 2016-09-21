@@ -20,7 +20,8 @@ public class AutoMLBuildSpec extends Iced {
    * as usual in H2O.
    */
   static final public class AutoMLInput extends Iced {
-    public ImportFilesV3 import_files; // NOTE: there's no backing class in H2O
+    public ImportFilesV3.ImportFiles training_files;
+    public ImportFilesV3.ImportFiles validation_files;
 
     @API(help = "Parse setup f00")
     public ParseSetup parse_setup;
