@@ -47,10 +47,10 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     this.trainingFrame = DKV.getGet(buildSpec.input_spec.training_frame);
     this.validationFrame = DKV.getGet(buildSpec.input_spec.validation_frame);
 
-    if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_files)
-      this.trainingFrame = importParseFrame(buildSpec.input_spec.training_files, buildSpec.input_spec.parse_setup);
-    if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_files)
-      this.validationFrame = importParseFrame(buildSpec.input_spec.validation_files, buildSpec.input_spec.parse_setup);
+    if (null == buildSpec.input_spec.training_frame && null != buildSpec.input_spec.training_path)
+      this.trainingFrame = importParseFrame(buildSpec.input_spec.training_path, buildSpec.input_spec.parse_setup);
+    if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_path)
+      this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
 
     /*
     TODO

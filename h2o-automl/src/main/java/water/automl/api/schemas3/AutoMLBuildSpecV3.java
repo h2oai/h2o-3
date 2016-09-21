@@ -26,35 +26,33 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
   static final public class AutoMLInputV3 extends Schema<AutoMLBuildSpec.AutoMLInput, AutoMLInputV3> {
     public AutoMLInputV3() { super(); }
 
-    @API(help = "File input f00")
-    public ImportFilesV3 training_files;
+    @API(help = "Path of training data to import and parse, in any form that H2O accepts, including local files or directories, s3, hdfs, etc.", required = false)
+    public ImportFilesV3 training_path;
 
-    @API(help = "File input f00")
-    public ImportFilesV3 validation_files;
+    @API(help = "Path of validation data to import and parse, in any form that H2O accepts, including local files or directories, s3, hdfs, etc.", required = false)
+    public ImportFilesV3 validation_path;
 
-    @API(help = "Parse setup f00")
+    @API(help = "Used to override default settings for training and test data parsing.", required = false)
     public ParseSetupV3 parse_setup;
 
     // @API(help="auxiliary relational datasets", direction=API.Direction.INPUT)
     // public String[] datasets_to_join;
 
-    @API(level = API.Level.critical, direction = API.Direction.INOUT,
-            help = "Id of the training data frame (Not required, to allow initial validation of model parameters).")
+    @API(help = "Id of the training data frame.", required = false)
     public KeyV3.FrameKeyV3 training_frame;
 
-    @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
-            help = "Id of the validation data frame.")
+    @API(help = "Id of the validation data frame.", required = false)
     public KeyV3.FrameKeyV3 validation_frame;
 
-    @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
+    @API(help = "Response variable column.",
             is_member_of_frames = {"training_frame", "validation_frame"},
-            is_mutually_exclusive_with = {"ignored_columns"},
-            help = "Response variable column.")
+            is_mutually_exclusive_with = {"ignored_columns"}
+            )
     public FrameV3.ColSpecifierV3 response_column;
 
-    @API(level = API.Level.critical, direction = API.Direction.INOUT,
-            is_member_of_frames = {"training_frame", "validation_frame"},
-            help = "Names of columns to ignore for training.")
+    @API(help = "Names of columns to ignore for training.",
+            is_member_of_frames = {"training_frame", "validation_frame"}
+            )
     public String[] ignored_columns;
   } // class AutoMLInputV3
 

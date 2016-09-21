@@ -8,7 +8,6 @@ import water.Key;
 import water.api.Handler;
 import water.api.schemas3.JobV3;
 import water.automl.api.schemas3.AutoMLBuildSpecV3;
-import water.parser.ParseSetup;
 
 
 public class AutoMLBuilderHandler extends Handler {
@@ -24,9 +23,9 @@ public class AutoMLBuilderHandler extends Handler {
                     null : (Frame)DKV.getGet(buildSpecSchema.input_spec.import_validation_files.path));
                     */
 
-    if (buildSpec.input_spec.training_frame != null && buildSpec.input_spec.training_files !=null)
+    if (buildSpec.input_spec.training_frame != null && buildSpec.input_spec.training_path !=null)
       throw new IllegalArgumentException("Both training_frame and training_files were specified; you must choose one or the other!");
-    if (buildSpec.input_spec.validation_frame != null && buildSpec.input_spec.validation_files !=null)
+    if (buildSpec.input_spec.validation_frame != null && buildSpec.input_spec.validation_path !=null)
       throw new IllegalArgumentException("Both validation_frame and validation_files were specified; you must choose one or the other!");
 
     AutoML aml;
