@@ -78,7 +78,7 @@ public class DeepWaterFrameIterator extends DeepWaterIterator {
         for (int i=0;i<chks.length;++i) {
           chks[i] = _dinfo._adaptedFrame.vec(i).chunkForChunkIdx(chkIdx);
         }
-        _dinfo.extractDenseRow(chks, _globalIndex, row);
+        _dinfo.extractDenseRow(chks, _globalIndex-(int)chks[0].start(), row);
         for (int i = 0; i< _dinfo.fullN(); ++i)
           _destData[start+i] = (float)row.get(i);
         if (_cache)
