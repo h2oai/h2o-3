@@ -28,5 +28,10 @@ dependencies {
     compile "net.sf.opencsv:opencsv:2.3"
 }
 
+shadowJar {
+    classifier = null
+    relocate 'au.com.bytecode', 'hex.genmodel.au.com.bytecode'
+}
+
 build.dependsOn shadowJar
-jar.dependsOn shadowJar
+jar.enabled = false 

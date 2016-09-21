@@ -9,7 +9,7 @@ tasks.withType(Jar) { Jar t ->
       if (t.classifier!=null) {
           rename("(.*)-${t.version}(.*)", '$1$2')
       } else {
-          rename("(.*)${t.version}-?(.*)", '$1$2')
+          rename("(.*)-${t.version}-?(.*)", '$1$2')
       }
     }
   }
