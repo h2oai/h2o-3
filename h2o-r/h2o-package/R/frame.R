@@ -982,7 +982,7 @@ h2o.as_date <- function(x, format, ...) {
 
 #' @rdname h2o.asDate
 #' @export
-as.Date.H2OFrame <- h2o.asDate
+as.Date.H2OFrame <- h2o.as_date
 
 #' Set the Time Zone on the H2O Cloud
 #'
