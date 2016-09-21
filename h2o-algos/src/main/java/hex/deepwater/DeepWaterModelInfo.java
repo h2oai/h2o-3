@@ -1,9 +1,11 @@
 package hex.deepwater;
 
+import hex.DataInfo;
 import hex.Model;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.gpu.ImageTrain;
+import water.gpu.NumericTrain;
 import water.util.*;
 
 import static hex.deepwater.DeepWaterParameters.Network.auto;
@@ -24,19 +26,62 @@ import java.util.Arrays;
  * This will be shared: one per node
  */
 final public class DeepWaterModelInfo extends Iced {
-  // pointer and snapshot of state of native library
-  transient ImageTrain _imageTrain;
-  int _height;
-  int _width;
-  int _channels;
   int _classes;
   int _deviceID;
   boolean _gpu;
   byte[] _network; // model definition (graph)
   byte[] _modelparams; // internal state of native backend (weights/biases/helpers)
-  float[] _meanData; //mean pixel value of the training data
 
   public TwoDimTable summaryTable;
+
+  //for image classification
+  transient ImageTrain _imageTrain;
+  int _height;
+  int _width;
+  int _channels;
+  float[] _meanData; //mean pixel value of the training data
+
+  //for numeric classification (csv/frame style)
+  transient NumericTrain _numericTrain;
+  int _ncols;
+  Key<DataInfo> _dataInfoKey;
+
+  Object getBackend() { return _imageTrain!=null ? _imageTrain : _numericTrain; }
+  public void nukeBackend() {
+    if (_imageTrain != null) {
+      _imageTrain.delete();
+      _imageTrain = null;
+    }
+    if (_numericTrain!=null) {
+      _numericTrain.delete();
+      _numericTrain = null;
+    }
+  }
+
+  public void saveNativeState(String path, int iteration) {
+    if (get_params()._backend == DeepWaterParameters.Backend.mxnet) {
+      if (_imageTrain!=null) {
+        _imageTrain.saveModel(path + ".json"); //independent of iterations
+        _imageTrain.saveParam(path + "." + iteration + ".params");
+      } else if (_numericTrain!=null){
+        _numericTrain.saveModel(path + ".json"); //independent of iterations
+        _numericTrain.saveParam(path + "." + iteration + ".params");
+      } else throw H2O.unimpl();
+    } else throw H2O.unimpl();
+  }
+
+  float[] predict(float[] data) {
+    if (_imageTrain!=null)
+      return _imageTrain.predict(data);
+    else if (_numericTrain!=null)
+      return _numericTrain.predict(data);
+    else throw H2O.unimpl();
+  }
+
+  @Override
+  public int hashCode() {
+    return _network.hashCode() + _modelparams.hashCode();
+  }
 
   // compute model size (number of model parameters required for making predictions)
   // momenta are not counted here, but they are needed for model building
@@ -68,7 +113,8 @@ final public class DeepWaterModelInfo extends Iced {
    * @param params Model parameters
    * @param nClasses number of classes (1 for regression, 0 for autoencoder)
    */
-  public DeepWaterModelInfo(final DeepWaterParameters params, Key model_id, int nClasses) {
+  public DeepWaterModelInfo(final DeepWaterParameters params, Key model_id, int nClasses, int nFeatures) {
+    _ncols = nFeatures;
     _classes = nClasses;
     _classification = _classes > 1;
     parameters = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
@@ -86,7 +132,7 @@ final public class DeepWaterModelInfo extends Iced {
       }
     }
     else {
-      if (params._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+      if (parameters._problem_type == DeepWaterParameters.ProblemType.image_classification) {
         _width=parameters._image_shape[0];
         _height=parameters._image_shape[1];
         _channels=parameters._channels;
@@ -169,23 +215,68 @@ final public class DeepWaterModelInfo extends Iced {
           Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
           throw t;
         }
+      } else if (parameters._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+        try {
+          assert _numericTrain == null;
+          _numericTrain = new NumericTrain(_ncols, _deviceID, (int) parameters.getOrMakeRealSeed(), _gpu);
+          if (parameters._network != user) {
+            String network = parameters._network == auto ? "500-relu-500-relu" : parameters._network.toString();
+            Log.info("Creating a fresh model of the following network type: " + network);
+            _numericTrain.buildNet(_classes, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
+          }
+          // load a network if specified
+          final String networkDef = parameters._network_definition_file;
+          if (networkDef != null && !networkDef.isEmpty()) {
+            File f = new File(networkDef);
+            if (!f.exists() || f.isDirectory()) {
+              Log.err("Network definition file " + f + " not found.");
+            } else {
+              Log.info("Loading the network from: " + f.getAbsolutePath());
+              _numericTrain.loadModel(f.getAbsolutePath());
+              Log.info("Setting the optimizer and initializing the first and last layer.");
+              _numericTrain.setOptimizer(_classes, parameters._mini_batch_size);
+            }
+          }
+          final String networkParms = parameters._network_parameters_file;
+          if (networkParms != null && !networkParms.isEmpty()) {
+            File f = new File(networkParms);
+            if (!f.exists() || f.isDirectory()) {
+              Log.err("Parameter file " + f + " not found.");
+            } else {
+              Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
+              _numericTrain.loadParam(f.getAbsolutePath());
+            }
+          } else {
+            Log.warn("No network parameters file specified. Starting from scratch.");
+          }
+
+          if (parameters._mean_image_file != null)
+            throw new IllegalArgumentException("_mean_image_file cannot be specified for a numeric classification task");
+          nativeToJava(); //store initial state as early as it's created
+        } catch (Throwable t) {
+          Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
+          throw t;
+        }
       } else {
-        throw new IllegalArgumentException("Only image classification is currently supported.");
+        throw H2O.unimpl();
       }
     }
   }
 
   public void nativeToJava() {
+    if (getBackend()==null) return;
     Log.info("Native backend -> Java.");
     long now = System.currentTimeMillis();
-    if (_imageTrain==null) throw new RuntimeException("Internal error - Lost connection to native code.");
     Path path = null;
     // only overwrite the network definition if it's null
     if (_network==null) {
       try {
         path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
         Log.info("backend is saving the model architecture.");
-        _imageTrain.saveModel(path.toString());
+        if (_imageTrain!=null)
+          _imageTrain.saveModel(path.toString());
+        else if (_numericTrain!=null)
+          _numericTrain.saveModel(path.toString());
         Log.info("done.");
         _network = Files.readAllBytes(path);
       } catch (IOException e) {
@@ -196,7 +287,10 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Log.info("backend is saving the parameters.");
-      _imageTrain.saveParam(path.toString());
+      if (_imageTrain!=null)
+        _imageTrain.saveParam(path.toString());
+      else if (_numericTrain!=null)
+        _numericTrain.saveParam(path.toString());
       Log.info("done.");
       _modelparams = Files.readAllBytes(path);
     } catch (IOException e) {
@@ -221,7 +315,7 @@ final public class DeepWaterModelInfo extends Iced {
   private void javaToNative(byte[] network, byte[] parameters) {
     long now = System.currentTimeMillis();
     //existing state is fine
-    if (_imageTrain!=null
+    if ((_imageTrain!=null || _numericTrain!=null)
             // either not overwriting with user-given (new) state, or we already are in sync
             && (network == null || network.equals(_network))
             && (parameters == null || Arrays.equals(parameters,_modelparams)) )  {
@@ -246,6 +340,13 @@ final public class DeepWaterModelInfo extends Iced {
         _imageTrain.loadModel(path.toString());
         Log.info("Randomizing everything.");
         _imageTrain.setOptimizer(_classes, get_params()._mini_batch_size); //randomizing initial state
+      } else if (get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+        if (_numericTrain == null) {
+          _numericTrain = new NumericTrain(_ncols, _deviceID, (int) get_params().getOrMakeRealSeed());
+        }
+        _numericTrain.loadModel(path.toString());
+        Log.info("Randomizing everything.");
+        _numericTrain.setOptimizer(_classes, get_params()._mini_batch_size); //randomizing initial state
       }
     } catch (IOException e) {
       e.printStackTrace();
@@ -256,6 +357,8 @@ final public class DeepWaterModelInfo extends Iced {
       Files.write(path, parameters);
       if (get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
         _imageTrain.loadParam(path.toString());
+      } else if (get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+        _numericTrain.loadParam(path.toString());
       }
     } catch (IOException e) {
       e.printStackTrace();

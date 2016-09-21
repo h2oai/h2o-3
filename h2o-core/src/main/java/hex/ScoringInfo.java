@@ -244,7 +244,7 @@ public class ScoringInfo extends Iced<ScoringInfo> {
         assert (speed >= 0) : "Speed should not be negative! " + speed + " = (float)(" + ((HasSamples)si).training_samples() + "/((" + si.total_training_time_ms + "-" + si.total_scoring_time_ms + "-" + si.total_setup_time_ms + ")/1e3)";
         table.set(row, col++, si.total_training_time_ms == 0 ? null : (
                 speed>10 ? String.format("%d", (int)speed) : String.format("%g", speed)
-        ) + " rows/sec");
+        ) + " obs/sec");
       }
       if (hasEpochs) table.set(row, col++, ((HasEpochs)si).epoch_counter());
       if (hasIterations) table.set(row, col++, ((HasIterations)si).iterations());

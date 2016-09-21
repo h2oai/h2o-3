@@ -101,7 +101,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
      * If checkpoint == null, then start training a new model, otherwise continue from a checkpoint
      */
     public final void buildModel() {
-      trainModel(new DeepWaterModel(_result,_parms,new DeepWaterModelOutput(DeepWater.this),nclasses()));
+      trainModel(new DeepWaterModel(_result,_parms,new DeepWaterModelOutput(DeepWater.this),train(),valid(),nclasses()));
     }
 
     /**
@@ -202,7 +202,12 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         _job.update(0,"Training...");
 
         // decide whether to cache
-        long bytes = train.numRows() * model.model_info()._width * model.model_info()._height * model.model_info()._channels * 4;
+        long bytes;
+        if (_parms._problem_type== DeepWaterParameters.ProblemType.image_classification) {
+          bytes = train.numRows() * model.model_info()._width * model.model_info()._height * model.model_info()._channels * 4;
+        } else {
+          bytes = train.byteSize();
+        }
         cache = mp._cache_data;
         if (cache) {
           if (bytes < H2O.CLOUD.free_mem() / 4) {
@@ -261,7 +266,6 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         if (model.model_info()._imageTrain!=null) model.model_info().nativeToJava();
         if (cache) model.cleanUpCache();
         model.removeNativeState();
-        //TODO: refactor DL the same way
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
           if (stop_requested()) {

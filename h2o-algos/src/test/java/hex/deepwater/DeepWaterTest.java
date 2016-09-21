@@ -1,6 +1,6 @@
 package hex.deepwater;
 
-import hex.Model;
+import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -9,9 +9,10 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.gpu.ImagePred;
 import water.gpu.ImageTrain;
 import water.gpu.util;
+import water.parser.BufferedString;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
 import water.util.StringUtils;
@@ -20,17 +21,13 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Random;
+import java.util.*;
 
 public class DeepWaterTest extends TestUtil {
   @BeforeClass
   public static void stall() { stall_till_cloudsize(1); new MXNetLoader(); }
 
   // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
-  @Ignore
   @Test
   public void inceptionPredictionMX() throws IOException {
     File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
@@ -56,20 +53,29 @@ public class DeepWaterTest extends TestUtil {
         int red = mycolor.getRed();
         int green = mycolor.getGreen();
         int blue = mycolor.getBlue();
-        pixels[r_idx] = red; r_idx++;
-        pixels[g_idx] = green; g_idx++;
-        pixels[b_idx] = blue; b_idx++;
+        pixels[r_idx] = red-117; r_idx++; //FIXME: Hardcoded mean image RGB values
+        pixels[g_idx] = green-117; g_idx++;
+        pixels[b_idx] = blue-117; b_idx++;
       }
     }
 
-    ImagePred m = new ImagePred();
 
     // the path to Inception model
-    m.setModelPath(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception"));
+    ImageTrain m = new ImageTrain(); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
+    m.loadModel(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
+    m.setOptimizer(1000, 1);
+    m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
 
-    m.loadInception();
+    float[] preds = m.predict(pixels);
+    int which = ArrayUtils.maxIndex(preds);
 
-    System.out.println("\n\n" + m.predict(pixels)+"\n\n");
+    Frame labels = parse_test_file("~/deepwater/backends/mxnet/Inception/synset.txt");
+
+    BufferedString str = new BufferedString();
+    String answer = labels.anyVec().atStr(str, which).toString();
+    System.out.println("\n\n" + answer +"\n\n");
+    labels.remove();
+    Assert.assertEquals("n02113023 Pembroke", answer);
   }
 
   // This tests the DeepWaterImageIterator
@@ -696,24 +702,25 @@ public class DeepWaterTest extends TestUtil {
     fs.blockForPending();
   }
 
-  @Ignore
   @Test
   public void prostate() {
     DeepWaterParameters p = new DeepWaterParameters();
     Frame tr;
     p._train = (tr=parse_test_file("smalldata/prostate/prostate.csv"))._key;
-    p._network = DeepWaterParameters.Network.lenet;
+    p._network = DeepWaterParameters.Network.relu_500_relu_500;
     p._response_column = "CAPSULE";
+    p._ignored_columns = new String[]{"ID"};
     Vec v = tr.remove(p._response_column);
     tr.add(p._response_column, v.toCategoricalVec());
     v.remove();
     DKV.put(tr);
-    p._mini_batch_size = 4;
-    p._train_samples_per_iteration = p._mini_batch_size;
-    p._problem_type = DeepWaterParameters.ProblemType.csv_classification;
-    p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+    p._rate = 5e-3;
+    p._mini_batch_size = 16;
+    p._epochs = 200;
+    p._train_samples_per_iteration = 0;
     DeepWater j= new DeepWater(p);
     DeepWaterModel m = j.trainModel().get();
+    Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.99);
     tr.remove();
     m.remove();
   }

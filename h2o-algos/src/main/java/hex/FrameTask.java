@@ -100,7 +100,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
    * Extracts the values, applies regularization to numerics, adds appropriate offsets to categoricals,
    * and adapts response according to the CaseMode/CaseValue if set.
    */
-  @Override public final void map(Chunk [] chunks, NewChunk [] outputs) {
+  @Override public void map(Chunk [] chunks, NewChunk [] outputs) {
     if(_jobKey != null && _jobKey.get() != null && _jobKey.get().stop_requested()) throw new Job.JobCancelledException();
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
