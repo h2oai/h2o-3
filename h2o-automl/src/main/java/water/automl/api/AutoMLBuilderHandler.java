@@ -1,48 +1,38 @@
 package water.automl.api;
 
 import ai.h2o.automl.AutoML;
+import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.TimedH2OJob;
 import water.DKV;
 import water.Key;
 import water.api.Handler;
 import water.api.schemas3.JobV3;
 import water.automl.api.schemas3.AutoMLBuildSpecV3;
-import water.fvec.Frame;
+import water.parser.ParseSetup;
 
 
 public class AutoMLBuilderHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public AutoMLBuildSpecV3 build(int version, AutoMLBuildSpecV3 args) {
+  public AutoMLBuildSpecV3 build(int version, AutoMLBuildSpecV3 buildSpecSchema) {
+    AutoMLBuildSpec buildSpec = buildSpecSchema.createAndFillImpl();
+/*
+    Frame trainingFrame =
+            (null == buildSpecSchema.input_spec.import_training_files?
+                    null : (Frame)DKV.getGet(buildSpecSchema.input_spec.import_training_files.path));
+    Frame validationFrame =
+            (null == buildSpecSchema.input_spec.import_validation_files?
+                    null : (Frame)DKV.getGet(buildSpecSchema.input_spec.import_validation_files.path));
+                    */
 
-    Frame frame =
-            (null == args.input_spec.import_files ?
-                    null : (Frame)DKV.getGet(args.input_spec.import_files.path));
+    if (buildSpec.input_spec.training_frame != null && buildSpec.input_spec.training_files !=null)
+      throw new IllegalArgumentException("Both training_frame and training_files were specified; you must choose one or the other!");
+    if (buildSpec.input_spec.validation_frame != null && buildSpec.input_spec.validation_files !=null)
+      throw new IllegalArgumentException("Both validation_frame and validation_files were specified; you must choose one or the other!");
+
     AutoML aml;
-    if( null==frame )
-      aml = AutoML.makeAutoML(Key.<AutoML>make(),
-              args.input_spec.import_files.path,
-              /* args.datasets_to_join, */ null,
-              args.input_spec.response_column.column_name,
-              args.loss,
-              args.max_time,
-              -1,
-              args.ensemble,
-              args.exclude,
-              args.try_mutations);
-    else throw new IllegalArgumentException("error: data already parsed");
-//      aml = new AutoML(
-//            Key.<AutoML>make(),
-//            args.dataset,
-//            frame,
-//            args.target_name,
-//            args.loss,
-//            args.max_time,
-//            -1,     // min accuracy or stopping crit ... "loss threshold"
-//            args.ensemble,
-//            args.exclude,
-//            args.try_mutations);
+    aml = AutoML.makeAutoML(Key.<AutoML>make(), buildSpec);
     DKV.put(aml);
-    args.job = new JobV3().fillFromImpl(new TimedH2OJob(aml,aml._key).start());
-    return args;
+    buildSpecSchema.job = new JobV3().fillFromImpl(new TimedH2OJob(aml,aml._key).start());
+    return buildSpecSchema;
   }
 }

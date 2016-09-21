@@ -27,7 +27,10 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
     public AutoMLInputV3() { super(); }
 
     @API(help = "File input f00")
-    public ImportFilesV3 import_files;
+    public ImportFilesV3 training_files;
+
+    @API(help = "File input f00")
+    public ImportFilesV3 validation_files;
 
     @API(help = "Parse setup f00")
     public ParseSetupV3 parse_setup;
@@ -53,7 +56,7 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
             is_member_of_frames = {"training_frame", "validation_frame"},
             help = "Names of columns to ignore for training.")
     public String[] ignored_columns;
-  }
+  } // class AutoMLInputV3
 
 
   ////////////////
