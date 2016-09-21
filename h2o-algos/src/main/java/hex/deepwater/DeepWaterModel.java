@@ -122,6 +122,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       _output._names = dinfo._adaptedFrame.names();
       _output._domains = dinfo._adaptedFrame.domains();
       model_info._dataInfoKey = dinfo._key;
+      if (dinfo.numCats()!=0)
+        Log.info("Exanding categorical columns to " + (dinfo.fullN() - dinfo.numNums()) + " dummy (one-hot encoded) columns.");
       DKV.put(dinfo);
     }
 
@@ -514,7 +516,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           int channels = model_info()._channels;
           iter = new DeepWaterImageIterator(score_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, model_info().get_params()._cache_data);
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-          iter = new DeepWaterFrameIterator(model_info()._dataInfoKey.get(), score_rows, null /*no labels*/, batch_size, _output.nfeatures(), model_info().get_params()._cache_data);
+          iter = new DeepWaterFrameIterator(model_info()._dataInfoKey.get(), score_rows, null /*no labels*/, batch_size, model_info().get_params()._cache_data);
         } else {
           throw H2O.unimpl();
         }
