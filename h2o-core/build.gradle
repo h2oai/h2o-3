@@ -5,7 +5,7 @@ description = "H2O Core"
 
 dependencies {
   // Dependency on shared model support
-  compile project (':h2o-genmodel')
+  compile project (path: ':h2o-genmodel', configuration: 'shadow')
   // Required for h2o-core
   compile "joda-time:joda-time:2.3"
   compile "gov.nist.math:jama:1.0.3"
