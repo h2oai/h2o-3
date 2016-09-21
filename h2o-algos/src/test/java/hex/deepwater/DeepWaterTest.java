@@ -704,25 +704,32 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void prostate() {
-    DeepWaterParameters p = new DeepWaterParameters();
-    Frame tr;
-    p._train = (tr=parse_test_file("smalldata/prostate/prostate.csv"))._key;
-    p._network = DeepWaterParameters.Network.relu_500_relu_500;
-    p._response_column = "CAPSULE";
-    p._ignored_columns = new String[]{"ID"};
-    Vec v = tr.remove(p._response_column);
-    tr.add(p._response_column, v.toCategoricalVec());
-    v.remove();
-    DKV.put(tr);
-    p._rate = 5e-3;
-    p._mini_batch_size = 16;
-    p._epochs = 200;
-    p._train_samples_per_iteration = 0;
-    DeepWater j= new DeepWater(p);
-    DeepWaterModel m = j.trainModel().get();
-    Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.99);
-    tr.remove();
-    m.remove();
+    Frame tr = null;
+    DeepWaterModel m = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
+      p._network = DeepWaterParameters.Network.relu_500_relu_500;
+      p._response_column = "CAPSULE";
+      p._ignored_columns = new String[]{"ID"};
+      for (String col : new String[]{"CAPSULE"}) {
+//        for (String col : new String[]{"RACE", "DPROS", "DCAPS", "CAPSULE", "GLEASON"}) {
+        Vec v = tr.remove(col);
+        tr.add(col, v.toCategoricalVec());
+        v.remove();
+      }
+      DKV.put(tr);
+      p._rate = 5e-3;
+      p._mini_batch_size = 16;
+      p._epochs = 200;
+      p._train_samples_per_iteration = 0;
+      DeepWater j = new DeepWater(p);
+      m = j.trainModel().get();
+      Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.99);
+    } finally {
+      if (tr!=null) tr.remove();
+      if (m!=null) m.remove();
+    }
   }
 }
 
