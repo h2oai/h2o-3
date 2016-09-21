@@ -12,10 +12,8 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
-
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * The iSAX 2.0 algorithm is a time series indexing strategy that reduces the dimensionality of a time series along the time axis.
@@ -23,6 +21,17 @@ import java.util.List;
  * uses 100 unique values, across 10 buckets along the time span.
  * http://www.cs.ucr.edu/~eamonn/iSAX_2.0.pdf
  * http://www.cs.ucr.edu/~eamonn/SAX.pdf
+ *
+ * Note: This approach assumes the frame has the form of TS x T where TS is a single time series and T is time:
+ *
+ *    T_1, T_2, T_3, T_4, ... , T_N
+ * TS_1 ...
+ * TS_2 ...
+ * TS_3 ...
+ *  .
+ *  .
+ *  .
+ * TS_N ...
  *
  * @author markchan & navdeepgill
  */
