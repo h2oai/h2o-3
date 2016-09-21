@@ -551,7 +551,9 @@ public class DeepWaterParameters extends Model.Parameters {
         }
       }
       if (fromParms._network == Network.auto) {
-        toParms._network = Network.inception_bn;
+        if (toParms._problem_type==ProblemType.image_classification) toParms._network = Network.inception_bn;
+        if (toParms._problem_type==ProblemType.text_classification) throw H2O.unimpl();
+        if (toParms._problem_type==ProblemType.h2oframe_classification) toParms._network = Network.relu_500_relu_500;
         if (!fromParms._quiet_mode)
           Log.info("_network: Using " + toParms._network + " model by default.");
       }
