@@ -57,9 +57,9 @@ public class DataInfo extends Keyed<DataInfo> {
     _responses += vecs.length;
   }
 
-  public int[] catModes() {return _catModes;}
+  public int[] catNAFill() {return _catNAFill;}
 
-  public int catMode(int cid) {return _catModes[cid];}
+  public int catNAFill(int cid) {return _catNAFill[cid];}
 
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
@@ -98,7 +98,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int _cats;  // "raw" number of categorical columns as they exist in the frame
   public int [] _catOffsets;   // offset column indices for the 1-hot expanded values (includes enum-enum interaction)
   public boolean [] _catMissing;  // bucket for missing levels
-  private int [] _catModes;    // majority class of each categorical col
+  private int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value
@@ -234,7 +234,7 @@ public class DataInfo extends Keyed<DataInfo> {
     Vec[] tvecs2 = new Vec[train.numCols()];
 
     // Compute the cardinality of each cat
-    _catModes = new int[ncats];
+    _catNAFill = new int[ncats];
     _catOffsets = MemoryManager.malloc4(ncats+1);
     _catMissing = new boolean[ncats];
     int len = _catOffsets[0] = 0;
@@ -262,7 +262,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
       else
         _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catModes[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1):-100;
+      _catNAFill[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1):-100;
       _permutation[i] = cats[i];
     }
     _numOffsets = MemoryManager.malloc4(nnums+1);
@@ -433,7 +433,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
     _normMul = normMul;
     _normSub = normSub;
-    _catModes = catModes;
+    _catNAFill = catModes;
   }
 
   public static int imputeCat(Vec v) {
@@ -473,7 +473,7 @@ public class DataInfo extends Keyed<DataInfo> {
         ++j;
       }
     }
-    int [] catModes = _catModes;
+    int [] catModes = _catNAFill;
     for(int k =0; k < catLvls.length; ++k)
       if(catLvls[k] == null)ignoredCols[ignoredCnt++] = k;
     if(ignoredCnt > 0){
@@ -482,7 +482,7 @@ public class DataInfo extends Keyed<DataInfo> {
       int y = 0;
       for (int c = 0; c < catLvls.length; ++c)
         if (catLvls[c] != null) {
-          catModes[y] = _catModes[c];
+          catModes[y] = _catNAFill[c];
           cs[y++] = catLvls[c];
         }
       assert y == cs.length;
@@ -708,7 +708,7 @@ public class DataInfo extends Keyed<DataInfo> {
           continue;
         res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
       }
-      if (_catMissing[i] && getCategoricalId(i,_catModes[i]) >=0)
+      if (_catMissing[i] && getCategoricalId(i, _catNAFill[i]) >=0)
         res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
       if( vecs[i] instanceof InteractionWrappedVec ) {
         InteractionWrappedVec iwv = (InteractionWrappedVec)vecs[i];
@@ -894,7 +894,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
 
   public final int getCategoricalId(int cid, double val) {
-    if(Double.isNaN(val)) return getCategoricalId(cid, _catModes[cid]);
+    if(Double.isNaN(val)) return getCategoricalId(cid, _catNAFill[cid]);
     int ival = (int)val;
     if(ival != val) throw new IllegalArgumentException("Categorical id must be an integer or NA (missing).");
     return getCategoricalId(cid,ival);
@@ -912,7 +912,7 @@ public class DataInfo extends Keyed<DataInfo> {
     int [] offs = fullCatOffsets();
     if(val + offs[cid] >= offs[cid+1]) {  // previously unseen level
       assert _valid:"categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid+1];
-      val = _catModes[cid];
+      val = _catNAFill[cid];
     }
     if (_catLvls[cid] != null) {  // some levels are ignored?
       assert _useAllFactorLevels;
@@ -956,7 +956,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
-      int cid = getCategoricalId(i,chunks[i].isNA(rid)?_catModes[i]:(int)chunks[i].at8(rid));
+      int cid = getCategoricalId(i,chunks[i].isNA(rid)? _catNAFill[i]:(int)chunks[i].at8(rid));
       if(cid >= 0)
         row.binIds[nbins++] = cid;
     }
@@ -1078,7 +1078,7 @@ public class DataInfo extends Keyed<DataInfo> {
     for (int i = 0; i < _cats; ++i) {
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
-        int cid = getCategoricalId(i,chunks[i].isNA(r)?_catModes[i]:(int)chunks[i].at8(r));
+        int cid = getCategoricalId(i,chunks[i].isNA(r)? _catNAFill[i]:(int)chunks[i].at8(r));
         if(cid >=0)
           row.binIds[row.nBins++] = cid;
         else if(_skipMissing) {
