@@ -593,7 +593,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     BigScore bs = new DeepWaterBigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(adaptFrm);
     if (computeMetrics) bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     if (makeNative) removeNativeState();
-    return bs.outputFrame(null == destination_key ? Key.make() : Key.make(destination_key), names, domains);
+    return bs.outputFrame(null == destination_key ? Key.<Frame>make() : Key.<Frame>make(destination_key), names, domains);
   }
 
   @Override
