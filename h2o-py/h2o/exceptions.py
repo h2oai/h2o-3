@@ -9,7 +9,7 @@ All H2O exceptions derive from :class:`H2OError`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ("H2OStartupError", "H2OConnectionError", "H2OServerError", "H2OResponseError",
-           "H2OValueError", "H2OTypeError")
+           "H2OValueError", "H2OTypeError", "H2OJobCancelled")
 
 
 class H2OError(Exception):
@@ -136,3 +136,16 @@ class H2OServerError(H2OError):
         """
         super(H2OServerError, self).__init__(message)
         self.stacktrace = stacktrace
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+# H2OJobCancelled
+#-----------------------------------------------------------------------------------------------------------------------
+
+class H2OJobCancelled(H2OError):
+    """
+    Raised when the user interrupts a running job.
+
+    By default, this exception will not trigger any output (as if it is caught and ignored), however the user still
+    has an ability to catch this explicitly and perform a custom action.
+    """

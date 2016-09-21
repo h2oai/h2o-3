@@ -40,7 +40,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     /**
      * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
      */
-    @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = false)
     public int max_hit_ratio_k;
 
     @API(help="Number of trees.", gridable = true)

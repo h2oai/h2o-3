@@ -52,16 +52,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public interface GLRMArchetypes {
-    Frame scoreReconstruction(Frame frame, Key destination_key, boolean reverse_transform);
-    Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform);
+    Frame scoreReconstruction(Frame frame, Key<Frame> destination_key, boolean reverse_transform);
+    Frame scoreArchetypes(Frame frame, Key<Frame> destination_key, boolean reverse_transform);
   }
 
   public interface LeafNodeAssignment {
-    Frame scoreLeafNodeAssignment(Frame frame, Key destination_key);
+    Frame scoreLeafNodeAssignment(Frame frame, Key<Frame> destination_key);
   }
 
   public interface ExemplarMembers {
-    Frame scoreExemplarMembers(Key destination_key, int exemplarIdx);
+    Frame scoreExemplarMembers(Key<Frame> destination_key, int exemplarIdx);
   }
 
   /**
@@ -1061,7 +1061,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     BigScore bs = new BigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
-    return bs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)), names, domains);
+    return bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
   }
 
 

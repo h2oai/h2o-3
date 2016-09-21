@@ -35,8 +35,8 @@ public class MathUtils {
   static public double computeWeightedQuantile(Vec weight, Vec values, double alpha) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame tempFrame = weight == null ?
-            new Frame(Key.make(), new String[]{"y"},     new Vec[]{values}) :
-            new Frame(Key.make(), new String[]{"y","w"}, new Vec[]{values, weight});
+            new Frame(Key.<Frame>make(), new String[]{"y"},     new Vec[]{values}) :
+            new Frame(Key.<Frame>make(), new String[]{"y","w"}, new Vec[]{values, weight});
     DKV.put(tempFrame);
     parms._train = tempFrame._key;
     parms._probs = new double[]{alpha};
@@ -308,7 +308,7 @@ public class MathUtils {
   }
 
   /** Compare 2 doubles within a tolerance
-   *  @param a double 
+   *  @param a double
    *  @param b double
    *  @param abseps - Absolute allowed tolerance
    *  @param releps - Relative allowed tolerance

@@ -87,7 +87,10 @@ public abstract class Parser extends Iced {
     StreamParseWriter nextChunk = dout;
     int zidx = bvs.read(null,0,0); // Back-channel read of chunk index
     assert zidx==1;
-    while( is.available() > 0 ) {
+    int streamAvailable = is.available();
+    while(streamAvailable > 0) {
+      parseChunk(cidx++, din, nextChunk);
+      streamAvailable = is.available(); // Can (also!) rollover to the next input chunk
       int xidx = bvs.read(null,0,0); // Back-channel read of chunk index
       if( xidx > zidx ) {  // Advanced chunk index of underlying ByteVec stream?
         zidx = xidx;       // Record advancing of chunk
@@ -98,7 +101,6 @@ public abstract class Parser extends Iced {
         }
         nextChunk = nextChunk.nextChunk();
       }
-      parseChunk(cidx++, din, nextChunk);
     }
     parseChunk(cidx, din, nextChunk);     // Parse the remaining partial 32K buffer
     nextChunk.close();

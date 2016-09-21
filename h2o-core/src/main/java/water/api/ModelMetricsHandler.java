@@ -345,7 +345,7 @@ class ModelMetricsHandler extends Handler {
           parms._model.score(parms._frame, parms._predictions_name, j);
         } else {
           Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer, j);
-          predictions = new Frame(Key.make(parms._predictions_name), predictions.names(), predictions.vecs());
+          predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
           DKV.put(predictions._key, predictions);
         }
         tryComplete();
@@ -403,29 +403,29 @@ class ModelMetricsHandler extends Handler {
             parms._predictions_name = "deep_features" + Key.make().toString().substring(0,5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
           predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer);
         }
-        predictions = new Frame(Key.make(parms._predictions_name), predictions.names(), predictions.vecs());
+        predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());
         DKV.put(predictions._key, predictions);
       } else if(Model.GLRMArchetypes.class.isAssignableFrom(parms._model.getClass())) {
         if(s.project_archetypes) {
           if (null == parms._predictions_name)
             parms._predictions_name = "reconstructed_archetypes_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_of_" + parms._frame._key.toString();
-          predictions = ((Model.GLRMArchetypes) parms._model).scoreArchetypes(parms._frame, Key.make(parms._predictions_name), s.reverse_transform);
+          predictions = ((Model.GLRMArchetypes) parms._model).scoreArchetypes(parms._frame, Key.<Frame>make(parms._predictions_name), s.reverse_transform);
         } else {
           assert s.reconstruct_train;
           if (null == parms._predictions_name)
             parms._predictions_name = "reconstruction_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_of_" + parms._frame._key.toString();
-          predictions = ((Model.GLRMArchetypes) parms._model).scoreReconstruction(parms._frame, Key.make(parms._predictions_name), s.reverse_transform);
+          predictions = ((Model.GLRMArchetypes) parms._model).scoreReconstruction(parms._frame, Key.<Frame>make(parms._predictions_name), s.reverse_transform);
         }
       } else if(s.leaf_node_assignment) {
         assert(Model.LeafNodeAssignment.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)
           parms._predictions_name = "leaf_node_assignment" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_on_" + parms._frame._key.toString();
-        predictions = ((Model.LeafNodeAssignment) parms._model).scoreLeafNodeAssignment(parms._frame, Key.make(parms._predictions_name));
+        predictions = ((Model.LeafNodeAssignment) parms._model).scoreLeafNodeAssignment(parms._frame, Key.<Frame>make(parms._predictions_name));
       } else if(s.exemplar_index >= 0) {
         assert(Model.ExemplarMembers.class.isAssignableFrom(parms._model.getClass()));
         if (null == parms._predictions_name)
           parms._predictions_name = "members_" + parms._model._key.toString() + "_for_exemplar_" + parms._exemplar_index;
-        predictions = ((Model.ExemplarMembers) parms._model).scoreExemplarMembers(Key.make(parms._predictions_name), parms._exemplar_index);
+        predictions = ((Model.ExemplarMembers) parms._model).scoreExemplarMembers(Key.<Frame>make(parms._predictions_name), parms._exemplar_index);
       }
       else throw new H2OIllegalArgumentException("Requires a Deep Learning, GLRM, DRF or GBM model.", "Model must implement specific methods.");
     }

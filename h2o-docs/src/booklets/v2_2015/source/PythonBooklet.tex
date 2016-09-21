@@ -458,7 +458,7 @@ H2O supports the following models:
 
 \begin{itemize}
   \item Generalized Linear Models (GLM) 
-  \item Gradient Boosted Regression (GBM)
+  \item Gradient Boosting Machine (GBM)
   \item Generalized Low Rank Model (GLRM)
   \item Distributed Random Forest (DRF)
 \end{itemize}
@@ -476,7 +476,7 @@ The list continues to grow, so check \url{www.h2o.ai} to see the latest addition
 
 {\textbf{Distributed Random Forest}}: Averages multiple decision trees, each created on different random samples of rows and columns. It is easy to use, non-linear, and provides feedback on the importance of each predictor in the model, making it one of the most robust algorithms for noisy data.
 
-{\textbf{Gradient Boosting (GBM)}}: Produces a prediction model in the form of an ensemble of weak prediction models. It builds the model in a stage-wise fashion and is generalized by allowing an arbitrary differentiable loss function. It is one of the most powerful methods available today.
+{\textbf{Gradient Boosting Machine (GBM)}}: Produces a prediction model in the form of an ensemble of weak prediction models. It builds the model in a stage-wise fashion and is generalized by allowing an arbitrary differentiable loss function. It is one of the most powerful methods available today.
 
 {\textbf{Deep Learning}}: Models high-level abstractions in data by using non-linear transformations in a layer-by-layer method. Deep learning is an example of supervised learning, which can use unlabeled data that other algorithms cannot.
 
@@ -495,7 +495,7 @@ The list continues to grow, so check \url{www.h2o.ai} to see the latest addition
 This section describes how to run the following model types:
 
 \begin{itemize}
-\item Gradient Boosted Models (GBM)
+\item Gradient Boosting Machine (GBM)
 \item Generalized Linear Models (GLM)
 \item K-means
 \item Principal Components Analysis (PCA)
@@ -503,8 +503,8 @@ This section describes how to run the following model types:
 \end{itemize}
 This section also shows how to generate predictions.
 
-\subsubsection{Gradient Boosting Models (GBM)}
-To generate gradient boosting models for creating forward-learning ensembles,
+\subsubsection{Gradient Boosting Machine (GBM)}
+To generate gradient boosting machine models for creating forward-learning ensembles,
 use {\texttt{H2OGradientBoostingEstimator}}.  
 
 The construction of the estimator
