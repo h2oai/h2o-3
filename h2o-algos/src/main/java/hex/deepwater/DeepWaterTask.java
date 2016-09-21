@@ -191,7 +191,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
           Collections.shuffle(trainRows, rng);
         }
 
-        iter = new DeepWaterFrameIterator(_localmodel._dataInfoKey.get(), trainRows, trainLabels, batchSize, _localmodel._ncols, _localmodel.get_params()._cache_data);
+        iter = new DeepWaterFrameIterator(_localmodel._dataInfoKey.get(), trainRows, trainLabels, batchSize, _localmodel.get_params()._cache_data);
         NumericTrainTask ntt = null;
         while (iter.Next(fs) && !_job.isStopping()) {
           if (ntt != null) nativetime += ntt._timeInMillis;
