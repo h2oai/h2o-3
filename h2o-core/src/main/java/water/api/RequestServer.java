@@ -593,6 +593,8 @@ public class RequestServer extends HttpServlet {
     return serveError(error);
   }
 
+  public abstract static interface WithInputStream { public InputStream is(); }
+
   private static NanoResponse serveSchema(Schema s, RequestType type) {
     // Convert Schema to desired output flavor
     String http_response_header = H2OError.httpStatusHeader(HttpResponseStatus.OK.getCode());
@@ -620,7 +622,10 @@ public class RequestServer extends HttpServlet {
 
     // TODO: remove this entire switch
     switch (type) {
-      case html: // return JSON for html requests
+      case html:
+        if( s instanceof WithInputStream )
+          return new NanoResponse(http_response_header, MIME_HTML, ((WithInputStream)s).is());
+        // Fall through
       case json:
         return new NanoResponse(http_response_header, MIME_JSON, s.toJsonString());
       case xml:
