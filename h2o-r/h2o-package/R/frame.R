@@ -980,7 +980,7 @@ h2o.as_date <- function(x, format, ...) {
   .newExpr("as.Date", chk.H2OFrame(x), .quote(format), ...)
 }
 
-#' @rdname h2o.asDate
+#' @rdname as.Date
 #' @export
 as.Date.H2OFrame <- h2o.as_date
 
