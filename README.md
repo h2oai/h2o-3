@@ -132,6 +132,9 @@ git clone https://github.com/h2oai/h2o-3.git
 cd h2o-3
 ./gradlew build -x test
 
+You may encounter problems: e.g. npm missing. Install it:
+brew install npm
+
 # Start H2O
 java -jar build/h2o.jar
 
