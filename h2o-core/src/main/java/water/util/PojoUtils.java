@@ -541,6 +541,8 @@ public class PojoUtils {
 
           if (f.getType().isAssignableFrom(FrameV3.ColSpecifierV3.class)) {
             setField(o, key, new FrameV3.ColSpecifierV3((String) value));
+          } else if (KeyV3.class.isAssignableFrom(f.getType())) {
+            setField(o, key, KeyV3.make((Class<? extends KeyV3>)f.getType(), Key.make((String) value)));
           } else {
             setField(o, key, value);
           }
