@@ -8,10 +8,12 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.gpu.ImageTrain;
 import water.gpu.util;
 import water.parser.BufferedString;
+import water.parser.ParseDataset;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -711,23 +713,64 @@ public class DeepWaterTest extends TestUtil {
       p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
       p._network = DeepWaterParameters.Network.relu_500_relu_500;
       p._response_column = "CAPSULE";
-      p._ignored_columns = new String[]{"ID"};
-      for (String col : new String[]{"CAPSULE"}) {
-//        for (String col : new String[]{"RACE", "DPROS", "DCAPS", "CAPSULE", "GLEASON"}) {
+      p._ignored_columns = new String[]{"ID", "AGE", "PSA", "VOL", "DPROS", "DCAPS", "GLEASON"};
+//      for (String col : new String[]{"CAPSULE"}) {
+      for (String col : new String[]{"RACE", "DPROS", "DCAPS", "CAPSULE", "GLEASON"}) {
         Vec v = tr.remove(col);
         tr.add(col, v.toCategoricalVec());
         v.remove();
       }
       DKV.put(tr);
       p._rate = 5e-3;
-      p._mini_batch_size = 16;
+      p._mini_batch_size = 1;
       p._epochs = 200;
       p._train_samples_per_iteration = 0;
+      p._shuffle_training_data = false;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.99);
     } finally {
       if (tr!=null) tr.remove();
+      if (m!=null) m.remove();
+    }
+  }
+  @Test
+  public void MNIST() {
+    Frame tr = null;
+    Frame va = null;
+    DeepWaterModel m = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
+      File valid = find_test_file("bigdata/laptop/mnist/test.csv.gz");
+      if (file != null) {
+        p._response_column = "C785";
+        NFSFileVec trainfv = NFSFileVec.make(file);
+        tr = ParseDataset.parse(Key.make(), trainfv._key);
+        NFSFileVec validfv = NFSFileVec.make(valid);
+        va = ParseDataset.parse(Key.make(), validfv._key);
+        for (String col : new String[]{p._response_column}) {
+          Vec v = tr.remove(col); tr.add(col, v.toCategoricalVec()); v.remove();
+          v = va.remove(col); va.add(col, v.toCategoricalVec()); v.remove();
+        }
+        DKV.put(tr);
+        DKV.put(va);
+
+        p._train = tr._key;
+        p._valid = va._key;
+        p._network = DeepWaterParameters.Network.relu_500_relu_500;
+        p._rate = 1e-3;
+        p._mini_batch_size = 128;
+        p._epochs = 100;
+        p._train_samples_per_iteration = 0;
+        p._shuffle_training_data = true;
+        DeepWater j = new DeepWater(p);
+        m = j.trainModel().get();
+        Assert.assertTrue(((ModelMetricsMultinomial)(m._output._training_metrics)).mean_per_class_error() < 0.05);
+      }
+    } finally {
+      if (tr!=null) tr.remove();
+      if (va!=null) va.remove();
       if (m!=null) m.remove();
     }
   }
