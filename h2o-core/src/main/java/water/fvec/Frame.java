@@ -66,6 +66,13 @@ import java.util.HashMap;
 public class Frame extends Lockable<Frame> {
   /** Vec names */
   public String[] _names;
+
+  /**
+   * vec name -> vec idx map
+   * Used to lookup vecs by name (instead of linear search)
+   */
+  private transient HashMap<String,Integer> _nameMap;
+
   private boolean _lastNameBig; // Last name is "Cxxx" and has largest number
   private Key<Vec>[] _keys;     // Keys for the vectors
   private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
@@ -78,10 +85,8 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Creates an internal frame composed of the given Vecs and default names.  The frame has no key. */
-  public Frame(Vec... vecs){
-    this(null, vecs);
-  }
 
+  public Frame( Vec... vecs ){ this((Key<Vec>)null,vecs);}
   /** Creates an internal frame composed of the given Vecs and names.  The frame has no key. */
   public Frame(String names[], Vec vecs[]) {
     this(null, names, vecs);
@@ -89,12 +94,15 @@ public class Frame extends Lockable<Frame> {
 
   /** Creates an empty frame with given key. */
   public Frame(Key<Frame> key) {
-    this(key, null, new Vec[0]);
+    this(key, new Vec[0]);
   }
 
   /**
    * Special constructor for data with unnamed columns (e.g. svmlight) bypassing *all* checks.
    */
+  public Frame(boolean noChecks, Vec... vecs){
+    this(null,vecs,noChecks);
+  }
   public Frame(Key<Frame> key, Vec vecs[], boolean noChecks) {
     super(key);
     assert noChecks;
@@ -107,32 +115,34 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
+  public static String[] makeDefaultColNames(int n){
+    String [] res = new String[n];
+    for(int i = 0; i < n; ++i)
+      res[i] = defaultColName(i);
+    return res;
+  }
+  public Frame(Key key,Vec... vecs){
+    this(key,makeDefaultColNames(vecs.length),vecs);
+  }
+
   /** Creates a frame with given key, names and vectors. */
   public Frame(Key<Frame> key, String names[], Vec vecs[] ) {
     super(key);
-
+    if(names == null)
+      names = makeDefaultColNames(vecs.length);
+    assert names.length == vecs.length;
     // Require all Vecs already be installed in the K/V store
+    _names = names;
+    // build name map and make sure all names are unique
+    name_map(true);
+    _vecs = vecs;
+    _keys = makeVecKeys(vecs.length);
     for( Vec vec : vecs ) DKV.prefetch(vec._key);
-    for( Vec vec : vecs ) assert DKV.get(vec._key) != null : " null vec: "+vec._key;
-
-    // Always require names
-    if( names==null ) {         // Make default names, all known to be unique
-      _names = new String[vecs.length];
-      _keys = makeVecKeys(vecs.length);
-      _vecs  = vecs;
-      for( int i=0; i<vecs.length; i++ ) _names[i] = defaultColName(i);
-      for( int i=0; i<vecs.length; i++ ) _keys [i] = vecs[i]._key;
-      for( int i=0; i<vecs.length; i++ ) checkCompatible(_names[i],vecs[i]);
-      _lastNameBig = true;
-    } else {
-      // Make empty to dodge asserts, then "add()" them all which will check
-      // for compatible Vecs & names.
-      _names = new String[0];
-      _keys = makeVecKeys(0);
-      _vecs  = new Vec   [0];
-      add(names,vecs);
+    for( int i = 0; i < vecs.length; ++i) {
+      assert DKV.get(vecs[i]._key) != null : " null vec: "+vecs[i]._key;
+      _keys[i] = vecs[i]._key;
+      checkCompatible(_names[i],vecs[i]);
     }
-    assert _names.length == vecs.length;
   }
 
   public void setNames(String[] columns){
@@ -164,38 +174,37 @@ public class Frame extends Lockable<Frame> {
     return new Key[size];
   }
 
-  // Make unique names.  Efficient for the special case of appending endless
-  // versions of "C123" style names where the next name is +1 over the prior
-  // name.  All other names take the O(n^2) lookup.
-  private int pint( String name ) {
-    try { return Integer.valueOf(name.substring(1)); }
-    catch(NumberFormatException ignored) { }
-    return 0;
+  private void updateMap(String [] names, boolean uniquify) {
+    HashMap<String,Integer> map = name_map(false);
+    for (int i = 0; i < names.length; ++i) {
+      if (uniquify)
+        names[i] = uniquify(names[i]);
+      if (_nameMap.containsKey(names[i]))
+        throw new IllegalArgumentException("duplicate column name " + names[i]);
+      _nameMap.put(names[i], i);
+    }
   }
 
-  public String uniquify( String name ) {
-    String n = name;
-    int lastName = 0;
-    if( name.length() > 0 && name.charAt(0)=='C' )
-      lastName = pint(name);
-    if( _lastNameBig && _names.length > 0 ) {
-      String last = _names[_names.length-1];
-      if( !last.equals("") && last.charAt(0)=='C' && lastName == pint(last)+1 )
-        return name;
+  private HashMap<String,Integer> name_map(){return name_map(false);}
+  private HashMap<String,Integer> name_map(boolean uniquify) {
+    if(_nameMap != null) return _nameMap;
+    synchronized(this){
+      if(_nameMap == null) _nameMap = new HashMap<>();
+      updateMap(_names,uniquify);
     }
-    int cnt=0, again, max=0;
-    do {
-      again = cnt;
-      for( String s : _names ) {
-        if( lastName > 0 && s.charAt(0)=='C' )
-          max = Math.max(max,pint(s));
-        if( n.equals(s) )
-          n = name+(cnt++);
-      }
-    } while( again != cnt );
-    if( lastName == max+1 ) _lastNameBig = true;
-    return n;
+    return _nameMap;
   }
+
+  public String uniquify(String name){
+    int cnt = 0;
+    String res = name;
+    boolean dulicate = false;
+    while(cnt < 1000 && (dulicate = (find(res) != -1)))
+      res = name + ++cnt;
+    if(dulicate) throw new IllegalStateException("Failed to generate unique name after " + cnt + "attempts");
+    return res;
+  }
+
 
   /** Check that the vectors are all compatible.  All Vecs have their content
    *  sharded using same number of rows per chunk, and all names are unique.
@@ -314,12 +323,8 @@ public class Frame extends Lockable<Frame> {
   /**   Finds the column index with a matching name, or -1 if missing
    *  @return the column index with a matching name, or -1 if missing */
   public int find( String name ) {
-    if( name == null ) return -1;
-    assert _names != null;
-    for( int i=0; i<_names.length; i++ )
-      if( name.equals(_names[i]) )
-        return i;
-    return -1;
+    Integer res = name_map().get(name);
+    return res == null?-1:res;
   }
 
   /**   Finds the matching column index, or -1 if missing
@@ -353,18 +358,25 @@ public class Frame extends Lockable<Frame> {
   }
 
   public void insertVec(int i, String name, Vec vec) {
+    if(find(name) != -1) throw new IllegalArgumentException("duplicate column name " + name);
     String [] names = new String[_names.length+1];
     Vec [] vecs = new Vec[_vecs.length+1];
     Key<Vec>[] keys = makeVecKeys(_keys.length + 1);
+    Vec [] oldVecs = vecs();
     System.arraycopy(_names,0,names,0,i);
-    System.arraycopy(_vecs,0,vecs,0,i);
+    System.arraycopy(oldVecs,0,vecs,0,i);
     System.arraycopy(_keys,0,keys,0,i);
     names[i] = name;
     vecs[i] = vec;
     keys[i] = vec._key;
-    System.arraycopy(_names,i,names,i+1,_names.length-i);
-    System.arraycopy(_vecs,i,vecs,i+1,_vecs.length-i);
-    System.arraycopy(_keys,i,keys,i+1,_keys.length-i);
+    HashMap<String,Integer> map = name_map();
+    map.put(name,i);
+    for(int j = i; j < _names.length; ++j){
+      map.put(_names[j],j+1);
+      names[j+1] = _names[j];
+      vecs[j+1] = oldVecs[j];
+      keys[j+1] = keys[j];
+    }
     _names = names;
     _vecs = vecs;
     _keys = keys;
@@ -503,91 +515,55 @@ public class Frame extends Lockable<Frame> {
     return _checksum;
   }
 
+  public void add(Vec... vecs) {
+    String [] names = new String[vecs.length];
+    int off = numCols();
+    for(int i = 0; i < names.length; ++i)
+      names[i] = uniquify(defaultColName(off+i));
+    add(names,vecs);
+  }
   // Add a bunch of vecs
-  public void add( String[] names, Vec[] vecs) {
-    bulkAdd(names, vecs);
-  }
-  public void add( String[] names, Vec[] vecs, int cols ) {
-    if (null == vecs || null == names) return;
-    if (cols == names.length && cols == vecs.length) {
-      bulkAdd(names, vecs);
-    } else {
-      for (int i = 0; i < cols; i++)
-        add(names[i], vecs[i]);
-    }
-  }
-
-  /** Append multiple named Vecs to the Frame.  Names are forced unique, by appending a
-   *  unique number if needed.
-   */
-  private void bulkAdd(String[] names, Vec[] vecs) {
-    String[] tmpnames = names.clone();
+  public Vec[] add( String[] names, Vec[] vecs) {
     int N = names.length;
     assert(names.length == vecs.length):"names = " + Arrays.toString(names) + ", vecs len = " + vecs.length;
+    names = names.clone();
+    updateMap(names,true);
     for (int i=0; i<N; ++i) {
-      vecs[i] = vecs[i] != null ? makeCompatible(new Frame(vecs[i]))[0] : null;
-      checkCompatible(tmpnames[i]=uniquify(tmpnames[i]),vecs[i]);  // Throw IAE is mismatch
+      vecs[i] = vecs[i] != null ? makeCompatible(vecs[i]) : null;
+      checkCompatible(names[i],vecs[i]);  // Throw IAE is mismatch
     }
-
     int ncols = _keys.length;
-
     // make temp arrays and don't assign them back until they are fully filled - otherwise vecs() can cache null's and NPE.
     String[] tmpnam = Arrays.copyOf(_names, ncols+N);
     Key<Vec>[] tmpkeys = Arrays.copyOf(_keys, ncols+N);
     Vec[] tmpvecs = Arrays.copyOf(_vecs, ncols+N);
     for (int i=0; i<N; ++i) {
-      tmpnam[ncols+i] = tmpnames[i];
+      tmpnam[ncols+i] = names[i];
       tmpkeys[ncols+i] = vecs[i]._key;
       tmpvecs[ncols+i] = vecs[i];
     }
     _names = tmpnam;
     _keys = tmpkeys;
     _vecs = tmpvecs;
+    return vecs;
   }
 
   /** Append a named Vec to the Frame.  Names are forced unique, by appending a
    *  unique number if needed.
    *  @return the added Vec, for flow-coding */
   public Vec add( String name, Vec vec ) {
-    vec = makeCompatible(new Frame(vec))[0];
-    checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
-    int ncols = _keys.length;
-    String[] names = Arrays.copyOf(_names,ncols+1);  names[ncols] = name;
-    Key<Vec>[] keys = Arrays.copyOf(_keys ,ncols+1);  keys [ncols] = vec._key;
-    Vec[] vecs  = Arrays.copyOf(_vecs ,ncols+1);  vecs [ncols] = vec;
-    _names = names;
-    _keys = keys;
-    _vecs = vecs;
-    return vec;
+    return add(new String[]{name}, new Vec[]{vec})[0];
   }
 
   /** Append a Frame onto this Frame.  Names are forced unique, by appending
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs().clone(),fr.numCols()); return this; }
+  public Frame add( Frame fr ) { add(fr._names.clone(),fr.vecs().clone()); return this; }
 
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
-    if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
-    if( _vecs.length != 0 ) {
-      if( !anyVec().group().equals(vec.group()) && !Arrays.equals(anyVec().espc(),vec.espc()) )
-        throw new IllegalArgumentException("Vector groups differs - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
-      if( numRows() != vec.length() )
-        throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
-    }
-    final int len = _names != null ? _names.length : 0;
-    String[] _names2 = new String[len + 1];
-    Vec[] _vecs2 = new Vec[len + 1];
-    Key<Vec>[] _keys2 = makeVecKeys(len + 1);
-    _names2[0] = name;
-    _vecs2 [0] = vec;
-    _keys2 [0] = vec._key;
-    System.arraycopy(_names, 0, _names2, 1, len);
-    System.arraycopy(_vecs,  0, _vecs2,  1, len);
-    System.arraycopy(_keys,  0, _keys2,  1, len);
-    _names = _names2;
-    _vecs  = _vecs2;
-    _keys  = _keys2;
+    add(name,vec);
+    moveFirst(numCols()-1);
     return this;
   }
 
@@ -600,43 +576,36 @@ public class Frame extends Lockable<Frame> {
     Vec v   = vecs [lo]; vecs  [lo] = vecs  [hi]; vecs  [hi] = v;
     Key<Vec> k = _keys[lo]; _keys[lo] = _keys[hi]; _keys[hi] = k;
     String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
+    if(_nameMap != null) {
+      _nameMap.put(_names[lo], lo);
+      _nameMap.put(_names[hi], hi);
+    }
   }
 
   /** move the provided columns to be first, in-place. For Merge currently since method='hash' was coded like that */
-  public void moveFirst( int cols[] ) {
-    boolean colsMoved[] = new boolean[_keys.length];
-    Vec tmpvecs[] = vecs().clone();
-    Key<Vec> tmpkeys[] = _keys.clone();
-    String tmpnames[] = _names.clone();
-
-    // Move the desired ones first
-    for (int i=0; i<cols.length; i++) {
-      int w = cols[i];
-      if (colsMoved[w]) throw new IllegalArgumentException("Duplicates in column numbers passed in");
-      if (w<0 || w>=_keys.length) throw new IllegalArgumentException("column number out of 0-based range");
-      colsMoved[w] = true;
-      tmpvecs[i] = _vecs[w];
-      tmpkeys[i] = _keys[w];
-      tmpnames[i] = _names[w];
-    }
-
-    // Put the other ones afterwards
-    int w = cols.length;
-    for (int i=0; i<_keys.length; i++) {
-      if (!colsMoved[i]) {
-        tmpvecs[w] = _vecs[i];
-        tmpkeys[w] = _keys[i];
-        tmpnames[w] = _names[i];
-        w++;
+  public void moveFirst( int... cols ) {
+    String [] names = _names.clone();
+    Key [] keys = _keys.clone();
+    Vec [] vecs = _vecs == null?null:_vecs.clone();
+    int j = 0, k = cols.length;
+    for(int i = 0; i < cols.length; ++i) {
+      if(i == cols[j]){
+        names[j] = _names[i];
+        keys[j] = _keys[i];
+        if(_vecs != null)  vecs[j] = _vecs[i];
+        if(_nameMap != null) _nameMap.put(names[j],j);
+        ++j;
+      } else  {
+        names[k] = _names[i];
+        keys[k] = _keys[i];
+        if(_vecs != null)  vecs[k] = _vecs[i];
+        if(_nameMap != null) _nameMap.put(names[k],k);
+        ++k;
       }
     }
-
-    // Copy back over the original in-place
-    for (int i=0; i<_keys.length; i++) {
-      _vecs[i] = tmpvecs[i];
-      _keys[i] = tmpkeys[i];
-      _names[i] = tmpnames[i];
-    }
+    _names = names;
+    _keys = keys;
+    _vecs = vecs;
   }
 
   /** Returns a subframe of this frame containing only vectors with desired names.
@@ -795,12 +764,14 @@ public class Frame extends Lockable<Frame> {
     int l = 0;
     for(int i = 0; i < _vecs.length; ++i) {
       if(j < idxs.length && i == idxs[j]) {
+        if(_nameMap != null) _nameMap.remove(_names[i]);
         ++j;
         res[k++] = _vecs[i];
       } else {
         rem  [l] = _vecs [i];
         names[l] = _names[i];
         keys [l] = _keys [i];
+        _nameMap.put(_names[i],l);
         ++l;
       }
     }
@@ -823,6 +794,7 @@ public class Frame extends Lockable<Frame> {
     System.arraycopy(names,idx+1,names,idx,len-idx-1);
     System.arraycopy(vecs ,idx+1,vecs ,idx,len-idx-1);
     System.arraycopy(keys ,idx+1,keys ,idx,len-idx-1);
+    if(_nameMap != null) _nameMap.remove(_names[idx]);
     _names = Arrays.copyOf(names,len-1);
     _vecs  = Arrays.copyOf(vecs ,len-1);
     _keys  = Arrays.copyOf(keys ,len-1);
@@ -854,6 +826,9 @@ public class Frame extends Lockable<Frame> {
     }
 
     Vec[] vecX = Arrays.copyOfRange(_vecs,startIdx,endIdx);
+    if(_nameMap != null)
+      for(int i = startIdx; i != endIdx; ++i)
+        _nameMap.remove(_names[i]);
     _names = names;
     _vecs = vecs;
     _keys = keys;
@@ -870,10 +845,12 @@ public class Frame extends Lockable<Frame> {
   public void restructure( String[] names, Vec[] vecs, int cols) {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
-    _names = new String[0];
-    _keys  = makeVecKeys(0);
-    _vecs  = new Vec   [0];
-    add(names,vecs,cols);
+    _names = Arrays.copyOf(names,cols);
+    _vecs  = Arrays.copyOf(vecs,cols);
+    _keys = makeVecKeys(cols);
+    _nameMap = null;
+    for(int i = 0 ; i < cols; ++i)
+      _keys[i] = vecs[i]._key;
   }
 
   // --------------------------------------------
@@ -885,6 +862,8 @@ public class Frame extends Lockable<Frame> {
     if( _keys != null ) delete_and_lock();
     else write_lock();
     _names = names;
+    _nameMap = null;
+    name_map(true);
     _keys = new Vec.VectorGroup().addVecs(names.length);
     // No Vectors tho!!! These will be added *after* the import
   }
@@ -1387,6 +1366,7 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
+  public Vec makeCompatible( Vec v) {return makeCompatible(new Frame(true,v),false)[0];}
   public Vec[] makeCompatible( Frame f) {return makeCompatible(f,false);}
   /** Return array of Vectors if 'f' is compatible with 'this', else return a new
    *  array of Vectors compatible with 'this' and a copy of 'f's data otherwise.  Note
