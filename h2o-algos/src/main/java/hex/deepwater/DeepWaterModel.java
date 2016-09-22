@@ -122,8 +122,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       _output._names = dinfo._adaptedFrame.names();
       _output._domains = dinfo._adaptedFrame.domains();
       model_info._dataInfoKey = dinfo._key;
-      if (dinfo.numCats()!=0)
-        Log.info("Expanding categorical features (enum to " + dinfo.numCats() + " dummy (one-hot encoded) columns (out of a total of " + dinfo.fullN() + " cols).");
+      Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
       DKV.put(dinfo);
     }
 
