@@ -811,5 +811,72 @@ public class DeepWaterTest extends TestUtil {
       if (splits!=null) for(Frame s: splits) s.delete();
     }
   }
+
+  @Test
+  public void textsToOnehot() {
+    ArrayList<String> texts = new ArrayList<>();
+    ArrayList<String> labels = new ArrayList<>();
+
+    texts.add("simplistic , silly and tedious .");
+    texts.add("it's so laddish and juvenile , only teenage boys could possibly find it funny .");
+    texts.add("exploitative and largely devoid of the depth or sophistication that would make watching such a graphic treatment of the crimes bearable .");
+    labels.add("neg");
+    labels.add("neg");
+    labels.add("neg");
+
+    texts.add("the rock is destined to be the 21st century's new \" conan \" and that he's going to make a splash even greater than arnold schwarzenegger , jean-claud van damme or steven segal .");
+    texts.add("the gorgeously elaborate continuation of \" the lord of the rings \" trilogy is so huge that a column of words cannot adequately describe co-writer/director peter jackson's expanded vision of j . r . r . tolkien's middle-earth .");
+    texts.add("effective but too-tepid biopic");
+    labels.add("pos");
+    labels.add("pos");
+    labels.add("pos");
+
+    ArrayList<Integer[]> coded = texts2array(texts);
+    System.out.println(coded);
+  }
+
+  public String[] tokenize(String text) {
+    return text.toLowerCase().split(" ");
+  }
+
+  public ArrayList<Integer[]> tokensToArray(String[] tokens, int padToLength, Map<String, Integer> dict) {
+    int nTokens = tokens.length;
+    int pad = padToLength - nTokens;
+    ArrayList<Integer[]> data = new ArrayList<>();
+    for (String t : tokens) {
+      Integer[] a = new Integer[padToLength];
+      a[dict.get(t)] = 1;
+      data.add(a);
+    }
+    return data;
+  }
+
+  public ArrayList<Integer[]> texts2array(ArrayList<String> texts) {
+
+    int maxlen = 0;
+    int index = 0;
+    Map<String, Integer> dict = new HashMap<>();
+    for (String text : texts) {
+      String[] tokens = tokenize(text);
+      for (String token : tokens) {
+        if (!dict.containsKey(token)) {
+          dict.put(token, index);
+          index += 1;
+        }
+      }
+      int len = tokens.length;
+      if (len > maxlen) maxlen = len;
+    }
+    Assert.assertEquals(56, maxlen);
+    Assert.assertEquals(19, index);
+    Assert.assertEquals(1, dict.size());
+
+    ArrayList<Integer[]> array = new ArrayList<>();
+    for (String text: texts) {
+      ArrayList<Integer[]> data = tokensToArray(tokenize(text), maxlen, dict);
+      array.addAll(data);
+    }
+    return array;
+  }
 }
 
