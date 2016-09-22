@@ -283,14 +283,14 @@ public class TestUtil extends Iced {
   protected Frame parse_test_folder( String fname ) {
     File folder = find_test_file(fname);
     File[] files = checkFolder(fname, folder);
-      Arrays.sort(files);
-      ArrayList<Key> keys = new ArrayList<>();
-      for( File f : files )
-        if( f.isFile() )
-          keys.add(NFSFileVec.make(f)._key);
-      Key[] res = new Key[keys.size()];
-      keys.toArray(res);
-      return ParseDataset.parse(Key.make(), res);
+    Arrays.sort(files);
+    ArrayList<Key> keys = new ArrayList<>();
+    for( File f : files )
+      if( f.isFile() )
+        keys.add(NFSFileVec.make(f)._key);
+    Key[] res = new Key[keys.size()];
+    keys.toArray(res);
+    return ParseDataset.parse(Key.make(), res);
   }
 
 

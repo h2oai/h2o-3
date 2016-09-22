@@ -20,8 +20,8 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
   public Grep( GrepModel.GrepParameters parms ) { super(parms); init(false); }
   @Override protected GrepDriver trainModelImpl() { return new GrepDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Unknown}; }
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; };
-
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+  Pattern _pattern = null;
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made
@@ -34,7 +34,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
     if( _parms._regex == null ) {
       error("_regex", "regex is missing");
     } else {
-      try { Pattern.compile(_parms._regex); }
+      try { _pattern = Pattern.compile(_parms._regex); }
       catch( PatternSyntaxException pse ) { error("regex", pse.getMessage()); }
     }
     if( _parms._train == null ) return;
@@ -59,14 +59,13 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
         // ---
         // Run the main Grep Loop
-        GrepGrep gg = new GrepGrep(_parms._regex).doAll(train().vecs()[0]);
+        GrepGrep gg = new GrepGrep(_pattern).doAll(train().vecs()[0]);
 
         // Fill in the model
         model._output._matches = Arrays.copyOf(gg._matches,gg._cnt);
         model._output._offsets = Arrays.copyOf(gg._offsets,gg._cnt);
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Grep: ").append("\n");
+        StringBuilder sb = new StringBuilder("Grep: \n");
         sb.append(Arrays.toString(model._output._matches)).append("\n");
         sb.append(Arrays.toString(model._output._offsets)).append("\n");
         Log.info(sb);
@@ -93,21 +92,20 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
 
   private class GrepGrep extends MRTask<GrepGrep> {
-    private final String _regex;
+    private final Pattern _pattern;
     // Outputs, hopefully not too big for once machine!
     String[] _matches;
     long  [] _offsets;
     int _cnt;
 
-    GrepGrep( String regex ) { _regex = regex; }
+    GrepGrep( Pattern pattern ) { _pattern = pattern; }
     @Override public void map( Chunk chk ) {
       _matches = new String[1]; // Result holders; will lazy expand
       _offsets = new long  [1];
       ByteSeq bs = new ByteSeq(chk,chk.nextChunk());
-      Pattern p = Pattern.compile(_regex);
       // We already checked that this is an instance of a ByteVec, which means
       // all the Chunks contain raw text as byte arrays.
-      Matcher m = p.matcher(bs);
+      Matcher m = _pattern.matcher(bs);
       while( m.find() && m.start() < bs._bs0.length )
         add(bs.str(m.start(),m.end()),chk.start()+m.start());
       _job.update(chk._len);         // Whole chunk of work, done all at once
