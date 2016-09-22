@@ -7,8 +7,8 @@ from tests import pyunit_utils
 #----------------------------------------------------------------------
 # PUBDEV-3359: verify that we can parse thousands of files correctly or
 # identify if not.  Split the airlines_all datasets into 2000 files
-# each with 50000 lines of data.  Total data frame should contain 100000000
-# rows.  Check and make sure our parser can handle this.
+# each with 50000 lines of data.  Total data frame should contain 99999999
+# rows. One row is header. Check and make sure our parser can handle this.
 #
 #----------------------------------------------------------------------
 
@@ -28,8 +28,8 @@ def hdfs_pubdev_3359_parser():
         h2oframe_csv = h2o.import_file(url_csv)
 
         # compare the two frames
-        if not(h2oframe_csv.nrow == 100000000):
-            print("Data should contain 100000000 rows but we parsed: {0} rows!".format(h2oframe_csv.nrow))
+        if not(h2oframe_csv.nrow == 99998000):
+            print("Data should contain 99998000 rows but we parsed: {0} rows!".format(h2oframe_csv.nrow))
         else:
             print("Parsing 2000 files correctly!  Great!")
     else:

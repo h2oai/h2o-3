@@ -769,13 +769,16 @@ match.H2OFrame <- h2o.match
 
 #' Remove Rows With NAs
 #'
-#' @rdname na.omit
+#' @rdname h2o.na_omit
 #' @param object H2OFrame object
 #' @param ... Ignored
 #' @export
-na.omit.H2OFrame <- function(object, ...){
+h2o.na_omit <- function(object, ...){
   .newExpr("na.omit", object)
 }
+
+#' @export
+na.omit.H2OFrame <- h2o.na_omit
 
 #' Conduct a lag 1 transform on a numeric H2OFrame column
 #'
@@ -966,12 +969,18 @@ h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) 
   .newExpr("mktime", year,month,day,hour,minute,second,msec)
 }
 
-
+#' Functions to convert between character representations and objects of class "Date" representing calendar dates.
+#'
+#' @param x H2OFrame column of strings or factors to be converted
+#' @param format A character string indicating date pattern
 #' @export
-as.Date.H2OFrame <- function(x, format, ...) {
+h2o.as_date <- function(x, format, ...) {
   if(!base::is.character(format)) stop("format must be a string")
   .newExpr("as.Date", chk.H2OFrame(x), .quote(format), ...)
 }
+
+#' @export
+as.Date.H2OFrame <- h2o.as_date
 
 #' Set the Time Zone on the H2O Cloud
 #'
@@ -1248,6 +1257,7 @@ log <- function(x, ...) {
   }
 }
 
+
 #' @rdname H2OFrame
 #' @export
 log10 <- function(x) {
@@ -1268,7 +1278,6 @@ log1p <- function(x) {
   if( !is.H2OFrame(x) ) .Primitive("log1p")(x)
   else .newExpr("log1p",x)
 }
-
 
 #' @rdname H2OFrame
 #' @export
@@ -2196,18 +2205,205 @@ h2o.scale <- function(x, center = TRUE, scale = TRUE) .newExpr("scale", chk.H2OF
 scale.H2OFrame <- h2o.scale
 
 #-----------------------------------------------------------------------------------------------------------------------
-# Below takes H2O primitives and appends h2o.* to ensure all H2O primitives exist with h2o.*
-# This will deal with some of the primitives in H2O:
-# .h2o.primitives = c(
-#    "*", "+", "/", "-", "^", "%%", "%/%", #No h2o.* needed...#
-#    "==", "!=", "<", ">", "<=", ">=", #No h2o.* needed...#
-#    "cos", "sin", "acos", "cosh", "tan", "tanh", "exp", "log", "sqrt",
-#    "abs", "ceiling", "floor",
-#    "mean", "sd", "sum", "prod", "all", "any", "min", "max",
-#    "is.factor", #No h2o.* needed to avoid confusion.#
-#    "nrow", "ncol", "length"
-#  )
+# Below takes H2O primitives that do not start with "h2o.*" and appends "h2o.*" to ensure all H2O primitives exist
+# with "h2o.*" in addition to original implementation.
+#
+#    log10, log2, log1p, trunc, dim, dimname, names, colnames, is.factor, is.numeric, is.character,
+#    print, str, as.numeric, as.character, as.factor, cos, sin, acos, cosh, tan, tanh, exp, log,
+#    sqrt, abs, ceiling, floor, mean, sd, sum, prod, all, any, min, max, nrow, ncol, and range
 #-----------------------------------------------------------------------------------------------------------------------
+
+#'
+#' Compute the log10 of x
+#'
+#' @name h2o.log10
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{log10}} for the base R implementation.
+#' @export
+h2o.log10 <- function(x) {
+  if(is.H2OFrame(x)) log10(x)
+  else log10(x)
+}
+
+#'
+#' Compute the log2 of x
+#'
+#' @name h2o.log2
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{log2}} for the base R implementation.
+#' @export
+h2o.log2 <- function(x) {
+  if(is.H2OFrame(x)) log2(x)
+  else log2(x)
+}
+
+#'
+#' Compute the log1p of x
+#'
+#' @name h2o.log1p
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{log1p}} for the base R implementation.
+#' @export
+h2o.log1p <- function(x) {
+  if(is.H2OFrame(x)) log1p(x)
+  else log1p(x)
+}
+
+#'
+#' trunc takes a single numeric argument x and returns a numeric vector containing the integers
+#' formed by truncating the values in x toward 0.
+#'
+#' @name h2o.trunc
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{trunc}} for the base R implementation.
+#' @export
+h2o.trunc <- function(x) {
+  if(is.H2OFrame(x)) trunc(x)
+  else trunc(x)
+}
+
+#'
+#' Returns the number of rows and columns for an H2OFrame object.
+#'
+#' @name h2o.dim
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{dim}} for the base R implementation.
+#' @export
+h2o.dim <- function(x) {
+  if(is.H2OFrame(x)) dim(x)
+  else dim(x)
+}
+
+#'
+#' Column names of an H2OFrame
+#'
+#' @name h2o.dimnames
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{dimnames}} for the base R implementation.
+#' @export
+h2o.dimnames <- function(x) {
+  if(is.H2OFrame(x)) dimnames(x)
+  else dimnames(x)
+}
+
+#'
+#' Column names of an H2OFrame
+#'
+#' @name h2o.names
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{names}} for the base R implementation.
+#' @export
+h2o.names <- function(x) {
+  if(is.H2OFrame(x)) names(x)
+  else names(x)
+}
+
+#'
+#' Return column names of an H2OFrame
+#'
+#' @name h2o.colnames
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{colnames}} for the base R implementation.
+#' @export
+h2o.colnames <- function(x) {
+  if(is.H2OFrame(x)) colnames(x)
+  else colnames(x)
+}
+
+#'
+#' Check if factor
+#'
+#' @name h2o.isfactor
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{is.factor}} for the base R implementation.
+#' @export
+h2o.isfactor <- function(x) {
+  if(is.H2OFrame(x)) is.factor(x)
+  else is.factor(x)
+}
+
+#'
+#' Check if numeric
+#'
+#' @name h2o.isnumeric
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{is.numeric}} for the base R implementation.
+#' @export
+h2o.isnumeric <- function(x) {
+  if(is.H2OFrame(x)) is.numeric(x)
+  else is.numeric(x)
+}
+
+#'
+#' Check if character
+#'
+#' @name h2o.ischaracter
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{is.character}} for the base R implementation.
+#' @export
+h2o.ischaracter <- function(x) {
+  if(is.H2OFrame(x)) is.character(x)
+  else is.character(x)
+}
+
+#'
+#' Convert H2O Data to Factors
+#'
+#' @name h2o.asfactor
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{as.factor}} for the base R implementation.
+#' @export
+h2o.asfactor <- function(x) {
+  if(is.H2OFrame(x)) as.factor(x)
+  else as.factor(x)
+}
+
+#'
+#' Convert H2O Data to Numerics
+#'
+#' @name h2o.asnumeric
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{as.numeric}} for the base R implementation.
+#' @export
+h2o.asnumeric <- function(x) {
+  if(is.H2OFrame(x)) as.numeric(x)
+  else as.numeric(x)
+}
+
+#'
+#' Convert H2O Data to Characters
+#'
+#' @name h2o.ascharacter
+#' @param x An H2OFrame object.
+#' @seealso \code{\link[base]{as.character}} for the base R implementation.
+#' @export
+h2o.ascharacter <- function(x) {
+  if(is.H2OFrame(x)) as.character(x)
+  else as.character(x)
+}
+
+#' Print An H2OFrame
+#'
+#' @param x An H2OFrame object
+#' @param n An (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
+#'          Anything bigger than 20 rows will require asking the server (first 20 rows are cached on the client).
+#' @param ... Further arguments to be passed from or to other methods.
+#' @export
+h2o.print <- function(x,n=6L) {
+  if(is.H2OFrame(x)) print(x,n)
+  else print(x,n)
+}
+
+#' Display the structure of an H2OFrame object
+#'
+#' @param object An H2OFrame.
+#' @param ... Further arguments to be passed from or to other methods.
+#' @param cols Print the per-column str for the H2OFrame
+#' @export
+h2o.str <- function(x,n=6L) {
+  if(is.H2OFrame(x)) str(x,n)
+  else str(x,n)
+}
 
 #'
 #' Compute the cosine of x
@@ -2633,7 +2829,6 @@ as.factor <- function(x) {
   if( is.H2OFrame(x) ) .newExpr("as.factor",x)
   else base::as.factor(x)
 }
-
 
 #' Convert an H2OFrame to a String
 #'
