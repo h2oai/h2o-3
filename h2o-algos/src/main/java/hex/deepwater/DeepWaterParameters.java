@@ -51,7 +51,8 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public enum Network {
     auto, user, lenet, alexnet, vgg, googlenet, inception_bn, resnet,
-    relu_10, relu_500_relu_500, relu_300_relu_300_relu_300 // fully-connected
+    tanh_100, relu_10, relu_500_relu_500, relu_300_relu_300_relu_300, // fully-connected
+    relu_500_relu_500_dropout,
   }
 
   public enum Backend {
