@@ -60,7 +60,7 @@ public class DeepWaterFrameIterator extends DeepWaterIterator {
     public void compute2() {
       _destLabel[_index] = _label;
       final int start=_index*_dinfo.fullN();
-      Key rowKey = Key.make("row_" + Integer.toString(_globalIndex) + "_" + DeepWaterModel.CACHE_MARKER);
+      Key rowKey = Key.make(_dinfo._key + "_row_" + Integer.toString(_globalIndex) + "_" + DeepWaterModel.CACHE_MARKER);
       boolean status = false;
       if (_cache) {
         IcedRow icedRow = DKV.getGet(rowKey);
@@ -71,16 +71,15 @@ public class DeepWaterFrameIterator extends DeepWaterIterator {
           status = true;
         }
       }
-      if (!status) {
+      if (!status) { //only do this the first time
         DataInfo.Row row = _dinfo.newDenseRow();
         Chunk[] chks = new Chunk[_dinfo._adaptedFrame.numCols()];
-        int chkIdx = _dinfo._adaptedFrame.anyVec().chunkForRow(_globalIndex).cidx();
-        for (int i=0;i<chks.length;++i) {
-          chks[i] = _dinfo._adaptedFrame.vec(i).chunkForChunkIdx(chkIdx);
-        }
+        for (int i=0;i<chks.length;++i)
+          chks[i] = _dinfo._adaptedFrame.vec(i).chunkForRow(_globalIndex);
         _dinfo.extractDenseRow(chks, _globalIndex-(int)chks[0].start(), row);
         for (int i = 0; i< _dinfo.fullN(); ++i)
           _destData[start+i] = (float)row.get(i);
+//        System.err.println(Arrays.toString(_destData));
         if (_cache)
           DKV.put(rowKey, new IcedRow(Arrays.copyOfRange(_destData, start, start + _dinfo.fullN())));
       }
