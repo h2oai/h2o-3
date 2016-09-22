@@ -49,13 +49,17 @@ public class AutoMLBuildSpec extends Iced {
     public boolean try_mutations = false;
   }
 
+  /**
+   * The specification of ensemble-building to be used for the AutoML process, if any.  If this object is null, do not build ensembles.
+   */
+  static final public class AutoMLEnsembleParameters extends Iced {
+  }
+
 
   public AutoMLBuildControl build_control;
   public AutoMLInput input_spec;
   public AutoMLFeatureEngineering feature_engineering;
-
-  // ensembling
-  public boolean ensemble = false;
+  public AutoMLEnsembleParameters ensemble_parameters;
 
   // model build
   public AutoML.algo[] exclude;

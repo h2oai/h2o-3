@@ -83,7 +83,12 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
 
     @API(help="Try frame transformations", direction=API.Direction.INPUT)
     public boolean try_mutations;
+  } // class AutoMLFeatureEngineeringV3
 
+  static final public class AutoMLEnsembleParametersV3 extends Schema<AutoMLBuildSpec.AutoMLEnsembleParameters, AutoMLEnsembleParametersV3> {
+    public AutoMLEnsembleParametersV3() {
+      super();
+    }
   } // class AutoMLFeatureEngineeringV3
 
 
@@ -99,11 +104,11 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
   @API(help="Specification of the feature engineering for the AutoML build process", direction=API.Direction.INPUT)
   public AutoMLFeatureEngineeringV3 feature_engineering;
 
-  @API(help="Allow AutoML to build ensembles", direction=API.Direction.INPUT)
-  public boolean ensemble;
-
   @API(help="Prevent AutoML from trying these models",values = {"DL","GLRM","KMEANS","RF","GBM","GLM"}, direction=API.Direction.INPUT)
   public AutoML.algo[] exclude;
+
+  @API(help="If present, AutoML should build ensembles; more control over the process is optional", direction=API.Direction.INPUT)
+  public AutoMLEnsembleParametersV3 ensemble_parameters;
 
 
   ////////////////
