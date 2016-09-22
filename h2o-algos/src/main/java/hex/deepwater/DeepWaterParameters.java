@@ -30,7 +30,7 @@ public class DeepWaterParameters extends Model.Parameters {
     super();
     _stopping_rounds = 5;
     _ignore_const_cols = false; //allow String columns with File URIs
-    _categorical_encoding = CategoricalEncodingScheme.OneHotInternal;
+    _categorical_encoding = CategoricalEncodingScheme.OneHotExplicit;
   }
   @Override
   public long progressUnits() {
@@ -540,8 +540,8 @@ public class DeepWaterParameters extends Model.Parameters {
       }
       if (fromParms._categorical_encoding==CategoricalEncodingScheme.AUTO) {
         if (!fromParms._quiet_mode)
-          Log.info("_categorical_encoding: Automatically enabling OneHotInternal categorical encoding.");
-        toParms._categorical_encoding = CategoricalEncodingScheme.OneHotInternal;
+          Log.info("_categorical_encoding: Automatically enabling OneHotExplicit categorical encoding.");
+        toParms._categorical_encoding = CategoricalEncodingScheme.OneHotExplicit;
       }
       if (fromParms._nfolds != 0) {
         if (fromParms._overwrite_with_best_model) {
