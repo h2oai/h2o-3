@@ -4546,8 +4546,8 @@ form.enterprise-form input{
     text-indent: -9999px;
     position: fixed;
     z-index: 999;
-    right: 20px;
-    bottom: 60px;
+    right: 10px;
+    bottom: 20px;
     background: #D1D1D1 url("../images/top.png") no-repeat center 50%;
     -webkit-border-radius: 30px;
     -moz-border-radius: 30px;
@@ -4559,3 +4559,70 @@ form.enterprise-form input{
     background-color: #a6a6a6;
     cursor: pointer;
 }
+
+@media screen and (max-width: 409px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 460px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 549px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 579px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
