@@ -719,7 +719,9 @@ public class DeepWaterTest extends TestUtil {
     try {
       DeepWaterParameters p = new DeepWaterParameters();
       p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
-      p._network = DeepWaterParameters.Network.relu_300_relu_300_relu_300;
+      //p._network = DeepWaterParameters.Network.relu_300_relu_300_relu_300;
+      p._network = DeepWaterParameters.Network.tanh_100;
+      p._network = DeepWaterParameters.Network.relu_500_relu_500_dropout;
       p._response_column = "CAPSULE";
       p._ignored_columns = new String[]{"ID"};
       for (String col : new String[]{"RACE", "DPROS", "DCAPS", "CAPSULE", "GLEASON"}) {
@@ -763,7 +765,9 @@ public class DeepWaterTest extends TestUtil {
 
         p._train = tr._key;
         p._valid = va._key;
-        p._network = DeepWaterParameters.Network.relu_300_relu_300_relu_300;
+        p._rate = 1e-4;
+        p._mini_batch_size = 128;
+        p._network = DeepWaterParameters.Network.relu_500_relu_500_dropout;
         DeepWater j = new DeepWater(p);
         m = j.trainModel().get();
         Assert.assertTrue(((ModelMetricsMultinomial)(m._output._training_metrics)).mean_per_class_error() < 0.05);
