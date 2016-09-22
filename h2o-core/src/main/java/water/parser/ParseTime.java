@@ -59,6 +59,7 @@ public abstract class ParseTime {
     return Long.MIN_VALUE;
   }
   // Tries to parse "yyyy-MM[-dd] [HH:mm:ss.SSS aa]"
+  // also allows for "yyyyMM[dd] [HH:mm:ss.SSS aa]"
   private static long attemptYearFirstTimeParse(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
@@ -73,19 +74,29 @@ public abstract class ParseTime {
     yyyy = digit(yyyy,buf[i++]);
     yyyy = digit(yyyy,buf[i++]);
     yyyy = digit(yyyy,buf[i++]);
-    if( buf[i++] != '-' ) return Long.MIN_VALUE;
-    MM = digit(MM,buf[i++]);
-    MM = i<end && buf[i]!='-' ? digit(MM,buf[i++]) : MM;
-    if( MM < 1 || MM > 12 ) return Long.MIN_VALUE;
-    if( (end-i)>=2 ) {
-      if( buf[i++] != '-' ) return Long.MIN_VALUE;
-      dd = digit(dd, buf[i++]);
-      dd = i < end && buf[i] >= '0' && buf[i] <= '9' ? digit(dd, buf[i++]) : dd;
-      if( dd < 1 || dd > 31 ) return Long.MIN_VALUE;
-    } else dd=1; // no day
-    while( i < end && buf[i] == ' ' ) i++;
-    if( i==end )
-      return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
+    if( buf[i] != '-' ) {  // YYYMM[dd]
+      MM = digit(MM, buf[i++]);
+      MM = i < end ? digit(MM, buf[i++]) : MM;
+    } else {
+      if (buf[i++] != '-') return Long.MIN_VALUE;
+      MM = digit(MM, buf[i++]);
+      MM = i < end && buf[i] != '-' ? digit(MM, buf[i++]) : MM;
+    }
+    if (MM < 1 || MM > 12) return Long.MIN_VALUE;  // invalid 2digit month
+    if ((end - i) >= 2) {
+      if( buf[i]!= '-' ) {
+        dd = digit(dd, buf[i++]);
+        dd = i < end && (buf[i] >= '0' && buf[i] <= '9') ? digit(dd, buf[i++]) : dd;
+      }else {
+        if (buf[i++] != '-') return Long.MIN_VALUE;
+        dd = digit(dd, buf[i++]);
+        dd = i < end && buf[i] >= '0' && buf[i] <= '9' ? digit(dd, buf[i++]) : dd;
+      }
+      if (dd < 1 || dd > 31) return Long.MIN_VALUE;  //invalid day
+    } else dd = 1; // no day
+    while (i < end && (buf[i] == ' ' || buf[i] == '-')) i++;
+    if (i == end)
+      return new DateTime(yyyy, MM, dd, 0, 0, 0, getTimezone()).getMillis();
 
     //Parse time
     return parseTime(buf, i, end, yyyy, MM, dd, false);

@@ -293,4 +293,27 @@ public class ParseTimeTest extends TestUtil {
       Assert.assertEquals(exp[i],vec.at8(i));
     fr.delete();
   }
+
+  @Test public void testISO8601_nodashes() {
+    // ISO 8601 allows YYYY-MM-DD as well as YYYYMMDD
+    String data = "Date\n"+
+      "20140123-12:01:01\n"+
+      "20140124-05:12:12\n"+
+      "20140123-01:22:12\n"+
+      "20140124-12:53:22\n";
+    Key k1 = ParserTest.makeByteVec(data);
+    Key r1 = Key.make("r1");
+    Frame fr = ParseDataset.parse(r1, k1);
+    Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
+    long[] exp = new long[] {  // Date, note: these ms counts all presume PST
+      1390507261000L,
+      1390569132000L,
+      1390468932000L,
+      1390596802000L,
+    };
+    Vec vec = fr.vec("Date");
+    for (int i=0; i < exp.length; i++ )
+      Assert.assertEquals(exp[i],vec.at8(i));
+    fr.delete();
+  }
 }
