@@ -12,6 +12,7 @@ import water.fvec.Frame;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.IcedHashMapGeneric;
+import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,7 +120,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
   // used to launch the AutoML asynchronously
   @Override public void run() {
-    totalTime = System.currentTimeMillis() + buildSpec.max_time;
+    totalTime = System.currentTimeMillis() + buildSpec.build_control.max_time;
     try {
       learn();
     } catch(AutoMLDoneException e) {
@@ -158,7 +159,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     // step 2: build a fast RF
     ModelBuilder initModel = selectInitial(frameMetadata);
     Model m = build(initModel); // need to track this...
-    System.out.println("AUTOML DONE");
+    Log.info("AUTOML DONE");
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
   }
