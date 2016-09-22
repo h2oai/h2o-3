@@ -76,7 +76,7 @@ public abstract class DKV {
   /** Make the mapping <em>key -&gt; val</em>.  */
   static public Value put( Key key, Value val, Futures fs, boolean dontCache ) {
     assert key != null;
-    assert val==null || val._key == key:"non-matching keys " + key.toString() + " != " + val._key.toString();
+    assert val==null || val._key == key:"non-matching keys " + key + " != " + val._key;
     while( true ) {
       Value old = Value.STORE_get(key); // Raw-get: do not lazy-manifest if overwriting
       Value res = DputIfMatch(key,val,old,fs,dontCache);
