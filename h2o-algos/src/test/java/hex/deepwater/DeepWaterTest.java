@@ -721,7 +721,7 @@ public class DeepWaterTest extends TestUtil {
       p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
       //p._network = DeepWaterParameters.Network.relu_300_relu_300_relu_300;
       p._network = DeepWaterParameters.Network.tanh_100;
-      p._network = DeepWaterParameters.Network.relu_500_relu_500_dropout;
+//      p._network = DeepWaterParameters.Network.relu_500_relu_500_dropout;
       p._response_column = "CAPSULE";
       p._ignored_columns = new String[]{"ID"};
       for (String col : new String[]{"RACE", "DPROS", "DCAPS", "CAPSULE", "GLEASON"}) {
