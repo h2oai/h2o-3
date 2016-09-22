@@ -1,5 +1,6 @@
-package hex.deepwater.backends.cudnn;
+package hex.deepwater.dataflow;
 
+import hex.deepwater.dataflow.Operation;
 import org.tensorflow.framework.DataType;
 
 /**

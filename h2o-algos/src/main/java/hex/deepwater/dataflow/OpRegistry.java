@@ -1,4 +1,4 @@
-package hex.deepwater.backends.cudnn;
+package hex.deepwater.dataflow;
 
 import java.util.HashMap;
 import java.util.Map;

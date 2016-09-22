@@ -13,10 +13,10 @@ public class Callback extends tensorflow.NodeLabelFunction {
     public Callback() { allocate(); }
     private native void allocate();
 
-    @Override
-    public BytePointer call(org.bytedeco.javacpp.tensorflow.Node node) {
-        System.out.println(node.name());
-        return null;
-    }
+//    @Override
+//    public BytePointer call(org.bytedeco.javacpp.tensorflow.Node node) {
+//        System.out.println(node.name());
+//        return null;
+//    }
 
 }

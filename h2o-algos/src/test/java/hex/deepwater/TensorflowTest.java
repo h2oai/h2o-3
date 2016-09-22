@@ -5,8 +5,6 @@
 package hex.deepwater;
 
 
-import hex.deepwater.backends.cudnn.CudaSession;
-import hex.deepwater.backends.cudnn.DenseOp;
 import org.bytedeco.javacpp.tensorflow;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -25,6 +23,7 @@ import java.nio.IntBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -46,8 +45,8 @@ import static org.bytedeco.javacpp.tensorflow.GraphConstructorOptions;
 import static org.bytedeco.javacpp.tensorflow.GraphDef;
 import static org.bytedeco.javacpp.tensorflow.GraphDefBuilder;
 import static org.bytedeco.javacpp.tensorflow.Node;
-import static org.bytedeco.javacpp.tensorflow.OpDef;
 import static org.bytedeco.javacpp.tensorflow.OpRegistry;
+import static org.bytedeco.javacpp.tensorflow.OpDef;
 import static org.bytedeco.javacpp.tensorflow.ReadBinaryProto;
 import static org.bytedeco.javacpp.tensorflow.ReadFile;
 import static org.bytedeco.javacpp.tensorflow.Reshape;
@@ -115,7 +114,7 @@ public class TensorflowTest extends TestUtil {
         return Status.OK();
     }
 
-    TensorVector getTopKLabels(Tensor distribution, int k) {
+    TensorVector getTopKLabels(Session sess, Tensor distribution, int k) {
 
         final String output_name = "top_k";
 
@@ -125,12 +124,11 @@ public class TensorflowTest extends TestUtil {
 
         tensorflow.GraphDef graph = new tensorflow.GraphDef();
         Status status = b.ToGraphDef(graph);
-
         checkStatus(status);
-        Session session = new Session(new SessionOptions());
-        checkStatus(session.Create(graph));
+        status = sess.Extend(graph);
+        checkStatus(status);
         TensorVector outputs = new TensorVector();
-        status = session.Run(new StringTensorPairVector(),
+        status = sess.Run(new StringTensorPairVector(),
                 new StringVector(new String[]{output_name + ":0", output_name + ":1"}),
                 new StringVector(),
                 outputs);
@@ -145,14 +143,13 @@ public class TensorflowTest extends TestUtil {
     }
 
 
-
     @Test
-    public void inferMNIST() throws Exception {
+    public void trainMNIST() throws Exception {
 
         SessionOptions opt = new SessionOptions();
         Session sess = new Session(opt);
         GraphDef graph_def = new GraphDef();
-        Status status = ReadBinaryProto(Env.Default(), expandPath("~/workspace/deepwater/tensorflow/models/mnist/mnist_with_summaries.pb"), graph_def);
+        Status status = ReadBinaryProto(Env.Default(), expandPath("~/workspace/deepwater/tensorflow/models/mnist/mnist_train.pb"), graph_def);
         if (!status.ok()) {
             throw new InternalError("could not load serialized protocol buffer");
         }
@@ -166,16 +163,86 @@ public class TensorflowTest extends TestUtil {
             System.out.println(">>>>> " + graph_def.node(i).name().getString());
         }
 
-        MNISTImageDataset dataset = new MNISTImageDataset("/tmp/data/t10k-labels-idx1-ubyte.gz", "/tmp/data/t10k-images-idx3-ubyte.gz");
+        MNISTImageDataset dataset = new MNISTImageDataset("/home/fmilo/workspace/h2o-3/train-labels-idx1-ubyte.gz",
+                "/home/fmilo/workspace/h2o-3/train-images-idx3-ubyte.gz");
         List<Pair<Integer, float[]>> images = dataset.loadDigitImages();
 
         int wrong_prediction = 0;
         int right_prediction = 0;
-        int batch_size = 10;
+        int batch_size = 100;
+
+        int current_batch_size = 0;
+
+        initVariables(sess);
+
         float[] batch = new float[784 * batch_size];
-        int[] batch_labels = new int[784 * batch_size];
+        float[] batch_labels = new float[10 * batch_size];
+
+        for (int ii = 0; ii < 20; ii++) {
+
+            for (Pair<Integer, float[]> sample : images) {
+                if (current_batch_size == 0) {
+                    Arrays.fill(batch_labels, 0);
+                    Arrays.fill(batch, 0);
+                }
+                float[] array = sample.getValue();
+                // accumulate images and labels into a batch
+                System.arraycopy(array, 0, batch, current_batch_size * 784, array.length);
+
+                int pos = sample.getKey();
+                batch_labels[current_batch_size * 10 + pos] = 1;
+                current_batch_size++;
+                if (current_batch_size < batch_size) {
+                    continue;
+                }
+
+                trainDigit(sess, batch, batch_labels, batch_size);
+
+                current_batch_size = 0;
+            }
+
+            inferMNISTSess(sess);
+        }
+    }
+
+    @Test
+    public void inferMNIST() throws Exception {
+
+        SessionOptions opt = new SessionOptions();
+        Session sess = new Session(opt);
+        GraphDef graph_def = new GraphDef();
+        Status status = ReadBinaryProto(Env.Default(), expandPath("mnist/mnist_with_summaries.pb"), graph_def);
+        if (!status.ok()) {
+            throw new InternalError("could not load serialized protocol buffer");
+        }
+        status = sess.Create(graph_def);
+        if (!status.ok()) {
+            throw new InternalError("could not create graph definition");
+        }
+
+
+        for (int i = 0; i < graph_def.node_size(); i++) {
+            //System.out.println(">>>>> " + graph_def.node(i).name().getString());
+        }
+
+        inferMNISTSess(sess);
+    }
+
+    void inferMNISTSess(Session sess) throws Exception {
+        MNISTImageDataset dataset = new MNISTImageDataset("/home/fmilo/workspace/h2o-3/t10k-labels-idx1-ubyte.gz", "/home/fmilo/workspace/h2o-3/t10k-images-idx3-ubyte.gz");
+        List<Pair<Integer, float[]>> images = dataset.loadDigitImages();
+
+        int wrong_prediction = 0;
+        int right_prediction = 0;
+        int batch_size = 100;
+        float[] batch = new float[784 * batch_size];
+        int[] batch_labels = new int[batch_size];
         int current_batch_size = 0;
         for (Pair<Integer, float[]> sample : images) {
+            if (current_batch_size == 0) {
+                Arrays.fill(batch_labels, 0);
+                Arrays.fill(batch, 0);
+            }
             float[] array = sample.getValue();
             // accumulate images and labels into a batch
             System.arraycopy(array, 0, batch, current_batch_size * 784, array.length);
@@ -193,12 +260,62 @@ public class TensorflowTest extends TestUtil {
                     right_prediction++;
                 }
             }
+            current_batch_size = 0;
         }
 
         System.out.println("right predictions: " + right_prediction + " - wrong Predictions:" + wrong_prediction);
         System.out.println("accuracy:" + right_prediction / 1.0 * (right_prediction + wrong_prediction));
     }
 
+    void initVariables(Session sess){
+        TensorVector outputs = new TensorVector();
+        Status status = sess.Run(new StringTensorPairVector(),
+                new StringVector(),
+                new StringVector("init"), outputs);
+        checkStatus(status);
+    }
+
+    int[] trainDigit(Session sess, float[] data, float[] y, int batch_size) throws Exception {
+        TensorVector outputs = new TensorVector();
+        ImageParams params = new ImageParams(expandPath("~/workspace/mnist_png/mnist_png/testing/0/1416.png"), 28, 28, 128, 128);
+        loadImage(params, outputs); // "input/x-input", "layer2/activation", outputs);
+
+        Tensor result = outputs.get(0);
+
+        outputs = new TensorVector();
+
+        Tensor y_batch = new Tensor(DT_FLOAT, new TensorShape(batch_size, 10));
+        ((FloatBuffer) y_batch.createBuffer()).put(y);
+
+        Tensor mnist_batch_image = new Tensor(DT_FLOAT, new TensorShape(batch_size, 784));
+        ((FloatBuffer) mnist_batch_image.createBuffer()).put(data);
+
+        Tensor dropout = new Tensor(DT_FLOAT, new TensorShape(1));
+
+        FloatBuffer dropout_b = dropout.createBuffer();
+        dropout_b.put(1.0f);
+
+        Status status = sess.Run(new StringTensorPairVector(new String[]{"input/x-input", "input/y-input", "dropout/Placeholder"},
+                        new Tensor[]{mnist_batch_image, y_batch, dropout}),
+                new StringVector("accuracy/accuracy/Mean:0"),
+                new StringVector("train/Adam"), outputs);
+        checkStatus(status);
+//        getTopKLabels(outputs.get(0), 1);
+//
+       FloatBuffer fb = outputs.get(0).createBuffer();
+       float[] activation_layer = new float[1];
+       fb.get(activation_layer);
+//
+//        int[] indexes = new int[batch_size];
+//        ((IntBuffer) outputs.get(1).createBuffer()).get(indexes);
+//
+       // for (int i = 0; i < activation_layer.length; i++) {
+       //     System.out.println("accuracy:" + activation_layer[i]);
+       // }
+
+        return new int[]{} ; //indexes;
+
+    }
 
     int[] inferDigit(Session sess, float[] data, int batch_size) throws Exception {
         TensorVector outputs = new TensorVector();
@@ -222,17 +339,25 @@ public class TensorflowTest extends TestUtil {
                 new StringVector("layer2/activation"),
                 new StringVector(), outputs);
         checkStatus(status);
-        getTopKLabels(outputs.get(0), 1);
+        //getTopKLabels(sess, outputs.get(0), 1);
 
         FloatBuffer fb = outputs.get(0).createBuffer();
-        float[] activation_layer = new float[batch_size];
+        float[] activation_layer = new float[10 * batch_size];
         fb.get(activation_layer);
 
         int[] indexes = new int[batch_size];
-        ((IntBuffer) outputs.get(1).createBuffer()).get(indexes);
 
-        for (int i = 0; i < activation_layer.length; i++) {
-            //System.out.println("activation layer:" + indexes[i] + ":" + activation_layer[i] );
+        for (int j = 0; j < batch_size; j++) {
+            int argmax =0;
+            float maxvalue = 0.0f;
+            for (int i = 0; i < 10; i++) {
+                float value = activation_layer[j * 10 + i];
+                if (value > maxvalue){
+                    argmax = i;
+                    maxvalue = value;
+                }
+            }
+            indexes[j] = argmax;
         }
 
         return indexes;
@@ -282,7 +407,7 @@ public class TensorflowTest extends TestUtil {
         checkStatus(status);
 
         FloatBuffer softmax = outputs.get(0).createBuffer();
-        TensorVector results = getTopKLabels(outputs.get(0), 5);
+        TensorVector results = getTopKLabels(sess, outputs.get(0), 5);
 
         FloatBuffer topK = results.get(0).createBuffer();
         IntBuffer topKindex = results.get(1).createBuffer();

@@ -1,4 +1,4 @@
-package hex.deepwater.backends.cudnn;
+package hex.deepwater.dataflow;
 
 import org.tensorflow.framework.DataType;
 import org.tensorflow.framework.NodeDef;
@@ -9,7 +9,7 @@ import java.util.List;
 public class Operation {
 
     private final NodeDef node;
-    Graph graph;
+    //Graph graph;
     List<Tensor> _inputs;
     List<DataType> _input_types;
     List<DataType> _outputs_types;
@@ -17,9 +17,9 @@ public class Operation {
     List<Tensor> _outputs;
     private final List<DataType> output_types;
 
-    public Operation(NodeDef node, Graph g, List<Tensor> inputs, List<DataType> output_types){
+    public Operation(NodeDef node, /*Graph g,*/ List<Tensor> inputs, List<DataType> output_types){
         this.node = node;
-        graph = g;
+        //graph = g;
         _inputs = inputs;
 
         _outputs = new ArrayList<>(output_types.size());
