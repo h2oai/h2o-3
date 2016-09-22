@@ -18,6 +18,7 @@
  */
 package org.apache.parquet.hadoop;
 
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Arrays;
@@ -27,6 +28,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
 
 import org.apache.parquet.format.converter.ParquetMetadataConverter;
+
 import static org.apache.parquet.format.converter.ParquetMetadataConverter.MetadataFilter;
 import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
@@ -103,7 +105,7 @@ public class VecParquetReader implements Closeable {
     }
   }
 
-  public static ParquetMetadata readFooter(Vec vec, MetadataFilter filter) {
+  public static byte[] readFooterAsBytes(Vec vec) {
     FSDataInputStream f = null;
     try {
       f = new FSDataInputStream(new VecDataInputStream(vec));
@@ -125,7 +127,9 @@ public class VecParquetReader implements Closeable {
         throw new RuntimeException("corrupted file: the footer index is not within the Vec");
       }
       f.seek(footerIndex);
-      return converter.readParquetMetadata(f, filter);
+      byte[] metadataBytes = new byte[footerLength];
+      f.readFully(metadataBytes);
+      return metadataBytes;
     } catch (IOException e) {
       throw new RuntimeException("Failed to read Parquet metadata", e);
     } finally {
@@ -134,6 +138,15 @@ public class VecParquetReader implements Closeable {
       } catch (Exception e) {
         Log.warn("Failed to close Vec data input stream", e);
       }
+    }
+  }
+
+  public static ParquetMetadata readFooter(byte[] metadataBytes, MetadataFilter filter) {
+    try {
+      ByteArrayInputStream bis = new ByteArrayInputStream(metadataBytes);
+      return converter.readParquetMetadata(bis, filter);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to read Parquet metadata", e);
     }
   }
 
