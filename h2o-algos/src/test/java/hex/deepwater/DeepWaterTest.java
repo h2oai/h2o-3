@@ -1,6 +1,8 @@
 package hex.deepwater;
 
+import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
+import hex.splitframe.ShuffleSplitFrame;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -717,9 +719,7 @@ public class DeepWaterTest extends TestUtil {
     try {
       DeepWaterParameters p = new DeepWaterParameters();
       p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
-      //p._network = DeepWaterParameters.Network.relu_300_relu_300_relu_300;
       p._network = DeepWaterParameters.Network.tanh_100;
-//      p._network = DeepWaterParameters.Network.relu_500_relu_500_dropout;
       p._response_column = "CAPSULE";
       p._ignored_columns = new String[]{"ID"};
       for (String col : new String[]{"RACE", "DPROS", "DCAPS", "CAPSULE", "GLEASON"}) {
@@ -732,7 +732,7 @@ public class DeepWaterTest extends TestUtil {
       p._epochs = 500;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
-      Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.99);
+      Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
     } finally {
       if (tr!=null) tr.remove();
       if (m!=null) m.remove();
@@ -763,12 +763,9 @@ public class DeepWaterTest extends TestUtil {
 
         p._train = tr._key;
         p._valid = va._key;
-        p._rate = 1e-4;
-        p._mini_batch_size = 128;
-        p._network = DeepWaterParameters.Network.relu_500_relu_500_dropout;
         DeepWater j = new DeepWater(p);
         m = j.trainModel().get();
-        Assert.assertTrue(((ModelMetricsMultinomial)(m._output._training_metrics)).mean_per_class_error() < 0.05);
+        Assert.assertTrue(((ModelMetricsMultinomial)(m._output._validation_metrics)).mean_per_class_error() < 0.05);
       }
     } finally {
       if (tr!=null) tr.remove();
@@ -778,6 +775,78 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
+  public void MNISTSparse() {
+    Frame tr = null;
+    Frame va = null;
+    DeepWaterModel m = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
+      File valid = find_test_file("bigdata/laptop/mnist/test.csv.gz");
+      if (file != null) {
+        p._response_column = "C785";
+        NFSFileVec trainfv = NFSFileVec.make(file);
+        tr = ParseDataset.parse(Key.make(), trainfv._key);
+        NFSFileVec validfv = NFSFileVec.make(valid);
+        va = ParseDataset.parse(Key.make(), validfv._key);
+        for (String col : new String[]{p._response_column}) {
+          Vec v = tr.remove(col); tr.add(col, v.toCategoricalVec()); v.remove();
+          v = va.remove(col); va.add(col, v.toCategoricalVec()); v.remove();
+        }
+        DKV.put(tr);
+        DKV.put(va);
+
+        p._train = tr._key;
+        p._valid = va._key;
+        p._sparse = true;
+        DeepWater j = new DeepWater(p);
+        m = j.trainModel().get();
+        Assert.assertTrue(((ModelMetricsMultinomial)(m._output._validation_metrics)).mean_per_class_error() < 0.05);
+      }
+    } finally {
+      if (tr!=null) tr.remove();
+      if (va!=null) va.remove();
+      if (m!=null) m.remove();
+    }
+  }
+
+  @Test
+  public void Airlines() {
+    Frame tr = null;
+    DeepWaterModel m = null;
+    Frame[] splits = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      File file = find_test_file("smalldata/airlines/allyears2k_headers.zip");
+      if (file != null) {
+        p._response_column = "IsDepDelayed";
+        p._ignored_columns = new String[]{"DepTime","ArrTime","Cancelled","CancellationCode","Diverted","CarrierDelay","WeatherDelay","NASDelay","SecurityDelay","LateAircraftDelay","IsArrDelayed"};
+        NFSFileVec trainfv = NFSFileVec.make(file);
+        tr = ParseDataset.parse(Key.make(), trainfv._key);
+        for (String col : new String[]{p._response_column}) {
+          Vec v = tr.remove(col); tr.add(col, v.toCategoricalVec()); v.remove();
+        }
+        DKV.put(tr);
+
+        double[] ratios = ard(0.5, 0.5);
+        Key[] keys = aro(Key.make("test.hex"), Key.make("train.hex"));
+        splits = ShuffleSplitFrame.shuffleSplitFrame(tr, keys, ratios, 42);
+
+        p._train = keys[0];
+        p._valid = keys[1];
+        DeepWater j = new DeepWater(p);
+        m = j.trainModel().get();
+        Assert.assertTrue(((ModelMetricsBinomial)(m._output._validation_metrics)).auc() > 0.65);
+      }
+    } catch(Throwable t) {
+      t.printStackTrace();
+    } finally {
+      if (tr!=null) tr.remove();
+      if (m!=null) m.remove();
+      if (splits!=null) for(Frame s: splits) s.delete();
+    }
+  }
+
   public void textsToOnehot() {
     ArrayList<String> texts = new ArrayList<>();
     ArrayList<String> labels = new ArrayList<>();
@@ -797,7 +866,7 @@ public class DeepWaterTest extends TestUtil {
     labels.add("pos");
 
     ArrayList<int[]> coded = texts2array(texts);
-   // System.out.println(coded);
+    // System.out.println(coded);
 
     Assert.assertEquals(228, coded.size());
     Assert.assertEquals(88, coded.get(0).length);
@@ -825,7 +894,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   public String[] tokenize(String text) {
-   // System.out.println(cleanString(text));
+    // System.out.println(cleanString(text));
     return cleanString(text).split(" ");
   }
 
@@ -883,6 +952,7 @@ public class DeepWaterTest extends TestUtil {
     }
     return array;
   }
+
 
 }
 
