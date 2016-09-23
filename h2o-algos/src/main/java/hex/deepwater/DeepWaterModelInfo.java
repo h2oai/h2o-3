@@ -153,11 +153,13 @@ final public class DeepWaterModelInfo extends Iced {
         _height = 0;
         _channels = 0;
         if (parameters._image_shape != null) {
-          _width = parameters._image_shape[0];
-          _height = parameters._image_shape[1];
+          if (parameters._image_shape[0]>0)
+            _width = parameters._image_shape[0];
+          if (parameters._image_shape[1]>0)
+            _height = parameters._image_shape[1];
           _channels = parameters._channels;
         }
-      }
+      } else throw H2O.unimpl();
 
       try {
         _mxnet = new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
