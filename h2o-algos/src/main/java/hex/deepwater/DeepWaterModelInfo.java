@@ -220,9 +220,22 @@ final public class DeepWaterModelInfo extends Iced {
           assert _numericTrain == null;
           _numericTrain = new NumericTrain(_ncols, _deviceID, (int) parameters.getOrMakeRealSeed(), _gpu);
           if (parameters._network != user) {
-            String network = parameters._network == auto ? "500-relu-500-relu" : parameters._network.toString();
-            Log.info("Creating a fresh model of the following network type: " + network);
-            _numericTrain.buildNet(_classes, parameters._mini_batch_size, network); //set optimizer, batch size, nclasses, etc.
+            String network = parameters._network == null ? null : parameters._network.toString();
+            if (network!=null) {
+              Log.info("Creating a fresh model of the following network type: " + network);
+              _numericTrain.buildNet(_classes, parameters._mini_batch_size, network, 0, new int[0], new String[0], 0, new float[0]); //set optimizer, batch size, nclasses, etc.
+            } else {
+              Log.info("Creating a fresh model of the following network type: MLP");
+              assert(parameters._activation!=null);
+              assert(parameters._hidden!=null);
+              String[] acts = new String[parameters._hidden.length];
+              String acti;
+              if (parameters._activation.toString().startsWith("Rectifier")) acti="relu";
+              else if (parameters._activation.toString().startsWith("Tanh")) acti="tanh";
+              else throw H2O.unimpl();
+              Arrays.fill(acts, acti);
+              _numericTrain.buildNet(_classes, parameters._mini_batch_size, "MLP", acts.length, parameters._hidden, acts, parameters._input_dropout_ratio, parameters._hidden_dropout_ratios); //set optimizer, batch size, nclasses, etc.
+            }
           }
           // load a network if specified
           final String networkDef = parameters._network_definition_file;
@@ -375,7 +388,7 @@ final public class DeepWaterModelInfo extends Iced {
   TwoDimTable createSummaryTable() {
     TwoDimTable table = new TwoDimTable(
         "Status of Deep Learning Model",
-        get_params()._network.toString() + ": " + PrettyPrint.bytes(size()) + ", "
+        get_params()._network == null ? "MLP" : get_params()._network.toString() + ": " + PrettyPrint.bytes(size()) + ", "
         + (!get_params()._autoencoder ? ("predicting " + get_params()._response_column + ", ") : "") +
             (get_params()._autoencoder ? "auto-encoder" :
                 _classification ? (_classes + "-class classification") : "regression")
