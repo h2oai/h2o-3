@@ -1901,7 +1901,7 @@ class H2OFrame(object):
 
     def strsplit(self, pattern):
         """
-        Split the strings in the target column on the given pattern.
+        Split the strings in the target column on the given regular expression pattern.
 
         Parameters
         ----------
