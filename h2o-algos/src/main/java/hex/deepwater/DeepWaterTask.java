@@ -7,10 +7,8 @@ import water.Job;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.gpu.ImageTrain;
-import water.gpu.NumericTrain;
 import water.parser.BufferedString;
 import water.util.Log;
-import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
 import java.io.IOException;
@@ -63,7 +61,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
     final int batchSize = _localmodel.get_params()._mini_batch_size;
 
     long nativetime = 0;
-    DeepWaterIterator iter;
+    DeepWaterIterator iter = null;
     long seed = 0xDECAF + 0xD00D * _localmodel.get_processed_global();
     Random rng = RandomUtils.getRNG(seed);
 
@@ -73,21 +71,18 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
     int len = (int)_fr.numRows();
     int j=0;
     Futures fs = new Futures();
+    ArrayList trainLabels = new ArrayList<>();
+    ArrayList trainData = new ArrayList<>();
 
     try {
       // Binary data (Images/Documents/etc.)
       if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification ||
-              _localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) {
-        int dataIdx = 0; //must be the first column
+          _localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) {
+        int dataIdx = 0; //must be the first column //FIXME
         Log.debug("Using column " + _fr.name(dataIdx) + " for " +
-                ((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) ? "path to image data"
-                        :((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) ? "text data"
-                        : "path to arbitrary bytes")));
-
-        // loop over all observations on this node
-        ArrayList<Float> trainLabels = new ArrayList<>();
-        ArrayList<String> trainData = new ArrayList<>();
-
+            ((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) ? "path to image data"
+                :((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) ? "text data"
+                : "path to arbitrary bytes")));
         // full passes over the data
         BufferedString bs = new BufferedString();
         int fullpasses = (int)_useFraction; // Example: train_samples_per_iteration = 4700, and train.numRows()=1000 -> _useFraction = 4.7 -> fullpasses = 4
@@ -115,48 +110,10 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
           trainData.add(file);
           trainLabels.add(response);
         }
-
-        // shuffle the (global) list
-        if (_shuffle) {
-          rng.setSeed(seed);
-          Collections.shuffle(trainLabels, rng);
-          rng.setSeed(seed);
-          Collections.shuffle(trainData, rng);
-        }
-
-        if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification ) {
-          int width = _localmodel._height;
-          int height = _localmodel._width;
-          int channels = _localmodel._channels;
-          iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, width, height, channels, _localmodel.get_params()._cache_data);
-          NativeImageTrainTask ntt = null;
-          while (iter.Next(fs) && !_job.isStopping()) {
-            if (ntt != null) nativetime += ntt._timeInMillis;
-            long n = _localmodel.get_processed_total();
-            if(!_localmodel.get_params()._quiet_mode)
-              //            Log.info("Trained " + n + " samples. Training on " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
-              _localmodel._imageTrain.setLR(_localmodel.get_params().rate((double) n));
-            _localmodel._imageTrain.setMomentum(_localmodel.get_params().momentum((double) n));
-            //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-            ntt = new NativeImageTrainTask(_localmodel._imageTrain, iter.getData(), iter.getLabel());
-            fs.add(H2O.submitTask(ntt));
-            _localmodel.add_processed_local(iter._batch_size);
-          }
-          fs.blockForPending();
-          nativetime += ntt._timeInMillis;
-        } else {
-          // TODO: implement other binary data types
-          throw H2O.unimpl();
-        }
       }
 
       // Numeric data (H2O Frame full with numeric columns)
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-
-        // loop over all observations on this node
-        ArrayList<Float> trainLabels = new ArrayList<>();
-        ArrayList<Integer> trainRows = new ArrayList<>();
-
         // full passes over the data
         int fullpasses = (int) _useFraction;
         while (j++ < fullpasses) {
@@ -165,47 +122,51 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
             if (weight == 0)
               continue;
             float response = (float) _fr.vec(respIdx).at(i);
-            trainRows.add(i);
+            trainData.add(i);
             trainLabels.add(response);
           }
         }
 
         // fractional passes
-        while (trainRows.size() < _useFraction * len || trainRows.size() % batchSize != 0) {
+        while (trainData.size() < _useFraction * len || trainData.size() % batchSize != 0) {
           int i = rng.nextInt(len);
           double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
           if (weight == 0)
             continue;
           float response = (float) _fr.vec(respIdx).at(i);
-          trainRows.add(i);
+          trainData.add(i);
           trainLabels.add(response);
         }
-
-        // shuffle the (global) list
-        if (_shuffle) {
-          rng.setSeed(seed);
-          Collections.shuffle(trainLabels, rng);
-          rng.setSeed(seed);
-          Collections.shuffle(trainRows, rng);
-        }
-
-        iter = new DeepWaterFrameIterator(_localmodel._dataInfoKey.get(), trainRows, trainLabels, batchSize, _localmodel.get_params()._cache_data);
-        NumericTrainTask ntt = null;
-        while (iter.Next(fs) && !_job.isStopping()) {
-          if (ntt != null) nativetime += ntt._timeInMillis;
-          float[] data = iter.getData();
-          float[] labels = iter.getLabel();
-          long n = _localmodel.get_processed_total();
-          _localmodel._numericTrain.setLR(_localmodel.get_params().rate((double) n));
-          _localmodel._numericTrain.setMomentum(_localmodel.get_params().momentum((double) n));
-          //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-          ntt = new NumericTrainTask(_localmodel._numericTrain, data, labels);
-          fs.add(H2O.submitTask(ntt));
-          _localmodel.add_processed_local(iter._batch_size);
-        }
-        fs.blockForPending();
-        nativetime += ntt._timeInMillis;
       }
+
+      // shuffle the (global) list
+      if (_shuffle) {
+        rng.setSeed(seed);
+        Collections.shuffle(trainLabels, rng);
+        rng.setSeed(seed);
+        Collections.shuffle(trainData, rng);
+      }
+      if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+        iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, _localmodel._width, _localmodel._height, _localmodel._channels, _localmodel.get_params()._cache_data);
+      }
+      else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+        iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfoKey.get(), batchSize, _localmodel.get_params()._cache_data);
+      }
+      NativeImageTrainTask ntt = null;
+      while (iter.Next(fs) && !_job.isStopping()) {
+        if (ntt != null) nativetime += ntt._timeInMillis;
+        long n = _localmodel.get_processed_total();
+        if(!_localmodel.get_params()._quiet_mode)
+          //            Log.info("Trained " + n + " samples. Training on " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
+          _localmodel.getBackend().setLR(_localmodel.get_params().rate((double) n));
+        _localmodel.getBackend().setMomentum(_localmodel.get_params().momentum((double) n));
+        //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
+        ntt = new NativeImageTrainTask(_localmodel.getBackend(), iter.getData(), iter.getLabel());
+        fs.add(H2O.submitTask(ntt));
+        _localmodel.add_processed_local(iter._batch_size);
+      }
+      fs.blockForPending();
+      nativetime += ntt._timeInMillis;
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -225,27 +186,6 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
     }
     long _timeInMillis;
     final ImageTrain _it;
-    float[] _data;
-    float[] _labels;
-
-    @Override
-    public void compute2() {
-      long start = System.currentTimeMillis();
-      _it.train(_data,_labels); //ignore predictions
-      long end = System.currentTimeMillis();
-      _timeInMillis += end-start;
-      tryComplete();
-    }
-  }
-
-  static private class NumericTrainTask extends H2O.H2OCountedCompleter<NumericTrainTask> {
-    NumericTrainTask(NumericTrain it, float[] data, float[] labels) {
-      _it = it;
-      _data = data;
-      _labels = labels;
-    }
-    long _timeInMillis;
-    final NumericTrain _it;
     float[] _data;
     float[] _labels;
 
