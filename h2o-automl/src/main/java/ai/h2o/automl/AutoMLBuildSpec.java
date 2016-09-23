@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import hex.schemas.GridSearchSchema;
 import water.Iced;
 import water.Key;
 import water.api.schemas3.ImportFilesV3;
@@ -13,11 +14,22 @@ import water.parser.ParseSetup;
 public class AutoMLBuildSpec extends Iced {
 
   /**
+   * Default constructor provides the default behavior.
+   */
+  public AutoMLBuildSpec() {
+    this.build_control = new AutoMLBuildControl();
+    // Note: no defaults for input_spec!
+    this.feature_engineering = new AutoMLFeatureEngineering();
+    this.build_models = new AutoMLBuildModels ();
+    this.ensemble_parameters = new AutoMLEnsembleParameters();
+  }
+
+  /**
    * The specification of overall build parameters for the AutoML process.
    */
   static final public class AutoMLBuildControl extends Iced {
-    public String loss = "MSE";
-    public long max_time = 3600;
+    public String loss = "MSE";  // TODO: Auto
+    public long max_time = 3600; // TODO: same early stopping criteria as RandomDiscreteValueSearchCriteria
   }
 
   /**
@@ -50,19 +62,24 @@ public class AutoMLBuildSpec extends Iced {
   }
 
   /**
+   * The specification of the parameters for building models for a single algo (e.g., GBM), including base model parameters and hyperparameter search.
+   */
+  static final public class AutoMLBuildModels extends Iced {
+    public AutoML.algo[] exclude_algos;
+    public GridSearchSchema[] model_searches;
+  }
+
+  /**
    * The specification of ensemble-building to be used for the AutoML process, if any.  If this object is null, do not build ensembles.
    */
   static final public class AutoMLEnsembleParameters extends Iced {
   }
 
-
   public AutoMLBuildControl build_control;
   public AutoMLInput input_spec;
   public AutoMLFeatureEngineering feature_engineering;
+  public AutoMLBuildSpec.AutoMLBuildModels build_models;
   public AutoMLEnsembleParameters ensemble_parameters;
-
-  // model build
-  public AutoML.algo[] exclude;
 
   // output
   public JobV3 job;
