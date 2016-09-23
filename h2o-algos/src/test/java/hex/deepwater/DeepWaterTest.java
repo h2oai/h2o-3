@@ -847,7 +847,8 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  public void textsToOnehot() {
+  @Test
+  public void textsToOnehotTest() {
     ArrayList<String> texts = new ArrayList<>();
     ArrayList<String> labels = new ArrayList<>();
 
