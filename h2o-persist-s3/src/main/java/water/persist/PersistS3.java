@@ -14,8 +14,11 @@ import water.util.RIStream;
 import com.amazonaws.*;
 import com.amazonaws.auth.*;
 import com.amazonaws.auth.profile.ProfileCredentialsProvider;
+import com.amazonaws.regions.*;
+import com.amazonaws.regions.Region;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.s3.model.*;
 
 import com.google.common.io.ByteStreams;
@@ -301,6 +304,12 @@ public final class PersistS3 extends Persist {
   public final static String S3_FORCE_HTTP = SYSTEM_PROP_PREFIX + "persist.s3.force.http";
   /** S3 end-point, for example: "https://localhost:9000 */
   public final static String S3_END_POINT = SYSTEM_PROP_PREFIX + "persist.s3.endPoint";
+  /** S3 region, for example "us-east-1",
+   * see {@link com.amazonaws.regions.Region#getRegion(com.amazonaws.regions.Regions)} for region list */
+  public final static String S3_REGION = SYSTEM_PROP_PREFIX + "persist.s3.region";
+  /** Enable S3 path style access via setting the property to true.
+   * See: {@link com.amazonaws.services.s3.S3ClientOptions#setPathStyleAccess(boolean)} */
+  public final static String S3_ENABLE_PATH_STYLE = SYSTEM_PROP_PREFIX + "persist.s3.enable.path.style";
 
 
   static ClientConfiguration s3ClientCfg() {
@@ -317,7 +326,20 @@ public final class PersistS3 extends Persist {
 
   static  AmazonS3Client configureClient(AmazonS3Client s3Client) {
     if (System.getProperty(S3_END_POINT) != null) {
-      s3Client.setEndpoint(System.getProperty(S3_END_POINT));
+      String endPoint = System.getProperty(S3_END_POINT);
+      Log.debug("S3 endpoint specified: ", endPoint);
+      s3Client.setEndpoint(endPoint);
+    }
+    if (System.getProperty(S3_REGION) != null) {
+      String region = System.getProperty(S3_REGION);
+      Log.debug("S3 region specified: ", region);
+      s3Client.setRegion(RegionUtils.getRegion(region));
+    }
+    if (System.getProperty(S3_ENABLE_PATH_STYLE) != null && Boolean.valueOf(System.getProperty(S3_ENABLE_PATH_STYLE))) {
+      Log.debug("S3 path style access enabled");
+      S3ClientOptions sco = new S3ClientOptions();
+      sco.setPathStyleAccess(true);
+      s3Client.setS3ClientOptions(sco);
     }
     return s3Client;
   }
