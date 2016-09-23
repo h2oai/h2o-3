@@ -452,8 +452,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       final int batch_size = get_params()._mini_batch_size;
       final int classes = _output.nclasses();
 
-      ArrayList<String> score_data = new ArrayList<>(); //for binary data (path to data)
-      ArrayList<Integer> score_rows = new ArrayList<>(); //for numeric data
+      ArrayList score_data = new ArrayList<>(); //for binary data (path to data)
       ArrayList<Integer> skipped = new ArrayList<>();
 
       // randomly add more rows to fill up to a multiple of batch_size
@@ -476,21 +475,14 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           String file = _fr.vec(0).atStr(bs, i).toString(); //TODO: FIX hardcoded column for data
           score_data.add(file);
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-          score_rows.add(i);
+          score_data.add(i);
         } else throw H2O.unimpl();
       }
 
-      if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
-        while (score_data.size() % batch_size != 0) {
-          int pick = rng.nextInt(score_data.size());
-          score_data.add(score_data.get(pick));
-        }
-      } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-        while (score_rows.size() % batch_size != 0) {
-          int pick = rng.nextInt(score_rows.size());
-          score_rows.add(score_rows.get(pick));
-        }
-      } else throw H2O.unimpl();
+      while (score_data.size() % batch_size != 0) {
+        int pick = rng.nextInt(score_data.size());
+        score_data.add(score_data.get(pick));
+      }
 
       _mb = makeMetricBuilder(_domain);
       assert(isSupervised()); //not yet implemented for autoencoder
@@ -520,7 +512,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           int channels = model_info()._channels;
           iter = new DeepWaterImageIterator(score_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, model_info().get_params()._cache_data);
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-          iter = new DeepWaterFrameIterator(di, score_rows, null /*no labels*/, batch_size, model_info().get_params()._cache_data);
+          iter = new DeepWaterFrameIterator(score_data, null, di,   /*no labels*/ batch_size, model_info().get_params()._cache_data);
         } else {
           throw H2O.unimpl();
         }
