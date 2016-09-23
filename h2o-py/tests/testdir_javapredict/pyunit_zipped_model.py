@@ -145,6 +145,8 @@ def test_zipped_rf_model():
                 print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
                       (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
                 report.append((estimator_name, problem, "POJO", times[1] - times[0], times[2] - times[1]))
+            else:
+                pojo_pred_file = None
 
 
             print("\nChecking whether the predictions coincide...")
