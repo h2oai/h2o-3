@@ -12,7 +12,7 @@ import java.util.Arrays;
 
 public class DeepWaterFrameIterator extends DeepWaterIterator {
 
-  public DeepWaterFrameIterator(DataInfo dinfo, ArrayList<Integer> rows, ArrayList<Float> labels, int batch_size, boolean cache) throws IOException {
+  public DeepWaterFrameIterator(ArrayList<Integer> rows, ArrayList<Float> labels, DataInfo dinfo, int batch_size, boolean cache) throws IOException {
     super(batch_size, dinfo.fullN(), cache);
     _rows_lst = rows;
     _label_lst = labels;
