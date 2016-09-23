@@ -1,6 +1,5 @@
 package hex.deepwater;
 
-import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.splitframe.ShuffleSplitFrame;
@@ -494,7 +493,7 @@ public class DeepWaterTest extends TestUtil {
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
 
-      Assert.assertTrue(m.model_info()._imageTrain==null);
+      Assert.assertTrue(m.model_info()._mxnet ==null);
 
       int hashCodeNetwork = java.util.Arrays.hashCode(m.model_info()._network);
       int hashCodeParams = java.util.Arrays.hashCode(m.model_info()._modelparams);
