@@ -40,7 +40,7 @@ def javapredict_dynamic_data():
 
     train = h2o.create_frame(**dataset_params)
     if append_response:
-        response.set_name(0,"response")
+        response.set_name(0, "response")
         train = response.cbind(train)
     if family == 'binomial': train['response'] = train['response'].asfactor()
     results_dir = pyunit_utils.locate("results")
