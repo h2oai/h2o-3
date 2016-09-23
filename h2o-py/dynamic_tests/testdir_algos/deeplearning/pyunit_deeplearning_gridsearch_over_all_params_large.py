@@ -307,6 +307,10 @@ class Test_deeplearning_grid_search:
                     temp = params_list["hidden"]
                     params_list["hidden"] = [temp]
 
+                if "hidden_dropout_ratios" in params_list:
+                    temp = params_list["hidden_dropout_ratios"]
+                    params_list["hidden_dropout_ratios"] = [temp]
+
                 manual_model = H2ODeepLearningEstimator(**params_list)
                 manual_model.train(x=self.x_indices, y=self.y_index, training_frame=self.training1_data,
                                    **model_params)
