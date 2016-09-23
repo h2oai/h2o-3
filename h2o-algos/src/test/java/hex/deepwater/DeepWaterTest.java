@@ -19,7 +19,6 @@ import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
 import water.util.Log;
-import water.util.RandomUtils;
 import water.util.StringUtils;
 
 import javax.imageio.ImageIO;
@@ -812,7 +811,7 @@ public class DeepWaterTest extends TestUtil {
   }
 
   @Test
-  public void textsToOnehot() {
+  public void textsToOnehotTest() {
     ArrayList<String> texts = new ArrayList<>();
     ArrayList<String> labels = new ArrayList<>();
 
