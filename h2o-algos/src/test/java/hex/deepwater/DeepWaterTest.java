@@ -1,7 +1,5 @@
 package hex.deepwater;
 
-import hex.Model;
-import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -798,31 +796,42 @@ public class DeepWaterTest extends TestUtil {
     labels.add("pos");
     labels.add("pos");
 
-    ArrayList<Integer[]> coded = texts2array(texts);
-    System.out.println(coded);
+    ArrayList<int[]> coded = texts2array(texts);
+   // System.out.println(coded);
+
+    Assert.assertEquals(234, coded.size());
+    Assert.assertEquals(85, coded.get(0).length);
+    System.out.println("rows " + coded.size() + " cols " + coded.get(0).length);
   }
 
   public String[] tokenize(String text) {
     return text.toLowerCase().split(" ");
   }
 
-  public ArrayList<Integer[]> tokensToArray(String[] tokens, int padToLength, Map<String, Integer> dict) {
-    int nTokens = tokens.length;
-    int pad = padToLength - nTokens;
-    ArrayList<Integer[]> data = new ArrayList<>();
+  public ArrayList<int[]> tokensToArray(String[] tokens, int padToLength, Map<String, Integer> dict) {
+    int dictSize = dict.size();
+    int len = tokens.length;
+    int pad = padToLength - len;
+    ArrayList<int[]> data = new ArrayList<>();
     for (String t : tokens) {
-      Integer[] a = new Integer[padToLength];
+      int[] a = new int[dictSize];
       a[dict.get(t)] = 1;
+      data.add(a);
+    }
+    for (int i = 0; i < pad; i++) {
+      int[] a = new int[dictSize];
+      a[dict.get(PADDING_SYMBOL)] = 1;
       data.add(a);
     }
     return data;
   }
-
-  public ArrayList<Integer[]> texts2array(ArrayList<String> texts) {
-
+  public static String PADDING_SYMBOL = "<s/>";
+  public ArrayList<int[]> texts2array(ArrayList<String> texts) {
     int maxlen = 0;
     int index = 0;
     Map<String, Integer> dict = new HashMap<>();
+    dict.put(PADDING_SYMBOL, index);
+    index += 1;
     for (String text : texts) {
       String[] tokens = tokenize(text);
       for (String token : tokens) {
@@ -834,13 +843,21 @@ public class DeepWaterTest extends TestUtil {
       int len = tokens.length;
       if (len > maxlen) maxlen = len;
     }
-    Assert.assertEquals(56, maxlen);
-    Assert.assertEquals(19, index);
-    Assert.assertEquals(1, dict.size());
+    System.out.println(dict);
+    System.out.println("maxlen " + maxlen);
+    System.out.println("dict size " + dict.size());
+    Assert.assertEquals(39, maxlen);
+    Assert.assertEquals(85, index);
+    Assert.assertEquals(85, dict.size());
 
-    ArrayList<Integer[]> array = new ArrayList<>();
+    ArrayList<int[]> array = new ArrayList<>();
     for (String text: texts) {
-      ArrayList<Integer[]> data = tokensToArray(tokenize(text), maxlen, dict);
+      ArrayList<int[]> data = tokensToArray(tokenize(text), maxlen, dict);
+      System.out.println(text);
+      System.out.println(" rows " + data.size() + "  cols " + data.get(0).length);
+      /*for (int[] x : data) {
+        System.out.println(Arrays.toString(x));
+      }*/
       array.addAll(data);
     }
     return array;
