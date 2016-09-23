@@ -578,7 +578,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
-    final boolean makeNative = model_info().getBackend()==null;
+    final boolean makeNative = model_info()._mxnet ==null;
     if (makeNative) model_info().javaToNative();
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
@@ -594,7 +594,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    final boolean makeNative = model_info().getBackend()==null;
+    final boolean makeNative = model_info()._mxnet ==null;
     if (makeNative) model_info().javaToNative();
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
