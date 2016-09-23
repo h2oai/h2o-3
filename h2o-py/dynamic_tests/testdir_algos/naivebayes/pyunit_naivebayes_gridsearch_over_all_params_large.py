@@ -202,7 +202,10 @@ class Test_naivebayes_grid_search:
         if "min_prob" in final_hyper_params_keys:
             old_len_prob = len([x for x in self.final_hyper_params["max_runtime_secs"] if (x >= 0)])
             good_len_prob = len([x for x in self.final_hyper_params["max_runtime_secs"] if (x >= 1e-10)])
-            self.possible_number_models = self.possible_number_models*good_len_prob/old_len_prob
+            if (old_len_prob > 0):
+                self.possible_number_models = self.possible_number_models*good_len_prob/old_len_prob
+            else:
+                self.possible_number_models = 0
 
         if "laplace" in final_hyper_params_keys:
             self.final_hyper_params["laplace"] = [self.laplace_scale * x for x
