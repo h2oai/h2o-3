@@ -834,13 +834,34 @@ public class DeepWaterTest extends TestUtil {
     ArrayList<int[]> coded = texts2array(texts);
    // System.out.println(coded);
 
-    Assert.assertEquals(234, coded.size());
-    Assert.assertEquals(85, coded.get(0).length);
+    Assert.assertEquals(228, coded.size());
+    Assert.assertEquals(88, coded.get(0).length);
     System.out.println("rows " + coded.size() + " cols " + coded.get(0).length);
   }
 
+  public String cleanString(String s) {
+    //Tokenization/string cleaning for all datasets except for SST.
+    //        Original taken from https://github.com/yoonkim/CNN_sentence/blob/master/process_data.py
+    String string = s;
+    string = string.replaceAll("[^A-Za-z0-9(),!?\\'\\`]", " ");
+    string = string.replaceAll("'s", " 's");
+    string = string.replaceAll("'ve", " 've");
+    string = string.replaceAll("n't", " n't");
+    string = string.replaceAll("'re", " 're");
+    string = string.replaceAll("'d", " 'd");
+    string = string.replaceAll("'ll", " 'll");
+    string = string.replaceAll(",", " , ");
+    string = string.replaceAll("!", " ! ");
+    string = string.replaceAll("\\(", " ( ");
+    string = string.replaceAll("\\)", " ) ");
+    string = string.replaceAll("\\?", " ? ");
+    string = string.replaceAll("\\s{2,}", " ");
+    return string.trim().toLowerCase();
+  }
+
   public String[] tokenize(String text) {
-    return text.toLowerCase().split(" ");
+   // System.out.println(cleanString(text));
+    return cleanString(text).split(" ");
   }
 
   public ArrayList<int[]> tokensToArray(String[] tokens, int padToLength, Map<String, Integer> dict) {
@@ -881,9 +902,9 @@ public class DeepWaterTest extends TestUtil {
     System.out.println(dict);
     System.out.println("maxlen " + maxlen);
     System.out.println("dict size " + dict.size());
-    Assert.assertEquals(39, maxlen);
-    Assert.assertEquals(85, index);
-    Assert.assertEquals(85, dict.size());
+    Assert.assertEquals(38, maxlen);
+    Assert.assertEquals(88, index);
+    Assert.assertEquals(88, dict.size());
 
     ArrayList<int[]> array = new ArrayList<>();
     for (String text: texts) {
