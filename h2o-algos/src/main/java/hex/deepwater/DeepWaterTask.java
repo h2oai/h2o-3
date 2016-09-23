@@ -1,12 +1,12 @@
 package hex.deepwater;
 
 import hex.FrameTask;
+import hex.deepwater.backends.BackendTrain;
 import water.Futures;
 import water.H2O;
 import water.Job;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
-import water.gpu.ImageTrain;
 import water.parser.BufferedString;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -153,6 +153,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
         iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfoKey.get(), batchSize, _localmodel.get_params()._cache_data);
       }
+
       NativeImageTrainTask ntt = null;
       while (iter.Next(fs) && !_job.isStopping()) {
         if (ntt != null) nativetime += ntt._timeInMillis;
@@ -160,11 +161,13 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
 
 //        if(!_localmodel.get_params()._quiet_mode)
 //          Log.info("Trained " + n + " samples. Training on " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
-
-        _localmodel.getBackend().setLR(_localmodel.get_params().rate((double) n));
-        _localmodel.getBackend().setMomentum(_localmodel.get_params().momentum((double) n));
+        float rate = _localmodel.get_params().rate((double) n);
+        _localmodel.backend.setParameter("learning_rate", rate); //setMomentum(_localmodel.get_params().momentum((double) n));
+        float momentum = _localmodel.get_params().momentum((double) n);
+        _localmodel.backend.setParameter("momentum", momentum); //setMomentum(_localmodel.get_params().momentum((double) n));
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-        ntt = new NativeImageTrainTask(_localmodel.getBackend(), iter.getData(), iter.getLabel());
+
+        ntt = new NativeImageTrainTask(_localmodel.backend, iter.getData(), iter.getLabel());
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(iter._batch_size);
       }
@@ -182,13 +185,13 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
   @Override public void map(Chunk [] chunks, NewChunk [] outputs) { return; }
 
   static private class NativeImageTrainTask extends H2O.H2OCountedCompleter<NativeImageTrainTask> {
-    NativeImageTrainTask(ImageTrain it, float[] data, float[] labels) {
+    NativeImageTrainTask(BackendTrain it, float[] data, float[] labels) {
       _it = it;
       _data = data;
       _labels = labels;
     }
     long _timeInMillis;
-    final ImageTrain _it;
+    final BackendTrain _it;
     float[] _data;
     float[] _labels;
 
