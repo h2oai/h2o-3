@@ -258,12 +258,12 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             if (!_parms._quiet_mode) {
               Log.info("  Note: best model was at " + (float) best_model.epoch_counter + " (out of " + (float) model.epoch_counter + ") epochs.");
             }
-            assert(Math.abs(best_model.loss() - model.loss())<1e-5*Math.abs(model.loss()+best_model.loss()));
+            assert(Math.abs(best_model.loss() - model.loss())<=1e-5*Math.abs(model.loss()+best_model.loss()));
           }
         }
       }
       finally {
-        if (model.model_info()._imageTrain!=null) model.model_info().nativeToJava();
+        if (model.model_info()._mxnet !=null) model.model_info().nativeToJava();
         if (cache) model.cleanUpCache();
         model.removeNativeState();
         if (!_parms._quiet_mode) {

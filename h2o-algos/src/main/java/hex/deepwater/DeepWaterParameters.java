@@ -2,7 +2,6 @@ package hex.deepwater;
 
 import hex.Model;
 import hex.ScoreKeeper;
-import hex.deeplearning.DeepLearningModel;
 import water.H2O;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Vec;
@@ -51,8 +50,6 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public enum Network {
     auto, user, lenet, alexnet, vgg, googlenet, inception_bn, resnet,
-    tanh_100, relu_10, relu_500_relu_500, relu_300_relu_300_relu_300, // fully-connected
-    relu_500_relu_500_dropout,
   }
 
   public enum Backend {
@@ -110,6 +107,40 @@ public class DeepWaterParameters extends Model.Parameters {
    * of selected models.
    */
   public double _epochs = 10;
+
+  /**
+   * Activation functions
+   */
+  public enum Activation {
+    Rectifier, Tanh
+  }
+
+  /**
+   * The activation function (non-linearity) to be used the neurons in the hidden layers.
+   * Tanh: Hyperbolic tangent function (same as scaled and shifted sigmoid).
+   * Rectifier: Chooses the maximum of (0, x) where x is the input value.
+   */
+  public Activation _activation = null;
+
+  /**
+   * The number and size of each hidden layer in the model.
+   * For example, if a user specifies "100,200,100" a model with 3 hidden
+   * layers will be produced, and the middle hidden layer will have 200
+   * neurons.
+   */
+  public int[] _hidden = null;
+
+  /**
+   * A fraction of the features for each training row to be omitted from training in order
+   * to improve generalization (dimension sampling).
+   */
+  public double _input_dropout_ratio = 0.0f;
+
+  /**
+   * A fraction of the inputs for each hidden layer to be omitted from training in order
+   * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
+   */
+  public double[] _hidden_dropout_ratios = null;
 
   /**
    * The number of training data rows to be processed per iteration. Note that
@@ -551,17 +582,42 @@ public class DeepWaterParameters extends Model.Parameters {
           toParms._overwrite_with_best_model = false;
         }
       }
-      if (fromParms._network == Network.auto) {
+      if (fromParms._network == Network.auto || fromParms._network==null) {
         if (toParms._problem_type==ProblemType.image_classification) toParms._network = Network.inception_bn;
         if (toParms._problem_type==ProblemType.text_classification) throw H2O.unimpl();
-        if (toParms._problem_type==ProblemType.h2oframe_classification) toParms._network = Network.relu_500_relu_500;
-        if (!fromParms._quiet_mode)
+        if (toParms._problem_type==ProblemType.h2oframe_classification) {
+          toParms._network = null;
+          if (fromParms._hidden == null) {
+            toParms._hidden = new int[]{200, 200};
+            toParms._activation = Activation.Rectifier;
+            toParms._hidden_dropout_ratios = new double[toParms._hidden.length];
+          }
+        }
+        if (!fromParms._quiet_mode && toParms._network!=null)
           Log.info("_network: Using " + toParms._network + " model by default.");
       }
       if (fromParms._autoencoder && fromParms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
         if (!fromParms._quiet_mode)
           Log.info("_stopping_metric: Automatically setting stopping_metric to MSE for autoencoder.");
         toParms._stopping_metric = ScoreKeeper.StoppingMetric.MSE;
+      }
+      if (toParms._hidden!=null) {
+        if (toParms._hidden_dropout_ratios==null) {
+          if (!fromParms._quiet_mode)
+            Log.info("_hidden_dropout_ratios: Automatically setting hidden_dropout_ratios to 0 for all layers.");
+          toParms._hidden_dropout_ratios = new double[toParms._hidden.length];
+        }
+        if (toParms._activation==null) {
+          toParms._activation = Activation.Rectifier;
+          if (!fromParms._quiet_mode)
+            Log.info("_activation: Automatically setting activation to " + toParms._activation + " for all layers.");
+        }
+        if (!fromParms._quiet_mode) {
+          Log.info("Hidden layers: " + Arrays.toString(toParms._hidden));
+          Log.info("Activation function: " + toParms._activation);
+          Log.info("Input dropout ratio: " + toParms._input_dropout_ratio);
+          Log.info("Hidden layer dropout ratio: " + Arrays.toString(toParms._hidden_dropout_ratios));
+        }
       }
 
       // Automatically set the distribution

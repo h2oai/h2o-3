@@ -493,7 +493,7 @@ public class DeepWaterTest extends TestUtil {
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
 
-      Assert.assertTrue(m.model_info()._imageTrain==null);
+      Assert.assertTrue(m.model_info()._mxnet ==null);
 
       int hashCodeNetwork = java.util.Arrays.hashCode(m.model_info()._network);
       int hashCodeParams = java.util.Arrays.hashCode(m.model_info()._modelparams);
@@ -719,7 +719,6 @@ public class DeepWaterTest extends TestUtil {
     try {
       DeepWaterParameters p = new DeepWaterParameters();
       p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
-      p._network = DeepWaterParameters.Network.tanh_100;
       p._response_column = "CAPSULE";
       p._ignored_columns = new String[]{"ID"};
       for (String col : new String[]{"RACE", "DPROS", "DCAPS", "CAPSULE", "GLEASON"}) {
@@ -799,6 +798,48 @@ public class DeepWaterTest extends TestUtil {
         p._train = tr._key;
         p._valid = va._key;
         p._sparse = true;
+        DeepWater j = new DeepWater(p);
+        m = j.trainModel().get();
+        Assert.assertTrue(((ModelMetricsMultinomial)(m._output._validation_metrics)).mean_per_class_error() < 0.05);
+      }
+    } finally {
+      if (tr!=null) tr.remove();
+      if (va!=null) va.remove();
+      if (m!=null) m.remove();
+    }
+  }
+
+  @Test
+  public void MNISTHinton() {
+    Frame tr = null;
+    Frame va = null;
+    DeepWaterModel m = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      File file = find_test_file("bigdata/laptop/mnist/train.csv.gz");
+      File valid = find_test_file("bigdata/laptop/mnist/test.csv.gz");
+      if (file != null) {
+        p._response_column = "C785";
+        NFSFileVec trainfv = NFSFileVec.make(file);
+        tr = ParseDataset.parse(Key.make(), trainfv._key);
+        NFSFileVec validfv = NFSFileVec.make(valid);
+        va = ParseDataset.parse(Key.make(), validfv._key);
+        for (String col : new String[]{p._response_column}) {
+          Vec v = tr.remove(col); tr.add(col, v.toCategoricalVec()); v.remove();
+          v = va.remove(col); va.add(col, v.toCategoricalVec()); v.remove();
+        }
+        DKV.put(tr);
+        DKV.put(va);
+
+        p._hidden = new int[]{1024,1024,2048};
+        p._input_dropout_ratio = 0.1;
+        p._hidden_dropout_ratios = new double[]{0.5,0.5,0.5};
+        p._stopping_rounds = 0;
+        p._rate = 1e-3;
+        p._mini_batch_size = 32;
+        p._epochs = 20;
+        p._train = tr._key;
+        p._valid = va._key;
         DeepWater j = new DeepWater(p);
         m = j.trainModel().get();
         Assert.assertTrue(((ModelMetricsMultinomial)(m._output._validation_metrics)).mean_per_class_error() < 0.05);
