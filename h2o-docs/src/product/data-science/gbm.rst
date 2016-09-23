@@ -202,9 +202,7 @@ Defining a GBM Model
    predictions to use for hit ratio computation. Applicable to
    multi-class only. To disable, enter 0.
 
--  **r2\_stopping**: Specify a threshold for the coefficient of
-   determination ((r^2)) metric value. When this threshold is met or
-   exceeded, H2O stops making trees.
+-  **r2\_stopping**: r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds, stopping_metric and stopping_tolerance instead.
 
 -  **stopping\_rounds**: Stops training when the option selected for
    **stopping\_metric** doesn't improve for the specified number of
@@ -229,7 +227,6 @@ Defining a GBM Model
    -  **logloss**
    -  **MSE**
    -  **AUC**
-   -  **r2**
    -  **misclassification**
 
 -  **stopping\_tolerance**: Specify the relative tolerance for the
