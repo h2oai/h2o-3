@@ -35,7 +35,8 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "stopping_tolerance", "max_runtime_secs", "replicate_training_data", "single_node_mode",
                       "shuffle_training_data", "mini_batch_size", "clip_gradient", "network", "backend", "image_shape",
                       "channels", "gpu", "device_id", "network_definition_file", "network_parameters_file",
-                      "mean_image_file", "export_native_model_prefix"}
+                      "mean_image_file", "export_native_model_prefix", "activation", "hidden", "input_dropout_ratio",
+                      "hidden_dropout_ratios"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -176,7 +177,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def categorical_encoding(self):
         """
         Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"]: Encoding scheme for categorical
-        features (Default: "one_hot_internal")
+        features (Default: "one_hot_explicit")
         """
         return self._parms.get("categorical_encoding")
 
@@ -487,14 +488,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @property
     def network(self):
         """
-        Enum["auto", "user", "lenet", "alexnet", "vgg", "vgg16", "googlenet", "inception_bn", "resnet"]: Network
-        architecture. (Default: "auto")
+        Enum["auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn", "resnet"]: Network architecture.
+        (Default: "auto")
         """
         return self._parms.get("network")
 
     @network.setter
     def network(self, network):
-        assert_is_type(network, None, Enum("auto", "user", "lenet", "alexnet", "vgg", "vgg16", "googlenet", "inception_bn", "resnet"))
+        assert_is_type(network, None, Enum("auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn", "resnet"))
         self._parms["network"] = network
 
 
@@ -595,5 +596,52 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def export_native_model_prefix(self, export_native_model_prefix):
         assert_is_type(export_native_model_prefix, None, str)
         self._parms["export_native_model_prefix"] = export_native_model_prefix
+
+
+    @property
+    def activation(self):
+        """Enum["rectifier", "tanh"]: Activation function."""
+        return self._parms.get("activation")
+
+    @activation.setter
+    def activation(self, activation):
+        assert_is_type(activation, None, Enum("rectifier", "tanh"))
+        self._parms["activation"] = activation
+
+
+    @property
+    def hidden(self):
+        """List[int]: Hidden layer sizes (e.g. [200, 200])."""
+        return self._parms.get("hidden")
+
+    @hidden.setter
+    def hidden(self, hidden):
+        assert_is_type(hidden, None, [int])
+        self._parms["hidden"] = hidden
+
+
+    @property
+    def input_dropout_ratio(self):
+        """float: Input layer dropout ratio (can improve generalization, try 0.1 or 0.2). (Default: 0.0)"""
+        return self._parms.get("input_dropout_ratio")
+
+    @input_dropout_ratio.setter
+    def input_dropout_ratio(self, input_dropout_ratio):
+        assert_is_type(input_dropout_ratio, None, numeric)
+        self._parms["input_dropout_ratio"] = input_dropout_ratio
+
+
+    @property
+    def hidden_dropout_ratios(self):
+        """
+        List[float]: Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer,
+        defaults to 0.5.
+        """
+        return self._parms.get("hidden_dropout_ratios")
+
+    @hidden_dropout_ratios.setter
+    def hidden_dropout_ratios(self, hidden_dropout_ratios):
+        assert_is_type(hidden_dropout_ratios, None, [numeric])
+        self._parms["hidden_dropout_ratios"] = hidden_dropout_ratios
 
 
