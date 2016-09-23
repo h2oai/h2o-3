@@ -172,7 +172,6 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
 
         // fractional passes
         while (trainRows.size() < _useFraction * len || trainRows.size() % batchSize != 0) {
-          assert (_shuffle);
           int i = rng.nextInt(len);
           double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
           if (weight == 0)
