@@ -762,6 +762,7 @@ public class DeepWaterTest extends TestUtil {
 
         p._train = tr._key;
         p._valid = va._key;
+        p._hidden = new int[]{500,500};
         DeepWater j = new DeepWater(p);
         m = j.trainModel().get();
         Assert.assertTrue(((ModelMetricsMultinomial)(m._output._validation_metrics)).mean_per_class_error() < 0.05);
@@ -797,6 +798,7 @@ public class DeepWaterTest extends TestUtil {
 
         p._train = tr._key;
         p._valid = va._key;
+        p._hidden = new int[]{500,500};
         p._sparse = true;
         DeepWater j = new DeepWater(p);
         m = j.trainModel().get();
