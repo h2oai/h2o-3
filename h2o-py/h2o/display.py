@@ -72,9 +72,9 @@ class H2ODisplay(object):
         if H2ODisplay._jupyter is None:
             try:
                 import IPython
-                import ipykernel
+                from ipykernel.zmqshell import ZMQInteractiveShell
                 ipy = IPython.get_ipython()
-                H2ODisplay._jupyter = isinstance(ipy, ipykernel.zmqshell.ZMQInteractiveShell)
+                H2ODisplay._jupyter = isinstance(ipy, ZMQInteractiveShell)
             except ImportError:
                 H2ODisplay._jupyter = False
         return H2ODisplay._jupyter
