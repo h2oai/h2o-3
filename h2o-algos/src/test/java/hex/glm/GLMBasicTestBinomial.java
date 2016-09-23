@@ -657,7 +657,7 @@ public class GLMBasicTestBinomial extends TestUtil {
 //      if(fTest != null)fTest.delete();
     }
   }
-  
+
   @Test
   public void testNonNegative() {
     GLMModel model = null;
@@ -867,10 +867,10 @@ public class GLMBasicTestBinomial extends TestUtil {
         vw.set(i, offset_test[i]);
     }
 
-    Frame fTrain = new Frame(Key.make("prostate_with_offset_train"), new String[]{"offset","weights"}, new Vec[]{offsetVecTrain, weightsVecTrain});
+    Frame fTrain = new Frame(Key.<Frame>make("prostate_with_offset_train"), new String[]{"offset","weights"}, new Vec[]{offsetVecTrain, weightsVecTrain});
     fTrain.add(_prostateTrain.names(), _prostateTrain.vecs());
     DKV.put(fTrain);
-    Frame fTest = new Frame(Key.make("prostate_with_offset_test"), new String[]{"offset"}, new Vec[]{offsetVecTest});
+    Frame fTest = new Frame(Key.<Frame>make("prostate_with_offset_test"), new String[]{"offset"}, new Vec[]{offsetVecTest});
     fTest.add(_prostateTest.names(),_prostateTest.vecs());
     DKV.put(fTest);
 //    Call:  glm(formula = CAPSULE ~ . - ID - RACE - DCAPS - DPROS - 1, family = binomial,

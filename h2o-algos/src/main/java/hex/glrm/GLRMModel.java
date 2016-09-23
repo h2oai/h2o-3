@@ -509,19 +509,19 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
   }
 
   /** Write out K/V pairs */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) { 
+  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     ab.putKey(_output._init_key);
     ab.putKey(_output._representation_key);
     return super.writeAll_impl(ab);
   }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     ab.getKey(_output._init_key,fs);
     ab.getKey(_output._representation_key,fs);
     return super.readAll_impl(ab,fs);
   }
 
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
-  private Frame reconstruct(Frame orig, Frame adaptedFr, Key destination_key, boolean save_imputed, boolean reverse_transform) {
+  private Frame reconstruct(Frame orig, Frame adaptedFr, Key<Frame> destination_key, boolean save_imputed, boolean reverse_transform) {
     final int ncols = _output._names.length;
     assert ncols == adaptedFr.numCols();
     String prefix = "reconstr_";
@@ -543,17 +543,17 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     int x = ncols + _parms._k, y = fullFrm.numCols();
     Frame f = fullFrm.extractFrame(x, y);  // this will call vec_impl() and we cannot call the delete() below just yet
 
-    f = new Frame((null == destination_key ? Key.make() : destination_key), f.names(), f.vecs());
+    f = new Frame((destination_key == null ? Key.<Frame>make() : destination_key), f.names(), f.vecs());
     DKV.put(f);
     gs._mb.makeModelMetrics(GLRMModel.this, orig, null, null);   // save error metrics based on imputed data
     return f;
   }
 
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j) {
-    return reconstruct(orig, adaptedFr, (null == destination_key ? Key.make() : Key.make(destination_key)), true, _parms._impute_original);
+    return reconstruct(orig, adaptedFr, Key.<Frame>make(destination_key), true, _parms._impute_original);
   }
 
-  public Frame scoreReconstruction(Frame frame, Key destination_key, boolean reverse_transform) {
+  public Frame scoreReconstruction(Frame frame, Key<Frame> destination_key, boolean reverse_transform) {
     Frame adaptedFr = new Frame(frame);
     adaptTestForTrain(adaptedFr, true, false);
     return reconstruct(frame, adaptedFr, destination_key, true, reverse_transform);

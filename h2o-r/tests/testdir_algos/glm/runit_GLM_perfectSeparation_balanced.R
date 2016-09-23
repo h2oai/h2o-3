@@ -2,9 +2,9 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 ##
 # Testing glm performance (reasonable coefficients) on balanced synthetic dataset with perfect separation.
-# Separation recognized by R glm with following warning: 
-#       1: glm.fit: algorithm did not converge 
-#       2: glm.fit: fitted probabilities numerically 0 or 1 occurred 
+# Separation recognized by R glm with following warning:
+#       1: glm.fit: algorithm did not converge
+#       2: glm.fit: fitted probabilities numerically 0 or 1 occurred
 ##
 
 
@@ -15,7 +15,9 @@ source("../../../scripts/h2o-r-test-setup.R")
 test <- function() {
 
     print("Read in synthetic balanced dataset")
-        data.b.hex <- h2o.uploadFile(locate("smalldata/synthetic_perfect_separation/balanced.csv"), destination_frame="data.b.hex")
+        data.b.hex <- h2o.uploadFile(locate("smalldata/synthetic_perfect_separation/balanced.csv"),
+                                     destination_frame="data.b.hex",
+                                     col.names=c("y", "x1", "x2"))
 
     print("Fit model on dataset.")
         model.balanced <- h2o.glm(x=c("x1", "x2"), y="y", data.b.hex, family="binomial", lambda_search=TRUE, alpha=0, nfolds=0, lambda=1e-8)
@@ -26,7 +28,7 @@ test <- function() {
     suppressWarnings((coef$"Intercept"<-NULL))
     stopifnot(coef < 50)
 
-    
+
 }
 
 doTest("Testing glm performance on balanced synthetic dataset with perfect separation.", test)

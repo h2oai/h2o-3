@@ -76,6 +76,13 @@ class TestGLMMultinomial:
     max_col_count_ratio = 500   # set max row count to be multiples of col_count to avoid over fitting
     min_col_count_ratio = 100   # set min row count to be multiples of col_count to avoid over fitting
 
+    ###### for debugging
+ #   max_col_count = 5         # set maximum values of train/test row and column counts
+ #   max_col_count_ratio = 50   # set max row count to be multiples of col_count to avoid overfitting
+ #   min_col_count_ratio = 10
+
+
+
     max_p_value = 2             # set maximum predictor value
     min_p_value = -2            # set minimum predictor value
 
@@ -120,7 +127,7 @@ class TestGLMMultinomial:
     total_test_number = 7
 
     ignored_eps = 1e-15   # if p-values < than this value, no comparison is performed, only for Gaussian
-    allowed_diff = 1e-1   # tolerance of comparison for logloss/prediction accuracy
+    allowed_diff = 5e-1   # tolerance of comparison for logloss/prediction accuracy
 
     nan_fraction = 0.2          # denote maximum fraction of NA's to be inserted into a column
 
@@ -171,7 +178,7 @@ class TestGLMMultinomial:
 
     best_lambda = 0.0   # store best lambda obtained using lambda search
 
-    testName = "pyunit_glm_multinomial.py"     # name of this test
+    test_name = "pyunit_glm_multinomial.py"     # name of this test
     sandbox_dir = ""    # sandbox directory where we are going to save our failed test data sets
 
     # store information about training, validation and test data sets that are used
@@ -231,7 +238,7 @@ class TestGLMMultinomial:
         """
 
         # clean out the sandbox directory first
-        self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.testName, True)
+        self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
 
         # randomly set Multinomial noise standard deviation as a fraction of actual predictor standard deviation
         self.noise_std = random.uniform(0, math.sqrt(pow((self.max_p_value - self.min_p_value), 2) / 12))
@@ -239,8 +246,8 @@ class TestGLMMultinomial:
 
         # randomly determine data set size in terms of column and row counts
         self.train_col_count = random.randint(3, self.max_col_count)    # accounts for enum columns later
-        self.train_row_count = round(self.train_col_count*random.uniform(self.min_col_count_ratio,
-                                                                         self.max_col_count_ratio))
+        self.train_row_count = int(round(self.train_col_count*random.uniform(self.min_col_count_ratio,
+                                                                             self.max_col_count_ratio)))
 
         self.class_number = random.randint(3, self.max_class_number)    # randomly set number of classes K
 
@@ -334,52 +341,84 @@ class TestGLMMultinomial:
         # save the training data files just in case the code crashed.
         pyunit_utils.remove_csv_files(self.current_dir, ".csv", action='copy', new_dir_path=self.sandbox_dir)
 
-    def tear_down(self):
+    def teardown(self):
         """
         This function performs teardown after the dynamic test is completed.  If all tests
         passed, it will delete all data sets generated since they can be quite large.  It
         will move the training/validation/test data sets into a Rsandbox directory so that
-        we can re-run the failed tests later.
+        we can re-run the failed test.
         """
 
-        if self.test_failed:    # some tests have failed.  Need to save data sets for later re-runs
-            # create Rsandbox directory to keep data sets and weight information
-            self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.testName, True)
+        remove_files = []
 
-            # Do not want to save all data sets.  Only save data sets that are needed for failed tests
-            if sum(self.test_failed_array[0:4]):
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.validation_data_file, self.validation_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
+        # create Rsandbox directory to keep data sets and weight information
+        self.sandbox_dir = pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, True)
 
-            if sum(self.test_failed_array[0:6]):
-                pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file, self.weight_filename)
+        # Do not want to save all data sets.  Only save data sets that are needed for failed tests
+        if sum(self.test_failed_array[0:4]):
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.validation_data_file, self.validation_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
+        else:   # remove those files instead of moving them
+            remove_files.append(self.training_data_file)
+            remove_files.append(self.validation_data_file)
+            remove_files.append(self.test_data_file)
 
-            if self.test_failed_array[5]:
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_nans, self.training_filename_nans)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_nans, self.test_filename_nans)
+        if sum(self.test_failed_array[0:6]):
+            pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file, self.weight_filename)
+        else:
+            remove_files.append(self.weight_data_file)
 
-            if self.test_failed_array[6]:
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_enum_nans,
-                                        self.training_filename_enum_nans)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_enum_nans, self.test_filename_enum_nans)
-                pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file_enum, self.weight_filename_enum)
+        if self.test_failed_array[3]:
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
 
-            if self.test_failed_array[7]:
-                pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_enum_nans_true_one_hot,
-                                        self.training_filename_enum_nans_true_one_hot)
-                pyunit_utils.move_files(self.sandbox_dir, self.validation_data_file_enum_nans_true_one_hot,
-                                        self.validation_filename_enum_nans_true_one_hot)
-                pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_enum_nans_true_one_hot,
-                                        self.test_filename_enum_nans_true_one_hot)
-                pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file_enum, self.weight_filename_enum)
-        else:   # all tests have passed.  Delete sandbox if it was not wiped before
-            pyunit_utils.make_Rsandbox_dir(self.current_dir, self.testName, False)
+        if self.test_failed_array[4]:
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file, self.training_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file, self.test_filename)
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_nans, self.training_filename_nans)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_nans, self.test_filename_nans)
+        else:
+            remove_files.append(self.training_data_file_nans)
+            remove_files.append(self.test_data_file_nans)
 
-        # remove any csv files left in test directory
-        #pyunit_utils.remove_csv_files(self.current_dir, ".csv")
+        if self.test_failed_array[5]:
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_enum_nans,
+                                    self.training_filename_enum_nans)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_enum_nans, self.test_filename_enum_nans)
+            pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file_enum, self.weight_filename_enum)
+        else:
+            remove_files.append(self.training_data_file_enum_nans)
+            remove_files.append(self.training_data_file_enum)
+            remove_files.append(self.test_data_file_enum_nans)
+            remove_files.append(self.test_data_file_enum)
+            remove_files.append(self.validation_data_file_enum_nans)
+            remove_files.append(self.validation_data_file_enum)
+            remove_files.append(self.weight_data_file_enum)
+
+        if self.test_failed_array[6]:
+            pyunit_utils.move_files(self.sandbox_dir, self.training_data_file_enum_nans_true_one_hot,
+                                    self.training_filename_enum_nans_true_one_hot)
+            pyunit_utils.move_files(self.sandbox_dir, self.validation_data_file_enum_nans_true_one_hot,
+                                    self.validation_filename_enum_nans_true_one_hot)
+            pyunit_utils.move_files(self.sandbox_dir, self.test_data_file_enum_nans_true_one_hot,
+                                    self.test_filename_enum_nans_true_one_hot)
+            pyunit_utils.move_files(self.sandbox_dir, self.weight_data_file_enum, self.weight_filename_enum)
+        else:
+            remove_files.append(self.training_data_file_enum_nans_true_one_hot)
+            remove_files.append(self.training_data_file_enum_true_one_hot)
+            remove_files.append(self.validation_data_file_enum_nans_true_one_hot)
+            remove_files.append(self.validation_data_file_enum_true_one_hot)
+            remove_files.append(self.test_data_file_enum_nans_true_one_hot)
+            remove_files.append(self.test_data_file_enum_true_one_hot)
+
+        if not(self.test_failed):   # all tests have passed.  Delete sandbox if if was not wiped before
+            pyunit_utils.make_Rsandbox_dir(self.current_dir, self.test_name, False)
+
+        # remove any csv files left in test directory, do not remove them, shared computing resources
+        if len(remove_files) > 0:
+            for file in remove_files:
+                pyunit_utils.remove_files(file)
 
     def test1_glm_no_regularization(self):
         """
@@ -872,11 +911,6 @@ class TestGLMMultinomial:
         print("Test6: test the GLM with enum/real values.")
         h2o.cluster_info()
 
-        # training result from python sklearn
-        (p_weights, p_logloss_train, p_cm_train, p_accuracy_training, p_logloss_test, p_cm_test, p_accuracy_test) =\
-            self.sklearn_multinomial_result(self.training_data_file_enum_nans, self.test_data_file_enum_nans,
-                                            True, False)
-
         # import training set and test set with missing values
         training_data = h2o.import_file(pyunit_utils.locate(self.training_data_file_enum_nans))
         test_data = h2o.import_file(pyunit_utils.locate(self.test_data_file_enum_nans))
@@ -897,6 +931,11 @@ class TestGLMMultinomial:
         if training_data[y_index].nlevels()[0] < self.class_number:
             print("Response classes are not represented in training dataset.")
             sys.exit(0)
+
+        # training result from python sklearn
+        (p_weights, p_logloss_train, p_cm_train, p_accuracy_training, p_logloss_test, p_cm_test, p_accuracy_test) =\
+            self.sklearn_multinomial_result(self.training_data_file_enum_nans, self.test_data_file_enum_nans,
+                                            True, False)
 
         test_data[y_index] = test_data[y_index].round().asfactor()
 
@@ -1234,7 +1273,7 @@ class TestGLMMultinomial:
         # replace missing values with column mean before proceeding for training/test data sets
         if np.isnan(training_data_xy).any():
             inds = np.where(np.isnan(training_data_xy))
-            col_means = stats.nanmean(training_data_xy, axis=0)
+            col_means = np.asarray(np.nanmean(training_data_xy, axis=0))[0]
             training_data_xy[inds] = np.take(col_means, inds[1])
 
             if np.isnan(test_data_xy).any():
@@ -1302,7 +1341,7 @@ def test_glm_multinomial():
     test_glm_multinomial.test5_missing_values()
     test_glm_multinomial.test6_enum_missing_values()
     test_glm_multinomial.test7_missing_enum_values_lambda_search()
-    # test_glm_multinomial.tear_down()
+    test_glm_multinomial.teardown()
 
     sys.stdout.flush()
 

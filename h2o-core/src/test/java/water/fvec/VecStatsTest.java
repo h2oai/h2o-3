@@ -25,7 +25,7 @@ public class VecStatsTest extends TestUtil {
       }
       vecs[0] = vec.layout_and_close(fs);
       fs.blockForPending();
-      frame = new Frame(Key.make(), null, vecs);
+      frame = new Frame(Key.<Frame>make(), null, vecs);
 
       // Make sure we test the multi-chunk case
       vecs = frame.vecs();

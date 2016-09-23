@@ -141,7 +141,7 @@ public final class PersistS3 extends Persist {
     // List of processed files
     AmazonS3 s3 = getClient();
     String [] parts = decodePath(path);
-    ObjectListing currentList = s3.listObjects(parts[0],parts[1]);
+    ObjectListing currentList = s3.listObjects(parts[0], parts[1]);
     processListing(currentList, files, fails,true);
     while(currentList.isTruncated()){
       currentList = s3.listNextBatchOfObjects(currentList);
@@ -254,6 +254,12 @@ public final class PersistS3 extends Persist {
     return Key.make(KEY_PREFIX + bucket + '/' + key);
   }
 
+  /**
+   * Decompose S3 name into bucket name and key name
+   *
+   * @param s generic s3 path (e.g., "s3://bucketname/my/directory/file.ext")
+   * @return array of { bucket name, key }
+   */
   private static String [] decodePath(String s) {
     assert s.startsWith(KEY_PREFIX) && s.indexOf('/') >= 0 : "Attempting to decode non s3 key: " + s;
     s = s.substring(KEY_PREFIX_LEN);
@@ -306,28 +312,26 @@ public final class PersistS3 extends Persist {
     return cfg;
   }
 
-  // TODO needed if storing ice to S3
-
-
   @Override public void delete(Value v) {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public Key uriToKey(URI uri) throws IOException {
-    ArrayList<String> files = new ArrayList<String>();
-    ArrayList<String> keys = new ArrayList<String>();
-    ArrayList<String> fails = new ArrayList<String>();
-    ArrayList<String> dels = new ArrayList<String>();
-    importFiles(uri.toString(),files,keys,fails,dels);
-    if(!fails.isEmpty())
-      throw new RuntimeException("Failed to import " + Arrays.toString(fails.toArray(new String[0])));
-    if(keys.size() != 1)
-      throw new RuntimeException("Expected exactly one file, got " + Arrays.toString(keys.toArray(new String[0])));
-    Key k = Key.make(keys.get(0));
-    Keyed x = DKV.getGet(k);
-    assert x._key.toString().equals(keys.get(0));
-    return k;
+    AmazonS3 s3 = getClient();
+    // Decompose URI into bucket, key
+    String [] parts = decodePath(uri.toString());
+    try {
+      ObjectMetadata om = s3.getObjectMetadata(parts[0], parts[1]);
+      // Voila: create S3 specific key pointing to the file
+      return S3FileVec.make(encodePath(parts[0], parts[1]), om.getContentLength());
+    } catch (AmazonServiceException e) {
+      if (e.getErrorCode().contains("404")) {
+        throw new IOException(e);
+      } else {
+        throw e;
+      }
+    }
   }
 
   @Override
@@ -390,7 +394,6 @@ public final class PersistS3 extends Persist {
     }
     @Override
     protected String wrapKey(String s) {
-      String x = _keyPrefix + s;
       return _keyPrefix + s;
     }
   }

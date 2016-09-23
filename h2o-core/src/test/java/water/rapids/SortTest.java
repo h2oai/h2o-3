@@ -26,7 +26,7 @@ public class SortTest extends TestUtil {
       // Sort will be on columns 0 and 1, in that order, and is expected stable.
       fr = buildFrame(1000,10);
       fr.insertVec(0,"row",fr.remove(2));
-      // 
+      //
       Val val = Rapids.exec(tree);
       assertTrue( val instanceof ValFrame);
       res = val.getFrame();
@@ -160,7 +160,7 @@ public class SortTest extends TestUtil {
     Vec vec1 = col1.layout_and_close(fs);
     Vec vec2 = col2.layout_and_close(fs);
     fs.blockForPending();
-    Frame fr = new Frame(Key.make("hex"), null, new Vec[]{vec0,vec1,vec2});
+    Frame fr = new Frame(Key.<Frame>make("hex"), null, new Vec[]{vec0,vec1,vec2});
     DKV.put(fr);
     return fr;
   }
