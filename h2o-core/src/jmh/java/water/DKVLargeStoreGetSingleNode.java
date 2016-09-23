@@ -5,14 +5,8 @@ import org.openjdk.jmh.annotations.*;
 import water.nbhm.NonBlockingHashMap;
 
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 import java.util.Random;
 
-@Fork(5)
-@BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=20)
-@Warmup(iterations=10)
-@OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
 
 // Alternative setup. Only do 1 method invocation per iteration. Generate unique key prior to each interation.

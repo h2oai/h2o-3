@@ -2,20 +2,12 @@ package water;
 
 import org.openjdk.jmh.annotations.*;
 
-import water.Key;
-
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
-@Fork(5)
-@BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=20, timeUnit=TimeUnit.MILLISECONDS, time=100)
-@Warmup(iterations=10, timeUnit=TimeUnit.MILLISECONDS, time=10)
-@OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
 public class CHMPutBenchmark {
 
-    ConcurrentHashMap<String,Integer> chm = new ConcurrentHashMap<String,Integer>(524288);
+    ConcurrentHashMap<String,Integer> chm = new ConcurrentHashMap<String,Integer>(2097152);
 
     // prior to each jmh iteration, clear out the hash map
     @Setup(Level.Iteration)
@@ -24,7 +16,7 @@ public class CHMPutBenchmark {
     // after each jmh iteration, make sure no resize operations took place because we don't want to measure these
     @TearDown(Level.Iteration)
     public void checkCHM() throws InterruptedException {
-        if (chm.size() > 524288*.75) {
+        if (chm.size() > 2097152*.75) {
             System.out.println("CHM probably resized. Invalid experiment.");
             throw new InterruptedException();
         }

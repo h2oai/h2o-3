@@ -1,18 +1,11 @@
 package water;
 
 import org.openjdk.jmh.annotations.*;
-
 import water.nbhm.NonBlockingHashMap;
 
 import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
 import java.util.Random;
 
-@Fork(5)
-@BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=20)
-@Warmup(iterations=10)
-@OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
 public class DKVGetBenchmarkSingleNode {
 

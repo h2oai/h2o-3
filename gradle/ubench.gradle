@@ -6,5 +6,22 @@ apply plugin: 'me.champeau.gradle.jmh'
 
 // Setup JMH
 jmh {
+    include = 'water.DKVGetBenchmarkSingleNode'
     jmhVersion = '1.12'
+    resultFormat = 'CSV'
+    resultsFile = project.file("${project.buildDir}/reports/jmh/results.csv")
+}
+
+dependencies {
+    jmh group: 'commons-io' , name: 'commons-io', version: '2.4'
+    jmh group: 'org.openjdk.jmh', name: 'jmh-generator-annprocess', version: '1.12'
+    jmh group: 'com.timgroup', name: 'java-statsd-client', version: '3.1.0'
+}
+
+task benchmark(type: JavaExec) {
+    classpath = sourceSets.jmh.runtimeClasspath
+    main = 'water.JMHRunner'
+    if (project.hasProperty('jmhArgs')) {
+        args(jmhArgs.split(','))
+    }
 }

@@ -4,17 +4,10 @@ import org.openjdk.jmh.annotations.*;
 
 import water.nbhm.NonBlockingHashMap;
 
-import java.util.concurrent.TimeUnit;
-
-@Fork(5)
-@BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=20, timeUnit=TimeUnit.MILLISECONDS, time=100)
-@Warmup(iterations=10, timeUnit=TimeUnit.MILLISECONDS, time=10)
-@OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
 public class DKVPutBenchmarkSingleNode {
 
-    NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(524288);
+    NonBlockingHashMap<String, Integer> nbhm = new NonBlockingHashMap<String, Integer>(2097152);
 
     @Setup(Level.Iteration)
     public void clearNBHM() { nbhm.clear(); }
@@ -22,8 +15,8 @@ public class DKVPutBenchmarkSingleNode {
     @TearDown(Level.Iteration)
     public void checkNBHM() throws InterruptedException {
         int endIterStoreSize = (nbhm.kvs().length-2)>>1;
-        if (524288 < endIterStoreSize) {
-            throw new InterruptedException("Looks like the nbhm was resized from "+524288+" to "+
+        if (2097152 < endIterStoreSize) {
+            throw new InterruptedException("Looks like the nbhm was resized from "+2097152+" to "+
                     endIterStoreSize+". For this benchmark, we want to avoid this.");
         }
     }

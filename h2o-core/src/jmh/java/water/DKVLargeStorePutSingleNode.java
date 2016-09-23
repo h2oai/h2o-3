@@ -6,11 +6,6 @@ import water.nbhm.NonBlockingHashMap;
 
 import java.util.concurrent.TimeUnit;
 
-@Fork(5)
-@BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=20, timeUnit=TimeUnit.MILLISECONDS, time=100)
-@Warmup(iterations=10, timeUnit=TimeUnit.MILLISECONDS, time=10)
-@OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
 
 // Alternative setup. Only do 1 method invocation per iteration. Generate unique key prior to each interation.

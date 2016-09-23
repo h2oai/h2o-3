@@ -44,8 +44,6 @@ dependencies {
   // compile 'net.java.dev.jets3t:jets3t:0.6.1'
 
   testCompile "junit:junit:${junitVersion}"
-
-  compile 'com.timgroup:java-statsd-client:3.1.0'
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

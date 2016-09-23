@@ -5,13 +5,7 @@ import org.openjdk.jmh.annotations.*;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
-@Fork(5)
-@BenchmarkMode(Mode.AverageTime)
-@Measurement(iterations=20)
-@Warmup(iterations=10)
-@OutputTimeUnit(value= TimeUnit.NANOSECONDS)
 @State(org.openjdk.jmh.annotations.Scope.Benchmark)
 public class CHMGetBenchmark {
 
