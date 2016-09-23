@@ -561,7 +561,12 @@ public class DeepWaterParameters extends Model.Parameters {
             ImageIO.read(new File(first));
             image=true;
           } catch(Throwable t) {
-            text = true;
+            if (first.endsWith(".jpg") || first.endsWith(".png") || first.endsWith(".tif")) {
+              image=true;
+              Log.warn("Cannot read first image at " + first + " - Check data.");
+            } else {
+              text = true;
+            }
           }
         }
         if (image) toParms._problem_type = ProblemType.image_classification;

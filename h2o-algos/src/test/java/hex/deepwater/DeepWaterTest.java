@@ -31,7 +31,6 @@ public class DeepWaterTest extends TestUtil {
   public static void stall() { stall_till_cloudsize(1); new MXNetLoader(); }
 
   // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
-  @Ignore //works on CPU, but not on GPU?
   @Test
   public void inceptionPredictionMX() throws IOException {
     File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
@@ -65,7 +64,8 @@ public class DeepWaterTest extends TestUtil {
 
 
     // the path to Inception model
-    ImageTrain m = new ImageTrain(); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
+    ImageTrain m = new ImageTrain(224,224,3);
+    //m.buildNet(1000,1,"inception_bn");
     m.loadModel(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
     m.setOptimizer(1000, 1);
     m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
@@ -104,9 +104,9 @@ public class DeepWaterTest extends TestUtil {
     int batch_size = 64;
     int classes = 10;
 
-    ImageTrain m = new ImageTrain();
+    ImageTrain m = new ImageTrain(224,224,3);
     m.buildNet(classes, batch_size, "inception_bn");
-    m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
+//    m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params")); //for inception_bn2
 
     int max_iter = 6; //epochs
     int count = 0;
