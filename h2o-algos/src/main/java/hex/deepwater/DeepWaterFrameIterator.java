@@ -60,7 +60,7 @@ public class DeepWaterFrameIterator extends DeepWaterIterator {
     public void compute2() {
       _destLabel[_index] = _label;
       final int start=_index*_dinfo.fullN();
-      Key rowKey = Key.make(_dinfo._key + "_row_" + Integer.toString(_globalIndex) + "_" + DeepWaterModel.CACHE_MARKER);
+      Key rowKey = Key.make(_dinfo._adaptedFrame._key + "_row_" + Integer.toString(_globalIndex) + "_" + DeepWaterModel.CACHE_MARKER);
       boolean status = false;
       if (_cache) {
         IcedRow icedRow = DKV.getGet(rowKey);

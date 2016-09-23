@@ -442,6 +442,11 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
     @Override public void map(Chunk[] chks, NewChunk[] cpreds) { }
     @Override protected void setupLocal() {
+      DataInfo di = model_info()._dataInfoKey == null ? null : model_info()._dataInfoKey.get();
+      if (di != null) {
+        di = IcedUtils.deepCopy(di);
+        di._adaptedFrame = _fr; //dinfo logic on _adaptedFrame is what we'll need for extracting standardized features from the data for scoring
+      }
       final int weightIdx =_fr.find(get_params()._weights_column);
       final int respIdx =_fr.find(get_params()._response_column);
       final int batch_size = get_params()._mini_batch_size;
@@ -515,7 +520,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           int channels = model_info()._channels;
           iter = new DeepWaterImageIterator(score_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, model_info().get_params()._cache_data);
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-          iter = new DeepWaterFrameIterator(model_info()._dataInfoKey.get(), score_rows, null /*no labels*/, batch_size, model_info().get_params()._cache_data);
+          iter = new DeepWaterFrameIterator(di, score_rows, null /*no labels*/, batch_size, model_info().get_params()._cache_data);
         } else {
           throw H2O.unimpl();
         }
