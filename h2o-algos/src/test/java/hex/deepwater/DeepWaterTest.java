@@ -833,12 +833,12 @@ public class DeepWaterTest extends TestUtil {
         DKV.put(va);
 
         p._hidden = new int[]{1024,1024,2048};
-        p._input_dropout_ratio = 0.1f;
-        p._hidden_dropout_ratios = new float[]{0.5f,0.5f,0.5f};
+        p._input_dropout_ratio = 0.1;
+        p._hidden_dropout_ratios = new double[]{0.5,0.5,0.5};
         p._stopping_rounds = 0;
         p._rate = 1e-3;
         p._mini_batch_size = 32;
-        p._epochs = 500;
+        p._epochs = 20;
         p._train = tr._key;
         p._valid = va._key;
         DeepWater j = new DeepWater(p);

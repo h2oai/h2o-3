@@ -223,7 +223,7 @@ final public class DeepWaterModelInfo extends Iced {
             String network = parameters._network == null ? null : parameters._network.toString();
             if (network!=null) {
               Log.info("Creating a fresh model of the following network type: " + network);
-              _numericTrain.buildNet(_classes, parameters._mini_batch_size, network, 0, new int[0], new String[0], 0, new float[0]); //set optimizer, batch size, nclasses, etc.
+              _numericTrain.buildNet(_classes, parameters._mini_batch_size, network, 0, new int[0], new String[0], 0, new double[0]); //set optimizer, batch size, nclasses, etc.
             } else {
               Log.info("Creating a fresh model of the following network type: MLP");
               assert(parameters._activation!=null);
