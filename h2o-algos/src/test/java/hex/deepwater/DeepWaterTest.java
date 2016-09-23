@@ -2,8 +2,13 @@ package hex.deepwater;
 
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
+import hex.deepwater.backends.BackendFactory;
+import hex.deepwater.backends.BackendTrain;
+import hex.deepwater.backends.RuntimeOptions;
+import hex.deepwater.datasets.ImageDataset;
 import hex.splitframe.ShuffleSplitFrame;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -11,8 +16,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-import water.gpu.ImageTrain;
-import water.gpu.util;
+
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
@@ -27,8 +31,16 @@ import java.io.*;
 import java.util.*;
 
 public class DeepWaterTest extends TestUtil {
+
+  private DeepWaterParameters.Backend backend;
+
   @BeforeClass
   public static void stall() { stall_till_cloudsize(1); new MXNetLoader(); }
+
+  @Before
+  public void setUp() throws Exception {
+    backend = DeepWaterParameters.Backend.mxnet;
+  }
 
   // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
   @Ignore //works on CPU, but not on GPU?
@@ -65,7 +77,7 @@ public class DeepWaterTest extends TestUtil {
 
 
     // the path to Inception model
-    ImageTrain m = new ImageTrain(); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
+    BackendTrain m = BackendFactory.Create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
     m.loadModel(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
     m.setOptimizer(1000, 1);
     m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
@@ -104,14 +116,16 @@ public class DeepWaterTest extends TestUtil {
     int batch_size = 64;
     int classes = 10;
 
-    ImageTrain m = new ImageTrain();
-    m.buildNet(classes, batch_size, "inception_bn");
+    BackendTrain m = BackendFactory.Create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
+    RuntimeOptions options = new RuntimeOptions();
+    m.setupSession(options, classes, batch_size, "inception_bn");
     m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
 
     int max_iter = 6; //epochs
     int count = 0;
     for (int iter = 0; iter < max_iter; iter++) {
-      m.setLR(3e-3f/(1+iter));
+      float learning_rate = 3e-3f/(1+iter);
+      m.setParameter("learning_rate", learning_rate);
       //each iteration does a different random shuffle
       Random rng = RandomUtils.getRNG(0);
       rng.setSeed(0xDECAF+0xD00D*iter);
@@ -151,7 +165,7 @@ public class DeepWaterTest extends TestUtil {
     scoreTestSet(path,classes,m);
   }
 
-  public static void scoreTestSet(String path, int classes, ImageTrain m) throws IOException {
+  public static void scoreTestSet(String path, int classes, BackendTrain m) throws IOException {
     // make test set predictions
     BufferedReader br = new BufferedReader(new FileReader(new File(path+"test_list.csv"))); //file created with 'cut -d, -f1 sample_submission.csv | sed 1d > test_list.csv'
 
@@ -252,7 +266,7 @@ public class DeepWaterTest extends TestUtil {
       p._stopping_rounds = 0;
       p._image_shape = new int[]{28,28};
       p._network = DeepWaterParameters.Network.lenet;
-
+      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
       // score a lot
       p._train_samples_per_iteration = p._mini_batch_size;
       p._score_duty_cycle = 1;
@@ -279,6 +293,8 @@ public class DeepWaterTest extends TestUtil {
       p._rate = 1e-3;
       p._epochs = epochs;
       p._channels = channels;
+      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
       Assert.assertTrue(m._output._training_metrics.cm().accuracy()>0.9);
@@ -400,6 +416,8 @@ public class DeepWaterTest extends TestUtil {
       p._seed = 1234;
       p._score_training_samples = 0;
       p._train_samples_per_iteration = p._mini_batch_size;
+      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+
       // first model
       Job j1 = new DeepWater(p).trainModel();
       m1 = (DeepWaterModel)j1.get();
@@ -490,10 +508,11 @@ public class DeepWaterTest extends TestUtil {
       p._seed = 1234;
       p._score_training_samples = 0;
       p._train_samples_per_iteration = p._mini_batch_size;
+      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
 
-      Assert.assertTrue(m.model_info()._mxnet ==null);
+      Assert.assertTrue(m.model_info().backend ==null);
 
       int hashCodeNetwork = java.util.Arrays.hashCode(m.model_info()._network);
       int hashCodeParams = java.util.Arrays.hashCode(m.model_info()._modelparams);
@@ -567,6 +586,7 @@ public class DeepWaterTest extends TestUtil {
       p._seed = 12345;
       p._epochs = 0.01;
       p._quiet_mode = true;
+      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
       m1 = new DeepWater(p).trainModel().get();
 
       Log.info("Scoring the original model.");
@@ -607,8 +627,7 @@ public class DeepWaterTest extends TestUtil {
   public void trainLoop() throws InterruptedException {
     int batch_size = 64;
     int classes = 10;
-    ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
-    m.buildNet(classes, batch_size, "lenet");
+    BackendTrain m = buildLENET();
 
     float[] data = new float[28*28*1*batch_size];
     float[] labels = new float[batch_size];
@@ -619,15 +638,26 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
+  private BackendTrain buildLENET() {
+    int batch_size = 64;
+    int classes = 10;
+    BackendTrain m = BackendFactory.Create(backend);// new ImageTrain(28,28,1,0,1234,true);
+    ImageDataset dataset = new ImageDataset(28, 28, 1);
+    RuntimeOptions opts = new RuntimeOptions();
+    opts.setUseGPU(true);
+    opts.setSeed(1234);
+    opts.setDeviceID(0);
+    m.buildNet(dataset, opts, classes, batch_size, "lenet");
+    return m;
+  }
+
   @Test
   public void saveLoop() {
     int batch_size = 64;
     int classes = 10;
-    ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
-    m.buildNet(classes, batch_size, "lenet");
-
+    BackendTrain m = buildLENET();
     int count=0;
-    while(count++<1000) {
+    while(count++<3) {
       Log.info("Iteration: " + count);
       m.saveParam("/tmp/testParam");
     }
@@ -635,14 +665,11 @@ public class DeepWaterTest extends TestUtil {
 
   @Test
   public void predictLoop() {
+    BackendTrain m = buildLENET();
     int batch_size = 64;
-    int classes = 10;
-    ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
-    m.buildNet(classes, batch_size, "lenet");
-
     float[] data = new float[28*28*1*batch_size];
     int count=0;
-    while(count++<1000) {
+    while(count++<3) {
       Log.info("Iteration: " + count);
       m.predict(data);
     }
@@ -651,9 +678,7 @@ public class DeepWaterTest extends TestUtil {
   @Test
   public void trainPredictLoop() {
     int batch_size = 64;
-    int classes = 10;
-    ImageTrain m = new ImageTrain(28,28,1,0,1234,true);
-    m.buildNet(classes, batch_size, "lenet");
+    BackendTrain m = buildLENET();
 
     float[] data = new float[28*28*1*batch_size];
     float[] labels = new float[batch_size];
@@ -691,26 +716,26 @@ public class DeepWaterTest extends TestUtil {
     m.remove();
   }
 
-  @Test public void imageToPixels() throws IOException {
-    final File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
-    final float[] dest = new float[28*28*3];
-    int count=0;
-    Futures fs = new Futures();
-    while(count++<10000)
-      fs.add(H2O.submitTask(
-          new H2O.H2OCountedCompleter() {
-            @Override
-            public void compute2() {
-              try {
-                util.img2pixels(imgFile.toString(), 28, 28, 3, dest, 0, null);
-              } catch (IOException e) {
-                e.printStackTrace();
-              }
-              tryComplete();
-            }
-          }));
-    fs.blockForPending();
-  }
+//  @Test public void imageToPixels() throws IOException {
+//    final File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
+//    final float[] dest = new float[28*28*3];
+//    int count=0;
+//    Futures fs = new Futures();
+//    while(count++<10000)
+//      fs.add(H2O.submitTask(
+//          new H2O.H2OCountedCompleter() {
+//            @Override
+//            public void compute2() {
+//              try {
+//                util.img2pixels(imgFile.toString(), 28, 28, 3, dest, 0, null);
+//              } catch (IOException e) {
+//                e.printStackTrace();
+//              }
+//              tryComplete();
+//            }
+//          }));
+//    fs.blockForPending();
+//  }
 
   @Test
   public void prostate() {
@@ -729,6 +754,8 @@ public class DeepWaterTest extends TestUtil {
       DKV.put(tr);
       p._seed = 1234;
       p._epochs = 500;
+      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);

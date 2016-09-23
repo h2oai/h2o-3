@@ -6,9 +6,9 @@ import hex.deepwater.backends.BackendFactory;
 import hex.deepwater.backends.BackendParams;
 import hex.deepwater.backends.BackendTrain;
 import hex.deepwater.backends.RuntimeOptions;
+import hex.deepwater.datasets.ImageDataset;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.gpu.ImageTrain;
 import water.util.*;
 
 import static water.gpu.deepwater.loadNDArray;
@@ -35,7 +35,7 @@ final public class DeepWaterModelInfo extends Iced {
   public TwoDimTable summaryTable;
 
   //for image classification
-  transient BackendTrain _mxnet;
+  transient BackendTrain backend;
   int _height;
   int _width;
   int _channels;
@@ -46,24 +46,24 @@ final public class DeepWaterModelInfo extends Iced {
   Key<DataInfo> _dataInfoKey;
 
   public void nukeBackend() {
-    if (_mxnet != null) {
-      _mxnet.delete();
-      _mxnet = null;
+    if (backend != null) {
+      backend.delete();
+      backend = null;
     }
   }
 
   public void saveNativeState(String path, int iteration) {
     if (get_params()._backend == DeepWaterParameters.Backend.mxnet) {
-      if (_mxnet !=null) {
-        _mxnet.saveModel(path + ".json"); //independent of iterations
-        _mxnet.saveParam(path + "." + iteration + ".params");
+      if (backend !=null) {
+        backend.saveModel(path + ".json"); //independent of iterations
+        backend.saveParam(path + "." + iteration + ".params");
       } else throw H2O.unimpl();
     } else throw H2O.unimpl();
   }
 
   float[] predict(float[] data) {
-    if (_mxnet !=null)
-      return _mxnet.predict(data);
+    if (backend !=null)
+      return backend.predict(data);
     else throw H2O.unimpl();
   }
 
@@ -161,15 +161,25 @@ final public class DeepWaterModelInfo extends Iced {
             _height = parameters._image_shape[1];
           _channels = parameters._channels;
         }
-      } else throw H2O.unimpl();
+      } else {
+        Log.warn("unknown problem_type:", parameters._problem_type);
+        throw H2O.unimpl();
+      }
+
+      RuntimeOptions opts = new RuntimeOptions();
+      opts.setSeed((int) parameters.getOrMakeRealSeed());
+      opts.setUseGPU(_gpu);
+      opts.setDeviceID(_deviceID);
+
+      ImageDataset dataset = new ImageDataset(_width, _height, _channels);
 
       try {
-        _mxnet = BackendFactory.Create(parameters._backend); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+        backend = BackendFactory.Create(parameters._backend); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
 
         String network = parameters._network == null ? null : parameters._network.toString();
         if (network!=null) {
           Log.info("Creating a fresh model of the following network type: " + network);
-          ((ImageTrain) _mxnet).buildNet(_classes, parameters._mini_batch_size, network);
+          backend.buildNet(dataset, opts, _classes, parameters._mini_batch_size, network);
         } else {
           Log.info("Creating a fresh model of the following network type: MLP");
           assert(parameters._activation!=null);
@@ -185,8 +195,7 @@ final public class DeepWaterModelInfo extends Iced {
           backendParams.setFloatListValues("hidden_dropout_ratios", parameters._hidden_dropout_ratios);
 
           //FIXME , acts.length, parameters._hidden, acts, parameters._input_dropout_ratio, parameters._hidden_dropout_ratios); //set optimizer, batch size, nclasses, etc.
-          RuntimeOptions opts = new RuntimeOptions();
-          _mxnet.setupSession(opts, _classes, parameters._mini_batch_size, "MLP");
+          backend.setupSession(opts, _classes, parameters._mini_batch_size, "MLP");
         }
 
         // load a network if specified
@@ -197,9 +206,9 @@ final public class DeepWaterModelInfo extends Iced {
             Log.err("Network definition file " + f + " not found.");
           } else {
             Log.info("Loading the network from: " + f.getAbsolutePath());
-            _mxnet.loadModel(f.getAbsolutePath());
+            backend.loadModel(f.getAbsolutePath());
             Log.info("Setting the optimizer and initializing the first and last layer.");
-            _mxnet.setOptimizer(_classes, parameters._mini_batch_size);
+            backend.setOptimizer(_classes, parameters._mini_batch_size);
           }
         }
 
@@ -210,27 +219,15 @@ final public class DeepWaterModelInfo extends Iced {
             Log.err("Parameter file " + f + " not found.");
           } else {
             Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
-            _mxnet.loadParam(f.getAbsolutePath());
+            backend.loadParam(f.getAbsolutePath());
           }
         } else {
           Log.warn("No network parameters file specified. Starting from scratch.");
         }
 
-        final String meanData = parameters._mean_image_file;
-        if (meanData != null && !meanData.isEmpty()) {
-          File f = new File(meanData);
-          if(!f.exists() || f.isDirectory()) {
-            Log.err("Mean image file " + f + " not found.");
-          } else {
-            Log.info("Loading the mean image data from: " + f.getAbsolutePath());
-            _meanData = loadNDArray(f.getAbsolutePath());
-            int dim = _channels*_width*_height;
-            if (_meanData.length != dim) {
-              throw new H2OIllegalArgumentException("Invalid mean image data format. Expected length: " + dim + ", but has length: " + _meanData.length);
-            }
-          }
-        } else {
-          Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
+        float[] meanData = loadMeanImageData(parameters._mean_image_file);
+          if(meanData.length > 0) {
+          dataset.setMeanData(meanData);
         }
         nativeToJava(); //store initial state as early as it's created
       } catch(Throwable t) {
@@ -240,8 +237,23 @@ final public class DeepWaterModelInfo extends Iced {
     }
   }
 
+  private float[] loadMeanImageData(String meanData) {
+    if (meanData != null && !meanData.isEmpty()) {
+      File f = new File(meanData);
+      if(!f.exists() || f.isDirectory()) {
+        Log.err("Mean image file " + f + " not found.");
+      } else {
+        Log.info("Loading the mean image data from: " + f.getAbsolutePath());
+        return loadNDArray(f.getAbsolutePath());
+      }
+    } else {
+      Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
+    }
+    return new float[0];
+  }
+
   public void nativeToJava() {
-    if (_mxnet ==null) return;
+    if (backend ==null) return;
     Log.info("Native backend -> Java.");
     long now = System.currentTimeMillis();
     Path path = null;
@@ -250,7 +262,7 @@ final public class DeepWaterModelInfo extends Iced {
       try {
         path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
         Log.info("backend is saving the model architecture.");
-        _mxnet.saveModel(path.toString());
+        backend.saveModel(path.toString());
         Log.info("done.");
         _network = Files.readAllBytes(path);
       } catch (IOException e) {
@@ -261,7 +273,7 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Log.info("backend is saving the parameters.");
-      _mxnet.saveParam(path.toString());
+      backend.saveParam(path.toString());
       Log.info("done.");
       _modelparams = Files.readAllBytes(path);
     } catch (IOException e) {
@@ -286,7 +298,7 @@ final public class DeepWaterModelInfo extends Iced {
   private void javaToNative(byte[] network, byte[] parameters) {
     long now = System.currentTimeMillis();
     //existing state is fine
-    if (_mxnet !=null
+    if (backend !=null
             // either not overwriting with user-given (new) state, or we already are in sync
             && (network == null || network.equals(_network))
             && (parameters == null || Arrays.equals(parameters,_modelparams))) {
@@ -304,13 +316,13 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, network);
-      if (_mxnet == null) {
-        _mxnet = BackendFactory.Create(get_params()._backend);
+      if (backend == null) {
+        backend = BackendFactory.Create(get_params()._backend);
         // new ImageTrain(_width, _height, _channels, _deviceID, (int) get_params().getOrMakeRealSeed());
       }
-      _mxnet.loadModel(path.toString());
+      backend.loadModel(path.toString());
       Log.info("Randomizing everything.");
-      _mxnet.setOptimizer(_classes, get_params()._mini_batch_size); //randomizing initial state
+      backend.setOptimizer(_classes, get_params()._mini_batch_size); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
@@ -318,7 +330,7 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, parameters);
-      _mxnet.loadParam(path.toString());
+      backend.loadParam(path.toString());
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }

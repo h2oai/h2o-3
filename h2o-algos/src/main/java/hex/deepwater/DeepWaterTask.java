@@ -7,7 +7,6 @@ import water.H2O;
 import water.Job;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
-import water.gpu.ImageTrain;
 import water.parser.BufferedString;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -151,7 +150,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, _localmodel._width, _localmodel._height, _localmodel._channels, _localmodel.get_params()._cache_data);
       }
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-        // FIXME: iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfoKey.get(), batchSize, _localmodel.get_params()._cache_data);
+        iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfoKey.get(), batchSize, _localmodel.get_params()._cache_data);
       }
 
       NativeImageTrainTask ntt = null;
@@ -164,12 +163,12 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         }
 
         float rate = _localmodel.get_params().rate((double) n);
-        _localmodel._mxnet.setParameter("learning_rate", rate); //setMomentum(_localmodel.get_params().momentum((double) n));
+        _localmodel.backend.setParameter("learning_rate", rate); //setMomentum(_localmodel.get_params().momentum((double) n));
         float momentum = _localmodel.get_params().momentum((double) n);
-          _localmodel._mxnet.setParameter("momentum", momentum); //setMomentum(_localmodel.get_params().momentum((double) n));
+          _localmodel.backend.setParameter("momentum", momentum); //setMomentum(_localmodel.get_params().momentum((double) n));
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
 
-        ntt = new NativeImageTrainTask(_localmodel._mxnet, iter.getData(), iter.getLabel());
+        ntt = new NativeImageTrainTask(_localmodel.backend, iter.getData(), iter.getLabel());
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(iter._batch_size);
       }
