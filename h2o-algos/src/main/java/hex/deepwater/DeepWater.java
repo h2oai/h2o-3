@@ -270,7 +270,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         }
       }
       finally {
-        if (model.model_info()._mxnet != null) model.model_info().nativeToJava();
+        if (model.model_info().backend != null) model.model_info().nativeToJava();
         if (cache) model.cleanUpCache();
         model.removeNativeState();
         if (!_parms._quiet_mode) {

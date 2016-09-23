@@ -31,17 +31,12 @@ class MXNetBackend implements BackendTrain {
 
     @Override
     public void saveModel(String model_path) {
-        if (_imageTrain != null) {
-            _imageTrain.saveModel(model_path);
-        }
+        getModel().saveModel(model_path);
     }
 
     @Override
     public void saveParam(String param_path) {
-
-        if (_imageTrain != null) {
-            _imageTrain.saveParam(param_path);
-        }
+        getModel().saveParam(param_path);
     }
 
     @Override
@@ -82,7 +77,7 @@ class MXNetBackend implements BackendTrain {
                 Log.err("Parameter file " + f + " not found.");
             } else {
                 Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
-                _imageTrain.loadParam(f.getAbsolutePath());
+                getModel().loadParam(f.getAbsolutePath());
             }
         } else {
             Log.warn("No network parameters file specified. Starting from scratch.");
@@ -97,10 +92,17 @@ class MXNetBackend implements BackendTrain {
                 Log.err("Network definition file " + f + " not found.");
             } else {
                 Log.info("Loading the network from: " + f.getAbsolutePath());
-                _imageTrain.loadModel(f.getAbsolutePath());
+                getModel().loadModel(f.getAbsolutePath());
                 Log.info("Setting the optimizer and initializing the first and last layer.");
                 // FIXME: _imageTrain.setOptimizer(_classes, parameters._mini_batch_size);
             }
         }
+    }
+
+    ImageTrain getModel() {
+      if (_imageTrain == null) {
+        _imageTrain = new ImageTrain();
+      }
+      return _imageTrain;
     }
 }
