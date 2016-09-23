@@ -120,6 +120,9 @@ final public class DeepWaterModelInfo extends Iced {
       }
     }
     else {
+      _width = _ncols;
+      _height = 0;
+      _channels = 0;
       if (parameters._problem_type == DeepWaterParameters.ProblemType.image_classification) {
         _width=parameters._image_shape[0];
         _height=parameters._image_shape[1];
@@ -148,16 +151,18 @@ final public class DeepWaterModelInfo extends Iced {
               throw H2O.unimpl("Unknown network type: " + parameters._network);
           }
         }
+        assert(_width>0);
+        assert(_height>0);
       } else if (parameters._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-        _width = _ncols;
-        _height = 0;
-        _channels = 0;
         if (parameters._image_shape != null) {
           if (parameters._image_shape[0]>0)
             _width = parameters._image_shape[0];
           if (parameters._image_shape[1]>0)
             _height = parameters._image_shape[1];
-          _channels = parameters._channels;
+          if (_width>0 && _height>0)
+            _channels = parameters._channels;
+          else
+            _channels = 0;
         }
       } else throw H2O.unimpl();
 

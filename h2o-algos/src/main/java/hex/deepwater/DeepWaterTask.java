@@ -13,6 +13,7 @@ import water.util.RandomUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
@@ -156,9 +157,11 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
       while (iter.Next(fs) && !_job.isStopping()) {
         if (ntt != null) nativetime += ntt._timeInMillis;
         long n = _localmodel.get_processed_total();
-        if(!_localmodel.get_params()._quiet_mode)
-          //            Log.info("Trained " + n + " samples. Training on " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
-          _localmodel.getBackend().setLR(_localmodel.get_params().rate((double) n));
+
+//        if(!_localmodel.get_params()._quiet_mode)
+//          Log.info("Trained " + n + " samples. Training on " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
+
+        _localmodel.getBackend().setLR(_localmodel.get_params().rate((double) n));
         _localmodel.getBackend().setMomentum(_localmodel.get_params().momentum((double) n));
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
         ntt = new NativeImageTrainTask(_localmodel.getBackend(), iter.getData(), iter.getLabel());
