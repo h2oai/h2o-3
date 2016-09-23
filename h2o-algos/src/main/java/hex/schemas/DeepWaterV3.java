@@ -58,8 +58,47 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "network_parameters_file",
         "mean_image_file",
         "export_native_model_prefix",
+        "activation",
+        "hidden",
+        "input_dropout_ratio",
+        "hidden_dropout_ratios",
     };
 
+    /**
+     * The activation function (non-linearity) to be used by the neurons in the hidden layers.
+     * Rectifier: Rectifier Linear Unit: Chooses the maximum of (0, x) where x is the input value.
+     * Tanh: Hyperbolic tangent function (same as scaled and shifted sigmoid).
+     */
+    @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
+        values = {"Rectifier", "Tanh"}, help = "Activation function.")
+    public DeepWaterParameters.Activation activation;
+
+    /**
+     * The number and size of each hidden layer in the model.
+     * For example, if a user specifies "100,200,100" a model with 3 hidden
+     * layers will be produced, and the middle hidden layer will have 200
+     * neurons.
+     */
+    @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
+        help = "Hidden layer sizes (e.g. [200, 200]).")
+    public int[] hidden;
+
+    /**
+     * A fraction of the features for each training row to be omitted from training in order
+     * to improve generalization (dimension sampling).
+     */
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+        help = "Input layer dropout ratio (can improve generalization, try 0.1 or 0.2).")
+    public double input_dropout_ratio;
+
+    /**
+     * A fraction of the inputs for each hidden layer to be omitted from training in order
+     * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
+     */
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+        help = "Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, " +
+            "defaults to 0.5.")
+    public double[] hidden_dropout_ratios;
 
     /** For classification models, the maximum size (in terms of classes) of
      *  the confusion matrix for it to be printed. This option is meant to
@@ -72,7 +111,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     /**
      * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
      */
-    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = false,
         help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to " +
             "disable).")
     public int max_hit_ratio_k;
@@ -293,7 +332,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     @API(level = API.Level.expert, direction=API.Direction.INOUT, help = "Clip gradients once their absolute value is larger than this value.")
     public double clip_gradient;
 
-    @API(level = API.Level.critical, direction=API.Direction.INOUT, values = {"auto","user","lenet","alexnet","vgg","vgg16","googlenet","inception_bn","resnet"}, help = "Network architecture.")
+    @API(level = API.Level.critical, direction=API.Direction.INOUT, values = {"auto","user","lenet","alexnet","vgg","googlenet","inception_bn","resnet"}, help = "Network architecture.")
     public DeepWaterParameters.Network network;
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT, values = {"auto","mxnet","caffe","tensorflow"}, help = "Deep Learning Backend.")
