@@ -1,13 +1,13 @@
 package hex.deepwater;
 
+import deepwater.backends.BackendModel;
+import deepwater.backends.BackendTrain;
 import hex.FrameTask;
-import hex.deepwater.backends.BackendTrain;
 import water.Futures;
 import water.H2O;
 import water.Job;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
-import water.gpu.ImageTrain;
 import water.parser.BufferedString;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -151,25 +151,22 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, _localmodel._width, _localmodel._height, _localmodel._channels, _localmodel.get_params()._cache_data);
       }
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-        // FIXME: iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfoKey.get(), batchSize, _localmodel.get_params()._cache_data);
+        iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfoKey.get(), batchSize, _localmodel.get_params()._cache_data);
       }
 
-      NativeImageTrainTask ntt = null;
+      NativeTrainTask ntt = null;
       while (iter.Next(fs) && !_job.isStopping()) {
         if (ntt != null) nativetime += ntt._timeInMillis;
         long n = _localmodel.get_processed_total();
-        if(!_localmodel.get_params()._quiet_mode)
-        {
-          //            Log.info("Trained " + n + " samples. Training on " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
-        }
 
-        float rate = _localmodel.get_params().rate((double) n);
-        _localmodel._mxnet.setParameter("learning_rate", rate); //setMomentum(_localmodel.get_params().momentum((double) n));
-        float momentum = _localmodel.get_params().momentum((double) n);
-          _localmodel._mxnet.setParameter("momentum", momentum); //setMomentum(_localmodel.get_params().momentum((double) n));
+//        if(!_localmodel.get_params()._quiet_mode)
+//          Log.info("Trained " + n + " samples. Training on " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
+
+        _localmodel._backend.setParameter(_localmodel._model, "learning_rate", _localmodel.get_params().learningRate((double) n));
+        _localmodel._backend.setParameter(_localmodel._model, "momentum", _localmodel.get_params().momentum((double) n));
+
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-
-        ntt = new NativeImageTrainTask(_localmodel._mxnet, iter.getData(), iter.getLabel());
+        ntt = new NativeTrainTask(_localmodel._backend, _localmodel._model, iter.getData(), iter.getLabel());
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(iter._batch_size);
       }
@@ -186,21 +183,26 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
   }
   @Override public void map(Chunk [] chunks, NewChunk [] outputs) { return; }
 
-  static private class NativeImageTrainTask extends H2O.H2OCountedCompleter<NativeImageTrainTask> {
-    NativeImageTrainTask(BackendTrain it, float[] data, float[] labels) {
-      _it = it;
-      _data = data;
-      _labels = labels;
-    }
+  static private class NativeTrainTask extends H2O.H2OCountedCompleter<NativeTrainTask> {
+
     long _timeInMillis;
     final BackendTrain _it;
+    final BackendModel _model;
+
     float[] _data;
     float[] _labels;
+
+    public NativeTrainTask(BackendTrain backend, BackendModel model, float[] data, float[] label) {
+      _it = backend;
+      _model = model;
+      _data = data;
+      _labels = label;
+    }
 
     @Override
     public void compute2() {
       long start = System.currentTimeMillis();
-      _it.train(_data,_labels); //ignore predictions
+      _it.train(_model, _data,_labels); //ignore predictions
       long end = System.currentTimeMillis();
       _timeInMillis += end-start;
       tryComplete();
