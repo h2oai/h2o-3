@@ -134,13 +134,13 @@ public class DeepWaterParameters extends Model.Parameters {
    * A fraction of the features for each training row to be omitted from training in order
    * to improve generalization (dimension sampling).
    */
-  public float _input_dropout_ratio = 0.0f;
+  public double _input_dropout_ratio = 0.0f;
 
   /**
    * A fraction of the inputs for each hidden layer to be omitted from training in order
    * to improve generalization. Defaults to 0.5 for each hidden layer if omitted.
    */
-  public float[] _hidden_dropout_ratios = null;
+  public double[] _hidden_dropout_ratios = null;
 
   /**
    * The number of training data rows to be processed per iteration. Note that
@@ -590,7 +590,7 @@ public class DeepWaterParameters extends Model.Parameters {
           if (fromParms._hidden == null) {
             toParms._hidden = new int[]{200, 200};
             toParms._activation = Activation.Rectifier;
-            toParms._hidden_dropout_ratios = new float[toParms._hidden.length];
+            toParms._hidden_dropout_ratios = new double[toParms._hidden.length];
           }
         }
         if (!fromParms._quiet_mode && toParms._network!=null)
@@ -605,12 +605,12 @@ public class DeepWaterParameters extends Model.Parameters {
         if (toParms._hidden_dropout_ratios==null) {
           if (!fromParms._quiet_mode)
             Log.info("_hidden_dropout_ratios: Automatically setting hidden_dropout_ratios to 0 for all layers.");
-          toParms._hidden_dropout_ratios = new float[toParms._hidden.length];
+          toParms._hidden_dropout_ratios = new double[toParms._hidden.length];
         }
         if (toParms._activation==null) {
           toParms._activation = Activation.Rectifier;
           if (!fromParms._quiet_mode)
-            Log.info("_activation: Automatically setting activation to " + toParms._activation + "for all layers.");
+            Log.info("_activation: Automatically setting activation to " + toParms._activation + " for all layers.");
         }
         if (!fromParms._quiet_mode) {
           Log.info("Hidden layers: " + Arrays.toString(toParms._hidden));
