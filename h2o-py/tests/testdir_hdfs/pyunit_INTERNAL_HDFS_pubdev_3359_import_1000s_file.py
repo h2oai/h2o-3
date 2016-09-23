@@ -28,10 +28,10 @@ def hdfs_pubdev_3359_parser():
         h2oframe_csv = h2o.import_file(url_csv)
 
         # compare the two frames
-        if not(h2oframe_csv.nrow == 99998000):
-            print("Data should contain 99998000 rows but we parsed: {0} rows!".format(h2oframe_csv.nrow))
-        else:
-            print("Parsing 2000 files correctly!  Great!")
+
+        # compare the two frames
+        assert h2oframe_csv.nrow == 99998000, "Data should contain 99998000 rows but we parsed: {0} " \
+                                            "rows!".format(h2oframe_csv.nrow)
     else:
         raise EnvironmentError
 
