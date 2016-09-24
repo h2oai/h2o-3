@@ -1,10 +1,6 @@
 package hex.deepwater.backends;
 
-/**
- * Created by fmilo on 9/22/16.
- */
 public class RuntimeOptions {
-
     private boolean useGpu;
     private int seed;
     private int []deviceID;
