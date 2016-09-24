@@ -217,13 +217,15 @@ final public class DeepWaterModelInfo extends Iced {
 
         backend = BackendFactory.create(parameters._backend); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
 
-        String network = parameters._network == null ? null : parameters._network.toString();
-        if (network!=null) {
-          Log.info("Creating a fresh model of the following network type: " + network);
-          backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, network);
-        } else {
-          Log.info("Creating a fresh model of the following network type: MLP");
-          backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(),_classes, "MLP");
+        if (parameters._network != DeepWaterParameters.Network.user) {
+          String network = parameters._network == null ? null : parameters._network.toString();
+          if (network != null && parameters._network != DeepWaterParameters.Network.user) {
+            Log.info("Creating a fresh model of the following network type: " + network);
+            backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, network);
+          } else {
+            Log.info("Creating a fresh model of the following network type: MLP");
+            backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, "MLP");
+          }
         }
 
         // load a network if specified
