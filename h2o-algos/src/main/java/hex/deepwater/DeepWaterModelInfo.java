@@ -38,11 +38,6 @@ final public class DeepWaterModelInfo extends Iced {
 
   public TwoDimTable summaryTable;
 
-  // backend
-  transient RuntimeOptions _opts = null;
-  transient DataSet _dataset = null;
-  transient BackendParams _backendParams = null;
-
   //for image classification
   transient BackendTrain backend;
   int _height;
@@ -106,6 +101,44 @@ final public class DeepWaterModelInfo extends Iced {
 
   final boolean _classification; // Classification cache (nclasses>1)
 
+  RuntimeOptions getRuntimeOptions() {
+    RuntimeOptions opts = new RuntimeOptions();
+    opts.setSeed((int) get_params().getOrMakeRealSeed());
+    opts.setUseGPU(get_params()._gpu);
+    opts.setDeviceID(get_params()._device_id);
+    return opts;
+  }
+
+  BackendParams getBackendParams() {
+    BackendParams backendParams = new BackendParams();
+    backendParams.set("mini_batch_size", get_params()._mini_batch_size);
+    String network = parameters._network == null ? null : parameters._network.toString();
+    if (network==null) {
+      assert (parameters._activation != null);
+      assert (parameters._hidden != null);
+      String[] acts = new String[parameters._hidden.length];
+      String acti;
+      if (parameters._activation.toString().startsWith("Rectifier")) acti = "relu";
+      else if (parameters._activation.toString().startsWith("Tanh")) acti = "tanh";
+      else throw H2O.unimpl();
+      Arrays.fill(acts, acti);
+      backendParams.set("activations", acts);
+      backendParams.set("hidden", parameters._hidden);
+      backendParams.set("input_dropout_ratio", parameters._input_dropout_ratio);
+      backendParams.set("hidden_dropout_ratios", parameters._hidden_dropout_ratios);
+    }
+    return backendParams;
+  }
+
+  DataSet getDataSet() {
+    DataSet dataset = new DataSet(_width, _height, _channels);
+    float[] meanData = loadMeanImageData(parameters._mean_image_file);
+    if(meanData.length > 0) {
+      dataset.setMeanData(meanData);
+    }
+    return dataset;
+  }
+
   /**
    * Main constructor
    * @param params Model parameters
@@ -120,11 +153,6 @@ final public class DeepWaterModelInfo extends Iced {
     DeepWaterParameters.Sanity.modifyParms(parameters, parameters, _classes); //sanitize the model_info's parameters
     _deviceID=parameters._device_id;
     _gpu=parameters._gpu;
-
-    _opts = new RuntimeOptions();
-    _opts.setSeed((int) parameters.getOrMakeRealSeed());
-    _opts.setUseGPU(_gpu);
-    _opts.setDeviceID(_deviceID);
 
     if (parameters._checkpoint!=null) {
       try {
@@ -185,34 +213,17 @@ final public class DeepWaterModelInfo extends Iced {
         throw H2O.unimpl();
       }
 
-      _dataset = new DataSet(_width, _height, _channels);
-
       try {
 
         backend = BackendFactory.create(parameters._backend); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
-        _backendParams = new BackendParams();
-        _backendParams.set("mini_batch_size", parameters._mini_batch_size);
 
         String network = parameters._network == null ? null : parameters._network.toString();
         if (network!=null) {
           Log.info("Creating a fresh model of the following network type: " + network);
-          backend.buildNet(_dataset, _opts, _backendParams, _classes, network);
+          backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, network);
         } else {
           Log.info("Creating a fresh model of the following network type: MLP");
-          assert(parameters._activation!=null);
-          assert(parameters._hidden!=null);
-          String[] acts = new String[parameters._hidden.length];
-          String acti;
-          if (parameters._activation.toString().startsWith("Rectifier")) acti="relu";
-          else if (parameters._activation.toString().startsWith("Tanh")) acti="tanh";
-          else throw H2O.unimpl();
-          Arrays.fill(acts, acti);
-          _backendParams.set("activations", acts);
-          _backendParams.set("hidden", parameters._hidden);
-          _backendParams.set("input_dropout_ratio", parameters._input_dropout_ratio);
-          _backendParams.set("hidden_dropout_ratios", parameters._hidden_dropout_ratios);
-
-          backend.buildNet(_dataset, _opts, _backendParams, _classes, "MLP");
+          backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(),_classes, "MLP");
         }
 
         // load a network if specified
@@ -225,7 +236,7 @@ final public class DeepWaterModelInfo extends Iced {
             Log.info("Loading the network from: " + f.getAbsolutePath());
             backend.loadModel(f.getAbsolutePath());
             Log.info("Setting the optimizer and initializing the first and last layer.");
-            backend.buildNet(_dataset, _opts, _backendParams, _classes, f.getAbsolutePath());
+            backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, f.getAbsolutePath());
           }
         }
 
@@ -242,10 +253,7 @@ final public class DeepWaterModelInfo extends Iced {
           Log.warn("No network parameters file specified. Starting from scratch.");
         }
 
-        float[] meanData = loadMeanImageData(parameters._mean_image_file);
-          if(meanData.length > 0) {
-          _dataset.setMeanData(meanData);
-        }
+
         nativeToJava(); //store initial state as early as it's created
       } catch(Throwable t) {
         Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
@@ -331,11 +339,11 @@ final public class DeepWaterModelInfo extends Iced {
     Path path = null;
     // only overwrite the network definition if it's null
     try {
-      path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
+      path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString() + ".json");
       Files.write(path, network);
       if (backend == null) backend = BackendFactory.create(get_params()._backend);
       Log.info("Randomizing everything.");
-      backend.buildNet(_dataset, _opts, _backendParams, _classes, path.toString()); //randomizing initial state
+      backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, path.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
