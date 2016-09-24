@@ -810,17 +810,13 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
+
+  // ------- Text conversions
+
   @Test
-  public void textsToOnehotTest() {
+  public void textsToArrayTest() {
     ArrayList<String> texts = new ArrayList<>();
     ArrayList<String> labels = new ArrayList<>();
-
-    texts.add("simplistic , silly and tedious .");
-    texts.add("it's so laddish and juvenile , only teenage boys could possibly find it funny .");
-    texts.add("exploitative and largely devoid of the depth or sophistication that would make watching such a graphic treatment of the crimes bearable .");
-    labels.add("neg");
-    labels.add("neg");
-    labels.add("neg");
 
     texts.add("the rock is destined to be the 21st century's new \" conan \" and that he's going to make a splash even greater than arnold schwarzenegger , jean-claud van damme or steven segal .");
     texts.add("the gorgeously elaborate continuation of \" the lord of the rings \" trilogy is so huge that a column of words cannot adequately describe co-writer/director peter jackson's expanded vision of j . r . r . tolkien's middle-earth .");
@@ -829,12 +825,23 @@ public class DeepWaterTest extends TestUtil {
     labels.add("pos");
     labels.add("pos");
 
+    texts.add("simplistic , silly and tedious .");
+    texts.add("it's so laddish and juvenile , only teenage boys could possibly find it funny .");
+    texts.add("exploitative and largely devoid of the depth or sophistication that would make watching such a graphic treatment of the crimes bearable .");
+    labels.add("neg");
+    labels.add("neg");
+    labels.add("neg");
+
     ArrayList<int[]> coded = texts2array(texts);
    // System.out.println(coded);
+    for (int[] a : coded) {
+      System.out.println(Arrays.toString(a));
+    }
 
-    Assert.assertEquals(228, coded.size());
-    Assert.assertEquals(88, coded.get(0).length);
     System.out.println("rows " + coded.size() + " cols " + coded.get(0).length);
+
+    Assert.assertEquals(6, coded.size());
+    Assert.assertEquals(38, coded.get(0).length);
   }
 
   public String cleanString(String s) {
@@ -862,25 +869,64 @@ public class DeepWaterTest extends TestUtil {
     return cleanString(text).split(" ");
   }
 
-  public ArrayList<int[]> tokensToArray(String[] tokens, int padToLength, Map<String, Integer> dict) {
+  public int[] tokensToArray(String[] tokens, int padToLength, Map<String, Integer> dict) {
     int dictSize = dict.size();
     int len = tokens.length;
     int pad = padToLength - len;
-    ArrayList<int[]> data = new ArrayList<>();
+    int[] data = new int[padToLength];
+    int ix = 0;
     for (String t : tokens) {
-      int[] a = new int[dictSize];
-      a[dict.get(t)] = 1;
-      data.add(a);
+      int index = dict.get(t);
+      data[ix] = index;
+      ix += 1;
     }
     for (int i = 0; i < pad; i++) {
-      int[] a = new int[dictSize];
-      a[dict.get(PADDING_SYMBOL)] = 1;
-      data.add(a);
+      int index = dict.get(PADDING_SYMBOL);
+      data[ix] = index;
+      ix += 1;
     }
     return data;
   }
-  public static String PADDING_SYMBOL = "<s/>";
+
+  public static String PADDING_SYMBOL = "</s>";
+
   public ArrayList<int[]> texts2array(ArrayList<String> texts) {
+    int maxlen = 0;
+    int index = 0;
+    Map<String, Integer> dict = new HashMap<>();
+    dict.put(PADDING_SYMBOL, index);
+    index += 1;
+    for (String text : texts) {
+      String[] tokens = tokenize(text);
+      for (String token : tokens) {
+        if (!dict.containsKey(token)) {
+          dict.put(token, index);
+          index += 1;
+        }
+      }
+      int len = tokens.length;
+      if (len > maxlen) maxlen = len;
+    }
+    System.out.println(dict);
+    System.out.println("maxlen " + maxlen);
+    System.out.println("dict size " + dict.size());
+    Assert.assertEquals(38, maxlen);
+    Assert.assertEquals(88, index);
+    Assert.assertEquals(88, dict.size());
+
+    ArrayList<int[]> array = new ArrayList<>();
+    for (String text: texts) {
+      int[] data = tokensToArray(tokenize(text), maxlen, dict);
+   //   System.out.println(text);
+   //   System.out.println(Arrays.toString(data));
+      array.add(data);
+    }
+    return array;
+  }
+
+
+  /*
+  public ArrayList<int[]> texts2arrayOnehot(ArrayList<String> texts) {
     int maxlen = 0;
     int index = 0;
     Map<String, Integer> dict = new HashMap<>();
@@ -909,12 +955,17 @@ public class DeepWaterTest extends TestUtil {
       ArrayList<int[]> data = tokensToArray(tokenize(text), maxlen, dict);
       System.out.println(text);
       System.out.println(" rows " + data.size() + "  cols " + data.get(0).length);
-      /*for (int[] x : data) {
-        System.out.println(Arrays.toString(x));
-      }*/
+      //for (int[] x : data) {
+      //  System.out.println(Arrays.toString(x));
+      //}
       array.addAll(data);
     }
     return array;
   }
+<<<<<<< 7143a92fed2c3b7bc87f19da6ae6ee08cf4fac48
+=======
+  */
+
+>>>>>>> texts2array same as in example
 }
 
