@@ -3,20 +3,16 @@ package hex.deepwater;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.deepwater.backends.BackendFactory;
+import hex.deepwater.backends.BackendParams;
 import hex.deepwater.backends.BackendTrain;
 import hex.deepwater.backends.RuntimeOptions;
-import hex.deepwater.datasets.ImageDataset;
+import hex.deepwater.datasets.DataSet;
 import hex.splitframe.ShuffleSplitFrame;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.util.ArrayUtils;
@@ -28,7 +24,10 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Random;
 
 public class DeepWaterTest extends TestUtil {
 
@@ -76,9 +75,20 @@ public class DeepWaterTest extends TestUtil {
 
 
     // the path to Inception model
-    BackendTrain m = BackendFactory.Create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
-    m.loadModel(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
-    m.setOptimizer(1000, 1);
+    //ImageTrain m = new ImageTrain(224,224,3);
+    //m.buildNet(1000,1,"inception_bn");
+    DataSet id = new DataSet(224,224,3);
+    BackendTrain m = BackendFactory.create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
+
+    RuntimeOptions opts = new RuntimeOptions();
+    opts.setDeviceID(0);
+    opts.setSeed(1234);
+    opts.setUseGPU(true);
+
+    BackendParams bparm = new BackendParams();
+    bparm.set("mini_batch_size", 1);
+
+    m.buildNet(id, opts, bparm, 1000, StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
     m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
 
     float[] preds = m.predict(pixels);
@@ -115,9 +125,12 @@ public class DeepWaterTest extends TestUtil {
     int batch_size = 64;
     int classes = 10;
 
-    BackendTrain m = BackendFactory.Create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
+    BackendTrain m = BackendFactory.create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
     RuntimeOptions options = new RuntimeOptions();
-    m.setupSession(options, classes, batch_size, "inception_bn");
+    DataSet id = new DataSet(224,224,3);
+    BackendParams bparm = new BackendParams();
+    bparm.set("mini_batch_size", batch_size);
+    m.buildNet(id, options, bparm, classes, "inception_bn");
     m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
 
     int max_iter = 6; //epochs
@@ -625,7 +638,6 @@ public class DeepWaterTest extends TestUtil {
   @Test
   public void trainLoop() throws InterruptedException {
     int batch_size = 64;
-    int classes = 10;
     BackendTrain m = buildLENET();
 
     float[] data = new float[28*28*1*batch_size];
@@ -640,20 +652,20 @@ public class DeepWaterTest extends TestUtil {
   private BackendTrain buildLENET() {
     int batch_size = 64;
     int classes = 10;
-    BackendTrain m = BackendFactory.Create(backend);// new ImageTrain(28,28,1,0,1234,true);
-    ImageDataset dataset = new ImageDataset(28, 28, 1);
+    BackendTrain m = BackendFactory.create(backend);// new ImageTrain(28,28,1,0,1234,true);
+    DataSet dataset = new DataSet(28, 28, 1);
     RuntimeOptions opts = new RuntimeOptions();
     opts.setUseGPU(true);
     opts.setSeed(1234);
     opts.setDeviceID(0);
-    m.buildNet(dataset, opts, classes, batch_size, "lenet");
+    BackendParams bparm = new BackendParams();
+    bparm.set("mini_batch_size", batch_size);
+    m.buildNet(dataset, opts, bparm, classes, "lenet");
     return m;
   }
 
   @Test
   public void saveLoop() {
-    int batch_size = 64;
-    int classes = 10;
     BackendTrain m = buildLENET();
     int count=0;
     while(count++<3) {

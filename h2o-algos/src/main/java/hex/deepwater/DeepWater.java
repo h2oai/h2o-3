@@ -269,6 +269,9 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           }
         }
       }
+      catch(Throwable t) {
+        t.printStackTrace();
+      }
       finally {
         if (model.model_info().backend != null) model.model_info().nativeToJava();
         if (cache) model.cleanUpCache();
