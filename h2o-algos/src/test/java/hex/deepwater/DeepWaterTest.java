@@ -3,6 +3,7 @@ package hex.deepwater;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.deepwater.backends.BackendFactory;
+import hex.deepwater.backends.BackendParams;
 import hex.deepwater.backends.BackendTrain;
 import hex.deepwater.backends.RuntimeOptions;
 import hex.deepwater.datasets.DataSet;
@@ -78,13 +79,17 @@ public class DeepWaterTest extends TestUtil {
     //ImageTrain m = new ImageTrain(224,224,3);
     //m.buildNet(1000,1,"inception_bn");
     DataSet id = new DataSet(224,224,3);
-    BackendTrain m = BackendFactory.Create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
+    BackendTrain m = BackendFactory.create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
 
     RuntimeOptions opts = new RuntimeOptions();
     opts.setDeviceID(0);
     opts.setSeed(1234);
     opts.setUseGPU(true);
-    m.buildNet(id, opts,1000,1,StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
+
+    BackendParams bparm = new BackendParams();
+    bparm.set("mini_batch_size", 1);
+
+    m.buildNet(id, opts, bparm, 1000, StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
     m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
 
     float[] preds = m.predict(pixels);
@@ -121,10 +126,12 @@ public class DeepWaterTest extends TestUtil {
     int batch_size = 64;
     int classes = 10;
 
-    BackendTrain m = BackendFactory.Create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
+    BackendTrain m = BackendFactory.create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
     RuntimeOptions options = new RuntimeOptions();
     DataSet id = new DataSet(224,224,3);
-    m.buildNet(id, options, classes, batch_size, "inception_bn");
+    BackendParams bparm = new BackendParams();
+    bparm.set("mini_batch_size", batch_size);
+    m.buildNet(id, options, bparm, classes, "inception_bn");
     m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
 
     int max_iter = 6; //epochs
@@ -632,7 +639,6 @@ public class DeepWaterTest extends TestUtil {
   @Test
   public void trainLoop() throws InterruptedException {
     int batch_size = 64;
-    int classes = 10;
     BackendTrain m = buildLENET();
 
     float[] data = new float[28*28*1*batch_size];
@@ -647,20 +653,20 @@ public class DeepWaterTest extends TestUtil {
   private BackendTrain buildLENET() {
     int batch_size = 64;
     int classes = 10;
-    BackendTrain m = BackendFactory.Create(backend);// new ImageTrain(28,28,1,0,1234,true);
+    BackendTrain m = BackendFactory.create(backend);// new ImageTrain(28,28,1,0,1234,true);
     DataSet dataset = new DataSet(28, 28, 1);
     RuntimeOptions opts = new RuntimeOptions();
     opts.setUseGPU(true);
     opts.setSeed(1234);
     opts.setDeviceID(0);
-    m.buildNet(dataset, opts, classes, batch_size, "lenet");
+    BackendParams bparm = new BackendParams();
+    bparm.set("mini_batch_size", batch_size);
+    m.buildNet(dataset, opts, bparm, classes, "lenet");
     return m;
   }
 
   @Test
   public void saveLoop() {
-    int batch_size = 64;
-    int classes = 10;
     BackendTrain m = buildLENET();
     int count=0;
     while(count++<3) {

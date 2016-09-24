@@ -2,9 +2,6 @@ package hex.deepwater.datasets;
 
 import water.exceptions.H2OIllegalArgumentException;
 
-/**
- * Created by fmilo on 9/22/16.
- */
 public class DataSet {
 
     int channels;
