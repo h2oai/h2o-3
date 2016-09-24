@@ -6,12 +6,14 @@ import hex.deepwater.backends.BackendFactory;
 import hex.deepwater.backends.BackendParams;
 import hex.deepwater.backends.BackendTrain;
 import hex.deepwater.backends.RuntimeOptions;
-import hex.deepwater.datasets.ImageDataset;
-import water.*;
+import hex.deepwater.datasets.DataSet;
+import water.H2O;
+import water.Iced;
+import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
-import water.util.*;
-
-import static water.gpu.deepwater.loadNDArray;
+import water.util.Log;
+import water.util.PrettyPrint;
+import water.util.TwoDimTable;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
+
+import static water.gpu.deepwater.loadNDArray;
 
 
 /**
@@ -33,6 +37,11 @@ final public class DeepWaterModelInfo extends Iced {
   byte[] _modelparams; // internal state of native backend (weights/biases/helpers)
 
   public TwoDimTable summaryTable;
+
+  // backend
+  transient RuntimeOptions _opts = null;
+  transient DataSet _dataset = null;
+  transient BackendParams _backendParams = null;
 
   //for image classification
   transient BackendTrain backend;
@@ -112,6 +121,11 @@ final public class DeepWaterModelInfo extends Iced {
     _deviceID=parameters._device_id;
     _gpu=parameters._gpu;
 
+    _opts = new RuntimeOptions();
+    _opts.setSeed((int) parameters.getOrMakeRealSeed());
+    _opts.setUseGPU(_gpu);
+    _opts.setDeviceID(_deviceID);
+
     if (parameters._checkpoint!=null) {
       try {
         DeepWaterModel other = (DeepWaterModel) parameters._checkpoint.get();
@@ -171,20 +185,18 @@ final public class DeepWaterModelInfo extends Iced {
         throw H2O.unimpl();
       }
 
-      RuntimeOptions opts = new RuntimeOptions();
-      opts.setSeed((int) parameters.getOrMakeRealSeed());
-      opts.setUseGPU(_gpu);
-      opts.setDeviceID(_deviceID);
-
-      ImageDataset dataset = new ImageDataset(_width, _height, _channels);
+      _dataset = new DataSet(_width, _height, _channels);
 
       try {
-        backend = BackendFactory.Create(parameters._backend); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+
+        backend = BackendFactory.create(parameters._backend); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+        _backendParams = new BackendParams();
+        _backendParams.set("mini_batch_size", parameters._mini_batch_size);
 
         String network = parameters._network == null ? null : parameters._network.toString();
         if (network!=null) {
           Log.info("Creating a fresh model of the following network type: " + network);
-          backend.buildNet(dataset, opts, _classes, parameters._mini_batch_size, network);
+          backend.buildNet(_dataset, _opts, _backendParams, _classes, network);
         } else {
           Log.info("Creating a fresh model of the following network type: MLP");
           assert(parameters._activation!=null);
@@ -195,12 +207,12 @@ final public class DeepWaterModelInfo extends Iced {
           else if (parameters._activation.toString().startsWith("Tanh")) acti="tanh";
           else throw H2O.unimpl();
           Arrays.fill(acts, acti);
+          _backendParams.set("activations", acts);
+          _backendParams.set("hidden", parameters._hidden);
+          _backendParams.set("input_dropout_ratio", parameters._input_dropout_ratio);
+          _backendParams.set("hidden_dropout_ratios", parameters._hidden_dropout_ratios);
 
-          BackendParams backendParams = new BackendParams();
-          backendParams.setFloatListValues("hidden_dropout_ratios", parameters._hidden_dropout_ratios);
-
-          //FIXME , acts.length, parameters._hidden, acts, parameters._input_dropout_ratio, parameters._hidden_dropout_ratios); //set optimizer, batch size, nclasses, etc.
-          backend.setupSession(opts, _classes, parameters._mini_batch_size, "MLP");
+          backend.buildNet(_dataset, _opts, _backendParams, _classes, "MLP");
         }
 
         // load a network if specified
@@ -213,7 +225,7 @@ final public class DeepWaterModelInfo extends Iced {
             Log.info("Loading the network from: " + f.getAbsolutePath());
             backend.loadModel(f.getAbsolutePath());
             Log.info("Setting the optimizer and initializing the first and last layer.");
-            backend.setOptimizer(_classes, parameters._mini_batch_size);
+            backend.buildNet(_dataset, _opts, _backendParams, _classes, f.getAbsolutePath());
           }
         }
 
@@ -232,7 +244,7 @@ final public class DeepWaterModelInfo extends Iced {
 
         float[] meanData = loadMeanImageData(parameters._mean_image_file);
           if(meanData.length > 0) {
-          dataset.setMeanData(meanData);
+          _dataset.setMeanData(meanData);
         }
         nativeToJava(); //store initial state as early as it's created
       } catch(Throwable t) {
@@ -258,7 +270,7 @@ final public class DeepWaterModelInfo extends Iced {
   }
 
   public void nativeToJava() {
-    if (backend ==null) return;
+    if (backend==null) return;
     Log.info("Native backend -> Java.");
     long now = System.currentTimeMillis();
     Path path = null;
@@ -321,13 +333,9 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, network);
-      if (backend == null) {
-        backend = BackendFactory.Create(get_params()._backend);
-        // new ImageTrain(_width, _height, _channels, _deviceID, (int) get_params().getOrMakeRealSeed());
-      }
-      backend.loadModel(path.toString());
+      if (backend == null) backend = BackendFactory.create(get_params()._backend);
       Log.info("Randomizing everything.");
-      backend.setOptimizer(_classes, get_params()._mini_batch_size); //randomizing initial state
+      backend.buildNet(_dataset, _opts, _backendParams, _classes, path.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
