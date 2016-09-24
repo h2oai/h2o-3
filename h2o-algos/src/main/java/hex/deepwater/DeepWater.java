@@ -24,9 +24,16 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); backendLoader(); }
 
   private void backendLoader() {
-    if (_parms._backend== DeepWaterParameters.Backend.mxnet)
+    switch(_parms._backend){
+    case mxnet:
       new MXNetLoader();
-    else throw H2O.unimpl();
+      break;
+    case tensorflow:
+     // no init required
+     break;
+    default:
+      throw H2O.unimpl();
+    }
   }
 
   static public void logNvidiaStats() { try { Log.info(water.gpu.util.getNvidiaStats()); } catch (IOException e) {} }
@@ -262,8 +269,11 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           }
         }
       }
+      catch(Throwable t) {
+        t.printStackTrace();
+      }
       finally {
-        if (model.model_info()._mxnet !=null) model.model_info().nativeToJava();
+        if (model.model_info().backend != null) model.model_info().nativeToJava();
         if (cache) model.cleanUpCache();
         model.removeNativeState();
         if (!_parms._quiet_mode) {
