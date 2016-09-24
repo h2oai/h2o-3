@@ -11,9 +11,9 @@ def to_H2OFrame():
 
     ## 1. list
     #   a. single col
-    python_obj = [1, "a", 2.5, "bcd", 0]
+    python_obj = [1, 2, 2.5, -100.9, 0]
     the_frame = h2o.H2OFrame(python_obj)
-    pyunit_utils.check_dims_values(python_obj, the_frame, rows=1, cols=5)
+    pyunit_utils.check_dims_values(python_obj, the_frame, rows=5, cols=1)
 
     #   b. 1 col, 5 rows
     python_obj = [[1], [2], [3.7], [8], [9]]
@@ -37,9 +37,9 @@ def to_H2OFrame():
 
     ## 2. tuple
     #   a. single row
-    python_obj = (1, "a", 2.5, "bcd", 0)
+    python_obj = (1, 1e-5, 2.5, 23, 0)
     the_frame = h2o.H2OFrame(python_obj)
-    pyunit_utils.check_dims_values(python_obj, the_frame, rows=1, cols=5)
+    pyunit_utils.check_dims_values(python_obj, the_frame, rows=5, cols=1)
 
     #   b. single column
     python_obj = ((1,), (2,), (3.7,), (8,), (9,))
@@ -126,7 +126,7 @@ def to_H2OFrame():
     #   a. single row
     python_obj = np.array([1, "a", 2.5, "bcd", 0])
     the_frame = h2o.H2OFrame(python_obj)
-    pyunit_utils.check_dims_values(python_obj, the_frame, rows=1, cols=5)
+    pyunit_utils.check_dims_values(python_obj, the_frame, rows=5, cols=1)
 
     #   b. single column
     python_obj = np.array([[1], [2], [3.7], [8], [9]])
