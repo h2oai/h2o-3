@@ -1,6 +1,7 @@
 package hex.deepwater.backends;
 
 import hex.deepwater.datasets.DataSet;
+import water.H2O;
 import water.gpu.ImageTrain;
 import water.util.Log;
 
@@ -55,7 +56,11 @@ class MXNetBackend implements BackendTrain {
 
     @Override
     public void setParameter(String name, float value) {
-
+        if (name == "momentum") {
+            _mxnet.setMomentum(value);
+        } else if (name == "learning_rate") {
+            _mxnet.setLR(value);
+        } else throw H2O.unimpl();
     }
 
     @Override
