@@ -2,17 +2,14 @@ package hex.deepwater.datasets;
 
 import water.exceptions.H2OIllegalArgumentException;
 
-/**
- * Created by fmilo on 9/22/16.
- */
-public class ImageDataset {
+public class DataSet {
 
     int channels;
     float[] meanData; //mean pixel value of the training data
     private int width;
     private int height;
 
-    public ImageDataset(int width, int height, int channels){
+    public DataSet(int width, int height, int channels){
         this.height = height;
         this.width = width;
         this.channels = channels;

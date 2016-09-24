@@ -1,10 +1,7 @@
 package hex.deepwater.backends;
 
-import hex.deepwater.datasets.ImageDataset;
+import hex.deepwater.datasets.DataSet;
 
-/**
- * Created by fmilo on 9/23/16.
- */
 class TensorflowBackend implements BackendTrain {
 
     @Override
@@ -13,18 +10,7 @@ class TensorflowBackend implements BackendTrain {
     }
 
     @Override
-    public void buildNet(ImageDataset dataset, RuntimeOptions opts, int num_classes, int batch_size, String name) {
-
-    }
-
-    @Override
-    public void setOptimizer(int var1, int var2) {
-
-    }
-
-
-    @Override
-    public void loadModel(String model_path) {
+    public void buildNet(DataSet dataset, RuntimeOptions opts, BackendParams backend_params, int num_classes, String name) {
 
     }
 
