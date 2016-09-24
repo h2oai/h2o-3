@@ -9,6 +9,7 @@ import water.rapids.ast.AstRoot;
 
 /**
  * Assign a whole frame over a global.  Copy-On-Write optimizations make this cheap.
+ *
  */
 public class AstAssign extends AstPrimitive {
   @Override
@@ -28,7 +29,9 @@ public class AstAssign extends AstPrimitive {
 
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    Key id = Key.make(asts[1].str());
+    Key<Frame> id = Key.make(asts[1].str());
+    if (DKV.get(id) != null) 
+      throw new IllegalArgumentException("Frame id " + id + " already exists");
     Frame src = stk.track(asts[2].exec(env)).getFrame();
     return new ValFrame(env._ses.assign(id, src)); // New global Frame over shared Vecs
   }
