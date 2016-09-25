@@ -13,7 +13,6 @@ import water.util.RandomUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
@@ -154,7 +153,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfoKey.get(), batchSize, _localmodel.get_params()._cache_data);
       }
 
-      NativeImageTrainTask ntt = null;
+      NativeTrainTask ntt = null;
       while (iter.Next(fs) && !_job.isStopping()) {
         if (ntt != null) nativetime += ntt._timeInMillis;
         long n = _localmodel.get_processed_total();
@@ -166,7 +165,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         _localmodel.backend.setParameter("momentum", _localmodel.get_params().momentum((double) n));
 
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-        ntt = new NativeImageTrainTask(_localmodel.backend, iter.getData(), iter.getLabel());
+        ntt = new NativeTrainTask(_localmodel.backend, iter.getData(), iter.getLabel());
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(iter._batch_size);
       }
@@ -183,8 +182,8 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
   }
   @Override public void map(Chunk [] chunks, NewChunk [] outputs) { return; }
 
-  static private class NativeImageTrainTask extends H2O.H2OCountedCompleter<NativeImageTrainTask> {
-    NativeImageTrainTask(BackendTrain it, float[] data, float[] labels) {
+  static private class NativeTrainTask extends H2O.H2OCountedCompleter<NativeTrainTask> {
+    NativeTrainTask(BackendTrain it, float[] data, float[] labels) {
       _it = it;
       _data = data;
       _labels = labels;
