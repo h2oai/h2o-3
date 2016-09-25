@@ -270,7 +270,8 @@ final public class DeepWaterModelInfo extends Iced {
         return loadNDArray(f.getAbsolutePath());
       }
     } else {
-      Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
+      if (get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification)
+        Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
     }
     return new float[0];
   }
