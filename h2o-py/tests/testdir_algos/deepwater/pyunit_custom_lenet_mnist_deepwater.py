@@ -48,8 +48,8 @@ def deepwater_custom_lenet_mnist():
   model = H2ODeepWaterEstimator(epochs=50, rate=1e-3, mini_batch_size=32,
                                 network='user', 
 				network_definition_file="/tmp/symbol_lenet-py.json", 
-				#image_shape=[28,28], channels=1,
-                                score_interval=0, train_samples_per_iteration=1000)
+				image_shape=[28,28], channels=1,
+                                score_interval=0, train_samples_per_iteration=1000, gpu=False)
                                 
   model.train(x=[0],y=resp, training_frame=train, validation_frame=test)
   model.show()
