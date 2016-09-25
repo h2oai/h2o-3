@@ -159,7 +159,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         model.training_rows = train.numRows();
         model.actual_train_samples_per_iteration =
             _parms._train_samples_per_iteration > 0 ? _parms._train_samples_per_iteration : //user-given value (>0)
-            _parms._train_samples_per_iteration == -2 ? 4*_parms._mini_batch_size :  //automatic (-2) -> start with something small
+            _parms._train_samples_per_iteration == -2 ? 32*_parms._mini_batch_size :  //automatic (-2) -> start with something small
                 _train.numRows(); //otherwise, do one epoch per iteration (-1 or 0)
 
         if (_weights != null && _weights.min()==0 && _weights.max()==1 && _weights.isInt()) {
