@@ -166,7 +166,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         _localmodel.backend.setParameter("momentum", _localmodel.get_params().momentum((double) n));
 
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-        ntt = new NativeImageTrainTask(_localmodel.backend, iter.getData(), iter.getLabel());
+        ntt = new NativeTrainTask(_localmodel.backend, iter.getData(), iter.getLabel());
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(iter._batch_size);
       }
@@ -184,7 +184,11 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
   @Override public void map(Chunk [] chunks, NewChunk [] outputs) { return; }
 
   static private class NativeTrainTask extends H2O.H2OCountedCompleter<NativeTrainTask> {
-
+    NativeTrainTask(BackendTrain it, float[] data, float[] labels) {
+      _it = it;
+      _data = data;
+      _labels = labels;
+    }
     long _timeInMillis;
     final BackendTrain _it;
     final BackendModel _model;
