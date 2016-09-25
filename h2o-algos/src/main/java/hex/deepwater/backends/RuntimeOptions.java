@@ -1,16 +1,11 @@
 package hex.deepwater.backends;
 
 public class RuntimeOptions {
-    private boolean useGpu;
-    private int seed;
-    private int []deviceID;
+    private boolean useGpu = true;
+    private long seed = System.nanoTime();
+    private int []deviceID = new int[]{0};
 
     public int[] getDeviceID() {
-        if (deviceID == null || deviceID.length == 0) {
-            int[] zero = new int[1];
-            zero[0] = 1;
-            return zero;
-        }
         return deviceID;
     }
 
@@ -26,11 +21,11 @@ public class RuntimeOptions {
         this.useGpu = use_gpu;
     }
 
-    public int getSeed() {
+    public long getSeed() {
         return seed;
     }
 
-    public void setSeed(int seed) {
+    public void setSeed(long seed) {
         this.seed = seed;
     }
 

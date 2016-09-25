@@ -161,17 +161,12 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
 
 //        if(!_localmodel.get_params()._quiet_mode)
 //          Log.info("Trained " + n + " samples. Training on " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
-        float rate = _localmodel.get_params().rate((double) n);
-        _localmodel.backend.setParameter("learning_rate", rate);
-        float momentum = _localmodel.get_params().momentum((double) n);
-        _localmodel.backend.setParameter("momentum", momentum);
-        //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
 
-        _localmodel._backend.setParameter(_localmodel._model, "learning_rate", _localmodel.get_params().learningRate((double) n));
-        _localmodel._backend.setParameter(_localmodel._model, "momentum", _localmodel.get_params().momentum((double) n));
+        _localmodel.backend.setParameter("learning_rate", _localmodel.get_params().rate((double) n));
+        _localmodel.backend.setParameter("momentum", _localmodel.get_params().momentum((double) n));
 
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
-        ntt = new NativeTrainTask(_localmodel._backend, _localmodel._model, iter.getData(), iter.getLabel());
+        ntt = new NativeImageTrainTask(_localmodel.backend, iter.getData(), iter.getLabel());
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(iter._batch_size);
       }

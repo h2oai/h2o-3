@@ -1,6 +1,7 @@
 package hex.deepwater;
 
 import hex.*;
+import hex.deepwater.backends.MXNetLoader;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
