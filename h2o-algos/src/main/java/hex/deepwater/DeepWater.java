@@ -235,7 +235,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
                   new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepWaterTask (model.model_info(), rowFraction(train, mp, model), _job).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
           long before = System.currentTimeMillis();
-          if (_parms._export_native_model_prefix!=null) {
+          if (_parms._export_native_model_prefix!=null && _parms._export_native_model_prefix!="") {
             Log.info("Saving model state.");
             model.exportNativeModel(_parms._export_native_model_prefix, model.iterations);
           }
