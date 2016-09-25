@@ -1,16 +1,12 @@
 package hex.deepwater.backends;
 
-import hex.deepwater.datasets.DataSet;
+import hex.deepwater.datasets.ImageDataSet;
 
 public interface BackendTrain {
 
     void delete();
 
-    void setOptimizer(int var1, int var2);
-
-    void loadModel(String model_path);
-
-    void buildNet(DataSet dataset, RuntimeOptions opts, BackendParams backend_params, int num_classes, String name);
+    void buildNet(ImageDataSet dataset, RuntimeOptions opts, BackendParams backend_params, int num_classes, String name);
 
     void saveModel(String model_path);
 

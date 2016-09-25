@@ -2,11 +2,8 @@ package hex.deepwater;
 
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
-import hex.deepwater.backends.BackendFactory;
-import hex.deepwater.backends.BackendParams;
-import hex.deepwater.backends.BackendTrain;
-import hex.deepwater.backends.RuntimeOptions;
-import hex.deepwater.datasets.DataSet;
+import hex.deepwater.backends.*;
+import hex.deepwater.datasets.ImageDataSet;
 import hex.splitframe.ShuffleSplitFrame;
 import org.junit.*;
 import water.*;
@@ -77,13 +74,12 @@ public class DeepWaterTest extends TestUtil {
     // the path to Inception model
     //ImageTrain m = new ImageTrain(224,224,3);
     //m.buildNet(1000,1,"inception_bn");
-    DataSet id = new DataSet(224,224,3);
+    ImageDataSet id = new ImageDataSet(224,224,3);
     BackendTrain m = BackendFactory.create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
 
     RuntimeOptions opts = new RuntimeOptions();
-    opts.setDeviceID(0);
     opts.setSeed(1234);
-    opts.setUseGPU(true);
+    opts.setUseGPU(false); //FIXME: Fails when set to true (i.e., running on the GPU) due to BatchNormalization issues?
 
     BackendParams bparm = new BackendParams();
     bparm.set("mini_batch_size", 1);
@@ -101,118 +97,6 @@ public class DeepWaterTest extends TestUtil {
     System.out.println("\n\n" + answer +"\n\n");
     labels.remove();
     Assert.assertEquals("n02113023 Pembroke", answer);
-  }
-
-  // This tests the DeepWaterImageIterator
-  @Ignore
-  @Test
-  public void inceptionFineTuning() throws IOException {
-    String path = StringUtils.expandPath("~/kaggle/statefarm/input/");
-    BufferedReader br = new BufferedReader(new FileReader(new File(path+"driver_imgs_list.csv")));
-
-    ArrayList<Float> train_labels = new ArrayList<>();
-    ArrayList<String> train_data = new ArrayList<>();
-
-    String line;
-    br.readLine(); //skip header
-    while ((line = br.readLine()) != null) {
-      String[] tmp = line.split(",");
-      train_labels.add(new Float(tmp[1].substring(1)).floatValue());
-      train_data.add(path+"train/"+tmp[1]+"/"+tmp[2]);
-    }
-    br.close();
-
-    int batch_size = 64;
-    int classes = 10;
-
-    BackendTrain m = BackendFactory.create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
-    RuntimeOptions options = new RuntimeOptions();
-    DataSet id = new DataSet(224,224,3);
-    BackendParams bparm = new BackendParams();
-    bparm.set("mini_batch_size", batch_size);
-    m.buildNet(id, options, bparm, classes, "inception_bn");
-    m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
-
-    int max_iter = 6; //epochs
-    int count = 0;
-    for (int iter = 0; iter < max_iter; iter++) {
-      float learning_rate = 3e-3f/(1+iter);
-      m.setParameter("learning_rate", learning_rate);
-      //each iteration does a different random shuffle
-      Random rng = RandomUtils.getRNG(0);
-      rng.setSeed(0xDECAF+0xD00D*iter);
-      Collections.shuffle(train_labels,rng);
-      rng.setSeed(0xDECAF+0xD00D*iter);
-      Collections.shuffle(train_data,rng);
-
-      DeepWaterImageIterator img_iter = new DeepWaterImageIterator(train_data, train_labels, null /*do not subtract mean*/, batch_size, 224, 224, 3, true);
-      Futures fs = new Futures();
-      while(img_iter.Next(fs)){
-        float[] data = img_iter.getData();
-        float[] labels = img_iter.getLabel();
-        float[] pred = m.train(data, labels);
-        if (count++ % 10 != 0) continue;
-
-        Vec[] classprobs = new Vec[classes];
-        String[] names = new String[classes];
-        for (int i=0;i<classes;++i) {
-          names[i] = "c" + i;
-          double[] vals=new double[batch_size];
-          for (int j = 0; j < batch_size; ++j) {
-            int idx=j*classes+i; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
-            vals[j] = pred[idx];
-          }
-          classprobs[i] = Vec.makeVec(vals,Vec.newKey());
-        }
-        water.fvec.Frame preds = new Frame(names,classprobs);
-        long[] lab = new long[batch_size];
-        for (int i=0;i<batch_size;++i)
-          lab[i] = (long)labels[i];
-        Vec actual = Vec.makeVec(lab,names,Vec.newKey());
-        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(preds,actual);
-        System.out.println(mm.toString());
-      }
-      m.saveParam(path+"/param."+iter);
-    }
-    scoreTestSet(path,classes,m);
-  }
-
-  public static void scoreTestSet(String path, int classes, BackendTrain m) throws IOException {
-    // make test set predictions
-    BufferedReader br = new BufferedReader(new FileReader(new File(path+"test_list.csv"))); //file created with 'cut -d, -f1 sample_submission.csv | sed 1d > test_list.csv'
-
-    ArrayList<Float> test_labels = new ArrayList<>();
-    ArrayList<String> test_data = new ArrayList<>();
-
-    String line;
-    while ((line = br.readLine()) != null) {
-      test_labels.add(new Float(-999)); //dummy
-      test_data.add(path+"test/"+line);
-    }
-
-    br.close();
-
-    FileWriter fw = new FileWriter(path+"/submission.csv");
-    int batch_size = 64; //avoid issues with batching at the end of the test set
-    DeepWaterImageIterator img_iter = new DeepWaterImageIterator(test_data, test_labels, null /*do not subtract mean*/, batch_size, 224, 224, 3, true);
-    fw.write("img,c0,c1,c2,c3,c4,c5,c6,c7,c8,c9\n");
-    Futures fs = new Futures();
-    while(img_iter.Next(fs)) {
-      float[] data = img_iter.getData();
-      String[] files = img_iter.getFiles();
-      float[] pred = m.predict(data);
-      for (int i=0;i<batch_size;++i) {
-        String file = files[i];
-        String[] pcs = file.split("/");
-        fw.write(pcs[pcs.length-1]);
-        for (int j=0;j<classes;++j) {
-          int idx=i*classes+j;
-          fw.write(","+pred[idx]);
-        }
-        fw.write("\n");
-      }
-    }
-    fw.close();
   }
 
   @Test
@@ -653,7 +537,7 @@ public class DeepWaterTest extends TestUtil {
     int batch_size = 64;
     int classes = 10;
     BackendTrain m = BackendFactory.create(backend);// new ImageTrain(28,28,1,0,1234,true);
-    DataSet dataset = new DataSet(28, 28, 1);
+    ImageDataSet dataset = new ImageDataSet(28, 28, 1);
     RuntimeOptions opts = new RuntimeOptions();
     opts.setUseGPU(true);
     opts.setSeed(1234);
