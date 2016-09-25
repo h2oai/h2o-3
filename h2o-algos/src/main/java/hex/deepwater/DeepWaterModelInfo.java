@@ -6,7 +6,7 @@ import hex.deepwater.backends.BackendFactory;
 import hex.deepwater.backends.BackendParams;
 import hex.deepwater.backends.BackendTrain;
 import hex.deepwater.backends.RuntimeOptions;
-import hex.deepwater.datasets.DataSet;
+import hex.deepwater.datasets.ImageDataSet;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.*;
@@ -108,6 +108,7 @@ final public class DeepWaterModelInfo extends Iced {
   BackendParams getBackendParams() {
     BackendParams backendParams = new BackendParams();
     backendParams.set("mini_batch_size", get_params()._mini_batch_size);
+    backendParams.set("clip_gradient", get_params()._clip_gradient);
     String network = parameters._network == null ? null : parameters._network.toString();
     if (network==null) {
       assert (parameters._activation != null);
@@ -126,8 +127,8 @@ final public class DeepWaterModelInfo extends Iced {
     return backendParams;
   }
 
-  DataSet getDataSet() {
-    DataSet dataset = new DataSet(_width, _height, _channels);
+  ImageDataSet getDataSet() {
+    ImageDataSet dataset = new ImageDataSet(_width, _height, _channels);
     float[] meanData = loadMeanImageData(parameters._mean_image_file);
     if(meanData.length > 0) {
       dataset.setMeanData(meanData);

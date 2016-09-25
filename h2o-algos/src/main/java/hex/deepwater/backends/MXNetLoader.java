@@ -1,4 +1,4 @@
-package hex.deepwater;
+package hex.deepwater.backends;
 
 import water.util.Log;
 
