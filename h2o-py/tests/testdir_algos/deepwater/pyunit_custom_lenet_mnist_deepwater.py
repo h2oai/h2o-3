@@ -45,13 +45,11 @@ def deepwater_custom_lenet_mnist():
   lenet(nclasses).save("/tmp/symbol_lenet-py.json")
 
   print("Importing the lenet model architecture for training in H2O")
-  model = H2ODeepWaterEstimator(epochs=50, rate=1e-3, mini_batch_size=32,
-                                network='user', 
-				network_definition_file="/tmp/symbol_lenet-py.json", 
-				image_shape=[28,28], channels=1,
-                                score_interval=0, train_samples_per_iteration=1000, gpu=False)
+  model = H2ODeepWaterEstimator(epochs=100, rate=1e-3, mini_batch_size=64,
+                                network='user', network_definition_file="/tmp/symbol_lenet-py.json",
+				image_shape=[28,28], channels=1)
                                 
-  model.train(x=[0],y=resp, training_frame=train, validation_frame=test)
+  model.train(x=predictors,y=resp, training_frame=train, validation_frame=test)
   model.show()
   error = model.model_performance(valid=True).mean_per_class_error()
   assert error < 0.1, "mean classification error on validation set is too high : " + str(error)
