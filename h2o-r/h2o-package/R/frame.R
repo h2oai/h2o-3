@@ -973,6 +973,7 @@ h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) 
 #'
 #' @param x H2OFrame column of strings or factors to be converted
 #' @param format A character string indicating date pattern
+#' @param ... Further arguments to be passed from or to other methods.
 #' @export
 h2o.as_date <- function(x, format, ...) {
   if(!base::is.character(format)) stop("format must be a string")
@@ -2400,9 +2401,9 @@ h2o.print <- function(x,n=6L) {
 #' @param ... Further arguments to be passed from or to other methods.
 #' @param cols Print the per-column str for the H2OFrame
 #' @export
-h2o.str <- function(x,n=6L) {
-  if(is.H2OFrame(x)) str(x,n)
-  else str(x,n)
+h2o.str <- function(object, ..., cols=FALSE) {
+  if(is.H2OFrame(object)) str(object, ..., cols)
+  else str(object, ..., cols)
 }
 
 #'
