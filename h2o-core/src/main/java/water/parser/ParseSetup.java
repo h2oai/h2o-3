@@ -11,6 +11,7 @@ import water.util.Log;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -635,6 +636,25 @@ public class ParseSetup extends Iced {
       return maxLineLength;
     }
     return -1;
+  }
+
+  /**
+   * Copies the common setup to another object (that is possibly and extension of the base setup).
+   * Note: this method only copies fields directly declared in ParseSetup class, it doesn't handle
+   * fields that are declared in classes derived from ParseSetup.
+   * @param setup target setup object
+   * @param <T> class derived from ParseSetup
+   * @return the target setup object (for convenience)
+   */
+  public <T extends ParseSetup> T copyTo(T setup) {
+    try {
+      for (Field field : ParseSetup.class.getDeclaredFields()) {
+        if (! java.lang.reflect.Modifier.isStatic(field.getModifiers())) field.set(setup, field.get(this));
+      }
+      return setup;
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public ParserInfo getParseType() {
