@@ -132,7 +132,7 @@ public class DeepWaterTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._rate = 1e-3;
-      p._epochs = 1;
+      p._epochs = 3;
       p._train_samples_per_iteration = samples;
       m = new DeepWater(p).trainModel().get();
       Assert.assertEquals(expected,m.iterations);
@@ -142,10 +142,10 @@ public class DeepWaterTest extends TestUtil {
     }
   }
 
-  @Test public void trainSamplesPerIteration0() { trainSamplesPerIteration(0,1); }
-  @Test public void trainSamplesPerIteration_auto() { trainSamplesPerIteration(-2,3); }
-  @Test public void trainSamplesPerIteration_neg1() { trainSamplesPerIteration(-1,1); }
-  @Test public void trainSamplesPerIteration_32() { trainSamplesPerIteration(32,9); }
+  @Test public void trainSamplesPerIteration0() { trainSamplesPerIteration(0,3); }
+  @Test public void trainSamplesPerIteration_auto() { trainSamplesPerIteration(-2,1); }
+  @Test public void trainSamplesPerIteration_neg1() { trainSamplesPerIteration(-1,3); }
+  @Test public void trainSamplesPerIteration_32() { trainSamplesPerIteration(32,26); }
   @Test public void trainSamplesPerIteration_1000() { trainSamplesPerIteration(1000,1); }
 
   @Test
