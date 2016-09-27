@@ -49,7 +49,8 @@ public class DRFV3 extends SharedTreeV3<DRF,DRFV3, DRFV3.DRFParametersV3> {
         "col_sample_rate_change_per_level",
         "col_sample_rate_per_tree",
         "min_split_improvement",
-        "histogram_type"
+        "histogram_type",
+        "categorical_encoding"
     };
 
     // Input fields

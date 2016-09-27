@@ -42,7 +42,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public String[] _warnings = new String[0];
   public Distribution _dist;
   protected ScoringInfo[] scoringInfo;
-  public IcedHashMap<Key, StackTraceElement[]> _toDelete = new IcedHashMap<>();
+  public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
 
 
   public interface DeepFeatures {
@@ -782,7 +782,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
                                            Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions, ToEigenVec tev,
-                                           IcedHashMap<Key, StackTraceElement[]> toDelete) throws IllegalArgumentException {
+                                           IcedHashMap<Key, String> toDelete) throws IllegalArgumentException {
     if (test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -888,7 +888,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (expensive) {
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
       if (updated!=test) {
-        if (toDelete!=null) toDelete.put(updated._key, Thread.currentThread().getStackTrace());
+        if (toDelete!=null) toDelete.put(updated._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         test.restructure(updated.names(), updated.vecs());
       }
     }

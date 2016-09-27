@@ -73,6 +73,8 @@
 #'        Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin".
 #' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction.  Defaults to 1.79769313486e+308.
 #' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. Default is 0.
+#' @param categorical_encoding Encoding scheme for categorical features
+#'        Can be one of "AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen". Default is "AUTO", which is "Enum".
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' \donttest{
@@ -132,7 +134,8 @@ h2o.gbm <- function(x, y, training_frame,
                     min_split_improvement = 1e-05,
                     histogram_type = c("AUTO","UniformAdaptive","Random","QuantilesGlobal","RoundRobin"),
                     max_abs_leafnode_pred,
-                    pred_noise_bandwidth=0
+                    pred_noise_bandwidth=0,
+                    categorical_encoding=c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen")
                     )
 {
    #If x is missing, then assume user wants to use all columns as features.
@@ -240,6 +243,7 @@ h2o.gbm <- function(x, y, training_frame,
   if(!missing(histogram_type)) parms$histogram_type <- histogram_type
   if(!missing(max_abs_leafnode_pred)) parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
   if(!missing(pred_noise_bandwidth)) parms$pred_noise_bandwidth <- pred_noise_bandwidth
+  if(!missing(categorical_encoding)) parms$categorical_encoding <- categorical_encoding
 
   .h2o.modelJob('gbm', parms)
 }

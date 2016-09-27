@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.*;
+import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -23,6 +24,8 @@ public abstract class SharedTreeModel<
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
         > extends Model<M, P, O> implements Model.LeafNodeAssignment {
+
+  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
 

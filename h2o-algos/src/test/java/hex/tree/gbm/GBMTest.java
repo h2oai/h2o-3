@@ -2697,4 +2697,51 @@ public class GBMTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testCatEncoding() {
+    for (Model.Parameters.CategoricalEncodingScheme c : Model.Parameters.CategoricalEncodingScheme.values()) {
+      if (c == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) continue;
+      Frame tfr = null;
+      GBMModel gbm = null;
+
+      try {
+        tfr = parse_test_file("./smalldata/junit/weather.csv");
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._ntrees = 5;
+        parms._categorical_encoding = c;
+        gbm = new GBM(parms).trainModel().get();
+      } finally {
+        if (tfr != null) tfr.delete();
+        if (gbm != null) gbm.deleteCrossValidationModels();
+        if (gbm != null) gbm.delete();
+      }
+    }
+  }
+
+  @Test
+  public void testCatEncodingCV() {
+    for (Model.Parameters.CategoricalEncodingScheme c : Model.Parameters.CategoricalEncodingScheme.values()) {
+      if (c == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) continue;
+      Frame tfr = null;
+      GBMModel gbm = null;
+
+      try {
+        tfr = parse_test_file("./smalldata/junit/weather.csv");
+        GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+        parms._train = tfr._key;
+        parms._response_column = tfr.lastVecName();
+        parms._ntrees = 5;
+        parms._categorical_encoding = c;
+        parms._nfolds = 3;
+        gbm = new GBM(parms).trainModel().get();
+      } finally {
+        if (tfr != null) tfr.delete();
+        if (gbm != null) gbm.deleteCrossValidationModels();
+        if (gbm != null) gbm.delete();
+      }
+    }
+  }
+
 }
