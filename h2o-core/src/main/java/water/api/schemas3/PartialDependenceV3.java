@@ -1,22 +1,26 @@
 package water.api.schemas3;
 
-import hex.PDP;
+import hex.PartialDependence;
 import water.Key;
 import water.api.API;
 
 /**
  * Partial dependence plot
  */
-public class PDPV3 extends SchemaV3<PDP, PDPV3> {
-  @API(help="Name of Model of interest", direction = API.Direction.INOUT)
+public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDependenceV3> {
+  @SuppressWarnings("unused")
+  @API(help="Model", direction = API.Direction.INOUT)
   public KeyV3.ModelKeyV3 model_id;
 
+  @SuppressWarnings("unused")
   @API(help="Frame", direction=API.Direction.INOUT)
   public KeyV3.FrameKeyV3 frame_id;
 
+  @SuppressWarnings("unused")
   @API(help="Column(s)", direction=API.Direction.INOUT)
   public String[] cols;
 
+  @SuppressWarnings("unused")
   @API(help="Number of bins", direction=API.Direction.INOUT)
   public int nbins;
 
@@ -25,7 +29,7 @@ public class PDPV3 extends SchemaV3<PDP, PDPV3> {
   public TwoDimTableV3[] partial_dependence_data;
 
   @API(help="Key to store the destination", direction=API.Direction.INOUT)
-  public KeyV3.PDPKeyV3 destination_key;
+  public KeyV3.PartialDependenceKeyV3 destination_key;
 
-  @Override public PDP createImpl( ) { return new PDP(Key.<PDP>make()); }
+  @Override public PartialDependence createImpl( ) { return new PartialDependence(Key.<PartialDependence>make()); }
 }
