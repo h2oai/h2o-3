@@ -8,7 +8,6 @@ h2o -- module for using H2O services.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import os
-import re
 import warnings
 
 from h2o.backend import H2OConnection
