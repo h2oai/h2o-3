@@ -98,7 +98,6 @@ public class SortTest extends TestUtil {
       FVecTest.makeByteVec(raw, "x,y\n0,a\n1,b\n2,c\n3,d\n4,e\n5,f\n6,g\n7,h");
       fr = ParseDataset.parse(parsed, raw);
       sortedFr = fr.sort(new int[]{0});
-      sortedFr.replace(1, sortedFr.vec(1).toStringVec()).remove();
     } finally {
       if( fr       != null ) fr.delete();
       if( sortedFr != null ) sortedFr.delete();
