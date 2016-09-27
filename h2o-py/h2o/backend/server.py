@@ -316,38 +316,36 @@ class H2OLocalServer(object):
         :return: Path to the java executable.
         :raises H2OStartupError: if java cannot be found.
         """
-        # is java in PATH?
-        if os.access("java", os.X_OK):
-            return "java"
+        # is java callable directly (doesn't work on windows it seems)?
+        java = "java.exe" if sys.platform == "win32" else "java"
+        if os.access(java, os.X_OK):
+            return java
+
+        # Can Java be found on the PATH?
         for path in os.getenv("PATH").split(os.pathsep):  # not same as os.path.sep!
-            full_path = os.path.join(path, "java")
+            full_path = os.path.join(path, java)
             if os.access(full_path, os.X_OK):
                 return full_path
 
         # check if JAVA_HOME is set (for Windows)
         if os.getenv("JAVA_HOME"):
-            return os.path.join(os.getenv("JAVA_HOME"), "bin", "java.exe")
+            full_path = os.path.join(os.getenv("JAVA_HOME"), "bin", java)
+            if os.path.exists(full_path):
+                return full_path
 
         # check "/Program Files" and "/Program Files (x86)" on Windows
         if sys.platform == "win32":
             # On Windows, backslash on the drive letter is necessary, otherwise os.path.join produces an invalid path
             program_folders = [os.path.join("C:\\", "Program Files", "Java"),
-                               os.path.join("C:\\", "Program Files (x86)", "Java")]
-            # Look for JDK
+                               os.path.join("C:\\", "Program Files (x86)", "Java"),
+                               os.path.join("C:\\", "ProgramData", "Oracle", "Java")]
             for folder in program_folders:
-                if not os.path.exists(folder): continue
-                for jdk in os.listdir(folder):
-                    if "jdk" not in jdk.lower(): continue
-                    path = os.path.join(folder, jdk, "bin", "java.exe")
-                    if os.path.exists(path):
-                        return path
-            # check for JRE and warn
-            for folder in program_folders:
-                path = os.path.join(folder, "jre7", "bin", "java.exe")
-                if os.path.exists(path):
-                    warn("Found JRE at " + path + "; but H2O requires the JDK to run.")
+                for dirpath, dirnames, filenames in os.walk(folder):
+                    if java in filenames:
+                        return os.path.join(dirpath, java)
+
         # not found...
-        raise H2OStartupError("Cannot find Java. Please install the latest JDK from\n"
+        raise H2OStartupError("Cannot find Java. Please install the latest JRE from\n"
                               "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 
 
