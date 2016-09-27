@@ -963,10 +963,7 @@ public class DeepWaterTest extends TestUtil {
     }
     return array;
   }
-<<<<<<< 7143a92fed2c3b7bc87f19da6ae6ee08cf4fac48
-=======
   */
 
->>>>>>> texts2array same as in example
 }
 
