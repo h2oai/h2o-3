@@ -90,6 +90,21 @@ public class SortTest extends TestUtil {
     }
   }
 
+  @Test public void testBasicSortStringCol() {
+    Frame fr = null, sortedFr = null;
+    try {
+      Key raw = Key.make("sort_test_data_raw");
+      Key parsed = Key.make("sort_test_data_parsed");
+      FVecTest.makeByteVec(raw, "x,y\n0,a\n1,b\n2,c\n3,d\n4,e\n5,f\n6,g\n7,h");
+      fr = ParseDataset.parse(parsed, raw);
+      sortedFr = fr.sort(new int[]{0});
+      sortedFr.replace(1, sortedFr.vec(1).toStringVec()).remove();
+    } finally {
+      if( fr       != null ) fr.delete();
+      if( sortedFr != null ) sortedFr.delete();
+    }
+  }
+
   // Assert that result is indeed sorted - on all 3 columns, as this is a
   // stable sort.
   private class CheckSort extends MRTask<CheckSort> {
