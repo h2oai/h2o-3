@@ -365,7 +365,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return mm;
   }
 
-  static void incrementModelMetrics(Output out, Key k) {
+  synchronized static void incrementModelMetrics(Output out, Key k) {
     for (Key key : out._model_metrics)
       if (k.equals(key)) return;
     out._model_metrics = Arrays.copyOf(out._model_metrics, out._model_metrics.length + 1);
