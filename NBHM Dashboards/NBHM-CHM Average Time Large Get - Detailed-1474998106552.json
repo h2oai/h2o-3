@@ -83,24 +83,26 @@
           "steppedLine": false,
           "targets": [
             {
+              "hide": false,
               "refId": "A",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest1.upper_90, '1 Thread')"
+              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest1.upper_90, '1 Thread')",
+              "textEditor": false
             },
             {
               "refId": "B",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest2.mean_90, '2 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest2.upper_90, '2 Threads')"
             },
             {
               "refId": "C",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest4.upper, '4 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest4.upper_90, '4 Threads')"
             },
             {
               "refId": "D",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest8.std, '8 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest8.upper_90, '8 Threads')"
             },
             {
               "refId": "E",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest16.count_90, '16 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVLargeStoreGetSingleNode.largeStoreGetTest16.upper_90, '16 Threads')"
             }
           ],
           "timeFrom": null,
@@ -176,11 +178,12 @@
           "targets": [
             {
               "refId": "A",
-              "target": "alias(stats.timers.h2o.core.water.CHMLargeGetBenchmark.largeGetTest1.mean, '1 Thread')"
+              "target": "alias(stats.timers.h2o.core.water.CHMLargeGetBenchmark.largeGetTest1.upper_90, '1 Thread')",
+              "textEditor": false
             },
             {
               "refId": "B",
-              "target": "alias(stats.timers.h2o.core.water.CHMLargeGetBenchmark.largeGetTest2.mean_90, '2 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMLargeGetBenchmark.largeGetTest2.upper_90, '2 Threads')"
             },
             {
               "refId": "C",
@@ -188,11 +191,11 @@
             },
             {
               "refId": "D",
-              "target": "alias(stats.timers.h2o.core.water.CHMLargeGetBenchmark.largeGetTest8.count_90, '8 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMLargeGetBenchmark.largeGetTest8.upper_90, '8 Threads')"
             },
             {
               "refId": "E",
-              "target": "alias(stats.timers.h2o.core.water.CHMLargeGetBenchmark.largeGetTest16.median, '16 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMLargeGetBenchmark.largeGetTest16.upper_90, '16 Threads')"
             }
           ],
           "timeFrom": null,
@@ -232,7 +235,7 @@
     }
   ],
   "time": {
-    "from": "now/w",
+    "from": "now-7d",
     "to": "now"
   },
   "timepicker": {
@@ -267,7 +270,7 @@
     "list": []
   },
   "schemaVersion": 12,
-  "version": 3,
+  "version": 9,
   "links": [],
   "gnetId": null
 }

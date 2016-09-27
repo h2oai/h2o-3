@@ -30,7 +30,7 @@
     }
   ],
   "id": null,
-  "title": "NBHM/CHM Average Time Large Put - Detailed",
+  "title": "NBHM/CHM Average Time Simple Get - Detailed",
   "tags": [],
   "style": "dark",
   "timezone": "browser",
@@ -84,23 +84,23 @@
           "targets": [
             {
               "refId": "A",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStorePutSingleNode.largeStorePutTest1.median, '1 Thread')"
+              "target": "alias(stats.timers.h2o.core.water.DKVGetBenchmarkSingleNode.getTest1.upper_90, '1 Thread')"
             },
             {
               "refId": "B",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStorePutSingleNode.largeStorePutTest2.count_ps, '2 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVGetBenchmarkSingleNode.getTest2.upper_90, '2 Threads')"
             },
             {
               "refId": "C",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStorePutSingleNode.largeStorePutTest4.mean, '4 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVGetBenchmarkSingleNode.getTest4.upper_90, '4 Threads')"
             },
             {
               "refId": "D",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStorePutSingleNode.largeStorePutTest4.mean, '8 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVGetBenchmarkSingleNode.getTest8.upper_90, '8 Threads')"
             },
             {
               "refId": "E",
-              "target": "alias(stats.timers.h2o.core.water.DKVLargeStorePutSingleNode.largeStorePutTest16.mean_90, '16 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVGetBenchmarkSingleNode.getTest16.upper_90, '16 Threads')"
             }
           ],
           "timeFrom": null,
@@ -176,23 +176,23 @@
           "targets": [
             {
               "refId": "A",
-              "target": "alias(stats.timers.h2o.core.water.CHMLargePutBenchmark.largePutTest1.mean_90, '1 Thread')"
+              "target": "alias(stats.timers.h2o.core.water.CHMGetBenchmark.chmGetTest1.upper_90, '1 Thread')"
             },
             {
               "refId": "B",
-              "target": "alias(stats.timers.h2o.core.water.CHMLargePutBenchmark.largePutTest2.count, '2 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMGetBenchmark.chmGetTest2.upper_90, '2 Threads')"
             },
             {
               "refId": "C",
-              "target": "alias(stats.timers.h2o.core.water.CHMLargePutBenchmark.largePutTest4.count, '4 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMGetBenchmark.chmGetTest4.upper_90, '4 Threads')"
             },
             {
               "refId": "D",
-              "target": "alias(stats.timers.h2o.core.water.CHMLargePutBenchmark.largePutTest4.count, '8 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMGetBenchmark.chmGetTest8.upper_90, '8 Threads')"
             },
             {
               "refId": "E",
-              "target": "alias(stats.timers.h2o.core.water.CHMLargePutBenchmark.largePutTest16.std, '16 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMGetBenchmark.chmGetTest16.upper_90, '16 Threads')"
             }
           ],
           "timeFrom": null,
@@ -232,8 +232,8 @@
     }
   ],
   "time": {
-    "from": "now/w",
-    "to": "now"
+    "from": "now/M",
+    "to": "now/M"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -266,8 +266,9 @@
   "annotations": {
     "list": []
   },
+  "refresh": "30s",
   "schemaVersion": 12,
-  "version": 4,
+  "version": 9,
   "links": [],
   "gnetId": null
 }

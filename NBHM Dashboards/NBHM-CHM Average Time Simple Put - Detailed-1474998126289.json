@@ -84,23 +84,23 @@
           "targets": [
             {
               "refId": "A",
-              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest1.median, '1 Thread')"
+              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest1.upper_90, '1 Thread')"
             },
             {
               "refId": "B",
-              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest2.mean, '2 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest2.upper_90, '2 Threads')"
             },
             {
               "refId": "C",
-              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest4.mean, '4 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest4.upper_90, '4 Threads')"
             },
             {
               "refId": "D",
-              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest8.mean_90, '8 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest8.upper_90, '8 Threads')"
             },
             {
               "refId": "E",
-              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest16.count_90, '16 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.putTest16.upper_90, '16 Threads')"
             }
           ],
           "timeFrom": null,
@@ -180,11 +180,11 @@
             },
             {
               "refId": "B",
-              "target": "alias(stats.timers.h2o.core.water.CHMPutBenchmark.chmPutTest2.lower, '2 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMPutBenchmark.chmPutTest2.upper_90, '2 Threads')"
             },
             {
               "refId": "C",
-              "target": "alias(stats.timers.h2o.core.water.CHMPutBenchmark.chmPutTest4.mean_90, '4 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMPutBenchmark.chmPutTest4.upper_90, '4 Threads')"
             },
             {
               "refId": "D",
@@ -192,7 +192,7 @@
             },
             {
               "refId": "E",
-              "target": "alias(stats.timers.h2o.core.water.CHMPutBenchmark.chmPutTest16.sum_90, '16 Threads')"
+              "target": "alias(stats.timers.h2o.core.water.CHMPutBenchmark.chmPutTest16.upper_90, '16 Threads')"
             }
           ],
           "timeFrom": null,
@@ -267,7 +267,7 @@
     "list": []
   },
   "schemaVersion": 12,
-  "version": 2,
+  "version": 6,
   "links": [],
   "gnetId": null
 }

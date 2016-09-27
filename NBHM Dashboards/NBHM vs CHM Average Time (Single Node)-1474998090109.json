@@ -281,7 +281,7 @@
             },
             {
               "refId": "B",
-              "target": "alias(maxSeries(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.*.upper), 'NBHM')"
+              "target": "alias(maxSeries(stats.timers.h2o.core.water.DKVPutBenchmarkSingleNode.*.upper_90), 'NBHM')"
             }
           ],
           "timeFrom": null,
@@ -364,11 +364,11 @@
           "targets": [
             {
               "refId": "A",
-              "target": "alias(maxSeries(stats.timers.h2o.core.water.CHMLargePutBenchmark.*.mean_90), 'CHM')"
+              "target": "alias(maxSeries(stats.timers.h2o.core.water.CHMLargePutBenchmark.*.upper_90), 'CHM')"
             },
             {
               "refId": "B",
-              "target": "alias(maxSeries(stats.timers.h2o.core.water.DKVLargeStorePutSingleNode.*.mean_90), 'NBHM')"
+              "target": "alias(maxSeries(stats.timers.h2o.core.water.DKVLargeStorePutSingleNode.*.upper_90), 'NBHM')"
             }
           ],
           "timeFrom": null,
@@ -444,7 +444,7 @@
   },
   "refresh": "30s",
   "schemaVersion": 12,
-  "version": 30,
+  "version": 32,
   "links": [],
   "gnetId": null
 }

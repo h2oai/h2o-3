@@ -62,6 +62,7 @@ public class JMHRunner {
         System.out.println("List of options available:");
         System.out.printf("%-30sEnable sending metrics to statsd\n", Arguments.OPTION_ENABLE_STATSD);
         System.out.printf("%-30sDisable sending metrics to statsd\n", Arguments.OPTION_DISABLE_STATSD);
+        System.out.printf("%-30sDisplay help options\n", Arguments.OPTION_HELP);
         System.out.printf("%-30sStatsd hostname\n", Arguments.STATSD_HOST_PREFIX);
         System.out.printf("%-30sStatsd port number\n", Arguments.STATSD_PORT_PREFIX);
     }
@@ -149,7 +150,7 @@ public class JMHRunner {
             executeThroughputBenchmarking();
 
             // Run benchmarks for average time and send metrics to statsd
-           executeAverageTimeBenchmarking();
+            executeAverageTimeBenchmarking();
       //  }
     }
 
