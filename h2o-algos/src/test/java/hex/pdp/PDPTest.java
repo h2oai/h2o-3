@@ -153,6 +153,7 @@ public class PDPTest extends TestUtil {
       // PDP
       pdp = new PDP(Key.<PDP>make());
       pdp._nbins = 33;
+      pdp._cols = new String[]{"Sunshine","MaxWindPeriod","WindSpeed9am"};
       pdp._model_id = (Key) model._key;
       pdp._frame_id = fr._key;
 
