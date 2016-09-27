@@ -1,7 +1,7 @@
 package water.api.schemas3;
 
 import hex.Model;
-import hex.PDP;
+import hex.PartialDependence;
 import hex.grid.Grid;
 import water.*;
 import water.api.API;
@@ -107,9 +107,9 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
     public AssemblyKeyV3(Key<Assembly> key) { super(key); }
   }
 
-  public static class PDPKeyV3 extends KeyV3<Iced, PDPKeyV3, PDP> {
-    public PDPKeyV3() {}
-    public PDPKeyV3(Key<PDP> key) { super(key); }
+  public static class PartialDependenceKeyV3 extends KeyV3<Iced, PartialDependenceKeyV3, PartialDependence> {
+    public PartialDependenceKeyV3() {}
+    public PartialDependenceKeyV3(Key<PartialDependence> key) { super(key); }
   }
 
   @Override public S fillFromImpl(Iced i) {
@@ -141,6 +141,8 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
       this.URL = "/3/Frames/" + key.toString();
     else if (Model.class.isAssignableFrom(keyed_class))
       this.URL = "/3/Models/" + key.toString();
+    else if (PartialDependence.class.isAssignableFrom(keyed_class))
+      this.URL = "/3/PartialDependence/" + key.toString();
     else if (Vec.class.isAssignableFrom(keyed_class))
       this.URL = null;
     else
