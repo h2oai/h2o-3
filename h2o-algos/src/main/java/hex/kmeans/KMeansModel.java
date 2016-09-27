@@ -22,13 +22,14 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public String algoName() { return "KMeans"; }
     public String fullName() { return "K-means"; }
     public String javaName() { return KMeansModel.class.getName(); }
-    @Override public long progressUnits() { return _max_iterations; }
+    @Override public long progressUnits() { return _estimate_k ? _k : _max_iterations; }
     public int _max_iterations = 1000;     // Max iterations
     public boolean _standardize = true;    // Standardize columns
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
     public Key<Frame> _user_points;
     public boolean _pred_indicator = false;   // For internal use only: generate indicator cols during prediction
                                               // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
+    public boolean _estimate_k = false;       // If enabled, iteratively find up to _k clusters
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
@@ -64,14 +65,14 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     assert domain == null;
-    return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_parms._k);
+    return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_output._k);
   }
 
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
     if (!_parms._pred_indicator) {
       return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics);
     } else {
-      final int len = _parms._k;
+      final int len = _output._k;
       String prefix = "cluster_";
       Frame adaptFrm = new Frame(adaptedFr);
       for(int c = 0; c < len; c++)
@@ -103,7 +104,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   public double[] score_indicator(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     assert _parms._pred_indicator;
-    assert tmp.length == _output._names.length && preds.length == _parms._k;
+    assert tmp.length == _output._names.length && preds.length == _output._centers_raw.length;
     for(int i = 0; i < tmp.length; i++)
       tmp[i] = chks[i].atd(row_in_chunk);
 
@@ -124,7 +125,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
     double[] preds = hex.genmodel.GenModel.KMeans_simplex(centers,tmp,_output._domains,_output._normSub,_output._normMul);
-    assert preds.length == _parms._k;
+    assert preds.length == _output._k;
     assert Math.abs(ArrayUtils.sum(preds) - 1) < 1e-6 : "Sum of k-means distance ratios should equal 1";
     return preds;
   }

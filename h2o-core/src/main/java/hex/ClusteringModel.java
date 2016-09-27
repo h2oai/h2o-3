@@ -1,8 +1,6 @@
 package hex;
 
 import water.Key;
-import water.util.SB;
-import water.util.TwoDimTable;
 
 /** Clustering Model
  *  Generates a 2-D array of clusters.
@@ -19,6 +17,7 @@ public abstract class ClusteringModel<M extends ClusteringModel<M,P,O>, P extend
 
   /** Output from all Clustering Models, includes generated clusters */
   public abstract static class ClusteringOutput extends Model.Output {
+    public int _k; // actual number of clusters
     /** Cluster centers_raw.  During model init, might be null or might have a "k"
     *   which is oversampled a lot.  Not standardized (although if standardization
     *   is used during the building process, the *builders* cluster centers_raw are standardized). */

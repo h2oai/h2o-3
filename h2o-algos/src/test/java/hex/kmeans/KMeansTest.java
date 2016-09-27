@@ -34,7 +34,7 @@ public class KMeansTest extends TestUtil {
     KMeans job = new KMeans(parms);
     KMeansModel kmm = job.trainModel().get();
     checkConsistency(kmm);
-    for( int i=0; i<parms._k; i++ )
+    for( int i=0; i<kmm._output._k; i++ )
       Assert.assertTrue( "Seed: "+seed, kmm._output._size[i] != 0 );
     return kmm;
   }
@@ -52,7 +52,7 @@ public class KMeansTest extends TestUtil {
       kmm.score(parms.train()).delete(); //this scores on the training data and appends a ModelMetrics
       ModelMetricsClustering mm = (ModelMetricsClustering) ModelMetrics.getFromDKV(kmm, parms.train());
       Assert.assertTrue(Arrays.equals(mm._size, ((ModelMetricsClustering) kmm._output._training_metrics)._size));
-      for (int i = 0; i < parms._k; ++i) {
+      for (int i = 0; i < kmm._output._k; ++i) {
         Assert.assertTrue(MathUtils.compare(mm._withinss[i], ((ModelMetricsClustering) kmm._output._training_metrics)._withinss[i], 1e-6, 1e-6));
       }
       Assert.assertTrue(MathUtils.compare(mm._totss, ((ModelMetricsClustering) kmm._output._training_metrics)._totss, 1e-6, 1e-6));
@@ -82,6 +82,35 @@ public class KMeansTest extends TestUtil {
         double flower = centers[k][4];
         Assert.assertTrue("categorical column expected",flower==(int)flower);
       }
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = kmm.score(fr);
+
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testIrisAutoK() {
+    KMeansModel kmm = null;
+    Frame fr = null, fr2= null;
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._k = 100;
+      parms._standardize = true;
+      parms._max_iterations = 10;
+      parms._estimate_k = true;
+      parms._init = KMeans.Initialization.Random;
+      kmm = doSeed(parms,0);
+
+      for (int i=0;i<kmm._output._centers_raw.length;++i)
+        Log.info(Arrays.toString(kmm._output._centers_raw[i]));
+      Assert.assertEquals("expected 3 centroids", 3, kmm._output._k);
 
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);

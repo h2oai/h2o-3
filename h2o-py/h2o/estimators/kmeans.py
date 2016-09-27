@@ -26,8 +26,8 @@ class H2OKMeansEstimator(H2OEstimator):
         self._parms = {}
         names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_predictions",
                       "keep_cross_validation_fold_assignment", "fold_assignment", "fold_column", "ignored_columns",
-                      "ignore_const_cols", "score_each_iteration", "k", "user_points", "max_iterations", "standardize",
-                      "seed", "init", "max_runtime_secs"}
+                      "ignore_const_cols", "score_each_iteration", "k", "estimate_k", "user_points", "max_iterations",
+                      "standardize", "seed", "init", "max_runtime_secs"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -155,13 +155,30 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def k(self):
-        """int: Number of clusters (Default: 1)"""
+        """
+        int: The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will
+        find up to k centroids. (Default: 1)
+        """
         return self._parms.get("k")
 
     @k.setter
     def k(self, k):
         assert_is_type(k, None, int)
         self._parms["k"] = k
+
+
+    @property
+    def estimate_k(self):
+        """
+        bool: Whether to estimate the number of clusters (<=k) iteratively and deterministically (takes longer).
+        (Default: False)
+        """
+        return self._parms.get("estimate_k")
+
+    @estimate_k.setter
+    def estimate_k(self, estimate_k):
+        assert_is_type(estimate_k, None, bool)
+        self._parms["estimate_k"] = estimate_k
 
 
     @property
@@ -188,7 +205,7 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def standardize(self):
-        """bool: Standardize columns (Default: True)"""
+        """bool: Standardize columns before computing distances (Default: True)"""
         return self._parms.get("standardize")
 
     @standardize.setter
