@@ -214,11 +214,11 @@ public class RegisterV3Api extends AbstractRegister {
         "gen_model.jar in order to perform prediction / scoring. Currently works for GBM and DRF algos only.");
 
     RequestServer.registerEndpoint("makePDP",
-        "GET /3/Models/{model_id}/pdp", ModelsHandler.class, "makePDP",
-        "Create data for partial dependence plot(s) for the specified model.");
+        "POST /3/PartialDependence/", ModelsHandler.class, "makePartialDependence",
+        "Create data for partial dependence plot(s) for the specified model and frame.");
 
     RequestServer.registerEndpoint("fetchPDP",
-        "GET /3/PartialDependence/{name}", ModelsHandler.class, "fetchPDP",
+        "GET /3/PartialDependence/{name}", ModelsHandler.class, "fetchPartialDependence",
         "Fetch partial dependence data.");
 
     // Model serialization - import/export calls
