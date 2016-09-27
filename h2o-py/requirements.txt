@@ -3,6 +3,7 @@ future
 requests
 tabulate
 
+twine
 urllib3
 grip
 wheel

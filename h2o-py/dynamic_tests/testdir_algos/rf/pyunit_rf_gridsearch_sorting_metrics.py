@@ -41,7 +41,7 @@ class Test_rf_gridsearch_sorting_metrics:
     diff = 1e-10            # comparison threshold
 
     curr_time = str(round(time.time()))     # store current timestamp, used as part of filenames.
-    seed = round(time.time())
+    seed = int(round(time.time()))
 
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
     training1_filename = "smalldata/gridsearch/multinomial_training1_set.csv"
@@ -234,10 +234,12 @@ class Test_rf_gridsearch_sorting_metrics:
                 grid_model_metrics.append(grid_model_metric)
 
                 manual_metric = each_model._model_json["output"]["cross_validation_metrics"]._metric_json["logloss"]
-                diff += abs(grid_model_metric - manual_metric)
+                if not(type(grid_model_metrics) == unicode) and not(type(manual_metric)==unicode):
+                    diff += abs(grid_model_metric - manual_metric)
 
                 manual_training_metric = each_model._model_json["output"]["training_metrics"]._metric_json["logloss"]
-                diff_train += abs(grid_model_metric-manual_training_metric)
+                if not(type(grid_model_metrics) == unicode) and not(type(manual_training_metric)==unicode):
+                    diff_train += abs(grid_model_metric-manual_training_metric)
 
                 print("grid model logloss: {0}, grid model training logloss: "
                       "{1}".format(grid_model_metric, manual_training_metric))

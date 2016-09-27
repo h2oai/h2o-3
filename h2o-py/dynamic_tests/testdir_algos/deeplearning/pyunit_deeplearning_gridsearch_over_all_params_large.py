@@ -47,7 +47,7 @@ class Test_deeplearning_grid_search:
     max_grid_model = 100          # maximum number of grid models generated before adding max_runtime_secs
 
     curr_time = str(round(time.time()))     # store current timestamp, used as part of filenames.
-    seed = round(time.time())
+    seed = int(round(time.time()))
 
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
     training1_filename = "smalldata/gridsearch/gaussian_training1_set.csv"
@@ -71,7 +71,7 @@ class Test_deeplearning_grid_search:
     max_real_number = 3         # maximum number of real grid values to generate
 
     time_scale = 2              # maximum runtime scale
-    extra_time_fraction = 0.1   # since timing is never perfect, give some extra time on top of maximum runtime limit
+    extra_time_fraction = 0.5   # since timing is never perfect, give some extra time on top of maximum runtime limit
     min_runtime_per_iteration = 0    # minimum run time found.  Determined later
     model_run_time = 0.0        # time taken to run a vanilla deeplearning model.  Determined later.
     allowed_runtime_diff = 0.05     # run time difference between deeplearning manually built and gridsearch models
@@ -303,6 +303,14 @@ class Test_deeplearning_grid_search:
                     model_params["elastic_averaging_regularization"] = params_list["elastic_averaging_regularization"]
                     del params_list["elastic_averaging_regularization"]
 
+                if "hidden" in params_list:
+                    temp = params_list["hidden"]
+                    params_list["hidden"] = [temp]
+
+                if "hidden_dropout_ratios" in params_list:
+                    temp = params_list["hidden_dropout_ratios"]
+                    params_list["hidden_dropout_ratios"] = [temp]
+
                 manual_model = H2ODeepLearningEstimator(**params_list)
                 manual_model.train(x=self.x_indices, y=self.y_index, training_frame=self.training1_data,
                                    **model_params)
@@ -351,10 +359,10 @@ class Test_deeplearning_grid_search:
 
             if self.test_failed == 0:
                 print("test_deeplearning_fieldnames for deeplearning has passed!")
-        except:
+        except Exception as e:
             if len(grid_model) > 0:
-                print("test_deeplearning_fieldnames for deeplearning failed: exception was thrown for "
-                      "no reason.")
+                print("test_deeplearning_fieldnames for deeplearning failed: exception ({0}) was thrown for "
+                      "no reason.".format(e))
                 self.test_failed += 1
 
 

@@ -43,7 +43,7 @@ class Test_glm_random_grid_search:
     training1_filename = "smalldata/gridsearch/binomial_training1_set.csv"
     json_filename = "random_gridsearch_GLM_binomial_hyper_parameter_" + curr_time + ".json"
 
-    allowed_diff = 0.1   # error tolerance allowed
+    allowed_diff = 0.5   # error tolerance allowed
     allowed_time_diff = 1e-1    # fraction of max_runtime_secs allowed for max run time stopping criteria
 
     # System parameters, do not change.  Dire consequences may follow if you do
@@ -68,7 +68,7 @@ class Test_glm_random_grid_search:
     possible_number_models = 0      # possible number of models built based on hyper-parameter specification
     max_model_number = 0    # maximum number of models specified to test for stopping conditions, generated later
     max_grid_runtime = 1          # maximum runtime value in seconds, 1 minute max
-    allowed_scaled_overtime = 0.1   # used to set max_allowed_runtime as allowed_scaled_overtime * total model run time
+    allowed_scaled_overtime = 1   # used to set max_allowed_runtime as allowed_scaled_overtime * total model run time
     allowed_scaled_time = 1       # scale back time
     allowed_scaled_model_number = 1.5   # used to set max_model_number as
     # possible_number_models * allowed_scaled_model_number
@@ -231,7 +231,7 @@ class Test_glm_random_grid_search:
         h2o.cluster_info()
 
         # setup_data our stopping condition here, random discrete and find all models
-        search_criteria = {'strategy': 'RandomDiscrete', "stopping_rounds": 0, "seed": round(time.time())}
+        search_criteria = {'strategy': 'RandomDiscrete', "stopping_rounds": 0, "seed": int(round(time.time()))}
         print("GLM Binomial grid search_criteria: {0}".format(search_criteria))
 
         # fire off random grid-search
@@ -270,7 +270,7 @@ class Test_glm_random_grid_search:
         # setup_data our stopping condition here
         self.max_model_number = random.randint(1, int(self.allowed_scaled_model_number * self.possible_number_models))
         search_criteria = {'strategy': 'RandomDiscrete', 'max_models': self.max_model_number,
-                           "seed": round(time.time())}
+                           "seed": int(round(time.time()))}
 
         print("GLM Binomial grid search_criteria: {0}".format(search_criteria))
         print("Possible number of models built is {0}".format(self.possible_number_models))
@@ -333,7 +333,7 @@ class Test_glm_random_grid_search:
         max_run_time_secs = random.uniform(self.one_model_time, self.max_grid_runtime)
         max_run_time_secs = random.uniform(self.one_model_time, self.allowed_scaled_time*self.max_grid_runtime)
         search_criteria = {'strategy': 'RandomDiscrete', 'max_runtime_secs': max_run_time_secs,
-                           "seed": round(time.time())}
+                           "seed": int(round(time.time()))}
         # search_criteria = {'strategy': 'RandomDiscrete', 'max_runtime_secs': 1/1e8}
 
         print("GLM Binomial grid search_criteria: {0}".format(search_criteria))
@@ -390,7 +390,7 @@ class Test_glm_random_grid_search:
             "stopping_metric": metric_name,
             "stopping_tolerance": random.uniform(1e-8, self.max_tolerance),
             "stopping_rounds": random.randint(1, self.max_stopping_rounds),
-            "seed": round(time.time())
+            "seed": int(round(time.time()))
         }
 
         print("GLM Binomial grid search_criteria: {0}".format(search_criteria))

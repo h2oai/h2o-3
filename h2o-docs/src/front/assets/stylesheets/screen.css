@@ -9,6 +9,34 @@ h1, h2, h3, h4, h5, h6,
     font-family:  'Futura', 'futura-pt', 'Futura LT', sans-serif;
 }
 
+h1 {
+
+    font-size: 20pt;
+    margin-top: 6pt;
+    margin-bottom: 4pt;
+}
+
+h2 {
+
+    font-size: 16pt;
+    margin-top: 0pt;
+    margin-bottom: 8pt;
+}
+
+h3 {
+
+    font-size: 14pt;
+    margin-top: 2pt;
+    margin-bottom: 6pt;
+}
+
+p {
+
+    font-size: 10pt
+    margin-top: 4pt;
+    margin-bottom: 4pt;
+}
+
 body.single {
     background-color: #fbe91f;
     -webkit-font-smoothing: antialiased;
@@ -4507,3 +4535,94 @@ form.enterprise-form input{
     font-size: 10px !important;
     line-height: 18px !important;
 }
+
+/* Styles for "Back to Top" button */
+
+#toTop
+{
+    display: none;
+    width: 50px;
+    height: 50px;
+    text-indent: -9999px;
+    position: fixed;
+    z-index: 999;
+    right: 10px;
+    bottom: 20px;
+    background: #D1D1D1 url("../images/top.png") no-repeat center 50%;
+    -webkit-border-radius: 30px;
+    -moz-border-radius: 30px;
+    border-radius: 30px;
+}
+
+#toTop:hover
+{
+    background-color: #a6a6a6;
+    cursor: pointer;
+}
+
+@media screen and (max-width: 409px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 460px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 549px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 579px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 767px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    #toTop
+    {
+        background: none !important;
+    }
+    #toTop:hover
+    {
+        background: none !important;
+    }
+}
+

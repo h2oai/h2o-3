@@ -44,7 +44,7 @@ class Test_rf_grid_search:
     max_grid_model = 50           # maximum number of grid models generated before adding max_runtime_secs
 
     curr_time = str(round(time.time()))     # store current timestamp, used as part of filenames.
-    seed = round(time.time())
+    seed = int(round(time.time()))
 
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
     training1_filename = "smalldata/gridsearch/multinomial_training1_set.csv"
@@ -68,7 +68,7 @@ class Test_rf_grid_search:
     max_real_number = 3         # maximum number of real grid values to generate
 
     time_scale = 2              # maximum runtime scale
-    extra_time_fraction = 0.25   # since timing is never perfect, give some extra time on top of maximum runtime limit
+    extra_time_fraction = 0.5   # since timing is never perfect, give some extra time on top of maximum runtime limit
     min_runtime_per_tree = 0    # minimum run time found.  Determined later
     model_run_time = 0.0        # time taken to run a vanilla random forest model.  Determined later.
     allowed_runtime_diff = 0.05     # run time difference between random forest manually built and gridsearch models
@@ -91,7 +91,7 @@ class Test_rf_grid_search:
     hyper_params = dict()
     hyper_params["balance_classes"] = [True, False]
     hyper_params["fold_assignment"] = ["AUTO", "Random", "Modulo", "Stratified"]
-    hyper_params["stopping_metric"] = ['logloss', 'r2']
+    hyper_params["stopping_metric"] = ['logloss']
 
     # parameters to be excluded from hyper parameter list even though they may be gridable
     exclude_parameter_lists = ['validation_frame', 'response_column', 'fold_column', 'offset_column',
@@ -239,10 +239,11 @@ class Test_rf_grid_search:
             self.correct_model_number = len(grid_model)     # store number of models built
 
             # make sure the correct number of models are built by gridsearch
-            if not (self.correct_model_number == self.possible_number_models):  # wrong grid model number
+            if (self.correct_model_number - self.possible_number_models)>0.9:  # wrong grid model number
                 self.test_failed += 1
                 print("test_rf_gridsearch_sorting_metrics for random forest failed: number of models built by "
-                      "gridsearch does not equal to all possible combinations of hyper-parameters")
+                      "gridsearch: {1} does not equal to all possible combinations of hyper-parameters: "
+                      "{1}".format(self.correct_model_number, self.possible_number_models))
             else:
                 # add parameters into params_dict.  Use this to manually build model
                 params_dict = dict()
@@ -318,10 +319,10 @@ class Test_rf_grid_search:
 
                 if self.test_failed == 0:
                     print("test_rf_gridsearch_sorting_metrics for random forest has passed!")
-        except:
+        except Exception as e:
             if self.possible_number_models > 0:
-                print("test_rf_gridsearch_sorting_metrics for random forest failed: exception was thrown for no"
-                      " reason.")
+                print("test_rf_gridsearch_sorting_metrics for random forest failed: exception ({0}) was thrown for no"
+                      " reason.".format(e))
                 self.test_failed += 1
 
 

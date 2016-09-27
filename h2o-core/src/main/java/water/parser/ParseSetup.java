@@ -11,6 +11,7 @@ import water.util.Log;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.HashSet;
 
@@ -258,6 +259,7 @@ public class ParseSetup extends Iced {
    * @return ParseSetup settings from looking at all files
    */
   public static ParseSetup guessSetup( Key[] fkeys, ParseSetup userSetup ) {
+
     //Guess setup of each file and collect results
     GuessSetupTsk t = new GuessSetupTsk(userSetup);
     t.doAll(fkeys).getResult();
@@ -328,11 +330,14 @@ public class ParseSetup extends Iced {
         _empty = false;
 
         // get file size
-        float decompRatio = ZipUtil.decompressionRatio(bv);
-        if (decompRatio > 1.0)
-          _totalParseSize += bv.length() * decompRatio; // estimate file size
-        else  // avoid numerical distortion of file size when not compressed
-          _totalParseSize += bv.length();
+//        float decompRatio = ZipUtil.decompressionRatio(bv);
+//        if (decompRatio > 1.0)
+//          _totalParseSize += bv.length() * decompRatio; // estimate file size
+//        else  // avoid numerical distortion of file size when not compressed
+
+        // since later calculation of chunk size and later number of chunks do not consider the
+        // compression ratio, we should not do that here either.  Quick fix proposed by Tomas.  Sleek!
+        _totalParseSize += bv.length();
 
         // Check for supported encodings
         checkEncoding(bits);
@@ -631,6 +636,25 @@ public class ParseSetup extends Iced {
       return maxLineLength;
     }
     return -1;
+  }
+
+  /**
+   * Copies the common setup to another object (that is possibly and extension of the base setup).
+   * Note: this method only copies fields directly declared in ParseSetup class, it doesn't handle
+   * fields that are declared in classes derived from ParseSetup.
+   * @param setup target setup object
+   * @param <T> class derived from ParseSetup
+   * @return the target setup object (for convenience)
+   */
+  public <T extends ParseSetup> T copyTo(T setup) {
+    try {
+      for (Field field : ParseSetup.class.getDeclaredFields()) {
+        if (! java.lang.reflect.Modifier.isStatic(field.getModifiers())) field.set(setup, field.get(this));
+      }
+      return setup;
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public ParserInfo getParseType() {
