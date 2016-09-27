@@ -1,6 +1,7 @@
 package water.api.schemas3;
 
 import hex.Model;
+import hex.PDP;
 import hex.grid.Grid;
 import water.*;
 import water.api.API;
@@ -104,6 +105,11 @@ public class KeyV3<I extends Iced, S extends KeyV3<I, S, K>, K extends Keyed> ex
   public static class AssemblyKeyV3 extends KeyV3<Iced, AssemblyKeyV3, Assembly> {
     public AssemblyKeyV3() {}
     public AssemblyKeyV3(Key<Assembly> key) { super(key); }
+  }
+
+  public static class PDPKeyV3 extends KeyV3<Iced, PDPKeyV3, PDP> {
+    public PDPKeyV3() {}
+    public PDPKeyV3(Key<PDP> key) { super(key); }
   }
 
   @Override public S fillFromImpl(Iced i) {

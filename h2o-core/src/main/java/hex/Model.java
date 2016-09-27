@@ -64,6 +64,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     Frame scoreExemplarMembers(Key<Frame> destination_key, int exemplarIdx);
   }
 
+  public interface GetMostImportantFeatures {
+    String[] getMostImportantFeatures(int n);
+  }
+
   /**
    * Default threshold for assigning class labels to the target class (for binomial models)
    * @return threshold in 0...1
