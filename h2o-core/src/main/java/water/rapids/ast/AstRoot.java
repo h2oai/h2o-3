@@ -47,7 +47,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
   // action is "execute all arguments, then apply a primitive action to the
   // arguments", but short-circuit evaluation may not execute all args.
   public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    throw water.H2O.fail();
+    throw new UnsupportedOperationException();
   }
 
   // Short name (there's lots of the simple math primtives, and we want them to
@@ -64,11 +64,12 @@ public abstract class AstRoot extends Iced<AstRoot> {
   public abstract String description();
 
   // Number of arguments, if that makes sense.  Always count 1 for self, so a
-  // binary operator like '+' actually has 3 nargs.
+  // binary operator like '+' actually has 3 nargs: ["+", lhs, rhs].
+  // For variable-argument expressions this method should return -1.
   public abstract int nargs();
 
   // Select columns by number or String.
-  // TODO: clarify the meaning
+  // TODO: clarify meaning
   public int[] columns(String[] names) {
     throw new IllegalArgumentException("Requires a number-list, but found an " + getClass().getSimpleName());
   }

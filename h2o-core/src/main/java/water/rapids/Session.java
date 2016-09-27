@@ -243,7 +243,7 @@ public class Session {
   /**
    * Update a global ID, maintaining sharing of Vecs
    */
-  public Frame assign(Key id, Frame src) {
+  public Frame assign(Key<Frame> id, Frame src) {
     if (FRAMES.containsKey(id)) throw new IllegalArgumentException("Cannot reassign temp " + id);
     Futures fs = new Futures();
     // Vec lifetime invariant: Globals do not share with other globals (but can
