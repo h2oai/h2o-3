@@ -5,6 +5,7 @@ import java.net.URI;
 import java.util.*;
 
 import hex.Model;
+import hex.PDP;
 import water.*;
 import water.api.FramesHandler.Frames;
 import water.api.schemas3.*;
@@ -159,6 +160,23 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     final Model model = getFromDKV("key", s.model_id.key());
     final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".zip";
     return new StreamingSchema(model.getMojoStream(), filename);
+  }
+
+  @SuppressWarnings("unused") // called from the RequestServer through reflection
+  public JobV3 makePDP(int version, PDPV3 s) {
+    PDP pdp;
+    if (s.destination_key != null)
+      pdp = new PDP(s.destination_key.key());
+    else
+      pdp = new PDP(Key.<PDP>make());
+    s.fillImpl(pdp); //fill frame_id/model_id/nbins/etc.
+    return new JobV3(pdp.execImpl());
+  }
+
+  @SuppressWarnings("unused") // called from the RequestServer through reflection
+  public PDPV3 fetchPDP(int version, KeyV3.PDPKeyV3 s) {
+    PDP pdp = DKV.getGet(s.key());
+    return new PDPV3().fillFromImpl(pdp);
   }
 
   /** Remove an unlocked model.  Fails if model is in-use. */
