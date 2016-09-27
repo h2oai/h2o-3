@@ -15,7 +15,7 @@ public class ModelParametersChecksumTest extends TestUtil {
 
   @BeforeClass()
   public static void setup() {
-    stall_till_cloudsize(5);
+    stall_till_cloudsize(1);
   }
 
   @Test

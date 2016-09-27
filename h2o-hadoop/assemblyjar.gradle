@@ -36,6 +36,7 @@ dependencies {
       transitive = false
     }
   }
+  compile(project(":h2o-parquet-parser"))
 }
 
 
@@ -45,7 +46,11 @@ def hadoopShadowJarExcludes = ['META-INF/*.DSA',
                             'uploader.properties',
                             'test.properties',
                             'cockpitlite.properties',
-                            'devpay_products.properties']
+                            'devpay_products.properties',
+                            // the license files are excluded for OS X compatibility (this is mainly for development)
+                            // OS X is unable to unpack these files from the jar on filesystem that is not case sensitive
+                            'LICENSE', 'license', 'LICENSE/*', 'license/*', 'META-INF/license', 'META-INF/LICENSE'
+]
 
 shadowJar {
   mergeServiceFiles()

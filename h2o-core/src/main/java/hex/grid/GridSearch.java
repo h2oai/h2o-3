@@ -49,7 +49,7 @@ import java.util.Map;
  * // Define hyper-space to search
  * HashMap<String,Object[]> hyperParms = new HashMap<>();
  * hyperParms.put("_ntrees", new Integer[]{1, 2});
- * hyperParms.put("_distribution",new Distribution.Family[] {Distribution.Family.multinomial});
+ * hyperParms.put("_distribution",new DistributionFamily[] {DistributionFamily.multinomial});
  * hyperParms.put("_max_depth",new Integer[]{1,2,5});
  * hyperParms.put("_learn_rate",new Float[]{0.01f,0.1f,0.3f});
  *
@@ -75,11 +75,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
 
   private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
+    assert hyperSpaceWalker != null : "Grid search needs to know how to walk around hyper space!";
+    _hyperSpaceWalker = hyperSpaceWalker;
     _result = gkey;
     String algoName = hyperSpaceWalker.getParams().algoName();
     _job = new Job<>(gkey, Grid.class.getName(), algoName + " Grid Search");
-    assert hyperSpaceWalker != null : "Grid search needs to know to how walk around hyper space!";
-    _hyperSpaceWalker = hyperSpaceWalker;
     // Note: do not validate parameters of created model builders here!
     // Leave it to launch time, and just mark the corresponding model builder job as failed.
   }

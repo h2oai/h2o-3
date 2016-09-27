@@ -35,8 +35,8 @@ public class MathUtils {
   static public double computeWeightedQuantile(Vec weight, Vec values, double alpha) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame tempFrame = weight == null ?
-            new Frame(Key.make(), new String[]{"y"},     new Vec[]{values}) :
-            new Frame(Key.make(), new String[]{"y","w"}, new Vec[]{values, weight});
+            new Frame(Key.<Frame>make(), new String[]{"y"},     new Vec[]{values}) :
+            new Frame(Key.<Frame>make(), new String[]{"y","w"}, new Vec[]{values, weight});
     DKV.put(tempFrame);
     parms._train = tempFrame._key;
     parms._probs = new double[]{alpha};
@@ -45,7 +45,7 @@ public class MathUtils {
     QuantileModel kmm = job.get();
     double value = kmm._output._quantiles[0/*col*/][0/*quantile*/];
     assert(!Double.isNaN(value));
-    Log.info("weighted " + alpha + "-quantile: " + value);
+    Log.debug("weighted " + alpha + "-quantile: " + value);
     job.remove();
     kmm.remove();
     DKV.remove(tempFrame._key);
@@ -308,7 +308,7 @@ public class MathUtils {
   }
 
   /** Compare 2 doubles within a tolerance
-   *  @param a double 
+   *  @param a double
    *  @param b double
    *  @param abseps - Absolute allowed tolerance
    *  @param releps - Relative allowed tolerance
@@ -677,4 +677,14 @@ public class MathUtils {
     int resLo = compareUnsigned(loA, loB);
     return resHi != 0 ? resHi : resLo;
   }
+
+  /**
+   * Logloss
+   * @param err prediction error (between 0 and 1)
+   * @return logloss
+   */
+  public static double logloss(double err) {
+    return Math.min(MAXLL, -Math.log(1.0-err));
+  }
+  final static double MAXLL = -Math.log(1e-15); //34.53878
 }

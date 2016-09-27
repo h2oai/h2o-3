@@ -1,7 +1,5 @@
 package water.genmodel;
 
-import java.util.Map;
-
 /**
  * A generic interface to access generated models.
  */
@@ -9,7 +7,7 @@ public interface IGeneratedModel {
     /** Returns model's unique identifier. */
     public String getUUID();
 
-    /** Returns number of columns used as input for training (i.e., exclude response column). */
+    /** Returns number of columns used as input for training (i.e., exclude response and offset columns). */
     public int getNumCols();
 
     /** The names of columns used in the model. It contains names of input columns and a name of response column. */
@@ -40,30 +38,12 @@ public interface IGeneratedModel {
     /** @return true if this model represents an AutoEncoder. */
     public boolean isAutoEncoder();
 
-    /** Predict the given row and return prediction.
-     *
-     * @param data row holding the data. Ordering should follow ordering of columns returned by getNames()
-     * @param preds allocated array to hold a prediction
-     * @return returned preds parameter filled by prediction
-     * @deprecated use method IGenModel#score0
-     */
-    @Deprecated
-    public float[] predict(double[] data, float[] preds);
-
-    /** Predict the given row and return prediction using given number of iterations (e.g., number of trees from forest).
-    *
-    * @param data row holding the data. Ordering should follow ordering of columns returned by getNames()
-    * @param preds allocated array to hold a prediction
-    * @param maxIters maximum number of iterations to use during predicting process
-    * @return returned preds parameter filled by prediction
-    */
-    public float[] predict(double[] data, float[] preds, int maxIters);
-
     /** Gets domain of given column.
      * @param name column name
      * @return return domain for given column or null if column is numeric.
      */
     public String[] getDomainValues(String name);
+
     /**
      * Returns domain values for i-th column.
      * @param i index of column
@@ -82,8 +62,27 @@ public interface IGeneratedModel {
     public int mapEnum(int colIdx, String categoricalValue);
 
     /**
-     * Returns the expected size of preds array which is passed to {@link #predict(double[], float[])} function.
+     * Returns the expected size of preds array which is passed to `predict(double[], float[])` function.
      * @return expected size of preds array
      */
     public int getPredsSize();
+
+    /** Predict the given row and return prediction.
+     *
+     * @param data row holding the data. Ordering should follow ordering of columns returned by getNames()
+     * @param preds allocated array to hold a prediction
+     * @return returned preds parameter filled by prediction
+     * @deprecated use method IGenModel#score0
+     */
+    @Deprecated
+    public float[] predict(double[] data, float[] preds);
+
+    /** Predict the given row and return prediction using given number of iterations (e.g., number of trees from forest).
+     *
+     * @param data row holding the data. Ordering should follow ordering of columns returned by getNames()
+     * @param preds allocated array to hold a prediction
+     * @param maxIters maximum number of iterations to use during predicting process
+     * @return returned preds parameter filled by prediction
+     */
+    public float[] predict(double[] data, float[] preds, int maxIters);
 }

@@ -16,9 +16,9 @@ from .deeplearning import H2ODeepLearningEstimator
 from .pca import H2OPrincipalComponentAnalysisEstimator
 from .random_forest import H2ORandomForestEstimator
 
-__all__ = [
+__all__ = (
     "H2OAutoEncoderEstimator", "H2OGeneralizedLowRankEstimator", "H2OGeneralizedLinearEstimator",
     "H2OAggregatorEstimator", "H2OSingularValueDecompositionEstimator", "H2OGradientBoostingEstimator",
     "H2OKMeansEstimator", "H2ONaiveBayesEstimator", "H2ODeepLearningEstimator",
     "H2OPrincipalComponentAnalysisEstimator", "H2ORandomForestEstimator"
-]
+)

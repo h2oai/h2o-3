@@ -458,6 +458,7 @@ public class NetworkInit {
         }
         break;
       } catch (Exception e) {
+        Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);
         if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
         if( _udpSocket != null ) try { _udpSocket.close(); } catch( IOException ie ) { }
         if( _tcpSocket != null ) try { _tcpSocket.close(); } catch( IOException ie ) { }
@@ -473,7 +474,7 @@ public class NetworkInit {
       // Try next available port to bound
       H2O.API_PORT += 2;
       if (H2O.API_PORT > (1<<16)) {
-        Log.err("Cannot find free port for " + H2O.SELF_ADDRESS);
+        Log.err("Cannot find free port for " + H2O.SELF_ADDRESS + " from baseport = " + H2O.ARGS.baseport);
         H2O.exit(-1);
       }
     }
@@ -502,9 +503,9 @@ public class NetworkInit {
 
     // Read a flatfile of allowed nodes
     if (embeddedConfigFlatfile != null)
-      H2O.STATIC_H2OS = parseFlatFileFromString(embeddedConfigFlatfile);
+      H2O.setFlatfile(parseFlatFileFromString(embeddedConfigFlatfile));
     else 
-      H2O.STATIC_H2OS = parseFlatFile(H2O.ARGS.flatfile);
+      H2O.setFlatfile(parseFlatFile(H2O.ARGS.flatfile));
 
     // All the machines has to agree on the same multicast address (i.e., multicast group)
     // Hence use the cloud name to generate multicast address
@@ -532,7 +533,7 @@ public class NetworkInit {
   }
 
   static private void multicast2( ByteBuffer bb, byte priority ) {
-    if( H2O.STATIC_H2OS == null ) {
+    if( !H2O.isFlatfileEnabled() ) {
       byte[] buf = new byte[bb.remaining()];
       bb.get(buf);
 
@@ -581,7 +582,7 @@ public class NetworkInit {
 
       // Hideous O(n) algorithm for broadcast - avoid the memory allocation in
       // this method (since it is heavily used)
-      HashSet<H2ONode> nodes = (HashSet<H2ONode>)H2O.STATIC_H2OS.clone();
+      HashSet<H2ONode> nodes = H2O.getFlatfile();
       nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
       for( H2ONode h2o : nodes ) {

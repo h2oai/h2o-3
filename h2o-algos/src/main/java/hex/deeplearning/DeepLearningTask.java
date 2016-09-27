@@ -1,11 +1,12 @@
 package hex.deeplearning;
 
-import hex.Distribution;
+import hex.genmodel.utils.DistributionFamily;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.DataInfo;
 import hex.FrameTask;
 import water.DKV;
 import water.H2O;
+import water.IcedUtils;
 import water.Key;
 import water.util.Log;
 import water.util.RandomUtils;
@@ -63,7 +64,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       _localmodel = DKV.getGet(_sharedmodel.localModelInfoKey(H2O.SELF));
       if (_localmodel != null) {
         if (!Arrays.equals(_localmodel.units, _sharedmodel.units)) {
-          _localmodel = _sharedmodel.deep_clone();
+          _localmodel = IcedUtils.deepCopy(_sharedmodel);
         } else {
           //Make sure that the local model has the right global (shared) parameters after checkpoint restart!
           _localmodel.set_params(_sharedmodel.get_params(), _sharedmodel._model_id);
@@ -72,7 +73,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       }
       else {
         // first time around - use the randomized initial weights and don't spread the shared (random) model
-        _localmodel = _sharedmodel.deep_clone();
+        _localmodel = IcedUtils.deepCopy(_sharedmodel);
         _sharedmodel = null;
       }
     } else {
@@ -279,7 +280,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
       }
     }
     if(!params._autoencoder) {
-      if (minfo._classification && minfo.get_params()._distribution!= Distribution.Family.modified_huber)
+      if (minfo._classification && minfo.get_params()._distribution != DistributionFamily.modified_huber)
         neurons[neurons.length - 1] = new Neurons.Softmax(minfo.units[minfo.units.length - 1]);
       else
         neurons[neurons.length - 1] = new Neurons.Linear();

@@ -13,6 +13,7 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 import warnings
 
 import h2o
+from h2o.exceptions import H2OJobCancelled
 from h2o.utils.progressbar import ProgressBar
 from h2o.utils.shared_utils import clamp
 
@@ -51,7 +52,8 @@ class H2OJob(object):
         completion. During this time we will display (in stdout) a progress bar with % completion status.
         """
         try:
-            pb = ProgressBar(self._job_type + " progress")
+            hidden = not H2OJob.__PROGRESS_BAR__
+            pb = ProgressBar(title=self._job_type + " progress", hidden=hidden)
             pb.execute(self._refresh_job_status)
         except StopIteration as e:
             if str(e) == "cancelled":
@@ -64,12 +66,10 @@ class H2OJob(object):
         if self.warnings:
             for w in self.warnings:
                 warnings.warn(w)
-        # TODO: this needs to br thought through more carefully
-        #       Right now if the user presses Ctrl+C the progress bar handles this gracefully and passes the
-        #       exception up, but these calls create ugly stacktrace dumps...
+
         # check if failed... and politely print relevant message
         if self.status == "CANCELLED":
-            raise EnvironmentError("Job with key {} was cancelled by the user.".format(self.job_key))
+            raise H2OJobCancelled("Job<%s> was cancelled by the user." % self.job_key)
         if self.status == "FAILED":
             if (isinstance(self.job, dict)) and ("stacktrace" in list(self.job)):
                 raise EnvironmentError("Job with key {} failed with an exception: {}\nstacktrace: "

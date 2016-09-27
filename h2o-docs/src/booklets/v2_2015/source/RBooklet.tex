@@ -398,7 +398,7 @@ The following section contains information about data preparation (also known as
 
 The following section describes the features and functions of some common models available in H2O.  For more information about running these models in R using H2O, refer to {\textbf{\nameref{sec:RunModel}}}. 
 
-%%mal H2O supports the following models: Deep Learning (DL), Generalized Linear Models (GLM), Gradient Boosted Regression (GBM), Na\"{i}ve Bayes (NB), Random Forest (RF), K-Means, Principal Components Analysis (PCA) and Generalized Low Rank Model (GLRM).
+%%mal H2O supports the following models: Deep Learning (DL), Generalized Linear Models (GLM), Gradient Boosting Machine (GBM), Na\"{i}ve Bayes (NB), Random Forest (RF), K-Means, Principal Components Analysis (PCA) and Generalized Low Rank Model (GLRM).
 
 \begin{minipage}{\textwidth}
 H2O supports the following models:  
@@ -787,7 +787,7 @@ First 10 rows:
 This section describes how to run the following model types:
 
 \begin{itemize}
-\item Gradient Boosted Models (GBM)
+\item Gradient Boosting Machine (GBM)
 \item Generalized Linear Models (GLM)
 \item K-means 
 \item Principal Components Analysis (PCA)
@@ -796,7 +796,7 @@ This section describes how to run the following model types:
 as well as how to generate predictions. 
 
 
-\subsection{Gradient Boosted Models (GBM)}
+\subsection{Gradient Boosting Machine (GBM)}
 
 To generate gradient boosted models for developing forward-learning ensembles, use {\texttt{h2o.gbm()}}.  In the parentheses, define \texttt{x} (the predictor variable vector), \texttt{y} (the integer or categorical response variable), the distribution type (multinomial is the default, gaussian is used for regression), and the name of the H2OParsedData object.
 For more information, use {\texttt{help(h2o.gbm)}}.

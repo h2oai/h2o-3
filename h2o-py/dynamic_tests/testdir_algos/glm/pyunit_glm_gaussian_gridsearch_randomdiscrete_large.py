@@ -42,7 +42,7 @@ class Test_glm_random_grid_search:
     training1_filename = "smalldata/gridsearch/gaussian_training1_set.csv"
     json_filename = "random_gridsearch_GLM_Gaussian_hyper_parameter_" + curr_time + ".json"
 
-    allowed_diff = 0.1   # error tolerance allowed
+    allowed_diff = 0.5   # error tolerance allowed
     allowed_time_diff = 1e-1    # fraction of max_runtime_secs allowed for max run time stopping criteria
 
     # System parameters, do not change.  Dire consequences may follow if you do
@@ -67,7 +67,7 @@ class Test_glm_random_grid_search:
     possible_number_models = 0      # possible number of models built based on hyper-parameter specification
     max_model_number = 0    # maximum number of models specified to test for stopping conditions, generated later
     max_grid_runtime = 1          # maximum runtime value in seconds, 1 minute max
-    allowed_scaled_overtime = 0.1   # used to set max_allowed_runtime as allowed_scaled_overtime * total model run time
+    allowed_scaled_overtime = 1   # used to set max_allowed_runtime as allowed_scaled_overtime * total model run time
     allowed_scaled_time = 1       # how much to scale back max time
     allowed_scaled_model_number = 1.5   # used to set max_model_number as
     # possible_number_models * allowed_scaled_model_number
@@ -433,12 +433,15 @@ def test_random_grid_search_for_glm():
     test_glm_gaussian_random_grid.test2_glm_random_grid_search_max_model()
     test_glm_gaussian_random_grid.test3_glm_random_grid_search_max_runtime_secs()
     test_glm_gaussian_random_grid.test4_glm_random_grid_search_metric("MSE", False)
-    test_glm_gaussian_random_grid.test4_glm_random_grid_search_metric("r2", True)
+#    test_glm_gaussian_random_grid.test4_glm_random_grid_search_metric("r2", True)  # R2 was removed as a stopping metric
     # test_glm_gaussian_random_grid.tear_down()  # obsolete
 
     # exit with error if any tests have failed
     if test_glm_gaussian_random_grid.test_failed > 0:
         sys.exit(1)
+    else:
+        pyunit_utils.remove_files(os.path.join(test_glm_gaussian_random_grid.current_dir,
+                                               test_glm_gaussian_random_grid.json_filename))
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_random_grid_search_for_glm)

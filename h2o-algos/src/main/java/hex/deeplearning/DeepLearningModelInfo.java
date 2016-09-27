@@ -1,7 +1,7 @@
 package hex.deeplearning;
 
 import hex.DataInfo;
-import hex.Distribution;
+import hex.genmodel.utils.DistributionFamily;
 import static java.lang.Double.isNaN;
 
 import hex.Model;
@@ -18,7 +18,7 @@ import java.util.Random;
  * This class contains the state of the Deep Learning model
  * This will be shared: one per node
  */
-final public class DeepLearningModelInfo extends Iced {
+final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
 
   public TwoDimTable summaryTable;
 
@@ -173,8 +173,8 @@ final public class DeepLearningModelInfo extends Iced {
 
     final int num_input = dinfo.fullN();
     final int num_output = get_params()._autoencoder ? num_input :
-            (_classification && parameters._distribution!= Distribution.Family.modified_huber ? train.vec(parameters._response_column).cardinality() : 1);
-    if (!get_params()._autoencoder) assert(num_output == nClasses || parameters._distribution== Distribution.Family.modified_huber );
+            (_classification && parameters._distribution != DistributionFamily.modified_huber ? train.vec(parameters._response_column).cardinality() : 1);
+    if (!get_params()._autoencoder) assert(num_output == nClasses || parameters._distribution == DistributionFamily.modified_huber );
 
     _saw_missing_cats = dinfo._cats > 0 ? new boolean[data_info._cats] : null;
     assert (num_input > 0);
@@ -260,14 +260,6 @@ final public class DeepLearningModelInfo extends Iced {
     rms_bias = new double[units.length-1];
     mean_weight = new double[units.length-1];
     rms_weight = new double[units.length-1];
-  }
-
-  // deep clone all weights/biases
-  DeepLearningModelInfo deep_clone() {
-    AutoBuffer ab = new AutoBuffer();
-    this.write(ab);
-    ab.flipForReading();
-    return (DeepLearningModelInfo) new DeepLearningModelInfo().read(ab);
   }
 
   /**
@@ -765,7 +757,7 @@ final public class DeepLearningModelInfo extends Iced {
     assert(pa > 0 && pa <= 1);
     DeepLearningModelInfo elasticAverage = DKV.getGet(nodeAverageModel.elasticAverageModelInfoKey()); //get latest version from DKV
     if (elasticAverage == null || pa == 1) {
-      elasticAverage = nodeAverageModel.deep_clone();
+      elasticAverage = IcedUtils.deepCopy(nodeAverageModel);
     } else {
       nodeAverageModel.mult(pa);
       elasticAverage.mult(1 - pa);

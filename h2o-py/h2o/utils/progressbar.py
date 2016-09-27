@@ -82,7 +82,7 @@ class ProgressBar(object):
     # How long are we allowed to wait after the progress is finished before returning.
     FINISH_DELAY = 0.3
 
-    def __init__(self, title=None, widgets=None, maxval=1.0, file_mode=None):
+    def __init__(self, title=None, widgets=None, maxval=1.0, file_mode=None, hidden=False):
         """
         Initialize the progress bar.
 
@@ -102,7 +102,11 @@ class ProgressBar(object):
 
         self._maxval = maxval
         self._file_mode = file_mode
-        self._widget = _ProgressBarCompoundWidget(widgets, title=title, file_mode=file_mode)
+        if hidden:
+            self._widget = _HiddenWidget()
+            self._file_mode = True
+        else:
+            self._widget = _ProgressBarCompoundWidget(widgets, title=title, file_mode=file_mode)
 
         # Variables needed for progress model (see docs).
         self._t0 = None  # Time when the model's parameters were computed
@@ -340,7 +344,7 @@ class ProgressBar(object):
             # If the user presses Ctrl+C this ensures we still start writing from the beginning of the line
             sys.stdout.write("\r")
         sys.stdout.write(txt)
-        if final:
+        if final and not isinstance(self._widget, _HiddenWidget):
             sys.stdout.write("\n")
         else:
             if not self._file_mode:
@@ -453,6 +457,12 @@ class ProgressBarFlexibleWidget(ProgressBarWidget):
         """Render the widget."""
         raise NotImplementedError()
 
+
+class _HiddenWidget(ProgressBarWidget):
+    """Widget that doesn't render anything (for hidden progress bars)."""
+    def render(self, progress, width=None, status=None):
+        """Return empty render result."""
+        return RenderResult()
 
 
 class _ProgressBarCompoundWidget(ProgressBarWidget):

@@ -1,24 +1,22 @@
 package hex.tree.gbm;
 
 import hex.Distribution;
-import hex.quantile.Quantile;
-import hex.quantile.QuantileModel;
+import hex.Model;
+import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
-import water.DKV;
-import water.Job;
 import water.Key;
-import water.fvec.Frame;
-import water.fvec.Vec;
-import water.util.Log;
 import water.util.SBPrintStream;
 
-public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GBMModel.GBMOutput> {
+import java.io.IOException;
+
+public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
 
   public static class GBMParameters extends SharedTreeModel.SharedTreeParameters {
     public double _learn_rate;
     public double _learn_rate_annealing;
     public double _col_sample_rate;
     public double _max_abs_leafnode_pred;
+    public double _pred_noise_bandwidth;
 
     public GBMParameters() {
       super();
@@ -29,6 +27,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
       _ntrees = 50;
       _max_depth = 5;
       _max_abs_leafnode_pred = Double.MAX_VALUE;
+      _pred_noise_bandwidth =0;
     }
 
     public String algoName() { return "GBM"; }
@@ -37,10 +36,12 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   }
 
   public static class GBMOutput extends SharedTreeModel.SharedTreeOutput {
-    public GBMOutput( GBM b) { super(b); }
+    public GBMOutput(GBM b) { super(b); }
   }
 
-  public GBMModel(Key selfKey, GBMParameters parms, GBMOutput output ) { super(selfKey,parms,output); }
+  public GBMModel(Key<GBMModel> selfKey, GBMParameters parms, GBMOutput output) {
+    super(selfKey,parms,output);
+  }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
@@ -48,11 +49,11 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
    *  subclass scoring logic. */
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset, int ntrees) {
     super.score0(data, preds, weight, offset, ntrees);    // These are f_k(x) in Algorithm 10.4
-    if (_parms._distribution == Distribution.Family.bernoulli || _parms._distribution == Distribution.Family.modified_huber) {
+    if (_parms._distribution == DistributionFamily.bernoulli || _parms._distribution == DistributionFamily.modified_huber) {
       double f = preds[1] + _output._init_f + offset; //Note: class 1 probability stored in preds[1] (since we have only one tree)
       preds[2] = new Distribution(_parms).linkInv(f);
       preds[1] = 1.0 - preds[2];
-    } else if (_parms._distribution == Distribution.Family.multinomial) { // Kept the initial prediction for binomial
+    } else if (_parms._distribution == DistributionFamily.multinomial) { // Kept the initial prediction for binomial
       if (_output.nclasses() == 2) { //1-tree optimization for binomial
         preds[1] += _output._init_f + offset; //offset is not yet allowed, but added here to be future-proof
         preds[2] = -preds[1];
@@ -69,7 +70,7 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
   @Override protected void toJavaUnifyPreds(SBPrintStream body) {
     // Preds are filled in from the trees, but need to be adjusted according to
     // the loss function.
-    if( _parms._distribution == Distribution.Family.bernoulli || _parms._distribution == Distribution.Family.modified_huber) {
+    if( _parms._distribution == DistributionFamily.bernoulli || _parms._distribution == DistributionFamily.modified_huber) {
       body.ip("preds[2] = preds[1] + ").p(_output._init_f).p(";").nl();
       body.ip("preds[2] = " + new Distribution(_parms).linkInvString("preds[2]") + ";").nl();
       body.ip("preds[1] = 1.0-preds[2];").nl();
@@ -91,5 +92,22 @@ public class GBMModel extends SharedTreeModel<GBMModel,GBMModel.GBMParameters,GB
     if (_parms._balance_classes)
       body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
     body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
+  }
+
+
+  @Override
+  public Model<GBMModel, GBMParameters, GBMOutput>.MojoStreamWriter getMojoStream() {
+    return new GbmMojoStreamWriter();
+  }
+
+  public class GbmMojoStreamWriter
+          extends SharedTreeModel<GBMModel, GBMParameters, GBMOutput>.TreeMojoStreamWriter {
+    @Override
+    protected void writeExtraModelInfo() throws IOException {
+      super.writeExtraModelInfo();
+      writeln("distribution = " + _parms._distribution);
+      writeln("init_f = " + _output._init_f);
+      writeln("offset_column = " + null);  // Not known yet
+    }
   }
 }

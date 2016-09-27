@@ -67,7 +67,7 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
     sb.di(1).ip("}").nl().nl(); // close the class
   }
 
-  @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, DHistogram.NASplitDir naSplitDir) {
+  @Override protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, int naSplitDirInt) {
     // Check for method size and number of constants generated in constant pool
     if (_nodes > MAX_NODES || _constantPoolSize > MAX_CONSTANT_POOL_SIZE || _staticInitSize > MAX_METHOD_SIZE ) {
       _sb.p(_javaClassName).p('_').p(_subtrees).p(".score0").p("(data)");
@@ -96,10 +96,13 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
     // Generates decision
     _sb.ip(" (");
     if(equal == 0 || equal == 1) {
-      if (naSplitDir == DHistogram.NASplitDir.NAvsREST) _sb.p("!Double.isNaN(data[").p(col).p("])");
-      else if (naSplitDir == DHistogram.NASplitDir.NALeft || naSplitDir == DHistogram.NASplitDir.Left) _sb.p("Double.isNaN(data[").p(col).p("]) || ");
-      else if (equal==1) _sb.p("!Double.isNaN(data[").p(col).p("]) && ");
-      if (naSplitDir != DHistogram.NASplitDir.NAvsREST) {
+      if (naSplitDirInt == DhnasdNaVsRest)
+        _sb.p("!Double.isNaN(data[").p(col).p("])");
+      else if (naSplitDirInt == DhnasdNaLeft || naSplitDirInt == DhnasdLeft)
+        _sb.p("Double.isNaN(data[").p(col).p("]) || ");
+      else if (equal==1)
+        _sb.p("!Double.isNaN(data[").p(col).p("]) && ");
+      if (naSplitDirInt != DhnasdNaVsRest) {
         _sb.p("data[").p(col);
         // Generate column names only if necessary
         if (_verboseCode) {
@@ -109,9 +112,11 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
         _constantPoolSize += 2; // * bytes for generated float which is represented as double because of cast (Double occupies 2 slots in constant pool)
       }
     } else {
-      if (naSplitDir == DHistogram.NASplitDir.NAvsREST ) _sb.p("!Double.isNaN(data[").p(col).p("])"); //no need to store group split, all we need to know is NA or not
+      if (naSplitDirInt == DhnasdNaVsRest)
+        _sb.p("!Double.isNaN(data[").p(col).p("])"); //no need to store group split, all we need to know is NA or not
       else {
-        if (naSplitDir == DHistogram.NASplitDir.NALeft || naSplitDir == DHistogram.NASplitDir.Left) _sb.p("Double.isNaN(data[").p(col).p("]) || "); //NAs go left
+        if (naSplitDirInt == DhnasdNaLeft || naSplitDirInt == DhnasdLeft)
+          _sb.p("Double.isNaN(data[").p(col).p("]) || "); //NAs go left
         gcmp.toJava(_sb, "GRPSPLIT" + _grpCnt, col, _tm._output._names[col]);
       }
       _grpCnt++;

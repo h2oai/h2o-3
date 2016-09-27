@@ -169,16 +169,16 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
     # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
     # TODO: clients should extract Java class name from header.
     regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    pojoname = regex.sub("_",model._id)
+    pojoname = regex.sub("_", model._id)
 
     print("Downloading Java prediction model code from H2O")
-    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results",pojoname))
+    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "results", pojoname))
     os.mkdir(tmpdir)
-    h2o.download_pojo(model,path=tmpdir)
-    h2o_genmodel_jar = os.path.join(tmpdir,"h2o-genmodel.jar")
+    h2o.download_pojo(model, path=tmpdir)
+    h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
     print("h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar))
-    java_file = os.path.join(tmpdir,pojoname+".java")
+    java_file = os.path.join(tmpdir, pojoname + ".java")
     assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
     print("java code saved in {0}".format(java_file))
 
@@ -191,19 +191,19 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         predictions = model.predict(test)
         predictions.summary()
         predictions.head()
-        out_h2o_csv = os.path.join(tmpdir,"out_h2o.csv")
+        out_h2o_csv = os.path.join(tmpdir, "out_h2o.csv")
         h2o.download_csv(predictions, out_h2o_csv)
         assert os.path.exists(out_h2o_csv), "Expected file {0} to exist, but it does not.".format(out_h2o_csv)
         print("H2O Predictions saved in {0}".format(out_h2o_csv))
 
         print("Setting up for Java POJO")
-        in_csv = os.path.join(tmpdir,"in.csv")
+        in_csv = os.path.join(tmpdir, "in.csv")
         h2o.download_csv(test[x], in_csv)
 
         # hack: the PredictCsv driver can't handle quoted strings, so remove them
-        f = open(in_csv, 'r+')
+        f = open(in_csv, "r+")
         csv = f.read()
-        csv = re.sub('\"', '', csv)
+        csv = re.sub('\"', "", csv)
         f.seek(0)
         f.write(csv)
         f.truncate()
@@ -212,11 +212,11 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
         print("Input CSV to PredictCsv saved in {0}".format(in_csv))
 
         print("Running PredictCsv Java Program")
-        out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
+        out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
-                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv", "--header", "--model", pojoname,
-                    "--input", in_csv, "--output", out_pojo_csv]
+                    "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.PredictCsv",
+                    "--pojo", pojoname, "--input", in_csv, "--output", out_pojo_csv]
         p = subprocess.Popen(java_cmd, stdout=PIPE, stderr=STDOUT)
         o, e = p.communicate()
         print("Java output: {0}".format(o))
@@ -233,13 +233,14 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
 
         # Value
         for r in range(hr):
-            hp = predictions[r,0]
+            hp = predictions[r, 0]
             if equality == "numeric":
-                pp = float.fromhex(predictions2[r,0])
-                assert abs(hp - pp) < 1e-4, "Expected predictions to be the same (within 1e-4) for row {0}, but got {1} and {2}".format(r,hp, pp)
+                pp = float.fromhex(predictions2[r, 0])
+                assert abs(hp - pp) < 1e-4, \
+                    "Expected predictions to be the same (within 1e-4) for row %d, but got %r and %r" % (r, hp, pp)
             elif equality == "class":
-                pp = predictions2[r,0]
-                assert hp == pp, "Expected predictions to be the same for row {0}, but got {1} and {2}".format(r,hp, pp)
+                pp = predictions2[r, 0]
+                assert hp == pp, "Expected predictions to be the same for row %d, but got %r and %r" % (r, hp, pp)
             else:
                 raise ValueError
 
@@ -251,13 +252,13 @@ def javamunge(assembly, pojoname, test, compile_only=False):
       The test set should be used to compare the output here and the output of the POJO.
     """
     print("Downloading munging POJO code from H2O")
-    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),"..","results", pojoname))
+    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "results", pojoname))
     os.mkdir(tmpdir)
     assembly.to_pojo(pojoname, path=tmpdir, get_jar=True)
-    h2o_genmodel_jar = os.path.join(tmpdir,"h2o-genmodel.jar")
+    h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
     print("h2o-genmodel.jar saved in {0}".format(h2o_genmodel_jar))
-    java_file = os.path.join(tmpdir,pojoname+".java")
+    java_file = os.path.join(tmpdir, pojoname + ".java")
     assert os.path.exists(java_file), "Expected file {0} to exist, but it does not.".format(java_file)
     print("java code saved in {0}".format(java_file))
 
@@ -268,7 +269,7 @@ def javamunge(assembly, pojoname, test, compile_only=False):
     if not compile_only:
 
         print("Setting up for Java POJO")
-        in_csv = os.path.join(tmpdir,"in.csv")
+        in_csv = os.path.join(tmpdir, "in.csv")
         h2o.download_csv(test, in_csv)
         assert os.path.exists(in_csv), "Expected file {0} to exist, but it does not.".format(in_csv)
         print("Input CSV to mungedCSV saved in {0}".format(in_csv))
@@ -276,13 +277,13 @@ def javamunge(assembly, pojoname, test, compile_only=False):
         print("Predicting in H2O")
         munged = assembly.fit(test)
         munged.head()
-        out_h2o_csv = os.path.join(tmpdir,"out_h2o.csv")
+        out_h2o_csv = os.path.join(tmpdir, "out_h2o.csv")
         h2o.download_csv(munged, out_h2o_csv)
         assert os.path.exists(out_h2o_csv), "Expected file {0} to exist, but it does not.".format(out_h2o_csv)
         print("Munged frame saved in {0}".format(out_h2o_csv))
 
         print("Running PredictCsv Java Program")
-        out_pojo_csv = os.path.join(tmpdir,"out_pojo.csv")
+        out_pojo_csv = os.path.join(tmpdir, "out_pojo.csv")
         cp_sep = ";" if sys.platform == "win32" else ":"
         java_cmd = ["java", "-ea", "-cp", h2o_genmodel_jar + cp_sep + tmpdir, "-Xmx12g", "-XX:MaxPermSize=2g",
                     "-XX:ReservedCodeCacheSize=256m", "hex.genmodel.tools.MungeCsv", "--header", "--munger", pojoname,
@@ -410,8 +411,8 @@ def make_random_grid_space(algo, ncols=None, nrows=None):
         if random.randint(0,1): grid_space['nbins_cats'] = random.sample(list(range(2,1025)),random.randint(2,3))
 
         if algo == "gbm":
-            if random.randint(0,1): grid_space['learn_rate'] = [random.random() for r in range(random.randint(2,3))]
-            grid_space['distribution'] = random.sample(['bernoulli','multinomial','gaussian','poisson','tweedie','gamma'], 1)
+            if random.randint(0,1): grid_space['learn_rate'] = [random.random() for _ in range(random.randint(2,3))]
+            grid_space['distribution'] = random.sample(['bernoulli', 'multinomial', 'gaussian', 'poisson', 'tweedie', 'gamma'], 1)
         if algo == "rf":
             if random.randint(0,1): grid_space['mtries'] = random.sample(list(range(1,ncols+1)),random.randint(2,3))
             if random.randint(0,1): grid_space['sample_rate'] = [random.random() for r in range(random.randint(2,3))]
@@ -486,7 +487,7 @@ def write_syn_floating_point_dataset_glm(csv_training_data_filename, csv_validat
                                          csv_test_data_filename, csv_weight_name, row_count, col_count, data_type,
                                          max_p_value, min_p_value, max_w_value, min_w_value, noise_std, family_type,
                                          valid_row_count, test_row_count, class_number=2,
-                                         class_method=['probability', 'probability', 'probability'],
+                                         class_method=('probability', 'probability', 'probability'),
                                          class_margin=[0.0, 0.0, 0.0]):
     """
     Generate random data sets to test the GLM algo using the following steps:
@@ -532,7 +533,6 @@ def write_syn_floating_point_dataset_glm(csv_training_data_filename, csv_validat
 
     :return: None
     """
-
     # generate bias b and weight as a column vector
     weights = generate_weights_glm(csv_weight_name, col_count, data_type, min_w_value, max_w_value,
                                    family_type=family_type, class_number=class_number)
@@ -686,10 +686,15 @@ def generate_weights_glm(csv_weight_filename, col_count, data_type, min_w_value,
             print("class_number must be >= 2!")
             sys.exit(1)
 
+        if isinstance(col_count, np.ndarray):
+            temp_col_count = col_count[0]
+        else:
+            temp_col_count = col_count
+
         if data_type == 1:     # generate random integer intercept/weight
-            weight = np.random.random_integers(min_w_value, max_w_value, [col_count+1, class_number])
+            weight = np.random.random_integers(min_w_value, max_w_value, [temp_col_count+1, class_number])
         elif data_type == 2:   # generate real intercept/weights
-            weight = np.random.uniform(min_w_value, max_w_value, [col_count+1, class_number])
+            weight = np.random.uniform(min_w_value, max_w_value, [temp_col_count+1, class_number])
         else:
             print("dataType must be 1 or 2 for now.")
             sys.exit(1)
@@ -985,7 +990,7 @@ def encode_enum_dataset(dataset, enum_level_vec, enum_col, true_one_hot, include
         if include_nans and np.any(enum_arrays[:, indc]):
             enum_col_num += 1
 
-        new_temp_enum = np.zeros((num_row, enum_col_num), dtype=np.int)
+        new_temp_enum = np.zeros((num_row, enum_col_num[0]))
         one_hot_matrix = one_hot_encoding(enum_col_num)
         last_col_index = enum_col_num-1
 
@@ -1514,7 +1519,7 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
             return coeffs
     elif what_param == 'best_lambda':
         lambda_str = model._model_json["output"]["model_summary"].cell_values[0][4].split('=')
-        return float(lambda_str[-1])
+        return float(str(lambda_str[-2]).split(',')[0])
     elif what_param == 'confusion_matrix':
         if 'multinomial' in family_type.lower():
             return model._model_json["output"]["training_metrics"]._metric_json["cm"]["table"]
@@ -2636,10 +2641,11 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
 
     row_indices = []
     if numElements > 0:
-        row_indices = random.sample(xrange(rows),numElements)
+        row_indices = random.sample(xrange(rows), numElements)
     else:
         numElements = rows  # Compare all elements
-        list(range(rows))
+        row_indices = list(range(rows))
+
 
     for ele_ind in range(numElements):
         row_ind = row_indices[ele_ind]
@@ -2660,7 +2666,7 @@ def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElement
 
 import warnings
 
-def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1):
+def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1, in_hdfs=False):
     """
             This function will execute a command to run and analyze the print outs of
     running the command.  The goal here is to capture any warnings that we may expect
@@ -2677,23 +2683,29 @@ def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="w
 
     buffer = StringIO()     # redirect warning messages to string buffer for later analysis
     sys.stderr = buffer
+    frame = None
 
-    frame = h2o.import_file(path=locate(filewithpath))
+    if in_hdfs:
+        frame = h2o.import_file(filewithpath)
+    else:
+        frame = h2o.import_file(path=locate(filewithpath))
 
     sys.stderr = sys.__stderr__     # redirect it back to stdout.
     try:        # for python 2.7
         if len(buffer.buflist) > 0:
             for index in range(len(buffer.buflist)):
+                print("*** captured warning message: {0}".format(buffer.buflist[index]))
                 if (warn_phrase in buffer.buflist[index]) and (warn_string_of_interest in buffer.buflist[index]):
                     number_warngings = number_warngings+1
+
     except:     # for python 3.
         warns = buffer.getvalue()
-
+        print("*** captured warning message: {0}".format(warns))
         if (warn_phrase in warns) and (warn_string_of_interest in warns):
             number_warngings = number_warngings+1
 
-        number_of_times = 1
-
+    print("Number of warnings found: {0} and number of times that warnings should appear {1}.".format(number_warngings,
+                                                                                                      number_of_times))
     if number_warngings >= number_of_times:
         return True
     else:
@@ -2735,9 +2747,9 @@ def compare_frame_summary(frame1_summary, frame2_summary, compareNames=False, co
 
             if isinstance(val1, list) or isinstance(val1, dict):
                 if isinstance(val1, dict):
-                    assert cmp(val1, val2) == 0, "failed column summary comparison for column {0} and summary " \
-                                                 "type {1}, frame 1 value is {2}, frame 2 value is " \
-                                                 "{3}".format(col_index, str(key_val), val1, val2)
+                    assert val1 == val2, "failed column summary comparison for column {0} and summary " \
+                                         "type {1}, frame 1 value is {2}, frame 2 value is " \
+                                         "{3}".format(col_index, str(key_val), val1, val2)
                 else:
                     if len(val1) > 0:
                         # find if elements are float
@@ -2757,9 +2769,9 @@ def compare_frame_summary(frame1_summary, frame2_summary, compareNames=False, co
                                                                             "{3}".format(col_index, str(key_val),
                                                                                          val1[ind], val2[ind])
                         else:
-                            assert cmp(val1, val2) == 0, "failed column summary comparison for column {0} and summary" \
-                                                         " type {1}, frame 1 value is {2}, frame 2 value is " \
-                                                         "{3}".format(col_index, str(key_val), val1, val2)
+                            assert val1 == val2, "failed column summary comparison for column {0} and summary" \
+                                                 " type {1}, frame 1 value is {2}, frame 2 value is " \
+                                                 "{3}".format(col_index, str(key_val), val1, val2)
             else:
                 if isinstance(val1, float):
                     assert abs(val1-val2) < 1e-5, "failed column summary comparison for column {0} and summary type " \
@@ -2769,3 +2781,31 @@ def compare_frame_summary(frame1_summary, frame2_summary, compareNames=False, co
                     assert val1 == val2, "failed column summary comparison for column {0} and summary type " \
                                          "{1}, frame 1 value is {2}, frame 2 value is " \
                                          "{3}".format(col_index, str(key_val), val1, val2)
+
+
+def cannaryHDFSTest(hdfs_name_node, file_name):
+    """
+    This function is written to detect if the hive-exec version is too old.  It will return
+    True if it is too old and false otherwise.
+
+    :param hdfs_name_node:
+    :param file_name:
+    :return:
+    """
+    url_orc = "hdfs://{0}{1}".format(hdfs_name_node, file_name)
+
+    try:
+        tempFrame = h2o.import_file(url_orc)
+        h2o.remove(tempFrame)
+        print("Your hive-exec version is good.  Parsing success for {0}.".format(url_orc))
+        return False
+    except Exception as e:
+        print("Error exception is {0}".format(str(e)))
+
+        if "NoSuchFieldError: vector" in str(e):
+            return True
+        else:       # exception is caused by other reasons.
+            return False
+
+
+

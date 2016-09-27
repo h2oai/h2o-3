@@ -13,7 +13,7 @@ build.local.conf
 flatfile*
 ice
 pytest_flatfile-*
-sandbox
+sandbox*/
 syn_datasets
 build/
 lib/
@@ -93,7 +93,6 @@ make-java6.sh
 # Ignore generated code
 src-gen/
 
-
-h2o-docs/src/booklets/v2_2015/source/.Rapp.history
-
-h2o-docs/src/booklets/v2_2015/source/R_Vignette_code_examples/.Rapp.history
+# Doc stuff
+.Rapp.history
+*.synctex.gz

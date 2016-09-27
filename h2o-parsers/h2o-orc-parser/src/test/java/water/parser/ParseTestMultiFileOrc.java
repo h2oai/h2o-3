@@ -1,6 +1,7 @@
 package water.parser;
 
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
@@ -24,8 +25,14 @@ public class ParseTestMultiFileOrc extends TestUtil {
     int totalFilesTested = 0;
     int numberWrong = 0;
 
-    private String[] csvDirectories = {"smalldata/synthetic_perfect_separation"};
-    private String[] orcDirectories = {"smalldata/parser/orc/synthetic_perfect_separation"};
+    private String[] csvDirectories = {"smalldata/smalldata/synthetic_perfect_separation/"};
+    private String[] orcDirectories = {"smalldata/parser/orc/synthetic_perfect_separation/"};
+
+    @BeforeClass
+    static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup
+        // Does not run test on Java6 since we are running on Hadoop lib
+        Assume.assumeTrue("Java6 is not supported", !System.getProperty("java.version", "NA").startsWith("1.6"));
+    }
 
     @BeforeClass
     static public void setup() { TestUtil.stall_till_cloudsize(5); }

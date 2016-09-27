@@ -82,7 +82,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
       // double numerr = _numcnt > 0 ? _sumsqe / _numcnt : Double.NaN;
       // double caterr = _catcnt > 0 ? _miscls / _catcnt : Double.NaN;
       // return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, numerr, caterr));
-      return m._output.addModelMetrics(new ModelMetricsGLRM(m, f, _sumsqe, _miscls, _numcnt, _catcnt));
+      return m.addModelMetrics(new ModelMetricsGLRM(m, f, _sumsqe, _miscls, _numcnt, _catcnt));
     }
   }
 }

@@ -69,7 +69,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
         // Weed out frames with vecs that are no longer in DKV
         boolean skip = false;
         for( Vec vec : frame.vecs() ) {
-          if (DKV.get(vec._key) == null) {
+          if (vec == null || DKV.get(vec._key) == null) {
             Log.warn("Leaked frame: Frame "+frame._key+" points to one or more deleted vecs.");
             skip = true;
             break;

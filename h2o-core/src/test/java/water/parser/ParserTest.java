@@ -1,12 +1,22 @@
 package water.parser;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Assert;
+import static org.junit.Assert.assertEquals;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
+import water.api.schemas3.ParseSetupV3;
 import water.fvec.*;
 import water.util.Log;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Queue;
 
 public class ParserTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(1); }
@@ -872,4 +882,79 @@ public class ParserTest extends TestUtil {
       f.delete();
     }
   }
+
+  /**
+   * PUBDEV-3401: Multi-file parse fails when streamParseZip produces less chunks than expected
+   * This test makes sure that streamParseZip will create expected number of output chunks even if
+   * the chunk size is perfectly aligned with the underlying buffers and rollover to the next input
+   * chunk happens in a call to get number of available bytes (is.available()).
+   * @throws IOException
+   */
+  @Test
+  public void testStreamParsePubDev3401() throws IOException {
+    final int chunkSize = 64 * 1024;
+    ParseSetupV3 ps = new ParseSetupV3();
+    ps.parse_type = "CSV";
+    ps.chunk_size = chunkSize;
+    // mock Parser
+    final List<Integer> pcCalls = new LinkedList<>();
+    Parser p = new Parser(new ParseSetup(ps), null) {
+      @Override protected ParseWriter parseChunk(int cidx, ParseReader din, ParseWriter dout) {
+        pcCalls.add(cidx);
+        byte[] data = din.getChunkData(cidx);
+        assert cidx <= 3;
+        assert ((data != null) && (data.length == chunkSize)) || (cidx == 3);
+        return null;
+      }
+    };
+    // mock source InputStream, only used for "back-channel" chunk index signalling
+    final Queue<Integer> cidxs = new LinkedList<>(Arrays.asList(1, 2, 3, 4));
+    InputStream bvs = new InputStream() {
+      @Override public int read() throws IOException { throw new UnsupportedOperationException(); }
+      @Override public int read(byte[] b, int off, int len) throws IOException {
+        assert b == null;
+        return cidxs.remove();
+      }
+    };
+    // mock StreamParseWriter
+    MockStreamParseWriter w = new MockStreamParseWriter(chunkSize);
+    // Vec made of 3 chunks
+    Key k = makeByteVec(
+            RandomStringUtils.randomAscii(chunkSize),
+            RandomStringUtils.randomAscii(chunkSize),
+            RandomStringUtils.randomAscii(chunkSize)
+    );
+    try {
+      ByteVec v = DKV.getGet(k);
+      p.streamParseZip(v.openStream(null), w, bvs);
+      assertEquals("Expected calls to parseChunk()", Arrays.asList(0, 1, 2, 3), pcCalls);
+      assertEquals("Expected calls to nextChunk()", Arrays.asList(0, 1, 2), w._nchks);
+    } finally {
+      k.remove();
+    }
+  }
+
+  private static class MockStreamParseWriter extends FVecParseWriter {
+    final List<Integer> _nchks;
+
+    MockStreamParseWriter(int chunkSize) {
+      super(null, 0, null, null, chunkSize, new AppendableVec[0]);
+      _nchks = new LinkedList<>();
+    }
+    MockStreamParseWriter(MockStreamParseWriter prev) {
+      super(null, prev._cidx + 1, null, null, prev._chunkSize, new AppendableVec[0]);
+      _nchks = prev._nchks;
+    }
+    @Override public FVecParseWriter nextChunk() {
+      _nchks.add(_cidx);
+      return new MockStreamParseWriter(this);
+    }
+    @Override public FVecParseWriter reduce(StreamParseWriter sdout) {
+      return this;
+    }
+    @Override public FVecParseWriter close(Futures fs) {
+      return this;
+    }
+  }
+
 }

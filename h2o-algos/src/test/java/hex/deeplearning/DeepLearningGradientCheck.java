@@ -6,6 +6,7 @@ import hex.DataInfo;
 import hex.Distribution;
 import hex.FrameTask;
 import hex.ModelMetricsRegression;
+import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -21,8 +22,8 @@ import java.util.Random;
 public class DeepLearningGradientCheck extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
-  static final float MAX_TOLERANCE = 1e-2f;
-  static final float MAX_FAILED_COUNT = 10;
+  static final float MAX_TOLERANCE = 2e-2f;
+  static final float MAX_FAILED_COUNT = 30;
   static final float SAMPLE_RATE = 0.01f;
 
   @Test
@@ -57,18 +58,18 @@ public class DeepLearningGradientCheck extends TestUtil {
       int failedcount=0;
       double maxRelErr = 0;
       double meanRelErr = 0;
-      for (Distribution.Family dist : new Distribution.Family[]{
-              Distribution.Family.gaussian,
-              Distribution.Family.laplace,
-              Distribution.Family.quantile,
-              Distribution.Family.huber,
-              Distribution.Family.modified_huber,
-              Distribution.Family.gamma,
-              Distribution.Family.poisson,
-              Distribution.Family.AUTO,
-              Distribution.Family.tweedie,
-              Distribution.Family.multinomial,
-              Distribution.Family.bernoulli,
+      for (DistributionFamily dist : new DistributionFamily[]{
+              DistributionFamily.gaussian,
+              DistributionFamily.laplace,
+              DistributionFamily.quantile,
+              DistributionFamily.huber,
+              DistributionFamily.modified_huber,
+              DistributionFamily.gamma,
+              DistributionFamily.poisson,
+              DistributionFamily.AUTO,
+              DistributionFamily.tweedie,
+              DistributionFamily.multinomial,
+              DistributionFamily.bernoulli,
       }) {
         for (DeepLearningParameters.Activation act : new DeepLearningParameters.Activation[]{
 //            DeepLearningParameters.Activation.ExpRectifier,
@@ -89,15 +90,15 @@ public class DeepLearningGradientCheck extends TestUtil {
                       1
               }) {
                 if (response.equals("Class")) {
-                  if (dist != Distribution.Family.multinomial && dist != Distribution.Family.AUTO)
+                  if (dist != DistributionFamily.multinomial && dist != DistributionFamily.AUTO)
                     continue;
                 }
                 else if (response.equals("Binary")) {
-                  if (dist != Distribution.Family.modified_huber && dist != Distribution.Family.bernoulli && dist != Distribution.Family.AUTO)
+                  if (dist != DistributionFamily.modified_huber && dist != DistributionFamily.bernoulli && dist != DistributionFamily.AUTO)
                     continue;
                 }
                 else {
-                  if (dist == Distribution.Family.multinomial || dist == Distribution.Family.modified_huber || dist == Distribution.Family.bernoulli) continue;
+                  if (dist == DistributionFamily.multinomial || dist == DistributionFamily.modified_huber || dist == DistributionFamily.bernoulli) continue;
                 }
 
                 DeepLearningParameters parms = new DeepLearningParameters();
@@ -138,7 +139,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                     p.delete();
                   }
 
-                  DeepLearningModelInfo modelInfo = dl.model_info().deep_clone(); //golden version
+                  DeepLearningModelInfo modelInfo = IcedUtils.deepCopy(dl.model_info()); //golden version
 //                Log.info(modelInfo.toStringAll());
                   long before = dl.model_info().checksum_impl();
 
@@ -147,7 +148,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                   // loop over every row in the dataset and check that the predictions
                   for (int rId = 0; rId < tfr.numRows(); rId+=1 /*miniBatchSize*/) {
                     // start from scratch - with a clean model
-                    dl.set_model_info(modelInfo.deep_clone());
+                    dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                     final DataInfo di = dl.model_info().data_info();
 
@@ -175,7 +176,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                         if (true) {
 
                           // start from scratch - with a clean model
-                          dl.set_model_info(modelInfo.deep_clone());
+                          dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                           // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
                           Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
@@ -201,7 +202,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           assert (before != dl.model_info().checksum_impl());
 
                           // reset the model back to the trained model
-                          dl.set_model_info(modelInfo.deep_clone());
+                          dl.set_model_info(IcedUtils.deepCopy(modelInfo));
                           assert (before == dl.model_info().checksum_impl());
 
                           double bpropGradient = DeepLearningModelInfo.gradientCheck.gradient;
@@ -267,7 +268,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           if (rng.nextFloat() >= SAMPLE_RATE) continue;
 
                           // start from scratch - with a clean model
-                          dl.set_model_info(modelInfo.deep_clone());
+                          dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                           // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
                           Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
@@ -293,7 +294,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           assert (before != dl.model_info().checksum_impl());
 
                           // reset the model back to the trained model
-                          dl.set_model_info(modelInfo.deep_clone());
+                          dl.set_model_info(IcedUtils.deepCopy(modelInfo));
                           assert (before == dl.model_info().checksum_impl());
 
                           double bpropGradient = DeepLearningModelInfo.gradientCheck.gradient;
@@ -395,18 +396,18 @@ public class DeepLearningGradientCheck extends TestUtil {
 
   @Test public void checkDistributionGradients() {
     Random rng = new Random(0xDECAF);
-    for (Distribution.Family dist : new Distribution.Family[]{
-            Distribution.Family.AUTO,
-            Distribution.Family.gaussian,
-            Distribution.Family.laplace,
-            Distribution.Family.quantile,
-            Distribution.Family.huber,
-            Distribution.Family.gamma,
-            Distribution.Family.poisson,
-            Distribution.Family.tweedie,
-            Distribution.Family.bernoulli,
-            Distribution.Family.modified_huber,
-//              Distribution.Family.multinomial, //no gradient/deviance implemented
+    for (DistributionFamily dist : new DistributionFamily[]{
+            DistributionFamily.AUTO,
+            DistributionFamily.gaussian,
+            DistributionFamily.laplace,
+            DistributionFamily.quantile,
+            DistributionFamily.huber,
+            DistributionFamily.gamma,
+            DistributionFamily.poisson,
+            DistributionFamily.tweedie,
+            DistributionFamily.bernoulli,
+            DistributionFamily.modified_huber,
+//              DistributionFamily.multinomial, //no gradient/deviance implemented
     }) {
       DeepLearningParameters p = new DeepLearningParameters();
       p._distribution = dist;

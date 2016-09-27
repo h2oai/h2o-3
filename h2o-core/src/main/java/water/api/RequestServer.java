@@ -531,6 +531,7 @@ public class RequestServer extends HttpServlet {
         if (index == path.length - 2) {
           int v = Integer.parseInt(nextToken);
           for (String key : branches.keySet()) {
+            if (branches.get(key).leaf == null) continue;
             if (Integer.parseInt(key) <= v) {
               // We also create a new branch in the tree to memorize this new route path.
               RouteTree newBranch = new RouteTree(nextToken);
@@ -588,11 +589,7 @@ public class RequestServer extends HttpServlet {
   private static NanoResponse response404(String what, RequestType type) {
     H2ONotFoundArgumentException e = new H2ONotFoundArgumentException(what + " not found", what + " not found");
     H2OError error = e.toH2OError(what);
-
     Log.warn(error._dev_msg);
-    Log.warn(error._values.toJsonString());
-    Log.warn((Object[]) error._stacktrace);
-
     return serveError(error);
   }
 
@@ -610,6 +607,18 @@ public class RequestServer extends HttpServlet {
       type = RequestType.json;
     }
 
+    if (s instanceof H2OErrorV3) {
+      return new NanoResponse(http_response_header, MIME_JSON, s.toJsonString());
+    }
+    if (s instanceof StreamingSchema) {
+      StreamingSchema ss = (StreamingSchema) s;
+      NanoResponse r = new NanoStreamResponse(http_response_header, MIME_DEFAULT_BINARY, ss.getStreamWriter());
+      // Needed to make file name match class name
+      r.addHeader("Content-Disposition", "attachment; filename=\"" + ss.getFilename() + "\"");
+      return r;
+    }
+
+    // TODO: remove this entire switch
     switch (type) {
       case html: // return JSON for html requests
       case json:
@@ -617,19 +626,11 @@ public class RequestServer extends HttpServlet {
       case xml:
         throw H2O.unimpl("Unknown type: " + type.toString());
       case java:
-        if (s instanceof H2OErrorV3) {
-          return new NanoResponse(http_response_header, MIME_JSON, s.toJsonString());
-        }
         if (s instanceof AssemblyV99) {
+          // TODO: fix the AssemblyV99 response handler so that it produces the appropriate StreamingSchema
           Assembly ass = DKV.getGet(((AssemblyV99) s).assembly_id);
           NanoResponse r = new NanoResponse(http_response_header, MIME_DEFAULT_BINARY, ass.toJava(((AssemblyV99) s).pojo_name));
           r.addHeader("Content-Disposition", "attachment; filename=\""+JCodeGen.toJavaId(((AssemblyV99) s).pojo_name)+".java\"");
-          return r;
-        } else if (s instanceof StreamingSchema) {
-          StreamingSchema ss = (StreamingSchema) s;
-          NanoResponse r = new NanoStreamResponse(http_response_header, MIME_DEFAULT_BINARY, ss.getStreamWriter());
-          // Needed to make file name match class name
-          r.addHeader("Content-Disposition", "attachment; filename=\"" + ss.getFilename() + "\"");
           return r;
         } else {
           throw new H2OIllegalArgumentException("Cannot generate java for type: " + s.getClass().getSimpleName());

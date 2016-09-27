@@ -53,7 +53,7 @@ public class LinearAlgebraUtils {
     for(int col = 0; col < dinfo._cats; col++) {
       if (Double.isNaN(row[col])) {
         if (dinfo._imputeMissing)
-          cidx = dinfo.catModes()[col];
+          cidx = dinfo.catNAFill()[col];
         else if (!dinfo._catMissing[col])
           continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
         else
@@ -172,7 +172,7 @@ public class LinearAlgebraUtils {
 
             if (Double.isNaN(a)) {
               if (_ainfo._imputeMissing)
-                cidx = _ainfo.catModes()[p];
+                cidx = _ainfo.catNAFill()[p];
               else if (!_ainfo._catMissing[p])
                 continue;   // Skip if entry missing and no NA bucket. All indicators will be zero.
               else
@@ -386,7 +386,7 @@ public class LinearAlgebraUtils {
   }
 
   public static Vec toEigen(Vec src) {
-    Frame train = new Frame(Key.make(), new String[]{"enum"}, new Vec[]{src});
+    Frame train = new Frame(Key.<Frame>make(), new String[]{"enum"}, new Vec[]{src});
     DataInfo dinfo = new DataInfo(train, null, 0, true /*_use_all_factor_levels*/, DataInfo.TransformType.NONE,
             DataInfo.TransformType.NONE, /* skipMissing */ false, /* imputeMissing */ true,
             /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);

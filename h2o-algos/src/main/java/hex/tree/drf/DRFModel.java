@@ -1,11 +1,15 @@
 package hex.tree.drf;
 
+import hex.Model;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.util.MathUtils;
 import water.util.SBPrintStream;
 
-public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DRFModel.DRFOutput> {
+import java.io.IOException;
+
+
+public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
 
   public static class DRFParameters extends SharedTreeModel.SharedTreeParameters {
     public String algoName() { return "DRF"; }
@@ -69,8 +73,21 @@ public class DRFModel extends SharedTreeModel<DRFModel,DRFModel.DRFParameters,DR
       }
       if (_parms._balance_classes)
         body.ip("hex.genmodel.GenModel.correctProbabilities(preds, PRIOR_CLASS_DISTRIB, MODEL_CLASS_DISTRIB);").nl();
-      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + " );").nl();
+      body.ip("preds[0] = hex.genmodel.GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, " + defaultThreshold() + ");").nl();
     }
   }
 
+  @Override
+  public Model<DRFModel, DRFParameters, DRFOutput>.MojoStreamWriter getMojoStream() {
+    return new DrfMojoStreamWriter();
+  }
+
+  public class DrfMojoStreamWriter
+          extends SharedTreeModel<DRFModel, DRFParameters, DRFOutput>.TreeMojoStreamWriter {
+    @Override
+    protected void writeExtraModelInfo() throws IOException {
+      super.writeExtraModelInfo();
+      writeln("binomial_double_trees = " + _parms._binomial_double_trees);
+    }
+  }
 }

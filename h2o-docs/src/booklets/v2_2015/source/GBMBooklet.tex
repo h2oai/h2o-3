@@ -16,7 +16,7 @@
 
 
 \begin{center}
-\textsc{\Large\bf{Gradient Boosted Models with H2O}}
+\textsc{\Large\bf{Gradient Boosting Machine with H2O}}
 
 \bigskip
 \line(1,0){250}  %inserts  horizontal line 
@@ -58,7 +58,7 @@
 
 {\raggedright 
 
-Gradient Boosted Models with H2O\\
+Gradient Boosting Machine with H2O\\
 
   by Cliff Click, Michal Malohlava, \\
 Arno Candel, Hank Roark \&\  Viraj Parmar\\
@@ -100,7 +100,7 @@ Printed in the United States of America.
 \newpage
 
 \section{Introduction}
-This document describes how to use Gradient Boosted Models (GBM) with H2O.  
+This document describes how to use Gradient Boosting Machine (GBM) with H2O.  
 Examples are written in R and Python.
 Topics include: 
 \begin{itemize}
@@ -130,7 +130,7 @@ R and Python code for the examples in this document are available here:\\
 
 To cite this booklet, use the following: 
 
-Click, C., Malohlava, M., Parmar, V., Roark, H., and Candel, A. (\shortmonthname\ \the\year). \textit{Gradient Boosted Models with H2O}. \url{http://h2o.ai/resources/}.
+Click, C., Malohlava, M., Parmar, V., Roark, H., and Candel, A. (\shortmonthname\ \the\year). \textit{Gradient Boosting Machine with H2O}. \url{http://h2o.ai/resources/}.
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -162,7 +162,7 @@ H2O's GBM functionalities include:
 \end{itemize}
 
 
-Gradient boosted models (also known as gradient boosting machines) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
+Gradient Boosting Machine (also known as gradient boosted models) sequentially fit new models to provide a more accurate estimate of a response variable in supervised learning tasks such as regression and classification. Although GBM is known to be difficult to distribute and parallelize, H2O provides an easily distributable and parallelizable version of GBM in its framework, as well as an effortless environment for model tuning and selection.
 
 
 \subsection{Theory and Framework}
@@ -474,6 +474,7 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{max\_depth}}: The user-defined tree depth. The default is 5.
 \item {\texttt{min\_rows}}: The minimum number of rows to assign to the terminal nodes. The default is 10.
 \item {\texttt{max\_abs\_leafnode\_pred}}: Limits the maximum absolute value of a leaf node prediction. The default is Double.MAX\_VALUE.
+\item {\texttt{pred\_noise\_bandwidth}}: The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. If this parameter is specified with a value greater than 0, then every leaf node prediction is randomly scaled by a number drawn from a Normal distribution centered around 1 with a bandwidth given by this parameter. The default is 0 (disabled).
 \item {\texttt{nbins}}: For numerical columns (real/int), build a histogram of at least the specified number of bins, then split at the best point The default is 20.
 \item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024. \label{nbins_cats}
 \item {\texttt{nbins\_top\_level}}: For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
@@ -506,8 +507,10 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{binomial\_double\_trees}}: For binary classification: Builds twice as many trees (one per class), which can result in better accuracy. 
 \item {\texttt{quantile\_alpha}}: Desired quantile for quantile regression (from 0.0 to 1.0) when \texttt{distribution = "quantile"}.  The default is 0.5 (median, same as \texttt{distribution = "laplace"}).
 \item {\texttt{tweedie\_power}}: A numeric specifying the power for the Tweedie function when \texttt{distribution = "tweedie"}.  The default is 1.5.
+\item \texttt{huber\_alpha}: Specify the desired quantile for Huber/M-regression (the threshold between quadratic and linear loss). This value must be between 0 and 1.
 \item {\texttt{checkpoint}}: Enter a model key associated with a previously-trained model. Use this option to build a new model as a continuation of a previously-generated model.
 \item {\texttt{keep\_cross\_validation\_predictions}}: Specify whether to keep the predictions of the cross-validation models.   The default is {\texttt{FALSE}}.
+\item {\texttt{keep\_cross\_validation\_fold\_assignment}}: Specify whether to preserve the fold assignment.   The default is {\texttt{FALSE}}.
 \item {\texttt{class\_sampling\_factors}}: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires \texttt{balance\_classes}.
 \item {\texttt{max\_after\_balance\_size}}: Maximum relative size of the training data after balancing class counts; can be less than 1.0.  The default is 5.
 \item \texttt{model\_id}: The unique ID assigned to the generated model. If not specified, an ID is generated automatically.

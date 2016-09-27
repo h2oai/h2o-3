@@ -13,7 +13,7 @@ import sys
 from colorama import Style, Fore
 from types import ModuleType
 
-from h2o.exceptions import H2OSoftError
+from h2o.exceptions import H2OJobCancelled, H2OSoftError
 from h2o.utils.compatibility import *  # NOQA
 
 # Nothing to import; this module's only job is to install an exception hook for debugging.
@@ -25,6 +25,9 @@ def get_tb():
 def err(msg=""):
     """Helper function for printing to stderr."""
     print(msg, file=sys.stderr)
+
+# In case any other module installs its own exception hook, try to play nicely and use that when appropriate
+_prev_except_hook = sys.excepthook
 
 
 def _except_hook(exc_type, exc_value, exc_tb):
@@ -84,15 +87,21 @@ def _except_hook(exc_type, exc_value, exc_tb):
                    frame of the outermost expression being evaluated). We need to walk down the list (by repeatedly
                    moving to exc_tb.tb_next) in order to find the execution frame where the actual exception occurred.
     """
+    if isinstance(exc_value, H2OJobCancelled):
+        return
+    if isinstance(exc_value, H2OSoftError):
+        _handle_soft_error(exc_type, exc_value, exc_tb)
+    else:
+        _prev_except_hook(exc_type, exc_value, exc_tb)
+
+    # Everythin else is disabled for now, because it generates too much output due to bugs in H2OFrame implementation
+    return
+
     import linecache
     if not exc_tb:  # Happens on SyntaxError exceptions
         sys.__excepthook__(exc_type, exc_value, exc_tb)
         return
     get_tb.tb = exc_tb
-
-    if isinstance(exc_value, H2OSoftError):
-        _handle_soft_error(exc_type, exc_value, exc_tb)
-        return
 
     err("\n================================ EXCEPTION INFO ================================\n")
     if exc_type != type(exc_value):
@@ -195,7 +204,7 @@ sys.excepthook = _except_hook
 
 def _handle_soft_error(exc_type, exc_value, exc_tb):
     colorama.init()
-    err(Fore.LIGHTRED_EX + exc_type.__name__ + ": " + str(exc_value) + Style.RESET_ALL)
+    err((Fore.LIGHTRED_EX + "%s: %s" + Style.RESET_ALL) % (exc_type.__name__, exc_value))
 
     # Convert to the list of frames
     tb = exc_tb

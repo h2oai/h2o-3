@@ -15,7 +15,7 @@ from h2o.backend import H2OConnection
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
 from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_tmp_key, quoted, urlopen
-from h2o.utils.typechecks import BoundInt, BoundNumeric, I, U, assert_is_type, assert_satisfies, is_type, numeric
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.estimator_base import H2OEstimator
@@ -43,7 +43,7 @@ h2oconn = None
 
 
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cluster_name=None, verbose=True):
+            proxy=None, cluster_id=None, verbose=True):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -59,23 +59,23 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param auth: Either a (username, password) pair for basic authentication, or one of the requests.auth
                  authenticator objects.
     :param proxy: Proxy server address.
-    :param cluster_name: Name of the H2O cluster to connect to. This option is used from Steam only.
+    :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
     :param verbose: Set to False to disable printing connection status messages.
     """
     global h2oconn
     h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
                                  verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
-                                 cluster_name=cluster_name, verbose=verbose)
+                                 cluster_id=cluster_id, verbose=verbose)
     if verbose:
         h2oconn.cluster.show_status()
     return h2oconn
 
 
-def api(endpoint, data=None, json=None, filename=None):
+def api(endpoint, data=None, json=None, filename=None, save_to=None):
     """Perform a REST API request to a previously connected server."""
     # type checks are performed in H2OConnection class
     _check_connection()
-    return h2oconn.request(endpoint, data=data, json=json, filename=filename)
+    return h2oconn.request(endpoint, data=data, json=json, filename=filename, save_to=save_to)
 
 
 
@@ -119,7 +119,7 @@ def version_check():
               "version from http://h2o.ai/download/".format(ci.build_age))
 
 
-def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_name=None,
+def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_id=None,
          proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):
     """
@@ -132,7 +132,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     :param insecure:
     :param username:
     :param password:
-    :param cluster_name:
+    :param cluster_id:
     :param proxy:
     :param start_h2o:
     :param nthreads:
@@ -152,7 +152,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     assert_is_type(insecure, bool)
     assert_is_type(username, str, None)
     assert_is_type(password, str, None)
-    assert_is_type(cluster_name, str, None)
+    assert_is_type(cluster_id, int, None)
     assert_is_type(proxy, {str: str}, None)
     assert_is_type(start_h2o, bool, None)
     assert_is_type(nthreads, int)
@@ -163,13 +163,30 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     assert_is_type(strict_version_check, bool)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool})
+
+    def get_mem_size(mmint, mmgb):
+        if not mmint:  # treat 0 and "" as if they were None
+            if mmgb is None: return None
+            return mmgb << 30
+        if is_type(mmint, int):
+            # If the user gives some small number just assume it's in Gigabytes...
+            if mmint < 1000: return mmint << 30
+            return mmint
+        if is_type(mmint, str):
+            last = mmint[-1].upper()
+            num = mmint[:-1]
+            if not (num.isdigit() and last in "MGT"):
+                raise H2OValueError("Wrong format for a *_memory_size argument: %s (should be a number followed by "
+                                    "a suffix 'M', 'G' or 'T')" % mmint)
+            if last == "T": return int(num) << 40
+            if last == "G": return int(num) << 30
+            if last == "M": return int(num) << 20
+
     scheme = "https" if https else "http"
     proxy = proxy[scheme] if proxy is not None and scheme in proxy else \
         kwargs["proxies"][scheme] if "proxies" in kwargs and scheme in kwargs["proxies"] else None
-    mmax = int(max_mem_size) if max_mem_size is not None else \
-        kwargs["max_mem_size_GB"] << 30 if "max_mem_size_GB" in kwargs else None
-    mmin = int(min_mem_size) if min_mem_size is not None else \
-        kwargs["min_mem_size_GB"] << 30 if "min_mem_size_GB" in kwargs else None
+    mmax = get_mem_size(max_mem_size, kwargs.get("max_mem_size_GB"))
+    mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
@@ -177,7 +194,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
         print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https, verify_ssl_certificates=not insecure,
-                                     auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True,
+                                     auth=auth, proxy=proxy, cluster_id=cluster_id, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url}",
                                             "connected.", "not found."))
     except H2OConnectionError:
@@ -188,9 +205,10 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, port=port)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
-                                     auth=auth, proxy=proxy, cluster_name=cluster_name, verbose=True)
+                                     auth=auth, proxy=proxy, cluster_id=cluster_id, verbose=True)
     if strict_version_check:
         version_check()
+    h2oconn.cluster.show_status()
 
 
 def lazy_import(path):
@@ -199,10 +217,11 @@ def lazy_import(path):
 
     :param path: A path to a data file (remote or local).
     """
-    if is_type(path, list, tuple, set):
-        return [_import(p)[0] for p in path]
-    else:
+    assert_is_type(path, str, [str])
+    if is_type(path, str):
         return _import(path)
+    else:
+        return [_import(p)[0] for p in path]
 
 
 def _import(path):
@@ -221,7 +240,7 @@ def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, 
 
     :param path: A path specifying the location of the data to upload.
     :param destination_frame:  The unique hex key assigned to the imported file. If none is given, a key will
-        automatically be generated.
+        be automatically generated.
     :param header: -1 means the first line is data, 0 means guess, 1 means first line is header.
     :param sep: The field separator character. Values on each line of the file are separated by
         this character. If not provided, the parser will automatically detect the separator.
@@ -463,7 +482,8 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
     if column_names is not None:
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
         if len(column_names) != len(j["column_types"]): raise ValueError(
-            "length of col_names should be equal to the number of columns")
+            "length of col_names should be equal to the number of columns: %d vs %d"
+            % (len(column_names), len(j["column_types"])))
         j["column_names"] = column_names
     if column_types is not None:
         if isinstance(column_types, dict):
@@ -735,32 +755,22 @@ def download_pojo(model, path="", get_jar=True):
 
     :param model: the model whose scoring POJO should be retrieved.
     :param path: an absolute path to the directory where POJO should be saved.
-    :param get_jar: retrieve the h2o-genmodel.jar also.
+    :param get_jar: retrieve the h2o-genmodel.jar also (will be saved to the same folder ``path``).
+    :returns: location of the downloaded POJO file.
     """
     assert_is_type(model, ModelBase)
     assert_is_type(path, str)
     assert_is_type(get_jar, bool)
 
-    java = api("GET /3/Models.java/%s" % model.model_id)
-
-    # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
-    # TODO: clients should extract Java class name from header.
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    pojoname = regex.sub("_", model.model_id)
-
     if path == "":
-        print(java)
+        java_code = api("GET /3/Models.java/%s" % model.model_id)
+        print(java_code)
+        return None
     else:
-        filepath = os.path.join(path, pojoname + ".java")
-        print("Filepath: {}".format(filepath))
-        with open(filepath, "wb") as f:
-            f.write(java.encode("utf-8"))
-    if get_jar and path != "":
-        url = h2oconn.make_url("h2o-genmodel.jar")
-        filename = path + "/" + "h2o-genmodel.jar"
-        response = urlopen()(url)
-        with open(filename, "wb") as f:
-            f.write(response.read())
+        filename = api("GET /3/Models.java/%s" % model.model_id, save_to=path)
+        if get_jar:
+            api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
+        return filename
 
 
 def download_csv(data, filename):
@@ -880,8 +890,10 @@ def cluster():
 def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
                  real_fraction=None, categorical_fraction=None, integer_fraction=None,
                  binary_fraction=None, time_fraction=None, string_fraction=None,
-                 value=0, real_range=100, factors=100, integer_range=100, binary_ones_fraction=0.02,
-                 missing_fraction=0.01, response_factors=2, has_response=False, seed=None, seed_for_column_types=None):
+                 value=0, real_range=100, factors=100, integer_range=100,
+                 binary_ones_fraction=0.02, missing_fraction=0.01,
+                 has_response=False, response_factors=2, positive_response=False,
+                 seed=None, seed_for_column_types=None):
     """
     Create a new frame with random data.
 
@@ -904,9 +916,13 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     :param time_fraction: the fraction of randomly created date/time columns.
     :param string_fraction: the fraction of randomly created string columns.
     :param missing_fraction: the fraction of total entries in the data frame that are set to NA.
-    :param response_factors: if has_response is True, then this is the number of factor levels in the response column.
     :param has_response: A logical value indicating whether an additional response column should be prepended to the
         final H2O data frame. If set to True, the total number of columns will be ``cols + 1``.
+    :param response_factors: if has_response is True, then this variable controls the type of the "response" column:
+        setting response_factors to 1 will generate real-valued response, any value greater or equal than 2 will
+        create categorical response with that many categories.
+    :param positive_reponse: when response variable is present and of real type, this will control whether it
+        contains positive values only, or both positive and negative.
     :param seed: a seed used to generate random values when ``randomize`` is True.
     :param seed_for_column_types: a seed used to generate random column types when ``randomize`` is True.
 
@@ -929,8 +945,9 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     assert_is_type(binary_ones_fraction, t_fraction)
     assert_is_type(factors, BoundInt(1))
     assert_is_type(integer_range, BoundInt(1))
-    assert_is_type(response_factors, None, BoundInt(1))
     assert_is_type(has_response, bool)
+    assert_is_type(response_factors, None, BoundInt(1))
+    assert_is_type(positive_response, bool)
     assert_is_type(seed, int, None)
     assert_is_type(seed_for_column_types, int, None)
     if (categorical_fraction or integer_fraction) and not randomize:
@@ -986,8 +1003,9 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
              "integer_range": integer_range,
              "binary_ones_fraction": binary_ones_fraction,
              "missing_fraction": missing_fraction,
-             "response_factors": response_factors,
              "has_response": has_response,
+             "response_factors": response_factors,
+             "positive_response": positive_response,
              "seed": -1 if seed is None else seed,
              "seed_for_column_types": -1 if seed_for_column_types is None else seed_for_column_types,
              }

@@ -108,6 +108,7 @@ public class AggregatorTest extends TestUtil {
   }
 
   @Test public void testAggregatorOneHot() {
+    Scope.enter();
     CreateFrame cf = new CreateFrame();
     cf.rows = 1000;
     cf.cols = 10;
@@ -137,6 +138,7 @@ public class AggregatorTest extends TestUtil {
     output.remove();
     frame.remove();
     agg.remove();
+    Scope.exit();
   }
 
   @Test public void testCovtype() {
@@ -195,6 +197,7 @@ public class AggregatorTest extends TestUtil {
     frame.delete();
   }
 
+  @Ignore
   @Test public void testCovtypeMemberIndices() {
     Frame frame = parse_test_file("smalldata/covtype/covtype.20k.data");
 

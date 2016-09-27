@@ -1,5 +1,6 @@
 package hex.tree.gbm;
 
+import hex.genmodel.utils.DistributionFamily;
 import hex.Distribution;
 import hex.ModelCategory;
 import hex.quantile.Quantile;
@@ -81,20 +82,20 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     if (expensive) {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GBM.this);
-      if (_parms._distribution == Distribution.Family.AUTO) {
-        if (_nclass == 1) _parms._distribution = Distribution.Family.gaussian;
-        if (_nclass == 2) _parms._distribution = Distribution.Family.bernoulli;
-        if (_nclass >= 3) _parms._distribution = Distribution.Family.multinomial;
+      if (_parms._distribution == DistributionFamily.AUTO) {
+        if (_nclass == 1) _parms._distribution = DistributionFamily.gaussian;
+        if (_nclass == 2) _parms._distribution = DistributionFamily.bernoulli;
+        if (_nclass >= 3) _parms._distribution = DistributionFamily.multinomial;
       }
       checkDistributions();
-      if (hasOffsetCol() && isClassifier() && _parms._distribution == Distribution.Family.multinomial) {
+      if (hasOffsetCol() && isClassifier() && _parms._distribution == DistributionFamily.multinomial) {
         error("_offset_column", "Offset is not supported for multinomial distribution.");
       }
-      if (hasOffsetCol() && _parms._distribution == Distribution.Family.bernoulli) {
+      if (hasOffsetCol() && _parms._distribution == DistributionFamily.bernoulli) {
         if (_offset.max() > 1)
           error("_offset_column", "Offset cannot be larger than 1 for Bernoulli distribution.");
       }
-      if (hasOffsetCol() && _parms._distribution == Distribution.Family.modified_huber) {
+      if (hasOffsetCol() && _parms._distribution == DistributionFamily.modified_huber) {
         if (_offset.max() > 1)
           error("_offset_column", "Offset cannot be larger than 1 for Modified Huber distribution.");
       }
@@ -147,6 +148,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
     if (_parms._max_abs_leafnode_pred <= 0)
       error("_max_abs_leafnode_pred", "max_abs_leafnode_pred must be larger than 0.");
+    if (_parms._pred_noise_bandwidth < 0)
+      error("_pred_noise_bandwidth", "pred_noise_bandwidth must be >= 0.");
   }
 
   // ----------------------
@@ -159,12 +162,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (!(1 <= _mtry && _mtry <= _ncols)) throw new IllegalArgumentException("Computed mtry should be in interval <1,"+_ncols+"> but it is " + _mtry);
 
       // for Bernoulli, we compute the initial value with Newton-Raphson iteration, otherwise it might be NaN here
-      _initialPrediction = _nclass > 2 || _parms._distribution == Distribution.Family.laplace || _parms._distribution == Distribution.Family.huber || _parms._distribution == Distribution.Family.quantile ? 0 : getInitialValue();
-      if (_parms._distribution == Distribution.Family.bernoulli) {
-        if (hasOffsetCol()) _initialPrediction = getInitialValueBernoulliOffset(_train);
-      } else if (_parms._distribution == Distribution.Family.laplace || _parms._distribution == Distribution.Family.huber) {
+      DistributionFamily distr = _parms._distribution;
+      _initialPrediction = _nclass > 2 || distr == DistributionFamily.laplace || distr == DistributionFamily.huber || distr == DistributionFamily.quantile ? 0 : getInitialValue();
+      if (distr == DistributionFamily.bernoulli) {
+        if (hasOffsetCol())
+          _initialPrediction = getInitialValueBernoulliOffset(_train);
+      } else if (distr == DistributionFamily.laplace || distr == DistributionFamily.huber) {
         _initialPrediction = getInitialValueQuantile(0.5);
-      } else if (_parms._distribution == Distribution.Family.quantile) {
+      } else if (distr == DistributionFamily.quantile) {
         _initialPrediction = getInitialValueQuantile(_parms._quantile_alpha);
       }
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
@@ -201,7 +206,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       QuantileModel qm = null;
       Frame tempFrame = null;
       try {
-        tempFrame = new Frame(Key.make(H2O.SELF), new String[]{"y"}, new Vec[]{y});
+        tempFrame = new Frame(Key.<Frame>make(H2O.SELF), new String[]{"y"}, new Vec[]{y});
         if (hasWeightCol()) tempFrame.add("w", _weights);
         DKV.put(tempFrame);
         QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
@@ -220,7 +225,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     /**
      * Helper to compute the initial value for Bernoulli for offset != 0
-     * @return
      */
     private double getInitialValueBernoulliOffset(Frame train) {
       Log.info("Running Newton-Raphson iteration to find the initial value since offsets are specified.");
@@ -301,7 +305,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           double f = preds.atd(row) + offset.atd(row);
           double y = ys.atd(row);
 //          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
-          if( _parms._distribution == Distribution.Family.multinomial ) {
+          if( _parms._distribution == DistributionFamily.multinomial ) {
             double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
             if( Double.isInfinite(sum) ) { // Overflow (happens for constant responses)
               for (int k = 0; k < _nclass; k++) {
@@ -367,7 +371,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     final static private double MIN_LOG_TRUNC = -19;
     final static private double MAX_LOG_TRUNC = 19;
 
-    private void truncatePreds(final DTree tree, int firstLeafIndex, Distribution.Family dist) {
+    private void truncatePreds(final DTree tree, int firstLeafIndex, DistributionFamily dist) {
       if (firstLeafIndex==tree._len) return;
       ComputeMinMax minMax = new ComputeMinMax(firstLeafIndex, tree._len).doAll(_train);
       if (DEV_DEBUG) {
@@ -393,14 +397,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // https://github.com/harrysouthworth/gbm/blob/master/src/tweedie.cpp
         // https://github.com/gbm-developers/gbm/blob/master/src/tweedie.cpp
         double val = node._pred;
-        if (dist == Distribution.Family.gamma || dist == Distribution.Family.tweedie) //only for gamma/tweedie
+        if (dist == DistributionFamily.gamma || dist == DistributionFamily.tweedie) //only for gamma/tweedie
           val += nodeMax;
         if (val > MAX_LOG_TRUNC) {
 //          Log.warn("Truncating large positive leaf prediction (log): " + node._pred + " to " + (MAX_LOG_TRUNC - nodeMax));
           node._pred = (float) (MAX_LOG_TRUNC - nodeMax);
         }
         val = node._pred;
-        if (dist == Distribution.Family.gamma || dist == Distribution.Family.tweedie) //only for gamma/tweedie
+        if (dist == DistributionFamily.gamma || dist == DistributionFamily.tweedie) //only for gamma/tweedie
           val += nodeMin;
         if (val < MIN_LOG_TRUNC) {
 //          Log.warn("Truncating large negative leaf prediction (log): " + node._pred + " to " + (MIN_LOG_TRUNC - nodeMin));
@@ -428,7 +432,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ESL2, page 387, Steps 2a, 2b
       // fills "Work" columns for all rows (incl. OOB) with the residuals
       double huberDelta = Double.NaN;
-      if (_parms._distribution== Distribution.Family.huber) {
+      if (_parms._distribution == DistributionFamily.huber) {
         // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
         // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
         // compute absolute diff |y-(f+o)| for all rows
@@ -465,20 +469,20 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // into the tree leaves.  Includes learn_rate.
       GammaPass gp = new GammaPass(ktrees, leaves, new Distribution(_parms));
       gp.doAll(_train);
-      if (_parms._distribution == Distribution.Family.laplace) {
+      if (_parms._distribution == DistributionFamily.laplace) {
         fitBestConstantsQuantile(ktrees, leaves[0], 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
-      } else if (_parms._distribution == Distribution.Family.quantile) {
+      } else if (_parms._distribution == DistributionFamily.quantile) {
         fitBestConstantsQuantile(ktrees, leaves[0], _parms._quantile_alpha); //compute the alpha-quantile for each leaf node and store that as prediction
-      } else if (_parms._distribution == Distribution.Family.huber) {
+      } else if (_parms._distribution == DistributionFamily.huber) {
         fitBestConstantsHuber(ktrees, leaves[0], huberDelta); //compute the alpha-quantile for each leaf node and store that as prediction
       } else {
         fitBestConstants(ktrees, leaves, gp);
       }
 
       // Apply a correction for strong mispredictions (otherwise deviance can explode)
-      if (_parms._distribution == Distribution.Family.gamma ||
-              _parms._distribution == Distribution.Family.poisson ||
-              _parms._distribution == Distribution.Family.tweedie) {
+      if (_parms._distribution == DistributionFamily.gamma ||
+          _parms._distribution == DistributionFamily.poisson ||
+          _parms._distribution == DistributionFamily.tweedie) {
         assert(_nclass == 1);
         truncatePreds(ktrees[0], leaves[0], _parms._distribution);
       }
@@ -757,7 +761,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp) {
-      double m1class = _nclass > 1 && _parms._distribution == Distribution.Family.multinomial ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
+      double m1class = _nclass > 1 && _parms._distribution == DistributionFamily.multinomial ? (double) (_nclass - 1) / _nclass : 1.0; // K-1/K for multinomial
       for (int k = 0; k < _nclass; k++) {
         final DTree tree = ktrees[k];
         if (tree == null) continue;
@@ -767,7 +771,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // In the multinomial case, check for very large values (which will get exponentiated later)
           // Note that gss can be *zero* while rss is non-zero - happens when some rows in the same
           // split are perfectly predicted true, and others perfectly predicted false.
-          if (_parms._distribution == Distribution.Family.multinomial) {
+          if (_parms._distribution == DistributionFamily.multinomial) {
             if (gf > 1e4) gf = 1e4f; // Cap prediction, will already overflow during Math.exp(gf)
             else if (gf < -1e4) gf = -1e4f;
           }
@@ -800,9 +804,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         if (_denom[tree][nid] == 0) return 0;
         double g = _num[tree][nid]/ _denom[tree][nid];
         assert (!Double.isInfinite(g) && !Double.isNaN(g));
-        if (_dist.distribution == Distribution.Family.poisson
-                || _dist.distribution == Distribution.Family.gamma
-                || _dist.distribution == Distribution.Family.tweedie)
+        if (_dist.distribution == DistributionFamily.poisson ||
+            _dist.distribution == DistributionFamily.gamma ||
+            _dist.distribution == DistributionFamily.tweedie)
         {
           return _dist.link(g);
         } else {
@@ -875,9 +879,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
             // For Laplace/Quantile distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
             if (wasOOBRow
-                    || _parms._distribution == Distribution.Family.laplace
-                    || _parms._distribution == Distribution.Family.huber
-                    || _parms._distribution == Distribution.Family.quantile) continue;
+                    || _parms._distribution == DistributionFamily.laplace
+                    || _parms._distribution == DistributionFamily.huber
+                    || _parms._distribution == DistributionFamily.quantile) continue;
 
             double z = ress.atd(row); //residual
             double f = preds.atd(row) + offset.atd(row);
@@ -905,15 +909,21 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           final Chunk ct   = chk_tree(chks, k);
           final Chunk y   = chk_resp(chks);
           final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
+          long baseseed = (0xDECAF + _parms._seed) * (0xFAAAAAAB + k * _parms._ntrees + _model._output._ntrees);
           for( int row=0; row<nids._len; row++ ) {
             int nid = (int)nids.at8(row);
             nids.set(row, ScoreBuildHistogram.FRESH);
             if( nid < 0 ) continue;
             if (y.isNA(row)) continue;
             if (weights.atd(row)==0) continue;
+            double factor = 1;
+            if (_parms._pred_noise_bandwidth !=0) {
+              _rand.setSeed(baseseed + nid); //bandwidth is a function of tree number, class and node id (but same for all rows in that node)
+              factor += _rand.nextGaussian() * _parms._pred_noise_bandwidth;
+            }
             // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
             // <tree_klazz> fields from tree prediction
-            ct.set(row, (float)(ct.atd(row) + ((LeafNode)tree.node(nid))._pred));
+            ct.set(row, (float)(ct.atd(row) + factor * ((LeafNode)tree.node(nid))._pred ));
           }
         }
       }
@@ -931,11 +941,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
     double f = chk_tree(chks,0).atd(row) + offset;
     double p = new Distribution(_parms).linkInv(f);
-    if( _parms._distribution == Distribution.Family.modified_huber || _parms._distribution == Distribution.Family.bernoulli ) {
+    if( _parms._distribution == DistributionFamily.modified_huber || _parms._distribution == DistributionFamily.bernoulli ) {
       fs[2] = p;
       fs[1] = 1.0-p;
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
-    } else if (_parms._distribution == Distribution.Family.multinomial) {
+    } else if (_parms._distribution == DistributionFamily.multinomial) {
       if (_nclass == 2) {
         // This optimization assumes the 2nd tree of a 2-class system is the
         // inverse of the first.  Fill in the missing tree
@@ -945,7 +955,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
       // Multinomial loss function; sum(exp(data)).  Load tree data
       assert(offset==0);
-      fs[0+1] = f;
+      fs[1] = f;
       for( int k=1; k<_nclass; k++ )
         fs[k+1]=chk_tree(chks,k).atd(row);
       // Rescale to avoid Infinities; return sum(exp(data))

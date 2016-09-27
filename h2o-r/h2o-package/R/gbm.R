@@ -1,12 +1,13 @@
-#' Gradient Boosted Machines
+#' Gradient Boosting Machine
 #'
-#' Builds gradient boosted classification trees, and gradient boosted regression trees on a parsed data set.
+#' Builds gradient boosted classification trees and gradient boosted regression trees on a parsed data set.
 #'
 #' The default distribution function will guess the model type
 #' based on the response column type. In order to run properly, the response column must be an numeric for "gaussian" or an
 #' enum for "bernoulli" or "multinomial".
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the GBM model.
+#'        If x is missing,then all columns except y are used.
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the column index
 #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
 #'        categorical variable).
@@ -17,60 +18,61 @@
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
 #' @param distribution A \code{character} string. The distribution function of the response.
 #'        Must be "AUTO", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber" or "gaussian"
-#' @param quantile_alpha Desired quantile for Quantile regression, must be between 0 and 1.
-#' @param huber_alpha Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
-#' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2.
-#' @param ntrees A nonnegative integer that determines the number of trees to grow.
-#' @param max_depth Maximum depth to grow the tree.
-#' @param min_rows Minimum number of rows to assign to teminal nodes.
-#' @param learn_rate Learning rate (from \code{0.0} to \code{1.0})
-#' @param learn_rate_annealing Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)
-#' @param sample_rate Row sample rate per tree (from \code{0.0} to \code{1.0})
-#' @param sample_rate_per_class Row sample rate per tree per class (one per class, from \code{0.0} to \code{1.0})
-#' @param col_sample_rate Column sample rate per split (from \code{0.0} to \code{1.0})
-#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0)
-#' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0})
-#' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.
+#' @param quantile_alpha Desired quantile for Quantile regression, must be between 0 and 1.  Default is 0.5.
+#' @param huber_alpha Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).  Default is 0.9.
+#' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2.  Default is 1.5.
+#' @param ntrees A nonnegative integer that determines the number of trees to grow.  Default is 50.
+#' @param max_depth Maximum depth to grow the tree.  Default is 5.
+#' @param min_rows Minimum number of rows to assign to teminal nodes.  Default is 10.
+#' @param learn_rate Learning rate (from \code{0.0} to \code{1.0}).  Default is 0.1.
+#' @param learn_rate_annealing Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999).  Default is 1.
+#' @param sample_rate Row sample rate per tree (from \code{0.0} to \code{1.0}).  Default is 1.
+#' @param sample_rate_per_class Row sample rate per tree per class (one per class, from \code{0.0} to \code{1.0}).
+#' @param col_sample_rate Column sample rate per split (from \code{0.0} to \code{1.0}).  Default is 1.
+#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0).  Default is 1.
+#' @param col_sample_rate_per_tree Column sample rate per tree (from \code{0.0} to \code{1.0}).  Default is 1.
+#' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point.  Default is 20.
 #' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root
-#'        level, then decrease by factor of two per level.
+#'        level, then decrease by factor of two per level.  Default is 1024.
 #' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point.
-#'        Higher values can lead to more overfitting.
+#'        Higher values can lead to more overfitting.  Default is 1024.
 #' @param validation_frame An H2OFrame object indicating the validation dataset used to contruct the
 #'        confusion matrix. Defaults to NULL.  If left as NULL, this defaults to the training data when \code{nfolds = 0}.
 #' @param balance_classes logical, indicates whether or not to balance training data class
-#'        counts via over/under-sampling (for imbalanced data).
+#'        counts via over/under-sampling (for imbalanced data).  Default is \code{FALSE}.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic
 #'        order). If not specified, sampling factors will be automatically computed to obtain class
 #'        balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less
-#'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.
+#'        than 1.0). Ignored if balance_classes is FALSE, which is the default behavior.  Default is 5.
 #' @param seed Seed for random numbers (affects sampling).
 #' @param build_tree_one_node Run on one node only; no network overhead but
-#'        fewer cpus used.  Suitable for small datasets.
-#' @param nfolds (Optional) Number of folds for cross-validation.
-#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation
+#'        fewer cpus used.  Suitable for small datasets.  Default is \code{FALSE}.
+#' @param nfolds (Optional) Number of folds for cross-validation.  Default is 0 (no cross-validation).
+#' @param fold_column (Optional) Column with cross-validation fold index assignment per observation.  Defaults to NULL.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not
 #'        specified, must be "AUTO", "Random",  "Modulo", or "Stratified".  The Stratified option will 
 #'        stratify the folds based on the response variable, for classification problems.
-#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
-#' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
-#' @param score_each_iteration Attempts to score each tree.
-#' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0.
-#' @param stopping_rounds Early stopping based on convergence of stopping_metric.
+#' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models.  Default is \code{FALSE}.
+#' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.  Default is \code{FALSE}.
+#' @param score_each_iteration Attempts to score each tree.  Default is \code{FALSE}.
+#' @param score_tree_interval Score the model after every so many trees. Default is 0 (disabled).
+#' @param stopping_rounds Early stopping based on convergence of stopping_metric.  Default is 0 (disabled).
 #'        Stop if simple moving average of length k of the stopping_metric does not improve
 #'        (by stopping_tolerance) for k=stopping_rounds scoring events.
-#'        Can only trigger after at least 2k scoring events. Use 0 to disable.
+#'        Can only trigger after at least 2k scoring events.
 #' @param stopping_metric Metric to use for convergence checking, only for _stopping_rounds > 0
 #'        Can be one of "AUTO", "deviance", "logloss", "MSE", "AUC", "misclassification", or "mean_per_class_error".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (if relative
-#'        improvement is not at least this much, stop)
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
-#' @param offset_column Specify the offset column.
-#' @param weights_column Specify the weights column.
-#' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.
+#'        improvement is not at least this much, stop).  Default is 0.001.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Default is 0 (disabled).
+#' @param offset_column Specify the offset column.  Defaults to \code{NULL}.
+#' @param weights_column Specify the weights column.  Defaults to \code{NULL}.
+#' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen.  Default is 1e-5 and the value must be >=0.
 #' @param histogram_type What type of histogram to use for finding optimal split points
 #'        Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin".
-#' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction.
+#' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction.  Defaults to 1.79769313486e+308.
+#' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. Default is 0.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @examples
 #' \donttest{
@@ -94,7 +96,7 @@ h2o.gbm <- function(x, y, training_frame,
                     distribution = c("AUTO","gaussian", "bernoulli", "multinomial", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                     quantile_alpha = 0.5,
                     tweedie_power = 1.5,
-                    huber_alpha,
+                    huber_alpha = 0.9,
                     ntrees = 50,
                     max_depth = 5,
                     min_rows = 10,
@@ -106,12 +108,12 @@ h2o.gbm <- function(x, y, training_frame,
                     col_sample_rate_change_per_level = 1.0,
                     col_sample_rate_per_tree = 1.0,
                     nbins = 20,
-                    nbins_top_level,
+                    nbins_top_level = 1024,
                     nbins_cats = 1024,
                     validation_frame = NULL,
                     balance_classes = FALSE,
                     class_sampling_factors,
-                    max_after_balance_size = 1,
+                    max_after_balance_size = 5,
                     seed,
                     build_tree_one_node = FALSE,
                     nfolds = 0,
@@ -121,17 +123,26 @@ h2o.gbm <- function(x, y, training_frame,
                     keep_cross_validation_fold_assignment = FALSE,
                     score_each_iteration = FALSE,
                     score_tree_interval = 0,
-                    stopping_rounds=0,
-                    stopping_metric=c("AUTO", "deviance", "logloss", "MSE", "AUC", "misclassification", "mean_per_class_error"),
-                    stopping_tolerance=1e-3,
-                    max_runtime_secs=0,
+                    stopping_rounds = 0,
+                    stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "misclassification", "mean_per_class_error"),
+                    stopping_tolerance = 1e-3,
+                    max_runtime_secs = 0,
                     offset_column = NULL,
                     weights_column = NULL,
-                    min_split_improvement,
-                    histogram_type=c("AUTO","UniformAdaptive","Random","QuantilesGlobal","RoundRobin"),
-                    max_abs_leafnode_pred
+                    min_split_improvement = 1e-05,
+                    histogram_type = c("AUTO","UniformAdaptive","Random","QuantilesGlobal","RoundRobin"),
+                    max_abs_leafnode_pred,
+                    pred_noise_bandwidth=0
                     )
 {
+   #If x is missing, then assume user wants to use all columns as features.
+   if(missing(x)){
+     if(is.numeric(y)){
+       x <- setdiff(col(training_frame),y)
+     }else{
+       x <- setdiff(colnames(training_frame),y)
+     }
+   }
   # Required maps for different names params, including deprecated params
   .gbm.map <- c("x" = "ignored_columns",
                 "y" = "response_column")
@@ -228,6 +239,7 @@ h2o.gbm <- function(x, y, training_frame,
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
   if(!missing(histogram_type)) parms$histogram_type <- histogram_type
   if(!missing(max_abs_leafnode_pred)) parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
+  if(!missing(pred_noise_bandwidth)) parms$pred_noise_bandwidth <- pred_noise_bandwidth
 
   .h2o.modelJob('gbm', parms)
 }

@@ -1,5 +1,6 @@
 package water;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -17,12 +18,14 @@ import water.util.Timer;
 import water.util.TwoDimTable;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Ignore("Support for tests, but no actual tests here")
@@ -206,27 +209,45 @@ public class TestUtil extends Iced {
     return find_test_file_static(fname);
   }
 
+  private static void checkFileEntry(String name, File file) {
+    assertNotNull("File not found: " + name, file);
+    assertTrue("File should exist: " + name, file.exists());
+  }
+
+  private static void checkFile(String name, File file) {
+    checkFileEntry(name, file);
+    assertTrue("Expected a readable file: " + name, file.canRead());
+  }
+
+  private static File[] checkFolder(String name, File folder) {
+    checkFileEntry(name, folder);
+    assertTrue("Expected a folder: " + name, folder.isDirectory());
+    File[] files = folder.listFiles();
+    assertNotNull("No files found in " + folder, files);
+    return files;
+  }
+
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
-  protected static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
-  protected static Frame parse_test_file( Key outputKey, String fname) {
+  public static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
+  public static Frame parse_test_file( Key outputKey, String fname) {
     File f = find_test_file_static(fname);
-    assert f != null && f.exists():" file not found: " + fname;
+    checkFile(fname, f);
     NFSFileVec nfs = NFSFileVec.make(f);
     return ParseDataset.parse(outputKey, nfs._key);
   }
 
   protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
     File f = find_test_file(fname);
-    assert f != null && f.exists():" file not found: " + fname;
+    checkFile(fname, f);
     NFSFileVec nfs = NFSFileVec.make(f);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
     File f = find_test_file_static(fname);
-    assert f != null && f.exists():" file not found: " + fname;
+    checkFile(fname, f);
     NFSFileVec nfs = NFSFileVec.make(f);
 
     Key[] res = {nfs._key};
@@ -261,8 +282,7 @@ public class TestUtil extends Iced {
    *  @return      Frame or NPE */
   protected Frame parse_test_folder( String fname ) {
     File folder = find_test_file(fname);
-    assert folder.isDirectory();
-    File[] files = folder.listFiles();
+    File[] files = checkFolder(fname, folder);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -281,10 +301,9 @@ public class TestUtil extends Iced {
    * @param na_string
    * @return
    */
-  protected Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
-    File folder = find_test_file(fname);
-    assert folder != null && folder.isDirectory():"Folder "+fname+" is not a directory.";
-    File[] files = folder.listFiles();
+  protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
+    File folder = find_test_file_static(fname);
+    File[] files = checkFolder(fname, folder);
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -405,8 +424,8 @@ public class TestUtil extends Iced {
   }
 
   public static boolean[] checkProjection(Frame expected, Frame actual, double threshold, boolean[] flipped) {
-    assert expected.numCols() == actual.numCols();
-    assert expected.numCols() == flipped.length;
+    assertEquals("Number of columns", expected.numCols(), actual.numCols());
+    assertEquals("Number of columns in flipped", expected.numCols(), flipped.length);
     int nfeat = (int) expected.numRows();
     int ncomp = expected.numCols();
 
@@ -485,4 +504,74 @@ public class TestUtil extends Iced {
     }
     @Override public void reduce( Cmp1 cmp ) { _unequal |= cmp._unequal; }
   }
+
+  public static void assertFrameAssertion(FrameAssertion frameAssertion) {
+    int[] dim = frameAssertion.dim;
+    Frame frame = null;
+    try {
+      frame = frameAssertion.prepare();
+      assertEquals("Frame has to have expected number of columns", dim[0], frame.numCols());
+      assertEquals("Frame has to have expected number of rows", dim[1], frame.numRows());
+      frameAssertion.check(frame);
+    } finally {
+      frameAssertion.done(frame);
+      if (frame != null)
+        frame.delete();
+    }
+  }
+
+  public static abstract class FrameAssertion {
+    protected final String file;
+    private final int[] dim; // columns X rows
+
+    public FrameAssertion(String file, int[] dim) {
+      this.file = file;
+      this.dim = dim;
+    }
+
+    public Frame prepare() {
+      return TestUtil.parse_test_file(file);
+    }
+
+    public void done(Frame frame) {}
+
+    public void check(Frame frame) {}
+
+    public final int nrows() { return dim[1]; }
+    public final int ncols() { return dim[0]; }
+  }
+
+  public static abstract class GenFrameAssertion extends FrameAssertion {
+
+    public GenFrameAssertion(String file, int[] dim) {
+      super(file, dim);
+    }
+    File generatedFile;
+
+    protected abstract File prepareFile() throws IOException;
+
+    @Override
+    public Frame prepare() {
+      try {
+        File f = generatedFile = prepareFile();
+        System.out.println("File generated into: " + f.getCanonicalPath());
+        if (f.isDirectory()) {
+          return parse_test_folder(f.getCanonicalPath(), null, ParseSetup.HAS_HEADER, null);
+        } else {
+          return parse_test_file(f.getCanonicalPath());
+        }
+      } catch (IOException e) {
+        throw new RuntimeException("Cannot prepare test frame from file: " + file, e);
+      }
+    }
+
+    @Override
+    public void done(Frame frame) {
+      if (generatedFile != null) {
+        generatedFile.deleteOnExit();
+        FileUtils.deleteQuietly(generatedFile);
+      }
+    }
+  }
+
 }

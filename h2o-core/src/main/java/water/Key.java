@@ -77,13 +77,13 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
    *  @return Returns the {@link Vec} Key from a {@link Chunk} Key. */
   public final Key getVecKey() { assert isChunkKey(); return water.fvec.Vec.getVecKey(this); }
 
-  /** Convenience function to fetch key contents from the DKV. 
+  /** Convenience function to fetch key contents from the DKV.
    * @return null if the Key is not mapped, or an instance of {@link Keyed} */
   public final T get() {
     Value val = DKV.get(this);
-    return val == null ? null : (T)val.get(); 
+    return val == null ? null : (T)val.get();
   }
- 
+
   // *Desired* distribution function on keys & replication factor. Replica #0
   // is the master, replica #1, 2, 3, etc represent additional desired
   // replication nodes. Note that this function is just the distribution
@@ -94,7 +94,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     int hsz = H2O.CLOUD.size();
 
     if (0 == hsz) return -1;    // Clients starting up find no cloud, be unable to home keys
-  
+
     // See if this is a specifically homed Key
     if( !user_allowed() && repl < _kb[1] ) { // Asking for a replica# from the homed list?
       assert repl == 0 : "No replication is support now";
@@ -106,7 +106,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
       // Else homed to a node which is no longer in the cloud!
       // Fall back to the normal home mode
     }
-  
+
     // Distribution of Fluid Vectors is a special case.
     // Fluid Vectors are grouped into vector groups, each of which must have
     // the same distribution of chunks so that MRTask run over group of
@@ -140,7 +140,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
       int nidx = (cidx-((1<<z)-1)*hsz)>>z;
       return ((nidx+repl)&0x7FFFFFFF) % hsz;
     }
-  
+
     // Easy Cheesy Stupid:
     return ((_hash+repl)&0x7FFFFFFF) % hsz;
   }
@@ -283,11 +283,15 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   /** Factory making a Key from a byte[]
-   *  @return Desired Key */ 
+   *  @return Desired Key */
   public static <P extends Keyed> Key<P> make(byte[] kb) { return make(kb, DEFAULT_DESIRED_REPLICA_FACTOR); }
+
   /** Factory making a Key from a String
-   *  @return Desired Key */ 
-  public static <P extends Keyed> Key<P> make(String s) { return make(decodeKeyName(s));}
+   *  @return Desired Key */
+  public static <P extends Keyed> Key<P> make(String s) {
+    return make(decodeKeyName(s != null? s : rand()));
+  }
+
   public static <P extends Keyed> Key<P> makeSystem(String s) {
     return make(s,DEFAULT_DESIRED_REPLICA_FACTOR,BUILT_IN_KEY, false);
   }
@@ -305,7 +309,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
   static <P extends Keyed> Key<P> make(String s, byte rf) { return make(decodeKeyName(s), rf);}
   /** Factory making a random Key
-   *  @return Desired Key */ 
+   *  @return Desired Key */
   public static <P extends Keyed> Key<P> make() { return make(rand()); }
 
   /** Factory making a homed system Key.  Requires the initial system byte but

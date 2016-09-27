@@ -19,12 +19,4 @@ public class DeepLearningScoringInfo extends ScoringInfo implements ScoringInfo.
   public double training_samples() { return training_samples; }
   public long score_training_samples() { return score_training_samples; }
   public long score_validation_samples() { return score_validation_samples; }
-
-  @Override
-  public DeepLearningScoringInfo deep_clone() {
-    AutoBuffer ab = new AutoBuffer();
-    this.write(ab);
-    ab.flipForReading();
-    return (DeepLearningScoringInfo) new DeepLearningScoringInfo().read(ab);
-  }
 }

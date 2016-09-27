@@ -20,21 +20,27 @@ def hdfs_orc_parser():
 
     if hadoop_namenode_is_accessible:
         hdfs_name_node = pyunit_utils.hadoop_namenode()
-        hdfs_orc_file = "/datasets/orc_parser/milsongs_orc"
-        url_orc = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_orc_file)
-        hdfs_csv_file = "/datasets/orc_parser/milsongs_csv"
-        url_csv = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_csv_file)
 
-        multi_file_csv = h2o.import_file(url_csv)
-        multi_file_orc = h2o.import_file(url_orc)
+        if pyunit_utils.cannaryHDFSTest(hdfs_name_node, "/datasets/orc_parser/orc/orc_split_elim.orc"):
+            print("Your hive-exec version is too old.  Orc parser test {0} is "
+          "skipped.".format("pyunit_INTERNAL_HDFS_milsongs_orc.py"))
+            pass
+        else:
+            hdfs_orc_file = "/datasets/orc_parser/milsongs_orc"
+            url_orc = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_orc_file)
+            hdfs_csv_file = "/datasets/orc_parser/milsongs_csv"
+            url_csv = "hdfs://{0}{1}".format(hdfs_name_node, hdfs_csv_file)
 
-        multi_file_csv.summary()
-        csv_summary = h2o.frame(multi_file_csv.frame_id)["frames"][0]["columns"]
+            multi_file_csv = h2o.import_file(url_csv)
+            multi_file_orc = h2o.import_file(url_orc)
 
-        multi_file_orc.summary()
-        orc_summary = h2o.frame(multi_file_orc.frame_id)["frames"][0]["columns"]
+            multi_file_csv.summary()
+            csv_summary = h2o.frame(multi_file_csv.frame_id)["frames"][0]["columns"]
 
-        pyunit_utils.compare_frame_summary(csv_summary, orc_summary)
+            multi_file_orc.summary()
+            orc_summary = h2o.frame(multi_file_orc.frame_id)["frames"][0]["columns"]
+
+            pyunit_utils.compare_frame_summary(csv_summary, orc_summary)
     else:
         raise EnvironmentError
 

@@ -44,13 +44,13 @@ import java.util.HashMap;
  *  then enforces {@link Chunk} row alignment across Vecs (or at least enforces
  *  a low-cost access model).  Parallel and distributed execution touching all
  *  the data in a Frame relies on this alignment to get good performance.
- *  
+ *
  *  <p>Example: Make a Frame from a CSV file:<pre>
  *  File file = ...
  *  NFSFileVec nfs = NFSFileVec.make(file); // NFS-backed Vec, lazily read on demand
  *  Frame fr = water.parser.ParseDataset.parse(Key.make("myKey"),nfs._key);
  *  </pre>
- * 
+ *
  *  <p>Example: Find and remove the Vec called "unique_id" from the Frame,
  *  since modeling with a unique_id can lead to overfitting:
  *  <pre>
@@ -78,26 +78,29 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Creates an internal frame composed of the given Vecs and default names.  The frame has no key. */
-  public Frame( Vec... vecs ){ this(null,vecs);}
+  public Frame(Vec... vecs){
+    this(null, vecs);
+  }
+
   /** Creates an internal frame composed of the given Vecs and names.  The frame has no key. */
-  public Frame( String names[], Vec vecs[] ) { this(null,names,vecs); }
+  public Frame(String names[], Vec vecs[]) {
+    this(null, names, vecs);
+  }
+
   /** Creates an empty frame with given key. */
-  public Frame( Key key ) {
-    this(key,null,new Vec[0]);
+  public Frame(Key<Frame> key) {
+    this(key, null, new Vec[0]);
   }
 
   /**
    * Special constructor for data with unnamed columns (e.g. svmlight) bypassing *all* checks.
-   * @param key
-   * @param vecs
-   * @param noChecks
    */
-  public Frame( Key key, Vec vecs[], boolean noChecks) {
+  public Frame(Key<Frame> key, Vec vecs[], boolean noChecks) {
     super(key);
     assert noChecks;
     _vecs = vecs;
     _names = new String[vecs.length];
-    _keys = new Key[vecs.length];
+    _keys = makeVecKeys(vecs.length);
     for (int i = 0; i < vecs.length; i++) {
       _names[i] = defaultColName(i);
       _keys[i] = vecs[i]._key;
@@ -105,7 +108,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Creates a frame with given key, names and vectors. */
-  public Frame( Key key, String names[], Vec vecs[] ) {
+  public Frame(Key<Frame> key, String names[], Vec vecs[] ) {
     super(key);
 
     // Require all Vecs already be installed in the K/V store
@@ -115,7 +118,7 @@ public class Frame extends Lockable<Frame> {
     // Always require names
     if( names==null ) {         // Make default names, all known to be unique
       _names = new String[vecs.length];
-      _keys  = new Key   [vecs.length];
+      _keys = makeVecKeys(vecs.length);
       _vecs  = vecs;
       for( int i=0; i<vecs.length; i++ ) _names[i] = defaultColName(i);
       for( int i=0; i<vecs.length; i++ ) _keys [i] = vecs[i]._key;
@@ -125,7 +128,7 @@ public class Frame extends Lockable<Frame> {
       // Make empty to dodge asserts, then "add()" them all which will check
       // for compatible Vecs & names.
       _names = new String[0];
-      _keys  = new Key   [0];
+      _keys = makeVecKeys(0);
       _vecs  = new Vec   [0];
       add(names,vecs);
     }
@@ -152,14 +155,24 @@ public class Frame extends Lockable<Frame> {
   /** Default column name maker */
   public static String defaultColName( int col ) { return "C"+(1+col); }
 
+  /**
+   * Helper method to initialize `_keys` array (which requires an unchecked cast).
+   * @param size number of elements in the array that will be created.
+   */
+  @SuppressWarnings("unchecked")
+  private Key<Vec>[] makeVecKeys(int size) {
+    return new Key[size];
+  }
+
   // Make unique names.  Efficient for the special case of appending endless
   // versions of "C123" style names where the next name is +1 over the prior
   // name.  All other names take the O(n^2) lookup.
   private int pint( String name ) {
-    try { return Integer.valueOf(name.substring(1)); } 
-    catch( NumberFormatException fe ) { }
+    try { return Integer.valueOf(name.substring(1)); }
+    catch(NumberFormatException ignored) { }
     return 0;
   }
+
   public String uniquify( String name ) {
     String n = name;
     int lastName = 0;
@@ -219,7 +232,7 @@ public class Frame extends Lockable<Frame> {
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
 
-  /** Returns the first readable vector. 
+  /** Returns the first readable vector.
    *  @return the first readable Vec */
   public final Vec anyVec() {
     Vec c0 = _col0; // single read
@@ -236,7 +249,9 @@ public class Frame extends Lockable<Frame> {
 
   /** A single column name.
    *  @return the column name */
-  public String name(int i) { return _names[i]; } // TODO: saw a non-reproducible NPE here
+  public String name(int i) {
+    return _names[i];
+  }
 
   /** The array of keys.
    * @return the array of keys for each vec in the frame.
@@ -274,7 +289,7 @@ public class Frame extends Lockable<Frame> {
     return vecs;
   }
 
-  /** Convenience to accessor for last Vec 
+  /** Convenience to accessor for last Vec
    *  @return last Vec */
   public Vec lastVec() { vecs(); return _vecs [_vecs.length -1]; }
   /** Convenience to accessor for last Vec name
@@ -283,10 +298,10 @@ public class Frame extends Lockable<Frame> {
 
   /** Force a cache-flush and reload, assuming vec mappings were altered
    *  remotely, or that the _vecs array was shared and now needs to be a
-   *  defensive copy. 
+   *  defensive copy.
    *  @return the new instance of the Frame's Vec[] */
   public final Vec[] reloadVecs() { _vecs=null; return vecs(); }
-  
+
   /** Returns the Vec by given index, implemented by code: {@code vecs()[idx]}.
    *  @param idx idx of column
    *  @return this frame idx-th vector, never returns <code>null</code> */
@@ -340,7 +355,7 @@ public class Frame extends Lockable<Frame> {
   public void insertVec(int i, String name, Vec vec) {
     String [] names = new String[_names.length+1];
     Vec [] vecs = new Vec[_vecs.length+1];
-    Key [] keys = new Key[_keys.length+1];
+    Key<Vec>[] keys = makeVecKeys(_keys.length + 1);
     System.arraycopy(_names,0,names,0,i);
     System.arraycopy(_vecs,0,vecs,0,i);
     System.arraycopy(_keys,0,keys,0,i);
@@ -457,10 +472,15 @@ public class Frame extends Lockable<Frame> {
   /** The {@code Vec.byteSize} of all Vecs
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
-    Vec[] vecs = bulkRollups();
-    long sum=0;
-    for (Vec vec : vecs) sum += vec.byteSize();
-    return sum;
+    try {
+      Vec[] vecs = bulkRollups();
+      long sum = 0;
+      for (Vec vec : vecs) sum += vec.byteSize();
+      return sum;
+    } catch(RuntimeException ex) {
+      Log.debug("Failure to obtain byteSize() - missing chunks?");
+      return -1;
+    }
   }
 
   /** 64-bit checksum of the checksums of the vecs.  SHA-265 checksums of the
@@ -556,11 +576,11 @@ public class Frame extends Lockable<Frame> {
         throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
     }
     final int len = _names != null ? _names.length : 0;
-    String[] _names2 = new String[len+1];
-    Vec[]    _vecs2  = new Vec   [len+1];
-    Key[]    _keys2  = new Key   [len+1];
+    String[] _names2 = new String[len + 1];
+    Vec[] _vecs2 = new Vec[len + 1];
+    Key<Vec>[] _keys2 = makeVecKeys(len + 1);
     _names2[0] = name;
-    _vecs2 [0] = vec ;
+    _vecs2 [0] = vec;
     _keys2 [0] = vec._key;
     System.arraycopy(_names, 0, _names2, 1, len);
     System.arraycopy(_vecs,  0, _vecs2,  1, len);
@@ -578,7 +598,7 @@ public class Frame extends Lockable<Frame> {
     if( lo==hi ) return;
     Vec vecs[] = vecs();
     Vec v   = vecs [lo]; vecs  [lo] = vecs  [hi]; vecs  [hi] = v;
-    Key k   = _keys[lo]; _keys [lo] = _keys [hi]; _keys [hi] = k;
+    Key<Vec> k = _keys[lo]; _keys[lo] = _keys[hi]; _keys[hi] = k;
     String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
   }
 
@@ -586,7 +606,7 @@ public class Frame extends Lockable<Frame> {
   public void moveFirst( int cols[] ) {
     boolean colsMoved[] = new boolean[_keys.length];
     Vec tmpvecs[] = vecs().clone();
-    Key tmpkeys[] = _keys.clone();
+    Key<Vec> tmpkeys[] = _keys.clone();
     String tmpnames[] = _names.clone();
 
     // Move the desired ones first
@@ -649,11 +669,13 @@ public class Frame extends Lockable<Frame> {
       if(map.containsKey(names[i])) vecs[i] = _vecs[map.get(names[i])];
       else if (replaceBy) {
         Log.warn("Column " + names[i] + " is missing, filling it in with " + c);
-        assert cnames != null;
         cnames[ccv] = names[i];
         vecs[i] = cvecs[ccv++] = anyVec().makeCon(c);
       }
-    return new Frame[] { new Frame(Key.make("subframe"+Key.make().toString()), names,vecs), ccv>0 ?  new Frame(Key.make("subframe"+Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null };
+    return new Frame[] {
+      new Frame(Key.<Frame>make("subframe" + Key.make().toString()), names, vecs),
+      ccv > 0? new Frame(Key.<Frame>make("subframe" + Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null
+    };
   }
 
   /** Allow rollups for all written-into vecs; used by {@link MRTask} once
@@ -674,23 +696,24 @@ public class Frame extends Lockable<Frame> {
     // only to delete them.  Supports Frames with some Vecs already deleted, as
     // a Scope cleanup action might delete Vecs out of order.
     Vec v = _col0;
-    if( v == null ) {
+    if (v == null) {
       Vec[] vecs = _vecs;       // Read once, in case racily being cleared
-      if( vecs != null )
-        for( int i=0; i<vecs.length; i++ )
-          if( (v=vecs[i]) != null ) // Stop on finding the 1st Vec
+      if (vecs != null)
+        for (Vec vec : vecs)
+          if ((v = vec) != null) // Stop on finding the 1st Vec
             break;
     }
-    if( v == null )             // Ok, now do DKV gets
-      for( int i=0; i<_keys.length; i++ )
-        if( (v=_keys[i].get()) != null )
+    if (v == null)             // Ok, now do DKV gets
+      for (Key<Vec> _key1 : _keys)
+        if ((v = _key1.get()) != null)
           break;                // Stop on finding the 1st Vec
-    if( v == null ) return fs;
+    if (v == null)
+      return fs;
 
     final int ncs = v.nChunks();
     _names = new String[0];
     _vecs = new Vec[0];
-    _keys = new Key[0];
+    _keys = makeVecKeys(0);
     // Bulk dumb local remove - no JMM, no ordering, no safety.
     new MRTask() {
       @Override public void setupLocal() {
@@ -707,7 +730,7 @@ public class Frame extends Lockable<Frame> {
       ab.putKey(k);
     return super.writeAll_impl(ab);
   }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) { 
+  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     for( Key k : _keys )
       ab.getKey(k,fs);
     return super.readAll_impl(ab,fs);
@@ -736,7 +759,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Split this Frame; return a subframe created from the given column interval, and
-   *  remove those columns from this Frame. 
+   *  remove those columns from this Frame.
    *  @param startIdx index of first column (inclusive)
    *  @param endIdx index of the last column (exclusive)
    *  @return a new Frame containing specified interval of columns */
@@ -746,11 +769,11 @@ public class Frame extends Lockable<Frame> {
     return f;
   }
 
-  /** Removes the column with a matching name.  
+  /** Removes the column with a matching name.
    *  @return The removed column */
   public Vec remove( String name ) { return remove(find(name)); }
 
-  public Frame remove( String[] names ) { 
+  public Frame remove( String[] names ) {
     for( String name : names )
       remove(find(name));
     return this;
@@ -766,7 +789,7 @@ public class Frame extends Lockable<Frame> {
     Vec[] res = new Vec[idxs.length];
     Vec[] rem = new Vec[_vecs.length-idxs.length];
     String[] names = new String[rem.length];
-    Key   [] keys  = new Key   [rem.length];
+    Key<Vec>[] keys = makeVecKeys(rem.length);
     int j = 0;
     int k = 0;
     int l = 0;
@@ -788,7 +811,7 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
-  /**  Removes a numbered column. 
+  /**  Removes a numbered column.
    *  @return the removed column */
   public final Vec remove( int idx ) {
     int len = _names.length;
@@ -815,7 +838,7 @@ public class Frame extends Lockable<Frame> {
     int len = _names.length;
     int nlen = len - (endIdx-startIdx);
     String[] names = new String[nlen];
-    Key[] keys = new Key[nlen];
+    Key<Vec>[] keys = makeVecKeys(nlen);
     Vec[] vecs = new Vec[nlen];
     vecs();
     if (startIdx > 0) {
@@ -848,7 +871,7 @@ public class Frame extends Lockable<Frame> {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
     _names = new String[0];
-    _keys  = new Key   [0];
+    _keys  = makeVecKeys(0);
     _vecs  = new Vec   [0];
     add(names,vecs,cols);
   }
@@ -1097,13 +1120,11 @@ public class Frame extends Lockable<Frame> {
 
   // Convert len rows starting at off to a 2-d ascii table
   @Override public String toString( ) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("Frame key: " + _key + "\n");
-    sb.append("   cols: " + numCols() + "\n");
-    sb.append("   rows: " + numRows() + "\n");
-    sb.append(" chunks: " + (anyVec()==null?"N/A":anyVec().nChunks()) + "\n");
-    sb.append("   size: " + byteSize() + "\n");
-    return sb.toString();
+    return ("Frame key: " + _key + "\n") +
+            "   cols: " + numCols() + "\n" +
+            "   rows: " + numRows() + "\n" +
+            " chunks: " + (anyVec() == null ? "N/A" : anyVec().nChunks()) + "\n" +
+            "   size: " + byteSize() + "\n";
   }
 
   public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
@@ -1157,7 +1178,7 @@ public class Frame extends Lockable<Frame> {
         for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_CAT:
-        coltypes[i] = "string"; 
+        coltypes[i] = "string";
         for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_TIME:
@@ -1166,7 +1187,7 @@ public class Frame extends Lockable<Frame> {
         for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : fmt.print(vec.at8(off+j)); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_NUM:
-        coltypes[i] = vec.isInt() ? "long" : "double"; 
+        coltypes[i] = vec.isInt() ? "long" : "double";
         for( int j=0; j<len; j++ ) { dblCells[j+H][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+H][i] = null; }
         break;
       case Vec.T_UUID:
@@ -1377,9 +1398,9 @@ public class Frame extends Lockable<Frame> {
       return f.vecs();                 // Then must be compatible
     Vec v1 = anyVec();
     Vec v2 = f.anyVec();
-    if(v1.length() != v2.length())
+    if (v1 != null && v2 != null && v1.length() != v2.length())
       throw new IllegalArgumentException("Can not make vectors of different length compatible!");
-    if (v2 == null || (!force && v1.checkCompatible(v2)))
+    if (v1 == null || v2 == null || (!force && v1.checkCompatible(v2)))
       return f.vecs();
     // Ok, here make some new Vecs with compatible layout
     Key k = Key.make();
@@ -1442,7 +1463,8 @@ public class Frame extends Lockable<Frame> {
     }
 
     private static Chunk[] firstChunks(Frame fr) {
-      if (fr.anyVec().nChunks() == 0) {
+      Vec anyvec = fr.anyVec();
+      if (anyvec == null || anyvec.nChunks() == 0 || anyvec.length() == 0) {
         return null;
       }
       Chunk[] chks = new Chunk[fr.vecs().length];
@@ -1453,10 +1475,7 @@ public class Frame extends Lockable<Frame> {
     }
 
     public CSVStream(Chunk[] chks, String[] names, int nChunks, boolean hex_string) {
-      if ((chks == null) && (nChunks != 0)) {
-        // Empty Frame
-        throw new IllegalArgumentException("If chunks are not defined, number of chunks to export need to be 0.");
-      }
+      if (chks == null) nChunks = 0;
       _lastChkIdx = (chks != null) ? chks[0].cidx() + nChunks - 1 : -1;
       _hex_string = hex_string;
       StringBuilder sb = new StringBuilder();
@@ -1577,7 +1596,7 @@ public class Frame extends Lockable<Frame> {
 
   @Override public Class<KeyV3.FrameKeyV3> makeSchema() { return KeyV3.FrameKeyV3.class; }
 
-  /** Sort rows of a frame, using the set of columns as keys.  
+  /** Sort rows of a frame, using the set of columns as keys.
    *  @return Copy of frame, sorted */
   public Frame sort( int[] cols ) { return Merge.sort(this,cols); }
 }

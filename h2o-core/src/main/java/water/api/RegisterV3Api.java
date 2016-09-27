@@ -208,6 +208,11 @@ public class RegisterV3Api extends AbstractRegister {
         "GET /3/Models.java/{model_id}", ModelsHandler.class, "fetchJavaCode",
         "[DEPRECATED] Return the stream containing model implementation in Java code.");
 
+    RequestServer.registerEndpoint("modelMojo",
+        "GET /3/Models/{model_id}/mojo", ModelsHandler.class, "fetchMojo",
+        "Return the model in the MOJO format. This format can then be interpreted by " +
+        "gen_model.jar in order to perform prediction / scoring. Currently works for GBM and DRF algos only.");
+
     // Model serialization - import/export calls
     RequestServer.registerEndpoint("importModel",
         "POST /99/Models.bin/{model_id}", ModelsHandler.class, "importModel",

@@ -1,16 +1,6 @@
 FAQ
 ===
 
-H2O
----
-
-**What is H2O?**
-
-H2O is an open-source platform for scalable and distributed machine
-learning, and set of algorithms implemented on that platform.
-
---------------
-
 General Troubleshooting Tips
 ----------------------------
 
@@ -279,9 +269,7 @@ Here is an example of how the prediction process works in H2O:
 The behavior for unseen categorical levels depends on the algorithm and
 how it handles missing levels (NA values):
 
--  DRF and GBM treat missing or NA factor levels as the smallest value
-   present (left-most in the bins), which can go left or right for any
-   split. Unseen factor levels always go left in any split.
+-  For DRF and GBM, missing values are interpreted as containing information (i.e., missing for a reason) rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
 -  Deep Learning creates an extra input neuron for missing and unseen
    categorical levels, which can remain untrained if there were no
    missing or unseen categorical levels in the training data, resulting

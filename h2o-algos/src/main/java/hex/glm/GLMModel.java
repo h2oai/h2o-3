@@ -976,9 +976,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   public double [] scoreRow(Row r, double o, double [] preds) {
     if(_parms._family == Family.multinomial) {
-      if(_eta == null) _eta = new ThreadLocal<>();
       double[] eta = _eta.get();
-      if(eta == null) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
+      if(eta == null || eta.length < _output.nclasses()) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
       final double[][] bm = _output._global_beta_multinomial;
       double sumExp = 0;
       double maxRow = 0;
@@ -1074,7 +1073,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       public void generate(JCodeSB out) {
         JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
         JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numMeans,"Imputed numeric values");
-        JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo.catModes(),"Imputed categorical values.");
+        JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo.catNAFill(),"Imputed categorical values.");
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");
       }
     });
@@ -1189,7 +1188,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     domains[0] = gs._domain;
-    return gs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names, domains);
+    return gs.outputFrame(Key.<Frame>make(destination_key),names, domains);
   }
 
   /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.

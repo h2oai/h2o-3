@@ -25,7 +25,7 @@ package water;
  *  Local Puts (one where the Key is homed on this Node) update directly in the
  *  local K/V store, taking no more time than a NonBlockingHashMap write.
  *  Remote Puts will serialize and ship data over the wire, taking time related
- *  to object size and network speed.  
+ *  to object size and network speed.
  *  <p>
  *  Blocking for a Put to complete takes longer, requiring all invalidates to
  *  have happened and perhaps a response from the home node (multiple
@@ -65,8 +65,8 @@ public abstract class DKV {
   static public Value put( Keyed keyed, Futures fs ) { return put(keyed._key,new Value(keyed._key,keyed),fs); }
 
   /** Make the mapping <em>key -&gt; val</em>.  Blocking, caching.  */
-  static public Value put( Key key, Value val ) { 
-    Futures fs = new Futures(); 
+  static public Value put( Key key, Value val ) {
+    Futures fs = new Futures();
     Value old = put(key,val,fs);
     fs.blockForPending();
     return old;
@@ -76,7 +76,7 @@ public abstract class DKV {
   /** Make the mapping <em>key -&gt; val</em>.  */
   static public Value put( Key key, Value val, Futures fs, boolean dontCache ) {
     assert key != null;
-    assert val==null || val._key == key:"non-matching keys " + key.toString() + " != " + val._key.toString();
+    assert val==null || val._key == key:"non-matching keys " + key + " != " + val._key;
     while( true ) {
       Value old = Value.STORE_get(key); // Raw-get: do not lazy-manifest if overwriting
       Value res = DputIfMatch(key,val,old,fs,dontCache);
@@ -169,7 +169,7 @@ public abstract class DKV {
   }
 
   /** Return the {@link Value} mapped to Key <em>key</em>, or null if no
-   *  mapping.  Blocks till data available, always caches.  
+   *  mapping.  Blocks till data available, always caches.
    *  @return The {@link Value} mapped to Key <em>key</em>, or null if no
    *  mapping. */
   static public Value get    ( Key key ) { return get(key,true ); }

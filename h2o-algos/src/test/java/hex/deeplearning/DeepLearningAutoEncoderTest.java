@@ -23,7 +23,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
   static final String PATH = "smalldata/anomaly/ecg_discord_train.csv"; //first 20 points
   static final String PATH2 = "smalldata/anomaly/ecg_discord_test.csv"; //first 22 points
 
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void run() {

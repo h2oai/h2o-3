@@ -145,8 +145,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       assert !Double.isNaN(_sumsqe);
 
       // Compute log loss
-      final double eps = 1e-15;
-      _logloss -= w*Math.log(Math.max(eps, 1-err));
+      _logloss += w*MathUtils.logloss(err);
       _auc.perRow(ds[2],iact,w);
       return ds;                // Flow coding
     }
@@ -191,7 +190,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         }
       }
       ModelMetricsBinomial mm = new ModelMetricsBinomial(m, f, _count, mse, _domain, sigma, auc,  logloss, gl);
-      if (m!=null) m._output.addModelMetrics(mm);
+      if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
     public String toString(){

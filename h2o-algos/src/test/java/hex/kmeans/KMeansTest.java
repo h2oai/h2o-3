@@ -26,8 +26,8 @@ import static org.junit.Assert.assertEquals;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
-  @BeforeClass() public static void setup() { stall_till_cloudsize(5); }
-  
+  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
     parms._seed = seed;
@@ -405,9 +405,9 @@ public class KMeansTest extends TestUtil {
               FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(fr._key, 1234, 0.1f);
               fr = mi.execImpl().get();
             }
-            train = new Frame(Key.make("train"), fr.names(), fr.vecs());
+            train = new Frame(Key.<Frame>make("train"), fr.names(), fr.vecs());
             DKV.put(train);
-            valid = new Frame(Key.make("valid"), fr.names(), fr.vecs());
+            valid = new Frame(Key.<Frame>make("valid"), fr.names(), fr.vecs());
             DKV.put(valid);
 
             KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();

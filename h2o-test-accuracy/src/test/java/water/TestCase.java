@@ -3,6 +3,7 @@ package water;
 import hex.*;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.grid.Grid;
@@ -26,8 +27,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import water.api.Schema;
-import hex.schemas.HyperSpaceSearchCriteriaV99;
+
 
 public class TestCase {
 
@@ -537,25 +537,25 @@ public class TestCase {
         case "_distribution":
           switch (parameterValue) {
             case "AUTO":
-              gbmParams._distribution = Distribution.Family.AUTO;
+              gbmParams._distribution = DistributionFamily.AUTO;
               break;
             case "gaussian":
-              gbmParams._distribution = Distribution.Family.gaussian;
+              gbmParams._distribution = DistributionFamily.gaussian;
               break;
             case "bernoulli":
-              gbmParams._distribution = Distribution.Family.bernoulli;
+              gbmParams._distribution = DistributionFamily.bernoulli;
               break;
             case "multinomial":
-              gbmParams._distribution = Distribution.Family.multinomial;
+              gbmParams._distribution = DistributionFamily.multinomial;
               break;
             case "poisson":
-              gbmParams._distribution = Distribution.Family.poisson;
+              gbmParams._distribution = DistributionFamily.poisson;
               break;
             case "gamma":
-              gbmParams._distribution = Distribution.Family.gamma;
+              gbmParams._distribution = DistributionFamily.gamma;
               break;
             case "tweedie":
-              gbmParams._distribution = Distribution.Family.tweedie;
+              gbmParams._distribution = DistributionFamily.tweedie;
               break;
             default:
               throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
@@ -733,25 +733,25 @@ public class TestCase {
         case "_distribution":
           switch (parameterValue) {
             case "AUTO":
-              dlParams._distribution = Distribution.Family.AUTO;
+              dlParams._distribution = DistributionFamily.AUTO;
               break;
             case "gaussian":
-              dlParams._distribution = Distribution.Family.gaussian;
+              dlParams._distribution = DistributionFamily.gaussian;
               break;
             case "bernoulli":
-              dlParams._distribution = Distribution.Family.bernoulli;
+              dlParams._distribution = DistributionFamily.bernoulli;
               break;
             case "multinomial":
-              dlParams._distribution = Distribution.Family.multinomial;
+              dlParams._distribution = DistributionFamily.multinomial;
               break;
             case "poisson":
-              dlParams._distribution = Distribution.Family.poisson;
+              dlParams._distribution = DistributionFamily.poisson;
               break;
             case "gamma":
-              dlParams._distribution = Distribution.Family.gamma;
+              dlParams._distribution = DistributionFamily.gamma;
               break;
             case "tweedie":
-              dlParams._distribution = Distribution.Family.tweedie;
+              dlParams._distribution = DistributionFamily.tweedie;
               break;
             default:
               throw new Exception(parameterValue + " distribution is not supported for gbm test cases");
@@ -965,25 +965,25 @@ public class TestCase {
         case "_distribution":
           switch (parameterValue) {
             case "AUTO":
-              drfParams._distribution = Distribution.Family.AUTO;
+              drfParams._distribution = DistributionFamily.AUTO;
               break;
             case "gaussian":
-              drfParams._distribution = Distribution.Family.gaussian;
+              drfParams._distribution = DistributionFamily.gaussian;
               break;
             case "bernoulli":
-              drfParams._distribution = Distribution.Family.bernoulli;
+              drfParams._distribution = DistributionFamily.bernoulli;
               break;
             case "multinomial":
-              drfParams._distribution = Distribution.Family.multinomial;
+              drfParams._distribution = DistributionFamily.multinomial;
               break;
             case "poisson":
-              drfParams._distribution = Distribution.Family.poisson;
+              drfParams._distribution = DistributionFamily.poisson;
               break;
             case "gamma":
-              drfParams._distribution = Distribution.Family.gamma;
+              drfParams._distribution = DistributionFamily.gamma;
               break;
             case "tweedie":
-              drfParams._distribution = Distribution.Family.tweedie;
+              drfParams._distribution = DistributionFamily.tweedie;
               break;
             default:
               throw new Exception(parameterValue + " distribution is not supported for gbm test cases");

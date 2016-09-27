@@ -226,7 +226,7 @@ It can sometimes be useful to see the coefficients for all lambda values. Or to 
 To extract the regularization path from R or python:
 
 - R: call h2o.getGLMFullRegularizationPath, takes the model as an argument
-- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method), takes the model as an rgument
+- Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method), takes the model as an argument
 
 
 Modifying or Creating Custom GLM Model
@@ -243,7 +243,7 @@ FAQ
 
 -  **How does the algorithm handle missing values during training?**
 
-  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is mean imputation. Note that categorical variables are imputed by adding extra "missing" level. Optionally, glm can skip all rows with any missing values.
+  Depending on the selected missing value handling policy, they are either imputed mean or the whole row is skipped. The default behavior is mean imputation. Note that categorical variables are imputed by adding an extra "missing" level. Optionally, glm can skip all rows with any missing values.
 
 -  **How does the algorithm handle missing values during testing?** 
 

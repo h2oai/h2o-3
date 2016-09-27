@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import atexit
 import os
+import re
 import sys
 import tempfile
 import time
@@ -66,7 +67,7 @@ class H2OConnection(backwards_compatible()):
 
     @staticmethod
     def open(server=None, url=None, ip=None, port=None, https=None, auth=None, verify_ssl_certificates=True,
-             proxy=None, cluster_name=None, verbose=True, _msgs=None):
+             proxy=None, cluster_id=None, verbose=True, _msgs=None):
         r"""
         Establish connection to an existing H2O server.
 
@@ -100,7 +101,7 @@ class H2OConnection(backwards_compatible()):
             will attempt to use a proxy specified in the environment (in HTTP_PROXY / HTTPS_PROXY variables). We
             check for the presence of these variables and issue a warning if they are found. In order to suppress
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
-        :param cluster_name: name of the H2O cluster to connect to. This option is used from Steam only.
+        :param cluster_id: name of the H2O cluster to connect to. This option is used from Steam only.
         :param verbose: if True, then connection progress info will be printed to the stdout.
         :param _msgs: custom messages to display during connection. This is a tuple (initial message, success message,
             failure message).
@@ -143,7 +144,7 @@ class H2OConnection(backwards_compatible()):
         assert_is_type(verify_ssl_certificates, bool)
         assert_is_type(proxy, str, None)
         assert_is_type(auth, AuthBase, (str, str), None)
-        assert_is_type(cluster_name, str, None)
+        assert_is_type(cluster_id, int, None)
         assert_is_type(_msgs, None, (str, str, str))
 
         conn = H2OConnection()
@@ -152,7 +153,7 @@ class H2OConnection(backwards_compatible()):
         conn._base_url = "%s://%s:%d" % (scheme, ip, port)
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
         conn._auth = auth
-        conn._cluster_name = cluster_name
+        conn._cluster_id = cluster_id
         conn._proxies = None
         if proxy and proxy != "(default)":
             conn._proxies = {scheme: proxy}
@@ -183,7 +184,7 @@ class H2OConnection(backwards_compatible()):
         return conn
 
 
-    def request(self, endpoint, data=None, json=None, filename=None):
+    def request(self, endpoint, data=None, json=None, filename=None, save_to=None):
         """
         Perform a REST API request to the backend H2O server.
 
@@ -192,8 +193,12 @@ class H2OConnection(backwards_compatible()):
             key/value pairs (values can also be arrays), which will be sent over in x-www-form-encoded format.
         :param json: also data payload, but it will be sent as a JSON body. Cannot be used together with `data`.
         :param filename: file to upload to the server. Cannot be used with `data` or `json`.
+        :param save_to: if provided, will write the response to that file (additionally, the response will be
+            streamed, so large files can be downloaded seamlessly). This parameter can be either a file name,
+            or a folder name. If the folder doesn't exist, it will be created automatically.
 
-        :returns: an H2OResponse object representing the server's response
+        :returns: an H2OResponse object representing the server's response (unless ``save_to`` parameter is
+            provided, in which case the output file's name will be returned).
         :raises H2OConnectionError: if the H2O server cannot be reached (or connection is not initialized)
         :raises H2OServerError: if there was a server error (http 500), or server returned malformed JSON
         :raises H2OResponseError: if the server returned an H2OErrorV3 response (e.g. if the parameters were invalid)
@@ -228,17 +233,22 @@ class H2OConnection(backwards_compatible()):
             params = data
             data = None
 
+        stream = False
+        if save_to is not None:
+            assert_is_type(save_to, str)
+            stream = True
+
         # Make the request
         start_time = time.time()
         try:
             self._log_start_transaction(endpoint, data, json, files, params)
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
-                       "X-Cluster": self._cluster_name}
+                       "X-Cluster": self._cluster_id}
             resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
-                                    headers=headers, timeout=self._timeout,
+                                    headers=headers, timeout=self._timeout, stream=stream,
                                     auth=self._auth, verify=self._verify_ssl_cert, proxies=self._proxies)
             self._log_end_transaction(start_time, resp)
-            return self._process_response(resp)
+            return self._process_response(resp, save_to)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
             if self._local_server and not self._local_server.is_running():
@@ -362,7 +372,7 @@ class H2OConnection(backwards_compatible()):
         self._verify_ssl_cert = None
         self._auth = None           # Authentication token
         self._proxies = None        # `proxies` dictionary in the format required by the requests module
-        self._cluster_name = None
+        self._cluster_id= None
         self._cluster = None        # H2OCluster object
         self._verbose = None        # Print detailed information about connection status
         self._requests_counter = 0  # how many API requests were made
@@ -517,7 +527,7 @@ class H2OConnection(backwards_compatible()):
 
 
     @staticmethod
-    def _process_response(response):
+    def _process_response(response, save_to):
         """
         Given a response object, prepare it to be handed over to the external caller.
 
@@ -525,10 +535,28 @@ class H2OConnection(backwards_compatible()):
            * detect if the response has error status, and convert it to an appropriate exception;
            * detect Content-Type, and based on that either parse the response as JSON or return as plain text.
         """
-        content_type = response.headers["Content-Type"] if "Content-Type" in response.headers else ""
+        status_code = response.status_code
+        if status_code == 200 and save_to:
+            if os.path.isdir(save_to) or save_to.endswith(os.path.sep):
+                dirname = os.path.abspath(save_to)
+                filename = H2OConnection._find_file_name(response)
+            else:
+                dirname, filename = os.path.split(os.path.abspath(save_to))
+            fullname = os.path.join(dirname, filename)
+            try:
+                if not os.path.exists(dirname):
+                    os.makedirs(dirname)
+                with open(fullname, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=65536):
+                        if chunk:  # Empty chunks may occasionally happen
+                            f.write(chunk)
+            except OSError as e:
+                raise H2OValueError("Cannot write to file %s: %s" % (fullname, e))
+            return fullname
+
+        content_type = response.headers.get("Content-Type", "")
         if ";" in content_type:  # Remove a ";charset=..." part
             content_type = content_type[:content_type.index(";")]
-        status_code = response.status_code
 
         # Auto-detect response type by its content-type. Decode JSON, all other responses pass as-is.
         if content_type == "application/json":
@@ -552,6 +580,12 @@ class H2OConnection(backwards_compatible()):
         # did not provide the correct status code.
         raise H2OServerError("HTTP %d %s:\n%r" % (status_code, response.reason, data))
 
+
+    @staticmethod
+    def _find_file_name(response):
+        cd = response.headers.get("Content-Disposition", "")
+        mm = re.search(r'filename="(.*)"$', cd)
+        return mm.group(1) if mm else "unknown"
 
 
     def _print(self, msg, flush=False, end="\n"):

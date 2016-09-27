@@ -169,7 +169,8 @@ public class Example {
             ModelMetricsListSchemaV3 predictions = predictionsService.predict(modelKey.name,
                                                                               trainingFrame.name,
                                                                               "predictions",
-                                                                              false, false, -1, false, false, false, false, -1, null).execute().body();
+                                                                              null,
+                                                                              false, false, -1, false, false, false, false, -1, false, null).execute().body();
             System.out.println("predictions: " + predictions);
 
         }
@@ -210,7 +211,7 @@ public class Example {
                 System.err.println("modelsService.list() failed");
             }
 
-            Response<JobV3> create_frame_response = createFrameService.run(null, 1000, 100, 42, 42, true, 0, 100000, 0.2, 100, 0.2, 32767, 0.2, 0.5, 0.2, 0, 0.2, 2, true, null).execute();
+            Response<JobV3> create_frame_response = createFrameService.run(null, 1000, 100, 42, 42, true, 0, 100000, 0.2, 100, 0.2, 32767, 0.2, 0.5, 0.2, 0, 0.2, true, 2, true, null).execute();
             if (create_frame_response.isSuccessful()) {
                 JobV3 job = create_frame_response.body();
 

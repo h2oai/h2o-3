@@ -62,13 +62,13 @@ public class ModelSchemaV3<
   public OS createOutputSchema() { throw H2O.fail("createOutputSchema() must be implemented in class: " + this.getClass()); }
 
   // Version&Schema-specific filling from the impl
-  @Override public S fillFromImpl( M m ) {
+  @Override public S fillFromImpl(M m) {
     this.data_frame = new KeyV3.FrameKeyV3(m._parms._train);
     this.response_column_name = m._parms._response_column;
     this.algo = m._parms.algoName().toLowerCase();
     this.algo_full_name = m._parms.fullName();
     // Key<? extends Model> k = m._key;
-    this.model_id = new ModelKeyV3(m._key);
+    this.model_id = new ModelKeyV3<>(m._key);
     this.checksum = m.checksum();
     parameters = createParametersSchema();
     parameters.fillFromImpl(m._parms);
@@ -77,6 +77,7 @@ public class ModelSchemaV3<
     output = createOutputSchema();
     output.fillFromImpl(m._output);
 
+    // noinspection unchecked
     return (S)this; // have to cast because the definition of S doesn't include ModelSchemaV3
   }
 

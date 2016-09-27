@@ -18,6 +18,7 @@ include 'h2o-test-integ'
 include 'h2o-test-accuracy'
 include 'h2o-avro-parser'
 include 'h2o-orc-parser'
+include 'h2o-parquet-parser'
 
 // Reconfigure scala projects to support cross compilation
 // The following code will create two projects for each included item:
@@ -31,7 +32,7 @@ scalaCrossCompile {
 
 // Make structure flat and avoid annoying dummy modules
 rootProject.children.each { project ->
-  if (project.name.equals("h2o-avro-parser") || project.name.equals("h2o-orc-parser")) {
+  if (project.name.startsWith("h2o-") && project.name.endsWith("-parser")) {
     String projectDirName = "h2o-parsers/${project.name}"
     project.projectDir = new File(settingsDir, projectDirName)
   }
@@ -46,9 +47,9 @@ if (System.getProperty("user.name").equals("jenkins")
 
   // Default hadoop build targets
   def allTargets = [
-          "cdh5.2", "cdh5.3", "cdh5.4.2", "cdh5.5.3", "cdh5.6.0", "cdh5.7.0",
+          "cdh5.2", "cdh5.3", "cdh5.4", "cdh5.5", "cdh5.6", "cdh5.7", "cdh5.8",
           "hdp2.1", "hdp2.2", "hdp2.3", "hdp2.4",
-          "mapr3.1.1", "mapr4.0.1", "mapr5.0", "mapr5.1"
+          "mapr3.1", "mapr4.0", "mapr5.0", "mapr5.1"
   ]
   // Compute targets
   def targets = System.getenv("H2O_TARGET") != null ? System.getenv("H2O_TARGET").split(",").collect { it.trim() } : allTargets

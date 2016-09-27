@@ -1,5 +1,8 @@
 package hex;
 
+import hex.genmodel.utils.DistributionFamily;
+import water.AutoBuffer;
+import water.IcedUtils;
 import water.MRTask;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.*;
@@ -46,20 +49,20 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
    * @param actual A Vec containing the actual target values
    * @return ModelMetrics object
    */
-  static public ModelMetricsRegression make(Vec predicted, Vec actual, Distribution.Family distribution) {
+  static public ModelMetricsRegression make(Vec predicted, Vec actual, DistributionFamily family) {
     if (predicted == null || actual == null)
       throw new IllegalArgumentException("Missing actual or predicted targets for regression metrics!");
     if (!predicted.isNumeric())
       throw new IllegalArgumentException("Predicted values must be numeric for regression metrics.");
     if (!actual.isNumeric())
       throw new IllegalArgumentException("Actual values must be numeric for regression metrics.");
-    if (distribution == Distribution.Family.quantile || distribution == Distribution.Family.tweedie || distribution == Distribution.Family.huber)
+    if (family == DistributionFamily.quantile || family == DistributionFamily.tweedie || family == DistributionFamily.huber)
       throw new IllegalArgumentException("Unsupported distribution family, requires additional parameters which cannot be specified right now.");
     Frame predsActual = new Frame(predicted);
     predsActual.add("actual", actual);
-    MetricBuilderRegression mb = new RegressionMetrics(distribution).doAll(predsActual)._mb;
+    MetricBuilderRegression mb = new RegressionMetrics(family).doAll(predsActual)._mb;
     ModelMetricsRegression mm = (ModelMetricsRegression)mb.makeModelMetrics(null, predsActual, null, null);
-    mm._description = "Computed on user-given predictions and targets, distribution: " + (distribution ==null?Distribution.Family.gaussian.toString(): distribution.toString()) + ".";
+    mm._description = "Computed on user-given predictions and targets, distribution: " + (family ==null? DistributionFamily.gaussian.toString(): family.toString()) + ".";
     return mm;
   }
 
@@ -69,8 +72,8 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   private static class RegressionMetrics extends MRTask<RegressionMetrics> {
     public MetricBuilderRegression _mb;
     final Distribution _distribution;
-    RegressionMetrics(Distribution.Family distribution) {
-      _distribution = distribution ==null ? new Distribution(Distribution.Family.gaussian) : new Distribution(distribution);
+    RegressionMetrics(DistributionFamily family) {
+      _distribution = family ==null ? new Distribution(DistributionFamily.gaussian) : new Distribution(family);
     }
     @Override public void map(Chunk[] chks) {
       _mb = new MetricBuilderRegression(_distribution);
@@ -111,7 +114,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       _abserror += w*Math.abs(err);
       _rmslerror += w*err_msle;
       assert !Double.isNaN(_sumsqe);
-      if (m!=null && m._parms._distribution!=Distribution.Family.huber)
+      if (m != null && m._parms._distribution != DistributionFamily.huber)
         _sumdeviance += m.deviance(w, yact[0], ds[0]);
       else if (_dist!=null)
         _sumdeviance += _dist.deviance(w, yact[0], ds[0]);
@@ -136,30 +139,42 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       double rmsle = Math.sqrt(_rmslerror/_wcount); //Root Mean Squared Log Error
       if (adaptedFrame ==null) adaptedFrame = f;
       double meanResDeviance = 0;
-      if (m!=null && m._parms._distribution== Distribution.Family.huber) {
+      if (m != null && m._parms._distribution == DistributionFamily.huber) {
         assert(_sumdeviance==0); // should not yet be computed
         if (preds != null) {
           Vec actual = adaptedFrame.vec(m._parms._response_column);
-          Vec absdiff = new MRTask() {
-            @Override public void map(Chunk[] cs, NewChunk[] nc) {
-              for (int i=0; i<cs[0].len(); ++i)
-                nc[0].addNum(Math.abs(cs[0].atd(i) - cs[1].atd(i)));
-            }
-          }.doAll(1, (byte)3, new Frame(new String[]{"preds","actual"}, new Vec[]{preds.anyVec(),actual})).outputFrame().anyVec();
-          Distribution dist = new Distribution(m._parms);
           Vec weight = adaptedFrame.vec(m._parms._weights_column);
+
           //compute huber delta based on huber alpha quantile on absolute prediction error
-          double huberDelta = MathUtils.computeWeightedQuantile(weight, absdiff, m._parms._huber_alpha);
-          absdiff.remove();
-          dist.setHuberDelta(huberDelta);
-          meanResDeviance = new MeanResidualDeviance(dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
+          double huberDelta = computeHuberDelta(actual, preds.anyVec(), weight, m._parms._huber_alpha);
+
+          // make a deep copy of the model's current distribution state (huber delta)
+          _dist = IcedUtils.deepCopy(m._dist);
+          _dist.setHuberDelta(huberDelta);
+
+          meanResDeviance = new MeanResidualDeviance(_dist, preds.anyVec(), actual, weight).exec().meanResidualDeviance;
         }
       } else {
-          meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
+        meanResDeviance = _sumdeviance / _wcount; //mean residual deviance
       }
       ModelMetricsRegression mm = new ModelMetricsRegression(m, f, _count, mse, weightedSigma(), mae, rmsle, meanResDeviance);
-      if (m!=null) m._output.addModelMetrics(mm);
+      if (m!=null) m.addModelMetrics(mm);
       return mm;
     }
+  }
+
+  public static double computeHuberDelta(Vec actual, Vec preds, Vec weight, double huberAlpha) {
+    Vec absdiff = new MRTask() {
+      @Override
+      public void map(Chunk[] cs, NewChunk[] nc) {
+        for (int i = 0; i < cs[0].len(); ++i)
+          nc[0].addNum(Math.abs(cs[0].atd(i) - cs[1].atd(i)));
+      }
+    }.doAll(1, (byte) 3, new Frame(new String[]{"preds", "actual"}, new Vec[]{preds, actual})).outputFrame().anyVec();
+    // make a deep copy of the model's current distribution state (huber delta)
+    //compute huber delta based on huber alpha quantile on absolute prediction error
+    double hd = MathUtils.computeWeightedQuantile(weight, absdiff, huberAlpha);
+    absdiff.remove();
+    return hd;
   }
 }

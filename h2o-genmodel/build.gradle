@@ -1,3 +1,5 @@
+apply plugin: 'com.github.johnrengelman.shadow'
+
 //
 // H2O Generated Model Support Module
 //
@@ -23,4 +25,8 @@ javadoc {
 
 dependencies {
     testCompile "junit:junit:${junitVersion}"
+    compile "net.sf.opencsv:opencsv:2.3"
 }
+
+build.dependsOn shadowJar
+jar.dependsOn shadowJar

@@ -1,15 +1,17 @@
 package hex.tree;
 
 import water.AutoBuffer;
-import water.Iced;
-import water.H2O;
 import water.util.IcedBitSet;
 
 
 /** Abstract visitor class for serialized trees.*/
 public abstract class TreeVisitor<T extends Exception> {
+  protected static final int DhnasdNaVsRest = DHistogram.NASplitDir.NAvsREST.value();
+  protected static final int DhnasdNaLeft = DHistogram.NASplitDir.NALeft.value();
+  protected static final int DhnasdLeft = DHistogram.NASplitDir.Left.value();
+
   // Override these methods to get walker behavior.
-  protected void pre (int col, float fcmp, IcedBitSet gcmp, int equal, DHistogram.NASplitDir naSplitDir) throws T { }
+  protected void pre (int col, float fcmp, IcedBitSet gcmp, int equal, int naSplitDirInt) throws T { }
   protected void mid ( int col, float fcmp, int equal ) throws T { }
   protected void post( int col, float fcmp, int equal ) throws T { }
   protected void leaf( float pred )                     throws T { }
@@ -26,7 +28,7 @@ public abstract class TreeVisitor<T extends Exception> {
   }
 
   // Call either the single-class leaf or the full-prediction leaf
-  private final void leaf2( int mask ) throws T {
+  private void leaf2( int mask ) throws T {
     assert (mask==0 || ( (mask&16)==16 && (mask&32)==32) ) : "Unknown mask: " + mask;   // Is a leaf or a special leaf on the top of tree
     leaf(_ts.get4f());
   }
@@ -36,10 +38,10 @@ public abstract class TreeVisitor<T extends Exception> {
     int col = _ts.get2();
     if( col==65535 ) { leaf2(nodeType); return; }
     int equal = (nodeType&12) >> 2;
-    DHistogram.NASplitDir naSplitDir = DHistogram.NASplitDir.values()[_ts.get1()];
+    int naSplitDirInt = _ts.get1();
 
     float fcmp = -1;
-    if (naSplitDir != DHistogram.NASplitDir.NAvsREST) {
+    if (naSplitDirInt != DhnasdNaVsRest) {
       // Extract value or group to split on
       if (equal == 0 || equal == 1)
         fcmp = _ts.get4f();
@@ -62,13 +64,13 @@ public abstract class TreeVisitor<T extends Exception> {
     case 48: skip =  4;  break; // skip is always 4 for direct leaves (see DecidedNode.size() and LeafNode.size() methods)
     default: assert false:"illegal lmask value " + lmask;
     }
-    pre(col,fcmp,_gcmp,equal,naSplitDir);   // Pre-walk
+    pre(col, fcmp, _gcmp, equal, naSplitDirInt); // Pre-walk
     _depth++;
     if( (lmask & 0x10)==16 ) leaf2(lmask);  else  visit();
-    mid(col,fcmp,equal);   // Mid-walk
+    mid(col, fcmp, equal);   // Mid-walk
     if( (rmask & 0x10)==16 ) leaf2(rmask);  else  visit();
     _depth--;
-    post(col,fcmp,equal);
+    post(col, fcmp, equal);
     _nodes++;
   }
 }

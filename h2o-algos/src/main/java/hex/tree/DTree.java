@@ -672,7 +672,7 @@ public class DTree extends Iced {
       assert _split != null;    // Not a broken root non-decision?
       assert _split._col >= 0;
       ab.put2((short)_split._col);
-      ab.put1((byte)_split._nasplit.ordinal());
+      ab.put1((byte)_split._nasplit.value());
 
       // Save split-at-value or group
       if (_split._nasplit!= DHistogram.NASplitDir.NAvsREST) {

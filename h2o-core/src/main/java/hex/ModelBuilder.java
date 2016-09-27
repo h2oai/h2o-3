@@ -1,5 +1,6 @@
 package hex;
 
+import hex.genmodel.utils.DistributionFamily;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -183,7 +184,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       dest().get()._output.stopClock();
     }
   }
-  
+
   /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
     if (error_count() > 0)
@@ -261,19 +262,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       ModelBuilder<M, P, O> cvModelBuilders[] = cv_makeFramesAndBuilders(N,weights);
 
-      // Step 4: Run all the CV models and launch the main model
-      H2O.H2OCountedCompleter mainMB = cv_buildModels(N, cvModelBuilders);
+      // Step 4: Run all the CV models
+      cv_buildModels(N, cvModelBuilders);
 
       // Step 5: Score the CV models
       ModelMetrics.MetricBuilder mbs[] = cv_scoreCVModels(N, weights, cvModelBuilders);
-      
-      // wait for completion of the main model
-      if (mainMB!=null) mainMB.join();
 
-      // Step 6: Combine cross-validation scores; compute main model x-val
+      // Step 6: Build the main model
+      buildMainModel();
+
+      // Step 7: Combine cross-validation scores; compute main model x-val
       // scores; compute gains/lifts
       cv_mainModelScores(N, mbs, cvModelBuilders);
-
 
       // Step 7: Clean up potentially created temp frames
       for (ModelBuilder mb : cvModelBuilders)
@@ -332,7 +332,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
     if (_parms._keep_cross_validation_fold_assignment)
-      DKV.put(new Frame(Key.make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
+      DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
     if( _parms._fold_column == null && !_parms._keep_cross_validation_fold_assignment) foldAssignment.remove();
     if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
 
@@ -357,10 +357,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame cvTrain = new Frame(Key.make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
+      Frame cvTrain = new Frame(Key.<Frame>make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
       cvTrain.add(weightName, weights[2*i]);
       DKV.put(cvTrain);
-      Frame cvValid = new Frame(Key.make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
+      Frame cvValid = new Frame(Key.<Frame>make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
       cvValid.add(weightName, weights[2*i+1]);
       DKV.put(cvValid);
 
@@ -391,7 +391,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 4: Run all the CV models and launch the main model
-  public H2O.H2OCountedCompleter cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
+  public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
     H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
     int nRunning=0;
     for( int i=0; i<N; ++i ) {
@@ -404,14 +404,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
       submodel_tasks[i].join();
-    // Now do the main model
-    if( _job.stop_requested() ) return null;
+    cv_computeAndSetOptimalParameters(cvModelBuilders);
+  }
+
+  private void buildMainModel() {
+    if (_job.stop_requested()) return;
     assert _job.isRunning();
     Log.info("Building main model.");
     _start_time = System.currentTimeMillis();
-    modifyParmsForCrossValidationMainModel(cvModelBuilders); //tell the main model that it shouldn't stop early either
-    H2O.H2OCountedCompleter mainMB = H2O.submitTask(trainModelImpl()); //non-blocking: start the main
-    return mainMB;
+    H2O.H2OCountedCompleter mm = H2O.submitTask(trainModelImpl());
+    mm.join();  // wait for completion
   }
 
   // Step 5: Score the CV models
@@ -426,9 +428,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       M cvModel = cvModelBuilders[i].dest().get();
       cvModel.adaptTestForTrain(adaptFr, true, !isSupervised());
       mbs[i] = cvModel.scoreMetrics(adaptFr);
-      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ || _parms._keep_cross_validation_predictions || (_parms._distribution==Distribution.Family.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
+      if (nclasses() == 2 /* need holdout predictions for gains/lift table */ ||
+              _parms._keep_cross_validation_predictions ||
+              (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
-        cvModel.predictScoreImpl(cvValid, adaptFr, predName, null);
+        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job);
+        DKV.put(cvModel);
       }
       // free resources as early as possible
       if (adaptFr != null) {
@@ -456,7 +461,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     mainModel._output._cross_validation_models = new Key[N];
     Key<Frame>[] predKeys = new Key[N];
     mainModel._output._cross_validation_predictions = _parms._keep_cross_validation_predictions ? predKeys : null;
-    
+
     for (int i = 0; i < N; ++i) {
       if (i > 0) mbs[0].reduce(mbs[i]);
       Key<M> cvModelKey = cvModelBuilders[i]._result;
@@ -464,7 +469,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       predKeys[i] = Key.make("prediction_" + cvModelKey.toString()); //must be the same as in cv_scoreCVModels above
     }
     Frame holdoutPreds = null;
-    if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution== Distribution.Family.huber)) {
+    if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution == DistributionFamily.huber)) {
       Key cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
       if (_parms._keep_cross_validation_predictions) //only show the user if they asked for it
         mainModel._output._cross_validation_holdout_predictions_frame_id = cvhp;
@@ -497,9 +502,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Override for model-specific checks / modifications to _parms for the main model during N-fold cross-validation.
-   *  For example, the model might need to be told to not do early stopping.
+   *  Also allow the cv models to be modified after all of them have been built.
+   *  For example, the model might need to be told to not do early stopping. CV models might have their lambda value modified, etc.
    */
-  public void modifyParmsForCrossValidationMainModel(ModelBuilder<M, P, O>[] cvModelBuilders) { }
+  public void cv_computeAndSetOptimalParameters(ModelBuilder<M, P, O>[] cvModelBuilders) { }
 
   /** @return Whether n-fold cross-validation is done  */
   public boolean nFoldCV() {
@@ -785,7 +791,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
     }
-    if (_parms._distribution != Distribution.Family.tweedie) {
+    if (_parms._distribution != DistributionFamily.tweedie) {
       hide("_tweedie_power", "Only for Tweedie Distribution.");
     }
     if (_parms._tweedie_power <= 1 || _parms._tweedie_power >= 2) {
@@ -802,7 +808,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _train = rebalance(_train, false, _result + ".temporary.train");
       _valid = rebalance(_valid, false, _result + ".temporary.valid");
     }
-    
+
     // Drop all non-numeric columns (e.g., String and UUID).  No current algo
     // can use them, and otherwise all algos will then be forced to remove
     // them.  Text algos (grep, word2vec) take raw text columns - which are
@@ -814,10 +820,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if(isSupervised()) {
       if(_response != null) {
-        if (_parms._distribution != Distribution.Family.tweedie) {
+        if (_parms._distribution != DistributionFamily.tweedie) {
           hide("_tweedie_power", "Tweedie power is only used for Tweedie distribution.");
         }
-        if (_parms._distribution != Distribution.Family.quantile) {
+        if (_parms._distribution != DistributionFamily.quantile) {
           hide("_quantile_alpha", "Quantile (alpha) is only used for Quantile regression.");
         }
         if (expensive) checkDistributions();
@@ -978,7 +984,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
     }
   }
-  
+
   /**
    * Rebalance a frame for load balancing
    * @param original_fr Input frame
@@ -986,7 +992,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param name Name of rebalanced frame
    * @return Frame that has potentially more chunks
    */
-  
+
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
     int chunks = desiredChunks(original_fr, local);
@@ -1004,7 +1010,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Scope.track(rebalanced_fr);
     return rebalanced_fr;
   }
-  
+
   /**
    * Find desired number of chunks. If fewer, dataset will be rebalanced.
    * @return Lower bound on number of chunks after rebalancing.
@@ -1014,21 +1020,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   public void checkDistributions() {
-    if (_parms._distribution == Distribution.Family.poisson) {
+    if (_parms._distribution == DistributionFamily.poisson) {
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Poisson distribution.");
-    } else if (_parms._distribution == Distribution.Family.gamma) {
+    } else if (_parms._distribution == DistributionFamily.gamma) {
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Gamma distribution.");
-    } else if (_parms._distribution == Distribution.Family.tweedie) {
+    } else if (_parms._distribution == DistributionFamily.tweedie) {
       if (_parms._tweedie_power >= 2 || _parms._tweedie_power <= 1)
         error("_tweedie_power", "Tweedie power must be between 1 and 2.");
       if (_response.min() < 0)
         error("_response", "Response must be non-negative for Tweedie distribution.");
-    } else if (_parms._distribution == Distribution.Family.quantile) {
+    } else if (_parms._distribution == DistributionFamily.quantile) {
       if (_parms._quantile_alpha > 1 || _parms._quantile_alpha < 0)
         error("_quantile_alpha", "Quantile alpha must be between 0 and 1.");
-    } else if (_parms._distribution == Distribution.Family.huber) {
+    } else if (_parms._distribution == DistributionFamily.huber) {
       if (_parms._huber_alpha <0 || _parms._huber_alpha>1)
         error("_huber_alpha", "Huber alpha must be between 0 and 1.");
     }

@@ -11,6 +11,7 @@
 #' calculation during prediction.
 #'
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing,then all columns except y are used.
 #' @param y The name or index of the response variable. If the data does not contain a header, this is the
 #'        column index number starting at 0, and increasing from left to right. The response must be a categorical
 #'        variable with at least two levels.
@@ -66,6 +67,14 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            compute_metrics = TRUE,
                            max_runtime_secs=0)
 {
+   #If x is missing, then assume user wants to use all columns as features.
+   if(missing(x)){
+     if(is.numeric(y)){
+       x <- setdiff(col(training_frame),y)
+     }else{
+       x <- setdiff(colnames(training_frame),y)
+     }
+   }
   # Training_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
     tryCatch(training_frame <- h2o.getFrame(training_frame),

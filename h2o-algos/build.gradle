@@ -22,8 +22,10 @@ apply from: "${rootDir}/gradle/dataCheck.gradle"
 // level) to files - then scrape the files later for test results.
 test {
   dependsOn ":h2o-core:testJar"
-  dependsOn smalldataCheck, cpLibs, jar, testJar, testMultiNode
+  dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode
 
   // Defeat task 'test' by running no tests.
   exclude '**'
 }
+
+testMultiNode.shouldRunAfter testSingleNode

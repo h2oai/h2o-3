@@ -90,7 +90,7 @@ public class PCATest extends TestUtil {
       model = new PCA(parms).trainModel().get();
       TestUtil.checkStddev(stddev, model._output._std_deviation, 1e-5);
       boolean[] flippedEig = TestUtil.checkEigvec(eigvec, model._output._eigenvectors, 1e-5);
-      
+
       score = model.score(train);
       scoreR = parse_test_file(Key.make("scoreR.hex"), "smalldata/pca_test/USArrests_PCAscore.csv");
       TestUtil.checkProjection(scoreR, score, TOLERANCE, flippedEig);    // Flipped cols must match those from eigenvectors
@@ -190,7 +190,7 @@ public class PCATest extends TestUtil {
       train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
       // Add missing values to the training data
       if (missing_fraction > 0) {
-        Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
+        Frame frtmp = new Frame(Key.<Frame>make(), train.names(), train.vecs());
         DKV.put(frtmp._key, frtmp); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
         FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
         j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly

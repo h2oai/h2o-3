@@ -51,11 +51,25 @@ public abstract class Paxos {
     // I am not client but received client heartbeat in flatfile mode.
     // Means that somebody is trying to connect to this cloud.
     // => update list of static hosts (it needs clean up)
-    if (!H2O.ARGS.client && H2O.STATIC_H2OS!=null
+    if (!H2O.ARGS.client && H2O.isFlatfileEnabled()
          && h2o._heartbeat._client
-         && !H2O.STATIC_H2OS.contains(h2o)) {
+         && !H2O.isNodeInFlatfile(h2o)) {
       // Extend static list of nodes to multicast to propagate information to client
-      H2O.STATIC_H2OS.add(h2o);
+      H2O.addNodeToFlatfile(h2o);
+      // A new client `h2o` is connected so we broadcast it around to other nodes
+      // Note: this could cause a temporary flood of messages since the other
+      // nodes will later inform about the connected client as well.
+      // Note: It would be helpful to have a control over flatfile-based multicast to inject a small wait.
+      UDPClientEvent.ClientEvent.Type.CONNECT.broadcast(h2o);
+    } else if (H2O.ARGS.client
+               && H2O.isFlatfileEnabled()
+               && !H2O.isNodeInFlatfile(h2o)) {
+      // This node is a client and using a flatfile to figure out a topology of the cluster.
+      // In this case we do not expect that we have a complete flatfile but use information
+      // provided by a host we received heartbeat from.
+      // That means that the host is in our flatfile already or it was notified about this client node
+      // via a node which is already in the flatfile)
+      H2O.addNodeToFlatfile(h2o);
     }
 
     // Never heard of this dude?  See if we want to kill him off for being cloud-locked
