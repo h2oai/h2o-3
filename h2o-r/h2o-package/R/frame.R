@@ -2769,7 +2769,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   dates <- attr(x, "types") %in% "time"
   if (length(dates) > 0) # why do some frames come in with no attributes but many columns?
     for (i in 1:length(dates)) { if (dates[[i]]) class(df[[i]]) = "POSIXct" }
-  df
+  df/1000
 }
 
 #' Convert an H2OFrame to a matrix
