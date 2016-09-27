@@ -302,6 +302,8 @@ def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, 
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    if path.startswith("~"):
+        path = os.path.expanduser(path)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
@@ -351,6 +353,10 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep=None,
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    patharr = path if isinstance(path, list) else [path]
+    if any(os.path.split(p)[0] == "~" for p in patharr):
+        raise H2OValueError("Paths relative to a current user (~) are not valid in the server environment. "
+                            "Please use absolute paths if possible.")
     if not parse:
         return lazy_import(path)
     else:
