@@ -22,7 +22,19 @@ public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
-        > extends Model<M, P, O> implements Model.LeafNodeAssignment {
+        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures {
+
+  @Override
+  public String[] getMostImportantFeatures(int n) {
+    if (_output == null) return null;
+    TwoDimTable vi = _output._variable_importances;
+    if (vi==null) return null;
+    n = Math.min(n, vi.getRowHeaders().length);
+    String res[] = new String[n];
+    for (int i = 0; i < n; ++i)
+      res[i] = vi.getRowHeaders()[i];
+    return res;
+  }
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
 
