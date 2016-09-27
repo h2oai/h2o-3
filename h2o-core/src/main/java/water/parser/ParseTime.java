@@ -41,7 +41,7 @@ public abstract class ParseTime {
     {"dec".getBytes(),"december" .getBytes()}
   };
 
-  static long attemptTimeParse( BufferedString str ) {
+  public static long attemptTimeParse( BufferedString str ) {
     try {
       long t0 = attemptYearFirstTimeParse(str); // "yyyy-MM-dd" and time if present
       if( t0 != Long.MIN_VALUE ) return t0;
