@@ -4,6 +4,7 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
 import hex.schemas.GridSearchSchema;
+import hex.schemas.HyperSpaceSearchCriteriaV99;
 import water.api.API;
 import water.api.Schema;
 import water.api.schemas3.*;
@@ -27,8 +28,8 @@ public class AutoMLBuildSpecV3 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpec
     @API(help="loss function", direction=API.Direction.INPUT)
     public String loss;
 
-    @API(help="maximum run time in seconds", direction=API.Direction.INPUT)
-    public long max_time;
+    @API(help="stopping criteria for the search", direction=API.Direction.INPUT)
+    public HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99 stopping_criteria;
   } // class AutoMLBuildControlV3
 
   /**

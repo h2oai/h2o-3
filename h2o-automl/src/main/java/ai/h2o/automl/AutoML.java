@@ -140,7 +140,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
   // used to launch the AutoML asynchronously
   @Override public void run() {
-    totalTime = System.currentTimeMillis() + buildSpec.build_control.max_time;
+    totalTime = System.currentTimeMillis() + Math.round(1000 * buildSpec.build_control.stopping_criteria.max_runtime_secs());
     try {
       learn();
     } catch(AutoMLDoneException e) {
@@ -183,13 +183,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     // step 2 for AutoML phase 1: do a random hyperparameter search with GBM
     Key<Grid> gridKey = Key.make("grid_0_" + this._key.toString());
 
-    // TODO: AutoMLBuildControl should contain a RandomDiscreteValueSearchCriteria
-    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
-    searchCriteria.set_max_runtime_secs(buildSpec.build_control.max_time);
-    searchCriteria.set_stopping_rounds(5);
-    searchCriteria.set_stopping_tolerance(0.001);
-    searchCriteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUTO);
-
+    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria;
 
     // TODO: put this into a Provider, which can return multiple searches
     GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
@@ -205,7 +199,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     gbmParameters._stopping_rounds = 2;
     gbmParameters._histogram_type= SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
 
-    Map<String, Object[]>searchParams = new HashMap<String, Object[]>();
+    Map<String, Object[]>searchParams = new HashMap<>();
     searchParams.put("ntrees", new Integer[] {10000});
     searchParams.put("max_depth", new Integer[] {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
     searchParams.put("min_rows", new Integer[] {1, 5, 10, 15, 30, 100});
