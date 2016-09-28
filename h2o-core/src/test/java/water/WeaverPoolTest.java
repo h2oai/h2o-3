@@ -1,11 +1,18 @@
 package water;
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class WeaverPoolTest extends TestUtil {
 
   @BeforeClass() public static void setup() { stall_till_cloudsize(3); }
+
+  @BeforeClass
+  static public void _preconditionJavaVersion() { // NOTE: the `_` force execution of this check after setup
+    // Does not run test on Java6 since we are running on Hadoop lib
+    Assume.assumeTrue("Java6 is not supported", !System.getProperty("java.version", "NA").startsWith("1.6"));
+  }
 
   @Test public void testGenClass() {
     String name = "A";
