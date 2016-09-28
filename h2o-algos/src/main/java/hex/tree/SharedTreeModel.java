@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.*;
+import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -35,6 +36,8 @@ public abstract class SharedTreeModel<
       res[i] = vi.getRowHeaders()[i];
     return res;
   }
+
+  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
 
