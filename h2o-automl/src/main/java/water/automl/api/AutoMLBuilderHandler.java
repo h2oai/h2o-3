@@ -29,6 +29,7 @@ public class AutoMLBuilderHandler extends Handler {
       throw new IllegalArgumentException("Both validation_frame and validation_files were specified; you must choose one or the other!");
 
     AutoML aml;
+    // TODO: name this job better
     aml = AutoML.makeAutoML(Key.<AutoML>make(), buildSpec);
     DKV.put(aml);
     buildSpecSchema.job = new JobV3().fillFromImpl(new TimedH2OJob(aml,aml._key).start());
