@@ -1,5 +1,7 @@
 package ai.h2o.automl;
 
+import hex.ScoreKeeper;
+import hex.grid.HyperSpaceSearchCriteria;
 import hex.schemas.GridSearchSchema;
 import water.Iced;
 import water.Key;
@@ -28,8 +30,18 @@ public class AutoMLBuildSpec extends Iced {
    * The specification of overall build parameters for the AutoML process.
    */
   static final public class AutoMLBuildControl extends Iced {
+    public AutoMLBuildControl() {
+      this.stopping_criteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+
+      // reasonable defaults:
+      stopping_criteria.set_max_runtime_secs(3600);
+      stopping_criteria.set_stopping_rounds(5);
+      stopping_criteria.set_stopping_tolerance(0.001);
+      stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUTO);
+    }
+
     public String loss = "MSE";  // TODO: Auto
-    public long max_time = 3600; // TODO: same early stopping criteria as RandomDiscreteValueSearchCriteria
+    public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
   }
 
   /**
