@@ -91,7 +91,7 @@ public class AstRectangleAssign extends AstPrimitive {
   }
 
   // Rectangular array copy from src into dst
-  private void assign_frame_frame(Frame dst, int[] cols, AstNumList rows, Frame src, Session ses) {
+  private void assign_frame_frame(Frame dst, int[] cols, final AstNumList rows, Frame src, Session ses) {
     // Sanity check
     if (cols.length != src.numCols())
       throw new IllegalArgumentException("Source and destination frames must have the same count of columns");
@@ -111,7 +111,7 @@ public class AstRectangleAssign extends AstPrimitive {
     // Partial update; needs to preserve type, and may need to copy to support
     // copy-on-write
     Vec[] dvecs = dst.vecs();
-    Vec[] svecs = src.vecs();
+    final Vec[] svecs = src.vecs();
     for (int col = 0; col < cols.length; col++)
       if (dvecs[cols[col]].get_type() != svecs[col].get_type())
         throw new IllegalArgumentException("Columns must be the same type; column " + col + ", \'" + dst._names[cols[col]] + "\', is of type " + dvecs[cols[col]].get_type_str() + " and the source is " + svecs[col].get_type_str());
@@ -128,7 +128,31 @@ public class AstRectangleAssign extends AstPrimitive {
       return;
     }
     // Handle large case
-    throw H2O.unimpl();
+    Vec[] vecs = ses.copyOnWrite(dst, cols);
+    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
+    for (int i = 0; i < cols.length; i++)
+      vecs2[i] = vecs[cols[i]];
+    rows.sort();                // Side-effect internal sort; needed for fast row lookup
+    new MRTask() {
+      @Override
+      public void map(Chunk[] cs) {
+        long start = cs[0].start();
+        long end = start + cs[0]._len;
+        long min = (long) rows.min(), max = (long) rows.max() - 1; // exclusive max to inclusive max when stride == 1
+        if (!(max < start || min > end)) {
+          int startOffset = (int) (min > start ? min : start);
+          for (int i = (int) (startOffset - start); i < cs[0]._len; ++i) {
+            long idx = rows.index(start + i);
+            if (idx >= 0)
+              for (int j = 0; j < cs.length; j++) {
+                Chunk chk = cs[j];
+                Vec v = svecs[j];
+                chk.set(i, v.at(idx));
+              }
+          }
+        }
+      }
+    }.doAll(vecs2);
   }
 
   // Assign a NON-STRING SCALAR over some dst rows; optimize for all rows
