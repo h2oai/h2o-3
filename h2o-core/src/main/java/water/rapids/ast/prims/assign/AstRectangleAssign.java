@@ -141,14 +141,23 @@ public class AstRectangleAssign extends AstPrimitive {
         long min = (long) rows.min(), max = (long) rows.max() - 1; // exclusive max to inclusive max when stride == 1
         if (!(max < start || min > end)) {
           int startOffset = (int) (min > start ? min : start);
+          Chunk[] scs = null;
           for (int i = (int) (startOffset - start); i < cs[0]._len; ++i) {
             long idx = rows.index(start + i);
-            if (idx >= 0)
-              for (int j = 0; j < cs.length; j++) {
-                Chunk chk = cs[j];
-                Vec v = svecs[j];
-                chk.set(i, v.at(idx));
+            if (idx < 0) continue;
+            if ((scs == null) || (scs[0].start() < idx) || (idx >= scs[0].start() + scs[0].len())) {
+              int sChkIdx = svecs[0].elem2ChunkIdx(idx);
+              scs = new Chunk[svecs.length];
+              for (int j = 0; j < svecs.length; j++) {
+                scs[j] = svecs[j].chunkForChunkIdx(sChkIdx);
               }
+            }
+            int si = (int) (idx - scs[0].start());
+            for (int j = 0; j < cs.length; j++) {
+              Chunk chk = cs[j];
+              Chunk schk = scs[j];
+              chk.set(i, schk.atd(si));
+            }
           }
         }
       }
