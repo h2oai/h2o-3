@@ -46,7 +46,7 @@ function testOutput () {
   # Grab the nonSSL data field from the packet body in human readable format
   tshark -x -r $OUTDIR/h2o-nonSSL.pcap -T text | awk -F "  " '{print $3}' > $OUTDIR/test_tmp.out
   # Remove all newlines and spaces for future grep
-  cat $OUTDIR/test_tmp.out | awk 1 RS='\n' ORS= | awk '{gsub(/ /,"")}1' > $OUTDIR/test.out
+  cat $OUTDIR/test_tmp.out | awk 1 RS='\n' ORS= | sed -e 's/ //g' > $OUTDIR/test.out
 
   # Check that all the data we used as input is in the TCP dump in not encrypted form!
   FOUND=$(countDataCells)
@@ -58,7 +58,7 @@ function testOutput () {
 
   # Grab the SSL data field from the packet body in human readable format
   tshark -x -r $OUTDIR/h2o-SSL.pcap -T text | awk -F "  " '{print $3}' > $OUTDIR/test_tmp.out
-  cat $OUTDIR/test_tmp.out | awk 1 RS='\n' ORS= | awk '{gsub(/ /,"")}1' > $OUTDIR/test.out
+  cat $OUTDIR/test_tmp.out | awk 1 RS='\n' ORS= | sed -e 's/ //g' > $OUTDIR/test.out
 
   # Check that none of the data we used as input is in the TCP dump in notencrypted form!
   FOUND=$(countDataCells)
