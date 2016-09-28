@@ -676,7 +676,7 @@ public class FrameUtils {
     }
   }
 
-  static public void cleanUp(IcedHashMap<Key, StackTraceElement[]> toDelete) {
+  static public void cleanUp(IcedHashMap<Key, String> toDelete) {
     Futures fs = new Futures();
     for (Key k : toDelete.keySet()) {
       k.remove(fs);

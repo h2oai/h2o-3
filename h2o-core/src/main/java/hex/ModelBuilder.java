@@ -18,7 +18,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public ToEigenVec getToEigenVec() { return null; }
 
-  private IcedHashMap<Key,StackTraceElement[]> _toDelete = new IcedHashMap<>();
+  private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
 
   public Job _job;     // Job controlling this build
@@ -924,7 +924,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (!_parms._is_cv_model)
           Scope.track(_train);
         else
-          _toDelete.put(_train._key, Thread.currentThread().getStackTrace());
+          _toDelete.put(_train._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         separateFeatureVecs(); //fix up the pointers to the special vecs
       }
       if (_valid != null) {
@@ -935,7 +935,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           if (!_parms._is_cv_model)
             Scope.track(_valid); //for CV, need to score one more time in outer loop
           else
-            _toDelete.put(_valid._key, Thread.currentThread().getStackTrace());
+            _toDelete.put(_valid._key, Arrays.toString(Thread.currentThread().getStackTrace()));
           _vresponse = _valid.vec(_parms._response_column);
         }
       }
