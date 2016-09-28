@@ -4,11 +4,20 @@ import ai.h2o.automl.strategies.initial.InitModel;
 import ai.h2o.automl.utils.AutoMLUtils;
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ScoreKeeper;
+import hex.grid.Grid;
+import hex.grid.GridSearch;
+import hex.grid.HyperSpaceSearchCriteria;
+import hex.tree.SharedTreeModel;
+import hex.tree.gbm.GBMModel;
 import water.*;
+import water.api.GridSearchHandler.DefaultModelParametersBuilderFactory;
 import water.api.schemas3.ImportFilesV3;
 import water.api.schemas3.KeyV3;
+import water.api.schemas3.ModelParametersSchemaV3;
 import water.exceptions.H2OAbstractRuntimeException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.IcedHashMapGeneric;
@@ -16,6 +25,10 @@ import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+
+import static water.Key.make;
 
 /**
  * Initial draft of AutoML
@@ -29,6 +42,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   private AutoMLBuildSpec buildSpec;     // all parameters for doing this AutoML build
   private Frame trainingFrame;     // all learning on this frame
   private Frame validationFrame;   // optional validation frame
+  private Vec responseVec;
   FrameMetadata frameMetadata;           // metadata for trainingFrame
   private boolean isClassification;
 
@@ -53,6 +67,12 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     if (null == buildSpec.input_spec.validation_frame && null != buildSpec.input_spec.validation_path)
       this.validationFrame = importParseFrame(buildSpec.input_spec.validation_path, buildSpec.input_spec.parse_setup);
 
+    if (null == this.trainingFrame)
+      throw new IllegalArgumentException("No training frame; user specified training_path: " +
+                                         buildSpec.input_spec.training_path +
+                                         " and training_frame: " + buildSpec.input_spec.training_frame);
+
+    this.responseVec = trainingFrame.vec(buildSpec.input_spec.response_column);
     /*
     TODO
     if( excludeAlgos!=null ) {
@@ -78,7 +98,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     // if (buildSpec.input_spec.parse_setup == null)
     //   buildSpec.input_spec.parse_setup = ParseSetup.guessSetup(); // use defaults!
 
-    AutoML autoML = new AutoML(key,buildSpec);
+    AutoML autoML = new AutoML(key, buildSpec);
 
     if (null == autoML.trainingFrame)
       throw new IllegalArgumentException("No training data has been specified, either as a path or a key.");
@@ -110,12 +130,12 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     String datasetName = importFiles.path.split("\\.(?=[^\\.]+$)")[0];
     Key[] realKeys = new Key[keys.size()];
     for (int i = 0; i < keys.size(); i++)
-      realKeys[i] = Key.make(keys.get(i));
+      realKeys[i] = make(keys.get(i));
 
     // TODO: we always have to tell guessSetup about single quotes?!
     ParseSetup guessedParseSetup = ParseSetup.guessSetup(realKeys, false, ParseSetup.GUESS_HEADER);
 
-    return ParseDataset.parse(Key.make(datasetName), realKeys, true, guessedParseSetup);
+    return ParseDataset.parse(make(datasetName), realKeys, true, guessedParseSetup);
   }
 
   // used to launch the AutoML asynchronously
@@ -157,8 +177,52 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     isClassification = frameMetadata.isClassification();
 
     // step 2: build a fast RF
-    ModelBuilder initModel = selectInitial(frameMetadata);
-    Model m = build(initModel); // need to track this...
+    // ModelBuilder initModel = selectInitial(frameMetadata);
+    // Model m = build(initModel); // need to track this...
+
+    // step 2 for AutoML phase 1: do a random hyperparameter search with GBM
+    Key<Grid> gridKey = Key.make("grid_0_" + this._key.toString());
+
+    // TODO: AutoMLBuildControl should contain a RandomDiscreteValueSearchCriteria
+    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+    searchCriteria.set_max_runtime_secs(buildSpec.build_control.max_time);
+    searchCriteria.set_stopping_rounds(5);
+    searchCriteria.set_stopping_tolerance(0.001);
+    searchCriteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUTO);
+
+
+    // TODO: put this into a Provider, which can return multiple searches
+    GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
+    gbmParameters._train = trainingFrame._key;
+    if (null != validationFrame)
+      gbmParameters._valid = validationFrame._key;
+    gbmParameters._response_column = buildSpec.input_spec.response_column;
+
+    gbmParameters._nfolds = 5;
+    gbmParameters._score_tree_interval = 20;
+    gbmParameters._stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
+    gbmParameters._stopping_tolerance = 0.001;
+    gbmParameters._stopping_rounds = 2;
+    gbmParameters._histogram_type= SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
+
+    Map<String, Object[]>searchParams = new HashMap<String, Object[]>();
+    searchParams.put("ntrees", new Integer[] {10000});
+    searchParams.put("max_depth", new Integer[] {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
+    searchParams.put("min_rows", new Integer[] {1, 5, 10, 15, 30, 100});
+    searchParams.put("learn_rate", new Double[] {0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
+    searchParams.put("sample_rate", new Double[] {0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00});
+    searchParams.put("col_sample_rate_per_tree", new Double[] {0.6, 1.00});
+    searchParams.put("min_split_improvement", new Double[] {1e-4, 1e-5});
+
+    if (trainingFrame.numCols() > 1000 && responseVec.isCategorical() && responseVec.cardinality() > 2)
+      searchParams.put("col_sample_rate_per_tree", new Double[] {0.4, 0.6, 0.8, 1.0});
+
+    Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
+            gbmParameters, // TODO
+            searchParams, // TODO
+            new DefaultModelParametersBuilderFactory<Model.Parameters, ModelParametersSchemaV3>(),
+            searchCriteria);
+
     Log.info("AUTOML DONE");
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
@@ -179,6 +243,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
 
   private ModelBuilder selectInitial(FrameMetadata fm) {  // may use _isClassification so not static method
+    // TODO: handle validation frame if present
     Frame[] trainTest = AutoMLUtils.makeTrainTestFromWeight(fm._fr,fm.weights());
     ModelBuilder mb = InitModel.initRF(trainTest[0], trainTest[1], fm.response()._name);
     mb._parms._ignored_columns = fm.ignoredCols();
@@ -186,7 +251,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
 
   // track models built by automl
-  public final Key<Model> MODELLIST = Key.make("AutoMLModelList"+Key.make().toString(), (byte) 0, (byte) 2 /*builtin key*/, false);  // public for the test
+  public final Key<Model> MODELLIST = make("AutoMLModelList"+ make().toString(), (byte) 0, (byte) 2 /*builtin key*/, false);  // public for the test
   class ModelList extends Keyed {
     Key<Model>[] _models;
     ModelList() { super(MODELLIST); _models = new Key[0]; }
@@ -207,7 +272,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     return models;
   }
 
-  public final Key<Model> LEADER = Key.make("AutoMLModelLeader"+Key.make().toString(), (byte) 0, (byte) 2, false);
+  public final Key<Model> LEADER = make("AutoMLModelLeader"+ make().toString(), (byte) 0, (byte) 2, false);
   class ModelLeader extends Keyed {
     Key<Model> _leader;
     ModelLeader() { super(LEADER); _leader = null; }
@@ -246,6 +311,8 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
   }
 
   // all model builds by AutoML call into this
+  // TODO: who is the caller?!
+  // TODO: remove this restriction!
   // expected to only ever have a single AutoML instance going at a time
   Model build(ModelBuilder mb) {
     Job j;
