@@ -91,7 +91,7 @@ public class AstRectangleAssign extends AstPrimitive {
   }
 
   // Rectangular array copy from src into dst
-  private void assign_frame_frame(Frame dst, int[] cols, final AstNumList rows, Frame src, Session ses) {
+  private void assign_frame_frame(Frame dst, int[] cols, AstNumList rows, Frame src, Session ses) {
     // Sanity check
     if (cols.length != src.numCols())
       throw new IllegalArgumentException("Source and destination frames must have the same count of columns");
@@ -133,31 +133,26 @@ public class AstRectangleAssign extends AstPrimitive {
     for (int i = 0; i < cols.length; i++)
       vecs2[i] = vecs[cols[i]];
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
-    new MRTask() {
+    new RowSliceTask(rows) {
       @Override
-      public void map(Chunk[] cs) {
+      void mapChunkSlice(Chunk[] cs, int chkOffset) {
         long start = cs[0].start();
-        long end = start + cs[0]._len;
-        long min = (long) rows.min(), max = (long) rows.max() - 1; // exclusive max to inclusive max when stride == 1
-        if (!(max < start || min > end)) {
-          int startOffset = (int) (min > start ? min : start);
-          Chunk[] scs = null;
-          for (int i = (int) (startOffset - start); i < cs[0]._len; ++i) {
-            long idx = rows.index(start + i);
-            if (idx < 0) continue;
-            if ((scs == null) || (scs[0].start() < idx) || (idx >= scs[0].start() + scs[0].len())) {
-              int sChkIdx = svecs[0].elem2ChunkIdx(idx);
-              scs = new Chunk[svecs.length];
-              for (int j = 0; j < svecs.length; j++) {
-                scs[j] = svecs[j].chunkForChunkIdx(sChkIdx);
-              }
+        Chunk[] scs = null;
+        for (int i = chkOffset; i < cs[0]._len; ++i) {
+          long idx = _rows.index(start + i);
+          if (idx < 0) continue;
+          if ((scs == null) || (scs[0].start() < idx) || (idx >= scs[0].start() + scs[0].len())) {
+            int sChkIdx = svecs[0].elem2ChunkIdx(idx);
+            scs = new Chunk[svecs.length];
+            for (int j = 0; j < svecs.length; j++) {
+              scs[j] = svecs[j].chunkForChunkIdx(sChkIdx);
             }
-            int si = (int) (idx - scs[0].start());
-            for (int j = 0; j < cs.length; j++) {
-              Chunk chk = cs[j];
-              Chunk schk = scs[j];
-              chk.set(i, schk.atd(si));
-            }
+          }
+          int si = (int) (idx - scs[0].start());
+          for (int j = 0; j < cs.length; j++) {
+            Chunk chk = cs[j];
+            Chunk schk = scs[j];
+            chk.set(i, schk.atd(si));
           }
         }
       }
@@ -165,7 +160,7 @@ public class AstRectangleAssign extends AstPrimitive {
   }
 
   // Assign a NON-STRING SCALAR over some dst rows; optimize for all rows
-  private void assign_frame_scalar(Frame dst, int[] cols, final AstNumList rows, final double src, Session ses) {
+  private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, final double src, Session ses) {
 
     // Handle fast small case
     long nrows = rows.cnt();
@@ -195,25 +190,14 @@ public class AstRectangleAssign extends AstPrimitive {
     for (int i = 0; i < cols.length; i++)
       vecs2[i] = vecs[cols[i]];
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
-    new MRTask() {
+    new RowSliceTask(rows) {
       @Override
-      public void map(Chunk[] cs) {
+      void mapChunkSlice(Chunk[] cs, int chkOffset) {
         long start = cs[0].start();
-        long end = start + cs[0]._len;
-        long min = (long) rows.min(), max = (long) rows.max() - 1; // exclusive max to inclusive max when stride == 1
-        //     [ start, ...,  end ]     the chunk
-        //1 []                          rows out left:  rows.max() < start
-        //2                         []  rows out rite:  rows.min() > end
-        //3 [ rows ]                    rows run left:  rows.min() < start && rows.max() <= end
-        //4          [ rows ]           rows run in  :  start <= rows.min() && rows.max() <= end
-        //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
-        if (!(max < start || min > end)) {   // not situation 1 or 2 above
-          int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
-          for (int i = (int) (startOffset - start); i < cs[0]._len; ++i)
-            if (rows.has(start + i))
-              for (Chunk chk : cs)
-                chk.set(i, src);
-        }
+        for (int i = chkOffset; i < cs[0]._len; ++i)
+          if (_rows.has(start + i))
+            for (Chunk chk : cs)
+              chk.set(i, src);
       }
     }.doAll(vecs2);
   }
@@ -237,25 +221,14 @@ public class AstRectangleAssign extends AstPrimitive {
     for (int i = 0; i < cols.length; i++)
       vecs2[i] = vecs[cols[i]];
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
-    new MRTask() {
+    new RowSliceTask(rows) {
       @Override
-      public void map(Chunk[] cs) {
+      public void mapChunkSlice(Chunk[] cs, int chkOffset) {
         long start = cs[0].start();
-        long end = start + cs[0]._len;
-        long min = (long) rows.min(), max = (long) rows.max() - 1; // exclusive max to inclusive max when stride == 1
-        //     [ start, ...,  end ]     the chunk
-        //1 []                          rows out left:  rows.max() < start
-        //2                         []  rows out rite:  rows.min() > end
-        //3 [ rows ]                    rows run left:  rows.min() < start && rows.max() <= end
-        //4          [ rows ]           rows run in  :  start <= rows.min() && rows.max() <= end
-        //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
-        if (!(max < start || min > end)) {   // not situation 1 or 2 above
-          int startOffset = (int) (min > start ? min : start);  // situation 4 and 5 => min > start;
-          for (int i = (int) (startOffset - start); i < cs[0]._len; ++i)
-            if (rows.has(start + i))
-              for (Chunk chk : cs)
-                chk.set(i, src);
-        }
+        for (int i = chkOffset; i < cs[0]._len; ++i)
+          if (rows.has(start + i))
+            for (Chunk chk : cs)
+              chk.set(i, src);
       }
     }.doAll(vecs2);
   }
@@ -278,4 +251,32 @@ public class AstRectangleAssign extends AstPrimitive {
     }.doAll(cols.length, Vec.T_NUM, new Frame(dst).add(rows)).outputFrame();
     assign_frame_frame(dst, cols, new AstNumList(0, dst.numRows()), src2, ses);
   }
+
+  private static abstract class RowSliceTask extends MRTask {
+
+    final AstNumList _rows;
+
+    RowSliceTask(AstNumList rows) { _rows = rows; }
+
+    @Override
+    public void map(Chunk[] cs) {
+      long start = cs[0].start();
+      long end = start + cs[0]._len;
+      long min = (long) _rows.min(), max = (long) _rows.max() - 1; // exclusive max to inclusive max when stride == 1
+      //     [ start, ...,  end ]     the chunk
+      //1 []                          rows out left:  rows.max() < start
+      //2                         []  rows out rite:  rows.min() > end
+      //3 [ rows ]                    rows run left:  rows.min() < start && rows.max() <= end
+      //4          [ rows ]           rows run in  :  start <= rows.min() && rows.max() <= end
+      //5                   [ rows ]  rows run rite:  start <= rows.min() && end < rows.max()
+      if (!(max < start || min > end)) {   // not situation 1 or 2 above
+        long startOffset = min > start ? min : start;  // situation 4 and 5 => min > start;
+        int chkOffset = (int) (startOffset - start);
+        mapChunkSlice(cs, chkOffset);
+      }
+    }
+
+    abstract void mapChunkSlice(Chunk[] cs, int chkOffset);
+  }
+
 }
