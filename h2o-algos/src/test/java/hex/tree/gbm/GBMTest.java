@@ -1901,7 +1901,6 @@ public class GBMTest extends TestUtil {
       Log.info("Optimal randomization: " + histoType[idx]);
       assertTrue(4 == idx);
     } finally {
-      if (gbm!=null) gbm.delete();
       if (tfr!=null) tfr.delete();
       if (ksplits[0]!=null) ksplits[0].remove();
       if (ksplits[1]!=null) ksplits[1].remove();
