@@ -52,17 +52,15 @@ public class AstISax extends AstPrimitive {
         AstRoot n = asts[2];
         AstRoot mc = asts[3];
 
+        //Check vecs are numeric
         for(Vec v : f.vecs()){
             if(!v.isNumeric()){
                 throw new IllegalArgumentException("iSAX only applies to numeric columns");
             }
         }
 
-        int numWords;
-        int maxCardinality;
-
-        numWords = (int) n.exec(env).getNum();
-        maxCardinality = (int) mc.exec(env).getNum();
+        int numWords = (int) n.exec(env).getNum();
+        int maxCardinality = (int) mc.exec(env).getNum();
 
         ArrayList<String> columns = new ArrayList<>();
         for (int i = 0; i < numWords; i++) {
@@ -73,6 +71,7 @@ public class AstISax extends AstPrimitive {
 
         _domain_hm = new double[numWords][maxCardinality];
         for (double[] r : _domain_hm) Arrays.fill(r,Double.NaN);
+
         // see if we can reduce the cardinality by checking all unique tokens in all series in a word
         for (int i=0; i<fr2.numCols(); i++) {
             String[] domains = fr2.vec(i).toCategoricalVec().domain();
@@ -91,7 +90,6 @@ public class AstISax extends AstPrimitive {
             }
             maxCards[i] = cnt;
         }
-
 
         Frame fr2_reduced = new AstISax.ISaxReduceCard(_domain_hm,maxCardinality).doAll(numWords, Vec.T_NUM,fr2)
                 .outputFrame(null,columns.toArray(new String[numWords]),null);
