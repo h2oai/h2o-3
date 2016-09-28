@@ -343,37 +343,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  static private class Replacer extends TAtomic<Model> {
-    final Key _k;
-    public Key[] _res;
-    Replacer(Key k) { _k=k; }
-    @Override
-    protected Model atomic(Model old) {
-      if (old==null) return null;
-      incrementModelMetrics(old._output, _k);
-      _res = old._output._model_metrics;
-      return old;
-    }
-  }
-
-  public synchronized ModelMetrics addModelMetrics(final ModelMetrics mm) {
+  public ModelMetrics addModelMetrics(final ModelMetrics mm) {
     DKV.put(mm);
-    final Key k = mm._key;
-    Replacer r = new Replacer(k);
-    r.invoke(_key);
-    Key[] res = r._res;
-    if (res==null)
-      incrementModelMetrics(_output, k);
-    else
-      _output._model_metrics = res;
+    incrementModelMetrics(_output, mm._key);
     return mm;
   }
 
-  synchronized static void incrementModelMetrics(Output out, Key k) {
-    for (Key key : out._model_metrics)
-      if (k.equals(key)) return;
-    out._model_metrics = Arrays.copyOf(out._model_metrics, out._model_metrics.length + 1);
-    out._model_metrics[out._model_metrics.length - 1] = k;
+  static void incrementModelMetrics(Output out, Key k) {
+    synchronized(out) {
+      for (Key key : out._model_metrics)
+        if (k.equals(key)) return;
+      out._model_metrics = Arrays.copyOf(out._model_metrics, out._model_metrics.length + 1);
+      out._model_metrics[out._model_metrics.length - 1] = k;
+    }
   }
 
   public void addWarning(String s){
@@ -1023,9 +1005,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
     Key[] keys = adaptFr.keys();
     for( int i=0; i<keys.length; i++ )
-      if( fr.find(keys[i]) != -1 ) // Exists in the original frame?
-        keys[i] = null;            // Do not delete it
-    adaptFr.delete();
+      if( fr.find(keys[i]) == -1 ) //only delete vecs that aren't shared
+        keys[i].remove();
+    DKV.remove(adaptFr._key); //delete the frame header
   }
 
   protected String [] makeScoringNames(){

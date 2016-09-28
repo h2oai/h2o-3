@@ -30,8 +30,14 @@ public class PartialDependence extends Lockable<PartialDependence> {
   public Job<PartialDependence> execImpl() {
     checkSanityAndFillParams();
     delete_and_lock(_job);
-    _frame_id.get().read_lock(_job._key);
-    _model_id.get().read_lock(_job._key);
+    _frame_id.get().write_lock(_job._key);
+    // Don't lock the model since the act of unlocking at the end would
+    // freshen the DKV version, but the live POJO must survive all the way
+    // to be able to delete the model metrics that got added to it.
+    // Note: All threads doing the scoring call model_id.get() and then
+    // update the _model_metrics only on the temporary live object, not in DKV.
+    // At the end, we call model.remove() and we need those model metrics to be
+    // deleted with it, so we must make sure we keep the live POJO alive.
     _job.start(new PartialDependenceDriver(), _cols.length);
     return _job;
   }
@@ -158,14 +164,12 @@ public class PartialDependence extends Lockable<PartialDependence> {
     @Override
     public void onCompletion(CountedCompleter caller) {
       _frame_id.get().unlock(_job._key);
-      _model_id.get().unlock(_job._key);
       unlock(_job);
     }
 
     @Override
     public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
       _frame_id.get().unlock(_job._key);
-      _model_id.get().unlock(_job._key);
       unlock(_job);
       return true;
     }

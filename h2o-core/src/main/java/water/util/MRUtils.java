@@ -305,13 +305,13 @@ public class MRUtils {
     // Re-try if we didn't get at least one example from each class
     if (ArrayUtils.minValue(dist) == 0 && count < 10) {
       Log.info("Re-doing stratified sampling because not all classes were represented (unlucky draw).");
-      r.delete();
+      r.remove();
       return sampleFrameStratified(fr, label, weights, sampling_ratios, seed+1, debug, ++count);
     }
 
     // shuffle intra-chunk
     Frame shuffled = shuffleFramePerChunk(r, seed+0x580FF13);
-    r.delete();
+    r.remove();
 
     return shuffled;
   }
