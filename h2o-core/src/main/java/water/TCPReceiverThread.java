@@ -1,11 +1,14 @@
 package water;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 
+import water.network.SocketChannelFactory;
 import water.util.Log;
 import water.util.SB;
 
@@ -19,8 +22,14 @@ import water.util.SB;
 
 public class TCPReceiverThread extends Thread {
   private ServerSocketChannel SOCK;
+  private SocketChannelFactory socketChannelFactory;
 
-  public TCPReceiverThread(ServerSocketChannel sock) { super("TCP-Accept"); SOCK = sock;  }
+  public TCPReceiverThread(
+          ServerSocketChannel sock) {
+    super("TCP-Accept");
+    SOCK = sock;
+    this.socketChannelFactory = H2O.SELF.getSocketFactory();
+  }
 
   // The Run Method.
   // Started by main() on a single thread, this code manages reading TCP requests
@@ -50,22 +59,30 @@ public class TCPReceiverThread extends Thread {
         // Block for TCP connection and setup to read from it.
         SocketChannel sock = SOCK.accept();
         ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+        ByteChannel wrappedSocket = socketChannelFactory.serverChannel(sock);
         bb.limit(bb.capacity());
         bb.position(0);
-        while(bb.hasRemaining()) // read first 8 bytes
-          sock.read(bb);
+        while(bb.hasRemaining()) { // read first 8 bytes
+          wrappedSocket.read(bb);
+        }
         bb.flip();
         int chanType = bb.get(); // 1 - small , 2 - big
         int port = bb.getChar();
         int sentinel = (0xFF) & bb.get();
-        if(sentinel != 0xef)
-          throw H2O.fail("missing eom sentinel when opening new tcp channel");
+        if(sentinel != 0xef) {
+          if(H2O.SELF.getSecurityManager().securityEnabled) {
+            throw new IOException("Missing EOM sentinel when opening new SSL tcp channel.");
+          } else {
+            throw H2O.fail("missing eom sentinel when opening new tcp channel");
+          }
+        }
         // todo compare against current cloud, refuse the con if no match
-        H2ONode h2o = H2ONode.intern(sock.socket().getInetAddress(),port);
+        InetAddress inetAddress = sock.socket().getInetAddress();
+        H2ONode h2o = H2ONode.intern(inetAddress,port);
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
-        case 1: new UDP_TCP_ReaderThread(h2o, sock).start(); break;
-        case 2: new TCPReaderThread(sock,new AutoBuffer(sock)).start(); break;
+        case 1: new UDP_TCP_ReaderThread(h2o, wrappedSocket).start(); break;
+        case 2: new TCPReaderThread(wrappedSocket,new AutoBuffer(wrappedSocket, inetAddress), inetAddress).start(); break;
         default: throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small and 2 - Big");
         }
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
@@ -82,12 +99,15 @@ public class TCPReceiverThread extends Thread {
 
   // A private thread for reading from this open socket.
   static class TCPReaderThread extends Thread {
-    public SocketChannel _sock;
+    public ByteChannel _sock;
     public AutoBuffer _ab;
-    public TCPReaderThread(SocketChannel sock, AutoBuffer ab) {
+    private final InetAddress address;
+
+    public TCPReaderThread(ByteChannel sock, AutoBuffer ab, InetAddress address) {
       super("TCP-"+ab._h2o+"-"+(ab._h2o._tcp_readers++));
       _sock = sock;
       _ab = ab;
+      this.address = address;
       setPriority(MAX_PRIORITY-1);
     }
 
@@ -119,7 +139,7 @@ public class TCPReceiverThread extends Thread {
         // Reuse open sockets for the next task
         try {
           if( !_sock.isOpen() ) break;
-          _ab = new AutoBuffer(_sock);
+          _ab = new AutoBuffer(_sock, address);
         } catch( Exception e ) {
           // Exceptions here are *normal*, this is an idle TCP connection and
           // either the OS can time it out, or the cloud might shutdown.  We
@@ -136,11 +156,11 @@ public class TCPReceiverThread extends Thread {
    *  byte array which is than passed on to FJQ.  Each message is expected to
    *  be MSG_SZ(2B) MSG BODY(MSG_SZ*B) EOM MARKER (1B - 0xef). */
   static class UDP_TCP_ReaderThread extends Thread {
-    private final SocketChannel _chan;
+    private final ByteChannel _chan;
     private final ByteBuffer _bb;
     private final H2ONode _h2o;
 
-    public UDP_TCP_ReaderThread(H2ONode h2o, SocketChannel chan) {
+    public UDP_TCP_ReaderThread(H2ONode h2o, ByteChannel chan) {
       super("UDP-TCP-READ-" + h2o);
       _h2o = h2o;
       _chan = chan;
