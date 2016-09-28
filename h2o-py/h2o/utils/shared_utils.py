@@ -96,8 +96,8 @@ def _handle_python_lists(python_obj, check_header):
     if _is_list_of_lists(python_obj):  # do we have a list of lists: [[...], ..., [...]] ?
         ncols = _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
     elif isinstance(python_obj, (list, tuple)):  # single list
-        ncols = len(python_obj)
-        python_obj = [python_obj]
+        ncols = 1
+        python_obj = [[e] for e in python_obj]
     else:  # scalar
         python_obj = [[python_obj]]
         ncols = 1
