@@ -27,7 +27,7 @@ def is_flow(file_name):
 
 
 class H2OCloud:
-    def __init__(self, abspath_tempdir, driver, nodes_per_cloud, xmx, output_dir):
+    def __init__(self, abspath_tempdir, driver, nodes_per_cloud, xmx, output_dir, test_ssl):
         self.ip = None
         self.port = None
         self.job_id = None
@@ -36,6 +36,7 @@ class H2OCloud:
         self.xmx = xmx
         self.output_dir = output_dir
         self.notify_file = os.path.join(abspath_tempdir, "notify.txt")
+        self.test_ssl = test_ssl
 
     def start(self):
         print_barrier()
@@ -45,6 +46,10 @@ class H2OCloud:
                '-output', self.output_dir,
                '-notify', self.notify_file,
                '-disown']
+
+        if self.test_ssl:
+            cmd.append("-internal_security_conf")
+
         print("+ CMD: " + str(cmd))
         returncode = subprocess.call(cmd)
 
@@ -112,6 +117,7 @@ def main():
     parser.add_argument("-mapperXmx", "--mapperXmx", help="Size of each H2O node", required=True)
     parser.add_argument("-script", "--script", help="Name of script to run", required=True)
     parser.add_argument("-output", "--output", help="HDFS temp output dir", required=True)
+    parser.add_argument("-test_ssl", "--test_ssl", help="Testing with SSL enabled", required=True)
     args = parser.parse_args()
     print_barrier()
     print ("Path to h2odriver:  " + args.driver)
@@ -119,9 +125,10 @@ def main():
     print ("Size of each node:  " + args.mapperXmx)
     print ("Script to run:      " + args.script)
     print ("HDFS output dir:    " + args.output)
+    print ("SSL on:             " + args.test_ssl)
 
     abspath_tempdir = tempfile.mkdtemp()
-    g_runner = H2OCloud(abspath_tempdir, args.driver, args.nodes, args.mapperXmx, args.output)
+    g_runner = H2OCloud(abspath_tempdir, args.driver, args.nodes, args.mapperXmx, args.output, args.test_ssl)
 
     # Handle killing the runner.
     signal.signal(signal.SIGINT, signal_handler)

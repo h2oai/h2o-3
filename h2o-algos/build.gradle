@@ -11,6 +11,15 @@ dependencies {
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
 
+task testSSLEncryption(type: Exec) {
+  dependsOn cpLibs, jar, testJar
+  if(project.hasProperty('doTestSSL')) {
+      commandLine 'bash', './testSSL.sh'
+  } else {
+    commandLine 'echo', 'SSL tests not enabled'
+  }
+}
+
 // The default 'test' behavior is broken in that it does not grok clusters.
 // For H2O, all tests need to be run on a cluster, where each JVM is
 // "free-running" - it's stdout/stderr are NOT hooked by another process.  If
@@ -22,10 +31,8 @@ apply from: "${rootDir}/gradle/dataCheck.gradle"
 // level) to files - then scrape the files later for test results.
 test {
   dependsOn ":h2o-core:testJar"
-  dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode
+  dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode, testSSLEncryption
 
   // Defeat task 'test' by running no tests.
   exclude '**'
 }
-
-testMultiNode.shouldRunAfter testSingleNode

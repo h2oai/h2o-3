@@ -160,6 +160,9 @@ final public class H2O {
             "    -login_conf <filename>\n" +
             "          LoginService configuration file\n" +
             "\n" +
+            "    -internal_security_conf <filename>\n" +
+            "          Path (absolute or relative) to a file containing all internal security related configurations\n" +
+            "\n" +
             "Cloud formation behavior:\n" +
             "\n" +
             "    New H2O nodes join together to form a cloud at startup time.\n" +
@@ -297,6 +300,9 @@ final public class H2O {
 
     /** -login_conf is login configuration service file on local filesystem */
     public String login_conf = null;
+
+    /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
+    public String internal_security_conf = null;
 
     //-----------------------------------------------------------------------------------
     // Debugging
@@ -520,6 +526,10 @@ final public class H2O {
       else if (s.matches("login_conf")) {
         i = s.incrementAndCheck(i, args);
         ARGS.login_conf = args[i];
+      }
+      else if (s.matches("internal_security_conf")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.internal_security_conf = args[i];
       }
       else {
         parseFailed("Unknown argument (" + s + ")");
