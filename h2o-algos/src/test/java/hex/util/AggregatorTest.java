@@ -36,7 +36,7 @@ public class AggregatorTest extends TestUtil {
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
     agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
-    System.out.println(output);
+    System.out.println(output.toTwoDimTable(0,10));
     frame.delete();
     Log.info("Number of exemplars: " + agg._exemplars.length);
 //    Assert.assertTrue(agg._exemplars.length==649);
@@ -67,7 +67,7 @@ public class AggregatorTest extends TestUtil {
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
     agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
-    System.out.println(output);
+    System.out.println(output.toTwoDimTable(0,10));
     Log.info("Number of exemplars: " + agg._exemplars.length);
 //    Assert.assertTrue(agg._exemplars.length==649);
     output.remove();
@@ -99,7 +99,7 @@ public class AggregatorTest extends TestUtil {
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
     agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
-    System.out.println(output);
+    System.out.println(output.toTwoDimTable(0,10));
     Log.info("Number of exemplars: " + agg._exemplars.length);
 //    Assert.assertTrue(agg._exemplars.length==649);
     output.remove();
@@ -132,7 +132,7 @@ public class AggregatorTest extends TestUtil {
     System.out.println("AggregatorModel finished in: " + (System.currentTimeMillis() - start)/1000. + " seconds");
     agg.checkConsistency();
     Frame output = agg._output._output_frame.get();
-    System.out.println(output);
+    System.out.println(output.toTwoDimTable(0,10));
     Log.info("Number of exemplars: " + agg._exemplars.length);
 //    Assert.assertTrue(agg._exemplars.length==649);
     output.remove();
