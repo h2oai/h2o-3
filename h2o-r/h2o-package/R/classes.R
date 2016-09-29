@@ -360,9 +360,9 @@ setClass("H2OModelMetrics",
 #' @export
 setMethod("show", "H2OModelMetrics", function(object) {
     cat(class(object), ": ", object@algorithm, "\n", sep="")
-    if( object@on_train ) cat("** Reported on training data. **\n")
-    if( object@on_valid ) cat("** Reported on validation data. **\n")
-    if( object@on_xval ) cat("** Reported on cross-validation data. **\n")
+    if( object@on_train & object@algorithm != "pca" ) cat("** Reported on training data. **\n")
+    if( object@on_valid & object@algorithm != "pca" ) cat("** Reported on validation data. **\n")
+    if( object@on_xval & object@algorithm != "pca"  ) cat("** Reported on cross-validation data. **\n")
     if( !is.null(object@metrics$description) ) cat("** ", object@metrics$description, " **\n\n", sep="")
     else                                       cat("\n")
 })
@@ -499,6 +499,8 @@ setMethod("show", "H2ODimReductionMetrics", function(object) {
       cat("\nMisclassification Error (Categorical): ", m$caterr)
       cat("\nNumber of Numeric Entries: ", m$numcnt)
       cat("\nNumber of Categorical Entries: ", m$catcnt)
+    }else if(object@algorithm == "pca" ) {
+        cat("No model metrics available for PCA")
     }
   } else print(NULL)
 })
