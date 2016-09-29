@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 @Ignore("Support for tests, but no actual tests here")
@@ -95,8 +94,7 @@ public class TestUtil extends Iced {
       }
       if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
     }
-    System.out.println("leaked_keys = " + leaked_keys + ", cnt = " + cnt);
-    assertTrue("No keys leaked, leaked_keys = " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
+    assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(){
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
@@ -161,7 +159,7 @@ public class TestUtil extends Iced {
   /** Hunt for test files in likely places.  Null if cannot find.
    *  @param fname Test filename
    *  @return      Found file or null */
-  public static File find_test_file_static(String fname) {
+  protected static File find_test_file_static(String fname) {
     // When run from eclipse, the working directory is different.
     // Try pointing at another likely place
     File file = new File(fname);
@@ -209,45 +207,27 @@ public class TestUtil extends Iced {
     return find_test_file_static(fname);
   }
 
-  private static void checkFileEntry(String name, File file) {
-    assertNotNull("File not found: " + name, file);
-    assertTrue("File should exist: " + name, file.exists());
-  }
-
-  private static void checkFile(String name, File file) {
-    checkFileEntry(name, file);
-    assertTrue("Expected a readable file: " + name, file.canRead());
-  }
-
-  private static File[] checkFolder(String name, File folder) {
-    checkFileEntry(name, folder);
-    assertTrue("Expected a folder: " + name, folder.isDirectory());
-    File[] files = folder.listFiles();
-    assertNotNull("No files found in " + folder, files);
-    return files;
-  }
-
   /** Find & parse a CSV file.  NPE if file not found.
    *  @param fname Test filename
    *  @return      Frame or NPE */
   public static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
   public static Frame parse_test_file( Key outputKey, String fname) {
     File f = find_test_file_static(fname);
-    checkFile(fname, f);
+    assert f != null && f.exists():" file not found: " + fname;
     NFSFileVec nfs = NFSFileVec.make(f);
     return ParseDataset.parse(outputKey, nfs._key);
   }
 
   protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
     File f = find_test_file(fname);
-    checkFile(fname, f);
+    assert f != null && f.exists():" file not found: " + fname;
     NFSFileVec nfs = NFSFileVec.make(f);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
     File f = find_test_file_static(fname);
-    checkFile(fname, f);
+    assert f != null && f.exists():" file not found: " + fname;
     NFSFileVec nfs = NFSFileVec.make(f);
 
     Key[] res = {nfs._key};
@@ -282,28 +262,32 @@ public class TestUtil extends Iced {
    *  @return      Frame or NPE */
   protected Frame parse_test_folder( String fname ) {
     File folder = find_test_file(fname);
-    File[] files = checkFolder(fname, folder);
-    Arrays.sort(files);
-    ArrayList<Key> keys = new ArrayList<>();
-    for( File f : files )
-      if( f.isFile() )
-        keys.add(NFSFileVec.make(f)._key);
-    Key[] res = new Key[keys.size()];
-    keys.toArray(res);
-    return ParseDataset.parse(Key.make(), res);
+    assert folder.isDirectory();
+    File[] files = folder.listFiles();
+    if (files != null) {
+      Arrays.sort(files);
+      ArrayList<Key> keys = new ArrayList<>();
+      for( File f : files )
+        if( f.isFile() )
+          keys.add(NFSFileVec.make(f)._key);
+      Key[] res = new Key[keys.size()];
+      keys.toArray(res);
+      return ParseDataset.parse(Key.make(), res);
+    } else return null;
   }
 
 
   /**
    * Parse a folder with csv files when a single na_string is specified.
    *
-   * @param fname
+   * @param fname name of folder
    * @param na_string
-   * @return
+   * @return a frame with prased data
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);
-    File[] files = checkFolder(fname, folder);
+    assert folder != null && folder.isDirectory():"Folder "+fname+" is not a directory: folder="+folder;
+    File[] files = folder.listFiles();
     Arrays.sort(files);
     ArrayList<Key> keys = new ArrayList<>();
     for( File f : files )
@@ -424,8 +408,8 @@ public class TestUtil extends Iced {
   }
 
   public static boolean[] checkProjection(Frame expected, Frame actual, double threshold, boolean[] flipped) {
-    assertEquals("Number of columns", expected.numCols(), actual.numCols());
-    assertEquals("Number of columns in flipped", expected.numCols(), flipped.length);
+    assert expected.numCols() == actual.numCols();
+    assert expected.numCols() == flipped.length;
     int nfeat = (int) expected.numRows();
     int ncomp = expected.numCols();
 
