@@ -7,17 +7,24 @@ from tests import pyunit_utils
 
 def test_pandas_to_h2oframe():
 
-    pddf = pd.DataFrame({"one": [4, 6, 1], "two": ["a", "b", "cde"], "three": [0, None, 1]})
+    def compare_frames(h2ofr, pdfr, colnames=None):
+        if not colnames:
+            colnames = list(pdfr.columns)
+        assert h2ofr.shape == pdfr.shape
+        assert h2ofr.columns == colnames, "Columns differ: %r vs %r" % (h2ofr.columns, colnames)
+        for i in range(len(h2ofr.columns)):
+            s1 = pdfr[pdfr.columns[i]].tolist()
+            s2 = h2ofr[colnames[i]].as_data_frame()[colnames[i]].tolist()
+            assert s1 == s2
+
+    pddf = pd.DataFrame({"one": [4, 6, 1], "two": ["a", "b", "cde"], "three": [0, -1, 1]})
     h2odf1 = h2o.H2OFrame.from_python(pddf)
     h2odf2 = h2o.H2OFrame.from_python(pddf, column_names=["A", "B", "C"])
     h2odf3 = h2o.H2OFrame(pddf)
 
-    assert h2odf1.shape == pddf.shape
-    assert h2odf1.columns == list(pddf.columns)
-    assert h2odf2.shape == pddf.shape
-    assert h2odf2.columns == ["A", "B", "C"]
-    assert h2odf3.shape == pddf.shape
-    assert h2odf3.columns == list(pddf.columns)
+    compare_frames(h2odf1, pddf)
+    compare_frames(h2odf2, pddf, ["A", "B", "C"])
+    compare_frames(h2odf3, pddf)
 
 
 if __name__ == "__main__":

@@ -104,8 +104,8 @@ def _handle_python_lists(python_obj, check_header):
     # create the header
     header = _gen_header(ncols) if check_header != 1 else python_obj.pop(0)
     # shape up the data for csv.DictWriter
-    data_to_write = [dict(list(zip(header, row))) for row in python_obj]
-    return header, data_to_write
+    # data_to_write = [dict(list(zip(header, row))) for row in python_obj]
+    return header, python_obj
 
 
 def stringify_list(arr):
