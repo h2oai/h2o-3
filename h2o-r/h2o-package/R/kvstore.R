@@ -211,11 +211,11 @@ h2o.getModel <- function(model_id) {
 #' Download the Scoring POJO (Plain Old Java Object) of an H2O Model
 #'
 #' @param model An H2OModel
-#' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to
+#' @param path The path to the directory to store the POJO (no trailing slash). If NULL, then print to
 #'             to console. The file name will be a compilable java file name.
 #' @param get_jar Whether to also download the h2o-genmodel.jar file needed to compile the POJO
 #' @param getjar (DEPRECATED) Whether to also download the h2o-genmodel.jar file needed to compile the POJO. This argument is now called `get_jar`.
-#' @return If path is "", then pretty print the POJO to the console.
+#' @return If path is NULL, then pretty print the POJO to the console.
 #'         Otherwise save it to the specified directory and return POJO file name.
 #' @examples
 #' \donttest{
@@ -232,15 +232,15 @@ h2o.getModel <- function(model_id) {
 #' h2o.download_pojo(my_model, getwd())  # save to the current working directory
 #' }
 #' @export
-h2o.download_pojo <- function(model, path="", getjar=NULL, get_jar=TRUE) {
+h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE) {
 
-  if(!(is.character(path))){
+  if(!is.null(path) && !(is.character(path))){
     stop("The 'path' variable should be of type character")
   }
   if(!(is.logical(get_jar))){
     stop("The 'get_jar' variable should be of type logical/boolean")
   }
-  if(path!="" && !(file.exists(path))){
+  if(!is.null(path) && !(file.exists(path))){
     stop(paste0("'path',",path,", to save pojo cannot be found."))
   }
 
@@ -252,7 +252,7 @@ h2o.download_pojo <- function(model, path="", getjar=NULL, get_jar=TRUE) {
   pojoname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
   
   file.path <- paste0(path, "/", pojoname, ".java")
-  if( path == "" ){
+  if( is.null(path) ){
     cat(java)
   } else {
     write(java, file=file.path)
