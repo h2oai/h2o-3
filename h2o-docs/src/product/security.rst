@@ -811,7 +811,7 @@ A more secure way would be to:
 Performance
 ~~~~~~~~~~~
 
-Turning on SSL may result in performance overhead for settings and algorithms that exchange data between nodes due to encryption/decryption time. Some algorithms (such as Deep Learning) might also slower because of this.
+Turning on SSL may result in performance overhead for settings and algorithms that exchange data between nodes due to encryption/decryption time. Some algorithms might also slower because of this.
 
 Example benchmark on a 5 node cluster (6GB memory per node) working with a 5.8mln row dataset (580MB):
 
@@ -821,8 +821,6 @@ Example benchmark on a 5 node cluster (6GB memory per node) working with a 5.8ml
 | Parsing:   | 4.908s              | 5.304s                 |
 +------------+---------------------+------------------------+
 | GLM model: | 01:39.446           | 01:49.634              |
-+------------+---------------------+------------------------+
-| DL model:  | 11:53.54 (42epochs) | 28:06.738 (100 epochs) |
 +------------+---------------------+------------------------+
 
 Caveats and Missing Pieces
