@@ -111,10 +111,10 @@ public class DKVTest extends TestUtil {
       new Random(1234).nextBytes(b1);
       Bytes bytes1 = new Bytes(b1);
 
-      // now them into the DKV
+      // put them into the DKV
       DKV.put(k1, bytes1);
 
-      // now overwrite the state of the live object
+      // overwrite the state of the live object
       new Random(4321).nextBytes(bytes1._b);
 
       // check that the DKV version isn't modified (i.e., that the DKV has the "original" version that was put into the store)
