@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.*;
+import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
@@ -22,7 +23,21 @@ public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
         P extends SharedTreeModel.SharedTreeParameters,
         O extends SharedTreeModel.SharedTreeOutput
-        > extends Model<M, P, O> implements Model.LeafNodeAssignment {
+        > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures {
+
+  @Override
+  public String[] getMostImportantFeatures(int n) {
+    if (_output == null) return null;
+    TwoDimTable vi = _output._variable_importances;
+    if (vi==null) return null;
+    n = Math.min(n, vi.getRowHeaders().length);
+    String res[] = new String[n];
+    for (int i = 0; i < n; ++i)
+      res[i] = vi.getRowHeaders()[i];
+    return res;
+  }
+
+  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
   public abstract static class SharedTreeParameters extends Model.Parameters {
 

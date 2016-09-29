@@ -42,7 +42,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public String[] _warnings = new String[0];
   public Distribution _dist;
   protected ScoringInfo[] scoringInfo;
-  public IcedHashMap<Key, StackTraceElement[]> _toDelete = new IcedHashMap<>();
+  public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
 
 
   public interface DeepFeatures {
@@ -62,6 +62,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public interface ExemplarMembers {
     Frame scoreExemplarMembers(Key<Frame> destination_key, int exemplarIdx);
+  }
+
+  public interface GetMostImportantFeatures {
+    String[] getMostImportantFeatures(int n);
   }
 
   /**
@@ -339,37 +343,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  static private class Replacer extends TAtomic<Model> {
-    final Key _k;
-    public Key[] _res;
-    Replacer(Key k) { _k=k; }
-    @Override
-    protected Model atomic(Model old) {
-      if (old==null) return null;
-      incrementModelMetrics(old._output, _k);
-      _res = old._output._model_metrics;
-      return old;
-    }
-  }
-
-  public synchronized ModelMetrics addModelMetrics(final ModelMetrics mm) {
+  public ModelMetrics addModelMetrics(final ModelMetrics mm) {
     DKV.put(mm);
-    final Key k = mm._key;
-    Replacer r = new Replacer(k);
-    r.invoke(_key);
-    Key[] res = r._res;
-    if (res==null)
-      incrementModelMetrics(_output, k);
-    else
-      _output._model_metrics = res;
+    incrementModelMetrics(_output, mm._key);
     return mm;
   }
 
   static void incrementModelMetrics(Output out, Key k) {
-    for (Key key : out._model_metrics)
-      if (k.equals(key)) return;
-    out._model_metrics = Arrays.copyOf(out._model_metrics, out._model_metrics.length + 1);
-    out._model_metrics[out._model_metrics.length - 1] = k;
+    synchronized(out) {
+      for (Key key : out._model_metrics)
+        if (k.equals(key)) return;
+      out._model_metrics = Arrays.copyOf(out._model_metrics, out._model_metrics.length + 1);
+      out._model_metrics[out._model_metrics.length - 1] = k;
+    }
   }
 
   public void addWarning(String s){
@@ -782,7 +768,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
                                            Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions, ToEigenVec tev,
-                                           IcedHashMap<Key, StackTraceElement[]> toDelete) throws IllegalArgumentException {
+                                           IcedHashMap<Key, String> toDelete) throws IllegalArgumentException {
     if (test == null) return new String[0];
     // Fast path cutout: already compatible
     String[][] tdomains = test.domains();
@@ -888,7 +874,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (expensive) {
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
       if (updated!=test) {
-        if (toDelete!=null) toDelete.put(updated._key, Thread.currentThread().getStackTrace());
+        if (toDelete!=null) toDelete.put(updated._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         test.restructure(updated.names(), updated.vecs());
       }
     }
@@ -907,7 +893,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @throws IllegalArgumentException
    */
   public Frame score(Frame fr) throws IllegalArgumentException {
-    return score(fr, null, null);
+    return score(fr, null, null, true);
   }
 
   /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
@@ -924,14 +910,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @throws IllegalArgumentException
    */
   public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
-    return score(fr, destination_key, null);
+    return score(fr, destination_key, null, true);
   }
 
   public Frame score(Frame fr, String destination_key, Job j) throws IllegalArgumentException {
+    return score(fr, destination_key, j, true);
+  }
+
+  public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    final boolean computeMetrics = (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
+    computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j); // Predict & Score
+    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
@@ -1019,9 +1009,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
     Key[] keys = adaptFr.keys();
     for( int i=0; i<keys.length; i++ )
-      if( fr.find(keys[i]) != -1 ) // Exists in the original frame?
-        keys[i] = null;            // Do not delete it
-    adaptFr.delete();
+      if( fr.find(keys[i]) == -1 ) //only delete vecs that aren't shared
+        keys[i].remove();
+    DKV.remove(adaptFr._key); //delete the frame header
   }
 
   protected String [] makeScoringNames(){
@@ -1048,10 +1038,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  computes the metrics for this frame.
    *
    * @param adaptFrm Already adapted frame
+   * @param computeMetrics
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
-    final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];

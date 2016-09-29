@@ -5,6 +5,7 @@ import java.net.URI;
 import java.util.*;
 
 import hex.Model;
+import hex.PartialDependence;
 import water.*;
 import water.api.FramesHandler.Frames;
 import water.api.schemas3.*;
@@ -159,6 +160,23 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     final Model model = getFromDKV("key", s.model_id.key());
     final String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".zip";
     return new StreamingSchema(model.getMojoStream(), filename);
+  }
+
+  @SuppressWarnings("unused") // called from the RequestServer through reflection
+  public JobV3 makePartialDependence(int version, PartialDependenceV3 s) {
+    PartialDependence partialDependence;
+    if (s.destination_key != null)
+      partialDependence = new PartialDependence(s.destination_key.key());
+    else
+      partialDependence = new PartialDependence(Key.<PartialDependence>make());
+    s.fillImpl(partialDependence); //fill frame_id/model_id/nbins/etc.
+    return new JobV3(partialDependence.execImpl());
+  }
+
+  @SuppressWarnings("unused") // called from the RequestServer through reflection
+  public PartialDependenceV3 fetchPartialDependence(int version, KeyV3.PartialDependenceKeyV3 s) {
+    PartialDependence partialDependence = DKV.getGet(s.key());
+    return new PartialDependenceV3().fillFromImpl(partialDependence);
   }
 
   /** Remove an unlocked model.  Fails if model is in-use. */

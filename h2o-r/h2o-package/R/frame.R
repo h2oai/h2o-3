@@ -780,6 +780,41 @@ h2o.na_omit <- function(object, ...){
 #' @export
 na.omit.H2OFrame <- h2o.na_omit
 
+#' Obtain a list of columns that are specified by `coltype`
+#'
+#' @rdname h2o.columns_by_type
+#' @param object H2OFrame object
+#' @param coltype A character string indicating which column type to filter by. This must be one of the following:
+#'   "numeric"      - Numeric, but not categorical or time
+#'   "categorical"  - Integer, with a categorical/factor String mapping
+#'   "string"       - String column
+#'   "time"         - Long msec since the Unix Epoch - with a variety of display/parse options
+#'   "uuid"         - UUID
+#'   "bad"          - No none-NA rows (triple negative! all NAs or zero rows)
+#' @param ... Ignored
+#' @return A list of column indices that correspond to "type"
+#' @examples
+#' \donttest{
+#' h2o.init()
+#' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex <- h2o.uploadFile(path = prosPath)
+#' h2o.columns_by_type(prostate.hex,coltype="numeric")
+#' }
+#' @export
+h2o.columns_by_type <- function(object,coltype="numeric",...){
+  if(!is.H2OFrame(object)){
+    stop("h2o.filter_type only operates on H2OFrames.")
+  }
+  if(!is.character(coltype)){
+    stop("`coltype` variable should be of type character.")
+  }
+  if(!(coltype %in% c("numeric", "categorical", "string", "time", "uuid", "bad"))){
+    stop(paste0("`coltype` must be one of the following: numeric, categorical, string, time, uuid, or bad but got "
+    , coltype))
+  }
+  .eval.scalar(.newExpr("columnsByType", object,.quote(coltype))) + 1
+}
+
 #' Conduct a lag 1 transform on a numeric H2OFrame column
 #'
 #' @rdname h2o.diff
@@ -973,6 +1008,7 @@ h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) 
 #'
 #' @param x H2OFrame column of strings or factors to be converted
 #' @param format A character string indicating date pattern
+#' @param ... Further arguments to be passed from or to other methods.
 #' @export
 h2o.as_date <- function(x, format, ...) {
   if(!base::is.character(format)) stop("format must be a string")
@@ -2400,9 +2436,9 @@ h2o.print <- function(x,n=6L) {
 #' @param ... Further arguments to be passed from or to other methods.
 #' @param cols Print the per-column str for the H2OFrame
 #' @export
-h2o.str <- function(x,n=6L) {
-  if(is.H2OFrame(x)) str(x,n)
-  else str(x,n)
+h2o.str <- function(object, ..., cols=FALSE) {
+  if(is.H2OFrame(object)) str(object, ..., cols)
+  else str(object, ..., cols)
 }
 
 #'

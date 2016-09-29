@@ -153,6 +153,17 @@ class H2OModelBuilderErrorV3(object):
     def parameters(self):
         return self._props["parameters"]
 
+    def __repr__(self):
+        res = "ModelBuilderErrorV3  (%s):\n" % self.exception_type
+        for k, v in self._props.items():
+            if k in {"exception_type"}: continue
+            if k == "stacktrace":
+                res += "    stacktrace =\n"
+                for line in v:
+                    res += "        %s\n" % line.strip()
+            else:
+                res += "    %s = %r\n" % (k, v)
+        return res
 
 
 

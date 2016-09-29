@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
@@ -14,6 +15,7 @@ import water.RPC.RPCCall;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.util.ArrayUtils;
+import water.network.SocketChannelFactory;
 import water.util.Log;
 import water.util.MathUtils;
 import water.util.UnsafeUtils;
@@ -28,6 +30,9 @@ import water.util.UnsafeUtils;
  */
 
 public final class H2ONode extends Iced<H2ONode> implements Comparable {
+  transient private SocketChannelFactory _socketFactory;
+  transient private H2OSecurityManager _security;
+
   transient short _unique_idx; // Dense integer index, skipping 0.  NOT cloud-wide unique.
   transient boolean _announcedLostContact;  // True if heartbeat published a no-contact msg
   transient public long _last_heard_from; // Time in msec since we last heard from this Node
@@ -110,6 +115,9 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     _unique_idx = unique_idx;
     _last_heard_from = System.currentTimeMillis();
     _heartbeat = new HeartBeat();
+
+    _security = new H2OSecurityManager();
+    _socketFactory = new SocketChannelFactory(_security);
   }
 
   // ---------------
@@ -226,19 +234,19 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // A queue of available TCP sockets
   // re-usable TCP socket opened to this node, or null.
   // This is essentially a BlockingQueue/Stack that allows null.
-  private transient SocketChannel _socks[] = new SocketChannel[2];
+  private transient ByteChannel _socks[] = new ByteChannel[2];
   private transient int _socksAvail=_socks.length;
   // Count of concurrent TCP requests both incoming and outgoing
   static final AtomicInteger TCPS = new AtomicInteger(0);
 
-  SocketChannel getTCPSocket() throws IOException {
+  ByteChannel getTCPSocket() throws IOException {
     // Under lock, claim an existing open socket if possible
     synchronized(this) {
       // Limit myself to the number of open sockets from node-to-node
       while( _socksAvail == 0 )
         try { wait(1000); } catch( InterruptedException ignored ) { }
       // Claim an open socket
-      SocketChannel sock = _socks[--_socksAvail];
+      ByteChannel sock = _socks[--_socksAvail];
       if( sock != null ) {
         if( sock.isOpen() ) return sock; // Return existing socket!
         // Else it's an already-closed socket, lower open TCP count
@@ -257,12 +265,14 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     bb.putChar((char)H2O.H2O_PORT);
     bb.put((byte)0xef);
     bb.flip();
-    while(bb.hasRemaining())
-      sock2.write(bb);
+    ByteChannel wrappedSocket = _socketFactory.clientChannel(sock2, _key.getHostName(), _key.getPort());
+    while(bb.hasRemaining()) {
+      wrappedSocket.write(bb);
+    }
     TCPS.incrementAndGet();     // Cluster-wide counting
-    return sock2;
+    return wrappedSocket;
   }
-  synchronized void freeTCPSocket( SocketChannel sock ) {
+  synchronized void freeTCPSocket( ByteChannel sock ) {
     assert 0 <= _socksAvail && _socksAvail < _socks.length;
     assert TCPS.get() > 0;
     if( sock != null && !sock.isOpen() ) sock = null;
@@ -285,7 +295,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // Buffers the small messages together and sends the bytes over via TCP channel.
   class UDP_TCP_SendThread extends Thread {
 
-    private SocketChannel _chan;  // Lazily made on demand; closed & reopened on error
+    private ByteChannel _chan;  // Lazily made on demand; closed & reopened on error
     private final ByteBuffer _bb; // Reusable output large buffer
   
     public UDP_TCP_SendThread(){
@@ -349,7 +359,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       _bb.flip();                 // limit set to old position; position set to 0
       while( _bb.hasRemaining() ) {
         try {
-          SocketChannel chan = _chan == null ? (_chan=openChan()) : _chan;
+          ByteChannel chan = _chan == null ? (_chan=openChan()) : _chan;
           chan.write(_bb);
   
         } catch(IOException ioe) {
@@ -376,7 +386,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     }
   
     // Open channel on first write attempt
-    private SocketChannel openChan() throws IOException {
+    private ByteChannel openChan() throws IOException {
       // Must make a fresh socket
       SocketChannel sock = SocketChannel.open();
       sock.socket().setReuseAddress(true);
@@ -389,9 +399,11 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       sock.socket().setTcpNoDelay(true);
       ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
       bb.put((byte) 1).putChar((char) H2O.H2O_PORT).put((byte) 0xef).flip();
-      while (bb.hasRemaining())   // Write out magic startup sequence
-        sock.write(bb);
-      return sock;
+      ByteChannel wrappedSocket = _socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
+      while (bb.hasRemaining()) {  // Write out magic startup sequence
+        wrappedSocket.write(bb);
+      }
+      return wrappedSocket;
     }
   }
 
@@ -572,4 +584,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   public final H2ONode read_impl( AutoBuffer ab ) { return intern(H2Okey.read(ab)); }
   public final AutoBuffer writeJSON_impl(AutoBuffer ab) { return ab.putJSONStr("node",_key.toString()); }
   public final H2ONode readJSON_impl( AutoBuffer ab ) { throw H2O.fail(); }
+
+
+  public SocketChannelFactory getSocketFactory() {
+    return _socketFactory;
+  }
+
+  public H2OSecurityManager getSecurityManager() {
+    return _security;
+  }
 }

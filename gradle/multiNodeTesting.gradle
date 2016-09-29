@@ -22,6 +22,11 @@ task testMultiNode(type: Exec) {
     environment "BUILD_DIR", project.buildDir
 
     def args = ['bash', './testMultiNode.sh']
+
+    if(project.hasProperty('doTestSSL')) {
+        args << 'ssl'
+    }
+
     if (project.hasProperty("jacocoCoverage")) {
         args << 'jacoco'
     }

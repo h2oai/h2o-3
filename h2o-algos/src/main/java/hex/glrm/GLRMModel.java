@@ -549,7 +549,7 @@ public class GLRMModel extends Model<GLRMModel,GLRMModel.GLRMParameters,GLRMMode
     return f;
   }
 
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics) {
     return reconstruct(orig, adaptedFr, Key.<Frame>make(destination_key), true, _parms._impute_original);
   }
 

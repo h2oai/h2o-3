@@ -92,7 +92,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j) {
+  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._k; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());

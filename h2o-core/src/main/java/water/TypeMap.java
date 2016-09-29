@@ -1,10 +1,12 @@
 package water;
 
-import java.util.Arrays;
-
 import water.api.schemas3.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
+
+import java.util.Arrays;
+
+import static water.Weaver.classForName;
 
 /** Internal H2O class used to build and maintain the cloud-wide type mapping.
  *  Only public to expose a few constants to subpackages.  No exposed user
@@ -199,7 +201,14 @@ public class TypeMap {
       }
     }
   }
+  static void drop(String ice_clz) {
+    Integer I = MAP.get(ice_clz);
+    if( I==null ) return; // no icer, no problem
+    synchronized( TypeMap.class ) {  // install null
+      GOLD[I] = null;
+    }
 
+  }
   static Iced newInstance(int id) { return (Iced) newFreezable(id); }
 
   /** Create a new freezable object based on its unique ID.
@@ -225,13 +234,13 @@ public class TypeMap {
   public static Freezable theFreezable(int id) {
     try {
       Icer f = goForGold(id);
-      return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
+      return (f==null ? getIcer(id, classForName(className(id))) : f).theFreezable();
     } catch( ClassNotFoundException e ) {
       throw Log.throwErr(e);
     }
   }
   public static Freezable getTheFreezableOrThrow(int id) throws ClassNotFoundException {
     Icer f = goForGold(id);
-    return (f==null ? getIcer(id, Class.forName(className(id))) : f).theFreezable();
+    return (f==null ? getIcer(id, classForName(className(id))) : f).theFreezable();
   }
 }

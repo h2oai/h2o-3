@@ -551,11 +551,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   /** Make either a prediction or a reconstruction.
    * @param orig Test dataset
    * @param adaptedFr Test dataset, adapted to the model
+   * @param computeMetrics
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics) {
     if (!get_params()._autoencoder) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key, j);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics);
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();

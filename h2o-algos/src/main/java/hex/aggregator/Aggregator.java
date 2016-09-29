@@ -152,7 +152,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         model._output._output_frame = Key.make("aggregated_" + _parms._train.toString() + "_by_" + model._key);
 
         _job.update(1, "Creating output frame.");
-        model.createFrameOfExemplars(di._adaptedFrame, model._output._output_frame);
+        model.createFrameOfExemplars(_parms._train.get(), model._output._output_frame);
 
         _job.update(1, "Done.");
         model.update(_job);

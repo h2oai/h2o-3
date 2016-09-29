@@ -213,6 +213,14 @@ public class RegisterV3Api extends AbstractRegister {
         "Return the model in the MOJO format. This format can then be interpreted by " +
         "gen_model.jar in order to perform prediction / scoring. Currently works for GBM and DRF algos only.");
 
+    RequestServer.registerEndpoint("makePDP",
+        "POST /3/PartialDependence/", ModelsHandler.class, "makePartialDependence",
+        "Create data for partial dependence plot(s) for the specified model and frame.");
+
+    RequestServer.registerEndpoint("fetchPDP",
+        "GET /3/PartialDependence/{name}", ModelsHandler.class, "fetchPartialDependence",
+        "Fetch partial dependence data.");
+
     // Model serialization - import/export calls
     RequestServer.registerEndpoint("importModel",
         "POST /99/Models.bin/{model_id}", ModelsHandler.class, "importModel",
@@ -222,7 +230,6 @@ public class RegisterV3Api extends AbstractRegister {
         "GET /99/Models.bin/{model_id}", ModelsHandler.class, "exportModel",
         "Export given model.");
 
-
     RequestServer.registerEndpoint("grid",
         "GET /99/Grids/{grid_id}", GridsHandler.class, "fetch",
         "Return the specified grid search result.");
@@ -230,7 +237,6 @@ public class RegisterV3Api extends AbstractRegister {
     RequestServer.registerEndpoint("grids",
         "GET /99/Grids", GridsHandler.class, "list",
         "Return all grids from H2O distributed K/V store.");
-
 
     RequestServer.registerEndpoint("newModelId",
         "POST /3/ModelBuilders/{algo}/model_id", ModelBuildersHandler.class, "calcModelId",

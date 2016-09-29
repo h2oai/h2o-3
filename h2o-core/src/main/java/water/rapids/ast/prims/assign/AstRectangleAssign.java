@@ -147,7 +147,9 @@ public class AstRectangleAssign extends AstPrimitive {
     // Bulk assign constant (probably zero) over a frame.  Directly set
     // columns: Copy-On-Write optimization happens here on the apply() exit.
     if (dst.numRows() == nrows && rows.isDense()) {
-      Vec vsrc = dst.anyVec().makeCon(src);
+      Vec anyVec = dst.anyVec();
+      assert anyVec != null;  // if anyVec was null, then dst.numRows() would have been 0
+      Vec vsrc = anyVec.makeCon(src);
       for (int col : cols)
         dst.replace(col, vsrc);
       if (dst._key != null) DKV.put(dst);
@@ -235,7 +237,7 @@ public class AstRectangleAssign extends AstPrimitive {
         for (int i = 0; i < cs[0]._len; ++i) {
           int nc = 0;
           if (bool.at8(i) == 1)
-            for (int c : cols) ncs[nc++].addNum(src);
+            for (int ignored : cols) ncs[nc++].addNum(src);
           else
             for (int c : cols) ncs[nc++].addNum(cs[c].atd(i));
         }

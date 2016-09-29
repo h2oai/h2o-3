@@ -67,9 +67,9 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_parms._k);
   }
 
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
     if (!_parms._pred_indicator) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key, j);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics);
     } else {
       final int len = _parms._k;
       String prefix = "cluster_";

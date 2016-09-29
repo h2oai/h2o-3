@@ -342,7 +342,7 @@ public final class ParseDataset {
           errs[i]._lineNum = errs[i]._gLineNum - espc[espcOff];
         }
       }
-      SortedSet s = new TreeSet<ParseWriter.ParseErr>(new Comparator<ParseWriter.ParseErr>() {
+      SortedSet s = new TreeSet<>(new Comparator<ParseWriter.ParseErr>() {
         @Override
         public int compare(ParseWriter.ParseErr o1, ParseWriter.ParseErr o2) {
           long res = o1._gLineNum - o2._gLineNum;
@@ -365,8 +365,10 @@ public final class ParseDataset {
     fr.unlock(job);
     // Remove CSV files from H2O memory
     if( deleteOnDone )
-      for( Key k : fkeys )
-        assert DKV.get(k) == null : "Input key "+k+" not deleted during parse";
+      for( Key k : fkeys ) {
+        DKV.remove(k);
+        assert DKV.get(k) == null : "Input key " + k + " not deleted during parse";
+      }
     return pds;
   }
   private static class CreateParse2GlobalCategoricalMaps extends DTask<CreateParse2GlobalCategoricalMaps> {

@@ -149,7 +149,6 @@ public class KMeansTest extends TestUtil {
       fr2 = kmm.score(fr);
       Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
       assertVecEquals(predR.vec(0), fr2.vec(0), threshold);
-      fr2.delete();
     } finally {
       init .delete();
       predR.delete();
@@ -278,7 +277,6 @@ public class KMeansTest extends TestUtil {
         fr2.delete();
         kmm.delete();
       }
-
     } finally {
       if( fr  != null ) fr.delete();
       if( fr2  != null) fr2.delete();
@@ -299,8 +297,6 @@ public class KMeansTest extends TestUtil {
       kmm = doSeed(parms, System.nanoTime());
       fr2=kmm.score(fr);
       Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
-      fr2.delete();
-
     } finally {
       if( fr  != null) fr.delete();
       if( fr2  != null) fr2.delete();
@@ -328,7 +324,6 @@ public class KMeansTest extends TestUtil {
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
       Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
-      fr2.delete();
 
     } finally {
       if( fr  != null ) fr.delete();
@@ -372,15 +367,12 @@ public class KMeansTest extends TestUtil {
         // Done building model; produce a score column with cluster choices
         fr2 = kmm.score(te);
         Assert.assertTrue(kmm.testJavaScoring(te,fr2,1e-15));
-        fr2.delete();
-        tr .delete();
-        te .delete();
 
       } finally {
-        if( fr  != null ) fr.delete();
-        if( fr2 != null ) fr2.delete();
         if( tr  != null ) tr .delete();
         if( te  != null ) te .delete();
+        if( fr2 != null ) fr2.delete();
+        if( fr  != null ) fr.delete();
         if( kmm != null ) kmm.delete();
       }
     }
@@ -469,10 +461,6 @@ public class KMeansTest extends TestUtil {
             // Done building model; produce a score column with cluster choices
             fr2 = kmm.score(fr);
             Assert.assertTrue(kmm.testJavaScoring(fr, fr2, 1e-15));
-            fr.delete();
-            fr2.delete();
-            train.delete();
-            valid.delete();
           } finally {
             if( fr  != null ) fr .delete();
             if( fr2 != null ) fr2.delete();

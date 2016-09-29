@@ -66,6 +66,8 @@
 #' @param histogram_type What type of histogram to use for finding optimal split points
 #'        Can be one of "AUTO", "UniformAdaptive", "Random", "QuantilesGlobal" or "RoundRobin". Note that H2O supports
 #'        extremely randomized trees with the "Random" option.
+#' @param categorical_encoding Encoding scheme for categorical features
+#'        Can be one of "AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen". Default is "AUTO", which is "Enum".
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction.
 #' @export
@@ -105,7 +107,8 @@ h2o.randomForest <- function(x, y, training_frame,
                              stopping_tolerance = 1e-3,
                              max_runtime_secs = 0,
                              min_split_improvement = 1e-5,
-                             histogram_type = c("AUTO","UniformAdaptive","Random","QuantilesGlobal","RoundRobin")
+                             histogram_type = c("AUTO","UniformAdaptive","Random","QuantilesGlobal","RoundRobin"),
+                             categorical_encoding=c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen")
                              )
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -197,6 +200,7 @@ h2o.randomForest <- function(x, y, training_frame,
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
   if(!missing(min_split_improvement)) parms$min_split_improvement <- min_split_improvement
   if(!missing(histogram_type)) parms$histogram_type <- histogram_type
+  if(!missing(categorical_encoding)) parms$categorical_encoding <- categorical_encoding
 
   .h2o.modelJob('drf', parms)
 }

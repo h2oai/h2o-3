@@ -5,6 +5,7 @@ import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
+import hex.util.LinearAlgebraUtils;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -60,6 +61,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   @Override protected boolean computePriorClassDistribution(){ return true;}
 
+  @Override
+  public ToEigenVec getToEigenVec() {
+    return LinearAlgebraUtils.toEigen;
+  }
+
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
    *  and each subclass will start with "super.init();".  This call is made
@@ -75,6 +81,10 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
     if( _parms._min_rows < 0 )
       error("_min_rows", "Requested min_rows must be greater than 0");
+
+    if (_parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) {
+      error("_categorical_encoding", "Cannot use OneHotInternal categorical encoding for tree methods.");
+    }
 
     if( _parms._ntrees < 0 || _parms._ntrees > MAX_NTREES)
       error("_ntrees", "Requested ntrees must be between 1 and " + MAX_NTREES);
@@ -582,6 +592,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       // Score on training data
       _job.update(0,"Scoring the model.");
+      _model._output._job = _job; // to allow to share the job for quantiles task
       Score sc = new Score(this,_model._output._ntrees>0/*score 0-tree model from scratch*/,oob,response()._key,_model._output.getModelCategory(),computeGainsLift).doAll(train(), build_tree_one_node);
       ModelMetrics mm = sc.makeModelMetrics(_model, _parms.train());
       out._training_metrics = mm;

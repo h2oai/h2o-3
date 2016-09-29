@@ -1,13 +1,21 @@
 package water.parser.parquet;
 
+import org.apache.parquet.hadoop.VecParquetReader;
+import org.reflections.ReflectionUtils;
+import water.H2O;
 import water.Job;
 import water.Key;
 import water.fvec.ByteVec;
+import water.fvec.FileVec;
+import water.fvec.Vec;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseSetup;
 import water.parser.Parser;
 import water.parser.ParserInfo;
 import water.parser.ParserProvider;
+
+import java.io.IOException;
+import java.lang.reflect.Field;
 
 /**
  * Parquet parser provider.
@@ -36,8 +44,15 @@ public class ParquetParserProvider extends ParserProvider {
 
   @Override
   public ParseSetup createParserSetup(Key[] inputs, ParseSetup requestedSetup) {
-    // pass through for now
-    return requestedSetup;
+    // pass through for now (just convert to an instance of ParquetParseSetup if needed)
+    return requestedSetup instanceof ParquetParser.ParquetParseSetup ?
+            requestedSetup : requestedSetup.copyTo(new ParquetParser.ParquetParseSetup());
+  }
+
+  @Override
+  public ParseSetup setupLocal(Vec v, ParseSetup setup) {
+    ((ParquetParser.ParquetParseSetup) setup).parquetMetadata = VecParquetReader.readFooterAsBytes(v);
+    return setup;
   }
 
 }

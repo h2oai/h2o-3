@@ -27,8 +27,11 @@ While most of this README is written for developers who do their own builds, mos
 
 1.  Point to <http://h2o.ai>
 2.  Click on Download
-3.  Scroll down to find the section for H2O-3
-4.  Click the version you want (generally the latest numbered release)
+3.  Click on Download H2O-3
+4.  Choose a platform
+5.  Follow the instructions on the download page
+
+For documentation, please visit <http://docs.h2o.ai>.
 
 <a name="Resources"></a>
 ## 2. Open Source Resources
@@ -583,6 +586,12 @@ Sparkling Water combines two open-source technologies: Apache Spark and H2O, our
 <a name="Documentation"></a>
 ## 8. Documentation
 
+### Live docs website
+
+Visit <http://docs.h2o.ai> for the top-level introduction to documentation on H2O projects.
+
+(Source code for the above page is [here](h2o-docs/src/front/index.html).)
+
 ### Generate REST API documentation 
 
 To generate the REST API documentation, use the following commands: 
@@ -598,7 +607,7 @@ If the build fails, try `gradlew clean`, then `git clean -f`.
 
 ### Bleeding edge build documentation
 
-Documentation for each bleeding edge nightly build is available on the [nightly build page](http://s3.amazonaws.com/h2o-release/h2o-3/master/latest.html).
+Documentation for each bleeding edge nightly build is available on the [nightly build page](http://s3.amazonaws.com/h2o-release/h2o/master/latest.html).
 
 -----
 

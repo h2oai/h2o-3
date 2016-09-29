@@ -248,8 +248,8 @@ class TestGLMGaussian:
 
         # randomly determine data set size in terms of column and row counts
         self.train_col_count = random.randint(3, self.max_col_count)    # accounts for enum columns later
-        self.train_row_count = round(self.train_col_count * random.uniform(self.min_col_count_ratio,
-                                                                           self.max_col_count_ratio))
+        self.train_row_count = int(round(self.train_col_count * random.uniform(self.min_col_count_ratio,
+                                                                           self.max_col_count_ratio)))
 
         #  DEBUGGING setup_data, remember to comment them out once done.
         # self.train_col_count = 3
@@ -921,7 +921,7 @@ class TestGLMGaussian:
         # replace missing values with column mean before proceeding for training/test data sets
         if np.isnan(training_data_xy).any():
             inds = np.where(np.isnan(training_data_xy))
-            col_means = stats.nanmean(training_data_xy, axis=0)
+            col_means = np.asarray(np.nanmean(training_data_xy, axis=0))[0]
             training_data_xy[inds] = np.take(col_means, inds[1])
 
             if np.isnan(test_data_xy).any():

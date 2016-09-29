@@ -28,8 +28,11 @@ public class ParquetParser extends Parser {
 
   private static final int MAX_PREVIEW_RECORDS = 1000;
 
+  private final byte[] _metadata;
+
   ParquetParser(ParseSetup setup, Key<Job> jobKey) {
     super(setup, jobKey);
+    _metadata = ((ParquetParseSetup) setup).parquetMetadata;
   }
 
   @Override
@@ -43,7 +46,7 @@ public class ParquetParser extends Parser {
     // extract metadata, we want to read only the row groups that have centers in this chunk
     ParquetMetadataConverter.MetadataFilter chunkFilter = ParquetMetadataConverter.range(
             chunk.start(), chunk.start() + chunk.len());
-    ParquetMetadata metadata = VecParquetReader.readFooter(vec, chunkFilter);
+    ParquetMetadata metadata = VecParquetReader.readFooter(_metadata, chunkFilter);
     if (metadata.getBlocks().isEmpty()) {
       Log.trace("Chunk #", cidx, " doesn't contain any Parquet block center.");
       return dout;
@@ -69,10 +72,11 @@ public class ParquetParser extends Parser {
       if (bits[i] != MAGIC[i]) return null;
     }
     // seems like we have a Parquet file
-    ParquetMetadata metadata = VecParquetReader.readFooter(vec, ParquetMetadataConverter.NO_FILTER);
+    byte[] metadataBytes = VecParquetReader.readFooterAsBytes(vec);
+    ParquetMetadata metadata = VecParquetReader.readFooter(metadataBytes, ParquetMetadataConverter.NO_FILTER);
     checkCompatibility(metadata);
     ParquetPreviewParseWriter ppWriter = readFirstRecords(metadata, vec, MAX_PREVIEW_RECORDS);
-    return ppWriter.toParseSetup();
+    return ppWriter.toParseSetup(metadataBytes);
   }
 
   private static class ParquetPreviewParseWriter extends PreviewParseWriter {
@@ -109,14 +113,23 @@ public class ParquetParser extends Parser {
       return types;
     }
 
-    ParseSetup toParseSetup() {
+    ParseSetup toParseSetup(byte[] parquetMetadata) {
       byte[] types = guessTypes();
-      return new ParseSetup(
-              ParquetParserProvider.PARQUET_INFO, (byte) '|', true, ParseSetup.HAS_HEADER,
-              _colNames.length, _colNames, types, new String[_colNames.length][] /* domains */, null /* NA strings */,
-              _data);
+      return new ParquetParseSetup(_colNames, types, _data, parquetMetadata);
     }
 
+  }
+
+  public static class ParquetParseSetup extends ParseSetup {
+    transient byte[] parquetMetadata;
+
+    public ParquetParseSetup() { super(); }
+    public ParquetParseSetup(String[] columnNames, byte[] ctypes, String[][] data, byte[] parquetMetadata) {
+      super(ParquetParserProvider.PARQUET_INFO, (byte) '|', true, ParseSetup.HAS_HEADER,
+              columnNames.length, columnNames, ctypes,
+              new String[columnNames.length][] /* domains */, null /* NA strings */, data);
+      this.parquetMetadata = parquetMetadata;
+    }
   }
 
   private static void checkCompatibility(ParquetMetadata metadata) {

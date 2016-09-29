@@ -97,8 +97,8 @@ def check_models(model1, model2, use_cross_validation=False, op='e'):
 
 def check_dims_values(python_obj, h2o_frame, rows, cols, dim_only=False):
     """
-    Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python object
-    conforms to the rules specified in the h2o frame documentation.
+    Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python
+    object conforms to the rules specified in the h2o frame documentation.
 
     :param python_obj: a (nested) list, tuple, dictionary, numpy.ndarray, ,or pandas.DataFrame
     :param h2o_frame: an H2OFrame
@@ -114,10 +114,12 @@ def check_dims_values(python_obj, h2o_frame, rows, cols, dim_only=False):
         if isinstance(python_obj, (list, tuple)):
             for c in range(cols):
                 for r in range(rows):
-                    pval = python_obj[r][c] if rows > 1 else python_obj[c]
-                    hval = h2o_frame[r,c]
-                    assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} " \
-                                         "and column {1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
+                    pval = python_obj[r]
+                    if isinstance(pval, (list, tuple)): pval = pval[c]
+                    hval = h2o_frame[r, c]
+                    assert pval == hval or abs(pval - hval) < 1e-10, \
+                        "expected H2OFrame to have the same values as the python object for row {0} " \
+                        "and column {1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
         elif isinstance(python_obj, dict):
             for r in range(rows):
                 for k in list(python_obj.keys()):

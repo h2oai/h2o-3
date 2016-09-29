@@ -7,13 +7,14 @@ h2o -- module for using H2O services.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import logging
 import os
-import re
 import warnings
 
 from h2o.backend import H2OConnection
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
+from h2o.utils.config import H2OConfigReader
 from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_tmp_key, quoted, urlopen
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from .estimators.deeplearning import H2OAutoEncoderEstimator
@@ -37,7 +38,7 @@ from .utils.compatibility import *  # NOQA
 from .utils.compatibility import PY3
 warnings.simplefilter("always", DeprecationWarning)
 
-
+logging.basicConfig()
 
 h2oconn = None
 
@@ -86,7 +87,6 @@ def connection():
 
 def version_check():
     """Used to verify that h2o-python module and the H2O server are compatible with each other."""
-    if os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"): return
     ci = h2oconn.cluster
     if not ci:
         raise H2OConnectionError("Connection not initialized. Did you run h2o.connect()?")
@@ -119,9 +119,9 @@ def version_check():
               "version from http://h2o.ai/download/".format(ci.build_age))
 
 
-def init(url=None, ip=None, port=None, https=None, insecure=False, username=None, password=None, cluster_id=None,
+def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None, cluster_id=None,
          proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
-         max_mem_size=None, min_mem_size=None, strict_version_check=True, **kwargs):
+         max_mem_size=None, min_mem_size=None, strict_version_check=None, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
@@ -149,7 +149,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     assert_is_type(ip, str, None)
     assert_is_type(port, int, str, None)
     assert_is_type(https, bool, None)
-    assert_is_type(insecure, bool)
+    assert_is_type(insecure, bool, None)
     assert_is_type(username, str, None)
     assert_is_type(password, str, None)
     assert_is_type(cluster_id, int, None)
@@ -160,7 +160,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     assert_is_type(enable_assertions, bool)
     assert_is_type(max_mem_size, int, str, None)
     assert_is_type(min_mem_size, int, str, None)
-    assert_is_type(strict_version_check, bool)
+    assert_is_type(strict_version_check, bool, None)
     assert_is_type(kwargs, {"proxies": {str: str}, "max_mem_size_GB": int, "min_mem_size_GB": int,
                             "force_connect": bool})
 
@@ -188,12 +188,37 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
     mmax = get_mem_size(max_mem_size, kwargs.get("max_mem_size_GB"))
     mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
+    check_version = True
+    verify_ssl_certificates = True
+
+    # Apply the config file
+    config = H2OConfigReader.get_config()
+    if url is None and ip is None and port is None and https is None and "init.url" in config:
+        url = config["init.url"]
+    if proxy is None and "init.proxy" in config:
+        proxy = config["init.proxy"]
+    if cluster_id is None and "init.cluster_id" in config:
+        cluster_id = int(config["init.cluster_id"])
+    if strict_version_check is None:
+        if "init.check_version" in config:
+            check_version = config["init.check_version"].lower() != "false"
+        elif os.environ.get("H2O_DISABLE_STRICT_VERSION_CHECK"):
+            check_version = False
+    else:
+        check_version = strict_version_check
+    if insecure is None:
+        if "init.verify_ssl_certificates" in config:
+            verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
+    else:
+        verify_ssl_certificates = not insecure
+
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
     if ip and ip != "localhost" and ip != "127.0.0.1" and start_h2o:
         print("Warning: connecting to remote server but falling back to local... Did you mean to use `h2o.connect()`?")
     try:
-        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https, verify_ssl_certificates=not insecure,
+        h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https,
+                                     verify_ssl_certificates=verify_ssl_certificates,
                                      auth=auth, proxy=proxy, cluster_id=cluster_id, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url}",
                                             "connected.", "not found."))
@@ -206,7 +231,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=False, username=None
                                   min_mem_size=mmin, ice_root=ice_root, port=port)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
                                      auth=auth, proxy=proxy, cluster_id=cluster_id, verbose=True)
-    if strict_version_check:
+    if check_version:
         version_check()
     h2oconn.cluster.show_status()
 
@@ -277,6 +302,8 @@ def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, 
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    if path.startswith("~"):
+        path = os.path.expanduser(path)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
@@ -326,6 +353,10 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep=None,
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    patharr = path if isinstance(path, list) else [path]
+    if any(os.path.split(p)[0] == "~" for p in patharr):
+        raise H2OValueError("Paths relative to a current user (~) are not valid in the server environment. "
+                            "Please use absolute paths if possible.")
     if not parse:
         return lazy_import(path)
     else:
