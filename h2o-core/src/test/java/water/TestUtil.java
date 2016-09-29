@@ -296,9 +296,9 @@ public class TestUtil extends Iced {
   /**
    * Parse a folder with csv files when a single na_string is specified.
    *
-   * @param fname name of folder
+   * @param fname
    * @param na_string
-   * @return a frame with prased data
+   * @return
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);
