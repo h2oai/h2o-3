@@ -27,7 +27,7 @@ class H2OKMeansEstimator(H2OEstimator):
         names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_predictions",
                       "keep_cross_validation_fold_assignment", "fold_assignment", "fold_column", "ignored_columns",
                       "ignore_const_cols", "score_each_iteration", "k", "estimate_k", "user_points", "max_iterations",
-                      "standardize", "seed", "init", "max_runtime_secs"}
+                      "standardize", "seed", "init", "max_runtime_secs", "categorical_encoding"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -170,8 +170,7 @@ class H2OKMeansEstimator(H2OEstimator):
     @property
     def estimate_k(self):
         """
-        bool: Whether to estimate the number of clusters (<=k) iteratively and deterministically (takes longer).
-        (Default: False)
+        bool: Whether to estimate the number of clusters (<=k) iteratively and deterministically. (Default: False)
         """
         return self._parms.get("estimate_k")
 
@@ -194,7 +193,7 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def max_iterations(self):
-        """int: Maximum training iterations (Default: 1000)"""
+        """int: Maximum training iterations (Default: 10)"""
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
@@ -245,5 +244,19 @@ class H2OKMeansEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
+
+
+    @property
+    def categorical_encoding(self):
+        """
+        Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"]: Encoding scheme for categorical
+        features (Default: "auto")
+        """
+        return self._parms.get("categorical_encoding")
+
+    @categorical_encoding.setter
+    def categorical_encoding(self, categorical_encoding):
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
+        self._parms["categorical_encoding"] = categorical_encoding
 
 

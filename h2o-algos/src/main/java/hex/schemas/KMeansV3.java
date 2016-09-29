@@ -28,14 +28,15 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
         "standardize",
         "seed",
         "init",
-        "max_runtime_secs"
+        "max_runtime_secs",
+        "categorical_encoding"
     };
 
     // Input fields
     @API(help = "User-specified points", required = false, level = API.Level.expert)
     public KeyV3.FrameKeyV3 user_points;
 
-    @API(help="Maximum training iterations", gridable = true)
+    @API(help="Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration)", gridable = true)
     public int max_iterations;        // Max iterations
 
     @API(help = "Standardize columns before computing distances", level = API.Level.critical, gridable = true)
@@ -47,7 +48,7 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
     @API(help = "Initialization mode", values = { "Random", "PlusPlus", "Furthest", "User" }, gridable = true) // TODO: pull out of categorical class. . .
     public KMeans.Initialization init;
 
-    @API(help = "Whether to estimate the number of clusters (<=k) iteratively and deterministically (takes longer).", level = API.Level.critical, gridable = true)
+    @API(help = "Whether to estimate the number of clusters (<=k) iteratively and deterministically.", level = API.Level.critical, gridable = true)
     public boolean estimate_k = false;
   }
 }

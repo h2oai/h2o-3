@@ -60,7 +60,7 @@ public class KMeansRandomTest extends TestUtil {
                     m = job.trainModel().get();
                     Assert.assertTrue("Progress not 100%, but " + job._job.progress() *100, job._job.progress() == 1.0);
 
-                    for (int j = 0; j < m._output._k; j++)
+                    for (int j = 0; j < m._output._k[m._output._k.length-1]; j++)
                       Assert.assertTrue(m._output._size[j] != 0);
 
                     Assert.assertTrue(m._output._iterations <= max_iter);
@@ -73,7 +73,7 @@ public class KMeansRandomTest extends TestUtil {
                     score = m.score(frame);
                     Vec.Reader vr = score.anyVec().new Reader();
                     for (long j = 0; j < score.numRows(); ++j)
-                      Assert.assertTrue(vr.at8(j) >= 0 && vr.at8(j) < m._output._k);
+                      Assert.assertTrue(vr.at8(j) >= 0 && vr.at8(j) < m._output._k[m._output._k.length-1]);
 
                     Log.info("Parameters combination " + count + ": PASS");
                     testcount++;

@@ -9,12 +9,12 @@
 #' @param x (Optional) A vector containing the data columns on
 #'        which k-means operates.
 #' @param k The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will find up to k centroids.
-#' @param estimate_k Whether to estimate the number of clusters (<=k) iteratively and deterministically (takes longer).
+#' @param estimate_k Whether to estimate the number of clusters (<=k) iteratively and deterministically.
 #' @param model_id (Optional) The unique id assigned to the resulting model. If
 #'        none is given, an id will automatically be generated.
 #' @param ignore_const_cols A logical value indicating whether or not to ignore all the constant columns in the training frame.
-#' @param max_iterations The maximum number of iterations allowed. Must be between 0
-#         and 1e6 inclusive.
+#' @param max_iterations Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration).
+#'        Must be between 0 and 1e6 inclusive.
 #' @param standardize Logical, indicates whether the data should be
 #'        standardized before running k-means.
 #' @param init A character string that selects the initial set of k cluster
@@ -53,7 +53,7 @@ h2o.kmeans <- function(training_frame, x,
                        estimate_k = FALSE,
                        model_id,
                        ignore_const_cols = TRUE,
-                       max_iterations = 1000,
+                       max_iterations = 10,
                        standardize = TRUE,
                        init = c("Furthest","Random", "PlusPlus"),
                        seed,
