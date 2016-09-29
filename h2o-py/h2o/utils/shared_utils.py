@@ -134,7 +134,8 @@ def _handle_numpy_array(python_obj, header):
 
 
 def _handle_pandas_data_frame(python_obj, header):
-    return _handle_numpy_array(python_obj.as_matrix(), header)
+    data = _handle_python_lists(python_obj.as_matrix().tolist(), -1)[1]
+    return list(python_obj.columns), data
 
 def _handle_python_dicts(python_obj, check_header):
     header = list(python_obj.keys())
