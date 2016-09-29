@@ -48,7 +48,7 @@ public class NewChunk extends Chunk {
       }
       if(_vals1 != null){
         byte b = (byte)x;
-        if(x == b && b > Byte.MIN_VALUE-1) {
+        if(x == b) {
           _vals1[idx] = b;
         } else {
           // need to switch to 4 byte values
@@ -151,9 +151,13 @@ public class NewChunk extends Chunk {
       }
     }
     public long get(int id) {
-      if(_vals1 != null) return _vals1[id];
-      if(_vals4 != null) return _vals4[id];
-      return _vals8[id];
+      try {
+        if (_vals1 != null) return _vals1[id];
+        if (_vals4 != null) return _vals4[id];
+        return _vals8[id];
+      } catch (ArrayIndexOutOfBoundsException aioobe) {
+        throw new ArrayIndexOutOfBoundsException("Index range expected 0.." + (_nzs-1) + ", got " + id);
+      }
     }
 
     public void switchToInts() {
@@ -165,8 +169,7 @@ public class NewChunk extends Chunk {
     }
 
     public void switchToLongs() {
-      int len = Math.max(_vals1 == null?0:_vals1.length,_vals4 == null?0:_vals4.length);
-      int newlen = len;
+      int newlen = Math.max(_vals1 == null?0:_vals1.length,_vals4 == null?0:_vals4.length);
       _vals8 = MemoryManager.malloc8(newlen);
       if(_vals1 != null)
         for(int i = 0; i < _vals1.length; ++i)
@@ -549,7 +552,7 @@ public class NewChunk extends Chunk {
   // Fast-path append double data
   public void addNum(double d) {
     if( isUUID() || isString() ) { addNA(); return; }
-    boolean predicate = _sparseNA ? !Double.isNaN(d) : isSparseZero()?d != 0:true;
+    boolean predicate = _sparseNA ? !Double.isNaN(d) : isSparseZero() || d != 0;
     if(predicate) {
       if(_ms != null) {
         if((long)d == d){
@@ -621,7 +624,7 @@ public class NewChunk extends Chunk {
           append_ss((BufferedString) str);
         else // this spares some callers from an unneeded conversion to BufferedString first
           append_ss((String) str);
-      } else if (_id == null) {
+      } else {
         _is[_sparseLen] = CStrChunk.NA;
         set_sparseLen(_sparseLen + 1);
       }
@@ -984,7 +987,7 @@ public class NewChunk extends Chunk {
         for (int i = 0; i < _sparseLen; ++i) {
           xs.set(_id[i], _xs.get(i));
           ms.set(_id[i], _ms.get(i));
-          missing.set(_id[i], _sparseNA || _missing == null?false:_missing.get(i));
+          missing.set(_id[i], (_sparseNA || _missing == null) && _missing.get(i));
         }
         assert _sparseNA || (ms._nzs == _ms._nzs):_ms._nzs + " != " + ms._nzs;
         ms._nzs = _ms._nzs;
@@ -1249,8 +1252,8 @@ public class NewChunk extends Chunk {
           return new C2SChunk( bufX(bias,xmin,C2SChunk._OFF,1),bias,PrettyPrint.pow10(xmin));
         }
       }
-      if(leRange < 4294967295l) {
-        long bias = 2147483647l + lemin;
+      if(leRange < 4294967295L) {
+        long bias = 2147483647L + lemin;
         return new C4SChunk( bufX(bias,xmin,C4SChunk._OFF,2),bias,PrettyPrint.pow10(xmin));
       }
       return chunkD();

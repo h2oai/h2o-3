@@ -3,14 +3,16 @@ package water.fvec;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import water.H2O;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
+import static org.junit.Assert.*;
 
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by tomas on 3/16/16.
+ * Tests for Frame.java
  */
 public class FrameTest extends TestUtil {
   @BeforeClass
@@ -18,8 +20,34 @@ public class FrameTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
-  @Ignore
-  @Test public void testDeepSelectSparse() {
+  @Test
+  public void testRemoveColumn() {
+    Scope.enter();
+    Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
+    try {
+      // dataset to split
+      int initialSize = testData.numCols();
+      testData.remove(-1);
+      assertEquals(initialSize, testData.numCols());
+      testData.remove(0);
+      assertEquals(initialSize - 1, testData.numCols());
+      assertEquals("C2", testData._names[0]);
+      testData.remove(initialSize - 2);
+      assertEquals(initialSize - 2, testData.numCols());
+      assertEquals("C" + (initialSize - 1), testData._names[initialSize - 3]);
+      testData.remove(42);
+      assertEquals(initialSize - 3, testData.numCols());
+      assertEquals("C43", testData._names[41]);
+      assertEquals("C45", testData._names[42]);
+    } finally {
+      Scope.exit();
+      testData.delete();
+      H2O.STORE.clear(); // TODO(vlad): figure out how come it's dirty after deletion of columns
+    }
+  }
+
+  // _names=C1,... - C10001
+  @Ignore @Test public void testDeepSelectSparse() {
     Scope.enter();
     // dataset to split
     Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
@@ -43,7 +71,6 @@ public class FrameTest extends TestUtil {
       subset1.delete();
 //      subset2.delete();
       if (x != null) x.delete();
-      if (y != null) y.delete();
     }
   }
 

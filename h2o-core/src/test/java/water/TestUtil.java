@@ -94,8 +94,7 @@ public class TestUtil extends Iced {
       }
       if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
     }
-    System.out.println("leaked_keys = " + leaked_keys + ", cnt = " + cnt);
-    assertTrue("No keys leaked, leaked_keys = " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
+    assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(){
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
@@ -265,23 +264,25 @@ public class TestUtil extends Iced {
     File folder = find_test_file(fname);
     assert folder.isDirectory();
     File[] files = folder.listFiles();
-    Arrays.sort(files);
-    ArrayList<Key> keys = new ArrayList<>();
-    for( File f : files )
-      if( f.isFile() )
-        keys.add(NFSFileVec.make(f)._key);
-    Key[] res = new Key[keys.size()];
-    keys.toArray(res);
-    return ParseDataset.parse(Key.make(), res);
+    if (files != null) {
+      Arrays.sort(files);
+      ArrayList<Key> keys = new ArrayList<>();
+      for( File f : files )
+        if( f.isFile() )
+          keys.add(NFSFileVec.make(f)._key);
+      Key[] res = new Key[keys.size()];
+      keys.toArray(res);
+      return ParseDataset.parse(Key.make(), res);
+    } else return null;
   }
 
 
   /**
    * Parse a folder with csv files when a single na_string is specified.
    *
-   * @param fname
+   * @param fname name of folder
    * @param na_string
-   * @return
+   * @return a frame with prased data
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);
