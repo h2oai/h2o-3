@@ -532,15 +532,10 @@ h2o.clusterStatus <- function() {
 # This function returns the path to the Java executable if it exists
 # X) NO: Fails on Windows.  Check for Java in user's PATH
 # 2) Check for JAVA_HOME environment variable
-# 3) If Windows, check standard install locations in Program Files folder. Warn if JRE found, but not JDK since H2O requires JDK to run.
+# 3) If Windows, check standard install locations in Program Files folder. Will look for JRE.
 # 4) Check for Java in user's PATH.
-# 5) When all fails, stop and prompt user to download JDK from Oracle website.
+# 5) When all fails, stop and prompt user to download JRE from Oracle website.
 .h2o.checkJava <- function() {
-# For reasons unknown, on Windows Sys.which("java") returns the Windows archaic
-# built-in Java, even with a good recent JDK on the PATH.  This Java version is
-# totally broken.  Try it last.
-#  if(nzchar(Sys.which("java")))
-#    Sys.which("java")
   if(nzchar(Sys.getenv("JAVA_HOME"))) {
     if(.Platform$OS.type == "windows") { file.path(Sys.getenv("JAVA_HOME"), "bin", "java.exe") }
     else                               { file.path(Sys.getenv("JAVA_HOME"), "bin", "java") }
@@ -550,24 +545,18 @@ h2o.clusterStatus <- function() {
     prog_folder <- c("Program Files", "Program Files (x86)")
     for(prog in prog_folder) {
       prog_path <- file.path("C:", prog, "Java")
-      jdk_folder <- list.files(prog_path, pattern = "jdk")
+      java_folder <- list.files(prog_path)
 
-      for(jdk in jdk_folder) {
-        path <- file.path(prog_path, jdk, "bin", "java.exe")
+      for(java in java_folder) {
+        path <- file.path(prog_path, java, "bin", "java.exe")
         if(file.exists(path)) return(path)
       }
-    }
-
-    # Check for existence of JRE and warn user
-    for(prog in prog_folder) {
-      path <- file.path("C:", prog, "Java", "jre7", "bin", "java.exe")
-      if(file.exists(path)) warning("Found JRE at ", path, " but H2O requires the JDK to run")
     }
   }
   else if(nzchar(Sys.which("java")))
     Sys.which("java")
   else
-    stop("Cannot find Java. Please install the latest JDK from\n",
+    stop("Cannot find Java. Please install the latest JRE from\n",
          "http://www.oracle.com/technetwork/java/javase/downloads/index.html")
 }
 
