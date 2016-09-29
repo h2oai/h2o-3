@@ -432,7 +432,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               _parms._keep_cross_validation_predictions ||
               (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
-        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job);
+        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true);
         DKV.put(cvModel);
       }
       // free resources as early as possible

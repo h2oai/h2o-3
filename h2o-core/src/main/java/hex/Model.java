@@ -893,7 +893,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @throws IllegalArgumentException
    */
   public Frame score(Frame fr) throws IllegalArgumentException {
-    return score(fr, null, null);
+    return score(fr, null, null, true);
   }
 
   /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
@@ -910,14 +910,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @throws IllegalArgumentException
    */
   public Frame score(Frame fr, String destination_key) throws IllegalArgumentException {
-    return score(fr, destination_key, null);
+    return score(fr, destination_key, null, true);
   }
 
   public Frame score(Frame fr, String destination_key, Job j) throws IllegalArgumentException {
+    return score(fr, destination_key, j, true);
+  }
+
+  public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    final boolean computeMetrics = (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
+    computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j); // Predict & Score
+    Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
     // Log modest confusion matrices
     Vec predicted = output.vecs()[0]; // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
@@ -1034,10 +1038,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  computes the metrics for this frame.
    *
    * @param adaptFrm Already adapted frame
+   * @param computeMetrics
    * @return A Frame containing the prediction column, and class distribution
    */
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
-    final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];

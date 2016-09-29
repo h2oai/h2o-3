@@ -109,7 +109,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
               test.add(col, cons);
               Frame preds = null;
               try {
-                preds = _model_id.get().score(test);
+                preds = _model_id.get().score(test, Key.make().toString(), _job, false);
                 if (_model_id.get()._output.nclasses() == 2) {
                   meanResponse[which] = preds.vec(2).mean();
                 } else if (_model_id.get()._output.nclasses() == 1) {

@@ -342,7 +342,7 @@ class ModelMetricsHandler extends Handler {
       @Override
       public void compute2() {
         if (s.deep_features_hidden_layer < 0) {
-          parms._model.score(parms._frame, parms._predictions_name, j);
+          parms._model.score(parms._frame, parms._predictions_name, j, true);
         } else {
           Frame predictions = ((Model.DeepFeatures) parms._model).scoreDeepFeatures(parms._frame, s.deep_features_hidden_layer, j);
           predictions = new Frame(Key.<Frame>make(parms._predictions_name), predictions.names(), predictions.vecs());

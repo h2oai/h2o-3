@@ -1178,10 +1178,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    *  computes the metrics for this frame.
    *
    * @param adaptFrm Already adapted frame
+   * @param computeMetrics
    * @return A Frame containing the prediction column, and class distribution
    */
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
     GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(names.length,Vec.T_NUM,adaptFrm);
