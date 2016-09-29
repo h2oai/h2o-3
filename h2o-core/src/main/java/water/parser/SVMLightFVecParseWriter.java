@@ -37,11 +37,13 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   @Override public void addStrCol(int idx, BufferedString str){addInvalidCol(idx);}
   @Override public boolean isString(int idx){return false;}
   @Override public FVecParseWriter close(Futures fs) {
+    if (_nvs != null) {
     for(NewChunk nc:_nvs) {
       nc.addZeros((int) _nLines - nc._len);
       assert nc._len == _nLines:"incompatible number of lines after parsing chunk, " + _nLines + " != " + nc._len;
     }
-    _nCols = _nvs.length;
+    }
+    _nCols = _nvs == null ? 0 : _nvs.length;
     return super.close(fs);
   }
   private void addColumns(int newColCnt){
