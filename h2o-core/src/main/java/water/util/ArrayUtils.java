@@ -1299,10 +1299,7 @@ public class ArrayUtils {
     return fr;
   }
   public static Frame frame(double[]... rows) { return frame(null, rows); }
-  public static Frame frame(String[] names, double[]... rows) {
-    Key<Frame> k = Key.make();
-    return frame(k, names, rows);
-  }
+  public static Frame frame(String[] names, double[]... rows) { return frame(Key.<Frame>make(), names, rows); }
   public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
 
   /**
