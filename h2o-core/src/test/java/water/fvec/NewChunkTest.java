@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 public class NewChunkTest extends TestUtil {
@@ -52,6 +53,23 @@ public class NewChunkTest extends TestUtil {
     assertEquals(Math.PI,c.atd(N+1),1e-16);
   }
 
+  @Test public void testSparseNAs() {
+    NewChunk nc = new NewChunk(null, 0, true);
+    nc.addNAs(128);
+    assertTrue(nc.isSparseNA());
+    for (int i = 0; i < 512; i++)
+      nc.addUUID(i, i);
+    assertFalse(nc.isSparseNA());
+    Chunk c = nc.compress();
+    assertEquals(128 + 512, c.len());
+    for (int i = 0; i < 128; ++i)
+      assertTrue(c.isNA(i));
+    for (int i = 0; i < 512; i++) {
+      assertEquals(i, c.at16l(128 + i));
+      assertEquals(i, c.at16h(128 + i));
+    }
+  }
+
   private static class NewChunkTestCpy extends NewChunk {
     NewChunkTestCpy(Vec vec, int cidx) {super(vec, cidx);}
     public NewChunkTestCpy() { super(null,0); }
@@ -60,6 +78,7 @@ public class NewChunkTest extends TestUtil {
     int missingSize()  {return _missing == null?0:_missing.size();}
   }
 
+  
   private void testIntegerChunk(long [] values, int mantissaSize) {
     Vec v = Vec.makeCon(0,0);
     // single bytes
