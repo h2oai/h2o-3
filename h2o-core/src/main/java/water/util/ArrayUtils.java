@@ -1003,7 +1003,7 @@ public class ArrayUtils {
     return c;
   }
 
-  @SafeVarargs
+  // Java7+  @SafeVarargs
   public static <T> T[] append(T[] a, T... b) {
     if( a==null ) return b;
     T[] tmp = Arrays.copyOf(a,a.length+b.length);

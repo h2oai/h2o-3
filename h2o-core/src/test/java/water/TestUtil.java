@@ -376,7 +376,7 @@ public class TestUtil extends Iced {
     return r;
   }
 
-  @SafeVarargs
+// Java7+  @SafeVarargs
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
