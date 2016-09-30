@@ -102,7 +102,11 @@ def _handle_python_lists(python_obj, check_header):
         python_obj = [[python_obj]]
         ncols = 1
     # create the header
-    header = _gen_header(ncols) if check_header != 1 else python_obj.pop(0)
+    if check_header == 1:
+        header = python_obj[0]
+        python_obj = python_obj[1:]
+    else:
+        header = _gen_header(ncols)
     # shape up the data for csv.DictWriter
     # data_to_write = [dict(list(zip(header, row))) for row in python_obj]
     return header, python_obj

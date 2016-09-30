@@ -152,7 +152,7 @@ class H2OFrame(object):
         # create a new csv writer object thingy
         csv_writer = csv.writer(tmp_file, dialect="excel", quoting=csv.QUOTE_NONNUMERIC)
         csv_writer.writerow(column_names)
-        if isinstance(data_to_write[0], dict):
+        if data_to_write and isinstance(data_to_write[0], dict):
             for row in data_to_write:
                 csv_writer.writerow([row.get(k, None) for k in col_header])
         else:
