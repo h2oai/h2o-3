@@ -34,6 +34,8 @@
 #'        stratify the folds based on the response variable, for classification problems.
 #' @param keep_cross_validation_predictions Whether to keep the predictions of the cross-validation models
 #' @param keep_cross_validation_fold_assignment Whether to keep the cross-validation fold assignment.
+#' @param categorical_encoding Encoding scheme for categorical features
+#'        Can be one of "AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen". Default is "AUTO", which is "Enum".
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable.
 #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
@@ -62,6 +64,7 @@ h2o.kmeans <- function(training_frame, x,
                        fold_assignment = c("AUTO","Random","Modulo","Stratified"),
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
+                       categorical_encoding=c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
                        max_runtime_secs=0)
 {
   # Training_frame may be a key or an H2OFrame object
@@ -98,6 +101,7 @@ h2o.kmeans <- function(training_frame, x,
   if( !missing(fold_assignment) )           parms$fold_assignment        <- fold_assignment
   if( !missing(keep_cross_validation_predictions) )  parms$keep_cross_validation_predictions  <- keep_cross_validation_predictions
   if( !missing(keep_cross_validation_fold_assignment) )  parms$keep_cross_validation_fold_assignment  <- keep_cross_validation_fold_assignment
+  if(!missing(categorical_encoding)) parms$categorical_encoding <- categorical_encoding
   if(!missing(max_runtime_secs)) parms$max_runtime_secs <- max_runtime_secs
 
   # Check if init is an acceptable set of user-specified starting points
