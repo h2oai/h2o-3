@@ -35,7 +35,7 @@ public class TestUtil extends Iced {
   private static String[] ignoreTestsNames;
   private static String[] doonlyTestsNames;
   protected static int _initial_keycnt = 0;
-  protected static int MINCLOUDSIZE;
+  protected static int MINCLOUDSIZE = Integer.parseInt(System.getProperty("cloudSize", "1"));
 
   public TestUtil() { this(1); }
   public TestUtil(int minCloudSize) {
@@ -62,6 +62,7 @@ public class TestUtil extends Iced {
     stall_till_cloudsize(new String[] {}, x);
   }
   public static void stall_till_cloudsize(String[] args, int x) {
+    x = Math.max(MINCLOUDSIZE, x);
     if( !_stall_called_before ) {
       H2O.main(args);
       H2O.registerRestApis(System.getProperty("user.dir"));
