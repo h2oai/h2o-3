@@ -1056,6 +1056,16 @@ public class ArrayUtils {
       System.arraycopy(original, 0, newArray, 0, newLength);
     return newArray;
   }
+  static public int[] copyAndFillOf(int[] original, int newLength, int padding) {
+    if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
+    int[] newArray = new int[newLength];
+    if(original.length < newLength) {
+      System.arraycopy(original, 0, newArray, 0, original.length);
+      Arrays.fill(newArray, original.length, newArray.length, padding);
+    } else
+      System.arraycopy(original, 0, newArray, 0, newLength);
+    return newArray;
+  }
 
   static public double[] copyFromIntArray(int[] a) {
     double[] da = new double[a.length];
