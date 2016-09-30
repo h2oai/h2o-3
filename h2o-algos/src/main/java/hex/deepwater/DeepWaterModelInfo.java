@@ -38,8 +38,8 @@ final public class DeepWaterModelInfo extends Iced {
   public TwoDimTable summaryTable;
 
   //for image classification
-  transient BackendTrain backend;
-  transient BackendModel _model;
+  transient BackendTrain backend; //interface provider
+  transient BackendModel _model;  //pointer to C++ process
 
   int _height;
   int _width;
@@ -51,10 +51,11 @@ final public class DeepWaterModelInfo extends Iced {
   Key<DataInfo> _dataInfoKey;
 
   public void nukeBackend() {
-    if (backend != null) {
+    if (backend != null && _model != null) {
       backend.delete(_model);
-      backend = null;
     }
+    backend = null;
+    _model = null;
   }
 
   public void saveNativeState(String path, int iteration) {
@@ -66,6 +67,7 @@ final public class DeepWaterModelInfo extends Iced {
 
   float[] predict(float[] data) {
     assert(backend!=null);
+    assert(_model!=null);
     return backend.predict(_model, data);
   }
 
@@ -333,6 +335,8 @@ final public class DeepWaterModelInfo extends Iced {
       Log.warn("No need to move the state from Java to native.");
       return;
     }
+    if (backend==null)
+      backend = BackendFactory.create(get_params()._backend);
 
     if (network==null) network = _network;
     if (parameters==null) parameters= _modelparams;
@@ -344,9 +348,8 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString() + ".json");
       Files.write(path, network);
-      if (backend == null) backend = BackendFactory.create(get_params()._backend);
       Log.info("Randomizing everything.");
-      backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, path.toString()); //randomizing initial state
+      _model = backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, path.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
