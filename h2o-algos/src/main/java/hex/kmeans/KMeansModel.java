@@ -3,6 +3,8 @@ package hex.kmeans;
 import hex.ClusteringModel;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
+import hex.ToEigenVec;
+import hex.util.LinearAlgebraUtils;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -17,6 +19,8 @@ import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
 public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
+
+  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
   public static class KMeansParameters extends ClusteringModel.ClusteringParameters {
     public String algoName() { return "KMeans"; }
