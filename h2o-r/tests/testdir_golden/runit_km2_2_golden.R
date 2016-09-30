@@ -15,7 +15,7 @@ test.kmstand.golden <- function() {
   ozoneScale = scale(ozoneR, center = TRUE, scale = TRUE)
   Log.info("Initial cluster centers:"); print(ozoneScale[startIdx,])
   fitR <- kmeans(ozoneScale, centers = ozoneScale[startIdx,], iter.max = 1000, algorithm = "Lloyd")
-  fitH2O <- h2o.kmeans(ozoneH2O, init = ozoneH2O[startIdx,], standardize = TRUE)
+  fitH2O <- h2o.kmeans(ozoneH2O, init = ozoneH2O[startIdx,], max_iterations = 1000,standardize = TRUE)
   
   Log.info("R Final Clusters:"); print(fitR$centers)
   Log.info("H2O Final Clusters:"); print(getCentersStd(fitH2O))
