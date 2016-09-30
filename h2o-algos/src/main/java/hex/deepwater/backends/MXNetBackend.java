@@ -11,11 +11,13 @@ import water.util.Log;
 import java.io.File;
 
 class MXNetBackend implements BackendTrain {
+  MXNetBackendModel get(BackendModel m) {
+    return (MXNetBackendModel) m;
+  }
 
   @Override
   public void delete(BackendModel m) {
-    MXNetBackendModel mxnet = (MXNetBackendModel)m ;
-    mxnet.delete();
+    get(m).delete();
   }
 
   @Override
@@ -48,8 +50,7 @@ class MXNetBackend implements BackendTrain {
 
   @Override
   public void setParameter(BackendModel m, String name, float value) {
-    MXNetBackendModel mxnet = (MXNetBackendModel)m ;
-
+    MXNetBackendModel mxnet = get(m);
     if (name == "momentum") {
       mxnet.setMomentum(value);
     } else if (name == "learning_rate") {
@@ -61,25 +62,22 @@ class MXNetBackend implements BackendTrain {
 
   @Override
   public float[] train(BackendModel m, float[] data, float[] label) {
-    MXNetBackendModel mxnetModel = (MXNetBackendModel)m ;
-    return mxnetModel.train(data, label);
+    return get(m).train(data, label);
   }
 
   @Override
   public float[] predict(BackendModel m, float[] data, float[] label) {
-    MXNetBackendModel model = (MXNetBackendModel)m ;
-    return model.predict(data, label);
+    return get(m).predict(data, label);
   }
 
   @Override
   public float[] predict(BackendModel m, float[] data) {
-    MXNetBackendModel model = (MXNetBackendModel)m ;
-    return model.predict(data);
+    return get(m).predict(data);
   }
 
   @Override
   public void loadParam(BackendModel m, String networkParms) {
-    MXNetBackendModel model = (MXNetBackendModel)m ;
+    MXNetBackendModel model = get(m);
 
     if (networkParms != null && !networkParms.isEmpty()) {
       File f = new File(networkParms);
@@ -96,12 +94,12 @@ class MXNetBackend implements BackendTrain {
 
   @Override
   public void saveModel(BackendModel m, String model_path) {
-
+    get(m).saveModel(model_path);
   }
 
   @Override
   public void saveParam(BackendModel m, String param_path) {
-
+    get(m).saveParam(param_path);
   }
 
   @Override
