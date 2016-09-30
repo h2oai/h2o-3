@@ -3502,6 +3502,12 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
 #' @return An H2OFrame with the name of time series, string representation of iSAX word, followed by binary representation
 #' @export
 h2o.isax <- function(x, num_words, max_cardinality){
+  if(num_words <= 0){
+    stop("num_words must be greater than 0!")
+  }
+  if(max_cardinality <= 0){
+    stop("max_cardinality must be greater than 0!")
+  }
   .newExpr("isax", x, num_words, max_cardinality)
 }
 

@@ -2254,6 +2254,8 @@ class H2OFrame(object):
         -------
           An H2OFrame with the name of time series, string representation of iSAX word, followed by binary representation
         """
+        assert num_words > 0, "num_words must be greater than 0!"
+        assert max_cardinality > 0, "max_cardinality must be greater than 0!"
         frame = H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality))._frame()
         return frame
 

@@ -55,12 +55,20 @@ public class AstISax extends AstPrimitive {
         //Check vecs are numeric
         for(Vec v : f.vecs()){
             if(!v.isNumeric()){
-                throw new IllegalArgumentException("iSAX only applies to numeric columns");
+                throw new IllegalArgumentException("iSAX only applies to numeric columns!");
             }
         }
 
         int numWords = (int) n.exec(env).getNum();
         int maxCardinality = (int) mc.exec(env).getNum();
+
+        //Check numWords and maxCardinality are >=0
+        if(numWords <= 0 ){
+            throw new IllegalArgumentException("numWords must be greater than 0!");
+        }
+        if(maxCardinality <= 0 ){
+            throw new IllegalArgumentException("maxCardinality must be greater than 0!");
+        }
 
         ArrayList<String> columns = new ArrayList<>();
         for (int i = 0; i < numWords; i++) {
