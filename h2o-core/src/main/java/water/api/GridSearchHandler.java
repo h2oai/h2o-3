@@ -149,7 +149,7 @@ public class GridSearchHandler<G extends Grid<MP>,
   }
 
 
-  static class DefaultModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
+  public static class DefaultModelParametersBuilderFactory<MP extends Model.Parameters, PS extends ModelParametersSchemaV3>
       implements ModelParametersBuilderFactory<MP> {
 
     @Override

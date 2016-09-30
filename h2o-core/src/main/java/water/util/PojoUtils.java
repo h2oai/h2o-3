@@ -515,9 +515,11 @@ public class PojoUtils {
         try {
           Field f = o.getClass().getField(key);
           f.setAccessible(true);
-          Object subObj = f.getType().newInstance();
-          fillFromMap(subObj, (Map<String, Object>) value);
-          setField(o, key, subObj);
+
+          // In some cases, the target object has children already (e.g., defaults), while in other cases it doesn't.
+          if (null == f.get(o))
+            f.set(o, f.getType().newInstance());
+          fillFromMap(f.get(o), (Map<String, Object>) value);
         } catch (NoSuchFieldException e) {
           throw new IllegalArgumentException("Field not found: '" + key + "' on object " + o);
         } catch (IllegalAccessException e) {
