@@ -648,6 +648,7 @@ public class NewChunk extends Chunk {
       append2slowUUID();
     _ms.set(_sparseLen,lo);
     _ds[_sparseLen] = Double.longBitsToDouble(hi);
+    if (_id != null) _id[_sparseLen] = _len;
     _sparseLen++;
     _len++;
     assert _sparseLen <= _len;
@@ -795,6 +796,7 @@ public class NewChunk extends Chunk {
     if( _ms != null && _sparseLen > 0 ) {
       _ds = MemoryManager.arrayCopyOf(_ds, _sparseLen * 2);
       _ms.resize(_sparseLen*2);
+      if(_id != null) _id = Arrays.copyOf(_id,_sparseLen*2);
     } else {
       _ms = new Mantissas(4);
       _xs = null;
