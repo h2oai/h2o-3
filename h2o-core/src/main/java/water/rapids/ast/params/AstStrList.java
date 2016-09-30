@@ -1,6 +1,5 @@
 package water.rapids.ast.params;
 
-import water.H2O;
 import water.rapids.Env;
 import water.rapids.Rapids;
 import water.rapids.Val;
@@ -15,6 +14,10 @@ import java.util.Arrays;
  */
 public class AstStrList extends AstParameter {
   public String[] _strs;
+
+  public AstStrList() {
+    _strs = null;
+  }
 
   public AstStrList(Rapids e) {
     ArrayList<String> strs = new ArrayList<>();

@@ -36,7 +36,7 @@ public class AstAsDate extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec vec = fr.vecs()[0];
     if (fr.vecs().length != 1 || !(vec.isCategorical() || vec.isString()))

@@ -1,12 +1,16 @@
 package water.rapids.ast.params;
 
-import water.H2O;
+import water.rapids.Env;
+import water.rapids.Rapids;
 import water.rapids.ast.AstParameter;
+import water.rapids.vals.ValNum;
 
 /**
  * Class for constants
  */
 public class AstConst extends AstParameter {
+  private final ValNum _v;
+  private final String name;
 
   final public static AstConst FALSE = new AstConst("False", 0);
   final public static AstConst TRUE = new AstConst("True", 1);
@@ -15,15 +19,14 @@ public class AstConst extends AstParameter {
   final public static AstConst E = new AstConst("E", Math.E);
 
 
-  private final String name;
-
   public AstConst() {
     name = null;
+    _v = null;
   }
 
   public AstConst(String name, double d) {
-    super(d);
     this.name = name;
+    this._v = new ValNum(d);
   }
 
   @Override
@@ -32,7 +35,8 @@ public class AstConst extends AstParameter {
   }
 
   @Override
-  public void setNum(double d) {
-    throw H2O.fail("Attempt to modify constant " + name);
+  public ValNum exec(Env env) {
+    return _v;
   }
+
 }

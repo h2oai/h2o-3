@@ -29,7 +29,7 @@ public class AstAsNumeric extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec[] nvecs = new Vec[fr.numCols()];
     Vec vv;

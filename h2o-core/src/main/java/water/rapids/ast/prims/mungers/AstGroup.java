@@ -241,7 +241,7 @@ public class AstGroup extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 
@@ -321,7 +321,7 @@ public class AstGroup extends AstPrimitive {
     // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a AstNumList
     AstNumList dim;
     if (ast instanceof AstNumList) dim = (AstNumList) ast;
-    else if (ast instanceof AstNum) dim = new AstNumList(((AstNum) ast)._v.getNum());
+    else if (ast instanceof AstNum) dim = new AstNumList(((AstNum) ast).getNum());
     else throw new IllegalArgumentException("Requires a number-list, but found a " + ast.getClass());
     if (dim.isEmpty()) return dim; // Allow empty
     for (int col : dim.expand4())

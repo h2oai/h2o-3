@@ -38,7 +38,7 @@ public class AstRectangleAssign extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc = stk.track(asts[2].exec(env));
     // Column selection

@@ -32,7 +32,7 @@ public class AstSeq extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     double from = asts[1].exec(env).getNum();
     double to = asts[2].exec(env).getNum();
     double by = asts[3].exec(env).getNum();

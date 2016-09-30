@@ -7,8 +7,7 @@ import water.MRTask;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
 import water.rapids.Env;
-
-import static water.rapids.ast.AstParameter.makeNum;
+import water.rapids.ast.params.AstNum;
 
 /**
  * This wrapper pushes a transform down into each chunk so that
@@ -95,7 +94,7 @@ public class TransformWrappedVec extends WrappedVec {
       _asts = new AstRoot[1+_c.length];
       _asts[0]=_fun;
       for(int i=1;i<_asts.length;++i)
-        _asts[i] = makeNum(0);
+        _asts[i] = new AstNum(0);
       _env = new Env(null);
     }
 
@@ -104,7 +103,7 @@ public class TransformWrappedVec extends WrappedVec {
     @Override public double atd_impl(int idx) {
       if( null==_fun ) return _c[0].atd(idx);  // simple wrapping of 1 vec
       for(int i=1;i<_asts.length;++i)
-        ((AstParameter)_asts[i]).setNum(_c[i-1].atd(idx)); // = makeNum(_c[i-1].atd(idx));
+        ((AstNum)_asts[i]).setNum(_c[i-1].atd(idx)); // = new AstNum(_c[i-1].atd(idx));
       return _fun.apply(_env,_env.stk(),_asts).getNum();   // Make the call per-row
     }
 
