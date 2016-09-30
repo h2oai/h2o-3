@@ -1,33 +1,37 @@
 package hex.deepwater.backends;
 
-import hex.deepwater.datasets.ImageDataSet;
+import deepwater.backends.BackendModel;
+import deepwater.backends.BackendParams;
+import deepwater.backends.BackendTrain;
+import deepwater.backends.RuntimeOptions;
+import deepwater.datasets.ImageDataSet;
 import water.H2O;
-import water.gpu.ImageTrain;
 import water.util.Log;
 
 import java.io.File;
 
 class MXNetBackend implements BackendTrain {
-  private ImageTrain _mxnet;
 
   @Override
-  public void delete() {
-    getTrainer().delete();
+  public void delete(BackendModel m) {
+    MXNetBackendModel mxnet = (MXNetBackendModel)m ;
+    mxnet.delete();
   }
 
   @Override
-  public void buildNet(ImageDataSet dataset, RuntimeOptions opts, BackendParams bparms, int num_classes, String name) {
+  public BackendModel buildNet(ImageDataSet dataset, RuntimeOptions opts, BackendParams bparms, int num_classes, String name) {
     assert(opts!=null);
     assert(dataset!=null);
     assert(bparms!=null);
-    _mxnet = new ImageTrain(dataset.getWidth(), dataset.getHeight(), dataset.getChannels(),
+    MXNetBackendModel mxnet = new MXNetBackendModel(dataset.getWidth(), dataset.getHeight(), dataset.getChannels(),
         opts.getDeviceID()[0], (int)opts.getSeed(), opts.useGPU());
+
     if (bparms.get("clip_gradient") != null)
-      _mxnet.setClipGradient(((Double)bparms.get("clip_gradient")).floatValue());
+      mxnet.setClipGradient(((Double)bparms.get("clip_gradient")).floatValue());
     if (bparms.get("hidden") == null) {
-      getTrainer().buildNet(num_classes, ((Integer) bparms.get("mini_batch_size")).intValue(), name);
+      mxnet.buildNet(num_classes, ((Integer) bparms.get("mini_batch_size")).intValue(), name);
     } else {
-      getTrainer().buildNet(
+      mxnet.buildNet(
           num_classes,
           ((Integer) bparms.get("mini_batch_size")).intValue(),
           name,
@@ -38,70 +42,71 @@ class MXNetBackend implements BackendTrain {
           (double[]) bparms.get("hidden_dropout_ratios")
       );
     }
-  }
-
-
-  @Override
-  public void saveModel(String model_path) {
-    getTrainer().saveModel(model_path);
+    return mxnet;
   }
 
   @Override
-  public void saveParam(String param_path) {
-    getTrainer().saveParam(param_path);
-  }
+  public void setParameter(BackendModel m, String name, float value) {
+    MXNetBackendModel mxnet = (MXNetBackendModel)m ;
 
-  @Override
-  public String toJson() {
-    return null;
-  }
-
-  @Override
-  public void setParameter(String name, float value) {
     if (name == "momentum") {
-      _mxnet.setMomentum(value);
+      mxnet.setMomentum(value);
     } else if (name == "learning_rate") {
-      _mxnet.setLR(value);
+      mxnet.setLR(value);
     } else if (name == "clip_gradient") {
-      _mxnet.setClipGradient(value);
+      mxnet.setClipGradient(value);
     } else throw H2O.unimpl();
   }
 
   @Override
-  public float[] train(float[] data, float[] label) {
-    return getTrainer().train(data, label);
+  public float[] train(BackendModel m, float[] data, float[] label) {
+    MXNetBackendModel mxnetModel = (MXNetBackendModel)m ;
+    return mxnetModel.train(data, label);
   }
 
   @Override
-  public float[] predict(float[] data, float[] label) {
-    return getTrainer().predict(data, label);
+  public float[] predict(BackendModel m, float[] data, float[] label) {
+    MXNetBackendModel model = (MXNetBackendModel)m ;
+    return model.predict(data, label);
   }
 
   @Override
-  public float[] predict(float[] data) {
-    return getTrainer().predict(data);
+  public float[] predict(BackendModel m, float[] data) {
+    MXNetBackendModel model = (MXNetBackendModel)m ;
+    return model.predict(data);
   }
 
 
   @Override
-  public void loadParam(String networkParms) {
+  public void loadParam(BackendModel m, String networkParms) {
+    MXNetBackendModel model = (MXNetBackendModel)m ;
+
     if (networkParms != null && !networkParms.isEmpty()) {
       File f = new File(networkParms);
       if (!f.exists() || f.isDirectory()) {
         Log.err("Parameter file " + f + " not found.");
       } else {
         Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
-        getTrainer().loadParam(f.getAbsolutePath());
+        model.loadParam(f.getAbsolutePath());
       }
     } else {
       Log.warn("No network parameters file specified. Starting from scratch.");
     }
   }
 
-  ImageTrain getTrainer() {
-    if (_mxnet == null) {
-      _mxnet = new ImageTrain();
-    }
-    return _mxnet;
+  @Override
+  public void saveModel(BackendModel m, String model_path) {
+
   }
+
+  @Override
+  public void saveParam(BackendModel m, String param_path) {
+
+  }
+
+  @Override
+  public String toJson(BackendModel m) {
+    return null;
+  }
+
 }

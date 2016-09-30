@@ -1,9 +1,13 @@
 package hex.deepwater;
 
+import deepwater.backends.BackendModel;
+import deepwater.backends.BackendParams;
+import deepwater.backends.BackendTrain;
+import deepwater.backends.RuntimeOptions;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.deepwater.backends.*;
-import hex.deepwater.datasets.ImageDataSet;
+import deepwater.datasets.ImageDataSet;
 import hex.splitframe.ShuffleSplitFrame;
 import org.apache.commons.lang.NotImplementedException;
 import org.junit.*;
@@ -11,26 +15,19 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+
 import water.parser.ParseDataset;
 import water.util.Log;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
-  protected DeepWaterParameters.Backend backend;
+  protected BackendTrain backend;
 
   @BeforeClass
   public static void stall() { stall_till_cloudsize(1); new MXNetLoader(); }
-
-  @Before
-  public void setUp() throws Exception {
-      throw new NotImplementedException();
-  }
 
   @Test
   public void memoryLeakTest() {
@@ -455,66 +452,66 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Test
   public void trainLoop() throws InterruptedException {
     int batch_size = 64;
-    BackendTrain m = buildLENET();
+    BackendModel m = buildLENET();
 
     float[] data = new float[28*28*1*batch_size];
     float[] labels = new float[batch_size];
     int count=0;
     while(count++<1000) {
       Log.info("Iteration: " + count);
-      m.train(data, labels);
+      backend.train(m, data, labels);
     }
   }
 
-  private BackendTrain buildLENET() {
+  private BackendModel buildLENET() {
     int batch_size = 64;
     int classes = 10;
-    BackendTrain m = BackendFactory.create(backend);// new ImageTrain(28,28,1,0,1234,true);
-    ImageDataSet dataset = new ImageDataSet(28, 28, 1);
+
+    ImageDataSet dataset = new ImageDataSet(29, 28, 1);
     RuntimeOptions opts = new RuntimeOptions();
     opts.setUseGPU(true);
     opts.setSeed(1234);
     opts.setDeviceID(0);
     BackendParams bparm = new BackendParams();
     bparm.set("mini_batch_size", batch_size);
-    m.buildNet(dataset, opts, bparm, classes, "lenet");
-    return m;
+    return backend.buildNet(dataset, opts, bparm, classes, "lenet");
   }
 
   @Test
-  public void saveLoop() {
-    BackendTrain m = buildLENET();
-    int count=0;
-    while(count++<3) {
+  public void saveLoop() throws IOException {
+    BackendModel m = buildLENET();
+    File f = File.createTempFile("saveLoop", ".tmp");
+
+    for(int count=0; count < 3; count++) {
       Log.info("Iteration: " + count);
-      m.saveParam("/tmp/testParam");
+      backend.saveParam(m, f.getAbsolutePath());
     }
   }
 
   @Test
   public void predictLoop() {
-    BackendTrain m = buildLENET();
+    BackendModel m = buildLENET();
     int batch_size = 64;
     float[] data = new float[28*28*1*batch_size];
     int count=0;
     while(count++<3) {
       Log.info("Iteration: " + count);
-      m.predict(data);
+      backend.predict(m, data);
     }
   }
 
   @Test
   public void trainPredictLoop() {
     int batch_size = 64;
-    BackendTrain m = buildLENET();
+    BackendModel m = buildLENET();
 
     float[] data = new float[28*28*1*batch_size];
     float[] labels = new float[batch_size];
     int count=0;
     while(count++<1000) {
       Log.info("Iteration: " + count);
-      m.train(data,labels);
-      float[] p = m.predict(data);
+      backend.train(m, data,labels);
+      float[] p = backend.predict(m, data);
     }
   }
 
