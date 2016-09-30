@@ -1,5 +1,7 @@
 package hex.deepwater.backends;
 
+import deepwater.backends.BackendParams;
+import deepwater.backends.RuntimeOptions;
 import hex.deepwater.datasets.ImageDataSet;
 
 public interface BackendTrain {
