@@ -34,7 +34,7 @@ def gbm(interactive=True, echo=True, testing=False):
 
         go()
         # Upload the prostate dataset that comes included in the h2o python package
-        prostate = h2o.data_file("prostate")
+        prostate = h2o.load_dataset("prostate")
 
         go()
         # Print a description of the prostate data
@@ -95,7 +95,7 @@ def deeplearning(interactive=True, echo=True, testing=False):
 
         go()
         # Upload the prostate dataset that comes included in the h2o python package
-        prostate = h2o.data_file("prostate")
+        prostate = h2o.load_dataset("prostate")
 
         go()
         # Print a description of the prostate data
@@ -155,7 +155,7 @@ def glm(interactive=True, echo=True, testing=False):
 
         go()
         # Upload the prostate dataset that comes included in the h2o python package
-        prostate = h2o.data_file("prostate")
+        prostate = h2o.load_dataset("prostate")
 
         go()
         # Print a description of the prostate data

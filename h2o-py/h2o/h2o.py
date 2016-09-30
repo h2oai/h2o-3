@@ -1130,7 +1130,7 @@ def demo(funcname, interactive=True, echo=True, test=False):
         print("Demo for %s is not available." % funcname)
 
 
-def data_file(relative_path):
+def load_dataset(relative_path):
     """Imports a data file within the 'h2o_data' folder."""
     assert_is_type(relative_path, str)
     h2o_dir = os.path.split(__file__)[0]
