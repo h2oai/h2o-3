@@ -1,12 +1,13 @@
 package hex.deepwater;
 
+import deepwater.backends.BackendModel;
 import hex.DataInfo;
 import hex.Model;
 import hex.deepwater.backends.BackendFactory;
-import hex.deepwater.backends.BackendParams;
-import hex.deepwater.backends.BackendTrain;
-import hex.deepwater.backends.RuntimeOptions;
-import hex.deepwater.datasets.ImageDataSet;
+import deepwater.backends.BackendParams;
+import deepwater.backends.BackendTrain;
+import deepwater.backends.RuntimeOptions;
+import deepwater.datasets.ImageDataSet;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
@@ -38,6 +39,8 @@ final public class DeepWaterModelInfo extends Iced {
 
   //for image classification
   transient BackendTrain backend;
+  transient BackendModel _model;
+
   int _height;
   int _width;
   int _channels;
@@ -49,24 +52,21 @@ final public class DeepWaterModelInfo extends Iced {
 
   public void nukeBackend() {
     if (backend != null) {
-      backend.delete();
+      backend.delete(_model);
       backend = null;
     }
   }
 
   public void saveNativeState(String path, int iteration) {
-    if (get_params()._backend == DeepWaterParameters.Backend.mxnet) {
-      if (backend !=null) {
-        backend.saveModel(path + ".json"); //independent of iterations
-        backend.saveParam(path + "." + iteration + ".params");
-      } else throw H2O.unimpl();
-    } else throw H2O.unimpl();
+    assert(backend!=null);
+    assert(_model!=null);
+    backend.saveModel(_model, path + ".json"); //independent of iterations
+    backend.saveParam(_model, path + "." + iteration + ".params");
   }
 
   float[] predict(float[] data) {
-    if (backend !=null)
-      return backend.predict(data);
-    else throw H2O.unimpl();
+    assert(backend!=null);
+    return backend.predict(_model, data);
   }
 
   @Override
@@ -220,10 +220,10 @@ final public class DeepWaterModelInfo extends Iced {
           String network = parameters._network == null ? null : parameters._network.toString();
           if (network != null && parameters._network != DeepWaterParameters.Network.user) {
             Log.info("Creating a fresh model of the following network type: " + network);
-            backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, network);
+            _model = backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, network);
           } else {
             Log.info("Creating a fresh model of the following network type: MLP");
-            backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, "MLP");
+            _model = backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, "MLP");
           }
         }
 
@@ -237,7 +237,7 @@ final public class DeepWaterModelInfo extends Iced {
             Log.info("Loading the network from: " + f.getAbsolutePath());
             backend.loadModel(f.getAbsolutePath());
             Log.info("Setting the optimizer and initializing the first and last layer.");
-            backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, f.getAbsolutePath());
+            _model = backend.buildNet(getDataSet(), getRuntimeOptions(), getBackendParams(), _classes, f.getAbsolutePath());
           }
         }
 
@@ -248,7 +248,8 @@ final public class DeepWaterModelInfo extends Iced {
             Log.err("Parameter file " + f + " not found.");
           } else {
             Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
-            backend.loadParam(f.getAbsolutePath());
+            assert (_model != null);
+            backend.loadParam(_model, f.getAbsolutePath());
           }
         } else {
           Log.warn("No network parameters file specified. Starting from scratch.");
@@ -289,7 +290,7 @@ final public class DeepWaterModelInfo extends Iced {
       try {
         path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
         Log.info("backend is saving the model architecture.");
-        backend.saveModel(path.toString());
+        backend.saveModel(_model, path.toString());
         Log.info("done.");
         _network = Files.readAllBytes(path);
       } catch (IOException e) {
@@ -300,7 +301,7 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Log.info("backend is saving the parameters.");
-      backend.saveParam(path.toString());
+      backend.saveParam(_model, path.toString());
       Log.info("done.");
       _modelparams = Files.readAllBytes(path);
     } catch (IOException e) {
@@ -353,7 +354,7 @@ final public class DeepWaterModelInfo extends Iced {
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
       Files.write(path, parameters);
-      backend.loadParam(path.toString());
+      backend.loadParam(_model, path.toString());
     } catch (IOException e) {
       e.printStackTrace();
     } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }

@@ -1,8 +1,9 @@
 package hex.deepwater.backends;
 
-import hex.deepwater.datasets.ImageDataSet;
-
+import deepwater.backends.BackendParams;
+import deepwater.backends.RuntimeOptions;
 import deepwater.backends.tensorflow.TensorflowBackendImpl;
+import hex.deepwater.datasets.ImageDataSet;
 
 class TensorflowBackend extends TensorflowBackendImpl implements BackendTrain {
 
