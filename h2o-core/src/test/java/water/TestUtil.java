@@ -96,8 +96,7 @@ public class TestUtil extends Iced {
       }
       if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
     }
-    System.out.println("leaked_keys = " + leaked_keys + ", cnt = " + cnt);
-    assertTrue("No keys leaked, leaked_keys = " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
+    assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new MRTask(){
       @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
@@ -298,8 +297,8 @@ public class TestUtil extends Iced {
   /**
    * Parse a folder with csv files when a single na_string is specified.
    *
-   * @param fname
-   * @param na_string
+   * @param fname name of folder
+   * @param na_string string for NA in a column
    * @return
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
@@ -349,7 +348,7 @@ public class TestUtil extends Iced {
    *  @param rows Data
    *  @return The Vec  */
   public static Vec vec(String[] domain, int ...rows) { 
-    Key k = Vec.VectorGroup.VG_LEN1.addVec();
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
     avec.setDomain(domain);
@@ -377,6 +376,8 @@ public class TestUtil extends Iced {
     for (int i=0; i<a.length;i++) r[i][0] = a[i];
     return r;
   }
+
+// Java7+  @SafeVarargs
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
@@ -384,9 +385,8 @@ public class TestUtil extends Iced {
   public static void assertVecEquals(Vec expecteds, Vec actuals, double delta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
-      if(expecteds.at(i) != actuals.at(i))
-        System.out.println(i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start()));
-      assertEquals(expecteds.at(i), actuals.at(i), delta);
+      final String message = i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      assertEquals(message, expecteds.at(i), actuals.at(i), delta);
     }
   }
 
@@ -447,7 +447,7 @@ public class TestUtil extends Iced {
     for( String arg : args ) {
       try {
         System.out.println("=== Starting "+arg);
-        Class clz = Class.forName(arg);
+        Class<?> clz = Class.forName(arg);
         Method main = clz.getDeclaredMethod("main");
         main.invoke(null);
       } catch( InvocationTargetException ite ) {

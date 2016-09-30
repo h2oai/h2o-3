@@ -38,7 +38,7 @@ public class ShuffleSplitFrameTest extends TestUtil {
   /** Simple testing scenario, splitting frame in the middle and comparing the values */
   static void testScenario(Frame f, String[] expValues) {
     double[] ratios = ard(0.5, 0.5);
-    Key[] keys = aro(Key.make("test.hex"), Key.make("train.hex"));
+    Key<Frame>[] keys = aro(Key.<Frame>make("test.hex"), Key.<Frame>make("train.hex"));
     Frame[] splits = null;
     try {
       splits = ShuffleSplitFrame.shuffleSplitFrame(f, keys, ratios, 42);
