@@ -170,4 +170,16 @@ public class ArrayUtilsTest extends TestUtil {
     assertArrayEquals("Nothing to remove",    sut, remove(sut, 0));
     assertArrayEquals("Nothing to remove",    sut, remove(sut, 1));
   }
+
+  @Test
+  public void testCountNonZeroes() {
+    double[] empty = {};
+    assertEquals(0, countNonzeros(empty));
+    double[] singlenz = {1.0};
+    assertEquals(1, countNonzeros(singlenz));
+    double[] threeZeroes = {0.0, 0.0, 0.0};
+    assertEquals(0, countNonzeros(threeZeroes));
+    double[] somenz = {-1.0, Double.MIN_VALUE, 0.0, Double.MAX_VALUE, 0.001, 0.0, 42.0};
+    assertEquals(5, countNonzeros(somenz));
+  }
 }
