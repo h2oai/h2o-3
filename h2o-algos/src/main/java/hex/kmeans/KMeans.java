@@ -1,6 +1,7 @@
 package hex.kmeans;
 
 import hex.*;
+import hex.util.LinearAlgebraUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -21,9 +22,9 @@ import java.util.Random;
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
 public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
+  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
   // Convergence tolerance
-  final static private double TOLERANCE = 1e-6;
-  final static private double SPLIT_FRACTION = 4;
+  final static private double TOLERANCE = 1e-4;
 
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
   public enum Initialization { Random, PlusPlus, Furthest, User }
@@ -73,6 +74,18 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         error("_estimate_k", "Cannot estimate k if user_points are provided.");
       info("_seed", "seed is ignored when estimate_k is enabled.");
       info("_init", "Initialization scheme is ignored when estimate_k is enabled - algorithm is deterministic.");
+      if (expensive) {
+        boolean numeric = false;
+        for (Vec v : _train.vecs()) {
+          if (v.isNumeric()) {
+            numeric = true;
+            break;
+          }
+        }
+        if (!numeric) {
+          error("_estimate_k", "Cannot estimate k if data has no numeric columns.");
+        }
+      }
     }
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
@@ -91,7 +104,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         _isCats[v] = vecs[v].isCategorical() ? new String[0] : null;
         if (_isCats[v] != null) model._output._categorical_column_count++;
       }
-      
       Random rand = water.util.RandomUtils.getRNG(_parms._seed-1);
       double centers[][];    // Cluster centers
       if( null != _parms._user_points ) { // User-specified starting points
@@ -201,7 +213,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       }
       else {
         // If data already standardized, grand mean is just the origin
-        TotSS totss = new TotSS(means,mults,modes, _parms.train().domains(), _parms.train().cardinality()).doAll(vecs);
+        TotSS totss = new TotSS(means,mults,modes, train().domains(), train().cardinality()).doAll(vecs);
         model._output._totss = totss._tss;
       }
       model._output._betweenss = model._output._totss - model._output._tot_withinss;  // MSE between-cluster
@@ -261,12 +273,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         final double rel_improvement_cutoff = Math.min(20.0 / train().numRows() + 0.5 / model._output.nfeatures(), .9);
         if (_parms._estimate_k)
           Log.info("Cutoff for relative improvement in within_cluster_sum_of_squares: " + rel_improvement_cutoff);
+        Vec[] vecs2 = Arrays.copyOf(vecs, vecs.length+1);
+        vecs2[vecs2.length-1] = vecs2[0].makeCon(-1);
         for (int k = startK; k <= _parms._k; ++k) {
           Log.info("Running Lloyds iteration for " + k + " centroids.");
           model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality
           double[][] lo=null, hi=null;
-          Vec[] vecs2 = Arrays.copyOf(vecs, vecs.length+1);
-          vecs2[vecs2.length-1] = vecs2[0].makeCon(-1);
           boolean stop = false;
           do { //Lloyds algorithm
             assert(centers.length == k);
@@ -291,9 +303,13 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             }
 
             stop = (task._reassigned_count < Math.max(1,train().numRows()*TOLERANCE) || model._output._iterations >= _parms._max_iterations);
-            if (stop) Log.info("Lloyds converged after " + model._output._iterations + " iterations.");
+            if (stop) {
+              if (model._output._iterations < _parms._max_iterations)
+                Log.info("Lloyds converged after " + model._output._iterations + " iterations.");
+              else
+                Log.info("Lloyds stopped after " + model._output._iterations + " iterations.");
+            }
           } while (!stop);
-          vecs2[vecs2.length-1].remove();
 
           double sum_squares_now = model._output._tot_withinss;
           double rel_improvement;
@@ -318,9 +334,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             model.update(_job); // Update model in K/V store
             _job.update(1); //1 more round for auto-clustering
           }
-          if (lo != null && hi != null)
-            centers = splitLargestCluster(centers, lo, hi);
+          if (lo != null && hi != null && _parms._estimate_k)
+            centers = splitLargestCluster(centers, lo, hi, means, mults, impute_cat, vecs2, k);
         } //k-finder
+        vecs2[vecs2.length-1].remove();
 
         Log.info(model._output._model_summary);
         Log.info(model._output._scoring_history);
@@ -338,7 +355,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       }
     }
 
-    double[][] splitLargestCluster(double[][] centers, double[][] lo, double[][] hi) {
+    double[][] splitLargestCluster(double[][] centers, double[][] lo, double[][] hi, double[] means, double[] mults, int[] impute_cat, Vec[] vecs2, int k) {
       double[][] newCenters = Arrays.copyOf(centers, centers.length + 1);
       for (int i = 0; i < centers.length; ++i)
         newCenters[i] = centers[i].clone();
@@ -349,6 +366,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       for (int i = 0; i < centers.length; ++i) {
         double[] range = new double[hi[i].length];
         for( int col=0; col<hi[i].length; col++ ) {
+          if (_isCats[col]!=null) continue; // can't split a cluster along categorical direction
           range[col] = hi[i][col] - lo[i][col];
           if (range[col] > maxRange) {
             clusterToSplit = i;
@@ -358,13 +376,18 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         }
 //        Log.info("Range for cluster " + i + ": " + Arrays.toString(range));
       }
-//      Log.info("Splitting cluster " + clusterToSplit + " in half in dimension " + dimToSplit);
       // start out new centroid as a copy of the one to split
-      newCenters[newCenters.length-1] = newCenters[clusterToSplit].clone();
+      assert (_isCats[dimToSplit] == null);
+      double splitPoint = newCenters[clusterToSplit][dimToSplit];
+//      Log.info("Splitting cluster " + clusterToSplit + " in half in dimension " + dimToSplit + " at splitpoint: " + splitPoint);
 
-      double delta = hi[clusterToSplit][dimToSplit] - lo[clusterToSplit][dimToSplit];
-      newCenters[newCenters.length-1][dimToSplit] = newCenters[clusterToSplit][dimToSplit] + delta/SPLIT_FRACTION; //add new cluster
-      newCenters[clusterToSplit     ][dimToSplit] -= delta/SPLIT_FRACTION; //fix up existing cluster
+      // compute the centroids of the two sub-clusters
+      SplitTask task = new SplitTask(newCenters, means, mults, impute_cat, _isCats, k+1, hasWeightCol(), clusterToSplit, dimToSplit, splitPoint).doAll(vecs2);
+//      Log.info("Splitting: " + Arrays.toString(newCenters[clusterToSplit]));
+      newCenters[clusterToSplit]      = task._cMeans[clusterToSplit].clone();
+//      Log.info("Into One: " + Arrays.toString(newCenters[clusterToSplit]));
+      newCenters[newCenters.length-1] = task._cMeans[newCenters.length-1].clone();
+//      Log.info("     Two: " + Arrays.toString(newCenters[newCenters.length-1]));
       return newCenters;
     }
 
@@ -412,7 +435,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         colTypes.add("long");
         colFormat.add("%d");
       }
-      colHeaders.add("Number of reassigned observations"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("Number of Reassigned Observations"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Within Cluster Sum Of Squares"); colTypes.add("double"); colFormat.add("%.5f");
 
       final int rows = output._history_withinss.length;
@@ -838,7 +861,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    * @param model, must contain valid statistics from training, such as _betweenss etc.
    */
   private ModelMetricsClustering makeTrainingMetrics(KMeansModel model) {
-    ModelMetricsClustering mm = new ModelMetricsClustering(model, model._parms.train());
+    ModelMetricsClustering mm = new ModelMetricsClustering(model, train());
     mm._size = model._output._size;
     mm._withinss = model._output._withinss;
     mm._betweenss = model._output._betweenss;
@@ -846,6 +869,91 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     mm._tot_withinss = model._output._tot_withinss;
     model.addMetrics(mm);
     return mm;
+  }
+
+  private static class SplitTask extends MRTask<SplitTask> {
+    // IN
+    double[][] _centers;
+    double[] _means, _mults;      // Standardization
+    int[] _modes;   // Imputation of missing categoricals
+    final int _k;
+    final String[][] _isCats;
+    final boolean _hasWeight;
+    final int _clusterToSplit;
+    final int _dimToSplit;
+    final double _splitPoint;
+
+    // OUT
+    double[][] _cMeans;         // Means for each cluster
+    long[] _size;               // Number of rows in each cluster
+
+    SplitTask(double[][] centers, double[] means, double[] mults, int[] modes, String[][] isCats, int k, boolean hasWeight, int clusterToSplit, int dimToSplit, double splitPoint) {
+      _centers = centers;
+      _means = means;
+      _mults = mults;
+      _modes = modes;
+      _isCats = isCats;
+      _k = k;
+      _hasWeight = hasWeight;
+      _clusterToSplit = clusterToSplit;
+      _dimToSplit = dimToSplit;
+      _splitPoint = splitPoint;
+    }
+
+    @Override public void map(Chunk[] cs) {
+      int N = cs.length - (_hasWeight ? 1:0) - 1 /*clusterassignment*/;
+      assert _centers[0].length==N;
+      _cMeans = new double[_k][N];
+      _size = new long[_k];
+
+      Chunk assignment = cs[cs.length-1];
+      // Find closest cluster center for each row
+      double[] values = new double[N]; // Temp data to hold row as doubles
+      ClusterDist cd = new ClusterDist();
+      for( int row = 0; row < cs[0]._len; row++ ) {
+        if (assignment.at8(row) != _clusterToSplit) continue;
+
+        double weight = _hasWeight ? cs[N].atd(row) : 1;
+        if (weight == 0) continue; //skip holdout rows
+
+        assert(weight == 1); //K-Means only works for weight 1 (or weight 0 for holdout)
+
+        data(values, cs, row, _means, _mults, _modes); // Load row as doubles
+        assert (_isCats[_dimToSplit]==null);
+        if (values[_dimToSplit] > _centers[_clusterToSplit][_dimToSplit]) {
+          cd._cluster = _centers.length-1;
+          assignment.set(row, cd._cluster);
+        } else {
+          cd._cluster = _clusterToSplit;
+        }
+
+        int clu = cd._cluster;
+        assert clu != -1;       // No broken rows
+
+        // Add values and increment counter for chosen cluster
+        for( int col = 0; col < N; col++ )
+          _cMeans[clu][col] += values[col]; // Sum the column centers
+        _size[clu]++;
+      }
+      // Scale back down to local mean
+      for( int clu = 0; clu < _k; clu++ )
+        if( _size[clu] != 0 ) ArrayUtils.div(_cMeans[clu], _size[clu]);
+      _centers = null;
+      _means = _mults = null;
+      _modes = null;
+    }
+
+    @Override public void reduce(SplitTask mr) {
+      for( int clu = 0; clu < _k; clu++ ) {
+        long ra =    _size[clu];
+        long rb = mr._size[clu];
+        double[] ma =    _cMeans[clu];
+        double[] mb = mr._cMeans[clu];
+        for( int c = 0; c < ma.length; c++ ) // Recursive mean
+          if( ra+rb > 0 ) ma[c] = (ma[c] * ra + mb[c] * rb) / (ra + rb);
+      }
+      ArrayUtils.add(_size, mr._size);
+    }
   }
 
 }

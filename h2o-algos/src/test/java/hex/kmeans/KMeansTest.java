@@ -12,14 +12,12 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.MathUtils;
+import water.util.*;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -119,6 +117,52 @@ public class KMeansTest extends TestUtil {
       if( fr  != null ) fr.delete();
       if( fr2 != null ) fr2.delete();
       if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testWeatherAutoK() {
+    KMeansModel kmm = null;
+    KMeansModel kmm2 = null;
+    Frame fr = null;
+    try {
+      fr = parse_test_file("smalldata/junit/weather.csv");
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._ignored_columns = new String[]{"Date"};
+      parms._k = 100;  // large enough
+      parms._max_iterations = 20;
+      parms._standardize = true;
+      parms._estimate_k = true;
+      kmm = doSeed(parms,0);
+
+      for (int i=0;i<kmm._output._centers_raw.length;++i) {
+        Log.info(Arrays.toString(kmm._output._centers_raw[i]));
+      }
+      Assert.assertEquals("expected 4 centroids", 4, kmm._output._k[kmm._output._k.length-1]);
+      double auto = kmm._output._tot_withinss;
+
+      parms._estimate_k = false;
+      parms._k = kmm._output._k[kmm._output._k.length-1];
+
+      Random rnd = RandomUtils.getRNG(1234);
+      double manual = 0;
+      double N = 10;
+      for (int i=0;i<N;++i) {
+        kmm2 = doSeed(parms, rnd.nextLong());
+        manual += kmm2._output._tot_withinss;
+        Assert.assertEquals("expected 4 centroids", 4, kmm2._output._k[kmm2._output._k.length - 1]);
+        kmm2.remove();
+      }
+      manual /= N;
+      Log.info("estimate_k tot_within_ss: " + auto);
+      Log.info("manual k=4 tot_within_ss (mean over " + N + " trials): " + manual);
+
+      Assert.assertTrue("estimate_k solution must be better than manual", auto < manual);
+
+    } finally {
+      if( fr  != null ) fr.remove();
+      if( kmm != null ) kmm.remove();
     }
   }
 

@@ -193,7 +193,10 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def max_iterations(self):
-        """int: Maximum training iterations (Default: 10)"""
+        """
+        int: Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration)
+        (Default: 10)
+        """
         return self._parms.get("max_iterations")
 
     @max_iterations.setter
