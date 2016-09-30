@@ -48,6 +48,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
   private long timeRemaining;
   private long totalTime;
+  private Job job;                  // the Job object for the build of this AutoML.  TODO: can we have > 1?
   private transient ArrayList<Job> jobs;
 
   // TODO: UGH: this should be dynamic, and it's easy to make it so
@@ -211,15 +212,45 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     if (trainingFrame.numCols() > 1000 && responseVec.isCategorical() && responseVec.cardinality() > 2)
       searchParams.put("col_sample_rate_per_tree", new Double[] {0.4, 0.6, 0.8, 1.0});
 
+    Log.info("AutoML: starting hyperparameter search");
+
     Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
             gbmParameters, // TODO
             searchParams, // TODO
             new DefaultModelParametersBuilderFactory<Model.Parameters, ModelParametersSchemaV3>(),
             searchCriteria);
 
-    Log.info("AUTOML DONE");
+    // TODO: poll!  (better than this)
+    while(gridJob.isRunning())
+      try { Thread.sleep(100); } catch (InterruptedException e) {};
+    // TODO:
+    this.job.update(1, "grid search complete");
+
+    Log.info("AutoML: build done");
     // gather more data? build more models? start applying transforms? what next ...?
     stop();
+  }
+
+  /**
+   * Instantiate an AutoML object and start it running.  Progress can be tracked via its job().
+   * @param buildSpec
+   * @return
+   */
+  public static AutoML startAutoML(AutoMLBuildSpec buildSpec) {
+    // TODO: name this job better
+    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(), buildSpec);
+
+    DKV.put(aml);
+
+    Job job = new TimedH2OJob(aml, aml._key).start();
+    aml.job = job;
+    job._max_runtime_msecs = Math.round(1000 * buildSpec.build_control.stopping_criteria.max_runtime_secs());
+    job._work = 3; // import, feature generation, grid search
+
+    aml.job.update(1, "data import complete");
+
+    DKV.put(aml);
+    return aml;
   }
 
   public Key<Model> getLeaderKey() {
@@ -339,6 +370,10 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     return m;
   }
 
+  public Job job() {
+    if (null == this.job) return null;
+    return DKV.getGet(this.job._key);
+  }
 
   // satisfy typing for job return type...
   public static class AutoMLKeyV3 extends KeyV3<Iced, AutoMLKeyV3, AutoML> {

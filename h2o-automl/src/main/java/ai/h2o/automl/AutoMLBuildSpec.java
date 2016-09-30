@@ -31,7 +31,7 @@ public class AutoMLBuildSpec extends Iced {
    */
   static final public class AutoMLBuildControl extends Iced {
     public AutoMLBuildControl() {
-      this.stopping_criteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      stopping_criteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
 
       // reasonable defaults:
       stopping_criteria.set_max_runtime_secs(3600);

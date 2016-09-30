@@ -2,9 +2,6 @@ package water.automl.api;
 
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
-import ai.h2o.automl.TimedH2OJob;
-import water.DKV;
-import water.Key;
 import water.api.Handler;
 import water.api.schemas3.JobV3;
 import water.automl.api.schemas3.AutoMLBuildSpecV3;
@@ -29,10 +26,8 @@ public class AutoMLBuilderHandler extends Handler {
       throw new IllegalArgumentException("Both validation_frame and validation_files were specified; you must choose one or the other!");
 
     AutoML aml;
-    // TODO: name this job better
-    aml = AutoML.makeAutoML(Key.<AutoML>make(), buildSpec);
-    DKV.put(aml);
-    buildSpecSchema.job = new JobV3().fillFromImpl(new TimedH2OJob(aml,aml._key).start());
+    aml = AutoML.startAutoML(buildSpec);
+    buildSpecSchema.job = new JobV3().fillFromImpl(aml.job());
     return buildSpecSchema;
   }
 }
