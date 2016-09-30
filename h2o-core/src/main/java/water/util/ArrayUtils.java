@@ -269,7 +269,7 @@ public class ArrayUtils {
   }
   public static double[][] mult(double[][] ary, double n) {
     if(ary == null) return null;
-    for (int i=0; i<ary.length; i++) mult(ary[i], n);
+    for (double[] row : ary) mult(row, n);
     return ary;
   }
   
@@ -891,20 +891,20 @@ public class ArrayUtils {
     return res;
   }
 
-  public static final boolean hasNaNsOrInfs(double [] ary){
+  public static boolean hasNaNsOrInfs(double [] ary){
     for(double d:ary)
       if(Double.isNaN(d) || Double.isInfinite(d))
         return true;
     return false;
   }
-  public static final boolean hasNaNs(double [] ary){
+  public static boolean hasNaNs(double [] ary){
     for(double d:ary)
       if(Double.isNaN(d))
         return true;
     return false;
   }
 
-  public static final boolean hasNaNsOrInfs(float [] ary){
+  public static boolean hasNaNsOrInfs(float [] ary){
     for(float d:ary)
       if(Double.isNaN(d) || Double.isInfinite(d))
         return true;
@@ -925,8 +925,8 @@ public class ArrayUtils {
     if (b == null) return a.clone();
     int[] r = new int[a.length];
     int cnt = 0;
-    for (int i=0; i<a.length; i++) {
-      if (!contains(b, a[i])) r[cnt++] = a[i];
+    for (int x : a) {
+      if (!contains(b, x)) r[cnt++] = x;
     }
     return Arrays.copyOf(r, cnt);
   }
@@ -937,8 +937,8 @@ public class ArrayUtils {
     if (b == null) return a.clone();
     String[] r = new String[a.length];
     int cnt = 0;
-    for (int i=0; i<a.length; i++) {
-      if (!contains(b, a[i])) r[cnt++] = a[i];
+    for (String s : a) {
+      if (!contains(b, s)) r[cnt++] = s;
     }
     return Arrays.copyOf(r, cnt);
   }
@@ -964,6 +964,26 @@ public class ArrayUtils {
     return c;
   }
 
+  static public int[] append( int[] a, int[] b ) {
+    if( a==null ) return b;
+    if( b==null ) return a;
+    if( a.length==0 ) return b;
+    if( b.length==0 ) return a;
+    int[] c = Arrays.copyOf(a,a.length+b.length);
+    System.arraycopy(b,0,c,a.length,b.length);
+    return c;
+  }
+
+  static public long[] append( long[] a, long[] b ) {
+    if( a==null ) return b;
+    if( b==null ) return a;
+    if( a.length==0 ) return b;
+    if( b.length==0 ) return a;
+    long[] c = Arrays.copyOf(a,a.length+b.length);
+    System.arraycopy(b,0,c,a.length,b.length);
+    return c;
+  }
+
   static public double[] append( double[] a, double[] b ) {
     if( a==null ) return b;
     if( b==null ) return a;
@@ -983,6 +1003,7 @@ public class ArrayUtils {
     return c;
   }
 
+  // Java7+  @SafeVarargs
   public static <T> T[] append(T[] a, T... b) {
     if( a==null ) return b;
     T[] tmp = Arrays.copyOf(a,a.length+b.length);
@@ -1268,11 +1289,11 @@ public class ArrayUtils {
    *  @param names names of frame columns
    *  @param rows  data given in the form of rows
    *  @return new frame which contains columns named according given names and including given data */
-  public static Frame frame(Key key, String[] names, double[]... rows) {
+  public static Frame frame(Key<Frame> key, String[] names, double[]... rows) {
     assert names == null || names.length == rows[0].length;
     Futures fs = new Futures();
     Vec[] vecs = new Vec[rows[0].length];
-    Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
+    Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
     int rowLayout = -1;
     for( int c = 0; c < vecs.length; c++ ) {
       AppendableVec vec = new AppendableVec(keys[c], Vec.T_NUM);
@@ -1288,7 +1309,7 @@ public class ArrayUtils {
     return fr;
   }
   public static Frame frame(double[]... rows) { return frame(null, rows); }
-  public static Frame frame(String[] names, double[]... rows) { return frame(Key.make(), names, rows); }
+  public static Frame frame(String[] names, double[]... rows) { return frame(Key.<Frame>make(), names, rows); }
   public static Frame frame(String name, Vec vec) { Frame f = new Frame(); f.add(name, vec); return f; }
 
   /**
@@ -1343,9 +1364,31 @@ public class ArrayUtils {
   }
 
   public static <T> T[] remove( T[] ary, int id) {
+    if(id < 0 || id >= ary.length) return Arrays.copyOf(ary,ary.length);
     if(id == ary.length-1) return Arrays.copyOf(ary,id);
-    if(id == 0) return Arrays.copyOfRange(ary,id,ary.length);
-    return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id,ary.length));
+    if(id == 0) return Arrays.copyOfRange(ary,1,ary.length);
+    return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id+1,ary.length));
+  }
+
+  public static byte[] remove(byte[] ary, int id) {
+    if(id < 0 || id >= ary.length) return Arrays.copyOf(ary,ary.length);
+    if(id == ary.length-1) return Arrays.copyOf(ary,id);
+    if(id == 0) return Arrays.copyOfRange(ary,1,ary.length);
+    return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id+1,ary.length));
+  }
+
+  public static int[] remove(int[] ary, int id) {
+    if(id < 0 || id >= ary.length) return Arrays.copyOf(ary,ary.length);
+    if(id == ary.length-1) return Arrays.copyOf(ary,id);
+    if(id == 0) return Arrays.copyOfRange(ary,1,ary.length);
+    return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id+1,ary.length));
+  }
+
+  public static long[] remove(long[] ary, int id) {
+    if(id < 0 || id >= ary.length) return Arrays.copyOf(ary,ary.length);
+    if(id == ary.length-1) return Arrays.copyOf(ary,id);
+    if(id == 0) return Arrays.copyOfRange(ary,1,ary.length);
+    return append(Arrays.copyOf(ary,id), Arrays.copyOfRange(ary,id+1,ary.length));
   }
 
   public static double[] padUniformly(double[] origPoints, int newLength) {
@@ -1382,7 +1425,6 @@ public class ArrayUtils {
         uniqueValidPoints[count++]= min;
         if (pos> min) uniqueValidPoints[count++]=pos;
         last=pos;
-        continue;
       }
       //last one
       else if (pos > maxEx) {
