@@ -36,9 +36,12 @@ from .transforms.decomposition import H2OSVD
 from .utils.debugging import *  # NOQA
 from .utils.compatibility import *  # NOQA
 from .utils.compatibility import PY3
-warnings.simplefilter("always", DeprecationWarning)
 
 logging.basicConfig()
+
+# An IPython deprecation warning is triggered after h2o.init(). Remove this once the deprecation has been resolved
+warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPython/.*')
+
 
 h2oconn = None
 

@@ -70,7 +70,7 @@ then
 else
     COVERAGE=""
 fi
-JVM="nice $JAVA_CMD $COVERAGE -ea $MAX_MEM -Xms2g -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
+JVM="nice $JAVA_CMD $COVERAGE -ea $MAX_MEM -Xms2g -DcloudSize=4 -cp build/libs/h2o-algos-test.jar${SEP}build/libs/h2o-algos.jar${SEP}../h2o-core/build/libs/h2o-core-test.jar${SEP}../h2o-core/build/libs/h2o-core.jar${SEP}../h2o-genmodel/build/libs/h2o-genmodel.jar${SEP}../lib/*"
 echo "$JVM" > $OUTDIR/jvm_cmd.txt
 # Ahhh... but the makefile runs the tests skipping the jar'ing step when possible.
 # Also, sometimes see test files in the main-class directory, so put the test

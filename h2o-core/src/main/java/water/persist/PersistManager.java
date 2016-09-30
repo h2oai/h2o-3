@@ -2,6 +2,7 @@ package water.persist;
 
 import water.H2O;
 import water.Key;
+import water.MRTask;
 import water.Value;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.UploadFileVec;
@@ -334,6 +335,48 @@ public class PersistManager {
 
     File f = new File(path);
     return f.isDirectory();
+  }
+
+  /**
+   * Checks whether a given path is either an empty directory or it doesn't yet exist.
+   * This is trivial if the filesystem where the path leads is distributed.
+   * If we are working with a local filesystem we need to make sure that this property
+   * is satisfied on all of the nodes.
+   * @param path path we want to check
+   * @return true the path is an empty or non-existent directory everywhere, false otherwise
+   */
+  public boolean isEmptyDirectoryAllNodes(String path) {
+    if (isHdfsPath(path)) {
+      validateHdfsConfigured();
+      if (! I[Value.HDFS].exists(path)) return true;
+      if (! I[Value.HDFS].isDirectory(path)) return false;
+      PersistEntry[] content = I[Value.HDFS].list(path);
+      return (content == null) || (content.length == 0);
+    }
+
+    return new CheckLocalDirTask(path).doAllNodes()._result;
+  }
+
+  private static class CheckLocalDirTask extends MRTask<CheckLocalDirTask> {
+    String _path;
+    // OUT
+    boolean _result;
+
+    CheckLocalDirTask(String _path) { this._path = _path; }
+
+    @Override public void reduce(CheckLocalDirTask mrt) {
+      _result = _result && mrt._result;
+    }
+    @Override protected void setupLocal() {
+      File f = new File(_path);
+      if (! f.exists())
+        _result = true;
+      else if (f.isDirectory()) {
+        File[] content = f.listFiles();
+        _result = (content != null) && (content.length == 0);
+      } else
+        _result = false;
+    }
   }
 
   public long length(String path) {

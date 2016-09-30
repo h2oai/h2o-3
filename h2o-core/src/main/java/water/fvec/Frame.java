@@ -1413,29 +1413,19 @@ public class Frame extends Lockable<Frame> {
 
   public static Job export(Frame fr, String path, String frameName, boolean overwrite, int nParts) {
     boolean forceSingle = nParts == 1;
-    boolean fileExists = H2O.getPM().exists(path);
     // Validate input
     if (forceSingle) {
+      boolean fileExists = H2O.getPM().exists(path);
       if (overwrite && fileExists) {
         Log.warn("File " + path + " exists, but will be overwritten!");
       } else if (!overwrite && fileExists) {
         throw new H2OIllegalArgumentException(path, "exportFrame", "File " + path + " already exists!");
       }
-    } else if (fileExists) {
-      boolean isDirectory = H2O.getPM().isDirectory(path);
-      if (! isDirectory) {
-        throw new H2OIllegalArgumentException(path, "exportFrame", "Cannot use regular existing file " + path +
-                " to store part files! Empty directory is expected.");
+    } else {
+      if (! H2O.getPM().isEmptyDirectoryAllNodes(path)) {
+        throw new H2OIllegalArgumentException(path, "exportFrame", "Cannot use path " + path +
+                " to store part files! The target needs to be either an existing empty directory or not exist yet.");
       }
-      Persist.PersistEntry[] dirContent = H2O.getPM().list(path);
-      if (dirContent.length != 0) {
-        throw new H2OIllegalArgumentException(path, "exportFrame", "Target directory " + path + " is non-empty. " +
-                "Empty directory is expected.");
-      }
-    }
-    // Make directory for part files
-    if ((! forceSingle) && (! fileExists)) {
-      H2O.getPM().mkdirs(path);
     }
     Job job =  new Job<>(fr._key, "water.fvec.Frame", "Export dataset");
     FrameUtils.ExportTaskDriver t = new FrameUtils.ExportTaskDriver(fr, path, frameName, overwrite, job, nParts);

@@ -22,28 +22,26 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public String algoName() { return "KMeans"; }
     public String fullName() { return "K-means"; }
     public String javaName() { return KMeansModel.class.getName(); }
-    @Override public long progressUnits() { return _max_iterations; }
-    public int _max_iterations = 1000;     // Max iterations
+    @Override public long progressUnits() { return _estimate_k ? _k : _max_iterations; }
+    public int _max_iterations = 10;     // Max iterations for Lloyds
     public boolean _standardize = true;    // Standardize columns
     public KMeans.Initialization _init = KMeans.Initialization.Furthest;
     public Key<Frame> _user_points;
     public boolean _pred_indicator = false;   // For internal use only: generate indicator cols during prediction
                                               // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
+    public boolean _estimate_k = false;       // If enabled, iteratively find up to _k clusters
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {
     // Iterations executed
     public int _iterations;
 
-    // Compute average change in standardized cluster centers
-    public double[/*iterations*/] _avg_centroids_chg = new double[]{Double.NaN};
-
     // Sum squared distance between each point and its cluster center.
     public double[/*k*/] _withinss;   // Within-cluster sum of square error
 
     // Sum squared distance between each point and its cluster center.
     public double _tot_withinss;      // Within-cluster sum-of-square error
-    public double[/*iterations*/] _history_withinss = new double[0];
+    public double[/*iterations*/] _history_withinss = new double[]{Double.NaN};
 
     // Sum squared distance between each point and grand mean.
     public double _totss;            // Total sum-of-square error to grand mean centroid
@@ -56,6 +54,8 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
     // Training time
     public long[/*iterations*/] _training_time_ms = new long[]{System.currentTimeMillis()};
+    public double[/*iterations*/] _reassigned_count = new double[]{Double.NaN};
+    public int[/*iterations*/] _k = new int[]{0};
 
     public KMeansOutput( KMeans b ) { super(b); }
   }
@@ -64,14 +64,14 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     assert domain == null;
-    return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_parms._k);
+    return new ModelMetricsClustering.MetricBuilderClustering(_output.nfeatures(),_output._k[_output._k.length-1]);
   }
 
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
     if (!_parms._pred_indicator) {
       return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics);
     } else {
-      final int len = _parms._k;
+      final int len = _output._k[_output._k.length-1];
       String prefix = "cluster_";
       Frame adaptFrm = new Frame(adaptedFr);
       for(int c = 0; c < len; c++)
@@ -103,7 +103,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
   public double[] score_indicator(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
     assert _parms._pred_indicator;
-    assert tmp.length == _output._names.length && preds.length == _parms._k;
+    assert tmp.length == _output._names.length && preds.length == _output._centers_raw.length;
     for(int i = 0; i < tmp.length; i++)
       tmp[i] = chks[i].atd(row_in_chunk);
 
@@ -124,7 +124,7 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
 
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
     double[] preds = hex.genmodel.GenModel.KMeans_simplex(centers,tmp,_output._domains,_output._normSub,_output._normMul);
-    assert preds.length == _parms._k;
+    assert preds.length == _output._k[_output._k.length-1];
     assert Math.abs(ArrayUtils.sum(preds) - 1) < 1e-6 : "Sum of k-means distance ratios should equal 1";
     return preds;
   }
