@@ -1,10 +1,10 @@
 package hex.deepwater;
 
+import deepwater.backends.BackendModel;
 import hex.deepwater.backends.BackendFactory;
-import hex.deepwater.backends.BackendParams;
-import hex.deepwater.backends.BackendTrain;
-import hex.deepwater.backends.RuntimeOptions;
-import hex.deepwater.datasets.ImageDataSet;
+import deepwater.backends.BackendParams;
+import deepwater.backends.RuntimeOptions;
+import deepwater.datasets.ImageDataSet;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -23,7 +23,7 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
 
     @Before
     public void setUp() throws Exception {
-        backend = DeepWaterParameters.Backend.mxnet;
+        backend = BackendFactory.create(DeepWaterParameters.Backend.mxnet);
     }
 
     // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
@@ -64,7 +64,6 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
       //ImageTrain m = new ImageTrain(224,224,3);
       //m.buildNet(1000,1,"inception_bn");
       ImageDataSet id = new ImageDataSet(224,224,3);
-      BackendTrain m = BackendFactory.create(backend); //NOTE: could have used the ImagePred class too - but using ImageTrain to check more relevant logic
 
       RuntimeOptions opts = new RuntimeOptions();
       opts.setSeed(1234);
@@ -74,10 +73,10 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
       bparm.set("mini_batch_size", 1);
 
       //FIXME: make the path a resource of the package
-      m.buildNet(id, opts, bparm, 1000, StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
-      m.loadParam(StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
+      BackendModel _model = backend.buildNet(id, opts, bparm, 1000, StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
+      backend.loadParam(_model, StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
 
-      float[] preds = m.predict(pixels);
+      float[] preds = backend.predict(_model, pixels);
       int which = ArrayUtils.maxIndex(preds);
 
       water.fvec.Frame labels = parse_test_file("~/deepwater/backends/mxnet/Inception/synset.txt");
