@@ -10,6 +10,7 @@ dependencies {
   compile files('water.gpu.jar')
   compile files('deepwater.backends-1.0-SNAPSHOT.jar')
   compile files('deepwater.backends.tensorflow-1.0-SNAPSHOT.jar')
+  compile files('deepwater.backends.mxnet-1.0-SNAPSHOT.jar')
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
