@@ -2,6 +2,7 @@ package hex.deepwater.backends;
 
 
 import deepwater.backends.BackendTrain;
+import deepwater.backends.mxnet.MXNetBackend;
 import hex.deepwater.DeepWaterParameters;
 import water.H2O;
 
