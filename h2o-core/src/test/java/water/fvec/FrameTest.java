@@ -79,6 +79,7 @@ public class FrameTest extends TestUtil {
       subset1.delete();
 //      subset2.delete();
       if (x != null) x.delete();
+      if (y != null) y.delete();
     }
   }
 
