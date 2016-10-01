@@ -570,9 +570,6 @@ final public class H2O {
     }
   }
 
-  // Model cache manager
-  public static ModelCacheManager getMCM() { return new ModelCacheManager(); }
-
   // Google analytics performance measurement
   public static GoogleAnalytics GA;
   public static int CLIENT_TYPE_GA_CUST_DIM = 1;

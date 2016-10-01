@@ -191,7 +191,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
           dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
-          
+
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
           _job.update(1, "Begin distributed calculation of Gram matrix");
@@ -266,7 +266,9 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._init = GLRM.Initialization.PlusPlus;
 
           // Build an SVD model
-          GLRMModel glrm = new GLRM(parms, _job).trainModelNested();
+          // Hack: we have to resort to unsafe type casts because _job is of Job<PCAModel> type, whereas a GLRM
+          // model requires a Job<GLRMModel> _job. If anyone knows how to avoid this hack, please fix it!
+          GLRMModel glrm = new GLRM(parms, (Job)_job).trainModelNested();
           if (stop_requested()) return;
           glrm._output._representation_key.get().delete();
           glrm.remove(); // Remove from DKV
