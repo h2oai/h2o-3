@@ -1568,6 +1568,7 @@ print.H2OFrame <- function(x,n=6L, ...) {
 #' @param object An H2OFrame.
 #' @param ... Further arguments to be passed from or to other methods.
 #' @param cols Print the per-column str for the H2OFrame
+#' @importFrom utils str
 #' @export
 str.H2OFrame <- function(object, ..., cols=FALSE) {
   if (length(l <- list(...)) && any("give.length" == names(l)))
