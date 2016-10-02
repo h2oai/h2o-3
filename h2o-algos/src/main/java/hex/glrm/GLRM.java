@@ -404,7 +404,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       if(!yychol.isSPD())
         Log.warn("Initialization failed: (YY' + gamma I) is non-SPD. Setting initial X to standard normal random matrix. Results will be numerically unstable");
       else {
-        CholMulTask cmtsk = new CholMulTask(_parms, yychol, yt_arch, _ncolA, _ncolX, dinfo._cats, normSub, normMul);
+        CholMulTask cmtsk = new CholMulTask(yychol, yt_arch, _ncolA, _ncolX, dinfo._cats, normSub, normMul);
         cmtsk.doAll(dinfo._adaptedFrame);
       }
     }
@@ -1343,7 +1343,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   // Solves XD = AY' for X where A is m x n, Y is k x n, D is k x k, and m >> n > k
   // Resulting matrix X = (AY')D^(-1) will have dimensions m x k
   private static class CholMulTask extends MRTask<CholMulTask> {
-    GLRMParameters _parms;
     final Archetypes _yt;     // _yt = Y' (transpose of Y)
     final int _ncolA;         // Number of cols in training frame
     final int _ncolX;         // Number of cols in X (k)
@@ -1352,11 +1351,10 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     final double[] _normMul;
     CholeskyDecomposition _chol;   // Cholesky decomposition of D = D', since we solve D'X' = DX' = AY'
 
-    CholMulTask(GLRMParameters parms, CholeskyDecomposition chol, Archetypes yt, int ncolA, int ncolX, int ncats,
+    CholMulTask(CholeskyDecomposition chol, Archetypes yt, int ncolA, int ncolX, int ncats,
                 double[] normSub, double[] normMul) {
       assert yt != null && yt.rank() == ncolX;
       assert ncats <= ncolA;
-      _parms = parms;
       _yt = yt;
       _ncolA = ncolA;
       _ncolX = ncolX;
