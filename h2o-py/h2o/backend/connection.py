@@ -146,7 +146,7 @@ class H2OConnection(backwards_compatible()):
         assert_is_type(proxy, str, None)
         assert_is_type(auth, AuthBase, (str, str), None)
         assert_is_type(cluster_id, int, None)
-        assert_is_type(cookies, list, None)
+        assert_is_type(cookies, [str], None)
         assert_is_type(_msgs, None, (str, str, str))
 
         conn = H2OConnection()

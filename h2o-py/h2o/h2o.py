@@ -47,7 +47,7 @@ h2oconn = None
 
 
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cluster_id=None, verbose=True):
+            proxy=None, cluster_id=None, cookies=None, verbose=True):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -64,12 +64,13 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
                  authenticator objects.
     :param proxy: Proxy server address.
     :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
+    :param cookies: List of cookies to add to request
     :param verbose: Set to False to disable printing connection status messages.
     """
     global h2oconn
     h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
                                  verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
-                                 cluster_id=cluster_id, verbose=verbose)
+                                 cluster_id=cluster_id, cookies=cookies, verbose=verbose)
     if verbose:
         h2oconn.cluster.show_status()
     return h2oconn
@@ -157,7 +158,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(username, str, None)
     assert_is_type(password, str, None)
     assert_is_type(cluster_id, int, None)
-    assert_is_type(cookies, list, None)
+    assert_is_type(cookies, [str], None)
     assert_is_type(proxy, {str: str}, None)
     assert_is_type(start_h2o, bool, None)
     assert_is_type(nthreads, int)
