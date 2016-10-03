@@ -12,7 +12,7 @@ class SSLProperties extends Properties {
         return null;
     }
 
-    String h2o_ssl_protocol() { return getProperty("h2o_ssl_protocol", "TLSv1.2"); }
+    String h2o_ssl_protocol() { return getProperty("h2o_ssl_protocol", SecurityUtils.defaultTLSVersion()); }
 
     String h2o_ssl_jks_internal() { return getProperty("h2o_ssl_jks_internal"); }
     String h2o_ssl_jks_password() { return getProperty("h2o_ssl_jks_password"); }

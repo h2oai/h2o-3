@@ -86,7 +86,7 @@ public class SecurityUtils {
 
     public static String generateSSLConfig(SSLCredentials credentials, String file) throws IOException {
         Properties sslConfig = new Properties();
-        sslConfig.put("h2o_ssl_protocol", "TLSv1.2");
+        sslConfig.put("h2o_ssl_protocol", defaultTLSVersion());
         sslConfig.put("h2o_ssl_jks_internal", credentials.jks.getLocation());
         sslConfig.put("h2o_ssl_jks_password", credentials.jks.pass);
         sslConfig.put("h2o_ssl_jts", credentials.jts.getLocation());
@@ -94,6 +94,10 @@ public class SecurityUtils {
         FileOutputStream output = new FileOutputStream(file);
         sslConfig.store(output, "");
         return file;
+    }
+
+    public static String defaultTLSVersion() {
+        return System.getProperty("java.version", "NA").startsWith("1.6") ? "TLSv1" : "TLSv1.2";
     }
 
     public static class StoreCredentials {
