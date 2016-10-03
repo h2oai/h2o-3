@@ -163,7 +163,7 @@ public abstract class Persist {
         case 'b':  b = '\\'; break;
         case 'z':  b = '\0'; break;
         default:
-          Log.warn("Invalid format of filename " + s + " at index " + i);
+          Log.warn("Invalid format of filename " + key + " at index " + i);
         }
       }
       if( j >= kb.length ) kb = Arrays.copyOf(kb, Math.max(2, j * 2));
