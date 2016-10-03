@@ -242,7 +242,7 @@ public class Vec extends Keyed<Vec> {
    *  non-categoricals), and the Vec type. */
   public Vec( Key<Vec> key, int rowLayout, String[] domain, byte type ) {
     super(key);
-    assert key._kb[0]==Key.VEC;
+    assert key.isVec();
     assert domain==null || type==T_CAT;
     assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
     setMeta(type,domain);
@@ -785,8 +785,8 @@ public class Vec extends Keyed<Vec> {
   /** Get a Vec Key from Chunk Key, without loading the Chunk.
    *  @return the Vec Key for the Chunk Key */
   public static Key getVecKey( Key chk_key ) {
-    assert chk_key._kb[0]==Key.CHK;
-    byte [] bits = chk_key._kb.clone();
+    assert chk_key.isChunkKey();
+    byte [] bits = chk_key.bytes();
     bits[0] = Key.VEC;
     UnsafeUtils.set4(bits, 6, -1); // chunk#
     return Key.make(bits);
@@ -800,7 +800,7 @@ public class Vec extends Keyed<Vec> {
    *  actual Vec object.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index and Vec Key */
   public static Key chunkKey(Key veckey, int cidx ) {
-    byte [] bits = veckey._kb.clone();
+    byte [] bits = veckey.bytes();
     bits[0] = Key.CHK;
     UnsafeUtils.set4(bits, 6, cidx); // chunk#
     return Key.make(bits);
@@ -844,7 +844,7 @@ public class Vec extends Keyed<Vec> {
   /** Make a new Key that fits the requirements for a Vec key, based on the
    *  passed-in key.  Used to make Vecs that back over e.g. disk files. */
   static Key<Vec> newKey(Key k) {
-    byte [] kb = k._kb;
+    byte [] kb = k.bytes();
     byte [] bits = MemoryManager.malloc1(kb.length + KEY_PREFIX_LEN);
     bits[0] = Key.VEC;
     bits[1] = -1;         // Not homed
@@ -856,7 +856,7 @@ public class Vec extends Keyed<Vec> {
 
   /** Make a ESPC-group key.  */
   private static Key espcKey(Key key) { 
-    byte [] bits = key._kb.clone();
+    byte [] bits = key.bytes();
     bits[0] = Key.GRP;
     UnsafeUtils.set4(bits, 2, -1);
     UnsafeUtils.set4(bits, 6, -2);
@@ -865,7 +865,7 @@ public class Vec extends Keyed<Vec> {
 
   /** Make a Vector-group key.  */
   private Key groupKey(){
-    byte [] bits = _key._kb.clone();
+    byte [] bits = _key.bytes();
     bits[0] = Key.GRP;
     UnsafeUtils.set4(bits, 2, -1);
     UnsafeUtils.set4(bits, 6, -1);
@@ -1219,7 +1219,7 @@ public class Vec extends Keyed<Vec> {
     /** Returns Vec Key from Vec id#.  Does NOT allocate a Key id#
      *  @return Vec Key from Vec id# */
     public Key<Vec> vecKey(int vecId) {
-      byte [] bits = _key._kb.clone();
+      byte [] bits = _key.bytes();
       bits[0] = Key.VEC;
       UnsafeUtils.set4(bits,2,vecId);
       return Key.make(bits);
@@ -1266,14 +1266,14 @@ public class Vec extends Keyed<Vec> {
 
     // -------------------------------------------------
     static boolean sameGroup(Vec v1, Vec v2) {
-      byte[] bits1 = v1._key._kb;
-      byte[] bits2 = v2._key._kb;
+      byte[] bits1 = v1._key.bytes();
+      byte[] bits2 = v2._key.bytes();
       if( bits1.length != bits2.length )
         return false;
-      int res  = 0;
-      for( int i = KEY_PREFIX_LEN; i < bits1.length; i++ )
-        res |= bits1[i] ^ bits2[i];
-      return res == 0;
+      for( int i = KEY_PREFIX_LEN; i < bits1.length; i++ ) {
+        if (bits1[i] != bits2[i]) return false;
+      }
+      return true;
     }
 
     /** Pretty print the VectorGroup

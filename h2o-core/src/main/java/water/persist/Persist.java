@@ -74,8 +74,8 @@ public abstract class Persist {
   // Verify bijection of key/file-name mappings.
   protected static String key2Str(Key k) {
     String s = key2Str_impl(k);
-    Key x;
-    assert (x = str2Key_impl(s)).equals(k) : "bijection fail " + k + " <-> " + s + " <-> " + x;
+    Key x = str2Key_impl(s);
+    assert x.equals(k) : "bijection fail " + k + " <-> " + s + " <-> " + x;
     return s;
   }
 
@@ -89,17 +89,18 @@ public abstract class Persist {
   // Convert a Key to a suitable filename string
   private static String key2Str_impl(Key k) {
     // check if we are system key
-    StringBuilder sb = new StringBuilder(k._kb.length / 2 + 4);
+    byte[] kb = k.bytes();
+    StringBuilder sb = new StringBuilder(kb.length / 2 + 4);
     int i = 0;
-    if( k._kb[0] < 32 ) {
+    if( kb[0] < 32 ) {
       // System keys: hexalate all the leading non-ascii bytes
       sb.append('%');
-      int j = k._kb.length - 1;     // Backwards scan for 1st non-ascii
-      while( j >= 0 && k._kb[j] >= 32 && k._kb[j] < 128 )
+      int j = kb.length - 1;     // Backwards scan for 1st non-ascii
+      while( j >= 0 && kb[j] >= 32 && kb[j] < 128 )
         j--;
       for( ; i <= j; i++ ) {
-        byte b = k._kb[i];
-        int nib0 = ((b >>> 4) & 15) + '0';
+        byte b = kb[i];
+        int nib0 = ((b >>> 4) & 15) + '0'; // TODO(vlad): get rid of this homegrown "tohex"
         if( nib0 > '9' ) nib0 += 'A' - 10 - '0';
         int nib1 = ((b >>> 0) & 15) + '0';
         if( nib1 > '9' ) nib1 += 'A' - 10 - '0';
@@ -108,7 +109,7 @@ public abstract class Persist {
       sb.append('%');
     }
     // Escape the special bytes from 'i' to the end
-    return escapeBytes(k._kb, i, sb).toString();
+    return escapeBytes(kb, i, sb).toString();
   }
 
   private static StringBuilder escapeBytes(byte[] bytes, int i, StringBuilder sb) {
@@ -132,8 +133,7 @@ public abstract class Persist {
   }
 
   // Convert a filename string to a Key
-  private static Key str2Key_impl(String s) {
-    String key = s;
+  private static Key str2Key_impl(String key) {
     byte[] kb = new byte[(key.length() - 1) / 2];
     int i = 0, j = 0;
     if( (key.length() > 2) && (key.charAt(0) == '%') && (key.charAt(1) >= '0') && (key.charAt(1) <= '9') ) {
