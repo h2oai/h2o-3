@@ -95,11 +95,11 @@ public class KMeansTest extends TestUtil {
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
     try {
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr = parse_test_file("smalldata/iris/iris_wheader_correct.csv");
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._ignored_columns = new String[]{"class"};
+      parms._ignored_columns = new String[]{"species"};
       parms._k = 100;  // large enough
       parms._standardize = false;
       parms._estimate_k = true;
@@ -108,7 +108,7 @@ public class KMeansTest extends TestUtil {
       for (int i=0;i<kmm._output._centers_raw.length;++i) {
         Log.info(Arrays.toString(kmm._output._centers_raw[i]));
       }
-      Assert.assertEquals("expected 4 centroids", 4, kmm._output._k[kmm._output._k.length-1]);
+      Assert.assertEquals("expected 3 centroids", 3, kmm._output._k[kmm._output._k.length-1]);
 
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);

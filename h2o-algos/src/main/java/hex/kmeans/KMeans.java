@@ -368,7 +368,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         for( int col=0; col<hi[i].length; col++ ) {
           if (_isCats[col]!=null) continue; // can't split a cluster along categorical direction
           range[col] = hi[i][col] - lo[i][col];
-          if (range[col] > maxRange) {
+          if ((float)range[col] > (float)maxRange) { //break ties
             clusterToSplit = i;
             dimToSplit = col;
             maxRange = range[col];
