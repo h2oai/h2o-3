@@ -108,15 +108,17 @@ public enum GlrmLoss {
   //--------------------------------------------------------------------------------------------------------------------
 
   Logistic {
-    @Override public boolean isForNumeric() { return true; }
+    @Override public boolean isForNumeric() { return true; }  // ???
     @Override public boolean isForCategorical() { return false; }
     @Override public boolean isForBinary() { return true; }
 
     @Override public double loss(double u, double a) {
-      return Math.log(1 + Math.exp(a == 0 ? u : -u));  // Booleans are coded {0,1} instead of {-1,1}
+      assert a == 0 || a == 1 : "Logistic loss should be applied to binary features only";
+      return Math.log(1 + Math.exp((1 - 2*a)*u));
     }
     @Override public double lgrad(double u, double a) {
-      return a == 0 ? 1/(1 + Math.exp(-u)) : -1/(1 + Math.exp(u));  // Booleans are coded as {0,1} instead of {-1,1}
+      double s = 1 - 2*a;
+      return s/(1 + Math.exp(s*u));
     }
     @Override public double impute(double u) {
       return u > 0? 1 : 0;
@@ -124,15 +126,17 @@ public enum GlrmLoss {
   },
 
   Hinge {
-    @Override public boolean isForNumeric() { return true; }
+    @Override public boolean isForNumeric() { return true; }   // ???
     @Override public boolean isForCategorical() { return false; }
     @Override public boolean isForBinary() { return true; }
 
     @Override public double loss(double u, double a) {
-      return Math.max(1 - (a == 0 ? -u : u), 0);   // Booleans are coded {0,1} instead of {-1,1}
+      assert a == 0 || a == 1 : "Hinge loss should be applied to binary variables only";
+      return Math.max(1 + (1 - 2*a)*u, 0);
     }
     @Override public double lgrad(double u, double a) {
-      return a == 0 ? (-u <= 1 ? 1 : 0) : (u <= 1 ? -1 : 0);  // Booleans are coded as {0,1} instead of {-1,1}
+      double s = 1 - 2*a;
+      return 1 + s*u > 0? s : 0;
     }
     @Override public double impute(double u) {
       return u > 0? 1 : 0;
@@ -191,10 +195,17 @@ public enum GlrmLoss {
       return grad;
     }
     @Override public int mimpute(double[] u) {
-      double[] cand = new double[u.length];
-      for (int a = 0; a < cand.length; a++)
-        cand[a] = mloss(u, a);
-      return ArrayUtils.minIndex(cand);
+      double sum = u.length - 1;
+      double best_loss = sum;
+      int best_a = 0;
+      for (int a = 1; a < u.length; a++) {
+        sum -= Math.min(1, u[a - 1]);
+        if (sum < best_loss) {
+          best_loss = sum;
+          best_a = a;
+        }
+      }
+      return best_a;
     }
   };
 
