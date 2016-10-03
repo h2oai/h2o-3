@@ -3,7 +3,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.slice.assign <- function() {
-  input.path <- locate("junit/id_cols.csv")
+  input.path <- locate("smalldata/junit/id_cols.csv")
   ids1 <- h2o.importFile(input.path, "ids1")
   ids2 <- h2o.importFile(input.path, "ids2")
 
