@@ -316,6 +316,7 @@ public class Frame extends Lockable<Frame> {
   public int find( String name ) {
     if( name == null ) return -1;
     assert _names != null;
+    // TODO: add a hashtable: O(n) is just stupid.
     for( int i=0; i<_names.length; i++ )
       if( name.equals(_names[i]) )
         return i;

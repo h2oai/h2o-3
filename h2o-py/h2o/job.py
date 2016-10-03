@@ -79,6 +79,7 @@ class H2OJob(object):
 
         return self
 
+    # TODO: this is not multi-client safe:
     def poll_once(self):
         """Query the job status and show the progress bar, but then cancel immediately."""
         self._poll_count = 1
