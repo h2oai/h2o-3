@@ -31,7 +31,7 @@ import java.io.*;
  * @see water.Weaver
  * @see water.AutoBuffer
  */
-abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizable {
+abstract public class Iced<D extends Iced> implements Freezable<D> {
 
   // The serialization flavor / delegate.  Lazily set on first use.
   transient private volatile short _ice_id = 0;
@@ -52,7 +52,7 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
     int id = _ice_id;
     int tyid;
     if(id != 0) assert id == (tyid =TypeMap.onIce(this)):"incorrectly cashed id " + id + ", typemap has " + tyid + ", type = " + getClass().getName();
-    return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this); 
+    return TypeMap.getIcer(id!=0 ? id : (_ice_id=(short)TypeMap.onIce(this)),this);
   }
 
   /** Standard "write thyself into the AutoBuffer" call, using the fast Iced
@@ -116,14 +116,14 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
 //  @Override public D readJSON_impl( AutoBuffer ab ) { return (D)this; }
 
   // Java serializers use H2Os Icing
-  @Override public void readExternal( ObjectInput ois )  throws IOException, ClassNotFoundException {
+  public void readExternal( ObjectInput ois )  throws IOException, ClassNotFoundException {
     int x = ois.readInt();
     byte[] buf = MemoryManager.malloc1(x);
     ois.readFully(buf);
     read(new AutoBuffer(buf));
   }
 
-  @Override public void writeExternal( ObjectOutput oos ) throws IOException {
+  public void writeExternal( ObjectOutput oos ) throws IOException {
     byte[] buf = write(new AutoBuffer()).buf();
     oos.writeInt(buf.length);
     oos.write(buf);
