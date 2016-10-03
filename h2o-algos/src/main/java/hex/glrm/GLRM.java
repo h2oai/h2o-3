@@ -48,7 +48,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   private transient int _ncolX;
 
   // Loss function for each column
-  private transient GLRMParameters.Loss[] _lossFunc;
+  private transient GlrmLoss[] _lossFunc;
 
   @Override protected GLRMDriver trainModelImpl() { return new GLRMDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Clustering}; }
@@ -61,11 +61,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
   @Override public void init(boolean expensive) {
     super.init(expensive);
+
+    _parms._loss.fillFromParameters(this);
     if (!_parms._loss.isForNumeric())
       error("_loss", _parms._loss + " is not a univariate loss function");
     if (!_parms._multi_loss.isForCategorical())
       error("_multi_loss", _parms._multi_loss + " is not a multivariate loss function");
-    if (_parms._period <= 0) error("_period", "_period must be a positive integer");
+
     if (_parms._gamma_x < 0) error("_gamma_x", "gamma must be a non-negative number");
     if (_parms._gamma_y < 0) error("_gamma_y", "gamma_y must be a non-negative number");
     if (_parms._max_iterations < 1 || _parms._max_iterations > 1e6)
@@ -165,7 +167,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         _lossFunc = _parms._loss_by_col;
       } else if (_parms._loss_by_col_idx != null && _parms._loss_by_col.length == _parms._loss_by_col_idx.length) {
         // Set default loss function for each column
-        _lossFunc = new GLRMParameters.Loss[_train.numCols()];
+        _lossFunc = new GlrmLoss[_train.numCols()];
         for(int i = 0; i < _lossFunc.length; i++)
           _lossFunc[i] = _train.vec(i).isCategorical() ? _parms._multi_loss : _parms._loss;
 
@@ -190,7 +192,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         error("_loss_by_col", "Must specify loss function for each column");
       else {
         // Set default loss function for each column
-        _lossFunc = new GLRMParameters.Loss[_train.numCols()];
+        _lossFunc = new GlrmLoss[_train.numCols()];
         for (int i = 0; i < _lossFunc.length; i++)
           _lossFunc[i] = _train.vec(i).isCategorical() ? _parms._multi_loss : _parms._loss;
       }
@@ -538,7 +540,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
         // Save loss function for each column in adapted frame order
         assert _lossFunc != null && _lossFunc.length == _train.numCols();
-        model._output._lossFunc = new GLRMParameters.Loss[_lossFunc.length];
+        model._output._lossFunc = new GlrmLoss[_lossFunc.length];
         for (int i = 0; i < _lossFunc.length; i++)
           model._output._lossFunc[i] = _lossFunc[tinfo._permutation[i]];
 
@@ -986,7 +988,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   private static class UpdateX extends MRTask<UpdateX> {
     // Input
     GLRMParameters _parms;
-    GLRMParameters.Loss[] _lossFunc;
+    GlrmLoss[] _lossFunc;
     final double _alpha;      // Step size divided by num cols in A
     final boolean _update;    // Should we update X from working copy?
     final Archetypes _yt;     // _yt = Y' (transpose of Y)
@@ -1002,7 +1004,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     double _xreg;    // Regularization evaluated on new X
 
     UpdateX(GLRMParameters parms, Archetypes yt, double alpha, boolean update, int ncolA, int ncolX, int ncats,
-            double[] normSub, double[] normMul, GLRMParameters.Loss[] lossFunc, int weightId) {
+            double[] normSub, double[] normMul, GlrmLoss[] lossFunc, int weightId) {
       assert yt != null && yt.rank() == ncolX;
       _parms = parms;
       _yt = yt;
@@ -1056,7 +1058,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           }
 
           // Gradient wrt x_i is matrix product \grad L_{i,j}(x_i * Y_j, A_{i,j}) * Y_j'
-          double[] weight = GLRMParameters.mlgrad(xy, (int) a[j], _lossFunc[j]);
+          double[] weight = _lossFunc[j].mlgrad(xy, (int) a[j]);
           double[][] ysub = _yt.getCatBlock(j);
           for (int k = 0; k < _ncolX; k++) {
             for (int c = 0; c < weight.length; c++)
@@ -1076,7 +1078,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             xy += chk_xold(cs, k, _ncolA).atd(row) * _yt.getNum(js, k);
 
           // Sum over y_j weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          double weight = cweight * _parms.lgrad(xy, (a[j] - _normSub[js]) * _normMul[js], _lossFunc[j]);
+          double weight = cweight * _lossFunc[j].lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
           for (int k = 0; k < _ncolX; k++)
             grad[k] += weight * _yt.getNum(js, k);
         }
@@ -1100,7 +1102,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         for (int j = 0; j < _ncats; j++) {
           if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
           double[] xy = ArrayUtils.multVecArr(xnew, _yt.getCatBlock(j));
-          _loss += GLRMParameters.mloss(xy, (int) a[j], _lossFunc[j]);
+          _loss +=  _lossFunc[j].mloss(xy, (int) a[j]);
         }
 
         // Numeric columns
@@ -1108,7 +1110,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           int js = j - _ncats;
           if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
           double xy = _yt.lmulNumCol(xnew, js);
-          _loss += _parms.loss(xy, (a[j] - _normSub[js]) * _normMul[js], _lossFunc[j]);
+          _loss += _lossFunc[j].loss(xy, (a[j] - _normSub[js]) * _normMul[js]);
         }
         _loss *= cweight;
       }
@@ -1123,7 +1125,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   private static class UpdateY extends MRTask<UpdateY> {
     // Input
     GLRMParameters _parms;
-    GLRMParameters.Loss[] _lossFunc;
+    GlrmLoss[] _lossFunc;
     final double _alpha;      // Step size divided by num cols in A
     final Archetypes _ytold;  // Old Y' matrix
     final int _ncolA;         // Number of cols in training frame
@@ -1138,7 +1140,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     double _yreg;       // Regularization evaluated on new Y
 
     UpdateY(GLRMParameters parms, Archetypes yt, double alpha, int ncolA, int ncolX, int ncats, double[] normSub,
-            double[] normMul, GLRMParameters.Loss[] lossFunc, int weightId) {
+            double[] normMul, GlrmLoss[] lossFunc, int weightId) {
       assert yt != null && yt.rank() == ncolX;
       _parms = parms;
       _lossFunc = lossFunc;
@@ -1181,7 +1183,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           }
 
           // Gradient for level p is x_i weighted by \grad_p L_{i,j}(x_i * Y_j, A_{i,j})
-          double[] weight = GLRMParameters.mlgrad(xy, (int)a, _lossFunc[j]);
+          double[] weight = _lossFunc[j].mlgrad(xy, (int)a);
           for (int level = 0; level < xy.length; level++) {
             for (int k = 0; k < _ncolX; k++)
               _ytnew[_ytold.getCatCidx(j, level)][k] += cweight * weight[level] * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
@@ -1209,7 +1211,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _ytold.getNum(js,k);
 
           // Sum over x_i weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
-          double weight = cweight * _parms.lgrad(xy, (a - _normSub[js]) * _normMul[js], _lossFunc[j]);
+          double weight = cweight * _lossFunc[j].lgrad(xy, (a - _normSub[js]) * _normMul[js]);
           for (int k = 0; k < _ncolX; k++)
             _ytnew[yidx][k] += weight * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
         }
@@ -1243,7 +1245,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   private static class ObjCalc extends MRTask<ObjCalc> {
     // Input
     GLRMParameters _parms;
-    GLRMParameters.Loss[] _lossFunc;
+    GlrmLoss[] _lossFunc;
     final Archetypes _yt;     // _yt = Y' (transpose of Y)
     final int _ncolA;         // Number of cols in training frame
     final int _ncolX;         // Number of cols in X (k)
@@ -1258,11 +1260,11 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     double _xold_reg;   // Regularization evaluated on old X
 
     ObjCalc(GLRMParameters parms, Archetypes yt, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul,
-            GLRMParameters.Loss[] lossFunc, int weightId) {
+            GlrmLoss[] lossFunc, int weightId) {
       this(parms, yt, ncolA, ncolX, ncats, normSub, normMul, lossFunc, weightId, false);
     }
     ObjCalc(GLRMParameters parms, Archetypes yt, int ncolA, int ncolX, int ncats, double[] normSub, double[] normMul,
-            GLRMParameters.Loss[] lossFunc, int weightId, boolean regX) {
+            GlrmLoss[] lossFunc, int weightId, boolean regX) {
       assert yt != null && yt.rank() == ncolX;
       assert ncats <= ncolA;
       _parms = parms;
@@ -1301,7 +1303,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
               xy[level] += chk_xnew(cs, k, _ncolA, _ncolX).atd(row) * _yt.getCat(j, level, k);
             }
           }
-          _loss += GLRMParameters.mloss(xy, (int)a, _lossFunc[j]);
+          _loss += _lossFunc[j].mloss(xy, (int)a);
         }
 
         // Numeric columns
@@ -1314,7 +1316,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           int js = j - _ncats;
           for (int k = 0; k < _ncolX; k++)
             xy += chk_xnew(cs, k, _ncolA, _ncolX).atd(row) * _yt.getNum(js, k);
-          _loss += _parms.loss(xy, (a - _normSub[js]) * _normMul[js], _lossFunc[j]);
+          _loss += _lossFunc[j].loss(xy, (a - _normSub[js]) * _normMul[js]);
         }
         _loss *= cweight;
 

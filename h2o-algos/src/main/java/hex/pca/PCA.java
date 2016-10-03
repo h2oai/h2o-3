@@ -1,6 +1,5 @@
 package hex.pca;
 
-import Jama.EigenvalueDecomposition;
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
 import hex.DataInfo;
@@ -10,6 +9,7 @@ import hex.ModelMetrics;
 import hex.ModelCategory;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
+import hex.glrm.GlrmLoss;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 
@@ -17,7 +17,6 @@ import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
-import water.fvec.Vec;
 import water.util.*;
 
 import java.util.Arrays;
@@ -259,7 +258,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._seed = _parms._seed;
           parms._recover_svd = true;
 
-          parms._loss = GLRMModel.GLRMParameters.Loss.Quadratic;
+          parms._loss = GlrmLoss.Quadratic;
           parms._gamma_x = parms._gamma_y = 0;
           parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.None;
           parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.None;

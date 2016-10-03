@@ -11,7 +11,7 @@ import water.util.TwoDimTable;
 
 import java.util.Random;
 
-import static hex.glrm.GLRMModel.GLRMParameters.Loss.*;
+import static hex.glrm.GlrmLoss.*;
 
 /**
  * GLRM (<a href="https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Model</a>).
@@ -65,10 +65,10 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public boolean _expand_user_y = true;    // Should categorical columns in _user_y be expanded via one-hot encoding? (for _init = User)
 
     // Loss functions
-    public Loss _loss = Loss.Quadratic;          // Default loss function for numeric cols
-    public Loss _multi_loss = Loss.Categorical;  // Default loss function for categorical cols
+    public GlrmLoss _loss = GlrmLoss.Quadratic;          // Default loss function for numeric cols
+    public GlrmLoss _multi_loss = GlrmLoss.Categorical;  // Default loss function for categorical cols
     public int _period = 1;                      // Length of the period when _loss = Periodic
-    public Loss[] _loss_by_col;                  // Override default loss function for specific columns
+    public GlrmLoss[] _loss_by_col;                  // Override default loss function for specific columns
     public int[] _loss_by_col_idx;
 
     // Regularization functions
@@ -91,24 +91,6 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
 
     //----- Enums ------------------------------------------------------------------------------------------------------
 
-    public enum Loss {
-      Quadratic(true), Absolute(true), Huber(true), Poisson(true), Periodic(true),  // One-dimensional loss (numeric)
-      Logistic(true, true), Hinge(true, true),  // Boolean loss (categorical)
-      Categorical(false), Ordinal(false);    // Multi-dimensional loss (categorical)
-
-      private boolean forNumeric;
-      private boolean forBinary;
-      Loss(boolean forNumeric) { this(forNumeric, false); }
-      Loss(boolean forNumeric, boolean forBinary) {
-        this.forNumeric = forNumeric;
-        this.forBinary = forBinary;
-      }
-
-      public boolean isForNumeric() { return forNumeric; }
-      public boolean isForCategorical() { return !forNumeric; }
-      public boolean isForBinary() { return forBinary; }
-    }
-
     // Non-negative matrix factorization (NNMF): r_x = r_y = NonNegative
     // Orthogonal NNMF: r_x = OneSparse, r_y = NonNegative
     // K-means clustering: r_x = UnitOneSparse, r_y = 0 (\gamma_y = 0)
@@ -120,11 +102,11 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     //----- Helper functions -------------------------------------------------------------------------------------------
 
     // Check if all elements of _loss_by_col are equal to a specific loss function
-    private boolean allLossEquals(Loss loss) {
+    private boolean allLossEquals(GlrmLoss loss) {
       if (_loss_by_col == null)
         return _loss == loss;
 
-      for (Loss a_loss_by_col : _loss_by_col) {
+      for (GlrmLoss a_loss_by_col : _loss_by_col) {
         if (a_loss_by_col != loss)
           return false;
       }
@@ -132,118 +114,10 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       return train != null && ((train.numCols() == _loss_by_col.length) || (_loss == loss));
     }
 
-    // Closed form solution only if quadratic loss, no regularization or quadratic regularization (same for X and Y),
-    // and no missing values
-    /* (method reported as unused)
-    public final boolean hasClosedForm() {
-      Frame train = _train.get();
-      if (train == null) return false;
-      long na_cnt = 0;
-      for (int i = 0; i < train.numCols(); i++)
-        na_cnt += train.vec(i).naCnt();
-      return hasClosedForm(na_cnt);
-    }
-    */
-
     public final boolean hasClosedForm(long na_cnt) {
       return (na_cnt == 0) && allLossEquals(Quadratic) &&
           (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == Regularizer.Quadratic) &&
           (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == Regularizer.Quadratic);
-    }
-
-    // L(u,a): Loss function
-    public final double loss(double u, double a) {
-      return loss(u, a, _loss);
-    }
-    public final double loss(double u, double a, Loss loss) {
-      assert loss.isForNumeric() : "Loss function " + loss + " not applicable to numerics";
-      switch(loss) {
-        case Quadratic:
-          return (u-a)*(u-a);
-        case Absolute:
-          return Math.abs(u-a);
-        case Huber:
-          return Math.abs(u-a) <= 1 ? 0.5*(u-a)*(u-a) : Math.abs(u-a)-0.5;
-        case Poisson:
-          assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
-          return Math.exp(u) + (a == 0 ? 0 : -a*u + a*Math.log(a) - a);   // Since \lim_{a->0} a*log(a) = 0
-        case Hinge:
-          // return Math.max(1-a*u,0);
-          return Math.max(1 - (a == 0 ? -u : u), 0);   // Booleans are coded {0,1} instead of {-1,1}
-        case Logistic:
-          // return Math.log(1 + Math.exp(-a * u));
-          return Math.log(1 + Math.exp(a == 0 ? u : -u));    // Booleans are coded {0,1} instead of {-1,1}
-        case Periodic:
-          return 1-Math.cos((a-u)*(2*Math.PI)/_period);
-        default:
-          throw new RuntimeException("Unknown loss function " + loss);
-      }
-    }
-
-    // \grad_u L(u,a): Gradient of loss function with respect to u
-    public final double lgrad(double u, double a, Loss loss) {
-      assert loss.isForNumeric() : "Loss function " + loss + " not applicable to numerics";
-      switch(loss) {
-        case Quadratic:
-          return 2*(u-a);
-        case Absolute:
-          return Math.signum(u - a);
-        case Huber:
-          return Math.abs(u-a) <= 1 ? u-a : Math.signum(u-a);
-        case Poisson:
-          assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
-          return Math.exp(u) - a;
-        case Hinge:
-          // return a*u <= 1 ? -a : 0;
-          return a == 0 ? (-u <= 1 ? 1 : 0) : (u <= 1 ? -1 : 0);  // Booleans are coded as {0,1} instead of {-1,1}
-        case Logistic:
-          // return -a/(1+Math.exp(a*u));
-          return a == 0 ? 1/(1+Math.exp(-u)) : -1/(1+Math.exp(u));    // Booleans are coded as {0,1} instead of {-1,1}
-        case Periodic:
-          return ((2*Math.PI)/_period) * Math.sin((a-u) * (2*Math.PI)/_period);
-        default:
-          throw new RuntimeException("Unknown loss function " + loss);
-      }
-    }
-
-    // L(u,a): Multidimensional loss function
-    public static double mloss(double[] u, int a, Loss multi_loss) {
-      assert multi_loss.isForCategorical() : "Loss function " + multi_loss + " not applicable to categoricals";
-      if(a < 0 || a > u.length-1)
-        throw new IllegalArgumentException("Index must be between 0 and " + String.valueOf(u.length-1));
-
-      double sum = 0;
-      switch(multi_loss) {
-        case Categorical:
-          for (double anU : u) sum += Math.max(1 + anU, 0);
-          sum += Math.max(1 - u[a], 0) - Math.max(1 + u[a], 0);
-          return sum;
-        case Ordinal:
-          for (int i = 0; i < u.length-1; i++) sum += Math.max(a>i ? 1-u[i]:1, 0);
-          return sum;
-        default:
-          throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
-      }
-    }
-
-    // \grad_u L(u,a): Gradient of multidimensional loss function with respect to u
-    public static double[] mlgrad(double[] u, int a, Loss multi_loss) {
-      assert multi_loss.isForCategorical() : "Loss function " + multi_loss + " not applicable to categoricals";
-      if(a < 0 || a > u.length-1)
-        throw new IllegalArgumentException("Index must be between 0 and " + String.valueOf(u.length-1));
-
-      double[] grad = new double[u.length];
-      switch(multi_loss) {
-        case Categorical:
-          for (int i = 0; i < u.length; i++) grad[i] = (1+u[i] > 0) ? 1:0;
-          grad[a] = (1-u[a] > 0) ? -1:0;
-          return grad;
-        case Ordinal:
-          for (int i = 0; i < u.length-1; i++) grad[i] = (a>i && 1-u[i] > 0) ? -1:0;
-          return grad;
-        default:
-          throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
-      }
     }
 
     // r_i(x_i), r_j(y_j): Regularization function for single row x_i or column y_j
@@ -417,40 +291,6 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       }
     }
 
-    // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for real numeric values
-    public static double impute(double u, Loss loss) {
-      assert loss.isForNumeric() : "Loss function " + loss + " not applicable to numerics";
-      switch(loss) {
-        case Quadratic:
-        case Absolute:
-        case Huber:
-        case Periodic:
-          return u;
-        case Poisson:
-          return Math.exp(u)-1;
-        case Hinge:
-        case Logistic:
-          return u > 0 ? 1 : 0;   // Booleans are coded as {0,1} instead of {-1,1}
-        default:
-          throw new RuntimeException("Unknown loss function " + loss);
-      }
-    }
-
-    // \hat A_{i,j} = \argmin_a L_{i,j}(x_iy_j, a): Data imputation for categorical values {0,1,2,...}
-    // TODO: Is there a faster way to find the loss minimizer?
-    public static int mimpute(double[] u, Loss multi_loss) {
-      assert multi_loss.isForCategorical() : "Loss function " + multi_loss + " not applicable to categoricals";
-      switch(multi_loss) {
-        case Categorical:
-        case Ordinal:
-          double[] cand = new double[u.length];
-          for (int a = 0; a < cand.length; a++)
-            cand[a] = mloss(u, a, multi_loss);
-          return ArrayUtils.minIndex(cand);
-        default:
-          throw new RuntimeException("Unknown multidimensional loss function " + multi_loss);
-      }
-    }
   }
 
 
@@ -510,7 +350,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public String[] _names_expanded;
 
     // Loss function for every column in adapted training frame
-    public GLRMParameters.Loss[] _lossFunc;
+    public GlrmLoss[] _lossFunc;
 
     // Training time
     public long[/*iterations*/] _training_time_ms = new long[0];
@@ -618,7 +458,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     for (int d = 0; d < _output._ncats; d++) {
       double[][] block = _output._archetypes_raw.getCatBlock(d);
       for (int k = 0; k < _parms._k; k++)
-        proj[k][_output._permutation[d]] = GLRMParameters.mimpute(block[k], _output._lossFunc[d]);
+        proj[k][_output._permutation[d]] = _output._lossFunc[d].mimpute(block[k]);
     }
 
     // Numeric columns
@@ -626,7 +466,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       int ds = d - _output._ncats;
       for (int k = 0; k < _parms._k; k++) {
         double num = _output._archetypes_raw.getNum(ds, k);
-        proj[k][_output._permutation[d]] = GLRMParameters.impute(num, _output._lossFunc[d]);
+        proj[k][_output._permutation[d]] = _output._lossFunc[d].impute(num);
         if (reverse_transform)
           proj[k][_output._permutation[d]] = proj[k][_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
       }
@@ -705,14 +545,14 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       // Categorical columns
       for (int d = 0; d < _output._ncats; d++) {
         double[] xyblock = _output._archetypes_raw.lmulCatBlock(tmp,d);
-        preds[_output._permutation[d]] = GLRMParameters.mimpute(xyblock, _output._lossFunc[d]);
+        preds[_output._permutation[d]] = _output._lossFunc[d].mimpute(xyblock);
       }
 
       // Numeric columns
       for (int d = _output._ncats; d < preds.length; d++) {
         int ds = d - _output._ncats;
         double xy = _output._archetypes_raw.lmulNumCol(tmp, ds);
-        preds[_output._permutation[d]] = GLRMParameters.impute(xy, _output._lossFunc[d]);
+        preds[_output._permutation[d]] = _output._lossFunc[d].impute(xy);
         if (_reverse_transform)
           preds[_output._permutation[d]] = preds[_output._permutation[d]] / _output._normMul[ds] + _output._normSub[ds];
       }

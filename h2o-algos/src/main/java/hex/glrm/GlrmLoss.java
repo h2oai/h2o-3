@@ -1,0 +1,237 @@
+package hex.glrm;
+
+import water.util.ArrayUtils;
+
+/**
+ * Loss function for the GLRM algorithm.
+ */
+public enum GlrmLoss {
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Loss functions for numeric features
+  //--------------------------------------------------------------------------------------------------------------------
+
+  Quadratic {
+    @Override public boolean isForNumeric() { return true; }
+    @Override public boolean isForCategorical() { return false; }
+    @Override public boolean isForBinary() { return false; }
+
+    @Override public double loss(double u, double a) {
+      return (u - a)*(u - a);
+    }
+    @Override public double lgrad(double u, double a) {
+      return 2*(u - a);
+    }
+    @Override public double impute(double u) {
+      return u;
+    }
+  },
+
+  Absolute {
+    @Override public boolean isForNumeric() { return true; }
+    @Override public boolean isForCategorical() { return false; }
+    @Override public boolean isForBinary() { return false; }
+
+    @Override public double loss(double u, double a) {
+      return Math.abs(u - a);
+    }
+    @Override public double lgrad(double u, double a) {
+      return Math.signum(u - a);
+    }
+    @Override public double impute(double u) {
+      return u;
+    }
+  },
+
+  Huber {
+    @Override public boolean isForNumeric() { return true; }
+    @Override public boolean isForCategorical() { return false; }
+    @Override public boolean isForBinary() { return false; }
+
+    @Override public double loss(double u, double a) {
+      double x = u - a;
+      return x > 1? x - 0.5 : x < -1 ? -x - 0.5 : 0.5*x*x;
+    }
+    @Override public double lgrad(double u, double a) {
+      double x = u - a;
+      return x > 1? 1 : x < -1 ? -1 : x;
+    }
+    @Override public double impute(double u) {
+      return u;
+    }
+  },
+
+  Poisson {
+    @Override public boolean isForNumeric() { return true; }
+    @Override public boolean isForCategorical() { return false; }
+    @Override public boolean isForBinary() { return false; }
+
+    @Override public double loss(double u, double a) {
+      assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
+      return Math.exp(u) + (a == 0 ? 0 : -a*u + a*Math.log(a) - a);   // Since \lim_{a->0} a*log(a) = 0
+    }
+    @Override public double lgrad(double u, double a) {
+      assert a >= 0 : "Poisson loss L(u,a) requires variable a >= 0";
+      return Math.exp(u) - a;
+    }
+    @Override public double impute(double u) {
+      return Math.exp(u);
+    }
+  },
+
+  Periodic {
+    @Override public boolean isForNumeric() { return true; }
+    @Override public boolean isForCategorical() { return false; }
+    @Override public boolean isForBinary() { return false; }
+
+    private double f;
+
+    @Override public void fillFromParameters(GLRM glrm) {
+      int period = glrm._parms._period;
+      if (period <= 0) glrm.error("_period", "_period must be a positive integer");
+      f = 2 * Math.PI / period;
+    }
+    @Override public double loss(double u, double a) {
+      return 1 - Math.cos((u - a)*f);
+    }
+    @Override public double lgrad(double u, double a) {
+      return f * Math.sin((u - a)*f);
+    }
+    @Override public double impute(double u) {
+      return u;
+    }
+  },
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Loss functions for binary features
+  //--------------------------------------------------------------------------------------------------------------------
+
+  Logistic {
+    @Override public boolean isForNumeric() { return true; }
+    @Override public boolean isForCategorical() { return false; }
+    @Override public boolean isForBinary() { return true; }
+
+    @Override public double loss(double u, double a) {
+      return Math.log(1 + Math.exp(a == 0 ? u : -u));  // Booleans are coded {0,1} instead of {-1,1}
+    }
+    @Override public double lgrad(double u, double a) {
+      return a == 0 ? 1/(1 + Math.exp(-u)) : -1/(1 + Math.exp(u));  // Booleans are coded as {0,1} instead of {-1,1}
+    }
+    @Override public double impute(double u) {
+      return u > 0? 1 : 0;
+    }
+  },
+
+  Hinge {
+    @Override public boolean isForNumeric() { return true; }
+    @Override public boolean isForCategorical() { return false; }
+    @Override public boolean isForBinary() { return true; }
+
+    @Override public double loss(double u, double a) {
+      return Math.max(1 - (a == 0 ? -u : u), 0);   // Booleans are coded {0,1} instead of {-1,1}
+    }
+    @Override public double lgrad(double u, double a) {
+      return a == 0 ? (-u <= 1 ? 1 : 0) : (u <= 1 ? -1 : 0);  // Booleans are coded as {0,1} instead of {-1,1}
+    }
+    @Override public double impute(double u) {
+      return u > 0? 1 : 0;
+    }
+  },
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Loss functions for multinomial features
+  //--------------------------------------------------------------------------------------------------------------------
+
+  Categorical {
+    @Override public boolean isForNumeric() { return false; }
+    @Override public boolean isForCategorical() { return true; }
+    @Override public boolean isForBinary() { return false; }
+
+    @Override public double mloss(double[] u, int a) {
+      if (!(a >= 0 && a < u.length))
+        throw new IndexOutOfBoundsException("a must be between 0 and " + (u.length - 1));
+      double sum = 0;
+      for (double ui : u)
+        sum += Math.max(1 + ui, 0);
+      sum += Math.max(1 - u[a], 0) - Math.max(1 + u[a], 0);
+      return sum;
+    }
+    @Override public double[] mlgrad(double[] u, int a) {
+      if (!(a >= 0 && a < u.length)) throw new IndexOutOfBoundsException("a must be between 0 and " + (u.length - 1));
+      double[] grad = new double[u.length];
+      for (int i = 0; i < u.length; i++)
+        grad[i] = (1 + u[i] > 0) ? 1 : 0;
+      grad[a] = (1 - u[a] > 0) ? -1 : 0;
+      return grad;
+    }
+    @Override public int mimpute(double[] u) {
+      return ArrayUtils.maxIndex(u);
+    }
+  },
+
+  Ordinal {
+    @Override public boolean isForNumeric() { return false; }
+    @Override public boolean isForCategorical() { return true; }
+    @Override public boolean isForBinary() { return false; }
+
+    @Override public double mloss(double[] u, int a) {
+      if (!(a >= 0 && a < u.length)) throw new IndexOutOfBoundsException("a must be between 0 and " + (u.length - 1));
+      double sum = 0;
+      for (int i = 0; i < u.length - 1; i++)
+        sum += a > i ? Math.max(1 - u[i], 0) : 1;
+      return sum;
+    }
+    @Override public double[] mlgrad(double[] u, int a) {
+      if (!(a >= 0 && a < u.length)) throw new IndexOutOfBoundsException("a must be between 0 and " + (u.length - 1));
+      double[] grad = new double[u.length];
+      for (int i = 0; i < u.length - 1; i++)
+        grad[i] = (a > i && 1 - u[i] > 0) ? -1 : 0;
+      return grad;
+    }
+    @Override public int mimpute(double[] u) {
+      double[] cand = new double[u.length];
+      for (int a = 0; a < cand.length; a++)
+        cand[a] = mloss(u, a);
+      return ArrayUtils.minIndex(cand);
+    }
+  };
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Public interface
+  //--------------------------------------------------------------------------------------------------------------------
+
+  abstract public boolean isForNumeric();
+  abstract public boolean isForCategorical();
+  abstract public boolean isForBinary();
+
+  /**
+   * This function should be invoked by the init() method to let the Loss object retrieve any additional parameters
+   * that it might need. The parameters will also be validated, and will call `glrm.error()` if that are not
+   * appropriate.
+   * Note: this function is rather a hack. Currently it is used only for Periodic loss function; however we do not
+   * support a way to have such loss function for one of the `_loss_by_col` overrides...
+   */
+  public void fillFromParameters(GLRM glrm) {}
+
+  /** Loss function for numeric variables */
+  public double loss(double u, double a) { throw new UnsupportedOperationException(); }
+
+  /** \grad_u L(u,a): Derivative of the numeric loss function with respect to u */
+  public double lgrad(double u, double a) { throw new UnsupportedOperationException(); }
+
+  /** \argmin_a L(u, a): Data imputation for real numeric values */
+  public double impute(double u) { throw new UnsupportedOperationException(); }
+
+  /** Loss function for categorical variables */
+  public double mloss(double[] u, int a) { throw new UnsupportedOperationException(); }
+
+  /** \grad_u L(u,a): Gradient of multidimensional loss function with respect to u */
+  public double[] mlgrad(double[] u, int a) { throw new UnsupportedOperationException(); }
+
+  /** \argmin_a L(u, a): Data imputation for categorical values {0, 1, 2, ...} */
+  public int mimpute(double[] u) { throw new UnsupportedOperationException(); }
+
+}
