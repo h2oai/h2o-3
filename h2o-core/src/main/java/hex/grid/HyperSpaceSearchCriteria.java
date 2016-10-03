@@ -80,5 +80,29 @@ public class HyperSpaceSearchCriteria extends Iced {
     public RandomDiscreteValueSearchCriteria() {
       super(Strategy.RandomDiscrete);
     }
+
+    public void set_seed(long _seed) {
+      this._seed = _seed;
+    }
+
+    public void set_max_models(int _max_models) {
+      this._max_models = _max_models;
+    }
+
+    public void set_max_runtime_secs(double _max_runtime_secs) {
+      this._max_runtime_secs = _max_runtime_secs;
+    }
+
+    public void set_stopping_rounds(int _stopping_rounds) {
+      this._stopping_rounds = _stopping_rounds;
+    }
+
+    public void set_stopping_metric(ScoreKeeper.StoppingMetric _stopping_metric) {
+      this._stopping_metric = _stopping_metric;
+    }
+
+    public void set_stopping_tolerance(double _stopping_tolerance) {
+      this._stopping_tolerance = _stopping_tolerance;
+    }
   }
 }

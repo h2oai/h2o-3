@@ -32,7 +32,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                       "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
                       "mtries", "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type"}
+                      "histogram_type", "categorical_encoding"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -547,5 +547,19 @@ class H2ORandomForestEstimator(H2OEstimator):
     def histogram_type(self, histogram_type):
         assert_is_type(histogram_type, None, Enum("auto", "uniform_adaptive", "random", "quantiles_global", "round_robin"))
         self._parms["histogram_type"] = histogram_type
+
+
+    @property
+    def categorical_encoding(self):
+        """
+        Enum["auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"]: Encoding scheme for categorical
+        features (Default: "auto")
+        """
+        return self._parms.get("categorical_encoding")
+
+    @categorical_encoding.setter
+    def categorical_encoding(self, categorical_encoding):
+        assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
+        self._parms["categorical_encoding"] = categorical_encoding
 
 

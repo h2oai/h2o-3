@@ -8,7 +8,11 @@ import water.nbhm.UtilUnsafe;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Class to auto-gen serializer delegate classes.  */
 public class Weaver {
@@ -40,6 +44,24 @@ public class Weaver {
   private static final CtClass _dtask, _enum, _serialize;//, _iced, _h2cc, _freezable;
   private static final Unsafe _unsafe = UtilUnsafe.getUnsafe();
 
+  /** Map of class names to their respective loader.
+   * Contains references of the node-local ClassLoaders
+   * so that {@link TypeMap#theFreezable(int)} can make the correct
+   * {@link Class#forName(String, boolean, ClassLoader)} call.
+   */
+  private static final transient Map<String/*className*/,ClassLoader> CLASSLOADERS;
+
+  /** Map of class names to their respective ClassPath instance in
+   * the {@link Weaver#_pool}. Class reloads will prune their classpaths.
+   */
+  private static final transient Map<String/*className*/, ClassPath> CLASSPATHS;
+
+  static Class classForName(String className) throws ClassNotFoundException {
+    ClassLoader c = CLASSLOADERS.get(className);  // was this class dynamically loaded?
+    if( c==null ) return Class.forName(className); // class not dynamically loaded, use Weaver's ClassLoader
+    return Class.forName(className,true,c);
+  }
+
   static {
     try { 
       _pool = ClassPool.getDefault();
@@ -50,22 +72,12 @@ public class Weaver {
 //      _iced = _pool.get("water.Iced");     // Base of serialization
 //      _h2cc = _pool.get("water.H2O$H2OCountedCompleter"); // Base of serialization
 //      _freezable = _pool.get("water.Freezable");      // Base of serialization
+      CLASSLOADERS = new HashMap<>();
+      CLASSPATHS   = new HashMap<>();
 
     } catch( NotFoundException nfe ) { throw new RuntimeException(nfe); }
   }
 
-  /**
-   * Obtain the H2O {@link ClassPool} to help manage classes that are generated
-   * dynamically.
-   *
-   * It is desirable to push classes generated at runtime onto the search path
-   * via {@link ClassPool#insertClassPath(ClassPath)}, so that
-   * {@link Weaver#javassistLoadClass(int, Class)} can attempt to find the class
-   * and generate any {@link Icer}s.
-   *
-   * @return {@link ClassPool}
-   */
-  public static ClassPool getPool() { return _pool; }
 
   public static <T extends Freezable> Icer<T> genDelegate( int id, Class<T> clazz ) {
     Exception e2;
@@ -108,6 +120,75 @@ public class Weaver {
 //    }
 //    return false;
 //  }
+
+  /**
+   * Load/Reload classes defined at runtime.
+   *
+   * Loading classes at runtime is a matter of simply injecting the
+   * new code into the {@link ClassPool}, and then {@link Weaver#javassistLoadClass(int, Class)}
+   * resolves the generation of (de)serializers. In order to reload classes, though,
+   * each dynamically loaded class must have its very own {@link ClassLoader}, and all
+   * previous {@link Icer}s must be removed. In order to maintain cluster-wide coherency
+   * about which classes are loaded, the {@link TypeMap} is likewise updated whenever a class
+   * is reloaded.
+   *
+   * In order to successfully load classes at runtime (for example a subclass of {@link MRTask}),
+   * each node takes the bytecode and class name and puts a new {@link ByteArrayClassPath} onto
+   * {@link Weaver#_pool}'s classpath. Since there is no mechanism for retrieving these
+   * {@link ClassPath} instances later, they are stored in {@link Weaver#CLASSPATHS} so that
+   * reload events can remove the old paths. Similarly, {@link Weaver#CLASSLOADERS} holds on
+   * to the loaders of dynamically created classes so that classes can be reloaded and old
+   * {@link ClassLoader} instances pruned.
+   *
+   * Finally, in order to {@link Weaver#genDelegate(int, Class)} during a class reload, then the
+   * previous {@link Icer} must be {@link CtClass#detach}ed. In addition, the {@link TypeMap#goForGold(int)}
+   * must turn a null for the {@link Icer}.
+   *
+   * @param name class name
+   * @param b bytecode
+   */
+  public static void loadDynamic(final String name, final byte[] b) {
+    Futures fs = new Futures();
+    fs.add(RPC.call(H2O.CLOUD.leader(), new LoadClazz(name,b))).blockForPending(); // leader node loads first
+    new MRTask() {
+      @Override public void setupLocal() {
+        if( H2O.SELF != H2O.CLOUD.leader() ) // already loaded on the leader, load all others
+          new LoadClazz(name,b).compute2();
+      }
+    }.doAllNodes();
+  }
+
+  private static class LoadClazz extends DTask<LoadClazz> {
+    private final String _name;
+    private final byte[] _bytes;
+    LoadClazz(String name, byte[] bytes) { _name=name; _bytes=bytes; }
+    @Override public void compute2() {
+      try {
+        loadClass(_name, _bytes);
+      } catch (NotFoundException e) {
+      } catch (CannotCompileException e) {
+        throw new RuntimeException(e);
+      }
+      tryComplete();
+    }
+    static void loadClass(String name, byte[] bytes) throws NotFoundException, CannotCompileException {
+      ClassPath path;
+      ClassLoader loader;
+      CtClass ctc = _pool.getOrNull(name);
+      if( ctc!=null ) {
+        ctc.defrost();
+        ctc.detach();
+        CtClass icer = _pool.getOrNull(implClazzName(name));
+        if( icer!=null ) icer.detach(); // drop the Icer
+        _pool.removeClassPath(CLASSPATHS.get(name));
+        TypeMap.drop(name);  // drop the icer from the typemap
+      }
+      CLASSPATHS.put(name, path=new ByteArrayClassPath(name, bytes));
+      _pool.insertClassPath(path);
+      CLASSLOADERS.put(name, loader = new URLClassLoader(new URL[0], _pool.getClassLoader()));
+      _pool.get(name).toClass(loader);
+    }
+  }
 
   // See if javaassist can find this class, already generated
   private static Class javassistLoadClass(int id, Class iced_clazz) throws CannotCompileException, NotFoundException, InstantiationException, IllegalAccessException, NoSuchFieldException, ClassNotFoundException, InvocationTargetException {

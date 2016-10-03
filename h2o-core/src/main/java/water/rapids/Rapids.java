@@ -5,7 +5,6 @@ import water.rapids.ast.AstExec;
 import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.*;
-import water.util.Log;
 
 /**
  * <p> Rapids is an interpreter of abstract syntax trees.
@@ -73,6 +72,7 @@ public class Rapids {
    * a normal global frame.
    * @param rapids expression to parse
    */
+  @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
   public static Val exec(String rapids, Session session) {
     AstRoot ast = Rapids.parse(rapids);
     // Synchronize the session, to stop back-to-back overlapping Rapids calls
@@ -86,11 +86,7 @@ public class Rapids {
       if (val.isFrame()) {
         Frame frame = val.getFrame();
         assert frame._key != null; // No nameless Frame returns, as these are hard to cleanup
-//        if (session.FRAMES.containsKey(frame._key)) {
-//          Log.info("UNIMPL: session.FRAMES already contains key " + frame._key);
-//        }// else {
         session.addRefCnt(frame, -1);
-        //}
       }
       return val;
     }
@@ -120,7 +116,7 @@ public class Rapids {
       case ' ':  throw new IllegalASTException("Expected an expression but ran out of text");
       case '-':  return (peek(1)>='0' && peek(1) <='9') ? new AstNum(this) : new AstId(this);
       default:  return new AstId(this);
-    }    
+    }
   }
 
 
@@ -197,12 +193,11 @@ public class Rapids {
     int idx = _str.length() - 1;
     int lo = _x, hi = idx;
 
-    String str = _str;
     if (idx < lo) {
       lo = idx;
       hi = lo;
     }
-    String s = msg + '\n' + str + '\n';
+    String s = msg + '\n' + _str + '\n';
     int i;
     for (i = 0; i < lo; i++) s += ' ';
     s += '^';

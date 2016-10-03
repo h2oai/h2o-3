@@ -1073,7 +1073,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       public void generate(JCodeSB out) {
         JCodeGen.toClassWithArray(out, "public static", "BETA", beta_internal()); // "The Coefficients"
         JCodeGen.toClassWithArray(out, "static", "NUM_MEANS", _output._dinfo._numMeans,"Imputed numeric values");
-        JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo.catModes(),"Imputed categorical values.");
+        JCodeGen.toClassWithArray(out, "static", "CAT_MODES", _output._dinfo.catNAFill(),"Imputed categorical values.");
         JCodeGen.toStaticVar(out, "CATOFFS", dinfo()._catOffsets, "Categorical Offsets");
       }
     });
@@ -1178,17 +1178,18 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    *  computes the metrics for this frame.
    *
    * @param adaptFrm Already adapted frame
+   * @param computeMetrics
    * @return A Frame containing the prediction column, and class distribution
    */
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
     String [] names = makeScoringNames();
     String [][] domains = new String[names.length][];
     GLMScore gs = makeScoringTask(adaptFrm,true,j).doAll(names.length,Vec.T_NUM,adaptFrm);
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     domains[0] = gs._domain;
-    return gs.outputFrame((null == destination_key ? Key.make() : Key.make(destination_key)),names, domains);
+    return gs.outputFrame(Key.<Frame>make(destination_key),names, domains);
   }
 
   /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.

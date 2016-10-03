@@ -21,6 +21,11 @@ public class ArrayUtils {
     for (long d: from) result += d;
     return result;
   }
+  public static long sum(final long[] from, int startIdx, int endIdx) {
+    long result = 0;
+    for (int i = startIdx; i < endIdx; i++) result += from[i];
+    return result;
+  }
   public static int sum(final int[] from) {
     int result = 0;
     for( int d : from ) result += d;
@@ -1028,6 +1033,16 @@ public class ArrayUtils {
   static public long[] copyAndFillOf(long[] original, int newLength, long padding) {
     if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
     long[] newArray = new long[newLength];
+    if(original.length < newLength) {
+      System.arraycopy(original, 0, newArray, 0, original.length);
+      Arrays.fill(newArray, original.length, newArray.length, padding);
+    } else
+      System.arraycopy(original, 0, newArray, 0, newLength);
+    return newArray;
+  }
+  static public int[] copyAndFillOf(int[] original, int newLength, int padding) {
+    if(newLength < 0) throw new NegativeArraySizeException("The array size is negative.");
+    int[] newArray = new int[newLength];
     if(original.length < newLength) {
       System.arraycopy(original, 0, newArray, 0, original.length);
       Arrays.fill(newArray, original.length, newArray.length, padding);

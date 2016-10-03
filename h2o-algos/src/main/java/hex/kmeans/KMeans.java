@@ -1,6 +1,7 @@
 package hex.kmeans;
 
 import hex.*;
+import hex.util.LinearAlgebraUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
@@ -21,8 +22,9 @@ import java.util.Random;
  * http://www.youtube.com/watch?v=cigXAxV3XcY
  */
 public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
+  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
   // Convergence tolerance
-  final private double TOLERANCE = 1e-6;
+  final static private double TOLERANCE = 1e-4;
 
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
   public enum Initialization { Random, PlusPlus, Furthest, User }
@@ -67,6 +69,24 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       else if( user_points.numRows() != _parms._k)
         error("_user_y", "The number of rows in the user-specified points is not equal to k = " + _parms._k);
     }
+    if (_parms._estimate_k) {
+      if (_parms._user_points!=null)
+        error("_estimate_k", "Cannot estimate k if user_points are provided.");
+      info("_seed", "seed is ignored when estimate_k is enabled.");
+      info("_init", "Initialization scheme is ignored when estimate_k is enabled - algorithm is deterministic.");
+      if (expensive) {
+        boolean numeric = false;
+        for (Vec v : _train.vecs()) {
+          if (v.isNumeric()) {
+            numeric = true;
+            break;
+          }
+        }
+        if (!numeric) {
+          error("_estimate_k", "Cannot estimate k if data has no numeric columns.");
+        }
+      }
+    }
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
@@ -75,7 +95,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     private String[][] _isCats;  // Categorical columns
 
     // Initialize cluster centers
-    double[][] initial_centers( KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults, final int[] modes ) {
+    double[][] initial_centers(KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults, final int[] modes, int k) {
 
       // Categoricals use a different distance metric than numeric columns.
       model._output._categorical_column_count=0;
@@ -84,8 +104,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         _isCats[v] = vecs[v].isCategorical() ? new String[0] : null;
         if (_isCats[v] != null) model._output._categorical_column_count++;
       }
-      
-      Random rand = water.util.RandomUtils.getRNG(_parms._seed - 1);
+      Random rand = water.util.RandomUtils.getRNG(_parms._seed-1);
       double centers[][];    // Cluster centers
       if( null != _parms._user_points ) { // User-specified starting points
         Frame user_points = _parms._user_points.get();
@@ -104,7 +123,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       else { // Random, Furthest, or PlusPlus initialization
         if (_parms._init == Initialization.Random) {
           // Initialize all cluster centers to random rows
-          centers = new double[_parms._k][model._output.nfeatures()];
+          centers = new double[k][model._output.nfeatures()];
           for (double[] center : centers)
             randomRow(vecs, rand, center, means, mults, modes);
         } else {
@@ -118,7 +137,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             SumSqr sqr = new SumSqr(centers, means, mults, modes, _isCats).doAll(vecs);
 
             // Sample with probability inverse to square distance
-            Sampler sampler = new Sampler(centers, means, mults, modes, _isCats, sqr._sqr, _parms._k * 3, _parms._seed, hasWeightCol()).doAll(vecs);
+            Sampler sampler = new Sampler(centers, means, mults, modes, _isCats, sqr._sqr, k * 3, _parms.getOrMakeRealSeed(), hasWeightCol()).doAll(vecs);
             centers = ArrayUtils.append(centers, sampler._sampled);
 
             // Fill in sample centers into the model
@@ -131,10 +150,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             model.update(_job); // Make early version of model visible, but don't update progress using update(1)
           }
           // Recluster down to k cluster centers
-          centers = recluster(centers, rand, _parms._k, _parms._init, _isCats);
+          centers = recluster(centers, rand, k, _parms._init, _isCats);
           model._output._iterations = 0; // Reset iteration count
         }
       }
+      assert(centers.length == k);
       return centers;
     }
 
@@ -142,12 +162,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     transient private int _reinit_attempts;
     // Handle the case where some centers go dry.  Rescue only 1 cluster
     // per iteration ('cause we only tracked the 1 worst row)
-    boolean cleanupBadClusters( Lloyds task, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults, final int[] modes ) {
+    boolean cleanupBadClusters( LloydsIterationTask task, final Vec[] vecs, final double[][] centers, final double[] means, final double[] mults, final int[] modes ) {
       // Find any bad clusters
       int clu;
-      for( clu=0; clu<_parms._k; clu++ )
+      for( clu=0; clu<centers.length; clu++ )
         if( task._size[clu] == 0 ) break;
-      if( clu == _parms._k ) return false; // No bad clusters
+      if( clu == centers.length ) return false; // No bad clusters
 
       long row = task._worst_row;
       Log.warn("KMeans: Re-initializing cluster " + clu + " to row " + row);
@@ -155,16 +175,16 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       task._size[clu] = 1; //FIXME: PUBDEV-871 Some other cluster had their membership count reduced by one! (which one?)
 
       // Find any MORE bad clusters; we only fixed the first one
-      for( clu=0; clu<_parms._k; clu++ )
+      for( clu=0; clu<centers.length; clu++ )
         if( task._size[clu] == 0 ) break;
-      if( clu == _parms._k ) return false; // No MORE bad clusters
+      if( clu == centers.length ) return false; // No MORE bad clusters
 
       // If we see 2 or more bad rows, just re-run Lloyds to get the
       // next-worst row.  We don't count this as an iteration, because
       // we're not really adjusting the centers, we're trying to get
       // some centers *at-all*.
       Log.warn("KMeans: Re-running Lloyds to re-init another cluster");
-      if (_reinit_attempts++ < _parms._k) {
+      if (_reinit_attempts++ < centers.length) {
         return true;  // Rerun Lloyds, and assign points to centroids
       } else {
         _reinit_attempts = 0;
@@ -174,7 +194,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
     // Compute all interesting KMeans stats (errors & variances of clusters,
     // etc).  Return new centers.
-    double[][] computeStatsFillModel( Lloyds task, KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults, final int[] modes ) {
+    double[][] computeStatsFillModel(LloydsIterationTask task, KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults, final int[] modes, int k) {
       // Fill in the model based on original destandardized centers
       if (model._parms._standardize) {
         model._output._centers_std_raw = task._cMeans;
@@ -183,25 +203,26 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       model._output._size = task._size;
       model._output._withinss = task._cSqr;
       double ssq = 0;       // sum squared error
-      for( int i=0; i<_parms._k; i++ )
+      for( int i=0; i<k; i++ )
         ssq += model._output._withinss[i]; // sum squared error all clusters
       model._output._tot_withinss = ssq;
 
       // Sum-of-square distance from grand mean
-      if(_parms._k == 1)
+      if(k == 1) {
         model._output._totss = model._output._tot_withinss;
+      }
       else {
         // If data already standardized, grand mean is just the origin
-        TotSS totss = new TotSS(means,mults,modes, _parms.train().domains(), _parms.train().cardinality()).doAll(vecs);
+        TotSS totss = new TotSS(means,mults,modes, train().domains(), train().cardinality()).doAll(vecs);
         model._output._totss = totss._tss;
       }
       model._output._betweenss = model._output._totss - model._output._tot_withinss;  // MSE between-cluster
       model._output._iterations++;
 
-      // add to scoring history
-      model._output._history_withinss = ArrayUtils.copyAndFillOf(
-          model._output._history_withinss,
-          model._output._history_withinss.length+1, model._output._tot_withinss);
+      model._output._history_withinss = ArrayUtils.copyAndFillOf( model._output._history_withinss, model._output._history_withinss.length+1, model._output._tot_withinss);
+      model._output._k = ArrayUtils.copyAndFillOf(model._output._k, model._output._k.length+1, k);
+      model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._training_time_ms.length+1, System.currentTimeMillis());
+      model._output._reassigned_count = ArrayUtils.copyAndFillOf(model._output._reassigned_count, model._output._reassigned_count.length+1, task._reassigned_count);
 
       // Two small TwoDimTables - cheap
       model._output._model_summary = createModelSummaryTable(model._output);
@@ -213,31 +234,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       return task._cMeans;      // New centers
     }
 
-    // Stopping criteria
-    boolean isDone( KMeansModel model, double[][] newCenters, double[][] oldCenters ) {
-      if( stop_requested() ) return true; // Stopped/cancelled
-      // Stopped for running out iterations
-      if( model._output._iterations >= _parms._max_iterations) return true;
-
-      // Compute average change in standardized cluster centers
-      if( oldCenters==null ) return false; // No prior iteration, not stopping
-      double average_change = 0;
-      for( int clu=0; clu<_parms._k; clu++ )
-        average_change += hex.genmodel.GenModel.KMeans_distance(oldCenters[clu],newCenters[clu],_isCats,null,null);
-      average_change /= _parms._k;  // Average change per cluster
-      model._output._avg_centroids_chg = ArrayUtils.copyAndFillOf(
-              model._output._avg_centroids_chg,
-              model._output._avg_centroids_chg.length+1, average_change);
-      model._output._training_time_ms = ArrayUtils.copyAndFillOf(
-              model._output._training_time_ms,
-              model._output._training_time_ms.length+1, System.currentTimeMillis());
-      return average_change < TOLERANCE;
-    }
-
     // Main worker thread
     @Override
     public void computeImpl() {
       KMeansModel model = null;
+      Key bestOutputKey = Key.make();
       try {
         init(true);
         // Do lock even before checking the errors, since this block is finalized by unlock
@@ -247,6 +248,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // The model to be built
         model = new KMeansModel(dest(), _parms, new KMeansModel.KMeansOutput(KMeans.this));
         model.delete_and_lock(_job);
+
+        int startK = _parms._estimate_k ? 1 : _parms._k;
 
         //
         final Vec vecs[] = _train.vecs();
@@ -259,36 +262,86 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         model._output._normSub = means;
         model._output._normMul = mults;
         // Initialize cluster centers and standardize if requested
-        double[][] centers = initial_centers(model,vecs,means,mults,impute_cat);
+        double[][] centers = initial_centers(model,vecs,means,mults,impute_cat, startK);
         if( centers==null ) return; // Stopped/cancelled during center-finding
-        double[][] oldCenters = null;
+        boolean work_unit_iter = !_parms._estimate_k;
 
         // ---
         // Run the main KMeans Clustering loop
-        // Stop after enough iterations or average_change < TOLERANCE
-        model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality
-        while( !isDone(model,centers,oldCenters) ) {
-          Lloyds task = new Lloyds(centers,means,mults,impute_cat,_isCats, _parms._k, hasWeightCol()).doAll(vecs);
-          // Pick the max categorical level for cluster center
-          max_cats(task._cMeans,task._cats,_isCats);
+        // Stop after enough iterations or reassigned_count < TOLERANCE * num_rows
+        double sum_squares = 0;
+        final double rel_improvement_cutoff = Math.min(20.0 / train().numRows() + 0.5 / model._output.nfeatures(), .9);
+        if (_parms._estimate_k)
+          Log.info("Cutoff for relative improvement in within_cluster_sum_of_squares: " + rel_improvement_cutoff);
+        Vec[] vecs2 = Arrays.copyOf(vecs, vecs.length+1);
+        vecs2[vecs2.length-1] = vecs2[0].makeCon(-1);
+        for (int k = startK; k <= _parms._k; ++k) {
+          Log.info("Running Lloyds iteration for " + k + " centroids.");
+          model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality
+          double[][] lo=null, hi=null;
+          boolean stop = false;
+          do { //Lloyds algorithm
+            assert(centers.length == k);
+            LloydsIterationTask task = new LloydsIterationTask(centers, means, mults, impute_cat, _isCats, k, hasWeightCol()).doAll(vecs2); //1 PASS OVER THE DATA
+            // Pick the max categorical level for cluster center
+            max_cats(task._cMeans, task._cats, _isCats);
 
-          // Handle the case where some centers go dry.  Rescue only 1 cluster
-          // per iteration ('cause we only tracked the 1 worst row)
-          if( cleanupBadClusters(task,vecs,centers,means,mults,impute_cat) ) continue;
+            // Handle the case where some centers go dry.  Rescue only 1 cluster
+            // per iteration ('cause we only tracked the 1 worst row)
+            if( !_parms._estimate_k && cleanupBadClusters(task,vecs,centers,means,mults,impute_cat) ) continue;
 
-          // Compute model stats; update standardized cluster centers
-          oldCenters = centers;
-          centers = computeStatsFillModel(task, model, vecs, means, mults, impute_cat);
+            // Compute model stats; update standardized cluster centers
+            centers = computeStatsFillModel(task, model, vecs, means, mults, impute_cat, k);
+            if (model._parms._score_each_iteration)
+              Log.info(model._output._model_summary);
+            lo = task._lo;
+            hi = task._hi;
 
-          model.update(_job); // Update model in K/V store
-          _job.update(1);     // One unit of work
-          if (model._parms._score_each_iteration)
-            Log.info(model._output._model_summary);
-        }
+            if (work_unit_iter) {
+              model.update(_job); // Update model in K/V store
+              _job.update(1); //1 more Lloyds iteration
+            }
+
+            stop = (task._reassigned_count < Math.max(1,train().numRows()*TOLERANCE) || model._output._iterations >= _parms._max_iterations);
+            if (stop) {
+              if (model._output._iterations < _parms._max_iterations)
+                Log.info("Lloyds converged after " + model._output._iterations + " iterations.");
+              else
+                Log.info("Lloyds stopped after " + model._output._iterations + " iterations.");
+            }
+          } while (!stop);
+
+          double sum_squares_now = model._output._tot_withinss;
+          double rel_improvement;
+          if (sum_squares==0) {
+            rel_improvement = 1;
+          } else {
+            rel_improvement = (sum_squares - sum_squares_now) / sum_squares;
+          }
+          Log.info("Relative improvement in total withinss: " + rel_improvement);
+          sum_squares = sum_squares_now;
+          if (_parms._estimate_k && k > 1) {
+            boolean outerConverged = rel_improvement < rel_improvement_cutoff;
+            if (outerConverged) {
+              KMeansModel.KMeansOutput best = DKV.getGet(bestOutputKey);
+              model._output = best;
+              Log.info("Converged. Retrieving the best model with k=" + model._output._k[model._output._k.length-1]);
+              break;
+            }
+          }
+          if (!work_unit_iter) {
+            DKV.put(bestOutputKey, IcedUtils.deepCopy(model._output)); //store a clone to avoid sharing the state between DKV and here
+            model.update(_job); // Update model in K/V store
+            _job.update(1); //1 more round for auto-clustering
+          }
+          if (lo != null && hi != null && _parms._estimate_k)
+            centers = splitLargestCluster(centers, lo, hi, means, mults, impute_cat, vecs2, k);
+        } //k-finder
+        vecs2[vecs2.length-1].remove();
 
         Log.info(model._output._model_summary);
-//        Log.info(model._output._scoring_history);
-//        Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
+        Log.info(model._output._scoring_history);
+        Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
 
         // At the end: validation scoring (no need to gather scoring history)
         if (_valid != null) {
@@ -298,7 +351,44 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         }
       } finally {
         if( model != null ) model.unlock(_job);
+        DKV.remove(bestOutputKey);
       }
+    }
+
+    double[][] splitLargestCluster(double[][] centers, double[][] lo, double[][] hi, double[] means, double[] mults, int[] impute_cat, Vec[] vecs2, int k) {
+      double[][] newCenters = Arrays.copyOf(centers, centers.length + 1);
+      for (int i = 0; i < centers.length; ++i)
+        newCenters[i] = centers[i].clone();
+
+      double maxRange=0;
+      int clusterToSplit=0;
+      int dimToSplit=0;
+      for (int i = 0; i < centers.length; ++i) {
+        double[] range = new double[hi[i].length];
+        for( int col=0; col<hi[i].length; col++ ) {
+          if (_isCats[col]!=null) continue; // can't split a cluster along categorical direction
+          range[col] = hi[i][col] - lo[i][col];
+          if ((float)range[col] > (float)maxRange) { //break ties
+            clusterToSplit = i;
+            dimToSplit = col;
+            maxRange = range[col];
+          }
+        }
+//        Log.info("Range for cluster " + i + ": " + Arrays.toString(range));
+      }
+      // start out new centroid as a copy of the one to split
+      assert (_isCats[dimToSplit] == null);
+      double splitPoint = newCenters[clusterToSplit][dimToSplit];
+//      Log.info("Splitting cluster " + clusterToSplit + " in half in dimension " + dimToSplit + " at splitpoint: " + splitPoint);
+
+      // compute the centroids of the two sub-clusters
+      SplitTask task = new SplitTask(newCenters, means, mults, impute_cat, _isCats, k+1, hasWeightCol(), clusterToSplit, dimToSplit, splitPoint).doAll(vecs2);
+//      Log.info("Splitting: " + Arrays.toString(newCenters[clusterToSplit]));
+      newCenters[clusterToSplit]      = task._cMeans[clusterToSplit].clone();
+//      Log.info("Into One: " + Arrays.toString(newCenters[clusterToSplit]));
+      newCenters[newCenters.length-1] = task._cMeans[newCenters.length-1].clone();
+//      Log.info("     Two: " + Arrays.toString(newCenters[newCenters.length-1]));
+      return newCenters;
     }
 
     private TwoDimTable createModelSummaryTable(KMeansModel.KMeansOutput output) {
@@ -326,7 +416,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       table.set(row, col++, Math.round(_train.numRows() * (hasWeightCol() ? _train.lastVec().mean() : 1)));
       table.set(row, col++, output._centers_raw.length);
       table.set(row, col++, output._categorical_column_count);
-      table.set(row, col++, output._iterations);
+      table.set(row, col++, output._k.length-1);
       table.set(row, col++, output._tot_withinss);
       table.set(row, col++, output._totss);
       table.set(row, col++, output._betweenss);
@@ -340,10 +430,15 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       colHeaders.add("Timestamp"); colTypes.add("string"); colFormat.add("%s");
       colHeaders.add("Duration"); colTypes.add("string"); colFormat.add("%s");
       colHeaders.add("Iteration"); colTypes.add("long"); colFormat.add("%d");
-      colHeaders.add("Avg. Change of Std. Centroids"); colTypes.add("double"); colFormat.add("%.5f");
+      if (_parms._estimate_k) {
+        colHeaders.add("Number of Clusters");
+        colTypes.add("long");
+        colFormat.add("%d");
+      }
+      colHeaders.add("Number of Reassigned Observations"); colTypes.add("long"); colFormat.add("%d");
       colHeaders.add("Within Cluster Sum Of Squares"); colTypes.add("double"); colFormat.add("%.5f");
 
-      final int rows = output._avg_centroids_chg.length;
+      final int rows = output._history_withinss.length;
       TwoDimTable table = new TwoDimTable(
               "Scoring History", null,
               new String[rows],
@@ -360,7 +455,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         table.set(row, col++, fmt.print(output._training_time_ms[i]));
         table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[i]-_job.start_time(), true));
         table.set(row, col++, i);
-        table.set(row, col++, output._avg_centroids_chg[i]);
+        if (_parms._estimate_k)
+          table.set(row, col++, output._k[i]);
+        table.set(row, col++, output._reassigned_count[i]);
         table.set(row, col++, output._history_withinss[i]);
         row++;
       }
@@ -508,7 +605,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   //   Compute distance between clusters
   //   Compute total sqr distance
 
-  private static class Lloyds extends MRTask<Lloyds> {
+  private static class LloydsIterationTask extends MRTask<LloydsIterationTask> {
     // IN
     double[][] _centers;
     double[] _means, _mults;      // Standardization
@@ -518,6 +615,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     boolean _hasWeight;
 
     // OUT
+    double[][] _lo, _hi;        // Bounding box
+    double _reassigned_count;
     double[][] _cMeans;         // Means for each cluster
     long[/*k*/][/*features*/][/*nfactors*/] _cats; // Histogram of cat levels
     double[] _cSqr;             // Sum of squares for each cluster
@@ -525,7 +624,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     long _worst_row;            // Row with max err
     double _worst_err;          // Max-err-row's max-err
 
-    Lloyds( double[][] centers, double[] means, double[] mults, int[] modes, String[][] isCats, int k, boolean hasWeight ) {
+    LloydsIterationTask(double[][] centers, double[] means, double[] mults, int[] modes, String[][] isCats, int k, boolean hasWeight ) {
       _centers = centers;
       _means = means;
       _mults = mults;
@@ -536,8 +635,14 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
 
     @Override public void map(Chunk[] cs) {
-      int N = cs.length - (_hasWeight ? 1:0);
+      int N = cs.length - (_hasWeight ? 1:0) - 1 /*clusterassignment*/;
       assert _centers[0].length==N;
+      _lo = new double[_k][N];
+      for( int clu=0; clu< _k; clu++ )
+        Arrays.fill(_lo[clu], Double.MAX_VALUE);
+      _hi = new double[_k][N];
+      for( int clu=0; clu< _k; clu++ )
+        Arrays.fill(_hi[clu], -Double.MAX_VALUE);
       _cMeans = new double[_k][N];
       _cSqr = new double[_k];
       _size = new long[_k];
@@ -548,6 +653,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           _cats[clu][col] = _isCats[col]==null ? null : new long[cs[col].vec().cardinality()];
       _worst_err = 0;
 
+      Chunk assignment = cs[cs.length-1];
       // Find closest cluster center for each row
       double[] values = new double[N]; // Temp data to hold row as doubles
       ClusterDist cd = new ClusterDist();
@@ -557,6 +663,18 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         assert(weight == 1); //K-Means only works for weight 1 (or weight 0 for holdout)
         data(values, cs, row, _means, _mults, _modes); // Load row as doubles
         closest(_centers, values, _isCats, cd); // Find closest cluster center
+        if (cd._cluster != assignment.at8(row)) {
+          _reassigned_count+=weight;
+          assignment.set(row, cd._cluster);
+        }
+        for( int clu=0; clu< _k; clu++ ) {
+          for( int col=0; col<N; col++ ) {
+            if (cd._cluster == clu) {
+              _lo[clu][col] = Math.min(values[col], _lo[clu][col]);
+              _hi[clu][col] = Math.max(values[col], _hi[clu][col]);
+            }
+          }
+        }
         int clu = cd._cluster;
         assert clu != -1;       // No broken rows
         _cSqr[clu] += cd._dist;
@@ -579,7 +697,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       _modes = null;
     }
 
-    @Override public void reduce(Lloyds mr) {
+    @Override public void reduce(LloydsIterationTask mr) {
+      _reassigned_count += mr._reassigned_count;
       for( int clu = 0; clu < _k; clu++ ) {
         long ra =    _size[clu];
         long rb = mr._size[clu];
@@ -591,6 +710,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       ArrayUtils.add(_cats, mr._cats);
       ArrayUtils.add(_cSqr, mr._cSqr);
       ArrayUtils.add(_size, mr._size);
+      for( int clu=0; clu< _k; clu++ ) {
+        for( int col=0; col<_lo[clu].length; col++ ) {
+          _lo[clu][col] = Math.min(mr._lo[clu][col], _lo[clu][col]);
+          _hi[clu][col] = Math.max(mr._hi[clu][col], _hi[clu][col]);
+        }
+      }
       // track global worst-row
       if( _worst_err < mr._worst_err) { _worst_err = mr._worst_err; _worst_row = mr._worst_row; }
     }
@@ -736,7 +861,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
    * @param model, must contain valid statistics from training, such as _betweenss etc.
    */
   private ModelMetricsClustering makeTrainingMetrics(KMeansModel model) {
-    ModelMetricsClustering mm = new ModelMetricsClustering(model, model._parms.train());
+    ModelMetricsClustering mm = new ModelMetricsClustering(model, train());
     mm._size = model._output._size;
     mm._withinss = model._output._withinss;
     mm._betweenss = model._output._betweenss;
@@ -744,6 +869,91 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     mm._tot_withinss = model._output._tot_withinss;
     model.addMetrics(mm);
     return mm;
+  }
+
+  private static class SplitTask extends MRTask<SplitTask> {
+    // IN
+    double[][] _centers;
+    double[] _means, _mults;      // Standardization
+    int[] _modes;   // Imputation of missing categoricals
+    final int _k;
+    final String[][] _isCats;
+    final boolean _hasWeight;
+    final int _clusterToSplit;
+    final int _dimToSplit;
+    final double _splitPoint;
+
+    // OUT
+    double[][] _cMeans;         // Means for each cluster
+    long[] _size;               // Number of rows in each cluster
+
+    SplitTask(double[][] centers, double[] means, double[] mults, int[] modes, String[][] isCats, int k, boolean hasWeight, int clusterToSplit, int dimToSplit, double splitPoint) {
+      _centers = centers;
+      _means = means;
+      _mults = mults;
+      _modes = modes;
+      _isCats = isCats;
+      _k = k;
+      _hasWeight = hasWeight;
+      _clusterToSplit = clusterToSplit;
+      _dimToSplit = dimToSplit;
+      _splitPoint = splitPoint;
+    }
+
+    @Override public void map(Chunk[] cs) {
+      int N = cs.length - (_hasWeight ? 1:0) - 1 /*clusterassignment*/;
+      assert _centers[0].length==N;
+      _cMeans = new double[_k][N];
+      _size = new long[_k];
+
+      Chunk assignment = cs[cs.length-1];
+      // Find closest cluster center for each row
+      double[] values = new double[N]; // Temp data to hold row as doubles
+      ClusterDist cd = new ClusterDist();
+      for( int row = 0; row < cs[0]._len; row++ ) {
+        if (assignment.at8(row) != _clusterToSplit) continue;
+
+        double weight = _hasWeight ? cs[N].atd(row) : 1;
+        if (weight == 0) continue; //skip holdout rows
+
+        assert(weight == 1); //K-Means only works for weight 1 (or weight 0 for holdout)
+
+        data(values, cs, row, _means, _mults, _modes); // Load row as doubles
+        assert (_isCats[_dimToSplit]==null);
+        if (values[_dimToSplit] > _centers[_clusterToSplit][_dimToSplit]) {
+          cd._cluster = _centers.length-1;
+          assignment.set(row, cd._cluster);
+        } else {
+          cd._cluster = _clusterToSplit;
+        }
+
+        int clu = cd._cluster;
+        assert clu != -1;       // No broken rows
+
+        // Add values and increment counter for chosen cluster
+        for( int col = 0; col < N; col++ )
+          _cMeans[clu][col] += values[col]; // Sum the column centers
+        _size[clu]++;
+      }
+      // Scale back down to local mean
+      for( int clu = 0; clu < _k; clu++ )
+        if( _size[clu] != 0 ) ArrayUtils.div(_cMeans[clu], _size[clu]);
+      _centers = null;
+      _means = _mults = null;
+      _modes = null;
+    }
+
+    @Override public void reduce(SplitTask mr) {
+      for( int clu = 0; clu < _k; clu++ ) {
+        long ra =    _size[clu];
+        long rb = mr._size[clu];
+        double[] ma =    _cMeans[clu];
+        double[] mb = mr._cMeans[clu];
+        for( int c = 0; c < ma.length; c++ ) // Recursive mean
+          if( ra+rb > 0 ) ma[c] = (ma[c] * ra + mb[c] * rb) / (ra + rb);
+      }
+      ArrayUtils.add(_size, mr._size);
+    }
   }
 
 }

@@ -130,7 +130,7 @@ public class SVDTest extends TestUtil {
 
         // Add missing values to the training data
         if (missing_fraction > 0) {
-          Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
+          Frame frtmp = new Frame(Key.<Frame>make(), train.names(), train.vecs());
           DKV.put(frtmp._key, frtmp); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
           FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
           j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly
@@ -361,7 +361,7 @@ public class SVDTest extends TestUtil {
       train = parse_test_file(Key.make("prostate.hex"), "smalldata/prostate/prostate_cat.csv");
 
       // Add missing values to the training data
-      Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
+      Frame frtmp = new Frame(Key.<Frame>make(), train.names(), train.vecs());
       DKV.put(frtmp._key, frtmp); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
       FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, 0.25);
       j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly

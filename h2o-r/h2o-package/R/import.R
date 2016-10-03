@@ -36,7 +36,7 @@
 #'        none is given, a key will automatically be generated based on the URL
 #'        path.
 #' @param parse (Optional) A logical value indicating whether the file should be
-#'        parsed after import.
+#'        parsed after import, for details see \link{h2o.parseRaw}.
 #' @param header (Optional) A logical value indicating whether the first line of
 #'        the file contains column headers. If left empty, the parser will try
 #'        to automatically detect this.
@@ -53,6 +53,7 @@
 #' @param progressBar (Optional) When FALSE, tell H2O parse call to block
 #'        synchronously instead of polling.  This can be faster for small
 #'        datasets but loses the progress bar.
+#' @seealso \link{h2o.import_sql_select}, \link{h2o.import_sql_table}, \link{h2o.parseRaw}
 #' @examples
 #' \donttest{
 #' h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)

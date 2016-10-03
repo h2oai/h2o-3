@@ -106,7 +106,7 @@ public class GLRMTest extends TestUtil {
     try {
       Log.info("num chunks: ", train.anyVec().nChunks());
       Vec[] acs_zcta_vec = {train.vec(0).toCategoricalVec()};
-      Frame acs_zcta_fr = new Frame(Key.make("acs_zcta_fr"),new String[] {"name"}, acs_zcta_vec);
+      Frame acs_zcta_fr = new Frame(Key.<Frame>make("acs_zcta_fr"),new String[] {"name"}, acs_zcta_vec);
       DKV.put(acs_zcta_fr);
       train.remove(0).remove();
       DKV.put(train);
@@ -141,7 +141,7 @@ public class GLRMTest extends TestUtil {
       if (model != null) model.delete();
     }
   }
-  
+
   @Test public void testArrests() throws InterruptedException, ExecutionException {
     // Initialize using first k rows of standardized training frame
     Frame yinit = ArrayUtils.frame(ard(ard(1.24256408, 0.7828393, -0.5209066, -0.003416473),
@@ -303,7 +303,7 @@ public class GLRMTest extends TestUtil {
 
         // Add missing values to the training data
         if (missing_fraction > 0) {
-          Frame frtmp = new Frame(Key.make(), train.names(), train.vecs());
+          Frame frtmp = new Frame(Key.<Frame>make(), train.names(), train.vecs());
           DKV.put(frtmp._key, frtmp); // Need to put the frame (to be modified) into DKV for MissingInserter to pick up
           FrameUtils.MissingInserter j = new FrameUtils.MissingInserter(frtmp._key, seed, missing_fraction);
           j.execImpl().get(); // MissingInserter is non-blocking, must block here explicitly

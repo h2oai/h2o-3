@@ -342,7 +342,7 @@ public final class ParseDataset {
           errs[i]._lineNum = errs[i]._gLineNum - espc[espcOff];
         }
       }
-      SortedSet s = new TreeSet<ParseWriter.ParseErr>(new Comparator<ParseWriter.ParseErr>() {
+      SortedSet s = new TreeSet<>(new Comparator<ParseWriter.ParseErr>() {
         @Override
         public int compare(ParseWriter.ParseErr o1, ParseWriter.ParseErr o2) {
           long res = o1._gLineNum - o2._gLineNum;
@@ -365,8 +365,10 @@ public final class ParseDataset {
     fr.unlock(job);
     // Remove CSV files from H2O memory
     if( deleteOnDone )
-      for( Key k : fkeys )
-        assert DKV.get(k) == null : "Input key "+k+" not deleted during parse";
+      for( Key k : fkeys ) {
+        DKV.remove(k);
+        assert DKV.get(k) == null : "Input key " + k + " not deleted during parse";
+      }
     return pds;
   }
   private static class CreateParse2GlobalCategoricalMaps extends DTask<CreateParse2GlobalCategoricalMaps> {
@@ -831,17 +833,18 @@ public final class ParseDataset {
           // Zipped file; no parallel decompression;
           InputStream bvs = vec.openStream(_jobKey);
           ZipInputStream zis = new ZipInputStream(bvs);
+
+          if (ZipUtil.isZipDirectory(key)) {  // file is a zip if multiple files
+            zis.getNextEntry();          // first ZipEntry describes the directory
+          }
+
           ZipEntry ze = zis.getNextEntry(); // Get the *FIRST* entry
           // There is at least one entry in zip file and it is not a directory.
           if( ze != null && !ze.isDirectory() )
             _dout[_lo] = streamParse(zis,localSetup, makeDout(localSetup,chunkStartIdx,vec.nChunks()), bvs);
             _errors = _dout[_lo].removeErrors();
-            // check for more files in archive
-            ZipEntry ze2 = zis.getNextEntry();
-            if (ze2 != null && !ze.isDirectory()) {
-              Log.warn("Only single file zip archives are currently supported, only file: "+ze.getName()+" has been parsed.  Remaining files have been ignored.");
-            }
-          else zis.close();       // Confused: which zipped file to decompress
+
+          zis.close();       // Confused: which zipped file to decompress
           chunksAreLocal(vec,chunkStartIdx,key);
           break;
         }

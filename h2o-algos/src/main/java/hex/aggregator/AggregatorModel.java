@@ -48,7 +48,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   public AggregatorModel(Key selfKey, AggregatorParameters parms, AggregatorOutput output) { super(selfKey,parms,output); }
 
   @Override
-  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j) {
+  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
     return null;
   }
 
@@ -106,7 +106,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
   }
 
   @Override
-  public Frame scoreExemplarMembers(Key destination_key, final int exemplarIdx) {
+  public Frame scoreExemplarMembers(Key<Frame> destination_key, final int exemplarIdx) {
     Vec booleanCol = new MRTask() {
       @Override
       public void map(Chunk c, NewChunk nc) {

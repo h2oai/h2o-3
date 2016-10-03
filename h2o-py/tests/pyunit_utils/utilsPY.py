@@ -97,8 +97,8 @@ def check_models(model1, model2, use_cross_validation=False, op='e'):
 
 def check_dims_values(python_obj, h2o_frame, rows, cols, dim_only=False):
     """
-    Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python object
-    conforms to the rules specified in the h2o frame documentation.
+    Check that the dimensions and values of the python object and H2OFrame are equivalent. Assumes that the python
+    object conforms to the rules specified in the h2o frame documentation.
 
     :param python_obj: a (nested) list, tuple, dictionary, numpy.ndarray, ,or pandas.DataFrame
     :param h2o_frame: an H2OFrame
@@ -114,10 +114,12 @@ def check_dims_values(python_obj, h2o_frame, rows, cols, dim_only=False):
         if isinstance(python_obj, (list, tuple)):
             for c in range(cols):
                 for r in range(rows):
-                    pval = python_obj[r][c] if rows > 1 else python_obj[c]
-                    hval = h2o_frame[r,c]
-                    assert pval == hval, "expected H2OFrame to have the same values as the python object for row {0} " \
-                                         "and column {1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
+                    pval = python_obj[r]
+                    if isinstance(pval, (list, tuple)): pval = pval[c]
+                    hval = h2o_frame[r, c]
+                    assert pval == hval or abs(pval - hval) < 1e-10, \
+                        "expected H2OFrame to have the same values as the python object for row {0} " \
+                        "and column {1}, but h2o got {2} and python got {3}.".format(r, c, hval, pval)
         elif isinstance(python_obj, dict):
             for r in range(rows):
                 for k in list(python_obj.keys()):
@@ -686,10 +688,15 @@ def generate_weights_glm(csv_weight_filename, col_count, data_type, min_w_value,
             print("class_number must be >= 2!")
             sys.exit(1)
 
+        if isinstance(col_count, np.ndarray):
+            temp_col_count = col_count[0]
+        else:
+            temp_col_count = col_count
+
         if data_type == 1:     # generate random integer intercept/weight
-            weight = np.random.random_integers(min_w_value, max_w_value, [col_count+1, class_number])
+            weight = np.random.random_integers(min_w_value, max_w_value, [temp_col_count+1, class_number])
         elif data_type == 2:   # generate real intercept/weights
-            weight = np.random.uniform(min_w_value, max_w_value, [col_count+1, class_number])
+            weight = np.random.uniform(min_w_value, max_w_value, [temp_col_count+1, class_number])
         else:
             print("dataType must be 1 or 2 for now.")
             sys.exit(1)
@@ -985,7 +992,7 @@ def encode_enum_dataset(dataset, enum_level_vec, enum_col, true_one_hot, include
         if include_nans and np.any(enum_arrays[:, indc]):
             enum_col_num += 1
 
-        new_temp_enum = np.zeros((num_row, enum_col_num), dtype=np.int)
+        new_temp_enum = np.zeros((num_row, enum_col_num[0]))
         one_hot_matrix = one_hot_encoding(enum_col_num)
         last_col_index = enum_col_num-1
 
@@ -1514,7 +1521,7 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
             return coeffs
     elif what_param == 'best_lambda':
         lambda_str = model._model_json["output"]["model_summary"].cell_values[0][4].split('=')
-        return float(lambda_str[-1])
+        return float(str(lambda_str[-2]).split(',')[0])
     elif what_param == 'confusion_matrix':
         if 'multinomial' in family_type.lower():
             return model._model_json["output"]["training_metrics"]._metric_json["cm"]["table"]

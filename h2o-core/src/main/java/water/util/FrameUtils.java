@@ -9,7 +9,6 @@ import hex.ToEigenVec;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.*;
-import water.parser.BufferedString;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 
@@ -277,21 +276,21 @@ public class FrameUtils {
     @Override
     public void compute2() {
       _frame.read_lock(_j._key);
-      if (_nParts < 0) {
-        EstimateSizeTask estSize = new EstimateSizeTask().dfork(_frame).getResult();
-        Log.debug("Estimator result: ", estSize);
-        // the goal is to not to create too small part files (and too many files), ideal part file size is one HDFS block
-        _nParts = Math.max((int) (estSize._size / DEFAULT_TARGET_PART_SIZE), H2O.CLOUD.size() + 1);
-        if (_nParts > AUTO_PARTS_MAX) {
-          Log.debug("Recommended number of part files (" + _nParts + ") exceeds maximum limit " + AUTO_PARTS_MAX + ". " +
-                  "Number of part files is limited to avoid slow downs when importing back to H2O."); // @tomk
-          _nParts = AUTO_PARTS_MAX;
+      if (_nParts == 1) {
+        // Single file export, the file should be created by the node that was asked to export the data
+        // (this is for non-distributed filesystems, we want the file to go to the local filesystem of the node)
+        Frame.CSVStream is = new Frame.CSVStream(_frame, true, false);
+        exportCSVStream(is, _path, 0);
+        tryComplete();
+      } else {
+        // Multi-part export
+        if (_nParts < 0) {
+          _nParts = calculateNParts();
+          assert _nParts > 0;
         }
-        Log.info("For file of estimated size " + estSize + "B determined number of parts: " + _nParts);
+        int nChunksPerPart = ((_frame.anyVec().nChunks() - 1) / _nParts) + 1;
+        new PartExportTask(this, _frame._names, nChunksPerPart).dfork(_frame);
       }
-      int nChunksPerPart = ((_frame.anyVec().nChunks() - 1) / _nParts) + 1;
-      boolean usePartNaming = _nParts > 1;
-      new PartExportTask(this, _frame._names, nChunksPerPart, usePartNaming).dfork(_frame);
     }
 
     @Override
@@ -303,6 +302,20 @@ public class FrameUtils {
     public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller) {
       _frame.unlock(_j);
       return super.onExceptionalCompletion(t, caller);
+    }
+
+    private int calculateNParts() {
+      EstimateSizeTask estSize = new EstimateSizeTask().dfork(_frame).getResult();
+      Log.debug("Estimator result: ", estSize);
+      // the goal is to not to create too small part files (and too many files), ideal part file size is one HDFS block
+      int nParts = Math.max((int) (estSize._size / DEFAULT_TARGET_PART_SIZE), H2O.CLOUD.size() + 1);
+      if (nParts > AUTO_PARTS_MAX) {
+        Log.debug("Recommended number of part files (" + nParts + ") exceeds maximum limit " + AUTO_PARTS_MAX + ". " +
+                "Number of part files is limited to avoid slow downs when importing back to H2O."); // @tomk
+        nParts = AUTO_PARTS_MAX;
+      }
+      Log.info("For file of estimated size " + estSize + "B determined number of parts: " + _nParts);
+      return nParts;
     }
 
     /**
@@ -340,36 +353,57 @@ public class FrameUtils {
       }
     }
 
+    private long copyCSVStream(Frame.CSVStream is, OutputStream os, int firstChkIdx, int buffer_size) throws IOException {
+      long len = 0;
+      byte[] bytes = new byte[buffer_size];
+      int curChkIdx = firstChkIdx;
+      for (;;) {
+        int count = is.read(bytes, 0, buffer_size);
+        if (count <= 0) {
+          break;
+        }
+        len += count;
+        os.write(bytes, 0, count);
+        int workDone = is._curChkIdx - curChkIdx;
+        if (workDone > 0) {
+          if (_j.stop_requested()) throw new Job.JobCancelledException();
+          _j.update(workDone);
+          curChkIdx = is._curChkIdx;
+        }
+      }
+      return len;
+    }
+
+    private void exportCSVStream(Frame.CSVStream is, String path, int firstChkIdx) {
+      OutputStream os = null;
+      long written = -1;
+      try {
+        os = H2O.getPM().create(path, _overwrite);
+        written = copyCSVStream(is, os, firstChkIdx, 4 * 1024 * 1024);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      } finally {
+        if (os != null) {
+          try {
+            os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
+            os.close();
+            Log.info("Written " + written + " bytes of key '" + _frameName + "' to " + _path + ".");
+          } catch (Exception e) {
+            Log.err(e);
+          }
+        }
+        try { is.close(); } catch (Exception e) { Log.err(e); }
+      }
+    }
+
     class PartExportTask extends MRTask<PartExportTask> {
       final String[] _colNames;
       final int _length;
-      final boolean _partNaming;
 
-      PartExportTask(H2O.H2OCountedCompleter<?> completer, String[] colNames, int length, boolean partNaming) {
+      PartExportTask(H2O.H2OCountedCompleter<?> completer, String[] colNames, int length) {
         super(completer);
         _colNames = colNames;
         _length = length;
-        _partNaming = partNaming;
-      }
-
-      private long copyStream(Frame.CSVStream is, OutputStream os, int firstChkIdx, int buffer_size) throws IOException {
-        long len = 0;
-        byte[] bytes = new byte[buffer_size];
-        int curChkIdx = firstChkIdx;
-        for (;;) {
-          int count = is.read(bytes, 0, buffer_size);
-          if (count <= 0) {
-            break;
-          }
-          len += count;
-          os.write(bytes, 0, count);
-          int workDone = is._curChkIdx - curChkIdx;
-          if (workDone > 0) {
-            _j.update(workDone);
-            curChkIdx = is._curChkIdx;
-          }
-        }
-        return len;
       }
 
       @Override
@@ -379,31 +413,15 @@ public class FrameUtils {
           return;
         }
         int partIdx = anyChunk.cidx() / _length;
-        String partPath = _partNaming ? _path + "/part-m-" + String.valueOf(100000 + partIdx).substring(1) : _path;
+        String partPath = _path + "/part-m-" + String.valueOf(100000 + partIdx).substring(1);
         Frame.CSVStream is = new Frame.CSVStream(cs, _colNames, _length, false);
-        OutputStream os = null;
-        long written = -1;
-        try {
-          os = H2O.getPM().create(partPath, _overwrite);
-          written = copyStream(is, os, anyChunk.cidx(), 4 * 1024 * 1024);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        } finally {
-          if (os != null) {
-            try {
-              os.flush(); // Seems redundant, but seeing a short-file-read on windows sometimes
-              os.close();
-              Log.info("Part " + partIdx + " of key '" + _frameName + "' of " + written + " bytes was written to " + _path + ".");
-            } catch (Exception e) {
-              Log.err(e);
-            }
-          }
-          try {
-            is.close();
-          } catch (Exception e) {
-            Log.err(e);
-          }
-        }
+        exportCSVStream(is, partPath, anyChunk.cidx());
+      }
+
+      @Override
+      protected void setupLocal() {
+        boolean created = H2O.getPM().mkdirs(_path);
+        if (! created) Log.warn("Path ", _path, " was not created.");
       }
     }
   }
@@ -676,7 +694,7 @@ public class FrameUtils {
     }
   }
 
-  static public void cleanUp(IcedHashMap<Key, StackTraceElement[]> toDelete) {
+  static public void cleanUp(IcedHashMap<Key, String> toDelete) {
     Futures fs = new Futures();
     for (Key k : toDelete.keySet()) {
       k.remove(fs);

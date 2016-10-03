@@ -83,9 +83,9 @@ public class GainsLift extends Iced {
       try {
         QuantileModel.QuantileParameters qp = new QuantileModel.QuantileParameters();
         if (_weights==null) {
-          fr = new Frame(Key.make(), new String[]{"predictions"}, new Vec[]{_preds});
+          fr = new Frame(Key.<Frame>make(), new String[]{"predictions"}, new Vec[]{_preds});
         } else {
-          fr = new Frame(Key.make(), new String[]{"predictions", "weights"}, new Vec[]{_preds, _weights});
+          fr = new Frame(Key.<Frame>make(), new String[]{"predictions", "weights"}, new Vec[]{_preds, _weights});
           qp._weights_column = "weights";
         }
         DKV.put(fr);

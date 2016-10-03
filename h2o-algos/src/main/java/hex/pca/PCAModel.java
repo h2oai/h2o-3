@@ -92,7 +92,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j) {
+  protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, final Job j, boolean computeMetrics) {
     Frame adaptFrm = new Frame(adaptedFr);
     for(int i = 0; i < _parms._k; i++)
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
@@ -115,7 +115,7 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
     int x = _output._names.length, y = adaptFrm.numCols();
     Frame f = adaptFrm.extractFrame(x, y); // this will call vec_impl() and we cannot call the delete() below just yet
 
-    f = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), f.names(), f.vecs());
+    f = new Frame(Key.<Frame>make(destination_key), f.names(), f.vecs());
     DKV.put(f);
     makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
     return f;

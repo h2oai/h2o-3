@@ -22,28 +22,33 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
         "ignore_const_cols",
         "score_each_iteration",
         "k",
+        "estimate_k",
         "user_points",
         "max_iterations",
         "standardize",
         "seed",
         "init",
-        "max_runtime_secs"
+        "max_runtime_secs",
+        "categorical_encoding"
     };
 
     // Input fields
-    @API(help = "User-specified points", required = false)
+    @API(help = "User-specified points", required = false, level = API.Level.expert)
     public KeyV3.FrameKeyV3 user_points;
 
-    @API(help="Maximum training iterations", gridable = true)
+    @API(help="Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration)", gridable = true)
     public int max_iterations;        // Max iterations
 
-    @API(help = "Standardize columns", level = API.Level.secondary, gridable = true)
+    @API(help = "Standardize columns before computing distances", level = API.Level.critical, gridable = true)
     public boolean standardize = true;
 
-    @API(help = "RNG Seed", level = API.Level.expert /* tested, works: , dependsOn = {"k", "max_iterations"} */, gridable = true)
+    @API(help = "RNG Seed", level = API.Level.secondary /* tested, works: , dependsOn = {"k", "max_iterations"} */, gridable = true)
     public long seed;
 
     @API(help = "Initialization mode", values = { "Random", "PlusPlus", "Furthest", "User" }, gridable = true) // TODO: pull out of categorical class. . .
     public KMeans.Initialization init;
+
+    @API(help = "Whether to estimate the number of clusters (<=k) iteratively and deterministically.", level = API.Level.critical, gridable = true)
+    public boolean estimate_k = false;
   }
 }

@@ -18,7 +18,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public ToEigenVec getToEigenVec() { return null; }
 
-  private IcedHashMap<Key,StackTraceElement[]> _toDelete = new IcedHashMap<>();
+  private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
 
   public Job _job;     // Job controlling this build
@@ -332,7 +332,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }.doAll(2*N,Vec.T_NUM,folds_and_weights).outputFrame().vecs();
     if (_parms._keep_cross_validation_fold_assignment)
-      DKV.put(new Frame(Key.make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
+      DKV.put(new Frame(Key.<Frame>make("cv_fold_assignment_" + _result.toString()), new String[]{"fold_assignment"}, new Vec[]{foldAssignment.makeCopy()}));
     if( _parms._fold_column == null && !_parms._keep_cross_validation_fold_assignment) foldAssignment.remove();
     if( origWeightsName == null ) origWeight.remove(); // Cleanup temp
 
@@ -357,10 +357,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame cvTrain = new Frame(Key.make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
+      Frame cvTrain = new Frame(Key.<Frame>make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
       cvTrain.add(weightName, weights[2*i]);
       DKV.put(cvTrain);
-      Frame cvValid = new Frame(Key.make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
+      Frame cvValid = new Frame(Key.<Frame>make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
       cvValid.add(weightName, weights[2*i+1]);
       DKV.put(cvValid);
 
@@ -432,7 +432,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               _parms._keep_cross_validation_predictions ||
               (_parms._distribution== DistributionFamily.huber /*need to compute quantiles on abs error of holdout predictions*/)) {
         String predName = "prediction_" + cvModelBuilders[i]._result.toString();
-        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job);
+        cvModel.predictScoreImpl(cvValid, adaptFr, predName, _job, true);
         DKV.put(cvModel);
       }
       // free resources as early as possible
@@ -924,7 +924,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (!_parms._is_cv_model)
           Scope.track(_train);
         else
-          _toDelete.put(_train._key, Thread.currentThread().getStackTrace());
+          _toDelete.put(_train._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         separateFeatureVecs(); //fix up the pointers to the special vecs
       }
       if (_valid != null) {
@@ -935,7 +935,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           if (!_parms._is_cv_model)
             Scope.track(_valid); //for CV, need to score one more time in outer loop
           else
-            _toDelete.put(_valid._key, Thread.currentThread().getStackTrace());
+            _toDelete.put(_valid._key, Arrays.toString(Thread.currentThread().getStackTrace()));
           _vresponse = _valid.vec(_parms._response_column);
         }
       }

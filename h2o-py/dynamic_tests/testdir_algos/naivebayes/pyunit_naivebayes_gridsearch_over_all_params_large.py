@@ -45,7 +45,7 @@ class Test_naivebayes_grid_search:
     max_grid_model = 100           # maximum number of grid models generated before adding max_runtime_secs
 
     curr_time = str(round(time.time()))     # store current timestamp, used as part of filenames.
-    seed = round(time.time())
+    seed = int(round(time.time()))
 
     # parameters denoting filenames of interested that store training/validation/test data sets in csv format
     training1_filename = "smalldata/gridsearch/multinomial_training1_set.csv"
@@ -68,7 +68,7 @@ class Test_naivebayes_grid_search:
     max_real_number = 5         # maximum number of real grid values to generate
 
     time_scale = 2              # maximum runtime scale
-    extra_time_fraction = 0.1   # since timing is never perfect, give some extra time on top of maximum runtime limit
+    extra_time_fraction = 0.5   # since timing is never perfect, give some extra time on top of maximum runtime limit
     min_runtime_per_tree = 0    # minimum run time found.  Determined later
     model_run_time = 0.0        # time taken to run a vanilla naivebayes model.  Determined later.
     allowed_runtime_diff = 0.1     # run time difference fraction when models are run by gridsearch and manually
@@ -202,7 +202,10 @@ class Test_naivebayes_grid_search:
         if "min_prob" in final_hyper_params_keys:
             old_len_prob = len([x for x in self.final_hyper_params["max_runtime_secs"] if (x >= 0)])
             good_len_prob = len([x for x in self.final_hyper_params["max_runtime_secs"] if (x >= 1e-10)])
-            self.possible_number_models = self.possible_number_models*good_len_prob/old_len_prob
+            if (old_len_prob > 0):
+                self.possible_number_models = self.possible_number_models*good_len_prob/old_len_prob
+            else:
+                self.possible_number_models = 0
 
         if "laplace" in final_hyper_params_keys:
             self.final_hyper_params["laplace"] = [self.laplace_scale * x for x
@@ -362,10 +365,10 @@ class Test_naivebayes_grid_search:
 
                 if self.test_failed == 0:
                     print("test_naivebayes_grid_search_over_params for naivebayes has passed!")
-        except:
+        except Exception as e:
             if self.possible_number_models > 0:
-                print("test_naivebayes_grid_search_over_params for naivebayes failed: exception was thrown for "
-                      "no reason.")
+                print("test_naivebayes_grid_search_over_params for naivebayes failed: exception ({0}) was thrown for "
+                      "no reason.".format(e))
                 self.test_failed += 1
 
 

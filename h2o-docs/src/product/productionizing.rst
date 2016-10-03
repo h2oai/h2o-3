@@ -91,28 +91,6 @@ Videos       http://library.fora.tv/2016/05/03/design_patterns_for_smart_applica
 =========    ==================================================================================================
 
 
-Journals.ai application
-~~~~~~~~~~~~~~~~~~~~~~~
-
-==================================================  ===========================================================
-Characteristic                                      Value
-==================================================  ===========================================================
-Pattern name                                        Custom visualization with Precalculated database
-Example training language                           R
-Example training data source                        Many CSV files
-Example scoring data source                         Precalculated SQLite database
-Scoring environment                                 Precalculated SQLite database
-Scoring engine                                      N/A
-Scoring latency SLA                                 Real-time
-==================================================  ===========================================================
-
-=========    ==================================================================================================
-Resource     Location
-=========    ==================================================================================================
-Videos       http://library.fora.tv/2016/05/03/design_patterns_for_smart_applications_and_data_products
-=========    ==================================================================================================
-
-
 Storm bolt
 ~~~~~~~~~~
 

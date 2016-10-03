@@ -1,5 +1,15 @@
 package water.api;
 
+import water.*;
+import water.H2O.H2OCountedCompleter;
+import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
+import water.exceptions.H2OKeyWrongTypeArgumentException;
+import water.util.Log;
+import water.util.PojoUtils;
+import water.util.ReflectionUtils;
+import water.util.annotations.IgnoreJRERequirement;
+
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -7,20 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
-
-import water.DKV;
-import water.H2O;
-import water.H2O.H2OCountedCompleter;
-import water.Iced;
-import water.Key;
-import water.Keyed;
-import water.Value;
-import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
-import water.exceptions.H2OKeyWrongTypeArgumentException;
-import water.util.Log;
-import water.util.ReflectionUtils;
-import water.util.annotations.IgnoreJRERequirement;
 
 public class Handler extends H2OCountedCompleter<Handler> {
 
@@ -33,7 +29,7 @@ public class Handler extends H2OCountedCompleter<Handler> {
   }
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
-  Schema handle(int version, Route route, Properties parms) throws Exception {
+  Schema handle(int version, Route route, Properties parms, String post_body) throws Exception {
     Class<? extends Schema> handler_schema_class = getHandlerMethodInputSchema(route._handler_method);
     Schema schema = Schema.newInstance(handler_schema_class);
 
@@ -48,6 +44,15 @@ public class Handler extends H2OCountedCompleter<Handler> {
     schema = schema.fillFromParms(parms);
     if (schema == null)
       throw H2O.fail("fillFromParms returned a null schema for version: " + version + " in: " + this.getClass() + " with params: " + parms);
+
+    // Fill from JSON body, if there is one.  NOTE: there should *either* be a JSON body *or* parms,
+    // with the exception of control-type query parameters.
+    //
+    // We use PojoUtils.fillFromJson() rather than just using "schema = Gson.fromJson(post_body)"
+    // so that we have defaults: we only overwrite fields that the client has specified.
+    if (null != post_body) {
+      PojoUtils.fillFromJson(schema, post_body);
+    }
 
     // NOTE! The handler method is free to modify the input schema and hand it back.
     Schema result = null;

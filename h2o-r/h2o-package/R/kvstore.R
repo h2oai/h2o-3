@@ -211,12 +211,12 @@ h2o.getModel <- function(model_id) {
 #' Download the Scoring POJO (Plain Old Java Object) of an H2O Model
 #'
 #' @param model An H2OModel
-#' @param path The path to the directory to store the POJO (no trailing slash). If "", then print to
+#' @param path The path to the directory to store the POJO (no trailing slash). If NULL, then print to
 #'             to console. The file name will be a compilable java file name.
 #' @param get_jar Whether to also download the h2o-genmodel.jar file needed to compile the POJO
 #' @param getjar (DEPRECATED) Whether to also download the h2o-genmodel.jar file needed to compile the POJO. This argument is now called `get_jar`.
-#' @return If path is "", then pretty print the POJO to the console.
-#'         Otherwise save it to the specified directory.
+#' @return If path is NULL, then pretty print the POJO to the console.
+#'         Otherwise save it to the specified directory and return POJO file name.
 #' @examples
 #' \donttest{
 #' library(h2o)
@@ -232,7 +232,18 @@ h2o.getModel <- function(model_id) {
 #' h2o.download_pojo(my_model, getwd())  # save to the current working directory
 #' }
 #' @export
-h2o.download_pojo <- function(model, path="", getjar=NULL, get_jar=TRUE) {
+h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE) {
+
+  if(!is.null(path) && !(is.character(path))){
+    stop("The 'path' variable should be of type character")
+  }
+  if(!(is.logical(get_jar))){
+    stop("The 'get_jar' variable should be of type logical/boolean")
+  }
+  if(!is.null(path) && !(file.exists(path))){
+    stop(paste0("'path',",path,", to save pojo cannot be found."))
+  }
+
   model_id <- model@model_id
   java <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
 
@@ -241,8 +252,9 @@ h2o.download_pojo <- function(model, path="", getjar=NULL, get_jar=TRUE) {
   pojoname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
   
   file.path <- paste0(path, "/", pojoname, ".java")
-  if( path == "" ) cat(java)
-  else {
+  if( is.null(path) ){
+    cat(java)
+  } else {
     write(java, file=file.path)
       # getjar is now deprecated and the new arg name is get_jar
       if (!is.null(getjar)) {
@@ -262,7 +274,65 @@ h2o.download_pojo <- function(model, path="", getjar=NULL, get_jar=TRUE) {
         writeBin(tmp, jar.path, useBytes = TRUE)
       }
     }
+    return(paste0(pojoname,".java"))
+  }
+}
+
+#'
+#' Download the model in MOJO format.
+#'
+#' @param model An H2OModel
+#' @param path The path where MOJO file should be saved. Saved to current directory by default.
+#' @param get_genmodel_jar If TRUE, then also download h2o-genmodel.jar and store it in folder ``path``.
+#' @return Name of the MOJO file written to the path.
+#'
+#' @examples
+#' \donttest{
+#' library(h2o)
+#' h <- h2o.init(nthreads=-1)
+#' fr <- as.h2o(iris)
+#' my_model <- h2o.gbm(x=1:4, y=5, training_frame=fr)
+#' h2o.download_mojo(my_model)  # save to the current working directory
+#' }
+#' @export
+h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE) {
+
+  if(!(is.character(path))){
+    stop("The 'path' variable should be of type character")
+  }
+  if(!(is.logical(get_genmodel_jar))){
+    stop("The 'get_genmodel_jar' variable should be of type logical/boolean")
   }
 
-  if( path!="") print( paste0("POJO written to: ", file.path) )
+  if(!(model@algorithm %in% c("drf","gbm"))){
+    stop("MOJOs are currently supported for Distributed Random Forest and Gradient Boosting Method models only.")
+  }
+
+  if(!(file.exists(path))){
+    stop(paste0("'path',",path,", to save MOJO file cannot be found."))
+  }
+
+  model_id <- model@model_id
+  .__curlError = FALSE
+  .__curlErrorMessage = ""
+
+  url = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = paste0(.h2o.__MODELS,"/",model_id,"/mojo"))
+  tmp = tryCatch(getBinaryURL(url = url,
+                      useragent = R.version.string),
+               error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+  if (! .__curlError) {
+     mojo.path <- paste0(path,"/",model_id,".zip")
+     writeBin(tmp, mojo.path, useBytes = TRUE)
+  }
+  if (get_genmodel_jar) {
+    url = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")
+    tmp = tryCatch(getBinaryURL(url = url,
+                        useragent = R.version.string),
+                 error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    if (! .__curlError) {
+      jar.path <- paste0(path, "/h2o-genmodel.jar")
+      writeBin(tmp, jar.path, useBytes = TRUE)
+    }
+  }
+  return(paste0(model_id,".zip"))
 }

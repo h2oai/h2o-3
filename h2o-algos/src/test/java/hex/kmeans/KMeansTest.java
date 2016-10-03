@@ -12,14 +12,12 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.util.ArrayUtils;
-import water.util.FrameUtils;
-import water.util.Log;
-import water.util.MathUtils;
+import water.util.*;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.Random;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -27,14 +25,14 @@ import static org.junit.Assert.assertEquals;
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
-  
+
   // Run KMeans with a given seed, & check all clusters are non-empty
   private static KMeansModel doSeed( KMeansModel.KMeansParameters parms, long seed ) {
     parms._seed = seed;
     KMeans job = new KMeans(parms);
     KMeansModel kmm = job.trainModel().get();
     checkConsistency(kmm);
-    for( int i=0; i<parms._k; i++ )
+    for( int i=0; i<kmm._output._k[kmm._output._k.length-1]; i++ )
       Assert.assertTrue( "Seed: "+seed, kmm._output._size[i] != 0 );
     return kmm;
   }
@@ -52,7 +50,7 @@ public class KMeansTest extends TestUtil {
       kmm.score(parms.train()).delete(); //this scores on the training data and appends a ModelMetrics
       ModelMetricsClustering mm = (ModelMetricsClustering) ModelMetrics.getFromDKV(kmm, parms.train());
       Assert.assertTrue(Arrays.equals(mm._size, ((ModelMetricsClustering) kmm._output._training_metrics)._size));
-      for (int i = 0; i < parms._k; ++i) {
+      for (int i = 0; i < kmm._output._k[kmm._output._k.length-1]; ++i) {
         Assert.assertTrue(MathUtils.compare(mm._withinss[i], ((ModelMetricsClustering) kmm._output._training_metrics)._withinss[i], 1e-6, 1e-6));
       }
       Assert.assertTrue(MathUtils.compare(mm._totss, ((ModelMetricsClustering) kmm._output._training_metrics)._totss, 1e-6, 1e-6));
@@ -90,6 +88,81 @@ public class KMeansTest extends TestUtil {
       if( fr  != null ) fr.delete();
       if( fr2 != null ) fr2.delete();
       if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testIrisAutoK() {
+    KMeansModel kmm = null;
+    Frame fr = null, fr2= null;
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader_correct.csv");
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._ignored_columns = new String[]{"species"};
+      parms._k = 100;  // large enough
+      parms._standardize = false;
+      parms._estimate_k = true;
+      kmm = doSeed(parms,0);
+
+      for (int i=0;i<kmm._output._centers_raw.length;++i) {
+        Log.info(Arrays.toString(kmm._output._centers_raw[i]));
+      }
+      Assert.assertEquals("expected 3 centroids", 3, kmm._output._k[kmm._output._k.length-1]);
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = kmm.score(fr);
+
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testWeatherAutoK() {
+    KMeansModel kmm = null;
+    KMeansModel kmm2 = null;
+    Frame fr = null;
+    try {
+      fr = parse_test_file("smalldata/junit/weather.csv");
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._ignored_columns = new String[]{"Date"};
+      parms._k = 100;  // large enough
+      parms._max_iterations = 20;
+      parms._standardize = true;
+      parms._estimate_k = true;
+      kmm = doSeed(parms,0);
+
+      for (int i=0;i<kmm._output._centers_raw.length;++i) {
+        Log.info(Arrays.toString(kmm._output._centers_raw[i]));
+      }
+      Assert.assertEquals("expected 4 centroids", 4, kmm._output._k[kmm._output._k.length-1]);
+      double auto = kmm._output._tot_withinss;
+
+      parms._estimate_k = false;
+      parms._k = kmm._output._k[kmm._output._k.length-1];
+
+      Random rnd = RandomUtils.getRNG(1234);
+      double manual = 0;
+      double N = 10;
+      for (int i=0;i<N;++i) {
+        kmm2 = doSeed(parms, rnd.nextLong());
+        manual += kmm2._output._tot_withinss;
+        Assert.assertEquals("expected 4 centroids", 4, kmm2._output._k[kmm2._output._k.length - 1]);
+        kmm2.remove();
+      }
+      manual /= N;
+      Log.info("estimate_k tot_within_ss: " + auto);
+      Log.info("manual k=4 tot_within_ss (mean over " + N + " trials): " + manual);
+
+      Assert.assertTrue("estimate_k solution must be better than manual", auto < manual);
+
+    } finally {
+      if( fr  != null ) fr.remove();
+      if( kmm != null ) kmm.remove();
     }
   }
 
@@ -149,7 +222,6 @@ public class KMeansTest extends TestUtil {
       fr2 = kmm.score(fr);
       Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
       assertVecEquals(predR.vec(0), fr2.vec(0), threshold);
-      fr2.delete();
     } finally {
       init .delete();
       predR.delete();
@@ -278,7 +350,6 @@ public class KMeansTest extends TestUtil {
         fr2.delete();
         kmm.delete();
       }
-
     } finally {
       if( fr  != null ) fr.delete();
       if( fr2  != null) fr2.delete();
@@ -299,8 +370,6 @@ public class KMeansTest extends TestUtil {
       kmm = doSeed(parms, System.nanoTime());
       fr2=kmm.score(fr);
       Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
-      fr2.delete();
-
     } finally {
       if( fr  != null) fr.delete();
       if( fr2  != null) fr2.delete();
@@ -328,7 +397,6 @@ public class KMeansTest extends TestUtil {
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
       Assert.assertTrue(kmm.testJavaScoring(fr,fr2,1e-15));
-      fr2.delete();
 
     } finally {
       if( fr  != null ) fr.delete();
@@ -372,15 +440,12 @@ public class KMeansTest extends TestUtil {
         // Done building model; produce a score column with cluster choices
         fr2 = kmm.score(te);
         Assert.assertTrue(kmm.testJavaScoring(te,fr2,1e-15));
-        fr2.delete();
-        tr .delete();
-        te .delete();
 
       } finally {
-        if( fr  != null ) fr.delete();
-        if( fr2 != null ) fr2.delete();
         if( tr  != null ) tr .delete();
         if( te  != null ) te .delete();
+        if( fr2 != null ) fr2.delete();
+        if( fr  != null ) fr.delete();
         if( kmm != null ) kmm.delete();
       }
     }
@@ -405,9 +470,9 @@ public class KMeansTest extends TestUtil {
               FrameUtils.MissingInserter mi = new FrameUtils.MissingInserter(fr._key, 1234, 0.1f);
               fr = mi.execImpl().get();
             }
-            train = new Frame(Key.make("train"), fr.names(), fr.vecs());
+            train = new Frame(Key.<Frame>make("train"), fr.names(), fr.vecs());
             DKV.put(train);
-            valid = new Frame(Key.make("valid"), fr.names(), fr.vecs());
+            valid = new Frame(Key.<Frame>make("valid"), fr.names(), fr.vecs());
             DKV.put(valid);
 
             KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
@@ -469,10 +534,6 @@ public class KMeansTest extends TestUtil {
             // Done building model; produce a score column with cluster choices
             fr2 = kmm.score(fr);
             Assert.assertTrue(kmm.testJavaScoring(fr, fr2, 1e-15));
-            fr.delete();
-            fr2.delete();
-            train.delete();
-            valid.delete();
           } finally {
             if( fr  != null ) fr .delete();
             if( fr2 != null ) fr2.delete();

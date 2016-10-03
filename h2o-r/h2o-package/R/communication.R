@@ -127,8 +127,8 @@
 
   tmp <- NULL
   header <- c('Connection' = 'close')
-  if (!is.na(conn@cluster_name)) {
-    header['X-Cluster'] = conn@cluster_name
+  if (!is.na(conn@cluster_id)) {
+    header['X-Cluster'] = conn@cluster_id
   }
   if ((method == "GET") || (method == "DELETE")) {
     h <- basicHeaderGatherer()

@@ -206,7 +206,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       QuantileModel qm = null;
       Frame tempFrame = null;
       try {
-        tempFrame = new Frame(Key.make(H2O.SELF), new String[]{"y"}, new Vec[]{y});
+        tempFrame = new Frame(Key.<Frame>make(H2O.SELF), new String[]{"y"}, new Vec[]{y});
         if (hasWeightCol()) tempFrame.add("w", _weights);
         DKV.put(tempFrame);
         QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();

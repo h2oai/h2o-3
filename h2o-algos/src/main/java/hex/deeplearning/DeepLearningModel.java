@@ -551,11 +551,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   /** Make either a prediction or a reconstruction.
    * @param orig Test dataset
    * @param adaptedFr Test dataset, adapted to the model
+   * @param computeMetrics
    * @return A frame containing the prediction or reconstruction
    */
-  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j) {
+  @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j, boolean computeMetrics) {
     if (!get_params()._autoencoder) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key, j);
+      return super.predictScoreImpl(orig, adaptedFr, destination_key, j, computeMetrics);
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();
@@ -579,7 +580,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         }
       }.doAll(len, Vec.T_NUM, adaptedFr).outputFrame();
 
-      Frame of = new Frame((null == destination_key ? Key.make() : Key.make(destination_key)), names, f.vecs());
+      Frame of = new Frame(Key.<Frame>make(destination_key), names, f.vecs());
       DKV.put(of);
       makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
       return of;
@@ -890,7 +891,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    * @return Threshold in MSE value for a point to be above the quantile
    */
   public double calcOutlierThreshold(Vec mse, double quantile) {
-    Frame mse_frame = new Frame(Key.make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
+    Frame mse_frame = new Frame(Key.<Frame>make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
     DKV.put(mse_frame._key, mse_frame);
 
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();

@@ -106,7 +106,7 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     @Override public Lockable atomic(Lockable old) {
       _old = old;
       if( old != null ) {       // Prior Lockable exists?
-        assert !old.is_wlocked(_job_key) : "Key "+_key+" already locked; lks="+Arrays.toString(old._lockers); // No double locking by same job
+        assert !old.is_wlocked(_job_key) : "Key "+_key+" already locked (or deleted); lks="+Arrays.toString(old._lockers); // No double locking by same job
         if( old.is_locked(_job_key) ) // read-locked by self? (double-write-lock checked above)
           old.set_unlocked(old._lockers,_job_key); // Remove read-lock; will atomically upgrade to write-lock
         if( !old.is_unlocked() ) // Blocking for some other Job to finish???

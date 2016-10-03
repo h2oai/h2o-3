@@ -96,16 +96,20 @@ def _handle_python_lists(python_obj, check_header):
     if _is_list_of_lists(python_obj):  # do we have a list of lists: [[...], ..., [...]] ?
         ncols = _check_lists_of_lists(python_obj)  # must be a list of flat lists, raise ValueError if not
     elif isinstance(python_obj, (list, tuple)):  # single list
-        ncols = len(python_obj)
-        python_obj = [python_obj]
+        ncols = 1
+        python_obj = [[e] for e in python_obj]
     else:  # scalar
         python_obj = [[python_obj]]
         ncols = 1
     # create the header
-    header = _gen_header(ncols) if check_header != 1 else python_obj.pop(0)
+    if check_header == 1:
+        header = python_obj[0]
+        python_obj = python_obj[1:]
+    else:
+        header = _gen_header(ncols)
     # shape up the data for csv.DictWriter
-    data_to_write = [dict(list(zip(header, row))) for row in python_obj]
-    return header, data_to_write
+    # data_to_write = [dict(list(zip(header, row))) for row in python_obj]
+    return header, python_obj
 
 
 def stringify_list(arr):
@@ -134,7 +138,8 @@ def _handle_numpy_array(python_obj, header):
 
 
 def _handle_pandas_data_frame(python_obj, header):
-    return _handle_numpy_array(python_obj.as_matrix(), header)
+    data = _handle_python_lists(python_obj.as_matrix().tolist(), -1)[1]
+    return list(python_obj.columns), data
 
 def _handle_python_dicts(python_obj, check_header):
     header = list(python_obj.keys())

@@ -69,7 +69,7 @@ class ExprNode(object):
     """
 
     # Magical count-of-5:   (get 2 more when looking at it in debug mode)
-    #  2 for _do_it frame, 2 for _do_it local dictionary list, 1 for parent
+    #  2 for _get_ast_str frame, 2 for _get_ast_str local dictionary list, 1 for parent
     MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
 
     def __init__(self, op="", *args):
@@ -79,10 +79,10 @@ class ExprNode(object):
             a._ex if _is_fr(a) else a for a in args)  # ast children; if not None and _cache._id is not None then tmp
         self._cache = H2OCache()  # ncols, nrows, names, types
 
-    def _eager_frame(self):  # returns H2OFrame instance
-        if not self._cache.is_empty(): return self
-        if self._cache._id is not None: return self  # Data already computed under ID, but not cached locally
-        return self._eval_driver(True)
+    def _eager_frame(self):
+        if not self._cache.is_empty(): return
+        if self._cache._id is not None: return  # Data already computed under ID, but not cached locally
+        self._eval_driver(True)
 
     def _eager_scalar(self):  # returns a scalar (or a list of scalars)
         if not self._cache.is_empty():
@@ -95,7 +95,7 @@ class ExprNode(object):
         return self._cache._data
 
     def _eval_driver(self, top):
-        exec_str = self._do_it(top)
+        exec_str = self._get_ast_str(top)
         res = ExprNode.rapids(exec_str)
         if 'scalar' in res:
             if isinstance(res['scalar'], list):
@@ -117,10 +117,11 @@ class ExprNode(object):
     # is eager, so the time parse as to occur in the correct order relative to
     # the timezone change, so cannot be lazy.
     #
-    def _do_it(self, top):
+    def _get_ast_str(self, top):
         if not self._cache.is_empty():  # Data already computed and cached; could a "false-like" cached value
             return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
-        if self._cache._id is not None: return self._cache._id  # Data already computed under ID, but not cached
+        if self._cache._id is not None:
+            return self._cache._id  # Data already computed under ID, but not cached
         # assert isinstance(self._children,tuple)
         exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
         gc_ref_cnt = len(gc.get_referrers(self))
@@ -135,7 +136,7 @@ class ExprNode(object):
         if arg is None:
             return "[]"  # empty list
         elif isinstance(arg, ExprNode):
-            return arg._do_it(False)
+            return arg._get_ast_str(False)
         elif isinstance(arg, ASTId):
             return str(arg)
         elif isinstance(arg, bool):

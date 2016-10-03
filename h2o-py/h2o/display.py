@@ -19,6 +19,9 @@ class H2ODisplay(object):
     """
     THOUSANDS = "{:,}"
 
+    # True/False flag whether we are connected to a Jupyter notebook. Computed on the first use.
+    _jupyter = None
+
     def __init__(self, table=None, header=None, table_header=None, **kwargs):
         self.table_header = table_header
         self.header = header
@@ -66,12 +69,15 @@ class H2ODisplay(object):
 
     @staticmethod
     def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html
-        try:
-            # noinspection PyUnresolvedReferences,PyStatementEffect
-            __IPYTHON__
-            return True
-        except NameError:
-            return False
+        if H2ODisplay._jupyter is None:
+            try:
+                import IPython
+                from ipykernel.zmqshell import ZMQInteractiveShell
+                ipy = IPython.get_ipython()
+                H2ODisplay._jupyter = isinstance(ipy, ZMQInteractiveShell)
+            except ImportError:
+                H2ODisplay._jupyter = False
+        return H2ODisplay._jupyter
 
     # some html table builder helper things
     @staticmethod

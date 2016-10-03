@@ -262,7 +262,7 @@ class H2OCloudNode(object):
     """
 
     def __init__(self, is_client, cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
-                 xmx, cp, output_dir):
+                 xmx, cp, output_dir, test_ssl):
         """
         Create a node in a cloud.
 
@@ -295,6 +295,8 @@ class H2OCloudNode(object):
         self.output_file_name = ""
         self.child = None
         self.terminated = False
+
+        self.test_ssl = test_ssl
 
         # Choose my base port number here.  All math is done here.  Every node has the same
         # base_port and calculates it's own my_base_port.
@@ -339,7 +341,6 @@ class H2OCloudNode(object):
                "-baseport", str(self.my_base_port),
                "-ga_opt_out"]
 
-
         # If the jacoco flag was included, then modify cmd to generate coverage
         # data using the jacoco agent
         if g_jacoco_include:
@@ -359,6 +360,12 @@ class H2OCloudNode(object):
 
             cmd = cmd[:1] + [jacoco] + cmd[1:]
 
+        if self.test_ssl:
+            cmd.append("-internal_security_conf")
+            if g_convenient:
+                cmd.append("../h2o-algos/src/test/resources/ssl.properties")
+            else:
+                cmd.append("../../../h2o-algos/src/test/resources/ssl3.properties")
 
         # Add S3N credentials to cmd if they exist.
         # ec2_hdfs_config_file_name = os.path.expanduser("~/.ec2/core-site.xml")
@@ -515,7 +522,7 @@ class H2OCloud(object):
     A class representing one of the H2O clouds.
     """
 
-    def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir):
+    def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl):
         """
         Create a cloud.
         See node definition above for argument descriptions.
@@ -530,6 +537,7 @@ class H2OCloud(object):
         self.xmx = xmx
         self.cp = cp
         self.output_dir = output_dir
+        self.test_ssl = test_ssl
 
         # Randomly choose a seven digit cloud number.
         n = random.randint(1000000, 9999999)
@@ -556,7 +564,8 @@ class H2OCloud(object):
                                 self.cloud_name,
                                 self.h2o_jar,
                                 "127.0.0.1", self.base_port,
-                                self.xmx, self.cp, self.output_dir)
+                                self.xmx, self.cp, self.output_dir,
+                                self.test_ssl)
             if is_client:
                 self.client_nodes.append(node)
             else:
@@ -977,7 +986,7 @@ class TestRunner(object):
                  use_cloud, use_cloud2, use_client, cloud_config, use_ip, use_port,
                  num_clouds, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir,
                  failed_output_dir, path_to_tar, path_to_whl, produce_unit_reports,
-                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf):
+                 testreport_dir, r_pkg_ver_chk, hadoop_namenode, on_hadoop, perf, test_ssl):
         """
         Create a runner.
 
@@ -1014,6 +1023,8 @@ class TestRunner(object):
         # Valid if use_cloud is True
         self.use_ip = use_ip
         self.use_port = use_port
+
+        self.test_ssl = test_ssl
 
         # Valid if use_cloud is False
         self.num_clouds = num_clouds
@@ -1065,7 +1076,7 @@ class TestRunner(object):
         else:
             for i in range(self.num_clouds):
                 cloud = H2OCloud(i, self.use_client, self.nodes_per_cloud, h2o_jar, self.base_port, xmx, cp,
-                                 self.output_dir)
+                                 self.output_dir, self.test_ssl)
                 self.clouds.append(cloud)
 
     @staticmethod
@@ -1973,6 +1984,7 @@ g_git_branch = None
 g_job_name = None
 g_py3 = False
 g_pycoverage = False
+g_test_ssl = False
 
 # globals added to support better reporting in xml files
 g_use_xml2 = False  # by default, use the original xml file output
@@ -2105,6 +2117,8 @@ def usage():
     print("")
     print("    --geterrs        Generate xml file that contains the actual unit test errors and the actual Java error.")
     print("")
+    print("    --test.ssl       Runs all the nodes with SSL enabled.")
+    print("")
     print("    If neither --test nor --testlist is specified, then the list of tests is")
     print("    discovered automatically as files matching '*runit*.R'.")
     print("")
@@ -2222,6 +2236,7 @@ def parse_args(argv):
     global g_py3
     global g_pycoverage
     global g_use_xml2
+    global g_test_ssl
 
     i = 1
     while i < len(argv):
@@ -2388,6 +2403,8 @@ def parse_args(argv):
             g_job_name = argv[i]
         elif s == "--geterrs":
             g_use_xml2 = True
+        elif s == "--test_ssl":
+            g_test_ssl = True
         else:
             unknown_arg(s)
 
@@ -2512,6 +2529,7 @@ def main(argv):
     global g_ncpu
     global g_os
     global g_job_name
+    global g_test_ssl
 
     g_script_name = os.path.basename(argv[0])
 
@@ -2560,7 +2578,7 @@ def main(argv):
                           g_use_cloud, g_use_cloud2, g_use_client, g_config, g_use_ip, g_use_port,
                           g_num_clouds, g_nodes_per_cloud, h2o_jar, g_base_port, g_jvm_xmx, g_jvm_cp,
                           g_output_dir, g_failed_output_dir, g_path_to_tar, g_path_to_whl, g_produce_unit_reports,
-                          testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf)
+                          testreport_dir, g_r_pkg_ver_chk, g_hadoop_namenode, g_on_hadoop, g_perf, g_test_ssl)
 
     # Build test list.
     if g_exclude_list_file is not None:

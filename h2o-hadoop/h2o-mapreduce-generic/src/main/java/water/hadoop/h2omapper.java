@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Properties;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
@@ -273,7 +274,10 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     int confLength = Integer.parseInt(conf.get(H2O_MAPPER_CONF_LENGTH));
     for (int i = 0; i < confLength; i++) {
       String arg = conf.get(H2O_MAPPER_CONF_ARG_BASE + Integer.toString(i));
-      argsList.add(arg);
+      // For files which are not passed as args (i.e. SSL certs)
+      if(null != arg && !arg.isEmpty()) {
+        argsList.add(arg);
+      }
 
       String basename = conf.get(H2O_MAPPER_CONF_BASENAME_BASE + Integer.toString(i));
       File f = new File(ice_root);
@@ -287,11 +291,17 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
         Log.POST(104, "after mkdirs()");
       }
       String fileName = ice_root + File.separator + basename;
-      FileOutputStream out = new FileOutputStream(fileName);
       String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + Integer.toString(i));
       byte[] byteArr = h2odriver.convertStringToByteArr(payload);
       h2odriver.writeBinaryFile(fileName, byteArr);
-      argsList.add(fileName);
+      if(null != arg && !arg.isEmpty()) {
+        argsList.add(fileName);
+      }
+
+      // Need to modify this config here as we don't know the destination dir for keys when generating it
+      if("default-security.config".equals(basename)) {
+        modifyKeyPath(fileName, ice_root);
+      }
     }
 
     String[] args = argsList.toArray(new String[argsList.size()]);
@@ -332,6 +342,47 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     int exitStatus = (int)b[0];
     System.out.println("Received exitStatus " + exitStatus);
     return exitStatus;
+  }
+
+  //==============================================================================
+  //                        SSL RELATED METHODS
+  //==============================================================================
+  private void modifyKeyPath(String fileName, String ice_root) throws IOException {
+    FileInputStream in = null;
+    Properties sslProps;
+    try {
+      in = new FileInputStream(fileName);
+      sslProps = new Properties();
+      sslProps.load(in);
+    } finally {
+      if (in != null) {
+        in.close();
+      }
+    }
+
+    subPath("h2o_ssl_jks_internal", sslProps, ice_root);
+    subPath("h2o_ssl_jts", sslProps, ice_root);
+
+    FileOutputStream out = null;
+    try {
+      out = new FileOutputStream(fileName);
+      sslProps.store(out, null);
+    } finally {
+      if (out != null) {
+        out.close();
+      }
+    }
+  }
+
+  //==============================================================================
+  //==============================================================================
+
+  private void subPath(String prop, Properties sslProps, String ice_root) {
+    String path = sslProps.getProperty(prop);
+    // Change only auto generated path. Don't allow the user to use "h2o-internal.jks" as path
+    if(null != path && "h2o-internal.jks".equals(path)) {
+      sslProps.setProperty(prop, ice_root + File.separator + path);
+    }
   }
 
   @Override
