@@ -102,7 +102,7 @@ class H2OConnection(backwards_compatible()):
             check for the presence of these variables and issue a warning if they are found. In order to suppress
             that warning and use proxy from the environment, pass ``proxy="(default)"``.
         :param cluster_id: name of the H2O cluster to connect to. This option is used from Steam only.
-        :param cookies: list of cookies to add to requests
+        :param cookies: Cookie (or list of) to add to requests
         :param verbose: if True, then connection progress info will be printed to the stdout.
         :param _msgs: custom messages to display during connection. This is a tuple (initial message, success message,
             failure message).
@@ -146,7 +146,7 @@ class H2OConnection(backwards_compatible()):
         assert_is_type(proxy, str, None)
         assert_is_type(auth, AuthBase, (str, str), None)
         assert_is_type(cluster_id, int, None)
-        assert_is_type(cookies, [str], None)
+        assert_is_type(cookies, str, [str], None)
         assert_is_type(_msgs, None, (str, str, str))
 
         conn = H2OConnection()
@@ -241,7 +241,7 @@ class H2OConnection(backwards_compatible()):
             assert_is_type(save_to, str)
             stream = True
 
-        if self._cookies is not None:
+        if self._cookies is not None and isinstance(self._cookies, list):
             self._cookies = ";".join(self._cookies)
 
         # Make the request
