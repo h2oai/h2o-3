@@ -1,14 +1,8 @@
-import sys
-sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
 
 
-
-
 def frame_show():
-    
-    
 
     iris = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate.csv.zip"))
@@ -17,7 +11,6 @@ def frame_show():
     iris.show()
     prostate.show()
     airlines.show()
-
 
 
 if __name__ == "__main__":
