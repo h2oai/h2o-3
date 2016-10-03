@@ -13,7 +13,7 @@ test.kmvanilla.golden <- function() {
   
   Log.info("Initial cluster centers:"); print(ozoneR[startIdx,])
   fitR <- kmeans(ozoneR, centers = ozoneR[startIdx,], iter.max = 1000, algorithm = "Lloyd")
-  fitH2O <- h2o.kmeans(ozoneH2O, init = ozoneH2O[startIdx,], standardize = FALSE)
+  fitH2O <- h2o.kmeans(ozoneH2O, init = ozoneH2O[startIdx,], max_iterations = 1000, standardize = FALSE)
   checkKMeansModel(fitH2O, fitR, tol = 0.01)
   
   Log.info("Compare Predicted Classes between R and H2O\n")

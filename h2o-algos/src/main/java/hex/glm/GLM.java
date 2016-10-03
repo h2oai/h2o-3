@@ -1391,6 +1391,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       gram.addDiag(rhos);
       if(!intercept) {
         gram.dropIntercept();
+        rhos = Arrays.copyOf(rhos,rhos.length-1);
         _xy[_xy.length-1] = 0;
       }
       _chol = gram.cholesky(null, true, null);
@@ -1410,6 +1411,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (!_chol.isSPD())
           throw new NonSPDMatrixException();
       }
+      gram.addDiag(ArrayUtils.mult(rhos, -1));
+      ArrayUtils.mult(rhos, -1);
     }
 
     @Override
