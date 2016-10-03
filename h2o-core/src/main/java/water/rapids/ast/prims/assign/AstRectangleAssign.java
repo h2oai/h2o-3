@@ -133,34 +133,41 @@ public class AstRectangleAssign extends AstPrimitive {
     for (int i = 0; i < cols.length; i++)
       vecs2[i] = vecs[cols[i]];
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
-    new RowSliceTask(rows) {
-      @Override
-      void mapChunkSlice(Chunk[] cs, int chkOffset) {
-        long start = cs[0].start();
-        Chunk[] scs = null;
-        for (int i = chkOffset; i < cs[0]._len; ++i) {
-          long idx = _rows.index(start + i);
-          if (idx < 0) continue;
-          if ((scs == null) || (scs[0].start() < idx) || (idx >= scs[0].start() + scs[0].len())) {
-            int sChkIdx = svecs[0].elem2ChunkIdx(idx);
-            scs = new Chunk[svecs.length];
-            for (int j = 0; j < svecs.length; j++) {
-              scs[j] = svecs[j].chunkForChunkIdx(sChkIdx);
-            }
-          }
-          int si = (int) (idx - scs[0].start());
-          for (int j = 0; j < cs.length; j++) {
-            Chunk chk = cs[j];
-            Chunk schk = scs[j];
-            chk.set(i, schk.atd(si));
+    new AssignFrameFrameTask(rows, svecs).doAll(vecs2);
+  }
+
+  private static class AssignFrameFrameTask extends RowSliceTask {
+    private Vec[] _svecs;
+    private AssignFrameFrameTask(AstNumList rows, Vec[] svecs) {
+      super(rows);
+      _svecs = svecs;
+    }
+    @Override
+    void mapChunkSlice(Chunk[] cs, int chkOffset) {
+      long start = cs[0].start();
+      Chunk[] scs = null;
+      for (int i = chkOffset; i < cs[0]._len; ++i) {
+        long idx = _rows.index(start + i);
+        if (idx < 0) continue;
+        if ((scs == null) || (scs[0].start() < idx) || (idx >= scs[0].start() + scs[0].len())) {
+          int sChkIdx = _svecs[0].elem2ChunkIdx(idx);
+          scs = new Chunk[_svecs.length];
+          for (int j = 0; j < _svecs.length; j++) {
+            scs[j] = _svecs[j].chunkForChunkIdx(sChkIdx);
           }
         }
+        int si = (int) (idx - scs[0].start());
+        for (int j = 0; j < cs.length; j++) {
+          Chunk chk = cs[j];
+          Chunk schk = scs[j];
+          chk.set(i, schk.atd(si));
+        }
       }
-    }.doAll(vecs2);
+    }
   }
 
   // Assign a NON-STRING SCALAR over some dst rows; optimize for all rows
-  private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, final double src, Session ses) {
+  private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, double src, Session ses) {
 
     // Handle fast small case
     long nrows = rows.cnt();
@@ -190,20 +197,27 @@ public class AstRectangleAssign extends AstPrimitive {
     for (int i = 0; i < cols.length; i++)
       vecs2[i] = vecs[cols[i]];
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
-    new RowSliceTask(rows) {
-      @Override
-      void mapChunkSlice(Chunk[] cs, int chkOffset) {
-        long start = cs[0].start();
-        for (int i = chkOffset; i < cs[0]._len; ++i)
-          if (_rows.has(start + i))
-            for (Chunk chk : cs)
-              chk.set(i, src);
-      }
-    }.doAll(vecs2);
+    new AssignFrameScalarTask(rows, src).doAll(vecs2);
+  }
+
+  private static class AssignFrameScalarTask extends RowSliceTask {
+    private double _src;
+    private AssignFrameScalarTask(AstNumList rows, double src) {
+      super(rows);
+      _src = src;
+    }
+    @Override
+    void mapChunkSlice(Chunk[] cs, int chkOffset) {
+      long start = cs[0].start();
+      for (int i = chkOffset; i < cs[0]._len; ++i)
+        if (_rows.has(start + i))
+          for (Chunk chk : cs)
+            chk.set(i, _src);
+    }
   }
 
   // Assign a STRING over some dst rows; optimize for all rows
-  private void assign_frame_scalar(Frame dst, int[] cols, final AstNumList rows, final String src, Session ses) {
+  private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, String src, Session ses) {
     // Check for needing to copy before updating
     // Handle fast small case
     Vec[] dvecs = dst.vecs();
@@ -221,16 +235,23 @@ public class AstRectangleAssign extends AstPrimitive {
     for (int i = 0; i < cols.length; i++)
       vecs2[i] = vecs[cols[i]];
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
-    new RowSliceTask(rows) {
-      @Override
-      public void mapChunkSlice(Chunk[] cs, int chkOffset) {
-        long start = cs[0].start();
-        for (int i = chkOffset; i < cs[0]._len; ++i)
-          if (rows.has(start + i))
-            for (Chunk chk : cs)
-              chk.set(i, src);
-      }
-    }.doAll(vecs2);
+    new AssignFrameStringScalarTask(rows, src).doAll(vecs2);
+  }
+
+  private static class AssignFrameStringScalarTask extends RowSliceTask {
+    private String _src;
+    private AssignFrameStringScalarTask(AstNumList rows, String src) {
+      super(rows);
+      _src = src;
+    }
+    @Override
+    void mapChunkSlice(Chunk[] cs, int chkOffset) {
+      long start = cs[0].start();
+      for (int i = chkOffset; i < cs[0]._len; ++i)
+        if (_rows.has(start + i))
+          for (Chunk chk : cs)
+            chk.set(i, _src);
+    }
   }
 
   // Boolean assignment with a scalar
@@ -252,7 +273,7 @@ public class AstRectangleAssign extends AstPrimitive {
     assign_frame_frame(dst, cols, new AstNumList(0, dst.numRows()), src2, ses);
   }
 
-  private static abstract class RowSliceTask extends MRTask {
+  private static abstract class RowSliceTask extends MRTask<RowSliceTask> {
 
     final AstNumList _rows;
 

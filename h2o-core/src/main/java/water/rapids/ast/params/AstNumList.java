@@ -271,6 +271,11 @@ public class AstNumList extends AstParameter {
     return v < _bases[idx] + _cnts[idx] * _strides[idx];
   }
 
+  /**
+   * Finds index of a given value in this number sequence, indexing start at 0.
+   * @param v value
+   * @return value index (>= 0) or -1 if value is not a member of this sequence
+   */
   public long index(long v) {
     int bIdx = findBase(v);
     if (bIdx >= 0) return water.util.ArrayUtils.sum(_cnts, 0, bIdx - 1);
