@@ -266,8 +266,14 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
 
     if( null != frame) {
       Futures fs = new Futures();
-      for( Vec v : frame.vecs() )
-        v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
+      int i = 0;
+      for( Vec v : frame.vecs() ) {
+        if (null == DKV.get(v._key))
+          Log.warn("For Frame: " + frame._key + ", Vec number: " + i + " (" + frame.name(i)+ ") is missing; not returning it.");
+        else
+          v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
+        i++;
+      }
       fs.blockForPending();
     }
 
