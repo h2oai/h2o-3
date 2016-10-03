@@ -142,9 +142,7 @@ public class GLRMCategoricalTest extends TestUtil {
               GlrmLoss.Quadratic,
               GlrmLoss.Absolute,
               GlrmLoss.Huber,
-              GlrmLoss.Poisson,
-              GlrmLoss.Hinge,
-              GlrmLoss.Logistic
+              GlrmLoss.Poisson
       }) {
         for(GlrmLoss multiloss : new GlrmLoss[] {
                 GlrmLoss.Categorical,
