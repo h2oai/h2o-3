@@ -260,7 +260,7 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._loss = GlrmLoss.Logistic;
+      parms._loss = GlrmLoss.Huber;
       parms._regularization_x = GLRMParameters.Regularizer.NonNegative;
       parms._regularization_y = GLRMParameters.Regularizer.NonNegative;
       parms._gamma_x = parms._gamma_y = 1;

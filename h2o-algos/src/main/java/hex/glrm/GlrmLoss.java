@@ -108,7 +108,7 @@ public enum GlrmLoss {
   //--------------------------------------------------------------------------------------------------------------------
 
   Logistic {
-    @Override public boolean isForNumeric() { return true; }  // ???
+    @Override public boolean isForNumeric() { return false; }
     @Override public boolean isForCategorical() { return false; }
     @Override public boolean isForBinary() { return true; }
 
@@ -126,7 +126,7 @@ public enum GlrmLoss {
   },
 
   Hinge {
-    @Override public boolean isForNumeric() { return true; }   // ???
+    @Override public boolean isForNumeric() { return false; }
     @Override public boolean isForCategorical() { return false; }
     @Override public boolean isForBinary() { return true; }
 
