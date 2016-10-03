@@ -20,7 +20,7 @@ public class SecurityUtilsTest {
 
             Properties sslConfig = new Properties();
             sslConfig.load(new FileInputStream(configPath));
-            assertEquals("TLSv1.2", sslConfig.getProperty("h2o_ssl_protocol"));
+            assertEquals(SecurityUtils.defaultTLSVersion(), sslConfig.getProperty("h2o_ssl_protocol"));
             assertEquals("h2o-keystore-test.jks", sslConfig.getProperty("h2o_ssl_jks_internal"));
             assertEquals("test123", sslConfig.getProperty("h2o_ssl_jks_password"));
             assertEquals("h2o-keystore-test.jks", sslConfig.getProperty("h2o_ssl_jts"));
