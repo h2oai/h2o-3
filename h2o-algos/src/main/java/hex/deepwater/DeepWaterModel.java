@@ -1,25 +1,27 @@
 package hex.deepwater;
 
 import hex.*;
-import static hex.ModelMetrics.calcVarImp;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.schemas.DeepWaterModelV3;
 import water.*;
-
-import static hex.deepwater.DeepWater.logNvidiaStats;
-import static water.H2O.technote;
 import water.api.schemas3.ModelSchemaV3;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.util.*;
+import water.util.Log;
+import water.util.PrettyPrint;
+import water.util.RandomUtils;
+import water.util.UnsafeUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
+
+import static hex.ModelMetrics.calcVarImp;
+import static water.H2O.technote;
 
 /**
  * The Deep Learning model
@@ -223,7 +225,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     if( !keep_running || get_params()._score_each_iteration ||
         (sinceLastScore > get_params()._score_interval *1000 //don't score too often
             &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
-      logNvidiaStats();
+      Log.info(GenModel.logNvidiaStats());
       jobKey.get().update(0,"Scoring on " + fTrain.numRows() + " training samples" +(fValid != null ? (", " + fValid.numRows() + " validation samples") : ""));
       final boolean printme = !get_params()._quiet_mode;
       _timeLastScoreStart = System.currentTimeMillis();
@@ -405,24 +407,31 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
-  @Override
-  protected double[] score0(double[] data, double[] preds) {
-//    return score0(data, preds, 1, 0);
-    throw H2O.unimpl();
+  /**
+   * Single-instance scoring - slow, not optimized for mini-batches - do not use unless if you know what you're doing
+   * @param data One single observation unrolled into a double[], with a length equal to the number of input neurons
+   * @param preds Array to store the predictions in (nclasses+1)
+   * @return vector of [0, p0, p1, p2, etc.]
+   */
+  @Override protected double[] score0(double[] data, double[] preds) {
+    //allocate a big enough array for the model to be able to score with mini_batch
+    float[] f = new float[_parms._mini_batch_size * model_info()._channels * model_info()._height * model_info()._width];
+    for (int i=0; i<data.length; ++i) f[i] = (float)data[i]; //only fill the first observation
+    //float[] predFloats = model_info().predict(f);
+    float[] predFloats = model_info._backend.predict(model_info._model, f);
+    assert(_output.nclasses()>=2) : "Only classification is supported right now.";
+    double[] p = new double[_output.nclasses()+1];
+    for (int i=1; i<p.length; ++i) p[i] = predFloats[i];
+    return p;
   }
 
-  /**
-   * Predict from raw double values representing the data
-   * @param data raw array containing categorical values (horizontalized to 1,0,0,1,0,0 etc.) and numerical values (0.35,1.24,5.3234,etc), both can contain NaNs
-   * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
-   * @return preds, can contain NaNs
-   */
-  @Override
-  public double[] score0(double[] data, double[] preds, double weight, double offset) {
-    throw H2O.unimpl();
+  @Override public double[] score0(double[] data, double[] preds, double weight, double offset) {
+    assert(weight==1);
+    assert(offset==0);
+    return score0(data, preds);
   }
-  synchronized
-  public double[] score0(Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+
+  @Override public double[] score0(Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
     throw H2O.unimpl();
   }
 
@@ -578,7 +587,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
-    final boolean makeNative = model_info().backend ==null;
+    final boolean makeNative = model_info()._backend ==null;
     if (makeNative) model_info().javaToNative();
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
@@ -594,7 +603,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   @Override
   protected ModelMetrics.MetricBuilder scoreMetrics(Frame adaptFrm) {
-    final boolean makeNative = model_info().backend ==null;
+    final boolean makeNative = model_info()._backend ==null;
     if (makeNative) model_info().javaToNative();
     final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
@@ -638,6 +647,40 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     if (fs==null) fs = new Futures();
     for (Key k : cacheKeys) DKV.remove(k, fs);
     fs.blockForPending();
+  }
+
+  @Override
+  public Model<DeepWaterModel, DeepWaterParameters, DeepWaterModelOutput>.MojoStreamWriter getMojoStream() {
+    return new DeepWaterMojoStreamWriter();
+  }
+
+  public class DeepWaterMojoStreamWriter extends MojoStreamWriter {
+    @Override
+    protected void writeExtraModelInfo() throws IOException {
+      super.writeExtraModelInfo();
+      writeln("backend = " + _parms._backend);
+      writeln("mini_batch_size = " + _parms._mini_batch_size);
+      if (_parms._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+        writeln("height = " + model_info._height);
+        writeln("width = " + model_info._width);
+        writeln("channels = " + model_info._channels);
+      }
+    }
+
+    @Override
+    protected void writeModelData() throws IOException {
+      writeBinaryFile("model.network", model_info()._network);
+      writeBinaryFile("model.params", model_info()._modelparams);
+      if (_parms._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+        float[] floats = model_info._meanData;
+        if (floats != null) {
+          byte[] bytes = new byte[floats.length * 4];
+          for (int i = 0; i < floats.length; ++i) UnsafeUtils.set4f(bytes, i, floats[i]);
+          writeBinaryFile("meandata", bytes);
+        }
+      }
+    }
+
   }
 }
 

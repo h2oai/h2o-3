@@ -1,6 +1,6 @@
 package hex.deepwater;
 
-import hex.deepwater.backends.BackendFactory;
+import hex.genmodel.GenModel;
 import org.junit.Before;
 import org.junit.Ignore;
 
@@ -9,7 +9,7 @@ public class DeepWaterTensorflowIntegrationTest extends DeepWaterAbstractIntegra
 
     @Before
     public void setUp() throws Exception {
-        backend = BackendFactory.create(DeepWaterParameters.Backend.mxnet);
+        backend = GenModel.createDeepWaterBackend(DeepWaterParameters.Backend.tensorflow.toString());
     }
 
 }

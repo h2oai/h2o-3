@@ -12,6 +12,7 @@ import os
 import random
 import subprocess
 import sys
+sys.path.insert(1, os.path.join("..",".."))
 import tempfile
 import time
 
@@ -19,13 +20,16 @@ import colorama
 import tabulate
 from tests import pyunit_utils
 import h2o
-from h2o.estimators import H2ORandomForestEstimator, H2OGradientBoostingEstimator
+from h2o.estimators import H2ORandomForestEstimator, H2OGradientBoostingEstimator, H2ODeepWaterEstimator
 
 # These variables can be tweaked to increase / reduce stress on the test. However when submitting to GitHub
 # please keep these reasonably low, so that the test wouldn't take exorbitant amounts of time.
 NTREES = 50
 DEPTH = 5
 NTESTROWS = 1000
+
+# Deep Water
+EPOCHS = 1
 
 def test_mojo_model():
     """
@@ -45,15 +49,18 @@ def test_mojo_model():
         target_dir = os.path.expanduser("~/Downloads/")
 
     report = []
-    for estimator in [H2ORandomForestEstimator, H2OGradientBoostingEstimator]:
+    for estimator in [H2ODeepWaterEstimator, H2ORandomForestEstimator, H2OGradientBoostingEstimator]:
         print(colorama.Fore.LIGHTYELLOW_EX + "\n#================================================")
         print("#  Estimator: " + estimator.__name__)
         print("#================================================\n" + colorama.Fore.RESET)
-        estimator_name = "GBM" if estimator == H2OGradientBoostingEstimator else "DRF"
+        estimator_name = "GBM" if estimator == H2OGradientBoostingEstimator else "DeepWater" if estimator == H2ODeepWaterEstimator else "DRF"
         for problem in ["binomial", "multinomial", "regression"]:
             print("========================")
             print("%s problem" % problem.capitalize())
             print("========================")
+            if estimator == H2ODeepWaterEstimator and problem == "regression":
+              print("Skipping %s" % problem.capitalize)
+              continue
             df = random_dataset(problem, verbose=False)
             print("Created dataset with %d rows x %d columns" % (df.nrow, df.ncol))
             test = df[:NTESTROWS, :]
@@ -62,7 +69,10 @@ def test_mojo_model():
 
             time0 = time.time()
             print("\n\nTraining %s model..." % estimator.__name__)
-            model = estimator(ntrees=NTREES, max_depth=DEPTH)
+            if estimator == H2ODeepWaterEstimator:
+              model = estimator(epochs=EPOCHS)
+            else:
+              model = estimator(ntrees=NTREES, max_depth=DEPTH)
             model.train(training_frame=train)
             print(model.summary())
             print("Time taken = %.3fs" % (time.time() - time0))
@@ -74,13 +84,14 @@ def test_mojo_model():
             assert os.path.exists(mojo_file)
             print("Time taken = %.3fs" % (time.time() - time0))
 
-            print("\nDownloading POJO...")
-            time0 = time.time()
-            pojo_file = model.download_pojo(target_dir)
-            pojo_size = os.stat(pojo_file).st_size
-            pojo_name = os.path.splitext(os.path.basename(pojo_file))[0]
-            print("    => %s  (%d bytes)" % (pojo_file, pojo_size))
-            print("Time taken = %.3fs" % (time.time() - time0))
+            if estimator != H2ODeepWaterEstimator:
+              print("\nDownloading POJO...")
+              time0 = time.time()
+              pojo_file = model.download_pojo(target_dir)
+              pojo_size = os.stat(pojo_file).st_size
+              pojo_name = os.path.splitext(os.path.basename(pojo_file))[0]
+              print("    => %s  (%d bytes)" % (pojo_file, pojo_size))
+              print("Time taken = %.3fs" % (time.time() - time0))
 
             print("\nDownloading the test datasets for local use: ", end="")
             time0 = time.time()
@@ -121,7 +132,7 @@ def test_mojo_model():
                   (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
             report.append((estimator_name, problem, "Mojo", times[1] - times[0], times[2] - times[1]))
 
-            if pojo_size <= 1000 << 20:  # 1000 Mb
+            if estimator != H2ODeepWaterEstimator and pojo_size <= 1000 << 20:  # 1000 Mb
                 time0 = time.time()
                 print("\nCompiling Java Pojo")
                 javac_cmd = ["javac", "-cp", genmodel_jar, "-J-Xmx12g", pojo_file]
