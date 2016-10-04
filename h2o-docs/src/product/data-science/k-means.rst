@@ -38,6 +38,8 @@ Defining a K-Means Model
 
 -  **k**\ \*: Specify the number of clusters.
 
+-  **estimate_k**: Specify whether to estimate the number of clusters (<=k) iteratively (independent of the seed) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each **k** that, the estimate will go up to **max_iteration**. This option is disabled by default.
+
 -  **user\_points**: Specify a vector of initial cluster centers. The
    user-specified points must have the same number of columns as the
    training observations. The number of rows must equal the number of
