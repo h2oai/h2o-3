@@ -1232,7 +1232,7 @@ outside of H2O, click the **Download POJO** button.
 
 **Note**: A POJO can be run in standalone mode or it can be integrated
 into a platform, such as `Hadoop's
-Storm <https://github.com/h2oai/h2o-training/blob/master/tutorials/streaming/storm/README.md>`__.
+Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__.
 To make the POJO work in your Java application, you will also need the
 ``h2o-genmodel.jar`` file (available in
 ``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``).
