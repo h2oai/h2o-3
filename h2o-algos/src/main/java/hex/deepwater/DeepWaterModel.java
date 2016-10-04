@@ -586,10 +586,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
 
   @Override
-  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j) {
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
     final boolean makeNative = model_info()._backend ==null;
     if (makeNative) model_info().javaToNative();
-    final boolean computeMetrics = (!isSupervised() || (adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad()));
     // Build up the names & domains.
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
