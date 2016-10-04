@@ -10,7 +10,7 @@ def deepwater_multi():
 
   frame = h2o.import_file(pyunit_utils.locate("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))
   print(frame.head(5))
-  model = H2ODeepWaterEstimator(epochs=50, rate=1e-3)
+  model = H2ODeepWaterEstimator(epochs=50, learning_rate=1e-3)
   model.train(x=[0],y=1, training_frame=frame)
   model.show()
   error = model.model_performance(train=True).mean_per_class_error()
