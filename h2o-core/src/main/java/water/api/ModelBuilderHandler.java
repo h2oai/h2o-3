@@ -15,7 +15,7 @@ import java.util.Properties;
 
 public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchemaV3> extends Handler {
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
-  @Override S handle(int version, Route route, Properties parms) throws Exception {
+  @Override S handle(int version, Route route, Properties parms, String postBody) throws Exception {
     // Peek out the desired algo from the URL
     String ss[] = route._url.split("/");
     String algoURLName = ss[3]; // {}/{3}/{ModelBuilders}/{gbm}/{parameters}
@@ -37,7 +37,7 @@ public class ModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderS
 
     // User specified key, or make a default?
     String model_id = parms.getProperty("model_id");
-    Key<Model> key = doTrain ? (Key<Model>)(model_id==null ? ModelBuilder.defaultKey(algoName) : Key.<Model>make(model_id)) : null;
+    Key<Model> key = doTrain ? (model_id==null ? ModelBuilder.defaultKey(algoName) : Key.<Model>make(model_id)) : null;
     // Default Job for just this training
     Job job = doTrain ? new Job<>(key,ModelBuilder.javaName(algoURLName),algoName) : null;
     // ModelBuilder

@@ -263,16 +263,37 @@ public class AstNumList extends AstParameter {
   // check if n is in this list of numbers
   // NB: all contiguous ranges have already been checked to have stride 1
   public boolean has(long v) {
-    assert _isSort; // Only called when already sorted
-    // do something special for negative indexing... that does not involve
-    // allocating arrays, once per list element!
-    if (v < 0) throw H2O.unimpl();
-    int idx = Arrays.binarySearch(_bases, v);
+    int idx = findBase(v);
     if (idx >= 0) return true;
     idx = -idx - 2;  // See Arrays.binarySearch; returns (-idx-1), we want +idx-1  ... if idx == -1 => then this transformation has no effect
     if (idx < 0) return false;
     assert _bases[idx] < v;     // Sanity check binary search, AND idx >= 0
     return v < _bases[idx] + _cnts[idx] * _strides[idx];
+  }
+
+  /**
+   * Finds index of a given value in this number sequence, indexing start at 0.
+   * @param v value
+   * @return value index (>= 0) or -1 if value is not a member of this sequence
+   */
+  public long index(long v) {
+    int bIdx = findBase(v);
+    if (bIdx >= 0) return water.util.ArrayUtils.sum(_cnts, 0, bIdx - 1);
+    bIdx = -bIdx - 2;
+    if (bIdx < 0) return -1L;
+    assert _bases[bIdx] < v;
+    long offset = v - (long) _bases[bIdx];
+    long stride = (long) _strides[bIdx];
+    if ((offset >= _cnts[bIdx] * stride) || (offset % stride != 0)) return -1L;
+    return water.util.ArrayUtils.sum(_cnts, 0, bIdx) + (offset / stride);
+  }
+
+  private int findBase(long v) {
+    assert _isSort; // Only called when already sorted
+    // do something special for negative indexing... that does not involve
+    // allocating arrays, once per list element!
+    if (v < 0) throw H2O.unimpl();
+    return Arrays.binarySearch(_bases, v);
   }
 
   // Select columns by number.  Numbers are capped to the number of columns +1

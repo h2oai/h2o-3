@@ -21,6 +21,11 @@ public class ArrayUtils {
     for (long d: from) result += d;
     return result;
   }
+  public static long sum(final long[] from, int startIdx, int endIdx) {
+    long result = 0;
+    for (int i = startIdx; i < endIdx; i++) result += from[i];
+    return result;
+  }
   public static int sum(final int[] from) {
     int result = 0;
     for( int d : from ) result += d;

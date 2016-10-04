@@ -84,4 +84,34 @@ public class PojoUtilsTest extends TestUtil {
       Assert.assertEquals(fromSchema.column_array[i].column_name, toIced.column_array[i]._column_name.toString());
   }
 
+  static public class TestNestedFillFromJson extends Iced {
+    public int meaning = 42;
+    public GBMModel.GBMParameters parameters = null;
+    public double double_meaning = 84.0;
+  }
+
+  @Test
+  public void TestFillFromJson() {
+    // Fill only one level, scalar:
+    GBMModel.GBMParameters o = new GBMModel.GBMParameters();
+    Assert.assertEquals(50, o._ntrees);
+    Assert.assertEquals(5, o._max_depth);
+
+    PojoUtils.fillFromJson(o, "{\"_ntrees\": 17}");
+    Assert.assertEquals(17, o._ntrees);
+    Assert.assertEquals(5, o._max_depth);
+
+    // Fill with a nested object:
+    TestNestedFillFromJson nested = new TestNestedFillFromJson();
+    nested.parameters = new GBMModel.GBMParameters();
+    Assert.assertEquals(50, nested.parameters._ntrees);
+    Assert.assertEquals(5, nested.parameters._max_depth);
+
+    PojoUtils.fillFromJson(nested, "{\"double_meaning\": 96, \"parameters\": {\"_ntrees\": 17}}");
+    Assert.assertEquals(96, nested.double_meaning, 0.00001);
+    Assert.assertEquals(42, nested.meaning);
+    Assert.assertEquals(17, nested.parameters._ntrees);
+    Assert.assertEquals(5, nested.parameters._max_depth);
+  }
+
 }

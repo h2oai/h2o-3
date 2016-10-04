@@ -1473,7 +1473,7 @@ h2o.setLevels <- function(x, levels) .newExpr("setDomain", chk.H2OFrame(x), leve
 #' @name h2o.head
 #' @param x An H2OFrame object.
 #' @param n (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
-#' @param ... Further arguments passed to or from other methods.
+#' @param ... Ignored.
 #' @return An H2OFrame containing the first or last n rows of an H2OFrame object.
 #' @examples
 #' \donttest{
@@ -1501,7 +1501,7 @@ head.H2OFrame <- h2o.head
 
 #' @rdname h2o.head
 #' @export
-h2o.tail <- function(x, ..., n=6L) {
+h2o.tail <- function(x,n=6L,...) {
   endidx <- nrow(x)
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
   if( n==0L ) head(x,n=0L)
@@ -1568,6 +1568,7 @@ print.H2OFrame <- function(x,n=6L, ...) {
 #' @param object An H2OFrame.
 #' @param ... Further arguments to be passed from or to other methods.
 #' @param cols Print the per-column str for the H2OFrame
+#' @importFrom utils str
 #' @export
 str.H2OFrame <- function(object, ..., cols=FALSE) {
   if (length(l <- list(...)) && any("give.length" == names(l)))

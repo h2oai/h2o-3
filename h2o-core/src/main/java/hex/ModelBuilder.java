@@ -21,14 +21,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
 
-  public Job _job;     // Job controlling this build
+  public Job<M> _job;     // Job controlling this build
   /** Block till completion, and return the built model from the DKV.  Note the
    *  funny assert: the Job does NOT have to be controlling this model build,
    *  but might, e.g. be controlling a Grid search for which this is just one
    *  of many results.  Calling 'get' means that we are blocking on the Job
    *  which is controlling ONLY this ModelBuilder, and when the Job completes
    *  we can return built Model. */
-  public final M get() { assert _job._result == _result; return (M)_job.get(); }
+  public final M get() { assert _job._result == _result; return _job.get(); }
   public final boolean isStopped() { return _job.isStopped(); }
 
   // Key of the model being built; note that this is DIFFERENT from
@@ -47,13 +47,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Default model-builder key */
-  public static Key<? extends Model> defaultKey(String algoName) {
+  public static <S extends Model> Key<S> defaultKey(String algoName) {
     return Key.make(H2O.calcNextUniqueModelId(algoName));
   }
 
   /** Default easy constructor: Unique new job and unique new result key */
   protected ModelBuilder(P parms) {
-    this(parms, (Key<M>)defaultKey(parms.algoName()));
+    this(parms, ModelBuilder.<M>defaultKey(parms.algoName()));
   }
 
   /** Unique new job and named result key */
@@ -63,9 +63,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /** Shared pre-existing Job and unique new result key */
-  protected ModelBuilder(P parms, Job job) {
+  protected ModelBuilder(P parms, Job<M> job) {
     _job = job;
-    _result = (Key<M>)defaultKey(parms.algoName());
+    _result = defaultKey(parms.algoName());
     _parms = parms;
   }
 
@@ -179,9 +179,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   private void setFinalState() {
-    if (dest() != null && dest().get() != null && dest().get()._output != null) {
-      dest().get()._output._job = _job;
-      dest().get()._output.stopClock();
+    Key<M> reskey = dest();
+    if (reskey == null) return;
+    M res = reskey.get();
+    if (res != null && res._output != null) {
+      res._output._job = _job;
+      res._output.stopClock();
     }
   }
 
@@ -242,7 +245,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   /**
    * Default naive (serial) implementation of N-fold cross-validation
-   * @return Cross-validation Job
    * (builds N+1 models, all have train+validation metrics, the main model has N-fold cross-validated validation metrics)
    */
   public void computeCrossValidation() {
@@ -316,7 +318,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec[] cv_makeWeights( final int N, Vec foldAssignment ) {
     String origWeightsName = _parms._weights_column;
     Vec origWeight  = origWeightsName != null ? train().vec(origWeightsName) : train().anyVec().makeCon(1.0);
-    Frame folds_and_weights = new Frame(new Vec[]{foldAssignment, origWeight});
+    Frame folds_and_weights = new Frame(foldAssignment, origWeight);
     Vec[] weights = new MRTask() {
         @Override public void map(Chunk chks[], NewChunk nchks[]) {
           Chunk fold = chks[0], orig = chks[1];
@@ -325,7 +327,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             double w = orig.atd(row);
             for( int f = 0; f < N; f++ ) {
               boolean holdout = foldIdx == f;
-              nchks[2*f+0].addNum(holdout ? 0 : w);
+              nchks[2 * f].addNum(holdout ? 0 : w);
               nchks[2*f+1].addNum(holdout ? w : 0);
             }
           }
@@ -745,7 +747,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void init(boolean expensive) {
     // Log parameters
     if( expensive && logMe() ) {
-      Log.info("Building H2O " + this.getClass().getSimpleName().toString() + " model with these parameters:");
+      Log.info("Building H2O " + this.getClass().getSimpleName() + " model with these parameters:");
       Log.info(new String(_parms.writeJSON(new AutoBuffer()).buf()));
     }
     // NOTE: allow re-init:
@@ -753,13 +755,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     assert _parms != null;      // Parms must already be set in
     if( _parms._train == null ) {
       if (expensive)
-        error("_train","Missing training frame");
+        error("_train", "Missing training frame");
       return;
     }
     Frame tr = _parms.train();
-    if( tr == null ) { error("_train","Missing training frame: "+_parms._train); return; }
+    if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
-    if( expensive) {
+    if (expensive) {
       _parms.getOrMakeRealSeed();
     }
     if (_parms._nfolds < 0 || _parms._nfolds == 1) {
@@ -1095,7 +1097,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   private TwoDimTable makeCrossValidationSummaryTable(Key[] cvmodels) {
     if (cvmodels == null || cvmodels.length == 0) return null;
-    int N=cvmodels.length;
+    int N = cvmodels.length;
     int extra_length=2; //mean/sigma/cv1/cv2/.../cvN
     String[] colTypes = new String[N+extra_length];
     Arrays.fill(colTypes, "string");
@@ -1119,25 +1121,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       Model m = DKV.getGet(cvmodels[0]);
       ModelMetrics mm = m._output._validation_metrics;
 
-      if (mm!=null) {
+      if (mm != null) {
 
         for (Method meth : mm.getClass().getMethods()) {
           if (excluded.contains(meth.getName())) continue;
           try {
             double c = (double) meth.invoke(mm);
             methods.add(meth);
-          } catch (Exception e) {}
+          } catch (Exception ignored) {}
         }
 
         ConfusionMatrix cm = mm.cm();
-        if (cm!=null) {
+        if (cm != null) {
           for (Method meth : cm.getClass().getMethods()) {
             if (excluded.contains(meth.getName())) continue;
             try {
               double c = (double) meth.invoke(cm);
               methods.add(meth);
-            } catch (Exception e) {
-            }
+            } catch (Exception ignored) {}
           }
         }
       }

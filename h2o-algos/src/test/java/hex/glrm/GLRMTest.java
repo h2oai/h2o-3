@@ -53,7 +53,7 @@ public class GLRMTest extends TestUtil {
 
   public static void checkLossbyCol(GLRMParameters parms, GLRMModel model) {
     int ncats = model._output._ncats;
-    GLRMParameters.Loss[] actual = model._output._lossFunc;
+    GlrmLoss[] actual = model._output._lossFunc;
     assert ncats >= 0 && ncats <= actual.length;
     if(null == parms._loss_by_col || null == parms._loss_by_col_idx) return;
     Assert.assertEquals(parms._loss_by_col.length, parms._loss_by_col_idx.length);
@@ -75,14 +75,14 @@ public class GLRMTest extends TestUtil {
     // Categorical columns
     for(int i = 0; i < ncats; i++) {
       int idx = Arrays.binarySearch(loss_idx_adapt, i);
-      GLRMParameters.Loss comp = idx >= 0 ? parms._loss_by_col[idx] : parms._multi_loss;
+      GlrmLoss comp = idx >= 0 ? parms._loss_by_col[idx] : parms._multi_loss;
       Assert.assertEquals(comp, actual[i]);
     }
 
     // Numeric columns
     for(int i = ncats; i < actual.length; i++) {
       int idx = Arrays.binarySearch(loss_idx_adapt, i);
-      GLRMParameters.Loss comp = idx >= 0 ? parms._loss_by_col[idx] : parms._loss;
+      GlrmLoss comp = idx >= 0 ? parms._loss_by_col[idx] : parms._loss;
       Assert.assertEquals(comp, actual[i]);
     }
   }
@@ -119,7 +119,7 @@ public class GLRMTest extends TestUtil {
       parms._k = 10;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._max_iterations = 1;
-      parms._loss = GLRMParameters.Loss.Quadratic;
+      parms._loss = GlrmLoss.Quadratic;
       try {
         Scope.enter();
         job = new GLRM(parms);
@@ -260,7 +260,7 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._loss = GLRMParameters.Loss.Logistic;
+      parms._loss = GlrmLoss.Huber;
       parms._regularization_x = GLRMParameters.Regularizer.NonNegative;
       parms._regularization_y = GLRMParameters.Regularizer.NonNegative;
       parms._gamma_x = parms._gamma_y = 1;
@@ -313,7 +313,7 @@ public class GLRMTest extends TestUtil {
         parms = new GLRMParameters();
         parms._train = train._key;
         parms._k = train.numCols();
-        parms._loss = GLRMParameters.Loss.Quadratic;
+        parms._loss = GlrmLoss.Quadratic;
         parms._regularization_x = GLRMParameters.Regularizer.None;
         parms._regularization_y = GLRMParameters.Regularizer.None;
         parms._transform = DataInfo.TransformType.STANDARDIZE;
@@ -359,8 +359,8 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 12;
-      parms._loss = GLRMParameters.Loss.Quadratic;
-      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.Absolute, GLRMParameters.Loss.Huber };
+      parms._loss = GlrmLoss.Quadratic;
+      parms._loss_by_col = new GlrmLoss[] { GlrmLoss.Absolute, GlrmLoss.Huber };
       parms._loss_by_col_idx = new int[] { 2 /* AGMT */, 5 /* DEG */ };
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.PlusPlus;

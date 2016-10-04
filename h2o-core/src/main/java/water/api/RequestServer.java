@@ -218,31 +218,48 @@ public class RequestServer extends HttpServlet {
         headers.put(key, value);
       }
 
+      final String contentType = request.getContentType();
       Properties parms = new Properties();
-      Map<String, String[]> parameterMap;
-      parameterMap = request.getParameterMap();
-      for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
-        String key = entry.getKey();
-        String[] values = entry.getValue();
+      String postBody = null;
 
-        if (values.length == 1) {
-          parms.put(key, values[0]);
-        } else if (values.length > 1) {
-          StringBuilder sb = new StringBuilder();
-          sb.append("[");
-          boolean first = true;
-          for (String value : values) {
-            if (!first) sb.append(",");
-            sb.append("\"").append(value).append("\"");
-            first = false;
+      if ("application/json".equals(contentType)) {
+        StringBuffer jb = new StringBuffer();
+        String line = null;
+        try {
+          BufferedReader reader = request.getReader();
+          while ((line = reader.readLine()) != null)
+            jb.append(line);
+        } catch (Exception e) {
+          throw new H2OIllegalArgumentException("Exception reading POST body JSON for URL: " + uri);
+        }
+        postBody = jb.toString();
+      } else {
+        // application/x-www-form-urlencoded
+        Map<String, String[]> parameterMap;
+        parameterMap = request.getParameterMap();
+        for (Map.Entry<String, String[]> entry : parameterMap.entrySet()) {
+          String key = entry.getKey();
+          String[] values = entry.getValue();
+
+          if (values.length == 1) {
+            parms.put(key, values[0]);
+          } else if (values.length > 1) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[");
+            boolean first = true;
+            for (String value : values) {
+              if (!first) sb.append(",");
+              sb.append("\"").append(value).append("\"");
+              first = false;
+            }
+            sb.append("]");
+            parms.put(key, sb.toString());
           }
-          sb.append("]");
-          parms.put(key, sb.toString());
         }
       }
 
       // Make serve() call.
-      NanoResponse resp = serve(uri, method, headers, parms);
+      NanoResponse resp = serve(uri, method, headers, parms, postBody);
 
       // Un-marshal Nano response back to Jetty.
       String choppedNanoStatus = resp.status.substring(0, 3);
@@ -299,7 +316,7 @@ public class RequestServer extends HttpServlet {
   /**
    * Subsequent handling of the dispatch
    */
-  public static NanoResponse serve(String url, String method, Properties header, Properties parms) {
+  public static NanoResponse serve(String url, String method, Properties header, Properties parms, String post_body) {
     try {
       // Jack priority for user-visible requests
       Thread.currentThread().setPriority(Thread.MAX_PRIORITY - 1);
@@ -391,7 +408,7 @@ public class RequestServer extends HttpServlet {
           return response404(method + " " + url, type);
 
       } else {
-        Schema response = route._handler.handle(uri.getVersion(), route, parms);
+        Schema response = route._handler.handle(uri.getVersion(), route, parms, post_body);
         PojoUtils.filterFields(response, (String)parms.get("_include_fields"), (String)parms.get("_exclude_fields"));
         return serveSchema(response, type);
       }

@@ -52,7 +52,7 @@ public class GLRMGridTest extends TestUtil {
       GLRMModel.GLRMParameters params = new GLRMModel.GLRMParameters();
       params._train = fr._key;
       params._seed = 4224L;
-      params._loss = GLRMModel.GLRMParameters.Loss.Absolute;
+      params._loss = GlrmLoss.Absolute;
       params._init = GLRM.Initialization.SVD;
 
       //
@@ -115,7 +115,7 @@ public class GLRMGridTest extends TestUtil {
       GLRMModel.GLRMParameters params = new GLRMModel.GLRMParameters();
       params._train = fr._key;
       params._seed = 4224L;
-      params._loss = GLRMModel.GLRMParameters.Loss.Absolute;
+      params._loss = GlrmLoss.Absolute;
       params._init = GLRM.Initialization.SVD;
 
       //
