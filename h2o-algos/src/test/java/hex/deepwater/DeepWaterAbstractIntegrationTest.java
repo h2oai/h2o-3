@@ -4,30 +4,34 @@ import deepwater.backends.BackendModel;
 import deepwater.backends.BackendParams;
 import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
+import deepwater.datasets.ImageDataSet;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
-import hex.deepwater.backends.*;
-import deepwater.datasets.ImageDataSet;
 import hex.splitframe.ShuffleSplitFrame;
-import org.apache.commons.lang.NotImplementedException;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
-
 import water.parser.ParseDataset;
 import water.util.Log;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   protected BackendTrain backend;
 
   @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); new MXNetLoader(); }
+  public static void stall() { stall_till_cloudsize(1); }
 
   @Test
   public void memoryLeakTest() {
@@ -40,7 +44,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
         p._network = DeepWaterParameters.Network.vgg;
-        p._rate = 1e-4;
+        p._learning_rate = 1e-4;
         p._mini_batch_size = 8;
         p._train_samples_per_iteration = 8;
         p._epochs = 1e-3;
@@ -60,7 +64,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       DeepWaterParameters p = new DeepWaterParameters();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
-      p._rate = 1e-3;
+      p._learning_rate = 1e-3;
       p._epochs = 3;
       p._train_samples_per_iteration = samples;
       m = new DeepWater(p).trainModel().get();
@@ -86,7 +90,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._epochs = 50;
-      p._rate = 0.01;
+      p._learning_rate = 0.01;
       p._momentum_start = 0.5;
       p._momentum_stable = 0.5;
       p._stopping_rounds = 0;
@@ -116,7 +120,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
-      p._rate = 1e-3;
+      p._learning_rate = 1e-3;
       p._epochs = epochs;
       p._channels = channels;
       p._problem_type = DeepWaterParameters.ProblemType.image_classification;
@@ -169,7 +173,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         DeepWaterParameters p = new DeepWaterParameters();
         p._train = (tr = parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
-        p._rate = 0; //no updates to original weights
+        p._learning_rate = 0; //no updates to original weights
         p._seed = 1234;
         p._epochs = 1; //for some reason, can't use 0 epochs
         p._channels = 1;
@@ -196,7 +200,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         DeepWaterParameters p = new DeepWaterParameters();
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
-        p._rate = 0; //no updates to original weights
+        p._learning_rate = 0; //no updates to original weights
         p._seed = i;
         p._epochs = 1; //for some reason, can't use 0 epochs
         p._channels = 1;
@@ -238,7 +242,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._network = network;
       p._mini_batch_size = 2;
       p._epochs = 0.01;
-//      p._rate = 0; //needed pass the test for inception/resnet
+//      p._learning_rate = 0; //needed pass the test for inception/resnet
       p._seed = 1234;
       p._score_training_samples = 0;
       p._train_samples_per_iteration = p._mini_batch_size;
@@ -291,7 +295,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         DeepWaterParameters p = new DeepWaterParameters();
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
-        p._rate = 1e-4;
+        p._learning_rate = 1e-4;
         p._seed = 1234;
         p._epochs = 1;
         p._channels = 1;
@@ -338,7 +342,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
 
-      Assert.assertTrue(m.model_info().backend ==null);
+      Assert.assertTrue(m.model_info()._backend ==null);
 
       int hashCodeNetwork = java.util.Arrays.hashCode(m.model_info()._network);
       int hashCodeParams = java.util.Arrays.hashCode(m.model_info()._modelparams);
@@ -408,7 +412,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._response_column = "C2";
       p._mini_batch_size = 2;
       p._train_samples_per_iteration = p._mini_batch_size;
-      p._rate = 0e-3;
+      p._learning_rate = 0e-3;
       p._seed = 12345;
       p._epochs = 0.01;
       p._quiet_mode = true;
@@ -524,7 +528,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     p._response_column = "C2";
     p._mini_batch_size = 4;
     p._train_samples_per_iteration = p._mini_batch_size;
-    p._rate = 0e-3;
+    p._learning_rate = 0e-3;
     p._seed = 12345;
     p._epochs = 0.01;
     p._quiet_mode = true;
@@ -689,7 +693,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         p._input_dropout_ratio = 0.1;
         p._hidden_dropout_ratios = new double[]{0.5,0.5,0.5};
         p._stopping_rounds = 0;
-        p._rate = 1e-3;
+        p._learning_rate = 1e-3;
         p._mini_batch_size = 32;
         p._epochs = 20;
         p._train = tr._key;

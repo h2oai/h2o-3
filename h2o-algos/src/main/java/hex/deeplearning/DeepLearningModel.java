@@ -1783,14 +1783,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       if (_nfolds != 0)
         dl.hide("_overwrite_with_best_model", "overwrite_with_best_model is unsupported in combination with n-fold cross-validation.");
       if (_adaptive_rate) {
-        dl.hide("_rate", "rate is not used with adaptive_rate.");
-        dl.hide("_rate_annealing", "rate_annealing is not used with adaptive_rate.");
+        dl.hide("_learning_rate", "rate is not used with adaptive_rate.");
+        dl.hide("_learning_rate_annealing", "rate_annealing is not used with adaptive_rate.");
         dl.hide("_rate_decay", "rate_decay is not used with adaptive_rate.");
         dl.hide("_momentum_start", "momentum_start is not used with adaptive_rate.");
         dl.hide("_momentum_ramp", "momentum_ramp is not used with adaptive_rate.");
         dl.hide("_momentum_stable", "momentum_stable is not used with adaptive_rate.");
-        if (_rate!=0.005) dl.warn("_rate", "rate cannot be specified if adaptive_rate is enabled.");
-        if (_rate_annealing!=1e-6) dl.warn("_rate_annealing", "rate_annealing cannot be specified if adaptive_rate is enabled.");
+        if (_rate!=0.005) dl.warn("_learning_rate", "rate cannot be specified if adaptive_rate is enabled.");
+        if (_rate_annealing!=1e-6) dl.warn("_learning_rate_annealing", "rate_annealing cannot be specified if adaptive_rate is enabled.");
         if (_rate_decay!=1) dl.warn("_rate_decay", "rate_decay cannot be specified if adaptive_rate is enabled.");
         if (_momentum_start!=0) dl.warn("_momentum_start", "momentum_start cannot be specified if adaptive_rate is enabled.");
         if (_momentum_ramp!=1e6) dl.warn("_momentum_ramb", "momentum_ramp cannot be specified if adaptive_rate is enabled.");
@@ -2004,8 +2004,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
               "_sparse",
               "_sparsity_beta",
               "_col_major",
-              "_rate",
-              "_rate_annealing",
+              "_learning_rate",
+              "_learning_rate_annealing",
               "_rate_decay",
               "_momentum_start",
               "_momentum_ramp",
