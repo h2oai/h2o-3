@@ -128,7 +128,7 @@ public class AstImpute extends AstPrimitive {
     AstRoot ast = asts[5];
     AstNumList by2;
     if (ast instanceof AstNumList) by2 = (AstNumList) ast;
-    else if (ast instanceof AstNum) by2 = new AstNumList(((AstNum) ast)._v.getNum());
+    else if (ast instanceof AstNum) by2 = new AstNumList(((AstNum) ast).getNum());
     else if (ast instanceof AstStrList) {
       String[] names = ((AstStrList) ast)._strs;
       double[] list = new double[names.length];
@@ -143,7 +143,7 @@ public class AstImpute extends AstPrimitive {
     AstRoot vals = asts[7];
     AstNumList values;
     if (vals instanceof AstNumList) values = (AstNumList) vals;
-    else if (vals instanceof AstNum) values = new AstNumList(((AstNum) vals)._v.getNum());
+    else if (vals instanceof AstNum) values = new AstNumList(((AstNum) vals).getNum());
     else values = null;
     boolean doGrpBy = !by2.isEmpty() || groupByFrame != null;
     // Compute the imputed value per-group.  Empty groups are allowed and OK.

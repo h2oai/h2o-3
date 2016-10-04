@@ -29,7 +29,7 @@ public class AstSeqLen extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     int len = (int) Math.ceil(asts[1].exec(env).getNum());
     if (len <= 0)
       throw new IllegalArgumentException("Error in seq_len(" + len + "): argument must be coercible to positive integer");

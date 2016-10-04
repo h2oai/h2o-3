@@ -9,7 +9,7 @@ import water.rapids.ast.AstParameter;
  * An ID.  Execution does lookup in the current scope.
  */
 public class AstId extends AstParameter {
-  final String _id;
+  private final String _id;
 
   public AstId() {
     _id = null;

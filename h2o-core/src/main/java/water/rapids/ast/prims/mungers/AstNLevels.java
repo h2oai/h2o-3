@@ -32,7 +32,7 @@ public class AstNLevels extends AstPrimitive {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() == 1) {
       Vec v = fr.anyVec();
-      nlevels = v.isCategorical() ? v.domain().length : 0;
+      nlevels = v != null && v.isCategorical() ? v.domain().length : 0;
       return new ValNum(nlevels);
     } else throw new IllegalArgumentException("nlevels applies to a single column. Got: " + fr.numCols());
   }

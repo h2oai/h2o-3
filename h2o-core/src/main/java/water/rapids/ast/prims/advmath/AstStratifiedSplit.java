@@ -33,7 +33,7 @@ public class AstStratifiedSplit extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1)
       throw new IllegalArgumentException("Must give a single column to stratify against. Got: " + fr.numCols() + " columns.");

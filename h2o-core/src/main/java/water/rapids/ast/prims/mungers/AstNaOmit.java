@@ -29,7 +29,7 @@ public class AstNaOmit extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame fr2 = new MRTask() {
       private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {

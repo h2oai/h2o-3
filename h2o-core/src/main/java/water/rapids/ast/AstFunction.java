@@ -93,7 +93,7 @@ public class AstFunction extends AstPrimitive {
   // Function execution.  Just throw self on stack like a constant.  However,
   // capture the existing global scope.
   @Override
-  public Val exec(Env env) {
+  public ValFun exec(Env env) {
     return new ValFun(new AstFunction(this, null, env._scope));
   }
 
