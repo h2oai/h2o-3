@@ -200,6 +200,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         error("_loss_by_col", "Number of loss functions specified must be <= " + _ncolA);
       else if (num_loss_by_cols == _ncolA && _parms._loss_by_col_idx == null)
         _lossFunc = _parms._loss_by_col;
+      else if (num_loss_by_cols < _ncolA && _parms._loss_by_col_idx == null)
+        error("_loss_by_col", "Number of elements in _loss_by_col is less than the size of the dataset -- the " +
+                              "_loss_by_col_idx array must also be provided");
       else if (_parms._loss_by_col_idx != null && num_loss_by_cols == _parms._loss_by_col_idx.length) {
         for (int i = 0; i < num_loss_by_cols; i++) {
           int cidx = _parms._loss_by_col_idx[i];
