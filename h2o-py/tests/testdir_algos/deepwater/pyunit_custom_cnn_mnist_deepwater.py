@@ -54,7 +54,7 @@ def deepwater_custom_cnn_mnist():
   cnn(nclasses).save("/tmp/symbol_custom-py.json")
 
   print("Importing the cnn model architecture for training in H2O")
-  model = H2ODeepWaterEstimator(epochs=100, rate=1e-3, mini_batch_size=64,
+  model = H2ODeepWaterEstimator(epochs=100, learning_rate=1e-3, mini_batch_size=64,
                                 network='user', network_definition_file="/tmp/symbol_custom-py.json",
 				image_shape=[28,28], channels=1)
                                 

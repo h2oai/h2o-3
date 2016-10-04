@@ -23,7 +23,7 @@ def cv_airlines():
 			     # regularization
 	 		     hidden_dropout_ratios=[0.1,0.1], input_dropout_ratio=0.0,          
 	 		     # learning rate
-			     rate=5e-3, rate_annealing=1e-6,                                    
+			     learning_rate=5e-3, learning_rate_annealing=1e-6,                                    
 			     # momentum
 			     momentum_start=0.9, momentum_stable=0.99, momentum_ramp=1e7,       
 		             # early stopping
