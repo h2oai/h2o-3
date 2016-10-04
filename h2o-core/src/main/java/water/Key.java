@@ -241,10 +241,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // k-v pairs start with this replication factor.
   static final byte DEFAULT_DESIRED_REPLICA_FACTOR = 1;
 
-  // Construct a new Key.
-  private Key(byte[] kb) {
-    if( kb.length > KEY_LENGTH ) throw new IllegalArgumentException("Key length would be "+kb.length);
-    _kb = kb;
+  private static int hash(byte[] kb) {
     // Quicky hash: http://en.wikipedia.org/wiki/Jenkins_hash_function
     int hash = 0;
     for( byte b : kb ) {
@@ -255,14 +252,29 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     hash += (hash << 3);
     hash ^= (hash >> 11);
     hash += (hash << 15);
+    return hash;
+  }
+
+  // Construct a new Key.
+  private Key(byte[] kb) {
+    this(kb, hash(kb));
+  }
+
+  private Key(byte[] kb, int hash) {
+    if( kb.length > KEY_LENGTH ) throw new IllegalArgumentException("Key length would be "+kb.length);
+    _kb = kb;
     _hash = hash;
+  }
+
+  static <T extends Keyed> Key<T> buildKeyForTestingPurposes(byte[] kb, int hash) {
+    return new Key<T>(kb, hash);
   }
 
   // Make new Keys.  Optimistically attempt interning, but no guarantee.
   static <P extends Keyed> Key<P> make(byte[] kb, byte rf) {
     if( rf == -1 ) throw new IllegalArgumentException();
-    Key key = new Key(kb);
-    Key key2 = H2O.getk(key); // Get the interned version, if any
+    Key<P> key = new Key<>(kb.clone());
+    Key<P> key2 = H2O.<P>getk(key); // Get the interned version, if any
     if( key2 != null ) // There is one! Return it instead
       return key2;
 
@@ -467,12 +479,13 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   @Override public int hashCode() { return _hash; }
+
+  public boolean equals(Key k) {
+    return k != null && _hash == k._hash && Arrays.equals(k._kb,_kb);
+  }
+
   @Override public boolean equals( Object o ) {
-    if( this == o ) return true;
-    if( o == null ) return false;
-    Key k = (Key)o;
-    if( _hash != k._hash ) return false;
-    return Arrays.equals(k._kb,_kb);
+    return this == o || (o != null && (o instanceof Key) && equals((Key)o));
   }
 
   /** Lexically ordered Key comparison, so Keys can be sorted.  Modestly expensive. */
@@ -481,10 +494,10 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     return this.toString().compareTo(o.toString());
   }
 
-  public static final AutoBuffer write_impl(Key k, AutoBuffer ab) {return ab.putA1(k._kb);}
-  public static final Key read_impl(Key k, AutoBuffer ab) {return make(ab.getA1());}
+  public static AutoBuffer write_impl(Key k, AutoBuffer ab) {return ab.putA1(k._kb);}
+  public static Key read_impl(Key k, AutoBuffer ab) {return make(ab.getA1());}
 
-  public static final AutoBuffer writeJSON_impl( Key k, AutoBuffer ab ) {
+  public static AutoBuffer writeJSON_impl( Key k, AutoBuffer ab ) {
     ab.putJSONStr("name",k.toString());
     ab.put1(',');
     ab.putJSONStr("type", ReflectionUtils.findActualClassParameter(k.getClass(), 0).getSimpleName());

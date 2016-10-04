@@ -889,7 +889,8 @@ public class Frame extends Lockable<Frame> {
   // Chunks in a Frame, before filling them.  This can be called in parallel
   // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
   static NewChunk[] createNewChunks(String name, byte[] type, int cidx) {
-    Frame fr = (Frame) Key.make(name).get();
+    Frame fr = Key.<Frame>make(name).get();
+    if (fr == null) throw new IllegalArgumentException("Frame <<" + name + ">> not found.");
     NewChunk[] nchks = new NewChunk[fr.numCols()];
     for (int i = 0; i < nchks.length; i++) {
       nchks[i] = new NewChunk(new AppendableVec(fr._keys[i], type[i]), cidx);
@@ -962,11 +963,13 @@ public class Frame extends Lockable<Frame> {
       Frame fr = (Frame) ocols;
       if (fr.numCols() != 1)
         throw new IllegalArgumentException("Columns Frame must have only one column (actually has " + fr.numCols() + " columns)");
-      long n = fr.anyVec().length();
+      final Vec aVec = fr.anyVec();
+      if (aVec == null) throw new IllegalArgumentException("frame is empty, no vectors");
+      long n = aVec.length();
       if (n > MAX_EQ2_COLS)
         throw new IllegalArgumentException("Too many requested columns (requested " + n +", max " + MAX_EQ2_COLS + ")");
       cols = new long[(int)n];
-      Vec.Reader v = fr.anyVec().new Reader();
+      Vec.Reader v = aVec.new Reader();
       for (long i = 0; i < v.length(); i++)
         cols[(int)i] = v.at8(i);
     } else
@@ -1114,10 +1117,11 @@ public class Frame extends Lockable<Frame> {
 
   // Convert len rows starting at off to a 2-d ascii table
   @Override public String toString( ) {
+    Vec aVec = anyVec();
     return ("Frame key: " + _key + "\n") +
             "   cols: " + numCols() + "\n" +
             "   rows: " + numRows() + "\n" +
-            " chunks: " + (anyVec() == null ? "N/A" : anyVec().nChunks()) + "\n" +
+            " chunks: " + (aVec == null ? "N/A" : aVec.nChunks()) + "\n" +
             "   size: " + byteSize() + "\n";
   }
 
@@ -1273,29 +1277,6 @@ public class Frame extends Lockable<Frame> {
           }
       }
     }.doAll(this.types(),this).outputFrame(keyName==null?null:Key.make(keyName),this.names(),this.domains());
-  }
-
-  // _vecs put into kv store already
-  private class DoCopyFrame extends MRTask<DoCopyFrame> {
-    final Vec[] _vecs;
-    DoCopyFrame(Vec[] vecs) {
-      _vecs = new Vec[vecs.length];
-      int rowLayout = _vecs[0]._rowLayout;
-      for(int i=0;i<vecs.length;++i)
-        _vecs[i] = new Vec(vecs[i].group().addVec(),rowLayout, vecs[i].domain(), vecs[i]._type);
-    }
-    @Override public void map(Chunk[] cs) {
-      int i=0;
-      for(Chunk c: cs) {
-        Chunk c2 = c.clone();
-        c2._vec=null;
-        c2._start=-1;
-        c2._cidx=-1;
-        c2._mem = c2._mem.clone();
-        DKV.put(_vecs[i++].chunkKey(c.cidx()), c2, _fs, true);
-      }
-    }
-    @Override public void postGlobal() { for( Vec _vec : _vecs ) DKV.put(_vec); }
   }
 
   /**

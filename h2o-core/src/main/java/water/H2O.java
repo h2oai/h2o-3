@@ -1667,7 +1667,7 @@ final public class H2O {
   }
   public static void raw_clear() { STORE.clear(); }
   public static boolean containsKey( Key key ) { return STORE.get(key) != null; }
-  static Key getk( Key key ) { return STORE.getk(key); }
+  static <T extends Keyed<T>> Key<T> getk( Key<T> key ) { return (Key<T>)STORE.getk(key); }
   public static Set<Key> localKeySet( ) { return STORE.keySet(); }
   static Collection<Value> values( ) { return STORE.values(); }
   static public int store_size() { return STORE.size(); }
