@@ -10,6 +10,7 @@ import hex.ModelCategory;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.glrm.GlrmLoss;
+import hex.glrm.GlrmRegularizer;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 
@@ -260,8 +261,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           parms._loss = GlrmLoss.Quadratic;
           parms._gamma_x = parms._gamma_y = 0;
-          parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.None;
-          parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.None;
+          parms._regularization_x = GlrmRegularizer.None;
+          parms._regularization_y = GlrmRegularizer.None;
           parms._init = GLRM.Initialization.PlusPlus;
 
           // Build an SVD model

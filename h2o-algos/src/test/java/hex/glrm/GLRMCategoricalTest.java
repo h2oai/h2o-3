@@ -97,8 +97,8 @@ public class GLRMCategoricalTest extends TestUtil {
       parms._train = train._key;
       parms._k = 8;
       parms._gamma_x = parms._gamma_y = 0.1;
-      parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.Quadratic;
-      parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.Quadratic;
+      parms._regularization_x = GlrmRegularizer.Quadratic;
+      parms._regularization_y = GlrmRegularizer.Quadratic;
       parms._init = GLRM.Initialization.PlusPlus;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._recover_svd = false;
@@ -121,13 +121,13 @@ public class GLRMCategoricalTest extends TestUtil {
     Random rng = new Random(seed);
     Frame train = null;
     final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
-    final GLRMParameters.Regularizer[] regs = new GLRMParameters.Regularizer[] {
-            GLRMParameters.Regularizer.Quadratic,
-            GLRMParameters.Regularizer.L1,
-            GLRMParameters.Regularizer.NonNegative,
-            GLRMParameters.Regularizer.OneSparse,
-            GLRMParameters.Regularizer.UnitOneSparse,
-            GLRMParameters.Regularizer.Simplex
+    final GlrmRegularizer[] regs = new GlrmRegularizer[] {
+            GlrmRegularizer.Quadratic,
+            GlrmRegularizer.L1,
+            GlrmRegularizer.NonNegative,
+            GlrmRegularizer.OneSparse,
+            GlrmRegularizer.UnitOneSparse,
+            GlrmRegularizer.Simplex
     };
 
     Scope.enter();

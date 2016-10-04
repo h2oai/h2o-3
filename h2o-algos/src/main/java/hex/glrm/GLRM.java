@@ -28,6 +28,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import static hex.glrm.GlrmLoss.Quadratic;
+
 /**
  * Generalized Low Rank Models
  * This is an algorithm for dimensionality reduction of a dataset. It is a general, parallelized
@@ -249,6 +251,19 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     return frob;
   }
 
+  // Closed-form solution for X and Y may exist if both loss and regularizers are quadratic.
+  public final boolean hasClosedForm(long na_cnt) {
+    if (na_cnt != 0) return false;
+    for (GlrmLoss lossi : _lossFunc)
+      if (lossi != Quadratic)
+        return false;
+    return (_parms._gamma_x == 0 || _parms._regularization_x == GlrmRegularizer.None ||
+                                    _parms._regularization_x == GlrmRegularizer.Quadratic) &&
+           (_parms._gamma_y == 0 || _parms._regularization_y == GlrmRegularizer.None ||
+                                    _parms._regularization_y == GlrmRegularizer.Quadratic);
+  }
+
+
   // Transform each column of a 2-D array, assuming categoricals sorted before numeric cols
   public static double[][] transform(double[][] centers, double[] normSub, double[] normMul, int ncats, int nnums) {
     int K = centers.length;
@@ -401,7 +416,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
         // Score only if clusters well-defined and closed-form solution does not exist
         double frob = frobenius2(km._output._centers_raw);
-        if (frob != 0 && !Double.isNaN(frob) && !_parms.hasClosedForm(na_cnt)) {
+        if (frob != 0 && !Double.isNaN(frob) && !hasClosedForm(na_cnt)) {
           // Frame pred = km.score(_parms.train());
           Log.info("Initializing X to matrix of weights inversely correlated with cluster distances");
           InitialXKMeans xtsk = new InitialXKMeans(_parms, km, _ncolA, _ncolX);
@@ -427,7 +442,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       // Project rows of Y into appropriate subspace for regularizer
       Random rand = RandomUtils.getRNG(_parms._seed);
       for (int i = 0; i < _parms._k; i++)
-        centers_exp[i] = _parms.project_y(centers_exp[i], rand);
+        centers_exp[i] = _parms._regularization_y.project(centers_exp[i], rand);
       return centers_exp;
     }
 
@@ -607,13 +622,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, model, na_cnt);
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         Archetypes ytnew = yt;
-        double yreg = _parms.regularize_y(yt._archetypes);
-        if (!(_parms._init == Initialization.User && null != _parms._user_x) && _parms.hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
+        double yreg = _parms._regularization_y.regularize(yt._archetypes);
+        if (!(_parms._init == Initialization.User && _parms._user_x != null) && hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
         _job.update(1, "Computing initial objective function");   // One unit of work
-        boolean regX = _parms._regularization_x != GLRMParameters.Regularizer.None && _parms._gamma_x != 0;  // Assume regularization on initial X is finite, else objective can be NaN if \gamma_x = 0
+        boolean regX = _parms._regularization_x != GlrmRegularizer.None && _parms._gamma_x != 0;  // Assume regularization on initial X is finite, else objective can be NaN if \gamma_x = 0
         ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub,
                                      model._output._normMul, model._output._lossFunc, weightId, regX);
         objtsk.doAll(dinfo._adaptedFrame);
@@ -961,7 +976,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       for (int row = 0; row < chks[0]._len; row++) {
         rand.setSeed(_parms._seed + chks[0].start() + row);   // global row ID determines the seed
         double xrow[] = ArrayUtils.gaussianVector(_ncolX, rand);
-        xrow = _parms.project_x(xrow, rand);
+        xrow = _parms._regularization_x.project(xrow, rand);
         for (int c = 0; c < xrow.length; c++) {
           chks[_ncolA+c].set(row, xrow[c]);
           chks[_ncolA+_ncolX+c].set(row, xrow[c]);
@@ -1019,7 +1034,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // double p[] = _model.score_indicator(chks, row, tmp, preds);
         double p[] = _model.score_ratio(chks, row, tmp);
         rand.setSeed(_parms._seed + chks[0].start() + row); //global row ID determines the seed
-        p = _parms.project_x(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
+        p = _parms._regularization_x.project(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
         for (int c = 0; c < p.length; c++) {
           chks[_ncolA+c].set(row, p[c]);
           chks[_ncolA+_ncolX+c].set(row, p[c]);
@@ -1135,8 +1150,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           // chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
           // _xreg += _parms.regularize_x(xnew[k]);
         }
-        double[] xnew = _parms.rproxgrad_x(u, _alpha, rand);
-        _xreg += _parms.regularize_x(xnew);
+        double[] xnew = _parms._regularization_x.rproxgrad(u, _alpha*_parms._gamma_x, rand);
+        _xreg += _parms._regularization_x.regularize(xnew);
         for (int k = 0; k < _ncolX; k++)
           chk_xnew(cs,k,_ncolA,_ncolX).set(row,xnew[k]);
 
@@ -1277,8 +1292,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           // _yreg += _parms.regularize_y(_ytnew[j][k]);
           u[k] = _ytold._archetypes[j][k] - _alpha * _ytnew[j][k];
         }
-        _ytnew[j] = _parms.rproxgrad_y(u, _alpha, rand);
-        _yreg += _parms.regularize_y(_ytnew[j]);
+        _ytnew[j] = _parms._regularization_y.rproxgrad(u, _alpha*_parms._gamma_y, rand);
+        _yreg += _parms._regularization_y.regularize(_ytnew[j]);
       }
     }
   }
@@ -1373,7 +1388,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             idx++;
           }
           assert idx == _ncolX;
-          _xold_reg += _parms.regularize_x(xrow);
+          _xold_reg += _parms._regularization_x.regularize(xrow);
         }
       }
     }
