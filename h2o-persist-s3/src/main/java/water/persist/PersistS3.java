@@ -120,8 +120,11 @@ public final class PersistS3 extends Persist {
     return new H2SO3InputStream(k, pmon);
   }
 
-  public static Key loadKey(S3ObjectSummary obj) throws IOException {
-    return S3FileVec.make(encodePath(obj.getBucketName(), obj.getKey()),obj.getSize());
+  public static Key loadKey(ObjectListing listing, S3ObjectSummary obj) throws IOException {
+    // Note: Some of S3 implementations does not fill bucketName of returned object (for example, Minio).
+    // So guess it based on returned ObjectListing
+    String bucketName = obj.getBucketName() == null ? listing.getBucketName() : obj.getBucketName();
+    return S3FileVec.make(encodePath(bucketName, obj.getKey()),obj.getSize());
   }
 
 
@@ -129,7 +132,7 @@ public final class PersistS3 extends Persist {
     for( S3ObjectSummary obj : listing.getObjectSummaries() ) {
       try {
         if (doImport) {
-          Key k = loadKey(obj);
+          Key k = loadKey(listing, obj);
           succ.add(k.toString());
         } else {
           succ.add(obj.getKey());
@@ -325,15 +328,16 @@ public final class PersistS3 extends Persist {
   }
 
   static  AmazonS3Client configureClient(AmazonS3Client s3Client) {
-    if (System.getProperty(S3_END_POINT) != null) {
-      String endPoint = System.getProperty(S3_END_POINT);
-      Log.debug("S3 endpoint specified: ", endPoint);
-      s3Client.setEndpoint(endPoint);
-    }
     if (System.getProperty(S3_REGION) != null) {
       String region = System.getProperty(S3_REGION);
       Log.debug("S3 region specified: ", region);
       s3Client.setRegion(RegionUtils.getRegion(region));
+    }
+    // Region overrides end-point settings
+    if (System.getProperty(S3_END_POINT) != null) {
+      String endPoint = System.getProperty(S3_END_POINT);
+      Log.debug("S3 endpoint specified: ", endPoint);
+      s3Client.setEndpoint(endPoint);
     }
     if (System.getProperty(S3_ENABLE_PATH_STYLE) != null && Boolean.valueOf(System.getProperty(S3_ENABLE_PATH_STYLE))) {
       Log.debug("S3 path style access enabled");
