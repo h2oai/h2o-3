@@ -42,9 +42,11 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
   // Number of columns in the training set (n)
   private transient int _ncolA;
-  private transient int _ncolY;    // With categoricals expanded into 0/1 indicator cols
 
-  // Number of columns in the resulting matrix X (k)
+  // Number of columns in the resulting matrix Y, taking into account expansion of the categoricals
+  private transient int _ncolY;
+
+  // Number of columns in the resulting matrix X (k), also number of rows in Y.
   private transient int _ncolX;
 
   // Loss function for each column
@@ -54,19 +56,35 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Clustering}; }
   public enum Initialization { Random, SVD, PlusPlus, User }
 
-  // Called from an http request
-  public GLRM(GLRMParameters parms) { super(parms); init(false); }
-  public GLRM(GLRMParameters parms, Job<GLRMModel> job) { super(parms, job); init(false); }
-  public GLRM(boolean startup_once) { super(new GLRMParameters(), startup_once); }
 
+  //--------------------------------------------------------------------------------------------------------------------
+  // Model initialization
+  //--------------------------------------------------------------------------------------------------------------------
+
+  // Called from an http request
+  public GLRM(GLRMParameters parms) {
+    super(parms);
+    init(false);
+  }
+  public GLRM(GLRMParameters parms, Job<GLRMModel> job) {
+    super(parms, job);
+    init(false);
+  }
+  public GLRM(boolean startup_once) {
+    super(new GLRMParameters(), startup_once);
+  }
+
+  /**
+   * Validate all parameters, and prepare the model for training.
+   */
   @Override public void init(boolean expensive) {
     super.init(expensive);
 
-    _parms._loss.fillFromParameters(this);
-    if (!_parms._loss.isForNumeric())
-      error("_loss", _parms._loss + " is not a univariate loss function");
-    if (!_parms._multi_loss.isForCategorical())
-      error("_multi_loss", _parms._multi_loss + " is not a multivariate loss function");
+    _ncolX = _parms._k;
+    _ncolA = _train == null? -1 : _train.numCols();
+    _ncolY = _train == null? -1 : LinearAlgebraUtils.numColsExp(_train, true);
+
+    initLoss();
 
     if (_parms._gamma_x < 0) error("_gamma_x", "gamma must be a non-negative number");
     if (_parms._gamma_y < 0) error("_gamma_y", "gamma_y must be a non-negative number");
@@ -82,12 +100,11 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       error("_recover_svd", "_recover_svd and _impute_original cannot both be true if _train is transformed");
 
     if (_train == null) return;
-    if (_train.numCols() < 2)
+    if (_ncolA < 2)
       error("_train", "_train must have more than one column");
     if (_valid != null && _valid.numRows() != _train.numRows())
       error("_valid", "_valid must have same number of rows as _train");
 
-    _ncolY = LinearAlgebraUtils.numColsExp(_train, true);
     if (_ncolY > 5000)
       warn("_train", "_train has " + _ncolY + " columns when categoricals are expanded. Algorithm may be slow.");
 
@@ -98,7 +115,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
       Frame user_y = _parms._user_y.get();
       assert null != user_y;
-      int user_y_cols = _parms._expand_user_y ? _train.numCols() : _ncolY;
+      int user_y_cols = _parms._expand_user_y ? _ncolA : _ncolY;
 
       // Check dimensions of user-specified initial Y
       if (user_y.numCols() != user_y_cols)
@@ -108,14 +125,14 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       else {
         int zero_vec = 0;
         Vec[] centersVecs = user_y.vecs();
-        for (int c = 0; c < _train.numCols(); c++) {
+        for (int c = 0; c < _ncolA; c++) {
           if (centersVecs[c].naCnt() > 0) {
             error("_user_y", "The user-specified Y cannot contain any missing values");
             break;
           } else if (centersVecs[c].isConst() && centersVecs[c].max() == 0)
             zero_vec++;
         }
-        if (zero_vec == _train.numCols())
+        if (zero_vec == _ncolA)
           error("_user_y", "The user-specified Y cannot all be zero");
       }
     }
@@ -146,61 +163,69 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       }
     }
 
-    for (int i = 0; i < _train.numCols(); i++) {
+    for (int i = 0; i < _ncolA; i++) {
       if (_train.vec(i).isString() || _train.vec(i).isUUID())
         throw H2O.unimpl("GLRM cannot handle String or UUID data");
     }
-
-    if (_parms._loss_by_col != null) {
-      if (_parms._loss_by_col.length > _train.numCols())
-        error("_loss_by_col", "Number of loss functions specified must be <= " + _train.numCols());
-      else if (_parms._loss_by_col_idx == null && _parms._loss_by_col.length == _train.numCols()) {
-        for(int i = 0; i < _parms._loss_by_col.length; i++) {
-          // Check that specified column loss is in allowable set for column type
-          if (_train.vec(i).isNumeric() && !_parms._loss_by_col[i].isForNumeric())
-            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to numeric column " + i);
-          else if (_train.vec(i).isCategorical() && !_parms._loss_by_col[i].isForCategorical())
-            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to categorical column " + i);
-          else if (!_train.vec(i).isBinary() && _parms._loss_by_col[i].isForBinary())
-            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to non-binary column " + i);
-        }
-        _lossFunc = _parms._loss_by_col;
-      } else if (_parms._loss_by_col_idx != null && _parms._loss_by_col.length == _parms._loss_by_col_idx.length) {
-        // Set default loss function for each column
-        _lossFunc = new GlrmLoss[_train.numCols()];
-        for(int i = 0; i < _lossFunc.length; i++)
-          _lossFunc[i] = _train.vec(i).isCategorical() ? _parms._multi_loss : _parms._loss;
-
-        for(int i = 0; i < _parms._loss_by_col.length; i++) {
-          // Check that specified column loss is in allowable set for column type
-          int cidx = _parms._loss_by_col_idx[i];
-          if (cidx < 0 || cidx >= _train.numCols())
-            error("_loss_by_col_idx", "Column index " + cidx + " must be in [0," + _train.numCols() + ")");
-          else if (_train.vec(cidx).isNumeric() && !_parms._loss_by_col[i].isForNumeric())
-            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to numeric column " + cidx);
-          else if (_train.vec(cidx).isCategorical() && !_parms._loss_by_col[i].isForCategorical())
-            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to categorical column " + cidx);
-          else if (!_train.vec(cidx).isBinary() && _parms._loss_by_col[i].isForBinary())
-            error("_loss_by_col", "Loss function " + _parms._loss_by_col[i] + " cannot apply to non-binary column " + cidx);
-          else
-            _lossFunc[_parms._loss_by_col_idx[i]] = _parms._loss_by_col[i];
-        }
-      } else
-        error("_loss_by_col_idx", "Must specify same number of column indices as loss functions");
-    } else {
-      if (_parms._loss_by_col_idx != null)
-        error("_loss_by_col", "Must specify loss function for each column");
-      else {
-        // Set default loss function for each column
-        _lossFunc = new GlrmLoss[_train.numCols()];
-        for (int i = 0; i < _lossFunc.length; i++)
-          _lossFunc[i] = _train.vec(i).isCategorical() ? _parms._multi_loss : _parms._loss;
-      }
-    }
-
-    _ncolX = _parms._k;
-    _ncolA = _train.numCols();
   }
+
+  /** Validate all Loss-related parameters, and fill in the `_lossFunc` array. */
+  private void initLoss() {
+    // First validate the parameters that do not require access to the training frame
+    if (!_parms._loss.isForNumeric())
+      error("_loss", _parms._loss + " is not a numeric loss function");
+    if (!_parms._multi_loss.isForCategorical())
+      error("_multi_loss", _parms._multi_loss + " is not a multivariate loss function");
+    if (_parms._loss_by_col != null && _parms._loss_by_col_idx != null &&
+            _parms._loss_by_col.length != _parms._loss_by_col_idx.length)
+      error("_loss_by_col", "Sizes of arrays _loss_by_col and _loss_by_col_idx must coincide");
+    if (_parms._period <= 0)
+      error("_period", "_period must be a positive integer");
+
+    if (_train == null) return;
+
+    // Initialize the default loss functions for each column
+    _lossFunc = new GlrmLoss[_ncolA];
+    for (int i = 0; i < _ncolA; i++)
+      _lossFunc[i] = _train.vec(i).isCategorical() ? _parms._multi_loss : _parms._loss;
+
+    // If _loss_by_col is provided, then override loss functions on the specified columns
+    if (_parms._loss_by_col != null) {
+      int num_loss_by_cols = _parms._loss_by_col.length;
+      if (num_loss_by_cols > _ncolA)
+        error("_loss_by_col", "Number of loss functions specified must be <= " + _ncolA);
+      else if (num_loss_by_cols == _ncolA && _parms._loss_by_col_idx == null)
+        _lossFunc = _parms._loss_by_col;
+      else if (_parms._loss_by_col_idx != null && num_loss_by_cols == _parms._loss_by_col_idx.length) {
+        for (int i = 0; i < num_loss_by_cols; i++) {
+          int cidx = _parms._loss_by_col_idx[i];
+          if (cidx < 0 || cidx >= _ncolA)
+            error("_loss_by_col_idx", "Column index " + cidx + " must be in [0," + _ncolA + ")");
+          else
+            _lossFunc[cidx] = _parms._loss_by_col[i];
+        }
+      }
+    } else if (_parms._loss_by_col_idx != null)
+      error("_loss_by_col_idx", "May only be specified together with _loss_by_col");
+
+    // Check that all loss functions correspond to their actual type
+    for (int i = 0; i < _ncolA; i++) {
+      Vec veci = _train.vec(i);
+      GlrmLoss lossi = _lossFunc[i];
+      if (veci.isNumeric() && !lossi.isForNumeric())
+        error("_loss_by_col", "Loss function " + lossi + " cannot be applied to numeric column " + i);
+      if (veci.isCategorical() && !lossi.isForCategorical())
+        error("_loss_by_col", "Loss function " + lossi + " cannot be applied to categorical column " + i);
+      if (veci.isBinary() && !lossi.isForBinary())
+        error("_loss_by_col", "Loss function " + lossi + " cannot be applied to binary column " + i);
+
+      // For "Periodic" loss function supply the period. We currently have no support for different periods for
+      // different columns.
+      if (lossi == GlrmLoss.Periodic)
+        lossi.setParameters(_parms._period);
+    }
+  }
+
 
   // Squared Frobenius norm of a matrix (sum of squared entries)
   public static double frobenius2(double[][] x) {

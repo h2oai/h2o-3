@@ -86,11 +86,6 @@ public enum GlrmLoss {
 
     private double f;
 
-    @Override public void fillFromParameters(GLRM glrm) {
-      int period = glrm._parms._period;
-      if (period <= 0) glrm.error("_period", "_period must be a positive integer");
-      f = 2 * Math.PI / period;
-    }
     @Override public double loss(double u, double a) {
       return 1 - Math.cos((u - a)*f);
     }
@@ -99,6 +94,10 @@ public enum GlrmLoss {
     }
     @Override public double impute(double u) {
       return u;
+    }
+
+    @Override public void setParameters(int period) {
+      f = 2 * Math.PI / period;
     }
   },
 
@@ -218,15 +217,6 @@ public enum GlrmLoss {
   abstract public boolean isForCategorical();
   abstract public boolean isForBinary();
 
-  /**
-   * This function should be invoked by the init() method to let the Loss object retrieve any additional parameters
-   * that it might need. The parameters will also be validated, and will call `glrm.error()` if that are not
-   * appropriate.
-   * Note: this function is rather a hack. Currently it is used only for Periodic loss function; however we do not
-   * support a way to have such loss function for one of the `_loss_by_col` overrides...
-   */
-  public void fillFromParameters(GLRM glrm) {}
-
   /** Loss function for numeric variables */
   public double loss(double u, double a) { throw new UnsupportedOperationException(); }
 
@@ -245,4 +235,6 @@ public enum GlrmLoss {
   /** \argmin_a L(u, a): Data imputation for categorical values {0, 1, 2, ...} */
   public int mimpute(double[] u) { throw new UnsupportedOperationException(); }
 
+  /** Initialize additional parameters on the loss function. Currently used by Periodic class only. */
+  public void setParameters(int p) { throw new UnsupportedOperationException(); }
 }
