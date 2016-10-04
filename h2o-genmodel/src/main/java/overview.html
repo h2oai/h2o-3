@@ -123,15 +123,17 @@ public class main {
     //                                             .setConvertUnknownCategoricalLevelsToNa(true));
 
     RowData row = new RowData();
-    row.put("CAPSULE", "0");
-    row.put("AGE", "68");
-    row.put("RACE", "2");
-    row.put("DCAPS", "2");
-    row.put("VOL", "0");
-    row.put("GLEASON", "6");
+     row.put("Year", "1987");
+     row.put("Month", "10");
+     row.put("DayofMonth", "14");
+     row.put("DayOfWeek", "3");
+     row.put("CRSDepTime", "730");
+     row.put("UniqueCarrier", "PS");
+     row.put("Origin", "SAN");
+     row.put("Dest", "SFO");
 
     BinomialModelPrediction p = model.predictBinomial(row);
-    System.out.println("Label (aka prediction) of tumor penetration of prostatic capsule " + p.label);
+    System.out.println("Label (aka prediction) is flight departure delayed: " + p.label);
     System.out.print("Class probabilities: ");
     for (int i = 0; i < p.classProbabilities.length; i++) {
       if (i > 0) {
