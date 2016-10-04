@@ -352,10 +352,7 @@ public final class ComputationState {
           classcols[k++] = cols[i++]-c*N;
         classcols = ArrayUtils.sortedMerge(oldActiveCols,Arrays.copyOf(classcols,k));
         sum += classcols.length;
-        if(classcols.length < 30)
-          System.out.println("active cols for class " + c + " = " + Arrays.toString(classcols));
         _activeDataMultinomial[c] = _dinfo.filterExpandedColumns(classcols);
-
       }
       assert _parms._max_active_predictors == -1 || sum <= _parms._max_active_predictors + _nclasses:"sum = " + sum + " max_active_preds = " + _parms._max_active_predictors + ", nclasses = " + _nclasses;
       _allIn = sum == N*_nclasses;
