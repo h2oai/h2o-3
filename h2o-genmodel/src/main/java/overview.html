@@ -326,23 +326,22 @@ and regression models, but 50% slower than MOJOs for multinomial models.
 <a name="quickstartmojo"></a>
 <h1><u>MOJO Quick start</u></h1>
 
-<h3>Step 1 (in terminal window 1): Start H2O</h3>
-<pre>
-$ java -jar h2o.jar
-</pre>
+MOJOs are built in much the same way as POJOs. The example code below
+shows how to start H2O and then build a model using either R or Python.
 
-<h3>Step 2: Build and extract the model</h3>
+<h3>Step 1: Start H2O, then build and extract the model</h3>
+
 <p></p>
-Note that MOJOs are not yet available in Flow. The examples below describe how to create a
-model using R and Python. The <code>download_mojo()</code> function saves the model as a zip file. You can
-upzip the file to view the options used to build the file along with each tree built in the model.
-Note that the each tree file is saved as a binary file type.
+The examples below describe how to create a model using R and Python. The
+<code>download_mojo()</code> function saves the model as a zip file. You can
+unzip the file to view the options used to build the file along with each
+tree built in the model. Note that each tree file is saved as a binary file type.
 
 <h5>Build and extract a model using R</h5>
 
 MOJOs are only supported for GBM and DRF models.
 
-<ol><li>Open a new terminal window (H2O must still be running in the first window) and start r.</li>
+<ol><li>Open a terminal window and start r.</li>
     <li>Run the following commands to build a simple GBM model.
         <pre>
         library(h2o)
@@ -357,16 +356,19 @@ MOJOs are only supported for GBM and DRF models.
                         ntrees=100,
                         max_depth=4,
                         learn_rate=0.1)
-        h2o.download_mojo(model)
-        [1] "MOJO file name: GBM_model_R_1475248925871_74.zip"
-        [1] "MOJO written to: /Users/user/GBM_model_R_1475248925871_74.zip"
+        </pre>
+    </li>
+    <li>Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
+        <pre>modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
+		print("Model saved to " + modelfile)
+		Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
         </pre>
     </li>
 </ol>
 
 <h5>Build and extract a model using Python</h5>
 
-<ol><li>Open a new terminal window (H2O must still be running in the first window) and start python.</li>
+<ol><li>Open a new terminal window and start python.</li>
     <li>Run the following commands to build a simple GBM model.
         <pre>
         import h2o
@@ -381,35 +383,32 @@ MOJOs are only supported for GBM and DRF models.
         model.train(y="CAPSULE",
                     x=["AGE","RACE","PSA","GLEASON"],
                     training_frame=h2o_df)
-        model.download_mojo()
-        u'/Users/user/GBM_model_python_1475248925871_888.zip'
+        </pre>
+    </li>
+    <li>
+        Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
+        <pre>
+        modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
+		print("Model saved to " + modelfile)
+		Model saved to /Users/user/GBM_model_python_1475248925871_888.zip
         </pre>
     </li>
 </ol>
 
-<h3>Step 3: Compile and Run the MOJO</h3>
+<h3>Step 2: Compile and Run the MOJO</h3>
 
-<p></p>
-<b>Note</b>: The remaining instructions assume that the MOJO model was downloaded to your home directory.
 <p></p>
 
 <ol>
-    <li>Download model pieces in a *new* terminal window - H2O must still be running in terminal window #1.
-        Note that this example downloads the GBM model that was created above using R.
+    <li>Open a *new* terminal window and change directories to the **experiment** folder:
         <pre>
-        $ mkdir experiment
         $ cd experiment
-        $ mv ~/GBM_model_R_1475248925871_74.zip .
-        $ curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
-        % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
-        Dload  Upload   Total   Spent    Left  Speed
-        100 77650  100 77650    0     0  15.4M      0 --:--:-- --:--:-- --:--:-- 37.0M
         </pre>
     </li>
 
-    <li>Create your main program in terminal window #2 by creating a new file called main.java
-        (for example, using "vim main.java") with the following contents. Note that this file
-        references the GBM model created above using R.
+    <li>Create your main program in the **experiment** folder by creating a new file
+        called main.java (for example, using "vim main.java"). Include the following contents.
+        Note that this file references the GBM model created above using R.
         <pre>
         import java.io.*;
         import hex.genmodel.easy.RowData;
@@ -455,6 +454,5 @@ The following output displays:
 <p></p>
 <pre>Has penetrated the prostatic capsule (1 yes; 0 no): 0
 Class probabilities: 0.8059929056296662,0.19400709437033375</pre>
-
 
 </body>
