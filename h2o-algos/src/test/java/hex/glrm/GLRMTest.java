@@ -114,8 +114,8 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._gamma_x = 0.25;
       parms._gamma_y = 0.5;
-      parms._regularization_x = GLRMParameters.Regularizer.Quadratic;
-      parms._regularization_y = GLRMParameters.Regularizer.L1;
+      parms._regularization_x = GlrmRegularizer.Quadratic;
+      parms._regularization_y = GlrmRegularizer.L1;
       parms._k = 10;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._max_iterations = 1;
@@ -157,8 +157,8 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._gamma_x = parms._gamma_y = 0.5;
-      parms._regularization_x = GLRMParameters.Regularizer.Quadratic;
-      parms._regularization_y = GLRMParameters.Regularizer.Quadratic;
+      parms._regularization_x = GlrmRegularizer.Quadratic;
+      parms._regularization_y = GlrmRegularizer.Quadratic;
       parms._k = 3;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.User;
@@ -189,8 +189,8 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 10;
       parms._gamma_x = parms._gamma_y = 0.25;
-      parms._regularization_x = GLRMParameters.Regularizer.Quadratic;
-      parms._regularization_y = GLRMParameters.Regularizer.Quadratic;
+      parms._regularization_x = GlrmRegularizer.Quadratic;
+      parms._regularization_y = GlrmRegularizer.Quadratic;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.SVD;
       parms._min_step_size = 1e-5;
@@ -261,8 +261,8 @@ public class GLRMTest extends TestUtil {
       parms._train = train._key;
       parms._k = 4;
       parms._loss = GlrmLoss.Huber;
-      parms._regularization_x = GLRMParameters.Regularizer.NonNegative;
-      parms._regularization_y = GLRMParameters.Regularizer.NonNegative;
+      parms._regularization_x = GlrmRegularizer.NonNegative;
+      parms._regularization_y = GlrmRegularizer.NonNegative;
       parms._gamma_x = parms._gamma_y = 1;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._init = GLRM.Initialization.PlusPlus;
@@ -314,8 +314,8 @@ public class GLRMTest extends TestUtil {
         parms._train = train._key;
         parms._k = train.numCols();
         parms._loss = GlrmLoss.Quadratic;
-        parms._regularization_x = GLRMParameters.Regularizer.None;
-        parms._regularization_y = GLRMParameters.Regularizer.None;
+        parms._regularization_x = GlrmRegularizer.None;
+        parms._regularization_y = GlrmRegularizer.None;
         parms._transform = DataInfo.TransformType.STANDARDIZE;
         parms._init = GLRM.Initialization.PlusPlus;
         parms._max_iterations = 1000;
@@ -409,8 +409,8 @@ public class GLRMTest extends TestUtil {
 
       Log.info("\nNon-negative matrix factorization");
       parms._gamma_x = parms._gamma_y = 1;
-      parms._regularization_x = GLRMParameters.Regularizer.NonNegative;
-      parms._regularization_y = GLRMParameters.Regularizer.NonNegative;
+      parms._regularization_x = GlrmRegularizer.NonNegative;
+      parms._regularization_y = GlrmRegularizer.NonNegative;
       try {
         job = new GLRM(parms);
         model = job.trainModel().get();
@@ -425,8 +425,8 @@ public class GLRMTest extends TestUtil {
 
       Log.info("\nOrthogonal non-negative matrix factorization");
       parms._gamma_x = parms._gamma_y = 1;
-      parms._regularization_x = GLRMParameters.Regularizer.OneSparse;
-      parms._regularization_y = GLRMParameters.Regularizer.NonNegative;
+      parms._regularization_x = GlrmRegularizer.OneSparse;
+      parms._regularization_y = GlrmRegularizer.NonNegative;
       try {
         job = new GLRM(parms);
         model = job.trainModel().get();
@@ -441,8 +441,8 @@ public class GLRMTest extends TestUtil {
 
       Log.info("\nQuadratic clustering (k-means)");
       parms._gamma_x = 1; parms._gamma_y = 0;
-      parms._regularization_x = GLRMParameters.Regularizer.UnitOneSparse;
-      parms._regularization_y = GLRMParameters.Regularizer.None;
+      parms._regularization_x = GlrmRegularizer.UnitOneSparse;
+      parms._regularization_y = GlrmRegularizer.None;
       try {
         job = new GLRM(parms);
         model = job.trainModel().get();
@@ -457,8 +457,8 @@ public class GLRMTest extends TestUtil {
 
       Log.info("\nQuadratic mixture (soft k-means)");
       parms._gamma_x = 1; parms._gamma_y = 0;
-      parms._regularization_x = GLRMParameters.Regularizer.UnitOneSparse;
-      parms._regularization_y = GLRMParameters.Regularizer.None;
+      parms._regularization_x = GlrmRegularizer.UnitOneSparse;
+      parms._regularization_y = GlrmRegularizer.None;
       try {
         job = new GLRM(parms);
         model = job.trainModel().get();
