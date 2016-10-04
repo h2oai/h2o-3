@@ -67,7 +67,7 @@ def deepwater_custom_alexnet():
   alexnet(nclasses).save("/tmp/symbol_alexnet-py.json")
 
   print("Importing the Alexnet model architecture for training in H2O")
-  model = H2ODeepWaterEstimator(epochs=100, rate=1e-2, mini_batch_size=128, rate_annealing=1e-5,
+  model = H2ODeepWaterEstimator(epochs=100, learning_rate=1e-2, mini_batch_size=128, learning_rate_annealing=1e-5,
                                 network='user', network_definition_file="/tmp/symbol_alexnet-py.json", image_shape=[224,224], channels=3,
                                 score_interval=0, train_samples_per_iteration=1000,
                                 gpu=True)
