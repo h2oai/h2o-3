@@ -2143,9 +2143,11 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
 
 #' @rdname h2o.cor
 #' @export
-cor <- function(x, y = NULL,na.rm = FALSE, use)  {
-  if( is.H2OFrame(x) ) h2o.cor(x,y)
-  else stats::cor(x,y)
+cor <- function (x, ...)
+{
+    if (is.H2OFrame(x))
+        h2o.cor(x, ...)
+    else stats::cor(x, ...)
 }
 
 #'

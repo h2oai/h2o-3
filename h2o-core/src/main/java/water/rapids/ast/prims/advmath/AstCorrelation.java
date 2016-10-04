@@ -2,9 +2,7 @@ package water.rapids.ast.prims.advmath;
 
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -12,7 +10,6 @@ import water.rapids.vals.ValNum;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.util.ArrayUtils;
-import java.util.Arrays;
 
 /**
  * Calculate Pearson's Correlation Coefficient between columns of a frame
@@ -60,6 +57,7 @@ public class AstCorrelation extends AstPrimitive {
       default:
         throw new IllegalArgumentException("unknown use mode: " + use);
     }
+
     return fry.numRows() == 1 ? scalar(frx, fry, mode) : array(frx, fry, mode);
   }
 
@@ -69,7 +67,17 @@ public class AstCorrelation extends AstPrimitive {
       throw new IllegalArgumentException("Single rows must have the same number of columns, found " + frx.numCols() + " and " + fry.numCols());
     Vec vecxs[] = frx.vecs();
     Vec vecys[] = fry.vecs();
-    double xmean = 0, ymean = 0, xvar = 0, yvar = 0, xsd = 0, ysd = 0, ncols = frx.numCols(), NACount = 0, xval, yval, ss = 0;
+    double xmean = 0;
+    double ymean = 0;
+    double xvar = 0;
+    double yvar = 0;
+    double xsd;
+    double ysd;
+    double ncols = fry.numCols();
+    double NACount = 0;
+    double xval;
+    double yval;
+    double ss = 0;
     for (int r = 0; r < ncols; r++) {
       xval = vecxs[r].at(0);
       yval = vecys[r].at(0);
@@ -94,77 +102,174 @@ public class AstCorrelation extends AstPrimitive {
         ss += (vecxs[r].at(0) - xmean) * (vecys[r].at(0) - ymean);
       }
     }
-    xsd = Math.sqrt(xvar / (frx.numRows())); //Sample Standard Deviation
-    ysd = Math.sqrt(yvar / (fry.numRows())); //Sample Standard Deviation
-    double cor_denom = xsd * ysd;
+    xsd = Math.sqrt(xvar / (ncols - 1 - NACount)); //Sample Standard Deviation
+    ysd = Math.sqrt(yvar / (ncols - 1 - NACount)); //Sample Standard Deviation
+    double denom = xsd * ysd; //sd(x) * sd(y)
 
     if (NACount != 0) {
       if (mode.equals(Mode.AllObs)) throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
       if (mode.equals(Mode.Everything)) return new ValNum(Double.NaN);
     }
 
-    for (int r = 0; r < ncols; r++) {
-      xval = vecxs[r].at(0);
-      yval = vecys[r].at(0);
-      if (!(Double.isNaN(xval) || Double.isNaN(yval)))
-        ss += (vecxs[r].at(0) - xmean) * (vecys[r].at(0) - ymean);
-    }
-
-    return new ValNum(ss / cor_denom); //Pearson's Correlation Coefficient
+    return new ValNum((ss / (ncols - NACount - 1)) / denom); //Pearson's Correlation Coefficient
   }
 
-  // Correlation Matrix.
-  // Compute correlation between all columns from each Frame against each other.
-  // Return a matrix of correlations which is frx.numCols wide and fry.numCols tall.
+  // Matrix correlation.  Compute correlation between all columns from each Frame
+  // against each other.  Return a matrix of correlations which is frx.numCols
+  // wide and fry.numCols tall.
   private Val array(Frame frx, Frame fry, Mode mode) {
     Vec[] vecxs = frx.vecs();
     int ncolx = vecxs.length;
     Vec[] vecys = fry.vecs();
     int ncoly = vecys.length;
 
-    if (mode.equals(Mode.AllObs)) {
-      for (Vec v : vecxs)
-        if (v.naCnt() != 0)
-          throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
+    if (mode.equals(Mode.Everything) || mode.equals(Mode.AllObs)) {
+
+      if (mode.equals(Mode.AllObs)) {
+        for (Vec v : vecxs)
+          if (v.naCnt() != 0)
+            throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
+      }
+
+      //Set up CoVarTask
+      CoVarTask[] cvs = new CoVarTask[ncoly];
+
+      //Get mean of x vecs
+      double[] xmeans = new double[ncolx];
+      for (int x = 0; x < ncolx; x++) {
+        xmeans[x] = vecxs[x].mean();
+      }
+
+      //Set up double arrays to capture sd(x), sd(y) and sd(x) * sd(y)
+      double[] sigmay = new double[ncoly];
+      double[] sigmax = new double[ncolx];
+      double[][] denom = new double[ncoly][ncolx];
+
+      // Launch tasks; each does all Xs vs one Y
+      for (int y = 0; y < ncoly; y++) {
+        //Get covariance between x and y
+        cvs[y] = new CoVarTask(vecys[y].mean(), xmeans).dfork(new Frame(vecys[y]).add(frx));
+        //Get sigma of y vecs
+        sigmay[y] = vecys[y].sigma();
+      }
+
+      //Get sigma of x vecs
+      for (int x = 0; x < ncolx; x++) {
+        sigmax[x] = vecxs[x].sigma();
+      }
+
+      //Denominator for correlation calculation is sigma_y * sigma_x (All x sigmas vs one Y)
+      for (int y = 0; y < ncoly; y++) {
+        for (int x = 0; x < ncolx; x++) {
+          denom[y][x] = sigmay[y] * sigmax[x];
+        }
+      }
+
+      // 1-col returns scalar
+      if (ncolx == 1 && ncoly == 1) {
+        return new ValNum((cvs[0].getResult()._covs[0] / (fry.numRows() - 1)) / denom[0][0]);
+      }
+
+      //Gather final result, which is the correlation coefficient per column
+      Vec[] res = new Vec[ncoly];
+      Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
+      for (int y = 0; y < ncoly; y++) {
+        res[y] = Vec.makeVec(ArrayUtils.div(ArrayUtils.div(cvs[y].getResult()._covs, (fry.numRows() - 1)), denom[y]), keys[y]);
+      }
+
+      return new ValFrame(new Frame(fry._names, res));
+    } else { //if (mode.equals(Mode.CompleteObs))
+
+      //Omit NA rows between X and Y.
+      //This will help with cov, sigma & mean calculations later as we only want to calculate cov, sigma, & mean
+      //for rows with no NAs
+      Frame frxy = new Frame(frx).add(fry);
+      Frame frxy_naomit = new MRTask() {
+        private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
+          for (int i = 0; i < cs.length; ++i) {
+            if (cs[i] instanceof CStrChunk) ncs[i].addStr(cs[i], row);
+            else if (cs[i] instanceof C16Chunk) ncs[i].addUUID(cs[i], row);
+            else if (cs[i].hasFloat()) ncs[i].addNum(cs[i].atd(row));
+            else ncs[i].addNum(cs[i].at8(row), 0);
+          }
+        }
+
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+          int col;
+          for (int row = 0; row < cs[0]._len; ++row) {
+            for (col = 0; col < cs.length; ++col)
+              if (cs[col].isNA(row)) break;
+            if (col == cs.length) copyRow(row, cs, ncs);
+          }
+        }
+      }.doAll(frxy.types(), frxy).outputFrame(frxy.names(), frxy.domains());
+
+      //Collect new vecs that do not contain NA rows
+      Frame frx_naomit = frxy_naomit.subframe(0, ncolx);
+      Frame fry_naomit = frxy_naomit.subframe(ncolx,frxy_naomit.vecs().length);
+      Vec[] vecxs_naomit = frx_naomit.vecs();
+      int ncolx_naomit = vecxs_naomit.length;
+      Vec[] vecys_naomit = fry_naomit.vecs();
+      int ncoly_naomit = vecys_naomit.length;
+
+      //Set up CoVarTask
+      CoVarTask[] cvs = new CoVarTask[ncoly_naomit];
+
+      //Get mean of X vecs
+      double[] xmeans = new double[ncolx_naomit];
+      for (int x = 0; x < ncolx_naomit; x++) {
+        xmeans[x] = vecxs_naomit[x].mean();
+      }
+
+      //Set up double arrays to capture sd(x), sd(y) and sd(x) * sd(y)
+      double[] sigmay = new double[ncoly_naomit];
+      double[] sigmax = new double[ncolx_naomit];
+      double[][] denom = new double[ncoly_naomit][ncolx_naomit];
+
+      // Launch tasks; each does all Xs vs one Y
+      for (int y = 0; y < ncoly_naomit; y++) {
+        //Get covariance between x and y
+        cvs[y] = new CoVarTask(vecys_naomit[y].mean(), xmeans).dfork(new Frame(vecys_naomit[y]).add(frx_naomit));
+        //Get sigma of y vecs
+        sigmay[y] = vecys_naomit[y].sigma();
+      }
+
+      //Get sigma of x vecs
+      for (int x = 0; x < ncolx_naomit; x++) {
+        sigmax[x] = vecxs_naomit[x].sigma();
+      }
+
+      //Denominator for correlation calculation is sigma_y * sigma_x (All x sigmas vs one Y)
+      for (int y = 0; y < ncoly_naomit; y++) {
+        for (int x = 0; x < ncolx_naomit; x++) {
+          denom[y][x] = sigmay[y] * sigmax[x];
+        }
+      }
+
+      // 1-col returns scalar
+      if (ncolx_naomit == 1 && ncoly_naomit == 1) {
+        return new ValNum((cvs[0].getResult()._covs[0] / (fry_naomit.numRows() - 1)) / denom[0][0]);
+      }
+
+      //Gather final result, which is the correlation coefficient per column
+      Vec[] res = new Vec[ncoly_naomit];
+      Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly_naomit);
+      for (int y = 0; y < ncoly_naomit; y++) {
+        res[y] = Vec.makeVec(ArrayUtils.div(ArrayUtils.div(cvs[y].getResult()._covs, (fry_naomit.numRows() - 1)), denom[y]), keys[y]);
+      }
+
+      return new ValFrame(new Frame(fry_naomit._names, res));
     }
-
-
-    CorTaskMean taskMean = new CorTaskMean(ncoly, ncolx, mode.equals(Mode.CompleteObs)?true:false).doAll(new Frame(fry).add(frx));
-
-    long NACount = taskMean._NACount;
-    double[] ymeans = ArrayUtils.div(taskMean._ysum, fry.numRows() - NACount);
-    double[] xmeans = ArrayUtils.div(taskMean._xsum, fry.numRows() - NACount);
-
-    CorTask[] cvs = new CorTask[ncoly];
-
-    // Launch tasks; each does all Xs vs one Y
-    for (int y = 0; y < ymeans.length; y++)
-      cvs[y] = new CorTask(ymeans[y], xmeans,true).dfork(new Frame(vecys[y]).add(frx));
-
-    // 1-col returns scalar
-    if (ncolx == 1 && ncoly == 1) {
-      return new ValNum(cvs[0].getResult()._cors[0] / cvs[0].getResult()._denom[0]);
-    }
-
-    // Gather all the Xs-vs-Y covariance arrays; divide by rows
-    Vec[] res = new Vec[ncoly];
-    Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly);
-    for (int y = 0; y < ncoly; y++)
-      res[y] = Vec.makeVec(ArrayUtils.div(cvs[y].getResult()._cors, cvs[y].getResult()._denom), keys[y]);
-
-    return new ValFrame(new Frame(fry._names, res));
   }
 
-  private static class CorTask extends MRTask<CorTask> {
-    double[] _cors;
-    double[] _denom;
+  private static class CoVarTask extends MRTask<CoVarTask> {
+    double[] _covs;
     final double _xmeans[], _ymean;
-    boolean _completeObs;
 
-    CorTask(double ymean, double[] xmeans, boolean completeObs) {
+    CoVarTask(double ymean, double[] xmeans) {
       _ymean = ymean;
       _xmeans = xmeans;
-      _completeObs = completeObs;
     }
 
     @Override
@@ -172,113 +277,21 @@ public class AstCorrelation extends AstPrimitive {
       final int ncolsx = cs.length - 1;
       final Chunk cy = cs[0];
       final int len = cy._len;
-      _cors = new double[ncolsx];
-      _denom = new double[ncolsx];
+      _covs = new double[ncolsx];
       double sum;
-      double varx;
-      double vary;
       for (int x = 0; x < ncolsx; x++) {
         sum = 0;
-        varx = 0;
-        vary = 0;
         final Chunk cx = cs[x + 1];
         final double xmean = _xmeans[x];
-        for (int row = 0; row < len; row++) {
-          if(_completeObs){
-            //If mode is "complete.obs", then we omit rows with NA's
-            //Checking for NA's and omitting any rows with an NA value.
-            //This same check is done for the mean vector (See CorTaskMean)
-            if(!(cx.isNA(row)) && !(cy.isNA(row))){
-              varx += (cx.atd(row) - xmean) * (cx.atd(row) - xmean); //Compute variance for x
-              vary += (cy.atd(row) - _ymean) * (cy.atd(row) - _ymean); //Compute variance for y
-              sum += (cx.atd(row) - xmean) * (cy.atd(row) - _ymean); //Compute sum of square
-            }
-          }
-          else {
-            varx += (cx.atd(row) - xmean) * (cx.atd(row) - xmean); //Compute variance for x
-            vary += (cy.atd(row) - _ymean) * (cy.atd(row) - _ymean); //Compute variance for y
-            sum += (cx.atd(row) - xmean) * (cy.atd(row) - _ymean); //Compute sum of square
-          }
-        }
-        _cors[x] = sum;
-        _denom[x] = Math.sqrt(varx) * Math.sqrt(vary);
+        for (int row = 0; row < len; row++)
+          sum += (cx.atd(row) - xmean) * (cy.atd(row) - _ymean);
+        _covs[x] = sum;
       }
     }
 
     @Override
-    public void reduce(CorTask cvt) {
-      ArrayUtils.add(_cors, cvt._cors);
-      ArrayUtils.add(_denom, cvt._denom);
-    }
-  }
-  
-  private static class CorTaskMean extends MRTask<CorTaskMean> {
-    double[] _xsum, _ysum;
-    long _NACount;
-    int _ncolx, _ncoly;
-    boolean _completeObs;
-
-    CorTaskMean(int ncoly, int ncolx, boolean completeObs) {
-      _ncolx = ncolx;
-      _ncoly = ncoly;
-      _completeObs = completeObs;
-    }
-
-    @Override
-    public void map(Chunk cs[]) {
-      _xsum = new double[_ncolx];
-      _ysum = new double[_ncoly];
-
-      double[] xvals = new double[_ncolx];
-      double[] yvals = new double[_ncoly];
-
-      double xval, yval;
-      boolean add;
-      int len = cs[0]._len;
-      for (int row = 0; row < len; row++) {
-        add = true;
-        //reset existing arrays to 0. Should save on GC.
-        Arrays.fill(xvals, 0);
-        Arrays.fill(yvals, 0);
-
-        for (int y = 0; y < _ncoly; y++) {
-          final Chunk cy = cs[y];
-          yval = cy.atd(row);
-          //if any yval along a row is NA and _completeObs is true, discard the entire row
-          if (Double.isNaN(yval) && _completeObs) {
-            _NACount++;
-            add = false;
-            break;
-          }
-          yvals[y] = yval;
-        }
-        if (add) {
-          for (int x = 0; x < _ncolx; x++) {
-            final Chunk cx = cs[x + _ncoly];
-            xval = cx.atd(row);
-            //if any yval along a row is NA and _completeObs is true, discard the entire row
-            if (Double.isNaN(xval) && _completeObs) {
-              _NACount++;
-              add = false;
-              break;
-            }
-            xvals[x] = xval;
-          }
-        }
-        //add is true iff row has been traversed and found no NAs among yvals and xvals
-        if (add) {
-          ArrayUtils.add(_xsum, xvals);
-          ArrayUtils.add(_ysum, yvals);
-        }
-      }
-    }
-
-    @Override
-    public void reduce(CorTaskMean cvt) {
-      ArrayUtils.add(_xsum, cvt._xsum);
-      ArrayUtils.add(_ysum, cvt._ysum);
-      _NACount += cvt._NACount;
+    public void reduce(CoVarTask cvt) {
+      ArrayUtils.add(_covs, cvt._covs);
     }
   }
 }
-
