@@ -303,8 +303,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       double[][] centers, centers_exp = null;
 
       if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
-        if (_parms._user_y != null) {   // Set Y = user-specified initial points
-          Vec[] yVecs = _parms._user_y.get().vecs();
+        Frame userYFrame = _parms._user_y == null? null : _parms._user_y.get();
+        if (userYFrame != null) {   // Set Y = user-specified initial points
+          Vec[] yVecs = userYFrame.vecs();
 
           if (_parms._expand_user_y) {   // Categorical cols must be one-hot expanded
             // Get the centers and put into array
@@ -370,9 +371,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         parms._impute_missing = true;
         parms._save_v_frame = false;
 
-        SVDModel svd = ModelCacheManager.<SVDModel, SVDParameters>get(parms);
+        SVDModel svd = ModelCacheManager.get(parms);
         if (svd == null) svd = new SVD(parms, _job).trainModelNested();
-//        if (stop_requested()) return null;    // breaks the code here due to no null checking later.
         model._output._init_key = svd._key;
 
         // Ensure SVD centers align with adapted training frame cols
@@ -409,9 +409,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         parms._seed = _parms._seed;
         parms._pred_indicator = true;
 
-        KMeansModel km = ModelCacheManager.<KMeansModel, KMeansModel.KMeansParameters>get(parms);
+        KMeansModel km = ModelCacheManager.get(parms);
         if (km == null) km = new KMeans(parms, _job).trainModelNested();
-//        if (stop_requested()) return null;
         model._output._init_key = km._key;
 
         // Score only if clusters well-defined and closed-form solution does not exist
@@ -433,7 +432,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       // If all centers are zero or any are NaN, initialize to standard Gaussian random matrix
       assert centers_exp != null && centers_exp.length == _parms._k && centers_exp[0].length == _ncolY :
               "Y must have " + _parms._k + " rows and " + _ncolY + " columns";
-      double frob = frobenius2(centers_exp);   // TODO: Don't need to calculate twice if k-means++
+      double frob = frobenius2(centers_exp);
       if (frob == 0 || Double.isNaN(frob)) {
         warn("_init", "Initialization failed. Setting initial Y to standard normal random matrix instead");
         centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
@@ -565,7 +564,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       boolean overwriteX = false;
 
       try {
-        init(true);   // Initialize parameters
+        init(true);   // Initialize + Validate parameters
         if (error_count() > 0) throw new IllegalArgumentException("Found validation errors: " + validationErrors());
 
         // The model to be built
@@ -606,8 +605,10 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Jam A and X into a single frame for distributed computation
         // [A,X,W] A is read-only training data, X is matrix from prior iteration, W is working copy of X this iteration
         fr = new Frame(_train);
-        for (int i = 0; i < _ncolX; i++) fr.add("xcol_" + i, fr.anyVec().makeZero());
-        for (int i = 0; i < _ncolX; i++) fr.add("wcol_" + i, fr.anyVec().makeZero());
+        Vec anyvec = fr.anyVec();
+        assert anyvec != null;
+        for (int i = 0; i < _ncolX; i++) fr.add("xcol_" + i, anyvec.makeZero());
+        for (int i = 0; i < _ncolX; i++) fr.add("wcol_" + i, anyvec.makeZero());
         dinfo = new DataInfo(/* train */ fr, /* validation */ null, /* nResponses */ 0, /* useAllFactorLevels */ true,
                              /* pred. transform */ _parms._transform, /* resp. transform */ DataInfo.TransformType.NONE,
                              /* skipMissing */ false, /* imputeMissing */ false, /* missingBucket */ false,
@@ -734,7 +735,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         model._output._model_summary = createModelSummaryTable(model._output);
         model.update(_job);
       } finally {
-        List<Key> keep = new ArrayList<>();
+        List<Key<Vec>> keep = new ArrayList<>();
         if (model != null) {
           Frame loadingFrm = DKV.getGet(model._output._representation_key);
           if (loadingFrm != null) for (Vec vec: loadingFrm.vecs()) keep.add(vec._key);
@@ -753,7 +754,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             for (int i = 0; i < _ncolX; i++) fr.vec(idx_xnew(i, _ncolA, _ncolX)).remove();
           }
         }
-        Scope.untrack(keep.toArray(new Key[0]));
+        Scope.untrack(keep);
       }
     }
 
@@ -816,6 +817,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     }
   }
 
+  @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
   protected static final class Archetypes extends Iced<Archetypes> {
     double[][] _archetypes;  // Y has nrows = k (lower dim), ncols = n (features)
     boolean _transposed;     // Is _archetypes = Y'? Used during model building for convenience.
@@ -1080,6 +1082,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       _normMul = normMul;
     }
 
+    @SuppressWarnings("ConstantConditions") // The method is too complex for IntelliJ
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       double[] a = new double[_ncolA];
@@ -1337,6 +1340,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       _normMul = normMul;
     }
 
+    @SuppressWarnings("ConstantConditions")  // The method is too complex
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
