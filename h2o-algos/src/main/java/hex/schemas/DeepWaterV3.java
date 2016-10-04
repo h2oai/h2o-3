@@ -29,8 +29,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "train_samples_per_iteration",
         "target_ratio_comm_to_comp",
         "seed",
-        "rate",
-        "rate_annealing",
+        "learning_rate",
+        "learning_rate_annealing",
         "momentum_start",
         "momentum_ramp",
         "momentum_stable",
@@ -184,7 +184,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      */
     @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
         help = "Learning rate (higher => less stable, lower => slower convergence).")
-    public double rate;
+    public double learning_rate;
 
     /**
      * Learning rate annealing reduces the learning rate to "freeze" into
@@ -195,7 +195,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      */
     @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
         help = "Learning rate annealing: rate / (1 + rate_annealing * samples).")
-    public double rate_annealing;
+    public double learning_rate_annealing;
 
     /**
      * The momentum_start parameter controls the amount of momentum at the beginning of training.

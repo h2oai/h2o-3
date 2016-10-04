@@ -1,9 +1,11 @@
 package hex.genmodel;
 
+import deepwater.backends.BackendTrain;
+import deepwater.backends.mxnet.MXNetBackend;
 import hex.ModelCategory;
 import water.genmodel.IGeneratedModel;
 
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -460,4 +462,28 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** ??? */
   public String getHeader() { return null; }
 
+  static public BackendTrain createDeepWaterBackend(String backend) {
+    switch (backend)  {
+      case "mxnet": {
+        return new MXNetBackend();
+      }
+      default:
+        throw new IllegalArgumentException("unimpl");
+    }
+  }
+
+  private static String getNvidiaStats() throws java.io.IOException {
+    String cmd = "nvidia-smi";
+    InputStream stdin = Runtime.getRuntime().exec(cmd).getInputStream();
+    InputStreamReader isr = new InputStreamReader(stdin);
+    BufferedReader br = new BufferedReader(isr);
+    StringBuilder sb = new StringBuilder();
+    String s;
+    while ((s = br.readLine()) != null) {
+      sb.append(s + "\n");
+    }
+    return sb.toString();
+  }
+
+  static public String logNvidiaStats() { try { return (getNvidiaStats()); } catch (IOException e) { return null; } }
 }
