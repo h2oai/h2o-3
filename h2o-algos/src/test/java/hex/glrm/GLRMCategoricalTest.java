@@ -63,7 +63,7 @@ public class GLRMCategoricalTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._loss = GLRMParameters.Loss.Absolute;
+      parms._loss = GlrmLoss.Absolute;
       parms._init = GLRM.Initialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_svd = true;
@@ -138,17 +138,15 @@ public class GLRMCategoricalTest extends TestUtil {
       train.remove("ID").remove();
       DKV.put(train._key, train);
 
-      for(GLRMParameters.Loss loss : new GLRMParameters.Loss[] {
-              GLRMParameters.Loss.Quadratic,
-              GLRMParameters.Loss.Absolute,
-              GLRMParameters.Loss.Huber,
-              GLRMParameters.Loss.Poisson,
-              GLRMParameters.Loss.Hinge,
-              GLRMParameters.Loss.Logistic
+      for(GlrmLoss loss : new GlrmLoss[] {
+              GlrmLoss.Quadratic,
+              GlrmLoss.Absolute,
+              GlrmLoss.Huber,
+              GlrmLoss.Poisson
       }) {
-        for(GLRMParameters.Loss multiloss : new GLRMParameters.Loss[] {
-                GLRMParameters.Loss.Categorical,
-                GLRMParameters.Loss.Ordinal
+        for(GlrmLoss multiloss : new GlrmLoss[] {
+                GlrmLoss.Categorical,
+                GlrmLoss.Ordinal
         }) {
           GLRMModel model = null;
           try {
@@ -205,9 +203,9 @@ public class GLRMCategoricalTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 12;
-      parms._loss = GLRMParameters.Loss.Quadratic;
-      parms._multi_loss = GLRMParameters.Loss.Categorical;
-      parms._loss_by_col = new GLRMParameters.Loss[] { GLRMParameters.Loss.Ordinal, GLRMParameters.Loss.Poisson, GLRMParameters.Loss.Absolute};
+      parms._loss = GlrmLoss.Quadratic;
+      parms._multi_loss = GlrmLoss.Categorical;
+      parms._loss_by_col = new GlrmLoss[] { GlrmLoss.Ordinal, GlrmLoss.Poisson, GlrmLoss.Absolute};
       parms._loss_by_col_idx = new int[] { 3 /* DPROS */, 1 /* AGE */, 6 /* VOL */ };
       parms._init = GLRM.Initialization.PlusPlus;
       parms._min_step_size = 1e-5;
