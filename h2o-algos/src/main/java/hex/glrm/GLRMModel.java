@@ -308,6 +308,9 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     // Current value of the objective function
     public double _objective;
 
+    // Current value of step_size used
+    public double _step_size;
+
     // Average change in objective function this iteration
     public double _avg_change_obj;
     public double[/*iterations*/] _history_objective = new double[0];
