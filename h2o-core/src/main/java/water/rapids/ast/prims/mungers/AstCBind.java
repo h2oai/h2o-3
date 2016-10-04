@@ -29,7 +29,7 @@ public class AstCBind extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
 
     // Compute the variable args.  Find the common row count
     Val vals[] = new Val[asts.length];

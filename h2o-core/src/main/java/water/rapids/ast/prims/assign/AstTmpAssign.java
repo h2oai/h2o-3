@@ -30,7 +30,7 @@ public class AstTmpAssign extends AstPrimitive {
 
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    Key id = Key.make(asts[1].str());
+    Key<Frame> id = Key.make(asts[1].str());
     if (DKV.get(id) != null) throw new IllegalArgumentException("Temp ID " + id + " already exists");
     Frame src = stk.track(asts[2].exec(env)).getFrame();
     Frame dst = new Frame(id, src._names, src.vecs());

@@ -1,5 +1,6 @@
 package water.rapids.ast.params;
 
+import water.rapids.Env;
 import water.rapids.Rapids;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstParameter;
@@ -8,15 +9,23 @@ import water.rapids.ast.AstParameter;
  * A number literal.  Execution simply returns its value.
  */
 public class AstNum extends AstParameter {
+  private final ValNum _v;
+
   public AstNum() {
+    _v = null;
   }
 
   public AstNum(Rapids e) {
-    super(e);
+    _v = new ValNum(Double.valueOf(e.token()));
   }
 
   public AstNum(double d) {
-    super(d);
+    _v = new ValNum(d);
+  }
+
+  @Override
+  public String str() {
+    return _v.toString();
   }
 
   @Override
@@ -25,11 +34,16 @@ public class AstNum extends AstParameter {
   }
 
   public void setNum(double d) {
-    ((ValNum) _v).setNum(d);
+    _v.setNum(d);
   }
 
   public double getNum() {
     return _v.getNum();
+  }
+
+  @Override
+  public ValNum exec(Env env) {
+    return _v;
   }
 
 }

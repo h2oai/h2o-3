@@ -34,7 +34,7 @@ public class AstCut extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double[] cuts = check(asts[2]);
     Arrays.sort(cuts);
@@ -121,7 +121,7 @@ public class AstCut extends AstPrimitive {
     double[] n;
     if (ast instanceof AstNumList) n = ((AstNumList) ast).expand();
     else if (ast instanceof AstNum)
-      n = new double[]{((AstNum) ast)._v.getNum()};  // this is the number of breaks wanted...
+      n = new double[]{((AstNum) ast).getNum()};  // this is the number of breaks wanted...
     else throw new IllegalArgumentException("Requires a number-list, but found a " + ast.getClass());
     return n;
   }

@@ -39,7 +39,7 @@ public class AstColumnsByType extends AstPrimitive {
     } //ary type
 
     @Override
-    public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    public ValNums apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
         Frame fr = stk.track(asts[1].exec(env)).getFrame();
         String type = stk.track(asts[2].exec(env)).getStr();
         DType dtype;

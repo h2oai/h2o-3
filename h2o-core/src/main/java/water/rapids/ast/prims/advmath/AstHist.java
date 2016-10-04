@@ -35,7 +35,7 @@ public class AstHist extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     // stack is [ ..., ary, breaks]
     // handle the breaks
     Frame fr2;
@@ -45,7 +45,7 @@ public class AstHist extends AstPrimitive {
     if (!vec.isNumeric()) throw new IllegalArgumentException("Hist only applies to single numeric columns.");
     //TODO Add case when vec is a constant numeric
     if(vec.isConst()) throw new IllegalArgumentException("Hist does not apply to constant numeric columns.");
-    
+
     AstRoot a = asts[2];
     String algo = null;
     int numBreaks = -1;
@@ -213,7 +213,7 @@ public class AstHist extends AstPrimitive {
     double m4 = t._sc / v.length();
     return m4 / Math.pow(m2, 2.0);
   }
-  
+
   public static class FourthMomTask extends MRTask<AstHist.FourthMomTask> {
     double _ss;
     double _sc;

@@ -34,7 +34,7 @@ public class AstQtile extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame fr_wkey = new Frame(fr); // Force a bogus Key for Quantiles ModelBuilder

@@ -41,14 +41,14 @@ public class AstTable extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr1 = stk.track(asts[1].exec(env)).getFrame();
     final boolean dense = asts[asts.length - 1].exec(env).getNum() == 1;
     Frame fr2 = asts.length == 4 ? stk.track(asts[2].exec(env)).getFrame() : null;
     int ncols = fr1.numCols() + (fr2 == null ? 0 : fr2.numCols());
     Vec vec1 = fr1.vec(0);
 
-    Val res = fast_table(vec1, ncols, fr1._names[0]);
+    ValFrame res = fast_table(vec1, ncols, fr1._names[0]);
     if (res != null) return res;
 
     if (!(asts.length == 3 || asts.length == 4) || ncols > 2)
