@@ -13,7 +13,7 @@ import java.util.*;
  *  exited.  Since enter &amp; exit are explicit, failure to exit means the Keys
  *  leak (there is no reliable thread-on-exit cleanup action).  You must call
  *  <code>Scope.exit()</code> at some point.  Only user keys &amp; Vec keys are tracked.</p>
- * 
+ *
  *  <p>Scopes support nesting.  Scopes support partial cleanup: you can list Keys
  *  you'd like to keep in the exit() call.  These will be "bumped up" to the
  *  higher nested scope - or escaped and become untracked at the top-level.</p>
@@ -85,12 +85,11 @@ public class Scope {
       scope._keys.peek().add(key);            // Track key
   }
 
-  static public void untrack( Key<Vec>[] keys ) {
+  static public void untrack(Iterable<Key<Vec>> keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
-    if( scope == null ) return;           // Not tracking this thread
-    if( scope._keys.size() == 0 ) return; // Tracked in the past, but no scope now
+    if (scope == null) return;           // Not tracking this thread
+    if (scope._keys.size() == 0) return; // Tracked in the past, but no scope now
     HashSet<Key> xkeys = scope._keys.peek();
-    for( Key<Vec> key : keys ) xkeys.remove(key); // Untrack key
+    for (Key<Vec> key : keys) xkeys.remove(key); // Untrack key
   }
-
 }
