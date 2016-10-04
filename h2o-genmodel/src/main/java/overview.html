@@ -371,9 +371,8 @@ MOJOs are only supported for GBM and DRF models.
         <pre>
         import h2o
         from h2o.estimators.gbm import H2OGradientBoostingEstimator
-        from h2o.h2o import data_file
         h2o.init()
-        h2o_df = h2o.upload_file(data_file("h2o_data/prostate.csv"))
+        h2o_df = h2o.load_dataset("prostate.csv")
         h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
         model=H2OGradientBoostingEstimator(distribution="bernoulli",
                                            ntrees=100,

@@ -1,6 +1,6 @@
 #POJO Quick Start
 
-This document describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the [Javadoc](http://h2o-release.s3.amazonaws.com/h2o/{{branch_name}}/{{build_number}}/docs-website/h2o-genmodel/javadoc/index.html) for more information, including packages. 
+This document describes how to build and implement a POJO to use predictive scoring. Java developers should refer to the [Javadoc](http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html) for more information, including packages. 
 
  >**Note**: POJOs are not supported for source files larger than 1G. For more information, refer to the [FAQ](#POJO_Err) below. 
  
