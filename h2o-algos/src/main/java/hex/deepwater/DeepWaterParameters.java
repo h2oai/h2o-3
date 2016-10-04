@@ -2,6 +2,7 @@ package hex.deepwater;
 
 import hex.Model;
 import hex.ScoreKeeper;
+import hex.genmodel.utils.DistributionFamily;
 import water.H2O;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Vec;
@@ -9,13 +10,10 @@ import water.parser.BufferedString;
 import water.util.ArrayUtils;
 import water.util.Log;
 
+import javax.imageio.ImageIO;
 import java.io.File;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-
-import hex.genmodel.utils.DistributionFamily;
-
-import javax.imageio.ImageIO;
 
 /**
  * Parameters for a Deep Water image classification model
@@ -36,7 +34,7 @@ public class DeepWaterParameters extends Model.Parameters {
     if (train()==null) return 1;
     return (long)Math.ceil(_epochs*train().numRows());
   }
-  public float rate(double n) { return (float)(_rate / (1 + _rate_annealing * n)); }
+  public float learningRate(double n) { return (float)(_learning_rate / (1 + _learning_rate_annealing * n)); }
   final public float momentum(double n) {
     double m = _momentum_start;
     if( _momentum_ramp > 0 ) {
@@ -177,7 +175,7 @@ public class DeepWaterParameters extends Model.Parameters {
    * why the momentum is best ramped up slowly.
    * This parameter is only active if adaptive learning rate is disabled.
    */
-  public double _rate = .005;
+  public double _learning_rate = .005;
 
   /**
    * Learning rate annealing reduces the learning rate to "freeze" into
@@ -186,7 +184,7 @@ public class DeepWaterParameters extends Model.Parameters {
    * (e.g., 1e-6 means that it takes 1e6 training samples to halve the learning rate).
    * This parameter is only active if adaptive learning rate is disabled.
    */
-  public double _rate_annealing = 1e-6;
+  public double _learning_rate_annealing = 1e-6;
 
   /**
    * The momentum_start parameter controls the amount of momentum at the beginning of training.
@@ -430,8 +428,8 @@ public class DeepWaterParameters extends Model.Parameters {
             "_autoencoder",
             "_network",
             "_backend",
-            "_rate",
-            "_rate_annealing",
+            "_learning_rate",
+            "_learning_rate_annealing",
             "_rate_decay",
             "_momentum_start",
             "_momentum_ramp",

@@ -16,7 +16,7 @@ public class Dropout {
   public byte[] bits() { return _bits; }
 
 //  public Dropout() {
-//    _rate = 0.5;
+//    _learning_rate = 0.5;
 //  }
 
   @Override

@@ -1,18 +1,19 @@
 package hex.deepwater;
 
-import hex.*;
-import hex.deepwater.backends.MXNetLoader;
+import hex.ModelBuilder;
+import hex.ModelCategory;
+import hex.ToEigenVec;
+import hex.genmodel.GenModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
-
-import static water.util.MRUtils.sampleFrame;
 import water.util.PrettyPrint;
 
-import java.io.IOException;
 import java.util.Arrays;
+
+import static water.util.MRUtils.sampleFrame;
 
 /**
  * Deep Learning Neural Net implementation based on MRTask
@@ -20,26 +21,21 @@ import java.util.Arrays;
 public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,DeepWaterModelOutput> {
 
   /** Main constructor from Deep Learning parameters */
-  public DeepWater(DeepWaterParameters parms ) { super(parms); init(false); backendLoader(); }
-  public DeepWater(DeepWaterParameters parms, Key<DeepWaterModel> key ) { super(parms,key); init(false); backendLoader(); }
-  public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); backendLoader(); }
-
-  private void backendLoader() {
-    switch(_parms._backend){
-    case mxnet:
-      new MXNetLoader();
-      break;
-    case tensorflow:
-     // no init required
-     break;
-    default:
-      throw H2O.unimpl();
-    }
+  public DeepWater(DeepWaterParameters parms ) {
+    super(parms);
+    init(false);
+    GenModel.createDeepWaterBackend(parms._backend.toString());
   }
 
-  static public void logNvidiaStats() { try { Log.info(water.gpu.util.getNvidiaStats()); } catch (IOException e) {} }
+  public DeepWater(DeepWaterParameters parms, Key<DeepWaterModel> key ) {
+    super(parms,key);
+    init(false);
+    GenModel.createDeepWaterBackend(parms._backend.toString());
+  }
 
-//  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+  public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
+
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   /** Types of models we can build with DeepWater  */
   @Override public ModelCategory[] can_build() {
@@ -274,7 +270,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         t.printStackTrace();
       }
       finally {
-        if (model.model_info().backend != null) model.model_info().nativeToJava();
+        if (model.model_info()._backend != null) model.model_info().nativeToJava();
         if (cache) model.cleanUpCache();
         model.removeNativeState();
         if (!_parms._quiet_mode) {

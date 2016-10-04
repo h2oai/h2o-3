@@ -1,5 +1,6 @@
 package hex.genmodel;
 
+import hex.genmodel.algos.DeepWaterMojo;
 import hex.genmodel.algos.DrfModel;
 import hex.genmodel.algos.GbmModel;
 import hex.genmodel.utils.ParseUtils;
@@ -62,9 +63,12 @@ abstract public class MojoModel extends GenModel {
         switch (algo) {
             case "Distributed Random Forest":
                 return new DrfModel(mojoReader, info, columns, domains);
+            case "Gradient Boosting Machine":
             case "Gradient Boosting Method":
             case "Gradient Boosting Machine":
                 return new GbmModel(mojoReader, info, columns, domains);
+            case "Deep Water":
+                return new DeepWaterMojo(mojoReader, info, columns, domains);
             default:
                 throw new IOException("Unsupported algorithm " + algo + " for raw models.");
         }

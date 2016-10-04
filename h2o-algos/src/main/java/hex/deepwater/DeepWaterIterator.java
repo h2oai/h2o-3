@@ -13,11 +13,11 @@ abstract public class DeepWaterIterator {
     _start_index = 0;
     _cache = cache;
     _data = new float[2][];
-    _data[0] = new float[batch_size * _observationSize];
-    _data[1] = new float[batch_size * _observationSize];
+    _data[0] = new float[_batch_size * _observationSize];
+    _data[1] = new float[_batch_size * _observationSize];
     _label = new float[2][];
-    _label[0] = new float[batch_size];
-    _label[1] = new float[batch_size];
+    _label[0] = new float[_batch_size];
+    _label[1] = new float[_batch_size];
   }
 
   abstract public boolean Next(Futures fs) throws IOException;
