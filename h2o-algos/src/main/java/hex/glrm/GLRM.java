@@ -185,9 +185,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     if (_train == null) return;
 
     // Initialize the default loss functions for each column
+    // Note: right now for binary columns `.isCategorical()` returns true. It has the undesired consequence that
+    // such variables will get categorical loss function, and will get expanded into 2 columns.
     _lossFunc = new GlrmLoss[_ncolA];
-    for (int i = 0; i < _ncolA; i++)
-      _lossFunc[i] = _train.vec(i).isCategorical() ? _parms._multi_loss : _parms._loss;
+    for (int i = 0; i < _ncolA; i++) {
+      Vec vi = _train.vec(i);
+      _lossFunc[i] = vi.isCategorical()? _parms._multi_loss : _parms._loss;
+    }
 
     // If _loss_by_col is provided, then override loss functions on the specified columns
     if (_parms._loss_by_col != null) {
@@ -210,14 +214,19 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
     // Check that all loss functions correspond to their actual type
     for (int i = 0; i < _ncolA; i++) {
-      Vec veci = _train.vec(i);
+      Vec vi = _train.vec(i);
       GlrmLoss lossi = _lossFunc[i];
-      if (veci.isNumeric() && !lossi.isForNumeric())
-        error("_loss_by_col", "Loss function " + lossi + " cannot be applied to numeric column " + i);
-      if (veci.isCategorical() && !lossi.isForCategorical())
-        error("_loss_by_col", "Loss function " + lossi + " cannot be applied to categorical column " + i);
-      if (veci.isBinary() && !lossi.isForBinary())
-        error("_loss_by_col", "Loss function " + lossi + " cannot be applied to binary column " + i);
+      if (vi.isNumeric()) {
+        if (!lossi.isForNumeric())
+          error("_loss_by_col", "Loss function " + lossi + " cannot be applied to numeric column " + i);
+      } else if (vi.isCategorical()) {
+        if (!lossi.isForCategorical())
+          error("_loss_by_col", "Loss function " + lossi + " cannot be applied to categorical column " + i);
+      } else if (vi.isBinary()) {
+        // Allow numeric loss functions on binary columns too; but not the other way round!
+        if (!lossi.isForBinary() && !lossi.isForNumeric())
+          error("_loss_by_col", "Loss function " + lossi + " cannot be applied to binary column " + i);
+      }
 
       // For "Periodic" loss function supply the period. We currently have no support for different periods for
       // different columns.
@@ -581,8 +590,10 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         fr = new Frame(_train);
         for (int i = 0; i < _ncolX; i++) fr.add("xcol_" + i, fr.anyVec().makeZero());
         for (int i = 0; i < _ncolX; i++) fr.add("wcol_" + i, fr.anyVec().makeZero());
-        dinfo = new DataInfo(fr, null, 0, true, _parms._transform, DataInfo.TransformType.NONE,
-                             false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+        dinfo = new DataInfo(/* train */ fr, /* validation */ null, /* nResponses */ 0, /* useAllFactorLevels */ true,
+                             /* pred. transform */ _parms._transform, /* resp. transform */ DataInfo.TransformType.NONE,
+                             /* skipMissing */ false, /* imputeMissing */ false, /* missingBucket */ false,
+                             /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(dinfo._key, dinfo);
 
         int weightId = dinfo._weights ? dinfo.weightChunkId() : -1;
@@ -1174,7 +1185,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       _ncolX = ncolX;
       _ytold = yt;
       _yreg = 0;
-      // _ytnew = new double[_ncolA][_ncolX];
 
       // Info on A (cols 1 to ncolA of frame)
       assert ncats <= ncolA;
