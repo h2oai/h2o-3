@@ -44,7 +44,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
-  private final byte[] _kb;      // Key bytes, wire-line protocol
+  public final byte[] _kb;      // Key bytes, wire-line protocol
   public byte[] bytes() { return _kb.clone(); }
   transient final int _hash;    // Hash on key alone (and not value)
 
