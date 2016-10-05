@@ -116,7 +116,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         error("_init", "init must be 'User' if providing user-specified points");
 
       Frame user_y = _parms._user_y.get();
-      assert null != user_y;
+      assert user_y != null;
       int user_y_cols = _parms._expand_user_y ? _ncolA : _ncolY;
 
       // Check dimensions of user-specified initial Y
@@ -144,7 +144,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         error("_init", "init must be 'User' if providing user-specified points");
 
       Frame user_x = _parms._user_x.get();
-      assert null != user_x;
+      assert user_x != null;
 
       if (user_x.numCols() != _parms._k)
         error("_user_x", "The user-specified X must have k = " + _parms._k + " columns");
@@ -173,16 +173,18 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
   /** Validate all Loss-related parameters, and fill in the `_lossFunc` array. */
   private void initLoss() {
+    int num_loss_by_cols = _parms._loss_by_col == null? 0 : _parms._loss_by_col.length;
+    int num_loss_by_cols_idx = _parms._loss_by_col_idx == null? 0 : _parms._loss_by_col_idx.length;
+
     // First validate the parameters that do not require access to the training frame
+    if (_parms._period <= 0)
+      error("_period", "_period must be a positive integer");
     if (!_parms._loss.isForNumeric())
       error("_loss", _parms._loss + " is not a numeric loss function");
     if (!_parms._multi_loss.isForCategorical())
       error("_multi_loss", _parms._multi_loss + " is not a multivariate loss function");
-    if (_parms._loss_by_col != null && _parms._loss_by_col_idx != null &&
-            _parms._loss_by_col.length != _parms._loss_by_col_idx.length)
-      error("_loss_by_col", "Sizes of arrays _loss_by_col and _loss_by_col_idx must coincide");
-    if (_parms._period <= 0)
-      error("_period", "_period must be a positive integer");
+    if (num_loss_by_cols != num_loss_by_cols_idx && num_loss_by_cols_idx > 0)
+      error("_loss_by_col", "Sizes of arrays _loss_by_col and _loss_by_col_idx must be the same");
 
     if (_train == null) return;
 
@@ -196,16 +198,15 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     }
 
     // If _loss_by_col is provided, then override loss functions on the specified columns
-    if (_parms._loss_by_col != null) {
-      int num_loss_by_cols = _parms._loss_by_col.length;
-      if (num_loss_by_cols > _ncolA)
-        error("_loss_by_col", "Number of loss functions specified must be <= " + _ncolA);
-      else if (num_loss_by_cols == _ncolA && _parms._loss_by_col_idx == null)
-        _lossFunc = _parms._loss_by_col;
-      else if (num_loss_by_cols < _ncolA && _parms._loss_by_col_idx == null)
-        error("_loss_by_col", "Number of elements in _loss_by_col is less than the size of the dataset -- the " +
-                              "_loss_by_col_idx array must also be provided");
-      else if (_parms._loss_by_col_idx != null && num_loss_by_cols == _parms._loss_by_col_idx.length) {
+    if (num_loss_by_cols > 0) {
+      if (num_loss_by_cols_idx == 0) {
+        if (num_loss_by_cols == _ncolA)
+          _lossFunc = _parms._loss_by_col;
+        else
+          error("_loss_by_col", "Number of override loss functions should be the same as the number of columns in " +
+                                "the input frame; or otherwise an explicit _loss_by_col_idx should be provided.");
+      }
+      if (num_loss_by_cols_idx == num_loss_by_cols) {
         for (int i = 0; i < num_loss_by_cols; i++) {
           int cidx = _parms._loss_by_col_idx[i];
           if (cidx < 0 || cidx >= _ncolA)
@@ -214,8 +215,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             _lossFunc[cidx] = _parms._loss_by_col[i];
         }
       }
-    } else if (_parms._loss_by_col_idx != null)
-      error("_loss_by_col_idx", "May only be specified together with _loss_by_col");
+      // Otherwise we have already reported an error at the start of this method
+    }
 
     // Check that all loss functions correspond to their actual type
     for (int i = 0; i < _ncolA; i++) {
@@ -383,7 +384,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
         // Set X and Y appropriately given SVD of A = UDV'
         // a) Set Y = D^(1/2)V'S where S = diag(\sigma)
-        final double[] dsqrt = new double[_parms._k];
+        double[] dsqrt = new double[_parms._k];
         for (int i = 0; i < _parms._k; i++) {
           dsqrt[i] = Math.sqrt(svd._output._d[i]);
           ArrayUtils.mult(centers_exp[i], dsqrt[i]);  // This gives one row of D^(1/2)V'
@@ -711,7 +712,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             xnames[i] = "Arch" + String.valueOf(i + 1);
           }
         }
-        model._output._representation_name = (_parms._representation_name == null || _parms._representation_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._representation_name;
+        model._output._representation_name = StringUtils.isNullOrEmpty(_parms._representation_name) ? "GLRMLoading_" + Key.rand() : _parms._representation_name;
         model._output._representation_key = Key.make(model._output._representation_name);
         Frame x = new Frame(model._output._representation_key, xnames, xvecs);
         xinfo = new DataInfo(x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
@@ -729,8 +730,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
         // Impute and compute error metrics on training/validation frame
         model._output._training_metrics = model.scoreMetricsOnly(_parms.train());
-        if (_valid != null)
-          model._output._validation_metrics = model.scoreMetricsOnly(_parms.valid());
+        model._output._validation_metrics = model.scoreMetricsOnly(_parms.valid());
         model._output._model_summary = createModelSummaryTable(model._output);
         model.update(_job);
       } finally {
@@ -766,10 +766,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       colHeaders.add("Final Step Size"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Final Objective Value"); colTypes.add("double"); colFormat.add("%.5f");
 
-      final int rows = 1;
       TwoDimTable table = new TwoDimTable(
               "Model Summary", null,
-              new String[rows],
+              new String[1],
               colHeaders.toArray(new String[0]),
               colTypes.toArray(new String[0]),
               colFormat.toArray(new String[0]),
@@ -793,7 +792,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       colHeaders.add("Step Size"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Objective"); colTypes.add("double"); colFormat.add("%.5f");
 
-      final int rows = output._training_time_ms.size();
+      int rows = output._training_time_ms.size();
       TwoDimTable table = new TwoDimTable(
               "Scoring History", null,
               new String[rows],
@@ -974,7 +973,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
       for (int row = 0; row < chks[0]._len; row++) {
         rand.setSeed(_parms._seed + chks[0].start() + row);   // global row ID determines the seed
-        double xrow[] = ArrayUtils.gaussianVector(_ncolX, rand);
+        double[] xrow = ArrayUtils.gaussianVector(_ncolX, rand);
         xrow = _parms._regularization_x.project(xrow, rand);
         for (int c = 0; c < xrow.length; c++) {
           chks[_ncolA+c].set(row, xrow[c]);
@@ -1025,13 +1024,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     }
 
     @Override public void map(Chunk[] chks) {
-      double tmp [] = new double[_ncolA];
+      double[] tmp = new double[_ncolA];
       Random rand = RandomUtils.getRNG(0);
 
       for (int row = 0; row < chks[0]._len; row++) {
         // double preds[] = new double[_ncolX];
         // double p[] = _model.score_indicator(chks, row, tmp, preds);
-        double p[] = _model.score_ratio(chks, row, tmp);
+        double[] p = _model.score_ratio(chks, row, tmp);
         rand.setSeed(_parms._seed + chks[0].start() + row); //global row ID determines the seed
         p = _parms._regularization_x.project(p, rand);  // TODO: Should we restrict indicator cols to regularizer subspace?
         for (int c = 0; c < p.length; c++) {

@@ -197,7 +197,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
 
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
   private Frame reconstruct(Frame orig, Frame adaptedFr, Key<Frame> destination_key, boolean save_imputed, boolean reverse_transform) {
-    final int ncols = _output._names.length;
+    int ncols = _output._names.length;
     assert ncols == adaptedFr.numCols();
     String prefix = "reconstr_";
 
@@ -243,7 +243,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
    * @return Frame containing k rows and n columns, where each row corresponds to an archetype
    */
   @Override public Frame scoreArchetypes(Frame frame, Key<Frame> destination_key, boolean reverse_transform) {
-    final int ncols = _output._names.length;
+    int ncols = _output._names.length;
     Frame adaptedFr = new Frame(frame);
     adaptTestForTrain(adaptedFr, true, false);
     assert ncols == adaptedFr.numCols();
@@ -291,22 +291,22 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       _reverse_transform = reverse_transform;
     }
 
-    @Override public void map( Chunk chks[] ) {
-      float atmp [] = new float[_ncolA];
-      double xtmp [] = new double[_ncolX];
-      double preds[] = new double[_ncolA];
+    @Override public void map(Chunk[] chks) {
+      float[] atmp = new float[_ncolA];
+      double[] xtmp = new double[_ncolX];
+      double[] preds = new double[_ncolA];
       _mb = GLRMModel.this.makeMetricBuilder(null);
 
       if (_save_imputed) {
         for (int row = 0; row < chks[0]._len; row++) {
-          double p[] = impute_data(chks, row, xtmp, preds);
+          double[] p = impute_data(chks, row, xtmp, preds);
           compute_metrics(chks, row, atmp, p);
           for (int c = 0; c < preds.length; c++)
             chks[_ncolA + _ncolX + c].set(row, p[c]);
         }
       } else {
         for (int row = 0; row < chks[0]._len; row++) {
-          double p[] = impute_data(chks, row, xtmp, preds);
+          double[] p = impute_data(chks, row, xtmp, preds);
           compute_metrics(chks, row, atmp, p);
         }
       }
@@ -360,7 +360,8 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
   public ModelMetricsGLRM scoreMetricsOnly(Frame frame) {
-    final int ncols = _output._names.length;
+    if (frame == null) return null;
+    int ncols = _output._names.length;
 
     // Need [A,X] where A = adapted test frame, X = loading frame
     // Note: A is adapted to original training frame
