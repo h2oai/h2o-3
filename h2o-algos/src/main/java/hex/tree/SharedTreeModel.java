@@ -338,6 +338,36 @@ public abstract class SharedTreeModel<
   @SuppressWarnings("unchecked")  // `M` is really the type of `this`
   private M self() { return (M)this; }
 
+  //--------------------------------------------------------------------------------------------------------------------
+  // Serialization into the "MOJO" format
+  //--------------------------------------------------------------------------------------------------------------------
+
+  public class TreeMojoStreamWriter extends Model<M, P, O>.MojoStreamWriter {
+    @Override
+    protected void writeExtraModelInfo() throws IOException {
+      writeln("n_trees = " + _output._ntrees);
+    }
+
+    @Override
+    protected void writeModelData() throws IOException {
+      assert _output._treeKeys.length == _output._ntrees;
+      int nclasses = _output.nclasses();
+      int ntreesPerClass = binomialOpt() && nclasses == 2? 1 : nclasses;
+      for (int i = 0; i < _output._ntrees; i++) {
+        for (int j = 0; j < ntreesPerClass; j++) {
+          Key<CompressedTree> key = _output._treeKeys[i][j];
+          Value ctVal = key != null? DKV.get(key) : null;
+          if (ctVal == null)
+            throw new H2OKeyNotFoundArgumentException("CompressedTree " + key + " not found");
+          CompressedTree ct = ctVal.get();
+          assert ct._nclass == nclasses;
+          // assume ct._seed is useless and need not be persisted
+          writeBinaryFile(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
+        }
+      }
+    }
+  }
+
 
   //--------------------------------------------------------------------------------------------------------------------
   // Serialization into a POJO
