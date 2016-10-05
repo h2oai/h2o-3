@@ -956,8 +956,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   // In chunk, first _ncolA cols are A, next _ncolX cols are X
   protected static int idx_xold(int c, int ncolA) { return ncolA+c; }
   protected static int idx_xnew(int c, int ncolA, int ncolX) { return ncolA+ncolX+c; }
-  protected static Chunk chk_xold(Chunk[] chks, int c, int ncolA) { return chks[ncolA+c]; }
-  protected static Chunk chk_xnew(Chunk[] chks, int c, int ncolA, int ncolX) { return chks[ncolA+ncolX+c]; }
 
   // Initialize X to standard Gaussian random matrix projected into regularizer subspace
   private static class InitialXProj extends MRTask<InitialXProj> {
@@ -1081,6 +1079,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       _normMul = normMul;
     }
 
+    private Chunk chk_xold(Chunk[] chks, int c) {
+      return chks[_ncolA + c];
+    }
+    private Chunk chk_xnew(Chunk[] chks, int c) {
+      return chks[_ncolA + _ncolX + c];
+    }
+
     @SuppressWarnings("ConstantConditions")  // The method is too complex for IntelliJ
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
@@ -1100,7 +1105,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Copy old working copy of X to current X if requested
         if (_update) {
           for (int k = 0; k < _ncolX; k++)
-            chk_xold(cs,k,_ncolA).set(row, chk_xnew(cs,k,_ncolA,_ncolX).atd(row));
+            chk_xold(cs, k).set(row, chk_xnew(cs, k).atd(row));
         }
 
         // Compute gradient of objective at row
@@ -1113,7 +1118,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           double[] xy = new double[_yt._numLevels[j]];
           for (int level = 0; level < xy.length; level++) {
             for (int k = 0; k < _ncolX; k++) {
-              xy[level] += chk_xold(cs, k, _ncolA).atd(row) * _yt.getCat(j, level, k);
+              xy[level] += chk_xold(cs, k).atd(row) * _yt.getCat(j, level, k);
             }
           }
 
@@ -1135,7 +1140,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           // Inner product x_i * y_j
           double xy = 0;
           for (int k = 0; k < _ncolX; k++)
-            xy += chk_xold(cs, k, _ncolA).atd(row) * _yt.getNum(js, k);
+            xy += chk_xold(cs, k).atd(row) * _yt.getNum(js, k);
 
           // Sum over y_j weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
           double weight = cweight * _lossFunc[j].lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
@@ -1146,7 +1151,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Update row x_i of working copy with new values
         double[] u = new double[_ncolX];
         for (int k = 0; k < _ncolX; k++) {
-          double xold = chk_xold(cs, k, _ncolA).atd(row);   // Old value of x_i
+          double xold = chk_xold(cs, k).atd(row);   // Old value of x_i
           u[k] = xold - _alpha * grad[k];
           // xnew[k] = _parms.rproxgrad_x(xold - _alpha * grad[k], _alpha);  // Proximal gradient
           // chk_xnew(cs,k,_ncolA,_ncolX).set(row, xnew[k]);
@@ -1155,7 +1160,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         double[] xnew = _parms._regularization_x.rproxgrad(u, _alpha*_parms._gamma_x, rand);
         _xreg += _parms._regularization_x.regularize(xnew);
         for (int k = 0; k < _ncolX; k++)
-          chk_xnew(cs,k,_ncolA,_ncolX).set(row,xnew[k]);
+          chk_xnew(cs, k).set(row,xnew[k]);
 
         // Compute loss function using new x_i
         // Categorical columns
@@ -1218,6 +1223,10 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       _normMul = normMul;
     }
 
+    private Chunk chk_xnew(Chunk[] chks, int c) {
+      return chks[_ncolA + _ncolX + c];
+    }
+
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       _ytnew = new double[_ytold.nfeatures()][_ncolX];
@@ -1237,7 +1246,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           double[] xy = new double[_ytold._numLevels[j]];
           for (int level = 0; level < xy.length; level++) {
             for (int k = 0; k < _ncolX; k++) {
-              xy[level] += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _ytold.getCat(j,level,k);
+              xy[level] += chk_xnew(cs, k).atd(row) * _ytold.getCat(j,level,k);
             }
           }
 
@@ -1245,7 +1254,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           double[] weight = _lossFunc[j].mlgrad(xy, (int)a);
           for (int level = 0; level < xy.length; level++) {
             for (int k = 0; k < _ncolX; k++)
-              _ytnew[_ytold.getCatCidx(j, level)][k] += cweight * weight[level] * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
+              _ytnew[_ytold.getCatCidx(j, level)][k] += cweight * weight[level] * chk_xnew(cs, k).atd(row);
           }
         }
       }
@@ -1267,12 +1276,12 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           // Inner product x_i * y_j
           double xy = 0;
           for (int k = 0; k < _ncolX; k++)
-            xy += chk_xnew(cs,k,_ncolA,_ncolX).atd(row) * _ytold.getNum(js,k);
+            xy += chk_xnew(cs, k).atd(row) * _ytold.getNum(js,k);
 
           // Sum over x_i weighted by gradient of loss \grad L_{i,j}(x_i * y_j, A_{i,j})
           double weight = cweight * _lossFunc[j].lgrad(xy, (a - _normSub[js]) * _normMul[js]);
           for (int k = 0; k < _ncolX; k++)
-            _ytnew[yidx][k] += weight * chk_xnew(cs,k,_ncolA,_ncolX).atd(row);
+            _ytnew[yidx][k] += weight * chk_xnew(cs, k).atd(row);
         }
       }
     }
@@ -1339,6 +1348,10 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       _normMul = normMul;
     }
 
+    private Chunk chk_xnew(Chunk[] chks, int c) {
+      return chks[_ncolA + _ncolX + c];
+    }
+
     @SuppressWarnings("ConstantConditions")  // The method is too complex
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
@@ -1360,7 +1373,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           double[] xy = new double[_yt._numLevels[j]];
           for (int level = 0; level < xy.length; level++) {
             for (int k = 0; k < _ncolX; k++) {
-              xy[level] += chk_xnew(cs, k, _ncolA, _ncolX).atd(row) * _yt.getCat(j, level, k);
+              xy[level] += chk_xnew(cs, k).atd(row) * _yt.getCat(j, level, k);
             }
           }
           _loss += _lossFunc[j].mloss(xy, (int)a);
@@ -1375,7 +1388,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           double xy = 0;
           int js = j - _ncats;
           for (int k = 0; k < _ncolX; k++)
-            xy += chk_xnew(cs, k, _ncolA, _ncolX).atd(row) * _yt.getNum(js, k);
+            xy += chk_xnew(cs, k).atd(row) * _yt.getNum(js, k);
           _loss += _lossFunc[j].loss(xy, (a - _normSub[js]) * _normMul[js]);
         }
         _loss *= cweight;
