@@ -9,10 +9,6 @@ import water.fvec.Vec;
 import water.util.*;
 import water.util.TwoDimTable;
 
-import java.util.Random;
-
-import static hex.glrm.GlrmLoss.*;
-
 /**
  * GLRM (<a href="https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Model</a>).
  *
