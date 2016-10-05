@@ -173,14 +173,11 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
   @Override protected Futures remove_impl( Futures fs ) {
-    if (_output._init_key != null)
-      _output._init_key.remove(fs);
-    if (_output._representation_key != null)
-      _output._representation_key.remove(fs);
+    if (_output._init_key != null) _output._init_key.remove(fs);
+    if (_output._representation_key != null) _output._representation_key.remove(fs);
     return super.remove_impl(fs);
   }
 
-  /** Write out K/V pairs */
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     ab.putKey(_output._init_key);
     ab.putKey(_output._representation_key);
@@ -188,9 +185,9 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    ab.getKey(_output._init_key,fs);
-    ab.getKey(_output._representation_key,fs);
-    return super.readAll_impl(ab,fs);
+    ab.getKey(_output._init_key, fs);
+    ab.getKey(_output._representation_key, fs);
+    return super.readAll_impl(ab, fs);
   }
 
 
