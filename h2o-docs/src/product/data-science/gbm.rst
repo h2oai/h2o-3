@@ -65,17 +65,17 @@ Defining a GBM Model
    training columns, since no information can be gained from them. This
    option is enabled by default.
 
--  **ntrees**: Specify the number of trees to build.
+-  `ntrees <gbm-params/ntrees.html>`__: Specify the number of trees to build.
 
--  **max\_depth**: Specify the maximum tree depth.
+-  `max_depth <gbm-params/max_depth.html>`__: Specify the maximum tree depth.
 
 -  **min\_rows**: Specify the minimum number of observations for a leaf
    (``nodesize`` in R).
 
--  **nbins**: (Numerical/real/int only) Specify the number of bins for
+-  `nbins <gbm-params/nbins.html>`__: (Numerical/real/int only) Specify the number of bins for
    the histogram to build, then split at the best point.
 
--  **nbins\_cats**: (Categorical/enums only) Specify the maximum number
+-  `nbins_cats <gbm-params/nbins_cats.html>`__: (Categorical/enums only) Specify the maximum number
    of bins for the histogram to build, then split at the best point.
    Higher values can lead to more overfitting. The levels are ordered
    alphabetically; if there are more levels than bins, adjacent levels
@@ -184,12 +184,12 @@ Defining a GBM Model
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  **balance\_classes**: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+-  `balance_classes <gbm-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max\_after\_balance\_size** parameter.
 
 -  **max\_confusion\_matrix\_size**: Specify the maximum size (in number
    of classes) for confusion matrices to be printed in the Logs.
 
--  **max\_hit\_ratio\_k**: Specify the maximum number (top K) of
+-  `max_hit_ratio_k <gbm-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of
    predictions to use for hit ratio computation. Applicable to
    multi-class only. To disable, enter 0.
 
@@ -257,16 +257,16 @@ Defining a GBM Model
 
 -  **keep\_cross\_validation\_fold\_assignment**: Enable this option to preserve the cross-validation fold assignment. 
 
--  **class\_sampling\_factors**: Specify the per-class (in
+-  `class_sampling_factors <gbm-params/class_sampling_factors.html>`__: Specify the per-class (in
    lexicographical order) over/under-sampling ratios. By default, these
    ratios are automatically computed during training to obtain the class
    balance.
 
--  **max\_after\_balance\_size**: Specify the maximum relative size of
+-  `max_after_balance_size <gbm-params/max_after_balance_size.html>`__: Specify the maximum relative size of
    the training data after balancing class counts (**balance\_classes**
    must be enabled). The value can be less than 1.0.
 
--  **nbins\_top\_level**: (For numerical/real/int columns only) Specify
+-  `nbins_top_level <gbm-params/nbins_top_level.html>`__: (For numerical/real/int columns only) Specify
    the minimum number of bins at the root level to use to build the
    histogram. This number will then be decreased by a factor of two per
    level.
