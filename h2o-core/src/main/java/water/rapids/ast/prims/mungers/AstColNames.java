@@ -31,7 +31,7 @@ public class AstColNames extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (asts[2] instanceof AstNumList) {
       if (!(asts[3] instanceof AstStrList))

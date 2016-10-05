@@ -37,7 +37,7 @@ public class AstReplaceFirst extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     final String pattern = asts[2].exec(env).getStr();
     final String replacement = asts[3].exec(env).getStr();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();

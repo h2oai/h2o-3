@@ -139,7 +139,7 @@ class ModelMetricsHandler extends Handler {
       mml._exemplar_index = this.exemplar_index;
       mml._deviances = this.deviances;
 
-      if (null != model_metrics) {
+      if (model_metrics != null) {
         mml._model_metrics = new ModelMetrics[model_metrics.length];
         for( int i=0; i<model_metrics.length; i++ )
           mml._model_metrics[i++] = (ModelMetrics)model_metrics[i].createImpl();
@@ -361,13 +361,13 @@ class ModelMetricsHandler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelMetricsListSchemaV3 predict(int version, ModelMetricsListSchemaV3 s) {
     // parameters checking:
-    if (null == s.model) throw new H2OIllegalArgumentException("model", "predict", s.model);
-    if (null == DKV.get(s.model.name)) throw new H2OKeyNotFoundArgumentException("model", "predict", s.model.name);
+    if (s.model == null) throw new H2OIllegalArgumentException("model", "predict", null);
+    if (DKV.get(s.model.name) == null) throw new H2OKeyNotFoundArgumentException("model", "predict", s.model.name);
 
     // Aggregator doesn't need a Frame to 'predict'
-    if (s.exemplar_index<0) {
-      if (null == s.frame) throw new H2OIllegalArgumentException("frame", "predict", s.frame);
-      if (null == DKV.get(s.frame.name)) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
+    if (s.exemplar_index < 0) {
+      if (s.frame == null) throw new H2OIllegalArgumentException("frame", "predict", null);
+      if (DKV.get(s.frame.name) == null) throw new H2OKeyNotFoundArgumentException("frame", "predict", s.frame.name);
     }
 
     ModelMetricsList parms = s.createAndFillImpl();
@@ -407,12 +407,12 @@ class ModelMetricsHandler extends Handler {
         DKV.put(predictions._key, predictions);
       } else if(Model.GLRMArchetypes.class.isAssignableFrom(parms._model.getClass())) {
         if(s.project_archetypes) {
-          if (null == parms._predictions_name)
+          if (parms._predictions_name == null)
             parms._predictions_name = "reconstructed_archetypes_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_of_" + parms._frame._key.toString();
           predictions = ((Model.GLRMArchetypes) parms._model).scoreArchetypes(parms._frame, Key.<Frame>make(parms._predictions_name), s.reverse_transform);
         } else {
           assert s.reconstruct_train;
-          if (null == parms._predictions_name)
+          if (parms._predictions_name == null)
             parms._predictions_name = "reconstruction_" + Key.make().toString().substring(0, 5) + "_" + parms._model._key.toString() + "_of_" + parms._frame._key.toString();
           predictions = ((Model.GLRMArchetypes) parms._model).scoreReconstruction(parms._frame, Key.<Frame>make(parms._predictions_name), s.reverse_transform);
         }

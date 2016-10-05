@@ -2,22 +2,25 @@ package water.rapids.ast.params;
 
 import water.rapids.Env;
 import water.rapids.Rapids;
-import water.rapids.Val;
 import water.rapids.ast.AstParameter;
+import water.rapids.vals.ValStr;
 
 /**
  * A String.  Execution is just to return the constant.
  */
 public class AstStr extends AstParameter {
+  private final ValStr _v;
+
   public AstStr() {
+    _v = null;
   }
 
   public AstStr(String str) {
-    super(str);
+    _v = new ValStr(str);
   }
 
   public AstStr(Rapids e, char c) {
-    super(e, c);
+    _v = new ValStr(e.match(c));
   }
 
   @Override
@@ -26,7 +29,7 @@ public class AstStr extends AstParameter {
   }
 
   @Override
-  public Val exec(Env env) {
+  public ValStr exec(Env env) {
     return _v;
   }
 
@@ -40,5 +43,9 @@ public class AstStr extends AstParameter {
     int i = water.util.ArrayUtils.find(names, _v.getStr());
     if (i == -1) throw new IllegalArgumentException("Column " + _v.getStr() + " not found");
     return new int[]{i};
+  }
+
+  public String getStr() {
+    return _v.getStr();
   }
 }
