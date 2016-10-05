@@ -6,20 +6,22 @@ apply plugin: 'jacoco'
 // When using v2.0+ of the Jenkins JaCoCo plugin, the
 // JaCoCo version needs to be v0.7.5+
 // 
+
+// If jacocoReportSubdir is provided, use it for .exec file and resulting report.  Else just use "jacoco".
+String reportSubdir =
+    project.hasProperty("jacocoReportSubdir") ?
+    project.getProperty("jacocoReportSubdir") : "jacoco"
+
 jacoco {
     toolVersion = "0.7.6.201602180812"
-    // If jacocoReportSubdir is provided, use it.  Else just use "jacoco".
-    reportsDir =
-        project.hasProperty("jacocoReportSubdir") ?
-            file("${buildDir}/reports/${project.getProperty("jacocoReportSubdir")}/") :
-            file("${buildDir}/reports/jacoco/")
+    reportsDir = file("${buildDir}/reports/${reportSubdir}")
 }
 
 repositories {
     mavenCentral()
 }
 
-String destination = "${buildDir}/reports/jacoco/report.exec"
+String destination = "${buildDir}/reports/${reportSubdir}/report.exec"
 
 task jacocoAgentLink(type: Exec) {
     //String location = project.configurations.testRuntime.find { it.name.startsWith("org.jacoco.agent") }
@@ -72,11 +74,11 @@ jacocoTestReport {
 }
 
 task cleanCoverageReports(type: Delete) {
-    delete files("${buildDir}/reports/jacoco")
+    delete files("${buildDir}/reports/jacoco*")
 }
 
 task cleanCoverageData (type: Delete) {
-    delete file("${buildDir}/reports/jacoco/report.exec")
+    delete file("${buildDir}/reports/jacoco*/report.exec")
 }
 
 jacocoTestReport.dependsOn jacocoMergeExecs
