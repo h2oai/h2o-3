@@ -63,6 +63,7 @@ abstract public class MojoModel extends GenModel {
             case "Distributed Random Forest":
                 return new DrfModel(mojoReader, info, columns, domains);
             case "Gradient Boosting Method":
+            case "Gradient Boosting Machine":
                 return new GbmModel(mojoReader, info, columns, domains);
             default:
                 throw new IOException("Unsupported algorithm " + algo + " for raw models.");
