@@ -18,7 +18,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public ToEigenVec getToEigenVec() { return null; }
 
-  private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
+  transient private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
 
   public Job<M> _job;     // Job controlling this build
