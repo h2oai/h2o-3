@@ -556,6 +556,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
               new String[model._output._eigenvectors_raw.length][], model._output._eigenvectors_raw);
     }
 
+    @SuppressWarnings("ConstantConditions")  // Method too complex for IntelliJ
     @Override
     public void computeImpl() {
       GLRMModel model = null;
@@ -688,9 +689,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           }
 
           // Add to scoring history
-          model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._training_time_ms.length+1, System.currentTimeMillis());
-          model._output._history_step_size = ArrayUtils.copyAndFillOf(model._output._history_step_size, model._output._history_step_size.length+1, step);
-          model._output._history_objective = ArrayUtils.copyAndFillOf(model._output._history_objective, model._output._history_objective.length+1, model._output._objective);
+          model._output._training_time_ms.add(System.currentTimeMillis());
+          model._output._history_step_size.add(step);
+          model._output._history_objective.add(model._output._objective);
           model._output._scoring_history = createScoringHistoryTable(model._output);
           model.update(_job); // Update model in K/V store
         }
@@ -722,9 +723,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         model._output._step_size = step;
 
         // Add to scoring history
-        model._output._history_step_size = ArrayUtils.copyAndFillOf(
-                model._output._history_step_size,
-                model._output._history_step_size.length+1, step);
+        model._output._history_step_size.add(step);
         model._output._archetypes = yt.buildTable(model._output._names_expanded, false);  // Transpose Y' to get original Y
         if (_parms._recover_svd) recoverSVD(model, xinfo);
 
@@ -779,7 +778,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       int col = 0;
       // table.set(row, col++, output._nobs);
       table.set(row, col++, output._iterations);
-      table.set(row, col++, output._history_step_size[output._history_step_size.length-1]);
+      table.set(row, col++, output._history_step_size.get(output._history_step_size.size() - 1));
       table.set(row, col, output._objective);
       return table;
     }
@@ -794,7 +793,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       colHeaders.add("Step Size"); colTypes.add("double"); colFormat.add("%.5f");
       colHeaders.add("Objective"); colTypes.add("double"); colFormat.add("%.5f");
 
-      final int rows = output._training_time_ms.length;
+      final int rows = output._training_time_ms.size();
       TwoDimTable table = new TwoDimTable(
               "Scoring History", null,
               new String[rows],
@@ -807,11 +806,11 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         assert(row < table.getRowDim());
         assert(col < table.getColDim());
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        table.set(row, col++, fmt.print(output._training_time_ms[row]));
-        table.set(row, col++, PrettyPrint.msecs(output._training_time_ms[row] - _job.start_time(), true));
+        table.set(row, col++, fmt.print(output._training_time_ms.get(row)));
+        table.set(row, col++, PrettyPrint.msecs(output._training_time_ms.get(row) - _job.start_time(), true));
         table.set(row, col++, row);
-        table.set(row, col++, output._history_step_size[row]);
-        table.set(row, col  , output._history_objective[row]);
+        table.set(row, col++, output._history_step_size.get(row));
+        table.set(row, col  , output._history_objective.get(row));
       }
       return table;
     }

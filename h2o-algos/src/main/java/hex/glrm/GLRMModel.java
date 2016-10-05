@@ -9,6 +9,8 @@ import water.fvec.Vec;
 import water.util.*;
 import water.util.TwoDimTable;
 
+import java.util.ArrayList;
+
 /**
  * GLRM (<a href="https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Model</a>).
  *
@@ -107,14 +109,14 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
 
     // Average change in objective function this iteration
     public double _avg_change_obj;
-    public double[/*iterations*/] _history_objective = new double[0];
+    public ArrayList<Double> _history_objective = new ArrayList<>();
 
     // Mapping from lower dimensional k-space to training features (Y)
     public TwoDimTable _archetypes;
     public GLRM.Archetypes _archetypes_raw;   // Needed for indexing into Y for scoring
 
     // Step size each iteration
-    public double[/*iterations*/] _history_step_size = new double[0];
+    public ArrayList<Double> _history_step_size = new ArrayList<>();
 
     // SVD of output XY
     public double[/*feature*/][/*k*/] _eigenvectors_raw;
@@ -150,7 +152,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public GlrmLoss[] _lossFunc;
 
     // Training time
-    public long[/*iterations*/] _training_time_ms = new long[0];
+    public ArrayList<Long> _training_time_ms = new ArrayList<>();
 
     public GLRMOutput(GLRM b) { super(b); }
 
