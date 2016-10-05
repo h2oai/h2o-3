@@ -16,7 +16,10 @@ import water.util.PrettyPrint;
 import water.util.RandomUtils;
 import water.util.UnsafeUtils;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -101,8 +104,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     model_info = new DeepWaterModelInfo(parms, destKey, nClasses, output.nfeatures());
     model_info_key = Key.make(H2O.SELF);
 
-    _output._names = train._names;
-    _output._domains = train.domains();
+    _output._origNames = train.names();
+    _output._origDomains = train.domains();
     if (get_params()._problem_type== DeepWaterParameters.ProblemType.h2oframe_classification) {
       double x = 0.782347234;
       boolean identityLink = new Distribution(get_params()).link(x) == x;
@@ -225,7 +228,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     if( !keep_running || get_params()._score_each_iteration ||
         (sinceLastScore > get_params()._score_interval *1000 //don't score too often
             &&(double)(_timeLastScoreEnd-_timeLastScoreStart)/sinceLastScore < get_params()._score_duty_cycle) ) { //duty cycle
-      Log.info(GenModel.logNvidiaStats());
+      Log.info(logNvidiaStats());
       jobKey.get().update(0,"Scoring on " + fTrain.numRows() + " training samples" +(fValid != null ? (", " + fValid.numRows() + " validation samples") : ""));
       final boolean printme = !get_params()._quiet_mode;
       _timeLastScoreStart = System.currentTimeMillis();
@@ -659,11 +662,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       super.writeExtraModelInfo();
       writeln("backend = " + _parms._backend);
       writeln("mini_batch_size = " + _parms._mini_batch_size);
-      if (_parms._problem_type == DeepWaterParameters.ProblemType.image_classification) {
-        writeln("height = " + model_info._height);
-        writeln("width = " + model_info._width);
-        writeln("channels = " + model_info._channels);
-      }
+      writeln("height = " + model_info._height);
+      writeln("width = " + model_info._width);
+      writeln("channels = " + model_info._channels);
     }
 
     @Override
@@ -681,5 +682,20 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
 
   }
+
+  private static String getNvidiaStats() throws java.io.IOException {
+    String cmd = "nvidia-smi";
+    InputStream stdin = Runtime.getRuntime().exec(cmd).getInputStream();
+    InputStreamReader isr = new InputStreamReader(stdin);
+    BufferedReader br = new BufferedReader(isr);
+    StringBuilder sb = new StringBuilder();
+    String s;
+    while ((s = br.readLine()) != null) {
+      sb.append(s + "\n");
+    }
+    return sb.toString();
+  }
+
+  static public String logNvidiaStats() { try { return (getNvidiaStats()); } catch (IOException e) { return null; } }
 }
 

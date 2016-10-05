@@ -20,10 +20,10 @@ import water.util.*;
 
 import java.io.*;
 import java.lang.reflect.Field;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.charset.Charset;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -1209,8 +1209,114 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * Override this in models that support serialization into the MOJO format.
    * @return a class that inherits from ModelMojo
    */
-  public ModelMojo getMojo() {
-    throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
+  public class MojoStreamWriter extends StreamWriter {
+    private StringBuilder tmpfile;
+    private String tmpname;
+    private ZipOutputStream zos;
+
+    @Override
+    public void writeTo(OutputStream os) {
+      zos = new ZipOutputStream(os);
+      try {
+        writeModelInfo();
+        writeDomains();
+        writeModelData();
+        zos.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+
+    private void writeModelInfo() throws IOException {
+      int n_categoricals = 0;
+      for (String[] domain : _output._domains)
+        if (domain != null)
+          n_categoricals++;
+
+      startWritingTextFile("model.ini");
+      writeln("[info]");
+      writeln("algorithm = " + _parms.fullName());
+      writeln("category = " + _output.getModelCategory());
+      writeln("uuid = " + checksum());
+      writeln("supervised = " + (_output.isSupervised() ? "true" : "false"));
+      writeln("n_features = " + _output.nfeatures());
+      writeln("n_classes = " + _output.nclasses());
+      writeln("n_columns = " + _output._names.length);
+      writeln("n_domains = " + n_categoricals);
+      writeln("balance_classes = " + _parms._balance_classes);
+      writeln("default_threshold = " + defaultThreshold());
+      writeln("prior_class_distrib = " + Arrays.toString(_output._priorClassDist));
+      writeln("model_class_distrib = " + Arrays.toString(_output._modelClassDist));
+      writeExtraModelInfo();
+      writeln("timestamp = " + new DateTime().toString());
+      writeln("h2o_version = " + H2O.ABV.projectVersion());
+      writeln("mojo_version = 1.0");
+      writeln("license = Apache License Version 2.0");
+      writeln("");
+      writeln("[columns]");
+      for (String name : _output._names) {
+        writeln(name);
+      }
+      writeln("");
+      writeln("[domains]");
+      String format = "%d: %d d%03d.txt";
+      for (int colIndex = 0, domIndex = 0; colIndex < _output._names.length; colIndex++) {
+        if (_output._domains[colIndex] != null)
+          writeln(String.format(format, colIndex, _output._domains[colIndex].length, domIndex++));
+      }
+      finishWritingTextFile();
+    }
+
+    private void writeDomains() throws IOException {
+      int domIndex = 0;
+      for (String[] domain : _output._domains) {
+        if (domain == null) continue;
+        startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
+        for (String category : domain) {
+          writeln(category.replaceAll("\n", "\\n"));  // replace newlines with "\n" escape sequences
+        }
+        finishWritingTextFile();
+      }
+    }
+
+    /**
+     * Overwrite in subclasses to write any additional information into the model.ini/[info] section.
+     */
+    protected void writeExtraModelInfo() throws IOException {}
+
+    /**
+     * Overwrite in subclasses to write the actual model data.
+     */
+    protected void writeModelData() throws IOException {}
+
+    protected void startWritingTextFile(String filename) {
+      assert tmpfile == null : "Previous text file was not closed";
+      tmpfile = new StringBuilder();
+      tmpname = filename;
+    }
+
+    protected void writeln(String s) {
+      assert tmpfile != null : "No text file is currently being written";
+      tmpfile.append(s);
+      tmpfile.append('\n');
+    }
+
+    protected void finishWritingTextFile() throws IOException {
+      writeBinaryFile(tmpname, tmpfile.toString().getBytes(Charset.forName("UTF-8")));
+      tmpfile = null;
+    }
+
+    protected void writeBinaryFile(String filename, byte[] bytes) throws IOException {
+      ZipEntry archiveEntry = new ZipEntry(filename);
+      archiveEntry.setSize(bytes.length);
+      zos.putNextEntry(archiveEntry);
+      zos.write(bytes);
+      zos.closeEntry();
+    }
+  }
+
+  public MojoStreamWriter getMojoStream() {
+    return new MojoStreamWriter();
   }
 
 

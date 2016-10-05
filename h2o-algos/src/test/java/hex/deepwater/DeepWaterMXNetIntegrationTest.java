@@ -4,7 +4,6 @@ import deepwater.backends.BackendModel;
 import deepwater.backends.BackendParams;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
-import hex.genmodel.GenModel;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -19,11 +18,13 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
+import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
+
 public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationTest {
 
   @Before
   public void setUp() throws Exception {
-    backend = GenModel.createDeepWaterBackend(DeepWaterParameters.Backend.mxnet.toString());
+    backend = createDeepWaterBackend(DeepWaterParameters.Backend.mxnet.toString());
   }
 
   // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
