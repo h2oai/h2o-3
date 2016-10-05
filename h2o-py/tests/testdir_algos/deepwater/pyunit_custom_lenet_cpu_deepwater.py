@@ -38,10 +38,10 @@ def deepwater_custom_lenet():
   print(frame.head(5))
   nclasses = frame[1].nlevels()[0]
 
-  print("Creating the Alexnet model architecture from scratch using the MXNet Python API")
+  print("Creating the model architecture from scratch using the MXNet Python API")
   lenet(nclasses).save("/tmp/symbol_lenet-py.json")
 
-  print("Importing the Alexnet model architecture for training in H2O")
+  print("Importing the model architecture for training in H2O")
   model = H2ODeepWaterEstimator(epochs=50, learning_rate=1e-3, mini_batch_size=32,
                                 network='user', network_definition_file="/tmp/symbol_lenet-py.json", image_shape=[28,28], channels=1,
                                 score_interval=0, train_samples_per_iteration=1000,
