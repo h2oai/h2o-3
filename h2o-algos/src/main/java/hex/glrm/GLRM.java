@@ -622,6 +622,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         model._output._iterations = 0;
         model._output._updates = 0;
         model._output._avg_change_obj = 2 * TOLERANCE;    // Allow at least 1 iteration
+        model._output._step_size = 0;       // set to zero
         model.update(_job);  // Update model in K/V store
 
         double step = _parms._init_step_size;   // Initial step size
@@ -700,6 +701,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
                              false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(x);
         DKV.put(xinfo);
+
+        // add last step_size used
+        model._output._step_size = step;
 
         // Add to scoring history
         model._output._history_step_size = ArrayUtils.copyAndFillOf(
