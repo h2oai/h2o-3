@@ -39,6 +39,14 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
   transient public int _tcp_readers;               // Count of started TCP reader threads
 
+  public boolean _removed_from_cloud;
+  public void stopSendThread(){
+    if(_sendThread != null) {
+      _sendThread._stopRequested = true;
+      _sendThread = null;
+    }
+    _removed_from_cloud = true;
+  }
   // A JVM is uniquely named by machine IP address and port#
   public final H2Okey _key;
 
@@ -295,6 +303,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // Buffers the small messages together and sends the bytes over via TCP channel.
   class UDP_TCP_SendThread extends Thread {
 
+    volatile boolean _stopRequested;
     private ByteChannel _chan;  // Lazily made on demand; closed & reopened on error
     private final ByteBuffer _bb; // Reusable output large buffer
   
@@ -335,7 +344,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   
     @Override public void run(){
       try {
-        while (true) {            // Forever loop
+        while (!_stopRequested) {            // Forever loop
           try {
             ByteBuffer bb = _msgQ.take(); // take never returns null but blocks instead
             while( bb != null ) {         // while have an BB to process
@@ -350,18 +359,21 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
             }
             sendBuffer();         // Send final trailing BBs
           } catch (InterruptedException e) { /*ignore*/ }
-        } 
+        }
       } catch(Throwable t) { throw Log.throwErr(t); }
+      if(_chan != null) {
+        try {_chan.close();} catch (IOException e) {}
+        _chan = null;
+      }
     }
   
     void sendBuffer(){
       int retries = 0;
       _bb.flip();                 // limit set to old position; position set to 0
-      while( _bb.hasRemaining() ) {
+      while( !_stopRequested && _bb.hasRemaining()) {
         try {
           ByteChannel chan = _chan == null ? (_chan=openChan()) : _chan;
           chan.write(_bb);
-  
         } catch(IOException ioe) {
           _bb.rewind();           // Position to zero; limit unchanged; retry the operation
           // Log if not shutting down, and not middle-of-cloud-formation where
@@ -369,7 +381,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
           // comes up - such as when not all nodes mentioned in a flatfile will be
           // booted.  Basically the ERRR log will show endless repeat attempts to
           // connect to the missing node
-          if( !H2O.getShutdownRequested() && (Paxos._cloudLocked || retries++ > 300) ) {
+          if( !_stopRequested && !H2O.getShutdownRequested() && (Paxos._cloudLocked || retries++ > 300) ) {
             Log.err("Got IO error when sending batch UDP bytes: ",ioe);
             retries = 150;      // Throttle the pace of error msgs
           }
@@ -381,7 +393,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
           try {Thread.sleep(sleep);} catch (InterruptedException e) {/*ignored*/}
         }
       }
-  
       _bb.clear();            // Position set to 0; limit to capacity
     }
   
