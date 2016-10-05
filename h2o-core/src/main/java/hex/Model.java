@@ -859,7 +859,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             good++;
           }
         } else if( vec.isCategorical() ) {
-//          throw new IllegalArgumentException("Test/Validation dataset has categorical column '"+names[i]+"' which is real-valued in the training data");
+          throw new IllegalArgumentException("Test/Validation dataset has categorical column '"+names[i]+"' which is real-valued in the training data");
         } else {
           good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
@@ -1200,8 +1200,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   @Override protected long checksum_impl() {
     return _parms.checksum_impl() * _output.checksum_impl();
   }
-
-
 
   /**
    * Override this in models that support serialization into the MOJO format.

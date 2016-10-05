@@ -3,7 +3,6 @@ package hex.deepwater;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ToEigenVec;
-import hex.genmodel.GenModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -24,13 +23,13 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   public DeepWater(DeepWaterParameters parms ) {
     super(parms);
     init(false);
-    GenModel.createDeepWaterBackend(parms._backend.toString());
+    //createDeepWaterBackend(parms._backend.toString());
   }
 
   public DeepWater(DeepWaterParameters parms, Key<DeepWaterModel> key ) {
     super(parms,key);
     init(false);
-    GenModel.createDeepWaterBackend(parms._backend.toString());
+    //createDeepWaterBackend(parms._backend.toString());
   }
 
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
