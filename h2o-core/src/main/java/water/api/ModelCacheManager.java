@@ -5,7 +5,7 @@ import water.api.ModelsHandler.Models;
 
 public class ModelCacheManager {
 
-  public static <M extends Model<M,P,? extends Model.Output>, P extends Model.Parameters> M get(P parms) {
+  public static <M extends Model, P extends Model.Parameters> M get(P parms) {
     Model[] models = Models.fetchAll();
     long checksum = parms.checksum();
     for (Model model : models) {

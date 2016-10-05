@@ -12,7 +12,8 @@ import water.fvec.Frame;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
-public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
+public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.SVDOutput> {
+
   public static class SVDParameters extends Model.Parameters {
     public String algoName() { return "SVD"; }
     public String fullName() { return "Singular Value Decomposition"; }
