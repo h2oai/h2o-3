@@ -346,8 +346,6 @@ public abstract class SharedTreeModel<
     @Override
     protected void writeExtraModelInfo() throws IOException {
       writeln("n_trees = " + _output._ntrees);
-      writeln("n_features = " + _output.nfeatures());
-      writeln("supervised = true");
     }
 
     @Override
