@@ -107,7 +107,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** The short name, used in making Keys.  e.g. "GBM" */
     abstract public String algoName();
 
-    /** The pretty algo name for this Model (e.g., Gradient Boosting Method, rather than GBM).*/
+    /** The pretty algo name for this Model (e.g., Gradient Boosting Machine, rather than GBM).*/
     abstract public String fullName();
 
     /** The Java class name for this Model (e.g., hex.tree.gbm.GBM, rather than GBM).*/
@@ -874,6 +874,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (expensive) {
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
       if (updated!=test) {
+        assert(updated._key!=test._key);
         if (toDelete!=null) toDelete.put(updated._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         test.restructure(updated.names(), updated.vecs());
       }
@@ -1269,6 +1270,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       writeln("algorithm = " + _parms.fullName());
       writeln("category = " + _output.getModelCategory());
       writeln("uuid = " + checksum());
+      writeln("supervised = " + (_output.isSupervised() ? "true" : "false"));
+      writeln("n_features = " + _output.nfeatures());
       writeln("n_classes = " + _output.nclasses());
       writeln("n_columns = " + _output._names.length);
       writeln("n_domains = " + n_categoricals);

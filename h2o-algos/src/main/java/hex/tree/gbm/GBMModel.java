@@ -31,7 +31,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     }
 
     public String algoName() { return "GBM"; }
-    public String fullName() { return "Gradient Boosting Method"; }
+    public String fullName() { return "Gradient Boosting Machine"; }
     public String javaName() { return GBMModel.class.getName(); }
   }
 
