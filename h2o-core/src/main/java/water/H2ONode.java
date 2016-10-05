@@ -359,8 +359,12 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
             }
             sendBuffer();         // Send final trailing BBs
           } catch (InterruptedException e) { /*ignore*/ }
-        } 
+        }
       } catch(Throwable t) { throw Log.throwErr(t); }
+      if(_chan != null) {
+        try {_chan.close();} catch (IOException e) {}
+        _chan = null;
+      }
     }
   
     void sendBuffer(){
