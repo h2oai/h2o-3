@@ -15,6 +15,8 @@ import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.prims.mungers.AstColSlice;
 import water.rapids.vals.ValFrame;
 
+import java.util.Arrays;
+
 /**
  * Rectangular assign into a row and column slice.  The destination must
  * already exist.  The output is conceptually a new copy of the data, with a
@@ -112,9 +114,16 @@ public class AstRectangleAssign extends AstPrimitive {
     // copy-on-write
     Vec[] dvecs = dst.vecs();
     final Vec[] svecs = src.vecs();
-    for (int col = 0; col < cols.length; col++)
-      if (dvecs[cols[col]].get_type() != svecs[col].get_type())
-        throw new IllegalArgumentException("Columns must be the same type; column " + col + ", \'" + dst._names[cols[col]] + "\', is of type " + dvecs[cols[col]].get_type_str() + " and the source is " + svecs[col].get_type_str());
+    for (int col = 0; col < cols.length; col++) {
+      int dtype = dvecs[cols[col]].get_type();
+      if (dtype != svecs[col].get_type())
+        throw new IllegalArgumentException("Columns must be the same type; " +
+                "column " + col + ", \'" + dst._names[cols[col]] + "\', is of type " + dvecs[cols[col]].get_type_str() +
+                " and the source is " + svecs[col].get_type_str());
+      if ((dtype == Vec.T_CAT) && (! Arrays.equals(dvecs[cols[col]].domain(), svecs[col].domain())))
+        throw new IllegalArgumentException("Cannot assign to a categorical column with a different domain; " +
+                "source column " + src._names[col] + ", target column " + dst._names[cols[col]]);
+    }
 
     // Frame fill
     // Handle fast small case
