@@ -33,6 +33,7 @@ import java.util.regex.Pattern;
 import water.H2O;
 import water.H2ONode;
 import water.JettyHTTPD;
+import water.Paxos;
 import water.util.Log;
 import water.util.NetworkUtils;
 import water.util.OSUtils;
@@ -582,10 +583,13 @@ public class NetworkInit {
 
       // Hideous O(n) algorithm for broadcast - avoid the memory allocation in
       // this method (since it is heavily used)
+
       HashSet<H2ONode> nodes = H2O.getFlatfile();
       nodes.addAll(water.Paxos.PROPOSED.values());
       bb.mark();
       for( H2ONode h2o : nodes ) {
+        if(h2o._removed_from_cloud)
+          continue;
         try {
           bb.reset();
           if(H2O.ARGS.useUDP) {

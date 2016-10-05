@@ -147,6 +147,15 @@ public abstract class Paxos {
       while( !_commonKnowledge )
         try { Paxos.class.wait(); } catch( InterruptedException ignore ) { }
       _cloudLocked = true;
+      // remove nodes which are not in the cluster (e.g. nodes from flat-file which are not actually used)
+      if(H2O.isFlatfileEnabled()){
+        for(H2ONode n: H2O.getFlatfile()){
+          if(!n._heartbeat._client && !PROPOSED.containsKey(n._key)){
+            Log.info("Flatile::" + n._key + " not active in this cloud. Removing it from the list.");
+            n.stopSendThread();
+          }
+        }
+      }
     }
   }
 
