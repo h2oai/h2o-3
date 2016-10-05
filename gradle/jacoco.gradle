@@ -8,7 +8,11 @@ apply plugin: 'jacoco'
 // 
 jacoco {
     toolVersion = "0.7.6.201602180812"
-    reportsDir = file("${buildDir}/reports/jacoco/")
+    reportsDir =
+        project.hasProperty("jacocoReportSubdir") ?
+            file("${buildDir}/reports/${project.getProperty("jacocoReportSubdir")}/") :
+            file("${buildDir}/reports/jacoco/")
+    //reportsDir = file("${buildDir}/reports/${reportsSubdir}/")
 }
 
 repositories {
@@ -76,3 +80,4 @@ task cleanCoverageData (type: Delete) {
 }
 
 jacocoTestReport.dependsOn jacocoMergeExecs
+
