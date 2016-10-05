@@ -24,7 +24,8 @@ public class AAA_PreCloudLock extends TestUtil {
   static final int CLOUD_SIZE = 4;
   static final int PARTIAL_CLOUD_SIZE = 2;
 
-  @BeforeClass() public static void setup() { stall_till_cloudsize(CLOUD_SIZE); }
+  @BeforeClass
+  public static void setup() { stall_till_cloudsize(CLOUD_SIZE); }
 
   private static void stall() {
     stall_till_cloudsize(PARTIAL_CLOUD_SIZE);
@@ -34,6 +35,7 @@ public class AAA_PreCloudLock extends TestUtil {
 
   // ---
   // Should be able to load basic status pages without locking the cloud.
+  @SuppressWarnings("ResultOfObjectAllocationIgnored")
   @Test public void testBasicStatusPages() {
     TypeMap._check_no_locking=true; // Blow a nice assert if locking
 
@@ -63,6 +65,8 @@ public class AAA_PreCloudLock extends TestUtil {
       new hex.schemas.GBMV3();
       new hex.schemas.GLMModelV3();
       new hex.schemas.GLMV3();
+      new hex.schemas.GLRMV3();
+      new hex.schemas.GLRMModelV3();
       new hex.schemas.GrepModelV3();
       new hex.schemas.GrepV3();
       new hex.schemas.KMeansModelV3();
