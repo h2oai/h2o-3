@@ -384,8 +384,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
     public Key _cross_validation_predictions[];
-    public Key _cross_validation_holdout_predictions_frame_id;
-    public Key _cross_validation_fold_assignment_frame_id;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id;
+    public Key<Frame> _cross_validation_fold_assignment_frame_id;
 
     // Model-specific start/end/run times
     // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
@@ -1321,6 +1321,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      */
     protected void writeModelData() throws IOException {}
 
+
+    // Helper functions for creating text files in the output mojo file:
+    //     startWritingTextFile("mydata.txt")
+    //     writeln("some info")
+    //     ...
+    //     finishWritingTextFile()
+    //
+
     protected void startWritingTextFile(String filename) {
       assert tmpfile == null : "Previous text file was not closed";
       tmpfile = new StringBuilder();
@@ -1338,6 +1346,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       tmpfile = null;
     }
 
+    /**
+     * Write binary content as a new file in the output mojo file.
+     * @param filename: name of the file within the .zip archive
+     * @param bytes: content to write to the file
+     */
     protected void writeBinaryFile(String filename, byte[] bytes) throws IOException {
       ZipEntry archiveEntry = new ZipEntry(filename);
       archiveEntry.setSize(bytes.length);
@@ -1347,6 +1360,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  /**
+   * Overwrite in subclasses to instantiate a model-specific MojoStreamWriter
+   */
   public MojoStreamWriter getMojoStream() {
     return new MojoStreamWriter();
   }

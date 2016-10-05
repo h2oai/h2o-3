@@ -10,13 +10,13 @@ public class GLRMModelV3 extends ModelSchemaV3<GLRMModel, GLRMModelV3, GLRMModel
 
   public static final class GLRMModelOutputV3 extends ModelOutputSchemaV3<GLRMModel.GLRMOutput, GLRMModelOutputV3> {
     // Output fields; input fields are in the parameters list
-    @API(help = "Iterations executed")
+    @API(help = "Number of iterations executed")
     public int iterations;
 
-    @API(help = "Updates executed")
+    @API(help = "Number of updates executed")
     public int updates;
 
-    @API(help = "Objective value")
+    @API(help = "Current value of the objective function")
     public double objective;
 
     @API(help = "Average change in objective value on final iteration")
@@ -25,7 +25,7 @@ public class GLRMModelV3 extends ModelSchemaV3<GLRMModel, GLRMModelV3, GLRMModel
     @API(help = "Final step size")
     public double step_size;
 
-    @API(help = "Mapping from lower dimensional k-space to training features")
+    @API(help = "Mapping from lower dimensional k-space to training features (Y)")
     public TwoDimTableV3 archetypes;
 
     @API(help = "Singular values of XY matrix")

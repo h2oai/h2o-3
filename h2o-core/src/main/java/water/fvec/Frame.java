@@ -253,7 +253,8 @@ public class Frame extends Lockable<Frame> {
   /** The array of keys.
    * @return the array of keys for each vec in the frame.
    */
-  public Key[] keys() { return _keys; }
+  public Key<Vec>[] keys() { return _keys; }
+  public Iterable<Key<Vec>> keysList() { return Arrays.asList(_keys); }
 
   /** The internal array of Vecs.  For efficiency Frames contain an array of
    *  Vec Keys - and the Vecs themselves are lazily loaded from the {@link DKV}.
