@@ -30,6 +30,8 @@ public class KeyTest extends TestUtil {
     Key<Stuff> k0 = s1.startsWith("F") ? null : key1; // to cheat the system
     assertFalse(key1.equals(k0));
     Object os1 = ("?"+s1).substring(1); // to cheat the system
+    Object key3 = Key.make(s1); // to cheat the system
+    assertTrue(key1.equals(key3));
     assertFalse(key1.equals(os1));
     assertFalse(key1.equals(key2));
     Key<Stuff> kh1 = Key.buildKeyForTestingPurposes(s1.getBytes(), 42);
