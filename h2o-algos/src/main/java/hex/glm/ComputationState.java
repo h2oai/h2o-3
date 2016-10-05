@@ -17,6 +17,7 @@ import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
+import java.util.Comparator;
 
 public final class ComputationState {
   final boolean _intercept;
@@ -127,36 +128,47 @@ public final class ComputationState {
    *
    * @return indices of expected active predictors.
    */
-  protected int applyStrongRules(double lambdaNew, double lambdaOld) {
+  protected void applyStrongRules(double lambdaNew, double lambdaOld) {
     lambdaNew = Math.min(_lambdaMax,lambdaNew);
     lambdaOld = Math.min(_lambdaMax,lambdaOld);
-    if(_parms._family == Family.multinomial)
-      return applyStrongRulesMultinomial(lambdaNew,lambdaOld);
+    if (_parms._family == Family.multinomial /* && _parms._solver != GLMParameters.Solver.L_BFGS */) {
+      applyStrongRulesMultinomial(lambdaNew, lambdaOld);
+      return;
+    }
     int P = _dinfo.fullN();
-    int newlySelected = 0;
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
     _allIn = _allIn || _parms._alpha[0]*lambdaNew == 0 || _activeBC.hasBounds();
     if (!_allIn) {
+      int newlySelected = 0;
       final double rhs = Math.max(0,_alpha * (2 * lambdaNew - lambdaOld));
       int [] newCols = MemoryManager.malloc4(P);
       int j = 0;
-      int[] oldActiveCols = _activeData._activeCols == null ? new int[0] : _activeData.activeCols();
+      int[] oldActiveCols = _activeData._activeCols == null ? new int[]{P} : _activeData.activeCols();
       for (int i = 0; i < P; ++i) {
-        if (j < oldActiveCols.length && i == oldActiveCols[j]) {
-          ++j;
-          newCols[newlySelected++] = i; // todo
-        } else if (_ginfo._gradient[i] > rhs || -_ginfo._gradient[i] > rhs) {
+        if(j < oldActiveCols.length && oldActiveCols[j] == i)
+          j++;
+        else if (_ginfo._gradient[i] > rhs || -_ginfo._gradient[i] > rhs)
           newCols[newlySelected++] = i;
-        }
       }
+      if(_parms._max_active_predictors != -1 && (oldActiveCols.length + newlySelected -1) > _parms._max_active_predictors){
+        Integer [] bigInts = ArrayUtils.toIntegers(newCols, 0, newlySelected);
+        Arrays.sort(bigInts, new Comparator<Integer>() {
+          @Override
+          public int compare(Integer o1, Integer o2) {
+            return (int)Math.signum(_ginfo._gradient[o2.intValue()]*_ginfo._gradient[o2.intValue()] - _ginfo._gradient[o1.intValue()]*_ginfo._gradient[o1.intValue()]);
+          }
+        });
+        newCols = ArrayUtils.toInt(bigInts,0,_parms._max_active_predictors - oldActiveCols.length + 1);
+        Arrays.sort(newCols);
+      } else newCols = Arrays.copyOf(newCols,newlySelected);
+      newCols = ArrayUtils.sortedMerge(oldActiveCols,newCols);
       // merge already active columns in
-      int active = newlySelected;
+      int active = newCols.length;
       _allIn = active == P;
       if(!_allIn) {
         int [] cols = newCols;
-        cols[newlySelected++] = P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
-        cols = Arrays.copyOf(cols, newlySelected);
+        assert cols[active-1] == P; // intercept is always selected, even if it is false (it's gonna be dropped later, it is needed for other stuff too)
         _beta = ArrayUtils.select(_beta, cols);
         if(_u != null) _u = ArrayUtils.select(_u,cols);
         _activeData = _dinfo.filterExpandedColumns(cols);
@@ -165,12 +177,11 @@ public final class ComputationState {
         _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal, ArrayUtils.select(_ginfo._gradient, cols));
         _activeBC = _bc.filterExpandedColumns(_activeData.activeCols());
         _gslvr = new GLMGradientSolver(_job,_parms,_activeData,(1-_alpha)*_lambda,_bc);
-        assert _beta.length == newlySelected;
-        return newlySelected;
+        assert _beta.length == cols.length;
+        return;
       }
     }
     _activeData = _dinfo;
-    return _dinfo.fullN();
   }
 
   public boolean _lsNeeded = false;
@@ -249,7 +260,12 @@ public final class ComputationState {
    *
    * @return indices of expected active predictors.
    */
-  protected int applyStrongRulesMultinomial(double lambdaNew, double lambdaOld) {
+  /**
+   * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
+   *
+   * @return indices of expected active predictors.
+   */
+  protected int applyStrongRulesMultinomial_old(double lambdaNew, double lambdaOld) {
     int P = _dinfo.fullN();
     int N = P+1;
     int selected = 0;
@@ -281,6 +297,66 @@ public final class ComputationState {
       _allIn = selected == cols.length;
     }
     return selected;
+  }
+
+  /**
+   * Apply strong rules to filter out expected inactive (with zero coefficient) predictors.
+   *
+   * @return indices of expected active predictors.
+   */
+  protected void applyStrongRulesMultinomial(double lambdaNew, double lambdaOld) {
+    int P = _dinfo.fullN();
+    int N = P+1;
+    int selected = 0;
+    _activeBC = _bc;
+    _activeData = _dinfo;
+    if (!_allIn) {
+      if(_activeDataMultinomial == null)
+        _activeDataMultinomial = new DataInfo[_nclasses];
+      final double rhs = _alpha * (2 * lambdaNew - lambdaOld);
+      int [] cols = MemoryManager.malloc4(N*_nclasses);
+
+      int oldActiveColsTotal = 0;
+      for(int c = 0; c < _nclasses; ++c) {
+        int j = 0;
+        int[] oldActiveCols = _activeDataMultinomial[c] == null ? new int[]{P} : _activeDataMultinomial[c]._activeCols;
+        oldActiveColsTotal += oldActiveCols.length;
+        for (int i = 0; i < P; ++i) {
+          if (j < oldActiveCols.length && i == oldActiveCols[j]) {
+            ++j;
+          } else if (_ginfo._gradient[c*N+i] > rhs || _ginfo._gradient[c*N+i] < -rhs) {
+            cols[selected++] = c*N + i;
+          }
+        }
+      }
+      if(_parms._max_active_predictors != -1 && _parms._max_active_predictors - oldActiveColsTotal + _nclasses < selected) {
+        Integer[] bigInts = ArrayUtils.toIntegers(cols, 0, selected);
+        Arrays.sort(bigInts, new Comparator<Integer>() {
+          @Override
+          public int compare(Integer o1, Integer o2) {
+            return (int) Math.signum(_ginfo._gradient[o2.intValue()] * _ginfo._gradient[o2.intValue()] - _ginfo._gradient[o1.intValue()] * _ginfo._gradient[o1.intValue()]);
+          }
+        });
+        cols = ArrayUtils.toInt(bigInts, 0, _parms._max_active_predictors - oldActiveColsTotal + _nclasses);
+        Arrays.sort(cols);
+        selected = cols.length;
+      }
+      int i = 0;
+      int [] cs = new int[P+1];
+      int sum = 0;
+      for(int c = 0; c < _nclasses; ++c){
+        int [] classcols = cs;
+        int[] oldActiveCols = _activeDataMultinomial[c] == null ? new int[]{P} : _activeDataMultinomial[c]._activeCols;
+        int k = 0;
+        while(i < selected && cols[i] < (c+1)*N)
+          classcols[k++] = cols[i++]-c*N;
+        classcols = ArrayUtils.sortedMerge(oldActiveCols,Arrays.copyOf(classcols,k));
+        sum += classcols.length;
+        _activeDataMultinomial[c] = _dinfo.filterExpandedColumns(classcols);
+      }
+      assert _parms._max_active_predictors == -1 || sum <= _parms._max_active_predictors + _nclasses:"sum = " + sum + " max_active_preds = " + _parms._max_active_predictors + ", nclasses = " + _nclasses;
+      _allIn = sum == N*_nclasses;
+    }
   }
 
   protected boolean checkKKTsMultinomial(){
@@ -323,7 +399,9 @@ public final class ComputationState {
     _beta = beta;
     _u = u;
     _activeBC = null;
-    if(!_allIn) {
+    if(_parms._max_active_predictors == _activeData.fullN()){
+      Log.info("skipping KKT check, reached maximum number of active predictors ("  + _parms._max_active_predictors + ")");
+    } else if(!_allIn) {
       int[] failedCols = new int[64];
       int fcnt = 0;
       for (int i = 0; i < grad.length - 1; ++i) {
