@@ -472,26 +472,28 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     Frame holdoutPreds = null;
     if (_parms._keep_cross_validation_predictions || (nclasses()==2 /*GainsLift needs this*/ || _parms._distribution == DistributionFamily.huber)) {
-      Key cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
+      Key<Frame> cvhp = Key.make("cv_holdout_prediction_" + mainModel._key.toString());
       if (_parms._keep_cross_validation_predictions) //only show the user if they asked for it
         mainModel._output._cross_validation_holdout_predictions_frame_id = cvhp;
       holdoutPreds = combineHoldoutPredictions(predKeys, cvhp);
     }
     if (_parms._keep_cross_validation_fold_assignment) {
       mainModel._output._cross_validation_fold_assignment_frame_id = Key.make("cv_fold_assignment_" + _result.toString());
-      Scope.untrack(((Frame)(mainModel._output._cross_validation_fold_assignment_frame_id.get())).keys());
+      Frame xvalidation_fold_assignment_frame = mainModel._output._cross_validation_fold_assignment_frame_id.get();
+      if (xvalidation_fold_assignment_frame != null)
+        Scope.untrack(xvalidation_fold_assignment_frame.keysList());
     }
     // Keep or toss predictions
     for (Key<Frame> k : predKeys) {
       Frame fr = DKV.getGet(k);
       if( fr != null ) {
-        if (_parms._keep_cross_validation_predictions) Scope.untrack(fr.keys());
+        if (_parms._keep_cross_validation_predictions) Scope.untrack(fr.keysList());
         else fr.remove();
       }
     }
     mainModel._output._cross_validation_metrics = mbs[0].makeModelMetrics(mainModel, _parms.train(), null, holdoutPreds);
     if (holdoutPreds != null) {
-      if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keys());
+      if (_parms._keep_cross_validation_predictions) Scope.untrack(holdoutPreds.keysList());
       else holdoutPreds.remove();
     }
     mainModel._output._cross_validation_metrics._description = N + "-fold cross-validation on training data (Metrics computed for combined holdout predictions)";

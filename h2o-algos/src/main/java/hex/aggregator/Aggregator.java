@@ -10,6 +10,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
+import java.util.Collections;
 
 public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> {
 
@@ -159,8 +160,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
       } finally {
         if (model != null) {
           model.unlock(_job);
-          Scope.untrack(new Key[]{model._exemplar_assignment_vec_key});
-          Scope.untrack(model._output._output_frame.get().keys());
+          Scope.untrack(Collections.singletonList(model._exemplar_assignment_vec_key));
+          Frame outFrame = model._output._output_frame.get();
+          if (outFrame != null) Scope.untrack(outFrame.keysList());
         }
         if (di!=null) di.remove();
       }
