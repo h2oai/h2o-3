@@ -449,7 +449,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
    * @param destination_key Frame Id for output
    * @return Frame containing k rows and n columns, where each row corresponds to an archetype
    */
-  @Override public Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform) {
+  @Override public Frame scoreArchetypes(Frame frame, Key<Frame> destination_key, boolean reverse_transform) {
     final int ncols = _output._names.length;
     Frame adaptedFr = new Frame(frame);
     adaptTestForTrain(adaptedFr, true, false);
@@ -476,7 +476,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     }
 
     // Convert projection of archetypes into a frame with correct domains
-    Frame f = ArrayUtils.frame((null == destination_key ? Key.make() : destination_key), adaptedFr.names(), proj);
+    Frame f = ArrayUtils.frame((destination_key == null ? Key.<Frame>make() : destination_key), adaptedFr.names(), proj);
     for(int i = 0; i < ncols; i++) f.vec(i).setDomain(adaptedDomme[i]);
     return f;
   }
@@ -486,7 +486,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     final int _ncolX;   // Number of cols in X (rank k)
     final boolean _save_imputed;  // Save imputed data into new vecs?
     final boolean _reverse_transform;   // Reconstruct original training data by reversing transform?
-    ModelMetrics.MetricBuilder _mb;
+    ModelMetricsGLRM.GlrmModelMetricsBuilder _mb;
 
     GLRMScore( int ncolA, int ncolX, boolean save_imputed ) {
       this(ncolA, ncolX, save_imputed, _parms._impute_original);
@@ -520,7 +520,6 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     }
 
     @Override public void reduce(GLRMScore other) {
-      // FIXME: IntelliJ raises a valid warning here; need to adjust the definition of _mb
       if (_mb != null) _mb.reduce(other._mb);
     }
 
@@ -586,7 +585,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     return (ModelMetricsGLRM) mm;
   }
 
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation, _parms._impute_original);
+  @Override public ModelMetricsGLRM.GlrmModelMetricsBuilder makeMetricBuilder(String[] domain) {
+    return new ModelMetricsGLRM.GlrmModelMetricsBuilder(_parms._k, _output._permutation, _parms._impute_original);
   }
 }
