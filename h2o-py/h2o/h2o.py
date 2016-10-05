@@ -1130,11 +1130,17 @@ def demo(funcname, interactive=True, echo=True, test=False):
         print("Demo for %s is not available." % funcname)
 
 
-def data_file(relative_path):
-    """Return absolute path to a file within the 'h2o' folder."""
+def load_dataset(relative_path):
+    """Imports a data file within the 'h2o_data' folder."""
     assert_is_type(relative_path, str)
     h2o_dir = os.path.split(__file__)[0]
-    return os.path.join(h2o_dir, relative_path)
+    for possible_file in [os.path.join(h2o_dir, relative_path),
+                          os.path.join(h2o_dir, "h2o_data", relative_path),
+                          os.path.join(h2o_dir, "h2o_data", relative_path + ".csv")]:
+        if os.path.exists(possible_file):
+            return upload_file(possible_file)
+    # File not found -- raise an error!
+    raise H2OValueError("Data file %s cannot be found" % relative_path)
 
 
 def make_metrics(predicted, actual, domain=None, distribution=None):

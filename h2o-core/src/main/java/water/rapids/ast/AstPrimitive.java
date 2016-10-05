@@ -20,7 +20,7 @@ public abstract class AstPrimitive extends AstRoot {
   }
 
   @Override
-  public Val exec(Env env) {
+  public ValFun exec(Env env) {
     return new ValFun(this);
   }
 

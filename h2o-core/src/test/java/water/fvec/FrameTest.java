@@ -3,14 +3,20 @@ package water.fvec;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import water.H2O;
 import water.Key;
 import water.Scope;
 import water.TestUtil;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import static org.junit.Assert.*;
+
 import static org.junit.Assert.assertTrue;
 
 /**
- * Created by tomas on 3/16/16.
+ * Tests for Frame.java
  */
 public class FrameTest extends TestUtil {
   @BeforeClass
@@ -18,6 +24,36 @@ public class FrameTest extends TestUtil {
     stall_till_cloudsize(1);
   }
 
+  @Test
+  public void testRemoveColumn() {
+    Scope.enter();
+    Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
+    Set<Vec> removedVecs = new HashSet<>();
+
+    try {
+      // dataset to split
+      int initialSize = testData.numCols();
+      removedVecs.add(testData.remove(-1));
+      assertEquals(initialSize, testData.numCols());
+      removedVecs.add(testData.remove(0));
+      assertEquals(initialSize - 1, testData.numCols());
+      assertEquals("C2", testData._names[0]);
+      removedVecs.add(testData.remove(initialSize - 2));
+      assertEquals(initialSize - 2, testData.numCols());
+      assertEquals("C" + (initialSize - 1), testData._names[initialSize - 3]);
+      removedVecs.add(testData.remove(42));
+      assertEquals(initialSize - 3, testData.numCols());
+      assertEquals("C43", testData._names[41]);
+      assertEquals("C45", testData._names[42]);
+    } finally {
+      Scope.exit();
+      for (Vec v : removedVecs) if (v != null) v.remove();
+      testData.delete();
+      H2O.STORE.clear();
+    }
+  }
+
+  // _names=C1,... - C10001
   @Ignore
   @Test public void testDeepSelectSparse() {
     Scope.enter();

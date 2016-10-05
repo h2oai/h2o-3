@@ -29,7 +29,7 @@ public class AstApply extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double margin = stk.track(asts[2].exec(env)).getNum();
     AstRoot fun = stk.track(asts[3].exec(env)).getFun();
@@ -49,7 +49,7 @@ public class AstApply extends AstPrimitive {
   }
 
   // --------------------------------------------------------------------------
-  private Val colwise(Env env, Env.StackHelp stk, Frame fr, AstRoot fun) {
+  private ValFrame colwise(Env env, Env.StackHelp stk, Frame fr, AstRoot fun) {
     // Break each column into it's own Frame, then execute the function passing
     // the 1 argument.  All columns are independent, and this loop should be
     // parallized over each column.
@@ -104,7 +104,7 @@ public class AstApply extends AstPrimitive {
   // --------------------------------------------------------------------------
   // Break each row into it's own Row, then execute the function passing the
   // 1 argument.  All rows are independent, and run in parallel
-  private Val rowwise(Env env, Frame fr, final AstRoot fun) {
+  private ValFrame rowwise(Env env, Frame fr, final AstRoot fun) {
     final String[] names = fr._names;
 
     final AstFunction scope = env._scope;  // Current execution scope; needed to lookup variables

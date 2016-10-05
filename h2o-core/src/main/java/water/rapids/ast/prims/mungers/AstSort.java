@@ -16,7 +16,7 @@ public class AstSort extends AstPrimitive {
   @Override public String str(){ return "sort";}
   @Override public int nargs() { return 1+2; } // (sort ary [cols])
 
-  @Override public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  @Override public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int[] cols = asts[2].columns(fr.names());
     return new ValFrame(Merge.sort(fr,cols));
