@@ -783,6 +783,8 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append data
   private void append2slowUUID() {
+    if(_id != null)
+      cancel_sparse();
     if( _ds==null && _ms!=null ) { // This can happen for columns with all NAs and then a UUID
       _xs=null;
       _ms.switchToLongs();
@@ -897,6 +899,7 @@ public class NewChunk extends Chunk {
   //Sparsify. Compressible element can be 0 or NA. Store noncompressible elements in _ds OR _ls and _xs OR _is and 
   // their row indices in _id.
   protected void set_sparse(int num_noncompressibles, Compress sparsity_type) {
+    assert !isUUID():"sparse for uuids is not supported";
     if ((sparsity_type == Compress.ZERO && isSparseNA()) || (sparsity_type == Compress.NA && isSparseZero()))
       cancel_sparse();
     if (sparsity_type == Compress.NA) {
@@ -991,7 +994,7 @@ public class NewChunk extends Chunk {
         _xs = xs;
         _missing = missing;
         _ms = ms;
-      } else {
+      } else{
         double [] ds = MemoryManager.malloc8d(_len);
         _missing = new BitSet();
         if (_sparseNA) Arrays.fill(ds, Double.NaN);
