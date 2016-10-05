@@ -711,7 +711,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           }
         }
         model._output._representation_name = (_parms._representation_name == null || _parms._representation_name.length() == 0) ? "GLRMLoading_" + Key.rand() : _parms._representation_name;
-        model._output._representation_key = Key.make(model._output._representation_name);
+        model._output._representation_key = Key.<Frame>make(model._output._representation_name);
         Frame x = new Frame(model._output._representation_key, xnames, xvecs);
         xinfo = new DataInfo(x, null, 0, true, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
                              false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
@@ -748,7 +748,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // if (x != null && !_parms._keep_loading) x.delete();
         // Clean up unused copy of X matrix
         if (fr != null) {
-          if(overwriteX) {
+          if (overwriteX) {
             for (int i = 0; i < _ncolX; i++) fr.vec(idx_xold(i, _ncolA)).remove();
           } else {
             for (int i = 0; i < _ncolX; i++) fr.vec(idx_xnew(i, _ncolA, _ncolX)).remove();
@@ -1082,11 +1082,11 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       _normMul = normMul;
     }
 
-    @SuppressWarnings("ConstantConditions") // The method is too complex for IntelliJ
+    @SuppressWarnings("ConstantConditions")  // The method is too complex for IntelliJ
     @Override public void map(Chunk[] cs) {
       assert (_ncolA + 2*_ncolX) == cs.length;
       double[] a = new double[_ncolA];
-      Chunk chkweight = _weightId >= 0 ? cs[_weightId]:new C0DChunk(1,cs[0]._len);
+      Chunk chkweight = _weightId >= 0 ? cs[_weightId] : new C0DChunk(1, cs[0]._len);
       Random rand = RandomUtils.getRNG(0);
       _loss = _xreg = 0;
 
