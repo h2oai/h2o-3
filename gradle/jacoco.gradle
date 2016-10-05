@@ -8,11 +8,11 @@ apply plugin: 'jacoco'
 // 
 jacoco {
     toolVersion = "0.7.6.201602180812"
+    // If jacocoReportSubdir is provided, use it.  Else just use "jacoco".
     reportsDir =
         project.hasProperty("jacocoReportSubdir") ?
             file("${buildDir}/reports/${project.getProperty("jacocoReportSubdir")}/") :
             file("${buildDir}/reports/jacoco/")
-    //reportsDir = file("${buildDir}/reports/${reportsSubdir}/")
 }
 
 repositories {
