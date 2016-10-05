@@ -3,6 +3,7 @@ future
 requests
 tabulate
 
+cython
 twine
 urllib3
 grip
