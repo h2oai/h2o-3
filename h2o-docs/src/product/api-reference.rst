@@ -1,5 +1,5 @@
-API Reference
-=============
+Appendix B - API Reference
+==========================
 
 The links below point to more detailed API/developer documentation.
 
