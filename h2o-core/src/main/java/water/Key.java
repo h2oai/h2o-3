@@ -273,7 +273,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // Make new Keys.  Optimistically attempt interning, but no guarantee.
   static <P extends Keyed> Key<P> make(byte[] kb, byte rf) {
     if( rf == -1 ) throw new IllegalArgumentException();
-    Key<P> key = new Key<>(kb.clone());
+    Key<P> key = new Key<>(kb/*TODO(vlad): take care of this: .clone()*/);
     Key<P> key2 = H2O.<P>getk(key); // Get the interned version, if any
     if( key2 != null ) // There is one! Return it instead
       return key2;
@@ -478,7 +478,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   }
 
   @Override public boolean equals( Object o ) {
-    return this == o || (o != null && (o instanceof Key) && equals((Key)o));
+    return this == o || (o instanceof Key) && equals((Key)o);
   }
 
   /** Lexically ordered Key comparison, so Keys can be sorted.  Modestly expensive. */

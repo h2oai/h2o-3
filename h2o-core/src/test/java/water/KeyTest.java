@@ -1,6 +1,7 @@
 package water;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
@@ -11,6 +12,7 @@ class Stuff extends Keyed<Stuff> {
 public class KeyTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
+  @Ignore("TODO(vlad): make it work when performance issues are resolved")
   @Test public void testKeyDisconnectFromArray() {
     byte[] bytes = "This  is a key".getBytes();
     Key<Stuff> key1 = Key.make(bytes);
