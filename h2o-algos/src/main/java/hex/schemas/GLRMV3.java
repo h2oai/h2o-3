@@ -10,10 +10,10 @@ import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.KeyV3;
 
-public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
+public class GLRMV3 extends ModelBuilderSchema<GLRM, GLRMV3, GLRMV3.GLRMParametersV3> {
 
   public static final class GLRMParametersV3 extends ModelParametersSchemaV3<GLRMParameters, GLRMParametersV3> {
-    static public String[] fields = new String[] {
+    public static String[] fields = {
         "model_id",
         "training_frame",
         "validation_frame",
@@ -101,15 +101,14 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
     @API(help = "Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" }, gridable = true)   // TODO: pull out of enum class
     public SVDParameters.Method svd_method;
 
-    @API(help = "User-specified initial Y", required = false)
+    @API(help = "User-specified initial Y")
     public KeyV3.FrameKeyV3 user_y;
 
-    @API(help = "User-specified initial X", required = false)
+    @API(help = "User-specified initial X")
     public KeyV3.FrameKeyV3 user_x;
 
     @API(help = "Frame key to save resulting X")
     public String loading_name;
-    // public KeyV3.FrameKeyV3 loading_key;
 
     @API(help = "Expand categorical columns in user-specified initial Y")
     public boolean expand_user_y;
