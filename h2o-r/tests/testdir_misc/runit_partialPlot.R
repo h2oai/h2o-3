@@ -26,8 +26,8 @@ test <- function() {
   prostate_hex[, "CAPSULE"] = as.factor(prostate_hex[, "CAPSULE"])
   
   ## Run Random Forest in H2O
-  seed = 1000
-  seed = -4.384871e+18
+  seed = .Random.seed[1]
+  Log.info(paste0("Random seed used = ", seed))
   prostate_drf = h2o.randomForest(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 50, seed = seed)
 
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
