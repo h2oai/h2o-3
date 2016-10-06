@@ -1,5 +1,6 @@
 GBM
---------------
+---
+
 Introduction
 ~~~~~~~~~~~~
 
@@ -299,85 +300,6 @@ predictions from Flow. Those leaf nodes represent decision rules that
 can be fed to other models (i.e., GLM with lambda search and strong
 rules) to obtain a limited set of the most important rules.
 
-FAQ
-~~~
-
--  **How does the algorithm handle missing values during training?**
-
-  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
-
--  **How does the algorithm handle missing values during testing?**
-
-  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
-
--  **What happens if the response has missing values?**
-
-  No errors will occur, but nothing will be learned from rows containing missing the response.
-
--  **What happens when you try to predict on a categorical level not
-   seen during training?**
-
-  GBM converts a new categorical level to an "undefined" value in the test set, and then splits either left or right during scoring. 
-
--  **Does it matter if the data is sorted?**
-
-  No.
-
--  **Should data be shuffled before training?**
-
-  No.
-
--  **How does the algorithm handle highly imbalanced data in a response
-   column?**
-
-  You can specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
-
--  **What if there are a large number of columns?**
-
-  GBM models are best for datasets with fewer than a few thousand columns.
-
--  **What if there are a large number of categorical factor levels?**
-
-  Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
-
--  **Given the same training set and the same GBM parameters, will GBM
-   produce a different model with two different validation data sets, or
-   the same model?**
-
-  Unless early stopping is turned on (it's disabled by default), then supplying two different validation sets will not change the model, resulting in the same model for both trials. However, if early stopping is turned on and two different validation sets are provided during the training process, that can lead to two different models. The use of a validation set in combination with early stopping can cause the model to stop training earlier (or later), depending on the validation set. Early stopping uses the validation set to determine when to stop building more trees. 
-
--  **How deterministic is GBM?**
-
-  As long as you set the seed, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). This means that if you set a seed, your results will be reproducible even if, for example, you change the number of nodes in your cluster, change the way you ingest data, or change the number of files your data lives in, among many other examples.
-
--  **When fitting a random number between 0 and 1 as a single feature,
-   the training ROC curve is consistent with ``random`` for low tree
-   numbers and overfits as the number of trees is increased, as
-   expected. However, when a random number is included as part of a set
-   of hundreds of features, as the number of trees increases, the random
-   number increases in feature importance. Why is this?**
-
-  This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature.
-
--  **How is column sampling implemented for GBM?**
-
-  For an example model using:
-
-   -  100 columns
-   -  ``col_sample_rate_per_tree=0.754``
-   -  ``col_sample_rate=0.8`` (refers to available columns after per-tree sampling)
-
-  For each tree, the floor is used to determine the number - in this example, (0.754 * 100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case, (0.754 * 0.8 * 100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
-
-- **I want to score multiple models on a huge dataset. Is it possible to score these models in parallel?**
-
- The best way to score models in parallel is to use the in-H2O binary models. To do this, import the binary (non-POJO, previously exported) model into an H2O cluster; import the datasets into H2O as well; call the predict endpoint either from R, Python, Flow or the REST API directly; then export the predictions to file or download them from the server.
- 
-- **Are there any tutorials for GBM?**
-
- You can find tutorials for using GBM with R, Python, and Flow at the following location: https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm. 
-
-
 GBM Algorithm
 ~~~~~~~~~~~~~
 
@@ -483,3 +405,24 @@ a Rejoinder by the Authors)." The Annals of Statistics 28.2 (2000):
 Elements of Statistical Learning. Vol.1. N.p., page 339: Springer New
 York,
 2001. <http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf>`__
+
+FAQ
+~~~
+
+This section describes some common questions asked by users. The questions are broken down based on one of the types below.
+
+.. toctree::
+   :maxdepth: 2
+
+   gbm-faq/preprocessing_steps
+   gbm-faq/histograms_and_binning
+   gbm-faq/missing_values
+   gbm-faq/default_values
+   gbm-faq/build_first_tree
+   gbm-faq/splitting
+   gbm-faq/cross_validation
+   gbm-faq/about_the_data
+   gbm-faq/reproducibility
+   gbm-faq/generated_metrics
+   gbm-faq/scoring
+   gbm-faq/tuning_a_gbm
