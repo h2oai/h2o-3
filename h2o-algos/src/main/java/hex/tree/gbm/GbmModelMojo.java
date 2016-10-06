@@ -16,8 +16,8 @@ public class GbmModelMojo extends SharedTreeMojo<GBMModel, GBMModel.GBMParameter
   @Override
   protected void writeExtraModelInfo() throws IOException {
     super.writeExtraModelInfo();
-    writeln("distribution = " + model._parms._distribution);
-    writeln("init_f = " + model._output._init_f);
-    writeln("offset_column = " + null);  // Not known yet
+    writekv("distribution", model._parms._distribution);
+    writekv("init_f", model._output._init_f);
+    writekv("offset_column", null);  // Not known yet
   }
 }
