@@ -1,12 +1,10 @@
 package hex.tree.drf;
 
-import hex.Model;
+import hex.ModelMojo;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.util.MathUtils;
 import water.util.SBPrintStream;
-
-import java.io.IOException;
 
 
 public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
@@ -32,7 +30,7 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
     public DRFOutput( DRF b) { super(b); }
   }
 
-  public DRFModel(Key selfKey, DRFParameters parms, DRFOutput output ) { super(selfKey,parms,output); }
+  public DRFModel(Key<DRFModel> selfKey, DRFParameters parms, DRFOutput output ) { super(selfKey, parms, output); }
 
   @Override protected boolean binomialOpt() { return !_parms._binomial_double_trees; }
 
@@ -40,7 +38,7 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
    *  and expect the last Chunks are for the final distribution and prediction.
    *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
-  @Override protected double[] score0(double data[], double preds[], double weight, double offset, int ntrees) {
+  @Override protected double[] score0(double[] data, double[] preds, double weight, double offset, int ntrees) {
     super.score0(data, preds, weight, offset, ntrees);
     int N = _output._ntrees;
     if (_output.nclasses() == 1) { // regression - compute avg over all trees
@@ -78,16 +76,8 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
   }
 
   @Override
-  public Model<DRFModel, DRFParameters, DRFOutput>.MojoStreamWriter getMojoStream() {
-    return new DrfMojoStreamWriter();
+  public ModelMojo getMojo() {
+    return new DrfModelMojo(this);
   }
 
-  public class DrfMojoStreamWriter
-          extends SharedTreeModel<DRFModel, DRFParameters, DRFOutput>.TreeMojoStreamWriter {
-    @Override
-    protected void writeExtraModelInfo() throws IOException {
-      super.writeExtraModelInfo();
-      writeln("binomial_double_trees = " + _parms._binomial_double_trees);
-    }
-  }
 }
