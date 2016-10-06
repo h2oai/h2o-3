@@ -477,8 +477,9 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     return this == k || (k != null && _hash == k._hash && Arrays.equals(k._kb,_kb));
   }
 
+  // This method is called on very rare occasions when compiler does not know we have a key to compare.
   @Override public boolean equals( Object o ) {
-    return this == o || (o instanceof Key) && equals((Key)o);
+    return this == o || (o instanceof Key && equals((Key)o));
   }
 
   /** Lexically ordered Key comparison, so Keys can be sorted.  Modestly expensive. */
