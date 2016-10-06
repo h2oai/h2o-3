@@ -1,6 +1,6 @@
 package hex.tree;
 
-import hex.ModelMojo;
+import hex.ModelMojoWriter;
 import water.DKV;
 import water.Key;
 import water.Value;
@@ -11,11 +11,11 @@ import java.io.IOException;
 /**
  * Shared Mojo definition file for DRF and GBM models.
  */
-public class SharedTreeMojo<M extends SharedTreeModel<M, P, O>,
-                            P extends SharedTreeModel.SharedTreeParameters,
-                            O extends SharedTreeModel.SharedTreeOutput> extends ModelMojo<M, P, O> {
+public class SharedTreeMojoWriter<M extends SharedTreeModel<M, P, O>,
+                                  P extends SharedTreeModel.SharedTreeParameters,
+                                  O extends SharedTreeModel.SharedTreeOutput> extends ModelMojoWriter<M, P, O> {
 
-  public SharedTreeMojo(M model) {
+  public SharedTreeMojoWriter(M model) {
     super(model);
   }
 

@@ -1,6 +1,6 @@
 package hex.glrm;
 
-import hex.ModelMojo;
+import hex.ModelMojoWriter;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -8,9 +8,9 @@ import java.nio.ByteBuffer;
 /**
  * MOJO serializer for GLRM model.
  */
-public class GlrmMojo extends ModelMojo<GLRMModel, GLRMModel.GLRMParameters, GLRMModel.GLRMOutput> {
+public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMParameters, GLRMModel.GLRMOutput> {
 
-  public GlrmMojo(GLRMModel model) {
+  public GlrmMojoWriter(GLRMModel model) {
     super(model);
   }
 

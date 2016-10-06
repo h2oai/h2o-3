@@ -1201,9 +1201,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   /**
    * Override this in models that support serialization into the MOJO format.
-   * @return a class that inherits from ModelMojo
+   * @return a class that inherits from ModelMojoWriter
    */
-  public ModelMojo getMojo() {
+  public ModelMojoWriter getMojo() {
     throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
   }
 
