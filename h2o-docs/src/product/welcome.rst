@@ -23,7 +23,12 @@ The `Recommended Systems <http://www.h2o.ai/product/recommended-systems-for-h2o/
    
 -  **Languages**: Scala, R, and Python are not required to use H2O unless you want to use H2O in those environments, but Java is always required. Supported versions include:
 
-   -  Java 7 or later. To build H2O or run H2O tests, the 64-bit JDK is required. To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required. Both of these are available on the `Java download page <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__.
+   -  Java 7 or later. **Note**: Java 9 is not yet released and is not currently supported.
+
+      - To build H2O or run H2O tests, the 64-bit JDK is required. 
+      - To run the H2O binary using either the command line, R, or Python packages, only 64-bit JRE is required. 
+      - Both of these are available on the `Java download page <http://www.oracle.com/technetwork/java/javase/downloads/index.html>`__.
+
    -  Scala 2.10 or later
    -  R version 3 or later
    -  Python 2.7.x or 3.5.x 
