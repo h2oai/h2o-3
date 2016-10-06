@@ -86,12 +86,6 @@ Interpreting a PCA Model
 PCA output returns a table displaying the number of components specified
 by the value for ``k``.
 
-Scree and cumulative variance plots for the components are returned as
-well. Users can access them by clicking on the black button labeled
-"Scree and Variance Plots" at the top left of the results page. A scree
-plot shows the variance of each component, while the cumulative variance
-plot shows the total variance accounted for by the set of components.
-
 The output for PCA includes the following:
 
 -  Model parameters (hidden)
