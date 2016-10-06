@@ -112,5 +112,10 @@ should be added to the group automatically.
 .. toctree::
    :maxdepth: 2
 
+   parameters
+
+.. toctree::
+   :maxdepth: 2
+
    api-reference
 
