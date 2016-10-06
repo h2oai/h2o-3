@@ -1,15 +1,15 @@
 package hex.tree.gbm;
 
-import hex.tree.SharedTreeMojo;
+import hex.tree.SharedTreeMojoWriter;
 
 import java.io.IOException;
 
 /**
  * MOJO support for GBM model.
  */
-public class GbmModelMojo extends SharedTreeMojo<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
+public class GbmModelMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
 
-  public GbmModelMojo(GBMModel model) {
+  public GbmModelMojoWriter(GBMModel model) {
     super(model);
   }
 

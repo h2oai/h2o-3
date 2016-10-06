@@ -16,7 +16,7 @@ import java.util.zip.ZipOutputStream;
  *
  * <p/> The function of a MOJO writer is simply to serialize the model into a Zip archive consisting of several
  * text/binary files. This base class handles serialization of some parameters that are common to all `Model`s, but
- * anything specific to a particular Model should be implemented in that Model's corresponding ModelMojo subclass.
+ * anything specific to a particular Model should be implemented in that Model's corresponding ModelMojoWriter subclass.
  *
  * <p/> When implementing a subclass, you have to override two functions:
  * <dl>
@@ -35,11 +35,11 @@ import java.util.zip.ZipOutputStream;
  * After subclassing this class, you should also override the {@link Model#getMojo()} method in your model's class to
  * return an instance of your new child class.
  *
- * @param <M> model class that your ModelMojo serializes
+ * @param <M> model class that your ModelMojoWriter serializes
  * @param <P> model parameters class that corresponds to your model
  * @param <O> model output class that corresponds to your model
  */
-public abstract class ModelMojo<M extends Model<M, P, O>, P extends Model.Parameters, O extends Model.Output>
+public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.Parameters, O extends Model.Output>
         extends StreamWriter
 {
   protected M model;
@@ -51,10 +51,10 @@ public abstract class ModelMojo<M extends Model<M, P, O>, P extends Model.Parame
 
 
   //--------------------------------------------------------------------------------------------------------------------
-  // Inheritance interface: ModelMojo subclasses are expected to override these methods to provide custom behavior
+  // Inheritance interface: ModelMojoWriter subclasses are expected to override these methods to provide custom behavior
   //--------------------------------------------------------------------------------------------------------------------
 
-  public ModelMojo(M model) {
+  public ModelMojoWriter(M model) {
     this.model = model;
   }
 
