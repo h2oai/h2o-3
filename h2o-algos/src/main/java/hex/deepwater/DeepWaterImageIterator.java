@@ -1,9 +1,17 @@
 package hex.deepwater;
 
+import hex.genmodel.GenModel;
 import water.*;
 import water.util.Log;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -44,7 +52,7 @@ public class DeepWaterImageIterator extends DeepWaterIterator {
     public int len() { return _dim.len(); }
   }
 
-  public static class IcedImage extends Iced<IcedImage> {
+  public static class IcedImage extends Keyed<IcedImage> {
     IcedImage(Dimensions dim, float[] data) { _dim = dim; _data = data; }
     Dimensions _dim;
     float[] _data;
@@ -73,9 +81,10 @@ public class DeepWaterImageIterator extends DeepWaterIterator {
     @Override
     public void compute2() {
       _destLabel[_index] = _label;
+      Path path = Paths.get(_file);
       try {
         final int start=_index*_conv.len();
-        Key imgKey = Key.make(_file + DeepWaterModel.CACHE_MARKER);
+        Key<IcedImage> imgKey = Key.make(_file + DeepWaterModel.CACHE_MARKER);
         boolean status = false;
         if (_cache) { //try to get the data from cache first
           IcedImage icedIm = DKV.getGet(imgKey);
@@ -87,14 +96,16 @@ public class DeepWaterImageIterator extends DeepWaterIterator {
           }
         }
         if (!status) {
-          // read the image into a float[], directly into the right place
-          water.gpu.util.img2pixels(_file, _conv._dim._width, _conv._dim._height, _conv._dim._channels, _destData, start, _meanData);
+          boolean isURL = _file.startsWith("http") && Files.notExists(path);
+          BufferedImage img;
+          if (isURL) img = ImageIO.read(new URL(_file.trim()));
+          else       img = ImageIO.read(new File(_file.trim()));
+          GenModel.img2pixels(img, _conv._dim._width, _conv._dim._height, _conv._dim._channels, _destData, start, _meanData);
           if (_cache)
             DKV.put(imgKey, new IcedImage(_conv._dim, Arrays.copyOfRange(_destData, start, start + _conv.len())));
         }
       } catch (IOException e) {
-        Log.warn("unable to convert image " + _file + " to raw float array: " + e.getMessage());
-        //e.printStackTrace();
+        Log.warn(e.getMessage());
       }
       tryComplete();
     }
