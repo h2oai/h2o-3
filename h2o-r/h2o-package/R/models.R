@@ -2853,7 +2853,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' }
 #' @export
 
-h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20) {
+h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
   if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
@@ -2885,7 +2885,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20) {
     plot(pp, type = "l", main = attr(x,"description"))
   }
 
-  lapply(res$partial_dependence_data, pp.plot)
+  if(plot) lapply(res$partial_dependence_data, pp.plot)
   if(length( res$partial_dependence_data) == 1) {
     return(res$partial_dependence_data[[1]])
   } else {
