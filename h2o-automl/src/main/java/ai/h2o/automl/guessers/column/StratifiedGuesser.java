@@ -7,7 +7,7 @@ import water.util.Log;
 import water.util.MRUtils;
 
 /**
- * If classificaiton problem, then determine whether or not to perform stratified sampling.
+ * If classification problem, then determine whether or not to perform stratified sampling.
  */
 public class StratifiedGuesser extends Guesser {
   public StratifiedGuesser(ColMeta cm) { super(cm); }
