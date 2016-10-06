@@ -3,8 +3,12 @@ package hex.genmodel;
 import hex.ModelCategory;
 import water.genmodel.IGeneratedModel;
 
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.List;
 
 /**
  * This is a helper class to support Java generated models.
@@ -456,4 +460,74 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   /** ??? */
   public String getHeader() { return null; }
+
+  // Helper for DeepWater
+  static public void setInput(final double[] from, float[] to, int _nums, int _cats, int[] _catOffsets, double[] _normMul, double[] _normSub, boolean useAllFactorLevels) {
+    float[] nums = new float[_nums]; // a bit wasteful - reallocated each time
+    int[] cats = new int[_cats]; // a bit wasteful - reallocated each time
+    for (int i = 0; i < _cats; ++i) {
+      if (Double.isNaN(from[i])) {
+        cats[i] = (_catOffsets[i + 1] - 1); //use the extra level for NAs made during training
+      } else {
+        int c = (int) from[i];
+        if (useAllFactorLevels)
+          cats[i] = c + _catOffsets[i];
+        else if (c != 0)
+          cats[i] = c + _catOffsets[i] - 1;
+        if (cats[i] >= _catOffsets[i + 1])
+          cats[i] = (_catOffsets[i + 1] - 1);
+      }
+    }
+    for (int i = _cats; i < _cats + _nums; ++i) {
+      double d = from[i];
+      if (_normMul != null) d = (d - _normSub[i - _cats]) * _normMul[i - _cats];
+      nums[i - _cats] = (float)d; //can be NaN for missing numerical data
+    }
+    assert(to.length == _nums + _catOffsets[_cats]);
+    Arrays.fill(to, 0f);
+    for (int i = 0; i < _cats; ++i)
+      to[cats[i]] = 1f; // one-hot encode categoricals
+    for (int i = 0; i < _nums; ++i)
+      to[_catOffsets[_cats] + i] = Double.isNaN(nums[i]) ? 0f : nums[i];
+  }
+
+  public static void img2pixels(BufferedImage img, int w, int h, int channels, float[] pixels, int start, float[] mean) throws IOException {
+    // resize the image
+    BufferedImage scaledImg = new BufferedImage(w, h, img.getType());
+    Graphics2D g2d = scaledImg.createGraphics();
+    g2d.drawImage(img, 0, 0, w, h, null);
+    g2d.dispose();
+
+    int r_idx = start;
+    int g_idx = r_idx + w * h;
+    int b_idx = g_idx + w * h;
+
+    for (int i = 0; i < h; i++) {
+      for (int j = 0; j < w; j++) {
+        Color mycolor = new Color(scaledImg.getRGB(j, i));
+        int red = mycolor.getRed();
+        int green = mycolor.getGreen();
+        int blue = mycolor.getBlue();
+        if (channels==1) {
+          pixels[r_idx] = (red+green+blue)/3;
+          if (mean!=null) {
+            pixels[r_idx] -= mean[r_idx];
+          }
+        } else {
+          pixels[r_idx] = red;
+          pixels[g_idx] = green;
+          pixels[b_idx] = blue;
+          if (mean!=null) {
+            pixels[r_idx] -= mean[r_idx-start];
+            pixels[g_idx] -= mean[g_idx-start];
+            pixels[b_idx] -= mean[b_idx-start];
+          }
+        }
+        r_idx++;
+        g_idx++;
+        b_idx++;
+      }
+    }
+  }
+
 }
