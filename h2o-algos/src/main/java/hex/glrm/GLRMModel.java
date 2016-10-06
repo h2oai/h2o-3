@@ -188,6 +188,10 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     return super.readAll_impl(ab, fs);
   }
 
+  public ModelMojo getMojo() {
+    return new GlrmMojo(this);
+  }
+
 
   //--------------------------------------------------------------------------------------------------------------------
   // Scoring

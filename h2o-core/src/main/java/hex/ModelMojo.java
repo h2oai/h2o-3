@@ -32,6 +32,9 @@ import java.util.zip.ZipOutputStream;
  *        create new text files.</dd>
  * </dl>
  *
+ * After subclassing this class, you should also override the {@link Model#getMojo()} method in your model's class to
+ * return an instance of your new child class.
+ *
  * @param <M> model class that your ModelMojo serializes
  * @param <P> model parameters class that corresponds to your model
  * @param <O> model output class that corresponds to your model
