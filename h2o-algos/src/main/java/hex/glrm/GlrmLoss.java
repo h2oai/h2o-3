@@ -85,6 +85,7 @@ public enum GlrmLoss {
     @Override public boolean isForBinary() { return false; }
 
     private double f;
+    private int period;
 
     @Override public double loss(double u, double a) {
       return 1 - Math.cos((u - a)*f);
@@ -97,8 +98,10 @@ public enum GlrmLoss {
     }
 
     @Override public void setParameters(int period) {
+      this.period = period;
       f = 2 * Math.PI / period;
     }
+    @Override public String toString() { return "Periodic(" + period + ")"; }
   },
 
 
