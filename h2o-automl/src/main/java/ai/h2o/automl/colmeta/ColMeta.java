@@ -152,6 +152,7 @@ public class ColMeta extends Iced {
     return hm;
   }
 
+  // TODO: enum, please!
   public String selectBasicTransform() {
     if( _ignored )                 return "ignored";
     if( _v.isBinary() )            return "none";
