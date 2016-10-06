@@ -1,15 +1,15 @@
 package hex.tree.drf;
 
-import hex.tree.SharedTreeMojo;
+import hex.tree.SharedTreeMojoWriter;
 
 import java.io.IOException;
 
 /**
  * Mojo definition for DRF model.
  */
-public class DrfModelMojo extends SharedTreeMojo<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
+public class DrfModelMojoWriter extends SharedTreeMojoWriter<DRFModel, DRFModel.DRFParameters, DRFModel.DRFOutput> {
 
-  public DrfModelMojo(DRFModel model) { super(model); }
+  public DrfModelMojoWriter(DRFModel model) { super(model); }
 
   @Override
   protected void writeExtraModelInfo() throws IOException {
