@@ -213,9 +213,9 @@ public enum GlrmLoss {
   // Public interface
   //--------------------------------------------------------------------------------------------------------------------
 
-  abstract public boolean isForNumeric();
-  abstract public boolean isForCategorical();
-  abstract public boolean isForBinary();
+  public abstract boolean isForNumeric();
+  public abstract boolean isForCategorical();
+  public abstract boolean isForBinary();
 
   /** Loss function for numeric variables */
   public double loss(double u, double a) { throw new UnsupportedOperationException(); }

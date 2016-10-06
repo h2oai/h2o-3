@@ -14,6 +14,6 @@ public class DrfModelMojo extends SharedTreeMojo<DRFModel, DRFModel.DRFParameter
   @Override
   protected void writeExtraModelInfo() throws IOException {
     super.writeExtraModelInfo();
-    writeln("binomial_double_trees = " + model._parms._binomial_double_trees);
+    writekv("binomial_double_trees", model._parms._binomial_double_trees);
   }
 }

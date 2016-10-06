@@ -184,7 +184,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _useAllFactorLevels = useAllFactorLevels;
     _interactionColumns=interactions;
     int[] interactionIDs=null;
-    if( null!=interactions ) {
+    if (interactions != null) {
       interactionIDs = new int[interactions.length];
       for(int i=0;i<interactions.length;++i) {
         interactionIDs[i] = train.find(interactions[i]);

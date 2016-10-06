@@ -21,7 +21,7 @@ public class SharedTreeMojo<M extends SharedTreeModel<M, P, O>,
 
   @Override
   protected void writeExtraModelInfo() throws IOException {
-    writeln("n_trees = " + model._output._ntrees);
+    writekv("n_trees", model._output._ntrees);
   }
 
   @Override
