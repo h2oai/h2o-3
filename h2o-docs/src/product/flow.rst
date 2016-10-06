@@ -919,6 +919,8 @@ types.
 
 -  **k**\ \*: (K-Means, PCA) For K-Means, specify the number of clusters. For PCA, specify the rank of matrix approximation.
 
+-  **estimate_k**: (K-Means) Specify whether to estimate the number of clusters (<=k) iteratively (independent of the seed) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each **k** that, the estimate will go up to **max_iteration**. This option is disabled by default.
+
 -  **user\_points**: (K-Means) For K-Means, specify the number of initial cluster centers.
 
 -  **max\_iterations**: (K-Means, PCA, GLM) Specify the number of training iterations.
@@ -1230,7 +1232,7 @@ outside of H2O, click the **Download POJO** button.
 
 **Note**: A POJO can be run in standalone mode or it can be integrated
 into a platform, such as `Hadoop's
-Storm <https://github.com/h2oai/h2o-training/blob/master/tutorials/streaming/storm/README.md>`__.
+Storm <https://github.com/h2oai/h2o-tutorials/tree/master/tutorials/streaming/storm>`__.
 To make the POJO work in your Java application, you will also need the
 ``h2o-genmodel.jar`` file (available in
 ``h2o-3/h2o-genmodel/build/libs/h2o-genmodel.jar``).
