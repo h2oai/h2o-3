@@ -2833,22 +2833,30 @@ h2o.cross_validation_predictions <- function(object) {
 #' Partial Dependence Plots
 #'
 #' Partial dependence plot gives a graphical depiction of the marginal effect of a variable on the response. The effect
-#' of a variable is measured in change in the mean response. Note: Unlike randomForest's partialPlot classfication method
+#' of a variable is measured in change in the mean response. Note: Unlike randomForest's partialPlot when plotting
+#' partial dependence the mean response (probabilities) is returned rather than the mean of the log class probability.
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @param data An H2OFrame object used for scoring and constructing the plot.
 #' @param cols Feature(s) for which partial dependence will be calculated.
 #' @param destination_key An key reference to the created partial dependence tables in H2O.
 #' @param nbins Number of bins used.
+#' @param plot A logical specifying whether to plot partial dependence table.
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
 #' \donttest{
 #' library(h2o)
 #' h2o.init(nthreads = -1)
-#' prostate.hex = h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"), destination_frame = "prostate.hex")
+#' prostate.path = system.file("extdata", "prostate.csv", package="h2o")
+#' prostate.hex = h2o.uploadFile(path = prostate.path, destination_frame = "prostate.hex")
 #' prostate.hex[, "CAPSULE"] <- as.factor(prostate.hex[, "CAPSULE"] )
 #' prostate.hex[, "RACE"] <- as.factor(prostate.hex[,"RACE"] )
-#' prostate.gbm = h2o.gbm(x = c("AGE","RACE"), y = "CAPSULE", training_frame = prostate.hex, ntrees = 10, max_depth = 5, learn_rate = 0.1)
+#' prostate.gbm = h2o.gbm(x = c("AGE","RACE"),
+#'                        y = "CAPSULE",
+#'                        training_frame = prostate.hex,
+#'                        ntrees = 10,
+#'                        max_depth = 5,
+#'                        learn_rate = 0.1)
 #' h2o.partialPlot(object = prostate.gbm, data = prostate.hex, cols = c("AGE", "RACE"))
 #' }
 #' @export
