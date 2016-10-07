@@ -90,11 +90,11 @@ public class AutoMLUtils {
     System.arraycopy(fr.vecs(),0,vecs,0,fr.vecs().length);
     names[names.length-1]="weight";
     vecs[vecs.length-1] = trainTestWeights[0];
-    res[0] = new Frame(Key.make(),names.clone(),vecs.clone());  // reclone for safety
+    res[0] = new Frame(Key.<Frame>make(),names.clone(),vecs.clone());  // reclone for safety
     DKV.put(res[0]);
     vecs = vecs.clone();
     vecs[vecs.length-1] = trainTestWeights[1];
-    res[1] = new Frame(Key.make(), names.clone(),vecs.clone()); // reclone for safety
+    res[1] = new Frame(Key.<Frame>make(), names.clone(),vecs.clone()); // reclone for safety
     DKV.put(res[1]);
     return res;
   }
@@ -107,11 +107,11 @@ public class AutoMLUtils {
     System.arraycopy(fr.vecs(),0,vecs,0,fr.vecs().length);
     names[names.length-1]="weight";
     vecs[vecs.length-1] = trainTestWeight[0];
-    res[0] = new Frame(Key.make(),names.clone(),vecs.clone());  // reclone for safety
+    res[0] = new Frame(Key.<Frame>make(),names.clone(),vecs.clone());  // reclone for safety
     DKV.put(res[0]);
     vecs = vecs.clone();
     vecs[vecs.length-1] = trainTestWeight[1];
-    res[1] = new Frame(Key.make(), names.clone(),vecs.clone()); // reclone for safety
+    res[1] = new Frame(Key.<Frame>make(), names.clone(),vecs.clone()); // reclone for safety
     DKV.put(res[1]);
     return res;
   }
