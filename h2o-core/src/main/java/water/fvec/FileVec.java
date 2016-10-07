@@ -56,7 +56,7 @@ public abstract class FileVec extends ByteVec {
   public int setChunkSize(Frame fr, int chunkSize) {
     // Clear cached chunks first
     // Peeking into a file before the chunkSize has been set
-    // will load chunks of the file in DFLT_CHUNK_SIZE amounts.
+    // will readFrom chunks of the file in DFLT_CHUNK_SIZE amounts.
     // If this side-effect is not reversed when _chunkSize differs
     // from the default value, parsing will either double read
     // sections (_chunkSize < DFLT_CHUNK_SIZE) or skip data
@@ -119,7 +119,7 @@ public abstract class FileVec extends ByteVec {
 
   // Convert a chunk# into a chunk - does lazy-chunk creation. As chunks are
   // asked-for the first time, we make the Key and an empty backing DVec.
-  // Touching the DVec will force the file load.
+  // Touching the DVec will force the file readFrom.
   @Override public Value chunkIdx( int cidx ) {
     final long nchk = nChunks();
     assert 0 <= cidx && cidx < nchk;
@@ -133,7 +133,7 @@ public abstract class FileVec extends ByteVec {
     val2.setDsk(); // It is already on disk.
     // If not-home, then block till the Key is everywhere.  Most calls here are
     // from the parser loading a text file, and the parser splits the work such
-    // that most puts here are on home - so this is a simple speed optimization: 
+    // that most puts here are on home - so this is a simple speed optimization:
     // do not make a Futures nor block on it on home.
     Futures fs = dkey.home() ? null : new Futures();
     // Atomically insert: fails on a race, but then return the old version
@@ -168,7 +168,7 @@ public abstract class FileVec extends ByteVec {
    * @param verbose - print the parse heuristics
    * @return - optimal chunk size in bytes (always a power of 2).
    */
-  public static int calcOptimalChunkSize(long totalSize, int numCols, long maxLineLength, int cores, int cloudsize, 
+  public static int calcOptimalChunkSize(long totalSize, int numCols, long maxLineLength, int cores, int cloudsize,
                                          boolean oldHeuristic, boolean verbose) {
     long localParseSize = (long) (double) totalSize / cloudsize;
 
@@ -235,7 +235,7 @@ public abstract class FileVec extends ByteVec {
       }
       assert(chunkSize >= minParseChunkSize);
       assert(chunkSize <= maxParseChunkSize);
-      if (verbose) 
+      if (verbose)
         Log.info("ParseSetup heuristic: "
           + "cloudSize: " + cloudsize
           + ", cores: " + cores

@@ -119,7 +119,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
     return h;
   }
 
- 
+
 
   // --- The Hash Table --------------------
   // Slot 0 is always used for a 'CHM' entry below to hold the interesting
@@ -282,17 +282,17 @@ public class NonBlockingHashMap<TypeK, TypeV>
 
   /** Returns the number of key-value mappings in this map.
    *  @return the number of key-value mappings in this map */
-  @Override 
+  @Override
   public int     size       ( )                       { return chm(_kvs).size(); }
   /** Returns <tt>size() == 0</tt>.
    *  @return <tt>size() == 0</tt> */
-  @Override 
+  @Override
   public boolean isEmpty    ( )                       { return size() == 0;      }
 
   /** Tests if the key in the table using the <tt>equals</tt> method.
    * @return <tt>true</tt> if the key is in the table using the <tt>equals</tt> method
    * @throws NullPointerException if the specified key is null  */
-  @Override 
+  @Override
   public boolean containsKey( Object key )            { return get(key) != null; }
 
   /** Legacy method testing if some key maps into the specified value in this
@@ -675,7 +675,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
         // by not allowing Keys to ever change.
 
         // Volatile read, to force loads of K to retry despite JIT, otherwise
-        // it is legal to e.g. haul the load of "K = key(kvs,idx);" outside of
+        // it is legal to e.g. haul the readFrom of "K = key(kvs,idx);" outside of
         // this loop (since failed CAS ops have no memory ordering semantics).
         int dummy = DUMMY_VOLATILE;
         continue;

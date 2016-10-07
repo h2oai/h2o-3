@@ -36,7 +36,7 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
-   *  Default method is to just load the data into the tmp array, then call
+   *  Default method is to just readFrom the data into the tmp array, then call
    *  subclass scoring logic. */
   @Override protected double[] score0(double[] data, double[] preds, double weight, double offset, int ntrees) {
     super.score0(data, preds, weight, offset, ntrees);
