@@ -14,7 +14,7 @@ import java.util.zip.ZipFile;
 /**
  * Prediction model based on the persisted binary data.
  */
-abstract public class MojoModel extends GenModel {
+public abstract class MojoModel extends GenModel {
     protected transient MojoReader _reader;
     protected hex.ModelCategory _category;
     protected String _uuid;
@@ -34,7 +34,7 @@ abstract public class MojoModel extends GenModel {
      * @return New `MojoModel` object.
      * @throws IOException if `file` does not exist, or cannot be read, or does not represent a valid model.
      */
-    static public MojoModel load(String file) throws IOException {
+    public static MojoModel load(String file) throws IOException {
         File f = new File(file);
         if (!f.exists())
             throw new FileNotFoundException("File " + file + " cannot be found.");
@@ -50,7 +50,7 @@ abstract public class MojoModel extends GenModel {
      * @return New `MojoModel` object
      * @throws IOException if the mojoReader does
      */
-    static public MojoModel load(MojoReader mojoReader) throws IOException {
+    public static MojoModel load(MojoReader mojoReader) throws IOException {
         Map<String, Object> info = parseModelInfo(mojoReader);
         String[] columns = (String[]) info.get("[columns]");
         String[][] domains = parseModelDomains(mojoReader, columns.length, info.get("[domains]"));
@@ -102,7 +102,7 @@ abstract public class MojoModel extends GenModel {
         _offsetColumn = (String) info.get("offset_column");
     }
 
-    static private Map<String, Object> parseModelInfo(MojoReader reader) throws IOException {
+    private static Map<String, Object> parseModelInfo(MojoReader reader) throws IOException {
         BufferedReader br = reader.getTextFile("model.ini");
         Map<String, Object> info = new HashMap<>();
         String line;
@@ -146,7 +146,7 @@ abstract public class MojoModel extends GenModel {
         return info;
     }
 
-    static private String[][] parseModelDomains(MojoReader reader, int n_columns, Object domains_assignment)
+    private static String[][] parseModelDomains(MojoReader reader, int n_columns, Object domains_assignment)
             throws IOException {
         String[][] domains = new String[n_columns][];
         // noinspection unchecked
@@ -184,7 +184,7 @@ abstract public class MojoModel extends GenModel {
         byte[] getBinaryFile(String filename) throws IOException;
     }
 
-    static private class FolderMojoReader implements MojoReader {
+    private static class FolderMojoReader implements MojoReader {
         private String root;
 
         public FolderMojoReader(String folder) {
@@ -208,7 +208,7 @@ abstract public class MojoModel extends GenModel {
         }
     }
 
-    static private class ArchiveMojoReader implements MojoReader {
+    private static class ArchiveMojoReader implements MojoReader {
         private ZipFile zf;
 
         public ArchiveMojoReader(String archivename) throws IOException {

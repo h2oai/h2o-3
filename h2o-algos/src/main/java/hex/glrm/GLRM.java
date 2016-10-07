@@ -40,7 +40,7 @@ import static hex.glrm.GlrmLoss.Quadratic;
  */
 public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRMModel.GLRMOutput> {
   // Convergence tolerance
-  private final double TOLERANCE = 1e-6;
+  private static final double TOLERANCE = 1e-6;
 
   // Number of columns in the training set (n)
   private transient int _ncolA;
