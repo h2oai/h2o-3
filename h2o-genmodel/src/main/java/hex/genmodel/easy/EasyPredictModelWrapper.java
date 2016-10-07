@@ -44,13 +44,13 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class EasyPredictModelWrapper implements java.io.Serializable {
   // These private members are read-only after the constructor.
-  final private GenModel m;
-  final private HashMap<String, Integer> modelColumnNameToIndexMap;
-  final private HashMap<Integer, HashMap<String, Integer>> domainMap;
+  private final GenModel m;
+  private final HashMap<String, Integer> modelColumnNameToIndexMap;
+  private final HashMap<Integer, HashMap<String, Integer>> domainMap;
 
   // These private members are configured by setConvertUnknownCategoricalLevelsToNa().
-  final private boolean convertUnknownCategoricalLevelsToNa;
-  final private ConcurrentHashMap<String,AtomicLong> unknownCategoricalLevelsSeenPerColumn;
+  private final boolean convertUnknownCategoricalLevelsToNa;
+  private final ConcurrentHashMap<String,AtomicLong> unknownCategoricalLevelsSeenPerColumn;
 
   /**
    * Configuration builder for instantiating a Wrapper.
@@ -58,9 +58,6 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   public static class Config {
     private GenModel model;
     private boolean convertUnknownCategoricalLevelsToNa = false;
-
-    public Config() {
-    }
 
     /**
      * Specify model object to wrap.
