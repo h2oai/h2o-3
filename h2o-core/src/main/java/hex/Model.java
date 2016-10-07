@@ -1138,7 +1138,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
-   *  Default method is to just load the data into the tmp array, then call
+   *  Default method is to just readFrom the data into the tmp array, then call
    *  subclass scoring logic. */
   public double[] score0( Chunk chks[], int row_in_chunk, double[] tmp, double[] preds ) {
     return score0(chks, 1, 0, row_in_chunk, tmp, preds);

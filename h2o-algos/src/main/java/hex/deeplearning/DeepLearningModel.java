@@ -398,7 +398,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (fTrain.numRows() != training_rows) {
           _output._training_metrics._description = "Metrics reported on temporary training frame with " + fTrain.numRows() + " samples";
         } else if (fTrain._key != null && fTrain._key.toString().contains("chunks")){
-          _output._training_metrics._description = "Metrics reported on temporary (load-balanced) training frame";
+          _output._training_metrics._description = "Metrics reported on temporary (readFrom-balanced) training frame";
         } else {
           _output._training_metrics._description = "Metrics reported on full training frame";
         }
@@ -430,7 +430,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
                 _output._validation_metrics._description += " (stratified sampling)";
               }
             } else if (fValid._key != null && fValid._key.toString().contains("chunks")){
-              _output._validation_metrics._description = "Metrics reported on temporary (load-balanced) validation frame";
+              _output._validation_metrics._description = "Metrics reported on temporary (readFrom-balanced) validation frame";
             } else {
               _output._validation_metrics._description = "Metrics reported on full validation frame";
             }

@@ -3,22 +3,19 @@ package hex.genmodel.algos;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 
-import java.util.Map;
-
 import static hex.genmodel.utils.DistributionFamily.*;
 
 /**
  * "Gradient Boosting Machine" MojoModel
  */
 public final class GbmModel extends TreeBasedModel {
-    private DistributionFamily _family;
-    private double _init_f;
+    public DistributionFamily _family;
+    public double _init_f;
 
-    public GbmModel(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
-        super(cr, info, columns, domains);
-        _family = DistributionFamily.valueOf((String) info.get("distribution"));
-        _init_f = (double) info.get("init_f");
+    public GbmModel(String[] columns, String[][] domains) {
+        super(columns, domains);
     }
+
 
     /**
      * Corresponds to `hex.tree.drf.DrfModel.score0()`

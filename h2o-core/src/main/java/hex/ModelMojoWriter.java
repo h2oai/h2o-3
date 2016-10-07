@@ -70,14 +70,14 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   /**
    * Write a simple value to the model.ini/[info] section. Here "simple" means a value that can be stringified with
-   * .toString(), and their stringified version is single-line.
+   * .toString(), and its stringified version does not span multiple lines.
    */
-  protected final void writekv(String key, Object value) {
+  protected final void writekv(String key, Object value) throws IOException {
     String valStr = value == null? "null" : value.toString();
     if (valStr.contains("\n"))
-      throw new RuntimeException("The `value` must not contain newline characters, got: " + valStr);
+      throw new IOException("The `value` must not contain newline characters, got: " + valStr);
     if (lkv.containsKey(key))
-      throw new RuntimeException("Key " + key + " was already written");
+      throw new IOException("Key " + key + " was already written");
     lkv.put(key, valStr);
   }
 
@@ -140,7 +140,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     }
   }
 
-  private void addCommonModelInfo() {
+  private void addCommonModelInfo() throws IOException {
     int n_categoricals = 0;
     for (String[] domain : model._output._domains)
       if (domain != null)

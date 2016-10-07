@@ -172,7 +172,7 @@ public abstract class Chunk extends Iced<Chunk> {
   transient long _start = -1;
   /** Global starting row for this local Chunk */
   public final long start() { return _start; }
-  /** Global index of this chunk filled during chunk load */
+  /** Global index of this chunk filled during chunk readFrom */
   transient int _cidx = -1;
 
   /** Number of rows in this Chunk; publically a read-only field.  Odd API
@@ -233,7 +233,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  Double.NaN if value is missing.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
@@ -248,7 +248,7 @@ public abstract class Chunk extends Iced<Chunk> {
   /** Missing value status.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
@@ -278,7 +278,7 @@ public abstract class Chunk extends Iced<Chunk> {
   /** High half of a 128-bit UUID, or throws if the value is missing.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
@@ -293,7 +293,7 @@ public abstract class Chunk extends Iced<Chunk> {
   /** String value using absolute row numbers, or null if missing.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
@@ -398,7 +398,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  change.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
   final void setNA_abs(long i) { long x = i-_start; if (0 <= x && x < _len) setNA((int) x); else _vec.setNA(i); }
@@ -413,7 +413,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  change.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a load from an aliasing local var,
+   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
   public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
@@ -586,7 +586,7 @@ public abstract class Chunk extends Iced<Chunk> {
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
 
   //Zero sparse methods:
-  
+
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
    *  @return true if this Chunk is sparse.  */
@@ -609,9 +609,9 @@ public abstract class Chunk extends Iced<Chunk> {
         res[k++] = i;
     return k;
   }
-  
+
   //NA sparse methods:
-  
+
   /** Sparse Chunks have a significant number of NAs, and support for
    *  skipping over large runs of NAs in a row.
    *  @return true if this Chunk is sparseNA.  */
@@ -624,7 +624,7 @@ public abstract class Chunk extends Iced<Chunk> {
 
   // Next non-NA. Analogous to nextNZ()
   public int nextNNA(int rid){ return rid + 1;}
-  
+
   /** Get chunk-relative indices of values (nonnas for nasparse, all for dense)
    *  stored in this chunk.  For dense chunks, this will contain indices of all
    *  the rows in this chunk.
@@ -633,7 +633,7 @@ public abstract class Chunk extends Iced<Chunk> {
     for( int i = 0; i < _len; ++i) res[i] = i;
     return _len;
   }
-  
+
   /** Report the Chunk min-value (excluding NAs), or NaN if unknown.  Actual
    *  min can be higher than reported.  Used to short-cut RollupStats for
    *  constant and boolean chunks. */

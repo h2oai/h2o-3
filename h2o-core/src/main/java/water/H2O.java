@@ -266,7 +266,7 @@ final public class H2O {
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
 
-    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
+    /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and readFrom any HDFS jar file at runtime. */
     public boolean hdfs_skip = false;
 
     /** -aws_credentials=aws_credentials; properties file for aws credentials */

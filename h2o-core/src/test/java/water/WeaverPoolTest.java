@@ -28,7 +28,7 @@ public class WeaverPoolTest extends TestUtil {
     Weaver.loadDynamic(name, bytecode);
     runClass(name);
 
-    // now load again
+    // now readFrom again
     Weaver.loadDynamic(name, bytecode);
     runClass(name);
 

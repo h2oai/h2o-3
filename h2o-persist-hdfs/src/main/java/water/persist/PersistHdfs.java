@@ -75,7 +75,7 @@ public final class PersistHdfs extends Persist {
     }
     CONF = conf;
   }
-  
+
   // Loading HDFS files
   public PersistHdfs() { _iceRoot = null; }
   public void cleanUp() { throw H2O.unimpl(); /** user-mode swapping not implemented */}
@@ -91,7 +91,7 @@ public final class PersistHdfs extends Persist {
       throw Log.throwErr(e);
     }
   }
-  
+
   /** InputStream from a HDFS-based Key */
   /*public static InputStream openStream(Key k, Job pmon) throws IOException {
     H2OHdfsInputStream res = null;
@@ -115,7 +115,7 @@ public final class PersistHdfs extends Persist {
     // tomk: Sun Apr 19 13:11:51 PDT 2015
     //
     //
-    // This load implementation behaved *HORRIBLY* with S3 when the libraries were updated.
+    // This readFrom implementation behaved *HORRIBLY* with S3 when the libraries were updated.
     //    Behaves well (and is the same set of libraries as H2O-1):
     //        org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0
     //        net.java.dev.jets3t:jets3t:0.6.1
@@ -234,7 +234,7 @@ public final class PersistHdfs extends Persist {
   private static class Size {
     int _value;
   }
-  
+
   private static void run(Callable c, boolean read, int size) {
     // Count all i/o time from here, including all retry overheads
     long start_io_ms = System.currentTimeMillis();
