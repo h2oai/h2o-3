@@ -627,7 +627,7 @@ public class Vec extends Keyed<Vec> {
           for (int r = 0; r < c._len; r++) {
             long i = r + c._start;
             Double x = f.apply(i);
-            if (x == null) c.setNA(r) else c.set(r, x);
+            if (x == null) c.setNA(r); else c.set(r, x);
           }
         }
       }
