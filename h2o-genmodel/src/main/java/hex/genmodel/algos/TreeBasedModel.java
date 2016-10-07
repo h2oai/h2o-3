@@ -18,6 +18,7 @@ public abstract class TreeBasedModel extends MojoModel {
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
     protected int _ntrees;
+    protected int _ntrees_per_class;
     protected byte[][] _compressed_trees;
 
     /**
