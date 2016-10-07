@@ -7,36 +7,38 @@ import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import sun.rmi.runtime.Log;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
 public class DeepWaterMojo extends MojoModel {
-  int _mini_batch_size;
-  int _height;
-  int _width;
-  int _channels;
+  final int _mini_batch_size;
+  final int _height;
+  final int _width;
+  final int _channels;
 
-  int _nums;
-  int _cats;
-  int[] _catOffsets;
-  double[] _normMul;
-  double[] _normSub;
-  boolean _useAllFactorLevels;
+  final int _nums;
+  final int _cats;
+  final int[] _catOffsets;
+  final double[] _normMul;
+  final double[] _normSub;
+  final boolean _useAllFactorLevels;
 
-  protected byte[] _network;
-  protected byte[] _parameters;
+  final protected byte[] _network;
+  final protected byte[] _parameters;
 
-  BackendTrain _backend; //interface provider
-  BackendModel _model;  //pointer to C++ process
+  final BackendTrain _backend; //interface provider
+  final BackendModel _model;  //pointer to C++ process
 
-  ImageDataSet _imageDataSet; //interface provider
-  RuntimeOptions _opts;
-  BackendParams _backendParams;
+  final ImageDataSet _imageDataSet; //interface provider
+  final RuntimeOptions _opts;
+  final BackendParams _backendParams;
 
   public DeepWaterMojo(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
     super(cr, info, columns, domains);
@@ -101,6 +103,8 @@ public class DeepWaterMojo extends MojoModel {
     assert(doubles != null) : "doubles are null";
     float[] floats = new float[_nums + _catOffsets[_cats]]; //TODO: use thread-local storage
     GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, _normMul, _normSub, _useAllFactorLevels);
+//    System.err.println(Arrays.toString(doubles));
+//    System.err.println(Arrays.toString(floats));
     float[] predFloats = _backend.predict(_model, floats);
     assert(_nclasses>=2) : "Only classification is supported right now.";
     assert(_nclasses == predFloats.length) : "nclasses " + _nclasses + " predFloats.length " + predFloats.length;
