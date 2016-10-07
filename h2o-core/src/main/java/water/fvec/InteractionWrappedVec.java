@@ -35,14 +35,14 @@ public class InteractionWrappedVec extends WrappedVec {
   public boolean _useAllFactorLevels;
   public boolean _skipMissing;
   public boolean _standardize;
-  private long _bins[];
+  private long[] _bins;
   private String[] _missingDomains;
 
   public transient GetMeanTask t;
-  private String _v1Enums[]; // only interact these enums from vec 1
-  private String _v2Enums[]; // only interact these enums from vec 2
+  private String[] _v1Enums; // only interact these enums from vec 1
+  private String[] _v2Enums; // only interact these enums from vec 2
 
-  public InteractionWrappedVec(Key key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, boolean skipMissing, boolean standardize, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
+  public InteractionWrappedVec(Key<Vec> key, int rowLayout, String[] vec1DomainLimit, String[] vec2DomainLimit, boolean useAllFactorLevels, boolean skipMissing, boolean standardize, Key<Vec> masterVecKey1, Key<Vec> masterVecKey2) {
     super(key, rowLayout, null);
     _masterVecKey1=masterVecKey1;
     _masterVecKey2=masterVecKey2;
@@ -54,14 +54,14 @@ public class InteractionWrappedVec extends WrappedVec {
     _skipMissing=skipMissing;
     setupDomain(_standardize=standardize);  // performs MRTask if both vecs are categorical!!
     DKV.put(this);
-    if( null!=t ) t.doAll(this);
+    if (t != null) t.doAll(this);
   }
 
   public String[] v1Domain() { return _v1Enums==null?_v1Domain:_v1Enums; }
   public String[] v2Domain() { return _v2Enums==null?_v2Domain:_v2Enums; }
   @Override public String[] domain() { // always returns the "correct" domains, so accidental mixup of domain vs domains is ok
-    String[] res;
-    if( null==(res=v1Domain()) || null==v2Domain() ) {
+    String[] res = v1Domain();
+    if(res == null || v2Domain() == null) {
       return res==null?v2Domain():res;
     }
     return super.domain();
@@ -90,19 +90,17 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   public double getSub(int i) {
-    if( null==t ) return mean();
+    if (t == null) return mean();
     return t._d[i];
   }
   public double getMul(int i) {
-    double sigma;
-    if( null==t ) sigma=sigma();
-    else          sigma=t._sigma[i];
-    return sigma==0?1:1./sigma;
+    double sigma = (t == null)? sigma() : t._sigma[i];
+    return sigma == 0? 1.0 : 1.0/sigma;
   }
 
   private static class GetMeanTask extends MRTask<GetMeanTask> {
-    private double  _d[];    // means, NA skipped
-    private double _sigma[]; // sds, NA skipped
+    private double[] _d;     // means, NA skipped
+    private double[] _sigma; // sds, NA skipped
     private long _rows;
 
     private final int _len;
@@ -319,10 +317,11 @@ public class InteractionWrappedVec extends WrappedVec {
   }
 
   public static class InteractionWrappedChunk extends Chunk {
-    public final transient Chunk _c[];
+    public final transient Chunk[] _c;
     public final boolean _c1IsCat; // left chunk is categorical
     public final boolean _c2IsCat; // rite chunk is categorical
     public final boolean _isCat;   // this vec is categorical
+
     InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c) {
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
