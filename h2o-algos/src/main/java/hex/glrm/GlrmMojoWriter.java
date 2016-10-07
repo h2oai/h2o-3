@@ -37,7 +37,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     for (double[] row : arch.getY(false))
       for (double val : row)
         bb.putDouble(val);
-    writeBinaryFile("archetypes.bin", bb.array());
+    writeblob("archetypes.bin", bb.array());
   }
 
 }

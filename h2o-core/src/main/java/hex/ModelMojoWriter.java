@@ -26,7 +26,7 @@ import java.util.zip.ZipOutputStream;
  * <ul>
  *   <li>{@link #writekv(String, Object)} to serialize any "simple" values (those that can be represented as a
  *       single-line string).</li>
- *   <li>{@link #writeBinaryFile(String, byte[])} to add arbitrary blobs of data to the archive.</li>
+ *   <li>{@link #writeblob(String, byte[])} to add arbitrary blobs of data to the archive.</li>
  *   <li>{@link #startWritingTextFile(String)} / {@link #writeln(String)} / {@link #finishWritingTextFile()} to
  *       add text files to the archive.</li>
  * </ul>
@@ -82,11 +82,11 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   }
 
   /** Write a binary file to the MOJO archive. */
-  protected final void writeBinaryFile(String filename, byte[] bytes) throws IOException {
+  protected final void writeblob(String filename, byte[] blob) throws IOException {
     ZipEntry archiveEntry = new ZipEntry(filename);
-    archiveEntry.setSize(bytes.length);
+    archiveEntry.setSize(blob.length);
     zos.putNextEntry(archiveEntry);
-    zos.write(bytes);
+    zos.write(blob);
     zos.closeEntry();
   }
 
@@ -107,7 +107,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   /** Finish writing a text file. */
   protected final void finishWritingTextFile() throws IOException {
     assert tmpfile != null : "No text file is currently being written";
-    writeBinaryFile(tmpname, tmpfile.toString().getBytes(Charset.forName("UTF-8")));
+    writeblob(tmpname, tmpfile.toString().getBytes(Charset.forName("UTF-8")));
     tmpfile = null;
   }
 
