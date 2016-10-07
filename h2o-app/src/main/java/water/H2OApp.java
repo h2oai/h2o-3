@@ -2,6 +2,10 @@ package water;
 
 public class H2OApp extends H2OStarter {
   public static void main(String[] args) {
+
+    if (H2O.checkUnsupportedJava())
+      System.exit(1);
+
     start(args, System.getProperty("user.dir"));
   }
 
