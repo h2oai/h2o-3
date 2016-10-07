@@ -1728,6 +1728,12 @@ final public class H2O {
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
 
+    String javaVersion = System.getProperty("java.version");
+    if (!(javaVersion.startsWith("1.6") || javaVersion.startsWith("1.7") || javaVersion.startsWith("1.8"))) {
+      System.out.println("Only Java 1.6-1.8 supported, version is " + javaVersion);
+      System.exit(1);
+    }
+
     // Record system start-time.
     if( !START_TIME_MILLIS.compareAndSet(0L, System.currentTimeMillis()) )
       return;                   // Already started
