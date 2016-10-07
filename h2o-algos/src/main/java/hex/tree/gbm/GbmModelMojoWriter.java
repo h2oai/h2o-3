@@ -14,8 +14,8 @@ public class GbmModelMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.
   }
 
   @Override
-  protected void writeExtraModelInfo() throws IOException {
-    super.writeExtraModelInfo();
+  protected void writeModelData() throws IOException {
+    super.writeModelData();
     writekv("distribution", model._parms._distribution);
     writekv("init_f", model._output._init_f);
     writekv("offset_column", null);  // Not known yet
