@@ -12,8 +12,8 @@ public class DrfModelMojoWriter extends SharedTreeMojoWriter<DRFModel, DRFModel.
   public DrfModelMojoWriter(DRFModel model) { super(model); }
 
   @Override
-  protected void writeExtraModelInfo() throws IOException {
-    super.writeExtraModelInfo();
+  protected void writeModelData() throws IOException {
+    super.writeModelData();
     writekv("binomial_double_trees", model._parms._binomial_double_trees);
   }
 }
