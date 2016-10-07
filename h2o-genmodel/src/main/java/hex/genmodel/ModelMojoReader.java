@@ -1,0 +1,148 @@
+package hex.genmodel;
+
+import hex.genmodel.utils.ParseUtils;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
+
+/**
+ * Helper class to deserialize a model from MOJO format. This is a counterpart to `ModelMojoWriter`.
+ */
+public abstract class ModelMojoReader<M extends MojoModel> {
+
+  protected M _model;
+
+  private MojoReaderBackend _reader;
+  private Map<String, Object> _lkv;
+
+
+  public static MojoModel readFrom(MojoReaderBackend reader) throws IOException {
+    Map<String, Object> info = parseModelInfo(reader);
+    String algo = (String) info.get("algorithm");
+    ModelMojoReader mmr = ModelMojoFactory.getMojoReader(algo);
+    mmr._lkv = info;
+    mmr._reader = reader;
+    mmr.readAll();
+    return mmr._model;
+  }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Inheritance interface: ModelMojoWriter subclasses are expected to override these methods to provide custom behavior
+  //--------------------------------------------------------------------------------------------------------------------
+
+  protected abstract void readModelData() throws IOException;
+
+  protected abstract M makeModel(String[] columns, String[][] domains);
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Interface for subclasses
+  //--------------------------------------------------------------------------------------------------------------------
+
+  @SuppressWarnings("unchecked")
+  protected <T> T readkv(String key) {
+    return (T) _lkv.get(key);
+  }
+
+  protected byte[] readblob(String name) throws IOException {
+    return _reader.getBinaryFile(name);
+  }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Private
+  //--------------------------------------------------------------------------------------------------------------------
+
+  private void readAll() throws IOException {
+    String[] columns = (String[]) _lkv.get("[columns]");
+    String[][] domains = parseModelDomains(columns.length);
+    _model = makeModel(columns, domains);
+    _model._uuid = readkv("uuid");
+    _model._category = hex.ModelCategory.valueOf((String) readkv("category"));
+    _model._supervised = readkv("supervised");
+    _model._nfeatures = readkv("n_features");
+    _model._nclasses = readkv("n_classes");
+    _model._balanceClasses = readkv("balance_classes");
+    _model._defaultThreshold = readkv("default_threshold");
+    _model._priorClassDistrib = readkv("prior_class_distrib");
+    _model._modelClassDistrib = readkv("model_class_distrib");
+    _model._offsetColumn = readkv("offset_column");
+    readModelData();
+  }
+
+  private static Map<String, Object> parseModelInfo(MojoReaderBackend reader) throws IOException {
+    BufferedReader br = reader.getTextFile("model.ini");
+    Map<String, Object> info = new HashMap<>();
+    String line;
+    int section = 0;
+    int ic = 0;  // Index for `columns` array
+    String[] columns = new String[0];  // array of column names, will be initialized later
+    Map<Integer, String> domains = new HashMap<>();  // map of (categorical column index => name of the domain file)
+    while (true) {
+      line = br.readLine();
+      if (line == null) break;
+      line = line.trim();
+      if (line.startsWith("#") || line.isEmpty()) continue;
+      if (line.equals("[info]"))
+        section = 1;
+      else if (line.equals("[columns]")) {
+        section = 2;  // Enter the [columns] section
+        Integer n_columns = (Integer) info.get("n_columns");
+        if (n_columns == null)
+          throw new IOException("`n_columns` variable is missing in the model info.");
+        columns = new String[n_columns];
+        info.put("[columns]", columns);
+      } else if (line.equals("[domains]")) {
+        section = 3; // Enter the [domains] section
+        info.put("[domains]", domains);
+      } else if (section == 1) {
+        // [info] section: just parse key-value pairs and store them into the `info` map.
+        String[] res = line.split("\\s*=\\s*", 2);
+        info.put(res[0], res[0].equals("uuid")? res[1] : ParseUtils.tryParse(res[1]));
+      } else if (section == 2) {
+        // [columns] section
+        if (ic >= columns.length)
+          throw new IOException("`n_columns` variable is too small.");
+        columns[ic++] = line;
+      } else if (section == 3) {
+        // [domains] section
+        String[] res = line.split(":\\s*", 2);
+        int col_index = Integer.parseInt(res[0]);
+        domains.put(col_index, res[1]);
+      }
+    }
+    return info;
+  }
+
+  private String[][] parseModelDomains(int n_columns) throws IOException {
+    String[][] domains = new String[n_columns][];
+    // noinspection unchecked
+    Map<Integer, String> domass = (Map<Integer, String>) _lkv.get("[domains]");
+    for (Map.Entry<Integer, String> e : domass.entrySet()) {
+      int col_index = e.getKey();
+      // There is a file with categories of the response column, but we ignore it.
+      if (col_index >= n_columns) continue;
+      String[] info = e.getValue().split(" ", 2);
+      int n_elements = Integer.parseInt(info[0]);
+      String domfile = info[1];
+      String[] domain = new String[n_elements];
+      BufferedReader br = _reader.getTextFile("domains/" + domfile);
+      String line;
+      int id = 0;  // domain elements counter
+      while (true) {
+        line = br.readLine();
+        if (line == null) break;
+        domain[id++] = line;
+      }
+      if (id != n_elements)
+        throw new IOException("Not enough elements in the domain file");
+      domains[col_index] = domain;
+    }
+    return domains;
+  }
+
+}

@@ -12,9 +12,9 @@ import water.util.Log;
  *  Used as a service to sub-tasks, collect pending-but-not-yet-done future
  *  tasks that need to complete prior to *this* task completing... or if the
  *  caller of this task is knowledgeable, pass these pending tasks along to him
- *  to block on before he completes. 
+ *  to block on before he completes.
  *  <p>
- *  Highly efficient under a high load of short-completion-time Futures.  Safe
+ *  Highly efficient under a high readFrom of short-completion-time Futures.  Safe
  *  to call with e.g. millions of Futures per second, as long as they all
  *  complete in roughly the same rate. */
 public class Futures {

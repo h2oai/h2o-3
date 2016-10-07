@@ -53,7 +53,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     }
     _numRowsOnThisNode = ArrayUtils.sum(MSBhist);   // we just use this count for the DKV data transfer rate message
     if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
-      Log.warn("RadixOrder(): load balancing on this node not optimal (max value should be <= "
+      Log.warn("RadixOrder(): readFrom balancing on this node not optimal (max value should be <= "
               + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
               + " " + Arrays.toString(MSBhist) + ")");
     }
@@ -87,13 +87,13 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     for (int msb = 0; msb < 256; msb++) {
       // each of the 256 columns starts at 0 for the 0th chunk. This 0 offsets
       // into x[MSBvalue][batch div][mod] and o[MSBvalue][batch div][mod]
-      long rollSum = 0;  
+      long rollSum = 0;
       for (int c = 0; c < nc; c++) {
         if (_counts[c] == null) continue;
         long tmp = _counts[c][msb];
         // Warning: modify the POJO DKV cache, but that's fine since this node
         // won't ask for the original DKV.get() version again
-        _counts[c][msb] = rollSum; 
+        _counts[c][msb] = rollSum;
         rollSum += tmp;
       }
     }
@@ -268,7 +268,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
           if (cnts[_msb] == 0) {  // robust in case we skipped zeros when accumulating
             msbNodeChunkCounts[j] = 0;
           } else {
-            // _counts is long so it can be accumulated in-place iirc.  
+            // _counts is long so it can be accumulated in-place iirc.
             // TODO: check
             msbNodeChunkCounts[j] = (int)(cnts[_msb] - lastCount);
             lastCount = cnts[_msb];

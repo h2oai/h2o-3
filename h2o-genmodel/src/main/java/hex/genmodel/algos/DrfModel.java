@@ -2,20 +2,17 @@ package hex.genmodel.algos;
 
 import hex.genmodel.GenModel;
 
-import java.util.Map;
 
 /**
  * "Distributed Random Forest" MojoModel
  */
 public final class DrfModel extends TreeBasedModel {
-    private int _effective_n_classes;
-    private boolean _binomial_double_trees;
+    public int _effective_n_classes;
+    public boolean _binomial_double_trees;
 
 
-    public DrfModel(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
-        super(cr, info, columns, domains);
-        _binomial_double_trees = (boolean) info.get("binomial_double_trees");
-        _effective_n_classes = _nclasses == 2 && !_binomial_double_trees? 1 : _nclasses;
+    public DrfModel(String[] columns, String[][] domains) {
+        super(columns, domains);
     }
 
     /**

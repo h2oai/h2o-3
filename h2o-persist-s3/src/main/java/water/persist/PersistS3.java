@@ -79,7 +79,7 @@ public final class PersistS3 extends Persist {
       try {
         return new PropertiesCredentials(credentials);
       } catch (IOException e) {
-        throw new AmazonClientException("Unable to load AWS credentials from file " + credentials);
+        throw new AmazonClientException("Unable to readFrom AWS credentials from file " + credentials);
       }
     }
 

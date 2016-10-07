@@ -30,8 +30,7 @@ public abstract class TreeBasedModel extends MojoModel {
      * Note: this function is also used from the `hex.tree.CompressedTree` class in `h2o-algos` project.
      */
     @SuppressWarnings("ConstantConditions")  // Complains that the code is too complex. Well duh!
-    public static double scoreTree(final byte[] tree, final double[] row, final int nclasses,
-                                   boolean computeLeafAssignment) {
+    public static double scoreTree(byte[] tree, double[] row, int nclasses, boolean computeLeafAssignment) {
         ByteBufferWrapper ab = new ByteBufferWrapper(tree);
         GenmodelBitSet bs = null;  // Lazily set on hitting first group test
         long bitsRight = 0;
@@ -41,8 +40,8 @@ public abstract class TreeBasedModel extends MojoModel {
             int colId = ab.get2();
             if (colId == 65535) return ab.get4f();
             int naSplitDir = ab.get1U();
-            final boolean naVsRest = naSplitDir == NsdNaVsRest;
-            final boolean leftward = naSplitDir == NsdNaLeft || naSplitDir == NsdLeft;
+            boolean naVsRest = naSplitDir == NsdNaVsRest;
+            boolean leftward = naSplitDir == NsdNaLeft || naSplitDir == NsdLeft;
             int lmask = (nodeType & 51);
             int equal = (nodeType & 12);  // Can be one of 0, 8, 12
             assert equal != 4;  // no longer supported
@@ -96,7 +95,7 @@ public abstract class TreeBasedModel extends MojoModel {
         }
     }
 
-    public static double scoreTree(final byte[] tree, final double[] row, final int nclasses) {
+    public static double scoreTree(byte[] tree, double[] row, int nclasses) {
         return scoreTree(tree, row, nclasses, false);
     }
 
@@ -117,10 +116,8 @@ public abstract class TreeBasedModel extends MojoModel {
     // Private
     //------------------------------------------------------------------------------------------------------------------
 
-    protected TreeBasedModel(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
-        super(cr, info, columns, domains);
-        _ntrees = (int) info.get("n_trees");
-        _compressed_trees = new byte[_ntrees * _nclasses][];
+    protected TreeBasedModel(String[] columns, String[][] domains) {
+        super(columns, domains);
     }
 
     /**
@@ -131,22 +128,10 @@ public abstract class TreeBasedModel extends MojoModel {
         for (int i = 0; i < nClassesToScore; i++) {
             int k = _nclasses == 1? 0 : i + 1;
             for (int j = 0; j < _ntrees; j++) {
-                preds[k] += scoreTree(fetchTree(i, j), row, _nclasses);
+                int itree = i * _ntrees + j;
+                preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses);
             }
         }
     }
 
-    private byte[] fetchTree(int classIdx, int treeIdx) {
-        try {
-            int itree = classIdx * _ntrees + treeIdx;
-            byte[] tree = _compressed_trees[itree];
-            if (tree == null) {
-                tree = _reader.getBinaryFile(String.format("trees/t%02d_%03d.bin", classIdx, treeIdx));
-                _compressed_trees[itree] = tree;
-            }
-            return tree;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
 }

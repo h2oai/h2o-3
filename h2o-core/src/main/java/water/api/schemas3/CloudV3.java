@@ -114,7 +114,7 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
     @API(help="nthreads", direction=API.Direction.OUTPUT)
     public int nthreads;
 
-    @API(help="System load; average #runnables/#cores", direction=API.Direction.OUTPUT)
+    @API(help="System readFrom; average #runnables/#cores", direction=API.Direction.OUTPUT)
     public float sys_load;       // Average #runnables/#cores
 
     @API(help="System CPU percentage used by this H2O process in last interval", direction=API.Direction.OUTPUT)

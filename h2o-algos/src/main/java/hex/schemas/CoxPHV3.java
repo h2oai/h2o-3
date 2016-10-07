@@ -121,7 +121,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
 //    /**
 //     * The random seed controls sampling and initialization. Reproducible
 //     * results are only expected with single-threaded operation (i.e.,
-//     * when running on one node, turning off load balancing and providing
+//     * when running on one node, turning off readFrom balancing and providing
 //     * a small dataset that fits in one chunk).  In general, the
 //     * multi-threaded asynchronous updates to the model parameters will
 //     * result in (intentional) race conditions and non-reproducible

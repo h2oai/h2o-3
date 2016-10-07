@@ -63,7 +63,7 @@ public class Weaver {
   }
 
   static {
-    try { 
+    try {
       _pool = ClassPool.getDefault();
       _pool.insertClassPath(new ClassClassPath(Weaver.class));
       _dtask= _pool.get("water.DTask");    // these also need copyOver
@@ -152,7 +152,7 @@ public class Weaver {
     fs.add(RPC.call(H2O.CLOUD.leader(), new LoadClazz(name,b))).blockForPending(); // leader node loads first
     new MRTask() {
       @Override public void setupLocal() {
-        if( H2O.SELF != H2O.CLOUD.leader() ) // already loaded on the leader, load all others
+        if( H2O.SELF != H2O.CLOUD.leader() ) // already loaded on the leader, readFrom all others
           new LoadClazz(name,b).compute2();
       }
     }.doAllNodes();
@@ -280,7 +280,7 @@ public class Weaver {
     }
 
     // The write call
-    String debug = 
+    String debug =
     make_body(icer_cc, iced_cc, iced_clazz, "write", null, null,
               "  protected final water.AutoBuffer write"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               super_id == -1?"":"    write"+super_id+"(ab,ice);\n",
@@ -290,7 +290,7 @@ public class Weaver {
               "    return ab;\n" +
               "  }");
     if( debug_print ) System.out.println(debug);
-    String debugJ= 
+    String debugJ=
     make_body(icer_cc, iced_cc, iced_clazz, "writeJSON", "(supers?ab.put1(','):ab).", "    ab.put1(',').",
               "  protected final water.AutoBuffer writeJSON"+id+"(water.AutoBuffer ab, "+iced_name+" ice) {\n",
               super_id == -1?"":"    writeJSON"+super_id+"(ab,ice);\n",
@@ -417,7 +417,7 @@ public class Weaver {
     String mimpl = impl+"_impl";
 
 
-    for( CtMethod mth : iced_cc.getDeclaredMethods() ) 
+    for( CtMethod mth : iced_cc.getDeclaredMethods() )
       if( mth.getName().equals(mimpl) ) { // Found custom serializer?
         int mods = mth.getModifiers();
         String ice_handle;
@@ -474,7 +474,7 @@ public class Weaver {
       // package, so public,protected and package-private all have sufficient
       // access, only private is a problem.
       boolean can_access = !javassist.Modifier.isPrivate(mods);
-      if( (impl.equals("read") || impl.equals("copyOver")) && javassist.Modifier.isFinal(mods) ) can_access = false; 
+      if( (impl.equals("read") || impl.equals("copyOver")) && javassist.Modifier.isFinal(mods) ) can_access = false;
       long off = _unsafe.objectFieldOffset(iced_clazz.getDeclaredField(ctf.getName()));
       int ftype = ftype(iced_cc, ctf.getSignature() ); // Field type encoding
       if( ftype%20 == 9 || ftype%20 == 11 ) {          // Iced/Objects

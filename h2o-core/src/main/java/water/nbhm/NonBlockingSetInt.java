@@ -17,9 +17,9 @@ import sun.misc.Unsafe;
 /**
  * A multi-threaded bit-vector set, implemented as an array of primitive
  * {@code longs}.  All operations are non-blocking and multi-threaded safe.
- * {@link #contains(int)} calls are roughly the same speed as a {load, mask}
+ * {@link #contains(int)} calls are roughly the same speed as a {readFrom, mask}
  * sequence.  {@link #add(int)} and {@link #remove(int)} calls are a tad more
- * expensive than a {load, mask, store} sequence because they must use a CAS.
+ * expensive than a {readFrom, mask, store} sequence because they must use a CAS.
  * The bit-vector is auto-sizing.
  *
  * <p><em>General note of caution:</em> The Set API allows the use of {@link Integer}
@@ -46,10 +46,10 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
   private static final long _nbsi_offset;
   static {                      // <clinit>
     Field f = null;
-    try { 
-      f = NonBlockingSetInt.class.getDeclaredField("_nbsi"); 
+    try {
+      f = NonBlockingSetInt.class.getDeclaredField("_nbsi");
     } catch( java.lang.NoSuchFieldException e ) {
-    } 
+    }
     _nbsi_offset = _unsafe.objectFieldOffset(f);
   }
   private final boolean CAS_nbsi( NBSI old, NBSI nnn ) {
@@ -62,42 +62,42 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
   private transient NBSI _nbsi;
 
   /** Create a new empty bit-vector */
-  public NonBlockingSetInt( ) { 
+  public NonBlockingSetInt( ) {
     _nbsi = new NBSI(63, new ConcurrentAutoTable(), this); // The initial 1-word set
   }
 
-  /** 
+  /**
    * Add {@code i} to the set.  Uppercase {@link Integer} version of add,
    * requires auto-unboxing.  When possible use the {@code int} version of
    * {@link #add(int)} for efficiency.
    * @throws IllegalArgumentException if i is negative.
    * @return <tt>true</tt> if i was added to the set.
    */
-  public boolean add ( final Integer i ) { 
-    return add(i.intValue()); 
+  public boolean add ( final Integer i ) {
+    return add(i.intValue());
   }
-  /** 
+  /**
    * Test if {@code o} is in the set.  This is the uppercase {@link Integer}
    * version of contains, requires a type-check and auto-unboxing.  When
    * possible use the {@code int} version of {@link #contains(int)} for
    * efficiency.
    * @return <tt>true</tt> if i was in the set.
    */
-  public boolean contains( final Object  o ) { 
+  public boolean contains( final Object  o ) {
     return o instanceof Integer && contains(((Integer) o).intValue());
   }
-  /** 
+  /**
    * Remove {@code o} from the set.  This is the uppercase {@link Integer}
    * version of remove, requires a type-check and auto-unboxing.  When
    * possible use the {@code int} version of {@link #remove(int)} for
    * efficiency.
    * @return <tt>true</tt> if i was removed to the set.
    */
-  public boolean remove( final Object  o ) { 
+  public boolean remove( final Object  o ) {
     return o instanceof Integer && remove(((Integer) o).intValue());
   }
 
-  /** 
+  /**
    * Add {@code i} to the set.  This is the lower-case '{@code int}' version
    * of {@link #add} - no autoboxing.  Negative values throw
    * IllegalArgumentException.
@@ -108,20 +108,20 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
     if( i < 0 ) throw new IllegalArgumentException(""+i);
     return _nbsi.add(i);
   }
-  /** 
+  /**
    * Test if {@code i} is in the set.  This is the lower-case '{@code int}'
    * version of {@link #contains} - no autoboxing.
    * @return <tt>true</tt> if i was int the set.
    */
   public boolean contains( final int i ) { return i >= 0 && _nbsi.contains(i); }
-  /** 
+  /**
    * Remove {@code i} from the set.  This is the fast lower-case '{@code int}'
    * version of {@link #remove} - no autoboxing.
    * @return <tt>true</tt> if i was added to the set.
    */
   public boolean remove  ( final int i ) { return i >= 0 && _nbsi.remove(i); }
-  
-  /** 
+
+  /**
    * Current count of elements in the set.  Due to concurrent racing updates,
    * the size is only ever approximate.  Updates due to the calling thread are
    * immediately visible to calling thread.
@@ -131,7 +131,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
   /** Approx largest element in set; at least as big (but max might be smaller).  */
   public int length() { return _nbsi._bits.length<<6; }
   /** Empty the bitvector. */
-  public void    clear   (             ) { 
+  public void    clear   (             ) {
     NBSI cleared = new NBSI(63, new ConcurrentAutoTable(), this); // An empty initial NBSI
     while( !CAS_nbsi( _nbsi, cleared ) ) // Spin until clear works
       ;
@@ -152,26 +152,26 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
     int _prev = -1;
     iter() { _nbsi2 = _nbsi; advance(); }
     public boolean hasNext() { return _idx != -2; }
-    private void advance() {     
+    private void advance() {
       while( true ) {
         _idx++;                 // Next index
         while( (_idx>>6) >= _nbsi2._bits.length ) { // Index out of range?
           if( _nbsi2._new == null ) { // New table?
             _idx = -2;          // No, so must be all done
-            return;             // 
+            return;             //
           }
           _nbsi2 = _nbsi2._new; // Carry on, in the new table
         }
         if( _nbsi2.contains(_idx) ) return;
       }
     }
-    public Integer next() { 
+    public Integer next() {
       if( _idx == -1 ) throw new NoSuchElementException();
       _prev = _idx;
       advance();
       return _prev;
     }
-    public void remove() { 
+    public void remove() {
       if( _prev == -1 ) throw new IllegalStateException();
       _nbsi2.remove(_prev);
       _prev = -1;
@@ -185,10 +185,10 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
     final NBSI nbsi = _nbsi;    // The One Field is transient
     final int len = _nbsi._bits.length<<6;
     s.writeInt(len);            // Write max element
-    for( int i=0; i<len; i++ ) 
+    for( int i=0; i<len; i++ )
       s.writeBoolean( _nbsi.contains(i) );
   }
-  
+
   // --- readObject --------------------------------------------------------
   // Read a CHM from a stream
   private void readObject(java.io.ObjectInputStream s) throws IOException, ClassNotFoundException  {
@@ -228,10 +228,10 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
     private static final long _new_offset;
     static {                      // <clinit>
       Field f = null;
-      try { 
-        f = NBSI.class.getDeclaredField("_new"); 
+      try {
+        f = NBSI.class.getDeclaredField("_new");
       } catch( java.lang.NoSuchFieldException e ) {
-      } 
+      }
       _new_offset = _unsafe.objectFieldOffset(f);
     }
     private final boolean CAS_new( NBSI nnn ) {
@@ -252,9 +252,9 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
     // Every 64th bit is put in it's own recursive bitvector.  If the low 6 bits
     // are all set, we shift them off and recursively operate on the _nbsi64 set.
     private final NBSI _nbsi64;
-    
-    private NBSI( int max_elem, ConcurrentAutoTable ctr, NonBlockingSetInt nonb ) { 
-      super(); 
+
+    private NBSI( int max_elem, ConcurrentAutoTable ctr, NonBlockingSetInt nonb ) {
+      super();
       _non_blocking_set_int = nonb;
       _size = ctr;
       _copyIdx  = ctr == null ? null : new AtomicInteger();
@@ -266,13 +266,13 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
       _nbsi64 = ((max_elem+1)>>>6) == 0 ? null : new NBSI((max_elem+1)>>>6, null, null);
       _sum_bits_length = _bits.length + (_nbsi64==null ? 0 : _nbsi64._sum_bits_length);
     }
-    
+
     // Lower-case 'int' versions - no autoboxing, very fast.
     // 'i' is known positive.
     public boolean add( final int i ) {
       // Check for out-of-range for the current size bit vector.
       // If so we need to grow the bit vector.
-      if( (i>>6) >= _bits.length ) 
+      if( (i>>6) >= _bits.length )
         return install_larger_new_bits(i). // Install larger pile-o-bits (duh)
           help_copy().add(i);              // Finally, add to the new table
 
@@ -286,7 +286,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
 
       final long mask = mask(j);
       long old;
-      do { 
+      do {
         old = nbsi._bits[j>>6]; // Read old bits
         if( old < 0 )           // Not mutable?
           // Not mutable: finish copy of word, and retry on copied word
@@ -311,7 +311,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
 
       final long mask = mask(j);
       long old;
-      do { 
+      do {
         old = nbsi._bits[j>>6]; // Read old bits
         if( old < 0 )           // Not mutable?
           // Not mutable: finish copy of word, and retry on copied word
@@ -321,8 +321,8 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
       _size.add(-1);
       return true;
     }
-    
-    public boolean contains( final int i ) { 
+
+    public boolean contains( final int i ) {
       if( (i>>6) >= _bits.length ) // Out of bounds?  Not in this array!
         return _new != null && help_copy().contains(i);
 
@@ -340,9 +340,9 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
         // Not mutable: finish copy of word, and retry on copied word
         return help_copy_impl(i).help_copy().contains(i);
       // Yes mutable: test & return bit
-      return (old & mask) != 0; 
+      return (old & mask) != 0;
     }
-    
+
     public int size() { return (int)_size.get(); }
 
     // Must grow the current array to hold an element of size i
@@ -391,7 +391,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
       return _new;
     }
 
-    // Help copy this one word.  State Machine.  
+    // Help copy this one word.  State Machine.
     // (1) If not "made immutable" in the old array, set the sign bit to make
     //     it immutable.
     // (2) If non-zero in old array & zero in new, CAS new from 0 to copy-of-old
@@ -419,7 +419,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
         if( old.CAS( j>>6, oldbits, bits ) ) {
           if( oldbits == 0 ) _copyDone.addAndGet(1);
           break;                // Success - old array word is now immutable
-        } 
+        }
         bits = old._bits[j>>6]; // Retry if CAS failed
       }
 
@@ -440,7 +440,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
         if( old.CAS( j>>6, bits, mask(63) ) )
           _copyDone.addAndGet(1); // One more word finished copying
       }
-      
+
       // Now in state 4: zero (and immutable) in old
 
       // Return the self bitvector for 'fluid' programming style
@@ -462,7 +462,7 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
         x = x._nbsi64;
       }
       print(d,buf.toString());
-      
+
       x = this;
       while( x != null ) {
         for( int i=0; i<x._bits.length; i++ )
@@ -478,5 +478,5 @@ public class NonBlockingSetInt extends AbstractSet<Integer> implements Serializa
         _new.print(d+1);
       }
     }
-  }    
+  }
 }

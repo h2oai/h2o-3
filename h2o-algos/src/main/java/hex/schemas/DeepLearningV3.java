@@ -215,7 +215,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     /**
      * The random seed controls sampling and initialization. Reproducible
      * results are only expected with single-threaded operation (i.e.,
-     * when running on one node, turning off load balancing and providing
+     * when running on one node, turning off readFrom balancing and providing
      * a small dataset that fits in one chunk).  In general, the
      * multi-threaded asynchronous updates to the model parameters will
      * result in (intentional) race conditions and non-reproducible
@@ -577,7 +577,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * to allow utilization of all cores.
      */
     @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
-        help = "Force extra load balancing to increase training speed for small datasets (to keep all cores busy).")
+        help = "Force extra readFrom balancing to increase training speed for small datasets (to keep all cores busy).")
     public boolean force_load_balance;
 
     /**
