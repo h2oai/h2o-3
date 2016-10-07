@@ -465,10 +465,15 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     @Override public void map(Chunk[] chks, NewChunk[] cpreds) { }
     @Override protected void setupLocal() {
       DataInfo di = model_info()._dataInfoKey == null ? null : model_info()._dataInfoKey.get();
+//      String[] names=null;
+//      Vec[] vecs = null;
       if (di != null) {
+//        names = di._adaptedFrame.names();
+//        vecs = di._adaptedFrame.vecs();
         di = IcedUtils.deepCopy(di);
         di._adaptedFrame = _fr; //dinfo logic on _adaptedFrame is what we'll need for extracting standardized features from the data for scoring
       }
+//      di._adaptedFrame.restructure(names, vecs);
       final int weightIdx =_fr.find(get_params()._weights_column);
       final int respIdx =_fr.find(get_params()._response_column);
       final int batch_size = get_params()._mini_batch_size;

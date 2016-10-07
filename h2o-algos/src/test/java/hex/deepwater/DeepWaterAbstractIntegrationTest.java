@@ -584,7 +584,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       DKV.put(tr);
       p._seed = 1234;
       p._epochs = 500;
-      p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit; //leads to standardization of categoricals
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
@@ -722,7 +721,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         p._ignored_columns = new String[]{"DepTime","ArrTime","Cancelled","CancellationCode","Diverted","CarrierDelay","WeatherDelay","NASDelay","SecurityDelay","LateAircraftDelay","IsArrDelayed"};
         NFSFileVec trainfv = NFSFileVec.make(file);
         tr = ParseDataset.parse(Key.make(), trainfv._key);
-        for (String col : new String[]{p._response_column}) {
+        for (String col : new String[]{p._response_column, "UniqueCarrier", "Origin", "Dest"}) {
           Vec v = tr.remove(col); tr.add(col, v.toCategoricalVec()); v.remove();
         }
         DKV.put(tr);
@@ -737,8 +736,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         m = j.trainModel().get();
         Assert.assertTrue(((ModelMetricsBinomial)(m._output._validation_metrics)).auc() > 0.65);
       }
-    } catch(Throwable t) {
-      t.printStackTrace();
     } finally {
       if (tr!=null) tr.remove();
       if (m!=null) m.remove();
@@ -769,17 +766,18 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         }
       }
       DKV.put(tr);
-      p._seed = 1234;
+      p._seed = 125;
       p._epochs = 1;
       p._categorical_encoding = categoricalEncodingScheme;
       p._score_training_samples = 100;
       p._score_validation_samples = 100;
+      p._shuffle_training_data = false;
       p._standardize = standardize;
       p._hidden = new int[]{10,10};
       m = new DeepWater(p).trainModel().get();
 
       preds = m.score(p._train.get());
-      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-4));
+      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
     } finally {
       if (tr!=null) tr.remove();
       if (m!=null) m.remove();
