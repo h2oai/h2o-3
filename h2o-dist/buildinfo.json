@@ -129,7 +129,7 @@
         {
             "name" : "Migrating to H2O 3",
             "id"   : "doc-migration",
-            "path" : "docs-website/h2o-docs/Migration.html"
+            "path" : "docs-website/h2o-docs/migrating.html"
         }
     ],
 

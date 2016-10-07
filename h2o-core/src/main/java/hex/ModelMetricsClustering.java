@@ -72,12 +72,12 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
       int col = 0;
       table.set(k, col++, k+1);
       table.set(k, col++, _size[k]);
-      table.set(k, col++, _withinss[k]);
+      table.set(k, col, _withinss[k]);
     }
     return table;
   }
 
-  public static class MetricBuilderClustering extends MetricBuilderUnsupervised {
+  public static class MetricBuilderClustering extends MetricBuilderUnsupervised<MetricBuilderClustering> {
     public long[] _size;        // Number of elements in cluster
     public double[] _within_sumsqe;   // Within-cluster sum of squared error
     private double[/*features*/] _colSum;  // Sum of each column
@@ -125,8 +125,7 @@ public class ModelMetricsClustering extends ModelMetricsUnsupervised {
     }
 
     @Override
-    public void reduce(MetricBuilder mb) {
-      MetricBuilderClustering mm = (MetricBuilderClustering) mb;
+    public void reduce(MetricBuilderClustering mm) {
       super.reduce(mm);
       ArrayUtils.add(_size, mm._size);
       ArrayUtils.add(_within_sumsqe, mm._within_sumsqe);

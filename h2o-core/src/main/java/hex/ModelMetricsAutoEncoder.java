@@ -11,7 +11,7 @@ public class ModelMetricsAutoEncoder extends ModelMetricsUnsupervised {
     super(model, frame, nobs, mse);
   }
 
-  public static class MetricBuilderAutoEncoder extends MetricBuilderUnsupervised {
+  public static class MetricBuilderAutoEncoder extends MetricBuilderUnsupervised<MetricBuilderAutoEncoder> {
     public MetricBuilderAutoEncoder(int dims) {
       _work = new double[dims];
     }

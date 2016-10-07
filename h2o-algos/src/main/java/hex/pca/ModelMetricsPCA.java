@@ -11,7 +11,7 @@ public class ModelMetricsPCA extends ModelMetricsUnsupervised {
   }
 
   // PCA currently does not have any model metrics to compute during scoring
-  public static class PCAModelMetrics extends MetricBuilderUnsupervised {
+  public static class PCAModelMetrics extends MetricBuilderUnsupervised<PCAModelMetrics> {
     public PCAModelMetrics(int dims) {
       _work = new double[dims];
     }

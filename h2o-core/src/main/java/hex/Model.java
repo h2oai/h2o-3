@@ -17,13 +17,9 @@ import water.fvec.*;
 import water.util.*;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.nio.charset.Charset;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -107,7 +103,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** The short name, used in making Keys.  e.g. "GBM" */
     abstract public String algoName();
 
-    /** The pretty algo name for this Model (e.g., Gradient Boosting Method, rather than GBM).*/
+    /** The pretty algo name for this Model (e.g., Gradient Boosting Machine, rather than GBM).*/
     abstract public String fullName();
 
     /** The Java class name for this Model (e.g., hex.tree.gbm.GBM, rather than GBM).*/
@@ -384,8 +380,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
     public Key _cross_validation_predictions[];
-    public Key _cross_validation_holdout_predictions_frame_id;
-    public Key _cross_validation_fold_assignment_frame_id;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id;
+    public Key<Frame> _cross_validation_fold_assignment_frame_id;
 
     // Model-specific start/end/run times
     // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
@@ -874,6 +870,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (expensive) {
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
       if (updated!=test) {
+        assert(updated._key!=test._key);
         if (toDelete!=null) toDelete.put(updated._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         test.restructure(updated.names(), updated.vecs());
       }
@@ -1201,151 +1198,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
 
-  //====================================================================================================================
+
   /**
-   * Serialize the model into a zipped file containing multiple raw data files. The structure of the zip will be
-   * as follows:
-   *    domains/
-   *        d000.txt
-   *        d001.txt
-   *        ...
-   *    trees/
-   *        t00_000.bin
-   *        ...
-   *    model.ini
-   * Each domain file is a plain text file with one line per category (not quoted).
-   * Each tree file is a binary file that is equivalent to `_bit` array in the model's `score()` function. The first 2
-   * digits in the tree file's name correspond to the class index, the last tree are the tree index (since trees are
-   * stored in a double-array Key&lt;CompressedTree>[ntrees][nclasses].
-   *
-   * The model.ini file has 3 sections: [info], [columns] and [domains]:
-   *    [info]
-   *    algo = Random Forest
-   *    n_trees = 100
-   *    n_columns = 25
-   *    n_domains = 3
-   *    ...
-   *    h2o_version = 3.9.10.0
-   *
-   *    [columns]
-   *    col1
-   *    col2
-   *    ...
-   *
-   *    [domains]
-   *    5: d000.txt
-   *    6: d001.txt
-   *    12: d002.txt
-   *
-   * The [info] section lists general model information; [columns] contains the list of all column names; and [domains]
-   *
+   * Override this in models that support serialization into the MOJO format.
+   * @return a class that inherits from ModelMojo
    */
-  public class MojoStreamWriter extends StreamWriter {
-    private StringBuilder tmpfile;
-    private String tmpname;
-    private ZipOutputStream zos;
-
-    @Override
-    public void writeTo(OutputStream os) {
-      zos = new ZipOutputStream(os);
-      try {
-        writeModelInfo();
-        writeDomains();
-        writeModelData();
-        zos.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    private void writeModelInfo() throws IOException {
-      int n_categoricals = 0;
-      for (String[] domain : _output._domains)
-        if (domain != null)
-          n_categoricals++;
-
-      startWritingTextFile("model.ini");
-      writeln("[info]");
-      writeln("algorithm = " + _parms.fullName());
-      writeln("category = " + _output.getModelCategory());
-      writeln("uuid = " + checksum());
-      writeln("n_classes = " + _output.nclasses());
-      writeln("n_columns = " + _output._names.length);
-      writeln("n_domains = " + n_categoricals);
-      writeln("balance_classes = " + _parms._balance_classes);
-      writeln("default_threshold = " + defaultThreshold());
-      writeln("prior_class_distrib = " + Arrays.toString(_output._priorClassDist));
-      writeln("model_class_distrib = " + Arrays.toString(_output._modelClassDist));
-      writeExtraModelInfo();
-      writeln("timestamp = " + new DateTime().toString());
-      writeln("h2o_version = " + H2O.ABV.projectVersion());
-      writeln("mojo_version = 1.0");
-      writeln("license = Apache License Version 2.0");
-      writeln("");
-      writeln("[columns]");
-      for (String name : _output._names) {
-        writeln(name);
-      }
-      writeln("");
-      writeln("[domains]");
-      String format = "%d: %d d%03d.txt";
-      for (int colIndex = 0, domIndex = 0; colIndex < _output._names.length; colIndex++) {
-        if (_output._domains[colIndex] != null)
-          writeln(String.format(format, colIndex, _output._domains[colIndex].length, domIndex++));
-      }
-      finishWritingTextFile();
-    }
-
-    private void writeDomains() throws IOException {
-      int domIndex = 0;
-      for (String[] domain : _output._domains) {
-        if (domain == null) continue;
-        startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
-        for (String category : domain) {
-          writeln(category.replaceAll("\n", "\\n"));  // replace newlines with "\n" escape sequences
-        }
-        finishWritingTextFile();
-      }
-    }
-
-    /**
-     * Overwrite in subclasses to write any additional information into the model.ini/[info] section.
-     */
-    protected void writeExtraModelInfo() throws IOException {}
-
-    /**
-     * Overwrite in subclasses to write the actual model data.
-     */
-    protected void writeModelData() throws IOException {}
-
-    protected void startWritingTextFile(String filename) {
-      assert tmpfile == null : "Previous text file was not closed";
-      tmpfile = new StringBuilder();
-      tmpname = filename;
-    }
-
-    protected void writeln(String s) {
-      assert tmpfile != null : "No text file is currently being written";
-      tmpfile.append(s);
-      tmpfile.append('\n');
-    }
-
-    protected void finishWritingTextFile() throws IOException {
-      writeBinaryFile(tmpname, tmpfile.toString().getBytes(Charset.forName("UTF-8")));
-      tmpfile = null;
-    }
-
-    protected void writeBinaryFile(String filename, byte[] bytes) throws IOException {
-      ZipEntry archiveEntry = new ZipEntry(filename);
-      archiveEntry.setSize(bytes.length);
-      zos.putNextEntry(archiveEntry);
-      zos.write(bytes);
-      zos.closeEntry();
-    }
-  }
-
-  public MojoStreamWriter getMojoStream() {
-    return new MojoStreamWriter();
+  public ModelMojo getMojo() {
+    throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
   }
 
 
@@ -1564,7 +1423,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon) {
     assert data.numRows() == model_predictions.numRows();
-    final Frame fr = new Frame(data);
+    Frame fr = new Frame(data);
     boolean computeMetrics = data.vec(_output.responseName()) != null && !data.vec(_output.responseName()).isBad();
     try {
       String[] warns = adaptTestForTrain(fr,true, computeMetrics);
@@ -1576,9 +1435,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int[] omap = null;
       if( _output.isClassifier() ) {
         Vec actual = fr.vec(_output.responseName());
-        String sdomain[] = actual == null ? null : actual.domain(); // Scored/test domain; can be null
-        String mdomain[] = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
-        if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
+        String[] sdomain = actual == null ? null : actual.domain(); // Scored/test domain; can be null
+        String[] mdomain = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
+        if( sdomain != null && !Arrays.equals(mdomain, sdomain)) {
           omap = CategoricalWrappedVec.computeMap(mdomain,sdomain); // Map from model-domain to scoring-domain
         }
       }
@@ -1598,8 +1457,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
 
-      double features[] = MemoryManager.malloc8d(genmodel._names.length);
-      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
+      double[] features = MemoryManager.malloc8d(genmodel._names.length);
+      double[] predictions = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
       // Compare predictions, counting mis-predicts
       int totalMiss = 0;

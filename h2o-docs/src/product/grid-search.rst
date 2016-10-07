@@ -119,6 +119,7 @@ K-Means Hyperparameters
 -  ``standardize``
 -  ``seed``
 -  ``init``
+-  ``estimate_k``
 
 GLM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~

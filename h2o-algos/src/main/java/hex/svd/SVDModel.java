@@ -12,7 +12,8 @@ import water.fvec.Frame;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
-public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVDOutput> {
+public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.SVDOutput> {
+
   public static class SVDParameters extends Model.Parameters {
     public String algoName() { return "SVD"; }
     public String fullName() { return "Singular Value Decomposition"; }
@@ -88,7 +89,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     @Override public ModelCategory getModelCategory() { return ModelCategory.DimReduction; }
   }
 
-  public SVDModel(Key selfKey, SVDParameters parms, SVDOutput output) { super(selfKey,parms,output); }
+  public SVDModel(Key<SVDModel> selfKey, SVDParameters parms, SVDOutput output) { super(selfKey, parms, output); }
 
   @Override protected Futures remove_impl( Futures fs ) {
     if (null != _output._u_key)
@@ -120,7 +121,7 @@ public class SVDModel extends Model<SVDModel,SVDModel.SVDParameters,SVDModel.SVD
     }
 
     // SVD currently does not have any model metrics to compute during scoring
-    public static class SVDModelMetrics extends MetricBuilderUnsupervised {
+    public static class SVDModelMetrics extends MetricBuilderUnsupervised<SVDModelMetrics> {
       public SVDModelMetrics(int dims) {
         _work = new double[dims];
       }

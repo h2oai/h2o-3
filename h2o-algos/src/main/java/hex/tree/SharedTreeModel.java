@@ -31,9 +31,8 @@ public abstract class SharedTreeModel<
     TwoDimTable vi = _output._variable_importances;
     if (vi==null) return null;
     n = Math.min(n, vi.getRowHeaders().length);
-    String res[] = new String[n];
-    for (int i = 0; i < n; ++i)
-      res[i] = vi.getRowHeaders()[i];
+    String[] res = new String[n];
+    System.arraycopy(vi.getRowHeaders(), 0, res, 0, n);
     return res;
   }
 
@@ -80,7 +79,7 @@ public abstract class SharedTreeModel<
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
-    private static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = new String[] { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
+    private static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
 
     protected String[] getCheckpointNonModifiableFields() {
       return CHECKPOINT_NON_MODIFIABLE_FIELDS;
@@ -137,13 +136,13 @@ public abstract class SharedTreeModel<
     public int _ntrees;
 
     /** More indepth tree stats */
-    final public TreeStats _treeStats;
+    public final TreeStats _treeStats;
 
     /** Trees get big, so store each one separately in the DKV. */
     public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
 
-    public ScoreKeeper _scored_train[/*ntrees+1*/];
-    public ScoreKeeper _scored_valid[/*ntrees+1*/];
+    public ScoreKeeper[/*ntrees+1*/] _scored_train;
+    public ScoreKeeper[/*ntrees+1*/] _scored_valid;
     public ScoreKeeper[] scoreKeepers() {
       ArrayList<ScoreKeeper> skl = new ArrayList<>();
       ScoreKeeper[] ska = _validation_metrics != null ? _scored_valid : _scored_train;
@@ -153,7 +152,7 @@ public abstract class SharedTreeModel<
       return skl.toArray(new ScoreKeeper[skl.size()]);
     }
     /** Training time */
-    public long _training_time_ms[/*ntrees+1*/] = new long[]{System.currentTimeMillis()};
+    public long[/*ntrees+1*/] _training_time_ms = {System.currentTimeMillis()};
 
     /**
      * Variable importances computed during training
@@ -201,7 +200,7 @@ public abstract class SharedTreeModel<
     super(selfKey, parms, output);
   }
 
-  public Frame scoreLeafNodeAssignment(Frame frame, Key destination_key) {
+  public Frame scoreLeafNodeAssignment(Frame frame, Key<Frame> destination_key) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
     int classTrees = 0;
@@ -221,8 +220,8 @@ public abstract class SharedTreeModel<
     }
     Frame res = new MRTask() {
       @Override public void map(Chunk chks[], NewChunk[] idx ) {
-        double input [] = new double[chks.length];
-        final String output[] = new String[outputcols];
+        double[] input = new double[chks.length];
+        String[] output = new String[outputcols];
 
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<chks.length; i++ )
@@ -262,10 +261,10 @@ public abstract class SharedTreeModel<
     return res;
   }
 
-  @Override protected double[] score0(double data[], double[] preds, double weight, double offset) {
+  @Override protected double[] score0(double[] data, double[] preds, double weight, double offset) {
     return score0(data, preds, weight, offset, _output._treeKeys.length);
   }
-  @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
+  @Override protected double[] score0(double[/*ncols*/] data, double[/*nclasses+1*/] preds) {
     return score0(data, preds, 1.0, 0.0);
   }
 
@@ -279,7 +278,7 @@ public abstract class SharedTreeModel<
   }
 
   // Score per line per tree
-  private void score0(double data[], double preds[], int treeIdx) {
+  private void score0(double[] data, double[] preds, int treeIdx) {
     Key[] keys = _output._treeKeys[treeIdx];
     for( int c=0; c<keys.length; c++ ) {
       if (keys[c] != null) {
@@ -313,62 +312,29 @@ public abstract class SharedTreeModel<
   }
 
   @Override protected Futures remove_impl( Futures fs ) {
-    for( Key ks[] : _output._treeKeys)
-      for( Key k : ks )
+    for (Key[] ks : _output._treeKeys)
+      for (Key k : ks)
         if( k != null ) k.remove(fs);
     return super.remove_impl(fs);
   }
 
   /** Write out K/V pairs */
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-    for( Key<CompressedTree> ks[] : _output._treeKeys )
-      for( Key<CompressedTree> k : ks )
+    for (Key<CompressedTree>[] ks : _output._treeKeys)
+      for (Key<CompressedTree> k : ks)
         ab.putKey(k);
     return super.writeAll_impl(ab);
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    for( Key<CompressedTree> ks[] : _output._treeKeys )
-      for( Key<CompressedTree> k : ks )
+    for (Key<CompressedTree>[] ks : _output._treeKeys)
+      for (Key<CompressedTree> k : ks)
         ab.getKey(k,fs);
     return super.readAll_impl(ab,fs);
   }
 
-  // `M` is really the type of `this`
-  @SuppressWarnings("unchecked")
+  @SuppressWarnings("unchecked")  // `M` is really the type of `this`
   private M self() { return (M)this; }
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Serialization into the "MOJO" format
-  //--------------------------------------------------------------------------------------------------------------------
-
-  public class TreeMojoStreamWriter extends Model<M, P, O>.MojoStreamWriter {
-    @Override
-    protected void writeExtraModelInfo() throws IOException {
-      writeln("n_trees = " + _output._ntrees);
-      writeln("n_features = " + _output.nfeatures());
-      writeln("supervised = true");
-    }
-
-    @Override
-    protected void writeModelData() throws IOException {
-      assert _output._treeKeys.length == _output._ntrees;
-      int nclasses = _output.nclasses();
-      int ntreesPerClass = binomialOpt() && nclasses == 2? 1 : nclasses;
-      for (int i = 0; i < _output._ntrees; i++) {
-        for (int j = 0; j < ntreesPerClass; j++) {
-          Key<CompressedTree> key = _output._treeKeys[i][j];
-          Value ctVal = key != null? DKV.get(key) : null;
-          if (ctVal == null)
-            throw new H2OKeyNotFoundArgumentException("CompressedTree " + key + " not found");
-          CompressedTree ct = ctVal.get();
-          assert ct._nclass == nclasses;
-          // assume ct._seed is useless and need not be persisted
-          writeBinaryFile(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
-        }
-      }
-    }
-  }
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -436,13 +402,13 @@ public abstract class SharedTreeModel<
     toJavaUnifyPreds(body);
   }
 
-  abstract protected void toJavaUnifyPreds(SBPrintStream body);
+  protected abstract void toJavaUnifyPreds(SBPrintStream body);
 
-  protected <T extends JCodeSB> T toJavaTreeName(final T sb, String mname, int t, int c ) {
+  protected <T extends JCodeSB> T toJavaTreeName(T sb, String mname, int t, int c ) {
     return (T) sb.p(mname).p("_Tree_").p(t).p("_class_").p(c);
   }
 
-  protected <T extends JCodeSB> T toJavaForestName(final T sb, String mname, int t ) {
+  protected <T extends JCodeSB> T toJavaForestName(T sb, String mname, int t ) {
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
 

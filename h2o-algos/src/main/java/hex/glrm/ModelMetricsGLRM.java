@@ -23,15 +23,15 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     _catcnt = catcnt;
   }
 
-  public static class GLRMModelMetrics extends MetricBuilderUnsupervised {
+  public static class GlrmModelMetricsBuilder extends MetricBuilderUnsupervised<GlrmModelMetricsBuilder> {
     public double _miscls;     // Number of misclassified categorical values
     public long _numcnt;      // Number of observed numeric entries
     public long _catcnt;     // Number of observed categorical entries
     public int[] _permutation;  // Permutation array for shuffling cols
     public boolean _impute_original;
 
-    public GLRMModelMetrics(int dims, int[] permutation) { this(dims, permutation, false); }
-    public GLRMModelMetrics(int dims, int[] permutation, boolean impute_original) {
+    public GlrmModelMetricsBuilder(int dims, int[] permutation) { this(dims, permutation, false); }
+    public GlrmModelMetricsBuilder(int dims, int[] permutation, boolean impute_original) {
       _work = new double[dims];
       _miscls = _numcnt = _catcnt = 0;
       _permutation = permutation;
@@ -69,8 +69,7 @@ public class ModelMetricsGLRM extends ModelMetricsUnsupervised {
     }
 
     @Override
-    public void reduce(MetricBuilder mb) {
-      GLRMModelMetrics mm = (GLRMModelMetrics) mb;
+    public void reduce(GlrmModelMetricsBuilder mm) {
       super.reduce(mm);
       _miscls += mm._miscls;
       _numcnt += mm._numcnt;

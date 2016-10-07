@@ -7,6 +7,6 @@ public class ModelMetricsUnsupervised extends ModelMetrics {
     super(model, frame, nobs, MSE, null);
   }
 
-  public static abstract class MetricBuilderUnsupervised extends MetricBuilder {
-  }
+  public static abstract class MetricBuilderUnsupervised<T extends MetricBuilderUnsupervised<T>>
+          extends MetricBuilder<T> {}
 }
