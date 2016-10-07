@@ -22,9 +22,10 @@ public class SharedTreeMojoWriter<M extends SharedTreeModel<M, P, O>,
   @Override
   protected void writeModelData() throws IOException {
     assert model._output._treeKeys.length == model._output._ntrees;
-    writekv("n_trees", model._output._ntrees);
     int nclasses = model._output.nclasses();
     int ntreesPerClass = model.binomialOpt() && nclasses == 2 ? 1 : nclasses;
+    writekv("n_trees", model._output._ntrees);
+    writekv("n_trees_per_class", ntreesPerClass);
     for (int i = 0; i < model._output._ntrees; i++) {
       for (int j = 0; j < ntreesPerClass; j++) {
         Key<CompressedTree> key = model._output._treeKeys[i][j];
