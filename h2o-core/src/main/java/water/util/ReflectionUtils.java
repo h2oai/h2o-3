@@ -1,14 +1,19 @@
 package water.util;
 
+import com.google.common.base.Function;
 import water.H2O;
 import water.Iced;
 
+import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.*;
+import java.net.URL;
 
 public class ReflectionUtils {
   /**
    * Reflection helper which returns the actual class for a type parameter, even if itself is parameterized.
    */
+  @SuppressWarnings("unchecked")
   public static <T> Class<T> findActualClassParameter(Class clz, int parm) {
     Class parm_class = null;
 
