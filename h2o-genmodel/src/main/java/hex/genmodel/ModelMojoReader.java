@@ -43,11 +43,22 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   // Interface for subclasses
   //--------------------------------------------------------------------------------------------------------------------
 
+  /**
+   * Retrieve value from the model's kv store which was previously put there using `writekv(key, value)`. We will
+   * attempt to cast to your expected type, but this is obviously unsafe. Note that the value is deserialized from
+   * the underlying string representation using {@link ParseUtils#tryParse(String)}, which occasionally may get the
+   * answer wrong.
+   * If the `key` is missing in the local kv store, null will be returned. However when assigning to a primitive type
+   * this would result in an NPE, so beware.
+   */
   @SuppressWarnings("unchecked")
   protected <T> T readkv(String key) {
     return (T) _lkv.get(key);
   }
 
+  /**
+   * Retrieve binary data previously saved to the mojo file using `writeblob(key, blob)`.
+   */
   protected byte[] readblob(String name) throws IOException {
     return _reader.getBinaryFile(name);
   }
