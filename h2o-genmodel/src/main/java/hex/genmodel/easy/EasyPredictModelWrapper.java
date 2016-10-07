@@ -463,6 +463,18 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
             value = Double.parseDouble(s);
           }
         } else if (o instanceof Double) {
+          String s = (String) o;
+          value = Double.parseDouble(s);
+        }
+        else if (o instanceof Double) {
+          String s = (String) o;
+          try {
+            value = Double.parseDouble(s);
+          } catch(NumberFormatException nfe) {
+            throw new PredictException("Unable to parse value: " + s + ", from column: "+ dataColumnName + ", as Double; " + nfe.getMessage());
+          }
+        }
+        else if (o instanceof Double) {
           value = (Double) o;
         } else if (o instanceof byte[] && isImage) {
           // Read the image from raw bytes
