@@ -779,9 +779,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       m = new DeepWater(p).trainModel().get();
 
       preds = m.score(p._train.get());
-      m.testJavaScoring(p._train.get(),preds,1e-3);
-    } catch(Throwable t) {
-      t.printStackTrace();
+      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-4));
     } finally {
       if (tr!=null) tr.remove();
       if (m!=null) m.remove();
@@ -791,9 +789,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   @Test public void MOJOTestNumericNonStandardized() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, false);}
   @Test public void MOJOTestNumeric() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, true);}
-  @Ignore
   @Test public void MOJOTestCatInternal() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotInternal, true, true);}
-  @Ignore
   @Test public void MOJOTestCatExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
 
   // ------- Text conversions
