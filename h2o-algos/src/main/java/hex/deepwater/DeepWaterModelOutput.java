@@ -4,10 +4,15 @@ import hex.Model;
 import hex.ModelCategory;
 import water.util.TwoDimTable;
 
-/**
- * Created by arno on 7/26/16.
- */
 public class DeepWaterModelOutput extends Model.Output {
+
+  int _nums;
+  int _cats;
+  int[] _catOffsets;
+  double[] _normMul;
+  double[] _normSub;
+  boolean _useAllFactorLevels;
+
   /**
    * The Deep Learning model output contains a few extra fields in addition to the metrics in Model.Output
    * 1) Scoring history (raw data)

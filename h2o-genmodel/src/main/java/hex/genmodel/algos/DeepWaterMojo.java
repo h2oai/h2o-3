@@ -5,6 +5,7 @@ import deepwater.backends.BackendParams;
 import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
+import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 
 import java.io.IOException;
@@ -19,6 +20,14 @@ public class DeepWaterMojo extends MojoModel {
   int _height;
   int _width;
   int _channels;
+
+  int _nums;
+  int _cats;
+  int[] _catOffsets;
+  double[] _normMul;
+  double[] _normSub;
+  boolean _useAllFactorLevels;
+
   protected byte[] _network;
   protected byte[] _parameters;
 
@@ -46,6 +55,12 @@ public class DeepWaterMojo extends MojoModel {
     _height = (int)info.get("height");
     _width = (int)info.get("width");
     _channels = (int)info.get("channels");
+    _nums = (int)info.get("nums");
+    _cats = (int)info.get("cats");
+    _catOffsets = (int[])info.get("catOffsets");
+    _normMul = (double[])info.get("normMul");
+    _normSub = (double[])info.get("normSub");
+    _useAllFactorLevels = (boolean)info.get("useAllFactorLevels");
 
     _imageDataSet = new ImageDataSet(_width, _height, _channels);
 //    float[] meanData = _backend.loadMeanImage(_model, (String)info.get("mean_image_file"));
@@ -82,14 +97,16 @@ public class DeepWaterMojo extends MojoModel {
    * Corresponds to `hex.DeepWater.score0()`
    */
   @Override
-  public final double[] score0(double[] row, double offset, double[] preds) {
-    float[] f = new float[_channels * _height * _width];
-    for (int i=0; i<row.length; ++i) f[i] = (float)row[i]; //only fill the first observation
-    float[] predFloats = _backend.predict(_model, f);
+  public final double[] score0(double[] doubles, double offset, double[] preds) {
+    assert(doubles != null) : "doubles are null";
+    float[] floats = new float[_nums + _catOffsets[_cats]]; //TODO: use thread-local storage
+    GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, _normMul, _normSub, _useAllFactorLevels);
+    float[] predFloats = _backend.predict(_model, floats);
     assert(_nclasses>=2) : "Only classification is supported right now.";
-    double[] p = new double[_nclasses+1];
-    for (int i=1; i<p.length; ++i) p[i] = predFloats[i];
-    return p;
+    assert(_nclasses == predFloats.length) : "nclasses " + _nclasses + " predFloats.length " + predFloats.length;
+    for (int i=0; i<predFloats.length; ++i) preds[1+i] = predFloats[i];
+    preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, doubles, _defaultThreshold);
+    return preds;
   }
 
   @Override

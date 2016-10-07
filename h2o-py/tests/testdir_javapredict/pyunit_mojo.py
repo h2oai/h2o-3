@@ -39,8 +39,9 @@ def test_mojo_model():
     download the model's MOJO, score the model remotely and fetch the predictions, score the model locally by
     running the genmodel jar, and finally compare the prediction results.
     """
-    genmodel_jar = os.path.abspath("../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar")
-    assert os.path.exists(genmodel_jar), "Cannot find " + genmodel_jar
+    genmodel_jar = ":".join([os.path.abspath("../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar"), os.path.abspath("../../../h2o-genmodel/deepwater.backends.mxnet-1.0-SNAPSHOT.jar")])
+    for jar in genmodel_jar.split(":"):
+      assert os.path.exists(jar), "Cannot find " + jar
 
     target_dir = ""
     if sys.platform == "win32":
@@ -70,7 +71,7 @@ def test_mojo_model():
             time0 = time.time()
             print("\n\nTraining %s model..." % estimator.__name__)
             if estimator == H2ODeepWaterEstimator:
-              model = estimator(epochs=EPOCHS)
+              model = estimator(epochs=EPOCHS) #, categorical_encoding="enum")
             else:
               model = estimator(ntrees=NTREES, max_depth=DEPTH)
             model.train(training_frame=train)
@@ -122,10 +123,12 @@ def test_mojo_model():
             print(local_pred_file)
             for inpfile, outfile in [(test_file, local_pred_file), (test2_file, local_pred_file2)]:
                 load_csv(inpfile)
-                ret = subprocess.call(["java", "-cp", genmodel_jar,
-                                       "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m",
-                                       "hex.genmodel.tools.PredictCsv",
-                                       "--input", inpfile, "--output", outfile, "--mojo", mojo_file, "--decimal"])
+                java_cmd = ["java", "-cp", genmodel_jar,
+                            "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m",
+                            "hex.genmodel.tools.PredictCsv",
+                            "--input", inpfile, "--output", outfile, "--mojo", mojo_file, "--decimal"]
+                print(java_cmd)
+                ret = subprocess.call(java_cmd)
                 assert ret == 0, "GenModel finished with return code %d" % ret
                 times.append(time.time())
             print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
@@ -150,6 +153,7 @@ def test_mojo_model():
                                 "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m", "-XX:MaxPermSize=256m",
                                 "hex.genmodel.tools.PredictCsv",
                                 "--pojo", pojo_name, "--input", inpfile, "--output", outfile, "--decimal"]
+                    print(java_cmd)
                     ret = subprocess.call(java_cmd)
                     assert ret == 0, "GenModel finished with return code %d" % ret
                     times.append(time.time())
@@ -168,6 +172,10 @@ def test_mojo_model():
             assert len(local_pred) == len(server_pred) == len(pojo_pred) == test.nrow, \
                 "Number of rows in prediction files do not match: %d vs %d vs %d vs %d" % \
                 (len(local_pred), len(server_pred), len(pojo_pred), test.nrow)
+
+            print(local_pred)
+            #print(pojo_pred)
+            print(server_pred)
             for i in range(test.nrow):
                 lpred = local_pred[i]
                 rpred = server_pred[i]
@@ -175,11 +183,11 @@ def test_mojo_model():
                 assert type(lpred) == type(rpred) == type(ppred), \
                     "Types of predictions do not match: %r / %r / %r" % (lpred, rpred, ppred)
                 if isinstance(lpred, float):
-                    same = abs(lpred - rpred) + abs(lpred - ppred) < 1e-8
+                    same = abs(lpred - rpred) + abs(lpred - ppred) <= 1e-8 * (abs(lpred) + abs(rpred) + abs(ppred))
                 else:
                     same = lpred == rpred == ppred
                 assert same, \
-                    "Predictions are different for row %d: local=%r, pojo=%r, bomo=%r" % (i + 1, lpred, ppred, rpred)
+                    "Predictions are different for row %d: mojo=%r, pojo=%r, server=%r" % (i + 1, lpred, ppred, rpred)
             print("Time taken = %.3fs" % (time.time() - time0))
             print(colorama.Fore.LIGHTGREEN_EX + "\nPredictions match!\n" + colorama.Fore.RESET)
 
@@ -197,6 +205,7 @@ def random_dataset(response_type, verbose=True):
     fractions["string_fraction"] = 0  # Right now we are dropping string columns, so no point in having them.
     fractions["binary_fraction"] /= 3
     fractions["time_fraction"] /= 2
+    #fractions["categorical_fraction"] = 0
     sum_fractions = sum(fractions.values())
     for k in fractions:
         fractions[k] /= sum_fractions

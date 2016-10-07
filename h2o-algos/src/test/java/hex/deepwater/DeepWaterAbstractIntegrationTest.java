@@ -5,6 +5,7 @@ import deepwater.backends.BackendParams;
 import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
+import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.splitframe.ShuffleSplitFrame;
@@ -742,10 +743,57 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     } finally {
       if (tr!=null) tr.remove();
       if (m!=null) m.remove();
-      if (splits!=null) for(Frame s: splits) s.delete();
+      if (splits!=null) for(Frame s: splits) s.remove();
     }
   }
 
+  private void MOJOTest(Model.Parameters.CategoricalEncodingScheme categoricalEncodingScheme, boolean enumCols, boolean standardize) {
+    Frame tr = null;
+    DeepWaterModel m = null;
+    Frame preds = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+
+      p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
+      p._response_column = "CAPSULE";
+      p._ignored_columns = new String[]{"ID"};
+      for (String col : new String[]{p._response_column}) {
+        Vec v = tr.remove(col);
+        tr.add(col, v.toCategoricalVec());
+        v.remove();
+      }
+      if (enumCols) {
+        for (String col : new String[]{"RACE", "DPROS", "DCAPS", "GLEASON"}) {
+          Vec v = tr.remove(col);
+          tr.add(col, v.toCategoricalVec());
+          v.remove();
+        }
+      }
+      DKV.put(tr);
+      p._seed = 1234;
+      p._epochs = 1;
+      p._categorical_encoding = categoricalEncodingScheme;
+      p._score_training_samples = 100;
+      p._score_validation_samples = 100;
+      p._standardize = standardize;
+      p._hidden = new int[]{10,10};
+      m = new DeepWater(p).trainModel().get();
+
+      preds = m.score(p._train.get());
+      m.testJavaScoring(p._train.get(),preds,1e-3);
+    } catch(Throwable t) {
+      t.printStackTrace();
+    } finally {
+      if (tr!=null) tr.remove();
+      if (m!=null) m.remove();
+      if (preds!=null) preds.remove();
+    }
+  }
+
+  @Test public void MOJOTestNumericNonStandardized() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, false);}
+  @Test public void MOJOTestNumeric() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, true);}
+  @Test public void MOJOTestCatInternal() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotInternal, true, true);}
+  @Test public void MOJOTestCatExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
 
   // ------- Text conversions
 
