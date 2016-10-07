@@ -34,7 +34,7 @@ public class SharedTreeMojoWriter<M extends SharedTreeModel<M, P, O>,
         CompressedTree ct = ctVal.get();
         assert ct._nclass == nclasses;
         // assume ct._seed is useless and need not be persisted
-        writeBinaryFile(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
+        writeblob(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
       }
     }
   }
