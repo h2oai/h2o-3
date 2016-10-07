@@ -14,10 +14,11 @@ import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+
 /**
- * Base class for all models' MOJO writers.
+ * Base class for serializing models into the MOJO format.
  *
- * <p/> The function of a MOJO writer is simply to serialize the model into a Zip archive consisting of several
+ * <p/> The function of a MOJO writer is simply to write the model into a Zip archive consisting of several
  * text/binary files. This base class handles serialization of some parameters that are common to all `Model`s, but
  * anything specific to a particular Model should be implemented in that Model's corresponding ModelMojoWriter subclass.
  *
@@ -58,7 +59,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     this.lkv = new LinkedHashMap<>(20);
   }
 
-  /** Overwrite in subclasses to write the actual model data. */
+  /** Override in subclasses to write the actual model data. */
   protected abstract void writeModelData() throws IOException;
 
 
