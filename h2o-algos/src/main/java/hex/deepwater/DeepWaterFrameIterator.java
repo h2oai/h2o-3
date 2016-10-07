@@ -79,7 +79,7 @@ public class DeepWaterFrameIterator extends DeepWaterIterator {
         _dinfo.extractDenseRow(chks, _globalIndex-(int)chks[0].start(), row);
         for (int i = 0; i< _dinfo.fullN(); ++i)
           _destData[start+i] = (float)row.get(i);
-//        System.err.println(Arrays.toString(_destData));
+//        System.err.println(Arrays.toString(Arrays.copyOfRange(_destData, start, start + _dinfo.fullN())));
         if (_cache)
           DKV.put(rowKey, new IcedRow(Arrays.copyOfRange(_destData, start, start + _dinfo.fullN())));
       }
