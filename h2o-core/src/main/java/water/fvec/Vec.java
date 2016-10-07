@@ -1,10 +1,12 @@
 package water.fvec;
 
+import com.google.common.base.Function;
 import water.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.util.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
@@ -205,7 +207,7 @@ public class Vec extends Keyed<Vec> {
    *  {@link #isInt}, but not vice-versa.
    *  @return true if this is an categorical column.  */
   public final boolean isCategorical() {
-    assert (_type==T_CAT && _domain!=null) || (_type!=T_CAT && _domain==null) || (_type==T_NUM && this instanceof InteractionWrappedVec && _domain!=null);
+    assert (_type==T_CAT && _domain!=null) || (_type!=T_CAT && _domain==null) || (_type==T_NUM && this instanceof InteractionWrappedVec);
     return _type==T_CAT;
   }
 
@@ -615,6 +617,21 @@ public class Vec extends Keyed<Vec> {
       }
     }.doAll(randVec);
     return randVec;
+  }
+
+  public static Vec makeFromFunction(long len, final Function<Long, Double> f0) throws IOException {
+    final Closure<Long, Double> f = Closure.enclose(f0);
+    return new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        for (Chunk c : cs) {
+          for (int r = 0; r < c._len; r++) {
+            long i = r + c._start;
+            Double x = f.apply(i);
+            if (x == null) c.setNA(r) else c.set(r, x);
+          }
+        }
+      }
+    }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
   // ======= Rollup Stats ======
