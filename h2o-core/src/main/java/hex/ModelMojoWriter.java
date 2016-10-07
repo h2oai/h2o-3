@@ -8,7 +8,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
@@ -42,12 +41,14 @@ import java.util.zip.ZipOutputStream;
 public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.Parameters, O extends Model.Output>
         extends StreamWriter
 {
+  /** Reference to the model being written. Use this in the subclasses to retreive information from your model. */
   protected M model;
+
   private StringBuilder tmpfile;
   private String tmpname;
   private ZipOutputStream zos;
   // Local key-value store: these values will be written to the model.ini/[info] section
-  private HashMap<String, String> lkv;
+  private Map<String, String> lkv;
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -56,7 +57,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   public ModelMojoWriter(M model) {
     this.model = model;
-    this.lkv = new LinkedHashMap<>(20);
+    this.lkv = new LinkedHashMap<>(20);  // Linked so as to preserve the order of entries in the output
   }
 
   /** Override in subclasses to write the actual model data. */
@@ -67,6 +68,10 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   // Utility functions: subclasses should use these to implement the behavior they need
   //--------------------------------------------------------------------------------------------------------------------
 
+  /**
+   * Write a simple value to the model.ini/[info] section. Here "simple" means a value that can be stringified with
+   * .toString(), and their stringified version is single-line.
+   */
   protected final void writekv(String key, Object value) {
     String valStr = value == null? "null" : value.toString();
     if (valStr.contains("\n"))
@@ -76,29 +81,34 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     lkv.put(key, valStr);
   }
 
-  protected final void startWritingTextFile(String filename) {
-    assert tmpfile == null : "Previous text file was not closed";
-    tmpfile = new StringBuilder();
-    tmpname = filename;
-  }
-
-  protected final void writeln(String s) {
-    assert tmpfile != null : "No text file is currently being written";
-    tmpfile.append(s);
-    tmpfile.append('\n');
-  }
-
-  protected final void finishWritingTextFile() throws IOException {
-    writeBinaryFile(tmpname, tmpfile.toString().getBytes(Charset.forName("UTF-8")));
-    tmpfile = null;
-  }
-
+  /** Write a binary file to the MOJO archive. */
   protected final void writeBinaryFile(String filename, byte[] bytes) throws IOException {
     ZipEntry archiveEntry = new ZipEntry(filename);
     archiveEntry.setSize(bytes.length);
     zos.putNextEntry(archiveEntry);
     zos.write(bytes);
     zos.closeEntry();
+  }
+
+  /** Write a text file to the MOJO archive (or rather open such file for writing). */
+  protected final void startWritingTextFile(String filename) {
+    assert tmpfile == null : "Previous text file was not closed";
+    tmpfile = new StringBuilder();
+    tmpname = filename;
+  }
+
+  /** Write a single line of text to a previously opened text file. */
+  protected final void writeln(String s) {
+    assert tmpfile != null : "No text file is currently being written";
+    tmpfile.append(s);
+    tmpfile.append('\n');
+  }
+
+  /** Finish writing a text file. */
+  protected final void finishWritingTextFile() throws IOException {
+    assert tmpfile != null : "No text file is currently being written";
+    writeBinaryFile(tmpname, tmpfile.toString().getBytes(Charset.forName("UTF-8")));
+    tmpfile = null;
   }
 
 
@@ -108,20 +118,14 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   /**
    * Used from `ModelsHandler.fetchMojo()` to serialize the Mojo into a StreamingSchema.
-   * The structure of the zip will be
-   * as follows:
+   * The structure of the zip will be the following:
+   *    model.ini
    *    domains/
    *        d000.txt
    *        d001.txt
    *        ...
-   *    trees/
-   *        t00_000.bin
-   *        ...
-   *    model.ini
+   *    (extra model files written by the subclasses)
    * Each domain file is a plain text file with one line per category (not quoted).
-   * Each tree file is a binary file that is equivalent to `_bit` array in the model's `score()` function. The first 2
-   * digits in the tree file's name correspond to the class index, the last tree are the tree index (since trees are
-   * stored in a double-array Key&lt;CompressedTree>[ntrees][nclasses].
    */
   @Override public final void writeTo(OutputStream os) {
     zos = new ZipOutputStream(os);
@@ -187,8 +191,9 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   private void writeModelInfo() throws IOException {
     startWritingTextFile("model.ini");
     writeln("[info]");
-    for (Map.Entry<String, String> kv : lkv.entrySet())
+    for (Map.Entry<String, String> kv : lkv.entrySet()) {
       writeln(kv.getKey() + " = " + kv.getValue());
+    }
 
     writeln("\n[columns]");
     for (String name : model._output._names) {
