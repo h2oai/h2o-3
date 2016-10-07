@@ -15,7 +15,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
   }
 
   @Override
-  protected void writeExtraModelInfo() throws IOException {
+  protected void writeModelData() throws IOException {
     GLRM.Archetypes arch = model._output._archetypes_raw;
     writekv("ncolY", arch.nfeatures());
     writekv("nrowY", arch.rank());
@@ -23,10 +23,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     writekv("regularizationY", model._parms._regularization_y);
     writekv("gammaX", model._parms._gamma_x);
     writekv("gammaY", model._parms._gamma_y);
-  }
 
-  @Override
-  protected void writeModelData() throws IOException {
     // Loss functions
     startWritingTextFile("losses.txt");
     for (GlrmLoss loss : model._output._lossFunc) {
@@ -35,7 +32,6 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     finishWritingTextFile();
 
     // Archetypes
-    GLRM.Archetypes arch = model._output._archetypes_raw;
     int n = arch.rank() * arch.nfeatures();
     ByteBuffer bb = ByteBuffer.wrap(new byte[n * 8]);
     for (double[] row : arch.getY(false))

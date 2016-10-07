@@ -8,6 +8,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -18,19 +21,15 @@ import java.util.zip.ZipOutputStream;
  * text/binary files. This base class handles serialization of some parameters that are common to all `Model`s, but
  * anything specific to a particular Model should be implemented in that Model's corresponding ModelMojoWriter subclass.
  *
- * <p/> When implementing a subclass, you have to override two functions:
- * <dl>
- *    <dt>{@link #writeExtraModelInfo()}</dt>
- *    <dd>to serialize any "simple" values (what counts as simple is entirely up to you). Within this class you can
- *        use {@link #writekv(String, Object)} in order to serialize any value under the given key. The value
- *        will be converted to string using its <code>toString()</code> method. The only restriction is that the
- *        value's string representation must not contain a newline.</dd>
- *    <dt>{@link #writeModelData()}</dt>
- *    <dd>to serialize any additional data (either text or binary). You can use
- *        {@link #writeBinaryFile(String, byte[])} to add arbitrary blobs of data to the archive; or
- *        {@link #startWritingTextFile(String)} / {@link #writeln(String)} / {@link #finishWritingTextFile()} to
- *        create new text files.</dd>
- * </dl>
+ * <p/> When implementing a subclass, you have to override the single functions {@link #writeModelData()}. Within
+ * this function you can use any of the following:
+ * <ul>
+ *   <li>{@link #writekv(String, Object)} to serialize any "simple" values (those that can be represented as a
+ *       single-line string).</li>
+ *   <li>{@link #writeBinaryFile(String, byte[])} to add arbitrary blobs of data to the archive.</li>
+ *   <li>{@link #startWritingTextFile(String)} / {@link #writeln(String)} / {@link #finishWritingTextFile()} to
+ *       add text files to the archive.</li>
+ * </ul>
  *
  * After subclassing this class, you should also override the {@link Model#getMojo()} method in your model's class to
  * return an instance of your new child class.
@@ -46,8 +45,8 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   private StringBuilder tmpfile;
   private String tmpname;
   private ZipOutputStream zos;
-  // When this flag is set to true, `writeln()` is disallowed and `writekv()` is allowed
-  private boolean writingIniFile = false;
+  // Local key-value store: these values will be written to the model.ini/[info] section
+  private HashMap<String, String> lkv;
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -56,10 +55,8 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   public ModelMojoWriter(M model) {
     this.model = model;
+    this.lkv = new LinkedHashMap<>(20);
   }
-
-  /** Overwrite in subclasses to write any additional information into the model.ini/[info] section. */
-  protected abstract void writeExtraModelInfo() throws IOException;
 
   /** Overwrite in subclasses to write the actual model data. */
   protected abstract void writeModelData() throws IOException;
@@ -70,23 +67,22 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   //--------------------------------------------------------------------------------------------------------------------
 
   protected final void writekv(String key, Object value) {
-    assert writingIniFile : "This function should only be used from `writeExtraModelInfo`";
     String valStr = value == null? "null" : value.toString();
     if (valStr.contains("\n"))
       throw new RuntimeException("The `value` must not contain newline characters, got: " + valStr);
-    tmpfile.append(key).append(" = ").append(valStr).append('\n');
+    if (lkv.containsKey(key))
+      throw new RuntimeException("Key " + key + " was already written");
+    lkv.put(key, valStr);
   }
 
   protected final void startWritingTextFile(String filename) {
     assert tmpfile == null : "Previous text file was not closed";
-    assert !writingIniFile;
     tmpfile = new StringBuilder();
     tmpname = filename;
   }
 
   protected final void writeln(String s) {
     assert tmpfile != null : "No text file is currently being written";
-    assert !writingIniFile : "Please use `writekv(key, value)` instead";
     tmpfile.append(s);
     tmpfile.append('\n');
   }
@@ -129,19 +125,42 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   @Override public final void writeTo(OutputStream os) {
     zos = new ZipOutputStream(os);
     try {
+      addCommonModelInfo();
+      writeModelData();
       writeModelInfo();
       writeDomains();
-      writeModelData();
       zos.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
   }
 
+  private void addCommonModelInfo() {
+    int n_categoricals = 0;
+    for (String[] domain : model._output._domains)
+      if (domain != null)
+        n_categoricals++;
+
+    writekv("h2o_version", H2O.ABV.projectVersion());
+    writekv("mojo_version", "1.0");
+    writekv("license", "Apache License Version 2.0");
+    writekv("algorithm", model._parms.fullName());
+    writekv("category", model._output.getModelCategory());
+    writekv("uuid", model.checksum());
+    writekv("supervised", model._output.isSupervised());
+    writekv("n_features", model._output.nfeatures());
+    writekv("n_classes", model._output.nclasses());
+    writekv("n_columns", model._output._names.length);
+    writekv("n_domains", n_categoricals);
+    writekv("balance_classes", model._parms._balance_classes);
+    writekv("default_threshold", model.defaultThreshold());
+    writekv("prior_class_distrib", Arrays.toString(model._output._priorClassDist));
+    writekv("model_class_distrib", Arrays.toString(model._output._modelClassDist));
+    writekv("timestamp", new DateTime().toString());
+  }
+
   /**
-   * Create the model.ini file containing the generic model parameters.
-   *
-   * The model.ini file has 3 sections: [info], [columns] and [domains]. For example:
+   * Create the model.ini file containing 3 sections: [info], [columns] and [domains]. For example:
    *    [info]
    *    algo = Random Forest
    *    n_trees = 100
@@ -165,39 +184,17 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
    * together with the number of categories to be read from that file.
    */
   private void writeModelInfo() throws IOException {
-    int n_categoricals = 0;
-    for (String[] domain : model._output._domains)
-      if (domain != null)
-        n_categoricals++;
-
     startWritingTextFile("model.ini");
     writeln("[info]");
-    writingIniFile = true;
-    writekv("algorithm", model._parms.fullName());
-    writekv("category", model._output.getModelCategory());
-    writekv("uuid", model.checksum());
-    writekv("supervised", model._output.isSupervised());
-    writekv("n_features", model._output.nfeatures());
-    writekv("n_classes", model._output.nclasses());
-    writekv("n_columns", model._output._names.length);
-    writekv("n_domains", n_categoricals);
-    writekv("balance_classes", model._parms._balance_classes);
-    writekv("default_threshold", model.defaultThreshold());
-    writekv("prior_class_distrib", Arrays.toString(model._output._priorClassDist));
-    writekv("model_class_distrib", Arrays.toString(model._output._modelClassDist));
-    writeExtraModelInfo();
-    writekv("timestamp", new DateTime().toString());
-    writekv("h2o_version", H2O.ABV.projectVersion());
-    writekv("mojo_version", "1.0");
-    writekv("license", "Apache License Version 2.0");
-    writingIniFile = false;
-    writeln("");
-    writeln("[columns]");
+    for (Map.Entry<String, String> kv : lkv.entrySet())
+      writeln(kv.getKey() + " = " + kv.getValue());
+
+    writeln("\n[columns]");
     for (String name : model._output._names) {
       writeln(name);
     }
-    writeln("");
-    writeln("[domains]");
+
+    writeln("\n[domains]");
     String format = "%d: %d d%03d.txt";
     int domIndex = 0;
     for (int colIndex = 0; colIndex < model._output._names.length; colIndex++) {
