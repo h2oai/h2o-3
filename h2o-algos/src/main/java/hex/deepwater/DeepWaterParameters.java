@@ -13,6 +13,7 @@ import water.util.Log;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.lang.reflect.Field;
+import java.net.URL;
 import java.util.Arrays;
 
 /**
@@ -27,7 +28,6 @@ public class DeepWaterParameters extends Model.Parameters {
     super();
     _stopping_rounds = 5;
     _ignore_const_cols = false; //allow String columns with File URIs
-    _categorical_encoding = CategoricalEncodingScheme.OneHotExplicit;
   }
   @Override
   public long progressUnits() {
@@ -297,11 +297,9 @@ public class DeepWaterParameters extends Model.Parameters {
       dl.warn("_image_shape", "image shape is ignored, only used for image_classification");
       dl.warn("_channels", "channels shape is ignored, only used for image_classification");
       dl.warn("_mean_image_file", "mean_image_file shape is ignored, only used for image_classification");
-//      if (_problem_type==ProblemType.numeric_classification) {
-//        if (_categorical_encoding==CategoricalEncodingScheme.OneHotInternal || _categorical_encoding==CategoricalEncodingScheme.Enum) {
-//          dl.error("_categorical_encoding", "categorical encoding scheme cannot be OneHotInternal or Enum: must have numeric columns as input.");
-//        }
-//      }
+      if (_categorical_encoding==CategoricalEncodingScheme.Enum) {
+        dl.error("_categorical_encoding", "categorical encoding scheme cannot be Enum: must have numeric columns as input.");
+      }
     }
 
     if (expensive && !classification)
@@ -428,8 +426,8 @@ public class DeepWaterParameters extends Model.Parameters {
             "_autoencoder",
             "_network",
             "_backend",
-            "_learning_rate",
-            "_learning_rate_annealing",
+            "_learn_rate",
+            "_learn_rate_annealing",
             "_rate_decay",
             "_momentum_start",
             "_momentum_ramp",
@@ -559,13 +557,17 @@ public class DeepWaterParameters extends Model.Parameters {
           try {
             ImageIO.read(new File(first));
             image=true;
-          } catch(Throwable t) {
-            if (first.endsWith(".jpg") || first.endsWith(".png") || first.endsWith(".tif")) {
-              image=true;
-              Log.warn("Cannot read first image at " + first + " - Check data.");
-            } else {
-              text = true;
-            }
+          } catch(Throwable t) {}
+          try {
+            ImageIO.read(new URL(first));
+            image=true;
+          } catch(Throwable t) {}
+
+          if (!image && (first.endsWith(".jpg") || first.endsWith(".png") || first.endsWith(".tif"))) {
+            image=true;
+            Log.warn("Cannot read first image at " + first + " - Check data.");
+          } else {
+            text = true;
           }
         }
         if (image) toParms._problem_type = ProblemType.image_classification;
@@ -576,8 +578,8 @@ public class DeepWaterParameters extends Model.Parameters {
       }
       if (fromParms._categorical_encoding==CategoricalEncodingScheme.AUTO) {
         if (!fromParms._quiet_mode)
-          Log.info("_categorical_encoding: Automatically enabling OneHotExplicit categorical encoding.");
-        toParms._categorical_encoding = CategoricalEncodingScheme.OneHotExplicit;
+          Log.info("_categorical_encoding: Automatically enabling OneHotInternal categorical encoding.");
+        toParms._categorical_encoding = CategoricalEncodingScheme.OneHotInternal;
       }
       if (fromParms._nfolds != 0) {
         if (fromParms._overwrite_with_best_model) {
