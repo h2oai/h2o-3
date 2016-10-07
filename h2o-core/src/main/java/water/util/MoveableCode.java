@@ -11,13 +11,45 @@ import java.net.URL;
  * Encapsulates a class inside, so we can pass around functions.
  */
 public class MoveableCode<T> extends ClassLoader implements Serializable {
-  private final static boolean DEBUG = true;
-  private final byte[] code;
-  private final String className;
+
+  public Class loadClass() { return code.loadClass(); }
+
+  private class Code {
+    private final String className;
+    private final byte[] bytes;
+    private final Code outer;
+
+    Code(String className, byte[] bytes, Code outer) {
+      this.className = className;
+      this.bytes = bytes;
+      this.outer = outer;
+    }
+
+    Code(Class<?> c) throws IOException {
+      bytes = readJavaClass(c);
+      className = c.getName();
+      Class<?> dc = c.getDeclaringClass();
+      outer = (dc == null) ? null : new Code(dc);
+    }
+
+    Class loadClass() {
+      if (outer != null) outer.loadClass();
+      return defineClass(className, bytes, 0, bytes.length);
+    }
+  }
+
+  byte[] readJavaClass(Class<?> c) throws IOException {
+    URL url = c.getClassLoader().getResource(c.getName().replace('.', '/') + ".class");
+    if (url == null) throw new IOException(String.format("Class %s not found", c));
+    return com.google.common.io.Resources.asByteSource(url).read();
+  }
+
+  private Code code;
+
+//  private final static boolean DEBUG = true;
 
   public MoveableCode(Class<?> c) throws IOException {
-    code = readJavaClass(c);
-    className = c.getCanonicalName();
+    code = new Code(c);
   }
 
   // TODO(vlad): make sure this is not called with an array
@@ -25,90 +57,16 @@ public class MoveableCode<T> extends ClassLoader implements Serializable {
     this(instance.getClass());
   }
 
-  byte[] code_for_testing() {
-    return code.clone();
+  byte[] code_bytes_for_testing() {
+    return code.bytes.clone();
   }
 
-  static byte[] readJavaClass(Class<?> c) throws IOException {
-    URL url = c.getClassLoader().getResource(c.getName().replace('.', '/') + ".class");
-    if (url == null) throw new IOException(String.format("Class %s not found", c));
-    return com.google.common.io.Resources.asByteSource(url).read();
+  public MoveableCode(String className, byte[] bytes) {
+    this(className, bytes, null);
   }
 
-  public MoveableCode(String className, byte[] code) {
-    this.className = className;
-    this.code = code;
-  }
-
-  private Class load(String name) {
-    return defineClass(name, code, 0, code.length);
-  }
-
-  private static int[] CONST_SIZES = {
-//     -  U   -  I  F  L  D  C  S  FI M IM NT   -   - MH MT ID
-      -1, 0, -1, 4, 4, 8, 8, 2, 2, 4, 4, 4, 4, -1, -1, 3, 2, 4
-  };
-
-  private int intAt(int i) {
-    return code[i] << 8 | code[i + 1];
-  }
-
-  private String strAt(int i) {
-    int size = intAt(i);
-    return new String(code, i+2, size);
-  }
-
-  private int[] constants;
-
-  private String stringNo(int i) {
-    int ptr = constants[i];
-    byte kind = code[ptr];
-    if (kind != 1) return null;//throw new IllegalArgumentException(String.format("constant[%d] is of type %d", i, kind));
-
-    return strAt(ptr+1);
-  }
-
-  private int classNo(int i) {
-    int ptr = constants[i];
-    byte kind = code[ptr];
-    if (kind != 7) throw new IllegalArgumentException(String.format("constant[%d] is of type %d", i, kind));
-
-    return intAt(ptr+1) - 1;
-  }
-
-  public Class loadClass() {
-    return load(className);
-  }
-
-  public String clazzzzName() throws IllegalArgumentException {
-    try {
-      int cpCount = intAt(8) - 1;
-      constants = new int[cpCount];
-      int ptr = 10;
-      for (int i = 0; i < cpCount; i++) {
-        constants[i] = ptr;
-        byte t = code[ptr];
-        int len0 = CONST_SIZES[t];
-        if (len0 == -1 && i != cpCount - 1) {
-          throw new IllegalArgumentException(String.format("Bad bytecode at %d, type=%d", ptr, t));
-        }
-        int len = (len0 == 0) ? (2 + intAt(ptr + 1)) : len0;
-        ptr += len + 1;
-      }
-
-//      for(int i = 0; p: constants) System.out.println(p + ":" + (code[p]==1 ? strAt(p+1) : "XXX"));
-
-      int classInfoIndex = intAt(ptr + 2) - 1;
-      int classNameIndex = classNo(classInfoIndex);
-      String name = stringNo(classNameIndex);
-      return name == null ? null : name.replaceAll("/", ".");
-    } catch (Exception x) {
-      if (DEBUG) {
-        x.printStackTrace();
-        System.out.println(dumpCode());
-      }
-      throw new IllegalArgumentException("Failed to extract class name from bytes");
-    }
+  public MoveableCode(String className, byte[] bytes, Code outer) {
+    this.code = new Code(className, bytes, outer);
   }
 
   protected T instance = null;
@@ -119,9 +77,8 @@ public class MoveableCode<T> extends ClassLoader implements Serializable {
   }
 
   @SuppressWarnings("unchecked")
-  public T instantiate() throws UnsupportedOperationException {
-    Class c = loadClass();
-
+  T instantiate() throws UnsupportedOperationException {
+    Class c = code.loadClass();
     try {
       Constructor con = c.getDeclaredConstructor();
       con.setAccessible(true);
@@ -140,7 +97,7 @@ public class MoveableCode<T> extends ClassLoader implements Serializable {
     }
   }
 
-  String dumpCode() { return dump(code); }
+  String dumpCode() { return dump(code.bytes); }
 
   public static String dump(byte[] bytes) {
     StringWriter out = new StringWriter();

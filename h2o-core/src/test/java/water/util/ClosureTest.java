@@ -15,6 +15,16 @@ class SampleCode implements Function<Integer, String> {
   }
 }
 
+class SampleContainer {
+  public static int random = 4;
+
+  static class MyFun implements Function<String, Integer> {
+    public Integer apply(String x) {
+      return x.length() * x.length() + random;
+    }
+  }
+}
+
 @SuppressWarnings("unchecked")
 public class ClosureTest {
 
@@ -39,7 +49,7 @@ public class ClosureTest {
   @SuppressWarnings("unchecked")
   public void testSerialization() throws Exception {
     final MoveableCode moveableCode = new MoveableCode(SampleCode.class);
-    byte[] bytes = moveableCode.code_for_testing();
+    byte[] bytes = moveableCode.code_bytes_for_testing();
     String s = moveableCode.dumpCode();
     assertArrayEquals(bytes, readHex(s));
   }
@@ -51,18 +61,27 @@ public class ClosureTest {
     assertTrue(Function.class.isAssignableFrom(c));
   }
 
-  @Ignore("vlad: will work on taking care of inner classes")
+  @Test
+  public void testDeserializationOfInnerClass() throws Exception {
+    Closure<String, Integer> c = Closure.enclose(new SampleContainer.MyFun());
+    assertEquals(new Integer(4), c.apply(""));
+    assertEquals(new Integer(13), c.apply("abc"));
+    SampleContainer.random = 42;
+    assertEquals(new Integer(5), c.apply("x"));
+    assertEquals(new Integer(40), c.apply("world!"));
+  }
+
   @Test
   public void testDeserializationOfRealLifeFSample() throws Exception {
     byte[] bytes = readHex(rlSampleCode);
-    Class c = new MoveableCode("water.fvec.UdfVecTest.$1", bytes).loadClass();
+    Class c = new MoveableCode("water.fvec.UdfVecTest$1", bytes).loadClass();
     assertTrue(Function.class.isAssignableFrom(c));
   }
 
   @Test
   @SuppressWarnings("unchecked")
   public void testDeserializationAndEval() throws Exception {
-    byte[] bytes = new MoveableCode(SampleCode.class).code_for_testing();
+    byte[] bytes = new MoveableCode(SampleCode.class).code_bytes_for_testing();
 
     Function<Integer, String> f = new MoveableCode<Function<Integer, String>>(SampleCode.class.getCanonicalName(), bytes).instantiate();
     assertEquals("X=42", f.apply(42));
