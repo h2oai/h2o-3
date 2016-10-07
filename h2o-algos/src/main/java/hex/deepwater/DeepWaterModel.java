@@ -14,7 +14,6 @@ import water.parser.BufferedString;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.RandomUtils;
-import water.util.UnsafeUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,6 +31,10 @@ import static water.H2O.technote;
  * a scoring history, as well as some helpers to indicate the progress
  */
 public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,DeepWaterModelOutput> {
+
+  @Override public ModelMojo getMojo() { return new DeepWaterModelMojo(this); }
+  @Override public boolean haveMojo() { return true; }
+  @Override public boolean havePojo() { return false; }
 
   // Default publicly visible Schema is V2
   public ModelSchemaV3 schema() { return new DeepWaterModelV3(); }
@@ -126,9 +129,15 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       // update the model's expected frame format - needed for train/test adaptation
       _output._names = dinfo._adaptedFrame.names();
       _output._domains = dinfo._adaptedFrame.domains();
-      model_info._dataInfoKey = dinfo._key;
+      _output._nums = dinfo._nums;
+      _output._cats = dinfo._cats;
+      _output._catOffsets = dinfo._catOffsets;
+      _output._normMul = dinfo._normMul;
+      _output._normSub = dinfo._normSub;
+      _output._useAllFactorLevels = dinfo._useAllFactorLevels;
       Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
       DKV.put(dinfo);
+      model_info._dataInfoKey = dinfo._key;
     }
 
     _dist = new Distribution(get_params());
@@ -410,15 +419,16 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
+
   /**
-   * Single-instance scoring - slow, not optimized for mini-batches - do not use unless if you know what you're doing
+   * Single-instance scoring - slow, not optimized for mini-batches - do not use unless you know what you're doing
    * @param data One single observation unrolled into a double[], with a length equal to the number of input neurons
    * @param preds Array to store the predictions in (nclasses+1)
    * @return vector of [0, p0, p1, p2, etc.]
    */
   @Override protected double[] score0(double[] data, double[] preds) {
     //allocate a big enough array for the model to be able to score with mini_batch
-    float[] f = new float[_parms._mini_batch_size * model_info()._channels * model_info()._height * model_info()._width];
+    float[] f = new float[_parms._mini_batch_size * data.length];
     for (int i=0; i<data.length; ++i) f[i] = (float)data[i]; //only fill the first observation
     //float[] predFloats = model_info().predict(f);
     float[] predFloats = model_info._backend.predict(model_info._model, f);
@@ -502,7 +512,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       if (_makePreds) {
         Vec[] predVecs = new Vec[cols];
         for (int i = 0; i < cols; ++i)
-          predVecs[i] = _fr.anyVec().makeZero(_fr.numRows());
+          predVecs[i] = _fr.anyVec().makeZero();
         _predFrame = new Frame(predVecs);
       }
 
@@ -596,6 +606,34 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     String[] names = makeScoringNames();
     String[][] domains = new String[names.length][];
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+
+    //DEBUGGING ONLY
+    /*
+    DataInfo _dinfo = model_info._dataInfoKey.get();
+    for (int r=0; r<_dinfo._adaptedFrame.numRows(); ++r) {
+
+      // Version 1 - via DataInfo
+      DataInfo.Row row = _dinfo.newDenseRow();
+      Chunk[] chks = new Chunk[_dinfo._adaptedFrame.numCols()];
+      for (int i = 0; i < chks.length; ++i)
+        chks[i] = _dinfo._adaptedFrame.vec(i).chunkForRow(r);
+      for (int i = 0; i < chks.length; ++i)
+        assert (chks[i]._len == chks[0]._len);
+      _dinfo.extractDenseRow(chks, r - (int)chks[0].start(), row);
+
+      // Version 2 - via GenModel
+      double[] from = new double[chks.length];
+      for (int i = 0; i < chks.length; ++i)
+        from[i] = chks[i].atd(r - (int)chks[0].start());
+      float[] _destData = new float[_output._nums + _output._catOffsets[_output._cats]];
+      GenModel.setInput(from, _destData, _output._nums, _output._cats, _output._catOffsets,
+          _output._normMul, _output._normSub, _output._useAllFactorLevels);
+
+      // Compare the two
+      for (int i = 0; i < _dinfo.fullN(); ++i)
+        assert Math.abs(_destData[i] - row.get(i)) <= 1e-6 * Math.abs(_destData[i] + row.get(i)) : " feature " + i + " is "  + _destData[i] + " vs " + row.get(i);
+    }
+    */
     // Score the dataset, building the class distribution & predictions
     BigScore bs = new DeepWaterBigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(adaptFrm);
     if (computeMetrics) bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
@@ -651,37 +689,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     fs.blockForPending();
   }
 
-  @Override
-  public Model<DeepWaterModel, DeepWaterParameters, DeepWaterModelOutput>.MojoStreamWriter getMojoStream() {
-    return new DeepWaterMojoStreamWriter();
-  }
-
-  public class DeepWaterMojoStreamWriter extends MojoStreamWriter {
-    @Override
-    protected void writeExtraModelInfo() throws IOException {
-      super.writeExtraModelInfo();
-      writeln("backend = " + _parms._backend);
-      writeln("mini_batch_size = " + _parms._mini_batch_size);
-      writeln("height = " + model_info._height);
-      writeln("width = " + model_info._width);
-      writeln("channels = " + model_info._channels);
-    }
-
-    @Override
-    protected void writeModelData() throws IOException {
-      writeBinaryFile("model.network", model_info()._network);
-      writeBinaryFile("model.params", model_info()._modelparams);
-      if (_parms._problem_type == DeepWaterParameters.ProblemType.image_classification) {
-        float[] floats = model_info._meanData;
-        if (floats != null) {
-          byte[] bytes = new byte[floats.length * 4];
-          for (int i = 0; i < floats.length; ++i) UnsafeUtils.set4f(bytes, i, floats[i]);
-          writeBinaryFile("meandata", bytes);
-        }
-      }
-    }
-
-  }
 
   private static String getNvidiaStats() throws java.io.IOException {
     String cmd = "nvidia-smi";

@@ -457,6 +457,9 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           Integer levelIndex = columnDomainMap.get(levelName);
           double value;
           if (levelIndex == null) {
+            levelIndex = columnDomainMap.get(dataColumnName + "." + levelName);
+          }
+          if (levelIndex == null) {
             if (convertUnknownCategoricalLevelsToNa) {
               value = Double.NaN;
               unknownCategoricalLevelsSeenPerColumn.get(dataColumnName).incrementAndGet();

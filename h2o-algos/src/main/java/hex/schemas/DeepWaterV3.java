@@ -29,6 +29,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "train_samples_per_iteration",
         "target_ratio_comm_to_comp",
         "seed",
+        "standardize",
         "learning_rate",
         "learning_rate_annealing",
         "momentum_start",
@@ -104,7 +105,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      *  the confusion matrix for it to be printed. This option is meant to
      *  avoid printing extremely large confusion matrices.
      *  */
-    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = false,
         help = "Maximum size (# classes) for confusion matrices to be printed in the Logs.")
     public int max_confusion_matrix_size;
 
@@ -325,41 +326,56 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
             "train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes).")
     public boolean shuffle_training_data;
 
-    @API(level = API.Level.expert, direction=API.Direction.INOUT,
+    @API(level = API.Level.expert, direction=API.Direction.INOUT, gridable = true,
         help = "Mini-batch size (smaller leads to better fit, larger can speed up and generalize better).")
     public int mini_batch_size;
 
-    @API(level = API.Level.expert, direction=API.Direction.INOUT, help = "Clip gradients once their absolute value is larger than this value.")
+    @API(level = API.Level.expert, direction=API.Direction.INOUT, gridable = true,
+        help = "Clip gradients once their absolute value is larger than this value.")
     public double clip_gradient;
 
-    @API(level = API.Level.critical, direction=API.Direction.INOUT, values = {"auto","user","lenet","alexnet","vgg","googlenet","inception_bn","resnet"}, help = "Network architecture.")
+    @API(level = API.Level.critical, direction=API.Direction.INOUT, gridable = true, values = {"auto","user","lenet","alexnet","vgg","googlenet","inception_bn","resnet"},
+        help = "Network architecture.")
     public DeepWaterParameters.Network network;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, values = {"auto","mxnet","caffe","tensorflow"}, help = "Deep Learning Backend.")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true, values = {"auto","mxnet","caffe","tensorflow"},
+        help = "Deep Learning Backend.")
     public DeepWaterParameters.Backend backend;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Width and height of image.")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true,
+        help = "Width and height of image.")
     public int[] image_shape;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Number of (color) channels.")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true,
+        help = "Number of (color) channels.")
     public int channels;
 
-    @API(level = API.Level.expert, direction=API.Direction.INOUT, help = "Whether to use a GPU (if available).")
+    @API(level = API.Level.expert, direction=API.Direction.INOUT,
+        help = "Whether to use a GPU (if available).")
     public boolean gpu;
 
-    @API(level = API.Level.expert, direction=API.Direction.INOUT, help = "Device ID (which GPU).")
+    @API(level = API.Level.expert, direction=API.Direction.INOUT,
+        help = "Device ID (which GPU).")
     public int device_id;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path of file containing network definition (graph, architecture).")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT,
+        help = "Path of file containing network definition (graph, architecture).")
     public String network_definition_file;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path of file containing network (initial) parameters (weights, biases).")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT,
+        help = "Path of file containing network (initial) parameters (weights, biases).")
     public String network_parameters_file;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path of file containing the mean image data for data normalization.")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT,
+        help = "Path of file containing the mean image data for data normalization.")
     public String mean_image_file;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, help = "Path (prefix) where to export the native model after every iteration.")
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT,
+        help = "Path (prefix) where to export the native model after every iteration.")
     public String export_native_model_prefix;
+
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+        help = "If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.")
+    public boolean standardize;
   }
 }
