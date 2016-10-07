@@ -225,6 +225,14 @@ Defining a DRF Model
 
     **Note**: H2O supports extremely randomized trees via ``histogram_type="Random"``. In extremely randomized trees (Extra-Trees), randomness goes one step further in the way splits are computed. As in Random Forests, a random subset of candidate features is used, but instead of looking for the best split, thresholds (for the split) are drawn at random for each candidate feature, and the best of these randomly-generated thresholds is picked as the splitting rule. This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.
 
+- **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
+
+  - ``auto``: Allow the algorithm to decide (default)
+  - ``enum``: 1 column per categorical feature
+  - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
+  - ``binary``: No more than 32 columns per categorical feature
+  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+
 -  **keep\_cross\_validation\_predictions**: Enable this option to keep the
    cross-validation prediction.
 
