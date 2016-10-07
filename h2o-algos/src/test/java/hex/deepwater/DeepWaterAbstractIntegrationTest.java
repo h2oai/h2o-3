@@ -584,8 +584,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       DKV.put(tr);
       p._seed = 1234;
       p._epochs = 500;
-      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
-
+      p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit; //leads to standardization of categoricals
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
@@ -792,7 +791,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   @Test public void MOJOTestNumericNonStandardized() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, false);}
   @Test public void MOJOTestNumeric() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, true);}
+  @Ignore
   @Test public void MOJOTestCatInternal() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotInternal, true, true);}
+  @Ignore
   @Test public void MOJOTestCatExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
 
   // ------- Text conversions
