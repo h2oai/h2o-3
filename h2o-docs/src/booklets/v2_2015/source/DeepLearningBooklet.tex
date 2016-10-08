@@ -99,8 +99,8 @@ Printed in the United States of America.
 
 \newpage
 \thispagestyle{empty}%remove pg#
+
 \tableofcontents
-\thispagestyle{empty}%remove pg#
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
@@ -927,6 +927,15 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 \item \texttt{input\_dropout\_ratio}: Specifies the fraction of the features for each training row to omit from training to improve generalization. The default is 0, which always uses all features.  Refer to {\textbf{\nameref{ssec:Regularization}}} for more details.
 
 \item \texttt{hidden\_dropout\_ratios}:  Specifies the fraction of the inputs for each hidden layer to omit from training to improve generalization. The default is 0.5 for each hidden layer.  Refer to {\textbf{\nameref{ssec:Regularization}}} for more details.
+
+\item \texttt{categorical\_encoding}:  Specify one of the following encoding schemes for handling categorical features:
+\begin{itemize}
+\item \texttt{auto}: Allow the algorithm to decide
+\item \texttt{one\_hot\_internal}: On the fly N+1 new cols for categorical features with N levels (default)
+\item \texttt{one\_hot\_explicit}: N+1 new columns for categorical features with N levels
+\item \texttt{binary}: No more than 32 columns per categorical feature
+\item \texttt{eigen}: $k$ columns per categorical feature, keeping projections of one-hot-encoded matrix onto $k$-dim eigen space only
+\end{itemize}
 
 \item \texttt{l1}: Specifies the $\ell_1$ (L1) regularization, which constrains the absolute value of the weights (can add stability and improve generalization, causes many weights to become 0). The default is 0, for no L1 regularization. Refer to {\textbf{\nameref{ssec:Regularization}}} for more details.
 

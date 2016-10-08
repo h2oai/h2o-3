@@ -144,6 +144,14 @@ Defining a GBM Model
 
 -  **pred\_noise\_bandwidth**: The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. If this parameter is specified with a value greater than 0, then every leaf node prediction is randomly scaled by a number drawn from a Normal distribution centered around 1 with a bandwidth given by this parameter. The default is 0 (disabled). 
 
+- **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
+
+  - ``auto``: Allow the algorithm to decide (default)
+  - ``enum``: 1 column per categorical feature
+  - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
+  - ``binary``: No more than 32 columns per categorical feature
+  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+
 -  **min\_split\_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
 -  **random\_split_points**: By default GBM bins from min...max in steps of (max-min)/N. When this option is enabled, GBM will instead sample N-1 points from min...max and use the sorted list of those for split finding.

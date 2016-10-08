@@ -475,6 +475,14 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{min\_rows}}: The minimum number of rows to assign to the terminal nodes. The default is 10.
 \item {\texttt{max\_abs\_leafnode\_pred}}: Limits the maximum absolute value of a leaf node prediction. The default is Double.MAX\_VALUE.
 \item {\texttt{pred\_noise\_bandwidth}}: The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. If this parameter is specified with a value greater than 0, then every leaf node prediction is randomly scaled by a number drawn from a Normal distribution centered around 1 with a bandwidth given by this parameter. The default is 0 (disabled).
+\item \texttt{categorical\_encoding}:  Specify one of the following encoding schemes for handling categorical features:
+\begin{itemize}
+\item \texttt{auto}: Allow the algorithm to decide (default)
+\item \texttt{enum}: 1 column per categorical feature
+\item \texttt{one\_hot\_explicit}: N+1 new columns for categorical features with N levels
+\item \texttt{binary}: No more than 32 columns per categorical feature
+\item \texttt{eigen}: $k$ columns per categorical feature, keeping projections of one-hot-encoded matrix onto $k$-dim eigen space only
+\end{itemize}
 \item {\texttt{nbins}}: For numerical columns (real/int), build a histogram of at least the specified number of bins, then split at the best point The default is 20.
 \item {\texttt{nbins\_cats}}: For categorical columns (enum), build a histogram of the specified number of bins, then split at the best point. Higher values can lead to more overfitting.  The default is 1024. \label{nbins_cats}
 \item {\texttt{nbins\_top\_level}}: For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then decrease by factor of two per level.
