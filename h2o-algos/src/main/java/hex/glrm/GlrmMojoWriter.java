@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.ModelMojoWriter;
+import hex.genmodel.algos.glrm.GlrmLoss;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;

@@ -1,5 +1,6 @@
 package hex.glrm;
 
+import hex.genmodel.algos.glrm.GlrmLoss;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

@@ -10,7 +10,7 @@ import hex.ModelCategory;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
-import hex.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 

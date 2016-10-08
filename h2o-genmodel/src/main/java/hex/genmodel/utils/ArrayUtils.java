@@ -40,6 +40,13 @@ public class ArrayUtils {
     return result;
   }
 
+  public static int maxIndex(double[] from) {
+    int result = 0;
+    for (int i = 1; i < from.length; ++i)
+      if (from[i] > from[result]) result = i;
+    return result;
+  }
+
   /**
    * Sort an integer array of indices based on values
    * Updates indices in place, keeps values the same
