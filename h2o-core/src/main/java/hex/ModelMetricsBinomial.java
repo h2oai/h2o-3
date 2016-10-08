@@ -7,7 +7,6 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.FrameUtils;
 import water.util.MathUtils;
 
 import java.util.Arrays;
@@ -87,16 +86,15 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       throw new IllegalArgumentException("Predicted probabilities must be between 0 and 1 for binomial metrics.");
     if (domain.length!=2)
       throw new IllegalArgumentException("Domain must have 2 class labels, but is " + Arrays.toString(domain) + " for binomial metrics.");
-    Vec _labels2 = _labels.adaptTo(domain);
-    if (_labels2.cardinality()!=2)
+    _labels = _labels.adaptTo(domain);
+    if (_labels.cardinality()!=2)
       throw new IllegalArgumentException("Adapted domain must have 2 class labels, but is " + Arrays.toString(_labels.domain()) + " for binomial metrics.");
     Frame predsLabel = new Frame(targetClassProbs);
-    predsLabel.add("labels", _labels2);
-    MetricBuilderBinomial mb = new BinomialMetrics(_labels2.domain()).doAll(predsLabel)._mb;
+    predsLabel.add("labels", _labels);
+    MetricBuilderBinomial mb = new BinomialMetrics(_labels.domain()).doAll(predsLabel)._mb;
+    _labels.remove();
     Frame preds = new Frame(targetClassProbs);
     ModelMetricsBinomial mm = (ModelMetricsBinomial)mb.makeModelMetrics(null, predsLabel, null, preds);
-    _labels.remove();
-    _labels2.remove();
     mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
     return mm;
   }
