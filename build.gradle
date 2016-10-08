@@ -153,6 +153,8 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
+        // Temporary solution for shipping dummy (inactive) deepwater jar dependencies until we go to maven central
+        // For now, this repo provides the Deep Water interface specified in deepwater:deepwater.backends
         maven {
           url "http://jitpack.io"
         }

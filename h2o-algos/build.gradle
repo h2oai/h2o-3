@@ -7,6 +7,7 @@ dependencies {
   compile project(":h2o-core")
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
+  //temp solution using jitpack.io to build directly from github
   compile 'com.github.h2oai.deepwater:deepwater.backends:master-SNAPSHOT'
   //compile files('deepwater-1.0-SNAPSHOT-all.jar')
 }
