@@ -16,6 +16,8 @@ import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.Arrays;
 
+import static hex.deepwater.DeepWaterParameters.ProblemType.auto;
+
 /**
  * Parameters for a Deep Water image classification model
  */
@@ -69,7 +71,7 @@ public class DeepWaterParameters extends Model.Parameters {
   public String _network_parameters_file;
   public String _export_native_model_prefix;
 
-  public ProblemType _problem_type = ProblemType.auto;
+  public ProblemType _problem_type = auto;
 
   // specific parameters for image_classification
   public int[] _image_shape = new int[]{0,0}; //width x height
@@ -293,13 +295,13 @@ public class DeepWaterParameters extends Model.Parameters {
         dl.error("_image_shape", "image_shape[1] must be >=1 or automatic (0).");
       if (_channels != 1 && _channels != 3)
         dl.error("_channels", "channels must be either 1 or 3.");
-    } else {
+    } else if (_problem_type != auto) {
       dl.warn("_image_shape", "image shape is ignored, only used for image_classification");
       dl.warn("_channels", "channels shape is ignored, only used for image_classification");
       dl.warn("_mean_image_file", "mean_image_file shape is ignored, only used for image_classification");
-      if (_categorical_encoding==CategoricalEncodingScheme.Enum) {
-        dl.error("_categorical_encoding", "categorical encoding scheme cannot be Enum: must have numeric columns as input.");
-      }
+    }
+    if (_categorical_encoding==CategoricalEncodingScheme.Enum) {
+      dl.error("_categorical_encoding", "categorical encoding scheme cannot be Enum: the neural network must have numeric columns as input.");
     }
 
     if (expensive && !classification)
@@ -548,7 +550,7 @@ public class DeepWaterParameters extends Model.Parameters {
         toParms._overwrite_with_best_model = false;
       }
       // Automatically set the problem_type
-      if (fromParms._problem_type == ProblemType.auto) {
+      if (fromParms._problem_type == auto) {
         boolean image=false;
         boolean text=false;
         if (fromParms.train().vec(0).isString()) {
