@@ -153,6 +153,9 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
+        //maven {
+        //  url "http://jitpack.io"
+        //}
         // mavenLocal()
     }
 
@@ -309,4 +312,3 @@ if (project.hasProperty("jacocoCoverage")) {
     apply from: "$rootDir/gradle/jacoco.gradle"
     build.finalizedBy jacocoAgentLink
 }
-
