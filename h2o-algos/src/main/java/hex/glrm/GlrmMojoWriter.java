@@ -22,7 +22,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     writekv("gammaY", model._parms._gamma_y);
 
     // Loss functions
-    startWritingTextFile("losses.txt");
+    startWritingTextFile("losses");
     for (GlrmLoss loss : model._output._lossFunc) {
       writeln(loss.toString());
     }
@@ -37,7 +37,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     for (double[] row : arch.getY(false))
       for (double val : row)
         bb.putDouble(val);
-    writeblob("archetypes.bin", bb.array());
+    writeblob("archetypes", bb.array());
   }
 
 }
