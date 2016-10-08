@@ -47,7 +47,7 @@ public class AvroParser extends Parser {
 
   @Override
   protected final ParseWriter parseChunk(int cidx, ParseReader din, ParseWriter dout) {
-    // We will read GenericRecord and readFrom them based on schema
+    // We will read GenericRecord and load them based on schema
     final DatumReader<GenericRecord> datumReader = new GenericDatumReader<>();
     final H2OSeekableInputAdaptor sbai = new H2OSeekableInputAdaptor(cidx, din);
     DataFileReader<GenericRecord> dataFileReader = null;

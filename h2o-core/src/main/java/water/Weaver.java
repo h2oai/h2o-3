@@ -152,7 +152,7 @@ public class Weaver {
     fs.add(RPC.call(H2O.CLOUD.leader(), new LoadClazz(name,b))).blockForPending(); // leader node loads first
     new MRTask() {
       @Override public void setupLocal() {
-        if( H2O.SELF != H2O.CLOUD.leader() ) // already loaded on the leader, readFrom all others
+        if( H2O.SELF != H2O.CLOUD.leader() ) // already loaded on the leader, load all others
           new LoadClazz(name,b).compute2();
       }
     }.doAllNodes();

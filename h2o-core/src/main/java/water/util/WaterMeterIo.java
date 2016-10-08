@@ -20,7 +20,7 @@ public class WaterMeterIo extends Iced {
     @API(help="Number of delete events", direction = API.Direction.OUTPUT)
     public long delete_count;
 
-    @API(help="Number of readFrom events", direction = API.Direction.OUTPUT)
+    @API(help="Number of load events", direction = API.Direction.OUTPUT)
     public long load_count;
 
     @API(help="Cumulative loaded bytes", direction = API.Direction.OUTPUT)

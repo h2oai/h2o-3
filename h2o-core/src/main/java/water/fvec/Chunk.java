@@ -172,7 +172,7 @@ public abstract class Chunk extends Iced<Chunk> {
   transient long _start = -1;
   /** Global starting row for this local Chunk */
   public final long start() { return _start; }
-  /** Global index of this chunk filled during chunk readFrom */
+  /** Global index of this chunk filled during chunk load */
   transient int _cidx = -1;
 
   /** Number of rows in this Chunk; publically a read-only field.  Odd API
@@ -233,7 +233,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  Double.NaN if value is missing.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
+   *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
@@ -248,7 +248,7 @@ public abstract class Chunk extends Iced<Chunk> {
   /** Missing value status.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
+   *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
@@ -278,7 +278,7 @@ public abstract class Chunk extends Iced<Chunk> {
   /** High half of a 128-bit UUID, or throws if the value is missing.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
+   *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
@@ -293,7 +293,7 @@ public abstract class Chunk extends Iced<Chunk> {
   /** String value using absolute row numbers, or null if missing.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
+   *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects).
    *
@@ -398,7 +398,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  change.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
+   *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
   final void setNA_abs(long i) { long x = i-_start; if (0 <= x && x < _len) setNA((int) x); else _vec.setNA(i); }
@@ -413,7 +413,7 @@ public abstract class Chunk extends Iced<Chunk> {
    *  change.
    *
    *  <p>This version uses absolute element numbers, but must convert them to
-   *  chunk-relative indices - requiring a readFrom from an aliasing local var,
+   *  chunk-relative indices - requiring a load from an aliasing local var,
    *  leading to lower quality JIT'd code (similar issue to using iterator
    *  objects). */
   public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }

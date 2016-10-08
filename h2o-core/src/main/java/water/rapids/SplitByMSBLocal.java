@@ -53,7 +53,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     }
     _numRowsOnThisNode = ArrayUtils.sum(MSBhist);   // we just use this count for the DKV data transfer rate message
     if (ArrayUtils.maxValue(MSBhist) > Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size())) {  // TO DO: better test of a good even split
-      Log.warn("RadixOrder(): readFrom balancing on this node not optimal (max value should be <= "
+      Log.warn("RadixOrder(): load balancing on this node not optimal (max value should be <= "
               + (Math.max(1000, _fr.numRows() / 20 / H2O.CLOUD.size()))
               + " " + Arrays.toString(MSBhist) + ")");
     }

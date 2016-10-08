@@ -115,7 +115,7 @@ public final class PersistHdfs extends Persist {
     // tomk: Sun Apr 19 13:11:51 PDT 2015
     //
     //
-    // This readFrom implementation behaved *HORRIBLY* with S3 when the libraries were updated.
+    // This load implementation behaved *HORRIBLY* with S3 when the libraries were updated.
     //    Behaves well (and is the same set of libraries as H2O-1):
     //        org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0
     //        net.java.dev.jets3t:jets3t:0.6.1

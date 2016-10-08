@@ -34,7 +34,7 @@ public class AAA_PreCloudLock extends TestUtil {
   }
 
   // ---
-  // Should be able to readFrom basic status pages without locking the cloud.
+  // Should be able to load basic status pages without locking the cloud.
   @SuppressWarnings("ResultOfObjectAllocationIgnored")
   @Test public void testBasicStatusPages() {
     TypeMap._check_no_locking=true; // Blow a nice assert if locking

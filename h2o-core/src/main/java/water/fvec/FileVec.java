@@ -56,7 +56,7 @@ public abstract class FileVec extends ByteVec {
   public int setChunkSize(Frame fr, int chunkSize) {
     // Clear cached chunks first
     // Peeking into a file before the chunkSize has been set
-    // will readFrom chunks of the file in DFLT_CHUNK_SIZE amounts.
+    // will load chunks of the file in DFLT_CHUNK_SIZE amounts.
     // If this side-effect is not reversed when _chunkSize differs
     // from the default value, parsing will either double read
     // sections (_chunkSize < DFLT_CHUNK_SIZE) or skip data
@@ -119,7 +119,7 @@ public abstract class FileVec extends ByteVec {
 
   // Convert a chunk# into a chunk - does lazy-chunk creation. As chunks are
   // asked-for the first time, we make the Key and an empty backing DVec.
-  // Touching the DVec will force the file readFrom.
+  // Touching the DVec will force the file load.
   @Override public Value chunkIdx( int cidx ) {
     final long nchk = nChunks();
     assert 0 <= cidx && cidx < nchk;

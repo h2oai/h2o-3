@@ -179,8 +179,8 @@ public class AccuracyTestingSuite {
     for (String t : testCaseEntries) {
       testCaseEntry = t.trim().split(",", -1);
 
-      // If algorithms are specified in the testCaseFilterString, readFrom all test cases for these algorithms. Otherwise,
-      // if specific test cases are specified, then only readFrom those. Else, readFrom all the test cases.
+      // If algorithms are specified in the testCaseFilterString, load all test cases for these algorithms. Otherwise,
+      // if specific test cases are specified, then only load those. Else, load all the test cases.
       if (null != algorithms) {
         if (!Arrays.asList(algorithms).contains(testCaseEntry[1])) { continue; }
       }
