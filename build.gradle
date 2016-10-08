@@ -153,9 +153,9 @@ subprojects {
         maven {
           url "http://repository.mapr.com/maven/"
         }
-        //maven {
-        //  url "http://jitpack.io"
-        //}
+        maven {
+          url "http://jitpack.io"
+        }
         // mavenLocal()
     }
 
