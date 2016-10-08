@@ -34,7 +34,13 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
+  @Override public BuilderVisibility builderVisibility() {
+    if (System.getProperty("deepwater.enabled", "false").equals("true")) {
+      return BuilderVisibility.Stable;
+    } else {
+      return BuilderVisibility.Experimental; //hide in Flow
+    }
+  }
 
   /** Types of models we can build with DeepWater  */
   @Override public ModelCategory[] can_build() {

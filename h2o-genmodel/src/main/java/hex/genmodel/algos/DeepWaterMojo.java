@@ -7,13 +7,11 @@ import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
-import sun.rmi.runtime.Log;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.UUID;
 
@@ -35,7 +33,6 @@ public class DeepWaterMojo extends MojoModel {
 
   final BackendTrain _backend; //interface provider
   final BackendModel _model;  //pointer to C++ process
-
   final ImageDataSet _imageDataSet; //interface provider
   final RuntimeOptions _opts;
   final BackendParams _backendParams;
