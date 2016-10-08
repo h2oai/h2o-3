@@ -153,7 +153,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     }
 
     @Override public void reduce( T mb ) {
-      if (this==mb) return;
       super.reduce(mb); // sumseq, count
       _logloss += mb._logloss;
       _auc.reduce(mb._auc);
