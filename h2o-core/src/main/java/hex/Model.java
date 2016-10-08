@@ -1477,7 +1477,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
           }
         }
-        totalMiss = miss;
+        totalMiss += miss;
       }
 
       // EasyPredict API
@@ -1518,7 +1518,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               System.err.println("Row: " + rowData.toString());
             }
           }
-          totalMiss = miss;
+          totalMiss += miss;
         }
       }
       if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + (totalMiss > 20 ? " (only first 20 are shown)": ""));
