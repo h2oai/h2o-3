@@ -117,17 +117,10 @@ public class DeepWaterMojo extends MojoModel {
 
   static public BackendTrain createDeepWaterBackend(String backend) {
     try {
-      try {
-        if (backend.equals("mxnet")) backend="deepwater.backends.mxnet.MXNetBackend";
-        return (BackendTrain)(Class.forName(backend).newInstance());
-      } catch (InstantiationException e) {
-        e.printStackTrace();
-      } catch (IllegalAccessException e) {
-        e.printStackTrace();
-      }
-    } catch (ClassNotFoundException e) {
-      e.printStackTrace();
-    }
+      if (backend.equals("mxnet"))      backend="deepwater.backends.mxnet.MXNetBackend";
+      if (backend.equals("tensorflow")) backend="deepwater.backends.tensorflow.TensorFlowBackend";
+      return (BackendTrain)(Class.forName(backend).newInstance());
+    } catch (Throwable e) {}
     return null;
   }
 }
