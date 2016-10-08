@@ -1,10 +1,10 @@
 package hex.schemas;
 
 import hex.DataInfo;
+import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.glrm.GlrmLoss;
-import hex.glrm.GlrmRegularizer;
 import hex.svd.SVDModel.SVDParameters;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
