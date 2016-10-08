@@ -240,4 +240,6 @@ public enum GlrmLoss {
 
   /** Initialize additional parameters on the loss function. Currently used by Periodic class only. */
   public void setParameters(int p) { throw new UnsupportedOperationException(); }
+
+
 }

@@ -23,6 +23,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     writekv("gammaY", model._parms._gamma_y);
 
     // Loss functions
+    writekv("ncolA", model._output._lossFunc.length);
     startWritingTextFile("losses");
     for (GlrmLoss loss : model._output._lossFunc) {
       writeln(loss.toString());

@@ -11,10 +11,18 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmModel> {
 
   @Override
   protected void readModelData() throws IOException {
-    _model._regx = GlrmRegularizer.valueOf((String) readkv("regularizationX"));
-    _model._gammax = readkv("gammaX");
+    _model._ncolA = readkv("ncolA");
     _model._ncolY = readkv("ncolY");
     _model._nrowY = readkv("nrowY");
+    _model._regx = GlrmRegularizer.valueOf((String) readkv("regularizationX"));
+    _model._gammax = readkv("gammaX");
+
+    // loss functions
+    _model._losses = new GlrmLoss[_model._ncolA];
+    int li = 0;
+    for (String line : readtext("losses")) {
+      _model._losses[li++] = GlrmLoss.valueOf(line);
+    }
 
     // archetypes
     _model._archetypes = new double[_model._nrowY][];
