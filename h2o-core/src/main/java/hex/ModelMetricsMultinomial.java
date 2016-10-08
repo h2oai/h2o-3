@@ -135,13 +135,12 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     int nclasses = perClassProbs.numCols();
     if (domain.length!=nclasses)
       throw new IllegalArgumentException("Given domain has " + domain.length + " classes, but predictions have " + nclasses + " columns (per-class probabilities) for multinomial metrics.");
-    Vec _labels2 = _labels.adaptTo(domain);
+    _labels = _labels.adaptTo(domain);
     Frame predsLabel = new Frame(perClassProbs);
-    predsLabel.add("labels", _labels2);
-    MetricBuilderMultinomial mb = new MultinomialMetrics((_labels2.domain())).doAll(predsLabel)._mb;
-    ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mb.makeModelMetrics(null, predsLabel, null, null);
+    predsLabel.add("labels", _labels);
+    MetricBuilderMultinomial mb = new MultinomialMetrics((_labels.domain())).doAll(predsLabel)._mb;
     _labels.remove();
-    _labels2.remove();
+    ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mb.makeModelMetrics(null, predsLabel, null, null);
     mm._description = "Computed on user-given predictions and labels.";
     return mm;
   }
