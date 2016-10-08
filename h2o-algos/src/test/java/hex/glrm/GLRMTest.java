@@ -2,6 +2,7 @@ package hex.glrm;
 
 import hex.DataInfo;
 import hex.ModelMetrics;
+import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
