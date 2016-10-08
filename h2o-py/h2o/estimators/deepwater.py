@@ -30,14 +30,14 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                       "fold_column", "response_column", "ignored_columns", "score_each_iteration",
                       "categorical_encoding", "overwrite_with_best_model", "epochs", "train_samples_per_iteration",
-                      "target_ratio_comm_to_comp", "seed", "learning_rate", "learning_rate_annealing", "momentum_start",
-                      "momentum_ramp", "momentum_stable", "distribution", "score_interval", "score_training_samples",
-                      "score_validation_samples", "score_duty_cycle", "stopping_rounds", "stopping_metric",
-                      "stopping_tolerance", "max_runtime_secs", "replicate_training_data", "single_node_mode",
-                      "shuffle_training_data", "mini_batch_size", "clip_gradient", "network", "backend", "image_shape",
-                      "channels", "gpu", "device_id", "network_definition_file", "network_parameters_file",
-                      "mean_image_file", "export_native_model_prefix", "activation", "hidden", "input_dropout_ratio",
-                      "hidden_dropout_ratios"}
+                      "target_ratio_comm_to_comp", "seed", "standardize", "learning_rate", "learning_rate_annealing",
+                      "momentum_start", "momentum_ramp", "momentum_stable", "distribution", "score_interval",
+                      "score_training_samples", "score_validation_samples", "score_duty_cycle", "stopping_rounds",
+                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "replicate_training_data",
+                      "single_node_mode", "shuffle_training_data", "mini_batch_size", "clip_gradient", "network",
+                      "backend", "image_shape", "channels", "gpu", "device_id", "network_definition_file",
+                      "network_parameters_file", "mean_image_file", "export_native_model_prefix", "activation",
+                      "hidden", "input_dropout_ratio", "hidden_dropout_ratios"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -255,7 +255,6 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
 
     @property
-<<<<<<< 0fbbf3404efb4da52c267666e69782f7b2a52a44
     def standardize(self):
         """
         bool: If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input
@@ -270,8 +269,6 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
 
     @property
-=======
->>>>>>> Add DeepWater MOJO.
     def learning_rate(self):
         """float: Learning rate (higher => less stable, lower => slower convergence). (Default: 0.005)"""
         return self._parms.get("learning_rate")
