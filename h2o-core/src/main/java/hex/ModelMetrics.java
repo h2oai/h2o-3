@@ -295,7 +295,6 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
       return perRow(ds, yact, m);
     }
     public void reduce( T mb ) {
-      if (this==mb) return;
       _sumsqe += mb._sumsqe;
       _count += mb._count;
       _wcount += mb._wcount;

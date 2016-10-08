@@ -126,7 +126,6 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     }
 
     @Override public void reduce( T mb ) {
-      if (this==mb) return;
       super.reduce(mb);
       _sumdeviance += mb._sumdeviance;
       _abserror += mb._abserror;

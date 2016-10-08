@@ -466,7 +466,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           Log.info("==============================================================================================================================================================================");
         }
         if (model != null) {
-          model.deleteElasticAverageModels(null);
+          model.deleteElasticAverageModels();
           model.unlock(_job);
           if (model.actual_best_model_key != null) {
             assert (model.actual_best_model_key != model._key);
@@ -573,7 +573,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         Log.info("Estimated compute power : " + Math.round(total_gflops*100)/100 + " GFlops");
         Log.info("Estimated time for comm : " + PrettyPrint.usecs((long) model.time_for_communication_us));
         Log.info("Estimated time per row  : " + ((long)time_per_row_us > 0 ? PrettyPrint.usecs((long) time_per_row_us) : time_per_row_us + " usecs"));
-        Log.info("Estimated training speed: " + (int)(1e6/time_per_row_us) + " obs/sec");
+        Log.info("Estimated training speed: " + (int)(1e6/time_per_row_us) + " rows/sec");
         Log.info("Setting train_samples_per_iteration (" + mp._train_samples_per_iteration + ") to auto-tuned value: " + tspi);
       }
 
