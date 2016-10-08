@@ -1,10 +1,11 @@
 package hex.schemas;
 
+import hex.Distribution;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.api.API;
-import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
+import water.api.schemas3.KeyV3;
 
 public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearningV3,DeepLearningV3.DeepLearningParametersV3> {
 
@@ -135,14 +136,14 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      *  the confusion matrix for it to be printed. This option is meant to
      *  avoid printing extremely large confusion matrices.
      *  */
-    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = false,
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
         help = "Maximum size (# classes) for confusion matrices to be printed in the Logs.")
     public int max_confusion_matrix_size;
 
     /**
      * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
      */
-    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = false,
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
         help = "Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to " +
             "disable).")
     public int max_hit_ratio_k;
