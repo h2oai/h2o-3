@@ -3,6 +3,7 @@ package hex.deepwater;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ToEigenVec;
+import hex.genmodel.algos.DeepWaterMojo;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -34,12 +35,21 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
 
-  @Override public BuilderVisibility builderVisibility() {
-    if (System.getProperty("deepwater.enabled", "false").equals("true")) {
-      return BuilderVisibility.Stable;
-    } else {
-      return BuilderVisibility.Experimental; //hide in Flow
+  static public boolean haveBackend() {
+    boolean haveBackend = false;
+    for (DeepWaterParameters.Backend b : DeepWaterParameters.Backend.values()) {
+      haveBackend |= (DeepWaterMojo.createDeepWaterBackend(b.toString()) != null);
+      if (haveBackend) break;
     }
+    return haveBackend;
+  }
+
+  static public boolean haveBackend(DeepWaterParameters.Backend backend) {
+    return (DeepWaterMojo.createDeepWaterBackend(backend.toString()) != null);
+  }
+
+  @Override public BuilderVisibility builderVisibility() {
+     return haveBackend() ? BuilderVisibility.Stable : BuilderVisibility.Experimental;
   }
 
   /** Types of models we can build with DeepWater  */

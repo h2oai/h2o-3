@@ -16,6 +16,6 @@ public class DeepWaterTensorflowIntegrationTest extends DeepWaterAbstractIntegra
     }
     @BeforeClass
     static public void _preconditionDeepWater() { // NOTE: the `_` force execution of this check after setup
-        Assume.assumeTrue(createDeepWaterBackend(DeepWaterParameters.Backend.tensorflow.toString())!=null);
+      Assume.assumeTrue(backend != null);
     }
 }
