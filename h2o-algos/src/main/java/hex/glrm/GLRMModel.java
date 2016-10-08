@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.*;
+import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;

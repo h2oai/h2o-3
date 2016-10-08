@@ -6,6 +6,7 @@ import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 
 import hex.*;
+import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.gram.Gram;
 import hex.gram.Gram.*;
