@@ -11,7 +11,7 @@ public class ParseUtils {
         String[] parts = input.substring(1, input.length()-1).split(",");
         double[] res = new double[parts.length];
         for (int i = 0; i < parts.length; i++)
-            res[i] = Double.parseDouble(parts[i]);
+            res[i] = Double.parseDouble(parts[i].trim());
         return res;
     }
 
@@ -21,7 +21,7 @@ public class ParseUtils {
         String[] parts = input.substring(1, input.length()-1).split(",");
         int[] res = new int[parts.length];
         for (int i = 0; i < parts.length; i++)
-            res[i] = Integer.parseInt(parts[i]);
+            res[i] = Integer.parseInt(parts[i].trim());
         return res;
     }
 
