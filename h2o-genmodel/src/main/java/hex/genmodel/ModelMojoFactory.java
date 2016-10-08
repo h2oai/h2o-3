@@ -2,6 +2,7 @@ package hex.genmodel;
 
 import hex.genmodel.algos.DrfMojoReader;
 import hex.genmodel.algos.GbmMojoReader;
+import hex.genmodel.algos.glrm.GlrmMojoReader;
 
 import java.io.IOException;
 
@@ -21,6 +22,10 @@ public class ModelMojoFactory {
       case "Gradient Boosting Method":
       case "Gradient Boosting Machine":
         return new GbmMojoReader();
+
+      case "Generalized Low Rank Modeling":
+      case "Generalized Low Rank Model":
+        return new GlrmMojoReader();
 
       default:
         throw new IOException("Unsupported MOJO algorithm: " + algo);
