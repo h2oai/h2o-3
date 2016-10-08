@@ -26,6 +26,7 @@ javadoc {
 dependencies {
     testCompile "junit:junit:${junitVersion}"
     compile "net.sf.opencsv:opencsv:2.3"
+    //temp solution using jitpack.io to build directly from github
     compile 'com.github.h2oai.deepwater:deepwater.backends:master-SNAPSHOT'
     //compile files('deepwater-1.0-SNAPSHOT-all.jar')
 }
