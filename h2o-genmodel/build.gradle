@@ -26,8 +26,8 @@ javadoc {
 dependencies {
     testCompile "junit:junit:${junitVersion}"
     compile "net.sf.opencsv:opencsv:2.3"
-  compile files('deepwater.backends-1.0-SNAPSHOT.jar')
-  compile files('deepwater.backends.mxnet-1.0-SNAPSHOT.jar')
+    //compile 'com.github.h2oai:deepwater:-SNAPSHOT'
+    compile files('deepwater-1.0-SNAPSHOT-all.jar')
 }
 
 build.dependsOn shadowJar

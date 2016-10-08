@@ -7,10 +7,8 @@ dependencies {
   compile project(":h2o-core")
   testCompile "junit:junit:${junitVersion}"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
-  compile files('water.gpu.jar')
-  compile files('deepwater.backends-1.0-SNAPSHOT.jar')
-  compile files('deepwater.backends.tensorflow-1.0-SNAPSHOT.jar')
-  compile files('deepwater.backends.mxnet-1.0-SNAPSHOT.jar')
+  //compile 'com.github.h2oai:deepwater:-SNAPSHOT'
+  compile files('deepwater-1.0-SNAPSHOT-all.jar')
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"
