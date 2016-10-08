@@ -675,7 +675,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
         // by not allowing Keys to ever change.
 
         // Volatile read, to force loads of K to retry despite JIT, otherwise
-        // it is legal to e.g. haul the readFrom of "K = key(kvs,idx);" outside of
+        // it is legal to e.g. haul the load of "K = key(kvs,idx);" outside of
         // this loop (since failed CAS ops have no memory ordering semantics).
         int dummy = DUMMY_VOLATILE;
         continue;

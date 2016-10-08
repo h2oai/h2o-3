@@ -280,7 +280,7 @@ public class Frame extends Lockable<Frame> {
 
   // Compute vectors for caching
   private Vec[] vecs_impl() {
-    // Load all Vec headers; readFrom them all in parallel by starting prefetches
+    // Load all Vec headers; load them all in parallel by starting prefetches
     for( Key<Vec> key : _keys ) DKV.prefetch(key);
     Vec [] vecs = new Vec[_keys.length];
     for( int i=0; i<_keys.length; i++ ) vecs[i] = _keys[i].get();

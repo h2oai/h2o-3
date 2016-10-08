@@ -71,7 +71,7 @@ package jsr166y;
  * pieces (leaf tasks). Even when work is split into individual calls,
  * tree-based techniques are usually preferable to directly forking
  * leaf tasks, because they reduce inter-thread communication and
- * improve readFrom balancing. In the recursive case, the second of each
+ * improve load balancing. In the recursive case, the second of each
  * pair of subtasks to finish triggers completion of its parent
  * (because no result combination is performed, the default no-op
  * implementation of method {@code onCompletion} is not overridden). A

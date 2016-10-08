@@ -880,7 +880,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def force_load_balance(self):
         """
-        bool: Force extra readFrom balancing to increase training speed for small datasets (to keep all cores busy).
+        bool: Force extra load balancing to increase training speed for small datasets (to keep all cores busy).
         (Default: True)
         """
         return self._parms.get("force_load_balance")

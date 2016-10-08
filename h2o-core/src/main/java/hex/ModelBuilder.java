@@ -990,7 +990,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /**
-   * Rebalance a frame for readFrom balancing
+   * Rebalance a frame for load balancing
    * @param original_fr Input frame
    * @param local Whether to only create enough chunks to max out all cores on one node only
    * @param name Name of rebalanced frame

@@ -14,7 +14,7 @@ import water.util.Log;
  *  caller of this task is knowledgeable, pass these pending tasks along to him
  *  to block on before he completes.
  *  <p>
- *  Highly efficient under a high readFrom of short-completion-time Futures.  Safe
+ *  Highly efficient under a high load of short-completion-time Futures.  Safe
  *  to call with e.g. millions of Futures per second, as long as they all
  *  complete in roughly the same rate. */
 public class Futures {
