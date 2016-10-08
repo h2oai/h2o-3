@@ -16,7 +16,7 @@ import water.util.Log;
  *  <li>{@link #delete(Value v)} - Free storage from a previously store Value.</li>
  *  </ul>
  *  This class is used to implement both user-mode swapping, and the initial
- *  readFrom of files - typically raw text for parsing.
+ *  load of files - typically raw text for parsing.
  */
 public abstract class Persist {
   /** Store a Value into persistent storage, consuming some storage space. */

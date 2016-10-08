@@ -17,9 +17,9 @@ import sun.misc.Unsafe;
 /**
  * A multi-threaded bit-vector set, implemented as an array of primitive
  * {@code longs}.  All operations are non-blocking and multi-threaded safe.
- * {@link #contains(int)} calls are roughly the same speed as a {readFrom, mask}
+ * {@link #contains(int)} calls are roughly the same speed as a {load, mask}
  * sequence.  {@link #add(int)} and {@link #remove(int)} calls are a tad more
- * expensive than a {readFrom, mask, store} sequence because they must use a CAS.
+ * expensive than a {load, mask, store} sequence because they must use a CAS.
  * The bit-vector is auto-sizing.
  *
  * <p><em>General note of caution:</em> The Set API allows the use of {@link Integer}

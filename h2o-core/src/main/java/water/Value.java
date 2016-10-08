@@ -229,13 +229,13 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** Load some or all of completely persisted Values */
   byte[] loadPersist() {
     // 00       assert: not written yet
-    // 01       assert: readFrom-after-delete
+    // 01       assert: load-after-delete
     // 10       expected; read
-    // 11       assert: readFrom-after-delete
+    // 11       assert: load-after-delete
     assert isPersisted();
     try {
       byte[] res = H2O.getPM().load(backend(), this);
-      assert !isDeleted();        // Race in user-land: readFrom-after-delete
+      assert !isDeleted();        // Race in user-land: load-after-delete
       return res;
     } catch( IOException ioe ) { throw Log.throwErr(ioe); }
   }

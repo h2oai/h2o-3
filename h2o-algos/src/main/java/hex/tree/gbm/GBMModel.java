@@ -43,7 +43,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
-   *  Default method is to just readFrom the data into the tmp array, then call
+   *  Default method is to just load the data into the tmp array, then call
    *  subclass scoring logic. */
   @Override protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double weight, double offset, int ntrees) {
     super.score0(data, preds, weight, offset, ntrees);    // These are f_k(x) in Algorithm 10.4

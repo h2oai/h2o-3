@@ -22,7 +22,7 @@ public class AAA_PreCloudLock extends TestUtil {
   }
 
   // ---
-  // Should be able to readFrom basic status pages without locking the cloud.
+  // Should be able to load basic status pages without locking the cloud.
   @Test public void testBasicStatusPages() {
     // Serve some pages and confirm cloud does not lock
     try {
