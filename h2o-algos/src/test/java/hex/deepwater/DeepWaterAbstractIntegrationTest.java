@@ -8,6 +8,7 @@ import deepwater.datasets.ImageDataSet;
 import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
+import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
 import hex.splitframe.ShuffleSplitFrame;
 import org.junit.*;
 import water.*;
@@ -26,9 +27,9 @@ import java.util.Map;
 
 public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
-  protected BackendTrain backend;
+  static protected BackendTrain backend;
   @BeforeClass static public void _preconditionDeepWater() { // NOTE: the `_` force execution of this check after setup
-    Assume.assumeTrue("DeepWater wasn't built", System.getProperty("deepwater.enabled", "false").equals("true"));
+    Assume.assumeTrue(DeepWater.haveBackend());
   }
 
   @BeforeClass
