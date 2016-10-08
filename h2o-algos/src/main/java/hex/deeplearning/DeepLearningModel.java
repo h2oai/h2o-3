@@ -221,7 +221,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
     DKV.put(dinfo);
-    Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
     _dist = new Distribution(get_params());
@@ -919,21 +918,25 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     assert (bestModel.compareTo(this) <= 0);
   }
 
-  @Override public Futures remove_impl(Futures fs) {
+  @Override public void delete() {
     if (_output.weights != null && _output.biases != null) {
-      for (Key k : _output.weights) if (k!=null) DKV.remove(k,fs);
-      for (Key k : _output.biases) if (k!=null) DKV.remove(k,fs);
+      for (Key k : _output.weights) {
+        if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
+      }
+      for (Key k : _output.biases) {
+        if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
+      }
     }
-    DKV.remove(model_info().data_info()._key, fs);
-    deleteElasticAverageModels(fs);
-    return fs;
+    DKV.remove(model_info().data_info()._key);
+    deleteElasticAverageModels();
+    super.delete();
   }
 
-  void deleteElasticAverageModels(Futures fs) {
+  void deleteElasticAverageModels() {
     if (model_info().get_params()._elastic_averaging) {
-      DKV.remove(model_info().elasticAverageModelInfoKey(), fs);
+      DKV.remove(model_info().elasticAverageModelInfoKey());
       for (H2ONode node : H2O.CLOUD._memary) {
-        DKV.remove(model_info().localModelInfoKey(node), fs);
+        DKV.remove(model_info().localModelInfoKey(node));
       }
     }
   }
