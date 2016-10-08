@@ -9,10 +9,7 @@ import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.splitframe.ShuffleSplitFrame;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
@@ -30,6 +27,9 @@ import java.util.Map;
 public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   protected BackendTrain backend;
+  @BeforeClass static public void _preconditionDeepWater() { // NOTE: the `_` force execution of this check after setup
+    Assume.assumeTrue("DeepWater wasn't built", System.getProperty("deepwater.enabled", "false").equals("true"));
+  }
 
   @BeforeClass
   public static void stall() { stall_till_cloudsize(1); }
