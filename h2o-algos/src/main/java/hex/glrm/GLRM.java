@@ -6,6 +6,7 @@ import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 
 import hex.*;
+import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.gram.Gram;
@@ -29,7 +30,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static hex.glrm.GlrmLoss.Quadratic;
+import static hex.genmodel.algos.glrm.GlrmLoss.Quadratic;
 
 /**
  * Generalized Low Rank Models

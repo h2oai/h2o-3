@@ -1,6 +1,6 @@
-package hex.glrm;
+package hex.genmodel.algos.glrm;
 
-import water.util.ArrayUtils;
+import hex.genmodel.utils.ArrayUtils;
 
 /**
  * Loss function for the GLRM algorithm.
