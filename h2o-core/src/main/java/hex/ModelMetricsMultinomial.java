@@ -147,7 +147,6 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
   // helper to build a ModelMetricsMultinomial for a N-class problem from a Frame that contains N per-class probability columns, and the actual label as the (N+1)-th column
   private static class MultinomialMetrics extends MRTask<MultinomialMetrics> {
-    public ModelMetricsMultinomial _mm; //OUTPUT
     public MultinomialMetrics(String[] domain) { this.domain = domain; }
     String[] domain;
     private MetricBuilderMultinomial _mb;
@@ -163,7 +162,6 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
       }
     }
     @Override public void reduce(MultinomialMetrics mrt) { _mb.reduce(mrt._mb); }
-    @Override protected void postGlobal() { _mm = (ModelMetricsMultinomial)_mb.makeModelMetrics(null, _fr, null, null); }
   }
 
   public static class MetricBuilderMultinomial<T extends MetricBuilderMultinomial<T>> extends MetricBuilderSupervised<T> {
