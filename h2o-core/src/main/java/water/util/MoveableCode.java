@@ -6,6 +6,7 @@ import java.io.StringWriter;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URL;
+import java.util.Arrays;
 
 /**
  * Encapsulates a class inside, so we can pass around functions.
@@ -14,7 +15,7 @@ public class MoveableCode<T> extends ClassLoader implements Serializable {
 
   public Class loadClass() { return code.loadClass(); }
 
-  private class Code {
+  private class Code implements Serializable {
     private final String className;
     private final byte[] bytes;
     private final Code outer;
@@ -76,13 +77,22 @@ public class MoveableCode<T> extends ClassLoader implements Serializable {
     return instance;
   }
 
+  private Constructor findCheapConstructor(Class cls) {
+    Constructor[] cons = cls.getDeclaredConstructors();
+    if (cons.length == 0) throw new UnsupportedOperationException("No constructor found for required class " + cls.getName());
+    Constructor con = cons[0];
+    for (Constructor c : cons) if (c.getParameterCount() < con.getParameterCount()) con = c;
+    return con;
+  }
+
   @SuppressWarnings("unchecked")
   T instantiate() throws UnsupportedOperationException {
     Class c = code.loadClass();
     try {
-      Constructor con = c.getDeclaredConstructor();
+      Constructor con = findCheapConstructor(c);
       con.setAccessible(true);
-      Object instance = con.newInstance();
+      Object[] nulls = new Object[con.getParameterCount()];
+      Object instance = con.newInstance(nulls);
       return (T) instance;
     } catch (ClassCastException e) {
       throw new UnsupportedOperationException("Could not cast to required type: " + c, e);
@@ -90,8 +100,6 @@ public class MoveableCode<T> extends ClassLoader implements Serializable {
       throw new UnsupportedOperationException("Failed to instantiate " + c, e);
     } catch (IllegalAccessException e) {
       throw new UnsupportedOperationException("Access problems with class " + c, e);
-    } catch (NoSuchMethodException e) {
-      throw new UnsupportedOperationException("Constructor missing in " + c, e);
     } catch (InvocationTargetException e) {
       throw new UnsupportedOperationException("Constructor failed in " + c, e);
     }

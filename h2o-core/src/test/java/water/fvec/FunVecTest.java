@@ -22,6 +22,8 @@ class Op implements Function<Long, Double> {
 }
 
 public class FunVecTest extends TestUtil {
+  public FunVecTest() {}
+
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   @Test public void testSineFunction() {
@@ -30,19 +32,23 @@ public class FunVecTest extends TestUtil {
       v = Vec.makeFromFunction(1 << 20, new Op());
       int random = 44444;
       Assert.assertEquals(Math.sin(random * 0.0001), v.at(random), 0.000001);
-//      AstRoot ast = Rapids.parse("{ x . (* 1 x) }");
-//      Vec iv = new AstVec(v, ast);
-//      new MRTask() {
-//        @Override
-//        public void map(Chunk c) {
-//          for (int i = 0; i < c._len; ++i) {
-//            double x = c.atd(i);
-//            if (Math.abs(x) > 1.0)
-//              throw new RuntimeException("moo");
-//          }
-//        }
-//      }.doAll(iv);
-//      iv.remove();
+      Function<Double, Double> sq = new Function<Double, Double>() {
+        public Double apply(Double x) { return x*x;}
+      };
+      Vec iv = new FunVec(v, sq);
+      new MRTask() {
+        @Override
+        public void map(Chunk c) {
+          for (int i = 0; i < c._len; ++i) {
+            long index = c._start + i;
+            double expected = Math.sin(0.0001 * index) * Math.sin(0.0001 * index);
+            double x = c.atd(i);
+            if (x != expected)
+              throw new RuntimeException("moo @" + c._cidx + "/" + i + " x=" + x + "; expected=" + expected);
+          }
+        }
+      }.doAll(iv);
+      iv.remove();
     } catch(Exception x) {
       x.printStackTrace();
       Assert.fail("Oops, exception " + x);

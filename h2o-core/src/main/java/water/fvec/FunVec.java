@@ -1,13 +1,17 @@
 package water.fvec;
 
+import com.google.common.base.Function;
 import water.DKV;
 import water.H2O;
 import water.Key;
 import water.MRTask;
+import water.exceptions.H2OFailException;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.util.Closure;
+
+import java.io.IOException;
 
 /**
  * This wrapper pushes a transform down into each chunk so that
@@ -37,14 +41,14 @@ public class FunVec extends Vec {
   private transient Vec[] dependencies;
   private final Closure fun;
 
-  public FunVec(Key key, int rowLayout, Closure fun, Vec... dependencies) {
+  public FunVec(Key<Vec> key, int rowLayout, Function<?,?> fun, Vec... dependencies) throws IOException {
     super(key, rowLayout, null);
-    this.fun=fun;
+    this.fun=Closure.enclose(fun);
     this.dependencies = dependencies;
     DKV.put(this);
   }
 
-  public FunVec(Vec v, Closure fun) {
+  public FunVec(Vec v, Function<?,?> fun) throws IOException {
     this(v.group().addVec(), v._rowLayout, fun, v);
   }
 
@@ -69,9 +73,13 @@ public class FunVec extends Vec {
   }
 
   @Override public Vec doCopy() {
-    Vec v = new FunVec(group().addVec(), _rowLayout, fun, dependencies);
-    v.setDomain(domain()==null?null:domain().clone());
-    return v;
+    try {
+      Vec v = new FunVec(group().addVec(), _rowLayout, fun, dependencies);
+      v.setDomain(domain()==null?null:domain().clone());
+      return v;
+    } catch (IOException ioe) {
+      throw new H2OFailException("Copy failed", ioe);
+    }
   }
 
   public static class FunChunk extends Chunk {
@@ -92,8 +100,10 @@ public class FunVec extends Vec {
 
     // TODO(vlad): implement other methods, take care of type safety
     // applies the function to a row of doubles
+    @SuppressWarnings("unchecked")
     @Override public double atd_impl(int idx) {
-      return (Double) fun.apply(dependencies[0].atd(idx));
+      Double neat = (Double) fun.apply(dependencies[0].atd(idx));
+      return neat == null ? Double.NaN : neat;
     }
 
     @Override public long at8_impl(int idx) { throw H2O.unimpl(); }

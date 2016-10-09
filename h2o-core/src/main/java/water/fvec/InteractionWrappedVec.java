@@ -14,7 +14,7 @@ import java.util.Map;
  *
  * This class represents an interaction between two Vec instances.
  *
- * Another virtual Vec (akin to TransformWrappedVec) used to represent a
+ * Another virtual Vec (akin to AstVec) used to represent a
  * never-materialized interaction between two columns.
  *
  * There are 3 types of interactions to consider: Num-Num, Num-Enum, and Enum-Enums
@@ -323,10 +323,10 @@ public class InteractionWrappedVec extends WrappedVec {
     public final boolean _c1IsCat; // left chunk is categorical
     public final boolean _c2IsCat; // rite chunk is categorical
     public final boolean _isCat;   // this vec is categorical
-    InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c) {
+    InteractionWrappedChunk(InteractionWrappedVec interactionWrappedVec, Chunk[] c) {
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
-      _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
+      _start = _c[0]._start; _vec = interactionWrappedVec; _cidx = _c[0]._cidx;
       _c1IsCat=_c[0]._vec.isCategorical();
       _c2IsCat=_c[1]._vec.isCategorical();
       _isCat = _vec.isCategorical();

@@ -8,6 +8,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.*;
+import java.util.Date;
 
 class SampleCode implements Function<Integer, String> {
   public String apply(Integer x) {
@@ -16,6 +17,8 @@ class SampleCode implements Function<Integer, String> {
 }
 
 class SampleContainer {
+  // the following constructor interferes with default instantiation
+  public SampleContainer(String theory, double agent, Date ofBirth) {}
   public static int random = 4;
 
   static class MyFun implements Function<String, Integer> {

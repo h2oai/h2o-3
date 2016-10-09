@@ -7,7 +7,7 @@ import water.TestUtil;
 import water.rapids.ast.AstRoot;
 import water.rapids.Rapids;
 
-public class TransformWrappedVecTest extends TestUtil {
+public class AstVecTest extends TestUtil {
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   @Test public void testInversion() {
@@ -15,11 +15,11 @@ public class TransformWrappedVecTest extends TestUtil {
     try {
       v = Vec.makeZero(1<<20);
       AstRoot ast = Rapids.parse("{ x . (- 1 x) }");
-      Vec iv = new TransformWrappedVec(v, ast);
+      Vec iv = new AstVec(v, ast);
       new MRTask() {
         @Override public void map(Chunk c) {
           for(int i=0;i<c._len;++i)
-            if( c.atd(i)!=1 )
+            if (c.atd(i) != 1.0)
               throw new RuntimeException("moo");
         }
       }.doAll(iv);

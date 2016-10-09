@@ -4,7 +4,6 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.MRTask;
-import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
 import water.rapids.Env;
 import water.rapids.ast.params.AstNum;
@@ -24,7 +23,7 @@ import water.rapids.ast.params.AstNum;
  * Each wrapped Vec will track its own transformations, which makes it easy
  * when generating a POJO.
  *
- * A TransformWrappedVec is actually a function of one or more Vec instances.
+ * A AstVec is actually a function of one or more Vec instances.
  *
  * This class exists here so that Chunk and NewChunk don't need to become fully public
  * (since java has no friends). Other packages (not just core H2O) depend on this class!
@@ -32,63 +31,54 @@ import water.rapids.ast.params.AstNum;
  *
  * @author spencer
  */
-public class TransformWrappedVec extends WrappedVec {
+public class AstVec extends Vec {
 
   private final Key<Vec>[] _masterVecKeys;
   private transient Vec[] _masterVecs;
   private final AstRoot _fun;
 
-  public TransformWrappedVec(Key key, int rowLayout, AstRoot fun, Key<Vec>... masterVecKeys) {
+  public AstVec(Key<Vec> key, int rowLayout, AstRoot fun, Key<Vec>... masterVecKeys) {
     super(key, rowLayout, null);
     _fun=fun;
     _masterVecKeys = masterVecKeys;
     DKV.put(this);
   }
 
-  public TransformWrappedVec(Vec v, AstRoot fun) {
+  public AstVec(Vec v, AstRoot fun) {
     this(v.group().addVec(), v._rowLayout, fun, v._key);
   }
-
-  public Vec makeVec() {
-    Vec v  = new MRTask() {
-      @Override public void map(Chunk c, NewChunk nc) {
-        for(int i=0;i<c._len;++i)
-          nc.addNum(c.atd(i));
-      }
-    }.doAll(Vec.T_NUM,this).outputFrame().anyVec();
-    remove();
-    return v;
-  }
-
-
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
     Chunk[] cs = new Chunk[_masterVecKeys.length];
     if( _masterVecs==null )
       _masterVecs = new Vec[_masterVecKeys.length];
-    for(int i=0; i<cs.length;++i)
-      cs[i] = (_masterVecs[i]!=null?_masterVecs[i]:(_masterVecs[i] = _masterVecKeys[i].get())).chunkForChunkIdx(cidx);
-    return new TransformWrappedChunk(_fun, this, cs);
+    for(int i=0; i<cs.length;++i) {
+      final Vec vec = _masterVecs[i] != null ? _masterVecs[i] : _masterVecKeys[i].get();
+      _masterVecs[i] = vec;
+      cs[i] = vec.chunkForChunkIdx(cidx);
+    }
+
+    return new AstChunk(_fun, this, cs);
   }
 
   @Override public Vec doCopy() {
-    Vec v = new TransformWrappedVec(group().addVec(), _rowLayout, _fun, _masterVecKeys);
+    Vec v = new AstVec(group().addVec(), _rowLayout, _fun, _masterVecKeys);
     v.setDomain(domain()==null?null:domain().clone());
     return v;
   }
 
-  public static class TransformWrappedChunk extends Chunk {
+  public static class AstChunk extends Chunk {
     public final AstRoot _fun;
     public final transient Chunk _c[];
 
     private final AstRoot[] _asts;
     private final Env _env;
 
-    TransformWrappedChunk(AstRoot fun, Vec transformWrappedVec, Chunk... c) {
+    AstChunk(AstRoot fun, Vec vec, Chunk... c) {
 
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);
-      _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
+      _start = _c[0]._start; _vec = vec; _cidx = _c[0]._cidx;
 
       _fun=fun;
       _asts = new AstRoot[1+_c.length];
