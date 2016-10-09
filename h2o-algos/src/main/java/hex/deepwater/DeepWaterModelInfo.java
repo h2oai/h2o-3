@@ -16,10 +16,9 @@ import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
@@ -284,29 +283,31 @@ final public class DeepWaterModelInfo extends Iced {
     if (_backend ==null) return;
     Log.info("Native backend -> Java.");
     long now = System.currentTimeMillis();
-    Path path = null;
+    File file = null;
     // only overwrite the network definition if it's null
     if (_network==null) {
       try {
-        path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
-        Log.info("backend is saving the model architecture.");
-        _backend.saveModel(_model, path.toString());
-        Log.info("done.");
-        _network = Files.readAllBytes(path);
+        file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+        _backend.saveModel(_model, file.toString());
+        FileInputStream is = new FileInputStream(file);
+        _network = new byte[(int)file.length()];
+        is.read(_network);
+        is.close();
       } catch (IOException e) {
         e.printStackTrace();
-      } finally { if (path!=null) path.toFile().delete(); }
+      } finally { if (file !=null) file.delete(); }
     }
     // always overwrite the parameters (weights/biases)
     try {
-      path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
-      Log.info("backend is saving the parameters.");
-      _backend.saveParam(_model, path.toString());
-      Log.info("done.");
-      _modelparams = Files.readAllBytes(path);
+      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+      _backend.saveParam(_model, file.toString());
+      FileInputStream is = new FileInputStream(file);
+      _modelparams = new byte[(int)file.length()];
+      is.read(_modelparams);
+      is.close();
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (path!=null) path.toFile().delete(); }
+    } finally { if (file !=null) file.delete(); }
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }
@@ -343,24 +344,28 @@ final public class DeepWaterModelInfo extends Iced {
     if (network==null || parameters==null) return;
     Log.info("Java state -> native backend.");
 
-    Path path = null;
+    File file = null;
     // only overwrite the network definition if it's null
     try {
-      path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString() + ".json");
-      Files.write(path, network);
+      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString() + ".json");
+      FileOutputStream os = new FileOutputStream(file);
+      os.write(network);
+      os.close();
       Log.info("Randomizing everything.");
-      _model = _backend.buildNet(getImageDataSet(), getRuntimeOptions(), getBackendParams(), _classes, path.toString()); //randomizing initial state
+      _model = _backend.buildNet(getImageDataSet(), getRuntimeOptions(), getBackendParams(), _classes, file.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (path!=null) path.toFile().delete(); }
+    } finally { if (file !=null) file.delete(); }
     // always overwrite the parameters (weights/biases)
     try {
-      path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
-      Files.write(path, parameters);
-      _backend.loadParam(_model, path.toString());
+      file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
+      FileOutputStream os = new FileOutputStream(file);
+      os.write(parameters);
+      os.close();
+      _backend.loadParam(_model, file.toString());
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (path!=null) path.toFile().delete(); }
+    } finally { if (file !=null) file.delete(); }
 
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
