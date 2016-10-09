@@ -1471,6 +1471,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
         // Compare predictions, counting mis-predicts
         for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
+          if (rnd.nextDouble() >= fraction) continue;
 
           // Native Java API
           for (int col = 0; col < features.length; col++) // Build feature set
@@ -1512,6 +1513,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();
         for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
+          if (rnd.nextDouble() >= fraction) continue;
           if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
           for (int col = 0; col < features.length; col++) {
             if (dvecs[col].isString()) {
