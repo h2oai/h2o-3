@@ -463,6 +463,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       return _predFrame;
     }
     @Override public void map(Chunk[] chks, NewChunk[] cpreds) { }
+    @Override public void reduce( BigScore bs ) { }
     @Override protected void setupLocal() {
       DataInfo di = model_info()._dataInfoKey == null ? null : model_info()._dataInfoKey.get();
 //      String[] names=null;
