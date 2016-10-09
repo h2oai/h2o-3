@@ -18,12 +18,14 @@ import java.io.IOException;
 import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
 
 public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationTest {
-
   @Before
   public void setUp() throws Exception {
     backend = createDeepWaterBackend(DeepWaterParameters.Backend.mxnet.toString());
-    Assume.assumeTrue(backend!=null);
   }
+  @BeforeClass
+  static public void checkBackend() {
+    Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.mxnet));
+   }
 
   // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
   // FIXME: push this to the actual deepwater.backends.mxnet.test module

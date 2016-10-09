@@ -33,11 +33,17 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
 
+  /** Check whether we have any Deep Water native backends available */
   static public boolean haveBackend() {
     for (DeepWaterParameters.Backend b : DeepWaterParameters.Backend.values()) {
       if (DeepWaterMojo.createDeepWaterBackend(b.toString()) != null) return true;
     }
     return false;
+  }
+
+  /** Check whether we have a specific Deep Water native backend available */
+  static public boolean haveBackend(DeepWaterParameters.Backend backend) {
+    return (DeepWaterMojo.createDeepWaterBackend(backend.toString()) != null);
   }
 
   @Override public BuilderVisibility builderVisibility() {
