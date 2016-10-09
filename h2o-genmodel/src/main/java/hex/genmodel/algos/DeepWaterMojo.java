@@ -8,10 +8,9 @@ import deepwater.datasets.ImageDataSet;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Map;
 import java.util.UUID;
 
@@ -75,21 +74,25 @@ public class DeepWaterMojo extends MojoModel {
     _backendParams = new BackendParams();
     _backendParams.set("mini_batch_size", 1);
 
-    Path path = Paths.get(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + ".json");
+    File file = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + ".json");
     try {
-      Files.write(path, _network);
+      FileOutputStream os = new FileOutputStream(file.toString());
+      os.write(_network);
+      os.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
-    _model = _backend.buildNet(_imageDataSet, _opts, _backendParams, _nclasses, path.toString());
+    _model = _backend.buildNet(_imageDataSet, _opts, _backendParams, _nclasses, file.toString());
 
-    path = Paths.get(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
+    file = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
     try {
-      Files.write(path, _parameters);
+      FileOutputStream os = new FileOutputStream(file.toString());
+      os.write(_parameters);
+      os.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
-    _backend.loadParam(_model, path.toString());
+    _backend.loadParam(_model, file.toString());
   }
 
   /**
