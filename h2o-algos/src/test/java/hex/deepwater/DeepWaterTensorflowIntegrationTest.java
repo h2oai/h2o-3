@@ -9,13 +9,9 @@ import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
 
 @Ignore
 public class DeepWaterTensorflowIntegrationTest extends DeepWaterAbstractIntegrationTest {
-
     @Before
     public void setUp() throws Exception {
         backend = createDeepWaterBackend(DeepWaterParameters.Backend.tensorflow.toString());
-    }
-    @BeforeClass
-    static public void _preconditionDeepWater() { // NOTE: the `_` force execution of this check after setup
-      Assume.assumeTrue(backend != null);
+        Assume.assumeTrue(backend!=null);
     }
 }

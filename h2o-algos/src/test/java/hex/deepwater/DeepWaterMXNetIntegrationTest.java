@@ -21,11 +21,8 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
 
   @Before
   public void setUp() throws Exception {
-    Assume.assumeTrue(DeepWater.haveBackend(DeepWaterParameters.Backend.mxnet));
-  }
-  @BeforeClass
-  static public void _preconditionDeepWater() { // NOTE: the `_` force execution of this check after setup
-    Assume.assumeTrue(backend != null);
+    backend = createDeepWaterBackend(DeepWaterParameters.Backend.mxnet.toString());
+    Assume.assumeTrue(backend!=null);
   }
 
   // This test has nothing to do with H2O - Pure integration test of deepwater/backends/mxnet
