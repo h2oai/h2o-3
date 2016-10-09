@@ -5,8 +5,6 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.deepwater import H2ODeepWaterEstimator
 
-import importlib
-
 def cnn(num_classes):
     import mxnet as mx
     data = mx.symbol.Variable('data')
@@ -39,7 +37,7 @@ def cnn(num_classes):
 
 
 def deepwater_custom_cnn_mnist():
-  print("Test checks if Deep Water works fine with a multiclass image dataset")
+  if not H2ODeepWaterEstimator.available(): return
 
   train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/mnist/train.csv.gz"))
   test = h2o.import_file(pyunit_utils.locate("bigdata/laptop/mnist/test.csv.gz"))

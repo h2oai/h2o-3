@@ -6,7 +6,7 @@ from tests import pyunit_utils
 from h2o.estimators.deepwater import H2ODeepWaterEstimator
 
 def deepwater_multi():
-  print("Test checks if Deep Water works fine with a multiclass image dataset")
+  if not H2ODeepWaterEstimator.available(): return
 
   frame = h2o.import_file(pyunit_utils.locate("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))
   print(frame.head(5))

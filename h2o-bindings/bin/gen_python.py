@@ -235,19 +235,19 @@ def algo_to_classname(algo):
     return "H2O" + algo.capitalize() + "Estimator"
 
 def extra_imports_for(algo):
-    if algo == "glm":
+    if algo == "glm" or algo == "deepwater":
         return "import h2o"
 
 def help_preamble_for(algo):
     if algo == "deeplearning":
         return """
-            Build a supervised Deep Neural Network model
+            Build a Deep Neural Network model using CPUs
             Builds a feed-forward multilayer artificial neural network on an H2OFrame"""
     if algo == "deepwater":
         return """
-            Build a supervised Deep Neural Network model for image classification
-            Builds a artificial neural network on an H2OFrame containing paths of images"""
-    if algo == "kmenas":
+            Build a Deep Learning model using multiple native GPU backends
+            Builds a deep neural network on an H2OFrame containing various data sources"""
+    if algo == "kmeans":
         return """Performs k-means clustering on an H2O dataset."""
     if algo == "glrm":
         return """Builds a generalized low rank model of a H2O dataset."""
@@ -351,6 +351,23 @@ def class_extra_for(algo):
                 m = H2OGeneralizedLinearEstimator()
                 m._resolve_model(model_json["model_id"]["name"], model_json)
                 return m"""
+
+    elif algo == "deepwater":
+        return """
+        # Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
+        @staticmethod
+        def available():
+            \"\"\"
+            Returns True if a deep water model can be built, or False otherwise.
+            \"\"\"
+            builder_json = h2o.api("GET /3/ModelBuilders", data={"algo": "deepwater"})
+            visibility = builder_json["model_builders"]["deepwater"]["visibility"]
+            if (visibility == "Experimental"):
+                print("Cannot build a Deep Water model - no backend found.")
+                return False
+            else:
+                return True
+        """
 
 def module_extra_for(algo):
     if algo == "deeplearning":
