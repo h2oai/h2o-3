@@ -9,6 +9,8 @@ from h2o.estimators.deepwater import H2ODeepWaterEstimator
 
 
 def deepwater_demo():
+  if not H2ODeepWaterEstimator.available(): return
+
   # Training data
   train_data = h2o.import_file(path=tests.locate("smalldata/gbm_test/ecology_model.csv"))
   train_data = train_data.drop('Site')

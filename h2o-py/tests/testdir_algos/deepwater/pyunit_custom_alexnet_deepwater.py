@@ -57,7 +57,7 @@ def alexnet(num_classes):
 
 
 def deepwater_custom_alexnet():
-  print("Test checks if Deep Water works fine with a multiclass image dataset")
+  if not H2ODeepWaterEstimator.available(): return
 
   frame = h2o.import_file(pyunit_utils.locate("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))
   print(frame.head(5))

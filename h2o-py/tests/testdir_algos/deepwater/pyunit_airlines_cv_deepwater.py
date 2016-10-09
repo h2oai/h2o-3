@@ -1,19 +1,14 @@
 from __future__ import print_function
-from builtins import range
 import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-import random
 from h2o.estimators.deepwater import H2ODeepWaterEstimator
 
 def cv_airlines():
-  if (not os.getenv("DEEPWATER")): return
+  if not H2ODeepWaterEstimator.available(): return
 
-  # read in the dataset and construct training set (and validation set)
   df =  h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"))
-
-  # pick the predictors and the correct response column
   predictors = ["Year","Month","DayofMonth","DayOfWeek","CRSDepTime","CRSArrTime","UniqueCarrier","FlightNum"]
   response_col = "IsDepDelayed"
 
