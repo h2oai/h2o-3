@@ -256,6 +256,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       for( double d : data ) hash ^= Double.doubleToRawLongBits(d) >> 6; // drop 6 least significants bits of mantissa (layout of long is: 1b sign, 11b exp, 52b mantisa)
 
     if (priorClassDist!=null) {
+      assert(preds.length==priorClassDist.length+1);
       // Tie-breaking based on prior probabilities
       // Example: probabilities are 0.4, 0.2, 0.4 for a 3-class problem with priors 0.7, 0.1, 0.2
       // Probability of predicting class 1 should be higher than for class 3 based on the priors

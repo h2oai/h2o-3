@@ -13,6 +13,7 @@ import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
 public class SVDModel extends Model<SVDModel, SVDModel.SVDParameters, SVDModel.SVDOutput> {
+  @Override public boolean havePojo() { return true; }
 
   public static class SVDParameters extends Model.Parameters {
     public String algoName() { return "SVD"; }

@@ -240,9 +240,11 @@ public class ScoringInfo extends Iced<ScoringInfo> {
 
       if (hasSamples) {
 //      Log.info("1st speed: (samples: " + si.training_samples + ", total_run_time: " + si.total_training_time_ms + ", total_scoring_time: " + si.total_scoring_time_ms + ", total_setup_time: " + si.total_setup_time_ms + ")");
-        int speed = (int) (((HasSamples)si).training_samples() / ((si.total_training_time_ms - si.total_scoring_time_ms - si.total_setup_time_ms) / 1e3));
-        assert (speed >= 0) : "Speed should not be negative! " + speed + " = (int)(" + ((HasSamples)si).training_samples() + "/((" + si.total_training_time_ms + "-" + si.total_scoring_time_ms + "-" + si.total_setup_time_ms + ")/1e3)";
-        table.set(row, col++, si.total_training_time_ms == 0 ? null : (String.format("%d", speed) + " rows/sec"));
+        float speed = (float) (((HasSamples)si).training_samples() / ((1.+si.total_training_time_ms - si.total_scoring_time_ms - si.total_setup_time_ms) / 1e3));
+        assert (speed >= 0) : "Speed should not be negative! " + speed + " = (float)(" + ((HasSamples)si).training_samples() + "/((" + si.total_training_time_ms + "-" + si.total_scoring_time_ms + "-" + si.total_setup_time_ms + ")/1e3)";
+        table.set(row, col++, si.total_training_time_ms == 0 ? null : (
+                speed>10 ? String.format("%d", (int)speed) : String.format("%g", speed)
+        ) + " obs/sec");
       }
       if (hasEpochs) table.set(row, col++, ((HasEpochs)si).epoch_counter());
       if (hasIterations) table.set(row, col++, ((HasIterations)si).iterations());

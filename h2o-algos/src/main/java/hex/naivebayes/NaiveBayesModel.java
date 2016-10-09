@@ -17,6 +17,8 @@ import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
 public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
+  @Override public boolean havePojo() { return true; }
+
   public static class NaiveBayesParameters extends Model.Parameters {
     public double _laplace = 0;         // Laplace smoothing parameter
     public double _eps_sdev = 0;   // Cutoff below which standard deviation is replaced with _min_sdev

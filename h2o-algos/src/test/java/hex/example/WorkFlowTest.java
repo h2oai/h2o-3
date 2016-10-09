@@ -108,7 +108,7 @@ public class WorkFlowTest extends TestUtil {
       // 3- build model on train; using test as validation
 
       // ---
-      // Gradient Boosting Method
+      // Gradient Boosting Machine
       GBMModel.GBMParameters gbm_parms = new GBMModel.GBMParameters();
       // base Model.Parameters
       gbm_parms._train = train._key;
