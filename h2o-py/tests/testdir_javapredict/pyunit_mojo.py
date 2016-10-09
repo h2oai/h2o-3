@@ -39,9 +39,8 @@ def test_mojo_model():
     download the model's MOJO, score the model remotely and fetch the predictions, score the model locally by
     running the genmodel jar, and finally compare the prediction results.
     """
-    genmodel_jar = ":".join([os.path.abspath("../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar"), os.path.abspath("../../../h2o-genmodel/deepwater.backends.mxnet-1.0-SNAPSHOT.jar")])
-    for jar in genmodel_jar.split(":"):
-      assert os.path.exists(jar), "Cannot find " + jar
+    genmodel_jar = os.path.abspath("../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar")
+    assert os.path.exists(genmodel_jar), "Cannot find " + genmodel_jar
 
     target_dir = ""
     if sys.platform == "win32":
@@ -51,6 +50,7 @@ def test_mojo_model():
 
     report = []
     for estimator in [H2ODeepWaterEstimator, H2ORandomForestEstimator, H2OGradientBoostingEstimator]:
+        if (estimator == H2ODeepWaterEstimator and not H2ODeepWaterEstimator.available()): continue
         print(colorama.Fore.LIGHTYELLOW_EX + "\n#================================================")
         print("#  Estimator: " + estimator.__name__)
         print("#================================================\n" + colorama.Fore.RESET)
