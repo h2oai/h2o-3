@@ -5,9 +5,6 @@ import water.Key;
 
 import java.io.*;
 import java.net.URI;
-import java.net.URL;
-import java.nio.file.Path;
-import java.util.UUID;
 
 /**
  * File utilities.
@@ -72,23 +69,4 @@ public class FileUtils {
   public static String keyToFileName(Key k) {
     return k.toString().replaceAll("[^a-zA-Z0-9_\\-\\.]", "_");
   }
-
-  /** Transform an image URL to a valid local file **/
-  public static String imageToUUID(String _file) {
-    return UUID.nameUUIDFromBytes(_file.getBytes()).toString() + _file.substring(_file.length()-4,_file.length());
-  }
-
-  synchronized
-  public static void downloadFile(URL url, Path path) throws IOException {
-    InputStream is = url.openStream();
-    OutputStream os = new FileOutputStream(path.toFile());
-    byte[] b = new byte[2048];
-    int length;
-    while ((length = is.read(b)) != -1) {
-      os.write(b, 0, length);
-    }
-    is.close();
-    os.close();
-  }
-
 }
