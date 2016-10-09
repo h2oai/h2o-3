@@ -4,9 +4,9 @@ sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.deepwater import H2ODeepWaterEstimator
-import mxnet as mx
 
 def Conv(data, num_filter, kernel=(1, 1), stride=(1, 1), pad=(0, 0), name=None, suffix='', withRelu=True, withBn=False):
+    import mxnet as mx
     conv = mx.sym.Convolution(data=data, num_filter=num_filter, kernel=kernel, stride=stride, pad=pad,
                               name='%s%s_conv2d' % (name, suffix))
     if withBn:
@@ -24,6 +24,7 @@ def InceptionResnetStem(data,
                         num_4_1, num_4_2, num_4_3, num_4_4,
                         num_5_1,
                         name):
+    import mxnet as mx
     stem_3x3 = Conv(data=data, num_filter=num_1_1, kernel=(3, 3), stride=(2, 2), name=('%s_conv' % name))
     stem_3x3 = Conv(data=stem_3x3, num_filter=num_1_2, kernel=(3, 3), name=('%s_stem' % name), suffix='_conv')
     stem_3x3 = Conv(data=stem_3x3, num_filter=num_1_3, kernel=(3, 3), pad=(1, 1), name=('%s_stem' % name),
@@ -67,6 +68,7 @@ def InceptionResnetV2A(data,
                        proj,
                        name,
                        scaleResidual=True):
+    import mxnet as mx
     init = data
 
     a1 = Conv(data=data, num_filter=num_1_1, name=('%s_a_1' % name), suffix='_conv')
@@ -97,6 +99,7 @@ def InceptionResnetV2B(data,
                        proj,
                        name,
                        scaleResidual=True):
+    import mxnet as mx
     init = data
 
     b1 = Conv(data=data, num_filter=num_1_1, name=('%s_b_1' % name), suffix='_conv')
@@ -124,6 +127,7 @@ def InceptionResnetV2C(data,
                        proj,
                        name,
                        scaleResidual=True):
+    import mxnet as mx
     init = data
 
     c1 = Conv(data=data, num_filter=num_1_1, name=('%s_c_1' % name), suffix='_conv')
@@ -149,6 +153,7 @@ def ReductionResnetV2A(data,
                        num_2_1,
                        num_3_1, num_3_2, num_3_3,
                        name):
+    import mxnet as mx
     ra1 = mx.sym.Pooling(data=data, kernel=(3, 3), stride=(2, 2), pool_type='max', name=('%s_%s_pool1' % ('max', name)))
 
     ra2 = Conv(data=data, num_filter=num_2_1, kernel=(3, 3), stride=(2, 2), name=('%s_ra_2' % name), suffix='_conv', withRelu=False)
@@ -169,6 +174,7 @@ def ReductionResnetV2B(data,
                        num_3_1, num_3_2,
                        num_4_1, num_4_2, num_4_3,
                        name):
+    import mxnet as mx
     rb1 = mx.sym.Pooling(data=data, kernel=(3, 3), stride=(2, 2), pool_type='max', name=('%s_%s_pool1' % ('max', name)))
 
     rb2 = Conv(data=data, num_filter=num_2_1, name=('%s_rb_2' % name), suffix='_conv_1')
@@ -246,6 +252,7 @@ def circle_in2c(data,
 
 # create inception-resnet-v2
 def get_symbol(num_classes=1000, scale=True):
+    import mxnet as mx
     # input shape 3*229*229
     data = mx.symbol.Variable(name="data")
 
