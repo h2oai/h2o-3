@@ -1517,6 +1517,9 @@ public class NewChunk extends Chunk {
   @Override boolean set_impl(int i, float f) {  return set_impl(i,(double)f); }
 
   @Override boolean set_impl(int i, String str) {
+    if (str == null) {
+      return setNA_impl(i);
+    }
     if(_is == null && _len > 0) {
       assert _sparseLen == 0;
       alloc_str_indices(_len);
