@@ -30,7 +30,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   protected BackendTrain backend;
 
   @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); }
+  public static void stall() { stall_till_cloudsize(1); Assume.assumeTrue(DeepWater.haveBackend());}
 
   @Test
   public void memoryLeakTest() {
