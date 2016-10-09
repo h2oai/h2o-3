@@ -28,9 +28,6 @@ import java.util.Map;
 public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   static protected BackendTrain backend;
-  @BeforeClass static public void _preconditionDeepWater() { // NOTE: the `_` force execution of this check after setup
-    Assume.assumeTrue(DeepWater.haveBackend());
-  }
 
   @BeforeClass
   public static void stall() { stall_till_cloudsize(1); }
