@@ -227,6 +227,7 @@ final public class DeepWaterModelInfo extends Iced {
 
       try {
         _backend = createDeepWaterBackend(parameters._backend.toString()); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+        if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
         ImageDataSet imageDataSet = getImageDataSet();
         _meanData = imageDataSet.getMeanData();
         RuntimeOptions opts = getRuntimeOptions();
@@ -332,8 +333,10 @@ final public class DeepWaterModelInfo extends Iced {
       Log.warn("No need to move the state from Java to native.");
       return;
     }
-    if (_backend ==null)
+    if (_backend ==null) {
       _backend = createDeepWaterBackend(get_params()._backend.toString()); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+      if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
+    }
 
     if (network==null) network = _network;
     if (parameters==null) parameters= _modelparams;

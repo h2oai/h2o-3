@@ -8,6 +8,7 @@ import random
 from h2o.estimators.deepwater import H2ODeepWaterEstimator
 
 def cv_cars_dw():
+  if not H2ODeepWaterEstimator.available(): return
 
   # read in the dataset and construct training set (and validation set)
   cars =  h2o.import_file(path=pyunit_utils.locate("smalldata/junit/cars_20mpg.csv"))
