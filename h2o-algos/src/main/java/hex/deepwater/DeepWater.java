@@ -24,28 +24,20 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   public DeepWater(DeepWaterParameters parms ) {
     super(parms);
     init(false);
-    //createDeepWaterBackend(parms._backend.toString());
   }
 
   public DeepWater(DeepWaterParameters parms, Key<DeepWaterModel> key ) {
     super(parms,key);
     init(false);
-    //createDeepWaterBackend(parms._backend.toString());
   }
 
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
 
   static public boolean haveBackend() {
-    boolean haveBackend = false;
     for (DeepWaterParameters.Backend b : DeepWaterParameters.Backend.values()) {
-      haveBackend |= (DeepWaterMojo.createDeepWaterBackend(b.toString()) != null);
-      if (haveBackend) break;
+      if (DeepWaterMojo.createDeepWaterBackend(b.toString()) != null) return true;
     }
-    return haveBackend;
-  }
-
-  static public boolean haveBackend(DeepWaterParameters.Backend backend) {
-    return (DeepWaterMojo.createDeepWaterBackend(backend.toString()) != null);
+    return false;
   }
 
   @Override public BuilderVisibility builderVisibility() {
