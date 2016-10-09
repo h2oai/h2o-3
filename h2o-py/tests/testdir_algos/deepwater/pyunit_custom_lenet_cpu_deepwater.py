@@ -5,8 +5,6 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators.deepwater import H2ODeepWaterEstimator
 
-import importlib
-
 def lenet(num_classes):
     import mxnet as mx
     data = mx.symbol.Variable('data')
@@ -32,7 +30,7 @@ def lenet(num_classes):
 
 
 def deepwater_custom_lenet():
-  print("Test checks if Deep Water works fine with a multiclass image dataset")
+  if not H2ODeepWaterEstimator.available(): return
 
   frame = h2o.import_file(pyunit_utils.locate("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))
   print(frame.head(5))

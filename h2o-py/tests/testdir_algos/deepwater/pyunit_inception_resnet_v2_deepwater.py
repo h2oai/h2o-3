@@ -341,7 +341,7 @@ def get_symbol(num_classes=1000, scale=True):
 
 
 def deepwater_inception_resnet_v2():
-  print("Test checks if Deep Water works fine with a multiclass image dataset")
+  if not H2ODeepWaterEstimator.available(): return
 
   frame = h2o.import_file(pyunit_utils.locate("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))
   print(frame.head(5))
