@@ -79,7 +79,7 @@ public class ChunksizeTest extends TestUtil {
                   fail = true;
                 }
 
-                if (chunkSize >= Value.MAX) {
+                if (chunkSize >= (1<<28)) { //256MB
                   msg += "LARGE ";
                   FileVec.calcOptimalChunkSize((long) totalSize, numCols, maxLineLength, cores, cloudSize, oldheuristic==1, true);
                   toolarge[oldheuristic]++;
