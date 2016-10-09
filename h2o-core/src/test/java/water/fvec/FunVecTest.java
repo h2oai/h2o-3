@@ -21,7 +21,7 @@ class Op implements Function<Long, Double> {
   }
 }
 
-public class UdfVecTest extends TestUtil {
+public class FunVecTest extends TestUtil {
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   @Test public void testSineFunction() {
