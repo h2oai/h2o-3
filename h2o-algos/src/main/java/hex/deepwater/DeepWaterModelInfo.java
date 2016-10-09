@@ -294,7 +294,7 @@ final public class DeepWaterModelInfo extends Iced {
         _network = Files.readAllBytes(path);
       } catch (IOException e) {
         e.printStackTrace();
-      } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
+      } finally { if (path!=null) path.toFile().delete(); }
     }
     // always overwrite the parameters (weights/biases)
     try {
@@ -305,7 +305,7 @@ final public class DeepWaterModelInfo extends Iced {
       _modelparams = Files.readAllBytes(path);
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
+    } finally { if (path!=null) path.toFile().delete(); }
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
   }
@@ -349,7 +349,7 @@ final public class DeepWaterModelInfo extends Iced {
       _model = _backend.buildNet(getImageDataSet(), getRuntimeOptions(), getBackendParams(), _classes, path.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
+    } finally { if (path!=null) path.toFile().delete(); }
     // always overwrite the parameters (weights/biases)
     try {
       path = Paths.get(System.getProperty("java.io.tmpdir"), Key.make().toString());
@@ -357,7 +357,7 @@ final public class DeepWaterModelInfo extends Iced {
       _backend.loadParam(_model, path.toString());
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (path!=null) try { Files.deleteIfExists(path); } catch (IOException e) { } }
+    } finally { if (path!=null) path.toFile().delete(); }
 
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));
