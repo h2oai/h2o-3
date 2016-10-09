@@ -658,9 +658,9 @@ For more information on how to use an H2O POJO, refer to the \textbf{POJO Quick 
 \subsection{Grid Search for Model Comparison} 
 \label{ssec:GridSearch}
 
-H2O supports model tuning in  grid search by allowing users to specify sets of values for parameter arguments and observe changes in model behavior. An example in R is provided below; the Python grid search API is currently in development.   
+H2O supports model tuning in  grid search by allowing users to specify sets of values for parameter arguments and observe changes in model behavior. 
 
-In this example, three different network topologies and two different $\ell_1$ norm weights are specified. This grid search model trains six different models using all possible combinations of these parameters; other parameter combinations can be specified for a larger space of models. Note that the models will most likely converge before the default value of \texttt{epochs}, since early stopping is enabled.
+In the  R and Python examples below, three different network topologies and two different $\ell_1$ norm weights are specified. This grid search model trains six different models using all possible combinations of these parameters; other parameter combinations can be specified for a larger space of models. Note that the models will most likely converge before the default value of \texttt{epochs}, since early stopping is enabled.
 
 Grid search provides more subtle insights into the model tuning and selection process by inspecting and comparing our trained models after the grid search process is complete. To learn how and when to select different parameter configurations in a grid search, refer to {\textbf{\nameref{sec:Parameters}}} for parameter descriptions and configurable values. 
 
