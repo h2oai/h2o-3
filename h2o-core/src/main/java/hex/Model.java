@@ -19,10 +19,7 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -1503,6 +1500,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             ss.getStreamWriter().writeTo(os);
             os.close();
             genmodel = MojoModel.load(filename);
+            new File(filename).delete();
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
