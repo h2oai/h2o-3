@@ -25,6 +25,7 @@ public abstract class SharedTreeModel<
         O extends SharedTreeModel.SharedTreeOutput
         > extends Model<M, P, O> implements Model.LeafNodeAssignment, Model.GetMostImportantFeatures {
   @Override public boolean haveMojo() { return true; }
+  @Override public boolean havePojo() { return true; }
 
   @Override
   public String[] getMostImportantFeatures(int n) {

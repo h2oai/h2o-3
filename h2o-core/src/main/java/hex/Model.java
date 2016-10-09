@@ -18,10 +18,7 @@ import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.util.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -88,10 +85,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public final boolean isSupervised() { return _output.isSupervised(); }
   public boolean havePojo() { return false; }
   public boolean haveMojo() { return false; }
+<<<<<<< d745e95e7fce19bfb4f75b3b9733686c43c6f521
 
   public boolean havePojo() { return true; }
   public boolean haveMojo() { return false; }
 
+=======
+>>>>>>> Cleanup of various utilities, MOJO, scoring, etc.
   public ToEigenVec getToEigenVec() { return null; }
 
   /** Model-specific parameter class.  Each model sub-class contains
@@ -1616,6 +1616,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             ss.getStreamWriter().writeTo(os);
             os.close();
             genmodel = MojoModel.load(filename);
+            new File(filename).delete();
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
