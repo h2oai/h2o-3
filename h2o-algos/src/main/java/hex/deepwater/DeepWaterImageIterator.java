@@ -9,14 +9,11 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 
-public class DeepWaterImageIterator extends DeepWaterIterator {
+class DeepWaterImageIterator extends DeepWaterIterator {
 
   public DeepWaterImageIterator(ArrayList<String> img_lst, ArrayList<Float> lable_lst, float[] meanData, int batch_size, int width, int height, int channels, boolean cache) throws IOException {
     super(batch_size, width*height*channels, cache);
@@ -46,13 +43,13 @@ public class DeepWaterImageIterator extends DeepWaterIterator {
 
   //Helper for image conversion
   //TODO: add cropping, distortion, rotation, etc.
-  public static class Conversion {
+  private static class Conversion {
     Conversion() { _dim = new Dimensions(); }
     Dimensions _dim;
     public int len() { return _dim.len(); }
   }
 
-  public static class IcedImage extends Keyed<IcedImage> {
+  static class IcedImage extends Keyed<IcedImage> {
     IcedImage(Dimensions dim, float[] data) { _dim = dim; _data = data; }
     Dimensions _dim;
     float[] _data;
@@ -81,7 +78,7 @@ public class DeepWaterImageIterator extends DeepWaterIterator {
     @Override
     public void compute2() {
       _destLabel[_index] = _label;
-      Path path = Paths.get(_file);
+      File file = new File(_file);
       try {
         final int start=_index*_conv.len();
         Key<IcedImage> imgKey = Key.make(_file + DeepWaterModel.CACHE_MARKER);
@@ -96,7 +93,7 @@ public class DeepWaterImageIterator extends DeepWaterIterator {
           }
         }
         if (!status) {
-          boolean isURL = _file.startsWith("http") && Files.notExists(path);
+          boolean isURL = _file.startsWith("http") && !file.exists();
           BufferedImage img;
           if (isURL) img = ImageIO.read(new URL(_file.trim()));
           else       img = ImageIO.read(new File(_file.trim()));
