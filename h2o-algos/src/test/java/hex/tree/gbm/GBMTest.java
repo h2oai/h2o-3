@@ -2702,6 +2702,7 @@ public class GBMTest extends TestUtil {
       if (c == Model.Parameters.CategoricalEncodingScheme.OneHotInternal) continue;
       Frame tfr = null;
       GBMModel gbm = null;
+      Frame fr2 = null;
 
       try {
         tfr = parse_test_file("./smalldata/junit/weather.csv");
@@ -2711,8 +2712,14 @@ public class GBMTest extends TestUtil {
         parms._ntrees = 5;
         parms._categorical_encoding = c;
         gbm = new GBM(parms).trainModel().get();
+        // Done building model; produce a score column with predictions
+        fr2 = gbm.score(tfr);
+
+        // Build a POJO, validate same results
+        Assert.assertTrue(gbm.testJavaScoring(tfr,fr2,1e-15));
       } finally {
         if (tfr != null) tfr.delete();
+        if (fr2 != null) fr2.delete();
         if (gbm != null) gbm.deleteCrossValidationModels();
         if (gbm != null) gbm.delete();
       }
