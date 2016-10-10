@@ -31,8 +31,8 @@ public class FunVec extends Vec {
     DKV.put(this);
   }
 
-  public FunVec(Vec v, Function<?,?> fun) throws IOException {
-    this(v.group().addVec(), v._rowLayout, fun, v);
+  public FunVec(Function<?,?> fun, Vec... dependencies) throws IOException {
+    this(dependencies[0].group().addVec(), dependencies[0]._rowLayout, fun, dependencies);
   }
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
@@ -68,14 +68,21 @@ public class FunVec extends Vec {
       this.fun=fun;
     }
 
+    private Double[] getArguments(int idx) {
+      Double[] values = new Double[dependencies.length];
+      for (int i = 0; i < dependencies.length; i++) values[i] = dependencies[i].atd(idx);
+      return values;
+    }
 
     // TODO(vlad): implement other methods, take care of type safety
     // applies the function to a row of doubles
     @SuppressWarnings("unchecked")
     @Override public double atd_impl(int idx) {
-      Double neat = (Double) fun.apply(dependencies[0].atd(idx));
+      Double[] args = getArguments(idx);
+      Double neat = (Double) ((args.length == 1) ? (Double) fun.apply(args[0]) : fun.apply(args));
       return neat == null ? Double.NaN : neat;
     }
+
 
     @Override public long at8_impl(int idx) { throw H2O.unimpl(); }
     @Override public boolean isNA_impl(int idx) { return Double.isNaN(atd_impl(idx)); }  // ouch, not quick! runs thru atd_impl

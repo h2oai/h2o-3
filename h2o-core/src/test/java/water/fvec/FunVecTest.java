@@ -1,41 +1,47 @@
 package water.fvec;
 
 import com.google.common.base.Function;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
 import water.MRTask;
 import water.TestUtil;
-import water.util.Closure;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
-class Op implements Function<Long, Double> {
-  public Double apply(Long x) {
-    return Math.sin(0.0001 * x);
-  }
-
-  @Override
-  public boolean equals(@Nullable Object object) {
-    return false;
-  }
+class Sine implements Function<Long, Double> {
+  public Double apply(Long x) { return Math.sin(0.0001 * x); }
 }
 
 public class FunVecTest extends TestUtil {
-  public FunVecTest() {}
+  static Set<Vec> registry = new HashSet<>();
 
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
+  @Before public void clean() {
+    registry.clear();
+  }
+  @After public void killem() {
+    for (Vec v : registry) v.remove();
+  }
+
+  Vec register(Vec v) { registry.add(v); return v; }
+
+  static Vec fill(long size, Function<Long, Double> fun) throws IOException {
+    Vec v = Vec.makeFromFunction(size, fun);
+    registry.add(v);
+    return v;
+  }
 
   @Test public void testSineFunction() {
-    Vec v=null;
     try {
-      v = Vec.makeFromFunction(1 << 20, new Op());
+      Vec v = fill(1 << 20, new Sine());
       int random = 44444;
       Assert.assertEquals(Math.sin(random * 0.0001), v.at(random), 0.000001);
       Function<Double, Double> sq = new Function<Double, Double>() {
         public Double apply(Double x) { return x*x;}
       };
-      Vec iv = new FunVec(v, sq);
+      Vec iv = new FunVec(sq, v);
       new MRTask() {
         @Override
         public void map(Chunk c) {
@@ -52,8 +58,30 @@ public class FunVecTest extends TestUtil {
     } catch(Exception x) {
       x.printStackTrace();
       Assert.fail("Oops, exception " + x);
-    } finally {
-      if (v != null) v.remove();
     }
+  }
+
+  @Test public void testFunctionOfTwoArgs() throws IOException {
+      Vec sines   = fill(1 << 24, new Function<Long, Double>() {
+        public Double apply(Long x) { return Math.sin(0.0001 * x); }
+      });
+      Vec cosines = fill(1 << 24, new Function<Long, Double>() {
+        public Double apply(Long x) { return Math.cos(0.0001 * x); }
+      });
+
+      Function<Double[], Double> sq = new Function<Double[], Double>() {
+        public Double apply(Double[] x) { return x[0]*x[0] + x[1]*x[1];}
+      };
+
+      Vec iv = register(new FunVec(sq, sines, cosines));
+
+      new MRTask() {
+        @Override public void map(Chunk c) {
+          for (int i = 0; i < c._len; ++i) {
+            double x = c.atd(i);
+            if (Math.abs(x - 1.0) > 0.0001) throw new RuntimeException("moo @" + c._cidx + "/" + i + " x=" + x + "; expected=1.0");
+          }
+        }
+      }.doAll(iv);
   }
 }
