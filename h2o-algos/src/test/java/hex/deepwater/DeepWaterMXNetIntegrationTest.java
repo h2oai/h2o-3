@@ -6,7 +6,6 @@ import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 import org.junit.*;
 import water.parser.BufferedString;
-import water.util.ArrayUtils;
 import water.util.StringUtils;
 
 import javax.imageio.ImageIO;
@@ -74,18 +73,33 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
     bparm.set("mini_batch_size", 1);
 
     //FIXME: make the path a resource of the package
-    BackendModel _model = backend.buildNet(id, opts, bparm, 1000, StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model-symbol.json"));
-    backend.loadParam(_model, StringUtils.expandPath("~/deepwater/backends/mxnet/Inception/model.params"));
+    BackendModel _model = backend.buildNet(id, opts, bparm, 1000, StringUtils.expandPath("~/deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/Inception_BN-symbol.json"));
+    backend.loadParam(_model, StringUtils.expandPath("~/deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/Inception_BN-0039.params"));
 
     float[] preds = backend.predict(_model, pixels);
-    int which = ArrayUtils.maxIndex(preds);
+    int K = 5;
+    int[] topK = new int[K];
+    for ( int i = 0; i < preds.length; i++ ) {
+      for ( int j = 0; j < K; j++ ) {
+        if ( preds[i] > preds[topK[j]] ) {
+          topK[j] = i;
+          break;
+        }
+      }
+    }
 
-    water.fvec.Frame labels = parse_test_file("~/deepwater/backends/mxnet/Inception/synset.txt");
 
+    water.fvec.Frame labels = parse_test_file("~/deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/synset.txt");
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("\nTop " + K + " predictions:\n");
     BufferedString str = new BufferedString();
-    String answer = labels.anyVec().atStr(str, which).toString();
-    System.out.println("\n\n" + answer +"\n\n");
+    for ( int j = 0; j < K; j++ ) {
+      String label = labels.anyVec().atStr(str, topK[j]).toString();
+      sb.append(" Score: " + String.format("%.4f", preds[topK[j]]) + "\t" + label + "\n");
+    }
+
+    System.out.println("\n\n" + sb.toString() +"\n\n");
     labels.remove();
-    Assert.assertEquals("n02113023 Pembroke", answer);
   }
 }
