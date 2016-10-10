@@ -2,6 +2,71 @@
 
 ##H2O
 
+###Turing (3.10.0.8) - 10/10/2016
+
+<h4>        Technical task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3363'>PUBDEV-3363</a>] -         R binding for new MOJO
+</li>
+</ul>
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3384'>PUBDEV-3384</a>] -         S3 API method PersistS3#uriToKey breaks expected contract
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3437'>PUBDEV-3437</a>] -         GLM multinomial with defaults fails on attached dataset
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3441'>PUBDEV-3441</a>] -         .structure() encounters list index out of bounds when nan is encountered in column
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3455'>PUBDEV-3455</a>] -         max_active_predi tors option in glm does not work anymore
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3461'>PUBDEV-3461</a>] -         Printed PCA model metrics in R is missing
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3477'>PUBDEV-3477</a>] -         R - Unnecessary JDK requirement on Windows
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3505'>PUBDEV-3505</a>] -         uuid columns with mostly missing values causes parse to fail.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-599'>HEXDEV-599</a>] -         Fold Column not available in h2o.grid
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-1943'>PUBDEV-1943</a>] -         Compute partial dependence data
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3422'>PUBDEV-3422</a>] -         Create Method to Return Columns of Specific Type
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3491'>PUBDEV-3491</a>] -         Find optimal number of clusters in K-Means
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3492'>PUBDEV-3492</a>] -         Add optional categorical encoding schemes for GBM/DRF
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3327'>PUBDEV-3327</a>] -         Tasks for completing MOJO support
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3444'>PUBDEV-3444</a>] -         Ensure functions have `h2o.*` alias in R API
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3465'>PUBDEV-3465</a>] -         Sync up functionality of download_mojo and download_pojo in R &amp; Py
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3499'>PUBDEV-3499</a>] -         Improve the stopping criterion for K-Means Lloyds iterations
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-596'>HEXDEV-596</a>] -         Encryption of H2O communication channels
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-636'>HEXDEV-636</a>] -         add option to Aggregator model to show ignored columns in output frame
+</li>
+</ul>
+
 ###Turing (3.10.0.7) - 9/19/2016
 
 <h4>        Bug
