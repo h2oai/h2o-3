@@ -19,8 +19,7 @@ test <- function() {
   # r_race_pp = partialPlot(x = prostate_rf, pred.data = prostate_df, x.var = "RACE")
   
   ## Import prostate dataset
-  prostate_path = system.file("extdata", "prostate.csv", package="h2o")
-  prostate_hex = h2o.importFile(prostate_path)
+  prostate_hex = h2o.uploadFile(locate("smalldata/logreg/prostate.csv"), "prostate.hex")
 
   ## Change CAPSULE to Enum
   prostate_hex[, "CAPSULE"] = as.factor(prostate_hex[, "CAPSULE"])
