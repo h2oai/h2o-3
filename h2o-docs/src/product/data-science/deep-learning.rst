@@ -148,6 +148,14 @@ recommended, as model performance can vary greatly.
    improve generalization. Specify one value per hidden layer. The range
    is >= 0 to <1, and the default is 0.5.
 
+-  **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
+
+  - ``auto``: Allow the algorithm to decide
+  - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
+  - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
+  - ``binary``: No more than 32 columns per categorical feature
+  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+
 -  **l1**: Specify the L1 regularization to add stability and improve
    generalization; sets the value of many weights to 0.
 

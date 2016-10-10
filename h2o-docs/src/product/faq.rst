@@ -110,6 +110,59 @@ For cluster startup, if you are not launching on Hadoop, then you will not need 
 
 --------------
 
+**What's the best approach to help diagnose a possible memory problem on a cluster?**
+
+We've found that the best way to understand JVM memory consumption is to turn on the following JVM flags:
+
+::
+
+   -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps
+
+You can then use the following tool to analyze the output: http://www.tagtraum.com/gcviewer-download.html
+
+--------------
+
+**How can I debug memory issues?**
+
+We recommend the following approach using R to debug memory issues:
+
+::
+
+   my for loop {
+    # perform loop
+
+    rm(R object that isn’t needed anymore)
+    rm(R object of h2o thing that isn’t needed anymore)
+
+    # trigger removal of h2o back-end objects that got rm’d above, since the rm can be lazy.
+    gc()
+    # optional extra one to be paranoid.  this is usually very fast.
+    gc()
+
+    # optionally sanity check that you see only what you expect to see here, and not more.
+    h2o.ls()
+
+    # tell back-end cluster nodes to do three back-to-back JVM full GCs.
+    h2o:::.h2o.garbageCollect()
+    h2o:::.h2o.garbageCollect()
+    h2o:::.h2o.garbageCollect()
+   }
+
+Note that the ``h2o.garbageCollct()`` function works as follows:
+
+::
+
+   # Trigger an explicit garbage collection across all nodes in the H2O cluster.
+   .h2o.garbageCollect <- function() {
+     res <- .h2o.__remoteSend("GarbageCollect", method = "POST")
+   }
+
+
+This tells the backend to do a forcible full-GC on each node in the H2O cluster. Doing three of them back-to-back makes it stand out clearly in the gcviewer chart where the bottom-of-inner loop is. You can then correlate what you expect to see with the X (time) axis of the memory utilization graph. 
+
+At this point you want to see if the bottom trough of the usage is growing from iteration to iteration after the triple full-GC bars in the graph. If the trough is not growing from iteration to iteration, then there is no leak; your usage is just really too much, and you need a bigger heap. If the trough is growing, then there is likely some kind of leak. You can try to use ``h2o.ls()`` to learn where the leak is. If ``h2o.ls()`` doesn't help, then you will have to drill much deeper using, for example, YourKit and reviewing the JVM-level heap profiles. 
+
+----------
 
 Algorithms
 ----------

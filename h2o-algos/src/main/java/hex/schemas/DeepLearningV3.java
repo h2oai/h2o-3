@@ -127,7 +127,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * When classes are balanced, limit the resulting dataset size to the
      * specified multiple of the original dataset size.
      */
-    @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
+    @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = false,
         help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). " +
             "Requires balance_classes.")
     public float max_after_balance_size;
@@ -136,7 +136,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      *  the confusion matrix for it to be printed. This option is meant to
      *  avoid printing extremely large confusion matrices.
      *  */
-    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = false,
         help = "Maximum size (# classes) for confusion matrices to be printed in the Logs.")
     public int max_confusion_matrix_size;
 
