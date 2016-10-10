@@ -5,7 +5,7 @@ import hex.genmodel.MojoModel;
 
 /**
  */
-public class GlrmModel extends MojoModel {
+public class GlrmMojoModel extends MojoModel {
   public int _ncolA;
   public int _ncolY;
   public int _nrowY;
@@ -17,7 +17,7 @@ public class GlrmModel extends MojoModel {
 
 
 
-  protected GlrmModel(String[] columns, String[][] domains) {
+  protected GlrmMojoModel(String[] columns, String[][] domains) {
     super(columns, domains);
   }
 
