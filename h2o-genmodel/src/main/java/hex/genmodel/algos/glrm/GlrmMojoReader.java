@@ -7,7 +7,7 @@ import java.nio.ByteBuffer;
 
 /**
  */
-public class GlrmMojoReader extends ModelMojoReader<GlrmModel> {
+public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
 
   @Override
   protected void readModelData() throws IOException {
@@ -36,8 +36,8 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmModel> {
   }
 
   @Override
-  protected GlrmModel makeModel(String[] columns, String[][] domains) {
-    return new GlrmModel(columns, domains);
+  protected GlrmMojoModel makeModel(String[] columns, String[][] domains) {
+    return new GlrmMojoModel(columns, domains);
   }
 
 }
