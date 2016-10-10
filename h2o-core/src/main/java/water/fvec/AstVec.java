@@ -67,7 +67,7 @@ public class AstVec extends Vec {
     return v;
   }
 
-  public static class AstChunk extends Chunk {
+  public static class AstChunk extends ImmutableChunk {
     public final AstRoot _fun;
     public final transient Chunk _c[];
 
@@ -99,18 +99,5 @@ public class AstVec extends Vec {
 
     @Override public long at8_impl(int idx) { throw H2O.unimpl(); }
     @Override public boolean isNA_impl(int idx) { return Double.isNaN(atd_impl(idx)); }  // ouch, not quick! runs thru atd_impl
-    // Returns true if the masterVec is missing, false otherwise
-    @Override public boolean set_impl(int idx, long l)   { return false; }
-    @Override public boolean set_impl(int idx, double d) { return false; }
-    @Override public boolean set_impl(int idx, float f)  { return false; }
-    @Override public boolean setNA_impl(int idx)         { return false; }
-    @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
-      for( int i=0; i< _len; i++ )
-        if( isNA(i) ) nc.addNA();
-        else          nc.addNum(atd(i));
-      return nc;
-    }
-    @Override protected final void initFromBytes () { throw water.H2O.fail(); }
   }
 }

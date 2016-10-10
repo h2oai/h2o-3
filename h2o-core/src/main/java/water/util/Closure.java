@@ -9,12 +9,19 @@ import java.io.IOException;
  * Encapsulates a (google) function, so we can pass it around in MoveableCode.
  */
 public class Closure<From, To> extends MoveableCode<Function<From, To>> implements Function<From, To> {
-  public Closure(Function<From, To> instance) throws IOException {
+  private final   int arity;
+
+  Closure(Function<From, To> instance, int arity) throws IOException {
     super(instance);
+    this.arity = arity;
   }
 
   public static <From, To> Closure<From, To> enclose(Function<From, To> f) throws IOException {
-    return (f instanceof Closure) ? (Closure<From, To>)f : new Closure<>(f);
+    return (f instanceof Closure) ? (Closure<From, To>)f : new Closure<>(f, 1);
+  }
+
+  public static <From, To> Closure<From[], To> enclose(Function<From[], To> f, int arity) throws IOException {
+    return (f instanceof Closure) ? (Closure<From[], To>)f : new Closure<>(f, arity);
   }
 
   @Nullable

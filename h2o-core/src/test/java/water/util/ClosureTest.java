@@ -95,10 +95,24 @@ public class ClosureTest {
   public void testClosure() throws Exception {
     Function<Integer, String> f = new SampleCode();
 
-    Closure<Integer, String> c = new Closure<>(f);
+    Closure<Integer, String> c = Closure.enclose(f);
 
     assertEquals("X=42", c.apply(42));
     assertEquals("X=12345", c.apply(12345));
+  }
+
+  @Test
+  public void testClosure2() throws Exception {
+    Function<Integer[], String> f = new Function<Integer[], String>() {
+      public String apply(Integer[] xs) {
+        return "xs={" + xs[0] + ", " + xs[1] + "}";
+      }
+    };
+
+    Closure<Integer[], String> c = Closure.enclose(f, 2);
+
+    assertEquals("xs={42, 78}", c.apply(new Integer[]{42,78}));
+    assertEquals("xs={123, 4}", c.apply(new Integer[]{123,4}));
 
   }
 

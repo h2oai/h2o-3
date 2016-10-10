@@ -14,27 +14,10 @@ import water.util.Closure;
 import java.io.IOException;
 
 /**
- * This wrapper pushes a transform down into each chunk so that
- * transformations will happen on-the-fly. When wrapped and there
- * are Op instances to be applied, the atd call will supersede the
- * usual chunk-at retrieval with a "special" atd call.
+ * This kind of Vec uses a function to calculate its values in runtime.
+ * It depends on one or more Vec instances.
  *
- * Overhead added per element fetch per chunk is another virtual call
- * per Op per element (per Chunk). As has been noted (see e.g. RollupStats),
- * virtual calls are expensive, but the memory savings are substantial.
- *
- * AutoML can freely transform columns without ramification.
- *
- * Each wrapped Vec will track its own transformations, which makes it easy
- * when generating a POJO.
- *
- * A AstVec is actually a function of one or more Vec instances.
- *
- * This class exists here so that Chunk and NewChunk don't need to become fully public
- * (since java has no friends). Other packages (not just core H2O) depend on this class!
- *
- *
- * @author spencer
+ * The function provided in serialized in Closure, to be called later on at the point of call.
  */
 public class FunVec extends Vec {
 
@@ -51,19 +34,6 @@ public class FunVec extends Vec {
   public FunVec(Vec v, Function<?,?> fun) throws IOException {
     this(v.group().addVec(), v._rowLayout, fun, v);
   }
-
-  public Vec makeVec() {
-    Vec v  = new MRTask() {
-      @Override public void map(Chunk c, NewChunk nc) {
-        for(int i=0;i<c._len;++i)
-          nc.addNum(c.atd(i));
-      }
-    }.doAll(Vec.T_NUM,this).outputFrame().anyVec();
-    remove();
-    return v;
-  }
-
-
 
   @Override public Chunk chunkForChunkIdx(int cidx) {
     Chunk[] cs = new Chunk[dependencies.length];
@@ -82,17 +52,18 @@ public class FunVec extends Vec {
     }
   }
 
-  public static class FunChunk extends Chunk {
+  public static class FunChunk extends ImmutableChunk {
     public final Closure fun;
     public final transient Chunk dependencies[];
-
-//    private final Env _env;
 
     FunChunk(Closure fun, Vec vec, Chunk... c) {
 
       // set all the chunk fields
-      dependencies = c; set_len(dependencies[0]._len);
-      _start = dependencies[0]._start; _vec = vec; _cidx = dependencies[0]._cidx;
+      dependencies = c;
+      set_len(dependencies[0]._len);
+      _start = dependencies[0]._start;
+      _vec = vec;
+      _cidx = dependencies[0]._cidx;
 
       this.fun=fun;
     }
@@ -108,18 +79,5 @@ public class FunVec extends Vec {
 
     @Override public long at8_impl(int idx) { throw H2O.unimpl(); }
     @Override public boolean isNA_impl(int idx) { return Double.isNaN(atd_impl(idx)); }  // ouch, not quick! runs thru atd_impl
-    // Returns true if the masterVec is missing, false otherwise
-    @Override public boolean set_impl(int idx, long l)   { return false; }
-    @Override public boolean set_impl(int idx, double d) { return false; }
-    @Override public boolean set_impl(int idx, float f)  { return false; }
-    @Override public boolean setNA_impl(int idx)         { return false; }
-    @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
-      for( int i=0; i< _len; i++ )
-        if( isNA(i) ) nc.addNA();
-        else          nc.addNum(atd(i));
-      return nc;
-    }
-    @Override protected final void initFromBytes () { throw H2O.fail(); }
   }
 }
