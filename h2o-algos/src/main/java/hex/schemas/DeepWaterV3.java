@@ -371,8 +371,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     public String mean_image_file;
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT,
-        help = "Path (prefix) where to export the native model after every iteration.")
-    public String export_native_model_prefix;
+        help = "Path (prefix) where to export the native model parameters after every iteration.")
+    public String export_native_parameters_prefix;
 
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
         help = "If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.")
