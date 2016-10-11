@@ -27,8 +27,8 @@ public class DeepWaterMojo extends MojoModel {
   public final double[] _normSub;
   public final boolean _useAllFactorLevels;
 
-  final protected byte[] _network;
-  final protected byte[] _parameters;
+  transient final protected byte[] _network;
+  transient final protected byte[] _parameters;
 
   final BackendTrain _backend; //interface provider
   final BackendModel _model;  //pointer to C++ process
@@ -103,11 +103,14 @@ public class DeepWaterMojo extends MojoModel {
     assert(doubles != null) : "doubles are null";
     float[] floats = null;
     int cats = _catOffsets == null ? 0 : _catOffsets[_cats];
-    if (_nums > 0)
+    if (_nums > 0) {
       floats = new float[_nums + cats]; //TODO: use thread-local storage
-    else
-      floats = new float[_width*_height*_channels]; //TODO: use thread-local storage
-    GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, _normMul, _normSub, _useAllFactorLevels);
+      GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, _normMul, _normSub, _useAllFactorLevels);
+    } else {
+      floats = new float[doubles.length];
+      for (int i=0; i<floats.length; ++i)
+        floats[i] = (float)doubles[i];
+    }
 //    System.err.println(Arrays.toString(doubles));
 //    System.err.println(Arrays.toString(floats));
     float[] predFloats = _backend.predict(_model, floats);
