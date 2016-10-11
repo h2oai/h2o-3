@@ -101,7 +101,12 @@ public class DeepWaterMojo extends MojoModel {
   @Override
   public final double[] score0(double[] doubles, double offset, double[] preds) {
     assert(doubles != null) : "doubles are null";
-    float[] floats = new float[_nums + _catOffsets[_cats]]; //TODO: use thread-local storage
+    float[] floats = null;
+    int cats = _catOffsets == null ? 0 : _catOffsets[_cats];
+    if (_nums > 0)
+      floats = new float[_nums + cats]; //TODO: use thread-local storage
+    else
+      floats = new float[_width*_height*_channels]; //TODO: use thread-local storage
     GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, _normMul, _normSub, _useAllFactorLevels);
 //    System.err.println(Arrays.toString(doubles));
 //    System.err.println(Arrays.toString(floats));
