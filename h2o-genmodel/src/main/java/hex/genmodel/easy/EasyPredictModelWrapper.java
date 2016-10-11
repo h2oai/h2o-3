@@ -2,12 +2,18 @@ package hex.genmodel.easy;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
+import hex.genmodel.algos.DeepWaterMojo;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.exception.PredictUnknownTypeException;
 import hex.genmodel.easy.exception.PredictWrongModelCategoryException;
 import hex.genmodel.easy.prediction.*;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -420,7 +426,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     }
   }
 
-  private void fillRawData(RowData data, double[] rawData) throws PredictException {
+  private double[] fillRawData(RowData data, double[] rawData) throws PredictException {
     for (String dataColumnName : data.keySet()) {
       Integer index = modelColumnNameToIndexMap.get(dataColumnName);
 
@@ -441,6 +447,29 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         }
         else if (o instanceof Double) {
           value = (Double) o;
+        }
+        else if (o instanceof byte[]) {
+          InputStream is = new ByteArrayInputStream((byte[])o);
+          BufferedImage img = null;
+          try {
+            img = ImageIO.read(is);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          DeepWaterMojo dwm = (DeepWaterMojo)m;
+          int W=dwm._width;
+          int H=dwm._height;
+          int C=dwm._channels;
+          float[] _destData = new float[W*H*C];
+          try {
+            GenModel.img2pixels(img, W, H, C, _destData, 0, null);
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          rawData = new double[_destData.length];
+          for (int i=0; i<rawData.length; ++i)
+            rawData[i] = _destData[i];
+          return rawData;
         }
         else {
           throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
@@ -479,12 +508,13 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         }
       }
     }
+    return rawData;
   }
 
   private double[] predict(RowData data, double[] preds) throws PredictException {
     double[] rawData = new double[m.nfeatures()];
     setToNaN(rawData);
-    fillRawData(data, rawData);
+    rawData = fillRawData(data, rawData);
     preds = m.score0(rawData, preds);
     return preds;
   }
