@@ -36,7 +36,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "stopping_metric", "stopping_tolerance", "max_runtime_secs", "replicate_training_data",
                       "single_node_mode", "shuffle_training_data", "mini_batch_size", "clip_gradient", "network",
                       "backend", "image_shape", "channels", "gpu", "device_id", "network_definition_file",
-                      "network_parameters_file", "mean_image_file", "export_native_model_prefix", "activation",
+                      "network_parameters_file", "mean_image_file", "export_native_parameters_prefix", "activation",
                       "hidden", "input_dropout_ratio", "hidden_dropout_ratios"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
