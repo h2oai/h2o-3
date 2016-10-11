@@ -229,6 +229,8 @@ public abstract class Chunk extends Iced<Chunk> {
     throw new ArrayIndexOutOfBoundsException(""+_start+" <= "+i+" < "+(_start+ _len));
   }
 
+  Chunk compress(){return this;}
+
   /** Load a {@code double} value using absolute row numbers.  Returns
    *  Double.NaN if value is missing.
    *
@@ -315,6 +317,16 @@ public abstract class Chunk extends Iced<Chunk> {
    *  missing.
    *  @return long value at the given row, or throw if the value is missing */
   public final long at8(int i) { return _chk2 == null ? at8_impl(i) : _chk2. at8_impl(i); }
+  public final int at4(int i) {
+    return _chk2 == null ? at4_impl(i) : _chk2.at4_impl(i);
+  }
+
+  public int at4_impl(int i) {
+    long l = at8_impl(i);
+    int x = (int)l;
+    if(x != l) throw new IllegalArgumentException("Value does not fit into int.");
+    return x;
+  }
 
   /** Missing value status using chunk-relative row numbers.
    *
@@ -559,7 +571,7 @@ public abstract class Chunk extends Iced<Chunk> {
     if( this  instanceof NewChunk ) _chk2 = this;
     if( _chk2 == null ) return fs;          // No change?
     if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
-    DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
+    DKV.put(_vec.newChunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
     return fs;
   }
 
@@ -651,11 +663,6 @@ public abstract class Chunk extends Iced<Chunk> {
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls8 array.   */
   public abstract NewChunk inflate_impl(NewChunk nc);
-
-  /** Return the next Chunk, or null if at end.  Mostly useful for parsers or
-   *  optimized stencil calculations that want to "roll off the end" of a
-   *  Chunk, but in a highly optimized way. */
-  public Chunk nextChunk( ) { return _vec.nextChunk(this); }
 
   /** @return String version of a Chunk, currently just the class name */
   @Override public String toString() { return getClass().getSimpleName(); }

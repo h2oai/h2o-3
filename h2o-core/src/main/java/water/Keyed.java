@@ -7,6 +7,7 @@ import water.fvec.*;
 public abstract class Keyed<T extends Keyed> extends Iced<T> {
   /** Key mapping a Value which holds this object; may be null  */
   public Key<T> _key;
+
   public Keyed() { _key = null; } // NOTE: every Keyed that can come out of the REST API has to have a no-arg constructor.
   public Keyed( Key<T> key ) { _key = key; }
 

@@ -782,6 +782,9 @@ public class Vec extends Keyed<Vec> {
     return lo;
   }
 
+  public int numCols(){throw H2O.unimpl();}
+  public int numRows(){throw H2O.unimpl();}
+
   /** Get a Vec Key from Chunk Key, without loading the Chunk.
    *  @return the Vec Key for the Chunk Key */
   public static Key getVecKey( Key chk_key ) {
@@ -792,19 +795,31 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
+  private transient ThreadLocal<Key> _keyTemplate = new ThreadLocal<>();
+
+  protected Key keyTemplate(){
+    Key k = _keyTemplate.get();
+    if(k == null)_keyTemplate.set(k = Key.make(_key._kb.clone()));
+    return k;
+  }
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index */
-  public Key chunkKey(int cidx ) { return chunkKey(_key,cidx); }
+  protected Key chunkKey(int cidx ) { return chunkKey(keyTemplate(),cidx); }
+
+  public Key newChunkKey(int cidx ) {
+    return chunkKey(Key.make(_key._kb.clone()),cidx);
+  }
 
   /** Get a Chunk Key from a chunk-index and a Vec Key, without needing the
    *  actual Vec object.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index and Vec Key */
   public static Key chunkKey(Key veckey, int cidx ) {
-    byte [] bits = veckey._kb.clone();
+    byte [] bits = veckey._kb;
     bits[0] = Key.CHK;
     UnsafeUtils.set4(bits, 6, cidx); // chunk#
-    return Key.make(bits);
+    return veckey;
   }
+
   // Filled in lazily and racily... but all writers write the exact identical Key
   public Key rollupStatsKey() { 
     if( _rollupStatsKey==null ) _rollupStatsKey=chunkKey(-2);
@@ -824,14 +839,6 @@ public class Vec extends Keyed<Vec> {
     if( val != null ) return true;
     Log.err("Error: Missing chunk " + cidx + " for " + _key);
     return false;
-  }
-
-  /** Return the next Chunk, or null if at end.  Mostly useful for parsers or
-   *  optimized stencil calculations that want to "roll off the end" of a
-   *  Chunk, but in a highly optimized way. */
-  Chunk nextChunk( Chunk prior ) {
-    int cidx = elem2ChunkIdx(prior._start)+1;
-    return cidx < nChunks() ? chunkForChunkIdx(cidx) : null;
   }
 
   /** Make a new random Key that fits the requirements for a Vec key. 
@@ -872,6 +879,12 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
+  Futures closeChunk(int cidx, ChunkAry c, Futures fs){
+    Key k = newChunkKey(cidx);
+    DKV.put(k,new DBlock(c._cs, c._ids),fs);
+    return fs;
+  }
+
   /** Get the group this vector belongs to.  In case of a group with only one
    *  vector, the object actually does not exist in KV store.  This is the ONLY
    *  place VectorGroups are fetched.
@@ -886,49 +899,59 @@ public class Vec extends Keyed<Vec> {
   /** The Chunk for a chunk#.  Warning: this pulls the data locally; using this
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a chunk# */
-  public Chunk chunkForChunkIdx(int cidx) {
-    long start = chunk2StartElem(cidx); // Chunk# to chunk starting element#
-    Value dvec = chunkIdx(cidx);        // Chunk# to chunk data
-    Chunk c = dvec.get();               // Chunk data to compression wrapper
-    long cstart = c._start;             // Read once, since racily filled in
-    Vec v = c._vec;
-    int tcidx = c._cidx;
-    if( cstart == start && v != null && tcidx == cidx)
-      return c;                       // Already filled-in
-    assert cstart == -1 || v == null || tcidx == -1; // Was not filled in (everybody racily writes the same start value)
-    c._vec = this;             // Fields not filled in by unpacking from Value
-    c._start = start;          // Fields not filled in by unpacking from Value
-    c._cidx = cidx;
-    return c;
+  public ChunkAry chunkForChunkIdx(int cidx) {
+    DBlock data = chunkIdx(cidx).get();        // Chunk# to chunk data
+    return new ChunkAry(this,cidx,data._cs,data._ids);
   }
 
   /** The Chunk for a row#.  Warning: this pulls the data locally; using this
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a row# */
-  public final Chunk chunkForRow(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
+  public final ChunkAry chunkForRow(long i) { return chunkForChunkIdx(elem2ChunkIdx(i)); }
 
   // ======= Direct Data Accessors ======
+
 
   /** Fetch element the slow way, as a long.  Floating point values are
    *  silently rounded to an integer.  Throws if the value is missing. 
    *  @return {@code i}th element as a long, or throw if missing */
-  public final long  at8( long i ) { return chunkForRow(i).at8_abs(i); }
+  public final long  at8( long i) { return at8(i,0); }
+  public final long  at8( long i, int j ) {
+    ChunkAry ary = chunkForRow(i);
+    return ary.at8(ary.chunkRelativeOffset(i),j);
+  }
 
   /** Fetch element the slow way, as a double, or Double.NaN is missing.
    *  @return {@code i}th element as a double, or Double.NaN if missing */
-  public final double at( long i ) { return chunkForRow(i).at_abs(i); }
+  public final double at( long i) { return at(i,0); }
+  public final double at( long i, int j ) {
+    ChunkAry ary = chunkForRow(i);
+    return ary.atd(ary.chunkRelativeOffset(i),j);
+  }
   /** Fetch the missing-status the slow way. 
    *  @return the missing-status the slow way */
-  public final boolean isNA(long row){ return chunkForRow(row).isNA_abs(row); }
+  public final boolean isNA(long i){ return isNA(i,0); }
+  public final boolean isNA(long i, int j){
+    ChunkAry ary = chunkForRow(i);
+    return ary.isNA(ary.chunkRelativeOffset(i),j);
+  }
 
   /** Fetch element the slow way, as the low half of a UUID.  Throws if the
    *  value is missing or not a UUID.
    *  @return {@code i}th element as a UUID low half, or throw if missing */
-  public final long  at16l( long i ) { return chunkForRow(i).at16l_abs(i); }
+  public final long  at16l( long i) {return at16l(i,0);}
+  public final long  at16l( long i , int j) {
+    ChunkAry ary = chunkForRow(i);
+    return ary.at16l(ary.chunkRelativeOffset(i),j);
+  }
   /** Fetch element the slow way, as the high half of a UUID.  Throws if the
    *  value is missing or not a UUID.
    *  @return {@code i}th element as a UUID high half, or throw if missing */
-  public final long  at16h( long i ) { return chunkForRow(i).at16h_abs(i); }
+  public final long  at16h( long i) {return at16h(i,0);}
+  public final long  at16h( long i, int j ) {
+    ChunkAry ary = chunkForRow(i);
+    return ary.at16h(ary.chunkRelativeOffset(i),j);
+  }
 
   /** Fetch element the slow way, as a {@link BufferedString} or null if missing.
    *  Throws if the value is not a String.  BufferedStrings are String-like
@@ -936,7 +959,11 @@ public class Vec extends Keyed<Vec> {
    *  constructing Strings.
    *  @return {@code i}th element as {@link BufferedString} or null if missing, or
    *  throw if not a String */
-  public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).atStr_abs(bStr, i); }
+  public final BufferedString atStr( BufferedString bStr, long i) {return atStr(bStr,i,0);}
+  public final BufferedString atStr( BufferedString bStr, long i, int j ) {
+    ChunkAry ck = chunkForRow(i);
+    return ck.atStr(bStr, ck.chunkRelativeOffset(i),j);
+  }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,
    *  but much faster than Vec.at(i).  Limited to single-threaded
@@ -949,14 +976,26 @@ public class Vec extends Keyed<Vec> {
    * z = vr.at(2);
    */
   public final class Reader {
-    private Chunk _cache;
-    private Chunk chk(long i) {
-      Chunk c = _cache;
-      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
+    private ChunkAry _cache;
+    private ChunkAry chk(long i) {
+      ChunkAry c = _cache;
+      return (c != null && c.start() <= i && i < c.start()+ c._numRows) ? c : (_cache = chunkForRow(i));
     }
-    public final long    at8( long i ) { return chk(i). at8_abs(i); }
-    public final double   at( long i ) { return chk(i).  at_abs(i); }
-    public final boolean isNA(long i ) { return chk(i).isNA_abs(i); }
+    public final long    at8( long i) { return at8(i,0); }
+    public final long    at8( long i, int j ) {
+      ChunkAry ck = chk(i);
+      return ck.at8(ck.chunkRelativeOffset(i),j);
+    }
+    public final double   at( long i) { return at(i,0);}
+    public final double   at( long i, int j ) {
+      ChunkAry ck = chk(i);
+      return ck.atd(ck.chunkRelativeOffset(i),j);
+    }
+    public final boolean isNA(long i) {return isNA(i,0);}
+    public final boolean isNA(long i, int j) {
+      ChunkAry ck = chk(i);
+      return ck.isNA(ck.chunkRelativeOffset(i),j);
+    }
     public final long length() { return Vec.this.length(); }
   }
 
@@ -965,41 +1004,41 @@ public class Vec extends Keyed<Vec> {
    *  if the long does not fit in a double (value is larger magnitude than
    *  2^52), AND float values are stored in Vec.  In this case, there is no
    *  common compatible data representation.  */
-  public final void set( long i, long l) {
-    Chunk ck = chunkForRow(i);
-    ck.set_abs(i, l);
-    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  public final void set( long i, long l) {set(i,0,l);}
+  public final void set( long i, int j, long l) {
+    ChunkAry ck = chunkForRow(i);
+    ck.set(ck.chunkRelativeOffset(i),j, l);
+    postWrite(ck.close(new Futures())).blockForPending();
   }
 
   /** Write element the slow way, as a double.  Double.NaN will be treated as a
    *  set of a missing element. */
-  public final void set( long i, double d) {
-    Chunk ck = chunkForRow(i);
-    ck.set_abs(i, d);
-    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  public final void set( long i, double d) {set(i,0,d);}
+  public final void set( long i, int j, double d) {
+    ChunkAry ck = chunkForRow(i);
+    ck.set(ck.chunkRelativeOffset(i), j, d);
+    postWrite(ck.close(new Futures())).blockForPending();
   }
 
   /** Write element the slow way, as a float.  Float.NaN will be treated as a
    *  set of a missing element. */
-  public final void set( long i, float  f) {
-    Chunk ck = chunkForRow(i);
-    ck.set_abs(i, f);
-    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
-  }
+  public final void set( long i, float  f) {set(i,(double)f);}
 
+  final void setNA( long i) { setNA(i,0);}
   /** Set the element as missing the slow way.  */
-  final void setNA( long i ) {
-    Chunk ck = chunkForRow(i);
-    ck.setNA_abs(i);
-    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  final void setNA( long i, int j ) {
+    ChunkAry ck = chunkForRow(i);
+    ck.setNA(ck.chunkRelativeOffset(i),j);
+    postWrite(ck.close(new Futures())).blockForPending();
   }
 
   /** Write element the slow way, as a String.  {@code null} will be treated as a
    *  set of a missing element. */
-  public final void set( long i, String str) {
-    Chunk ck = chunkForRow(i);
-    ck.set_abs(i, str);
-    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  public final void set( long i, String str) {set(i,0,str);}
+  public final void set( long i, int j, String str) {
+    ChunkAry ck = chunkForRow(i);
+    ck.set(ck.chunkRelativeOffset(i), j,str);
+    postWrite(ck.close(new Futures())).blockForPending();
   }
 
   /** A more efficient way to write randomly to a Vec - still single-threaded,
@@ -1014,17 +1053,40 @@ public class Vec extends Keyed<Vec> {
    * }
    */
   public final class Writer implements java.io.Closeable {
-    private Chunk _cache;
-    private Chunk chk(long i) {
-      Chunk c = _cache;
-      return (c != null && c.chk2()==null && c._start <= i && i < c._start+ c._len) ? c : (_cache = chunkForRow(i));
+    private ChunkAry _cache;
+    int _j;
+    private ChunkAry chk(long i) {
+      ChunkAry c = _cache;
+      return (c != null && c.start() <= i && i < c.start()+ c._numRows) ? c : (_cache = chunkForRow(i));
     }
-    private Writer() { preWriting(); }
-    public final void set( long i, long   l) { chk(i).set_abs(i, l); }
-    public final void set( long i, double d) { chk(i).set_abs(i, d); }
-    public final void set( long i, float  f) { chk(i).set_abs(i, f); }
-    public final void setNA( long i        ) { chk(i).setNA_abs(i); }
-    public final void set( long i,String str){ chk(i).set_abs(i, str); }
+    private Writer() { this(0);}
+    private Writer(int j) { preWriting(); }
+
+    public final void set( long i, long   l) { set(i,_j,l);}
+    public final void set( long i, int j, long   l) {
+      ChunkAry ck = chk(i);
+      ck.set(ck.chunkRelativeOffset(i),j, l);
+    }
+    public final void set( long i, double   d) { set(i,_j,d);}
+    public final void set( long i, int j, double d) {
+      ChunkAry ck = chk(i);
+      ck.set(ck.chunkRelativeOffset(i),j, d);
+    }
+    public final void set( long i, float  f) { set(i,f);}
+    public final void set( long i, int j, float  f) {
+      ChunkAry ck = chk(i);
+      ck.set(ck.chunkRelativeOffset(i),j, f);
+    }
+    public final void setNA( long i        ) { setNA(i,_j); }
+    public final void setNA( long i, int j) {
+      ChunkAry ck = chk(i);
+      ck.setNA(ck.chunkRelativeOffset(i),j);
+    }
+    public final void set( long i,String str){ set(i,_j,str); }
+    public final void set( long i,int j, String str){
+      ChunkAry ck = chk(i);
+      ck.set(ck.chunkRelativeOffset(i),j,str);
+    }
     public Futures close(Futures fs) { return postWrite(closeLocal(fs)); }
     public void close() { close(new Futures()).blockForPending(); }
   }
@@ -1039,7 +1101,7 @@ public class Vec extends Keyed<Vec> {
     int nc = nChunks();
     for( int i=0; i<nc; i++ )
       if( H2O.containsKey(chunkKey(i)) )
-        chunkForChunkIdx(i).close(i, fs);
+        chunkForChunkIdx(i).close(fs);
     return fs;                  // Flow-coding
   }
 
@@ -1166,6 +1228,17 @@ public class Vec extends Keyed<Vec> {
     return new CategoricalWrappedVec(group().addVec(),_rowLayout,domain,this._key);
   }
 
+
+  public static Key<Vec> setVecId(Key groupKey, int vecId){
+    UnsafeUtils.set4(groupKey._kb,2,vecId);
+    return groupKey;
+  }
+
+  public static Key<Vec> setChunkId(Key vecKey, int chunkId){
+    UnsafeUtils.set4(vecKey._kb,6,chunkId);
+    return vecKey;
+  }
+
   /** Class representing the group of vectors.
    *
    *  Vectors from the same group have same distribution of chunks among nodes.
@@ -1224,6 +1297,8 @@ public class Vec extends Keyed<Vec> {
       UnsafeUtils.set4(bits,2,vecId);
       return Key.make(bits);
     }
+
+
 
     /** Task to atomically add vectors into existing group.
      *  @author tomasnykodym   */

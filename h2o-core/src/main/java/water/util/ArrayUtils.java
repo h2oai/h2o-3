@@ -1132,6 +1132,13 @@ public class ArrayUtils {
     assert i == aIds.length && j == bIds.length;
   }
 
+  public static <T> T[]  select(T[] ary, int[] idxs) {
+    T [] res  = Arrays.copyOf(ary,idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
+
   public static String[] select(String[] ary, int[] idxs) {
     String [] res  = new String[idxs.length];
     for(int i = 0; i < res.length; ++i)
@@ -1141,6 +1148,13 @@ public class ArrayUtils {
 
   public static double[] select(double[] ary, int[] idxs) {
     double [] res = MemoryManager.malloc8d(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = ary[idxs[i]];
+    return res;
+  }
+
+  public static int[] select(int[] ary, int[] idxs) {
+    int [] res = MemoryManager.malloc4(idxs.length);
     for(int i = 0; i < res.length; ++i)
       res[i] = ary[idxs[i]];
     return res;
@@ -1551,5 +1565,21 @@ public class ArrayUtils {
       if (value == lhValue) return true;
     }
     return false;
+  }
+
+  public static final class IntAry {
+    int [] _ary = new int[4];
+    int _sz;
+    public void add(int i){
+      if(_sz == _ary.length)
+        _ary = Arrays.copyOf(_ary,Math.max(4,_ary.length*2));
+      _ary[_sz++] = i;
+    }
+    public int get(int i){
+      if(i >= _sz) throw new ArrayIndexOutOfBoundsException(i);
+      return _ary[i];
+    }
+    public int size(){return _sz;}
+    public int[] toArray(){return Arrays.copyOf(_ary,_sz);}
   }
 }

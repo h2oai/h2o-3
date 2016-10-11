@@ -269,6 +269,12 @@ public class NewChunk extends Chunk {
   private int _sparseRatio = MIN_SPARSE_RATIO;
   public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
 
+  public NewChunk() {
+    _vec = null;
+    _cidx = -1;
+    _ms = new Mantissas(4);
+    _xs = new Exponents(4);
+  }
   public NewChunk( Vec vec, int cidx ) {
     _vec = vec; _cidx = cidx;
     _ms = new Mantissas(4);
@@ -1012,6 +1018,7 @@ public class NewChunk extends Chunk {
 
   // Study this NewVector and determine an appropriate compression scheme.
   // Return the data so compressed.
+  @Override
   public Chunk compress() {
     Chunk res = compress2();
     byte type = type();
