@@ -31,75 +31,81 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
   @Ignore
   @Test
   public void inceptionPredictionMX() throws IOException {
-    File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
-    BufferedImage img = ImageIO.read(imgFile);
+    for (boolean gpu : new boolean[]{true, false}) {
 
-    int w = 224, h = 224;
+      // Set model parameters
+      int w = 224, h = 224, channels = 3;
+      ImageDataSet id = new ImageDataSet(w,h,channels);
+      RuntimeOptions opts = new RuntimeOptions();
+      opts.setSeed(1234);
+      opts.setUseGPU(gpu);
+      BackendParams bparm = new BackendParams();
+      bparm.set("mini_batch_size", 1);
 
-    BufferedImage scaledImg = new BufferedImage(w, h, img.getType());
+      // Load the model
+//    File file = new File(getClass().getClassLoader().getResource("deepwater/backends/mxnet/models/Inception/synset.txt").getFile()); //FIXME: Use the model in the resource
+      String path = "../deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/";
+      BackendModel _model = backend.buildNet(id, opts, bparm, 1000, StringUtils.expandPath(path + "Inception_BN-symbol.json"));
+      backend.loadParam(_model, StringUtils.expandPath(path + "Inception_BN-0039.params"));
+      water.fvec.Frame labels = parse_test_file(path + "synset.txt");
+      float[] mean = backend.loadMeanImage(_model, path + "mean_224.nd");
 
-    Graphics2D g2d = scaledImg.createGraphics();
-    g2d.drawImage(img, 0, 0, w, h, null);
-    g2d.dispose();
-
-    float[] pixels = new float[w * h * 3];
-
-    int r_idx = 0;
-    int g_idx = r_idx + w * h;
-    int b_idx = g_idx + w * h;
-
-    for (int i = 0; i < h; i++) {
-      for (int j = 0; j < w; j++) {
-        Color mycolor = new Color(scaledImg.getRGB(j, i));
-        int red = mycolor.getRed();
-        int green = mycolor.getGreen();
-        int blue = mycolor.getBlue();
-        pixels[r_idx] = red-117; r_idx++; //FIXME: Hardcoded mean image RGB values
-        pixels[g_idx] = green-117; g_idx++;
-        pixels[b_idx] = blue-117; b_idx++;
-      }
-    }
-
-    // the path to Inception model
-    //ImageTrain m = new ImageTrain(224,224,3);
-    //m.buildNet(1000,1,"inception_bn");
-    ImageDataSet id = new ImageDataSet(224,224,3);
-
-    RuntimeOptions opts = new RuntimeOptions();
-    opts.setSeed(1234);
-    opts.setUseGPU(false); //FIXME: Fails when set to true (i.e., running on the GPU) due to BatchNormalization issues?
-
-    BackendParams bparm = new BackendParams();
-    bparm.set("mini_batch_size", 1);
-
-    //FIXME: make the path a resource of the package
-    BackendModel _model = backend.buildNet(id, opts, bparm, 1000, StringUtils.expandPath("~/deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/Inception_BN-symbol.json"));
-    backend.loadParam(_model, StringUtils.expandPath("~/deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/Inception_BN-0039.params"));
-
-    float[] preds = backend.predict(_model, pixels);
-    int K = 5;
-    int[] topK = new int[K];
-    for ( int i = 0; i < preds.length; i++ ) {
-      for ( int j = 0; j < K; j++ ) {
-        if ( preds[i] > preds[topK[j]] ) {
-          topK[j] = i;
-          break;
+      // Turn the image into a vector of the correct size
+      File imgFile = find_test_file("smalldata/deepwater/imagenet/test2.jpg");
+      BufferedImage img = ImageIO.read(imgFile);
+      BufferedImage scaledImg = new BufferedImage(w, h, img.getType());
+      Graphics2D g2d = scaledImg.createGraphics();
+      g2d.drawImage(img, 0, 0, w, h, null);
+      g2d.dispose();
+      float[] pixels = new float[w * h * channels];
+      int r_idx = 0;
+      int g_idx = r_idx + w * h;
+      int b_idx = g_idx + w * h;
+      for (int i = 0; i < h; i++) {
+        for (int j = 0; j < w; j++) {
+          Color mycolor = new Color(scaledImg.getRGB(j, i));
+          int red = mycolor.getRed();
+          int green = mycolor.getGreen();
+          int blue = mycolor.getBlue();
+          pixels[r_idx] = red - mean[r_idx];
+          r_idx++;
+          pixels[g_idx] = green - mean[g_idx];
+          g_idx++;
+          pixels[b_idx] = blue - mean[b_idx];
+          b_idx++;
         }
       }
+      float[] preds = backend.predict(_model, pixels);
+      int K = 5;
+      int[] topK = new int[K];
+      for ( int i = 0; i < preds.length; i++ ) {
+        for ( int j = 0; j < K; j++ ) {
+          if ( preds[i] > preds[topK[j]] ) {
+            topK[j] = i;
+            break;
+          }
+        }
+      }
+
+      // Display the top 5 predictions
+      StringBuilder sb = new StringBuilder();
+      sb.append("\nTop " + K + " predictions:\n");
+      BufferedString str = new BufferedString();
+      for ( int j = 0; j < K; j++ ) {
+        String label = labels.anyVec().atStr(str, topK[j]).toString();
+        sb.append(" Score: " + String.format("%.4f", preds[topK[j]]) + "\t" + label + "\n");
+      }
+      System.out.println("\n\n" + sb.toString() +"\n\n");
+      String expected =
+      "\n" +
+          "Top 5 predictions:\n" +
+          " Score: 0.6647\tn02113023 Pembroke\n" +
+          " Score: 0.0309\tn02112018 Pomeranian\n" +
+          " Score: 0.0179\tn02115641 dingo\n" +
+          " Score: 0.0028\tn03803284 muzzle\n" +
+          " Score: 0.0018\tn02342885 hamster\n";
+      Assert.assertTrue("Illegal predictions!", expected.equals(sb.toString()));
+      labels.remove();
     }
-
-
-    water.fvec.Frame labels = parse_test_file("~/deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/synset.txt");
-
-    StringBuilder sb = new StringBuilder();
-    sb.append("\nTop " + K + " predictions:\n");
-    BufferedString str = new BufferedString();
-    for ( int j = 0; j < K; j++ ) {
-      String label = labels.anyVec().atStr(str, topK[j]).toString();
-      sb.append(" Score: " + String.format("%.4f", preds[topK[j]]) + "\t" + label + "\n");
-    }
-
-    System.out.println("\n\n" + sb.toString() +"\n\n");
-    labels.remove();
   }
 }
