@@ -8,7 +8,6 @@ import deepwater.datasets.ImageDataSet;
 import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
-import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
 import hex.splitframe.ShuffleSplitFrame;
 import org.junit.*;
 import water.*;
@@ -154,9 +153,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Ignore
   @Test public void convergenceResnetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.resnet, 50); }
 
-  @Ignore // FIXME - bad network definition?
+  @Ignore
   @Test public void convergenceAlexnetColor() { checkConvergence(3, DeepWaterParameters.Network.alexnet, 50); }
-  @Ignore // FIXME - bad network definition?
+  @Ignore
   @Test public void convergenceAlexnetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.alexnet, 50); }
 
   //FIXME
