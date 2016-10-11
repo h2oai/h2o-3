@@ -1,10 +1,12 @@
-package hex.genmodel.algos;
+package hex.genmodel.algos.drf;
+
+import hex.genmodel.algos.tree.SharedTreeMojoReader;
 
 import java.io.IOException;
 
 /**
  */
-public class DrfMojoReader extends TreeMojoReader<DrfModel> {
+public class DrfMojoReader extends SharedTreeMojoReader<DrfMojoModel> {
 
   @Override
   protected void readModelData() throws IOException {
@@ -14,7 +16,7 @@ public class DrfMojoReader extends TreeMojoReader<DrfModel> {
   }
 
   @Override
-  protected DrfModel makeModel(String[] columns, String[][] domains) {
-    return new DrfModel(columns, domains);
+  protected DrfMojoModel makeModel(String[] columns, String[][] domains) {
+    return new DrfMojoModel(columns, domains);
   }
 }

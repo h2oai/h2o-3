@@ -1,19 +1,18 @@
-package hex.genmodel.algos;
+package hex.genmodel.algos.tree;
 
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.drf.DrfMojoModel;
+import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
-import hex.genmodel.utils.NaSplitDir;
 
-import java.io.IOException;
 import java.util.Arrays;
-import java.util.Map;
 
 /**
- * Common ancestor for {@link DrfModel} and {@link GbmModel}.
+ * Common ancestor for {@link DrfMojoModel} and {@link GbmMojoModel}.
  * See also: `hex.tree.SharedTreeModel` and `hex.tree.TreeVisitor` classes.
  */
-public abstract class TreeBasedModel extends MojoModel {
+public abstract class SharedTreeMojoModel extends MojoModel {
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
@@ -117,7 +116,7 @@ public abstract class TreeBasedModel extends MojoModel {
     // Private
     //------------------------------------------------------------------------------------------------------------------
 
-    protected TreeBasedModel(String[] columns, String[][] domains) {
+    protected SharedTreeMojoModel(String[] columns, String[][] domains) {
         super(columns, domains);
     }
 

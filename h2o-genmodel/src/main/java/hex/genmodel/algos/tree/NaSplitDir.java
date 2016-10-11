@@ -1,4 +1,4 @@
-package hex.genmodel.utils;
+package hex.genmodel.algos.tree;
 
 /**
  * Copy of `hex.tree.DHistogram.NASplitDir` in package `h2o-algos`.

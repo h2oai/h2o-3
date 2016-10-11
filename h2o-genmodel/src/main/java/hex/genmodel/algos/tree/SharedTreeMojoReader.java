@@ -1,18 +1,19 @@
-package hex.genmodel.algos;
+package hex.genmodel.algos.tree;
 
 import hex.genmodel.ModelMojoReader;
+import hex.genmodel.algos.drf.DrfMojoModel;
 
 import java.io.IOException;
 
 /**
  */
-public abstract class TreeMojoReader<M extends TreeBasedModel> extends ModelMojoReader<M> {
+public abstract class SharedTreeMojoReader<M extends SharedTreeMojoModel> extends ModelMojoReader<M> {
 
   @Override
   protected void readModelData() throws IOException {
     // In mojos v=1.0 this info wasn't saved.
     Integer tpc = readkv("n_trees_per_class");
-    if (tpc == null) tpc = (_model instanceof DrfModel)? ((DrfModel) _model)._effective_n_classes : _model._nclasses;
+    if (tpc == null) tpc = (_model instanceof DrfMojoModel)? ((DrfMojoModel) _model)._effective_n_classes : _model._nclasses;
 
     _model._ntrees = readkv("n_trees");
     _model._ntrees_per_class = tpc;

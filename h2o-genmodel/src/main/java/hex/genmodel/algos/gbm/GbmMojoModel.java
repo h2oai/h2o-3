@@ -1,6 +1,7 @@
-package hex.genmodel.algos;
+package hex.genmodel.algos.gbm;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 
 import static hex.genmodel.utils.DistributionFamily.*;
@@ -8,17 +9,17 @@ import static hex.genmodel.utils.DistributionFamily.*;
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public final class GbmModel extends TreeBasedModel {
+public final class GbmMojoModel extends SharedTreeMojoModel {
     public DistributionFamily _family;
     public double _init_f;
 
-    public GbmModel(String[] columns, String[][] domains) {
+    public GbmMojoModel(String[] columns, String[][] domains) {
         super(columns, domains);
     }
 
 
     /**
-     * Corresponds to `hex.tree.drf.DrfModel.score0()`
+     * Corresponds to `hex.tree.drf.DrfMojoModel.score0()`
      */
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {

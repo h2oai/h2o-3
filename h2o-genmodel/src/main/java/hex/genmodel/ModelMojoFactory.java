@@ -1,8 +1,8 @@
 package hex.genmodel;
 
 import hex.genmodel.algos.DeepWaterMojo;
-import hex.genmodel.algos.DrfMojoReader;
-import hex.genmodel.algos.GbmMojoReader;
+import hex.genmodel.algos.drf.DrfMojoReader;
+import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 
 import java.io.IOException;

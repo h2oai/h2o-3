@@ -1,22 +1,23 @@
-package hex.genmodel.algos;
+package hex.genmodel.algos.drf;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 
 
 /**
  * "Distributed Random Forest" MojoModel
  */
-public final class DrfModel extends TreeBasedModel {
+public final class DrfMojoModel extends SharedTreeMojoModel {
     public int _effective_n_classes;
     public boolean _binomial_double_trees;
 
 
-    public DrfModel(String[] columns, String[][] domains) {
+    public DrfMojoModel(String[] columns, String[][] domains) {
         super(columns, domains);
     }
 
     /**
-     * Corresponds to `hex.tree.drf.DrfModel.score0()`
+     * Corresponds to `hex.tree.drf.DrfMojoModel.score0()`
      */
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {

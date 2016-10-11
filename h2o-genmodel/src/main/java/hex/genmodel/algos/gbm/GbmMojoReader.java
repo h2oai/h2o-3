@@ -1,12 +1,13 @@
-package hex.genmodel.algos;
+package hex.genmodel.algos.gbm;
 
+import hex.genmodel.algos.tree.SharedTreeMojoReader;
 import hex.genmodel.utils.DistributionFamily;
 
 import java.io.IOException;
 
 /**
  */
-public class GbmMojoReader extends TreeMojoReader<GbmModel> {
+public class GbmMojoReader extends SharedTreeMojoReader<GbmMojoModel> {
 
   @Override
   protected void readModelData() throws IOException {
@@ -16,7 +17,7 @@ public class GbmMojoReader extends TreeMojoReader<GbmModel> {
   }
 
   @Override
-  protected GbmModel makeModel(String[] columns, String[][] domains) {
-    return new GbmModel(columns, domains);
+  protected GbmMojoModel makeModel(String[] columns, String[][] domains) {
+    return new GbmMojoModel(columns, domains);
   }
 }
