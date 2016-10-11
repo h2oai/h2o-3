@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 import static hex.ModelMetrics.calcVarImp;
@@ -475,6 +476,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         di._adaptedFrame = _fr; //dinfo logic on _adaptedFrame is what we'll need for extracting standardized features from the data for scoring
       }
 //      di._adaptedFrame.restructure(names, vecs);
+//      System.err.println("Constructor: Extracting row from Frame with names: " + Arrays.toString(di._adaptedFrame._names));
       final int weightIdx =_fr.find(get_params()._weights_column);
       final int respIdx =_fr.find(get_params()._response_column);
       final int batch_size = get_params()._mini_batch_size;
