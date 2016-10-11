@@ -2,6 +2,8 @@ package hex.genmodel;
 
 import hex.ModelCategory;
 
+import java.util.EnumSet;
+
 /**
  * Interface publishing methods for generated models.
  *
@@ -34,4 +36,9 @@ public interface IGenModel {
    * @see hex.ModelCategory
    */
   ModelCategory getModelCategory();
+
+  /**
+   * For models with multiple categories, returns the set of all supported categories.
+   */
+  EnumSet<ModelCategory> getModelCategories();
 }
