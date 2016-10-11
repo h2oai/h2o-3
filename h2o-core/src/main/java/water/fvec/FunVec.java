@@ -6,10 +6,6 @@ import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.exceptions.H2OFailException;
-import water.rapids.Env;
-import water.rapids.ast.AstRoot;
-import water.rapids.ast.params.AstNum;
-import water.util.Closure;
 
 import java.io.IOException;
 
@@ -22,16 +18,17 @@ import java.io.IOException;
 public class FunVec extends Vec {
 
   private transient Vec[] dependencies;
-  private final Closure fun;
+  private final Function fun;
 
   public FunVec(Key<Vec> key, int rowLayout, Function<?,?> fun, Vec... dependencies) throws IOException {
     super(key, rowLayout, null);
-    this.fun=Closure.enclose(fun);
+    this.fun = fun;
+//    this.fun=Closure.enclose(fun);
     this.dependencies = dependencies;
     DKV.put(this);
   }
 
-  public FunVec(Function<?,?> fun, Vec... dependencies) throws IOException {
+  public FunVec(Vec.Function<?,?> fun, Vec... dependencies) throws IOException {
     this(dependencies[0].group().addVec(), dependencies[0]._rowLayout, fun, dependencies);
   }
 
@@ -53,10 +50,10 @@ public class FunVec extends Vec {
   }
 
   public static class FunChunk extends ImmutableChunk {
-    public final Closure fun;
+    public final Function fun;
     public final transient Chunk dependencies[];
 
-    FunChunk(Closure fun, Vec vec, Chunk... c) {
+    FunChunk(Function fun, Vec vec, Chunk... c) {
 
       // set all the chunk fields
       dependencies = c;

@@ -7,6 +7,7 @@ import water.parser.BufferedString;
 import water.util.*;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
@@ -619,8 +620,13 @@ public class Vec extends Keyed<Vec> {
     return randVec;
   }
 
-  public static Vec makeFromFunction(long len, final Function<Long, Double> f0) throws IOException {
-    final Closure<Long, Double> f = Closure.enclose(f0);
+
+  interface Function<X,Y> extends Serializable {
+    public Y apply(X x);
+  }
+
+  public static Vec makeFromFunction(long len, final Function<Long, Double> f) throws IOException {
+//    final Closure<Long, Double> f = Closure.enclose(f0);
     return new MRTask() {
       @Override public void map(Chunk[] cs) {
         for (Chunk c : cs) {
