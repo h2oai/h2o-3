@@ -590,6 +590,35 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   }
 
   @Test
+  public void categorical() {
+    Frame tr = null;
+    DeepWaterModel m = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv"))._key;
+      p._response_column = "y";
+      for (String col : new String[]{"y"}) {
+        Vec v = tr.remove(col);
+        tr.add(col, v.toCategoricalVec());
+        v.remove();
+      }
+      DKV.put(tr);
+      p._seed = 1234;
+      p._epochs = 0.001;
+      p._mini_batch_size = 1;
+      p._shuffle_training_data = false;
+      p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+      p._train_samples_per_iteration = 0;
+      DeepWater j = new DeepWater(p);
+      m = j.trainModel().get();
+      Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
+    } finally {
+      if (tr!=null) tr.remove();
+      if (m!=null) m.remove();
+    }
+  }
+
+  @Test
   public void MNIST() {
     Frame tr = null;
     Frame va = null;
