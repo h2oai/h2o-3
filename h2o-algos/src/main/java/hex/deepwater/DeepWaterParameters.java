@@ -29,7 +29,6 @@ public class DeepWaterParameters extends Model.Parameters {
   public DeepWaterParameters() {
     super();
     _stopping_rounds = 5;
-    _ignore_const_cols = false; //allow String columns with File URIs
   }
   @Override
   public long progressUnits() {
@@ -386,6 +385,37 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_autoencoder && _stopping_metric != ScoreKeeper.StoppingMetric.AUTO && _stopping_metric != ScoreKeeper.StoppingMetric.MSE) {
       dl.error("_stopping_metric", "Stopping metric must either be AUTO or MSE for autoencoder.");
     }
+    if (expensive) {
+      _ignore_const_cols = guessProblemType() == DeepWaterParameters.ProblemType.h2oframe_classification;
+      dl.info("_ignore_const_cols", "Automatically setting ignore_const_cols to " + (_ignore_const_cols ? " YES " : " NO "));
+    }
+  }
+
+  ProblemType guessProblemType() {
+    boolean image=false;
+    boolean text=false;
+    if (train().vec(0).isString()) {
+      BufferedString bs = new BufferedString();
+      String first = train().anyVec().atStr(bs, 0).toString();
+      try {
+        ImageIO.read(new File(first));
+        image=true;
+      } catch(Throwable t) {}
+      try {
+        ImageIO.read(new URL(first));
+        image=true;
+      } catch(Throwable t) {}
+
+      if (!image && (first.endsWith(".jpg") || first.endsWith(".png") || first.endsWith(".tif"))) {
+        image=true;
+        Log.warn("Cannot read first image at " + first + " - Check data.");
+      } else {
+        text = true;
+      }
+    }
+    if (image) return ProblemType.image_classification;
+    else if (text) return ProblemType.text_classification;
+    else return ProblemType.h2oframe_classification;
   }
 
   static class Sanity {
@@ -551,30 +581,7 @@ public class DeepWaterParameters extends Model.Parameters {
       }
       // Automatically set the problem_type
       if (fromParms._problem_type == auto) {
-        boolean image=false;
-        boolean text=false;
-        if (fromParms.train().vec(0).isString()) {
-          BufferedString bs = new BufferedString();
-          String first = fromParms.train().anyVec().atStr(bs, 0).toString();
-          try {
-            ImageIO.read(new File(first));
-            image=true;
-          } catch(Throwable t) {}
-          try {
-            ImageIO.read(new URL(first));
-            image=true;
-          } catch(Throwable t) {}
-
-          if (!image && (first.endsWith(".jpg") || first.endsWith(".png") || first.endsWith(".tif"))) {
-            image=true;
-            Log.warn("Cannot read first image at " + first + " - Check data.");
-          } else {
-            text = true;
-          }
-        }
-        if (image) toParms._problem_type = ProblemType.image_classification;
-        else if (text) toParms._problem_type = ProblemType.text_classification;
-        else toParms._problem_type = ProblemType.h2oframe_classification;
+        toParms._problem_type = fromParms.guessProblemType();
         if (!fromParms._quiet_mode)
           Log.info("_problem_type: Automatically selecting problem_type: " + toParms._problem_type.toString());
       }

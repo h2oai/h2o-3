@@ -76,8 +76,8 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
    *
    *  Validate the very large number of arguments in the DL Parameter directly. */
   @Override public void init(boolean expensive) {
-    super.init(expensive);
     _parms.validate(this, expensive);
+    super.init(expensive);
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
@@ -244,7 +244,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
                   new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
                   new DeepWaterTask (model.model_info(), rowFraction(train, mp, model), _job).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
           long before = System.currentTimeMillis();
-          if (_parms._export_native_parameters_prefix !=null && _parms._export_native_parameters_prefix !="") {
+          if (_parms._export_native_parameters_prefix !=null && !_parms._export_native_parameters_prefix.equals("")) {
             Log.info("Saving model state.");
             model.exportNativeModel(_parms._export_native_parameters_prefix, model.iterations);
           }
