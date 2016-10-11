@@ -15,17 +15,17 @@ import java.util.Map;
 import java.util.UUID;
 
 public class DeepWaterMojo extends MojoModel {
-  final int _mini_batch_size;
-  final int _height;
-  final int _width;
-  final int _channels;
+  public final int _mini_batch_size;
+  public final int _height;
+  public final int _width;
+  public final int _channels;
 
-  final int _nums;
-  final int _cats;
-  final int[] _catOffsets;
-  final double[] _normMul;
-  final double[] _normSub;
-  final boolean _useAllFactorLevels;
+  public final int _nums;
+  public final int _cats;
+  public final int[] _catOffsets;
+  public final double[] _normMul;
+  public final double[] _normSub;
+  public final boolean _useAllFactorLevels;
 
   final protected byte[] _network;
   final protected byte[] _parameters;
