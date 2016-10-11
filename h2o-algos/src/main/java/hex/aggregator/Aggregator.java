@@ -19,7 +19,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     return LinearAlgebraUtils.toEigen;
   }
 
-  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
+  @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   public static class Exemplar extends Iced<Exemplar> {
     Exemplar(double[] d, long id) { data=d; gid=id; _cnt=1; }
