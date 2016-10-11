@@ -69,7 +69,7 @@ public class DeepWaterParameters extends Model.Parameters {
   public Backend _backend = Backend.mxnet;
   public String _network_definition_file;
   public String _network_parameters_file;
-  public String _export_native_model_prefix;
+  public String _export_native_parameters_prefix;
 
   public ProblemType _problem_type = auto;
 
