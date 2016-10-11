@@ -58,7 +58,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "network_definition_file",
         "network_parameters_file",
         "mean_image_file",
-        "export_native_model_prefix",
+        "export_native_parameters_prefix",
         "activation",
         "hidden",
         "input_dropout_ratio",
