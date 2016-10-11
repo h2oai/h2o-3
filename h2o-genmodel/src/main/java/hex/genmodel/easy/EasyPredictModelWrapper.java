@@ -181,8 +181,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @return The prediction.
    * @throws PredictException
    */
-  public AbstractPrediction predict(RowData data) throws PredictException {
-    switch (m.getModelCategory()) {
+  public AbstractPrediction predict(RowData data, ModelCategory mc) throws PredictException {
+    switch (mc) {
       case AutoEncoder:
         return predictAutoEncoder(data);
       case Binomial:
@@ -201,6 +201,10 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
       default:
         throw new PredictException("Unhandled model category (" + m.getModelCategory() + ") in switch statement");
     }
+  }
+
+  public AbstractPrediction predict(RowData data) throws PredictException {
+    return predict(data, m.getModelCategory());
   }
 
   /**
@@ -394,21 +398,14 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   private void validateModelCategory(ModelCategory c) throws PredictException {
-    if (m.getModelCategory() != c) {
-      throw new PredictWrongModelCategoryException("Prediction type unsupported by model of category " + m.getModelCategory());
-    }
+    if (!m.getModelCategories().contains(c))
+      throw new PredictException(c + " prediction type is not supported for this model.");
   }
 
+  // This should have been called predict(), because that's what it does
   private double[] preamble(ModelCategory c, RowData data) throws PredictException {
     validateModelCategory(c);
-    double[] preds;
-    if (c == ModelCategory.DimReduction) {
-      preds = new double[m.nclasses()];
-    } else {
-      preds = new double[m.getPredsSize()];
-    }
-    preds = predict(data, preds);
-    return preds;
+    return predict(data, new double[m.getPredsSize(c)]);
   }
 
   private void setToNaN(double[] arr) {

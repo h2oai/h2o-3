@@ -49,14 +49,19 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   /** Returns this model category. */
-  @Override abstract public ModelCategory getModelCategory();
+  @Override public abstract ModelCategory getModelCategory();
+
+  /** Override this for models that may produce results in different categories. */
+  @Override public EnumSet<ModelCategory> getModelCategories() {
+    return EnumSet.of(getModelCategory());
+  }
 
 
   //--------------------------------------------------------------------------------------------------------------------
   // IGeneratedModel interface
   //--------------------------------------------------------------------------------------------------------------------
 
-  @Override abstract public String getUUID();
+  @Override public abstract String getUUID();
 
   /** Returns number of columns used as input for training (i.e., exclude response and offset columns). */
   @Override public int getNumCols() {
@@ -143,6 +148,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return isClassifier()? 1 + getNumResponseClasses() : 2;
   }
 
+  public int getPredsSize(ModelCategory mc) {
+    return (mc == ModelCategory.DimReduction)? nclasses() :
+           (mc == ModelCategory.AutoEncoder)? nfeatures() : getPredsSize();
+  }
+
   @Override
   public float[] predict(double[] data, float[] preds) {
     return predict(data, preds, 0);
@@ -175,7 +185,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  loaded into the re-used temp array, which is also returned.  This call
    *  exactly matches the hex.Model.score0, but uses the light-weight
    *  GenModel class. */
-  abstract public double[] score0(double[] row, double[] preds);
+  public abstract double[] score0(double[] row, double[] preds);
 
   public double[] score0(double[] row, double offset, double[] preds) {
     throw new UnsupportedOperationException("`offset` column is not supported");
@@ -183,7 +193,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
 
   // Does the mapping lookup for every row, no allocation.
   // data and preds arrays are pre-allocated and can be re-used for every row.
-  public double[] score0(Map<String, Double> row, double data[], double preds[]) {
+  public double[] score0(Map<String, Double> row, double[] data, double[] preds) {
     Double offset = _offsetColumn == null? null : row.get(_offsetColumn);
     return score0(map(row, data), offset == null? 0.0 : offset, preds);
   }
@@ -191,7 +201,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   // Does the mapping lookup for every row.
   // preds array is pre-allocated and can be re-used for every row.
   // Allocates a double[] for every row.
-  public double[] score0(Map<String, Double> row, double preds[]) {
+  public double[] score0(Map<String, Double> row, double[] preds) {
     return score0(row, new double[nfeatures()], preds);
   }
 
