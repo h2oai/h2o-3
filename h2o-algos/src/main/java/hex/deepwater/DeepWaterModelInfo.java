@@ -228,6 +228,8 @@ final public class DeepWaterModelInfo extends Iced {
         _backend = createDeepWaterBackend(parameters._backend.toString()); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
         if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
         ImageDataSet imageDataSet = getImageDataSet();
+        if (parameters._mean_image_file != null)
+          imageDataSet.setMeanData(_backend.loadMeanImage(_model, parameters._mean_image_file));
         _meanData = imageDataSet.getMeanData();
         RuntimeOptions opts = getRuntimeOptions();
         BackendParams bparms = getBackendParams();
