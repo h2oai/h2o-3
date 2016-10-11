@@ -1,14 +1,21 @@
 package water.api.schemas3;
 
+import water.DKV;
 import water.Futures;
 import water.Key;
 import water.MemoryManager;
-import water.api.*;
+import water.api.API;
 import water.api.schemas3.KeyV3.FrameKeyV3;
-import water.fvec.*;
+import water.fvec.ByteVec;
+import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.fvec.Frame.VecSpecifier;
+import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.util.*;
+import water.util.ChunkSummary;
+import water.util.FrameUtils;
+import water.util.Log;
+import water.util.PrettyPrint;
 
 /**
  * All the details on a Frame.  Note that inside ColV3 there are fields which won't be
@@ -235,11 +242,19 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     Vec[] vecs = f.vecs();
     Futures fs = new Futures();
     // Compute rollups in parallel as needed, by starting all of them and using
-    // them when filling in the ColV3 Schemas
+    // them when filling in the ColV3 Schemas.
+    // NOTE: SKIP deleted Vecs!  The columns entry will be null for deleted Vecs.
     for( int i = 0; i < column_count; i++ )
-      vecs[column_offset + i].startRollupStats(fs);
+      if (null == DKV.get(vecs[column_offset + i]._key))
+        Log.warn("For Frame: " + f._key + ", Vec number: " + (column_offset + i) + " (" + f.name((column_offset + i))+ ") is missing; not returning it.");
+      else
+        vecs[column_offset + i].startRollupStats(fs);
     for( int i = 0; i < column_count; i++ )
-      columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
+      if (null == DKV.get(vecs[column_offset + i]._key))
+        Log.warn("For Frame: " + f._key + ", Vec number: " + (column_offset + i) + " (" + f.name((column_offset + i))+ ") is missing; not returning it.");
+      else
+        columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
+
     fs.blockForPending();
     this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
     this.default_percentiles = Vec.PERCENTILES;
@@ -258,7 +273,8 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
 
   public void clearBinsField() {
     for (ColV3 col: columns)
-      col.clearBinsField();
+      if (col != null)
+        col.clearBinsField();
   }
 
   private abstract static class ColOp { abstract String op(ColV3 v); }
