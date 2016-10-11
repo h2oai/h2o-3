@@ -22,6 +22,9 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     writekv("gammaX", model._parms._gamma_x);
     writekv("gammaY", model._parms._gamma_y);
 
+    // DataInfo mapping
+    writekv("cols_permutation", model._output._permutation);
+
     // Loss functions
     writekv("ncolA", model._output._lossFunc.length);
     startWritingTextFile("losses");
