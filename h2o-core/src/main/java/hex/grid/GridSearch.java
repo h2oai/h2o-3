@@ -326,7 +326,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     if (grid.getModel(params) != null) return null;
     ModelBuilder mb = ModelBuilder.make(params.algoName(), _job, result);
     mb._parms = params;
-    mb.trainModelNested();
+    mb.trainModelNested(null);
     return mb;
   }
 

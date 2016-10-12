@@ -373,7 +373,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         parms._save_v_frame = false;
 
         SVDModel svd = ModelCacheManager.get(parms);
-        if (svd == null) svd = new SVD(parms, _job).trainModelNested();
+        if (svd == null) svd = new SVD(parms, _job).trainModelNested(_rebalancedTrain);
         model._output._init_key = svd._key;
 
         // Ensure SVD centers align with adapted training frame cols
@@ -389,21 +389,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           dsqrt[i] = Math.sqrt(svd._output._d[i]);
           ArrayUtils.mult(centers_exp[i], dsqrt[i]);  // This gives one row of D^(1/2)V'
         }
-
         // b) Set X = UD^(1/2) = AVD^(-1/2)
         Frame uFrm = DKV.get(svd._output._u_key).get();
         assert uFrm.numCols() == _parms._k;
+        assert uFrm.isCompatible(dfrm);
         Frame fullFrm = (new Frame(uFrm)).add(dfrm);  // Jam matrices together into frame [U,A,X,W]
         InitialXSVD xtsk = new InitialXSVD(dsqrt, _parms._k, _ncolA, _ncolX);
         xtsk.doAll(fullFrm);
-
-        // fix for PUBDEV-3528.  Copy content of fullFrm into dfrm for X, W
-        int endIndex = _ncolX+_ncolA;
-        for (int index = _ncolA; index < endIndex; index++) {
-          int fullFrm_index = index+_ncolX;
-          dfrm.replace(index, fullFrm.vec(fullFrm_index));
-          dfrm.replace(fullFrm_index, fullFrm.vec(fullFrm_index));
-        }
       } else if (_parms._init == Initialization.PlusPlus) {  // Run k-means++ and set Y = resulting cluster centers, X = indicator matrix of assignments
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
@@ -418,7 +410,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         parms._pred_indicator = true;
 
         KMeansModel km = ModelCacheManager.get(parms);
-        if (km == null) km = new KMeans(parms, _job).trainModelNested();
+        if (km == null) km = new KMeans(parms, _job).trainModelNested(_rebalancedTrain);
         model._output._init_key = km._key;
 
         // Score only if clusters well-defined and closed-form solution does not exist
@@ -564,6 +556,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
               new String[model._output._eigenvectors_raw.length][], model._output._eigenvectors_raw);
     }
 
+    private transient Frame _rebalancedTrain;
     @SuppressWarnings("ConstantConditions")  // Method too complex for IntelliJ
     @Override
     public void computeImpl() {
@@ -580,6 +573,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         model = new GLRMModel(dest(), _parms, new GLRMModel.GLRMOutput(GLRM.this));
         model.delete_and_lock(_job);
 
+        _rebalancedTrain = new Frame(_train);
         // Save adapted frame info for scoring later
         tinfo = new DataInfo(_train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE,
                              false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
