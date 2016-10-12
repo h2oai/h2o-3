@@ -14,8 +14,15 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
     _model._ncolA = readkv("ncolA");
     _model._ncolY = readkv("ncolY");
     _model._nrowY = readkv("nrowY");
+    _model._ncolX = readkv("ncolX");
     _model._regx = GlrmRegularizer.valueOf((String) readkv("regularizationX"));
     _model._gammax = readkv("gammaX");
+    _model._init = GlrmInitialization.valueOf((String) readkv("initialization"));
+
+    _model._ncats = readkv("num_categories");
+    _model._nnums = readkv("num_numeric");
+    _model._normSub = readkv("norm_sub");
+    _model._normMul = readkv("norm_mul");
 
     // loss functions
     _model._losses = new GlrmLoss[_model._ncolA];
@@ -25,6 +32,7 @@ public class GlrmMojoReader extends ModelMojoReader<GlrmMojoModel> {
     }
 
     // archetypes
+    _model._numLevels = readkv("num_levels_per_category");
     _model._archetypes = new double[_model._nrowY][];
     ByteBuffer bb = ByteBuffer.wrap(readblob("archetypes"));
     for (int i = 0; i < _model._nrowY; i++) {

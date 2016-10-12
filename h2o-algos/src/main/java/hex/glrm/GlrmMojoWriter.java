@@ -17,13 +17,19 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
 
   @Override
   protected void writeModelData() throws IOException {
+    writekv("initialization", model._parms._init);
     writekv("regularizationX", model._parms._regularization_x);
     writekv("regularizationY", model._parms._regularization_y);
     writekv("gammaX", model._parms._gamma_x);
     writekv("gammaY", model._parms._gamma_y);
+    writekv("ncolX", model._parms._k);
 
     // DataInfo mapping
     writekv("cols_permutation", model._output._permutation);
+    writekv("num_categories", model._output._ncats);
+    writekv("num_numeric", model._output._nnums);
+    writekv("norm_sub", model._output._normSub);
+    writekv("norm_mul", model._output._normMul);
 
     // Loss functions
     writekv("ncolA", model._output._lossFunc.length);
@@ -37,6 +43,7 @@ public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMPar
     GLRM.Archetypes arch = model._output._archetypes_raw;
     writekv("ncolY", arch.nfeatures());
     writekv("nrowY", arch.rank());
+    writekv("num_levels_per_category", arch._numLevels);
     int n = arch.rank() * arch.nfeatures();
     ByteBuffer bb = ByteBuffer.wrap(new byte[n * 8]);
     for (double[] row : arch.getY(false))

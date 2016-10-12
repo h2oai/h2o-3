@@ -5,6 +5,7 @@ import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.svd.SVDModel.SVDParameters;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
@@ -96,7 +97,7 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM, GLRMV3, GLRMV3.GLRMParamete
     public long seed;
 
     @API(help = "Initialization mode", values = { "Random", "SVD", "PlusPlus", "User" }, gridable = true) // TODO: pull out of categorical class
-    public GLRM.Initialization init;
+    public GlrmInitialization init;
 
     @API(help = "Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" }, gridable = true)   // TODO: pull out of enum class
     public SVDParameters.Method svd_method;

@@ -11,6 +11,7 @@ import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
 import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 
@@ -265,7 +266,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._gamma_x = parms._gamma_y = 0;
           parms._regularization_x = GlrmRegularizer.None;
           parms._regularization_y = GlrmRegularizer.None;
-          parms._init = GLRM.Initialization.PlusPlus;
+          parms._init = GlrmInitialization.PlusPlus;
 
           // Build an SVD model
           // Hack: we have to resort to unsafe type casts because _job is of Job<PCAModel> type, whereas a GLRM

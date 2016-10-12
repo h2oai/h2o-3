@@ -1,6 +1,7 @@
 package hex.glrm;
 
 import hex.*;
+import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.svd.SVDModel.SVDParameters;
@@ -58,7 +59,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     // Data transformation (demean to compare with PCA)
     public DataInfo.TransformType _transform = DataInfo.TransformType.NONE;
     public int _k = 1;                       // Rank of resulting XY matrix
-    public GLRM.Initialization _init = GLRM.Initialization.PlusPlus;  // Initialization of Y matrix
+    public GlrmInitialization _init = GlrmInitialization.PlusPlus;  // Initialization of Y matrix
     public SVDParameters.Method _svd_method = SVDParameters.Method.Randomized;  // SVD initialization method (for _init = SVD)
     public Key<Frame> _user_y;               // User-specified Y matrix (for _init = User)
     public Key<Frame> _user_x;               // User-specified X matrix (for _init = User)
