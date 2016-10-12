@@ -1592,13 +1592,22 @@ public class NewChunk extends Chunk {
     assert _xs==null; 
     return _ds[i];
   }
+
+  private long loAt(int idx) { return _ms.get(idx); }
+  private long hiAt(int idx) { return Double.doubleToRawLongBits(_ds[idx]); }
+
   @Override protected long at16l_impl(int idx) {
-    if(_ms.get(idx) == C16Chunk._LO_NA) throw new RuntimeException("Attempting to access NA as integer value.");
+    long lo = loAt(idx);
+    if(lo == C16Chunk._LO_NA && hiAt(idx) == C16Chunk._HI_NA) {
+      throw new RuntimeException("Attempting to access NA as integer lo value at " + idx);
+    }
     return _ms.get(idx);
   }
   @Override protected long at16h_impl(int idx) {
     long hi = Double.doubleToRawLongBits(_ds[idx]);
-    if(hi == C16Chunk._HI_NA) throw new RuntimeException("Attempting to access NA as integer value.");
+    if(hi == C16Chunk._HI_NA && loAt(idx) == C16Chunk._LO_NA) {
+      throw new RuntimeException("Attempting to access NA as integer hi value at " + idx);
+    }
     return hi;
   }
   @Override public boolean isNA_impl( int i ) {
