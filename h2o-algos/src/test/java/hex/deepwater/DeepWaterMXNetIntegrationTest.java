@@ -109,14 +109,26 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
     DeepWaterModel m = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cc.csv"))._key;
       p._response_column = "C2";
+      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+      p._train.get().remove("C3");
+      for (String col : new String[]{p._train.get().name(0)}) {
+        Vec v = tr.remove(col);
+        tr.add(col, v.toStringVec());
+        v.remove();
+      }
+      for (String col : new String[]{p._response_column}) {
+        Vec v = tr.remove(col);
+        tr.add(col, v.toCategoricalVec());
+        v.remove();
+      }
       String path = "../deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/";
       p._network = DeepWaterParameters.Network.user;
       p._image_shape = new int[]{224, 224};
       p._channels = 3;
-      p._network_definition_file = path + "Inception_BN-symbol.json";
-      p._network_parameters_file = path + "Inception_BN-0039.params";
+      p._network_definition_file = path + "Inception_BN-symbol.json"; //TODO: allow loading this 1000-class graph for this 3-class problem
+      p._network_parameters_file = path + "Inception_BN-0039.params"; //TODO: allow loading this parameter file for the 3-class modified graph
       p._mean_image_file         = path + "mean_224.nd";
       p._epochs = 0.1; //just make a model, no training needed
       p._learning_rate = 0; //just make a model, no training needed

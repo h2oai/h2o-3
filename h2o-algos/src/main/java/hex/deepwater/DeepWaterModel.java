@@ -502,8 +502,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           continue;
         }
         if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
-          String file = _fr.vec(0).atStr(bs, i).toString(); //TODO: FIX hardcoded column for data
-          score_data.add(file);
+          BufferedString file = _fr.vec(0).atStr(bs, i);
+          if (file!=null)
+            score_data.add(file.toString());
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
           score_data.add(i);
         } else throw H2O.unimpl();
