@@ -123,7 +123,7 @@ public class TypeMap {
     // Need to install a new cloud-wide type ID for className.
     assert H2O.CLOUD.size() > 0 : "No cloud when getting type id for "+className;
     // Am I leader, or not?  Lock the cloud to find out
-    Paxos.lockCloud(className);
+    Paxos.lockCloud("icing class " + className);
     // Leader: pick an ID.  Not-the-Leader: fetch ID from leader.
     int id = H2O.CLOUD.leader() == H2O.SELF ? -1 : FetchId.fetchId(className);
     return install(className,id);
