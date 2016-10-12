@@ -42,9 +42,7 @@ def gbm(interactive=True, echo=True, testing=False):
 
         go()
         # Randomly split the dataset into ~70/30, training/test sets
-        r = prostate[0].runif()
-        train = prostate[r < 0.70]
-        test = prostate[r >= 0.70]
+        train, test = prostate.split_frame(ratios=[0.70])
 
         go()
         # Convert the response columns to factors (for binary classification problems)
@@ -103,9 +101,7 @@ def deeplearning(interactive=True, echo=True, testing=False):
 
         go()
         # Randomly split the dataset into ~70/30, training/test sets
-        r = prostate[0].runif()
-        train = prostate[r < 0.70]
-        test = prostate[r >= 0.70]
+        train, test = prostate.split_frame(ratios=[0.70])
 
         go()
         # Convert the response columns to factors (for binary classification problems)
@@ -163,9 +159,7 @@ def glm(interactive=True, echo=True, testing=False):
 
         go()
         # Randomly split the dataset into ~70/30, training/test sets
-        r = prostate[0].runif()
-        train = prostate[r < 0.70]
-        test = prostate[r >= 0.70]
+        train, test = prostate.split_frame(ratios=[0.70])
 
         go()
         # Convert the response columns to factors (for binary classification problems)
