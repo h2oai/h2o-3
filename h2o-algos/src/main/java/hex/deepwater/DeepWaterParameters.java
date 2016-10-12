@@ -421,63 +421,63 @@ public class DeepWaterParameters extends Model.Parameters {
   static class Sanity {
     // the following parameters can be modified when restarting from a checkpoint
     transient static private final String[] cp_modifiable = new String[]{
-            "_seed",
-            "_checkpoint",
-            "_epochs",
-            "_score_interval",
-            "_train_samples_per_iteration",
-            "_target_ratio_comm_to_comp",
-            "_score_duty_cycle",
-            "_score_training_samples",
-            "_score_validation_samples",
-            "_score_validation_sampling",
-            "_classification_stop",
-            "_regression_stop",
-            "_stopping_rounds",
-            "_stopping_metric",
-            "_quiet_mode",
-            "_max_confusion_matrix_size",
-            "_max_hit_ratio_k",
-            "_diagnostics",
-            "_variable_importances",
-            "_replicate_training_data",
-            "_shuffle_training_data",
-            "_single_node_mode",
-            "_overwrite_with_best_model",
-            "_mini_batch_size",
-            "_network_parameters_file"
+        "_seed",
+        "_checkpoint",
+        "_epochs",
+        "_score_interval",
+        "_train_samples_per_iteration",
+        "_target_ratio_comm_to_comp",
+        "_score_duty_cycle",
+        "_score_training_samples",
+        "_score_validation_samples",
+        "_score_validation_sampling",
+        "_classification_stop",
+        "_regression_stop",
+        "_stopping_rounds",
+        "_stopping_metric",
+        "_quiet_mode",
+        "_max_confusion_matrix_size",
+        "_max_hit_ratio_k",
+        "_diagnostics",
+        "_variable_importances",
+        "_replicate_training_data",
+        "_shuffle_training_data",
+        "_single_node_mode",
+        "_overwrite_with_best_model",
+        "_mini_batch_size",
+        "_network_parameters_file"
     };
 
     // the following parameters must not be modified when restarting from a checkpoint
     transient static private final String[] cp_not_modifiable = new String[]{
-            "_drop_na20_cols",
-            "_response_column",
-            "_activation",
-            "_use_all_factor_levels",
-            "_standardize",
-            "_autoencoder",
-            "_network",
-            "_backend",
-            "_learn_rate",
-            "_learn_rate_annealing",
-            "_rate_decay",
-            "_momentum_start",
-            "_momentum_ramp",
-            "_momentum_stable",
-            "_ignore_const_cols",
-            "_max_categorical_features",
-            "_nfolds",
-            "_distribution",
-            "_network_definition_file",
-            "_mean_image_file"
+        "_drop_na20_cols",
+        "_response_column",
+        "_activation",
+        "_use_all_factor_levels",
+        "_standardize",
+        "_autoencoder",
+        "_network",
+        "_backend",
+        "_learn_rate",
+        "_learn_rate_annealing",
+        "_rate_decay",
+        "_momentum_start",
+        "_momentum_ramp",
+        "_momentum_stable",
+        "_ignore_const_cols",
+        "_max_categorical_features",
+        "_nfolds",
+        "_distribution",
+        "_network_definition_file",
+        "_mean_image_file"
     };
 
     static void checkCompleteness() {
       for (Field f : hex.deepwater.DeepWaterParameters.class.getDeclaredFields())
         if (!ArrayUtils.contains(cp_not_modifiable, f.getName())
-                &&
-                !ArrayUtils.contains(cp_modifiable, f.getName())
-                ) {
+            &&
+            !ArrayUtils.contains(cp_modifiable, f.getName())
+            ) {
           if (f.getName().equals("_hidden")) continue;
           if (f.getName().equals("_ignored_columns")) continue;
           if (f.getName().equals("$jacocoData")) continue; // If code coverage is enabled
@@ -528,10 +528,10 @@ public class DeepWaterParameters extends Model.Parameters {
     /**
      * Update the parameters from checkpoint to user-specified
      *
-     * @param srcParms     source: user-specified parameters
-     * @param tgtParms     target: parameters to be modified
-     * @param doIt         whether to overwrite target parameters (or just print the message)
-     * @param quiet        whether to suppress the notifications about parameter changes
+     * @param srcParms source: user-specified parameters
+     * @param tgtParms target: parameters to be modified
+     * @param doIt     whether to overwrite target parameters (or just print the message)
+     * @param quiet    whether to suppress the notifications about parameter changes
      */
     static void updateParametersDuringCheckpointRestart(hex.deepwater.DeepWaterParameters srcParms, hex.deepwater.DeepWaterParameters tgtParms/*actually used during training*/, boolean doIt, boolean quiet) {
       for (Field fTarget : tgtParms.getClass().getFields()) {
@@ -559,15 +559,24 @@ public class DeepWaterParameters extends Model.Parameters {
     /**
      * Take user-given parameters and turn them into usable, fully populated parameters (e.g., to be used by Neurons during training)
      *
-     * @param fromParms      raw user-given parameters from the REST API (READ ONLY)
-     * @param toParms        modified set of parameters, with defaults filled in (WILL BE MODIFIED)
-     * @param nClasses       number of classes (1 for regression or autoencoder)
+     * @param fromParms raw user-given parameters from the REST API (READ ONLY)
+     * @param toParms   modified set of parameters, with defaults filled in (WILL BE MODIFIED)
+     * @param nClasses  number of classes (1 for regression or autoencoder)
      */
     static void modifyParms(hex.deepwater.DeepWaterParameters fromParms, hex.deepwater.DeepWaterParameters toParms, int nClasses) {
       if (H2O.CLOUD.size() == 1 && fromParms._replicate_training_data) {
         if (!fromParms._quiet_mode)
           Log.info("_replicate_training_data: Disabling replicate_training_data on 1 node.");
         toParms._replicate_training_data = false;
+      }
+      // Automatically set the distribution
+      if (fromParms._distribution == DistributionFamily.AUTO) {
+        // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/Quadratic/Huber/Absolute
+        if (nClasses > 1) {
+          toParms._distribution = nClasses == 2 ? DistributionFamily.bernoulli : DistributionFamily.multinomial;
+        } else {
+          throw H2O.unimpl("Only classification is supported for now.");
+        }
       }
       if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
         if (!fromParms._quiet_mode)
