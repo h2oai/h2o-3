@@ -7,11 +7,9 @@ import water.TestUtil;
 import java.util.Arrays;
 import java.util.UUID;
 
-import static org.junit.Assert.fail;
-
 public class C16ChunkTest extends TestUtil {
 
-  static UUID u(long lo, long hi) { return new UUID(hi, lo);}
+  static UUID u(long lo, long hi) { return new UUID(lo, hi);}
 
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   UUID[] sampleVals = new UUID[]{
@@ -86,17 +84,6 @@ public class C16ChunkTest extends TestUtil {
       checkChunk(cc2, l, haveNA);
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
-    }
-  }
-
-  @Test
-  public void test_illegal_values() {
-    Chunk cc = buildTestData(false);
-    try {
-      cc.set_impl(4, C16Chunk._LO_NA, C16Chunk._HI_NA);
-      fail("Expected a failure on adding an illegal value");
-    } catch(IllegalArgumentException iae) {
-      // as expected
     }
   }
 
