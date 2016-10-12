@@ -58,15 +58,15 @@ public class NewChunkTest extends TestUtil {
     nc.addNAs(128);
     assertTrue(nc.isSparseNA());
     for (int i = 0; i < 512; i++)
-      nc.addUUID(i, i);
+      nc.addUUID(i, i / 2 + i / 3);
     assertFalse(nc.isSparseNA());
     Chunk c = nc.compress();
     assertEquals(128 + 512, c.len());
     for (int i = 0; i < 128; ++i)
-      assertTrue(c.isNA(i));
+      assertTrue("Expected a NA at " + i, c.isNA(i));
     for (int i = 0; i < 512; i++) {
       assertEquals(i, c.at16l(128 + i));
-      assertEquals(i, c.at16h(128 + i));
+      assertEquals(i / 2 + i / 3 , c.at16h(128 + i));
     }
   }
 
