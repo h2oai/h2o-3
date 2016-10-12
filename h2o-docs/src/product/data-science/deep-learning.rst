@@ -152,7 +152,6 @@ recommended, as model performance can vary greatly.
 
   - ``auto``: Allow the algorithm to decide
   - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
-  - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
   - ``binary``: No more than 32 columns per categorical feature
   - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
 
