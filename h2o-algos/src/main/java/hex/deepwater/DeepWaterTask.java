@@ -92,9 +92,10 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
             double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
             if (weight == 0)
               continue;
-            String file = _fr.vec(dataIdx).atStr(bs, i).toString();
+            BufferedString file = _fr.vec(dataIdx).atStr(bs, i);
+            if (file!=null)
+              trainData.add(file.toString());
             float response = (float) _fr.vec(respIdx).at(i);
-            trainData.add(file);
             trainLabels.add(response);
           }
         }
@@ -106,9 +107,10 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
           double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
           if (weight == 0)
             continue;
-          String file = _fr.vec(dataIdx).atStr(bs, i).toString();
+          BufferedString file = _fr.vec(dataIdx).atStr(bs, i);
+          if (file!=null)
+            trainData.add(file.toString());
           float response = (float) _fr.vec(respIdx).at(i);
-          trainData.add(file);
           trainLabels.add(response);
         }
       }
