@@ -252,7 +252,6 @@ final public class DeepWaterModelInfo extends Iced {
             Log.err("Network definition file " + f + " not found.");
           } else {
             Log.info("Loading the network from: " + f.getAbsolutePath());
-            backend.loadModel(f.getAbsolutePath());
             Log.info("Setting the optimizer and initializing the first and last layer.");
             _model = _backend.buildNet(imageDataSet, opts, bparms, _classes, f.getAbsolutePath());
           }
