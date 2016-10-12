@@ -3,7 +3,6 @@ package water.fvec;
 import org.junit.*;
 
 import water.TestUtil;
-import water.util.Pair;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -14,7 +13,8 @@ public class C16ChunkTest extends TestUtil {
 
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   UUID[] sampleVals = new UUID[]{
-      u(6, 6),
+      u(6, 5),
+      u(5, 6),
       u(C16Chunk._LO_NA, C16Chunk._HI_NA + 1),
       u(C16Chunk._LO_NA, C16Chunk._HI_NA - 1),
       u(C16Chunk._LO_NA+1, C16Chunk._HI_NA),
@@ -60,6 +60,11 @@ public class C16ChunkTest extends TestUtil {
     if (withNA) nc.addNA();
     for (UUID u : sampleVals) nc.addUUID(u.getLeastSignificantBits(), u.getMostSignificantBits());
     nc.addNA();
+    nc.addNA();
+    nc.addNA();
+    nc.addNA();
+    nc.addNA();
+    nc.addNA();
 
     return nc.compress();
   }
@@ -68,34 +73,36 @@ public class C16ChunkTest extends TestUtil {
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
       boolean haveNA = l == 1;
+
       Chunk cc = buildTestData(haveNA);
 
-      Assert.assertEquals(sampleVals.length + 1 + l, cc._len);
+      final int expectedLength = sampleVals.length + 6 + l;
+      Assert.assertEquals(expectedLength, cc._len);
       Assert.assertTrue(cc instanceof C16Chunk);
-      checkChunk(cc, l, haveNA);
+      checkChunk(cc, l, haveNA, sampleVals.length);
 
       NewChunk nc = cc.inflate_impl(new NewChunk(null, 0));
       nc.values(0, nc._len);
-      Assert.assertEquals(sampleVals.length + 1 + l, nc._len);
-      checkChunk(nc, l, haveNA);
+      Assert.assertEquals(expectedLength, nc._len);
+      checkChunk(nc, l, haveNA, sampleVals.length);
 
       Chunk cc2 = nc.compress();
-      Assert.assertEquals(sampleVals.length + 1 + l, cc._len);
+      Assert.assertEquals(expectedLength, cc._len);
       Assert.assertTrue(cc2 instanceof C16Chunk);
-      checkChunk(cc2, l, haveNA);
+      checkChunk(cc2, l, haveNA, sampleVals.length);
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
   }
 
   private UUID uuidAt(Chunk cc, int i) {
-    return new UUID(cc.at16l(i), cc.at16h(i));
+    return u(cc.at16l(i), cc.at16h(i));
   }
 
-  private void checkChunk(Chunk cc, int l, boolean haveNA) {
+  private void checkChunk(Chunk cc, int l, boolean haveNA, int n) {
     if (haveNA) Assert.assertTrue(cc.isNA(0));
     if (haveNA) Assert.assertTrue(cc.isNA_abs(0));
-    for (int i = 0; i < sampleVals.length; ++i) {
+    for (int i = 0; i < n; i++) {
       UUID expected = sampleVals[i];
       long expectedLo = expected.getLeastSignificantBits();
       long expectedHi = expected.getMostSignificantBits();
@@ -110,6 +117,12 @@ public class C16ChunkTest extends TestUtil {
 
   @Test
   public void test_set_impl() {
+    Chunk sut = buildTestData(false);
+    for (int i = 0; i < sampleVals.length - 4; i++) {
+      UUID u = sampleVals[i];
+      sut.set_impl(i + 4, u.getLeastSignificantBits(), u.getMostSignificantBits());
+    }
+    checkChunk(sut, 4, false, sampleVals.length - 4);
   }
 
 }
