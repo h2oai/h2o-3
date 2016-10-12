@@ -18,6 +18,6 @@ public class GbmModelMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.
     super.writeModelData();
     writekv("distribution", model._parms._distribution);
     writekv("init_f", model._output._init_f);
-    writekv("offset_column", null);  // Not known yet
+    writekv("offset_column", "null");  // Not known yet
   }
 }

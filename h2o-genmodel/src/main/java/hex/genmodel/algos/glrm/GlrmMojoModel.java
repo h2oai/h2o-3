@@ -2,7 +2,6 @@ package hex.genmodel.algos.glrm;
 
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
-import hex.genmodel.utils.ArrayUtils;
 
 import java.util.EnumSet;
 import java.util.Random;
@@ -38,6 +37,10 @@ public class GlrmMojoModel extends MojoModel {
     super(columns, domains);
   }
 
+  @Override public int getPredsSize(ModelCategory mc) {
+    return _ncolX;
+  }
+
   /**
    * This function corresponds to the DimReduction model category
    */
@@ -63,88 +66,26 @@ public class GlrmMojoModel extends MojoModel {
 
     // Step 2: update X based on prox-prox algorithm, iterate until convergence
     double alpha = 1;
-    double loss = Double.POSITIVE_INFINITY;
+    double obj = objective(x, a);
     boolean done = false;
     int iters = 0;
     while (!done && iters++ < 100) {
+      // Compute the gradient of the loss function
+      double[] grad = gradientL(x, a);
 
-      // Step 2a: compute gradient of the objective function with respect to x
-      double[] grad = new double[_ncolX];
-
-      // Categorical columns
-      int cat_offset = 0;
-      for (int j = 0; j < _ncats; j++) {
-        if (Double.isNaN(a[j])) continue;   // Skip missing observations in row (???)
-        int n_levels = _numLevels[j];
-
-        // Calculate xy = x * Y_j where Y_j is sub-matrix corresponding to categorical col j
-        double[] xy = new double[n_levels];
-        for (int level = 0; level < n_levels; level++) {
-          for (int k = 0; k < _ncolX; k++) {
-            xy[level] += x[k] * _archetypes[k][level + cat_offset];
-          }
-        }
-
-        // Gradient wrt x is matrix product \grad L_j(x * Y_j, A_j) * Y_j'
-        double[] gradL = _losses[j].mlgrad(xy, (int) a[j]);
-        for (int k = 0; k < _ncolX; k++) {
-          for (int c = 0; c < n_levels; c++)
-            grad[k] += gradL[c] * _archetypes[k][c + cat_offset];
-        }
-        cat_offset += n_levels;
-      }
-
-      // Numeric columns
-      int num_offset = cat_offset - _ncats;
-      for (int j = _ncats; j < _ncolA; j++) {
-        int js = j - _ncats;
-        if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
-
-        // Inner product x * y_j
-        double xy = 0;
-        for (int k = 0; k < _ncolX; k++)
-          xy += x[k] * _archetypes[k][j + num_offset];
-
-        // Sum over y_j weighted by gradient of loss \grad L_j(x * y_j, A_j)
-        double gradL = _losses[j].lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
-        for (int k = 0; k < _ncolX; k++)
-          grad[k] += gradL * _archetypes[k][j + num_offset];
-      }
-
-      // Update row x_i of working copy with new values
+      // Try to make a step of size alpha, until we can achieve improvement in the objective.
       double[] u = new double[_ncolX];
       while (true) {
-        // Compute the tentative new x
+        // Compute the tentative new x (using the prox algorithm)
         for (int k = 0; k < _ncolX; k++) {
           u[k] = x[k] - alpha * grad[k];
         }
         double[] xnew = _regx.rproxgrad(u, alpha * _gammax, random);
 
-        // Compute loss function at the new x   TODO: make this a method
-        double newloss = 0;
-        for (int j = 0; j < _ncats; j++) {
-          if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
-          int n_levels = _numLevels[j];
-          double[] xy = new double[n_levels];
-          for (int level = 0; level < n_levels; level++) {
-            for (int k = 0; k < _ncolX; k++) {
-              xy[level] += xnew[k] * _archetypes[k][level + cat_offset];
-            }
-          }
-          newloss +=  _losses[j].mloss(xy, (int) a[j]);
-        }
-        for (int j = _ncats; j < _ncolA; j++) {
-          int js = j - _ncats;
-          if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
-          double xy = 0;
-          for (int k = 0; k < _ncolX; k++)
-            xy += xnew[k] * _archetypes[k][j + num_offset];
-          newloss += _losses[j].loss(xy, (a[j] - _normSub[js]) * _normMul[js]);
-        }
-
-        if (newloss < loss) {
-          if (newloss > loss * 1.000001) done = true;
-          loss = newloss;
+        double newobj = objective(xnew, a);
+        if (newobj < obj) {
+          if (newobj > obj * 1.000001) done = true;
+          obj = newobj;
           x = xnew;
           alpha *= 1.05;
           break;
@@ -154,9 +95,89 @@ public class GlrmMojoModel extends MojoModel {
       }
     }
 
+    // Step 3: return the result
     System.arraycopy(x, 0, preds, 0, _ncolX);
     return preds;
   }
 
+  /**
+   * Compute gradient of the objective function with respect to x, i.e. d/dx Sum_j[L_j(xY_j, a)]
+   * @param x: current x row
+   * @param a: the adapted data row
+   */
+  private double[] gradientL(double[] x, double[] a) {
+    // Prepate output row
+    double[] grad = new double[_ncolX];
 
+    // Categorical columns
+    int cat_offset = 0;
+    for (int j = 0; j < _ncats; j++) {
+      if (Double.isNaN(a[j])) continue;   // Skip missing observations in row (???)
+      int n_levels = _numLevels[j];
+
+      // Calculate xy = x * Y_j where Y_j is sub-matrix corresponding to categorical col j
+      double[] xy = new double[n_levels];
+      for (int level = 0; level < n_levels; level++) {
+        for (int k = 0; k < _ncolX; k++) {
+          xy[level] += x[k] * _archetypes[k][level + cat_offset];
+        }
+      }
+
+      // Gradient wrt x is matrix product \grad L_j(x * Y_j, A_j) * Y_j'
+      double[] gradL = _losses[j].mlgrad(xy, (int) a[j]);
+      for (int k = 0; k < _ncolX; k++) {
+        for (int c = 0; c < n_levels; c++)
+          grad[k] += gradL[c] * _archetypes[k][c + cat_offset];
+      }
+      cat_offset += n_levels;
+    }
+
+    // Numeric columns
+    for (int j = _ncats; j < _ncolA; j++) {
+      int js = j - _ncats;
+      if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
+
+      // Inner product x * y_j
+      double xy = 0;
+      for (int k = 0; k < _ncolX; k++)
+        xy += x[k] * _archetypes[k][js + cat_offset];
+
+      // Sum over y_j weighted by gradient of loss \grad L_j(x * y_j, A_j)
+      double gradL = _losses[j].lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
+      for (int k = 0; k < _ncolX; k++)
+        grad[k] += gradL * _archetypes[k][js + cat_offset];
+    }
+    return grad;
+  }
+
+  private double objective(double[] x, double[] a) {
+    double res = 0;
+
+    // Loss: Categorical columns
+    int cat_offset = 0;
+    for (int j = 0; j < _ncats; j++) {
+      if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
+      int n_levels = _numLevels[j];
+      double[] xy = new double[n_levels];
+      for (int level = 0; level < n_levels; level++) {
+        for (int k = 0; k < _ncolX; k++) {
+          xy[level] += x[k] * _archetypes[k][level + cat_offset];
+        }
+      }
+      res +=  _losses[j].mloss(xy, (int) a[j]);
+      cat_offset += n_levels;
+    }
+    // Loss: Numeric columns
+    for (int j = _ncats; j < _ncolA; j++) {
+      int js = j - _ncats;
+      if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
+      double xy = 0;
+      for (int k = 0; k < _ncolX; k++)
+        xy += x[k] * _archetypes[k][js + cat_offset];
+      res += _losses[j].loss(xy, (a[j] - _normSub[js]) * _normMul[js]);
+    }
+
+    res += _gammax * _regx.regularize(x);
+    return res;
+  }
 }
