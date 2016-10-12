@@ -157,33 +157,35 @@ class H2OEstimator(ModelBase):
         elif y is not None:
             raise H2OValueError("y should not be provided for an unsupervised model")
         assert_is_type(y, str, None)
-        if ignored_columns is None:
-            ignored_columns = []
-        else:
+        ignored_columns_set = set()
+        if ignored_columns is not None:
             if x is not None:
                 raise H2OValueError("Properties x and ignored_columns cannot be specified simultaneously")
-            for i, ic in enumerate(ignored_columns):
+            for ic in ignored_columns:
                 if is_type(ic, int):
                     if not (-ncols <= ic < ncols):
                         raise H2OValueError("Column %d does not exist in the training frame" % ic)
-                    ignored_columns[i] = names[ic]
+                    ignored_columns_set.add(names[ic])
                 else:
                     if ic not in names:
                         raise H2OValueError("Column %s not in the training frame" % ic)
-        assert_is_type(ignored_columns, [str])
+                    ignored_columns_set.add(ic)
         if x is None:
-            x = list(set(names) - {y} - set(ignored_columns))
+            xset = set(names) - {y} - ignored_columns_set
         else:
+            xset = set()
             if is_type(x, int, str): x = [x]
-            for i, xi in enumerate(x):
+            for xi in x:
                 if is_type(xi, int):
                     if not (-ncols <= xi < ncols):
                         raise H2OValueError("Column %d does not exist in the training frame" % xi)
-                    x[i] = names[xi]
-                elif xi not in names:
-                    raise H2OValueError("Column %s not in the training frame" % xi)
+                    xset.add(names[xi])
+                else:
+                    if xi not in names:
+                        raise H2OValueError("Column %s not in the training frame" % xi)
+                    xset.add(xi)
 
-        parms["x"] = x
+        parms["x"] = list(xset)
         parms["y"] = y
         parms["training_frame"] = training_frame
         parms["validation_frame"] = validation_frame
