@@ -12,8 +12,10 @@ import hex.genmodel.easy.prediction.*;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -427,6 +429,11 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   private double[] fillRawData(RowData data, double[] rawData) throws PredictException {
+
+    // TODO: refactor
+    boolean isImage = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("image_classification");
+    boolean isText  = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("text_classification");
+
     for (String dataColumnName : data.keySet()) {
       Integer index = modelColumnNameToIndexMap.get(dataColumnName);
 
@@ -436,45 +443,63 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         continue;
       }
 
+      BufferedImage img = null;
       String[] domainValues = m.getDomainValues(index);
       if (domainValues == null) {
-        // Column has numeric value.
-        double value;
+        // Column is either numeric or a string (for images or text)
+        double value = Double.NaN;
         Object o = data.get(dataColumnName);
         if (o instanceof String) {
-          String s = (String) o;
-          value = Double.parseDouble(s);
-        }
-        else if (o instanceof Double) {
+          String s = ((String) o).trim();
+          // Url to an image given
+          boolean isURL = s.matches("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
+          if (isImage) {
+            try {
+              if (isURL) img = ImageIO.read(new URL(s));
+              else       img = ImageIO.read(new File(s));
+            }
+            catch (IOException e) {
+              throw new PredictException("Couldn't read image from " + s);
+            }
+          } else if (isText) {
+            // TODO: use model-specific vectorization of text
+            throw new IllegalArgumentException("text classification is not yet implemented.");
+          }
+          else {
+            // numeric
+            value = Double.parseDouble(s);
+          }
+        } else if (o instanceof Double) {
           value = (Double) o;
-        }
-        else if (o instanceof byte[]) {
-          InputStream is = new ByteArrayInputStream((byte[])o);
-          BufferedImage img = null;
+        } else if (o instanceof byte[] && isImage) {
+          // Read the image from raw bytes
+          InputStream is = new ByteArrayInputStream((byte[]) o);
           try {
             img = ImageIO.read(is);
           } catch (IOException e) {
-            e.printStackTrace();
+            throw new PredictException("Couldn't interpret raw bytes as an image.");
           }
-          DeepWaterMojo dwm = (DeepWaterMojo)m;
-          int W=dwm._width;
-          int H=dwm._height;
-          int C=dwm._channels;
-          float[] _destData = new float[W*H*C];
+        } else {
+          throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
+        }
+
+        if (isImage && img != null) {
+          DeepWaterMojo dwm = (DeepWaterMojo) m;
+          int W = dwm._width;
+          int H = dwm._height;
+          int C = dwm._channels;
+          float[] _destData = new float[W * H * C];
           try {
             GenModel.img2pixels(img, W, H, C, _destData, 0, null);
           } catch (IOException e) {
             e.printStackTrace();
+            throw new PredictException("Couldn't vectorize image.");
           }
           rawData = new double[_destData.length];
-          for (int i=0; i<rawData.length; ++i)
+          for (int i = 0; i < rawData.length; ++i)
             rawData[i] = _destData[i];
           return rawData;
         }
-        else {
-          throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
-        }
-
         rawData[index] = value;
       }
       else {
