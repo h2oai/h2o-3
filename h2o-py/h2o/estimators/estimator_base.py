@@ -95,7 +95,7 @@ class H2OEstimator(ModelBase):
 
 
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
-              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None):
+              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None, **ignored):
         """
         Train the H2O model.
 
@@ -104,7 +104,7 @@ class H2OEstimator(ModelBase):
         x : list, None
             A list of column names or indices indicating the predictor columns.
 
-        y : str, int
+        y :
             An index or a column name indicating the response column.
 
         training_frame : H2OFrame
