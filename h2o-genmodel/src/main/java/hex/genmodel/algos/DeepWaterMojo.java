@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class DeepWaterMojo extends MojoModel {
+  public final String _problem_type;
   public final int _mini_batch_size;
   public final int _height;
   public final int _width;
@@ -49,6 +50,7 @@ public class DeepWaterMojo extends MojoModel {
       throw new RuntimeException(e);
     }
     _backend = createDeepWaterBackend((String)info.get("backend")); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+    _problem_type = (String)info.get("problem_type");
     _mini_batch_size = (int)info.get("mini_batch_size");
     _height = (int)info.get("height");
     _width = (int)info.get("width");

@@ -93,7 +93,7 @@ class DeepWaterImageIterator extends DeepWaterIterator {
           }
         }
         if (!status) {
-          boolean isURL = _file.startsWith("http") && !file.exists();
+          boolean isURL = _file.matches("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]") && !file.exists();
           BufferedImage img;
           if (isURL) img = ImageIO.read(new URL(_file.trim()));
           else       img = ImageIO.read(new File(_file.trim()));
