@@ -30,6 +30,7 @@ public class DeepWaterMojo extends MojoModel {
 
   transient final protected byte[] _network;
   transient final protected byte[] _parameters;
+  transient final float[] _meanImageData;
 
   final BackendTrain _backend; //interface provider
   final BackendModel _model;  //pointer to C++ process
@@ -40,12 +41,12 @@ public class DeepWaterMojo extends MojoModel {
   public DeepWaterMojo(MojoReader cr, Map<String, Object> info, String[] columns, String[][] domains) {
     super(cr, info, columns, domains);
     try {
-      _network = _reader.getBinaryFile("model.network");
+      _network = _reader.getBinaryFile("model_network");
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
     try {
-      _parameters = _reader.getBinaryFile("model.params");
+      _parameters = _reader.getBinaryFile("model_params");
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -57,16 +58,12 @@ public class DeepWaterMojo extends MojoModel {
     _channels = (int)info.get("channels");
     _nums = (int)info.get("nums");
     _cats = (int)info.get("cats");
-    _catOffsets = (int[])info.get("catOffsets");
-    _normMul = (double[])info.get("normMul");
-    _normSub = (double[])info.get("normSub");
-    _useAllFactorLevels = (boolean)info.get("useAllFactorLevels");
+    _catOffsets = (int[])info.get("cat_offsets");
+    _normMul = (double[])info.get("norm_mul");
+    _normSub = (double[])info.get("norm_sub");
+    _useAllFactorLevels = (boolean)info.get("use_all_factor_levels");
 
     _imageDataSet = new ImageDataSet(_width, _height, _channels);
-//    float[] meanData = _backend.loadMeanImage(_model, (String)info.get("mean_image_file"));
-//    if(meanData.length > 0) {
-//      _imageDataSet.setMeanData(meanData);
-//    }
 
     _opts = new RuntimeOptions();
     _opts.setSeed(0); // ignored
@@ -85,6 +82,9 @@ public class DeepWaterMojo extends MojoModel {
       e.printStackTrace();
     }
     _model = _backend.buildNet(_imageDataSet, _opts, _backendParams, _nclasses, file.toString());
+    if (info.get("mean_image_file")!=null)
+      _imageDataSet.setMeanData(_backend.loadMeanImage(_model, (String)info.get("mean_image_file")));
+    _meanImageData = _imageDataSet.getMeanData();
 
     file = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
     try {
@@ -103,18 +103,17 @@ public class DeepWaterMojo extends MojoModel {
   @Override
   public final double[] score0(double[] doubles, double offset, double[] preds) {
     assert(doubles != null) : "doubles are null";
-    float[] floats = null;
+    float[] floats;
     int cats = _catOffsets == null ? 0 : _catOffsets[_cats];
     if (_nums > 0) {
       floats = new float[_nums + cats]; //TODO: use thread-local storage
       GenModel.setInput(doubles, floats, _nums, _cats, _catOffsets, _normMul, _normSub, _useAllFactorLevels);
     } else {
       floats = new float[doubles.length];
-      for (int i=0; i<floats.length; ++i)
-        floats[i] = (float)doubles[i];
+      for (int i=0; i<floats.length; ++i) {
+        floats[i] = (float) doubles[i] - (_meanImageData == null ? 0 : _meanImageData[i]);
+      }
     }
-//    System.err.println(Arrays.toString(doubles));
-//    System.err.println(Arrays.toString(floats));
     float[] predFloats = _backend.predict(_model, floats);
     assert(_nclasses>=2) : "Only classification is supported right now.";
     assert(_nclasses == predFloats.length) : "nclasses " + _nclasses + " predFloats.length " + predFloats.length;

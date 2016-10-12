@@ -133,20 +133,20 @@ final public class DeepWaterModelInfo extends Iced {
 
   private ImageDataSet getImageDataSet() {
     ImageDataSet dataset = new ImageDataSet(_width, _height, _channels);
-    if (parameters._mean_image_file != null) {
-      final File f = new File(parameters._mean_image_file);
-      if (f.exists() && !f.isDirectory()) {
-        Log.info("Loading the mean image data from: " + f);
-        float[] meanData = _backend.loadMeanImage(_model, f.getAbsolutePath());
-        if (meanData.length > 0)
-          dataset.setMeanData(meanData);
-      }
-      else {
-        System.err.println("Mean image file " + f + " not found.");
-      }
-    } else if (get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
-      Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
-    }
+//    if (parameters._mean_image_file != null) {
+//      final File f = new File(parameters._mean_image_file);
+//      if (f.exists() && !f.isDirectory()) {
+//        Log.info("Loading the mean image data from: " + f);
+//        float[] meanData = _backend.loadMeanImage(_model, f.getAbsolutePath()); //<--- _model isn't created yet!
+//        if (meanData.length > 0)
+//          dataset.setMeanData(meanData);
+//      }
+//      else {
+//        System.err.println("Mean image file " + f + " not found.");
+//      }
+//    } else if (get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+//      Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
+//    }
     return dataset;
   }
 
@@ -228,9 +228,6 @@ final public class DeepWaterModelInfo extends Iced {
         _backend = createDeepWaterBackend(parameters._backend.toString()); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
         if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
         ImageDataSet imageDataSet = getImageDataSet();
-        if (parameters._mean_image_file != null && !parameters._mean_image_file.equals(""))
-          imageDataSet.setMeanData(_backend.loadMeanImage(_model, parameters._mean_image_file));
-        _meanData = imageDataSet.getMeanData();
         RuntimeOptions opts = getRuntimeOptions();
         BackendParams bparms = getBackendParams();
         if (parameters._network != DeepWaterParameters.Network.user) {
@@ -257,6 +254,10 @@ final public class DeepWaterModelInfo extends Iced {
           }
         }
 
+        if (parameters._mean_image_file != null && !parameters._mean_image_file.equals(""))
+          imageDataSet.setMeanData(_backend.loadMeanImage(_model, parameters._mean_image_file));
+        _meanData = imageDataSet.getMeanData();
+
         final String networkParms = parameters._network_parameters_file;
         if (networkParms != null && !networkParms.isEmpty()) {
           File f = new File(networkParms);
@@ -270,8 +271,6 @@ final public class DeepWaterModelInfo extends Iced {
         } else {
           Log.warn("No network parameters file specified. Starting from scratch.");
         }
-
-
         nativeToJava(); //store initial state as early as it's created
       } catch(Throwable t) {
         Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
