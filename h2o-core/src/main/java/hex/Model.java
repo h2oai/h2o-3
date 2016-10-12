@@ -16,6 +16,7 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.util.*;
 
 import java.io.*;
@@ -1515,16 +1516,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
         EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
         RowData rowData = new RowData();
+        BufferedString bStr = new BufferedString();
         for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
           if (rnd.nextDouble() >= fraction) continue;
           if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
           for (int col = 0; col < features.length; col++) {
-            double val = dvecs[col].at(row);
-            rowData.put(
-                genmodel._names[col],
-                genmodel._domains[col] == null ? (Double) val
-                    : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
-                    : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel"); //unseen levels are treated as such
+            if (dvecs[col].isNumeric()) {
+              double val = dvecs[col].at(row);
+              rowData.put(
+                  genmodel._names[col],
+                  genmodel._domains[col] == null ? (Double) val
+                      : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
+                      : (int) val < genmodel._domains[col].length ? genmodel._domains[col][(int) val] : "UnknownLevel"); //unseen levels are treated as such
+            } else if (dvecs[col].isString()){
+              rowData.put(genmodel._names[col], dvecs[col].atStr(bStr, row));
+            }
           }
 
           AbstractPrediction p;

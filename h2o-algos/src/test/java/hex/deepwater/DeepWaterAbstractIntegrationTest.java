@@ -366,6 +366,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   public void deepWaterCV() {
     DeepWaterModel m = null;
     Frame tr = null;
+    Frame preds = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
@@ -374,11 +375,14 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._nfolds = 3;
       p._epochs = 2;
       m = new DeepWater(p).trainModel().get();
+      preds = m.score(p._train.get());
+      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
       Log.info(m);
     } finally {
       if (m!=null) m.deleteCrossValidationModels();
       if (m!=null) m.delete();
       if (tr!=null) tr.remove();
+      if (preds!=null) preds.remove();
     }
   }
 
@@ -585,6 +589,27 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
     } finally {
       if (tr!=null) tr.remove();
+      if (m!=null) m.remove();
+    }
+  }
+
+  @Test
+  public void imageURLs() {
+    Frame tr = null;
+    Frame preds = null;
+    DeepWaterModel m = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._train = (tr = parse_test_file("smalldata/deepwater/imagenet/binomial_image_urls.csv"))._key;
+      p._response_column = "C2";
+      DeepWater j = new DeepWater(p);
+      m = j.trainModel().get();
+      Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
+      preds = m.score(p._train.get());
+      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
+    } finally {
+      if (tr!=null) tr.remove();
+      if (preds!=null) preds.remove();
       if (m!=null) m.remove();
     }
   }

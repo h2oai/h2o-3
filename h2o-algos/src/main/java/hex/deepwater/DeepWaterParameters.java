@@ -388,7 +388,7 @@ public class DeepWaterParameters extends Model.Parameters {
     if (expensive) {
       _ignore_const_cols = guessProblemType() == DeepWaterParameters.ProblemType.h2oframe_classification;
       dl.info("_ignore_const_cols", "Automatically setting ignore_const_cols to " + (_ignore_const_cols ? " YES " : " NO "));
-    }
+    } else _ignore_const_cols = false;
   }
 
   ProblemType guessProblemType() {
