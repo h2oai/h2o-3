@@ -85,7 +85,11 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
 
 
 def connection():
-    """Return current H2OConnection handler."""
+    """
+    Return current H2OConnection handler.
+
+    :returns H2OConnection:
+    """
     return h2oconn
 
 
