@@ -17,6 +17,7 @@ public class GlrmMojoModel extends MojoModel {
   public int _nrowY;
   public double[][] _archetypes;
   public int[] _numLevels;
+  public int[] _permutation;
   public GlrmLoss[] _losses;
   public GlrmRegularizer _regx;
   public double _gammax;
@@ -48,8 +49,13 @@ public class GlrmMojoModel extends MojoModel {
     assert _archetypes.length == _nrowY;
     assert _archetypes[0].length == _ncolY;
 
+    // Step 0: prepare the data row
+    double[] a = new double[_ncolA];
+    for (int i = 0; i < _ncolA; i++)
+      a[i] = row[_permutation[i]];
+
     // Step 1: initialize X  (for now do Random initialization only)
-    double[] x = preds;
+    double[] x = new double[_ncolX];
     Random random = new Random();
     for (int i = 0; i < _ncolX; i++)
       x[i] = random.nextGaussian();
@@ -68,8 +74,7 @@ public class GlrmMojoModel extends MojoModel {
       // Categorical columns
       int cat_offset = 0;
       for (int j = 0; j < _ncats; j++) {
-        double aj = row[j];
-        if (Double.isNaN(aj)) continue;   // Skip missing observations in row (???)
+        if (Double.isNaN(a[j])) continue;   // Skip missing observations in row (???)
         int n_levels = _numLevels[j];
 
         // Calculate xy = x * Y_j where Y_j is sub-matrix corresponding to categorical col j
@@ -81,7 +86,7 @@ public class GlrmMojoModel extends MojoModel {
         }
 
         // Gradient wrt x is matrix product \grad L_j(x * Y_j, A_j) * Y_j'
-        double[] gradL = _losses[j].mlgrad(xy, (int) aj);
+        double[] gradL = _losses[j].mlgrad(xy, (int) a[j]);
         for (int k = 0; k < _ncolX; k++) {
           for (int c = 0; c < n_levels; c++)
             grad[k] += gradL[c] * _archetypes[k][c + cat_offset];
@@ -93,8 +98,7 @@ public class GlrmMojoModel extends MojoModel {
       int num_offset = cat_offset - _ncats;
       for (int j = _ncats; j < _ncolA; j++) {
         int js = j - _ncats;
-        double aj = row[j];
-        if (Double.isNaN(aj)) continue;   // Skip missing observations in row
+        if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
 
         // Inner product x * y_j
         double xy = 0;
@@ -102,7 +106,7 @@ public class GlrmMojoModel extends MojoModel {
           xy += x[k] * _archetypes[k][j + num_offset];
 
         // Sum over y_j weighted by gradient of loss \grad L_j(x * y_j, A_j)
-        double gradL = _losses[j].lgrad(xy, (aj - _normSub[js]) * _normMul[js]);
+        double gradL = _losses[j].lgrad(xy, (a[j] - _normSub[js]) * _normMul[js]);
         for (int k = 0; k < _ncolX; k++)
           grad[k] += gradL * _archetypes[k][j + num_offset];
       }
@@ -119,7 +123,7 @@ public class GlrmMojoModel extends MojoModel {
         // Compute loss function at the new x   TODO: make this a method
         double newloss = 0;
         for (int j = 0; j < _ncats; j++) {
-          if (Double.isNaN(row[j])) continue;   // Skip missing observations in row
+          if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
           int n_levels = _numLevels[j];
           double[] xy = new double[n_levels];
           for (int level = 0; level < n_levels; level++) {
@@ -127,15 +131,15 @@ public class GlrmMojoModel extends MojoModel {
               xy[level] += xnew[k] * _archetypes[k][level + cat_offset];
             }
           }
-          newloss +=  _losses[j].mloss(xy, (int) row[j]);
+          newloss +=  _losses[j].mloss(xy, (int) a[j]);
         }
         for (int j = _ncats; j < _ncolA; j++) {
           int js = j - _ncats;
-          if (Double.isNaN(row[j])) continue;   // Skip missing observations in row
+          if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
           double xy = 0;
           for (int k = 0; k < _ncolX; k++)
             xy += xnew[k] * _archetypes[k][j + num_offset];
-          newloss += _losses[j].loss(xy, (row[j] - _normSub[js]) * _normMul[js]);
+          newloss += _losses[j].loss(xy, (a[j] - _normSub[js]) * _normMul[js]);
         }
 
         if (newloss < loss) {
