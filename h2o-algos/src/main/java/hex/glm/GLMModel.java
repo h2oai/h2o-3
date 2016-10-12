@@ -1086,19 +1086,24 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       body.ip("for(int i = 0; i < " + _output._dinfo._cats + "; ++i) if(Double.isNaN(data[i])) data[i] = CAT_MODES.VALUES[i];").nl();
       body.ip("for(int i = 0; i < " + _output._dinfo._nums + "; ++i) if(Double.isNaN(data[i + " + _output._dinfo._cats + "])) data[i+" + _output._dinfo._cats + "] = NUM_MEANS.VALUES[i];").nl();
     }
+
+    String handleCastedIntInequality = _parms._missing_values_handling == MissingValuesHandling.Skip
+      ? "continue" // ignore Double.NaN (in effect, use 0) when we're meant to skip unknown levels
+      : "throw new IllegalArgumentException(\"categorical value out of range\")";
+
     if(_parms._family != Family.multinomial) {
       body.ip("double eta = 0.0;").nl();
       if (!_parms._use_all_factor_levels) { // skip level 0 of all factors
         body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {").nl();
         body.ip("  int ival = (int)data[i] - 1;").nl();
-        body.ip("  if(ival != data[i] - 1) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+        body.ip("  if(ival != data[i] - 1) " + handleCastedIntInequality + ";").nl();
         body.ip("  ival += CATOFFS[i];").nl();
         body.ip("  if(ival < CATOFFS[i + 1])").nl();
         body.ip("    eta += b[ival];").nl();
       } else { // do not skip any levels
         body.ip("for(int i = 0; i < CATOFFS.length-1; ++i) {").nl();
         body.ip("  int ival = (int)data[i];").nl();
-        body.ip("  if(ival != data[i]) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+        body.ip("  if(ival != data[i]) " + handleCastedIntInequality + ";").nl();
         body.ip("  ival += CATOFFS[i];").nl();
         body.ip("  if(ival < CATOFFS[i + 1])").nl();
         body.ip("    eta += b[ival];").nl();
@@ -1129,14 +1134,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if (!_parms._use_all_factor_levels) { // skip level 0 of all factors
           body.ip("  for(int i = 0; i < CATOFFS.length-1; ++i) if(data[i] != 0) {").nl();
           body.ip("    int ival = (int)data[i] - 1;").nl();
-          body.ip("    if(ival != data[i] - 1) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+          body.ip("    if(ival != data[i] - 1) " + handleCastedIntInequality + ";").nl();
           body.ip("    ival += CATOFFS[i];").nl();
           body.ip("    if(ival < CATOFFS[i + 1])").nl();
           body.ip("      preds[c+1] += b[ival+c*" + P + "];").nl();
         } else { // do not skip any levels
           body.ip("  for(int i = 0; i < CATOFFS.length-1; ++i) {").nl();
           body.ip("    int ival = (int)data[i];").nl();
-          body.ip("    if(ival != data[i]) throw new IllegalArgumentException(\"categorical value out of range\");").nl();
+          body.ip("    if(ival != data[i]) " + handleCastedIntInequality + ";").nl();
           body.ip("    ival += CATOFFS[i];").nl();
           body.ip("    if(ival < CATOFFS[i + 1])").nl();
           body.ip("      preds[c+1] += b[ival+c*" + P + "];").nl();
