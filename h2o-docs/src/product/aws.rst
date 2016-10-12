@@ -1,4 +1,4 @@
-EC2 Instances & S3 storage
+EC2 Instances & S3 Storage
 ==========================
 
 *Tested on Redhat AMI, Amazon Linux AMI, and Ubuntu AMI*
@@ -8,13 +8,17 @@ to pass your S3 access credentials to H2O. This will allow you to access
 your data on S3 when importing data frames with path prefixes
 ``s3n://...``.
 
+To use the `Minio Cloud Storage <https://minio.io/>`__, you will need to pass an endpoint in addition to access credentials. 
+
 For security reasons, we recommend writing a script to read the access
 credentials that are stored in a separate file. This will not only keep
 your credentials from propagating to other locations, but it will also
 make it easier to change the credential information later.
 
-Standalone Instance
----------------------
+**Note**: You can only specify one S3 endpoint. This means you can either read data from AWS S3 or Minio S3, not from both.
+
+AWS Standalone Instance
+-----------------------
 
 When running H2O in standalone mode using the simple Java launch
 command, we can pass in the S3 credentials in two ways.
@@ -42,32 +46,28 @@ command, we can pass in the S3 credentials in two ways.
 
 		java -jar h2o.jar -hdfs_config core-site.xml
 
-   3. Import the data using importFile with the S3 url path: **s3n://bucket/path/to/file.csv**
+   3. Import the data using ``importFile`` with the S3 URL path: **s3n://bucket/path/to/file.csv**. You can pass the Minio Access Key and Secret Access Key in an S3N URL in Flow, R, or Python (where ``AWS_ACCESS_KEY`` represents your user name, and ``AWS_SECRET_KEY`` represents your password).
 
--  You can pass the AWS Access Key and Secret Access Key in an S3N Url
-   in Flow, R, or Python (where ``AWS_ACCESS_KEY`` represents your user
-   name and ``AWS_SECRET_KEY`` represents your password).
+    -  To import the data from the Flow API:
 
-   -  To import the data from the Flow API:
+      ::
 
-    ::
+  		importFiles [ "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv" ]
 
-		importFiles [ "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv" ]
+    -  To import the data from the R API:
 
-   -  To import the data from the R API:
+      ::
 
-    ::
+  		h2o.importFile(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")
 
-		h2o.importFile(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")
+    -  To import the data from the Python API:
 
-   -  To import the data from the Python API:
+      ::
 
-    ::
+  		h2o.import_file(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")
 
-		h2o.import_frame(path = "s3n://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")
-
-Multi-Node Instance
-----------------------
+AWS Multi-Node Instance
+-----------------------
 
 `Python <http://www.amazon.com/Python-and-AWS-Cookbook-ebook/dp/B005ZTO0UW/ref=sr_1_1?ie=UTF8&qid=1379879111&sr=8-1&keywords=python+aws>`_ and the `boto <http://boto.readthedocs.org/en/latest/>`_ Python library are required to launch a multi-node instance of H2O on EC2. Confirm these dependencies are installed before proceeding.
 
@@ -103,7 +103,7 @@ Build a cluster of EC2 instances by running the following commands on the host t
 
 	  ./h2o-cluster-start-h2o.sh
 
-  Wait 60 seconds after entering the command before entering it on the next node. 
+ Wait 60 seconds after entering the command before entering it on the next node. 
  
 4. In your internet browser, substitute any of the public DNS node addresses for *IP_ADDRESS* in the following example: ``http://IP_ADDRESS:54321``
 
@@ -113,12 +113,70 @@ Build a cluster of EC2 instances by running the following commands on the host t
 
   **Note**: To successfully import data, the data must reside in the same location on all nodes. 
 
+.. _minio:
+
+Minio Instance
+--------------
+
+Minio Cloud Storage is an alternative to Amazon AWS S3. When using a Minio server, the following additional parameters are specified in the Java launch command:
+
+- ``endpoint``: Specifies a minio server instance (including address and port). This overrides the existing endpoint, which is currently hardcoded to be AWS S3.
+
+- ``enable.path.style``: Specifies to override the default S3 behavior to expose every bucket as a full DNS enabled path. Note that this is a Minio recommendation.
+
+1. Edit the properties in the ``core-site.xml`` file to include your these new parameters as well as the Access Key ID and Access Key. Refer to the following example:
+
+  ::
+
+      <property>
+        <name>Dsys.ai.h2o.persist.s3.endPoint</name>
+        <value>example.minio.io:9000</value>
+      </property>
+      <property>
+        <name>Dsys.ai.h2o.persist.s3.enable.path.style</name>
+        <value>true</value>
+      </property>
+      <property>
+        <name>Daws.AccessKeyId</name>
+        <value>[MINIO SECRET KEY]</value>
+      </property>
+
+      <property>
+        <name>Daws.SecretAccessKey</name>
+        <value>[MINIO SECRET ACCESS KEY]</value>
+      </property>
+
+2. Launch with the configuration file ``core-site.xml`` by entering the following in the command line:
+
+  ::
+
+      java -jar h2o.jar -hdfs_config core-site.xml
+
+3. Import the data using ``importFile`` with the Minio S3 url path: **s3n://bucket/path/to/file.csv**. You can pass the AWS Access Key and Secret Access Key in an S3N URL in Flow, R, or Python (where ``MINIO_ACCESS_KEY`` represents your user name, and ``MINIO_SECRET_KEY`` represents your password).
+
+ - To import the data from the Flow API:
+
+  ::
+
+   importFiles [ "s3n://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv" ]
+
+ - To import the data from the R API:
+
+  ::
+
+   h2o.importFile(path = "s3n://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv")
+
+ - To import the data from the Python API:
+
+  ::
+
+   h2o.import_file(path = "s3n://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv")
+
 
 .. _Core-site.xml:
 
-
 Core-site.xml Example
--------------------------------
+---------------------
 
 The following is an example core-site.xml file:
 
