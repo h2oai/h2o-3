@@ -6,6 +6,7 @@ import hex.genmodel.algos.glrm.GlrmLoss;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+
 /**
  * MOJO serializer for GLRM model.
  */

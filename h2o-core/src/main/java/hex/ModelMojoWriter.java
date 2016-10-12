@@ -80,6 +80,12 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
       throw new IOException("Key " + key + " was already written");
     lkv.put(key, valStr);
   }
+  protected final void writekv(String key, int[] value) throws IOException {
+    writekv(key, Arrays.toString(value));
+  }
+  protected final void writekv(String key, double[] value) throws IOException {
+    writekv(key, Arrays.toString(value));
+  }
 
   /** Write a binary file to the MOJO archive. */
   protected final void writeblob(String filename, byte[] blob) throws IOException {

@@ -405,7 +405,7 @@ public class GLRMTest extends TestUtil {
       assert model != null;
 
       checkLossbyCol(parms, model);
-      model.testJavaScoring(train, train, 1e-6);
+      model.testJavaScoring(train, model._output._representation_key.get(), 1e-6);
 
     } finally {
       if (train != null) train.delete();
