@@ -212,9 +212,8 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
-  /** Quick compatibility check between Frames.  Used by some tests for efficient equality checks. */
+  /** Frames are compatible if they have the same layout (number of rows and chunking) and the same vector group (chunk placement).. */
   public boolean isCompatible( Frame fr ) {
-    if( numCols() != fr.numCols() ) return false;
     if( numRows() != fr.numRows() ) return false;
     for( int i=0; i<vecs().length; i++ )
       if( !vecs()[i].checkCompatible(fr.vecs()[i]) )
