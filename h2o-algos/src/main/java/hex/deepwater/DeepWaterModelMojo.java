@@ -24,6 +24,7 @@ public class DeepWaterModelMojo extends ModelMojo<DeepWaterModel, DeepWaterParam
   protected void writeExtraModelInfo() throws IOException {
     super.writeExtraModelInfo();
     writeln("backend = " + _parms._backend);
+    writeln("problem_type = " + _parms._problem_type.toString());
     writeln("mini_batch_size = " + _parms._mini_batch_size);
     writeln("height = " + _model_info._height);
     writeln("width = " + _model_info._width);
