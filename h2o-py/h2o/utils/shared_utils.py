@@ -22,7 +22,7 @@ from h2o.utils.typechecks import assert_is_type, is_type, numeric
 _id_ctr = 0
 
 
-def _py_tmp_key(append=""):
+def _py_tmp_key(append):
     global _id_ctr
     _id_ctr += 1
     return "py_" + str(_id_ctr) + append
