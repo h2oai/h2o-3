@@ -41,7 +41,8 @@ public class MRUtils {
           if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
             count++;
             for (int i = 0; i < ncs.length; i++) {
-              if (cs[i] instanceof CStrChunk)
+              if (cs[i].isNA(r)) ncs[i].addNA();
+              else if (cs[i] instanceof CStrChunk)
                 ncs[i].addStr(cs[i].atStr(bStr,r));
               else if (cs[i] instanceof C16Chunk)
                 ncs[i].addUUID(cs[i].at16l(r),cs[i].at16h(r));
