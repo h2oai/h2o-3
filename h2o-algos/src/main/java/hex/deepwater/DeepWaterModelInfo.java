@@ -152,16 +152,15 @@ final public class DeepWaterModelInfo extends Iced {
 
   /**
    * Main constructor
-   * @param params Model parameters
+   * @param origParams Model parameters
    * @param nClasses number of classes (1 for regression, 0 for autoencoder)
    */
-  public DeepWaterModelInfo(final DeepWaterParameters params, Key model_id, int nClasses, int nFeatures) {
+  public DeepWaterModelInfo(final DeepWaterParameters origParams, Key model_id, int nClasses, int nFeatures) {
     _ncols = nFeatures;
     _classes = nClasses;
     _classification = _classes > 1;
-    parameters = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
+    parameters = (DeepWaterParameters) origParams.clone(); //make a copy, don't change model's parameters
     _model_id = model_id;
-    DeepWaterParameters.Sanity.modifyParms(parameters, parameters, _classes); //sanitize the model_info's parameters
     _deviceID=parameters._device_id;
     _gpu=parameters._gpu;
 

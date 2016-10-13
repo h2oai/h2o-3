@@ -12,7 +12,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     // Determines the order of parameters in the GUI
     static public String[] fields = new String[] {
 				"model_id",
-        "checkpoint",
+        //"checkpoint",
 				"training_frame",
 				"validation_frame",
         "nfolds",

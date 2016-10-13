@@ -5,13 +5,11 @@ import deepwater.backends.BackendParams;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 import org.junit.*;
-import water.fvec.*;
 import water.parser.BufferedString;
 import water.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.Frame;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -101,7 +99,6 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
     }
   }
 
-  @Ignore
   @Test
   public void PreTrainedMOJO() {
     water.fvec.Frame tr = null;
@@ -109,22 +106,23 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
     DeepWaterModel m = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
-      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cc.csv"))._key;
+      //p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cc.csv"))._key;
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
-      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
-      p._train.get().remove("C3");
-      for (String col : new String[]{p._train.get().name(0)}) {
-        Vec v = tr.remove(col);
-        tr.add(col, v.toStringVec());
-        v.remove();
-      }
-      for (String col : new String[]{p._response_column}) {
-        Vec v = tr.remove(col);
-        tr.add(col, v.toCategoricalVec());
-        v.remove();
-      }
+//      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+//      p._train.get().remove("C3");
+//      for (String col : new String[]{p._train.get().name(0)}) {
+//        Vec v = tr.remove(col);
+//        tr.add(col, v.toStringVec());
+//        v.remove();
+//      }
+//      for (String col : new String[]{p._response_column}) {
+//        Vec v = tr.remove(col);
+//        tr.add(col, v.toCategoricalVec());
+//        v.remove();
+//      }
       String path = "../deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/";
-      p._network = DeepWaterParameters.Network.user;
+//      p._network = DeepWaterParameters.Network.user;
       p._image_shape = new int[]{224, 224};
       p._channels = 3;
       p._network_definition_file = path + "Inception_BN-symbol.json"; //TODO: allow loading this 1000-class graph for this 3-class problem
