@@ -26,18 +26,18 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2ODeepWaterEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_predictions",
-                      "keep_cross_validation_fold_assignment", "fold_assignment", "fold_column", "response_column",
-                      "ignored_columns", "score_each_iteration", "categorical_encoding", "overwrite_with_best_model",
-                      "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp", "seed", "standardize",
-                      "learning_rate", "learning_rate_annealing", "momentum_start", "momentum_ramp", "momentum_stable",
-                      "distribution", "score_interval", "score_training_samples", "score_validation_samples",
-                      "score_duty_cycle", "stopping_rounds", "stopping_metric", "stopping_tolerance",
-                      "max_runtime_secs", "replicate_training_data", "single_node_mode", "shuffle_training_data",
-                      "mini_batch_size", "clip_gradient", "network", "backend", "image_shape", "channels", "gpu",
-                      "device_id", "network_definition_file", "network_parameters_file", "mean_image_file",
-                      "export_native_parameters_prefix", "activation", "hidden", "input_dropout_ratio",
-                      "hidden_dropout_ratios"}
+        names_list = {"model_id", "checkpoint", "training_frame", "validation_frame", "nfolds",
+                      "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
+                      "fold_column", "response_column", "ignored_columns", "score_each_iteration",
+                      "categorical_encoding", "overwrite_with_best_model", "epochs", "train_samples_per_iteration",
+                      "target_ratio_comm_to_comp", "seed", "standardize", "learning_rate", "learning_rate_annealing",
+                      "momentum_start", "momentum_ramp", "momentum_stable", "distribution", "score_interval",
+                      "score_training_samples", "score_validation_samples", "score_duty_cycle", "stopping_rounds",
+                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "replicate_training_data",
+                      "single_node_mode", "shuffle_training_data", "mini_batch_size", "clip_gradient", "network",
+                      "backend", "image_shape", "channels", "gpu", "device_id", "network_definition_file",
+                      "network_parameters_file", "mean_image_file", "export_native_parameters_prefix", "activation",
+                      "hidden", "input_dropout_ratio", "hidden_dropout_ratios"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -48,6 +48,17 @@ class H2ODeepWaterEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+
+    @property
+    def checkpoint(self):
+        """str: Model checkpoint to resume training with."""
+        return self._parms.get("checkpoint")
+
+    @checkpoint.setter
+    def checkpoint(self, checkpoint):
+        assert_is_type(checkpoint, None, str, H2OEstimator)
+        self._parms["checkpoint"] = checkpoint
+
 
     @property
     def training_frame(self):
