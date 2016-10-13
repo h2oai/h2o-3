@@ -3,6 +3,7 @@ package hex.genmodel.algos.glrm;
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Random;
 
@@ -51,6 +52,7 @@ public class GlrmMojoModel extends MojoModel {
     assert _nrowY == _ncolX;
     assert _archetypes.length == _nrowY;
     assert _archetypes[0].length == _ncolY;
+    System.out.println("Scoring row " + Arrays.toString(row));
 
     // Step 0: prepare the data row
     double[] a = new double[_ncolA];
@@ -70,6 +72,7 @@ public class GlrmMojoModel extends MojoModel {
     boolean done = false;
     int iters = 0;
     while (!done && iters++ < 100) {
+//      System.out.println("  x = " + Arrays.toString(x) + ", obj = " + obj);
       // Compute the gradient of the loss function
       double[] grad = gradientL(x, a);
 
@@ -83,8 +86,10 @@ public class GlrmMojoModel extends MojoModel {
         double[] xnew = _regx.rproxgrad(u, alpha * _gammax, random);
 
         double newobj = objective(xnew, a);
-        if (newobj < obj) {
-          if (newobj > obj * 1.000001) done = true;
+        if (newobj == 0) break;
+        double obj_improvement = 1 - newobj/obj;
+        if (obj_improvement >= 0) {
+          if (obj_improvement < 1e-6) done = true;
           obj = newobj;
           x = xnew;
           alpha *= 1.05;
@@ -96,6 +101,7 @@ public class GlrmMojoModel extends MojoModel {
     }
 
     // Step 3: return the result
+    System.out.println("  => result = " + Arrays.toString(x));
     System.arraycopy(x, 0, preds, 0, _ncolX);
     return preds;
   }

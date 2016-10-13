@@ -395,10 +395,12 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._loss = GlrmLoss.Absolute;
+      parms._loss = GlrmLoss.Quadratic;
       parms._init = GlrmInitialization.Random;
       parms._recover_svd = false;
       parms._max_iterations = 1000;
+      parms._regularization_x = GlrmRegularizer.Quadratic;
+      parms._gamma_x = 0.3;
 
       glrm = new GLRM(parms);
       model = glrm.trainModel().get();
