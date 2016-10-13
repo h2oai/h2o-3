@@ -3,6 +3,7 @@ package water.fvec;
 import org.junit.*;
 
 import water.TestUtil;
+import water.util.Pair;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -88,7 +89,7 @@ public class C16ChunkTest extends TestUtil {
   }
 
   private UUID uuidAt(Chunk cc, int i) {
-    return u(cc.at16l(i), cc.at16h(i));
+    return new UUID(cc.at16l(i), cc.at16h(i));
   }
 
   private void checkChunk(Chunk cc, int l, boolean haveNA) {
