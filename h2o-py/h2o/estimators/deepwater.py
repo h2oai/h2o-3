@@ -604,7 +604,10 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def activation(self):
-        """Enum["rectifier", "tanh"]: Activation function."""
+        """
+        Enum["rectifier", "tanh"]: Activation function. Only used if no user-defined network architecture file is
+        provided, and only for problem_type=h2oframe_classification.
+        """
         return self._parms.get("activation")
 
     @activation.setter
@@ -615,7 +618,10 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def hidden(self):
-        """List[int]: Hidden layer sizes (e.g. [200, 200])."""
+        """
+        List[int]: Hidden layer sizes (e.g. [200, 200]). Only used if no user-defined network architecture file is
+        provided, and only for problem_type=h2oframe_classification.
+        """
         return self._parms.get("hidden")
 
     @hidden.setter
