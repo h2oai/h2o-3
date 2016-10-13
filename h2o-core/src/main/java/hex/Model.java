@@ -1504,12 +1504,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             ss.getStreamWriter().writeTo(os);
             os.close();
             genmodel = MojoModel.load(filename);
-            boolean deleted = new File(filename).delete();
-            assert deleted : "Failed to delete the file";
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
             throw H2O.fail("Internal MOJO loading failed", e1);
+          } finally {
+            boolean deleted = new File(filename).delete();
+            assert deleted : "Failed to delete the file";
           }
         }
 
@@ -1585,7 +1586,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               if (num_errors < 20) {
                 System.err.println("EasyPredict Predictions mismatch for row " + rowData);
                 System.err.println("  Expected predictions: " + Arrays.toString(expected_preds));
-                System.err.println("  Actual predictions: " + Arrays.toString(actual_preds));
+                System.err.println("  Actual predictions:   " + Arrays.toString(actual_preds));
               }
               break;
             }
