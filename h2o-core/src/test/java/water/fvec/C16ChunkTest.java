@@ -3,14 +3,15 @@ package water.fvec;
 import org.junit.*;
 
 import water.TestUtil;
-import water.util.Pair;
 
 import java.util.Arrays;
 import java.util.UUID;
 
+import static org.junit.Assert.fail;
+
 public class C16ChunkTest extends TestUtil {
 
-  static UUID u(long lo, long hi) { return new UUID(lo, hi);}
+  static UUID u(long lo, long hi) { return new UUID(hi, lo);}
 
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   UUID[] sampleVals = new UUID[]{
@@ -88,8 +89,19 @@ public class C16ChunkTest extends TestUtil {
     }
   }
 
+  @Test
+  public void test_illegal_values() {
+    Chunk cc = buildTestData(false);
+    try {
+      cc.set_impl(4, C16Chunk._LO_NA, C16Chunk._HI_NA);
+      fail("Expected a failure on adding an illegal value");
+    } catch(IllegalArgumentException iae) {
+      // as expected
+    }
+  }
+
   private UUID uuidAt(Chunk cc, int i) {
-    return new UUID(cc.at16l(i), cc.at16h(i));
+    return u(cc.at16l(i), cc.at16h(i));
   }
 
   private void checkChunk(Chunk cc, int l, boolean haveNA) {

@@ -4,16 +4,15 @@ import water.*;
 import water.util.UnsafeUtils;
 
 public class C16Chunk extends Chunk {
-  public static final long _LO_NA = Long.MIN_VALUE;
-  public static final long _HI_NA = 0;
+  static final long _LO_NA = Long.MIN_VALUE;
+  static final long _HI_NA = 0;
   C16Chunk( byte[] bs ) { _mem=bs; _start = -1;
     set_len(_mem.length>>4); }
   @Override protected final long   at8_impl( int i ) { throw new IllegalArgumentException("at8_abs but 16-byte UUID");  }
   @Override protected final double atd_impl( int i ) { throw new IllegalArgumentException("atd but 16-byte UUID");  }
-  @Override protected final boolean isNA_impl( int i ) {
-    return loAt(i) ==_LO_NA && hiAt(i) ==_HI_NA;
-  }
 
+  @Override protected final boolean isNA_impl( int i ) { return isNA(loAt(i), hiAt(i)); }
+  public static boolean isNA(long lo, long hi) { return lo ==_LO_NA && hi ==_HI_NA; }
   private long loAt(int idx) { return UnsafeUtils.get8(_mem, idx*16); }
   private long hiAt(int idx) { return UnsafeUtils.get8(_mem, idx*16+8); }
 
@@ -32,6 +31,7 @@ public class C16Chunk extends Chunk {
     return hi;
   }
   @Override boolean set_impl(int i, long lo, long hi) {
+    if (isNA(lo, hi)) throw new IllegalArgumentException("Illegal uid value");
     UnsafeUtils.set8(_mem, i*16,     lo);
     UnsafeUtils.set8(_mem, i*16 + 8, hi);
     return true;
