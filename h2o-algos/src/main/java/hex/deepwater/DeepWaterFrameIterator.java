@@ -2,8 +2,10 @@ package hex.deepwater;
 
 import hex.DataInfo;
 import water.*;
-import water.fvec.*;
-import water.parser.BufferedString;
+import water.fvec.C4FChunk;
+import water.fvec.C8DChunk;
+import water.fvec.Chunk;
+import water.fvec.NewChunk;
 import water.util.UnsafeUtils;
 
 import java.io.IOException;
