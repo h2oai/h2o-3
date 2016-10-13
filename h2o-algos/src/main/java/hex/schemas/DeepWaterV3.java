@@ -71,7 +71,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      * Tanh: Hyperbolic tangent function (same as scaled and shifted sigmoid).
      */
     @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
-        values = {"Rectifier", "Tanh"}, help = "Activation function.")
+        values = {"Rectifier", "Tanh"}, help = "Activation function. Only used if no user-defined network architecture file is provided, and only for problem_type=h2oframe_classification.")
     public DeepWaterParameters.Activation activation;
 
     /**
@@ -81,7 +81,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      * neurons.
      */
     @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
-        help = "Hidden layer sizes (e.g. [200, 200]).")
+        help = "Hidden layer sizes (e.g. [200, 200]). Only used if no user-defined network architecture file is provided, and only for problem_type=h2oframe_classification.")
     public int[] hidden;
 
     /**
