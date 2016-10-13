@@ -445,22 +445,33 @@ public class DeepWaterParameters extends Model.Parameters {
         "_single_node_mode",
         "_overwrite_with_best_model",
         "_mini_batch_size",
-        "_network_parameters_file"
+        "_network_parameters_file",
+        "_clip_gradient",
+        "_learning_rate",
+        "_learning_rate_annealing",
+        "_gpu",
+        "_sparse",
+        "_device_id",
+        "_input_dropout_ratio",
+        "_hidden_dropout_ratios",
+        "_cache_data",
+        "_export_native_parameters_prefix",
+        "_image_shape", //since it's hard to do equals on this in the check - should not change between checkpoint restarts
     };
 
     // the following parameters must not be modified when restarting from a checkpoint
     transient static private final String[] cp_not_modifiable = new String[]{
         "_drop_na20_cols",
+        "_missing_values_handling",
         "_response_column",
         "_activation",
         "_use_all_factor_levels",
+        "_problem_type",
+        "_channels",
         "_standardize",
         "_autoencoder",
         "_network",
         "_backend",
-        "_learn_rate",
-        "_learn_rate_annealing",
-        "_rate_decay",
         "_momentum_start",
         "_momentum_ramp",
         "_momentum_stable",

@@ -48,7 +48,7 @@ final public class DeepWaterModelInfo extends Iced {
 
   //for numeric classification (csv/frame style)
   int _ncols;
-  Key<DataInfo> _dataInfoKey;
+  DataInfo _dataInfo;
 
   public void nukeBackend() {
     if (_backend != null && _model != null) {
@@ -132,22 +132,7 @@ final public class DeepWaterModelInfo extends Iced {
   }
 
   private ImageDataSet getImageDataSet() {
-    ImageDataSet dataset = new ImageDataSet(_width, _height, _channels);
-//    if (parameters._mean_image_file != null) {
-//      final File f = new File(parameters._mean_image_file);
-//      if (f.exists() && !f.isDirectory()) {
-//        Log.info("Loading the mean image data from: " + f);
-//        float[] meanData = _backend.loadMeanImage(_model, f.getAbsolutePath()); //<--- _model isn't created yet!
-//        if (meanData.length > 0)
-//          dataset.setMeanData(meanData);
-//      }
-//      else {
-//        System.err.println("Mean image file " + f + " not found.");
-//      }
-//    } else if (get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
-//      Log.warn("No mean image file specified. Using 0 values. Convergence might be slower.");
-//    }
-    return dataset;
+    return new ImageDataSet(_width, _height, _channels);
   }
 
   /**
@@ -164,117 +149,109 @@ final public class DeepWaterModelInfo extends Iced {
     _deviceID=parameters._device_id;
     _gpu=parameters._gpu;
 
-    if (parameters._checkpoint!=null) {
-      try {
-        DeepWaterModel other = (DeepWaterModel) parameters._checkpoint.get();
-        javaToNative(other.model_info()._network, other.model_info()._modelparams);
-        throw H2O.unimpl();
-      } catch (Throwable t) {
-        throw new H2OIllegalArgumentException("Invalid checkpoint provided.");
-      }
-    }
-    else {
-      _width = _ncols;
-      _height = 0;
-      _channels = 0;
-      if (parameters._problem_type == DeepWaterParameters.ProblemType.image_classification) {
-        _width=parameters._image_shape[0];
-        _height=parameters._image_shape[1];
-        _channels=parameters._channels;
-        if (_width==0 || _height==0) {
-          switch(parameters._network) {
-            case lenet:
-              _width = 28;
-              _height = 28;
-              break;
-            case auto:
-            case alexnet:
-            case inception_bn:
-            case googlenet:
-            case resnet:
-              _width = 224;
-              _height = 224;
-              break;
-            case vgg:
-              _width = 320;
-              _height = 320;
-              break;
-            case user:
-              throw new H2OIllegalArgumentException("Please specify width and height for user-given model definition.");
-            default:
-              throw H2O.unimpl("Unknown network type: " + parameters._network);
-          }
+    _width = _ncols;
+    _height = 0;
+    _channels = 0;
+    if (parameters._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+      _width=parameters._image_shape[0];
+      _height=parameters._image_shape[1];
+      _channels=parameters._channels;
+      if (_width==0 || _height==0) {
+        switch(parameters._network) {
+          case lenet:
+            _width = 28;
+            _height = 28;
+            break;
+          case auto:
+          case alexnet:
+          case inception_bn:
+          case googlenet:
+          case resnet:
+            _width = 224;
+            _height = 224;
+            break;
+          case vgg:
+            _width = 320;
+            _height = 320;
+            break;
+          case user:
+            throw new H2OIllegalArgumentException("Please specify width and height for user-given model definition.");
+          default:
+            throw H2O.unimpl("Unknown network type: " + parameters._network);
         }
-        assert(_width>0);
-        assert(_height>0);
-      } else if (parameters._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-        if (parameters._image_shape != null) {
-          if (parameters._image_shape[0]>0)
-            _width = parameters._image_shape[0];
-          if (parameters._image_shape[1]>0)
-            _height = parameters._image_shape[1];
-          if (_width>0 && _height>0)
-            _channels = parameters._channels;
-          else
-            _channels = 0;
+      }
+      assert(_width>0);
+      assert(_height>0);
+    } else if (parameters._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+      if (parameters._image_shape != null) {
+        if (parameters._image_shape[0]>0)
+          _width = parameters._image_shape[0];
+        if (parameters._image_shape[1]>0)
+          _height = parameters._image_shape[1];
+        if (_width>0 && _height>0)
+          _channels = parameters._channels;
+        else
+          _channels = 0;
+      }
+    } else {
+      Log.warn("unknown problem_type:", parameters._problem_type);
+      throw H2O.unimpl();
+    }
+    setupNativeBackend();
+  }
+
+  void setupNativeBackend() {
+    try {
+      _backend = createDeepWaterBackend(parameters._backend.toString());
+      if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
+      ImageDataSet imageDataSet = getImageDataSet();
+      RuntimeOptions opts = getRuntimeOptions();
+      BackendParams bparms = getBackendParams();
+      if (parameters._network != DeepWaterParameters.Network.user) {
+        String network = parameters._network == null ? null : parameters._network.toString();
+        if (network != null && parameters._network != DeepWaterParameters.Network.user) {
+          Log.info("Creating a fresh model of the following network type: " + network);
+          _model = _backend.buildNet(imageDataSet, opts, bparms, _classes, network);
+        } else {
+          Log.info("Creating a fresh model of the following network type: MLP");
+          _model = _backend.buildNet(imageDataSet, opts, bparms, _classes, "MLP");
+        }
+      }
+
+      // load a network if specified
+      final String networkDef = parameters._network_definition_file;
+      if (networkDef != null && !networkDef.isEmpty()) {
+        File f = new File(networkDef);
+        if(!f.exists() || f.isDirectory()) {
+          Log.err("Network definition file " + f + " not found.");
+        } else {
+          Log.info("Loading the network from: " + f.getAbsolutePath());
+          Log.info("Setting the optimizer and initializing the first and last layer.");
+          _model = _backend.buildNet(imageDataSet, opts, bparms, _classes, f.getAbsolutePath());
+        }
+      }
+
+      if (parameters._mean_image_file != null && !parameters._mean_image_file.equals(""))
+        imageDataSet.setMeanData(_backend.loadMeanImage(_model, parameters._mean_image_file));
+      _meanData = imageDataSet.getMeanData();
+
+      final String networkParms = parameters._network_parameters_file;
+      if (networkParms != null && !networkParms.isEmpty()) {
+        File f = new File(networkParms);
+        if(!f.exists() || f.isDirectory()) {
+          Log.err("Parameter file " + f + " not found.");
+        } else {
+          Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
+          assert (_model != null);
+          _backend.loadParam(_model, f.getAbsolutePath());
         }
       } else {
-        Log.warn("unknown problem_type:", parameters._problem_type);
-        throw H2O.unimpl();
+        Log.warn("No network parameters file specified. Starting from scratch.");
       }
-
-      try {
-        _backend = createDeepWaterBackend(parameters._backend.toString()); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
-        if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
-        ImageDataSet imageDataSet = getImageDataSet();
-        RuntimeOptions opts = getRuntimeOptions();
-        BackendParams bparms = getBackendParams();
-        if (parameters._network != DeepWaterParameters.Network.user) {
-          String network = parameters._network == null ? null : parameters._network.toString();
-          if (network != null && parameters._network != DeepWaterParameters.Network.user) {
-            Log.info("Creating a fresh model of the following network type: " + network);
-            _model = _backend.buildNet(imageDataSet, opts, bparms, _classes, network);
-          } else {
-            Log.info("Creating a fresh model of the following network type: MLP");
-            _model = _backend.buildNet(imageDataSet, opts, bparms, _classes, "MLP");
-          }
-        }
-
-        // load a network if specified
-        final String networkDef = parameters._network_definition_file;
-        if (networkDef != null && !networkDef.isEmpty()) {
-          File f = new File(networkDef);
-          if(!f.exists() || f.isDirectory()) {
-            Log.err("Network definition file " + f + " not found.");
-          } else {
-            Log.info("Loading the network from: " + f.getAbsolutePath());
-            Log.info("Setting the optimizer and initializing the first and last layer.");
-            _model = _backend.buildNet(imageDataSet, opts, bparms, _classes, f.getAbsolutePath());
-          }
-        }
-
-        if (parameters._mean_image_file != null && !parameters._mean_image_file.equals(""))
-          imageDataSet.setMeanData(_backend.loadMeanImage(_model, parameters._mean_image_file));
-        _meanData = imageDataSet.getMeanData();
-
-        final String networkParms = parameters._network_parameters_file;
-        if (networkParms != null && !networkParms.isEmpty()) {
-          File f = new File(networkParms);
-          if(!f.exists() || f.isDirectory()) {
-            Log.err("Parameter file " + f + " not found.");
-          } else {
-            Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
-            assert (_model != null);
-            _backend.loadParam(_model, f.getAbsolutePath());
-          }
-        } else {
-          Log.warn("No network parameters file specified. Starting from scratch.");
-        }
-        nativeToJava(); //store initial state as early as it's created
-      } catch(Throwable t) {
-        Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
-        throw t;
-      }
+      nativeToJava(); //store initial state as early as it's created
+    } catch(Throwable t) {
+      Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
+      throw t;
     }
   }
 
@@ -350,7 +327,7 @@ final public class DeepWaterModelInfo extends Iced {
       FileOutputStream os = new FileOutputStream(file);
       os.write(network);
       os.close();
-      Log.info("Randomizing everything.");
+//      Log.info("Randomizing everything.");
       _model = _backend.buildNet(getImageDataSet(), getRuntimeOptions(), getBackendParams(), _classes, file.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();

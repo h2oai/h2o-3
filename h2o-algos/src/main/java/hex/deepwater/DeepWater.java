@@ -1,11 +1,13 @@
 package hex.deepwater;
 
+import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ToEigenVec;
 import hex.genmodel.algos.DeepWaterMojo;
 import hex.util.LinearAlgebraUtils;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
@@ -13,6 +15,7 @@ import water.util.PrettyPrint;
 
 import java.util.Arrays;
 
+import static hex.deepwater.DeepWaterModel.makeDataInfo;
 import static water.util.MRUtils.sampleFrame;
 
 /**
@@ -118,7 +121,80 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
      * If checkpoint == null, then start training a new model, otherwise continue from a checkpoint
      */
     public final void buildModel() {
-      trainModel(new DeepWaterModel(_result,_parms,new DeepWaterModelOutput(DeepWater.this),train(),valid(),nclasses()));
+      DeepWaterModel cp = null;
+      if (_parms._checkpoint == null) {
+        cp = new DeepWaterModel(_result,_parms,new DeepWaterModelOutput(DeepWater.this),train(),valid(),nclasses());
+      } else {
+        final DeepWaterModel previous = DKV.getGet(_parms._checkpoint);
+        if (previous == null) throw new IllegalArgumentException("Checkpoint not found.");
+        Log.info("Resuming from checkpoint.");
+        _job.update(0,"Resuming from checkpoint");
+
+        if( isClassifier() != previous._output.isClassifier() )
+          throw new H2OIllegalArgumentException("Response type must be the same as for the checkpointed model.");
+        if( isSupervised() != previous._output.isSupervised() )
+          throw new H2OIllegalArgumentException("Model type must be the same as for the checkpointed model.");
+
+        //READ ONLY
+        DeepWaterParameters.Sanity.checkIfParameterChangeAllowed(previous._parms, _parms);
+
+        DataInfo dinfo = null;
+        try {
+          // PUBDEV-2513: Adapt _train and _valid (in-place) to match the frames that were used for the previous model
+          // This can add or remove dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
+          for (String st : previous.adaptTestForTrain(_train,true,false)) Log.warn(st);
+          for (String st : previous.adaptTestForTrain(_valid,true,false)) Log.warn(st);
+          if (previous.model_info()._dataInfo!=null) {
+            dinfo = makeDataInfo(_train, _valid, _parms);
+            DKV.put(dinfo);
+          }
+          cp = new DeepWaterModel(dest(), _parms, previous, dinfo);
+          cp.write_lock(_job);
+
+          if (!Arrays.equals(cp._output._names, previous._output._names)) {
+            throw new H2OIllegalArgumentException("The columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
+          }
+          if (!Arrays.deepEquals(cp._output._domains, previous._output._domains)) {
+            throw new H2OIllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");
+          }
+          if (dinfo != null && dinfo.fullN() != previous.model_info()._dataInfo.fullN()) {
+            throw new H2OIllegalArgumentException("Total number of predictors is different than for the checkpointed model.");
+          }
+          if (_parms._epochs <= previous.epoch_counter) {
+            throw new H2OIllegalArgumentException("Total number of epochs must be larger than the number of epochs already trained for the checkpointed model (" + previous.epoch_counter + ").");
+          }
+
+          // these are the mutable parameters that are to be used by the model (stored in model_info.parameters)
+          final DeepWaterParameters actualParms = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
+          assert (actualParms != previous.model_info().get_params());
+          assert (actualParms != _parms);
+          assert (actualParms != previous._parms);
+
+          // Update actualNewP parameters based on what the user wants (cp_modifiable parameters only), was cloned from the previous model so far
+
+          //show the user only the changes in the user-facing parameters
+          DeepWaterParameters.Sanity.updateParametersDuringCheckpointRestart(_parms, previous._parms, false /*doIt*/, false /*quiet*/);
+
+          //actually change the parameters in the "insider" version of parameters
+          DeepWaterParameters.Sanity.updateParametersDuringCheckpointRestart(_parms /*user-given*/, cp.model_info().get_params() /*model_info.parameters that will be used*/, true /*doIt*/, true /*quiet*/);
+
+          // update/sanitize parameters (in place) to set defaults etc.
+          DeepWaterParameters.Sanity.modifyParms(_parms, cp.model_info().get_params(), nclasses());
+
+          Log.info("Continuing training after " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
+          cp.update(_job);
+        } catch (H2OIllegalArgumentException ex){
+          if (cp != null) {
+            cp.unlock(_job);
+            cp.delete();
+            cp = null;
+          }
+          throw ex;
+        } finally {
+          if (cp != null) cp.unlock(_job);
+        }
+      }
+      trainModel(cp);
     }
 
     /**
@@ -240,9 +316,9 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         for(;;) {
           model.iterations++;
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
-                  new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
-                  new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
-                  new DeepWaterTask (model.model_info(), rowFraction(train, mp, model), _job).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
+                  new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() :  // replicated data + single node mode
+                  new DeepWaterTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()):  // replicated data + multi-node mode
+                  new DeepWaterTask (model.model_info(), rowFraction(train, mp, model), _job).doAll     (    train    ).model_info());                                // distributed data (always in multi-node mode)
           long before = System.currentTimeMillis();
           if (_parms._export_native_parameters_prefix !=null && !_parms._export_native_parameters_prefix.equals("")) {
             Log.info("Saving model state.");

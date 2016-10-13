@@ -9,13 +9,17 @@ import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
 import hex.splitframe.ShuffleSplitFrame;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.junit.*;
 import water.*;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,12 +28,24 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
+
 public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   protected BackendTrain backend;
+  abstract DeepWaterParameters.Backend getBackend();
 
   @BeforeClass
-  public static void stall() { stall_till_cloudsize(1); Assume.assumeTrue(DeepWater.haveBackend());}
+  static public void stall() { stall_till_cloudsize(1); }
+
+  @BeforeClass
+  public static void checkBackend() { Assume.assumeTrue(DeepWater.haveBackend()); }
+
+  @Before
+  public void createBackend() throws Exception {
+    backend = createDeepWaterBackend(getBackend().toString());
+    Assert.assertTrue(backend != null);
+  }
 
   @Test
   public void memoryLeakTest() {
@@ -39,6 +55,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     while(counter-- > 0) {
       try {
         DeepWaterParameters p = new DeepWaterParameters();
+        p._backend = getBackend();
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
         p._network = DeepWaterParameters.Network.vgg;
@@ -60,6 +77,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._learning_rate = 1e-3;
@@ -85,6 +103,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._epochs = 50;
@@ -115,6 +134,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
@@ -169,6 +189,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       Frame tr = null;
       try {
         DeepWaterParameters p = new DeepWaterParameters();
+        p._backend = getBackend();
         p._train = (tr = parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
         p._learning_rate = 0; //no updates to original weights
@@ -196,6 +217,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       Frame tr = null;
       try {
         DeepWaterParameters p = new DeepWaterParameters();
+        p._backend = getBackend();
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
         p._learning_rate = 0; //no updates to original weights
@@ -235,6 +257,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
@@ -291,6 +314,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       Frame tr = null;
       try {
         DeepWaterParameters p = new DeepWaterParameters();
+        p._backend = getBackend();
         p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
         p._response_column = "C2";
         p._learning_rate = 1e-4;
@@ -328,6 +352,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Frame tr = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = network;
@@ -370,6 +395,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Frame preds = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._response_column = "C2";
       p._network = DeepWaterParameters.Network.lenet;
@@ -409,6 +435,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Frame pred = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
       p._network = network;
       p._response_column = "C2";
@@ -525,6 +552,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   public void scoreLoop() {
     DeepWaterParameters p = new DeepWaterParameters();
     Frame tr;
+    p._backend = getBackend();
     p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
     p._network = DeepWaterParameters.Network.lenet;
     p._response_column = "C2";
@@ -574,6 +602,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     DeepWaterModel m = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
       p._response_column = "CAPSULE";
       p._ignored_columns = new String[]{"ID"};
@@ -601,6 +630,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     DeepWaterModel m = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr = parse_test_file("smalldata/deepwater/imagenet/binomial_image_urls.csv"))._key;
       p._response_column = "C2";
       DeepWater j = new DeepWater(p);
@@ -621,6 +651,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     DeepWaterModel m = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
       p._train = (tr = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv"))._key;
       p._response_column = "y";
       for (String col : new String[]{"y"}) {
@@ -660,6 +691,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         DKV.put(tr);
         DKV.put(va);
 
+        p._backend = getBackend();
         p._train = tr._key;
         p._valid = va._key;
         p._hidden = new int[]{500,500};
@@ -696,6 +728,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         DKV.put(tr);
         DKV.put(va);
 
+        p._backend = getBackend();
         p._train = tr._key;
         p._valid = va._key;
         p._hidden = new int[]{500,500};
@@ -733,6 +766,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         DKV.put(tr);
         DKV.put(va);
 
+        p._backend = getBackend();
         p._hidden = new int[]{1024,1024,2048};
         p._input_dropout_ratio = 0.1;
         p._hidden_dropout_ratios = new double[]{0.5,0.5,0.5};
@@ -775,6 +809,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         Key[] keys = aro(Key.make("test.hex"), Key.make("train.hex"));
         splits = ShuffleSplitFrame.shuffleSplitFrame(tr, keys, ratios, 42);
 
+        p._backend = getBackend();
         p._train = keys[0];
         p._valid = keys[1];
         DeepWater j = new DeepWater(p);
@@ -795,6 +830,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     try {
       DeepWaterParameters p = new DeepWaterParameters();
 
+      p._backend = getBackend();
       p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
       p._response_column = "CAPSULE";
       p._ignored_columns = new String[]{"ID"};
@@ -811,6 +847,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         }
       }
       DKV.put(tr);
+      p._backend = getBackend();
       p._seed = 125;
       p._epochs = 1;
       p._categorical_encoding = categoricalEncodingScheme;
@@ -834,6 +871,181 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Test public void MOJOTestNumeric() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, true);}
   @Test public void MOJOTestCatInternal() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotInternal, true, true);}
   @Test public void MOJOTestCatExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
+
+  @Test
+  public void testCheckpointForwards() {
+    Frame tfr = null;
+    DeepWaterModel dl = null;
+    DeepWaterModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
+      p._train = tfr._key;
+      p._epochs = 10;
+      p._response_column = "C5";
+      p._hidden = new int[]{2,2};
+      p._seed = 0xdecaf;
+      p._stopping_rounds = 0;
+
+      dl = new DeepWater(p).trainModel().get();
+
+      DeepWaterParameters parms2 = (DeepWaterParameters) p.clone();
+      parms2._epochs = 20;
+      parms2._checkpoint = dl._key;
+      dl2 = new DeepWater(parms2).trainModel().get();
+      Assert.assertTrue(dl2.epoch_counter > 20);
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+
+  @Test
+  public void testCheckpointBackwards() {
+    Frame tfr = null;
+    DeepWaterModel dl = null;
+    DeepWaterModel dl2 = null;
+
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
+      p._train = tfr._key;
+      p._epochs = 10;
+      p._response_column = "C5";
+      p._hidden = new int[]{2,2};
+      p._seed = 0xdecaf;
+
+      dl = new DeepWater(p).trainModel().get();
+
+      DeepWaterParameters parms2 = (DeepWaterParameters) p.clone();
+      parms2._epochs = 9;
+      parms2._checkpoint = dl._key;
+      try {
+        dl2 = new DeepWater(parms2).trainModel().get();
+        Assert.fail("Should toss exception instead of reaching here");
+      } catch (H2OIllegalArgumentException ex) {
+      }
+
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+    }
+  }
+
+  @Test public void checkpointReporting() {
+    Scope.enter();
+    Frame frame = null;
+    try {
+      File file = find_test_file("smalldata/logreg/prostate.csv");
+      NFSFileVec trainfv = NFSFileVec.make(file);
+      frame = ParseDataset.parse(Key.make(), trainfv._key);
+      DeepWaterParameters p = new DeepWaterParameters();
+
+      // populate model parameters
+      p._backend = getBackend();
+      p._train = frame._key;
+      p._response_column = "CAPSULE"; // last column is the response
+      p._activation = DeepWaterParameters.Activation.Rectifier;
+      p._epochs = 4;
+      p._train_samples_per_iteration = -1;
+      p._mini_batch_size = 1;
+      p._score_duty_cycle = 1;
+      p._score_interval = 0;
+      p._overwrite_with_best_model = false;
+      p._seed = 1234;
+
+      // Convert response 'C785' to categorical (digits 1 to 10)
+      int ci = frame.find("CAPSULE");
+      Scope.track(frame.replace(ci, frame.vecs()[ci].toCategoricalVec()));
+      DKV.put(frame);
+
+      long start = System.currentTimeMillis();
+      try { Thread.sleep(1000); } catch( InterruptedException ex ) { } //to avoid rounding issues with printed time stamp (1 second resolution)
+
+      DeepWaterModel model = new DeepWater(p).trainModel().get();
+      long sleepTime = 5; //seconds
+      try { Thread.sleep(sleepTime*1000); } catch( InterruptedException ex ) { }
+
+      // checkpoint restart after sleep
+      DeepWaterParameters p2 = (DeepWaterParameters)p.clone();
+      p2._checkpoint = model._key;
+      p2._epochs *= 2;
+      DeepWaterModel model2 = null;
+      try {
+        model2 = new DeepWater(p2).trainModel().get();
+        long end = System.currentTimeMillis();
+        TwoDimTable table = model2._output._scoring_history;
+        double priorDurationDouble=0;
+        long priorTimeStampLong=0;
+        DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+        for (int i=0; i<table.getRowDim(); ++i) {
+
+          // Check that timestamp is correct, and growing monotonically
+          String timestamp = (String)table.get(i,0);
+          long timeStampLong = fmt.parseMillis(timestamp);
+          Assert.assertTrue("Timestamp must be later than outside timer start", timeStampLong >= start);
+          Assert.assertTrue("Timestamp must be earlier than outside timer end", timeStampLong <= end);
+          Assert.assertTrue("Timestamp must increase", timeStampLong >= priorTimeStampLong);
+          priorTimeStampLong = timeStampLong;
+
+          // Check that duration is growing monotonically
+          String duration = (String)table.get(i,1);
+          duration = duration.substring(0, duration.length()-4); //"x.xxxx sec"
+          try {
+            double durationDouble = Double.parseDouble(duration);
+            Assert.assertTrue("Duration must be >0: " + durationDouble, durationDouble >= 0);
+            Assert.assertTrue("Duration must increase: " + priorDurationDouble + " -> " + durationDouble, durationDouble >= priorDurationDouble);
+            Assert.assertTrue("Duration cannot be more than outside timer delta", durationDouble <= (end - start) / 1e3);
+            priorDurationDouble = durationDouble;
+          } catch(NumberFormatException ex) {
+            //skip
+          }
+
+          // Check that epoch counting is good
+          Assert.assertTrue("Epoch counter must be contiguous", (Double)table.get(i,3) == i); //1 epoch per step
+          Assert.assertTrue("Iteration counter must match epochs", (Integer)table.get(i,4) == i); //1 iteration per step
+        }
+        try {
+          // Check that duration doesn't see the sleep
+          String durationBefore = (String)table.get((int)(p._epochs),1);
+          durationBefore = durationBefore.substring(0, durationBefore.length()-4);
+          String durationAfter = (String)table.get((int)(p._epochs+1),1);
+          durationAfter = durationAfter.substring(0, durationAfter.length()-4);
+          Assert.assertTrue("Duration must be smooth", Double.parseDouble(durationAfter) - Double.parseDouble(durationBefore) < sleepTime+1);
+
+          // Check that time stamp does see the sleep
+          String timeStampBefore = (String)table.get((int)(p._epochs),0);
+          long timeStampBeforeLong = fmt.parseMillis(timeStampBefore);
+          String timeStampAfter = (String)table.get((int)(p._epochs+1),0);
+          long timeStampAfterLong = fmt.parseMillis(timeStampAfter);
+          Assert.assertTrue("Time stamp must experience a delay", timeStampAfterLong-timeStampBeforeLong >= (sleepTime-1/*rounding*/)*1000);
+
+          // Check that the training speed is similar before and after checkpoint restart
+          String speedBefore = (String)table.get((int)(p._epochs),2);
+          speedBefore = speedBefore.substring(0, speedBefore.length()-9);
+          double speedBeforeDouble = Double.parseDouble(speedBefore);
+          String speedAfter = (String)table.get((int)(p._epochs+1),2);
+          speedAfter = speedAfter.substring(0, speedAfter.length()-9);
+          double speedAfterDouble = Double.parseDouble(speedAfter);
+          Assert.assertTrue("Speed shouldn't change more than 50%", Math.abs(speedAfterDouble-speedBeforeDouble)/speedBeforeDouble < 0.5); //expect less than 50% change in speed
+        } catch(NumberFormatException ex) {
+          //skip runtimes > 1 minute (too hard to parse into seconds here...).
+        }
+
+      } finally {
+        if (model != null) model.delete();
+        if (model2 != null) model2.delete();
+      }
+    } finally {
+      if (frame!=null) frame.remove();
+      Scope.exit();
+    }
+  }
 
   // ------- Text conversions
 
@@ -987,6 +1199,5 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     return array;
   }
   */
-
 }
 
