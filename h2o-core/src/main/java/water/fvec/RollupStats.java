@@ -11,6 +11,7 @@ import water.nbhm.NonBlockingHashMap;
 import water.parser.Categorical;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -288,12 +289,15 @@ final class RollupStats extends Iced {
     if( vec.isString() ) computeHisto = false; // No histogram for string columns
     final Key rskey = vec.rollupStatsKey();
     RollupStats rs = getOrNull(vec,rskey);
-    if(rs == null || (computeHisto && !rs.hasHisto()))
-      fs.add(new RPC(rskey.home_node(),new ComputeRollupsTask(vec,computeHisto)).addCompleter(new H2OCallback() {
-        @Override public void callback(H2OCountedCompleter h2OCountedCompleter) {
+    if(rs == null || (computeHisto && !rs.hasHisto())) {
+      Log.debug("Will calculate RollupStats, key = ", rskey);
+      fs.add(new RPC(rskey.home_node(), new ComputeRollupsTask(vec, computeHisto)).addCompleter(new H2OCallback() {
+        @Override
+        public void callback(H2OCountedCompleter h2OCountedCompleter) {
           DKV.get(rskey); // fetch new results via DKV to enable caching of the results.
         }
       }).call());
+    }
   }
 
   private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
@@ -400,7 +404,7 @@ final class RollupStats extends Iced {
     @Override
     public void compute2() {
       assert _rsKey.home();
-      final Vec vec = DKV.getGet(_vecKey);
+      Log.debug("Calculating RollupStats, key = ", _rsKey);
       while(true) {
         Value v = DKV.get(_rsKey);
         RollupStats rs = (v == null) ? null : v.<RollupStats>get();
@@ -414,6 +418,8 @@ final class RollupStats extends Iced {
         if (rs != null) {
           if (rs.isReady()) {
             if (_computeHisto && !rs.hasHisto()) { // a.2 => compute rollups
+              final Vec vec = DKV.getGet(_vecKey);
+              if (vec == null) break; // Vec was deleted since we last checked
               CountedCompleter cc = getCompleter(); // should be null or RPCCall
               if(cc != null) assert cc.getCompleter() == null;
               // note: if cc == null then onExceptionalCompletion tasks waiting on this may be woken up before exception handling iff exception is thrown.
@@ -431,7 +437,9 @@ final class RollupStats extends Iced {
             rs._tsk.join();
           } else if(rs.isMutating()) // c) => throw IAE
             throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (3)");
-        } else { // d) => compute the rollups
+        } else { // rs == null d) => compute the rollups
+          final Vec vec = DKV.getGet(_vecKey);
+          if (vec == null) break; // Vec was deleted since we last checked
           final Value nnn = makeComputing();
           Futures fs = new Futures();
           Value oldv = DKV.DputIfMatch(_rsKey, nnn, v, fs);
