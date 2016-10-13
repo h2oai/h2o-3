@@ -11,6 +11,13 @@ For numerical columns (real/int), the ``nbins_top_level`` option is the number o
 
 To make a model more general, decrease ``nbins_top_level`` and ``nbins_cats``. To make a model more specific, increase ``nbins`` and/or ``nbins_top_level`` and ``nbins_cats``. Keep in mind that increasing ``nbins_cats`` can lead to in `overfitting <https://en.m.wikipedia.org/wiki/Overfitting>`__ on the training set.
 
+Related Parameters
+~~~~~~~~~~~~~~~~~~
+
+- `nbins <nbins.html>`__
+- `nbins_cats <nbins_cats.html>`__
+
+
 Example
 ~~~~~~~
 
@@ -136,9 +143,3 @@ Example
 	# sort the grid models by decreasing AUC
 	sorted_grid = grid.get_grid(sort_by='auc', decreasing=True)
 	print(sorted_grid)
-
-Related Parameters
-~~~~~~~~~~~~~~~~~~
-
-- `nbins <nbins.html>`__
-- `nbins_cats <nbins_cats.html>`__

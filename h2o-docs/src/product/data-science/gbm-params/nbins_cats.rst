@@ -17,6 +17,12 @@ To make a model more general, decrease ``nbins_top_level`` and ``nbins_cats``. T
 
 **Note**: Currently in H2O, if the number of categorical values in a dataset exceeds the value specified with ``nbins_cats``, then the values are grouped into bins by `lexical ordering <https://en.wikipedia.org/wiki/Lexicographical_order>`__. 
 
+Related Parameters
+~~~~~~~~~~~~~~~~~~
+
+- `nbins <nbins.html>`__
+- `nbins_top_level <nbins_top_level.html>`__
+
 
 Example
 ~~~~~~~
@@ -159,9 +165,3 @@ Example
 	# sort the grid models by decreasing AUC
 	sorted_grid = grid.get_grid(sort_by = 'auc', decreasing = True)
 	print(sorted_grid)
-
-Related Parameters
-~~~~~~~~~~~~~~~~~~
-
-- `nbins <nbins.html>`__
-- `nbins_top_level <nbins_top_level.html>`__
