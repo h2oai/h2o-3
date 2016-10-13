@@ -772,7 +772,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     Frame tr = _parms.train();
     if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
-    if(_train == null)_train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
+    _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
     if (expensive) {
       _parms.getOrMakeRealSeed();
     }
