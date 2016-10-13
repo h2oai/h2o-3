@@ -28,6 +28,27 @@ public class GlrmMojoModel extends MojoModel {
   public double[] _normMul;
   // We don't really care about regularization of Y since it is not used during scoring
 
+  /**
+   * This is the "learning rate" in the gradient descent method. More specifically, at each iteration step we update
+   * x according to x_new = x_old - alpha * grad_x(obj)(x_old). If the objective evaluated at x_new is smaller than
+   * the objective at x_old, then we proceed with the update, increasing alpha slightly (in case we learn too slowly);
+   * however if the objective at x_new is bigger than the original objective, then we "overshot" and therefore reduce
+   * alpha in half.
+   * When reusing the alpha between multiple computations of the gradient, we find that alpha eventually "stabilizes"
+   * in a certain range; moreover that range is roughly the same when scoring different rows. This is why alpha was
+   * made static -- so that its value from previous scoring round can be reused to achieve faster convergence.
+   * This approach is not thread-safe! If we ever make GenModel capable of scoring multiple rows in parallel, this
+   * will have to be changed to make updates to alpha synchronized.
+   */
+  private static double alpha = 1.0;
+  private static final double DOWN_FACTOR = 0.5;
+  private static final double UP_FACTOR = Math.pow(1.0/DOWN_FACTOR, 1.0/4);
+  static {
+    //noinspection ConstantAssertCondition,ConstantConditions
+    assert DOWN_FACTOR < 1 && DOWN_FACTOR > 0;
+    assert UP_FACTOR > 1;
+  }
+
   private static EnumSet<ModelCategory> CATEGORIES = EnumSet.of(ModelCategory.AutoEncoder, ModelCategory.DimReduction);
   @Override public EnumSet<ModelCategory> getModelCategories() {
     return CATEGORIES;
@@ -52,7 +73,6 @@ public class GlrmMojoModel extends MojoModel {
     assert _nrowY == _ncolX;
     assert _archetypes.length == _nrowY;
     assert _archetypes[0].length == _ncolY;
-    System.out.println("Scoring row " + Arrays.toString(row));
 
     // Step 0: prepare the data row
     double[] a = new double[_ncolA];
@@ -67,18 +87,17 @@ public class GlrmMojoModel extends MojoModel {
     x = _regx.project(x, random);
 
     // Step 2: update X based on prox-prox algorithm, iterate until convergence
-    double alpha = 1;
     double obj = objective(x, a);
     boolean done = false;
     int iters = 0;
     while (!done && iters++ < 100) {
-//      System.out.println("  x = " + Arrays.toString(x) + ", obj = " + obj);
       // Compute the gradient of the loss function
       double[] grad = gradientL(x, a);
 
       // Try to make a step of size alpha, until we can achieve improvement in the objective.
       double[] u = new double[_ncolX];
       while (true) {
+        // System.out.println("  " + alpha);
         // Compute the tentative new x (using the prox algorithm)
         for (int k = 0; k < _ncolX; k++) {
           u[k] = x[k] - alpha * grad[k];
@@ -92,16 +111,16 @@ public class GlrmMojoModel extends MojoModel {
           if (obj_improvement < 1e-6) done = true;
           obj = newobj;
           x = xnew;
-          alpha *= 1.05;
+          alpha *= UP_FACTOR;
           break;
         } else {
-          alpha *= 0.6;
+          alpha *= DOWN_FACTOR;
         }
       }
     }
 
     // Step 3: return the result
-    System.out.println("  => result = " + Arrays.toString(x));
+    // System.out.println("obj = " + obj + ", alpha = " + alpha + ", n_iters = " + iters);
     System.arraycopy(x, 0, preds, 0, _ncolX);
     return preds;
   }
