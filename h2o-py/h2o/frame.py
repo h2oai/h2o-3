@@ -236,7 +236,7 @@ class H2OFrame(object):
         if self._ex._cache._id is None:
             h2o.assign(self, newid)
         else:
-            oldname = self.id
+            oldname = self.frame_id
             self._ex._cache._id = newid
             h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, newid))
 
