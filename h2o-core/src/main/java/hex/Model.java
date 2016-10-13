@@ -1424,7 +1424,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // is well, false is there are any mismatches.  Throws if there is any error
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon) {
-    final double fraction = 0.1;
+    return testJavaScoring(data, model_predictions, rel_epsilon, 0.1);
+  }
+  public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double fraction) {
     Random rnd = RandomUtils.getRNG(data.byteSize());
     assert data.numRows() == model_predictions.numRows();
     Frame fr = new Frame(data);
@@ -1453,6 +1455,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec[] pvecs = model_predictions.vecs();
       double[] features = null;
       int num_errors = 0;
+      int num_total = 0;
 
       // First try internal POJO via fast double[] API
       if (havePojo()) {
@@ -1471,6 +1474,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // Compare predictions, counting mis-predicts
         for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
           if (rnd.nextDouble() >= fraction) continue;
+          num_total++;
 
           // Native Java API
           for (int col = 0; col < features.length; col++) // Build feature set
@@ -1482,6 +1486,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
               if (num_errors++ < 10)
                 System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
+              break;
             }
           }
         }
@@ -1573,6 +1578,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           }
 
           // Verify the correctness of the prediction
+          num_total++;
           for (int col = 0; col < pvecs.length; col++) {
             if (!MathUtils.compare(actual_preds[col], expected_preds[col], 1e-15, rel_epsilon)) {
               num_errors++;
@@ -1587,7 +1593,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         }
       }
       if (num_errors != 0)
-        System.err.println("Number of mismatches: " + num_errors + (num_errors > 20 ? " (only first 20 are shown)": ""));
+        System.err.println("Number of errors: " + num_errors + (num_errors > 20 ? " (only first 20 are shown)": "") +
+                           " out of " + num_total + " rows tested.");
       return num_errors == 0;
     } finally {
       cleanup_adapt(fr, data);  // Remove temp keys.
