@@ -1451,9 +1451,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       GenModel genmodel = null;
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
-      double features[] = null;
-      int totalMiss = 0;
-      int miss = 0;
+      double[] features = null;
+      int num_errors = 0;
 
       // First try internal POJO via fast double[] API
       if (havePojo()) {
@@ -1481,19 +1480,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             double d = pvecs[col].at(row);                  // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
             if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
-              if (miss++ < 10)
+              if (num_errors++ < 10)
                 System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
             }
           }
-          totalMiss += miss;
         }
       }
 
       // EasyPredict API with POJO and/or MOJO
-      for (int i=0; i< (haveMojo() ? 2 : 1); ++i) { //i=0 POJO, i=1 MOJO
-        if (i==0 && !havePojo()) continue;
-        if (i==1) { //MOJO
-          assert(haveMojo());
+      for (int i = 0; i < 2; ++i) {
+        if (i == 0 && !havePojo()) continue;
+        if (i == 1 && !haveMojo()) continue;
+        if (i == 1) {  // MOJO
           final String filename = modelName + ".zip";
           StreamingSchema ss = new StreamingSchema(getMojo(), filename);
           try {
@@ -1501,7 +1499,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             ss.getStreamWriter().writeTo(os);
             os.close();
             genmodel = MojoModel.load(filename);
-            new File(filename).delete();
+            boolean deleted = new File(filename).delete();
+            assert deleted : "Failed to delete the file";
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
@@ -1512,9 +1511,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();
-        for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
+        for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded
           if (rnd.nextDouble() >= fraction) continue;
           if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
+
+          // Generate input row
           for (int col = 0; col < features.length; col++) {
             if (dvecs[col].isString()) {
               rowData.put(genmodel._names[col], dvecs[col].atStr(bStr, row));
@@ -1528,36 +1529,66 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             }
           }
 
+          // Make a prediction
           AbstractPrediction p;
-          try { p=epmw.predict(rowData); }
-          catch (PredictException e) { continue; }
+          try {
+            p = epmw.predict(rowData);
+          } catch (PredictException e) {
+            num_errors++;
+            if (num_errors < 20) {
+              System.err.println("EasyPredict threw an exception when predicting row " + rowData);
+              e.printStackTrace();
+            }
+            continue;
+          }
+
+          // Convert model predictions and "internal" predictions into the same shape
+          double[] expected_preds = new double[pvecs.length];
+          double[] actual_preds = new double[pvecs.length];
           for (int col = 0; col < pvecs.length; col++) { // Compare predictions
             double d = pvecs[col].at(row); // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
             double d2 = Double.NaN;
-            switch( genmodel.getModelCategory()) {
-              case Clustering:  d2 = ((ClusteringModelPrediction) p).cluster;  break;
-              case Regression:  d2 = ((RegressionModelPrediction) p).value;    break;
-              case Binomial:       BinomialModelPrediction bmp = (   BinomialModelPrediction) p;
-                d2 = (col==0) ? bmp.labelIndex : bmp.classProbabilities[col-1];  break;
-              case Multinomial: MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
-                d2 = (col==0) ? mmp.labelIndex : mmp.classProbabilities[col-1];  break;
-              case DimReduction: d2 = ((DimReductionModelPrediction) p).dimensions[col]; break;
+            switch (genmodel.getModelCategory()) {
+              case Clustering:
+                d2 = ((ClusteringModelPrediction) p).cluster;
+                break;
+              case Regression:
+                d2 = ((RegressionModelPrediction) p).value;
+                break;
+              case Binomial:
+                BinomialModelPrediction bmp = (BinomialModelPrediction) p;
+                d2 = (col == 0) ? bmp.labelIndex : bmp.classProbabilities[col - 1];
+                break;
+              case Multinomial:
+                MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
+                d2 = (col == 0) ? mmp.labelIndex : mmp.classProbabilities[col - 1];
+                break;
+              case DimReduction:
+                d2 = ((DimReductionModelPrediction) p).dimensions[col];
+                break;
+            }
+            expected_preds[col] = d;
+            actual_preds[col] = d2;
+          }
 
-            }
-            if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
-              miss++;
-              if (miss < 20) {
-                System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", EasyPredict " + (i==0?"POJO":"MOJO") + " prediction=" + d2);
-                System.err.println("Row: " + rowData.toString());
+          // Verify the correctness of the prediction
+          for (int col = 0; col < pvecs.length; col++) {
+            if (!MathUtils.compare(actual_preds[col], expected_preds[col], 1e-15, rel_epsilon)) {
+              num_errors++;
+              if (num_errors < 20) {
+                System.err.println("EasyPredict Predictions mismatch for row " + rowData);
+                System.err.println("  Expected predictions: " + Arrays.toString(expected_preds));
+                System.err.println("  Actual predictions: " + Arrays.toString(actual_preds));
               }
+              break;
             }
-            totalMiss += miss;
           }
         }
       }
-      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + (totalMiss > 20 ? " (only first 20 are shown)": ""));
-      return totalMiss==0;
+      if (num_errors != 0)
+        System.err.println("Number of mismatches: " + num_errors + (num_errors > 20 ? " (only first 20 are shown)": ""));
+      return num_errors == 0;
     } finally {
       cleanup_adapt(fr, data);  // Remove temp keys.
     }
