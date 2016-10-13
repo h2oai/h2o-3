@@ -207,8 +207,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
   }
 
-  /** Train a model as part of a larger Job; the Job already exists and has started. */
-  final public M trainModelNested() {
+  /**
+   * Train a model as part of a larger Job;
+   *
+   * @param fr: Input frame override, ignored if null.
+   *   In some cases, algos do not work directly with the original frame in the K/V store.
+   *   Instead they run on a private anonymous copy (eg: reblanced dataset).
+   *   Use this argument if you want nested job to work on the actual working copy rather than the original Frame in the K/V.
+   *   Example: Outer job rebalances dataset and then calls nested job. To avoid needless second reblance, pass in the (already rebalanced) working copy.
+   * */
+  final public M trainModelNested(Frame fr) {
+    if(fr != null) // Use the working copy (e.g. rebalanced) instead of the original K/V store version
+      _train = fr;
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
