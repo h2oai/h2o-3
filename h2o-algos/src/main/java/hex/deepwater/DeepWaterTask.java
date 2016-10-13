@@ -41,7 +41,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
    * @param fraction Fraction of rows of the training to train with
    */
   public DeepWaterTask(DeepWaterModelInfo inputModel, float fraction, Job job) {
-    super(job._key,inputModel._dataInfoKey!=null ? inputModel._dataInfoKey.get() : null);
+    super(job._key,inputModel._dataInfo);
     _sharedmodel = inputModel;
     _useFraction=fraction;
     _shuffle = model_info().get_params()._shuffle_training_data;
@@ -153,7 +153,8 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, _localmodel._width, _localmodel._height, _localmodel._channels, _localmodel.get_params()._cache_data);
       }
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-        iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfoKey.get(), batchSize, _localmodel.get_params()._cache_data);
+        assert(_localmodel._dataInfo != null);
+        iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfo, batchSize, _localmodel.get_params()._cache_data);
       }
 
       NativeTrainTask ntt = null;

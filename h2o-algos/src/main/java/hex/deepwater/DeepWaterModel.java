@@ -15,12 +15,8 @@ import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 
 import static hex.ModelMetrics.calcVarImp;
@@ -71,7 +67,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   private float _bestLoss = Float.POSITIVE_INFINITY;
 
   public Key actual_best_model_key;
-  public Key model_info_key;
 
   public DeepWaterScoringInfo last_scored() { return (DeepWaterScoringInfo) super.last_scored(); }
 
@@ -93,10 +88,86 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
   }
 
+  static DataInfo makeDataInfo(Frame train, Frame valid, DeepWaterParameters parms) {
+    double x = 0.782347234;
+    boolean identityLink = new Distribution(parms).link(x) == x;
+    return new DataInfo(
+        train,
+        valid,
+        parms._autoencoder ? 0 : 1, //nResponses
+        parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+        parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE, //transform predictors
+        !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
+        parms._missing_values_handling == DeepWaterParameters.MissingValuesHandling.Skip, //whether to skip missing
+        false, // do not replace NAs in numeric cols with mean
+        true,  // always add a bucket for missing values
+        parms._weights_column != null, // observation weights
+        parms._offset_column != null,
+        parms._fold_column != null
+    );
+  }
+
+  /** Constructor to restart from a checkpointed model
+   *  @param destKey New destination key for the model
+   *  @param parms User-given parameters for checkpoint restart
+   *  @param cp Checkpoint to restart from
+   */
+  public DeepWaterModel(final Key destKey, final DeepWaterParameters parms, final DeepWaterModel cp, final DataInfo dataInfo) {
+    super(destKey, parms == null ? (DeepWaterParameters)cp._parms.clone() : IcedUtils.deepCopy(parms), (DeepWaterModelOutput)cp._output.clone());
+    DeepWaterParameters.Sanity.modifyParms(_parms, _parms, cp._output.nclasses()); //sanitize the model_info's parameters
+    assert(_parms != cp._parms); //make sure we have a clone
+    assert (_parms._checkpoint == cp._key);
+    model_info = IcedUtils.deepCopy(cp.model_info);
+    model_info._dataInfo = dataInfo;
+    assert(model_info._network != null);
+    assert(model_info._modelparams != null);
+    model_info.javaToNative();
+    _dist = new Distribution(get_params());
+    assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
+    actual_best_model_key = cp.actual_best_model_key;
+    time_of_start_ms = cp.time_of_start_ms;
+    total_training_time_ms = cp.total_training_time_ms;
+    total_checkpointed_run_time_ms = cp.total_training_time_ms;
+    total_scoring_time_ms = cp.total_scoring_time_ms;
+    total_setup_time_ms = cp.total_setup_time_ms;
+    training_rows = cp.training_rows; //copy the value to display the right number on the model page before training has started
+    validation_rows = cp.validation_rows; //copy the value to display the right number on the model page before training has started
+    _bestLoss = cp._bestLoss;
+    epoch_counter = cp.epoch_counter;
+    iterations = cp.iterations;
+
+    // deep clone scoring history
+    scoringInfo = cp.scoringInfo.clone();
+    for (int i=0; i< scoringInfo.length;++i)
+      scoringInfo[i] = IcedUtils.deepCopy(cp.scoringInfo[i]);
+    _output.errors = last_scored();
+    _output._scoring_history = DeepWaterScoringInfo.createScoringHistoryTable(scoringInfo, (null != get_params()._valid), false, _output.getModelCategory(), _output.isAutoencoder());
+    _output._variable_importances = calcVarImp(last_scored().variable_importances);
+    if (dataInfo!=null) {
+      _output._names = dataInfo._adaptedFrame.names();
+      _output._domains = dataInfo._adaptedFrame.domains();
+    }
+    assert(_key.equals(destKey));
+  }
+
+  void setDataInfoToOutput(DataInfo dinfo) {
+    if (dinfo == null) return;
+    // update the model's expected frame format - needed for train/test adaptation
+    _output._names = dinfo._adaptedFrame.names();
+    _output._domains = dinfo._adaptedFrame.domains();
+    _output._nums = dinfo._nums;
+    _output._cats = dinfo._cats;
+    _output._catOffsets = dinfo._catOffsets;
+    _output._normMul = dinfo._normMul;
+    _output._normSub = dinfo._normSub;
+    _output._useAllFactorLevels = dinfo._useAllFactorLevels;
+    Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
+  }
+
   /**
    * Regular constructor (from scratch)
    * @param destKey destination key
-   * @param parms DL parameters
+   * @param params DL parameters
    * @param output DL model output
    * @param nClasses Number of classes (1 for regression or autoencoder)
    */
@@ -109,40 +180,14 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
     DeepWaterParameters parms = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     DeepWaterParameters.Sanity.modifyParms(parms, parms, nClasses); //sanitize the model_info's parameters
-    Key dinfoKey = null;
+    DataInfo dinfo = null;
     if (parms._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-      double x = 0.782347234;
-      boolean identityLink = new Distribution(parms).link(x) == x;
-      final DataInfo dinfo = new DataInfo(
-              train,
-              valid,
-              parms._autoencoder ? 0 : 1, //nResponses
-              parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-              parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE, //transform predictors
-              !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
-              parms._missing_values_handling == DeepWaterParameters.MissingValuesHandling.Skip, //whether to skip missing
-              false, // do not replace NAs in numeric cols with mean
-              true,  // always add a bucket for missing values
-              parms._weights_column != null, // observation weights
-              parms._offset_column != null,
-              parms._fold_column != null
-      );
-      // update the model's expected frame format - needed for train/test adaptation
-      _output._names = dinfo._adaptedFrame.names();
-      _output._domains = dinfo._adaptedFrame.domains();
-      _output._nums = dinfo._nums;
-      _output._cats = dinfo._cats;
-      _output._catOffsets = dinfo._catOffsets;
-      _output._normMul = dinfo._normMul;
-      _output._normSub = dinfo._normSub;
-      _output._useAllFactorLevels = dinfo._useAllFactorLevels;
-      Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
+      dinfo = makeDataInfo(train, valid, parms);
       DKV.put(dinfo);
-      dinfoKey = dinfo._key;
+      setDataInfoToOutput(dinfo);
     }
-    model_info = new DeepWaterModelInfo(parms, destKey, nClasses, dinfoKey != null ? ((DataInfo)dinfoKey.get()).fullN() : output.nfeatures());
-    model_info_key = Key.make(H2O.SELF);
-    model_info._dataInfoKey = dinfoKey;
+    model_info = new DeepWaterModelInfo(parms, destKey, nClasses, dinfo != null ? dinfo.fullN() : -1);
+    model_info._dataInfo = dinfo;
 
     // now, parms is get_params();
     _dist = new Distribution(get_params());
@@ -392,8 +437,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
 
   private void putMeAsBestModel(Key bestModelKey) {
-    DeepWaterModel dlm = new AutoBuffer().put(this).flipForReading().get();
-    DKV.put(bestModelKey, dlm);
+    DKV.put(bestModelKey, IcedUtils.deepCopy(this));
     assert DKV.get(bestModelKey) != null;
     assert ((DeepWaterModel)DKV.getGet(bestModelKey)).compareTo(this) <= 0;
   }
@@ -470,17 +514,11 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     @Override public void map(Chunk[] chks, NewChunk[] cpreds) { }
     @Override public void reduce( BigScore bs ) { }
     @Override protected void setupLocal() {
-      DataInfo di = model_info()._dataInfoKey == null ? null : model_info()._dataInfoKey.get();
-//      String[] names=null;
-//      Vec[] vecs = null;
+      DataInfo di = model_info()._dataInfo;
       if (di != null) {
-//        names = di._adaptedFrame.names();
-//        vecs = di._adaptedFrame.vecs();
         di = IcedUtils.deepCopy(di);
         di._adaptedFrame = _fr; //dinfo logic on _adaptedFrame is what we'll need for extracting standardized features from the data for scoring
       }
-//      di._adaptedFrame.restructure(names, vecs);
-//      System.err.println("Constructor: Extracting row from Frame with names: " + Arrays.toString(di._adaptedFrame._names));
       final int weightIdx =_fr.find(get_params()._weights_column);
       final int respIdx =_fr.find(get_params()._response_column);
       final int batch_size = get_params()._mini_batch_size;
@@ -676,8 +714,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   protected Futures remove_impl(Futures fs) {
     cleanUpCache(fs);
     removeNativeState();
-    if (model_info()._dataInfoKey!=null)
-      model_info()._dataInfoKey.remove(fs);
+    if (model_info()._dataInfo !=null)
+      model_info()._dataInfo.remove(fs);
     return super.remove_impl(fs);
   }
 
