@@ -40,7 +40,7 @@ public class ParseUUIDTest  extends TestUtil {
         int col2 = 0;
         for( int col = 0; col < fr.numCols(); col++ ) {
           if( vecs[col].isUUID() ) {
-            if( exp[row][col2]==C16Chunk._LO_NA && exp[row][col2+1]==C16Chunk._HI_NA ) {
+            if( C16Chunk.isNA(exp[row][col2], exp[row][col2+1]) ) {
               Assert.assertTrue("Frame " + fr._key + ", row=" + row + ", col=" + col + ", expect=NA",
                       vecs[col].isNA(row));
             } else {

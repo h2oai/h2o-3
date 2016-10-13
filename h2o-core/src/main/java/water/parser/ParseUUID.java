@@ -2,6 +2,8 @@ package water.parser;
 
 import water.fvec.C16Chunk;
 
+import java.util.UUID;
+
 /**
  * Utility class for parsing UUIDs.
  *
@@ -17,7 +19,7 @@ public class ParseUUID {
    * @param str
    * @return TRUE if str represents a valid UUID
    */
-  public static final boolean isUUID(BufferedString str) {
+  public static boolean isUUID(BufferedString str) {
     boolean res;
     int old = str.getOffset();
     attemptUUIDParseLow(str);
@@ -35,25 +37,22 @@ public class ParseUUID {
    * of the passed in BufferedString.
    *
    * @param str
-   * @return A two value long array array containing the low
-   * and high hash values in indices 0,1 respectively.  For
-   * invalid UUID strings, the returned values are
-   * {link @C16Chunk._LO_NA} and {link @C16Chunk._HI_NA},
-   * respectively.
+   * @return A parsed UUID, or a null if parsing failed.
    */
-  public static long[] attemptUUIDParse( BufferedString str) {
-    long[] uuid = new long[2];
-    uuid[0] = attemptUUIDParseLow(str);
-    if (str.getOffset() == -1) return badUUID();
-    uuid[1] = attemptUUIDParseHigh(str);
-    if (str.getOffset() == -1) return badUUID();
-    return uuid;
+  public static UUID attemptUUIDParse(BufferedString str) {
+    Long lo = attemptUUIDParseLow(str);
+    Long hi = attemptUUIDParseHigh(str);
+    return (str.getOffset() == -1) ? null : buildUUID(lo, hi);
+  }
+
+  private static UUID buildUUID(Long lo, Long hi) {
+    return (lo == null || hi == null || (C16Chunk.isNA(lo, hi))) ? null : new UUID(hi, lo);
   }
 
   // --------------------------------
   // Parse XXXXXXXX-XXXX-XXXX and return an arbitrary long, or set str.off==-1
   // (and return Long.MIN_VALUE but this is a valid long return value).
-  private static long attemptUUIDParseLow(BufferedString str) {
+  private static Long attemptUUIDParseLow(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
     if( i+36 > buf.length ) return markBad(str);
@@ -71,8 +70,8 @@ public class ParseUUID {
   }
 
   // Parse -XXXX-XXXXXXXXXXXX and return an arbitrary long, or set str.off==-1
-  // (and return Long.MIN_VALUE but this is a valid long return value).
-  public static long attemptUUIDParseHigh(BufferedString str) {
+  // (and return null).
+  public static Long attemptUUIDParseHigh(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
     if ( i== -1 ) return markBad(str);
@@ -89,7 +88,7 @@ public class ParseUUID {
     return attemptUUIDParseEnd(str, hi, buf, i);
   }
 
-  private static long attemptUUIDParseEnd(BufferedString str, long lo, byte[] buf, int i) {
+  private static Long attemptUUIDParseEnd(BufferedString str, long lo, byte[] buf, int i) {
     // Can never equal MIN_VALUE since only parsed 14 of 16 digits, unless
     // failed parse already.
     if( lo == Long.MIN_VALUE ) return markBad(str);
@@ -102,8 +101,8 @@ public class ParseUUID {
     // unless we have a failed parse in the last 2 digits
     lo = get2(lo,buf,i);
     return (lo == Long.MIN_VALUE || // broken UUID already, OR
-            // too many valid UUID digits
-            (i+2< buf.length && hdigit(0,buf[i+2]) != Long.MIN_VALUE)) ? markBad(str) : lo;
+        // too many valid UUID digits
+        (i + 2 < buf.length && hdigit(0, buf[i + 2]) != Long.MIN_VALUE)) ? null : lo;
   }
 
 
@@ -121,11 +120,8 @@ public class ParseUUID {
     else if( b >= 'a' && b <= 'f' ) return (x<<4)+b-'a'+10;
     else return Long.MIN_VALUE;
   }
-  private static long markBad(BufferedString str) {
+  private static Long markBad(BufferedString str) {
     str.setOff(-1);
-    return Long.MIN_VALUE;
-  }
-  private static long[] badUUID() {
-    return new long[]{C16Chunk._LO_NA, C16Chunk._HI_NA};
+    return null;
   }
 }
