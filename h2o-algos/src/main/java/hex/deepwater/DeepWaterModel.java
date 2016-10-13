@@ -100,32 +100,32 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
    * @param output DL model output
    * @param nClasses Number of classes (1 for regression or autoencoder)
    */
-  public DeepWaterModel(final Key destKey, final DeepWaterParameters parms, final DeepWaterModelOutput output, Frame train, Frame valid, int nClasses) {
-    super(destKey, parms, output);
+  public DeepWaterModel(final Key destKey, final DeepWaterParameters params, final DeepWaterModelOutput output, Frame train, Frame valid, int nClasses) {
+    super(destKey, params, output);
     if (H2O.getCloudSize() != 1)
       throw new IllegalArgumentException("Deep Water currently only supports execution of 1 node.");
-
-    model_info = new DeepWaterModelInfo(parms, destKey, nClasses, output.nfeatures());
-    model_info_key = Key.make(H2O.SELF);
-
     _output._origNames = train.names();
     _output._origDomains = train.domains();
-    if (get_params()._problem_type== DeepWaterParameters.ProblemType.h2oframe_classification) {
+
+    DeepWaterParameters parms = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
+    DeepWaterParameters.Sanity.modifyParms(parms, parms, nClasses); //sanitize the model_info's parameters
+    Key dinfoKey = null;
+    if (parms._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
       double x = 0.782347234;
-      boolean identityLink = new Distribution(get_params()).link(x) == x;
+      boolean identityLink = new Distribution(parms).link(x) == x;
       final DataInfo dinfo = new DataInfo(
               train,
               valid,
-              get_params()._autoencoder ? 0 : 1, //nResponses
-              get_params()._autoencoder || get_params()._use_all_factor_levels, //use all FactorLevels for auto-encoder
-              get_params()._standardize ? (get_params()._autoencoder ? DataInfo.TransformType.NORMALIZE : get_params()._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE, //transform predictors
-              !get_params()._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
-              get_params()._missing_values_handling == DeepWaterParameters.MissingValuesHandling.Skip, //whether to skip missing
+              parms._autoencoder ? 0 : 1, //nResponses
+              parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
+              parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE, //transform predictors
+              !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
+              parms._missing_values_handling == DeepWaterParameters.MissingValuesHandling.Skip, //whether to skip missing
               false, // do not replace NAs in numeric cols with mean
               true,  // always add a bucket for missing values
-              get_params()._weights_column != null, // observation weights
-              get_params()._offset_column != null,
-              get_params()._fold_column != null
+              parms._weights_column != null, // observation weights
+              parms._offset_column != null,
+              parms._fold_column != null
       );
       // update the model's expected frame format - needed for train/test adaptation
       _output._names = dinfo._adaptedFrame.names();
@@ -138,9 +138,13 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       _output._useAllFactorLevels = dinfo._useAllFactorLevels;
       Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
       DKV.put(dinfo);
-      model_info._dataInfoKey = dinfo._key;
+      dinfoKey = dinfo._key;
     }
+    model_info = new DeepWaterModelInfo(parms, destKey, nClasses, dinfoKey != null ? ((DataInfo)dinfoKey.get()).fullN() : output.nfeatures());
+    model_info_key = Key.make(H2O.SELF);
+    model_info._dataInfoKey = dinfoKey;
 
+    // now, parms is get_params();
     _dist = new Distribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = Key.make(H2O.SELF);
@@ -552,6 +556,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           if (isCancelled() || _j != null && _j.stop_requested()) return;
           float[] data = iter.getData();
           float[] predFloats = model_info().predict(data);
+//          System.err.println("preds: " + Arrays.toString(predFloats));
 //          Log.info("Scoring on " + batch_size + " samples (rows " + row + " and up): " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
 
             // fill the pre-created output Frame

@@ -137,6 +137,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   @Ignore //too slow
   @Test public void convergenceGoogleNetColor() { checkConvergence(3, DeepWaterParameters.Network.googlenet, 150); }
+  @Ignore //too slow
   @Test public void convergenceGoogleNetGrayScale() { checkConvergence(1, DeepWaterParameters.Network.googlenet, 100); }
 
   @Test public void convergenceLenetColor() { checkConvergence(3, DeepWaterParameters.Network.lenet, 100); }
@@ -628,12 +629,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         v.remove();
       }
       DKV.put(tr);
-      p._seed = 1234;
-      p._epochs = 0.001;
-      p._mini_batch_size = 1;
-      p._shuffle_training_data = false;
-      p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
-      p._train_samples_per_iteration = 0;
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
