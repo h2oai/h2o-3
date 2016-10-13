@@ -6,7 +6,8 @@ import water.util.UnsafeUtils;
 public class C16Chunk extends Chunk {
   static final long _LO_NA = Long.MIN_VALUE;
   static final long _HI_NA = 0;
-  C16Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>4); }
+  C16Chunk( byte[] bs ) { _mem=bs; _start = -1;
+    set_len(_mem.length>>4); }
   @Override protected final long   at8_impl( int i ) { throw new IllegalArgumentException("at8_abs but 16-byte UUID");  }
   @Override protected final double atd_impl( int i ) { throw new IllegalArgumentException("atd but 16-byte UUID");  }
 
