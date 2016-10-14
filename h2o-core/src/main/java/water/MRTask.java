@@ -626,24 +626,24 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if(_profile!=null)
           _profile._userstart = System.currentTimeMillis();
 
-        int fr_vecs_length = _fr.vecs().length;
-        int outputs_length = _output_types == null? 0 : _output_types.length;
-        if (outputs_length == 0) {
-          if (fr_vecs_length == 1) map(bvs[0]);
-          else if (fr_vecs_length == 2) map(bvs[0], bvs[1]);
-          else if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2]);
+        int num_fr_vecs = _fr.vecs().length;
+        int num_outputs = _output_types == null? 0 : _output_types.length;
+        if (num_outputs == 0) {
+          if (num_fr_vecs == 1) map(bvs[0]);
+          else if (num_fr_vecs == 2) map(bvs[0], bvs[1]);
+          else if (num_fr_vecs == 3) map(bvs[0], bvs[1], bvs[2]);
           map(bvs);
         }
-        else if (outputs_length == 1) {  // convenience versions for cases with single output.
+        else if (num_outputs == 1) {  // convenience versions for cases with single output.
           assert appendableChunks != null;
-          if (fr_vecs_length == 1) map(bvs[0], appendableChunks[0]);
-          else if (fr_vecs_length == 2) map(bvs[0], bvs[1], appendableChunks[0]);
+          if (num_fr_vecs == 1) map(bvs[0], appendableChunks[0]);
+          else if (num_fr_vecs == 2) map(bvs[0], bvs[1], appendableChunks[0]);
           // else if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2], appendableChunks[0]);
           map(bvs, appendableChunks[0]);
         }
-        else if (outputs_length == 2) {  // convenience versions for cases with 2 outputs (e.g split).
+        else if (num_outputs == 2) {  // convenience versions for cases with 2 outputs (e.g split).
           assert appendableChunks != null;
-          if (fr_vecs_length == 1) map(bvs[0], appendableChunks[0], appendableChunks[1]);
+          if (num_fr_vecs == 1) map(bvs[0], appendableChunks[0], appendableChunks[1]);
           // else if (fr_vecs_length == 2) map(bvs[0], bvs[1], appendableChunks[0], appendableChunks[1]);
           // else if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2], appendableChunks[0], appendableChunks[1]);
           map(bvs, appendableChunks[0], appendableChunks[1]);
