@@ -350,13 +350,60 @@ public class TestUtil extends Iced {
    *  @param domain Categorical/Factor names, mapped by the data values
    *  @param rows Data
    *  @return The Vec  */
-  public static Vec vec(String[] domain, int ...rows) { 
+  public static Vec vec(String[] domain, int ...rows) {
     Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
     Futures fs = new Futures();
     AppendableVec avec = new AppendableVec(k,Vec.T_NUM);
     avec.setDomain(domain);
     NewChunk chunk = new NewChunk(avec, 0);
     for( int r : rows ) chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  /** A numeric Vec from an array of ints */
+  public static Vec ivec(int...rows) {
+    return vec(null, rows);
+  }
+
+  /** A numeric Vec from an array of doubles */
+  public static Vec dvec(double...rows) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, Vec.T_NUM);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (double r : rows)
+      chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  /** A time Vec from an array of ints */
+  public static Vec tvec(int...rows) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, Vec.T_TIME);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (int r : rows)
+      chunk.addNum(r);
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  /** A string Vec from an array of strings */
+  public static Vec svec(String...rows) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, Vec.T_STR);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (String r : rows)
+      chunk.addStr(r);
     chunk.close(0, fs);
     Vec vec = avec.layout_and_close(fs);
     fs.blockForPending();
