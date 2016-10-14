@@ -1,10 +1,12 @@
 package water.fvec;
 
 import water.*;
+import water.functional.Function;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.util.*;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
@@ -275,10 +277,12 @@ public class Vec extends Keyed<Vec> {
   /** Number of rows in chunk. Does not fetch chunk content. */
   private int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
+  boolean isSmall() { return length() < 1000; }
+
   /** Check that row-layouts are compatible. */
-  boolean checkCompatible( Vec v ) {
+  boolean isCompatibleWith(Vec v) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
-    return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
+    return Arrays.equals(espc(), v.espc()) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e3);
   }
 
@@ -619,6 +623,20 @@ public class Vec extends Keyed<Vec> {
       }
     }.doAll(randVec);
     return randVec;
+  }
+
+  public static Vec makeFromFunction(long len, final Function<Long, ?> f) throws IOException {
+//    final Closure<Long, Double> f = Closure.enclose(f0);
+    return new MRTask() {
+      @Override public void map(Chunk[] cs) {
+        for (Chunk c : cs) {
+          for (int r = 0; r < c._len; r++) {
+            long i = r + c._start;
+            c.setAny(r, f.apply(i));
+          }
+        }
+      }
+    }.doAll(makeZero(len))._fr.vecs()[0];
   }
 
   // ======= Rollup Stats ======

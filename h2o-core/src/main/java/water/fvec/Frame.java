@@ -7,7 +7,6 @@ import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
 import water.rapids.Merge;
-import water.persist.Persist;
 import water.util.*;
 
 import java.io.IOException;
@@ -119,7 +118,7 @@ public class Frame extends Lockable<Frame> {
       _vecs  = vecs;
       for( int i=0; i<vecs.length; i++ ) _names[i] = defaultColName(i);
       for( int i=0; i<vecs.length; i++ ) _keys [i] = vecs[i]._key;
-      for( int i=0; i<vecs.length; i++ ) checkCompatible(_names[i],vecs[i]);
+      for( int i=0; i<vecs.length; i++ ) checkCompatibility(_names[i],vecs[i]);
       _lastNameBig = true;
     } else {
       // Make empty to dodge asserts, then "add()" them all which will check
@@ -197,13 +196,13 @@ public class Frame extends Lockable<Frame> {
   /** Check that the vectors are all compatible.  All Vecs have their content
    *  sharded using same number of rows per chunk, and all names are unique.
    *  Throw an IAE if something does not match.  */
-  private void checkCompatible( String name, Vec vec ) {
+  private void checkCompatibility(String name, Vec vec ) {
     if( vec instanceof AppendableVec ) return; // New Vectors are endlessly compatible
     Vec v0 = anyVec();
     if( v0 == null ) return; // No fixed-size Vecs in the Frame
     // Vector group has to be the same, or else the layout has to be the same,
     // or else the total length has to be small.
-    if( !v0.checkCompatible(vec) ) {
+    if( !v0.isCompatibleWith(vec) ) {
       if(!Vec.VectorGroup.sameGroup(v0,vec))
         Log.err("Unexpected incompatible vector group, " + v0.group() + " != " + vec.group());
       if(!Arrays.equals(v0.espc(), vec.espc()))
@@ -216,7 +215,7 @@ public class Frame extends Lockable<Frame> {
   public boolean isCompatible( Frame fr ) {
     if( numRows() != fr.numRows() ) return false;
     for( int i=0; i<vecs().length; i++ )
-      if( !vecs()[i].checkCompatible(fr.vecs()[i]) )
+      if( !vecs()[i].isCompatibleWith(fr.vecs()[i]) )
         return false;
     return true;
   }
@@ -524,7 +523,7 @@ public class Frame extends Lockable<Frame> {
     assert(names.length == vecs.length):"names = " + Arrays.toString(names) + ", vecs len = " + vecs.length;
     for (int i=0; i<N; ++i) {
       vecs[i] = vecs[i] != null ? makeCompatible(new Frame(vecs[i]))[0] : null;
-      checkCompatible(tmpnames[i]=uniquify(tmpnames[i]),vecs[i]);  // Throw IAE is mismatch
+      checkCompatibility(tmpnames[i]=uniquify(tmpnames[i]),vecs[i]);  // Throw IAE is mismatch
     }
 
     int ncols = _keys.length;
@@ -548,7 +547,7 @@ public class Frame extends Lockable<Frame> {
    *  @return the added Vec, for flow-coding */
   public Vec add( String name, Vec vec ) {
     vec = makeCompatible(new Frame(vec))[0];
-    checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
+    checkCompatibility(name=uniquify(name),vec);  // Throw IAE is mismatch
     int ncols = _keys.length;
     String[] names = Arrays.copyOf(_names,ncols+1);  names[ncols] = name;
     Key<Vec>[] keys = Arrays.copyOf(_keys ,ncols+1);  keys [ncols] = vec._key;
@@ -744,7 +743,7 @@ public class Frame extends Lockable<Frame> {
     nv = ((new Frame(rv)).makeCompatible(new Frame(nv)))[0];
     DKV.put(nv);
     assert DKV.get(nv._key)!=null; // Already in DKV
-    assert rv.checkCompatible(nv);
+    assert rv.isCompatibleWith(nv);
     _vecs[col] = nv;
     _keys[col] = nv._key;
     return rv;
@@ -1394,7 +1393,7 @@ public class Frame extends Lockable<Frame> {
     Vec v2 = f.anyVec();
     if (v1 != null && v2 != null && v1.length() != v2.length())
       throw new IllegalArgumentException("Can not make vectors of different length compatible!");
-    if (v1 == null || v2 == null || (!force && v1.checkCompatible(v2)))
+    if (v1 == null || v2 == null || (!force && v1.isCompatibleWith(v2)))
       return f.vecs();
     // Ok, here make some new Vecs with compatible layout
     Key k = Key.make();
@@ -1488,7 +1487,7 @@ public class Frame extends Lockable<Frame> {
         if(i > 0) sb.append(',');
         if(!_curChks[i].isNA(_chkRow)) {
           if( v.isCategorical() ) sb.append('"').append(v.factor(_curChks[i].at8(_chkRow))).append('"');
-          else if( v.isUUID() ) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
+          else if( v.isUUID() ) sb.append(PrettyPrint.uuid(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
           else if( v.isInt() ) sb.append(_curChks[i].at8(_chkRow));
           else if (v.isString()) sb.append('"').append(_curChks[i].atStr(tmpStr, _chkRow)).append('"');
           else {
