@@ -348,7 +348,7 @@ public class Vec extends Keyed<Vec> {
       espc[i] = espc[i-1]+len/nchunks;
     espc[nchunks] = len;
     VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(0,vg,ESPC.rowLayout(vg._key,espc));
+    return makeCon(0, vg, ESPC.rowLayout(vg._key, espc), T_NUM);
   }
 
   /** Make a new constant vector with the given row count.
@@ -363,7 +363,7 @@ public class Vec extends Keyed<Vec> {
       espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
     VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(x,vg,ESPC.rowLayout(vg._key,espc));
+    return makeCon(x, vg, ESPC.rowLayout(vg._key, espc), T_NUM);
   }
 
   public Vec [] makeDoubles(int n, double [] values) {
@@ -428,7 +428,10 @@ public class Vec extends Keyed<Vec> {
   }
 
   public static Vec makeCon( final long l, String[] domain, VectorGroup group, int rowLayout ) {
-    final Vec v0 = new Vec(group.addVec(), rowLayout, domain);
+    return makeCon(l, domain, group, rowLayout, domain == null? T_NUM : T_CAT);
+  }
+  private static Vec makeCon( final long l, String[] domain, VectorGroup group, int rowLayout, byte type ) {
+    final Vec v0 = new Vec(group.addVec(), rowLayout, domain, type);
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
@@ -492,11 +495,12 @@ public class Vec extends Keyed<Vec> {
    *  and initialized to the given constant value.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.  */
-  public Vec makeCon( final double d ) { return makeCon(d, group(), _rowLayout); }
+  public Vec makeCon(final double d) { return makeCon(d, group(), _rowLayout, T_NUM); }
+  public Vec makeCon(final double d, byte type) { return makeCon(d, group(), _rowLayout, type); }
 
-  private static Vec makeCon( final double d, VectorGroup group, int rowLayout ) {
-    if( (long)d==d ) return makeCon((long)d, null, group, rowLayout);
-    final Vec v0 = new Vec(group.addVec(), rowLayout, null, T_NUM);
+  private static Vec makeCon( final double d, VectorGroup group, int rowLayout, byte type ) {
+    if( (long)d==d ) return makeCon((long)d, null, group, rowLayout, type);
+    final Vec v0 = new Vec(group.addVec(), rowLayout, null, type);
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
