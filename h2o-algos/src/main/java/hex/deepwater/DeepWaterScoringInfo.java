@@ -8,13 +8,13 @@ import water.AutoBuffer;
  */
 public class DeepWaterScoringInfo extends ScoringInfo implements ScoringInfo.HasEpochs, ScoringInfo.HasSamples, ScoringInfo.HasIterations
 {
-  public int iterations;
-  public double epoch_counter;
-  public double training_samples;
-  public long score_training_samples;
-  public long score_validation_samples;
+  int iterations;
+  double epoch_counter;
+  double training_samples;
+  long score_training_samples;
+  long score_validation_samples;
 
-  public int iterations() { return iterations; };
+  public int iterations() { return iterations; }
   public double epoch_counter() { return epoch_counter; }
   public double training_samples() { return training_samples; }
   public long score_training_samples() { return score_training_samples; }

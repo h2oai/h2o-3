@@ -29,24 +29,14 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
     init(false);
   }
 
-  public DeepWater(DeepWaterParameters parms, Key<DeepWaterModel> key ) {
-    super(parms,key);
-    init(false);
-  }
-
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
 
   /** Check whether we have any Deep Water native backends available */
-  static public boolean haveBackend() {
+  static boolean haveBackend() {
     for (DeepWaterParameters.Backend b : DeepWaterParameters.Backend.values()) {
       if (DeepWaterMojo.createDeepWaterBackend(b.toString()) != null) return true;
     }
     return false;
-  }
-
-  /** Check whether we have a specific Deep Water native backend available */
-  static public boolean haveBackend(DeepWaterParameters.Backend backend) {
-    return (DeepWaterMojo.createDeepWaterBackend(backend.toString()) != null);
   }
 
   @Override public BuilderVisibility builderVisibility() {
@@ -120,7 +110,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
      * Train a Deep Learning model, assumes that all members are populated
      * If checkpoint == null, then start training a new model, otherwise continue from a checkpoint
      */
-    public final void buildModel() {
+    final void buildModel() {
       DeepWaterModel cp = null;
       if (_parms._checkpoint == null) {
         cp = new DeepWaterModel(_result,_parms,new DeepWaterModelOutput(DeepWater.this),train(),valid(),nclasses());
@@ -272,7 +262,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             Log.info("Enabling training data shuffling, because all nodes train on the full dataset (replicated training data).");
           mp._shuffle_training_data = true;
         }
-        if(!mp._shuffle_training_data && model.actual_train_samples_per_iteration == model.training_rows && train.anyVec().nChunks()==1) {
+        if(!mp._shuffle_training_data && model.actual_train_samples_per_iteration == model.training_rows && train.anyVec()!=null && train.anyVec().nChunks()==1) {
           if (!mp._quiet_mode)
             Log.info("Enabling training data shuffling to avoid training rows in the same order over and over (no Hogwild since there's only 1 chunk).");
           mp._shuffle_training_data = true;
@@ -359,9 +349,13 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         t.printStackTrace();
       }
       finally {
-        if (model.model_info()._backend != null) model.model_info().nativeToJava();
-        if (cache) model.cleanUpCache();
-        model.removeNativeState();
+        if (model != null) {
+          if (model.model_info() != null && model.model_info()._backend != null)
+            model.model_info().nativeToJava();
+          if (cache)
+            model.cleanUpCache();
+          model.removeNativeState();
+        }
         if (!_parms._quiet_mode) {
           Log.info("==============================================================================================================================================================================");
           if (stop_requested()) {

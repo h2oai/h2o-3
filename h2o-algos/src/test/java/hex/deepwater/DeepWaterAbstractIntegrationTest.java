@@ -19,14 +19,12 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.Log;
+import water.util.StringUtils;
 import water.util.TwoDimTable;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
 
@@ -1050,7 +1048,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   // ------- Text conversions
 
   @Test
-  public void textsToArrayTest() {
+  public void textsToArrayTest() throws IOException {
     ArrayList<String> texts = new ArrayList<>();
     ArrayList<String> labels = new ArrayList<>();
 
@@ -1068,8 +1066,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     labels.add("neg");
     labels.add("neg");
 
-    ArrayList<int[]> coded = texts2array(texts);
-   // System.out.println(coded);
+    ArrayList<int[]> coded = StringUtils.texts2array(texts);
+    // System.out.println(coded);
     for (int[] a : coded) {
       System.out.println(Arrays.toString(a));
     }
@@ -1080,84 +1078,41 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Assert.assertEquals(38, coded.get(0).length);
   }
 
-  public String cleanString(String s) {
-    //Tokenization/string cleaning for all datasets except for SST.
-    //        Original taken from https://github.com/yoonkim/CNN_sentence/blob/master/process_data.py
-    String string = s;
-    string = string.replaceAll("[^A-Za-z0-9(),!?\\'\\`]", " ");
-    string = string.replaceAll("'s", " 's");
-    string = string.replaceAll("'ve", " 've");
-    string = string.replaceAll("n't", " n't");
-    string = string.replaceAll("'re", " 're");
-    string = string.replaceAll("'d", " 'd");
-    string = string.replaceAll("'ll", " 'll");
-    string = string.replaceAll(",", " , ");
-    string = string.replaceAll("!", " ! ");
-    string = string.replaceAll("\\(", " ( ");
-    string = string.replaceAll("\\)", " ) ");
-    string = string.replaceAll("\\?", " ? ");
-    string = string.replaceAll("\\s{2,}", " ");
-    return string.trim().toLowerCase();
-  }
+  @Test
+  public void tweetsToArrayTest() throws IOException {
+    ArrayList<String> texts = new ArrayList<>();
+    ArrayList<String> labels = new ArrayList<>();
 
-  public String[] tokenize(String text) {
-   // System.out.println(cleanString(text));
-    return cleanString(text).split(" ");
-  }
-
-  public int[] tokensToArray(String[] tokens, int padToLength, Map<String, Integer> dict) {
-    int dictSize = dict.size();
-    int len = tokens.length;
-    int pad = padToLength - len;
-    int[] data = new int[padToLength];
-    int ix = 0;
-    for (String t : tokens) {
-      int index = dict.get(t);
-      data[ix] = index;
-      ix += 1;
-    }
-    for (int i = 0; i < pad; i++) {
-      int index = dict.get(PADDING_SYMBOL);
-      data[ix] = index;
-      ix += 1;
-    }
-    return data;
-  }
-
-  public static String PADDING_SYMBOL = "</s>";
-
-  public ArrayList<int[]> texts2array(ArrayList<String> texts) {
-    int maxlen = 0;
-    int index = 0;
-    Map<String, Integer> dict = new HashMap<>();
-    dict.put(PADDING_SYMBOL, index);
-    index += 1;
-    for (String text : texts) {
-      String[] tokens = tokenize(text);
-      for (String token : tokens) {
-        if (!dict.containsKey(token)) {
-          dict.put(token, index);
-          index += 1;
-        }
+    {
+      FileInputStream is = new FileInputStream("/home/arno/tweets.txt");
+      BufferedReader br = new BufferedReader(new InputStreamReader(is));
+      String line;
+      while ((line = br.readLine()) != null) {
+        texts.add(line);
       }
-      int len = tokens.length;
-      if (len > maxlen) maxlen = len;
+      is.close();
     }
-    System.out.println(dict);
-    System.out.println("maxlen " + maxlen);
-    System.out.println("dict size " + dict.size());
-    Assert.assertEquals(38, maxlen);
-    Assert.assertEquals(88, index);
-    Assert.assertEquals(88, dict.size());
 
-    ArrayList<int[]> array = new ArrayList<>();
-    for (String text: texts) {
-      int[] data = tokensToArray(tokenize(text), maxlen, dict);
-   //   System.out.println(text);
-   //   System.out.println(Arrays.toString(data));
-      array.add(data);
+    {
+      FileInputStream is = new FileInputStream("/home/arno/labels.txt");
+      BufferedReader br = new BufferedReader(new InputStreamReader(is));
+      String line;
+      while ((line = br.readLine()) != null) {
+        labels.add(line);
+      }
+      is.close();
     }
-    return array;
+
+    ArrayList<int[]> coded = StringUtils.texts2array(texts);
+   // System.out.println(coded);
+//    for (int[] a : coded) {
+//      System.out.println(Arrays.toString(a));
+//    }
+
+    System.out.println("rows " + coded.size() + " cols " + coded.get(0).length);
+
+    Assert.assertEquals(1390, coded.size());
+    Assert.assertEquals(35, coded.get(0).length);
   }
 
 

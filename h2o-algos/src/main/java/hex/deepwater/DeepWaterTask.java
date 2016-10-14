@@ -20,10 +20,10 @@ import java.util.Random;
 public class DeepWaterTask extends FrameTask<DeepWaterTask> {
   private DeepWaterModelInfo _localmodel; //per-node state (to be reduced)
   private DeepWaterModelInfo _sharedmodel; //input/output
-  int _chunk_node_count = 1;
-  float _useFraction;
-  boolean _shuffle;
-  final Job _job;
+  private int _chunk_node_count = 1;
+  private float _useFraction;
+  private boolean _shuffle;
+  private final Job _job;
 
   /**
    * Accessor to the object containing the (final) state of the Deep Learning model
@@ -40,7 +40,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
    * @param inputModel Initial model state
    * @param fraction Fraction of rows of the training to train with
    */
-  public DeepWaterTask(DeepWaterModelInfo inputModel, float fraction, Job job) {
+  DeepWaterTask(DeepWaterModelInfo inputModel, float fraction, Job job) {
     super(job._key,inputModel._dataInfo);
     _sharedmodel = inputModel;
     _useFraction=fraction;
@@ -52,7 +52,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
    * Transfer ownership from global (shared) model to local model which will be worked on
    */
   @Override protected void setupLocal(){
-    long start = System.currentTimeMillis();
+//    long start = System.currentTimeMillis();
     assert(_localmodel == null);
     _localmodel = _sharedmodel;
     _sharedmodel = null;
@@ -61,7 +61,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
     final int respIdx =_fr.find(_localmodel.get_params()._response_column);
     final int batchSize = _localmodel.get_params()._mini_batch_size;
 
-    long nativetime = 0;
+//    long nativetime = 0;
     DeepWaterIterator iter = null;
     long seed = 0xDECAF + 0xD00D * _localmodel.get_processed_global();
     Random rng = RandomUtils.getRNG(seed);
@@ -153,13 +153,16 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, _localmodel._width, _localmodel._height, _localmodel._channels, _localmodel.get_params()._cache_data);
       }
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-        assert(_localmodel._dataInfo != null);
+        assert (_localmodel._dataInfo != null);
         iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfo, batchSize, _localmodel.get_params()._cache_data);
+      }
+      else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) {
+        iter = new DeepWaterTextIterator(trainData, trainLabels, batchSize, 100/*FIXME*/, _localmodel.get_params()._cache_data);
       }
 
       NativeTrainTask ntt = null;
       while (iter.Next(fs) && !_job.isStopping()) {
-        if (ntt != null) nativetime += ntt._timeInMillis;
+//        if (ntt != null) nativetime += ntt._timeInMillis;
         long n = _localmodel.get_processed_total();
 
 //        if(!_localmodel.get_params()._quiet_mode)
@@ -174,17 +177,17 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         _localmodel.add_processed_local(iter._batch_size);
       }
       fs.blockForPending();
-      nativetime += ntt._timeInMillis;
+//      nativetime += ntt._timeInMillis;
     } catch (IOException e) {
       e.printStackTrace();
     }
-    long end = System.currentTimeMillis();
+//    long end = System.currentTimeMillis();
 //    if (!_localmodel.get_params()._quiet_mode) {
 //      Log.info("Time for one iteration: " + PrettyPrint.msecs(end - start, true));
 //      Log.info("Time for native training : " + PrettyPrint.msecs(nativetime, true));
 //    }
   }
-  @Override public void map(Chunk [] chunks, NewChunk [] outputs) { return; }
+  @Override public void map(Chunk [] chunks, NewChunk [] outputs) { }
 
   static private class NativeTrainTask extends H2O.H2OCountedCompleter<NativeTrainTask> {
 
@@ -195,7 +198,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
     float[] _data;
     float[] _labels;
 
-    public NativeTrainTask(BackendTrain backend, BackendModel model, float[] data, float[] label) {
+    NativeTrainTask(BackendTrain backend, BackendModel model, float[] data, float[] label) {
       _it = backend;
       _model = model;
       _data = data;
@@ -223,7 +226,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
   /**
    * Average the per-node models (for elastic averaging, already wrote them to DKV in postLocal())
    * This is a no-op between F/J worker threads (operate on the same weights/biases)
-   * @param other
+   * @param other Other DeepWaterTask to reduce
    */
   @Override public void reduce(DeepWaterTask other){
     if (_localmodel != null && other._localmodel != null && other._localmodel.get_processed_local() > 0 //other DLTask was active (its model_info should be used for averaging)
@@ -242,8 +245,8 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
   }
 
 
-  static long _lastWarn;
-  static long _warnCount;
+  private static long _lastWarn;
+  private static long _warnCount;
   /**
    * After all reduces are done, the driver node calls this method to clean up
    * This is only needed if we're not inside a DeepWaterTask2 (which will do the reduction between replicated data workers).
@@ -265,7 +268,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
     assert ((!dlp._replicate_training_data || H2O.CLOUD.size() == 1) == !_run_local);
     if (!_run_local) {
       _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
-      _localmodel.set_processed_local(0l);
+      _localmodel.set_processed_local(0L);
       // model averaging
       if (_chunk_node_count > 1)
         _localmodel.div(_chunk_node_count);
