@@ -1,7 +1,5 @@
 description = "H2O REST API bindings"
 
-apply plugin: 'java'
-
 // Common constants
 def runner = new File("$rootDir/scripts/run.py").canonicalPath
 def binDir = file("bin")

@@ -109,6 +109,14 @@ task copyGenModelJarToWebRoot(type: Copy) {
   rename { filename -> "h2o-genmodel.jar"}
 }
 
+task copyDeepWaterJarToWebRoot(type: Copy) {
+  from {
+      file("${rootDir}/lib/deepwater-all.jar")
+  }
+  into "src/main/resources/www/${h2oRESTApiVersion}/"
+}
+
+
 task deleteBowerModules(type: Delete) {
   delete 'lib'
 }
@@ -124,6 +132,11 @@ task deleteFlowFromWebRoot(type: Delete) {
 task deleteGenModelJarFromWebRoot(type: Delete) {
     delete "src/main/resources/www/${h2oRESTApiVersion}/h2o-genmodel.jar"
 }
+
+task deleteDeepWaterJarFromWebRoot(type: Delete) {
+    delete "src/main/resources/www/${h2oRESTApiVersion}/deepwater-all.jar"
+}
+
 
 def exampleFlowsOutputDir = "$rootDir/h2o-web/src/main/resources/www/flow/packs"
 
@@ -183,10 +196,12 @@ processResources.dependsOn copyExampleFlows
 processResources.dependsOn compileHelpFiles
 processResources.dependsOn copyHelpImages
 processResources.dependsOn copyGenModelJarToWebRoot
+processResources.dependsOn copyDeepWaterJarToWebRoot
 
 compileAndInstallDocFiles.dependsOn installNpmPackages
 compileAndInstallDocFiles.dependsOn ":h2o-docs:build"
 build.dependsOn compileAndInstallDocFiles
 
 // Hook clean stage
-clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDocFiles
+clean.dependsOn deleteFlowFromWebRoot, cleanUpSmokeTest, deleteGenModelJarFromWebRoot, deleteDeepWaterJarFromWebRoot, deleteDocFiles
+
