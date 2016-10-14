@@ -202,7 +202,7 @@ public class GainsLift extends Iced {
       _thresh = thresh.clone();
     }
 
-    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,null); }
+    @Override public void map( Chunk ca, Chunk cp) { map(ca, cp, (Chunk)null); }
     @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
       _events = new long[_thresh.length];
       _observations = new long[_thresh.length];
