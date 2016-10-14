@@ -586,7 +586,7 @@ public class DeepWaterParameters extends Model.Parameters {
         if (nClasses > 1) {
           toParms._distribution = nClasses == 2 ? DistributionFamily.bernoulli : DistributionFamily.multinomial;
         } else {
-          throw H2O.unimpl("Only classification is supported for now.");
+          toParms._distribution = DistributionFamily.gaussian;
         }
       }
       if (fromParms._single_node_mode && (H2O.CLOUD.size() == 1 || !fromParms._replicate_training_data)) {
@@ -651,14 +651,6 @@ public class DeepWaterParameters extends Model.Parameters {
           Log.info("Activation function: " + toParms._activation);
           Log.info("Input dropout ratio: " + toParms._input_dropout_ratio);
           Log.info("Hidden layer dropout ratio: " + Arrays.toString(toParms._hidden_dropout_ratios));
-        }
-      }
-
-      // Automatically set the distribution
-      if (fromParms._distribution == DistributionFamily.AUTO) {
-        // For classification, allow AUTO/bernoulli/multinomial with losses CrossEntropy/Quadratic/Huber/Absolute
-        if (nClasses > 1) {
-          toParms._distribution = nClasses == 2 ? DistributionFamily.bernoulli : DistributionFamily.multinomial;
         }
       }
     }

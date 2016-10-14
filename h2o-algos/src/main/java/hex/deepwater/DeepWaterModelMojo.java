@@ -36,6 +36,8 @@ class DeepWaterModelMojo extends ModelMojo<DeepWaterModel, DeepWaterParameters, 
     writeln("cat_offsets = " + Arrays.toString(_output._catOffsets));
     writeln("norm_mul = " + Arrays.toString(_output._normMul));
     writeln("norm_sub = " + Arrays.toString(_output._normSub));
+    writeln("norm_resp_mul = " + Arrays.toString(_output._normRespMul));
+    writeln("norm_resp_sub = " + Arrays.toString(_output._normRespSub));
     writeln("use_all_factor_levels = " + (_output._useAllFactorLevels ? "true" : "false"));
   }
 

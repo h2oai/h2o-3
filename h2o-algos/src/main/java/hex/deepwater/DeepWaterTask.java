@@ -117,6 +117,9 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
 
       // Numeric data (H2O Frame full with numeric columns)
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+        double mul = _localmodel._dataInfo._normRespMul!=null ? _localmodel._dataInfo._normRespMul[0] : 1;
+        double sub = _localmodel._dataInfo._normRespSub!=null ? _localmodel._dataInfo._normRespSub[0] : 0;
+
         // full passes over the data
         int fullpasses = (int) _useFraction;
         while (j++ < fullpasses) {
@@ -124,7 +127,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
             double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
             if (weight == 0)
               continue;
-            float response = (float) _fr.vec(respIdx).at(i);
+            float response = (float)((_fr.vec(respIdx).at(i) - sub) / mul);
             trainData.add(i);
             trainLabels.add(response);
           }
@@ -136,7 +139,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
           double weight = weightIdx == -1 ? 1 : _fr.vec(weightIdx).at(i);
           if (weight == 0)
             continue;
-          float response = (float) _fr.vec(respIdx).at(i);
+          float response = (float)((_fr.vec(respIdx).at(i) - sub) / mul);
           trainData.add(i);
           trainLabels.add(response);
         }

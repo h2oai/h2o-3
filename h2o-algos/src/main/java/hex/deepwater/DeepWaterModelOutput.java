@@ -11,6 +11,8 @@ public class DeepWaterModelOutput extends Model.Output {
   int[] _catOffsets;
   double[] _normMul;
   double[] _normSub;
+  double[] _normRespMul;
+  double[] _normRespSub;
   boolean _useAllFactorLevels;
 
   /**
