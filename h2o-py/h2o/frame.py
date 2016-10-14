@@ -857,15 +857,42 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("cumsum", self, axis), cache=self._ex._cache)
 
     def cumprod(self, axis=0):
-        """The cumulative product over the column."""
+        """The cumulative product over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
+        """
         return H2OFrame._expr(expr=ExprNode("cumprod", self, axis), cache=self._ex._cache)
 
     def cummin(self, axis=0):
-        """The cumulative min over the column."""
+        """The cumulative min over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
+        """
         return H2OFrame._expr(expr=ExprNode("cummin", self, axis), cache=self._ex._cache)
 
     def cummax(self, axis=0):
-        """The cumulative max over the column."""
+        """The cumulative max over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
+        """
         return H2OFrame._expr(expr=ExprNode("cummax", self, axis), cache=self._ex._cache)
 
     def prod(self, na_rm=False):
