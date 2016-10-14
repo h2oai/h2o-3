@@ -57,7 +57,7 @@ public class DeepWaterParameters extends Model.Parameters {
   }
 
   public enum ProblemType {
-    auto, image_classification, text_classification, h2oframe_classification
+    auto, image, text, dataset
   }
 
   public double _clip_gradient = 10.0;
@@ -285,7 +285,7 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_clip_gradient<=0)
       dl.error("_clip_gradient", "Clip gradient must be >= 0");
 
-    if (_problem_type == ProblemType.image_classification) {
+    if (_problem_type == ProblemType.image) {
       if (_image_shape.length != 2)
         dl.error("_image_shape", "image_shape must have 2 dimensions (width, height)");
       if (_image_shape[0] < 0)
@@ -386,7 +386,7 @@ public class DeepWaterParameters extends Model.Parameters {
       dl.error("_stopping_metric", "Stopping metric must either be AUTO or MSE for autoencoder.");
     }
     if (expensive) {
-      _ignore_const_cols = guessProblemType() == DeepWaterParameters.ProblemType.h2oframe_classification;
+      _ignore_const_cols = guessProblemType() == DeepWaterParameters.ProblemType.dataset;
       dl.info("_ignore_const_cols", "Automatically setting ignore_const_cols to " + (_ignore_const_cols ? " YES " : " NO "));
     } else _ignore_const_cols = false;
   }
@@ -413,9 +413,9 @@ public class DeepWaterParameters extends Model.Parameters {
         text = true;
       }
     }
-    if (image) return ProblemType.image_classification;
-    else if (text) return ProblemType.text_classification;
-    else return ProblemType.h2oframe_classification;
+    if (image) return ProblemType.image;
+    else if (text) return ProblemType.text;
+    else return ProblemType.dataset;
   }
 
   static class Sanity {
@@ -618,8 +618,8 @@ public class DeepWaterParameters extends Model.Parameters {
         }
       }
       if (fromParms._network == Network.auto || fromParms._network==null) {
-        if (toParms._problem_type==ProblemType.image_classification) toParms._network = Network.inception_bn;
-        if (toParms._problem_type==ProblemType.text_classification || toParms._problem_type==ProblemType.h2oframe_classification) {
+        if (toParms._problem_type ==ProblemType.image) toParms._network = Network.inception_bn;
+        if (toParms._problem_type ==ProblemType.text || toParms._problem_type ==ProblemType.dataset) {
           toParms._network = null;
           if (fromParms._hidden == null) {
             toParms._hidden = new int[]{200, 200};

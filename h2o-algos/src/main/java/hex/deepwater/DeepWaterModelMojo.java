@@ -45,7 +45,7 @@ class DeepWaterModelMojo extends ModelMojo<DeepWaterModel, DeepWaterParameters, 
   protected void writeModelData() throws IOException {
     writeBinaryFile("model_network", _model_info._network);
     writeBinaryFile("model_params", _model_info._modelparams);
-    if (_parms._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+    if (_parms._problem_type == DeepWaterParameters.ProblemType.image) {
       String meanImage = _parms._mean_image_file;
       if (meanImage!=null) {
         byte[] data = new byte[(int)new File(meanImage).length()];

@@ -111,7 +111,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._stopping_rounds = 0;
       p._image_shape = new int[]{28,28};
       p._network = DeepWaterParameters.Network.lenet;
-      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+      p._problem_type = DeepWaterParameters.ProblemType.image;
       // score a lot
       p._train_samples_per_iteration = p._mini_batch_size;
       p._score_duty_cycle = 1;
@@ -139,7 +139,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._learning_rate = 1e-3;
       p._epochs = epochs;
       p._channels = channels;
-      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+      p._problem_type = DeepWaterParameters.ProblemType.image;
 
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
@@ -265,7 +265,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._seed = 1234;
       p._score_training_samples = 0;
       p._train_samples_per_iteration = p._mini_batch_size;
-      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+      p._problem_type = DeepWaterParameters.ProblemType.image;
 
       // first model
       Job j1 = new DeepWater(p).trainModel();
@@ -359,7 +359,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._seed = 1234;
       p._score_training_samples = 0;
       p._train_samples_per_iteration = p._mini_batch_size;
-      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+      p._problem_type = DeepWaterParameters.ProblemType.image;
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
 
@@ -443,7 +443,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._seed = 12345;
       p._epochs = 0.01;
       p._quiet_mode = true;
-      p._problem_type = DeepWaterParameters.ProblemType.image_classification;
+      p._problem_type = DeepWaterParameters.ProblemType.image;
       m1 = new DeepWater(p).trainModel().get();
 
       Log.info("Scoring the original model.");
