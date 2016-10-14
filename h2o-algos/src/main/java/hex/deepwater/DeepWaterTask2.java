@@ -9,7 +9,7 @@ import water.fvec.Frame;
  * DRemoteTask-based Deep Learning.
  * Every node has access to all the training data which leads to optimal CPU utilization and training accuracy IFF the data fits on every node.
  */
-public class DeepWaterTask2 extends MRTask<DeepWaterTask2> {
+class DeepWaterTask2 extends MRTask<DeepWaterTask2> {
   /**
    * Construct a DeepWaterTask2 where every node trains on the entire training dataset
    * @param jobKey Job ID
@@ -17,13 +17,12 @@ public class DeepWaterTask2 extends MRTask<DeepWaterTask2> {
    * @param model_info Initial DeepWaterModelInfo (weights + biases)
    * @param sync_fraction Fraction of the training data to use for one SGD iteration
    */
-  public DeepWaterTask2(Key jobKey, Frame train, DeepWaterModelInfo model_info, float sync_fraction, int iteration) {
+  DeepWaterTask2(Key jobKey, Frame train, DeepWaterModelInfo model_info, float sync_fraction, int iteration) {
     assert(sync_fraction > 0);
     _jobKey = jobKey;
     _fr = train;
     _sharedmodel = model_info;
     _sync_fraction = sync_fraction;
-    _iteration = iteration;
   }
 
   /**
@@ -37,7 +36,6 @@ public class DeepWaterTask2 extends MRTask<DeepWaterTask2> {
   private DeepWaterModelInfo _sharedmodel;
   final private float _sync_fraction;
   private DeepWaterTask _res;
-  private final int _iteration;
 
   /**
    * Do the local computation: Perform one DeepWaterTask (with run_local=true) iteration.
@@ -80,8 +78,7 @@ public class DeepWaterTask2 extends MRTask<DeepWaterTask2> {
     // model averaging (DeepWaterTask only computed the per-node models, each on all the data)
 //    _res.model_info().div(_res._chunk_node_count);
     _res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
-    _res.model_info().set_processed_local(0l);
-    DeepWaterModelInfo nodeAverageModel = _res.model_info();
-    _sharedmodel = nodeAverageModel;
+    _res.model_info().set_processed_local(0L);
+    _sharedmodel = _res.model_info();
   }
 }

@@ -6,7 +6,6 @@ import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 import hex.DataInfo;
-import hex.Model;
 import water.H2O;
 import water.Iced;
 import water.Key;
@@ -29,13 +28,11 @@ import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
  * This will be shared: one per node
  */
 final public class DeepWaterModelInfo extends Iced {
-  int _classes;
-  int _deviceID;
-  boolean _gpu;
+  private int _classes;
   byte[] _network; // model definition (graph)
   byte[] _modelparams; // internal state of native backend (weights/biases/helpers)
 
-  public TwoDimTable summaryTable;
+  private TwoDimTable summaryTable;
 
   //for image classification
   transient BackendTrain _backend; //interface provider
@@ -46,11 +43,9 @@ final public class DeepWaterModelInfo extends Iced {
   int _channels;
   float[] _meanData; //mean pixel value of the training data
 
-  //for numeric classification (csv/frame style)
-  int _ncols;
   DataInfo _dataInfo;
 
-  public void nukeBackend() {
+  void nukeBackend() {
     if (_backend != null && _model != null) {
       _backend.delete(_model);
     }
@@ -58,7 +53,7 @@ final public class DeepWaterModelInfo extends Iced {
     _model = null;
   }
 
-  public void saveNativeState(String path, int iteration) {
+  void saveNativeState(String path, int iteration) {
     assert(_backend !=null);
     assert(_model!=null);
     _backend.saveModel(_model, path + ".json"); //independent of iterations
@@ -73,7 +68,7 @@ final public class DeepWaterModelInfo extends Iced {
 
   @Override
   public int hashCode() {
-    return _network.hashCode() + _modelparams.hashCode();
+    return Arrays.hashCode(_network) + Arrays.hashCode(_modelparams);
   }
 
   // compute model size (number of model parameters required for making predictions)
@@ -85,21 +80,20 @@ final public class DeepWaterModelInfo extends Iced {
     return res;
   }
 
-  Key<Model> _model_id;
   public DeepWaterParameters parameters;
   public final DeepWaterParameters get_params() { return parameters; }
 
   private long processed_global;
-  public synchronized long get_processed_global() { return processed_global; }
-  public synchronized void set_processed_global(long p) { processed_global = p; }
-  public synchronized void add_processed_global(long p) { processed_global += p; }
+  synchronized long get_processed_global() { return processed_global; }
+  synchronized void set_processed_global(long p) { processed_global = p; }
+  synchronized void add_processed_global(long p) { processed_global += p; }
   private long processed_local;
-  public synchronized long get_processed_local() { return processed_local; }
-  public synchronized void set_processed_local(long p) { processed_local = p; }
-  public synchronized void add_processed_local(long p) { processed_local += p; }
-  public synchronized long get_processed_total() { return processed_global + processed_local; }
+  synchronized long get_processed_local() { return processed_local; }
+  synchronized void set_processed_local(long p) { processed_local = p; }
+  synchronized void add_processed_local(long p) { processed_local += p; }
+  synchronized long get_processed_total() { return processed_global + processed_local; }
 
-  final boolean _classification; // Classification cache (nclasses>1)
+  private final boolean _classification; // Classification cache (nclasses>1)
 
   private RuntimeOptions getRuntimeOptions() {
     RuntimeOptions opts = new RuntimeOptions();
@@ -140,16 +134,11 @@ final public class DeepWaterModelInfo extends Iced {
    * @param origParams Model parameters
    * @param nClasses number of classes (1 for regression, 0 for autoencoder)
    */
-  public DeepWaterModelInfo(final DeepWaterParameters origParams, Key model_id, int nClasses, int nFeatures) {
-    _ncols = nFeatures;
+  DeepWaterModelInfo(final DeepWaterParameters origParams, int nClasses, int nFeatures) {
     _classes = nClasses;
     _classification = _classes > 1;
     parameters = (DeepWaterParameters) origParams.clone(); //make a copy, don't change model's parameters
-    _model_id = model_id;
-    _deviceID=parameters._device_id;
-    _gpu=parameters._gpu;
-
-    _width = _ncols;
+    _width = nFeatures;
     _height = 0;
     _channels = 0;
     if (parameters._problem_type == DeepWaterParameters.ProblemType.image_classification) {
@@ -193,6 +182,8 @@ final public class DeepWaterModelInfo extends Iced {
         else
           _channels = 0;
       }
+    } else if (parameters._problem_type == DeepWaterParameters.ProblemType.text_classification) {
+      _width =100; //FIXME
     } else {
       Log.warn("unknown problem_type:", parameters._problem_type);
       throw H2O.unimpl();
@@ -200,7 +191,7 @@ final public class DeepWaterModelInfo extends Iced {
     setupNativeBackend();
   }
 
-  void setupNativeBackend() {
+  private void setupNativeBackend() {
     try {
       _backend = createDeepWaterBackend(parameters._backend.toString());
       if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
@@ -255,7 +246,7 @@ final public class DeepWaterModelInfo extends Iced {
     }
   }
 
-  public void nativeToJava() {
+  void nativeToJava() {
     if (_backend ==null) return;
     Log.info("Native backend -> Java.");
     long now = System.currentTimeMillis();
@@ -291,7 +282,7 @@ final public class DeepWaterModelInfo extends Iced {
   /**
    * Create native backend and fill it with the model's state stored in the Java model
    */
-  public void javaToNative() {
+  void javaToNative() {
     javaToNative(null,null);
   }
 
@@ -305,7 +296,7 @@ final public class DeepWaterModelInfo extends Iced {
     //existing state is fine
     if (_backend !=null
             // either not overwriting with user-given (new) state, or we already are in sync
-            && (network == null || network.equals(_network))
+            && (network == null || Arrays.equals(network,_network))
             && (parameters == null || Arrays.equals(parameters,_modelparams))) {
       Log.warn("No need to move the state from Java to native.");
       return;
@@ -331,7 +322,7 @@ final public class DeepWaterModelInfo extends Iced {
       _model = _backend.buildNet(getImageDataSet(), getRuntimeOptions(), getBackendParams(), _classes, file.toString()); //randomizing initial state
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (file !=null) file.delete(); }
+    } finally { file.delete(); }
     // always overwrite the parameters (weights/biases)
     try {
       file = new File(System.getProperty("java.io.tmpdir"), Key.make().toString());
@@ -341,7 +332,7 @@ final public class DeepWaterModelInfo extends Iced {
       _backend.loadParam(_model, file.toString());
     } catch (IOException e) {
       e.printStackTrace();
-    } finally { if (file !=null) file.delete(); }
+    } finally { file.delete(); }
 
     long time = System.currentTimeMillis() - now;
     Log.info("Took: " + PrettyPrint.msecs(time, true));

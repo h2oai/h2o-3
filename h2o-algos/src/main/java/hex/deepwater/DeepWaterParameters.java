@@ -619,8 +619,7 @@ public class DeepWaterParameters extends Model.Parameters {
       }
       if (fromParms._network == Network.auto || fromParms._network==null) {
         if (toParms._problem_type==ProblemType.image_classification) toParms._network = Network.inception_bn;
-        if (toParms._problem_type==ProblemType.text_classification) throw H2O.unimpl();
-        if (toParms._problem_type==ProblemType.h2oframe_classification) {
+        if (toParms._problem_type==ProblemType.text_classification || toParms._problem_type==ProblemType.h2oframe_classification) {
           toParms._network = null;
           if (fromParms._hidden == null) {
             toParms._hidden = new int[]{200, 200};

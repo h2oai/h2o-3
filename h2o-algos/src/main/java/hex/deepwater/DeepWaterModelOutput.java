@@ -24,7 +24,7 @@ public class DeepWaterModelOutput extends Model.Output {
     autoencoder = b._parms._autoencoder;
     assert b.isSupervised() == !autoencoder;
   }
-  final boolean autoencoder;
+  private final boolean autoencoder;
 
   @Override
   public boolean isAutoencoder() { return autoencoder; }

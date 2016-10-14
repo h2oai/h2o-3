@@ -10,17 +10,17 @@ import java.util.Arrays;
 /**
  * Mojo definition for DeepWater model.
  */
-public class DeepWaterModelMojo extends ModelMojo<DeepWaterModel, DeepWaterParameters, DeepWaterModelOutput> {
+class DeepWaterModelMojo extends ModelMojo<DeepWaterModel, DeepWaterParameters, DeepWaterModelOutput> {
 
-  public DeepWaterModelMojo(DeepWaterModel model) {
+  DeepWaterModelMojo(DeepWaterModel model) {
     super(model);
     _parms = model.get_params();
     _model_info = model.model_info();
     _output = model._output;
   }
-  DeepWaterParameters _parms;
-  DeepWaterModelInfo _model_info;
-  DeepWaterModelOutput _output;
+  private DeepWaterParameters _parms;
+  private DeepWaterModelInfo _model_info;
+  private DeepWaterModelOutput _output;
 
   @Override
   protected void writeExtraModelInfo() throws IOException {
