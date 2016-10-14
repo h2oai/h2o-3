@@ -14,6 +14,13 @@ Bins are linear sized from the observed min-to-max for the subset being split ag
 This value defaults to 20 bins. If you have few observations in a node (but greater than 10), and ``nbins`` is set to 20 (the default), empty bins will be created if there aren't enough observations to go in each bin. As ``nbins`` goes up, the algorithm will more closely approximate evaluating each individual observation as a split point. To make a model more general, decrease ``nbins_top_level`` and ``nbins_cats``. To make a model more specific, increase ``nbins`` and/or ``nbins_top_level`` and ``nbins_cats``. Keep in mind that increasing ``nbins_cats`` can have a dramatic effect on the amount of overfitting.
 
 
+Related Parameters
+~~~~~~~~~~~~~~~~~~
+
+- `nbins_cats <nbins_cats.html>`__
+- `nbins_top_level <nbins_top_level.html>`__
+
+
 Example
 ~~~~~~~
 
@@ -137,9 +144,3 @@ Example
 	# sort the grid models by decreasing AUC
 	sorted_grid = grid.get_grid(sort_by='auc', decreasing=True)
 	print(sorted_grid)
-
-Related Parameters
-~~~~~~~~~~~~~~~~~~
-
-- `nbins_cats <nbins_cats.html>`__
-- `nbins_top_level <nbins_top_level.html>`__
