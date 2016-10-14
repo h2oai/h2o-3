@@ -161,7 +161,7 @@ public class Tabulate extends Keyed<Tabulate> {
 
     @Override
     public void map(Chunk x, Chunk y) {
-      map(x,y,null);
+      map(x, y, (Chunk)null);
     }
     @Override
     public void map(Chunk x, Chunk y, Chunk w) {
