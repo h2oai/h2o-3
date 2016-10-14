@@ -378,6 +378,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
+      cv_mb._train = cvTrain;
       cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
@@ -770,7 +771,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_train", "Missing training frame");
       return;
     }
-    Frame tr = _parms.train();
+    Frame tr = _train != null?_train:_parms.train();
     if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
     if (expensive) {
