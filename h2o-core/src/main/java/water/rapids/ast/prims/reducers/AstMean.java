@@ -97,11 +97,9 @@ public class AstMean extends AstPrimitive {
 
     // Compute the mean over all rows
     final int numCols = compFrame.numCols();
-    System.out.println("preparing to run a task...");
     Frame res = new MRTask() {
       @Override
       public void map(Chunk[] cs, NewChunk nc) {
-        System.out.println("map(cs, nc)");
         for (int i = 0; i < cs[0]._len; i++) {
           double d = 0;
           int numNaColumns = 0;
@@ -112,7 +110,7 @@ public class AstMean extends AstPrimitive {
             else
               d += val;
           }
-          if (na_rm && numNaColumns < numCols)
+          if (na_rm? numNaColumns < numCols : numNaColumns == 0)
             nc.addNum(d / (numCols - numNaColumns));
           else
             nc.addNum(Double.NaN);
