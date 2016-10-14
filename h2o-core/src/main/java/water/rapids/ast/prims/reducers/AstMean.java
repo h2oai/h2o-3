@@ -4,10 +4,11 @@ import water.Key;
 import water.MRTask;
 import water.fvec.*;
 import water.rapids.Env;
+import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.vals.ValNums;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.rapids.vals.ValRow;
 
 public class AstMean extends AstPrimitive {
   @Override
@@ -43,14 +44,32 @@ public class AstMean extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
-    Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    boolean narm = asts[2].exec(env).getNum() == 1;
-    boolean axis = asts.length == 4 && (asts[3].exec(env).getNum() == 1);
-    if (fr == null)
-      throw new IllegalArgumentException("Frame " + asts[1] + " does not exist");
+  public Val apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
+    Val val1 = asts[1].exec(env);
+    if (val1 instanceof ValFrame) {
+      Frame fr = stk.track(val1).getFrame();
+      boolean na_rm = asts[2].exec(env).getNum() == 1;
+      boolean axis = asts.length == 4 && (asts[3].exec(env).getNum() == 1);
+      if (fr == null)
+        throw new IllegalArgumentException("Frame " + asts[1] + " does not exist");
 
-    return axis? rowwiseMean(fr, narm) : colwiseMean(fr, narm);
+      return axis? rowwiseMean(fr, na_rm) : colwiseMean(fr, na_rm);
+    }
+    else if (val1 instanceof ValRow) {
+      // This may be called from AstApply when doing per-row computations.
+      double[] row = val1.getRow();
+      boolean na_rm = asts[2].exec(env).getNum() == 1;
+      double d = 0;
+      int n = 0;
+      for (double r: row) {
+        if (Double.isNaN(r) && !na_rm)
+          return new ValRow(new double[]{Double.NaN}, null);
+        d += r;
+        n++;
+      }
+      return new ValRow(new double[]{d / n}, null);
+    } else
+      throw new IllegalArgumentException("Incorrect argument to (mean): expected a frame or a row, received " + val1.getClass());
   }
 
 

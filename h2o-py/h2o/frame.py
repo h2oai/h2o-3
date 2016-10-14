@@ -1740,7 +1740,7 @@ class H2OFrame(object):
         """The sum of all frame entries."""
         return ExprNode("sumNA" if na_rm else "sum", self)._eager_scalar()
 
-    def mean(self, skipna=None, axis=0, **kwargs):
+    def mean(self, skipna=True, axis=0, **kwargs):
         """
         Compute the frame's means by-column (or by-row).
 
@@ -1753,18 +1753,16 @@ class H2OFrame(object):
 
         @returns H2OFrame: the results frame.
         """
-        assert_is_type(skipna, None, bool)
+        assert_is_type(skipna, bool)
         assert_is_type(axis, 0, 1)
+        # Deprecated since 2016-10-14,
         if "na_rm" in kwargs:
-            if skipna is not None:
-                raise H2OValueError("Parameter na_rm is obsolete; use skipna instead")
+            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=DeprecationWarning)
             na_rm = kwargs.pop("na_rm")
             assert_is_type(na_rm, bool)
             skipna = na_rm  # don't assign to skipna directly, to help with error reporting
         if kwargs:
             raise H2OValueError("Unknown parameters %r" % list(kwargs))
-        if skipna is None:
-            skipna = True
         return H2OFrame._expr(ExprNode("mean", self, skipna, axis))
 
     def skewness(self, na_rm=False):
