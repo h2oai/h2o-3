@@ -96,6 +96,3 @@ src-gen/
 # Doc stuff
 .Rapp.history
 *.synctex.gz
-
-# Deep Water
-./lib/deepwater-1.0-SNAPSHOT-all.jar

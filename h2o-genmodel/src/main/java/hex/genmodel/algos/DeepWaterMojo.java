@@ -26,6 +26,8 @@ public class DeepWaterMojo extends MojoModel {
   public final int[] _catOffsets;
   public final double[] _normMul;
   public final double[] _normSub;
+  public final double[] _normRespMul;
+  public final double[] _normRespSub;
   public final boolean _useAllFactorLevels;
 
   transient final protected byte[] _network;
@@ -61,6 +63,8 @@ public class DeepWaterMojo extends MojoModel {
     _catOffsets = (int[])info.get("cat_offsets");
     _normMul = (double[])info.get("norm_mul");
     _normSub = (double[])info.get("norm_sub");
+    _normRespMul = (double[])info.get("norm_resp_mul");
+    _normRespSub = (double[])info.get("norm_resp_sub");
     _useAllFactorLevels = (boolean)info.get("use_all_factor_levels");
 
     _imageDataSet = new ImageDataSet(_width, _height, _channels);
@@ -115,10 +119,14 @@ public class DeepWaterMojo extends MojoModel {
       }
     }
     float[] predFloats = _backend.predict(_model, floats);
-    assert(_nclasses>=2) : "Only classification is supported right now.";
     assert(_nclasses == predFloats.length) : "nclasses " + _nclasses + " predFloats.length " + predFloats.length;
-    for (int i=0; i<predFloats.length; ++i) preds[1+i] = predFloats[i];
-    preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, doubles, _defaultThreshold);
+    if (_nclasses > 1) {
+      for (int i = 0; i < predFloats.length; ++i)
+        preds[1 + i] = predFloats[i];
+      preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, doubles, _defaultThreshold);
+    } else {
+      preds[0] = predFloats[0] * _normRespMul[0] + _normRespSub[0];
+    }
     return preds;
   }
 

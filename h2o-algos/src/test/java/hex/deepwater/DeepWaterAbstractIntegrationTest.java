@@ -595,7 +595,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 //  }
 
   @Test
-  public void prostate() {
+  public void prostateClassification() {
     Frame tr = null;
     DeepWaterModel m = null;
     try {
@@ -618,6 +618,37 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     } finally {
       if (tr!=null) tr.remove();
       if (m!=null) m.remove();
+    }
+  }
+
+  @Test
+  public void prostateRegression() {
+    Frame tr = null;
+    Frame preds = null;
+    DeepWaterModel m = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
+      p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
+      p._response_column = "AGE";
+      p._ignored_columns = new String[]{"ID"};
+      for (String col : new String[]{"RACE", "DPROS", "DCAPS", "CAPSULE", "GLEASON"}) {
+        Vec v = tr.remove(col);
+        tr.add(col, v.toCategoricalVec());
+        v.remove();
+      }
+      DKV.put(tr);
+      p._seed = 1234;
+      p._epochs = 1000;
+      DeepWater j = new DeepWater(p);
+      m = j.trainModel().get();
+      Assert.assertTrue((m._output._training_metrics).rmse() < 5);
+      preds = m.score(p._train.get());
+      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
+    } finally {
+      if (tr!=null) tr.remove();
+      if (m!=null) m.remove();
+      if (preds!=null) preds.remove();
     }
   }
 
