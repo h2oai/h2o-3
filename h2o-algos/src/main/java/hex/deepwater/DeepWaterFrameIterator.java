@@ -13,9 +13,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 
-public class DeepWaterFrameIterator extends DeepWaterIterator {
+class DeepWaterFrameIterator extends DeepWaterIterator {
 
-  public DeepWaterFrameIterator(ArrayList<Integer> rows, ArrayList<Float> labels, DataInfo dinfo, int batch_size, boolean cache) throws IOException {
+  DeepWaterFrameIterator(ArrayList<Integer> rows, ArrayList<Float> labels, DataInfo dinfo, int batch_size, boolean cache) throws IOException {
     super(batch_size, dinfo.fullN(), cache);
     _rows_lst = rows;
     _label_lst = labels;
@@ -23,9 +23,10 @@ public class DeepWaterFrameIterator extends DeepWaterIterator {
   }
 
   // Row-based storage, potentially sparse
-  public static class IcedRow extends Iced<IcedRow> {
+  static class IcedRow extends Iced<IcedRow> {
     int size() { return _chunk._len; }
     float getVal(int i) { return (float) _chunk.atd(i); }
+    public IcedRow() {}
     IcedRow(float[] fs) {
       double[] ds = new double[fs.length];
       for (int i = 0; i< fs.length; i++) ds[i]= fs[i];
@@ -49,7 +50,7 @@ public class DeepWaterFrameIterator extends DeepWaterIterator {
     float[] _destData;
     float[] _destLabel;
     boolean _cache;
-    public FrameDataConverter(int index, int globalIndex, DataInfo dinfo, float label, float[] destData, float[] destLabel, boolean cache) {
+    FrameDataConverter(int index, int globalIndex, DataInfo dinfo, float label, float[] destData, float[] destLabel, boolean cache) {
       _index=index;
       _globalIndex=globalIndex;
       _dinfo = dinfo;
@@ -107,8 +108,7 @@ public class DeepWaterFrameIterator extends DeepWaterIterator {
     }
   }
 
-  private int _start_index;
   final private ArrayList<Integer> _rows_lst;
   final private ArrayList<Float> _label_lst;
-  final DataInfo _dinfo;
+  final private DataInfo _dinfo;
 }

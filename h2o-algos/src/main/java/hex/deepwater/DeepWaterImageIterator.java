@@ -15,12 +15,12 @@ import java.util.Arrays;
 
 class DeepWaterImageIterator extends DeepWaterIterator {
 
-  public DeepWaterImageIterator(ArrayList<String> img_lst, ArrayList<Float> lable_lst, float[] meanData, int batch_size, int width, int height, int channels, boolean cache) throws IOException {
+  DeepWaterImageIterator(ArrayList<String> images, ArrayList<Float> labels, float[] meanData, int batch_size, int width, int height, int channels, boolean cache) throws IOException {
     super(batch_size, width*height*channels, cache);
-    _img_lst = img_lst;
-    _label_lst = lable_lst;
+    _img_lst = images;
+    _label_lst = labels;
     _meanData = meanData;
-    _num_obs = img_lst.size();
+    _num_obs = images.size();
     _width = width;
     _height = height;
     _channels = channels;
@@ -50,6 +50,7 @@ class DeepWaterImageIterator extends DeepWaterIterator {
   }
 
   static class IcedImage extends Keyed<IcedImage> {
+    public IcedImage() {}
     IcedImage(Dimensions dim, float[] data) { _dim = dim; _data = data; }
     Dimensions _dim;
     float[] _data;
@@ -64,7 +65,7 @@ class DeepWaterImageIterator extends DeepWaterIterator {
     float[] _destLabel;
     int _index;
     boolean _cache;
-    public ImageConverter(int index, String file, float label, Conversion conv, float[] destData, float[] meanData, float[] destLabel, String[] destFile, boolean cache) {
+    ImageConverter(int index, String file, float label, Conversion conv, float[] destData, float[] meanData, float[] destLabel, boolean cache) {
       _index=index;
       _file=file;
       _label=label;
@@ -87,8 +88,7 @@ class DeepWaterImageIterator extends DeepWaterIterator {
           IcedImage icedIm = DKV.getGet(imgKey);
           if (icedIm != null && icedIm._dim.compareTo(_conv._dim)==0) {
             // place the cached image into the right minibatch slot
-            for (int i=0; i<icedIm._data.length; ++i)
-              _destData[start+i] = icedIm._data[i];
+            System.arraycopy(icedIm._data, 0, _destData, start, icedIm._data.length);
             status = true;
           }
         }
@@ -118,7 +118,7 @@ class DeepWaterImageIterator extends DeepWaterIterator {
       conv._dim._width=this._width;
       conv._dim._channels=this._channels;
       for (int i = 0; i < _batch_size; i++)
-        fs.add(H2O.submitTask(new ImageConverter(i, _img_lst.get(_start_index +i), _label_lst ==null?Float.NaN: _label_lst.get(_start_index +i),conv, _data[which()], _meanData, _label[which()], _file[which()], _cache)));
+        fs.add(H2O.submitTask(new ImageConverter(i, _img_lst.get(_start_index +i), _label_lst ==null?Float.NaN: _label_lst.get(_start_index +i),conv, _data[which()], _meanData, _label[which()], _cache)));
       fs.blockForPending();
       flip();
       _start_index = _start_index + _batch_size;

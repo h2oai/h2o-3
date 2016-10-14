@@ -16,8 +16,11 @@ import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.UUID;
 
 import static hex.ModelMetrics.calcVarImp;
 import static water.H2O.technote;
@@ -41,32 +44,33 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
 
   final public DeepWaterModelInfo model_info() { return model_info; }
-  final public VarImp varImp() { return _output.errors.variable_importances; }
+
+//  final public VarImp varImp() { return _output.errors.variable_importances; }
 
   private volatile DeepWaterModelInfo model_info;
 
   // timing
-  public long total_checkpointed_run_time_ms; //time spent in previous models
-  public long total_training_time_ms; //total time spent running (training+scoring, including all previous models)
-  public long total_scoring_time_ms; //total time spent scoring (including all previous models)
-  public long total_setup_time_ms; //total time spent setting up (including all previous models)
+  private long total_checkpointed_run_time_ms; //time spent in previous models
+  private long total_training_time_ms; //total time spent running (training+scoring, including all previous models)
+  private long total_scoring_time_ms; //total time spent scoring (including all previous models)
+  long total_setup_time_ms; //total time spent setting up (including all previous models)
   private long time_of_start_ms; //start time for this model (this cp restart)
 
   // auto-tuning
-  public long actual_train_samples_per_iteration;
-  public long time_for_iteration_overhead_ms; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
+  long actual_train_samples_per_iteration;
+  long time_for_iteration_overhead_ms; //helper for auto-tuning: time in microseconds for collective bcast/reduce of the model
 
   // helpers for diagnostics
-  public double epoch_counter;
-  public int iterations;
-  public boolean stopped_early;
-  public long training_rows;
-  public long validation_rows;
+  double epoch_counter;
+  int iterations;
+  boolean stopped_early;
+  long training_rows;
+  long validation_rows;
 
   // Keep the best model so far, based on a single criterion (overall class. error or MSE)
   private float _bestLoss = Float.POSITIVE_INFINITY;
 
-  public Key actual_best_model_key;
+  Key actual_best_model_key;
 
   public DeepWaterScoringInfo last_scored() { return (DeepWaterScoringInfo) super.last_scored(); }
 
@@ -112,7 +116,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
    *  @param parms User-given parameters for checkpoint restart
    *  @param cp Checkpoint to restart from
    */
-  public DeepWaterModel(final Key destKey, final DeepWaterParameters parms, final DeepWaterModel cp, final DataInfo dataInfo) {
+  public DeepWaterModel(final Key<DeepWaterModel> destKey, final DeepWaterParameters parms, final DeepWaterModel cp, final DataInfo dataInfo) {
     super(destKey, parms == null ? (DeepWaterParameters)cp._parms.clone() : IcedUtils.deepCopy(parms), (DeepWaterModelOutput)cp._output.clone());
     DeepWaterParameters.Sanity.modifyParms(_parms, _parms, cp._output.nclasses()); //sanitize the model_info's parameters
     assert(_parms != cp._parms); //make sure we have a clone
@@ -150,7 +154,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     assert(_key.equals(destKey));
   }
 
-  void setDataInfoToOutput(DataInfo dinfo) {
+  private void setDataInfoToOutput(DataInfo dinfo) {
     if (dinfo == null) return;
     // update the model's expected frame format - needed for train/test adaptation
     _output._names = dinfo._adaptedFrame.names();
@@ -171,7 +175,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
    * @param output DL model output
    * @param nClasses Number of classes (1 for regression or autoencoder)
    */
-  public DeepWaterModel(final Key destKey, final DeepWaterParameters params, final DeepWaterModelOutput output, Frame train, Frame valid, int nClasses) {
+  public DeepWaterModel(final Key<DeepWaterModel> destKey, final DeepWaterParameters params, final DeepWaterModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, params, output);
     if (H2O.getCloudSize() != 1)
       throw new IllegalArgumentException("Deep Water currently only supports execution of 1 node.");
@@ -186,7 +190,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       DKV.put(dinfo);
       setDataInfoToOutput(dinfo);
     }
-    model_info = new DeepWaterModelInfo(parms, destKey, nClasses, dinfo != null ? dinfo.fullN() : -1);
+    model_info = new DeepWaterModelInfo(parms, nClasses, dinfo != null ? dinfo.fullN() : -1);
     model_info._dataInfo = dinfo;
 
     // now, parms is get_params();
@@ -216,10 +220,10 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       throw new IllegalArgumentException(technote(5, "Model is too large to fit into the DKV (larger than " + PrettyPrint.bytes(Value.MAX) + ")."));
   }
 
-  public long _timeLastIterationEnter;
-  public long _timeLastScoreStart; //start actual scoring
-  private long _timeLastScoreEnd;  //finished actual scoring
-  private long _timeLastPrintStart;
+  long _timeLastIterationEnter;
+  long _timeLastScoreStart; //start actual scoring
+  long _timeLastScoreEnd;  //finished actual scoring
+  long _timeLastPrintStart;
 
   private void checkTimingConsistency() {
     assert(total_scoring_time_ms <= total_training_time_ms);
@@ -231,7 +235,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     assert(total_scoring_time_ms >= 0);
   }
 
-  void updateTiming(Key<Job> job_key) {
+  private void updateTiming(Key<Job> job_key) {
     final long now = System.currentTimeMillis();
     long start_time_current_model = job_key.get().start_time();
     total_training_time_ms = total_checkpointed_run_time_ms + (now - start_time_current_model);
@@ -302,6 +306,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       scoringInfo.training_samples = (double)model_info().get_processed_total();
       scoringInfo.validation = fValid != null;
       scoringInfo.score_training_samples = fTrain.numRows();
+      scoringInfo.score_validation_samples = get_params()._score_validation_samples;
       scoringInfo.is_classification = _output.isClassifier();
       scoringInfo.is_autoencoder = _output.isAutoencoder();
 
@@ -503,7 +508,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   class DeepWaterBigScore extends BigScore {
     Frame _predFrame; //OUTPUT
-    @Override public Frame outputFrame(Key key, String [] names, String [][] domains){
+    @Override public Frame outputFrame(Key<Frame> key, String [] names, String [][] domains){
       _predFrame = new Frame(key, names, _predFrame.vecs());
       if (domains!=null)
         _predFrame.vec(0).setDomain(domains[0]); //only the label is ever categorical
@@ -524,8 +529,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       final int batch_size = get_params()._mini_batch_size;
       final int classes = _output.nclasses();
 
-      ArrayList score_data = new ArrayList<>(); //for binary data (path to data)
-      ArrayList<Integer> skipped = new ArrayList<>();
+      ArrayList score_data = new ArrayList(); //for binary data (path to data)
+      ArrayList<Integer> skipped = new ArrayList();
 
       // randomly add more rows to fill up to a multiple of batch_size
       long seed = 0xDECAF + 0xD00D * model_info().get_processed_global();
@@ -543,7 +548,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           skipped.add(i);
           continue;
         }
-        if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+        if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification
+            || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) {
           BufferedString file = _fr.vec(0).atStr(bs, i);
           if (file!=null)
             score_data.add(file.toString());
@@ -585,7 +591,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           int channels = model_info()._channels;
           iter = new DeepWaterImageIterator(score_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, model_info().get_params()._cache_data);
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
-          iter = new DeepWaterFrameIterator(score_data, null, di,   /*no labels*/ batch_size, model_info().get_params()._cache_data);
+          iter = new DeepWaterFrameIterator(score_data, null /*no labels*/, di, batch_size, model_info().get_params()._cache_data);
+        } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) {
+          iter = new DeepWaterTextIterator(score_data, null /*no labels*/, batch_size, 100 /*FIXME*/, model_info().get_params()._cache_data);
         } else {
           throw H2O.unimpl();
         }
@@ -635,8 +643,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
             row++;
           }
           if (_makePreds) {
-            for (int i = 0; i < vw.length; ++i)
-              vw[i].close(fs);
+            for (Vec.Writer aVw : vw) aVw.close(fs);
             fs.blockForPending();
           }
         }
@@ -723,9 +730,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     model_info().saveNativeState(path, iteration);
   }
 
-  public static String CACHE_MARKER = "__d33pW473r_1n73rn4l__";
+  static String CACHE_MARKER = "__d33pW473r_1n73rn4l__";
 
-  public void cleanUpCache() {
+  void cleanUpCache() {
     cleanUpCache(null);
   }
   private void cleanUpCache(Futures fs) {
@@ -755,6 +762,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     return sb.toString();
   }
 
-  static public String logNvidiaStats() { try { return (getNvidiaStats()); } catch (IOException e) { return null; } }
+  static private String logNvidiaStats() { try { return (getNvidiaStats()); } catch (IOException e) { return null; } }
 }
 
