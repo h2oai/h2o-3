@@ -675,8 +675,7 @@ def generate_main_class(endpoints):
                 i++;
               }
             }
-            catch (InstantiationException | IllegalAccessException e) { /* can't be */ }
-            catch (NoSuchMethodException | InvocationTargetException e) {
+            catch (Exception e) {
               e.printStackTrace();
             }
             return keys;
