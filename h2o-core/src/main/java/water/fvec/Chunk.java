@@ -558,7 +558,8 @@ public abstract class Chunk extends Iced<Chunk> {
     long hi = uuid.getMostSignificantBits();
 
     if( _chk2.set_impl(idx, lo, hi) ) return uuid;
-    (_chk2 = inflate_impl(new NewChunk(this))).set_impl(idx,lo, hi);
+    _chk2 = inflate_impl(new NewChunk(this));
+    _chk2.set_impl(idx,lo, hi);
     return uuid;
   }
 
@@ -595,12 +596,25 @@ null;
     return _cidx;
   }
 
+  static class WrongType extends IllegalArgumentException {
+    private final Class<?> expected;
+    private final Class<?> actual;
+
+    public WrongType(Class<?> expected, Class<?> actual) {
+      super("Expected: " + expected + ", actual: " + actual);
+      this.expected = expected;
+      this.actual = actual;
+    }
+  }
+
+  static WrongType wrongType(Class<?> expected, Class<?> actual) { return new WrongType(expected, actual); }
+
   /** Chunk-specific readers.  Not a public API */
   abstract double   atd_impl(int idx);
   abstract long     at8_impl(int idx);
   abstract boolean isNA_impl(int idx);
-  long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
+  long at16l_impl(int idx) { throw wrongType(UUID.class, Object.class); }
+  long at16h_impl(int idx) { throw wrongType(UUID.class, Object.class); }
   BufferedString atStr_impl(BufferedString bStr, int idx) { throw new IllegalArgumentException("Not a String"); }
 
   /** Chunk-specific writer.  Returns false if the value does not fit in the
@@ -610,7 +624,7 @@ null;
   abstract boolean set_impl  (int idx, float f );
   abstract boolean setNA_impl(int idx);
   boolean set_impl (int idx, String str) { throw H2O.unimpl(); }
-  boolean set_impl(int i, long lo, long hi) { throw H2O.unimpl(); }
+  boolean set_impl(int i, long lo, long hi) { return false; }
     //Zero sparse methods:
   
   /** Sparse Chunks have a significant number of zeros, and support for

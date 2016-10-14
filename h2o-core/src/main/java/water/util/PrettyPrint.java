@@ -129,13 +129,17 @@ public class PrettyPrint {
 
 
   // About as clumsy and random as a blaster...
-  public static String UUID( long lo, long hi ) {
+  public static String uuid( long lo, long hi ) {
     long lo0 = (lo>>32)&0xFFFFFFFFL;
     long lo1 = (lo>>16)&0xFFFFL;
     long lo2 = (lo>> 0)&0xFFFFL;
     long hi0 = (hi>>48)&0xFFFFL;
     long hi1 = (hi>> 0)&0xFFFFFFFFFFFFL;
     return String.format("%08X-%04X-%04X-%04X-%012X",lo0,lo1,lo2,hi0,hi1);
+  }
+
+  public static String uuid(java.util.UUID uuid) {
+    return uuid == null ? "(N/A)" : uuid(uuid.getLeastSignificantBits(), uuid.getMostSignificantBits());
   }
 
   public static String number(Chunk chk, double d, int precision) {

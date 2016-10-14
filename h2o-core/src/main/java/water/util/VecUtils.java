@@ -350,7 +350,7 @@ public class VecUtils {
         } else {
           for (int i=0; i < chk._len; i++) {
             if (!chk.isNA(i))
-              newChk.addStr(PrettyPrint.UUID(chk.at16l(i), chk.at16h(i)));
+              newChk.addStr(PrettyPrint.uuid(chk.at16l(i), chk.at16h(i)));
             else
               newChk.addNA();
           }
