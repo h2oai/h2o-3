@@ -24,6 +24,22 @@ public class TCPReceiverThread extends Thread {
   private ServerSocketChannel SOCK;
   private SocketChannelFactory socketChannelFactory;
 
+
+  /**
+   * Byte representing TCP communication for small data
+   */
+  static final byte TCP_SMALL = 1;
+
+  /**
+   * Byte representing TCP communication for big data
+   */
+  static final byte TCP_BIG = 2;
+
+  /**
+   * Byte representing TCP communication for communicating with H2O backend from non-H2O environment
+   */
+  static final byte TCP_EXTERNAL = 3;
+
   public TCPReceiverThread(
           ServerSocketChannel sock) {
     super("TCP-Accept");
@@ -77,13 +93,25 @@ public class TCPReceiverThread extends Thread {
           }
         }
         // todo compare against current cloud, refuse the con if no match
+
+
+        // Do H2O.Intern in corresponding case branch, we can't do H2O.intern here since it wouldn't work
+        // with ExternalFrameHandling ( we don't send the same information there as with the other communication)
         InetAddress inetAddress = sock.socket().getInetAddress();
-        H2ONode h2o = H2ONode.intern(inetAddress,port);
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
-        case 1: new UDP_TCP_ReaderThread(h2o, wrappedSocket).start(); break;
-        case 2: new TCPReaderThread(wrappedSocket,new AutoBuffer(wrappedSocket, inetAddress), inetAddress).start(); break;
-        default: throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small and 2 - Big");
+        case TCP_SMALL:
+          H2ONode h2o = H2ONode.intern(inetAddress, port);
+          new UDP_TCP_ReaderThread(h2o, wrappedSocket).start();
+          break;
+        case TCP_BIG:
+          new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress), inetAddress).start();
+          break;
+        case TCP_EXTERNAL:
+          new ExternalFrameHandlerThread(sock, new AutoBuffer(sock, null)).start();
+          break;
+        default:
+          throw H2O.fail("unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
         }
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown
