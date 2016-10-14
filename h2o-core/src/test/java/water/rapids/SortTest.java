@@ -7,6 +7,7 @@ import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.rapids.vals.ValFrame;
 
+import java.io.IOException;
 import java.util.Random;
 
 import static org.junit.Assert.assertTrue;
@@ -165,4 +166,18 @@ public class SortTest extends TestUtil {
     return fr;
   }
 
+  @Test public void TestSortTimes() throws IOException {
+    Frame fr=null, sorted=null;
+    try {
+      fr = parse_test_file("smalldata/junit/sort_crash.csv");
+      sorted = fr.sort(new int[]{0});
+      Vec vec = sorted.vec(0);
+      int len = (int)vec.length();
+      for( int i=1; i<len; i++ )
+        assertTrue( vec.at8(i-1) < vec.at8(i) );
+    } finally {
+      if( fr != null ) fr.delete();
+      if( sorted != null ) sorted.delete();
+    }
+  }
 }
