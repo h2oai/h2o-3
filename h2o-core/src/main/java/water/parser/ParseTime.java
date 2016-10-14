@@ -59,6 +59,7 @@ public abstract class ParseTime {
     return Long.MIN_VALUE;
   }
   // Tries to parse "yyyy-MM[-dd] [HH:mm:ss.SSS aa]"
+  // Tries to parse "yyyyMMdd-HH:mm:ss.SSS aa".  In this form the dash and trailing time is required
   private static long attemptYearFirstTimeParse(BufferedString str) {
     final byte[] buf = str.getBuffer();
     int i=str.getOffset();
@@ -73,19 +74,27 @@ public abstract class ParseTime {
     yyyy = digit(yyyy,buf[i++]);
     yyyy = digit(yyyy,buf[i++]);
     yyyy = digit(yyyy,buf[i++]);
-    if( buf[i++] != '-' ) return Long.MIN_VALUE;
+    final boolean dash = buf[i] == '-';
+    if( dash ) i++;
     MM = digit(MM,buf[i++]);
     MM = i<end && buf[i]!='-' ? digit(MM,buf[i++]) : MM;
     if( MM < 1 || MM > 12 ) return Long.MIN_VALUE;
     if( (end-i)>=2 ) {
-      if( buf[i++] != '-' ) return Long.MIN_VALUE;
+      if( dash && buf[i++] != '-' ) return Long.MIN_VALUE;
       dd = digit(dd, buf[i++]);
       dd = i < end && buf[i] >= '0' && buf[i] <= '9' ? digit(dd, buf[i++]) : dd;
       if( dd < 1 || dd > 31 ) return Long.MIN_VALUE;
-    } else dd=1; // no day
-    while( i < end && buf[i] == ' ' ) i++;
-    if( i==end )
-      return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
+    } else {
+      if( !dash ) return Long.MIN_VALUE; // yyyyMM is ambiguous with plain numbers
+      dd=1;                              // yyyy-MM; no day
+    }
+    if( dash ) {                // yyyy-MM[-dd]
+      while( i < end && buf[i] == ' ' ) i++; // optional seperator or trailing blanks
+      if( i==end )
+        return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
+    } else {                    // yyyyMMdd-HH:mm:ss.SSS; dash AND time is now required
+      if( buf[i++] != '-' ) return Long.MIN_VALUE;
+    }
 
     //Parse time
     return parseTime(buf, i, end, yyyy, MM, dd, false);
