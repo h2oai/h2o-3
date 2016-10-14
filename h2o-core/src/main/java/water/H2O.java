@@ -9,7 +9,6 @@ import jsr166y.ForkJoinWorkerThread;
 
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
-import org.joda.time.PeriodType;
 import org.reflections.Reflections;
 
 import java.io.File;
@@ -37,7 +36,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import water.UDPRebooted.ShutdownTsk;
-import water.api.ModelCacheManager;
 import water.api.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
@@ -1725,8 +1723,29 @@ final public class H2O {
     }
   }
 
+  /**
+   * Check if the Java version is not supported
+   * @return true if not supported
+   */
+  public static boolean checkUnsupportedJava() {
+    String version = System.getProperty("java.version");
+    if (version != null && !(version.startsWith("1.6") || version.startsWith("1.7") || version.startsWith("1.8"))) {
+      System.err.println("Only Java 1.6-1.8 supported, version is " + version);
+      return true;
+    }
+    String vmName = System.getProperty("java.vm.name");
+    if (vmName != null && vmName.equals("GNU libgcj")) {
+      System.err.println("GNU gcj is not supported");
+      return true;
+    }
+    return false;
+  }
+
   // --------------------------------------------------------------------------
   public static void main( String[] args ) {
+
+   if (checkUnsupportedJava())
+     throw new RuntimeException("Unsupported Java version");
 
     // Record system start-time.
     if( !START_TIME_MILLIS.compareAndSet(0L, System.currentTimeMillis()) )

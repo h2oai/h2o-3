@@ -212,9 +212,8 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
-  /** Quick compatibility check between Frames.  Used by some tests for efficient equality checks. */
+  /** Frames are compatible if they have the same layout (number of rows and chunking) and the same vector group (chunk placement).. */
   public boolean isCompatible( Frame fr ) {
-    if( numCols() != fr.numCols() ) return false;
     if( numRows() != fr.numRows() ) return false;
     for( int i=0; i<vecs().length; i++ )
       if( !vecs()[i].checkCompatible(fr.vecs()[i]) )
@@ -253,7 +252,8 @@ public class Frame extends Lockable<Frame> {
   /** The array of keys.
    * @return the array of keys for each vec in the frame.
    */
-  public Key[] keys() { return _keys; }
+  public Key<Vec>[] keys() { return _keys; }
+  public Iterable<Key<Vec>> keysList() { return Arrays.asList(_keys); }
 
   /** The internal array of Vecs.  For efficiency Frames contain an array of
    *  Vec Keys - and the Vecs themselves are lazily loaded from the {@link DKV}.

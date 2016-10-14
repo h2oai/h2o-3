@@ -1,5 +1,6 @@
 GBM
---------------
+---
+
 Introduction
 ~~~~~~~~~~~~
 
@@ -65,17 +66,17 @@ Defining a GBM Model
    training columns, since no information can be gained from them. This
    option is enabled by default.
 
--  **ntrees**: Specify the number of trees to build.
+-  `ntrees <gbm-params/ntrees.html>`__: Specify the number of trees to build.
 
--  **max\_depth**: Specify the maximum tree depth.
+-  `max_depth <gbm-params/max_depth.html>`__: Specify the maximum tree depth.
 
 -  **min\_rows**: Specify the minimum number of observations for a leaf
    (``nodesize`` in R).
 
--  **nbins**: (Numerical/real/int only) Specify the number of bins for
+-  `nbins <gbm-params/nbins.html>`__: (Numerical/real/int only) Specify the number of bins for
    the histogram to build, then split at the best point.
 
--  **nbins\_cats**: (Categorical/enums only) Specify the maximum number
+-  `nbins_cats <gbm-params/nbins_cats.html>`__: (Categorical/enums only) Specify the maximum number
    of bins for the histogram to build, then split at the best point.
    Higher values can lead to more overfitting. The levels are ordered
    alphabetically; if there are more levels than bins, adjacent levels
@@ -143,6 +144,14 @@ Defining a GBM Model
 
 -  **pred\_noise\_bandwidth**: The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. If this parameter is specified with a value greater than 0, then every leaf node prediction is randomly scaled by a number drawn from a Normal distribution centered around 1 with a bandwidth given by this parameter. The default is 0 (disabled). 
 
+- **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
+
+  - ``auto``: Allow the algorithm to decide (default)
+  - ``enum``: 1 column per categorical feature
+  - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
+  - ``binary``: No more than 32 columns per categorical feature
+  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
+
 -  **min\_split\_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
 -  **random\_split_points**: By default GBM bins from min...max in steps of (max-min)/N. When this option is enabled, GBM will instead sample N-1 points from min...max and use the sorted list of those for split finding.
@@ -184,12 +193,12 @@ Defining a GBM Model
    
     **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  **balance\_classes**: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **Max\_after\_balance\_size** parameter.
+-  `balance_classes <gbm-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max\_after\_balance\_size** parameter.
 
 -  **max\_confusion\_matrix\_size**: Specify the maximum size (in number
    of classes) for confusion matrices to be printed in the Logs.
 
--  **max\_hit\_ratio\_k**: Specify the maximum number (top K) of
+-  `max_hit_ratio_k <gbm-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of
    predictions to use for hit ratio computation. Applicable to
    multi-class only. To disable, enter 0.
 
@@ -257,16 +266,16 @@ Defining a GBM Model
 
 -  **keep\_cross\_validation\_fold\_assignment**: Enable this option to preserve the cross-validation fold assignment. 
 
--  **class\_sampling\_factors**: Specify the per-class (in
+-  `class_sampling_factors <gbm-params/class_sampling_factors.html>`__: Specify the per-class (in
    lexicographical order) over/under-sampling ratios. By default, these
    ratios are automatically computed during training to obtain the class
    balance.
 
--  **max\_after\_balance\_size**: Specify the maximum relative size of
+-  `max_after_balance_size <gbm-params/max_after_balance_size.html>`__: Specify the maximum relative size of
    the training data after balancing class counts (**balance\_classes**
    must be enabled). The value can be less than 1.0.
 
--  **nbins\_top\_level**: (For numerical/real/int columns only) Specify
+-  `nbins_top_level <gbm-params/nbins_top_level.html>`__: (For numerical/real/int columns only) Specify
    the minimum number of bins at the root level to use to build the
    histogram. This number will then be decreased by a factor of two per
    level.
@@ -298,85 +307,6 @@ with the leaf node assignments, or click the checkbox when making
 predictions from Flow. Those leaf nodes represent decision rules that
 can be fed to other models (i.e., GLM with lambda search and strong
 rules) to obtain a limited set of the most important rules.
-
-FAQ
-~~~
-
--  **How does the algorithm handle missing values during training?**
-
-  Missing values are interpreted as containing information (i.e., missing for a reason), rather than missing at random. During tree building, split decisions for every node are found by minimizing the loss function and treating missing values as a separate category that can go either left or right.
-
--  **How does the algorithm handle missing values during testing?**
-
-  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
-
--  **What happens if the response has missing values?**
-
-  No errors will occur, but nothing will be learned from rows containing missing the response.
-
--  **What happens when you try to predict on a categorical level not
-   seen during training?**
-
-  GBM converts a new categorical level to an "undefined" value in the test set, and then splits either left or right during scoring. 
-
--  **Does it matter if the data is sorted?**
-
-  No.
-
--  **Should data be shuffled before training?**
-
-  No.
-
--  **How does the algorithm handle highly imbalanced data in a response
-   column?**
-
-  You can specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
-
--  **What if there are a large number of columns?**
-
-  GBM models are best for datasets with fewer than a few thousand columns.
-
--  **What if there are a large number of categorical factor levels?**
-
-  Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
-
--  **Given the same training set and the same GBM parameters, will GBM
-   produce a different model with two different validation data sets, or
-   the same model?**
-
-  Unless early stopping is turned on (it's disabled by default), then supplying two different validation sets will not change the model, resulting in the same model for both trials. However, if early stopping is turned on and two different validation sets are provided during the training process, that can lead to two different models. The use of a validation set in combination with early stopping can cause the model to stop training earlier (or later), depending on the validation set. Early stopping uses the validation set to determine when to stop building more trees. 
-
--  **How deterministic is GBM?**
-
-  As long as you set the seed, GBM is deterministic up to floating point rounding errors (out-of-order atomic addition of multiple threads during histogram building). This means that if you set a seed, your results will be reproducible even if, for example, you change the number of nodes in your cluster, change the way you ingest data, or change the number of files your data lives in, among many other examples.
-
--  **When fitting a random number between 0 and 1 as a single feature,
-   the training ROC curve is consistent with ``random`` for low tree
-   numbers and overfits as the number of trees is increased, as
-   expected. However, when a random number is included as part of a set
-   of hundreds of features, as the number of trees increases, the random
-   number increases in feature importance. Why is this?**
-
-  This is a known behavior of GBM that is similar to its behavior in R. If, for example, it takes 50 trees to learn all there is to learn from a frame without the random features, when you add a random predictor and train 1000 trees, the first 50 trees will be approximately the same. The final 950 trees are used to make sense of the random number, which will take a long time since there's no structure. The variable importance will reflect the fact that all the splits from the first 950 trees are devoted to the random feature.
-
--  **How is column sampling implemented for GBM?**
-
-  For an example model using:
-
-   -  100 columns
-   -  ``col_sample_rate_per_tree=0.754``
-   -  ``col_sample_rate=0.8`` (refers to available columns after per-tree sampling)
-
-  For each tree, the floor is used to determine the number - in this example, (0.754 * 100)=75 out of the 100 - of columns that are randomly picked, and then the floor is used to determine the number - in this case, (0.754 * 0.8 * 100)=60 - of columns that are then randomly chosen for each split decision (out of the 75).
-
-- **I want to score multiple models on a huge dataset. Is it possible to score these models in parallel?**
-
- The best way to score models in parallel is to use the in-H2O binary models. To do this, import the binary (non-POJO, previously exported) model into an H2O cluster; import the datasets into H2O as well; call the predict endpoint either from R, Python, Flow or the REST API directly; then export the predictions to file or download them from the server.
- 
-- **Are there any tutorials for GBM?**
-
- You can find tutorials for using GBM with R, Python, and Flow at the following location: https://github.com/h2oai/h2o-3/tree/master/h2o-docs/src/product/tutorials/gbm. 
-
 
 GBM Algorithm
 ~~~~~~~~~~~~~
@@ -483,3 +413,24 @@ a Rejoinder by the Authors)." The Annals of Statistics 28.2 (2000):
 Elements of Statistical Learning. Vol.1. N.p., page 339: Springer New
 York,
 2001. <http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf>`__
+
+FAQ
+~~~
+
+This section describes some common questions asked by users. The questions are broken down based on one of the types below.
+
+.. toctree::
+   :maxdepth: 2
+
+   gbm-faq/preprocessing_steps
+   gbm-faq/histograms_and_binning
+   gbm-faq/missing_values
+   gbm-faq/default_values
+   gbm-faq/build_first_tree
+   gbm-faq/splitting
+   gbm-faq/cross_validation
+   gbm-faq/about_the_data
+   gbm-faq/reproducibility
+   gbm-faq/generated_metrics
+   gbm-faq/scoring
+   gbm-faq/tuning_a_gbm

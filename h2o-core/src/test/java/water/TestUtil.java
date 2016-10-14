@@ -14,6 +14,7 @@ import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.Log;
+import water.util.StringUtils;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
@@ -173,6 +174,8 @@ public class TestUtil extends Iced {
       file = new File("../../" + fname);
     if( !file.exists() )
       file = new File("../target/" + fname);
+    if( !file.exists() )
+      file = new File(StringUtils.expandPath(fname));
     if( !file.exists() )
       file = null;
     return file;

@@ -552,6 +552,12 @@ public class ArrayUtils {
       if (from[i]>from[result]) result = i;
     return result;
   }
+  public static int maxIndex(float[] from) {
+    int result = 0;
+    for (int i = 1; i<from.length; ++i)
+      if (from[i]>from[result]) result = i;
+    return result;
+  }
   public static int maxIndex(double[] from) {
     int result = 0;
     for (int i = 1; i<from.length; ++i)
@@ -801,6 +807,20 @@ public class ArrayUtils {
   public static int[] toInt(String[] a, int off, int len) {
     int[] res = new int[len];
     for(int i=0; i<len; i++) res[i] = Integer.valueOf(a[off + i]);
+    return res;
+  }
+
+  public static Integer[] toIntegers(int[] a, int off, int len) {
+    Integer [] res = new Integer[len];
+    for(int i = 0; i < len; ++i)
+      res[i] = a[off+i];
+    return res;
+  }
+
+  public static int[] toInt(Integer[] a, int off, int len) {
+    int [] res = new int[len];
+    for(int i = 0; i < len; ++i)
+      res[i] = a[off+i];
     return res;
   }
 
@@ -1078,6 +1098,17 @@ public class ArrayUtils {
     return da;
   }
 
+  public static int [] sortedMerge(int[] a, int [] b) {
+    int [] c = MemoryManager.malloc4(a.length + b.length);
+    int i = 0, j = 0;
+    for(int k = 0; k < c.length; ++k){
+      if(i == a.length) c[k] = b[j++];
+      else if(j == b.length)c[k] = a[i++];
+      else if(b[j] < a[i]) c[k] = b[j++];
+      else c[k] = a[i++];
+    }
+    return c;
+  }
   // sparse sortedMerge (ids and vals)
   public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
     int i = 0, j = 0;

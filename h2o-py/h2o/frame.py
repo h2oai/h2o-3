@@ -191,7 +191,7 @@ class H2OFrame(object):
         if not self._ex._cache.names_valid():
             self._ex._cache.flush()
             self._frame(True)
-        return self._ex._cache.names
+        return list(self._ex._cache.names)
 
     @names.setter
     def names(self, value):
@@ -224,7 +224,7 @@ class H2OFrame(object):
         if not self._ex._cache.types_valid():
             self._ex._cache.flush()
             self._frame(True)
-        return self._ex._cache.types
+        return dict(self._ex._cache.types)
 
     @property
     def frame_id(self):
@@ -236,7 +236,7 @@ class H2OFrame(object):
         if self._ex._cache._id is None:
             h2o.assign(self, newid)
         else:
-            oldname = self.id
+            oldname = self.frame_id
             self._ex._cache._id = newid
             h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, newid))
 
@@ -1547,7 +1547,7 @@ class H2OFrame(object):
 
         splits = []
         tmp_runif = self.runif(seed)
-        tmp_runif.frame_id = "%s_splitter" % _py_tmp_key()
+        tmp_runif.frame_id = "%s_splitter" % _py_tmp_key(h2o.connection().session_id)
 
         i = 0
         while i < num_slices:

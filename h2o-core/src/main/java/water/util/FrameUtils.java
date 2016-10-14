@@ -455,7 +455,7 @@ public class FrameUtils {
             Chunk col = cs[iCol];
             int numTargetColumns = _categorySizes[iCol];
             for (int iRow = 0; iRow < col._len; ++iRow) {
-              long val = col.isNA(iRow)? 0 : 1 + col.at8(iRow);
+              long val = col.isNA(iRow)? numTargetColumns-1 : col.at8(iRow);
               for (int j = 0; j < numTargetColumns; ++j) {
                 ncs[targetColOffset + j].addNum(val==j ? 1 : 0, 0);
               }

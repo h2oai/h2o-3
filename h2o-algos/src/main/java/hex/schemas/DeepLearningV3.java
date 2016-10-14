@@ -12,19 +12,19 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
   public static final class DeepLearningParametersV3 extends ModelParametersSchemaV3<DeepLearningParameters, DeepLearningParametersV3> {
 
     // Determines the order of parameters in the GUI
-    static public String[] fields = new String[] {
-                                "model_id",
-                                "training_frame",
-                                "validation_frame",
+    public static String[] fields = {
+        "model_id",
+        "training_frame",
+        "validation_frame",
         "nfolds",
         "keep_cross_validation_predictions",
         "keep_cross_validation_fold_assignment",
         "fold_assignment",
         "fold_column",
-                                "response_column",
-                                "ignored_columns",
-                                "ignore_const_cols",
-                                "score_each_iteration",
+        "response_column",
+        "ignored_columns",
+        "ignore_const_cols",
+        "score_each_iteration",
         "weights_column",
         "offset_column",
         "balance_classes",
@@ -127,7 +127,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      * When classes are balanced, limit the resulting dataset size to the
      * specified multiple of the original dataset size.
      */
-    @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
+    @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = false,
         help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). " +
             "Requires balance_classes.")
     public float max_after_balance_size;
@@ -136,7 +136,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
      *  the confusion matrix for it to be printed. This option is meant to
      *  avoid printing extremely large confusion matrices.
      *  */
-    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = false,
         help = "Maximum size (# classes) for confusion matrices to be printed in the Logs.")
     public int max_confusion_matrix_size;
 

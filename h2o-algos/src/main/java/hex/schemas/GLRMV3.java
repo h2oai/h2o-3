@@ -4,6 +4,7 @@ import hex.DataInfo;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.glrm.GlrmLoss;
+import hex.glrm.GlrmRegularizer;
 import hex.svd.SVDModel.SVDParameters;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
@@ -68,10 +69,10 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
     public int period;
 
     @API(help = "Regularization function for X matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }, gridable = true) // TODO: pull out of categorical class
-    public GLRMParameters.Regularizer regularization_x;
+    public GlrmRegularizer regularization_x;
 
     @API(help = "Regularization function for Y matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }, gridable = true) // TODO: pull out of categorical class
-    public GLRMParameters.Regularizer regularization_y;
+    public GlrmRegularizer regularization_y;
 
     @API(help = "Regularization weight on X matrix", gridable = true)
     public double gamma_x;

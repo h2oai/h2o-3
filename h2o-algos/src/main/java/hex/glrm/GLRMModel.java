@@ -9,9 +9,7 @@ import water.fvec.Vec;
 import water.util.*;
 import water.util.TwoDimTable;
 
-import java.util.Random;
-
-import static hex.glrm.GlrmLoss.*;
+import java.util.ArrayList;
 
 /**
  * GLRM (<a href="https://web.stanford.edu/~boyd/papers/pdf/glrm.pdf">Generalized Low Rank Model</a>).
@@ -72,8 +70,8 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public int[] _loss_by_col_idx;
 
     // Regularization functions
-    public Regularizer _regularization_x = Regularizer.None;   // Regularization function for X matrix
-    public Regularizer _regularization_y = Regularizer.None;   // Regularization function for Y matrix
+    public GlrmRegularizer _regularization_x = GlrmRegularizer.None;   // Regularization function for X matrix
+    public GlrmRegularizer _regularization_y = GlrmRegularizer.None;   // Regularization function for Y matrix
     public double _gamma_x = 0;                   // Regularization weight on X matrix
     public double _gamma_y = 0;                   // Regularization weight on Y matrix
 
@@ -88,208 +86,6 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public boolean _recover_svd = false;          // Recover singular values and eigenvectors of XY at the end?
     public boolean _impute_original = false;      // Reconstruct original training data by reversing _transform?
     public boolean _verbose = true;               // Log when objective increases each iteration?
-
-    //----- Enums ------------------------------------------------------------------------------------------------------
-
-    // Non-negative matrix factorization (NNMF): r_x = r_y = NonNegative
-    // Orthogonal NNMF: r_x = OneSparse, r_y = NonNegative
-    // K-means clustering: r_x = UnitOneSparse, r_y = 0 (\gamma_y = 0)
-    // Quadratic mixture: r_x = Simplex, r_y = 0 (\gamma_y = 0)
-    public enum Regularizer {
-      None, Quadratic, L2, L1, NonNegative, OneSparse, UnitOneSparse, Simplex
-    }
-
-    //----- Helper functions -------------------------------------------------------------------------------------------
-
-    // Check if all elements of _loss_by_col are equal to a specific loss function
-    private boolean allLossEquals(GlrmLoss loss) {
-      if (_loss_by_col == null)
-        return _loss == loss;
-
-      for (GlrmLoss a_loss_by_col : _loss_by_col) {
-        if (a_loss_by_col != loss)
-          return false;
-      }
-      Frame train = _train.get();
-      return train != null && ((train.numCols() == _loss_by_col.length) || (_loss == loss));
-    }
-
-    public final boolean hasClosedForm(long na_cnt) {
-      return (na_cnt == 0) && allLossEquals(Quadratic) &&
-          (_gamma_x == 0 || _regularization_x == Regularizer.None || _regularization_x == Regularizer.Quadratic) &&
-          (_gamma_y == 0 || _regularization_y == Regularizer.None || _regularization_y == Regularizer.Quadratic);
-    }
-
-    // r_i(x_i), r_j(y_j): Regularization function for single row x_i or column y_j
-    public final double regularize_x(double[] u) { return regularize(u, _regularization_x); }
-    public final double regularize_y(double[] u) { return regularize(u, _regularization_y); }
-    public final double regularize(double[] u, Regularizer regularization) {
-      if(u == null) return 0;
-      double ureg = 0;
-
-      switch(regularization) {
-        case None:
-          return 0;
-        case Quadratic:
-          for (double anU : u) ureg += anU * anU;
-          return ureg;
-        case L2:
-          for (double anU : u) ureg += anU * anU;
-          return Math.sqrt(ureg);
-        case L1:
-          for (double anU : u) ureg += Math.abs(anU);
-          return ureg;
-        case NonNegative:
-          for (double anU : u) {
-            if (anU < 0) return Double.POSITIVE_INFINITY;
-          }
-          return 0;
-        case OneSparse:
-          int card = 0;
-          for (double anU : u) {
-            if (anU < 0) return Double.POSITIVE_INFINITY;
-            else if (anU > 0) card++;
-          }
-          return card == 1 ? 0 : Double.POSITIVE_INFINITY;
-        case UnitOneSparse:
-          int ones = 0, zeros = 0;
-          for (double anU : u) {
-            if (anU == 1) ones++;
-            else if (anU == 0) zeros++;
-            else return Double.POSITIVE_INFINITY;
-          }
-          return ones == 1 && zeros == u.length-1 ? 0 : Double.POSITIVE_INFINITY;
-        case Simplex:
-          double sum = 0, absum = 0;
-          for (double anU : u) {
-            if (anU < 0) return Double.POSITIVE_INFINITY;
-            else {
-              sum += anU;
-              absum += Math.abs(anU);
-            }
-          }
-          return MathUtils.equalsWithinRecSumErr(sum, 1.0, u.length, absum) ? 0 : Double.POSITIVE_INFINITY;
-        default:
-          throw new RuntimeException("Unknown regularization function " + regularization);
-      }
-    }
-
-    // \sum_i r_i(x_i): Sum of regularization function for all entries of X
-    // public final double regularize_x(double[][] u) { return regularize(u, _regularization_x); }
-    public final double regularize_y(double[][] u) { return regularize(u, _regularization_y); }
-    public final double regularize(double[][] u, Regularizer regularization) {
-      if(u == null || regularization == Regularizer.None) return 0;
-
-      double ureg = 0;
-      for (double[] anU : u) {
-        ureg += regularize(anU, regularization);
-        if (Double.isInfinite(ureg)) return ureg;
-      }
-      return ureg;
-    }
-
-    // \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at vector u
-    public final double[] rproxgrad_x(double[] u, double alpha, Random rand) {
-      return rproxgrad(u, alpha, _gamma_x, _regularization_x, rand);
-    }
-    public final double[] rproxgrad_y(double[] u, double alpha, Random rand) {
-      return rproxgrad(u, alpha, _gamma_y, _regularization_y, rand);
-    }
-    static double[] rproxgrad(double[] u, double alpha, double gamma, Regularizer regularization, Random rand) {
-      if (u == null || alpha == 0 || gamma == 0) return u;
-      double[] v = new double[u.length];
-
-      switch(regularization) {
-        case None:
-          return u;
-        case Quadratic:
-          for (int i = 0; i < u.length; i++)
-            v[i] = u[i]/(1+2*alpha*gamma);
-          return v;
-        case L2:
-          // Proof uses Moreau decomposition; see section 6.5.1 of Parikh and Boyd https://web.stanford.edu/~boyd/papers/pdf/prox_algs.pdf
-          double weight = 1 - alpha*gamma/ArrayUtils.l2norm(u);
-          if (weight < 0) return v;   // Zero vector
-          for (int i = 0; i < u.length; i++)
-            v[i] = weight * u[i];
-          return v;
-        case L1:
-          for (int i = 0; i < u.length; i++)
-            v[i] = Math.max(u[i]-alpha*gamma,0) + Math.min(u[i]+alpha*gamma,0);
-          return v;
-        case NonNegative:
-          for (int i = 0; i < u.length; i++)
-            v[i] = Math.max(u[i],0);
-          return v;
-        case OneSparse:
-          int idx = ArrayUtils.maxIndex(u, rand);
-          v[idx] = u[idx] > 0 ? u[idx] : 1e-6;
-          return v;
-        case UnitOneSparse:
-          idx = ArrayUtils.maxIndex(u, rand);
-          v[idx] = 1;
-          return v;
-        case Simplex:
-          // Proximal gradient algorithm by Chen and Ye in http://arxiv.org/pdf/1101.6081v2.pdf
-          // 1) Sort input vector u in ascending order: u[1] <= ... <= u[n]
-          int n = u.length;
-          int[] idxs = new int[n];
-          for(int i = 0; i < n; i++) idxs[i] = i;
-          ArrayUtils.sort(idxs, u);
-
-          // 2) Calculate cumulative sum of u in descending order
-          // cumsum(u) = (..., u[n-2]+u[n-1]+u[n], u[n-1]+u[n], u[n])
-          double[] ucsum = new double[n];
-          ucsum[n-1] = u[idxs[n-1]];
-          for(int i = n-2; i >= 0; i--)
-            ucsum[i] = ucsum[i+1] + u[idxs[i]];
-
-          // 3) Let t_i = (\sum_{j=i+1}^n u[j] - 1)/(n - i)
-          // For i = n-1,...,1, set optimal t* to first t_i >= u[i]
-          double t = (ucsum[0] - 1)/n;    // Default t* = (\sum_{j=1}^n u[j] - 1)/n
-          for (int i = n-1; i >= 1; i--) {
-            double tmp = (ucsum[i] - 1)/(n - i);
-            if(tmp >= u[idxs[i-1]]) {
-              t = tmp; break;
-            }
-          }
-
-          // 4) Return max(u - t*, 0) as projection of u onto simplex
-          double[] x = new double[u.length];
-          for (int i = 0; i < u.length; i++)
-            x[i] = Math.max(u[i] - t, 0);
-          return x;
-        default:
-          throw new RuntimeException("Unknown regularization function " + regularization);
-      }
-    }
-
-    // Project X,Y matrices into appropriate subspace so regularizer is finite. Used during initialization.
-    public final double[] project_x(double[] u, Random rand) { return project(u, _regularization_x, rand); }
-    public final double[] project_y(double[] u, Random rand) { return project(u, _regularization_y, rand); }
-    public final double[] project(double[] u, Regularizer regularization, Random rand) {
-      if (u == null) return null;
-
-      switch(regularization) {
-        // Domain is all real numbers
-        case None:
-        case Quadratic:
-        case L2:
-        case L1:
-          return u;
-        // Proximal operator of indicator function for a set C is (Euclidean) projection onto C
-        case NonNegative:
-        case OneSparse:
-        case UnitOneSparse:
-          return rproxgrad(u, 1, 1, regularization, rand);
-        case Simplex:
-          double reg = regularize(u, regularization);   // Check if inside simplex before projecting since algo is complicated
-          if (reg == 0) return u;
-          return rproxgrad(u, 1, 1, regularization, rand);
-        default:
-          throw new RuntimeException("Unknown regularization function " + regularization);
-      }
-    }
 
   }
 
@@ -308,16 +104,19 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     // Current value of the objective function
     public double _objective;
 
+    // Current value of step_size used
+    public double _step_size;
+
     // Average change in objective function this iteration
     public double _avg_change_obj;
-    public double[/*iterations*/] _history_objective = new double[0];
+    public ArrayList<Double> _history_objective = new ArrayList<>();
 
     // Mapping from lower dimensional k-space to training features (Y)
     public TwoDimTable _archetypes;
     public GLRM.Archetypes _archetypes_raw;   // Needed for indexing into Y for scoring
 
     // Step size each iteration
-    public double[/*iterations*/] _history_step_size = new double[0];
+    public ArrayList<Double> _history_step_size = new ArrayList<>();
 
     // SVD of output XY
     public double[/*feature*/][/*k*/] _eigenvectors_raw;
@@ -353,7 +152,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     public GlrmLoss[] _lossFunc;
 
     // Training time
-    public long[/*iterations*/] _training_time_ms = new long[0];
+    public ArrayList<Long> _training_time_ms = new ArrayList<>();
 
     public GLRMOutput(GLRM b) { super(b); }
 
@@ -374,14 +173,11 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
   @Override protected Futures remove_impl( Futures fs ) {
-    if (_output._init_key != null)
-      _output._init_key.remove(fs);
-    if (_output._representation_key != null)
-      _output._representation_key.remove(fs);
+    if (_output._init_key != null) _output._init_key.remove(fs);
+    if (_output._representation_key != null) _output._representation_key.remove(fs);
     return super.remove_impl(fs);
   }
 
-  /** Write out K/V pairs */
   @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
     ab.putKey(_output._init_key);
     ab.putKey(_output._representation_key);
@@ -389,9 +185,9 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    ab.getKey(_output._init_key,fs);
-    ab.getKey(_output._representation_key,fs);
-    return super.readAll_impl(ab,fs);
+    ab.getKey(_output._init_key, fs);
+    ab.getKey(_output._representation_key, fs);
+    return super.readAll_impl(ab, fs);
   }
 
 
@@ -401,7 +197,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
 
   // GLRM scoring is data imputation based on feature domains using reconstructed XY (see Udell (2015), Section 5.3)
   private Frame reconstruct(Frame orig, Frame adaptedFr, Key<Frame> destination_key, boolean save_imputed, boolean reverse_transform) {
-    final int ncols = _output._names.length;
+    int ncols = _output._names.length;
     assert ncols == adaptedFr.numCols();
     String prefix = "reconstr_";
 
@@ -446,8 +242,8 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
    * @param destination_key Frame Id for output
    * @return Frame containing k rows and n columns, where each row corresponds to an archetype
    */
-  @Override public Frame scoreArchetypes(Frame frame, Key destination_key, boolean reverse_transform) {
-    final int ncols = _output._names.length;
+  @Override public Frame scoreArchetypes(Frame frame, Key<Frame> destination_key, boolean reverse_transform) {
+    int ncols = _output._names.length;
     Frame adaptedFr = new Frame(frame);
     adaptTestForTrain(adaptedFr, true, false);
     assert ncols == adaptedFr.numCols();
@@ -473,7 +269,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     }
 
     // Convert projection of archetypes into a frame with correct domains
-    Frame f = ArrayUtils.frame((null == destination_key ? Key.make() : destination_key), adaptedFr.names(), proj);
+    Frame f = ArrayUtils.frame((destination_key == null ? Key.<Frame>make() : destination_key), adaptedFr.names(), proj);
     for(int i = 0; i < ncols; i++) f.vec(i).setDomain(adaptedDomme[i]);
     return f;
   }
@@ -483,7 +279,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     final int _ncolX;   // Number of cols in X (rank k)
     final boolean _save_imputed;  // Save imputed data into new vecs?
     final boolean _reverse_transform;   // Reconstruct original training data by reversing transform?
-    ModelMetrics.MetricBuilder _mb;
+    ModelMetricsGLRM.GlrmModelMetricsBuilder _mb;
 
     GLRMScore( int ncolA, int ncolX, boolean save_imputed ) {
       this(ncolA, ncolX, save_imputed, _parms._impute_original);
@@ -495,29 +291,28 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       _reverse_transform = reverse_transform;
     }
 
-    @Override public void map( Chunk chks[] ) {
-      float atmp [] = new float[_ncolA];
-      double xtmp [] = new double[_ncolX];
-      double preds[] = new double[_ncolA];
+    @Override public void map(Chunk[] chks) {
+      float[] atmp = new float[_ncolA];
+      double[] xtmp = new double[_ncolX];
+      double[] preds = new double[_ncolA];
       _mb = GLRMModel.this.makeMetricBuilder(null);
 
       if (_save_imputed) {
         for (int row = 0; row < chks[0]._len; row++) {
-          double p[] = impute_data(chks, row, xtmp, preds);
+          double[] p = impute_data(chks, row, xtmp, preds);
           compute_metrics(chks, row, atmp, p);
           for (int c = 0; c < preds.length; c++)
             chks[_ncolA + _ncolX + c].set(row, p[c]);
         }
       } else {
         for (int row = 0; row < chks[0]._len; row++) {
-          double p[] = impute_data(chks, row, xtmp, preds);
+          double[] p = impute_data(chks, row, xtmp, preds);
           compute_metrics(chks, row, atmp, p);
         }
       }
     }
 
     @Override public void reduce(GLRMScore other) {
-      // FIXME: IntelliJ raises a valid warning here; need to adjust the definition of _mb
       if (_mb != null) _mb.reduce(other._mb);
     }
 
@@ -565,7 +360,8 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
   }
 
   public ModelMetricsGLRM scoreMetricsOnly(Frame frame) {
-    final int ncols = _output._names.length;
+    if (frame == null) return null;
+    int ncols = _output._names.length;
 
     // Need [A,X] where A = adapted test frame, X = loading frame
     // Note: A is adapted to original training frame
@@ -583,7 +379,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     return (ModelMetricsGLRM) mm;
   }
 
-  @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsGLRM.GLRMModelMetrics(_parms._k, _output._permutation, _parms._impute_original);
+  @Override public ModelMetricsGLRM.GlrmModelMetricsBuilder makeMetricBuilder(String[] domain) {
+    return new ModelMetricsGLRM.GlrmModelMetricsBuilder(_parms._k, _output._permutation, _parms._impute_original);
   }
 }

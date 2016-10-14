@@ -957,6 +957,7 @@ public class Vec extends Keyed<Vec> {
     public final long    at8( long i ) { return chk(i). at8_abs(i); }
     public final double   at( long i ) { return chk(i).  at_abs(i); }
     public final boolean isNA(long i ) { return chk(i).isNA_abs(i); }
+    public final BufferedString atStr(BufferedString sb, long i) { return chk(i).atStr_abs(sb, i); }
     public final long length() { return Vec.this.length(); }
   }
 

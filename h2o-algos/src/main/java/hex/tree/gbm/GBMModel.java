@@ -1,13 +1,11 @@
 package hex.tree.gbm;
 
 import hex.Distribution;
-import hex.Model;
+import hex.ModelMojo;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.util.SBPrintStream;
-
-import java.io.IOException;
 
 public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
 
@@ -31,7 +29,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     }
 
     public String algoName() { return "GBM"; }
-    public String fullName() { return "Gradient Boosting Method"; }
+    public String fullName() { return "Gradient Boosting Machine"; }
     public String javaName() { return GBMModel.class.getName(); }
   }
 
@@ -96,18 +94,8 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
 
 
   @Override
-  public Model<GBMModel, GBMParameters, GBMOutput>.MojoStreamWriter getMojoStream() {
-    return new GbmMojoStreamWriter();
+  public ModelMojo getMojo() {
+    return new GbmModelMojo(this);
   }
 
-  public class GbmMojoStreamWriter
-          extends SharedTreeModel<GBMModel, GBMParameters, GBMOutput>.TreeMojoStreamWriter {
-    @Override
-    protected void writeExtraModelInfo() throws IOException {
-      super.writeExtraModelInfo();
-      writeln("distribution = " + _parms._distribution);
-      writeln("init_f = " + _output._init_f);
-      writeln("offset_column = " + null);  // Not known yet
-    }
-  }
 }

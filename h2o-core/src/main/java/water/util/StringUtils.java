@@ -29,10 +29,19 @@ public class StringUtils {
    * @return True if the string is either null or empty, false otherwise
    */
   public static boolean isNullOrEmpty(String s) {
-    return s == null || s.length() == 0;
+    return s == null || s.isEmpty();
   }
   public static boolean isNullOrEmpty(BufferedString s) {
     return s == null || s.length() == 0;
+  }
+
+  /**
+   * Expand ~ to user.home
+   * @param path that can (but doesn't have to) contain a tilde (~)
+   * @return expanded path
+   */
+  public static String expandPath(String path) {
+    return path.replaceFirst("^~", System.getProperty("user.home"));
   }
 
 }

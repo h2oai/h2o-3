@@ -61,7 +61,7 @@ def lending_club_munging_assembly():
   assembly.to_pojo("LendingClubMungingDemo")#, path="/Users/spencer/Desktop/munging_pojo/lending_club_demo", get_jar=True)
 
   y="int_rate"
-  x=["loan_amnt", "longest_credit_length", "revol_util", "emp_length",
+  x=["loan_amnt", "earliest_cr_line", "revol_util", "emp_length",
      "home_ownership", "annual_inc", "purpose", "addr_state", "dti",
      "delinq_2yrs", "total_acc", "verification_status", "term"]
 

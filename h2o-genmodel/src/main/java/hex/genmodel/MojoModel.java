@@ -63,6 +63,7 @@ abstract public class MojoModel extends GenModel {
             case "Distributed Random Forest":
                 return new DrfModel(mojoReader, info, columns, domains);
             case "Gradient Boosting Method":
+            case "Gradient Boosting Machine":
                 return new GbmModel(mojoReader, info, columns, domains);
             default:
                 throw new IOException("Unsupported algorithm " + algo + " for raw models.");
@@ -224,7 +225,7 @@ abstract public class MojoModel extends GenModel {
         public byte[] getBinaryFile(String filename) throws IOException {
             ZipEntry za = zf.getEntry(filename);
             if (za == null)
-                throw new IOException("Tree file " + filename + " not found");
+                throw new IOException("Binary file " + filename + " not found");
             byte[] out = new byte[(int) za.getSize()];
             DataInputStream dis = new DataInputStream(zf.getInputStream(za));
             dis.readFully(out);

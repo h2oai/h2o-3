@@ -19,7 +19,7 @@ import water.util.JCodeGen;
 import water.util.SBPrintStream;
 
 public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansParameters,KMeansModel.KMeansOutput> {
-
+  @Override public boolean havePojo() { return true; }
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
   public static class KMeansParameters extends ClusteringModel.ClusteringParameters {
