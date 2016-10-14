@@ -88,7 +88,7 @@ public class AstMeanTest extends TestUtil {
     Vec vt1 = TestUtil.tvec(10000000, 10000020, 10000030, 10000040, 10000060);
 
     Frame fr1 = null, fr2 = null;
-    Frame rs1 = null, rs2 = null;
+    Frame rs1 = null, rs2 = null, rs3 = null;
     try {
       // Test with na_rm = False and no vs1
       Key<Frame> key1 = Key.make();
@@ -109,11 +109,18 @@ public class AstMeanTest extends TestUtil {
       rs2 = val2.getFrame();
       assertColFrameEquals(new double[]{Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN}, rs2);
 
+      // Test na_rm = true
+      Val val3 = Rapids.exec("(mean " + key2 + " 1 1)");
+      Assert.assertTrue(val3 instanceof ValFrame);
+      rs3 = val3.getFrame();
+      assertColFrameEquals(new double[]{1.7/4, 2.9/4, 4.1/3, 10.3/4, 10.0/3}, rs3);
+
     } finally {
       if (fr1 != null) fr1.delete();
       if (fr2 != null) fr2.delete();
       if (rs1 != null) rs1.delete();
       if (rs2 != null) rs2.delete();
+      if (rs3 != null) rs3.delete();
       vi1.remove();
       vd1.remove();
       vd2.remove();

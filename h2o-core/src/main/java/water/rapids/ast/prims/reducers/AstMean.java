@@ -22,7 +22,7 @@ public class AstMean extends AstPrimitive {
 
   @Override
   public int nargs() {
-    return 1 + 3;
+    return -1;  // 1 + 3;
   }
 
   @Override
@@ -46,7 +46,7 @@ public class AstMean extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     boolean narm = asts[2].exec(env).getNum() == 1;
-    boolean axis = asts[3].exec(env).getNum() == 1;
+    boolean axis = asts.length == 4 && (asts[3].exec(env).getNum() == 1);
     if (fr == null)
       throw new IllegalArgumentException("Frame " + asts[1] + " does not exist");
 
@@ -105,7 +105,7 @@ public class AstMean extends AstPrimitive {
           int numNaColumns = 0;
           for (int j = 0; j < numCols; j++) {
             double val = cs[j].atd(i);
-            if (val == Double.NaN)
+            if (Double.isNaN(val))
               numNaColumns++;
             else
               d += val;
