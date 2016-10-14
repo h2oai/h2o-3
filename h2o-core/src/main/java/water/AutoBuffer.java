@@ -129,8 +129,14 @@ public final class AutoBuffer {
     _persist = 0;               // No persistance
   }
 
+
   /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
-   *  figure the originating H2ONode from the first few bytes read. */
+   *  figure the originating H2ONode from the first few bytes read.
+   *
+   *  Remote address means that the communication originates from non-h2o node ( for example spark executor)
+   *  Int this case we don't send H2O field ( it would cause infinite wait, since we don't send port and other
+   *  information when communicating with non-h2o node)
+   *  */
   AutoBuffer( ByteChannel sock, InetAddress remoteAddress  ) throws IOException {
     _chan = sock;
     raisePriority();            // Make TCP priority high
@@ -139,7 +145,11 @@ public final class AutoBuffer {
     _read = true;               // Reading by default
     _firstPage = true;
     // Read Inet from socket, port from the stream, figure out H2ONode
-    _h2o = H2ONode.intern(remoteAddress, getPort());
+    if(remoteAddress!=null) {
+      _h2o = H2ONode.intern(remoteAddress, getPort());
+    }else{
+      _h2o = null;
+    }
     _firstPage = true;          // Yes, must reset this.
     _time_start_ms = System.currentTimeMillis();
     _persist = Value.TCP;
