@@ -169,12 +169,12 @@ public class SortTest extends TestUtil {
   @Test public void TestSortTimes() throws IOException {
     Frame fr=null, sorted=null;
     try {
-      fr = parse_test_file("smalldata/junit/sort_crash.csv");
+      fr = parse_test_file("sort_crash.csv");
       sorted = fr.sort(new int[]{0});
       Vec vec = sorted.vec(0);
       int len = (int)vec.length();
       for( int i=1; i<len; i++ )
-        assertTrue( vec.at8(i-1) < vec.at8(i) );
+        assertTrue( vec.at8(i-1) <= vec.at8(i) );
     } finally {
       if( fr != null ) fr.delete();
       if( sorted != null ) sorted.delete();

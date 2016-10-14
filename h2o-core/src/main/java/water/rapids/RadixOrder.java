@@ -131,26 +131,45 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
         _base[i] = (long)col.min();
         max = (long)col.max();
       }
-      long range = max - _base[i] + 2; // +1 for when min==max to include the bound, +1 for the leading NA spot
-      // number of bits starting from 1 easier to think about (for me)
-      int biggestBit = 1 + (int) Math.floor(Math.log(range) / Math.log(2));  
-      // TODO: feed back to R warnings()
-      if (biggestBit < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  
-      assert biggestBit >= 1;
-      _shift[i] = Math.max(8, biggestBit)-8;
-      long MSBwidth = 1L<<_shift[i];
-      if (_base[i] % MSBwidth != 0) {
-        // choose base lower than minimum so as to align boundaries (unless
-        // minimum already on a boundary by chance)
-        _base[i] = MSBwidth * (_base[i]/MSBwidth + (_base[i]<0 ? -1 : 0));
-        assert _base[i] % MSBwidth == 0;
-      }
-      _bytesUsed[i] = (_shift[i]+15) / 8;
-      assert (biggestBit-1)/8 + 1 == _bytesUsed[i];
-      long chk = (max - _base[i] + 1L) >> _shift[i];  // relied on in RadixCount.map
+
+      // Compute the span or range between min and max.  Compute a
+      // shift amount to bring the high order bits of the range down
+      // low for radix sorting.  Lower the lower-bound to be an even
+      // power of the shift.
+      long chk = computeShift(max, i);
+      // On rare occasions, lowering the lower-bound also increases
+      // the span or range until another bit is needed in the sort.
+      // In this case, we need to re-compute the shift amount and
+      // perhaps use an even lower lower-bound.
+      if( chk == 256 ) chk = computeShift(max, i);
       assert chk <= 255;
       assert chk >= 0;
+
+      _bytesUsed[i] = (_shift[i]+15) / 8;
+      //assert (biggestBit-1)/8 + 1 == _bytesUsed[i];
     }
+  }
+
+  // Compute the span or range between min and max.  Compute a
+  // shift amount to bring the high order bits of the range down
+  // low for radix sorting.  Lower the lower-bound to be an even
+  // power of the shift.
+  private long computeShift( final long max, final int i )  {
+    long range = max - _base[i] + 2; // +1 for when min==max to include the bound, +1 for the leading NA spot
+    // number of bits starting from 1 easier to think about (for me)
+    int biggestBit = 1 + (int) Math.floor(Math.log(range) / Math.log(2));  
+    // TODO: feed back to R warnings()
+    if (biggestBit < 8) Log.warn("biggest bit should be >= 8 otherwise need to dip into next column (TODO)");  
+    assert biggestBit >= 1;
+    _shift[i] = Math.max(8, biggestBit)-8;
+    long MSBwidth = 1L<<_shift[i];
+    if (_base[i] % MSBwidth != 0) {
+      // choose base lower than minimum so as to align boundaries (unless
+      // minimum already on a boundary by chance)
+      _base[i] = MSBwidth * (_base[i]/MSBwidth + (_base[i]<0 ? -1 : 0));
+      assert _base[i] % MSBwidth == 0;
+    }
+    return (max - _base[i] + 1L) >> _shift[i];  // relied on in RadixCount.map
   }
 
   private static class SendSplitMSB extends MRTask<SendSplitMSB> {
