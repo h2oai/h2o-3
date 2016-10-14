@@ -1072,6 +1072,7 @@ h2o.runif <- function(x, seed = -1) {
 #' @param data A dataframe against which to create the fold column.
 #' @param nfolds The number of desired folds.
 #' @param seed A random seed, -1 indicates that H2O will choose one.
+#' @export
 h2o.kfold_column <- function(data,nfolds,seed=-1) .eval.frame(.newExpr("kfold_column",data,nfolds,seed))
 
 #' Check H2OFrame columns for factors
