@@ -648,7 +648,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           // else if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2], appendableChunks[0], appendableChunks[1]);
           map(bvs, appendableChunks[0], appendableChunks[1]);
         }
-        map(bvs, appendableChunks);
+        if (num_outputs >= 0)
+          map(bvs, appendableChunks);
 
         _res = self();          // Save results since called map() at least once!
         // Further D/K/V put any new vec results.
