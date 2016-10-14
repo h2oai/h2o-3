@@ -136,8 +136,7 @@ public class AstMean extends AstPrimitive {
     for (int i = 0; i < fr.numCols(); i++) {
       Vec v = fr.vec(i);
       boolean valid = (v.isNumeric() || v.isTime()) && v.length() > 0 && (na_rm || v.naCnt() == 0);
-      Vec newvec = vec1.makeCon(valid? v.mean() : Double.NaN);
-      if (v.isTime()) newvec.setTime();
+      Vec newvec = vec1.makeCon(valid? v.mean() : Double.NaN, v.get_type());
       res.add(fr.name(i), newvec);
     }
 
