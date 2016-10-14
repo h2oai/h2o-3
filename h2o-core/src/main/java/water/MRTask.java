@@ -628,22 +628,24 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
         int fr_vecs_length = _fr.vecs().length;
         int outputs_length = _output_types == null? 0 : _output_types.length;
-        if (fr_vecs_length == 1) map(bvs[0]);
-        else if(fr_vecs_length == 2) map(bvs[0], bvs[1]);
-        else if(fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2]);
-        map(bvs);
+        if (outputs_length == 0) {
+          if (fr_vecs_length == 1) map(bvs[0]);
+          if (fr_vecs_length == 2) map(bvs[0], bvs[1]);
+          if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2]);
+          map(bvs);
+        }
         if (outputs_length == 1) {  // convenience versions for cases with single output.
           assert appendableChunks != null;
           if (fr_vecs_length == 1) map(bvs[0], appendableChunks[0]);
-          else if (fr_vecs_length == 2) map(bvs[0], bvs[1], appendableChunks[0]);
-          //else if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2], appendableChunks[0]);
+          if (fr_vecs_length == 2) map(bvs[0], bvs[1], appendableChunks[0]);
+          // if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2], appendableChunks[0]);
           map(bvs, appendableChunks[0]);
         }
         if (outputs_length == 2) {  // convenience versions for cases with 2 outputs (e.g split).
           assert appendableChunks != null;
           if (fr_vecs_length == 1) map(bvs[0], appendableChunks[0], appendableChunks[1]);
-          //if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0],appendableChunks[1]);
-          //if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0],appendableChunks[1]);
+          // if (fr_vecs_length == 2) map(bvs[0], bvs[1], appendableChunks[0], appendableChunks[1]);
+          // if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2], appendableChunks[0], appendableChunks[1]);
           map(bvs, appendableChunks[0], appendableChunks[1]);
         }
         if (outputs_length >= 0)
