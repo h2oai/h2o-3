@@ -46,7 +46,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   /** Types of models we can build with DeepWater  */
   @Override public ModelCategory[] can_build() {
     return new ModelCategory[]{
-//            ModelCategory.Regression,
+            ModelCategory.Regression,
             ModelCategory.Binomial,
             ModelCategory.Multinomial,
 //            ModelCategory.AutoEncoder

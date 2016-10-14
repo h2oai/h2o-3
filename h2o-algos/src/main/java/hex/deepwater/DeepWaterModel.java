@@ -15,12 +15,12 @@ import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.RandomUtils;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.UUID;
 
 import static hex.ModelMetrics.calcVarImp;
 import static water.H2O.technote;
@@ -164,6 +164,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     _output._catOffsets = dinfo._catOffsets;
     _output._normMul = dinfo._normMul;
     _output._normSub = dinfo._normSub;
+    _output._normRespMul = dinfo._normRespMul;
+    _output._normRespSub = dinfo._normRespSub;
     _output._useAllFactorLevels = dinfo._useAllFactorLevels;
     Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
   }
@@ -585,6 +587,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         long row=0;
         int skippedIdx=0;
         int skippedRow=skipped.isEmpty()?-1:skipped.get(skippedIdx);
+        double mul = 1;
+        double sub = 0;
+        if (_output._normRespMul!=null && _output._normRespSub!=null) {
+          mul = _output._normRespMul[0];
+          sub = _output._normRespSub[0];
+        }
         if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
           int width = model_info()._width;
           int height = model_info()._height;
@@ -636,9 +644,11 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
                 _mb.perRow(preds, actual, DeepWaterModel.this);
             }
             else {
-              vw[0].set(row, predFloats[j]);
+              double pred = predFloats[j] * mul + sub;
+              if (_makePreds)
+                vw[0].set(row, pred);
               if (_computeMetrics)
-                _mb.perRow(new double[]{predFloats[j]}, actual, DeepWaterModel.this);
+                _mb.perRow(new double[]{pred}, actual, DeepWaterModel.this);
             }
             row++;
           }
