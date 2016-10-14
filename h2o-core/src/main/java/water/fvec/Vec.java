@@ -288,6 +288,7 @@ public class Vec extends Keyed<Vec> {
   /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
   boolean writable() { return true; }
   public void setBad() { _type = T_BAD; }
+  public void setTime() { _type = T_TIME; }
   /** Get the column type. */
   public byte get_type() { return _type; }
   public String get_type_str() { return TYPE_STR[_type]; }
