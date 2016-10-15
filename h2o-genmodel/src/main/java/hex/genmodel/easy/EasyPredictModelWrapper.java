@@ -480,7 +480,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
             throw new PredictException("Couldn't interpret raw bytes as an image.");
           }
         } else {
-          throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
+          throw new PredictUnknownTypeException(
+                  "Unexpected object type " + o.getClass().getName() + " for numeric column " + dataColumnName);
         }
 
         if (isImage && img != null) {
@@ -529,7 +530,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           rawData[index] = value;
         }
         else {
-          throw new PredictUnknownTypeException("Unknown object type " + o.getClass().getName());
+          throw new PredictUnknownTypeException(
+                  "Unexpected object type " + o.getClass().getName() + " for categorical column " + dataColumnName);
         }
       }
     }
