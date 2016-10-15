@@ -32,7 +32,7 @@ public class DeepwaterMojoModel extends MojoModel {
 
   transient protected byte[] _network;
   transient protected byte[] _parameters;
-  transient float[] _meanImageData;
+  public transient float[] _meanImageData;
 
   BackendTrain _backend; //interface provider
   BackendModel _model;  //pointer to C++ process

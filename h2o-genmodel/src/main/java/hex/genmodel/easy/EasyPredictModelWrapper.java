@@ -484,7 +484,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           int C = dwm._channels;
           float[] _destData = new float[W * H * C];
           try {
-            GenModel.img2pixels(img, W, H, C, _destData, 0, null);
+            GenModel.img2pixels(img, W, H, C, _destData, 0, dwm._meanImageData);
           } catch (IOException e) {
             e.printStackTrace();
             throw new PredictException("Couldn't vectorize image.");
