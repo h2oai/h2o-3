@@ -26,7 +26,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
+import static hex.genmodel.algos.deepwater.DeepwaterMojoModel.createDeepWaterBackend;
 
 public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 

@@ -1,9 +1,11 @@
-package hex.glrm;
+package hex.genmodel.algos.glrm;
 
-import water.util.ArrayUtils;
-import water.util.MathUtils;
+import hex.genmodel.utils.ArrayUtils;
+import hex.genmodel.utils.MathUtils;
 
 import java.util.Random;
+
+
 
 /**
  * Regularization method for matrices X and Y in the GLRM algorithm.
@@ -212,11 +214,11 @@ public enum GlrmRegularizer {
 
 
   /** Regularization function applied to a single row x_i or column y_j */
-  abstract public double regularize(double[] u);
+  public abstract double regularize(double[] u);
 
   /** Regularization applied to an entire matrix (sum over rows) */
   public final double regularize(double[][] u) {
-    if (u == null || this == GlrmRegularizer.None) return 0;
+    if (u == null || this == None) return 0;
     double ureg = 0;
     for (double[] uarr : u) {
       ureg += regularize(uarr);
@@ -226,8 +228,8 @@ public enum GlrmRegularizer {
   }
 
   /** \prox_{\alpha_k*r}(u): Proximal gradient of (step size) * (regularization function) evaluated at vector u */
-  abstract public double[] rproxgrad(double[] u, double delta, Random rand);
+  public abstract double[] rproxgrad(double[] u, double delta, Random rand);
 
   /** Project X,Y matrices into appropriate subspace so regularizer is finite. Used during initialization. */
-  abstract public double[] project(double[] u, Random rand);
+  public abstract double[] project(double[] u, Random rand);
 }

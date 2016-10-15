@@ -2,7 +2,7 @@ package hex.tree;
 
 import java.util.Random;
 
-import hex.genmodel.algos.TreeBasedModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import water.*;
 import water.util.IcedBitSet;
 import water.util.SB;
@@ -36,12 +36,12 @@ public class CompressedTree extends Keyed<CompressedTree> {
   }
 
   public double score(final double row[]) {
-    return TreeBasedModel.scoreTree(_bits, row, _nclass, false);
+    return SharedTreeMojoModel.scoreTree(_bits, row, _nclass, false);
   }
 
   public String getDecisionPath(final double row[]) {
-    double d = TreeBasedModel.scoreTree(_bits, row, _nclass, true);
-    return TreeBasedModel.getDecisionPath(d);
+    double d = SharedTreeMojoModel.scoreTree(_bits, row, _nclass, true);
+    return SharedTreeMojoModel.getDecisionPath(d);
   }
 
   public Random rngForChunk(int cidx) {

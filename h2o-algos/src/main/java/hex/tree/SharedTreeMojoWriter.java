@@ -1,6 +1,6 @@
 package hex.tree;
 
-import hex.ModelMojo;
+import hex.ModelMojoWriter;
 import water.DKV;
 import water.Key;
 import water.Value;
@@ -11,17 +11,12 @@ import java.io.IOException;
 /**
  * Shared Mojo definition file for DRF and GBM models.
  */
-public class SharedTreeMojo<M extends SharedTreeModel<M, P, O>,
-                            P extends SharedTreeModel.SharedTreeParameters,
-                            O extends SharedTreeModel.SharedTreeOutput> extends ModelMojo<M, P, O> {
+public class SharedTreeMojoWriter<M extends SharedTreeModel<M, P, O>,
+                                  P extends SharedTreeModel.SharedTreeParameters,
+                                  O extends SharedTreeModel.SharedTreeOutput> extends ModelMojoWriter<M, P, O> {
 
-  public SharedTreeMojo(M model) {
+  public SharedTreeMojoWriter(M model) {
     super(model);
-  }
-
-  @Override
-  protected void writeExtraModelInfo() throws IOException {
-    writeln("n_trees = " + model._output._ntrees);
   }
 
   @Override
@@ -29,6 +24,8 @@ public class SharedTreeMojo<M extends SharedTreeModel<M, P, O>,
     assert model._output._treeKeys.length == model._output._ntrees;
     int nclasses = model._output.nclasses();
     int ntreesPerClass = model.binomialOpt() && nclasses == 2 ? 1 : nclasses;
+    writekv("n_trees", model._output._ntrees);
+    writekv("n_trees_per_class", ntreesPerClass);
     for (int i = 0; i < model._output._ntrees; i++) {
       for (int j = 0; j < ntreesPerClass; j++) {
         Key<CompressedTree> key = model._output._treeKeys[i][j];
@@ -38,7 +35,7 @@ public class SharedTreeMojo<M extends SharedTreeModel<M, P, O>,
         CompressedTree ct = ctVal.get();
         assert ct._nclass == nclasses;
         // assume ct._seed is useless and need not be persisted
-        writeBinaryFile(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
+        writeblob(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
       }
     }
   }

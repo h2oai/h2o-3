@@ -2,11 +2,10 @@ package hex.genmodel.easy;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.DeepWaterMojo;
+import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.exception.PredictUnknownTypeException;
-import hex.genmodel.easy.exception.PredictWrongModelCategoryException;
 import hex.genmodel.easy.prediction.*;
 
 import javax.imageio.ImageIO;
@@ -52,13 +51,13 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class EasyPredictModelWrapper implements java.io.Serializable {
   // These private members are read-only after the constructor.
-  final private GenModel m;
-  final private HashMap<String, Integer> modelColumnNameToIndexMap;
-  final private HashMap<Integer, HashMap<String, Integer>> domainMap;
+  private final GenModel m;
+  private final HashMap<String, Integer> modelColumnNameToIndexMap;
+  private final HashMap<Integer, HashMap<String, Integer>> domainMap;
 
   // These private members are configured by setConvertUnknownCategoricalLevelsToNa().
-  final private boolean convertUnknownCategoricalLevelsToNa;
-  final private ConcurrentHashMap<String,AtomicLong> unknownCategoricalLevelsSeenPerColumn;
+  private final boolean convertUnknownCategoricalLevelsToNa;
+  private final ConcurrentHashMap<String,AtomicLong> unknownCategoricalLevelsSeenPerColumn;
 
   /**
    * Configuration builder for instantiating a Wrapper.
@@ -66,9 +65,6 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   public static class Config {
     private GenModel model;
     private boolean convertUnknownCategoricalLevelsToNa = false;
-
-    public Config() {
-    }
 
     /**
      * Specify model object to wrap.
@@ -192,8 +188,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
    * @return The prediction.
    * @throws PredictException
    */
-  public AbstractPrediction predict(RowData data) throws PredictException {
-    switch (m.getModelCategory()) {
+  public AbstractPrediction predict(RowData data, ModelCategory mc) throws PredictException {
+    switch (mc) {
       case AutoEncoder:
         return predictAutoEncoder(data);
       case Binomial:
@@ -212,6 +208,10 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
       default:
         throw new PredictException("Unhandled model category (" + m.getModelCategory() + ") in switch statement");
     }
+  }
+
+  public AbstractPrediction predict(RowData data) throws PredictException {
+    return predict(data, m.getModelCategory());
   }
 
   /**
@@ -405,21 +405,14 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   }
 
   private void validateModelCategory(ModelCategory c) throws PredictException {
-    if (m.getModelCategory() != c) {
-      throw new PredictWrongModelCategoryException("Prediction type unsupported by model of category " + m.getModelCategory());
-    }
+    if (!m.getModelCategories().contains(c))
+      throw new PredictException(c + " prediction type is not supported for this model.");
   }
 
+  // This should have been called predict(), because that's what it does
   private double[] preamble(ModelCategory c, RowData data) throws PredictException {
     validateModelCategory(c);
-    double[] preds;
-    if (c == ModelCategory.DimReduction) {
-      preds = new double[m.nclasses()];
-    } else {
-      preds = new double[m.getPredsSize()];
-    }
-    preds = predict(data, preds);
-    return preds;
+    return predict(data, new double[m.getPredsSize(c)]);
   }
 
   private void setToNaN(double[] arr) {
@@ -431,8 +424,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   private double[] fillRawData(RowData data, double[] rawData) throws PredictException {
 
     // TODO: refactor
-    boolean isImage = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("image");
-    boolean isText  = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("text");
+    boolean isImage = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("image");
+    boolean isText  = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("text");
 
     for (String dataColumnName : data.keySet()) {
       Integer index = modelColumnNameToIndexMap.get(dataColumnName);
@@ -485,7 +478,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         }
 
         if (isImage && img != null) {
-          DeepWaterMojo dwm = (DeepWaterMojo) m;
+          DeepwaterMojoModel dwm = (DeepwaterMojoModel) m;
           int W = dwm._width;
           int H = dwm._height;
           int C = dwm._channels;

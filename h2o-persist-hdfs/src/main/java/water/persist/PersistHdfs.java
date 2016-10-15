@@ -75,7 +75,7 @@ public final class PersistHdfs extends Persist {
     }
     CONF = conf;
   }
-  
+
   // Loading HDFS files
   public PersistHdfs() { _iceRoot = null; }
   public void cleanUp() { throw H2O.unimpl(); /** user-mode swapping not implemented */}
@@ -91,7 +91,7 @@ public final class PersistHdfs extends Persist {
       throw Log.throwErr(e);
     }
   }
-  
+
   /** InputStream from a HDFS-based Key */
   /*public static InputStream openStream(Key k, Job pmon) throws IOException {
     H2OHdfsInputStream res = null;
@@ -234,7 +234,7 @@ public final class PersistHdfs extends Persist {
   private static class Size {
     int _value;
   }
-  
+
   private static void run(Callable c, boolean read, int size) {
     // Count all i/o time from here, including all retry overheads
     long start_io_ms = System.currentTimeMillis();

@@ -586,7 +586,7 @@ public abstract class Chunk extends Iced<Chunk> {
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
 
   //Zero sparse methods:
-  
+
   /** Sparse Chunks have a significant number of zeros, and support for
    *  skipping over large runs of zeros in a row.
    *  @return true if this Chunk is sparse.  */
@@ -609,9 +609,9 @@ public abstract class Chunk extends Iced<Chunk> {
         res[k++] = i;
     return k;
   }
-  
+
   //NA sparse methods:
-  
+
   /** Sparse Chunks have a significant number of NAs, and support for
    *  skipping over large runs of NAs in a row.
    *  @return true if this Chunk is sparseNA.  */
@@ -624,7 +624,7 @@ public abstract class Chunk extends Iced<Chunk> {
 
   // Next non-NA. Analogous to nextNZ()
   public int nextNNA(int rid){ return rid + 1;}
-  
+
   /** Get chunk-relative indices of values (nonnas for nasparse, all for dense)
    *  stored in this chunk.  For dense chunks, this will contain indices of all
    *  the rows in this chunk.
@@ -633,7 +633,7 @@ public abstract class Chunk extends Iced<Chunk> {
     for( int i = 0; i < _len; ++i) res[i] = i;
     return _len;
   }
-  
+
   /** Report the Chunk min-value (excluding NAs), or NaN if unknown.  Actual
    *  min can be higher than reported.  Used to short-cut RollupStats for
    *  constant and boolean chunks. */
