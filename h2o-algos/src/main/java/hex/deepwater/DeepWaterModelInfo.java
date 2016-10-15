@@ -141,7 +141,7 @@ final public class DeepWaterModelInfo extends Iced {
     _width = nFeatures;
     _height = 0;
     _channels = 0;
-    if (parameters._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+    if (parameters._problem_type == DeepWaterParameters.ProblemType.image) {
       _width=parameters._image_shape[0];
       _height=parameters._image_shape[1];
       _channels=parameters._channels;
@@ -171,7 +171,7 @@ final public class DeepWaterModelInfo extends Iced {
       }
       assert(_width>0);
       assert(_height>0);
-    } else if (parameters._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+    } else if (parameters._problem_type == DeepWaterParameters.ProblemType.dataset) {
       if (parameters._image_shape != null) {
         if (parameters._image_shape[0]>0)
           _width = parameters._image_shape[0];
@@ -182,7 +182,7 @@ final public class DeepWaterModelInfo extends Iced {
         else
           _channels = 0;
       }
-    } else if (parameters._problem_type == DeepWaterParameters.ProblemType.text_classification) {
+    } else if (parameters._problem_type == DeepWaterParameters.ProblemType.text) {
       _width =100; //FIXME
     } else {
       Log.warn("unknown problem_type:", parameters._problem_type);

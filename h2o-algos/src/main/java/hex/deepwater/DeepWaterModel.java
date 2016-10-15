@@ -187,7 +187,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     DeepWaterParameters parms = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     DeepWaterParameters.Sanity.modifyParms(parms, parms, nClasses); //sanitize the model_info's parameters
     DataInfo dinfo = null;
-    if (parms._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+    if (parms._problem_type == DeepWaterParameters.ProblemType.dataset) {
       dinfo = makeDataInfo(train, valid, parms);
       DKV.put(dinfo);
       setDataInfoToOutput(dinfo);
@@ -550,12 +550,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           skipped.add(i);
           continue;
         }
-        if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification
-            || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) {
+        if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image
+            || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
           BufferedString file = _fr.vec(0).atStr(bs, i);
           if (file!=null)
             score_data.add(file.toString());
-        } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+        } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
           score_data.add(i);
         } else throw H2O.unimpl();
       }
@@ -593,14 +593,14 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           mul = _output._normRespMul[0];
           sub = _output._normRespSub[0];
         }
-        if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+        if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image) {
           int width = model_info()._width;
           int height = model_info()._height;
           int channels = model_info()._channels;
           iter = new DeepWaterImageIterator(score_data, null /*no labels*/, model_info()._meanData, batch_size, width, height, channels, model_info().get_params()._cache_data);
-        } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+        } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
           iter = new DeepWaterFrameIterator(score_data, null /*no labels*/, di, batch_size, model_info().get_params()._cache_data);
-        } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) {
+        } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
           iter = new DeepWaterTextIterator(score_data, null /*no labels*/, batch_size, 100 /*FIXME*/, model_info().get_params()._cache_data);
         } else {
           throw H2O.unimpl();

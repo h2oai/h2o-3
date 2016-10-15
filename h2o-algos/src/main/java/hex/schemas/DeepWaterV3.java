@@ -44,8 +44,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "stopping_metric",
         "stopping_tolerance",
         "max_runtime_secs",
-        "replicate_training_data",
-        "single_node_mode",
+//        "replicate_training_data",
+//        "single_node_mode",
         "shuffle_training_data",
         "mini_batch_size",
         "clip_gradient",
@@ -63,6 +63,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "hidden",
         "input_dropout_ratio",
         "hidden_dropout_ratios",
+        "problem_type",
     };
 
     /**
@@ -70,8 +71,20 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      * Rectifier: Rectifier Linear Unit: Chooses the maximum of (0, x) where x is the input value.
      * Tanh: Hyperbolic tangent function (same as scaled and shifted sigmoid).
      */
+    @API(level = API.Level.critical, direction = API.Direction.INOUT,
+        values = {"auto", "image", "text", "dataset"},
+        help = "Problem type, auto-detected by default. If set to image, the H2OFrame must contain a string column containing the path (URI or URL) to the images in the first column. " +
+        "If set to text, the H2OFrame must contain a string column containing the text in the first column. " +
+        "If set to dataset, Deep Water behaves just like any other H2O Model and builds a model on the provided H2OFrame (non-String columns).")
+    public DeepWaterParameters.ProblemType problem_type;
+
+    /**
+     * The activation function (non-linearity) to be used by the neurons in the hidden layers.
+     * Rectifier: Rectifier Linear Unit: Chooses the maximum of (0, x) where x is the input value.
+     * Tanh: Hyperbolic tangent function (same as scaled and shifted sigmoid).
+     */
     @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
-        values = {"Rectifier", "Tanh"}, help = "Activation function. Only used if no user-defined network architecture file is provided, and only for problem_type=h2oframe_classification.")
+        values = {"Rectifier", "Tanh"}, help = "Activation function. Only used if no user-defined network architecture file is provided, and only for problem_type=dataset.")
     public DeepWaterParameters.Activation activation;
 
     /**
@@ -81,7 +94,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      * neurons.
      */
     @API(level = API.Level.critical, direction = API.Direction.INOUT, gridable = true,
-        help = "Hidden layer sizes (e.g. [200, 200]). Only used if no user-defined network architecture file is provided, and only for problem_type=h2oframe_classification.")
+        help = "Hidden layer sizes (e.g. [200, 200]). Only used if no user-defined network architecture file is provided, and only for problem_type=dataset.")
     public int[] hidden;
 
     /**

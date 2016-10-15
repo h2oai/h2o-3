@@ -33,11 +33,11 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "target_ratio_comm_to_comp", "seed", "standardize", "learning_rate", "learning_rate_annealing",
                       "momentum_start", "momentum_ramp", "momentum_stable", "distribution", "score_interval",
                       "score_training_samples", "score_validation_samples", "score_duty_cycle", "stopping_rounds",
-                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "replicate_training_data",
-                      "single_node_mode", "shuffle_training_data", "mini_batch_size", "clip_gradient", "network",
-                      "backend", "image_shape", "channels", "gpu", "device_id", "network_definition_file",
-                      "network_parameters_file", "mean_image_file", "export_native_parameters_prefix", "activation",
-                      "hidden", "input_dropout_ratio", "hidden_dropout_ratios"}
+                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "shuffle_training_data",
+                      "mini_batch_size", "clip_gradient", "network", "backend", "image_shape", "channels", "gpu",
+                      "device_id", "network_definition_file", "network_parameters_file", "mean_image_file",
+                      "export_native_parameters_prefix", "activation", "hidden", "input_dropout_ratio",
+                      "hidden_dropout_ratios", "problem_type"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -438,31 +438,6 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
 
     @property
-    def replicate_training_data(self):
-        """
-        bool: Replicate the entire training dataset onto every node for faster training on small datasets. (Default:
-        True)
-        """
-        return self._parms.get("replicate_training_data")
-
-    @replicate_training_data.setter
-    def replicate_training_data(self, replicate_training_data):
-        assert_is_type(replicate_training_data, None, bool)
-        self._parms["replicate_training_data"] = replicate_training_data
-
-
-    @property
-    def single_node_mode(self):
-        """bool: Run on a single node for fine-tuning of model parameters. (Default: False)"""
-        return self._parms.get("single_node_mode")
-
-    @single_node_mode.setter
-    def single_node_mode(self, single_node_mode):
-        assert_is_type(single_node_mode, None, bool)
-        self._parms["single_node_mode"] = single_node_mode
-
-
-    @property
     def shuffle_training_data(self):
         """
         bool: Enable shuffling of training data (recommended if training data is replicated and
@@ -617,7 +592,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def activation(self):
         """
         Enum["rectifier", "tanh"]: Activation function. Only used if no user-defined network architecture file is
-        provided, and only for problem_type=h2oframe_classification.
+        provided, and only for problem_type=dataset.
         """
         return self._parms.get("activation")
 
@@ -631,7 +606,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def hidden(self):
         """
         List[int]: Hidden layer sizes (e.g. [200, 200]). Only used if no user-defined network architecture file is
-        provided, and only for problem_type=h2oframe_classification.
+        provided, and only for problem_type=dataset.
         """
         return self._parms.get("hidden")
 
@@ -664,6 +639,23 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def hidden_dropout_ratios(self, hidden_dropout_ratios):
         assert_is_type(hidden_dropout_ratios, None, [numeric])
         self._parms["hidden_dropout_ratios"] = hidden_dropout_ratios
+
+
+    @property
+    def problem_type(self):
+        """
+        Enum["auto", "image", "text", "dataset"]: Problem type, auto-detected by default. If set to image, the H2OFrame
+        must contain a string column containing the path (URI or URL) to the images in the first column. If set to text,
+        the H2OFrame must contain a string column containing the text in the first column. If set to dataset, Deep Water
+        behaves just like any other H2O Model and builds a model on the provided H2OFrame (non-String columns).
+        (Default: "auto")
+        """
+        return self._parms.get("problem_type")
+
+    @problem_type.setter
+    def problem_type(self, problem_type):
+        assert_is_type(problem_type, None, Enum("auto", "image", "text", "dataset"))
+        self._parms["problem_type"] = problem_type
 
 
 
