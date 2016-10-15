@@ -286,7 +286,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
         // decide whether to cache
         long bytes;
-        if (_parms._problem_type== DeepWaterParameters.ProblemType.image_classification) {
+        if (_parms._problem_type == DeepWaterParameters.ProblemType.image) {
           bytes = train.numRows() * model.model_info()._width * model.model_info()._height * model.model_info()._channels * 4;
         } else {
           bytes = train.byteSize();

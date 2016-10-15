@@ -77,12 +77,12 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
 
     try {
       // Binary data (Images/Documents/etc.)
-      if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification ||
-          _localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) {
+      if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image ||
+          _localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
         int dataIdx = 0; //must be the first column //FIXME
         Log.debug("Using column " + _fr.name(dataIdx) + " for " +
-            ((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) ? "path to image data"
-                :((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) ? "text data"
+            ((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image) ? "path to image data"
+                :((_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text) ? "text data"
                 : "path to arbitrary bytes")));
         // full passes over the data
         BufferedString bs = new BufferedString();
@@ -116,7 +116,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
       }
 
       // Numeric data (H2O Frame full with numeric columns)
-      else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+      else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
         double mul = _localmodel._dataInfo._normRespMul!=null ? _localmodel._dataInfo._normRespMul[0] : 1;
         double sub = _localmodel._dataInfo._normRespSub!=null ? _localmodel._dataInfo._normRespSub[0] : 0;
 
@@ -152,14 +152,14 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         rng.setSeed(seed);
         Collections.shuffle(trainData, rng);
       }
-      if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image_classification) {
+      if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.image) {
         iter = new DeepWaterImageIterator(trainData, trainLabels, _localmodel._meanData, batchSize, _localmodel._width, _localmodel._height, _localmodel._channels, _localmodel.get_params()._cache_data);
       }
-      else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.h2oframe_classification) {
+      else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
         assert (_localmodel._dataInfo != null);
         iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfo, batchSize, _localmodel.get_params()._cache_data);
       }
-      else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text_classification) {
+      else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
         iter = new DeepWaterTextIterator(trainData, trainLabels, batchSize, 100/*FIXME*/, _localmodel.get_params()._cache_data);
       }
 
