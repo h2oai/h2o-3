@@ -1,0 +1,46 @@
+package water.rapids.ast.prims.mungers;
+
+import water.fvec.Frame;
+import water.rapids.Env;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
+import water.rapids.vals.ValRow;
+
+/**
+ */
+public class AstGetrow extends AstPrimitive {
+
+  @Override public String[] args() {
+    return new String[]{"frame"};
+  }
+
+  @Override public int nargs() {
+    return 1 + 1;
+  }
+
+  @Override public String str() {
+    return "getrow";
+  }
+
+  @Override public String example() {
+    return "(getrow frame)";
+  }
+
+  @Override public String description() {
+    return "For a single-row frame, this function returns the contents of that frame as a ValRow. " +
+           "Any non-numeric columns will be converted into NaNs.";
+  }
+
+  @Override
+  public ValRow apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    Frame fr = stk.track(asts[1].exec(env)).getFrame();
+    if (fr.numRows() != 1)
+      throw new IllegalArgumentException("The frame should have only 1 row; found " + fr.numRows() + " rows.");
+
+    double[] res = new double[fr.numCols()];
+    for (int i = 0; i < res.length; i++) {
+      res[i] = fr.vec(i).isNumeric()? fr.vec(i).at(0) : Double.NaN;
+    }
+    return new ValRow(res, null);
+  }
+}
