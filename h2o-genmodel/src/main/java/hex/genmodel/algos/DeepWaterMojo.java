@@ -125,7 +125,10 @@ public class DeepWaterMojo extends MojoModel {
         preds[1 + i] = predFloats[i];
       preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, doubles, _defaultThreshold);
     } else {
-      preds[0] = predFloats[0] * _normRespMul[0] + _normRespSub[0];
+      if (_normRespMul!=null && _normRespSub!=null)
+        preds[0] = predFloats[0] * _normRespMul[0] + _normRespSub[0];
+      else
+        preds[0] = predFloats[0];
     }
     return preds;
   }

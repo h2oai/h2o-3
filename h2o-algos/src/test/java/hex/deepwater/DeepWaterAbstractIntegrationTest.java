@@ -411,6 +411,37 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
+  @Test
+  public void deepWaterCVRegression() {
+    DeepWaterModel m = null;
+    Frame tr = null;
+    Frame preds = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      p._backend = getBackend();
+      p._train = (tr=parse_test_file("bigdata/laptop/deepwater/imagenet/cat_dog_mouse.csv"))._key;
+      p._response_column = "C2";
+      for (String col : new String[]{p._response_column}) {
+        Vec v = tr.remove(col);
+        tr.add(col, v.toNumericVec());
+        v.remove();
+      }
+      DKV.put(tr);
+      p._network = DeepWaterParameters.Network.lenet;
+      p._nfolds = 3;
+      p._epochs = 2;
+      m = new DeepWater(p).trainModel().get();
+      preds = m.score(p._train.get());
+      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
+      Log.info(m);
+    } finally {
+      if (m!=null) m.deleteCrossValidationModels();
+      if (m!=null) m.delete();
+      if (tr!=null) tr.remove();
+      if (preds!=null) preds.remove();
+    }
+  }
+
   // Pure convenience wrapper
   @Ignore @Test public void restoreStateAll() {
     for (DeepWaterParameters.Network network : DeepWaterParameters.Network.values()) {

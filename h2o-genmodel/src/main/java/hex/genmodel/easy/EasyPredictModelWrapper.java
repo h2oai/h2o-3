@@ -431,8 +431,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   private double[] fillRawData(RowData data, double[] rawData) throws PredictException {
 
     // TODO: refactor
-    boolean isImage = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("image_classification");
-    boolean isText  = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("text_classification");
+    boolean isImage = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("image");
+    boolean isText  = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("text");
 
     for (String dataColumnName : data.keySet()) {
       Integer index = modelColumnNameToIndexMap.get(dataColumnName);
@@ -463,7 +463,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
             }
           } else if (isText) {
             // TODO: use model-specific vectorization of text
-            throw new IllegalArgumentException("text classification is not yet implemented.");
+            throw new IllegalArgumentException("MOJO scoring for text classification is not yet implemented.");
           }
           else {
             // numeric

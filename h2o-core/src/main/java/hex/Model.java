@@ -1524,7 +1524,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           // Generate input row
           for (int col = 0; col < features.length; col++) {
             if (dvecs[col].isString()) {
-              rowData.put(genmodel._names[col], dvecs[col].atStr(bStr, row));
+              rowData.put(genmodel._names[col], dvecs[col].atStr(bStr, row).toString());
             } else {
               double val = dvecs[col].at(row);
               rowData.put(
