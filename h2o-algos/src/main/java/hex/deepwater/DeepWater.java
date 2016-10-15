@@ -345,9 +345,6 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           }
         }
       }
-      catch(Throwable t) {
-        t.printStackTrace();
-      }
       finally {
         if (model != null) {
           if (model.model_info() != null && model.model_info()._backend != null)
