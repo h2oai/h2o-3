@@ -499,11 +499,11 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
       else {
         // Column has categorical value.
         Object o = data.get(dataColumnName);
+        double value;
         if (o instanceof String) {
           String levelName = (String) o;
           HashMap<String, Integer> columnDomainMap = domainMap.get(index);
           Integer levelIndex = columnDomainMap.get(levelName);
-          double value;
           if (levelIndex == null) {
             levelIndex = columnDomainMap.get(dataColumnName + "." + levelName);
           }
@@ -519,13 +519,13 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           else {
             value = levelIndex;
           }
-
-          rawData[index] = value;
-        }
-        else {
+        } else if (o instanceof Double && Double.isNaN((double)o)) {
+          value = (double)o; //Missing factor is the only Double value allowed
+        } else {
           throw new PredictUnknownTypeException(
                   "Unexpected object type " + o.getClass().getName() + " for categorical column " + dataColumnName);
         }
+        rawData[index] = value;
       }
     }
     return rawData;
