@@ -499,10 +499,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     for (int i=0; i<data.length; ++i) f[i] = (float)data[i]; //only fill the first observation
     //float[] predFloats = model_info().predict(f);
     float[] predFloats = model_info._backend.predict(model_info._model, f);
-    assert(_output.nclasses()>=2) : "Only classification is supported right now.";
-    double[] p = new double[_output.nclasses()+1];
-    for (int i=1; i<p.length; ++i) p[i] = predFloats[i];
-    return p;
+    if (_output.nclasses()>=2) {
+      for (int i = 1; i < _output.nclasses()+1; ++i) preds[i] = predFloats[i];
+    } else {
+      preds[0] = predFloats[0];
+    }
+    return preds;
   }
 
   @Override public double[] score0(double[] data, double[] preds, double weight, double offset) {
@@ -532,8 +534,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     @Override public void map(Chunk[] chks, NewChunk[] cpreds) { }
     @Override public void reduce( BigScore bs ) { }
     @Override protected void setupLocal() {
-      if (model_info.unstable) {
-        Log.err("Cannot score with an unstable model.");
+      if (model_info._unstable) {
+        Log.err("Cannot score with an _unstable model.");
         Log.err(unstable_msg);
         throw new UnsupportedOperationException(unstable_msg);
       }
@@ -679,7 +681,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
             fs.blockForPending();
           }
           if (unstable) {
-            model_info.unstable = true;
+            model_info._unstable = true;
             Log.err(unstable_msg);
             throw new UnsupportedOperationException(unstable_msg);
           }

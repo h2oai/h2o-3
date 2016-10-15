@@ -69,7 +69,8 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
    *
    *  Validate the very large number of arguments in the DL Parameter directly. */
   @Override public void init(boolean expensive) {
-    _parms.validate(this, expensive);
+    _parms.validate(this, expensive); //must call before super.init to set ignore_const_cols, which depends on the model type
+    if (expensive && error_count() > 0) return; //super.init will reset the error count...
     super.init(expensive);
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }

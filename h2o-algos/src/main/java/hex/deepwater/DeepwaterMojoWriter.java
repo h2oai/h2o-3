@@ -18,7 +18,7 @@ class DeepwaterMojoWriter extends ModelMojoWriter<DeepWaterModel, DeepWaterParam
     _parms = model.get_params();
     _model_info = model.model_info();
     _output = model._output;
-    if (_model_info.unstable) {
+    if (_model_info._unstable) {
       throw new UnsupportedOperationException(technote(4, "Refusing to create a MOJO for an unstable model."));
     }
   }

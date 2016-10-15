@@ -1107,6 +1107,68 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testNumericalExplosion() {
+    for (boolean ae : new boolean[]{
+//        true,
+        false
+    }) {
+      Frame tfr = null;
+      DeepWaterModel dl = null;
+      Frame pred = null;
+
+      try {
+        tfr = parse_test_file("./smalldata/junit/two_spiral.csv");
+        for (String s : new String[]{
+            "Class"
+        }) {
+          Vec resp = tfr.vec(s).toCategoricalVec();
+          tfr.remove(s).remove();
+          tfr.add(s, resp);
+          DKV.put(tfr);
+        }
+        DeepWaterParameters parms = new DeepWaterParameters();
+        parms._train = tfr._key;
+        parms._epochs = 100;
+        parms._response_column = "Class";
+        parms._autoencoder = ae;
+        parms._train_samples_per_iteration = 10;
+        parms._hidden = new int[]{10,10,10,10,10,10,10,10,10,10,10,10,10,10,10,10};
+        parms._learning_rate = 1e10;
+        parms._standardize = false;
+
+        // Build a first model; all remaining models should be equal
+        DeepWater job = new DeepWater(parms);
+        try {
+          dl = job.trainModel().get();
+          Assert.fail("Should toss exception instead of reaching here");
+        } catch( RuntimeException de ) {
+          // OK
+        }
+        dl = DKV.getGet(job.dest());
+        try {
+          pred = dl.score(tfr);
+          Assert.fail("Should toss exception instead of reaching here");
+        } catch ( RuntimeException ex) {
+          // OK
+        }
+        try {
+          dl.getMojo();
+          Assert.fail("Should toss exception instead of reaching here");
+        } catch ( RuntimeException ex) {
+          System.err.println(ex.getMessage());
+          // OK
+        }
+        Assert.assertTrue(dl.model_info()._unstable);
+        Assert.assertTrue(dl._output._job.isCrashed());
+      } finally {
+        if (tfr != null) tfr.delete();
+        if (dl != null) dl.delete();
+        if (pred != null) pred.delete();
+      }
+    }
+  }
+
   // ------- Text conversions
 
   @Test

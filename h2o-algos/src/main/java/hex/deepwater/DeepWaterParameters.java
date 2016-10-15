@@ -303,9 +303,6 @@ public class DeepWaterParameters extends Model.Parameters {
       dl.error("_categorical_encoding", "categorical encoding scheme cannot be Enum: the neural network must have numeric columns as input.");
     }
 
-    if (expensive && !classification)
-      dl.error("_response_column", "Only classification is supported right now.");
-
     if (_autoencoder)
       dl.error("_autoencoder", "Autoencoder is not supported right now.");
 

@@ -45,7 +45,7 @@ final public class DeepWaterModelInfo extends Iced {
 
   DataInfo _dataInfo;
 
-  volatile boolean unstable = false;
+  volatile boolean _unstable = false;
 
   void nukeBackend() {
     if (_backend != null && _model != null) {
