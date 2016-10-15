@@ -584,7 +584,7 @@ public abstract class Chunk extends Iced<Chunk> {
   abstract boolean set_impl  (int idx, float f );
   abstract boolean setNA_impl(int idx);
   boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
-
+  boolean set_impl(int i, long lo, long hi) { throw H2O.unimpl(); }
   //Zero sparse methods:
 
   /** Sparse Chunks have a significant number of zeros, and support for
