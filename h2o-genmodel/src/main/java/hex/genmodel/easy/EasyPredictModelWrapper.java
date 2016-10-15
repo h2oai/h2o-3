@@ -2,11 +2,10 @@ package hex.genmodel.easy;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.DeepWaterMojo;
+import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.exception.PredictUnknownTypeException;
-import hex.genmodel.easy.exception.PredictWrongModelCategoryException;
 import hex.genmodel.easy.prediction.*;
 
 import javax.imageio.ImageIO;
@@ -425,8 +424,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   private double[] fillRawData(RowData data, double[] rawData) throws PredictException {
 
     // TODO: refactor
-    boolean isImage = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("image");
-    boolean isText  = m instanceof DeepWaterMojo && ((DeepWaterMojo) m)._problem_type.equals("text");
+    boolean isImage = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("image");
+    boolean isText  = m instanceof DeepwaterMojoModel && ((DeepwaterMojoModel) m)._problem_type.equals("text");
 
     for (String dataColumnName : data.keySet()) {
       Integer index = modelColumnNameToIndexMap.get(dataColumnName);
@@ -479,7 +478,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         }
 
         if (isImage && img != null) {
-          DeepWaterMojo dwm = (DeepWaterMojo) m;
+          DeepwaterMojoModel dwm = (DeepwaterMojoModel) m;
           int W = dwm._width;
           int H = dwm._height;
           int C = dwm._channels;

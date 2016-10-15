@@ -20,7 +20,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static hex.genmodel.algos.DeepWaterMojo.createDeepWaterBackend;
+import static hex.genmodel.algos.deepwater.DeepwaterMojoModel.createDeepWaterBackend;
 
 
 /**

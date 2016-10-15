@@ -1,6 +1,6 @@
 package hex.genmodel;
 
-import hex.genmodel.algos.DeepWaterMojo;
+import hex.genmodel.algos.deepwater.DeepwaterMojoReader;
 import hex.genmodel.algos.drf.DrfMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
@@ -25,7 +25,7 @@ public class ModelMojoFactory {
         return new GbmMojoReader();
 
       case "Deep Water":
-        return new DeepWaterMojo();
+        return new DeepwaterMojoReader();
 
       case "Generalized Low Rank Modeling":
       case "Generalized Low Rank Model":

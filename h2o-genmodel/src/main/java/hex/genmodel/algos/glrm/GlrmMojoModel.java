@@ -3,7 +3,6 @@ package hex.genmodel.algos.glrm;
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 
-import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Random;
 
