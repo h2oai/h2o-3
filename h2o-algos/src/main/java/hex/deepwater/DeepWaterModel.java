@@ -32,7 +32,7 @@ import static water.H2O.technote;
  */
 public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,DeepWaterModelOutput> {
 
-  @Override public ModelMojo getMojo() { return new DeepWaterModelMojo(this); }
+  @Override public ModelMojoWriter getMojo() { return new DeepwaterMojoWriter(this); }
   @Override public boolean haveMojo() { return true; }
   @Override public boolean havePojo() { return false; }
 

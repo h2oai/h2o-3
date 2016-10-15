@@ -4,7 +4,7 @@ import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ToEigenVec;
-import hex.genmodel.algos.DeepWaterMojo;
+import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -34,7 +34,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   /** Check whether we have any Deep Water native backends available */
   static boolean haveBackend() {
     for (DeepWaterParameters.Backend b : DeepWaterParameters.Backend.values()) {
-      if (DeepWaterMojo.createDeepWaterBackend(b.toString()) != null) return true;
+      if (DeepwaterMojoModel.createDeepWaterBackend(b.toString()) != null) return true;
     }
     return false;
   }

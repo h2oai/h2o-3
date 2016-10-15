@@ -28,6 +28,7 @@ import java.util.NoSuchElementException;
  */
 public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
   @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return false; }
 
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));

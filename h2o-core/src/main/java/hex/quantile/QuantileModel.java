@@ -8,6 +8,9 @@ import water.Key;
 
 public class QuantileModel extends Model<QuantileModel,QuantileModel.QuantileParameters,QuantileModel.QuantileOutput> {
 
+  @Override public boolean havePojo() { return false; }
+  @Override public boolean haveMojo() { return false; }
+
   public static enum CombineMethod { INTERPOLATE, AVERAGE, LOW, HIGH }
   public static class QuantileParameters extends Model.Parameters {
     // Set of probabilities to compute

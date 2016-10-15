@@ -40,7 +40,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  typically found via its Key, and so the Key is available before we get
    *  the Value and does not need to be passed around the wire.  Not final,
    *  because Keys are interned slowly (for faster compares) and periodically a
-   *  Value's Key will be updated to an interned but equivalent Key.  
+   *  Value's Key will be updated to an interned but equivalent Key.
    *  <p>
    *  Should not be set by any user code.  */
   public transient Key _key;
@@ -142,7 +142,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     return pojo;
   }
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
-   *  Will (re)build the POJO from the _mem array.  Never returns NULL.  
+   *  Will (re)build the POJO from the _mem array.  Never returns NULL.
    *  @return The POJO, probably the cached instance.  */
   public final <T extends Freezable> T getFreezable() {
     touch();
@@ -180,7 +180,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   private boolean onHDFS(){ return (backend()) == HDFS; }
   private boolean onNFS (){ return (backend()) ==  NFS; }
   private boolean onS3  (){ return (backend()) ==   S3; }
- 
+
  // Manipulate the on-disk bit
   private final static byte NOTdsk = 0<<3; // latest _mem is persisted or not
   private final static byte ON_dsk = 1<<3;
@@ -349,7 +349,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   public final Value read_impl(AutoBuffer bb) {
     assert _key == null;        // Not set yet
     // Set persistence backend but... strip off saved-to-disk bit
-    _persist = (byte)(bb.get1()&BACKEND_MASK); 
+    _persist = (byte)(bb.get1()&BACKEND_MASK);
     _type = (short) bb.get2();
     _mem = bb.getA1();
     _max = _mem.length;
@@ -542,7 +542,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     assert h2o != H2O.SELF;     // Do not track self as a replica
     _key = key;
     // Set the replica bit for the one node we know about, and leave the
-    // rest clear.  
+    // rest clear.
     replicas()[h2o._unique_idx]=1;
     _rwlock.set(1);             // An initial read-lock, so a fast PUT cannot wipe this one out before invalidates have a chance of being counted
   }

@@ -1,6 +1,6 @@
-package hex.glrm;
+package hex.genmodel.algos.glrm;
 
-import water.util.ArrayUtils;
+import hex.genmodel.utils.ArrayUtils;
 
 /**
  * Loss function for the GLRM algorithm.
@@ -85,6 +85,7 @@ public enum GlrmLoss {
     @Override public boolean isForBinary() { return false; }
 
     private double f;
+    private int period;
 
     @Override public double loss(double u, double a) {
       return 1 - Math.cos((u - a)*f);
@@ -97,8 +98,10 @@ public enum GlrmLoss {
     }
 
     @Override public void setParameters(int period) {
+      this.period = period;
       f = 2 * Math.PI / period;
     }
+    @Override public String toString() { return "Periodic(" + period + ")"; }
   },
 
 
@@ -213,9 +216,9 @@ public enum GlrmLoss {
   // Public interface
   //--------------------------------------------------------------------------------------------------------------------
 
-  abstract public boolean isForNumeric();
-  abstract public boolean isForCategorical();
-  abstract public boolean isForBinary();
+  public abstract boolean isForNumeric();
+  public abstract boolean isForCategorical();
+  public abstract boolean isForBinary();
 
   /** Loss function for numeric variables */
   public double loss(double u, double a) { throw new UnsupportedOperationException(); }
@@ -237,4 +240,6 @@ public enum GlrmLoss {
 
   /** Initialize additional parameters on the loss function. Currently used by Periodic class only. */
   public void setParameters(int p) { throw new UnsupportedOperationException(); }
+
+
 }
