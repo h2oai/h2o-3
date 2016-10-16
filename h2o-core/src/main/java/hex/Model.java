@@ -1587,7 +1587,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             if (!MathUtils.compare(actual_preds[col], expected_preds[col], abs_epsilon, rel_epsilon)) {
               num_errors++;
               if (num_errors < 20) {
-                System.err.println("EasyPredict Predictions mismatch for row " + rowData);
+                System.err.println( (i == 0 ? "POJO" : "MOJO") + " EasyPredict Predictions mismatch for row " + rowData);
                 System.err.println("  Expected predictions: " + Arrays.toString(expected_preds));
                 System.err.println("  Actual predictions:   " + Arrays.toString(actual_preds));
               }
