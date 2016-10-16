@@ -176,7 +176,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
       if( vec.isUUID() ) {
         string_data = new String[len];
         for (int i = 0; i < len; i++)
-          string_data[i] = vec.isNA(off + i) ? null : PrettyPrint.UUID(vec.at16l(off + i), vec.at16h(off + i));
+          string_data[i] = vec.isNA(off + i) ? null : PrettyPrint.uuid(vec.at16l(off + i), vec.at16h(off + i));
         data = null;
       } else if ( vec.isString() ) {
         string_data = new String[len];

@@ -1483,7 +1483,7 @@ public class Frame extends Lockable<Frame> {
         if(i > 0) sb.append(',');
         if(!_curChks[i].isNA(_chkRow)) {
           if( v.isCategorical() ) sb.append('"').append(v.factor(_curChks[i].at8(_chkRow))).append('"');
-          else if( v.isUUID() ) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
+          else if( v.isUUID() ) sb.append(PrettyPrint.uuid(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
           else if( v.isInt() ) sb.append(_curChks[i].at8(_chkRow));
           else if (v.isString()) sb.append('"').append(_curChks[i].atStr(tmpStr, _chkRow)).append('"');
           else {
