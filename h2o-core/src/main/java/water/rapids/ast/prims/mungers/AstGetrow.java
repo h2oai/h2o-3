@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.mungers;
 
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -39,7 +40,8 @@ public class AstGetrow extends AstPrimitive {
 
     double[] res = new double[fr.numCols()];
     for (int i = 0; i < res.length; i++) {
-      res[i] = fr.vec(i).isNumeric()? fr.vec(i).at(0) : Double.NaN;
+      Vec v = fr.vec(i);
+      res[i] = v.isNumeric()? v.at(0) : v.isTime()? v.at8(0) : Double.NaN;
     }
     return new ValRow(res, null);
   }
