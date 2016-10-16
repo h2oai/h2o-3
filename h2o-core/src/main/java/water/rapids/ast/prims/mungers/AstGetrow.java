@@ -29,7 +29,8 @@ public class AstGetrow extends AstPrimitive {
 
   @Override public String description() {
     return "For a single-row frame, this function returns the contents of that frame as a ValRow. " +
-           "Any non-numeric columns will be converted into NaNs.";
+           "All non-numeric and non-time columns will be converted into NaNs. " +
+           "This function does not work for frames that have more than 1 row.";
   }
 
   @Override
