@@ -82,6 +82,29 @@ public class FrameUtils {
     }
   }
 
+  public static void printTopCategoricalLevels(Frame fr, boolean warn, int topK) {
+    String[][] domains = fr.domains();
+    String[] names = fr.names();
+    int len = domains.length;
+    int[] levels = new int[len];
+    for (int i = 0; i < len; ++i)
+      levels[i] = domains[i] != null ? domains[i].length : 0;
+    Arrays.sort(levels);
+    if (levels[len - 1] > 0) {
+      int levelcutoff = levels[len - 1 - Math.min(topK, len - 1)];
+      int count = 0;
+      for (int i = 0; i < len && count < topK; ++i) {
+        if (domains[i] != null && domains[i].length >= levelcutoff) {
+          if (warn)
+            Log.warn("Categorical feature '" + names[i] + "' has cardinality " + domains[i].length + ".");
+          else
+            Log.info("Categorical feature '" + names[i] + "' has cardinality " + domains[i].length + ".");
+        }
+        count++;
+      }
+    }
+  }
+
   private static class Vec2ArryTsk extends MRTask<Vec2ArryTsk> {
     final int N;
     public double [] res;

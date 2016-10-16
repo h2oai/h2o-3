@@ -941,7 +941,12 @@ public class Vec extends Keyed<Vec> {
    *  constructing Strings.
    *  @return {@code i}th element as {@link BufferedString} or null if missing, or
    *  throw if not a String */
-  public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).atStr_abs(bStr, i); }
+  public final BufferedString atStr( BufferedString bStr, long i ) {
+    if (isCategorical()) { //for categorical vecs, return the factor level
+      if (isNA(i)) return null;
+      return bStr.set(_domain[(int)at8(i)]);
+    } else return chunkForRow(i).atStr_abs(bStr, i);
+  }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,
    *  but much faster than Vec.at(i).  Limited to single-threaded

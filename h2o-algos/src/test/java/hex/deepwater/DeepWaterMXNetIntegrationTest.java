@@ -5,6 +5,7 @@ import deepwater.backends.BackendParams;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.parser.BufferedString;
 import water.util.StringUtils;
@@ -94,6 +95,7 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
     }
   }
 
+  @Ignore
   @Test
   public void PreTrainedMOJO() {
     water.fvec.Frame tr = null;

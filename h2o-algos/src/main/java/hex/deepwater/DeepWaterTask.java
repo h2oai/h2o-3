@@ -163,7 +163,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         iter = new DeepWaterTextIterator(trainData, trainLabels, batchSize, 100/*FIXME*/, _localmodel.get_params()._cache_data);
       }
 
-      NativeTrainTask ntt = null;
+      NativeTrainTask ntt;
       while (iter.Next(fs) && !_job.isStopping()) {
 //        if (ntt != null) nativetime += ntt._timeInMillis;
         long n = _localmodel.get_processed_total();

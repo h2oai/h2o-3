@@ -11,6 +11,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.util.FrameUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
 import water.util.RandomUtils;
@@ -63,7 +64,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   // helpers for diagnostics
   double epoch_counter;
   int iterations;
-  boolean stopped_early;
+  private boolean stopped_early;
   long training_rows;
   long validation_rows;
 
@@ -71,6 +72,13 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   private float _bestLoss = Float.POSITIVE_INFINITY;
 
   Key actual_best_model_key;
+
+  private final String unstable_msg = technote(4,
+      "\n\nTrying to predict with an unstable model." +
+          "\nJob was aborted due to observed numerical instability (exponential growth)."
+          + "\nEither the weights or the bias values are unreasonably large or lead to large activation values."
+          + "\nTry a different initial distribution, a bounded activation function (Tanh), adding regularization"
+          + "\n(via dropout) or use a smaller learning rate and/or momentum.");
 
   public DeepWaterScoringInfo last_scored() { return (DeepWaterScoringInfo) super.last_scored(); }
 
@@ -167,7 +175,6 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     _output._normRespMul = dinfo._normRespMul;
     _output._normRespSub = dinfo._normRespSub;
     _output._useAllFactorLevels = dinfo._useAllFactorLevels;
-    Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
   }
 
   /**
@@ -194,6 +201,10 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     }
     model_info = new DeepWaterModelInfo(parms, nClasses, dinfo != null ? dinfo.fullN() : -1);
     model_info._dataInfo = dinfo;
+    if (dinfo!=null) {
+      FrameUtils.printTopCategoricalLevels(dinfo._adaptedFrame, dinfo.fullN() > 10000, 10);
+      Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
+    }
 
     // now, parms is get_params();
     _dist = new Distribution(get_params());
@@ -223,9 +234,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
 
   long _timeLastIterationEnter;
-  long _timeLastScoreStart; //start actual scoring
-  long _timeLastScoreEnd;  //finished actual scoring
-  long _timeLastPrintStart;
+  private long _timeLastScoreStart; //start actual scoring
+  private long _timeLastScoreEnd;  //finished actual scoring
+  private long _timeLastPrintStart;
 
   private void checkTimingConsistency() {
     assert(total_scoring_time_ms <= total_training_time_ms);
@@ -488,10 +499,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     for (int i=0; i<data.length; ++i) f[i] = (float)data[i]; //only fill the first observation
     //float[] predFloats = model_info().predict(f);
     float[] predFloats = model_info._backend.predict(model_info._model, f);
-    assert(_output.nclasses()>=2) : "Only classification is supported right now.";
-    double[] p = new double[_output.nclasses()+1];
-    for (int i=1; i<p.length; ++i) p[i] = predFloats[i];
-    return p;
+    if (_output.nclasses()>=2) {
+      for (int i = 1; i < _output.nclasses()+1; ++i) preds[i] = predFloats[i];
+    } else {
+      preds[0] = predFloats[0];
+    }
+    return preds;
   }
 
   @Override public double[] score0(double[] data, double[] preds, double weight, double offset) {
@@ -521,11 +534,18 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     @Override public void map(Chunk[] chks, NewChunk[] cpreds) { }
     @Override public void reduce( BigScore bs ) { }
     @Override protected void setupLocal() {
+      if (model_info._unstable) {
+        Log.err("Cannot score with an _unstable model.");
+        Log.err(unstable_msg);
+        throw new UnsupportedOperationException(unstable_msg);
+      }
+
       DataInfo di = model_info()._dataInfo;
       if (di != null) {
         di = IcedUtils.deepCopy(di);
         di._adaptedFrame = _fr; //dinfo logic on _adaptedFrame is what we'll need for extracting standardized features from the data for scoring
       }
+      final int dataIdx = 0; //FIXME
       final int weightIdx =_fr.find(get_params()._weights_column);
       final int respIdx =_fr.find(get_params()._response_column);
       final int batch_size = get_params()._mini_batch_size;
@@ -552,7 +572,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         }
         if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image
             || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
-          BufferedString file = _fr.vec(0).atStr(bs, i);
+          BufferedString file = _fr.vec(dataIdx).atStr(bs, i);
           if (file!=null)
             score_data.add(file.toString());
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
@@ -614,6 +634,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 //          Log.info("Scoring on " + batch_size + " samples (rows " + row + " and up): " + Arrays.toString(((DeepWaterImageIterator)iter).getFiles()));
 
             // fill the pre-created output Frame
+          boolean unstable = false;
           for (int j = 0; j < batch_size; ++j) {
             while (row==skippedRow) {
               assert(weightIdx == -1 ||_fr.vec(weightIdx).at(row)==0);
@@ -631,6 +652,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
               for (int i=0;i<classes;++i) {
                 int idx=j*classes+i; //[p0,...,p9,p0,...,p9, ... ,p0,...,p9]
                 preds[1+i] = predFloats[idx];
+                if (Double.isNaN(preds[1+i]))
+                  unstable = true;
               }
               if (_parms._balance_classes)
                 GenModel.correctProbabilities(preds, _output._priorClassDist, _output._modelClassDist);
@@ -645,6 +668,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
             }
             else {
               double pred = predFloats[j] * mul + sub;
+              if (Double.isNaN(pred))
+                unstable = true;
               if (_makePreds)
                 vw[0].set(row, pred);
               if (_computeMetrics)
@@ -655,6 +680,11 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
           if (_makePreds) {
             for (Vec.Writer aVw : vw) aVw.close(fs);
             fs.blockForPending();
+          }
+          if (unstable) {
+            model_info._unstable = true;
+            Log.err(unstable_msg);
+            throw new UnsupportedOperationException(unstable_msg);
           }
         }
         if ( _j != null) _j.update(_fr.anyVec().nChunks());
