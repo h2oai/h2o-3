@@ -648,16 +648,29 @@ public class NewChunk extends Chunk {
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
-    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
+<<<<<<< c12f9c278ec6192054df575a368b1e124326325a
+    set_impl(_sparseLen, lo, hi);
+=======
     if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
       append2slowUUID();
     _ms.set(_sparseLen,lo);
     _ds[_sparseLen] = Double.longBitsToDouble(hi);
     if (_id != null) _id[_sparseLen] = _len;
+>>>>>>> PUBDEV-3505 Fixed handling of (na) sparse uuid columns, added test.
     _sparseLen++;
     _len++;
     assert _sparseLen <= _len;
   }
+
+  @Override public boolean set_impl(int idx, long lo, long hi) {
+    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
+    if( _ms==null || _ds== null || idx >= _ms.len() )
+      append2slowUUID();
+    _ms.set(idx,lo);
+    _ds[idx] = Double.longBitsToDouble(hi);
+    return true;
+  }
+
   public void addUUID( Chunk c, long row ) {
     if (c.isNA_abs(row)) addNA();
     else addUUID(c.at16l_abs(row),c.at16h_abs(row));
