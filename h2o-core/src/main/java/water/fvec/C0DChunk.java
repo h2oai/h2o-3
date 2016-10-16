@@ -3,6 +3,7 @@ package water.fvec;
 import water.util.UnsafeUtils;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 /**
  * The constant 'double' column.
@@ -23,6 +24,7 @@ public class C0DChunk extends Chunk {
     if( Double.isNaN(_con) ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)_con;          // Possible silent truncation
   }
+  long at16h_impl(int idx) { throw wrongType(UUID.class, Object.class); }
   @Override protected final double atd_impl( int i ) {return _con;}
   @Override protected final boolean isNA_impl( int i ) { return Double.isNaN(_con); }
   @Override boolean set_impl(int idx, long l) { return l==_con; }
