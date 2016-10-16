@@ -545,6 +545,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         di = IcedUtils.deepCopy(di);
         di._adaptedFrame = _fr; //dinfo logic on _adaptedFrame is what we'll need for extracting standardized features from the data for scoring
       }
+      final int dataIdx = 0; //FIXME
       final int weightIdx =_fr.find(get_params()._weights_column);
       final int respIdx =_fr.find(get_params()._response_column);
       final int batch_size = get_params()._mini_batch_size;
@@ -571,7 +572,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         }
         if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.image
             || model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
-          BufferedString file = _fr.vec(0).atStr(bs, i);
+          BufferedString file = _fr.vec(dataIdx).atStr(bs, i);
           if (file!=null)
             score_data.add(file.toString());
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {

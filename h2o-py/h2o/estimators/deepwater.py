@@ -33,11 +33,11 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "target_ratio_comm_to_comp", "seed", "standardize", "learning_rate", "learning_rate_annealing",
                       "momentum_start", "momentum_ramp", "momentum_stable", "distribution", "score_interval",
                       "score_training_samples", "score_validation_samples", "score_duty_cycle", "stopping_rounds",
-                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "shuffle_training_data",
-                      "mini_batch_size", "clip_gradient", "network", "backend", "image_shape", "channels", "gpu",
-                      "device_id", "network_definition_file", "network_parameters_file", "mean_image_file",
-                      "export_native_parameters_prefix", "activation", "hidden", "input_dropout_ratio",
-                      "hidden_dropout_ratios", "problem_type"}
+                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "ignore_const_cols",
+                      "shuffle_training_data", "mini_batch_size", "clip_gradient", "network", "backend", "image_shape",
+                      "channels", "gpu", "device_id", "network_definition_file", "network_parameters_file",
+                      "mean_image_file", "export_native_parameters_prefix", "activation", "hidden",
+                      "input_dropout_ratio", "hidden_dropout_ratios", "problem_type"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -435,6 +435,17 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def max_runtime_secs(self, max_runtime_secs):
         assert_is_type(max_runtime_secs, None, numeric)
         self._parms["max_runtime_secs"] = max_runtime_secs
+
+
+    @property
+    def ignore_const_cols(self):
+        """bool: Ignore constant columns. (Default: True)"""
+        return self._parms.get("ignore_const_cols")
+
+    @ignore_const_cols.setter
+    def ignore_const_cols(self, ignore_const_cols):
+        assert_is_type(ignore_const_cols, None, bool)
+        self._parms["ignore_const_cols"] = ignore_const_cols
 
 
     @property
