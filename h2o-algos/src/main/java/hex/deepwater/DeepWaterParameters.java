@@ -303,9 +303,6 @@ public class DeepWaterParameters extends Model.Parameters {
       dl.error("_categorical_encoding", "categorical encoding scheme cannot be Enum: the neural network must have numeric columns as input.");
     }
 
-    if (expensive && !classification)
-      dl.error("_response_column", "Only classification is supported right now.");
-
     if (_autoencoder)
       dl.error("_autoencoder", "Autoencoder is not supported right now.");
 
@@ -385,37 +382,47 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_autoencoder && _stopping_metric != ScoreKeeper.StoppingMetric.AUTO && _stopping_metric != ScoreKeeper.StoppingMetric.MSE) {
       dl.error("_stopping_metric", "Stopping metric must either be AUTO or MSE for autoencoder.");
     }
-    if (expensive) {
-      _ignore_const_cols = guessProblemType() == DeepWaterParameters.ProblemType.dataset;
-      dl.info("_ignore_const_cols", "Automatically setting ignore_const_cols to " + (_ignore_const_cols ? " YES " : " NO "));
-    } else _ignore_const_cols = false;
   }
 
+  /**
+   * Attempt to guess the problem type from the dataset
+   * @return
+   */
   ProblemType guessProblemType() {
-    boolean image=false;
-    boolean text=false;
-    if (train().vec(0).isString()) {
-      BufferedString bs = new BufferedString();
-      String first = train().anyVec().atStr(bs, 0).toString();
-      try {
-        ImageIO.read(new File(first));
-        image=true;
-      } catch(Throwable t) {}
-      try {
-        ImageIO.read(new URL(first));
-        image=true;
-      } catch(Throwable t) {}
-
-      if (!image && (first.endsWith(".jpg") || first.endsWith(".png") || first.endsWith(".tif"))) {
-        image=true;
-        Log.warn("Cannot read first image at " + first + " - Check data.");
-      } else {
-        text = true;
+    if (_problem_type == auto) {
+      boolean image = false;
+      boolean text = false;
+      String first = null;
+      Vec v = train().vec(0);
+      if (v.isString() || v.isCategorical() /*small data parser artefact*/) {
+        BufferedString bs = new BufferedString();
+        first = v.atStr(bs, 0).toString();
+        try {
+          ImageIO.read(new File(first));
+          image = true;
+        } catch (Throwable t) {
+        }
+        try {
+          ImageIO.read(new URL(first));
+          image = true;
+        } catch (Throwable t) {
+        }
       }
+
+      if (first != null) {
+        if (!image && (first.endsWith(".jpg") || first.endsWith(".png") || first.endsWith(".tif"))) {
+          image = true;
+          Log.warn("Cannot read first image at " + first + " - Check data.");
+        } else if (v.isString() && train().numCols() <= 4) { //at most text, label, fold_col, weight
+          text = true;
+        }
+      }
+      if (image) return ProblemType.image;
+      else if (text) return ProblemType.text;
+      else return ProblemType.dataset;
+    } else {
+      return _problem_type;
     }
-    if (image) return ProblemType.image;
-    else if (text) return ProblemType.text;
-    else return ProblemType.dataset;
   }
 
   static class Sanity {

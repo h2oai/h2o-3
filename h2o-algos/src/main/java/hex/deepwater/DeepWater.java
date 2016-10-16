@@ -69,10 +69,13 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
    *
    *  Validate the very large number of arguments in the DL Parameter directly. */
   @Override public void init(boolean expensive) {
+    super.init(expensive); //drop constant and ignored columns
     _parms.validate(this, expensive);
-    super.init(expensive);
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
+
+  @Override
+  protected  boolean ignoreStringColumns(){ return _parms.guessProblemType() == DeepWaterParameters.ProblemType.dataset; }
 
   @Override
   public void cv_computeAndSetOptimalParameters(ModelBuilder<DeepWaterModel, DeepWaterParameters, DeepWaterModelOutput>[] cvModelBuilders) {
@@ -344,9 +347,6 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             assert(Math.abs(best_model.loss() - model.loss())<=1e-5*Math.abs(model.loss()+best_model.loss()));
           }
         }
-      }
-      catch(Throwable t) {
-        t.printStackTrace();
       }
       finally {
         if (model != null) {

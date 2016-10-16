@@ -195,29 +195,11 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
     boolean warn = units[0] > 100000L;
     if (printLevels) {
       final String[][] domains = dinfo._adaptedFrame.domains();
-      int[] levels = new int[domains.length];
-      for (int i = 0; i < levels.length; ++i) {
-        levels[i] = domains[i] != null ? domains[i].length : 0;
-      }
-      Arrays.sort(levels);
       if (warn) {
         Log.warn("===================================================================================================================================");
         Log.warn(num_input + " input features" + (dinfo._cats > 0 ? " (after categorical one-hot encoding)" : "") + ". Can be slow and require a lot of memory.");
       }
-      if (levels[levels.length - 1] > 0) {
-        int levelcutoff = levels[levels.length - 1 - Math.min(10, levels.length - 1)];
-        int count = 0;
-        for (int i = 0; i < dinfo._adaptedFrame.numCols() - (get_params()._autoencoder ? 0 : 1) && count < 10; ++i) {
-          if (dinfo._adaptedFrame.domains()[i] != null && dinfo._adaptedFrame.domains()[i].length >= levelcutoff) {
-            if (warn) {
-              Log.warn("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
-            } else {
-              Log.info("Categorical feature '" + dinfo._adaptedFrame._names[i] + "' has cardinality " + dinfo._adaptedFrame.domains()[i].length + ".");
-            }
-          }
-          count++;
-        }
-      }
+      FrameUtils.printTopCategoricalLevels(dinfo._adaptedFrame, warn, 10);
       if (warn) {
         Log.warn("Suggestions:");
         Log.warn(" *) Limit the size of the first hidden layer");

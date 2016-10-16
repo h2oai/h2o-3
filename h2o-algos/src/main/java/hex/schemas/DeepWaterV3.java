@@ -44,6 +44,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "stopping_metric",
         "stopping_tolerance",
         "max_runtime_secs",
+        "ignore_const_cols",
 //        "replicate_training_data",
 //        "single_node_mode",
         "shuffle_training_data",
