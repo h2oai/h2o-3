@@ -697,7 +697,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
       preds = m.score(p._train.get());
-      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
+      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3,1e-5,1));
     } finally {
       if (tr!=null) tr.remove();
       if (preds!=null) preds.remove();

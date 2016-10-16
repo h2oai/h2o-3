@@ -8,12 +8,6 @@ import deepwater.datasets.ImageDataSet;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Map;
-import java.util.UUID;
-
 public class DeepwaterMojoModel extends MojoModel {
   public String _problem_type;
   public int _mini_batch_size;
@@ -30,8 +24,8 @@ public class DeepwaterMojoModel extends MojoModel {
   public double[] _normRespSub;
   public boolean _useAllFactorLevels;
 
-  transient protected byte[] _network;
-  transient protected byte[] _parameters;
+  transient byte[] _network;
+  transient byte[] _parameters;
   public transient float[] _meanImageData;
 
   BackendTrain _backend; //interface provider
@@ -40,7 +34,7 @@ public class DeepwaterMojoModel extends MojoModel {
   RuntimeOptions _opts;
   BackendParams _backendParams;
 
-  protected DeepwaterMojoModel(String[] columns, String[][] domains) {
+  DeepwaterMojoModel(String[] columns, String[][] domains) {
     super(columns, domains);
   }
 

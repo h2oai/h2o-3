@@ -64,7 +64,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   // helpers for diagnostics
   double epoch_counter;
   int iterations;
-  boolean stopped_early;
+  private boolean stopped_early;
   long training_rows;
   long validation_rows;
 
@@ -234,9 +234,9 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
 
   long _timeLastIterationEnter;
-  long _timeLastScoreStart; //start actual scoring
-  long _timeLastScoreEnd;  //finished actual scoring
-  long _timeLastPrintStart;
+  private long _timeLastScoreStart; //start actual scoring
+  private long _timeLastScoreEnd;  //finished actual scoring
+  private long _timeLastPrintStart;
 
   private void checkTimingConsistency() {
     assert(total_scoring_time_ms <= total_training_time_ms);

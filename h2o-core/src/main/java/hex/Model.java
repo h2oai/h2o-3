@@ -1424,9 +1424,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // is well, false is there are any mismatches.  Throws if there is any error
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon) {
-    return testJavaScoring(data, model_predictions, rel_epsilon, 0.1);
+    return testJavaScoring(data, model_predictions, rel_epsilon, 1e-15, 0.1);
   }
-  public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double fraction) {
+  public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon) {
+    return testJavaScoring(data, model_predictions, rel_epsilon, abs_epsilon, 0.1);
+  }
+  public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon, double fraction) {
     Random rnd = RandomUtils.getRNG(data.byteSize());
     assert data.numRows() == model_predictions.numRows();
     Frame fr = new Frame(data);
@@ -1483,7 +1486,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           for (int col = 0; col < pvecs.length; col++) { // Compare predictions
             double d = pvecs[col].at(row);                  // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
-            if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
+            if (!MathUtils.compare(predictions[col], d, abs_epsilon, rel_epsilon)) {
               if (num_errors++ < 10)
                 System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
               break;
@@ -1581,7 +1584,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           // Verify the correctness of the prediction
           num_total++;
           for (int col = 0; col < pvecs.length; col++) {
-            if (!MathUtils.compare(actual_preds[col], expected_preds[col], 1e-15, rel_epsilon)) {
+            if (!MathUtils.compare(actual_preds[col], expected_preds[col], abs_epsilon, rel_epsilon)) {
               num_errors++;
               if (num_errors < 20) {
                 System.err.println("EasyPredict Predictions mismatch for row " + rowData);
