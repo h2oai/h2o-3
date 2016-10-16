@@ -547,7 +547,7 @@ public class NewChunkTest extends TestUtil {
       nc.addStr("a");
       post();
       Assert.assertFalse(cc.isNA(0));
-      cc.set(0, null);
+      cc.set(0, (String)null);
       Assert.assertTrue(cc.isNA(0));
     } finally { remove(); }
   }

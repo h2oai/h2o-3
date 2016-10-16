@@ -47,6 +47,7 @@ import java.util.UUID;
  *   <tr><td>        </td><td>{@link #set(long,float)} </td><td>{@code NaN} </td><td>Limited precision takes less memory</td>
  *   <tr><td>        </td><td>{@link #set(long,long)}  </td><td>Cannot set  </td><td></td>
  *   <tr><td>        </td><td>{@link #set(long,String)}</td><td>{@code null}</td><td>Convenience wrapper for String</td>
+ *   <tr><td>        </td<td>{@link #set(long,UUID)}</td><td>{@code null}</td></tr>
  *   <tr><td>        </td><td>{@link #setNA(long)}     </td><td>            </td><td></td>
  *   </table>
  *
@@ -276,7 +277,7 @@ public class Vec extends Keyed<Vec> {
   private int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
-  boolean checkCompatible( Vec v ) {
+  boolean isCompatibleWith(Vec v ) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
     return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e3);
@@ -1004,6 +1005,12 @@ public class Vec extends Keyed<Vec> {
   public final void set( long i, String str) {
     Chunk ck = chunkForRow(i);
     ck.set_abs(i, str);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  }
+
+  public final void set(long i, UUID uuid) {
+    Chunk ck = chunkForRow(i);
+    ck.set_abs(i, uuid);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 
