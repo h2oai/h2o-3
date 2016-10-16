@@ -230,6 +230,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
     init(new AstDdply());
     init(new AstFilterNaCols());
     init(new AstFlatten());
+    init(new AstGetrow());
     init(new AstGroup());
     init(new AstGroupedPermute());
     init(new AstIsCharacter());
