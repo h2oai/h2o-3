@@ -3,6 +3,8 @@ package water.fvec;
 import water.*;
 import water.parser.BufferedString;
 
+import java.util.UUID;
+
 /** A compression scheme, over a chunk of data - a single array of bytes.
  *  Chunks are mapped many-to-1 to a {@link Vec}.  The <em>actual</em> vector
  *  header info is in the Vec - which contains info to find all the bytes of
@@ -418,6 +420,8 @@ public abstract class Chunk extends Iced<Chunk> {
    *  objects). */
   public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
 
+  public final void set_abs(long i, UUID uuid) { long x = i-_start; if (0 <= x && x < _len) set((int) x, uuid); else _vec.set(i,uuid); }
+
   public boolean hasFloat(){return true;}
   public boolean hasNA(){return true;}
 
@@ -548,6 +552,38 @@ public abstract class Chunk extends Iced<Chunk> {
     return str;
   }
 
+  public final UUID set(int idx, UUID uuid) {
+    setWrite();
+    long lo = uuid.getLeastSignificantBits();
+    long hi = uuid.getMostSignificantBits();
+
+    if( _chk2.set_impl(idx, lo, hi) ) return uuid;
+    _chk2 = inflate_impl(new NewChunk(this));
+    _chk2.set_impl(idx,lo, hi);
+    return uuid;
+  }
+
+  private Object setUnknown(int idx) {
+    setNA(idx);
+    return null;
+  }
+
+  /**
+   * @param idx index of the value in Chunk
+   * @param x new value to set
+   * @return x on success, or null if something went wrong
+   */
+  public final Object setAny(int idx, Object x) {
+    return x instanceof String         ? set(idx, (String) x) :
+           x instanceof Double         ? set(idx, (Double)x) :
+           x instanceof Float          ? set(idx, (Float)x) :
+           x instanceof Long           ? set(idx, (Long)x) :
+           x instanceof Integer        ? set(idx, ((Integer)x).longValue()) :
+           x instanceof UUID           ? set(idx, (UUID) x) :
+           x instanceof java.util.Date ? set(idx, ((java.util.Date) x).getTime()) :
+           /* otherwise */               setUnknown(idx);
+      }
+
   /** After writing we must call close() to register the bulk changes.  If a
    *  NewChunk was needed, it will be compressed into some other kind of Chunk.
    *  The resulting Chunk (either a modified self, or a compressed NewChunk)
@@ -569,12 +605,25 @@ public abstract class Chunk extends Iced<Chunk> {
     return _cidx;
   }
 
+  static class WrongType extends IllegalArgumentException {
+    private final Class<?> expected;
+    private final Class<?> actual;
+
+    public WrongType(Class<?> expected, Class<?> actual) {
+      super("Expected: " + expected + ", actual: " + actual);
+      this.expected = expected;
+      this.actual = actual;
+    }
+  }
+
+  static WrongType wrongType(Class<?> expected, Class<?> actual) { return new WrongType(expected, actual); }
+
   /** Chunk-specific readers.  Not a public API */
   abstract double   atd_impl(int idx);
   abstract long     at8_impl(int idx);
   abstract boolean isNA_impl(int idx);
-  long at16l_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
-  long at16h_impl(int idx) { throw new IllegalArgumentException("Not a UUID"); }
+  long at16l_impl(int idx) { throw wrongType(UUID.class, Object.class); }
+  long at16h_impl(int idx) { throw wrongType(UUID.class, Object.class); }
   BufferedString atStr_impl(BufferedString bStr, int idx) { throw new IllegalArgumentException("Not a String"); }
 
   /** Chunk-specific writer.  Returns false if the value does not fit in the
@@ -583,8 +632,8 @@ public abstract class Chunk extends Iced<Chunk> {
   abstract boolean set_impl  (int idx, double d );
   abstract boolean set_impl  (int idx, float f );
   abstract boolean setNA_impl(int idx);
-  boolean set_impl (int idx, String str) { throw new IllegalArgumentException("Not a String"); }
-  boolean set_impl(int i, long lo, long hi) { throw H2O.unimpl(); }
+  boolean set_impl (int idx, String str) { throw H2O.unimpl(); }
+  boolean set_impl(int i, long lo, long hi) { return false; }
   //Zero sparse methods:
 
   /** Sparse Chunks have a significant number of zeros, and support for
@@ -657,8 +706,8 @@ public abstract class Chunk extends Iced<Chunk> {
    *  Chunk, but in a highly optimized way. */
   public Chunk nextChunk( ) { return _vec.nextChunk(this); }
 
-  /** @return String version of a Chunk, currently just the class name */
-  @Override public String toString() { return getClass().getSimpleName(); }
+  /** @return String version of a Chunk, class name and range*/
+  @Override public String toString() { return getClass().getSimpleName() + "[" + _start + ".." + (_start + _len - 1) + "]"; }
 
   /** In memory size in bytes of the compressed Chunk plus embedded array. */
   public long byteSize() {

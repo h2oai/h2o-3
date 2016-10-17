@@ -138,6 +138,10 @@ public class PrettyPrint {
     return String.format("%08X-%04X-%04X-%04X-%012X",lo0,lo1,lo2,hi0,hi1);
   }
 
+  public static String uuid(java.util.UUID uuid) {
+    return uuid == null ? "(N/A)" : UUID(uuid.getLeastSignificantBits(), uuid.getMostSignificantBits());
+  }
+
   public static String number(Chunk chk, double d, int precision) {
     long l = (long)d;
     if( (double)l == d ) return Long.toString(l);
