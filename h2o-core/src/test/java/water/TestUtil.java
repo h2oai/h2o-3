@@ -22,8 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -366,6 +365,33 @@ public class TestUtil extends Iced {
   /** A numeric Vec from an array of ints */
   public static Vec ivec(int...rows) {
     return vec(null, rows);
+  }
+
+  /** A categorical Vec from an array of strings */
+  public static Vec cvec(String ...rows) {
+    return cvec(null, rows);
+  }
+
+  public static Vec cvec(String[] domain, String ...rows) {
+    HashMap<String, Integer> domainMap = new HashMap<>(10);
+    ArrayList<String> domainList = new ArrayList<>(10);
+    if (domain != null) {
+      int j = 0;
+      for (String s : domain) {
+        domainMap.put(s, j++);
+        domainList.add(s);
+      }
+    }
+    int[] irows = new int[rows.length];
+    for (int i = 0, j = 0; i < rows.length; i++) {
+      String s = rows[i];
+      if (!domainMap.containsKey(s)) {
+        domainMap.put(s, j++);
+        domainList.add(s);
+      }
+      irows[i] = domainMap.get(s);
+    }
+    return vec(domainList.toArray(new String[]{}), irows);
   }
 
   /** A numeric Vec from an array of doubles */

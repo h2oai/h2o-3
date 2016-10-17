@@ -21,7 +21,7 @@ import static org.junit.Assert.*;
  * Test the AstMean.java class
  */
 public class AstMeanTest extends TestUtil {
-  private static Vec vi1, vd1, vd2, vd3, vs1, vt1, vt2;
+  private static Vec vi1, vd1, vd2, vd3, vs1, vt1, vt2, vc1, vc2;
   private static ArrayList<Frame> allFrames;
 
   @BeforeClass public static void setup() {
@@ -33,11 +33,13 @@ public class AstMeanTest extends TestUtil {
     vs1 = TestUtil.svec("a", "b", "c", "d", "e");
     vt1 = TestUtil.tvec(10000000, 10000020, 10000030, 10000040, 10000060);
     vt2 = TestUtil.tvec(20000000, 20000020, 20000030, 20000040, 20000060);
+    vc1 = TestUtil.cvec(ar("N", "Y"), "Y", "N", "Y", "Y", "N");
+    vc2 = TestUtil.cvec("a", "c", "c", "b", "a");
     allFrames = new ArrayList<>(10);
   }
 
   @AfterClass public static void teardown() {
-    for (Vec v : aro(vi1, vd1, vd2, vd3, vs1, vt1, vt2))
+    for (Vec v : aro(vi1, vd1, vd2, vd3, vs1, vt1, vt2, vc1, vc2))
       v.remove();
     for (Frame f : allFrames)
       f.delete();
@@ -49,28 +51,28 @@ public class AstMeanTest extends TestUtil {
 
   @Test public void testColumnwiseMeanWithoutNaRm() {
     Frame fr = register(new Frame(Key.<Frame>make(),
-            ar("I", "D", "DD", "DN", "T", "S"),
-            aro(vi1, vd1, vd2, vd3, vt1, vs1)
+            ar("I", "D", "DD", "DN", "T", "S", "C"),
+            aro(vi1, vd1, vd2, vd3, vt1, vs1, vc2)
     ));
     Val val1 = Rapids.exec("(mean " + fr._key + " 0 0)");
     assertTrue(val1 instanceof ValFrame);
     Frame res = register(val1.getFrame());
     assertArrayEquals(fr.names(), res.names());
-    assertArrayEquals(ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_NUM), res.types());
-    assertRowFrameEquals(ard(0.0, 4.0, 0.6, Double.NaN, 10000030.0, Double.NaN), res);
+    assertArrayEquals(ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_NUM, Vec.T_NUM), res.types());
+    assertRowFrameEquals(ard(0.0, 4.0, 0.6, Double.NaN, 10000030.0, Double.NaN, Double.NaN), res);
   }
 
   @Test public void testColumnwiseMeanWithNaRm() {
     Frame fr = register(new Frame(Key.<Frame>make(),
-            ar("I", "D", "DD", "DN", "T", "S"),
-            aro(vi1, vd1, vd2, vd3, vt1, vs1)
+            ar("I", "D", "DD", "DN", "T", "S", "C"),
+            aro(vi1, vd1, vd2, vd3, vt1, vs1, vc2)
     ));
     Val val = Rapids.exec("(mean " + fr._key + " 1 0)");
     assertTrue(val instanceof ValFrame);
     Frame res = register(val.getFrame());
     assertArrayEquals(fr.names(), res.names());
-    assertArrayEquals(ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_NUM), res.types());
-    assertRowFrameEquals(ard(0.0, 4.0, 0.6, 2.0, 10000030.0, Double.NaN), res);
+    assertArrayEquals(ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_NUM, Vec.T_NUM), res.types());
+    assertRowFrameEquals(ard(0.0, 4.0, 0.6, 2.0, 10000030.0, Double.NaN, Double.NaN), res);
   }
 
   @Test public void testColumnwiseMeanOnEmptyFrame() {
@@ -80,6 +82,17 @@ public class AstMeanTest extends TestUtil {
     Frame res = register(val.getFrame());
     assertEquals(res.numCols(), 0);
     assertEquals(res.numRows(), 0);
+  }
+
+  @Test public void testColumnwiseMeanBinaryVec() {
+    assertTrue(vc1.isBinary() && !vc2.isBinary());
+    Frame fr = register(new Frame(Key.<Frame>make(), ar("C1", "C2"), aro(vc1, vc2)));
+    Val val = Rapids.exec("(mean " + fr._key + " 1 0)");
+    assertTrue(val instanceof ValFrame);
+    Frame res = register(val.getFrame());
+    assertArrayEquals(fr.names(), res.names());
+    assertArrayEquals(ar(Vec.T_NUM, Vec.T_NUM), res.types());
+    assertRowFrameEquals(ard(0.6, Double.NaN), res);
   }
 
   @Test public void testRowwiseMeanWithoutNaRm() {
