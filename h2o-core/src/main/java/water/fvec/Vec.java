@@ -1,7 +1,6 @@
 package water.fvec;
 
 import water.*;
-import water.functional.Function;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.util.*;
