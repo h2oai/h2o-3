@@ -156,6 +156,11 @@ import java.util.UUID;
  * @author Cliff Click
  */
 public class Vec extends Keyed<Vec> {
+
+  public interface VectorHolder {
+    Vec vec();
+  }
+
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
   byte _type;                   // Vec Type
 
@@ -283,7 +288,7 @@ public class Vec extends Keyed<Vec> {
   boolean isCompatibleWith(Vec v) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
     return Arrays.equals(espc(), v.espc()) &&
-            (VectorGroup.sameGroup(this, v) || length() < 1e3);
+            (VectorGroup.sameGroup(this, v) || isSmall());
   }
 
   /** Default read/write behavior for Vecs.  File-backed Vecs are read-only. */
@@ -625,20 +630,6 @@ public class Vec extends Keyed<Vec> {
     return randVec;
   }
 
-  public static Vec makeFromFunction(long len, final Function<Long, ?> f) throws IOException {
-//    final Closure<Long, Double> f = Closure.enclose(f0);
-    return new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for (Chunk c : cs) {
-          for (int r = 0; r < c._len; r++) {
-            long i = r + c._start;
-            c.setAny(r, f.apply(i));
-          }
-        }
-      }
-    }.doAll(makeZero(len))._fr.vecs()[0];
-  }
-
   // ======= Rollup Stats ======
 
   /** Vec's minimum value 
@@ -958,7 +949,12 @@ public class Vec extends Keyed<Vec> {
    *  constructing Strings.
    *  @return {@code i}th element as {@link BufferedString} or null if missing, or
    *  throw if not a String */
-  public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).atStr_abs(bStr, i); }
+  public final BufferedString atStr( BufferedString bStr, long i ) {
+    if (isCategorical()) { //for categorical vecs, return the factor level
+      if (isNA(i)) return null;
+      return bStr.set(_domain[(int)at8(i)]);
+    } else return chunkForRow(i).atStr_abs(bStr, i);
+  }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,
    *  but much faster than Vec.at(i).  Limited to single-threaded
@@ -1022,6 +1018,12 @@ public class Vec extends Keyed<Vec> {
   public final void set( long i, String str) {
     Chunk ck = chunkForRow(i);
     ck.set_abs(i, str);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  }
+
+  public final void set(long i, UUID uuid) {
+    Chunk ck = chunkForRow(i);
+    ck.set_abs(i, uuid);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 

@@ -589,4 +589,9 @@ public class TestUtil extends Iced {
   private static Set<Vec> toDrop = new HashSet<>();
 
   protected static Vec willDrop(Vec v) { toDrop.add(v); return v; }
+
+  protected static <T extends Vec.VectorHolder> T willDrop(T vh) {
+    toDrop.add(vh.vec());
+    return vh;
+  }
 }

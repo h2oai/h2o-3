@@ -110,7 +110,7 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 }}</pre>
  */
 
-public abstract class Chunk extends Iced<Chunk> {
+public abstract class Chunk extends Iced<Chunk> implements Vec.VectorHolder {
 
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
@@ -422,6 +422,8 @@ public abstract class Chunk extends Iced<Chunk> {
    *  objects). */
   public final void set_abs(long i, String str) { long x = i-_start; if (0 <= x && x < _len) set((int) x, str); else _vec.set(i,str); }
 
+  public final void set_abs(long i, UUID uuid) { long x = i-_start; if (0 <= x && x < _len) set((int) x, uuid); else _vec.set(i,uuid); }
+
   public boolean hasFloat(){return true;}
   public boolean hasNA(){return true;}
 
@@ -552,7 +554,7 @@ public abstract class Chunk extends Iced<Chunk> {
     return str;
   }
 
-  public final UUID setUUID(int idx, UUID uuid) {
+  public final UUID set(int idx, UUID uuid) {
     setWrite();
     long lo = uuid.getLeastSignificantBits();
     long hi = uuid.getMostSignificantBits();
@@ -563,16 +565,25 @@ public abstract class Chunk extends Iced<Chunk> {
     return uuid;
   }
 
+  private Object setUnknown(int idx, Object x) {
+    setNA(idx);
+    return null;
+  }
+
+  /**
+   * @param idx index of the value in Chunk
+   * @param x new value to set
+   * @return x on success, or null if something went wrong
+   */
   public final Object setAny(int idx, Object x) {
-    return x == null ? setNA(idx) :
-           x instanceof String         ? set(idx, (String) x) :
+    return x instanceof String         ? set(idx, (String) x) :
            x instanceof Double         ? set(idx, (Double)x) :
            x instanceof Float          ? set(idx, (Float)x) :
            x instanceof Long           ? set(idx, (Long)x) :
            x instanceof Integer        ? set(idx, ((Integer)x).longValue()) :
-           x instanceof UUID           ? setUUID(idx, (UUID) x) :
+           x instanceof UUID           ? set(idx, (UUID) x) :
            x instanceof java.util.Date ? set(idx, ((java.util.Date) x).getTime()) :
-null;
+           /* otherwise */               setUnknown(idx, x);
       }
 
   /** After writing we must call close() to register the bulk changes.  If a
@@ -697,8 +708,8 @@ null;
    *  Chunk, but in a highly optimized way. */
   public Chunk nextChunk( ) { return _vec.nextChunk(this); }
 
-  /** @return String version of a Chunk, currently just the class name */
-  @Override public String toString() { return getClass().getSimpleName(); }
+  /** @return String version of a Chunk, class name and range*/
+  @Override public String toString() { return getClass().getSimpleName() + "[" + _start + ".." + (_start + _len - 1) + "]"; }
 
   /** In memory size in bytes of the compressed Chunk plus embedded array. */
   public long byteSize() {
