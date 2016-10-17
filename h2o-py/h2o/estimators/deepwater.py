@@ -546,12 +546,12 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def device_id(self):
-        """int: Device ID (which GPU). (Default: 0)"""
+        """List[int]: Device IDs (which GPUs to use). (Default: [0])"""
         return self._parms.get("device_id")
 
     @device_id.setter
     def device_id(self, device_id):
-        assert_is_type(device_id, None, int)
+        assert_is_type(device_id, None, [int])
         self._parms["device_id"] = device_id
 
 
