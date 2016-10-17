@@ -47,6 +47,7 @@ import java.util.UUID;
  *   <tr><td>        </td><td>{@link #set(long,float)} </td><td>{@code NaN} </td><td>Limited precision takes less memory</td>
  *   <tr><td>        </td><td>{@link #set(long,long)}  </td><td>Cannot set  </td><td></td>
  *   <tr><td>        </td><td>{@link #set(long,String)}</td><td>{@code null}</td><td>Convenience wrapper for String</td>
+ *   <tr><td>        </td<td>{@link #set(long,UUID)}</td><td>{@code null}</td></tr>
  *   <tr><td>        </td><td>{@link #setNA(long)}     </td><td>            </td><td></td>
  *   </table>
  *
@@ -276,7 +277,7 @@ public class Vec extends Keyed<Vec> {
   private int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
-  boolean checkCompatible( Vec v ) {
+  boolean isCompatibleWith(Vec v ) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
     return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e3);
@@ -348,7 +349,7 @@ public class Vec extends Keyed<Vec> {
       espc[i] = espc[i-1]+len/nchunks;
     espc[nchunks] = len;
     VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(0,vg,ESPC.rowLayout(vg._key,espc));
+    return makeCon(0, vg, ESPC.rowLayout(vg._key, espc), T_NUM);
   }
 
   /** Make a new constant vector with the given row count.
@@ -363,7 +364,7 @@ public class Vec extends Keyed<Vec> {
       espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
     VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(x,vg,ESPC.rowLayout(vg._key,espc));
+    return makeCon(x, vg, ESPC.rowLayout(vg._key, espc), T_NUM);
   }
 
   public Vec [] makeDoubles(int n, double [] values) {
@@ -428,7 +429,10 @@ public class Vec extends Keyed<Vec> {
   }
 
   public static Vec makeCon( final long l, String[] domain, VectorGroup group, int rowLayout ) {
-    final Vec v0 = new Vec(group.addVec(), rowLayout, domain);
+    return makeCon(l, domain, group, rowLayout, domain == null? T_NUM : T_CAT);
+  }
+  private static Vec makeCon( final long l, String[] domain, VectorGroup group, int rowLayout, byte type ) {
+    final Vec v0 = new Vec(group.addVec(), rowLayout, domain, type);
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
@@ -492,11 +496,12 @@ public class Vec extends Keyed<Vec> {
    *  and initialized to the given constant value.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.  */
-  public Vec makeCon( final double d ) { return makeCon(d, group(), _rowLayout); }
+  public Vec makeCon(final double d) { return makeCon(d, group(), _rowLayout, T_NUM); }
+  public Vec makeCon(final double d, byte type) { return makeCon(d, group(), _rowLayout, type); }
 
-  private static Vec makeCon( final double d, VectorGroup group, int rowLayout ) {
-    if( (long)d==d ) return makeCon((long)d, null, group, rowLayout);
-    final Vec v0 = new Vec(group.addVec(), rowLayout, null, T_NUM);
+  private static Vec makeCon( final double d, VectorGroup group, int rowLayout, byte type ) {
+    if( (long)d==d ) return makeCon((long)d, null, group, rowLayout, type);
+    final Vec v0 = new Vec(group.addVec(), rowLayout, null, type);
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
@@ -936,7 +941,12 @@ public class Vec extends Keyed<Vec> {
    *  constructing Strings.
    *  @return {@code i}th element as {@link BufferedString} or null if missing, or
    *  throw if not a String */
-  public final BufferedString atStr( BufferedString bStr, long i ) { return chunkForRow(i).atStr_abs(bStr, i); }
+  public final BufferedString atStr( BufferedString bStr, long i ) {
+    if (isCategorical()) { //for categorical vecs, return the factor level
+      if (isNA(i)) return null;
+      return bStr.set(_domain[(int)at8(i)]);
+    } else return chunkForRow(i).atStr_abs(bStr, i);
+  }
 
   /** A more efficient way to read randomly to a Vec - still single-threaded,
    *  but much faster than Vec.at(i).  Limited to single-threaded
@@ -1000,6 +1010,12 @@ public class Vec extends Keyed<Vec> {
   public final void set( long i, String str) {
     Chunk ck = chunkForRow(i);
     ck.set_abs(i, str);
+    postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
+  }
+
+  public final void set(long i, UUID uuid) {
+    Chunk ck = chunkForRow(i);
+    ck.set_abs(i, uuid);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
   }
 

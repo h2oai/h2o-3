@@ -34,7 +34,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Parameters common to all models:
-  @API(level = API.Level.critical, direction = API.Direction.INOUT, required = false,
+  @API(level = API.Level.critical, direction = API.Direction.INOUT,
       help="Destination id for this model; auto-generated if not specified.")
   public ModelKeyV3 model_id;
 
@@ -166,16 +166,16 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public S fillFromImpl(P impl) {
     PojoUtils.copyProperties(this, impl, PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
 
-    if (null != impl._train) {
+    if (impl._train != null) {
       Value v = DKV.get(impl._train);
-      if (null != v) {
+      if (v != null) {
         training_frame = new FrameKeyV3(((Frame) v.get())._key);
       }
     }
 
-    if (null != impl._valid) {
+    if (impl._valid != null) {
       Value v = DKV.get(impl._valid);
-      if (null != v) {
+      if (v != null) {
         validation_frame = new FrameKeyV3(((Frame) v.get())._key);
       }
     }
@@ -186,8 +186,8 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   public P fillImpl(P impl) {
     super.fillImpl(impl);
 
-    impl._train = (null == this.  training_frame ? null : Key.<Frame>make(this.  training_frame.name));
-    impl._valid = (null == this.validation_frame ? null : Key.<Frame>make(this.validation_frame.name));
+    impl._train = (this.training_frame == null) ? null : Key.<Frame>make(this.training_frame.name);
+    impl._valid = (this.validation_frame == null) ? null : Key.<Frame>make(this.validation_frame.name);
     impl._max_runtime_secs = nfolds > 0 ? max_runtime_secs / (nfolds+1) : max_runtime_secs;
 
     return impl;
@@ -198,19 +198,18 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
     // all fields and collecting the fields in a Map of Sets.  Then pass over them a second
     // time setting the full lists.
     Map<String, Set<String>> field_exclusivity_groups = new HashMap<>();
-    for (int i = 0; i < metadata.length; i++) {
-      ModelParameterSchemaV3 param = metadata[i];
+    for (ModelParameterSchemaV3 param : metadata) {
       String name = param.name;
 
       // Turn param.is_mutually_exclusive_with into a List which we will walk over twice
       List<String> me = new ArrayList<String>();
       me.add(name);
       // Note: this can happen if this field doesn't have an @API annotation, in which case we got an earlier WARN
-      if (null != param.is_mutually_exclusive_with) me.addAll(Arrays.asList(param.is_mutually_exclusive_with));
+      if (param.is_mutually_exclusive_with != null) me.addAll(Arrays.asList(param.is_mutually_exclusive_with));
 
       // Make a new Set which contains ourselves, fields we have already been connected to,
       // and fields *they* have already been connected to.
-      Set new_set = new HashSet();
+      Set<String> new_set = new HashSet<>();
       for (String s : me) {
         // Were we mentioned by a previous field?
         if (field_exclusivity_groups.containsKey(s))
@@ -226,11 +225,10 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
     }
 
     // Now walk over all the fields and create new comprehensive is_mutually_exclusive arrays, not containing self.
-    for (int i = 0; i < metadata.length; i++) {
-      ModelParameterSchemaV3 param = metadata[i];
+    for (ModelParameterSchemaV3 param : metadata) {
       String name = param.name;
       Set<String> me = field_exclusivity_groups.get(name);
-      Set<String> not_me = new HashSet(me);
+      Set<String> not_me = new HashSet<>(me);
       not_me.remove(name);
       param.is_mutually_exclusive_with = not_me.toArray(new String[not_me.size()]);
     }
@@ -240,7 +238,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
    * Write the parameters, including their metadata, into an AutoBuffer.  Used by
    * ModelBuilderSchema#writeJSON_impl and ModelSchemaV3#writeJSON_impl.
    */
-  public static final AutoBuffer writeParametersJSON(AutoBuffer ab, ModelParametersSchemaV3 parameters, ModelParametersSchemaV3 default_parameters) {
+  public static AutoBuffer writeParametersJSON(AutoBuffer ab, ModelParametersSchemaV3 parameters, ModelParametersSchemaV3 default_parameters) {
     String[] fields = parameters.fields();
 
     // Build ModelParameterSchemaV2 objects for each field, and the call writeJSON on the array
@@ -257,7 +255,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
         metadata[i] = schema;
       }
     } catch (NoSuchFieldException e) {
-      throw H2O.fail("Caught exception accessing field: " + field_name + " for schema object: " + parameters + ": " + e.toString());
+      throw new RuntimeException("Caught exception accessing field: " + field_name + " for schema object: " + parameters + ": " + e.toString());
     }
 
     compute_transitive_closure_of_is_mutually_exclusive(metadata);

@@ -2,6 +2,7 @@ package water.fvec;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Futures;
@@ -10,9 +11,7 @@ import water.TestUtil;
 import java.util.Arrays;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class NewChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -58,7 +57,7 @@ public class NewChunkTest extends TestUtil {
     nc.addNAs(128);
     assertTrue(nc.isSparseNA());
     for (int i = 0; i < 512; i++)
-      nc.addUUID(i, i);
+      nc.addUUID(i, i/2+i/3);
     assertFalse(nc.isSparseNA());
     Chunk c = nc.compress();
     assertEquals(128 + 512, c.len());
@@ -66,7 +65,7 @@ public class NewChunkTest extends TestUtil {
       assertTrue(c.isNA(i));
     for (int i = 0; i < 512; i++) {
       assertEquals(i, c.at16l(128 + i));
-      assertEquals(i, c.at16h(128 + i));
+      assertEquals(i/2+i/3, c.at16h(128 + i));
     }
   }
 
@@ -548,44 +547,86 @@ public class NewChunkTest extends TestUtil {
       nc.addStr("a");
       post();
       Assert.assertFalse(cc.isNA(0));
-      cc.set(0, null);
+      cc.set(0, (String)null);
       Assert.assertTrue(cc.isNA(0));
     } finally { remove(); }
   }
 
-private static double []  test_seq = new double[]{
+
+
+  private static double []  test_seq = new double[]{
     2,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,3,0,0,0,Double.NaN,Double.NaN,Double.NaN,Double.NaN,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,3,0,0,1,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,0,3,32,0,0,0,17,6,2,0,0,0,0,0,0,0,0,67,0,0,0,0,0,0,0
-};
-@Test public void testSparseWithMissing(){
-  // DOUBLES
-  av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-  nc = new NewChunk(av, 0);
-  for(double d:test_seq)
-    nc.addNum(d);
-  Chunk c = nc.compress();
-  for(int i =0 ; i < test_seq.length; ++i) {
-    if(Double.isNaN(test_seq[i]))
-      Assert.assertTrue(c.isNA(i));
-    else
-      Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +  test_seq[i],c.atd(i),0);
+  };
+
+  @Test
+  public void testSparseWithMissing() {
+    // DOUBLES
+    av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
+    nc = new NewChunk(av, 0);
+    for (double d : test_seq)
+      nc.addNum(d);
+    Chunk c = nc.compress();
+    for (int i = 0; i < test_seq.length; ++i) {
+      if (Double.isNaN(test_seq[i]))
+        Assert.assertTrue(c.isNA(i));
+      else
+        Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +test_seq[i], c.atd(i), 0);
+    }
+    // INTS
+    av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
+    nc = new NewChunk(av, 0);
+    for (double d : test_seq)
+      if (Double.isNaN(d)) nc.addNA();
+      else nc.addNum((int) d, 0);
+    c = nc.compress();
+    for (int i = 0; i < test_seq.length; ++i) {
+      if (Double.isNaN(test_seq[i]))
+        Assert.assertTrue(c.isNA(i));
+      else
+        Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +test_seq[i], c.atd(i), 0);
+    }
   }
-  // INTS
-  av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-  nc = new NewChunk(av, 0);
-  for(double d:test_seq)
-    if(Double.isNaN(d)) nc.addNA();
-    else nc.addNum((int)d,0);
-  c = nc.compress();
-  for(int i =0 ; i < test_seq.length; ++i) {
-    if(Double.isNaN(test_seq[i]))
-      Assert.assertTrue(c.isNA(i));
-    else
-      Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +  test_seq[i],c.atd(i),0);
+
+  @Test public void testAddIllegalUUID() {
+    nc = new NewChunk(av, 0);
+    nc.addUUID(123L, 456L);
+    nc.addNA();
+    assertTrue(nc.isNA(1));
+    assertTrue(nc.isNA2(1));
+    try {
+      nc.addUUID(C16Chunk._LO_NA, C16Chunk._HI_NA);
+      assertTrue(nc.isNA(2));
+      fail("Expected a failure on adding an illegal value");
+    } catch(IllegalArgumentException iae) {
+      // as expected
+    }
+/* TODO(Vlad): fix after UUID checks get through
+    nc.addNum(Double.NEGATIVE_INFINITY);
+    nc.addNum(Double.POSITIVE_INFINITY);
+    try {
+      nc.addNum(Double.NaN);
+      fail("Expected a failure on adding an illegal value");
+    } catch(IllegalArgumentException iae) {
+      // as expected
+    }
+    */
   }
 
-}
+  @Ignore("Vlad: will fix it after UUID")
+  @Test public void testAddIllegalNum() {
+    nc = new NewChunk(av, 0);
 
-
+    nc.addNum(Math.PI);
+    nc.addNum(Double.NEGATIVE_INFINITY);
+    nc.addNum(Double.POSITIVE_INFINITY);
+    try {
+      nc.addNum(Double.NaN);
+      assertTrue(nc.isNA(3));
+      fail("Expected a failure on adding an illegal value");
+    } catch(IllegalArgumentException iae) {
+      // as expected
+    }
+  }
 
 }
 

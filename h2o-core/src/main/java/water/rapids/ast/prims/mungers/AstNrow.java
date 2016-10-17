@@ -27,6 +27,16 @@ public class AstNrow extends AstPrimitive {
   }
 
   @Override
+  public String example() {
+    return "(nrow frame)";
+  }
+
+  @Override
+  public String description() {
+    return "Return the number of rows in the frame.";
+  }
+
+  @Override
   public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     return new ValNum(fr.numRows());

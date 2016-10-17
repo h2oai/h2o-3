@@ -83,6 +83,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public final boolean isSupervised() { return _output.isSupervised(); }
   public boolean havePojo() { return false; }
   public boolean haveMojo() { return false; }
+
   public ToEigenVec getToEigenVec() { return null; }
 
   /** Model-specific parameter class.  Each model sub-class contains
@@ -1067,17 +1068,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return bs._mb;
   }
 
-  private class BigScore extends MRTask<BigScore> {
-    final String[] _domain; // Prediction domain; union of test and train classes
-    final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
-    ModelMetrics.MetricBuilder _mb;
+  protected class BigScore extends MRTask<BigScore> {
+    final protected String[] _domain; // Prediction domain; union of test and train classes
+    final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
+    public ModelMetrics.MetricBuilder _mb;
     final double[] _mean;  // Column means of test frame
-    final boolean _computeMetrics;  // Column means of test frame
-    final boolean _hasWeights;
-    final boolean _makePreds;
-    final Job _j;
+    final public boolean _computeMetrics;  // Column means of test frame
+    final public boolean _hasWeights;
+    final public boolean _makePreds;
+    final public Job _j;
 
-    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
+    public BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
       _j = j;
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
@@ -1129,7 +1130,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       if ( _j != null) _j.update(1);
     }
-    @Override public void reduce( BigScore bs ) { if(_mb != null)_mb.reduce(bs._mb); }
+    @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
   }
 
@@ -1200,13 +1201,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return _parms.checksum_impl() * _output.checksum_impl();
   }
 
-
-
   /**
    * Override this in models that support serialization into the MOJO format.
-   * @return a class that inherits from ModelMojo
+   * @return a class that inherits from ModelMojoWriter
    */
-  public ModelMojo getMojo() {
+  public ModelMojoWriter getMojo() {
     throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
   }
 
@@ -1425,7 +1424,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // is well, false is there are any mismatches.  Throws if there is any error
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon) {
-    final double fraction = 0.1;
+    return testJavaScoring(data, model_predictions, rel_epsilon, 1e-15, 0.1);
+  }
+  public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon) {
+    return testJavaScoring(data, model_predictions, rel_epsilon, abs_epsilon, 0.1);
+  }
+  public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon, double fraction) {
     Random rnd = RandomUtils.getRNG(data.byteSize());
     assert data.numRows() == model_predictions.numRows();
     Frame fr = new Frame(data);
@@ -1452,9 +1456,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       GenModel genmodel = null;
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
-      double features[] = null;
-      int totalMiss = 0;
-      int miss = 0;
+      double[] features = null;
+      int num_errors = 0;
+      int num_total = 0;
 
       // First try internal POJO via fast double[] API
       if (havePojo()) {
@@ -1473,6 +1477,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         // Compare predictions, counting mis-predicts
         for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
           if (rnd.nextDouble() >= fraction) continue;
+          num_total++;
 
           // Native Java API
           for (int col = 0; col < features.length; col++) // Build feature set
@@ -1481,20 +1486,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           for (int col = 0; col < pvecs.length; col++) { // Compare predictions
             double d = pvecs[col].at(row);                  // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
-            if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
-              if (miss++ < 10)
+            if (!MathUtils.compare(predictions[col], d, abs_epsilon, rel_epsilon)) {
+              if (num_errors++ < 10)
                 System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
+              break;
             }
           }
-          totalMiss += miss;
         }
       }
 
       // EasyPredict API with POJO and/or MOJO
-      for (int i=0; i< (haveMojo() ? 2 : 1); ++i) { //i=0 POJO, i=1 MOJO
-        if (i==0 && !havePojo()) continue;
-        if (i==1) { //MOJO
-          assert(haveMojo());
+      for (int i = 0; i < 2; ++i) {
+        if (i == 0 && !havePojo()) continue;
+        if (i == 1 && !haveMojo()) continue;
+        if (i == 1) {  // MOJO
           final String filename = modelName + ".zip";
           StreamingSchema ss = new StreamingSchema(getMojo(), filename);
           try {
@@ -1502,23 +1507,27 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             ss.getStreamWriter().writeTo(os);
             os.close();
             genmodel = MojoModel.load(filename);
-            new File(filename).delete();
             features = MemoryManager.malloc8d(genmodel._names.length);
           } catch (IOException e1) {
             e1.printStackTrace();
             throw H2O.fail("Internal MOJO loading failed", e1);
+          } finally {
+            boolean deleted = new File(filename).delete();
+            assert deleted : "Failed to delete the file";
           }
         }
 
         EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
         RowData rowData = new RowData();
         BufferedString bStr = new BufferedString();
-        for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
+        for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded
           if (rnd.nextDouble() >= fraction) continue;
           if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
+
+          // Generate input row
           for (int col = 0; col < features.length; col++) {
             if (dvecs[col].isString()) {
-              rowData.put(genmodel._names[col], dvecs[col].atStr(bStr, row));
+              rowData.put(genmodel._names[col], dvecs[col].atStr(bStr, row).toString());
             } else {
               double val = dvecs[col].at(row);
               rowData.put(
@@ -1529,36 +1538,68 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             }
           }
 
+          // Make a prediction
           AbstractPrediction p;
-          try { p=epmw.predict(rowData); }
-          catch (PredictException e) { continue; }
+          try {
+            p = epmw.predict(rowData);
+          } catch (PredictException e) {
+            num_errors++;
+            if (num_errors < 20) {
+              System.err.println("EasyPredict threw an exception when predicting row " + rowData);
+              e.printStackTrace();
+            }
+            continue;
+          }
+
+          // Convert model predictions and "internal" predictions into the same shape
+          double[] expected_preds = new double[pvecs.length];
+          double[] actual_preds = new double[pvecs.length];
           for (int col = 0; col < pvecs.length; col++) { // Compare predictions
             double d = pvecs[col].at(row); // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
             double d2 = Double.NaN;
-            switch( genmodel.getModelCategory()) {
-              case Clustering:  d2 = ((ClusteringModelPrediction) p).cluster;  break;
-              case Regression:  d2 = ((RegressionModelPrediction) p).value;    break;
-              case Binomial:       BinomialModelPrediction bmp = (   BinomialModelPrediction) p;
-                d2 = (col==0) ? bmp.labelIndex : bmp.classProbabilities[col-1];  break;
-              case Multinomial: MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
-                d2 = (col==0) ? mmp.labelIndex : mmp.classProbabilities[col-1];  break;
-              case DimReduction: d2 = ((DimReductionModelPrediction) p).dimensions[col]; break;
+            switch (genmodel.getModelCategory()) {
+              case Clustering:
+                d2 = ((ClusteringModelPrediction) p).cluster;
+                break;
+              case Regression:
+                d2 = ((RegressionModelPrediction) p).value;
+                break;
+              case Binomial:
+                BinomialModelPrediction bmp = (BinomialModelPrediction) p;
+                d2 = (col == 0) ? bmp.labelIndex : bmp.classProbabilities[col - 1];
+                break;
+              case Multinomial:
+                MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
+                d2 = (col == 0) ? mmp.labelIndex : mmp.classProbabilities[col - 1];
+                break;
+              case DimReduction:
+                d2 = ((DimReductionModelPrediction) p).dimensions[col];
+                break;
+            }
+            expected_preds[col] = d;
+            actual_preds[col] = d2;
+          }
 
-            }
-            if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
-              miss++;
-              if (miss < 20) {
-                System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", EasyPredict " + (i==0?"POJO":"MOJO") + " prediction=" + d2);
-                System.err.println("Row: " + rowData.toString());
+          // Verify the correctness of the prediction
+          num_total++;
+          for (int col = 0; col < pvecs.length; col++) {
+            if (!MathUtils.compare(actual_preds[col], expected_preds[col], abs_epsilon, rel_epsilon)) {
+              num_errors++;
+              if (num_errors < 20) {
+                System.err.println( (i == 0 ? "POJO" : "MOJO") + " EasyPredict Predictions mismatch for row " + rowData);
+                System.err.println("  Expected predictions: " + Arrays.toString(expected_preds));
+                System.err.println("  Actual predictions:   " + Arrays.toString(actual_preds));
               }
+              break;
             }
-            totalMiss += miss;
           }
         }
       }
-      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + (totalMiss > 20 ? " (only first 20 are shown)": ""));
-      return totalMiss==0;
+      if (num_errors != 0)
+        System.err.println("Number of errors: " + num_errors + (num_errors > 20 ? " (only first 20 are shown)": "") +
+                           " out of " + num_total + " rows tested.");
+      return num_errors == 0;
     } finally {
       cleanup_adapt(fr, data);  // Remove temp keys.
     }

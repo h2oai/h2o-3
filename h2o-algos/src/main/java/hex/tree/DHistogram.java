@@ -74,7 +74,7 @@ public final class DHistogram extends Iced {
   /**
    * Split direction for missing values.
    *
-   * Warning: If you change this enum, make sure to synchronize them with `hex.genmodel.utils.NaSplitDir` in
+   * Warning: If you change this enum, make sure to synchronize them with `hex.genmodel.algos.tree.NaSplitDir` in
    * package `h2o-genmodel`.
    */
   public enum NASplitDir {

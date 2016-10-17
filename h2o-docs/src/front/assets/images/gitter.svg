@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="48px" height="48px" viewBox="0 0 48 48" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 40.1 (33804) - http://www.bohemiancoding.com/sketch -->
+    <title>gitter-2</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <circle id="path-1" cx="24" cy="24" r="24"></circle>
+        <linearGradient x1="50%" y1="0%" x2="50%" y2="100%" id="linearGradient-3">
+            <stop stop-color="#FB0766" offset="0%"></stop>
+            <stop stop-color="#C50948" offset="100%"></stop>
+        </linearGradient>
+    </defs>
+    <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Footer-Copy-2" transform="translate(-1136.000000, -285.000000)">
+            <g id="Footer" transform="translate(0.000000, 23.000000)">
+                <g id="gitter-2" transform="translate(1136.000000, 262.000000)">
+                    <mask id="mask-2" fill="white">
+                        <use xlink:href="#path-1"></use>
+                    </mask>
+                    <use id="Oval-2" fill="#D8D8D8" xlink:href="#path-1"></use>
+                    <polygon id="Shape" fill="url(#linearGradient-3)" mask="url(#mask-2)" points="0 0 48 0 48 48 0 48"></polygon>
+                    <path d="M15.733875,11.7886875 L18.0823125,11.7886875 L18.0823125,27.287625 L15.733875,27.287625 L15.733875,11.7886875 L15.733875,11.7886875 Z M30.0118125,15.546 L32.3600625,15.546 L32.3600625,27.287625 L30.0118125,27.287625 L30.0118125,15.546 L30.0118125,15.546 Z M20.5245,15.546 L22.87275,15.546 L22.87275,36.258375 L20.5245,36.258375 L20.5245,15.546 L20.5245,15.546 Z M25.2211875,15.546 L27.569625,15.546 L27.569625,36.258375 L25.2211875,36.258375 L25.2211875,15.546 L25.2211875,15.546 Z" id="Shape" fill="#FFFFFF" mask="url(#mask-2)"></path>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

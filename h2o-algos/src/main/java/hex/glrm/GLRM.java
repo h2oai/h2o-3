@@ -6,6 +6,9 @@ import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 
 import hex.*;
+import hex.genmodel.algos.glrm.GlrmInitialization;
+import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.gram.Gram;
 import hex.gram.Gram.*;
@@ -28,7 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-import static hex.glrm.GlrmLoss.Quadratic;
+import static hex.genmodel.algos.glrm.GlrmLoss.Quadratic;
 
 /**
  * Generalized Low Rank Models
@@ -40,7 +43,7 @@ import static hex.glrm.GlrmLoss.Quadratic;
  */
 public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRMModel.GLRMOutput> {
   // Convergence tolerance
-  private final double TOLERANCE = 1e-6;
+  private static final double TOLERANCE = 1e-6;
 
   // Number of columns in the training set (n)
   private transient int _ncolA;
@@ -56,7 +59,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
   @Override protected GLRMDriver trainModelImpl() { return new GLRMDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Clustering}; }
-  public enum Initialization { Random, SVD, PlusPlus, User }
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -112,7 +114,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
     if (_parms._k < 1 || _parms._k > _ncolY) error("_k", "_k must be between 1 and " + _ncolY + " inclusive");
     if (_parms._user_y != null) { // Check dimensions of user-specified initial Y
-      if (_parms._init != GLRM.Initialization.User)
+      if (_parms._init != GlrmInitialization.User)
         error("_init", "init must be 'User' if providing user-specified points");
 
       Frame user_y = _parms._user_y.get();
@@ -140,7 +142,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     }
 
     if (_parms._user_x != null) { // Check dimensions of user-specified initial X
-      if (_parms._init != GLRM.Initialization.User)
+      if (_parms._init != GlrmInitialization.User)
         error("_init", "init must be 'User' if providing user-specified points");
 
       Frame user_x = _parms._user_x.get();
@@ -303,7 +305,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     private double[][] initialXY(DataInfo tinfo, Frame dfrm, GLRMModel model, long na_cnt) {
       double[][] centers, centers_exp = null;
 
-      if (_parms._init == Initialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
+      if (_parms._init == GlrmInitialization.User) { // Set X and Y to user-specified points if available, Gaussian matrix if not
         Frame userYFrame = _parms._user_y == null? null : _parms._user_y.get();
         if (userYFrame != null) {   // Set Y = user-specified initial points
           Vec[] yVecs = userYFrame.vecs();
@@ -351,12 +353,12 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         }
         return centers_exp;   // Don't project or change Y in any way if user-specified, just return it
 
-      } else if (_parms._init == Initialization.Random) {  // Generate X and Y from standard normal distribution
+      } else if (_parms._init == GlrmInitialization.Random) {  // Generate X and Y from standard normal distribution
         centers_exp = ArrayUtils.gaussianArray(_parms._k, _ncolY);
         InitialXProj xtsk = new InitialXProj(_parms, _ncolA, _ncolX);
         xtsk.doAll(dfrm);
 
-      } else if (_parms._init == Initialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y = right singular vectors
+      } else if (_parms._init == GlrmInitialization.SVD) {  // Run SVD on A'A/n (Gram) and set Y = right singular vectors
         SVDParameters parms = new SVDParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
@@ -373,7 +375,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         parms._save_v_frame = false;
 
         SVDModel svd = ModelCacheManager.get(parms);
-        if (svd == null) svd = new SVD(parms, _job).trainModelNested();
+        if (svd == null) svd = new SVD(parms, _job).trainModelNested(_rebalancedTrain);
         model._output._init_key = svd._key;
 
         // Ensure SVD centers align with adapted training frame cols
@@ -389,15 +391,14 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           dsqrt[i] = Math.sqrt(svd._output._d[i]);
           ArrayUtils.mult(centers_exp[i], dsqrt[i]);  // This gives one row of D^(1/2)V'
         }
-
         // b) Set X = UD^(1/2) = AVD^(-1/2)
         Frame uFrm = DKV.get(svd._output._u_key).get();
         assert uFrm.numCols() == _parms._k;
+        assert uFrm.isCompatible(dfrm);
         Frame fullFrm = (new Frame(uFrm)).add(dfrm);  // Jam matrices together into frame [U,A,X,W]
         InitialXSVD xtsk = new InitialXSVD(dsqrt, _parms._k, _ncolA, _ncolX);
         xtsk.doAll(fullFrm);
-
-      } else if (_parms._init == Initialization.PlusPlus) {  // Run k-means++ and set Y = resulting cluster centers, X = indicator matrix of assignments
+      } else if (_parms._init == GlrmInitialization.PlusPlus) {  // Run k-means++ and set Y = resulting cluster centers, X = indicator matrix of assignments
         KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
         parms._train = _parms._train;
         parms._ignored_columns = _parms._ignored_columns;
@@ -411,7 +412,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         parms._pred_indicator = true;
 
         KMeansModel km = ModelCacheManager.get(parms);
-        if (km == null) km = new KMeans(parms, _job).trainModelNested();
+        if (km == null) km = new KMeans(parms, _job).trainModelNested(_rebalancedTrain);
         model._output._init_key = km._key;
 
         // Score only if clusters well-defined and closed-form solution does not exist
@@ -557,6 +558,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
               new String[model._output._eigenvectors_raw.length][], model._output._eigenvectors_raw);
     }
 
+    private transient Frame _rebalancedTrain;
     @SuppressWarnings("ConstantConditions")  // Method too complex for IntelliJ
     @Override
     public void computeImpl() {
@@ -573,6 +575,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         model = new GLRMModel(dest(), _parms, new GLRMModel.GLRMOutput(GLRM.this));
         model.delete_and_lock(_job);
 
+        _rebalancedTrain = new Frame(_train);
         // Save adapted frame info for scoring later
         tinfo = new DataInfo(_train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE,
                              false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
@@ -626,7 +629,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);  // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         Archetypes ytnew = yt;
         double yreg = _parms._regularization_y.regularize(yt._archetypes);
-        if (!(_parms._init == Initialization.User && _parms._user_x != null) && hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
+        if (!(_parms._init == GlrmInitialization.User && _parms._user_x != null) && hasClosedForm(na_cnt))    // Set X to closed-form solution of ALS equation if possible for better accuracy
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
 
         // Compute initial objective function
@@ -1040,6 +1043,11 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       }
     }
   }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Update X step
+  //--------------------------------------------------------------------------------------------------------------------
 
   private static class UpdateX extends MRTask<UpdateX> {
     // Input

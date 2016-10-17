@@ -18,7 +18,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public ToEigenVec getToEigenVec() { return null; }
 
-  private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
+  transient private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
 
   public Job<M> _job;     // Job controlling this build
@@ -207,8 +207,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
             (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
   }
 
-  /** Train a model as part of a larger Job; the Job already exists and has started. */
-  final public M trainModelNested() {
+  /**
+   * Train a model as part of a larger Job;
+   *
+   * @param fr: Input frame override, ignored if null.
+   *   In some cases, algos do not work directly with the original frame in the K/V store.
+   *   Instead they run on a private anonymous copy (eg: reblanced dataset).
+   *   Use this argument if you want nested job to work on the actual working copy rather than the original Frame in the K/V.
+   *   Example: Outer job rebalances dataset and then calls nested job. To avoid needless second reblance, pass in the (already rebalanced) working copy.
+   * */
+  final public M trainModelNested(Frame fr) {
+    if(fr != null) // Use the working copy (e.g. rebalanced) instead of the original K/V store version
+      _train = fr;
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
@@ -368,6 +378,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
+      cv_mb._train = cvTrain;
       cv_mb._result = Key.make(identifier); // Each submodel gets its own key
       cv_mb._parms = (P) _parms.clone();
       // Fix up some parameters of the clone
@@ -760,7 +771,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_train", "Missing training frame");
       return;
     }
-    Frame tr = _parms.train();
+    Frame tr = _train != null?_train:_parms.train();
     if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
     _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
     if (expensive) {

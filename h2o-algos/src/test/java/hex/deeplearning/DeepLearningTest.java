@@ -1147,6 +1147,7 @@ public class DeepLearningTest extends TestUtil {
         dl = DKV.getGet(job.dest());
         try {
           pred = dl.score(tfr);
+          Assert.fail("Should toss exception instead of reaching here");
         } catch ( RuntimeException ex) {
           // OK
         }

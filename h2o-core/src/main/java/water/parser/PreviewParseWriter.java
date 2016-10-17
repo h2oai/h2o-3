@@ -140,7 +140,7 @@ public class PreviewParseWriter extends Iced implements ParseWriter {
       }
 
       // All same string or empty?
-      if( _domains[i].size() == 1  ) {
+      if( _domains[i].size() == 1 && _ndates[i]==0 ) {
         // Obvious NA, or few instances of the single string, declare numeric
         // else categorical
         types[i] = (_domains[i].containsKey("NA") ||

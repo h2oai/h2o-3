@@ -2,6 +2,9 @@ package hex.glrm;
 
 import hex.DataInfo;
 import hex.ModelMetrics;
+import hex.genmodel.algos.glrm.GlrmInitialization;
+import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -161,7 +164,7 @@ public class GLRMTest extends TestUtil {
       parms._regularization_y = GlrmRegularizer.Quadratic;
       parms._k = 3;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
-      parms._init = GLRM.Initialization.User;
+      parms._init = GlrmInitialization.User;
       parms._recover_svd = false;
       parms._user_y = yinit._key;
       parms._seed = seed;
@@ -192,7 +195,7 @@ public class GLRMTest extends TestUtil {
       parms._regularization_x = GlrmRegularizer.Quadratic;
       parms._regularization_y = GlrmRegularizer.Quadratic;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
-      parms._init = GLRM.Initialization.SVD;
+      parms._init = GlrmInitialization.SVD;
       parms._min_step_size = 1e-5;
       parms._recover_svd = false;
       parms._max_iterations = 2000;
@@ -230,7 +233,7 @@ public class GLRMTest extends TestUtil {
       parms._k = 4;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       // parms._init = GLRM.Initialization.PlusPlus;
-      parms._init = GLRM.Initialization.User;
+      parms._init = GlrmInitialization.User;
       parms._user_y = yinit._key;
       parms._max_iterations = 1000;
       parms._min_step_size = 1e-8;
@@ -265,7 +268,7 @@ public class GLRMTest extends TestUtil {
       parms._regularization_y = GlrmRegularizer.NonNegative;
       parms._gamma_x = parms._gamma_y = 1;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
-      parms._init = GLRM.Initialization.PlusPlus;
+      parms._init = GlrmInitialization.PlusPlus;
       parms._max_iterations = 100;
       parms._min_step_size = 1e-8;
       parms._recover_svd = true;
@@ -317,7 +320,7 @@ public class GLRMTest extends TestUtil {
         parms._regularization_x = GlrmRegularizer.None;
         parms._regularization_y = GlrmRegularizer.None;
         parms._transform = DataInfo.TransformType.STANDARDIZE;
-        parms._init = GLRM.Initialization.PlusPlus;
+        parms._init = GlrmInitialization.PlusPlus;
         parms._max_iterations = 1000;
         parms._seed = seed;
         parms._recover_svd = true;
@@ -363,7 +366,7 @@ public class GLRMTest extends TestUtil {
       parms._loss_by_col = new GlrmLoss[] { GlrmLoss.Absolute, GlrmLoss.Huber };
       parms._loss_by_col_idx = new int[] { 2 /* AGMT */, 5 /* DEG */ };
       parms._transform = DataInfo.TransformType.STANDARDIZE;
-      parms._init = GLRM.Initialization.PlusPlus;
+      parms._init = GlrmInitialization.PlusPlus;
       parms._min_step_size = 1e-5;
       parms._recover_svd = false;
       parms._max_iterations = 2000;
@@ -376,6 +379,38 @@ public class GLRMTest extends TestUtil {
       model.score(train).delete();
       ModelMetricsGLRM mm = (ModelMetricsGLRM)ModelMetrics.getFromDKV(model,train);
       Log.info("Numeric Sum of Squared Error = " + mm._numerr + "\tCategorical Misclassification Error = " + mm._caterr);
+    } finally {
+      if (train != null) train.delete();
+      if (model != null) model.delete();
+    }
+  }
+
+  @Test public void testMojo() throws InterruptedException, ExecutionException {
+    GLRM glrm;
+    GLRMModel model = null;
+    Frame train = null;
+
+    try {
+      Scope.enter();
+      train = parse_test_file(Key.<Frame>make("birds"), "./smalldata/pca_test/AustraliaCoast.csv");
+      GLRMParameters parms = new GLRMParameters();
+      parms._train = train._key;
+      parms._k = 4;
+      parms._loss = GlrmLoss.Quadratic;
+      parms._init = GlrmInitialization.Random;
+      parms._max_iterations = 2000;
+      parms._regularization_x = GlrmRegularizer.Quadratic;
+      parms._gamma_x = 0;
+      parms._gamma_y = 0;
+
+      glrm = new GLRM(parms);
+      model = glrm.trainModel().get();
+      assert model != null;
+
+      checkLossbyCol(parms, model);
+      boolean res = model.testJavaScoring(train, model._output._representation_key.get(), 1e-6, 1);
+      // Disable for now
+      // Assert.assertTrue(res);
     } finally {
       if (train != null) train.delete();
       if (model != null) model.delete();
@@ -400,7 +435,7 @@ public class GLRMTest extends TestUtil {
       GLRMParameters parms = new GLRMParameters();
       parms._train = train._key;
       parms._k = 4;
-      parms._init = GLRM.Initialization.User;
+      parms._init = GlrmInitialization.User;
       parms._user_y = init._key;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_svd = false;

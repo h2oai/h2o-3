@@ -641,24 +641,29 @@ public class NewChunk extends Chunk {
     else { addStr(c.atStr(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
   }
 
+  public void addUUID(UUID uuid) {
+    if (uuid == null) addNA();
+    else addUUID(uuid.getLeastSignificantBits(), uuid.getMostSignificantBits());
+  }
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
+    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
     if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
       append2slowUUID();
     _ms.set(_sparseLen,lo);
     _ds[_sparseLen] = Double.longBitsToDouble(hi);
+    if (_id != null) _id[_sparseLen] = _len;
     _sparseLen++;
     _len++;
     assert _sparseLen <= _len;
   }
   public void addUUID( Chunk c, long row ) {
-    if( c.isNA_abs(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
+    if (c.isNA_abs(row)) addNA();
     else addUUID(c.at16l_abs(row),c.at16h_abs(row));
   }
   public void addUUID( Chunk c, int row ) {
-    if( c.isNA(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
-    else addUUID(c.at16l(row),c.at16h(row));
+    addUUID(c, (long) row);
   }
 
   public final boolean isUUID(){return _ms != null && _ds != null; }
@@ -795,6 +800,7 @@ public class NewChunk extends Chunk {
     if( _ms != null && _sparseLen > 0 ) {
       _ds = MemoryManager.arrayCopyOf(_ds, _sparseLen * 2);
       _ms.resize(_sparseLen*2);
+      if(_id != null) _id = Arrays.copyOf(_id,_sparseLen*2);
     } else {
       _ms = new Mantissas(4);
       _xs = null;

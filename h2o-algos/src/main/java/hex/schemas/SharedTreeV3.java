@@ -61,7 +61,7 @@ public class SharedTreeV3<B extends SharedTree, S extends SharedTreeV3<B,S,P>, P
     @API(help="For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher values can lead to more overfitting.", level = API.Level.secondary, gridable = true)
     public int nbins_cats;
 
-    @API(help="Stop making trees when the R^2 metric equals or exceeds this", level = API.Level.secondary, gridable = true)
+    @API(help="r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds, stopping_metric and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2 metric equals or exceeds this", level = API.Level.secondary, gridable = true)
     public double r2_stopping;
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)

@@ -9,6 +9,7 @@ import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 /** Parsed data output specialized for fluid vecs.
  * @author tomasnykodym
@@ -116,9 +117,9 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
           _nvs[_col]._timCnt++; // Count histo of time parse patterns
         }
       } else if( _ctypes[colIdx] == Vec.T_UUID ) { // UUID column?  Only allow UUID parses
-        long[] uuid = ParseUUID.attemptUUIDParse(str);
+        UUID uuid = ParseUUID.attemptUUIDParse(str);
         // FIXME: what if colIdx > _nCols
-        if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(uuid[0], uuid[1]);
+        if( colIdx < _nCols ) _nvs[_col = colIdx].addUUID(uuid);
       } else if( _ctypes[colIdx] == Vec.T_STR ) {
         _nvs[_col = colIdx].addStr(str);
       } else { // categoricals

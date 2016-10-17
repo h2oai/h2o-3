@@ -98,7 +98,7 @@ public class GainsLift extends Iced {
         } else {
           qp._probs = new double[]{0.99, 0.98, 0.97, 0.96, 0.95, 0.9, 0.85, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1, 0};
         }
-        qm = job != null && !job.isDone() ? new Quantile(qp, job).trainModelNested() : new Quantile(qp).trainModel().get();
+        qm = job != null && !job.isDone() ? new Quantile(qp, job).trainModelNested(null) : new Quantile(qp).trainModel().get();
         _quantiles = qm._output._quantiles[0];
         // find uniques (is there a more elegant way?)
         TreeSet<Double> hs = new TreeSet<>();
@@ -202,7 +202,7 @@ public class GainsLift extends Iced {
       _thresh = thresh.clone();
     }
 
-    @Override public void map( Chunk ca, Chunk cp) { map(ca,cp,null); }
+    @Override public void map( Chunk ca, Chunk cp) { map(ca, cp, (Chunk)null); }
     @Override public void map( Chunk ca, Chunk cp, Chunk cw) {
       _events = new long[_thresh.length];
       _observations = new long[_thresh.length];
