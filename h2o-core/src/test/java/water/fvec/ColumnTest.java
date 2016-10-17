@@ -20,7 +20,7 @@ public class ColumnTest extends TestUtil {
   static public void setup() {  stall_till_cloudsize(1); }
 
   @Test
-  public void testOnVectorIsNA() throws Exception {
+  public void testIsNA() throws Exception {
     Column<Double> c = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       @Override public Double apply(Long i) {
         return (i > 10 && i < 20) ? null : Math.sin(i);

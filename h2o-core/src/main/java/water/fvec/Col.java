@@ -52,7 +52,7 @@ public class Col {
             TypedChunk<T> tc = newChunk(c);
             for (int r = 0; r < c._len; r++) {
               long i = r + c._start;
-              c.setAny(r, f.apply(i));
+              tc.set(r, f.apply(i));
             }
           }
         }
@@ -100,7 +100,9 @@ public class Col {
     @Override public TypedChunk<Double> newChunk(final Chunk c) {
       return new TypedChunk<Double>(c) {
         @Override Double get(int idx) { return c.isNA(idx) ? null : c.atd(idx); }
-        @Override void set(int idx, Double value) { c.set(idx, value); }
+        @Override void set(int idx, Double value) {
+          if (value == null) c.setNA(idx); else c.set(idx, value);
+        }
       };
     }
   };
@@ -108,7 +110,9 @@ public class Col {
   public static class OfDoubles extends OnVector<Double> {
     public OfDoubles(Vec vec) { super(vec, Vec.T_NUM); }
     @Override public Double get(long idx) { return vec.at(idx); }
-    @Override public void set(long idx, Double value) { vec.set(idx, value); }
+    @Override public void set(long idx, Double value) {
+      if (value == null) vec.setNA(idx); else vec.set(idx, value);
+    }
   }
 
   //-------------------------------------------------------------
@@ -145,7 +149,9 @@ public class Col {
     @Override public TypedChunk<Integer> newChunk(final Chunk c) {
       return new TypedChunk<Integer>(c) {
         @Override Integer get(int idx) { return c.isNA(idx) ? null : (int) c.at8(idx); }
-        @Override void set(int idx, Integer value) { c.set(idx, value); }
+        @Override void set(int idx, Integer value) {
+          if (value == null) c.setNA(idx); else c.set(idx, value);
+        }
       };
     }
 
@@ -178,7 +184,9 @@ public class Col {
     }
 
     @Override
-    public void set(long idx, Integer value) { vec.set(idx, value); }
+    public void set(long idx, Integer value) {
+      if (value == null) vec.setNA(idx); else vec.set(idx, value);
+    }
   }
 
   //-------------------------------------------------------------
@@ -213,7 +221,9 @@ public class Col {
     @Override public TypedChunk<Date> newChunk(final Chunk c) {
       return new TypedChunk<Date>(c) {
         @Override Date get(int idx) { return isNA(idx) ? null : new Date(c.at8(idx)); }
-        @Override void set(int idx, Date value) { c.set(idx, value.getTime()); }
+        @Override void set(int idx, Date value) {
+          if (value == null) c.setNA(idx); else c.set(idx, value.getTime());
+        }
       };
     }
   };
@@ -221,7 +231,9 @@ public class Col {
   public static class OfDates extends OnVector<Date> {
     OfDates(Vec vec) { super(vec, Vec.T_TIME); }
     @Override public Date get(long idx) { return isNA(idx) ? null : new Date(vec.at8(idx)); }
-    @Override public void set(long idx, Date value) { vec.set(idx, value.getTime()); }
+    @Override public void set(long idx, Date value) {
+      if (value == null) vec.setNA(idx); else vec.set(idx, value.getTime());
+    }
   }
 
   static String asString(Object x) { return x == null ? null : x.toString(); }

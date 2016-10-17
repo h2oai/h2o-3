@@ -570,22 +570,6 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.VectorHolder {
     return null;
   }
 
-  /**
-   * @param idx index of the value in Chunk
-   * @param x new value to set
-   * @return x on success, or null if something went wrong
-   */
-  public final Object setAny(int idx, Object x) {
-    return x instanceof String         ? set(idx, (String) x) :
-           x instanceof Double         ? set(idx, (Double)x) :
-           x instanceof Float          ? set(idx, (Float)x) :
-           x instanceof Long           ? set(idx, (Long)x) :
-           x instanceof Integer        ? set(idx, ((Integer)x).longValue()) :
-           x instanceof UUID           ? set(idx, (UUID) x) :
-           x instanceof java.util.Date ? set(idx, ((java.util.Date) x).getTime()) :
-           /* otherwise */               setUnknown(idx);
-      }
-
   /** After writing we must call close() to register the bulk changes.  If a
    *  NewChunk was needed, it will be compressed into some other kind of Chunk.
    *  The resulting Chunk (either a modified self, or a compressed NewChunk)
