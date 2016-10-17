@@ -369,8 +369,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     public boolean gpu;
 
     @API(level = API.Level.expert, direction=API.Direction.INOUT,
-        help = "Device ID (which GPU).")
-    public int device_id;
+        help = "Device IDs (which GPUs to use).")
+    public int[] device_id;
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT,
         help = "Path of file containing network definition (graph, architecture).")
