@@ -702,22 +702,29 @@
   }
 }
 #mega-menu-wrap-primary .mega-menu-toggle .mega-toggle-block-1:before {
-  content: '\f333';
+/*  content: '\f333';
   font-family: 'dashicons';
-  font-size: 24px;
+  font-size: 24px; */
+  background-image: url("../images/menu_close.png");
   margin: 0 0 0 5px;
   color: #fff;
 }
 #mega-menu-wrap-primary .mega-menu-toggle.mega-menu-open .mega-toggle-block-1:before {
-  content: '\f153';
+/*  content: '\f153'; */
+  background-repeat: no-repeat;
 }
 #mega-menu-wrap-primary .mega-menu-toggle .mega-toggle-block-1:after {
-  content: 'MENU';
+/*  content: 'MENU '; */
+  content: url("../images/menu_open.png");
   color: #fff;
   float: left;
+  background-position: right;
+  background-repeat: no-repeat;
 }
 #mega-menu-wrap-primary .mega-menu-toggle.mega-menu-open .mega-toggle-block-1:after {
-  content: 'MENU';
+/*  content: 'MENU'; */
+  content: url("../images/menu_close.png");
+  background-repeat: no-repeat;
 }
 #mega-menu-wrap-primary.mega-sticky {
   position: fixed;
