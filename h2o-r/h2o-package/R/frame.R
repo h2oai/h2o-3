@@ -1998,7 +1998,7 @@ summary.H2OFrame <- h2o.summary
 #' mean(prostate.hex$AGE)
 #' }
 #' @export
-h2o.mean <- function(x, ..., na.rm=TRUE) .eval.scalar(.newExpr("mean",x,na.rm))
+h2o.mean <- function(x, ..., na.rm=TRUE) .eval.scalar(.newExpr("getrow", .newExpr("mean",x,na.rm)))
 
 #' @rdname h2o.mean
 #' @export
