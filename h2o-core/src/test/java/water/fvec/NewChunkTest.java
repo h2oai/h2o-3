@@ -550,7 +550,7 @@ public class NewChunkTest extends TestUtil {
       nc.addStr("a");
       post();
       Assert.assertFalse(cc.isNA(0));
-      cc.set(0, null);
+      cc.set(0, (String)null);
       Assert.assertTrue(cc.isNA(0));
     } finally { remove(); }
   }
@@ -558,32 +558,33 @@ public class NewChunkTest extends TestUtil {
 private static double []  test_seq = new double[]{
     2,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,3,0,0,0,Double.NaN,Double.NaN,Double.NaN,Double.NaN,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,3,0,0,1,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,0,3,32,0,0,0,17,6,2,0,0,0,0,0,0,0,0,67,0,0,0,0,0,0,0
 };
-@Test public void testSparseWithMissing(){
+@Test public void testSparseWithMissing() {
   // DOUBLES
   av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
   nc = new NewChunk(av, 0);
-  for(double d:test_seq)
+  for (double d : test_seq)
     nc.addNum(d);
   Chunk c = nc.compress();
-  for(int i =0 ; i < test_seq.length; ++i) {
-    if(Double.isNaN(test_seq[i]))
+  for (int i = 0; i < test_seq.length; ++i) {
+    if (Double.isNaN(test_seq[i]))
       Assert.assertTrue(c.isNA(i));
     else
-      Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +  test_seq[i],c.atd(i),0);
+      Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +test_seq[i], c.atd(i), 0);
   }
   // INTS
   av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
   nc = new NewChunk(av, 0);
-  for(double d:test_seq)
-    if(Double.isNaN(d)) nc.addNA();
-    else nc.addNum((int)d,0);
+  for (double d : test_seq)
+    if (Double.isNaN(d)) nc.addNA();
+    else nc.addNum((int) d, 0);
   c = nc.compress();
-  for(int i =0 ; i < test_seq.length; ++i) {
-    if(Double.isNaN(test_seq[i]))
+  for (int i = 0; i < test_seq.length; ++i) {
+    if (Double.isNaN(test_seq[i]))
       Assert.assertTrue(c.isNA(i));
     else
-      Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +  test_seq[i],c.atd(i),0);
+      Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +test_seq[i], c.atd(i), 0);
   }
+}
 
   @Test
   public void testSetUUID() {
