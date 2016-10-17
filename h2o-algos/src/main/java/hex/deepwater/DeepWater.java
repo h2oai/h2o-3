@@ -14,6 +14,7 @@ import water.util.Log;
 import water.util.PrettyPrint;
 
 import java.util.Arrays;
+import java.util.UUID;
 
 import static hex.deepwater.DeepWaterModel.makeDataInfo;
 import static water.util.MRUtils.sampleFrame;
@@ -257,6 +258,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           if( validScoreFrame != val_fr ) Scope.track(validScoreFrame);
           if (!_parms._quiet_mode) Log.info("Number of chunks of the validation data: " + validScoreFrame.anyVec().nChunks());
         }
+        UUID.randomUUID();
 
         // Set train_samples_per_iteration size (cannot be done earlier since this depends on whether stratified sampling is done)
         // Determine whether shuffling is enforced
