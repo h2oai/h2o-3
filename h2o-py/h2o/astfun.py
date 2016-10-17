@@ -154,6 +154,7 @@ def _unop_bc(op, idx, ops, keys):
 def _func_bc(nargs, idx, ops, keys):
     named_args = {}
     unnamed_args = []
+    args = []
     while nargs > 0:
         if nargs >= 256:  # named args ( foo(50,True,x=10) ) read first  ( right -> left )
             arg, idx = _opcode_read_arg(idx, ops, keys)
@@ -172,12 +173,16 @@ def _func_bc(nargs, idx, ops, keys):
         if PY2:
             argspec = inspect.getargspec(getattr(frcls, op))
             argnames = argspec.args[1:]
-            argdefs = argspec.defaults or ()
+            argdefs = list(argspec.defaults)
         else:
-            argspec = inspect.signature(getattr(frcls, op))
-            argnames = list(argspec.parameters.keys())[1:]
-            argdefs = [i.default for i in list(argspec.parameters.values())[1:]]
-        args = unnamed_args + list(argdefs[len(unnamed_args):])
+            argnames = []
+            argdefs = []
+            for name, param in inspect.signature(getattr(frcls, op)).parameters.items():
+                if name == "self": continue
+                if param.kind == inspect._VAR_KEYWORD: continue
+                argnames.append(name)
+                argdefs.append(param.default)
+        args = unnamed_args + argdefs[len(unnamed_args):]
         for a in named_args: args[argnames.index(a)] = named_args[a]
     if op == "ceil": op = "ceiling"
     if op == "sum" and len(args) > 0 and args[0]: op = "sumNA"
