@@ -570,6 +570,11 @@ class H2OFrame(object):
     def flatten(self):
         return ExprNode("flatten", self)._eager_scalar()
 
+    def getrow(self):
+        if self.nrows != 1:
+            raise H2OValueError("This method can only be applied to single-row frames")
+        return ExprNode("getrow", self)._eager_scalar()
+
     def mult(self, matrix):
         """Perform matrix multiplication.
 
