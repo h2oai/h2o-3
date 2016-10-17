@@ -563,7 +563,7 @@ public abstract class Chunk extends Iced<Chunk> {
     return uuid;
   }
 
-  private Object setUnknown(int idx, Object x) {
+  private Object setUnknown(int idx) {
     setNA(idx);
     return null;
   }
@@ -581,7 +581,7 @@ public abstract class Chunk extends Iced<Chunk> {
            x instanceof Integer        ? set(idx, ((Integer)x).longValue()) :
            x instanceof UUID           ? set(idx, (UUID) x) :
            x instanceof java.util.Date ? set(idx, ((java.util.Date) x).getTime()) :
-           /* otherwise */               setUnknown(idx, x);
+           /* otherwise */               setUnknown(idx);
       }
 
   /** After writing we must call close() to register the bulk changes.  If a
