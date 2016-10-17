@@ -37,9 +37,9 @@ public class Col {
 
   public static abstract class Factory<T> implements Serializable {
     public abstract TypedChunk<T> newChunk(final Chunk c);
-    public abstract OnVector<T> newColumn(Vec vec);
+    public abstract TypedVector<T> newColumn(Vec vec);
 
-    public OnVector<T> newColumn(long len, final Function<Long, T> f) throws IOException {
+    public TypedVector<T> newColumn(long len, final Function<Long, T> f) throws IOException {
       return newColumn(makeVec(len, f));
     }
 
@@ -62,10 +62,10 @@ public class Col {
   }
 
 
-  public abstract static class OnVector<T> implements Column<T>, VectorHolder {
+  public abstract static class TypedVector<T> implements Column<T>, VectorHolder {
     protected Vec vec;
 
-    protected OnVector(Vec vec, byte type) {
+    protected TypedVector(Vec vec, byte type) {
       this.vec = vec;
       vec._type = type;
     }
@@ -95,7 +95,7 @@ public class Col {
 
   public static final Factory<Double> Doubles = new Factory<Double>() {
 
-    @Override public OnVector<Double> newColumn(Vec vec) { return new OfDoubles(vec); }
+    @Override public TypedVector<Double> newColumn(Vec vec) { return new OfDoubles(vec); }
 
     @Override public TypedChunk<Double> newChunk(final Chunk c) {
       return new TypedChunk<Double>(c) {
@@ -103,23 +103,25 @@ public class Col {
         @Override void set(int idx, Double value) {
           if (value == null) c.setNA(idx); else c.set(idx, value);
         }
+        public void set(int idx, double value) { c.set(idx, value); }
       };
     }
   };
 
-  public static class OfDoubles extends OnVector<Double> {
+  public static class OfDoubles extends TypedVector<Double> {
     public OfDoubles(Vec vec) { super(vec, Vec.T_NUM); }
     @Override public Double get(long idx) { return vec.at(idx); }
     @Override public void set(long idx, Double value) {
       if (value == null) vec.setNA(idx); else vec.set(idx, value);
     }
+    public void set(long idx, double value) { vec.set(idx, value); }
   }
 
   //-------------------------------------------------------------
 
   public static final Factory<String> Strings = new Factory<String>() {
 
-    @Override public OnVector<String> newColumn(Vec vec) { return new OfStrings(vec); }
+    @Override public TypedVector<String> newColumn(Vec vec) { return new OfStrings(vec); }
 
     @Override public TypedChunk<String> newChunk(final Chunk c) {
       return new TypedChunk<String>(c) {
@@ -129,7 +131,7 @@ public class Col {
     }
   };
 
-  public static class OfStrings extends OnVector<String> {
+  public static class OfStrings extends TypedVector<String> {
     public OfStrings(Vec vec) { super(vec, Vec.T_STR); }
 
     @Override
@@ -144,7 +146,7 @@ public class Col {
   //-------------------------------------------------------------
 
   static class EnumFactory extends Factory<Integer> {
-    @Override public OnVector<Integer> newColumn(Vec vec) { return new OfEnums(vec); }
+    @Override public TypedVector<Integer> newColumn(Vec vec) { return new OfEnums(vec); }
 
     @Override public TypedChunk<Integer> newChunk(final Chunk c) {
       return new TypedChunk<Integer>(c) {
@@ -152,10 +154,11 @@ public class Col {
         @Override void set(int idx, Integer value) {
           if (value == null) c.setNA(idx); else c.set(idx, value);
         }
+        public void set(int idx, int value) { c.set(idx, value); }
       };
     }
 
-    public OnVector<Integer> newColumn(long len, String[] domain, final Function<Long, Integer> f) throws IOException {
+    public TypedVector<Integer> newColumn(long len, String[] domain, final Function<Long, Integer> f) throws IOException {
       Vec vec = makeVec(len, f);
       vec.setDomain(domain);
       return newColumn(vec);
@@ -164,7 +167,7 @@ public class Col {
 
   public static final EnumFactory Enums = new EnumFactory();
 
-  public static class OfEnums extends OnVector<Integer> {
+  public static class OfEnums extends TypedVector<Integer> {
     private final String[] domain;
 
     public OfEnums(Vec vec) {
@@ -187,13 +190,15 @@ public class Col {
     public void set(long idx, Integer value) {
       if (value == null) vec.setNA(idx); else vec.set(idx, value);
     }
+
+    public void set(long idx, int value) { vec.set(idx, value); }
   }
 
   //-------------------------------------------------------------
 
   public static final Factory<UUID> UUIDs = new Factory<UUID>() {
 
-    @Override public OnVector<UUID> newColumn(Vec vec) { return new OfUUID(vec); }
+    @Override public TypedVector<UUID> newColumn(Vec vec) { return new OfUUID(vec); }
 
     @Override public TypedChunk<UUID> newChunk(final Chunk c) {
       return new TypedChunk<UUID>(c) {
@@ -203,7 +208,7 @@ public class Col {
     }
   };
 
-  public static class OfUUID extends OnVector<UUID> {
+  public static class OfUUID extends TypedVector<UUID> {
 
     OfUUID(Vec vec) { super(vec, Vec.T_UUID); }
 
@@ -216,7 +221,7 @@ public class Col {
   
   public static final Factory<Date> Dates = new Factory<Date>() {
 
-    @Override public OnVector<Date> newColumn(Vec vec) { return new OfDates(vec); }
+    @Override public TypedVector<Date> newColumn(Vec vec) { return new OfDates(vec); }
 
     @Override public TypedChunk<Date> newChunk(final Chunk c) {
       return new TypedChunk<Date>(c) {
@@ -228,7 +233,7 @@ public class Col {
     }
   };
 
-  public static class OfDates extends OnVector<Date> {
+  public static class OfDates extends TypedVector<Date> {
     OfDates(Vec vec) { super(vec, Vec.T_TIME); }
     @Override public Date get(long idx) { return isNA(idx) ? null : new Date(vec.at8(idx)); }
     @Override public void set(long idx, Date value) {
