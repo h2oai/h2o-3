@@ -173,7 +173,7 @@ def _func_bc(nargs, idx, ops, keys):
         if PY2:
             argspec = inspect.getargspec(getattr(frcls, op))
             argnames = argspec.args[1:]
-            argdefs = list(argspec.defaults)
+            argdefs = list(argspec.defaults or [])
         else:
             argnames = []
             argdefs = []
