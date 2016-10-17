@@ -62,7 +62,7 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public double _clip_gradient = 10.0;
   public boolean _gpu = true;
-  public int _device_id=0;
+  public int[] _device_id = new int[]{0};
 
   public Network _network = Network.auto;
   public Backend _backend = Backend.mxnet;
