@@ -41,9 +41,9 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
     _model._imageDataSet = new ImageDataSet(_model._width, _model._height, _model._channels);
 
     _model._opts = new RuntimeOptions();
-    _model._opts.setSeed(0); // ignored
-    _model._opts.setUseGPU(false); // don't use a GPU for inference
-    _model._opts.setDeviceID(0); // ignored
+    _model._opts.setSeed(0); // ignored - not needed during scoring
+    _model._opts.setUseGPU((boolean)readkv("gpu"));
+    _model._opts.setDeviceID((int[])readkv("device_id"));
 
     _model._backendParams = new BackendParams();
     _model._backendParams.set("mini_batch_size", 1);

@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 import static hex.ModelMetrics.calcVarImp;
@@ -73,11 +74,11 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
 
   Key actual_best_model_key;
 
-  private final String unstable_msg = technote(4,
+  static final String unstable_msg = technote(4,
       "\n\nTrying to predict with an unstable model." +
           "\nJob was aborted due to observed numerical instability (exponential growth)."
           + "\nEither the weights or the bias values are unreasonably large or lead to large activation values."
-          + "\nTry a different initial distribution, a bounded activation function (Tanh), adding regularization"
+          + "\nTry a different network architecture, a bounded activation function (tanh), adding regularization"
           + "\n(via dropout) or use a smaller learning rate and/or momentum.");
 
   public DeepWaterScoringInfo last_scored() { return (DeepWaterScoringInfo) super.last_scored(); }

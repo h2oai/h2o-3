@@ -61,6 +61,8 @@ public class DeepwaterMojoModel extends MojoModel {
     if (_nclasses > 1) {
       for (int i = 0; i < predFloats.length; ++i)
         preds[1 + i] = predFloats[i];
+      if (_balanceClasses)
+        GenModel.correctProbabilities(preds, _priorClassDistrib, _modelClassDistrib);
       preds[0] = GenModel.getPrediction(preds, _priorClassDistrib, doubles, _defaultThreshold);
     } else {
       if (_normRespMul!=null && _normRespSub!=null)
