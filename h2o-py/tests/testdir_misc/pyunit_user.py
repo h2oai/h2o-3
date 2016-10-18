@@ -19,7 +19,7 @@ def user():
     (a[0] + 2).show()  # Add 2 to every element; broadcast a constant
     (a[0] + a[1]).show()  # Add 2 columns; broadcast parallel add
     sum(a).show()
-    print(a["sepal_len"].mean()[0])
+    print(a["sepal_len"].mean())
 
     print()
     print("Rows 50 through 77 in the `sepal_len` column")
@@ -32,14 +32,14 @@ def user():
 
     a.show()
 
-    colmeans = a.mean()
-
     print("The column means: ")
-    print(colmeans)
+    print(a.mean())
     print()
 
-    try:                   print(a["Sepal_len"].dim)  # Error, mispelt column name
-    except Exception: pass  # Expected error
+    try:
+        print(a["Sepal_len"].dim)  # Error, misspelt column name
+    except Exception:
+        pass  # Expected error
 
     b = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))[0:4]
     c = a + b
@@ -52,7 +52,7 @@ def user():
     c = None
     # Internal "ExprNode(c=a+b)" not dead!
 
-    print(1 + (a[0] + b[1]).mean()[0])
+    print(1 + (a[0] + b[1]).mean())
 
     import collections
 
