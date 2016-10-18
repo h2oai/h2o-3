@@ -9,6 +9,17 @@ import water.util.UnsafeUtils;
 public class C8Chunk extends Chunk {
   protected static final long _NA = Long.MIN_VALUE;
   C8Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>3); }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i) {
+      long res = UnsafeUtils.get8(_mem,i<<3);
+      if(res == _NA)cf.addMissing(i);
+      else cf.addValue(res, i);
+    }
+    return cf;
+  }
+
   @Override protected final long at8_impl( int i ) {
     long res = UnsafeUtils.get8(_mem,i<<3);
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");

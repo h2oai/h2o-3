@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.util.UnsafeUtils;
 
 /**
  * The empty-compression function, if all elements fit directly on UNSIGNED bytes.
@@ -10,6 +11,27 @@ public class C1Chunk extends Chunk {
   static protected final int _OFF = 0;
   static protected final long _NA = 0xFF;
   C1Chunk(byte[] bs) { _mem=bs; _start = -1; set_len(_mem.length); }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i) {
+      long res = 0xFF&_mem[_OFF+i];
+      if(res == _NA)cf.addMissing(i);
+      else cf.addValue(res, i);
+    }
+    return cf;
+  }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+    for(int i:rows) {
+      long res = 0xFF&_mem[_OFF+i];
+      if(res == _NA)cf.addMissing(i);
+      else cf.addValue(res, i);
+    }
+    return cf;
+  }
+
   @Override protected final long at8_impl( int i ) {
     long res = 0xFF&_mem[i+_OFF];
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");

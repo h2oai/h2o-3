@@ -115,6 +115,30 @@ public abstract class Chunk extends Iced<Chunk> {
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
+  public static class ChunkFunctor {
+    public void addValue(double val, int id){throw H2O.unimpl();}
+    public void addMissing(int id){ addValue(Double.NaN,id);}
+    public void addValue(long val, int id){ addValue((double)val,id);}
+    public void addValue(BufferedString str, int id){throw H2O.unimpl();}
+    // reduced result if any
+    public Object result(){return null;}
+
+  }
+
+  public final ChunkFunctor processRows(ChunkFunctor cf) {return processRows(cf,0,_len);}
+
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i)
+      cf.addValue(atd(i), i);
+    return cf;
+  }
+
+  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+    for(int i:rows)
+      cf.addValue(atd(i), i);
+    return cf;
+  }
+
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
    * @param vals holds extracted values, length must be >= this.sparseLen()
