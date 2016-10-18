@@ -50,9 +50,6 @@ public class AstMean extends AstPrimitive {
       Frame fr = stk.track(val1).getFrame();
       boolean na_rm = asts[2].exec(env).getNum() == 1;
       boolean axis = asts.length == 4 && (asts[3].exec(env).getNum() == 1);
-      if (fr == null)
-        throw new IllegalArgumentException("Frame " + asts[1] + " does not exist");
-
       return axis? rowwiseMean(fr, na_rm) : colwiseMean(fr, na_rm);
     }
     else if (val1 instanceof ValRow) {
@@ -62,10 +59,13 @@ public class AstMean extends AstPrimitive {
       double d = 0;
       int n = 0;
       for (double r: row) {
-        if (Double.isNaN(r) && !na_rm)
-          return new ValRow(new double[]{Double.NaN}, null);
-        d += r;
-        n++;
+        if (Double.isNaN(r)) {
+          if (!na_rm)
+            return new ValRow(new double[]{Double.NaN}, null);
+        } else {
+          d += r;
+          n++;
+        }
       }
       return new ValRow(new double[]{d / n}, null);
     } else
@@ -147,7 +147,7 @@ public class AstMean extends AstPrimitive {
    * Compute column-wise means (i.e. means of each column), and return a frame having a single row.
    */
   private ValFrame colwiseMean(Frame fr, final boolean na_rm) {
-    Frame res = new Frame(Key.<Frame>make());
+    Frame res = new Frame();
 
     Vec vec1 = Vec.makeCon(null, 0);
     assert vec1.length() == 1;

@@ -11,6 +11,7 @@ import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
+import water.rapids.vals.ValRow;
 
 import java.util.ArrayList;
 
@@ -48,6 +49,16 @@ public class AstMeanTest extends TestUtil {
   //--------------------------------------------------------------------------------------------------------------------
   // Tests
   //--------------------------------------------------------------------------------------------------------------------
+
+  @Test public void testAstMeanGeneralStructure() {
+    AstMean a = new AstMean();
+    String[] args = a.args();
+    assertEquals(3, args.length);
+    String example = a.example();
+    assertTrue(example.startsWith("(mean "));
+    String description = a.description();
+    assertTrue("Description for AstMean is too short", description.length() > 100);
+  }
 
   @Test public void testColumnwiseMeanWithoutNaRm() {
     Frame fr = register(new Frame(Key.<Frame>make(),
@@ -142,6 +153,56 @@ public class AstMeanTest extends TestUtil {
     assertColFrameEquals(ard(15000000, 15000020, 15000030, 15000040, 15000060), res);
   }
 
+  @Test public void testRowwiseMeanOnEmptyFrame() {
+    Frame fr = register(new Frame(Key.<Frame>make()));
+    Val val = Rapids.exec("(mean " + fr._key + " 0 1)");
+    assertTrue(val instanceof ValFrame);
+    Frame res = register(val.getFrame());
+    assertEquals(res.numCols(), 0);
+    assertEquals(res.numRows(), 0);
+  }
+
+  @Test public void testRowwiseMeanOnFrameWithNonnumericColumnsOnly() {
+    Frame fr = register(new Frame(Key.<Frame>make(), ar("c1", "s1"), aro(vc2, vs1)));
+    Val val = Rapids.exec("(mean " + fr._key + " 1 1)");
+    assertTrue(val instanceof ValFrame);
+    Frame res = register(val.getFrame());
+    assertEquals("Unexpected column name", "mean", res.name(0));
+    assertEquals("Unexpected column type", Vec.T_NUM, res.types()[0]);
+    assertColFrameEquals(ard(Double.NaN, Double.NaN, Double.NaN, Double.NaN, Double.NaN), res);
+  }
+
+  @Test public void testBadFirstArgument() {
+    try {
+      Rapids.exec("(mean " + vi1._key + " 1 0)");
+      fail();
+    } catch (IllegalArgumentException ignored) {}
+    try {
+      Rapids.exec("(mean hello 1 0)");
+      fail();
+    } catch (IllegalArgumentException ignored) {}
+    try {
+      Rapids.exec("(mean 2 1 0)");
+      fail();
+    } catch (IllegalArgumentException ignored) {}
+  }
+
+  @Test public void testValRowArgument() {
+    Frame fr = register(new Frame(Key.<Frame>make(),
+            ar("i1", "d1", "d2", "d3"),
+            aro(vi1, vd1, vd2, vd3)
+    ));
+    Val val = Rapids.exec("(apply " + fr._key + " 1 {x . (mean x 1)})");  // skip NAs
+    assertTrue(val instanceof ValFrame);
+    Frame res = register(val.getFrame());
+    assertColFrameEquals(ard(1.7/4, 2.9/4, 4.1/3, 10.3/4, 10.0/3), res);
+
+    Val val2 = Rapids.exec("(apply " + fr._key + " 1 {x . (mean x 0)})");  // do not skip NAs
+    assertTrue(val2 instanceof ValFrame);
+    Frame res2 = register(val2.getFrame());
+    assertColFrameEquals(ard(1.7/4, 2.9/4, Double.NaN, 10.3/4, Double.NaN), res2);
+  }
+
 
   //--------------------------------------------------------------------------------------------------------------------
   // Helpers
@@ -164,7 +225,7 @@ public class AstMeanTest extends TestUtil {
   }
 
   private static Frame register(Frame f) {
-    DKV.put(f._key, f);
+    if (f._key != null) DKV.put(f._key, f);
     allFrames.add(f);
     return f;
   }
