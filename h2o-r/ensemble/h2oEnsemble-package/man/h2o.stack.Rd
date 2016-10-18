@@ -108,8 +108,8 @@ Erin LeDell \email{erin@h2o.ai}
     
 # An example of binary classification on a local machine using h2o.ensemble
 
-library(h2oEnsemble)  # Requires version >=0.1.8 of h2oEnsemble
-localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
+library(h2oEnsemble)
+localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
 
 
 # Import a sample binary outcome train/test set into R

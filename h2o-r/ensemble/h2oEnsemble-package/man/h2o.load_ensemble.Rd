@@ -30,9 +30,8 @@
 \dontrun{
 # An example of binary classification on a local machine using h2o.ensemble
   
-library(h2oEnsemble)  # Requires version >=0.0.4 of h2oEnsemble
-library(cvAUC)  # Used to calculate test set AUC (requires version >=1.0.1 of cvAUC)
-localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
+library(h2oEnsemble)
+localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
   
   
 # Import a sample binary outcome train/test set into R
@@ -49,21 +48,21 @@ test[,y] <- as.factor(test[,y])
   
 # Specify the base learner library & the metalearner
 learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
-               "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
+             "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
 metalearner <- "h2o.deeplearning.wrapper"
   
   
 # Train the ensemble using 5-fold CV to generate level-one data
 # More CV folds will take longer to train, but should increase performance
 fit <- h2o.ensemble(x = x, y = y, 
-                      training_frame = train, 
-                      family = family, 
-                      learner = learner, 
-                      metalearner = metalearner,
-                      cvControl = list(V = 5, shuffle = TRUE))
+                    training_frame = train, 
+                    family = family, 
+                    learner = learner, 
+                    metalearner = metalearner,
+                    cvControl = list(V = 5, shuffle = TRUE))
   
 # Save ensemble model (a collection of H2OModels and an RData object) to disk
-h2o.save_ensemble(fit, path = "./h2o-ensemble-model-loadtest", force = FALSE, export_levelone = FALSE)
+h2o.save_ensemble(fit, path = "./h2o-ensemble-model-loadtest")
 rm(fit)
   
 # Load model from disk
@@ -71,11 +70,11 @@ fit <- h2o.load_ensemble(path = "./h2o-ensemble-model-loadtest")
 
 # Generate predictions from ensemble model on a test set
 pp <- predict(fit, test)
-predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
+predictions <- as.data.frame(pp$pred)[,3]  # third column, p1 is P(Y==1)
 labels <- as.data.frame(test[,y])[,1]
 
-# Ensemble test AUC 
-cvAUC::AUC(predictions = predictions, labels = labels)
-# 0.7888723
+# Ensemble test AUC using suggested cvAUC package
+if (requireNamespace("cvAUC", quietly=TRUE))
+  cvAUC::AUC(predictions = predictions, labels = labels) # 0.7888723
 }
 }
