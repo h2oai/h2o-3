@@ -30,14 +30,14 @@ public class C0LChunk extends Chunk {
   @Override double max() { return _con; }
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int from, int to) {
     for(int i = from; i < to; ++i)
       cf.addValue(_con, i);
     return cf;
   }
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int [] rows) {
     for(int i:rows) cf.addValue(_con,i);
     return cf;
   }

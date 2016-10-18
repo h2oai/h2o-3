@@ -11,7 +11,7 @@ public class C8Chunk extends Chunk {
   C8Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>3); }
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int from, int to) {
     for(int i = from; i < to; ++i) {
       long res = UnsafeUtils.get8(_mem,i<<3);
       if(res == _NA)cf.addMissing(i);

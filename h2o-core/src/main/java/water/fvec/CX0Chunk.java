@@ -11,7 +11,7 @@ public final class CX0Chunk extends CXIChunk {
   // Sparse constructor
   protected CX0Chunk(int len, byte [] buf){super(len,0,buf);}
 
-  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int from, int to) {
     int startOff = from == 0?_OFF:findOffset(from);
     int endOff = to == _len?_mem.length:findOffset(to);
     final int inc = _ridsz;
