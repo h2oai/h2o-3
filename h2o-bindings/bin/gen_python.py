@@ -297,8 +297,11 @@ def help_epilogue_for(algo):
 def init_extra_for(algo):
     if algo == "deeplearning":
         return "if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True"
+    # TODO: Ugh: this should come from the metadata, not be hacked in here:
     if algo == "glrm":
         return """self._parms["_rest_version"] = 3"""
+    if algo == "stackedensemble":
+        return """self._parms["_rest_version"] = 99"""
 
 def class_extra_for(algo):
     if algo == "glm":
