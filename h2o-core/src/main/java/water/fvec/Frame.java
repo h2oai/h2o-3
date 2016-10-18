@@ -711,16 +711,12 @@ public class Frame extends Lockable<Frame> {
     if (v == null)
       return fs;
 
-    final int ncs = v.nChunks();
     _names = new String[0];
     _vecs = new Vec[0];
     _keys = makeVecKeys(0);
+
     // Bulk dumb local remove - no JMM, no ordering, no safety.
-    new MRTask() {
-      @Override public void setupLocal() {
-        for( Key k : keys ) if( k != null ) Vec.bulk_remove(k,ncs);
-      }
-    }.doAllNodes();
+    Vec.bulk_remove(keys, v.nChunks());
 
     return fs;
   }

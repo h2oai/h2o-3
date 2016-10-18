@@ -736,7 +736,14 @@ public class Vec extends Keyed<Vec> {
    *  contents. */
   public void preWriting( ) {
     if( !writable() ) throw new IllegalArgumentException("Vector not writable");
-    final Key rskey = rollupStatsKey();
+    setMutating(rollupStatsKey());
+  }
+
+  /**
+   * Marks the Vec as mutating. Vec needs to be marked as mutating whenever
+   * it is modified ({@link #preWriting()}) or removed ({@link #remove_impl(Futures)}).
+   */
+  private static void setMutating(Key rskey) {
     Value val = DKV.get(rskey);
     if( val != null ) {
       RollupStats rs = val.get(RollupStats.class);
@@ -1108,23 +1115,39 @@ public class Vec extends Keyed<Vec> {
    *  associated Chunks.
    *  @return Passed in Futures for flow-coding  */
   @Override public Futures remove_impl( Futures fs ) {
-    // Bulk dumb local remove - no JMM, no ordering, no safety.
-    final int ncs = nChunks();
-    new MRTask() {
-      @Override public void setupLocal() { bulk_remove(_key,ncs); }
-    }.doAllNodes();
+    bulk_remove(new Key[]{_key}, nChunks());
     return fs;
   }
+
+  static void bulk_remove( final Key[] keys, final int ncs ) {
+    // Need to mark the Vec as mutating to make sure that no running computations of RollupStats will
+    // re-insert the rollups into DKV after they are deleted in bulk_remove(Key, int).
+    Futures fs = new Futures();
+    for (Key key : keys) fs.add(new SetMutating().fork(chunkKey(key,-2)));
+    fs.blockForPending();
+    // Bulk dumb local remove - no JMM, no ordering, no safety.
+    // Remove Vecs everywhere first - important! (this should make simultaneously running Rollups to fail)
+    new MRTask() {
+      @Override public void setupLocal() {
+        for( Key k : keys ) if( k != null ) Vec.bulk_remove_vec(k, ncs);
+      }
+    }.doAllNodes();
+    // Remove RollupStats
+    new MRTask() {
+      @Override public void setupLocal() {
+        for( Key k : keys ) if( k != null ) H2O.raw_remove(chunkKey(k,-2));
+      }
+    }.doAllNodes();
+  }
+
   // Bulk remove: removes LOCAL keys only, without regard to total visibility.
   // Must be run in parallel on all nodes to preserve semantics, completely
   // removing the Vec without any JMM communication.
-  static void bulk_remove( Key vkey, int ncs ) {
+  private static void bulk_remove_vec( Key vkey, int ncs ) {
     for( int i=0; i<ncs; i++ ) {
       Key kc = chunkKey(vkey,i);
       H2O.raw_remove(kc);
     }
-    Key kr = chunkKey(vkey,-2); // Rollup Stats
-    H2O.raw_remove(kr);
     H2O.raw_remove(vkey);
   }
 
