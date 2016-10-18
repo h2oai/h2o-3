@@ -26,18 +26,19 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2ODeepWaterEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "checkpoint", "training_frame", "validation_frame", "nfolds",
-                      "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
-                      "fold_column", "response_column", "ignored_columns", "score_each_iteration",
-                      "categorical_encoding", "overwrite_with_best_model", "epochs", "train_samples_per_iteration",
-                      "target_ratio_comm_to_comp", "seed", "standardize", "learning_rate", "learning_rate_annealing",
-                      "momentum_start", "momentum_ramp", "momentum_stable", "distribution", "score_interval",
-                      "score_training_samples", "score_validation_samples", "score_duty_cycle", "stopping_rounds",
-                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "ignore_const_cols",
-                      "shuffle_training_data", "mini_batch_size", "clip_gradient", "network", "backend", "image_shape",
-                      "channels", "gpu", "device_id", "network_definition_file", "network_parameters_file",
-                      "mean_image_file", "export_native_parameters_prefix", "activation", "hidden",
-                      "input_dropout_ratio", "hidden_dropout_ratios", "problem_type"}
+        names_list = {"model_id", "checkpoint", "training_frame", "validation_frame", "nfolds", "balance_classes",
+                      "max_after_balance_size", "class_sampling_factors", "keep_cross_validation_predictions",
+                      "keep_cross_validation_fold_assignment", "fold_assignment", "fold_column", "response_column",
+                      "ignored_columns", "score_each_iteration", "categorical_encoding", "overwrite_with_best_model",
+                      "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp", "seed", "standardize",
+                      "learning_rate", "learning_rate_annealing", "momentum_start", "momentum_ramp", "momentum_stable",
+                      "distribution", "score_interval", "score_training_samples", "score_validation_samples",
+                      "score_duty_cycle", "stopping_rounds", "stopping_metric", "stopping_tolerance",
+                      "max_runtime_secs", "ignore_const_cols", "shuffle_training_data", "mini_batch_size",
+                      "clip_gradient", "network", "backend", "image_shape", "channels", "gpu", "device_id",
+                      "network_definition_file", "network_parameters_file", "mean_image_file",
+                      "export_native_parameters_prefix", "activation", "hidden", "input_dropout_ratio",
+                      "hidden_dropout_ratios", "problem_type"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -91,6 +92,47 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def nfolds(self, nfolds):
         assert_is_type(nfolds, None, int)
         self._parms["nfolds"] = nfolds
+
+
+    @property
+    def balance_classes(self):
+        """
+        bool: Balance training data class counts via over/under-sampling (for imbalanced data). (Default: False)
+        """
+        return self._parms.get("balance_classes")
+
+    @balance_classes.setter
+    def balance_classes(self, balance_classes):
+        assert_is_type(balance_classes, None, bool)
+        self._parms["balance_classes"] = balance_classes
+
+
+    @property
+    def max_after_balance_size(self):
+        """
+        float: Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
+        balance_classes. (Default: 5.0)
+        """
+        return self._parms.get("max_after_balance_size")
+
+    @max_after_balance_size.setter
+    def max_after_balance_size(self, max_after_balance_size):
+        assert_is_type(max_after_balance_size, None, float)
+        self._parms["max_after_balance_size"] = max_after_balance_size
+
+
+    @property
+    def class_sampling_factors(self):
+        """
+        List[float]: Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling
+        factors will be automatically computed to obtain class balance during training. Requires balance_classes.
+        """
+        return self._parms.get("class_sampling_factors")
+
+    @class_sampling_factors.setter
+    def class_sampling_factors(self, class_sampling_factors):
+        assert_is_type(class_sampling_factors, None, [float])
+        self._parms["class_sampling_factors"] = class_sampling_factors
 
 
     @property
@@ -450,10 +492,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def shuffle_training_data(self):
-        """
-        bool: Enable shuffling of training data (recommended if training data is replicated and
-        train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes). (Default: True)
-        """
+        """bool: Enable global shuffling of training data. (Default: True)"""
         return self._parms.get("shuffle_training_data")
 
     @shuffle_training_data.setter

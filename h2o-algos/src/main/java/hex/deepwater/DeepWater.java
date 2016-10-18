@@ -10,13 +10,16 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
+import water.util.MRUtils;
 import water.util.PrettyPrint;
 
 import java.util.Arrays;
 
 import static hex.deepwater.DeepWaterModel.makeDataInfo;
 import static water.util.MRUtils.sampleFrame;
+import static water.util.MRUtils.sampleFrameStratified;
 
 /**
  * Deep Learning Neural Net implementation based on MRTask
@@ -234,6 +237,21 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         Frame val_fr = _valid != null ? new Frame(mp._valid,_valid.names(), _valid.vecs()) : null;
 
         train = tra_fr;
+        if (model._output.isClassifier() && mp._balance_classes) {
+          _job.update(0,"Balancing class distribution of training data...");
+          float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
+          if (mp._class_sampling_factors != null) {
+            if (mp._class_sampling_factors.length != train.lastVec().domain().length)
+              throw new IllegalArgumentException("class_sampling_factors must have " + train.lastVec().domain().length + " elements");
+            trainSamplingFactors = mp._class_sampling_factors.clone(); //clone: don't modify the original
+          }
+          train = sampleFrameStratified(
+              train, train.lastVec(), train.vec(model._output.weightsName()), trainSamplingFactors, (long)(mp._max_after_balance_size*train.numRows()), mp._seed, true, false);
+          Vec l = train.lastVec();
+          Vec w = train.vec(model._output.weightsName());
+          MRUtils.ClassDist cd = new MRUtils.ClassDist(l);
+          model._output._modelClassDist = _weights != null ? cd.doAll(l, w).rel_dist() : cd.doAll(l).rel_dist();
+        }
         model.training_rows = train.numRows();
         model.actual_train_samples_per_iteration =
             _parms._train_samples_per_iteration > 0 ? _parms._train_samples_per_iteration : //user-given value (>0)
