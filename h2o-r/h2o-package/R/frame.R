@@ -2259,8 +2259,7 @@ scale.H2OFrame <- h2o.scale
 #' @seealso \code{\link[base]{log10}} for the base R implementation.
 #' @export
 h2o.log10 <- function(x) {
-  if(is.H2OFrame(x)) log10(x)
-  else log10(x)
+  log10(x)
 }
 
 #'
@@ -2271,8 +2270,7 @@ h2o.log10 <- function(x) {
 #' @seealso \code{\link[base]{log2}} for the base R implementation.
 #' @export
 h2o.log2 <- function(x) {
-  if(is.H2OFrame(x)) log2(x)
-  else log2(x)
+  log2(x)
 }
 
 #'
@@ -2283,8 +2281,7 @@ h2o.log2 <- function(x) {
 #' @seealso \code{\link[base]{log1p}} for the base R implementation.
 #' @export
 h2o.log1p <- function(x) {
-  if(is.H2OFrame(x)) log1p(x)
-  else log1p(x)
+  log1p(x)
 }
 
 #'
@@ -2296,8 +2293,7 @@ h2o.log1p <- function(x) {
 #' @seealso \code{\link[base]{trunc}} for the base R implementation.
 #' @export
 h2o.trunc <- function(x) {
-  if(is.H2OFrame(x)) trunc(x)
-  else trunc(x)
+  trunc(x)
 }
 
 #'
@@ -2308,8 +2304,7 @@ h2o.trunc <- function(x) {
 #' @seealso \code{\link[base]{dim}} for the base R implementation.
 #' @export
 h2o.dim <- function(x) {
-  if(is.H2OFrame(x)) dim(x)
-  else dim(x)
+  dim(x)
 }
 
 #'
@@ -2320,8 +2315,7 @@ h2o.dim <- function(x) {
 #' @seealso \code{\link[base]{dimnames}} for the base R implementation.
 #' @export
 h2o.dimnames <- function(x) {
-  if(is.H2OFrame(x)) dimnames(x)
-  else dimnames(x)
+  dimnames(x)
 }
 
 #'
@@ -2332,8 +2326,7 @@ h2o.dimnames <- function(x) {
 #' @seealso \code{\link[base]{names}} for the base R implementation.
 #' @export
 h2o.names <- function(x) {
-  if(is.H2OFrame(x)) names(x)
-  else names(x)
+  names(x)
 }
 
 #'
@@ -2344,8 +2337,7 @@ h2o.names <- function(x) {
 #' @seealso \code{\link[base]{colnames}} for the base R implementation.
 #' @export
 h2o.colnames <- function(x) {
-  if(is.H2OFrame(x)) colnames(x)
-  else colnames(x)
+  colnames(x)
 }
 
 #'
@@ -2356,8 +2348,7 @@ h2o.colnames <- function(x) {
 #' @seealso \code{\link[base]{is.factor}} for the base R implementation.
 #' @export
 h2o.isfactor <- function(x) {
-  if(is.H2OFrame(x)) is.factor(x)
-  else is.factor(x)
+  is.factor(x)
 }
 
 #'
@@ -2368,8 +2359,7 @@ h2o.isfactor <- function(x) {
 #' @seealso \code{\link[base]{is.numeric}} for the base R implementation.
 #' @export
 h2o.isnumeric <- function(x) {
-  if(is.H2OFrame(x)) is.numeric(x)
-  else is.numeric(x)
+  is.numeric(x)
 }
 
 #'
@@ -2380,8 +2370,7 @@ h2o.isnumeric <- function(x) {
 #' @seealso \code{\link[base]{is.character}} for the base R implementation.
 #' @export
 h2o.ischaracter <- function(x) {
-  if(is.H2OFrame(x)) is.character(x)
-  else is.character(x)
+  is.character(x)
 }
 
 #'
@@ -2392,8 +2381,7 @@ h2o.ischaracter <- function(x) {
 #' @seealso \code{\link[base]{as.factor}} for the base R implementation.
 #' @export
 h2o.asfactor <- function(x) {
-  if(is.H2OFrame(x)) as.factor(x)
-  else as.factor(x)
+  as.factor(x)
 }
 
 #'
@@ -2404,8 +2392,7 @@ h2o.asfactor <- function(x) {
 #' @seealso \code{\link[base]{as.numeric}} for the base R implementation.
 #' @export
 h2o.asnumeric <- function(x) {
-  if(is.H2OFrame(x)) as.numeric(x)
-  else as.numeric(x)
+  as.numeric(x)
 }
 
 #'
@@ -2416,8 +2403,7 @@ h2o.asnumeric <- function(x) {
 #' @seealso \code{\link[base]{as.character}} for the base R implementation.
 #' @export
 h2o.ascharacter <- function(x) {
-  if(is.H2OFrame(x)) as.character(x)
-  else as.character(x)
+  as.character(x)
 }
 
 #' Print An H2OFrame
@@ -2428,8 +2414,7 @@ h2o.ascharacter <- function(x) {
 #' @param ... Further arguments to be passed from or to other methods.
 #' @export
 h2o.print <- function(x,n=6L) {
-  if(is.H2OFrame(x)) print(x,n)
-  else print(x,n)
+  print(x,n)
 }
 
 #' Display the structure of an H2OFrame object
@@ -2439,8 +2424,7 @@ h2o.print <- function(x,n=6L) {
 #' @param cols Print the per-column str for the H2OFrame
 #' @export
 h2o.str <- function(object, ..., cols=FALSE) {
-  if(is.H2OFrame(object)) str(object, ..., cols)
-  else str(object, ..., cols)
+  str(object, ..., cols)
 }
 
 #'
@@ -2451,8 +2435,7 @@ h2o.str <- function(object, ..., cols=FALSE) {
 #' @seealso \code{\link[base]{cos}} for the base R implementation.
 #' @export
 h2o.cos <- function(x) {
-  if( is.H2OFrame(x) ) cos(x)
-  else cos(x)
+  cos(x)
 }
 
 #'
@@ -2463,8 +2446,7 @@ h2o.cos <- function(x) {
 #' @seealso \code{\link[base]{sin}} for the base R implementation.
 #' @export
 h2o.sin <- function(x) {
-  if( is.H2OFrame(x) ) sin(x)
-  else sin(x)
+  sin(x)
 }
 
 #'
@@ -2475,8 +2457,7 @@ h2o.sin <- function(x) {
 #' @seealso \code{\link[base]{acos}} for the base R implementation.
 #' @export
 h2o.acos <- function(x) {
-  if( is.H2OFrame(x) ) acos(x)
-  else acos(x)
+  acos(x)
 }
 
 #'
@@ -2487,8 +2468,7 @@ h2o.acos <- function(x) {
 #' @seealso \code{\link[base]{cosh}} for the base R implementation.
 #' @export
 h2o.cosh <- function(x) {
-  if( is.H2OFrame(x) ) cosh(x)
-  else cosh(x)
+  cosh(x)
 }
 
 #'
@@ -2499,8 +2479,7 @@ h2o.cosh <- function(x) {
 #' @seealso \code{\link[base]{tan}} for the base R implementation.
 #' @export
 h2o.tan <- function(x) {
-  if( is.H2OFrame(x) ) tan(x)
-  else tan(x)
+  tan(x)
 }
 
 #'
@@ -2511,8 +2490,7 @@ h2o.tan <- function(x) {
 #' @seealso \code{\link[base]{tanh}} for the base R implementation.
 #' @export
 h2o.tanh <- function(x) {
-  if( is.H2OFrame(x) ) tanh(x)
-  else tanh(x)
+  tanh(x)
 }
 
 #'
@@ -2523,8 +2501,7 @@ h2o.tanh <- function(x) {
 #' @seealso \code{\link[base]{exp}} for the base R implementation.
 #' @export
 h2o.exp <- function(x) {
-  if( is.H2OFrame(x) ) exp(x)
-  else exp(x)
+  exp(x)
 }
 
 #'
@@ -2535,8 +2512,8 @@ h2o.exp <- function(x) {
 #' @seealso \code{\link[base]{log}} for the base R implementation.
 #' @export
 h2o.log <- function(x) {
-  if( is.H2OFrame(x) ) log(x)
-  else log(x)
+  log(x)
+
 }
 
 #'
@@ -2547,8 +2524,7 @@ h2o.log <- function(x) {
 #' @seealso \code{\link[base]{sqrt}} for the base R implementation.
 #' @export
 h2o.sqrt <- function(x) {
-  if( is.H2OFrame(x) ) sqrt(x)
-  else sqrt(x)
+  sqrt(x)
 }
 
 #'
@@ -2559,8 +2535,7 @@ h2o.sqrt <- function(x) {
 #' @seealso \code{\link[base]{abs}} for the base R implementation.
 #' @export
 h2o.abs <- function(x) {
-  if( is.H2OFrame(x) ) abs(x)
-  else abs(x)
+  abs(x)
 }
 
 #'
@@ -2573,8 +2548,7 @@ h2o.abs <- function(x) {
 #' @seealso \code{\link[base]{ceiling}} for the base R implementation.
 #' @export
 h2o.ceiling <- function(x) {
-  if( is.H2OFrame(x) ) ceiling(x)
-  else ceiling(x)
+  ceiling(x)
 }
 
 #'
@@ -2587,8 +2561,7 @@ h2o.ceiling <- function(x) {
 #' @seealso \code{\link[base]{floor}} for the base R implementation.
 #' @export
 h2o.floor <- function(x) {
-  if( is.H2OFrame(x) ) floor(x)
-  else floor(x)
+  floor(x)
 }
 
 #'
@@ -2600,8 +2573,7 @@ h2o.floor <- function(x) {
 #' @seealso \code{\link[base]{sum}} for the base R implementation.
 #' @export
 h2o.sum <- function(x,na.rm = FALSE) {
-  if( is.H2OFrame(x) ) sum(x,na.rm)
-  else sum(x,na.rm)
+  sum(x,na.rm = na.rm)
 }
 
 #'
@@ -2612,8 +2584,7 @@ h2o.sum <- function(x,na.rm = FALSE) {
 #' @seealso \code{\link[base]{prod}} for the base R implementation.
 #' @export
 h2o.prod <- function(x) {
-  if( is.H2OFrame(x) ) prod(x)
-  else prod(x)
+  prod(x)
 }
 
 #'
@@ -2624,8 +2595,7 @@ h2o.prod <- function(x) {
 #' @seealso \code{\link[base]{all}} for the base R implementation.
 #' @export
 h2o.all <- function(x) {
-  if( is.H2OFrame(x) ) all(x)
-  else all(x)
+  all(x)
 }
 
 #'
@@ -2636,8 +2606,7 @@ h2o.all <- function(x) {
 #' @seealso \code{\link[base]{all}} for the base R implementation.
 #' @export
 h2o.any <- function(x) {
-  if( is.H2OFrame(x) ) all(x)
-  else all(x)
+  all(x)
 }
 
 #'
@@ -2649,8 +2618,7 @@ h2o.any <- function(x) {
 #' @seealso \code{\link[base]{min}} for the base R implementation.
 #' @export
 h2o.min <- function(x,na.rm = FALSE) {
-  if( is.H2OFrame(x) ) min(x,na.rm)
-  else min(x,na.rm)
+  min(x,na.rm = na.rm)
 }
 
 #'
@@ -2662,8 +2630,7 @@ h2o.min <- function(x,na.rm = FALSE) {
 #' @seealso \code{\link[base]{max}} for the base R implementation.
 #' @export
 h2o.max <- function(x,na.rm = FALSE) {
-  if( is.H2OFrame(x) ) max(x,na.rm)
-  else max(x,na.rm)
+  max(x,na.rm = na.rm)
 }
 
 #'
@@ -2674,8 +2641,7 @@ h2o.max <- function(x,na.rm = FALSE) {
 #' @seealso \code{\link[base]{nrow}} for the base R implementation.
 #' @export
 h2o.nrow <- function(x) {
-  if( is.H2OFrame(x) ) nrow(x)
-  else nrow(x)
+ nrow(x)
 }
 
 #'
@@ -2686,8 +2652,7 @@ h2o.nrow <- function(x) {
 #' @seealso \code{\link[base]{ncol}} for the base R implementation.
 #' @export
 h2o.ncol <- function(x) {
-  if( is.H2OFrame(x) ) ncol(x)
-  else ncol(x)
+ ncol(x)
 }
 
 #'
@@ -2700,8 +2665,7 @@ h2o.ncol <- function(x) {
 #' @seealso \code{\link[base]{range}} for the base R implementation.
 #' @export
 h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
-  if( is.H2OFrame(x) ) range(x,na.rm,finite)
-  else range(x,na.rm,finite)
+  range(x,na.rm = na.rm,finite)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
