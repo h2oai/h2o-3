@@ -75,11 +75,15 @@ public class MRUtils {
         ArrayUtils.shuffleArray(idx, getRNG(seed));
         for (long anIdx : idx) {
           for (int i = 0; i < ncs.length; i++) {
-            ncs[i].addNum(cs[i].atd((int) anIdx));
+            if (cs[i] instanceof CStrChunk) {
+              ncs[i].addStr(cs[i],cs[i].start()+anIdx);
+            } else {
+              ncs[i].addNum(cs[i].atd((int) anIdx));
+            }
           }
         }
       }
-    }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr.names(), fr.domains());
+    }.doAll(fr.types(), fr).outputFrame(fr.names(), fr.domains());
   }
 
   /**
@@ -282,8 +286,14 @@ public class MRUtils {
             sampling_reps = (int)sampling_ratios[label] + (rng.nextFloat() < remainder ? 1 : 0);
           }
           for (int i = 0; i < ncs.length; i++) {
-            for (int j = 0; j < sampling_reps; ++j) {
-              ncs[i].addNum(cs[i].atd(r));
+            if (cs[i] instanceof CStrChunk) {
+              for (int j = 0; j < sampling_reps; ++j) {
+                ncs[i].addStr(cs[i],cs[0].start()+r);
+              }
+            } else {
+              for (int j = 0; j < sampling_reps; ++j) {
+                ncs[i].addNum(cs[i].atd(r));
+              }
             }
           }
         }

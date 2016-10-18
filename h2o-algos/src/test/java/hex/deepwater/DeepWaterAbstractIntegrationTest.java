@@ -693,6 +693,10 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._backend = getBackend();
       p._train = (tr = parse_test_file("smalldata/deepwater/imagenet/binomial_image_urls.csv"))._key;
       p._response_column = "C2";
+      p._balance_classes = true;
+      p._epochs = 1;
+      p._max_after_balance_size = 2f;
+      p._class_sampling_factors = new float[]{3,5};
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
       Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);

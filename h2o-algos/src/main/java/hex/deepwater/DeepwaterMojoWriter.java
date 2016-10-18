@@ -43,6 +43,8 @@ class DeepwaterMojoWriter extends ModelMojoWriter<DeepWaterModel, DeepWaterParam
     writekv("norm_resp_mul", _output._normRespMul);
     writekv("norm_resp_sub", _output._normRespSub);
     writekv("use_all_factor_levels", _output._useAllFactorLevels);
+    writekv("gpu", _parms._gpu);
+    writekv("device_id", _parms._device_id);
 
     writeblob("model_network", _model_info._network);
     writeblob("model_params", _model_info._modelparams);
