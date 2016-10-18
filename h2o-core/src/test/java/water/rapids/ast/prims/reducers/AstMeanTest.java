@@ -153,6 +153,14 @@ public class AstMeanTest extends TestUtil {
     assertColFrameEquals(ard(15000000, 15000020, 15000030, 15000040, 15000060), res);
   }
 
+  @Test public void testRowwiseMeanOnFrameWithTimeAndNumericColumn() {
+    Frame fr = register(new Frame(Key.<Frame>make(), ar("t1", "i1"), aro(vt1, vi1)));
+    Val val = Rapids.exec("(mean " + fr._key + " 1 1)");
+    assertTrue(val instanceof ValFrame);
+    Frame res = register(val.getFrame());
+    assertColFrameEquals(ard(-1, -2, 0, 2, 1), res);
+  }
+
   @Test public void testRowwiseMeanOnEmptyFrame() {
     Frame fr = register(new Frame(Key.<Frame>make()));
     Val val = Rapids.exec("(mean " + fr._key + " 0 1)");

@@ -10,6 +10,7 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValRow;
 
+
 public class AstMean extends AstPrimitive {
   @Override
   public String[] args() {
@@ -40,7 +41,11 @@ public class AstMean extends AstPrimitive {
            "the NA values: if it is 1, then NAs are ignored; if it is 0, then presence of NAs renders the result " +
            "in that column (row) also NA.\n" +
            "Mean of a double / integer / binary column is a double value. Mean of a categorical / string / uuid " +
-           "column is NA. Mean of a time column is time. Mean of a column with 0 rows is NaN.";
+           "column is NA. Mean of a time column is time. Mean of a column with 0 rows is NaN.\n" +
+           "When computing row-wise means, we try not to mix columns of different types. In particular, if there " +
+           "are any numeric columns, then all time columns are omitted from computation. However when computing " +
+           "mean over multiple time columns, then the Time result is returned. Lastly, binary columns are treated " +
+           "as NAs always.";
   }
 
   @Override
@@ -80,11 +85,21 @@ public class AstMean extends AstPrimitive {
     String[] newnames = {"mean"};
     Key<Frame> newkey = Key.make();
 
+    // Determine how many columns of different types we have
+    int n_numeric = 0, n_time = 0;
+    for (Vec vec : fr.vecs()) {
+      if (vec.isNumeric()) n_numeric++;
+      if (vec.isTime()) n_time++;
+    }
+    // Compute the type of the resulting column: if all columns are TIME then the result is also time; otherwise
+    // if at least one column is numeric then the result is also numeric.
+    byte resType = n_numeric > 0? Vec.T_NUM : Vec.T_TIME;
+
     // Construct the frame over which the mean should be computed
     Frame compFrame = new Frame();
     for (int i = 0; i < fr.numCols(); i++) {
       Vec vec = fr.vec(i);
-      if (vec.isNumeric() || vec.isTime())
+      if (n_numeric > 0? vec.isNumeric() : vec.isTime())
         compFrame.add(fr.name(i), vec);
     }
     Vec anyvec = compFrame.anyVec();
@@ -99,20 +114,11 @@ public class AstMean extends AstPrimitive {
       } // else the original frame is empty, in which case we return an empty frame too
       return new ValFrame(res);
     }
-    if (!na_rm && compFrame.numCols() < fr.numCols()) {
+    if (!na_rm && n_numeric < fr.numCols() && n_time < fr.numCols()) {
       // If some of the columns are non-numeric and na_rm==false, then the result is a vec of NAs
       Frame res = new Frame(newkey, newnames, new Vec[]{anyvec.makeCon(Double.NaN)});
       return new ValFrame(res);
     }
-
-    // Compute the type of the resulting column: if all columns are TIME then the result is also time; otherwise
-    // if at least one column is numeric then the result is also numeric.
-    byte resType = Vec.T_TIME;
-    for (Vec v: compFrame.vecs())
-      if (v.isNumeric()) {
-        resType = Vec.T_NUM;
-        break;
-      }
 
     // Compute the mean over all rows
     final int numCols = compFrame.numCols();
