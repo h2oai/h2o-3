@@ -139,7 +139,7 @@ public class CBSChunk extends Chunk {
   }
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int from, int to) {
     for(int i = from; i < to; ++i) {
       byte b = atb(i);
       if(b == _NA)cf.addMissing(i);
@@ -149,7 +149,7 @@ public class CBSChunk extends Chunk {
   }
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int [] rows) {
     for(int i:rows) {
       byte b = atb(i);
       if(b == _NA)cf.addMissing(i);

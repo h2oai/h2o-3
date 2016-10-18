@@ -20,14 +20,14 @@ public class C1NChunk extends Chunk {
 
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int from, int to) {
     for(int i = from; i < to; ++i)
       cf.addValue(0xFF&_mem[i], i);
     return cf;
   }
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int [] rows) {
     for(int i: rows)
       cf.addValue(0xFF&_mem[i], i);
     return cf;

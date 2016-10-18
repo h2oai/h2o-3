@@ -19,7 +19,7 @@ public class C2SChunk extends Chunk {
   }
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int from, int to) {
     for(int i = from; i < to; ++i) {
       long res = UnsafeUtils.get2(_mem,_OFF+(i << 1));
       if(res == C2Chunk._NA)cf.addMissing(i);
@@ -29,7 +29,7 @@ public class C2SChunk extends Chunk {
   }
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int [] rows) {
     for(int i: rows) {
       long res = UnsafeUtils.get2(_mem,_OFF+(i << 1));
       if(res == C2Chunk._NA)cf.addMissing(i);

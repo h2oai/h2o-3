@@ -16,7 +16,7 @@ public class C4SChunk extends Chunk {
 
 
   @Override
-  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+  public ChunkFunctor processRows(final ChunkFunctor cf, int [] rows) {
     for(int i:rows) {
       long res = UnsafeUtils.get4(_mem,_OFF+(i << 2));
       if(res == C4Chunk._NA)cf.addMissing(i);

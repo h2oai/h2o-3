@@ -603,7 +603,7 @@ public final class DHistogram extends Iced {
   }
 
   public void updateSharedHistosAndReset(final ScoreBuildHistogram.LocalHisto lh,
-                                         final double[] ws, Chunk cs, final double[] ys,
+                                         final double[] ws, final Chunk cs, final double[] ys,
                                          int [] rows, int hi, int lo) {
     final double minmax[] = new double[]{_min2,_maxIn};
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
