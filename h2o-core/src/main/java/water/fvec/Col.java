@@ -48,8 +48,7 @@ public class Col {
     }
 
     protected Vec makeVec(long len, final Function<Long, T> f) throws IOException {
-      final Vec vec0 = Vec.makeZero(len);
-      vec0._type = typeCode;
+      final Vec vec0 = Vec.makeZero(len, typeCode);
 
       return new MRTask() {
         @Override

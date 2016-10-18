@@ -5,7 +5,6 @@ import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.util.*;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.UUID;
@@ -318,7 +317,11 @@ public class Vec extends Keyed<Vec> {
   }
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
-  public static Vec makeZero( long len ) { return makeCon(0d,len); }
+  public static Vec makeZero( long len ) { return makeZero(len, T_NUM); }
+
+  public static Vec makeZero(long len, byte typeCode) {
+    return makeCon(0.0, len, true, typeCode);
+  }
 
   /** Make a new constant vector with the given row count, and redistribute the data
    * evenly around the cluster.
@@ -333,8 +336,12 @@ public class Vec extends Keyed<Vec> {
   /** Make a new constant vector with the given row count. 
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, boolean redistribute) {
+    return makeCon(x,len,redistribute, T_NUM);
+  }
+
+  public static Vec makeCon(double x, long len, boolean redistribute, byte typeCode) {
     int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
-    return makeCon(x,len,log_rows_per_chunk,redistribute);
+    return makeCon(x,len,log_rows_per_chunk,redistribute, typeCode);
   }
 
   /** Make a new constant vector with the given row count, and redistribute the data evenly
@@ -362,6 +369,10 @@ public class Vec extends Keyed<Vec> {
   /** Make a new constant vector with the given row count.
    *  @return New constant vector with the given row count. */
   public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute) {
+    return makeCon(x, len, log_rows_per_chunk, redistribute, T_NUM);
+  }
+
+  public static Vec makeCon(double x, long len, int log_rows_per_chunk, boolean redistribute, byte typeCode) {
     int chunks0 = (int)Math.max(1,len>>log_rows_per_chunk); // redistribute = false
     int chunks1 = (int)Math.min( 4 * H2O.NUMCPUS * H2O.CLOUD.size(), len); // redistribute = true
     int nchunks = (redistribute && chunks0 < chunks1 && len > 10*chunks1) ? chunks1 : chunks0;
@@ -371,8 +382,9 @@ public class Vec extends Keyed<Vec> {
       espc[i] = redistribute ? espc[i-1]+len/nchunks : ((long)i)<<log_rows_per_chunk;
     espc[nchunks] = len;
     VectorGroup vg = VectorGroup.VG_LEN1;
-    return makeCon(x, vg, ESPC.rowLayout(vg._key, espc), T_NUM);
+    return makeCon(x, vg, ESPC.rowLayout(vg._key, espc), typeCode);
   }
+
 
   public Vec [] makeDoubles(int n, double [] values) {
     Key [] keys = group().addVecs(n);

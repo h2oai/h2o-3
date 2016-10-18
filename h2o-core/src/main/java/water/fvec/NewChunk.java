@@ -72,7 +72,9 @@ public class NewChunk extends Chunk {
       }
       return _vals4[id];
     }
-    public boolean isCategorical(int i) { return _vals1 !=  null && _vals1[i] == CATEGORICAL_1 || _vals4 != null && _vals4[i] == CATEGORICAL_2;}
+    public boolean isCategorical(int i) {
+      return _vals1 !=  null && _vals1[i] == CATEGORICAL_1 || _vals4 != null && _vals4[i] == CATEGORICAL_2;
+    }
 
     private static byte CATEGORICAL_1 = Byte.MIN_VALUE;
     private static int  CATEGORICAL_2 = Integer.MIN_VALUE;
