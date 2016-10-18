@@ -34,7 +34,7 @@ from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_fra
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, numeric, numpy_ndarray,
-                                  pandas_dataframe, U)
+                                  pandas_dataframe, scipy_sparse, U)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
 __all__ = ("H2OFrame", )
@@ -134,7 +134,10 @@ class H2OFrame(object):
 
     def _upload_python_object(self, python_obj, destination_frame=None, header=0, separator=",",
                               column_names=None, column_types=None, na_strings=None):
-        assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe)
+        assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
+        if is_type(python_obj, scipy_sparse):
+            self._upload_sparse_matrix(python_obj, destination_frame=destination_frame)
+            return
         # TODO: all these _handle*rs should really belong to this class, not to shared_utils.
         processor = (_handle_pandas_data_frame if is_type(python_obj, pandas_dataframe) else
                      _handle_numpy_array if is_type(python_obj, numpy_ndarray) else
@@ -161,6 +164,49 @@ class H2OFrame(object):
         self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings)
         os.remove(tmp_path)  # delete the tmp file
 
+
+    def _upload_sparse_matrix(self, matrix, destination_frame=None):
+        import scipy.sparse as sp
+        if not sp.issparse(matrix):
+            return H2OValueError("A sparse matrix expected, got %s" % type(matrix))
+
+        tmp_handle, tmp_path = tempfile.mkstemp(suffix=".svmlight")
+        out = os.fdopen(tmp_handle, "wb")
+        if destination_frame is None:
+            destination_frame = _py_tmp_key(h2o.connection().session_id)
+
+        # sp.find(matrix) returns (row indices, column indices, values) of the non-zero elements of A. Unfortunately
+        # there is no guarantee that those elements are returned in the correct order, so need to sort
+        data = zip(*sp.find(matrix))
+        if not isinstance(data, list): data = list(data)  # possibly convert from iterator to a list
+        data.sort()
+        idata = 0  # index of the next element to be consumed from `data`
+        for irow in range(matrix.shape[0]):
+            if idata < len(data) and data[idata][0] == irow and data[idata][1] == 0:
+                y = data[idata][2]
+                idata += 1
+            else:
+                y = 0
+            out.write(str(y))
+            while idata < len(data) and data[idata][0] == irow:
+                out.write(" ")
+                out.write(str(data[idata][1]))
+                out.write(":")
+                out.write(str(data[idata][2]))
+                idata += 1
+            out.write("\n")
+        out.close()
+
+        ret = h2o.api("POST /3/PostFile", filename=tmp_path)
+        os.remove(tmp_path)
+        rawkey = ret["destination_frame"]
+
+        p = {"source_frames": [rawkey], "destination_frame": destination_frame}
+        H2OJob(h2o.api("POST /3/ParseSVMLight", data=p), "Parse").poll()
+        self._ex._cache._id = destination_frame
+        self._ex._cache.fill()
+
+
     @staticmethod
     def get_frame(frame_id):
         """
@@ -180,6 +226,7 @@ class H2OFrame(object):
         """Reload frame information from the backend h2o server."""
         self._ex._cache.flush()
         self._frame(True)
+
 
     #-------------------------------------------------------------------------------------------------------------------
     # Frame properties
