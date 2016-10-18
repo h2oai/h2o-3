@@ -101,6 +101,13 @@ public interface Freezable<T extends Freezable> extends Cloneable {
    *  In most cases, just use the Autobuffer version.
    *  @return serialized bytes */
   byte [] asBytes();
+
+  /**
+   * Whether the bytes provided by asBytes() are compressed and need
+   * to be decompressed by IcedUtils.decompress first
+   * @return boolean flag
+   */
+  boolean hasCompressedBytes();
   /**
    * Replace yourself with deserialized version from the given bytes.
    * Useful for Freezables directly supported by byte array (@see Chunk).

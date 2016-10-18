@@ -180,6 +180,12 @@ public class AutoSerialTest extends Iced {
 
   // test that simple freezable works (gets autoserializaed correctly)
   public static class SimpleFreezableTest implements Freezable<SimpleFreezableTest>, Serializable {
+
+    @Override
+    public boolean hasCompressedBytes() {
+      return false;
+    }
+
     final int x;
     double y;
     String str;

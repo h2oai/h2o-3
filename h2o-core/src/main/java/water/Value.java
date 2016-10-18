@@ -3,6 +3,8 @@ package water;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.zip.DataFormatException;
+
 import jsr166y.ForkJoinPool;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -78,6 +80,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   private volatile byte[] _mem;
   final byte[] rawMem() { return _mem; }
 
+  // Helper to store internal flags such as compression flags
+  private byte _flags;
+  private static byte COMPRESSION = 0x01; //the first bit is used for compression
+  private boolean checkFlagSet(byte mask) { return (_flags & mask) == mask; }
+
   // ---
   // A POJO version of the _mem array, or null if the _mem has not been
   // serialized or if _mem is primitive data and not a POJO.  Cleared to null
@@ -111,10 +118,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  @return byte[] holding the serialized POJO  */
   public final byte[] memOrLoad() {
     byte[] mem = _mem;          // Read once!
-    if( mem != null ) return mem;
+    if( mem != null)
+      return checkFlagSet(COMPRESSION) ? IcedUtils.decompress(mem) : mem;
     Freezable pojo = _pojo;     // Read once!
     if( pojo != null )          // Has the POJO, make raw bytes
-      return _mem = pojo.asBytes();
+      return checkFlagSet(COMPRESSION) ? IcedUtils.decompress(pojo.asBytes()) : pojo.asBytes();
     if( _max == 0 ) return (_mem = new byte[0]);
     return (_mem = loadPersist());
   }
@@ -310,21 +318,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   Value(Key k, byte[] mem ) { this(k, mem.length, mem, TypeMap.PRIM_B, ICE); }
   Value(Key k, String s ) { this(k, s.getBytes()); }
   Value(Key k, Iced pojo ) { this(k,pojo,ICE); }
-  Value(Key k, Iced pojo, byte be ) {
-    _key = k;
-    _pojo = pojo;
-    _type = (short)pojo.frozenType();
-    _mem = pojo.asBytes();
-    _max = _mem.length;
-    assert _max < MAX : "Value size = " + _max + " (0x"+Integer.toHexString(_max) + ") >= (MAX=" + MAX + ").";
-    // For the ICE backend, assume new values are not-yet-written.
-    // For HDFS & NFS backends, assume we from global data and preserve the
-    // passed-in persist bits
-    byte p = (byte)(be&BACKEND_MASK);
-    _persist = (p==ICE) ? p : be;
-    _rwlock = new AtomicInteger(1);
-    _replicas = null;
-  }
   /** Standard constructor to build a Value from a POJO and a Key.  */
   public Value(Key k, Freezable pojo) { this(k,pojo,ICE); }
   Value(Key k, Freezable pojo, byte be) {
@@ -332,6 +325,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _pojo = pojo;
     _type = (short)pojo.frozenType();
     _mem = pojo.asBytes();
+    if (pojo.hasCompressedBytes())
+      _flags |= COMPRESSION;
     _max = _mem.length;
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
