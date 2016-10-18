@@ -126,7 +126,7 @@ class H2OFrame(object):
         assert_is_type(separator, I(str, lambda s: len(s) == 1))
         assert_is_type(column_names, None, [str])
         assert_is_type(column_types, None, [coltype])
-        assert_is_type(na_strings, None, [str])
+        assert_is_type(na_strings, None, [str], [[str]], { str: [str] })
         fr = H2OFrame()
         fr._upload_python_object(python_obj, destination_frame, header, separator, column_names, column_types,
                                  na_strings)
