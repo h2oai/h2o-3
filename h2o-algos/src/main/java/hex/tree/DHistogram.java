@@ -3,6 +3,7 @@ package hex.tree;
 import com.google.common.util.concurrent.AtomicDouble;
 import sun.misc.Unsafe;
 import water.*;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
@@ -601,34 +602,33 @@ public final class DHistogram extends Iced {
     return new DTree.Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
   }
 
-  public void updateSharedHistosAndReset(ScoreBuildHistogram.LocalHisto lh, double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo) {
-    double minmax[] = new double[]{_min2,_maxIn};
+  public void updateSharedHistosAndReset(final ScoreBuildHistogram.LocalHisto lh,
+                                         final double[] ws, Chunk cs, final double[] ys,
+                                         int [] rows, int hi, int lo) {
+    final double minmax[] = new double[]{_min2,_maxIn};
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
-    for(int r = lo; r< hi; ++r) {
-      int k = rows[r];
-      double weight = ws[k];
-      if (weight == 0) continue;
-      double col_data = cs[k];
-      if( col_data < minmax[0] ) minmax[0] = col_data;
-      if( col_data > minmax[1] ) minmax[1] = col_data;
-      double y = ys[k];
-      assert(!Double.isNaN(y));
-      double wy = weight * y;
-      double wyy = wy * y;
-      if (Double.isNaN(col_data)) {
-        //separate bucket for NA - atomically added to the shared histo
-        _wNA.addAndGet(weight);
-        _wYNA.addAndGet(wy);
-        _wYYNA.addAndGet(wyy);
-      } else {
-        // increment local pre-thread histograms
-        int b = bin(col_data);
-        lh.wAdd(b,weight);
-        lh.wYAdd(b,wy);
-        lh.wYYAdd(b,wyy);
+    cs.processRows(new Chunk.ChunkFunctor() {
+      @Override public void addValue(double col_data, int k) {
+        double w = ws[k];
+        if (w == 0) return;
+        if( col_data < minmax[0] ) minmax[0] = col_data;
+        if( col_data > minmax[1] ) minmax[1] = col_data;
+        double resp = ys[k];
+        double wy = w*resp;
+        double wyy = wy*resp;
+        if (Double.isNaN(col_data)) {
+          _wNA.addAndGet(w);
+          _wYNA.addAndGet(wy);
+          _wYYNA.addAndGet(wyy);
+        } else {
+          int b = bin(col_data); // Compute bin# via linear interpolation
+          lh.wAdd(b, w);
+          lh.wYAdd(b, wy);
+          lh.wYYAdd(b, wyy);
+        }
       }
-    }
+    }, Arrays.copyOfRange(rows, lo, hi));
 
     // Atomically update histograms
     setMin(minmax[0]);       // Track actual lower/upper bound per-bin

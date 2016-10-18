@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.util.UnsafeUtils;
 
 /**
  * The empty-compression function, if all elements fit directly on UNSIGNED bytes.
@@ -16,6 +17,23 @@ public class C1NChunk extends Chunk {
   @Override boolean set_impl(int i, double d) { return false; }
   @Override boolean set_impl(int i, float f ) { return false; }
   @Override boolean setNA_impl(int idx) { return false; }
+
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i)
+      cf.addValue(0xFF&_mem[i], i);
+    return cf;
+  }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+    for(int i: rows)
+      cf.addValue(0xFF&_mem[i], i);
+    return cf;
+  }
+
+
   @Override public NewChunk inflate_impl(NewChunk nc) {
     nc.alloc_exponent(_len);
     nc.alloc_mantissa(_len);

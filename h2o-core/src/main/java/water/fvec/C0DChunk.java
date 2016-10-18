@@ -23,6 +23,20 @@ public class C0DChunk extends Chunk {
     if( Double.isNaN(_con) ) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)_con;          // Possible silent truncation
   }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i)
+      cf.addValue(_con, i);
+    return cf;
+  }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+    for(int i:rows) cf.addValue(_con,i);
+    return cf;
+  }
+
   @Override protected final double atd_impl( int i ) {return _con;}
   @Override protected final boolean isNA_impl( int i ) { return Double.isNaN(_con); }
   @Override boolean set_impl(int idx, long l) { return l==_con; }

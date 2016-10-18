@@ -10,6 +10,29 @@ public class C2Chunk extends Chunk {
   static protected final long _NA = Short.MIN_VALUE;
   static protected final int _OFF=0;
   C2Chunk( byte[] bs ) { _mem=bs; _start = -1; set_len(_mem.length>>1); }
+
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int from, int to) {
+    for(int i = from; i < to; ++i) {
+      long res = UnsafeUtils.get2(_mem,i<<1);
+      if(res == _NA)cf.addMissing(i);
+      else cf.addValue(res, i);
+    }
+    return cf;
+  }
+
+  @Override
+  public ChunkFunctor processRows(ChunkFunctor cf, int [] rows) {
+    for(int i:rows) {
+      long res = UnsafeUtils.get2(_mem,i<<1);
+      if(res == _NA)cf.addMissing(i);
+      else cf.addValue(res, i);
+    }
+    return cf;
+  }
+
+
   @Override protected final long at8_impl( int i ) {
     int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
