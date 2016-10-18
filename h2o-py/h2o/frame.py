@@ -2643,15 +2643,16 @@ def _binop(lhs, op, rhs):
     if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame):
         lrows, lcols = lhs.shape
         rrows, rcols = rhs.shape
-        if lrows == rrows:
-            if lcols != rcols and lcols > 1 and rcols > 1:  # The server also accepts 0 and 1 columns
-                raise H2OValueError("Attempting to operate on incompatible frames: number of columns "
-                                    "must match; got %d columns on the left and %d columns on the right"
-                                    % (lcols, rcols))
-        else:
-            if lcols != rcols or (lrows > 1 and rrows > 1):
-                raise H2OValueError("Attempting to operate on incompatible frames: number of rows does not "
-                                    "match: got %d rows on the left and %d rows on the right"
-                                    % (lrows, rrows))
+        compatible = ((lcols == rcols and lrows == rrows) or
+                      (lcols == 1 and lrows == rrows) or
+                      (lcols == 1 and lrows == 1) or
+                      (rcols == 1 and lrows == rrows) or
+                      (rcols == 1 and rrows == 1) or
+                      (lrows == 1 and lcols == rcols) or
+                      (rrows == 1 and lcols == rcols)
+                      )
+        if not compatible:
+            raise H2OValueError("Attempting to operate on incompatible frames: (%d x %d) and (%d x %d)"
+                                % (lrows, lcols, rrows, rcols))
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
     return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)
