@@ -7,15 +7,25 @@ import water.*;
 import water.util.Log;
 import water.util.PrettyPrint;
 
+import java.util.Random;
+
 public class ChunkSpeedTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
   final int cols = 100;
-  final int rows = 100000;
-  final int rep = 10;
+  final int rows = 1000;
+  final int rep = 1000;
   final double[][] raw = new double[cols][rows];
   Chunk[] chunks = new Chunk[cols];
+  static byte[] buf = new byte[10000000];
+  static {
+    new Random().nextBytes(buf);
+  }
 
+  //double f(double x) { return x; }
+  //double f(double x) { return Math.sqrt(x*x); }
+  //double f(double x) { return Math.tanh(x); }
+  double f(double x) { return buf[Math.abs((int)x) % 10000000]; }
 
   @Test
   public void run() {
@@ -89,7 +99,7 @@ public class ChunkSpeedTest extends TestUtil {
         start = System.currentTimeMillis();
       for (int j=0; j<cols; ++j) {
         for (int i = 0; i < rows; ++i) {
-          sum += raw[j][i];
+          sum += f(raw[j][i]);
         }
       }
     }
@@ -109,7 +119,7 @@ public class ChunkSpeedTest extends TestUtil {
         start = System.currentTimeMillis();
       for (int i = 0; i < rows; ++i) {
         for (int j=0; j<cols; ++j) {
-          sum += raw[j][i];
+          sum += f(raw[j][i]);
         }
       }
     }
@@ -123,7 +133,7 @@ public class ChunkSpeedTest extends TestUtil {
   double walkChunk(final Chunk c) {
     double sum =0;
     for (int i = 0; i < rows; ++i) {
-      sum += c.atd(i);
+      sum += f(c.atd(i));
     }
     return sum;
   }
@@ -131,14 +141,14 @@ public class ChunkSpeedTest extends TestUtil {
     double sum =0;
     c.getDoubles(vals,0,c._len);
     for (int i = 0; i < rows; ++i)
-      sum += vals[i];
+      sum += f(vals[i]);
     return sum;
   }
 
   double walkChunkVistor(final Chunk c) {
     return ((Double)c.processRows(new Chunk.ChunkFunctor(){
       double sum = 0;
-      @Override public void addValue(double v, int id){sum += v;}
+      @Override public void addValue(double v, int id){sum += f(v);}
       @Override public Double result(){return sum;}
     }).result()).doubleValue() ;
   }
@@ -151,7 +161,7 @@ public class ChunkSpeedTest extends TestUtil {
       int n = to - from;
       c.getDoubles(vals,from,to);
       for (int i = 0; i < n; ++i)
-        sum += vals[i];
+        sum += f(vals[i]);
       from = to;
     }
     return sum;
@@ -200,7 +210,7 @@ public class ChunkSpeedTest extends TestUtil {
         start = System.currentTimeMillis();
       for (int j=0; j<cols; ++j) {
         for (int i = 0; i < rows; ++i) {
-          sum += chunks[j].atd(i);
+          sum += f(chunks[j].atd(i));
         }
       }
     }
