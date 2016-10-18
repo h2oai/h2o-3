@@ -36,10 +36,15 @@ abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizab
   // The serialization flavor / delegate.  Lazily set on first use.
   transient private volatile short _ice_id = 0;
 
+  @Override
+  public boolean hasCompressedBytes() {
+    return true;
+  }
 
   @Override
   public byte [] asBytes(){
-    return write(new AutoBuffer()).buf();
+    byte[] b = write(new AutoBuffer()).buf();
+    return hasCompressedBytes() ? IcedUtils.compress(b) : b;
   }
 
   @Override

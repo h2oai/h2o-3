@@ -722,7 +722,14 @@ public abstract class Chunk extends Iced<Chunk> {
   public final  AutoBuffer write_impl(AutoBuffer bb) {return bb.putA1(_mem);}
 
   @Override
-  public final byte [] asBytes(){return _mem;}
+  public final byte [] asBytes() {
+    return hasCompressedBytes() ? IcedUtils.compress(_mem) : _mem;
+  }
+
+  @Override
+  public boolean hasCompressedBytes() {
+    return false;
+  }
 
   @Override
   public final Chunk reloadFromBytes(byte [] ary){

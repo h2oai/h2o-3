@@ -1132,10 +1132,17 @@ final public class H2O {
       implements Cloneable, Freezable<T> {
 
     @Override
-    public byte [] asBytes(){return new AutoBuffer().put(this).buf();}
+    public byte [] asBytes(){
+      return IcedUtils.compress(new AutoBuffer().put(this).buf());
+    }
 
     @Override
-    public T reloadFromBytes(byte [] ary){ return read(new AutoBuffer(ary));}
+    public boolean hasCompressedBytes() {
+      return true;
+    }
+
+    @Override
+    public T reloadFromBytes(byte [] ary /*uncompressed*/){ return read(new AutoBuffer(ary));}
 
     private /*final*/ byte _priority;
     // Without a completer, we expect this task will be blocked on - so the
