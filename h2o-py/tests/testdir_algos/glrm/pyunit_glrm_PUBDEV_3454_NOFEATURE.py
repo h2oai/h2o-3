@@ -7,7 +7,7 @@ from tests import pyunit_utils
 from h2o.estimators.glrm import H2OGeneralizedLowRankEstimator
 import time
 
-# I am trying to resolve a customer issue as captured in PUBDEV-3454.  Dmitry Tolstonogov (ADP)
+# I am trying to resolve a customer issue as captured in PUBDEV-3454.  Our customer
 # said that he ran a GLRM model on a data set (which he has shared with us but would not want
 # us to put it out to public) with many categorical leves (~13000 columns in Y matrix).  Model
 # converges in ~1 hour for 76 iterations but job runs for another 6.5 hours while nothing happens.
