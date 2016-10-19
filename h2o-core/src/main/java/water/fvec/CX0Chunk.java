@@ -21,6 +21,7 @@ public final class CX0Chunk extends CXIChunk {
     else
       for (int off = startOff; off < endOff; off += inc)
         cf.addValue(1,UnsafeUtils.get4(_mem,off) & 0xFFFF);
+    if (true) throw H2O.unimpl("FIXME: Also need to add the contributions of the 0s - need to add unit test!");
     return cf;
   }
 

@@ -635,9 +635,9 @@ public final class DHistogram extends Iced {
     @Override public void addValue(double col_data, int k) {
       double w = _ws[k];
       if (w == 0) return;
-      double resp = _ys[k];
-      double wy = w*resp;
-      double wyy = wy*resp;
+      double y = _ys[k];
+      double wy = w*y;
+      double wyy = wy*y;
       if (Double.isNaN(col_data)) {
         _wNA.addAndGet(w);
         _wYNA.addAndGet(wy);
