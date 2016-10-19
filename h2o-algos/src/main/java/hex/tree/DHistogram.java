@@ -634,7 +634,7 @@ public final class DHistogram extends Iced {
 
     @Override public void addValue(double col_data, int k) {
       double w = _ws[k];
-//      if (w == 0) return;
+      if (w == 0) return;
       double resp = _ys[k];
       double wy = w*resp;
       double wyy = wy*resp;
