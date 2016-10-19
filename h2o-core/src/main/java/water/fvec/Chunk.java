@@ -110,14 +110,13 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 }}</pre>
  */
 
-public abstract class Chunk extends Iced<Chunk> {
+public abstract class Chunk extends Iced<Chunk> implements Vec.VectorHolder {
 
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
-   * @param vals holds extracted values, length must be >= this.sparseLen()
    * @param vals holds extracted chunk-relative row ids, length must be >= this.sparseLen()
    * @return number of extracted (non-zero) elements, equal to sparseLen()
    */
@@ -434,7 +433,7 @@ public abstract class Chunk extends Iced<Chunk> {
   }
 
   public Chunk deepCopy() {
-    Chunk c2 = (Chunk)clone();
+    Chunk c2 = clone();
     c2._vec=null;
     c2._start=-1;
     c2._cidx=-1;
@@ -567,22 +566,6 @@ public abstract class Chunk extends Iced<Chunk> {
     setNA(idx);
     return null;
   }
-
-  /**
-   * @param idx index of the value in Chunk
-   * @param x new value to set
-   * @return x on success, or null if something went wrong
-   */
-  public final Object setAny(int idx, Object x) {
-    return x instanceof String         ? set(idx, (String) x) :
-           x instanceof Double         ? set(idx, (Double)x) :
-           x instanceof Float          ? set(idx, (Float)x) :
-           x instanceof Long           ? set(idx, (Long)x) :
-           x instanceof Integer        ? set(idx, ((Integer)x).longValue()) :
-           x instanceof UUID           ? set(idx, (UUID) x) :
-           x instanceof java.util.Date ? set(idx, ((java.util.Date) x).getTime()) :
-           /* otherwise */               setUnknown(idx);
-      }
 
   /** After writing we must call close() to register the bulk changes.  If a
    *  NewChunk was needed, it will be compressed into some other kind of Chunk.
