@@ -10,9 +10,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import csv
 import os
 import random
+import shutil
 import subprocess
-import sys
-sys.path.insert(1, os.path.join("..",".."))
+import sys; sys.path.insert(1, os.path.join("..", ".."))
 import tempfile
 import time
 
@@ -21,6 +21,7 @@ import tabulate
 from tests import pyunit_utils
 import h2o
 from h2o.estimators import H2ORandomForestEstimator, H2OGradientBoostingEstimator, H2ODeepWaterEstimator
+
 
 # These variables can be tweaked to increase / reduce stress on the test. However when submitting to GitHub
 # please keep these reasonably low, so that the test wouldn't take exorbitant amounts of time.
@@ -31,7 +32,8 @@ NTESTROWS = 1000
 # Deep Water
 EPOCHS = 1
 
-def test_mojo_model():
+
+def test_mojo_model(target_dir):
     """
     Test the correctness of the "MOJO" model format.
 
@@ -42,96 +44,100 @@ def test_mojo_model():
     genmodel_jar = os.path.abspath("../../../h2o-genmodel/build/libs/h2o-genmodel-all.jar")
     assert os.path.exists(genmodel_jar), "Cannot find " + genmodel_jar
 
-    target_dir = ""
-    if sys.platform == "win32":
-        target_dir = tempfile.mkdtemp()
-    else:
-        target_dir = os.path.expanduser("~/Downloads/")
-
     report = []
-    for estimator in [H2ODeepWaterEstimator, H2ORandomForestEstimator, H2OGradientBoostingEstimator]:
+    for estimator, estimator_name in [(H2ODeepWaterEstimator, "DeepWater"),
+                                      (H2ORandomForestEstimator, "DRF"),
+                                      (H2OGradientBoostingEstimator, "GBM")]:
         if (estimator == H2ODeepWaterEstimator and not H2ODeepWaterEstimator.available()): continue
         print(colorama.Fore.LIGHTYELLOW_EX + "\n#================================================")
         print("#  Estimator: " + estimator.__name__)
         print("#================================================\n" + colorama.Fore.RESET)
-        estimator_name = "GBM" if estimator == H2OGradientBoostingEstimator else "DeepWater" if estimator == H2ODeepWaterEstimator else "DRF"
+
         for problem in ["binomial", "multinomial", "regression"]:
             print("========================")
             print("%s problem" % problem.capitalize())
             print("========================")
             if estimator == H2ODeepWaterEstimator and problem == "regression":
-              print("Skipping %s" % problem.capitalize)
-              continue
+                print("Skipping %s" % problem.capitalize)
+                continue
             df = random_dataset(problem, verbose=False)
             print("Created dataset with %d rows x %d columns" % (df.nrow, df.ncol))
-            test = df[:NTESTROWS, :]
             train = df[NTESTROWS:, :]
-            test2 = test.rbind(test)
+            test0 = df[0, :]
+            test1 = df[:NTESTROWS, :]
+            test2 = test1.rbind(test1)
 
             time0 = time.time()
             print("\n\nTraining %s model..." % estimator.__name__)
             if estimator == H2ODeepWaterEstimator:
-              model = estimator(epochs=EPOCHS) #, categorical_encoding="enum")
+                model = estimator(epochs=EPOCHS)  # , categorical_encoding="enum")
             else:
-              model = estimator(ntrees=NTREES, max_depth=DEPTH)
+                model = estimator(ntrees=NTREES, max_depth=DEPTH)
             model.train(training_frame=train)
             print(model.summary())
-            print("Time taken = %.3fs" % (time.time() - time0))
+            print("    Time taken = %.3fs" % (time.time() - time0))
 
             print("\nDownloading MOJO...")
             time0 = time.time()
             mojo_file = model.download_mojo(target_dir)
             print("    => %s  (%d bytes)" % (mojo_file, os.stat(mojo_file).st_size))
             assert os.path.exists(mojo_file)
-            print("Time taken = %.3fs" % (time.time() - time0))
+            print("    Time taken = %.3fs" % (time.time() - time0))
 
             if estimator != H2ODeepWaterEstimator:
-              print("\nDownloading POJO...")
-              time0 = time.time()
-              pojo_file = model.download_pojo(target_dir)
-              pojo_size = os.stat(pojo_file).st_size
-              pojo_name = os.path.splitext(os.path.basename(pojo_file))[0]
-              print("    => %s  (%d bytes)" % (pojo_file, pojo_size))
-              print("Time taken = %.3fs" % (time.time() - time0))
+                print("\nDownloading POJO...")
+                time0 = time.time()
+                pojo_file = model.download_pojo(target_dir)
+                pojo_size = os.stat(pojo_file).st_size
+                pojo_name = os.path.splitext(os.path.basename(pojo_file))[0]
+                print("    => %s  (%d bytes)" % (pojo_file, pojo_size))
+                print("    Time taken = %.3fs" % (time.time() - time0))
 
-            print("\nDownloading the test datasets for local use: ", end="")
+            print("\nDownloading the test datasets for local use: ")
             time0 = time.time()
-            test_file = os.path.join(target_dir, "test_%s.csv" % test.frame_id)
+            test0_file = os.path.join(target_dir, "test0_%s.csv" % test0.frame_id)
+            test1_file = os.path.join(target_dir, "test1_%s.csv" % test1.frame_id)
             test2_file = os.path.join(target_dir, "test2_%s.csv" % test2.frame_id)
-            print(test_file)
-            h2o.download_csv(test, test_file)
+            print("    => " + test0_file)
+            print("    => " + test1_file)
+            print("    => " + test2_file)
+            h2o.download_csv(test0, test0_file)
+            h2o.download_csv(test1, test1_file)
             h2o.download_csv(test2, test2_file)
-            print("Time taken = %.3fs" % (time.time() - time0))
+            print("    Time taken = %.3fs" % (time.time() - time0))
 
-            print("\nScoring the model remotely and downloading to file ", end="")
-            times = [time.time()]
-            h2o_pred_file = os.path.join(target_dir, "predR_%s.csv" % test.frame_id)
+            print("\nScoring the model remotely and downloading to files...")
+            times = []
+            h2o_pred_file0 = os.path.join(target_dir, "predR_%s.csv" % test0.frame_id)
+            h2o_pred_file1 = os.path.join(target_dir, "predR_%s.csv" % test1.frame_id)
             h2o_pred_file2 = os.path.join(target_dir, "predR_%s.csv" % test2.frame_id)
-            print(h2o_pred_file)
-            for testframe, outfile in [(test, h2o_pred_file), (test2, h2o_pred_file2)]:
+            for testframe, outfile in [(test0, h2o_pred_file0), (test1, h2o_pred_file1), (test2, h2o_pred_file2)]:
                 predictions = model.predict(testframe)
                 h2o.download_csv(predictions, outfile)
+                print("    => " + outfile)
                 times.append(time.time())
-            print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
+            print("    Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
                   (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
             report.append((estimator_name, problem, "Server", times[1] - times[0], times[2] - times[1]))
 
-            print("\nScoring the model locally and saving to file ", end="")
-            times = [time.time()]
-            local_pred_file = os.path.join(target_dir, "predL_%s.csv" % test.frame_id)
+            print("\nScoring the model locally and saving to files... ")
+            times = []
+            local_pred_file0 = os.path.join(target_dir, "predL_%s.csv" % test0.frame_id)
+            local_pred_file1 = os.path.join(target_dir, "predL_%s.csv" % test1.frame_id)
             local_pred_file2 = os.path.join(target_dir, "predL_%s.csv" % test2.frame_id)
-            print(local_pred_file)
-            for inpfile, outfile in [(test_file, local_pred_file), (test2_file, local_pred_file2)]:
+            for inpfile, outfile in [(test0_file, local_pred_file0), (test1_file, local_pred_file1),
+                                     (test2_file, local_pred_file2)]:
                 load_csv(inpfile)
                 java_cmd = ["java", "-cp", genmodel_jar,
                             "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m",
                             "hex.genmodel.tools.PredictCsv",
                             "--input", inpfile, "--output", outfile, "--mojo", mojo_file, "--decimal"]
-                print(java_cmd)
+                print("    %r" % java_cmd)
                 ret = subprocess.call(java_cmd)
                 assert ret == 0, "GenModel finished with return code %d" % ret
+                print("    => " + local_pred_file1)
                 times.append(time.time())
-            print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
+            print("    Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
                   (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
             report.append((estimator_name, problem, "Mojo", times[1] - times[0], times[2] - times[1]))
 
@@ -140,43 +146,42 @@ def test_mojo_model():
                 print("\nCompiling Java Pojo")
                 javac_cmd = ["javac", "-cp", genmodel_jar, "-J-Xmx12g", pojo_file]
                 subprocess.check_call(javac_cmd)
-                print("Time taken = %.3fs" % (time.time() - time0))
+                print("    Time taken = %.3fs" % (time.time() - time0))
 
-                pojo_pred_file = os.path.join(target_dir, "predP_%s.csv" % test.frame_id)
+                pojo_pred_file0 = os.path.join(target_dir, "predP_%s.csv" % test0.frame_id)
+                pojo_pred_file1 = os.path.join(target_dir, "predP_%s.csv" % test1.frame_id)
                 pojo_pred_file2 = os.path.join(target_dir, "predP_%s.csv" % test2.frame_id)
-                print("Scoring POJO and saving to file %s" % pojo_pred_file)
-                times = [time.time()]
+                print("\nScoring POJO and saving to file...")
+                times = []
                 cp_sep = ";" if sys.platform == "win32" else ":"
-                for inpfile, outfile in [(test_file, pojo_pred_file), (test2_file, pojo_pred_file2)]:
+                for inpfile, outfile in [(test0_file, pojo_pred_file0), (test1_file, pojo_pred_file1),
+                                         (test2_file, pojo_pred_file2)]:
                     load_csv(inpfile)
                     java_cmd = ["java", "-cp", cp_sep.join([genmodel_jar, target_dir]),
                                 "-ea", "-Xmx12g", "-XX:ReservedCodeCacheSize=256m", "-XX:MaxPermSize=256m",
                                 "hex.genmodel.tools.PredictCsv",
                                 "--pojo", pojo_name, "--input", inpfile, "--output", outfile, "--decimal"]
-                    print(java_cmd)
+                    print("    %r" % java_cmd)
                     ret = subprocess.call(java_cmd)
                     assert ret == 0, "GenModel finished with return code %d" % ret
                     times.append(time.time())
-                print("Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
+                print("    Time taken = %.3fs   (1st run: %.3f, 2nd run: %.3f)" %
                       (times[2] + times[0] - 2 * times[1], times[1] - times[0], times[2] - times[1]))
                 report.append((estimator_name, problem, "POJO", times[1] - times[0], times[2] - times[1]))
             else:
-                pojo_pred_file = None
+                pojo_pred_file1 = None
 
 
             print("\nChecking whether the predictions coincide...")
             time0 = time.time()
-            local_pred = load_csv(local_pred_file)
-            server_pred = load_csv(h2o_pred_file)
-            pojo_pred = load_csv(pojo_pred_file) if pojo_pred_file else local_pred
-            assert len(local_pred) == len(server_pred) == len(pojo_pred) == test.nrow, \
+            local_pred = load_csv(local_pred_file1)
+            server_pred = load_csv(h2o_pred_file1)
+            pojo_pred = load_csv(pojo_pred_file1) if pojo_pred_file1 else local_pred
+            assert len(local_pred) == len(server_pred) == len(pojo_pred) == test1.nrow, \
                 "Number of rows in prediction files do not match: %d vs %d vs %d vs %d" % \
-                (len(local_pred), len(server_pred), len(pojo_pred), test.nrow)
+                (len(local_pred), len(server_pred), len(pojo_pred), test1.nrow)
 
-            print(local_pred)
-            #print(pojo_pred)
-            print(server_pred)
-            for i in range(test.nrow):
+            for i in range(test1.nrow):
                 lpred = local_pred[i]
                 rpred = server_pred[i]
                 ppred = pojo_pred[i]
@@ -188,7 +193,7 @@ def test_mojo_model():
                     same = lpred == rpred == ppred
                 assert same, \
                     "Predictions are different for row %d: mojo=%r, pojo=%r, server=%r" % (i + 1, lpred, ppred, rpred)
-            print("Time taken = %.3fs" % (time.time() - time0))
+            print("    Time taken = %.3fs" % (time.time() - time0))
             print(colorama.Fore.LIGHTGREEN_EX + "\nPredictions match!\n" + colorama.Fore.RESET)
 
     print(colorama.Fore.LIGHTYELLOW_EX + "\n\n#================================================")
@@ -238,9 +243,12 @@ def load_csv(csvfile):
     return output
 
 
-
-if __name__ == "__main__":
-    colorama.init()
-    pyunit_utils.standalone_test(test_mojo_model)
-else:
-    test_mojo_model()
+try:
+    target_dir = tempfile.mkdtemp()
+    if __name__ == "__main__":
+        colorama.init()
+        pyunit_utils.standalone_test(lambda: test_mojo_model(target_dir))
+    else:
+        test_mojo_model(target_dir)
+finally:
+    shutil.rmtree(target_dir)
