@@ -237,19 +237,13 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     final int hcslen = hcs.length;
     // these arrays will be re-used for all cols and nodes
     double[] ws = new double[chks[0]._len];
-    double[] cs = new double[chks[0]._len];
     double[] ys = new double[chks[0]._len];
     weight.getDoubles(ws,0,ws.length);
     wrks.getDoubles(ys,0,ys.length);
     for (int c = 0; c < cols; c++) {
-      boolean extracted = false;
       for (int n = 0; n < hcslen; n++) {
         int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         if (sCols == null || ArrayUtils.find(sCols,c) >= 0) {
-//          if (!extracted) {
-//            chks[c].getDoubles(cs, 0, cs.length);
-//            extracted = true;
-//          }
           DHistogram h = hcs[n][c];
           if( h==null ) continue; // Ignore untracked columns in this split
           lh.resizeIfNeeded(h._w.length);

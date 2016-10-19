@@ -607,33 +607,60 @@ public final class DHistogram extends Iced {
     return new DTree.Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
   }
 
+  static final class CF extends Chunk.ChunkFunctor {
+    CF(double[] w, double[] wY, double[] wYY, double[] ws, double[] ys, AtomicDouble wNA, AtomicDouble wYNA, AtomicDouble wYYNA, DHistogram hist, double[] minmax) {
+      _w = w;
+      _wY = wY;
+      _wYY = wYY;
+      _wNA = wNA;
+      _wYNA = wYNA;
+      _wYYNA = wYYNA;
+      _hist = hist;
+      _minmax = minmax;
+      _ws = ws;
+      _ys = ys;
+    }
+
+    final DHistogram _hist;
+    final double[] _w;
+    final double[] _wY;
+    final double[] _wYY;
+    final double[] _ws;
+    final double[] _ys;
+    final AtomicDouble _wNA;
+    final AtomicDouble _wYNA;
+    final AtomicDouble _wYYNA;
+    final double[] _minmax;
+
+    @Override public void addValue(double col_data, int k) {
+      double w = _ws[k];
+//      if (w == 0) return;
+      double resp = _ys[k];
+      double wy = w*resp;
+      double wyy = wy*resp;
+      if (Double.isNaN(col_data)) {
+        _wNA.addAndGet(w);
+        _wYNA.addAndGet(wy);
+        _wYYNA.addAndGet(wyy);
+      } else {
+        if( col_data < _minmax[0] ) _minmax[0] = col_data;
+        if( col_data > _minmax[1] ) _minmax[1] = col_data;
+        int b = _hist.bin(col_data); // Compute bin# via linear interpolation
+        _w[b]+=w;
+        _wY[b]+=wy;
+        _wYY[b]+=wyy;
+      }
+    }
+  }
+
   public void updateSharedHistosAndReset(final ScoreBuildHistogram.LocalHisto lh,
                                          final double[] ws, final Chunk cs, final double[] ys,
                                          int [] rows, int hi, int lo) {
     final double minmax[] = new double[]{_min2,_maxIn};
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
-    cs.processRows(new Chunk.ChunkFunctor() {
-      @Override public void addValue(double col_data, int k) {
-        double w = ws[k];
-        if (w == 0) return;
-        if( col_data < minmax[0] ) minmax[0] = col_data;
-        if( col_data > minmax[1] ) minmax[1] = col_data;
-        double resp = ys[k];
-        double wy = w*resp;
-        double wyy = wy*resp;
-        if (Double.isNaN(col_data)) {
-          _wNA.addAndGet(w);
-          _wYNA.addAndGet(wy);
-          _wYYNA.addAndGet(wyy);
-        } else {
-          int b = bin(col_data); // Compute bin# via linear interpolation
-          lh.w[b]+=w;
-          lh.wY[b]+=wy;
-          lh.wYY[b]+=wyy;
-        }
-      }
-    }, Arrays.copyOfRange(rows, lo, hi));
+    CF cf = new CF(_w, _wY, _wYY, ws, ys, _wNA, _wYNA, _wYYNA, this, minmax);
+    cs.processRows(cf, Arrays.copyOfRange(rows, lo, hi));
 
     // Atomically update histograms
     setMin(minmax[0]);       // Track actual lower/upper bound per-bin
