@@ -202,7 +202,7 @@ final public class DeepWaterModelInfo extends Iced {
       BackendParams bparms = getBackendParams();
       if (parameters._network != DeepWaterParameters.Network.user) {
         String network = parameters._network == null ? null : parameters._network.toString();
-        if (network != null && parameters._network != DeepWaterParameters.Network.user) {
+        if (network != null) {
           Log.info("Creating a fresh model of the following network type: " + network);
           _model = _backend.buildNet(imageDataSet, opts, bparms, _classes, network);
         } else {
