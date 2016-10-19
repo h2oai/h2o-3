@@ -628,9 +628,9 @@ public final class DHistogram extends Iced {
           _wYYNA.addAndGet(wyy);
         } else {
           int b = bin(col_data); // Compute bin# via linear interpolation
-          lh.wAdd(b, w);
-          lh.wYAdd(b, wy);
-          lh.wYYAdd(b, wyy);
+          lh.w[b]+=w;
+          lh.wY[b]+=wy;
+          lh.wYY[b]+=wyy;
         }
       }
     }, Arrays.copyOfRange(rows, lo, hi));
@@ -641,17 +641,17 @@ public final class DHistogram extends Iced {
 
     final int len = _w.length;
     for( int b=0; b<len; b++ ) {
-      if (lh.w(b) != 0) {
-        AtomicUtils.DoubleArray.add(_w, b, lh.w(b));
-        lh.wClear(b);
+      if (lh.w[b] != 0) {
+        AtomicUtils.DoubleArray.add(_w, b, lh.w[b]);
+        lh.w[b] = 0;
       }
-      if (lh.wY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_wY, b, (float) lh.wY(b));
-        lh.wYClear(b);
+      if (lh.wY[b] != 0) {
+        AtomicUtils.DoubleArray.add(_wY, b, (float)lh.wY[b]);
+        lh.wY[b] = 0;
       }
-      if (lh.wYY(b) != 0) {
-        AtomicUtils.DoubleArray.add(_wYY,b,(float)lh.wYY(b));
-        lh.wYYClear(b);
+      if (lh.wYY[b] != 0) {
+        AtomicUtils.DoubleArray.add(_wYY,b,(float)lh.wYY[b]);
+        lh.wYY[b] = 0;
       }
     }
   }

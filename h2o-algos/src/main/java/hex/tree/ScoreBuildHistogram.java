@@ -265,30 +265,19 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
    * Can now change the internal memory layout without affecting the calling code
    */
   static class LocalHisto {
-    public void wAdd(int b, double val) { bins[b]+=val; }
-    public void wYAdd(int b, double val) { sums[b]+=val; }
-    public void wYYAdd(int b, double val) { ssqs[b]+=val; }
-    public void wClear(int b) { bins[b]=0; }
-    public void wYClear(int b) { sums[b]=0; }
-    public void wYYClear(int b) { ssqs[b]=0; }
-    public double w(int b) { return bins[b]; }
-    public double wY(int b) { return sums[b]; }
-    public double wYY(int b) { return ssqs[b]; }
-
-    private double bins[];
-    private double sums[];
-    private double ssqs[];
-
+    public double w[];
+    public double wY[];
+    public double wYY[];
     LocalHisto(int len) {
-      bins = new double[len];
-      sums = new double[len];
-      ssqs = new double[len];
+      w = new double[len];
+      wY = new double[len];
+      wYY = new double[len];
     }
     void resizeIfNeeded(int len) {
-      if( len > bins.length) {
-        bins = new double[len];
-        sums = new double[len];
-        ssqs = new double[len];
+      if( len > w.length) {
+        w = new double[len];
+        wY = new double[len];
+        wYY = new double[len];
       }
     }
   }
