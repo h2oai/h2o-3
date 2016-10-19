@@ -623,8 +623,7 @@ public class NewChunkTest extends TestUtil {
     nc.isNA(5);
   }
 
-  @Test public void testAddIllegalDouble() {    assertFalse(nc.isNA(2));
-
+  @Test public void testAddIllegalDouble() {
     nc = new NewChunk(av, 0);
     nc.addNum(Math.PI);
     nc.addNum(Double.NEGATIVE_INFINITY);
