@@ -427,7 +427,7 @@ public class NewChunk extends Chunk {
       } else if( _ds != null ) { // Doubles?
         assert _xs==null;
         for(int i = 0; i < _sparseLen; ++i) {
-          if( Double.isNaN(_ds[i]) ) nas++;
+          if( Double.isNaN(_ds[i]) ) nas++; 
           else if( _ds[i]!=0 ) nzs++;
         }
       } else {
@@ -680,7 +680,7 @@ public class NewChunk extends Chunk {
     if(!sparseZero()) for(int i = 0; i < n; ++i)addNum(0,0);
     else set_len(_len + n);
   }
-
+  
   public void addNAs(int n) {
     if(!sparseNA())
       for (int i = 0; i <n; ++i) {
@@ -692,7 +692,7 @@ public class NewChunk extends Chunk {
       }
     else set_len(_len + n);
   }
-
+  
   // Append all of 'nc' onto the current NewChunk.  Kill nc.
   public void add( NewChunk nc ) {
     assert _cidx >= 0;
@@ -776,7 +776,7 @@ public class NewChunk extends Chunk {
           assert _sparseLen <= _len;
           return;
         }
-      }
+      } 
       else {
         // verify we're still sufficiently sparse
         if((_sparseRatio*(_sparseLen) >> 2) > _len)  cancel_sparse();
@@ -860,7 +860,7 @@ public class NewChunk extends Chunk {
           set_sparse(nonnas,Compress.NA);
           assert _id.length == _ms.len():"id.len = " + _id.length + ", ms.len = " + _ms.len();
           assert _sparseLen <= _len;
-          return;
+          return;        
         } else if((nzs+1)*_sparseRatio < _len) { // note order important here
           set_sparse(nzs,Compress.ZERO);
           assert _sparseLen <= _len;
@@ -904,10 +904,10 @@ public class NewChunk extends Chunk {
     _missing = null;
     _ds = ds;
   }
-
+  
   public enum Compress {ZERO, NA}
 
-  //Sparsify. Compressible element can be 0 or NA. Store noncompressible elements in _ds OR _ls and _xs OR _is and
+  //Sparsify. Compressible element can be 0 or NA. Store noncompressible elements in _ds OR _ls and _xs OR _is and 
   // their row indices in _id.
   protected void set_sparse(int num_noncompressibles, Compress sparsity_type) {
     assert !isUUID():"sparse for uuids is not supported";
@@ -977,11 +977,11 @@ public class NewChunk extends Chunk {
   private boolean is_compressible(double d) {
     return _sparseNA ? Double.isNaN(d) : d == 0;
   }
-
+  
   private boolean is_compressible(int x) {
     return isNA2(x)?_sparseNA:!_sparseNA &&_ms.get(x) == 0;
   }
-
+  
   public void cancel_sparse(){
     if(_sparseLen != _len){
       if(_is != null){
@@ -1096,7 +1096,7 @@ public class NewChunk extends Chunk {
       na_sparse = true;
     } else if (_sparseLen != _len)
       cancel_sparse();
-
+    
     // If the data is UUIDs there's not much compression going on
     if( _ds != null && _ms != null )
       return chunkUUID();
@@ -1238,7 +1238,7 @@ public class NewChunk extends Chunk {
       int sz = 8;
       if( Short.MIN_VALUE <= min && max <= Short.MAX_VALUE ) sz = 2;
       else if( Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE ) sz = 4;
-      return new CNAXIChunk(_len,sz,bufS(sz));
+      return new CNAXIChunk(_len,sz,bufS(sz));      
     }
     // Exponent scaling: replacing numbers like 1.3 with 13e-1.  '13' fits in a
     // byte and we scale the column by 0.1.  A set of numbers like
@@ -1570,13 +1570,13 @@ public class NewChunk extends Chunk {
     }
     return setNA_impl2(i);
   }
-
+  
   protected final long at8_impl2(int i) {
     if(isNA2(i))throw new RuntimeException("Attempting to access NA as integer value.");
     if( _ms == null ) return (long)_ds[i];
     return _ms.get(i)*PrettyPrint.pow10i(_xs.get(i));
   }
-
+  
   @Override public long at8_impl( int i ) {
     if( _len != _sparseLen) {
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);
@@ -1598,7 +1598,7 @@ public class NewChunk extends Chunk {
     // if exponent is Integer.MIN_VALUE (for missing value) or >=0, then go the integer path (at8_impl)
     // negative exponents need to be handled right here
     if( _ds == null ) return _xs.get(i) >= 0 ? at8_impl2(i) : _ms.get(i)*Math.pow(10,_xs.get(i));
-    assert _xs==null;
+    assert _xs==null; 
     return _ds[i];
   }
 
