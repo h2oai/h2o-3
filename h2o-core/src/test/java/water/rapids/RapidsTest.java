@@ -11,6 +11,7 @@ import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.vals.ValFrame;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.io.File;
 import java.util.Arrays;
@@ -59,7 +60,7 @@ public class RapidsTest extends TestUtil {
   }
   @Test public void test4_throws() {
     String tree = "(== a.hex (cols a.hex [1 2]))";
-    checkTree(tree,true);
+    checkTree(tree, "Frames must have same columns, found 4 columns and 2 columns.");
   }
 
   @Test public void test5() {
@@ -115,7 +116,7 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
     // Unknown var2
     tree = "({var1 . (* var1 var2)} 3)";
-    checkTree(tree,true);
+    checkTree(tree, "Name lookup of 'var2' failed");
     // Compute 3* a.hex[0,0]
     tree = "({var1 . (* var1 (rows a.hex [0]))} 3)";
     checkTree(tree);
@@ -222,8 +223,8 @@ public class RapidsTest extends TestUtil {
     checkTree(tree);
   }
 
-  private void checkTree(String tree) { checkTree(tree,false); }
-  private void checkTree(String tree, boolean expectThrow) {
+  private void checkTree(String tree) { checkTree(tree, null); }
+  private void checkTree(String tree, String thrownMessage) {
     //Frame r = frame(new double[][]{{-1},{1},{2},{3},{4},{5},{6},{254}});
     //Key ahex = Key.make("a.hex");
     //Frame fr = new Frame(ahex, null, new Vec[]{r.remove(0)});
@@ -233,7 +234,7 @@ public class RapidsTest extends TestUtil {
     fr.remove(4).remove();
     try {
       Val val = Rapids.exec(tree);
-      Assert.assertFalse(expectThrow);
+      Assert.assertNull(thrownMessage);
       System.out.println(val.toString());
       if (val instanceof ValFrame) {
         Frame fr2 = val.getFrame();
@@ -241,7 +242,11 @@ public class RapidsTest extends TestUtil {
         fr2.remove();
       }
     } catch( IllegalArgumentException iae ) {
-      if( !expectThrow ) throw iae;
+      if (thrownMessage != null) {
+        Assert.assertEquals(thrownMessage, iae.getMessage());
+        Log.debug("Expected Exception suppressed", iae);
+      } else
+        throw iae;
     } finally {
       fr.delete();
     }
