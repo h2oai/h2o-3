@@ -880,11 +880,12 @@ h2o.dct <- function(data, destination_frame, dimensions, inverse=FALSE) {
 # is this still true?
 #' This method calls the function of the MutableDateTime class in Java.
 #' @param x An H2OFrame object.
-#' @return An H2OFrame object containig the entries of \code{x} converted to years
-#'         starting from 1900, e.g. 69 corresponds to the year 1969.
+#' @return An H2OFrame object containing the entries of \code{x} converted to years
+#'         This calculation starts from 1900.
 #' @seealso \code{\link{h2o.month}}
 #' @export
-h2o.year <- function(x) .newExpr("-",.newExpr("year", chk.H2OFrame(x)),1900)
+h2o.year <- function(x) .newExpr("-",.newExpr("year", chk.H2OFrame(x)),1900) + 1900
+
 
 #' Convert Milliseconds to Months in H2O Datasets
 #'
