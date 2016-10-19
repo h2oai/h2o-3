@@ -168,7 +168,7 @@ class H2OFrame(object):
     def _upload_sparse_matrix(self, matrix, destination_frame=None):
         import scipy.sparse as sp
         if not sp.issparse(matrix):
-            return H2OValueError("A sparse matrix expected, got %s" % type(matrix))
+            raise H2OValueError("A sparse matrix expected, got %s" % type(matrix))
 
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".svmlight")
         out = os.fdopen(tmp_handle, "wb")
