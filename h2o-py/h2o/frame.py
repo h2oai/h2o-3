@@ -570,6 +570,11 @@ class H2OFrame(object):
     def flatten(self):
         return ExprNode("flatten", self)._eager_scalar()
 
+    def getrow(self):
+        if self.nrows != 1:
+            raise H2OValueError("This method can only be applied to single-row frames")
+        return ExprNode("getrow", self)._eager_scalar()
+
     def mult(self, matrix):
         """Perform matrix multiplication.
 
@@ -1740,20 +1745,30 @@ class H2OFrame(object):
         """The sum of all frame entries."""
         return ExprNode("sumNA" if na_rm else "sum", self)._eager_scalar()
 
-    def mean(self, na_rm=False):
+    def mean(self, skipna=True, axis=0, **kwargs):
         """
-        Compute the mean.
+        Compute the frame's means by-column (or by-row).
 
-        Parameters
-        ----------
-          na_rm: bool, default=False
-            If True, then remove NAs from the computation.
+        @param skipna: if True (default), then NAs are ignored during the computation. Otherwise presence
+            of NAs renders the entire result NA.
+        @param axis: direction of mean computation. If 0 (default), then mean is computed columnwise, and the result
+            is a frame with 1 row and number of columns as in the original frame. If 1, then mean is computed rowwise
+            and the result is a frame with 1 column (called "mean"), and number of rows equal to the number of rows
+            in the original frame.
 
-        Returns
-        -------
-          A list containing the mean for each column (NaN for non-numeric columns).
+        @returns H2OFrame: the results frame.
         """
-        return ExprNode("mean", self, na_rm)._eager_scalar()
+        assert_is_type(skipna, bool)
+        assert_is_type(axis, 0, 1)
+        # Deprecated since 2016-10-14,
+        if "na_rm" in kwargs:
+            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=DeprecationWarning)
+            na_rm = kwargs.pop("na_rm")
+            assert_is_type(na_rm, bool)
+            skipna = na_rm  # don't assign to skipna directly, to help with error reporting
+        if kwargs:
+            raise H2OValueError("Unknown parameters %r" % list(kwargs))
+        return H2OFrame._expr(ExprNode("mean", self, skipna, axis))
 
     def skewness(self, na_rm=False):
         """
@@ -2628,15 +2643,16 @@ def _binop(lhs, op, rhs):
     if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame):
         lrows, lcols = lhs.shape
         rrows, rcols = rhs.shape
-        if lrows == rrows:
-            if lcols != rcols and lcols > 1 and rcols > 1:  # The server also accepts 0 and 1 columns
-                raise H2OValueError("Attempting to operate on incompatible frames: number of columns "
-                                    "must match; got %d columns on the left and %d columns on the right"
-                                    % (lcols, rcols))
-        else:
-            if lcols != rcols or (lrows > 1 and rrows > 1):
-                raise H2OValueError("Attempting to operate on incompatible frames: number of rows does not "
-                                    "match: got %d rows on the left and %d rows on the right"
-                                    % (lrows, rrows))
+        compatible = ((lcols == rcols and lrows == rrows) or
+                      (lcols == 1 and lrows == rrows) or
+                      (lcols == 1 and lrows == 1) or
+                      (rcols == 1 and lrows == rrows) or
+                      (rcols == 1 and rrows == 1) or
+                      (lrows == 1 and lcols == rcols) or
+                      (rrows == 1 and lcols == rcols)
+                      )
+        if not compatible:
+            raise H2OValueError("Attempting to operate on incompatible frames: (%d x %d) and (%d x %d)"
+                                % (lrows, lcols, rrows, rcols))
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
     return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)

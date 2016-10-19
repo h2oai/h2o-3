@@ -13,10 +13,11 @@ def pyunit_apply():
     fr.apply(lambda x: x["PSA"], axis=1).show()
     print()
     print()
-    fr.apply(lambda x: x['PSA'] > x['VOL'],axis=1).show()
+    fr.apply(lambda x: x['PSA'] > x['VOL'], axis=1).show()
     print()
     print(fr.mean())
-    fr.apply(lambda x: x.mean()).show()
+    fr.apply(lambda x: x.mean(), axis=0).show()
+    fr.apply(lambda x: x.mean(), axis=1).show()
 
 
 

@@ -132,4 +132,19 @@ public class StringUtils {
     return array;
   }
 
+  /**
+   * Join the array with the given delimiter, and return it as a string.
+   *
+   * @param delimiter string to be used as a separator between array elements
+   * @param arr the array to join
+   * @return a single string containing all elements in `arr` joined together
+   */
+  public static String join(String delimiter, String[] arr) {
+    StringBuilder sb = new StringBuilder();
+    for (String item : arr) {
+      if (sb.length() > 0) sb.append(delimiter);
+      sb.append(item);
+    }
+    return sb.toString();
+  }
 }
