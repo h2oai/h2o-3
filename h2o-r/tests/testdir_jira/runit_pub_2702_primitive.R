@@ -23,7 +23,7 @@ test.prim <- function(){
  expect_equal(h2o.sum(fr[,1]),sum(fr[,1]))
  expect_equal(h2o.prod(fr[,1]),prod(fr[,1]))
  expect_equal(h2o.all(fr[,1] < 1000),all(fr[,1 < 1000]))
- expect_true(h2o.any(fr[,1] < 1000),any(fr[,1] < 1000))
+ expect_equal(h2o.any(fr[,1] < 1000),any(fr[,1] < 1000))
  expect_equal(h2o.min(fr[,1]),min(fr[,1]))
  expect_equal(h2o.max(fr[,1]),max(fr[,1]))
  expect_equal(h2o.nrow(fr[,1]),nrow(fr[,1]))
