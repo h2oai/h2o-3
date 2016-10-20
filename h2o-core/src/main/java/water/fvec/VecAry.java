@@ -191,6 +191,11 @@ public class VecAry extends Vec {
     return res;
   }
 
+  @Override
+  public void removeCols(final int... ids){
+    remove(ids).remove();
+  }
+
   public VecAry append(Vec v){
     if(_rowLayout == -1) return replaceWith(new VecAry(v));
     if(v instanceof VecAry) return append((VecAry)v);

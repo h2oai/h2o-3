@@ -92,9 +92,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             false, // do not replace NAs in numeric cols with mean
             true,  // always add a bucket for missing values
-            parms._weights_column != null, // observation weights
-            parms._offset_column != null,
-            parms._fold_column != null
+            parms._weights_column, // observation weights
+            parms._offset_column,
+            parms._fold_column
     );
     // Checks and adjustments:
     // 1) observation weights (adjust mean/sigmas for predictors and response)
@@ -115,7 +115,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
   @Override protected void checkMemoryFootPrint() {
     if (_parms._checkpoint != null) return;
-    long p = hex.util.LinearAlgebraUtils.numColsExp(_train,true) - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
+    long p = hex.util.LinearAlgebraUtils.numColsExp(_train,true) - (_parms._autoencoder ? 0 : _train.lastVec().cardinality(0));
     String[][] dom = _train.domains();
     // hack: add the factor levels for the NAs
     for (int i=0; i<_train.numCols()-(_parms._autoencoder ? 0 : 1); ++i) {
@@ -124,7 +124,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       }
     }
 //    assert(makeDataInfo(_train, _valid, _parms).fullN() == p);
-    long output = _parms._autoencoder ? p : Math.abs(_train.lastVec().cardinality());
+    long output = _parms._autoencoder ? p : Math.abs(_train.lastVec().cardinality(0));
     // weights
     long model_size = p * _parms._hidden[0];
     int layer=1;
@@ -306,13 +306,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         if ( _parms._export_weights_and_biases && cp._output.weights != null && cp._output.biases != null) {
           for (Key k : Arrays.asList(cp._output.weights)) {
             keep.add(k);
-            for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
+            for (Vec vk : ((Frame) DKV.getGet(k)).vecs().vecs()) {
               keep.add(vk._key);
             }
           }
           for (Key k : Arrays.asList(cp._output.biases)) {
             keep.add(k);
-            for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
+            for (Vec vk : ((Frame) DKV.getGet(k)).vecs().vecs()) {
               keep.add(vk._key);
             }
           }
@@ -351,10 +351,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         train = tra_fr;
         if (model._output.isClassifier() && mp._balance_classes) {
           _job.update(0,"Balancing class distribution of training data...");
-          float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
+          float[] trainSamplingFactors = new float[train.lastVec().domain(0).length]; //leave initialized to 0 -> will be filled up below
           if (mp._class_sampling_factors != null) {
-            if (mp._class_sampling_factors.length != train.lastVec().domain().length)
-              throw new IllegalArgumentException("class_sampling_factors must have " + train.lastVec().domain().length + " elements");
+            if (mp._class_sampling_factors.length != train.lastVec().domain(0).length)
+              throw new IllegalArgumentException("class_sampling_factors must have " + train.lastVec().domain(0).length + " elements");
             trainSamplingFactors = mp._class_sampling_factors.clone(); //clone: don't modify the original
           }
           train = sampleFrameStratified(

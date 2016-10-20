@@ -392,6 +392,9 @@ public class Frame extends Lockable<Frame> {
     return _checksum;
   }
 
+  public void add( String[] names, Vec vecs) {
+    bulkAdd(names, new VecAry(vecs));
+  }
   // Add a bunch of vecs
   public void add( String[] names, VecAry vecs) {
     bulkAdd(names, vecs);

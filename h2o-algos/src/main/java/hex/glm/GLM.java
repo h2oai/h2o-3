@@ -759,19 +759,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       double objold = _state.objective();
       int iter2=0; // total cd iters
       // get reweighted least squares vectors
-      Vec[] newVecs = _state.activeData()._adaptedFrame.anyVec().makeZeros(3);
-      Vec w = newVecs[0]; // fixed before each CD loop
-      Vec z = newVecs[1]; // fixed before each CD loop
-      Vec zTilda = newVecs[2]; // will be updated at every variable within CD loop
+      Vec newVecs = _state.activeData()._adaptedFrame.anyVec().makeZeros(3);
+      // w z zTilda
+//      Vec w = newVecs[0]; // fixed before each CD loop
+//      Vec z = newVecs[1]; // fixed before each CD loop
+//      Vec zTilda = newVecs[2]; // will be updated at every variable within CD loop
       long startTimeTotalNaive = System.currentTimeMillis();
 
       // generate new IRLS iteration
       while (iter2++ < 30) {
 
         Frame fr = new Frame(_state.activeData()._adaptedFrame);
-        fr.add("w", w); // fr has all data
-        fr.add("z", z);
-        fr.add("zTilda", zTilda);
+        fr.add(new String[]{"w","z","zTilda"},newVecs); // fr has all data
 
         GLMGenerateWeightsTask gt = new GLMGenerateWeightsTask(_job._key, _state.activeData(), _parms, beta).doAll(fr);
         double objVal = objVal(gt._likelihood, gt._betaw, _state.lambda());
@@ -783,10 +782,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         // coordinate descent loop
         while (iter1++ < 100) {
           Frame fr2 = new Frame();
-          fr2.add("w", w);
-          fr2.add("z", z);
-          fr2.add("zTilda", zTilda); // original x%*%beta if first iteration
-
+          fr2.add(new String[]{"w","z","zTilda"},newVecs); // fr has all data
           for(int i=0; i < _state.activeData()._cats; i++) {
             Frame fr3 = new Frame(fr2);
             int level_num = _state.activeData()._catOffsets[i+1]-_state.activeData()._catOffsets[i];
@@ -895,7 +891,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       long durationTotalNaive = (endTimeTotalNaive - startTimeTotalNaive)/1000;
       System.out.println("Time to run Naive Coordinate Descent " + durationTotalNaive);
       _state._iter = iter2;
-      for (Vec v : newVecs) v.remove();
+      newVecs.remove();
       _state.updateState(beta,objold);
     }
     private void fitModel() {
@@ -1683,7 +1679,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Vec v = beta_constraints.vec("names");
       String[] dom;
       int[] map;
-      if (v.isString()) {
+      if (v.isString(0)) {
         dom = new String[(int) v.length()];
         map = new int[dom.length];
         BufferedString tmpStr = new BufferedString();
@@ -1698,7 +1694,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           if (sortedDom[i - 1].equals(sortedDom[i]))
             throw new IllegalArgumentException("Illegal beta constraints file, got duplicate constraint for predictor '" + sortedDom[i - 1] + "'!");
       } else if (v.isCategorical()) {
-        dom = v.domain();
+        dom = v.domain(0);
         map = FrameUtils.asInts(v);
         // check for dups
         int[] sortedMap = MemoryManager.arrayCopyOf(map, map.length);
