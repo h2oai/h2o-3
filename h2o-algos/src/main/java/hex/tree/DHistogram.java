@@ -255,7 +255,12 @@ public final class DHistogram extends Iced {
   // Compute bin min/max.
   // Compute response mean & variance.
   void incr( double col_data, double y, double w ) {
-    assert !Double.isNaN(col_data);
+    if (Double.isNaN(col_data)) {
+      _wNA.addAndGet(w);
+      _wYNA.addAndGet(w*y);
+      _wYYNA.addAndGet(w*y*y);
+      return;
+    }
     assert Double.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
     int b = bin(col_data);      // Compute bin# via linear interpolation
     water.util.AtomicUtils.DoubleArray.add(_w,b,w); // Bump count in bin

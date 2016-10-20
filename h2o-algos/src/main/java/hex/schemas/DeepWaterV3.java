@@ -16,6 +16,9 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "training_frame",
         "validation_frame",
         "nfolds",
+        "balance_classes",
+        "max_after_balance_size",
+        "class_sampling_factors",
         "keep_cross_validation_predictions",
         "keep_cross_validation_fold_assignment",
         "fold_assignment",
@@ -336,8 +339,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      * times the dataset size or larger).
      */
     @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
-        help = "Enable shuffling of training data (recommended if training data is replicated and " +
-            "train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes).")
+        help = "Enable global shuffling of training data.")
     public boolean shuffle_training_data;
 
     @API(level = API.Level.expert, direction=API.Direction.INOUT, gridable = true,
@@ -369,8 +371,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     public boolean gpu;
 
     @API(level = API.Level.expert, direction=API.Direction.INOUT,
-        help = "Device ID (which GPU).")
-    public int device_id;
+        help = "Device IDs (which GPUs to use).")
+    public int[] device_id;
 
     @API(level = API.Level.secondary, direction=API.Direction.INOUT,
         help = "Path of file containing network definition (graph, architecture).")
@@ -391,5 +393,32 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
         help = "If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.")
     public boolean standardize;
+
+    /**
+     * For imbalanced data, balance training data class counts via
+     * over/under-sampling. This can result in improved predictive accuracy.
+     */
+    @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
+        help = "Balance training data class counts via over/under-sampling (for imbalanced data).")
+    public boolean balance_classes;
+
+    /**
+     * Desired over/under-sampling ratios per class (lexicographic order).
+     * Only when balance_classes is enabled.
+     * If not specified, they will be automatically computed to obtain class balance during training.
+     */
+    @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
+        help = "Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling " +
+            "factors will be automatically computed to obtain class balance during training. Requires balance_classes.")
+    public float[] class_sampling_factors;
+
+    /**
+     * When classes are balanced, limit the resulting dataset size to the
+     * specified multiple of the original dataset size.
+     */
+    @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = false,
+        help = "Maximum relative size of the training data after balancing class counts (can be less than 1.0). " +
+            "Requires balance_classes.")
+    public float max_after_balance_size;
   }
 }

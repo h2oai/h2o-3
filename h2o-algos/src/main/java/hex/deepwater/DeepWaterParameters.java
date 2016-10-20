@@ -62,7 +62,7 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public double _clip_gradient = 10.0;
   public boolean _gpu = true;
-  public int _device_id=0;
+  public int[] _device_id = new int[]{0};
 
   public Network _network = Network.auto;
   public Backend _backend = Backend.mxnet;
@@ -624,18 +624,27 @@ public class DeepWaterParameters extends Model.Parameters {
           toParms._overwrite_with_best_model = false;
         }
       }
+      // automatic selection
       if (fromParms._network == Network.auto || fromParms._network==null) {
-        if (toParms._problem_type ==ProblemType.image) toParms._network = Network.inception_bn;
-        if (toParms._problem_type ==ProblemType.text || toParms._problem_type ==ProblemType.dataset) {
-          toParms._network = null;
-          if (fromParms._hidden == null) {
-            toParms._hidden = new int[]{200, 200};
-            toParms._activation = Activation.Rectifier;
-            toParms._hidden_dropout_ratios = new double[toParms._hidden.length];
+        // if the user specified the network, then keep that
+        if (fromParms._network_definition_file != null && !fromParms._network_definition_file.equals("")) {
+          if (!fromParms._quiet_mode)
+            Log.info("_network_definition_file: Automatically setting network type to 'user', since a network definition file was provided.");
+          toParms._network = Network.user;
+        } else {
+          // pick something reasonable
+          if (toParms._problem_type == ProblemType.image) toParms._network = Network.inception_bn;
+          if (toParms._problem_type == ProblemType.text || toParms._problem_type == ProblemType.dataset) {
+            toParms._network = null;
+            if (fromParms._hidden == null) {
+              toParms._hidden = new int[]{200, 200};
+              toParms._activation = Activation.Rectifier;
+              toParms._hidden_dropout_ratios = new double[toParms._hidden.length];
+            }
           }
+          if (!fromParms._quiet_mode && toParms._network != null && toParms._network != Network.user)
+            Log.info("_network: Using " + toParms._network + " model by default.");
         }
-        if (!fromParms._quiet_mode && toParms._network!=null)
-          Log.info("_network: Using " + toParms._network + " model by default.");
       }
       if (fromParms._autoencoder && fromParms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
         if (!fromParms._quiet_mode)

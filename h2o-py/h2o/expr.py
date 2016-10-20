@@ -154,7 +154,7 @@ class ExprNode(object):
                 return "[%s]" % " ".join('"%s"' % elem for elem in arg)
             else:
                 return "[%s]" % " ".join("NaN" if i == 'NaN' or math.isnan(i) else str(i) for i in arg)
-        raise ValueError("Unexpected arg type: " + str(type(arg)) + " " + str(arg.__class__) + " " + arg.__repr__())
+        raise ValueError("Unexpected arg type: %s %s %r" % (type(arg), arg.__class__, arg))
 
     def __del__(self):
         try:

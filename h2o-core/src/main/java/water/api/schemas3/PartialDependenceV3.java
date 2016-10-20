@@ -28,7 +28,7 @@ public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDepe
   @API(help="Partial Dependence Data", direction=API.Direction.OUTPUT)
   public TwoDimTableV3[] partial_dependence_data;
 
-  @API(help="Key to store the destination", direction=API.Direction.INOUT)
+  @API(help="Key to store the destination", direction=API.Direction.INPUT)
   public KeyV3.PartialDependenceKeyV3 destination_key;
 
   @Override public PartialDependence createImpl( ) { return new PartialDependence(Key.<PartialDependence>make()); }

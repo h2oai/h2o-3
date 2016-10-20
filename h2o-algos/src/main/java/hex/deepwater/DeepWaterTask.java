@@ -9,11 +9,13 @@ import water.Job;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.parser.BufferedString;
+import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.RandomUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
@@ -175,6 +177,13 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         _localmodel._backend.setParameter(_localmodel._model, "momentum", _localmodel.get_params().momentum((double) n));
 
         //fork off GPU work, but let the iterator.Next() wait on completion before swapping again
+        //System.err.println("data: " + Arrays.toString(iter.getData()));
+        float[] preds = _localmodel._backend.predict(_localmodel._model, iter.getData());
+        if (Float.isNaN(ArrayUtils.sum(preds))) {
+          Log.err(DeepWaterModel.unstable_msg);
+          throw new UnsupportedOperationException(DeepWaterModel.unstable_msg);
+        }
+//        System.err.println("pred: " + Arrays.toString(preds));
         ntt = new NativeTrainTask(_localmodel._backend, _localmodel._model, iter.getData(), iter.getLabel());
         fs.add(H2O.submitTask(ntt));
         _localmodel.add_processed_local(iter._batch_size);
@@ -182,7 +191,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
       fs.blockForPending();
 //      nativetime += ntt._timeInMillis;
     } catch (IOException e) {
-      e.printStackTrace();
+      e.printStackTrace(); //gracefully continue if we can't find files etc.
     }
 //    long end = System.currentTimeMillis();
 //    if (!_localmodel.get_params()._quiet_mode) {
@@ -195,14 +204,14 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
   static private class NativeTrainTask extends H2O.H2OCountedCompleter<NativeTrainTask> {
 
     long _timeInMillis;
-    final BackendTrain _it;
+    final BackendTrain _backend;
     final BackendModel _model;
 
     float[] _data;
     float[] _labels;
 
     NativeTrainTask(BackendTrain backend, BackendModel model, float[] data, float[] label) {
-      _it = backend;
+      _backend = backend;
       _model = model;
       _data = data;
       _labels = label;
@@ -211,7 +220,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
     @Override
     public void compute2() {
       long start = System.currentTimeMillis();
-      _it.train(_model, _data,_labels); //ignore predictions
+      _backend.train(_model, _data,_labels); //ignore predictions
       long end = System.currentTimeMillis();
       _timeInMillis += end-start;
       tryComplete();

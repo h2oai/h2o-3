@@ -50,6 +50,7 @@ public class RapidsHandler extends Handler {
     switch (val.type()) {
       case Val.NUM:  return new RapidsNumberV3(val.getNum());
       case Val.NUMS: return new RapidsNumbersV3(val.getNums());
+      case Val.ROW:  return new RapidsNumbersV3(val.getRow());
       case Val.STR:  return new RapidsStringV3(val.getStr());
       case Val.STRS: return new RapidsStringsV3(val.getStrs());
       case Val.FRM:  return new RapidsFrameV3(val.getFrame());
