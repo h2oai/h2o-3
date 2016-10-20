@@ -4,11 +4,6 @@ package water.rapids.ast;
 public abstract class AstParameter extends AstRoot {
 
   @Override
-  public int nargs() {
-    return 1;
-  }
-
-  @Override
   public String example() {
     return null;
   }
@@ -21,5 +16,11 @@ public abstract class AstParameter extends AstRoot {
   public String toJavaString() {
     return str();
   }
+
+  // Select columns by number or String.
+  public int[] columns(String[] names) {
+    throw new IllegalArgumentException("Requires a number-list, but found an " + getClass().getSimpleName());
+  }
+
 
 }

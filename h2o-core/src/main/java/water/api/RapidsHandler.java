@@ -35,9 +35,7 @@ public class RapidsHandler extends Handler {
 
     Val val;
     try {
-      // No locking, no synchronization - since any local locking is NOT a
-      // cluster-wide lock locking, which just provides the illusion of safety
-      // but not the actuality.
+      // This call is synchronized on the session instance
       val = Rapids.exec(rapids.ast, ses);
     } catch (IllegalArgumentException e) {
       throw e;
@@ -90,9 +88,7 @@ public class RapidsHandler extends Handler {
   }
 
 
-  // For now, only 1 active Rapids session-per-cloud.  Needs to be per-session
-  // id... but clients then need to announce which session with each rapids call
-
+  /** Map of session-id (sent by the client) to the actual session instance. */
   public static HashMap<String, Session> SESSIONS = new HashMap<>();
 
   @SuppressWarnings("unused") // called through reflection by RequestServer

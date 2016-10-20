@@ -33,8 +33,4 @@ public class AstRow extends AstRoot {
     return _row;
   }
 
-  @Override
-  public int nargs() {
-    return 1;
-  }
 }

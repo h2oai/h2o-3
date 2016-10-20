@@ -5,6 +5,7 @@ import water.H2O;
 import water.Key;
 import water.MRTask;
 import water.rapids.ast.AstParameter;
+import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.Env;
 import water.rapids.ast.params.AstNum;
@@ -36,16 +37,16 @@ public class TransformWrappedVec extends WrappedVec {
 
   private final Key<Vec>[] _masterVecKeys;
   private transient Vec[] _masterVecs;
-  private final AstRoot _fun;
+  private final AstPrimitive _fun;
 
-  public TransformWrappedVec(Key key, int rowLayout, AstRoot fun, Key<Vec>... masterVecKeys) {
+  public TransformWrappedVec(Key key, int rowLayout, AstPrimitive fun, Key<Vec>... masterVecKeys) {
     super(key, rowLayout, null);
     _fun=fun;
     _masterVecKeys = masterVecKeys;
     DKV.put(this);
   }
 
-  public TransformWrappedVec(Vec v, AstRoot fun) {
+  public TransformWrappedVec(Vec v, AstPrimitive fun) {
     this(v.group().addVec(), v._rowLayout, fun, v._key);
   }
 
@@ -78,13 +79,13 @@ public class TransformWrappedVec extends WrappedVec {
   }
 
   public static class TransformWrappedChunk extends Chunk {
-    public final AstRoot _fun;
+    public final AstPrimitive _fun;
     public final transient Chunk _c[];
 
     private final AstRoot[] _asts;
     private final Env _env;
 
-    TransformWrappedChunk(AstRoot fun, Vec transformWrappedVec, Chunk... c) {
+    TransformWrappedChunk(AstPrimitive fun, Vec transformWrappedVec, Chunk... c) {
 
       // set all the chunk fields
       _c = c; set_len(_c[0]._len);

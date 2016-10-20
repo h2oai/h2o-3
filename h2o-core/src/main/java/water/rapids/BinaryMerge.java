@@ -1,5 +1,11 @@
 package water.rapids;
 
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//
+// TODO: move to water.rapids.ast.prims.mungers (this is a helper class for AstMerge)
+//
+//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 // Since we have a single key field in H2O (different to data.table), bmerge() becomes a lot simpler (no
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
 
