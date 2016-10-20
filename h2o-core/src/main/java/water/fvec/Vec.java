@@ -593,10 +593,11 @@ public class Vec extends Keyed<Vec> {
   public double[] maxs(int c){ return rollupStats().getRollups(c)._maxs; }
   /** True if the column contains only a constant value and it is not full of NAs 
    *  @return True if the column is constant */
-  public final boolean isConst() { return min() == max(); }
+  public final boolean isConst() { return isConst(0); }
+  public final boolean isConst(int c) { return min(c) == max(c); }
   /** True if the column contains only NAs
    *  @return True if the column contains only NAs */
-  public final boolean isBad() { return naCnt()==length(); }
+  public final boolean isBad(int c) { return naCnt(c)==length(); }
   /** Vecs's mean 
    *  @return Vec's mean */
   public double mean() {return mean(0);}

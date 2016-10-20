@@ -74,7 +74,7 @@ public class Scope {
   static public Frame track( Frame fr ) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
-    for( Vec vec: fr.vecs() ) track_impl(scope, vec._key);
+    for( Vec vec: fr.vecs().vecs()) track_impl(scope, vec._key);
     track_impl(scope, fr._key);
     return fr;
   }
@@ -85,6 +85,15 @@ public class Scope {
       scope._keys.peek().add(key);            // Track key
   }
 
+  static public void untrack(Frame fr){
+    for(Vec v:fr.vecs().vecs())untrack(v._key);
+  }
+  static public void untrack(Key<Vec> key) {
+    Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
+    if (scope == null) return;           // Not tracking this thread
+    if (scope._keys.size() == 0) return; // Tracked in the past, but no scope now
+    scope._keys.peek().remove(key);
+  }
   static public void untrack(Iterable<Key<Vec>> keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread

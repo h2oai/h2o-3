@@ -38,4 +38,8 @@ public class NewChunkAry extends ChunkAry<NewChunk> {
   public void addNAs(int c, int skipped) {
     _cs[c].addNAs(skipped);
   }
+
+  public void setDoubles(int c, double[] vals) {
+    _cs[c].setDoubles(vals);
+  }
 }
