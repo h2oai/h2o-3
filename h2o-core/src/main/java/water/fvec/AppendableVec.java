@@ -22,10 +22,10 @@ public class AppendableVec extends Vec {
   public final int _chunkOff;
 
 
-  public AppendableVec( Key<Vec> key, byte type ) { this(key, new long[4], type, 0); }
+  public AppendableVec( Key<Vec> key, byte... types ) { this(key, new long[4], types, 0); }
 
-  public AppendableVec( Key<Vec> key, long[] tmp_espc, byte type, int chunkOff) {
-    super( key, -1/*no rowLayout yet*/, null, type ); 
+  public AppendableVec( Key<Vec> key, long[] tmp_espc, byte [] types, int chunkOff) {
+    super( key, -1/*no rowLayout yet*/, null, types );
     _tmp_espc = tmp_espc;
     _chunkOff = chunkOff;
   }
@@ -94,8 +94,11 @@ public class AppendableVec extends Vec {
     espc[nchunk]=x;             // Total element count in last
     return ESPC.rowLayout(_key,espc);
   }
-
-
+  public final void setDomains(String[][] domains) {
+    _domains = domains;
+    for(int i = 0; i < _types.length; ++i)
+      assert (_domains[i] != null) == (_types[i] == Vec.T_CAT);
+  }
   // "Close" out a NEW vector - rewrite it to a plain Vec that supports random
   // reads, plus computes rows-per-chunk, min/max/mean, etc.
   public Vec close(int rowLayout, Futures fs) {
@@ -106,9 +109,8 @@ public class AppendableVec extends Vec {
       nchunk--;
       DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
     }
-
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, rowLayout, domain(), _type);
+    Vec vec = new Vec(_key, rowLayout, _domains, _types);
     DKV.put(_key,vec,fs);       // Inject the header into the K/V store
     return vec;
   }
@@ -116,7 +118,12 @@ public class AppendableVec extends Vec {
   // Default read/write behavior for AppendableVecs
   @Override protected boolean readable() { return false; }
   @Override protected boolean writable() { return true ; }
-  @Override public NewChunk chunkForChunkIdx(int cidx) { return new NewChunk(this,cidx); }
+  @Override public NewChunkAry chunkForChunkIdx(int cidx) {
+    NewChunk [] ncs = new NewChunk[numCols()];
+    for(int i = 0; i < ncs.length; ++i)
+      ncs[i] = new NewChunk();
+    return new NewChunkAry(this,cidx,ncs,null);
+  }
   // None of these are supposed to be called while building the new vector
   @Override public Value chunkIdx( int cidx ) { throw H2O.fail(); }
   @Override public long length() { throw H2O.fail(); }

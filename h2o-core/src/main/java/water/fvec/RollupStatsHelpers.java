@@ -13,17 +13,17 @@ public class RollupStatsHelpers {
   /**
    * MASTER TEMPLATE - All methods below are COPY & PASTED from this template, and some optimizations are performed based on the chunk types
    *
-   * @param c
-   * @param start
+   * @param ca
    * @param checksum
    * @return
    */
-  public long numericChunkRollup(Chunk c, long start, long checksum) {
+  public long numericChunkRollup(ChunkAry ca, int col, long checksum) {
+    long start = ca._start;
     long pinfs=0, ninfs=0, naCnt=0, nzCnt=0;
     // pull (some) members into local variables for speed
     boolean isInt = _rs._isInt;
-    boolean hasNA = c.hasNA();
-    boolean hasFloat = c.hasFloat();
+    boolean hasNA = ca.hasNA(col);
+    boolean hasFloat = ca.hasFloat(col);
     double dmin = _rs._mins[_rs._mins.length-1];
     double dmax = _rs._maxs[_rs._maxs.length-1];
 
@@ -35,11 +35,11 @@ public class RollupStatsHelpers {
     double M2 = 0; //variance of non-NA rows, will be 0 for all 0s of sparse chunks
 
     // loop over all values for dense chunks, but only the non-zeros for sparse chunks
-    for (int i = c.nextNZ(-1); i < c._len; i = c.nextNZ(i)) {
-      if (hasNA && c.isNA(i)) naCnt++;
+    for (int i = ca.nextNZ(-1,col); i < ca._len; i = ca.nextNZ(i,col)) {
+      if (hasNA && ca.isNA(i,col)) naCnt++;
       else {
-        double x = c.atd(i);
-        long l = hasFloat ? Double.doubleToRawLongBits(x) : c.at8(i);
+        double x = ca.atd(i,col);
+        long l = hasFloat ? Double.doubleToRawLongBits(x) : ca.at8(i,col);
         if (l != 0) // ignore 0s in checksum to be consistent with sparse chunks
           checksum ^= (17 * (start + i)) ^ 23 * l;
         if (x == Double.POSITIVE_INFINITY) pinfs++;

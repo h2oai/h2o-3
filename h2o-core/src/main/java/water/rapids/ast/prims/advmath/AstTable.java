@@ -2,13 +2,9 @@ package water.rapids.ast.prims.advmath;
 
 import water.AutoBuffer;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -81,18 +77,17 @@ public class AstTable extends AstPrimitive {
     Vec dataLayoutVec = Vec.makeCon(0, cnts.length);
     Frame fr = new MRTask() {
       @Override
-      public void map(Chunk cs[], NewChunk nc0, NewChunk nc1) {
-        final Chunk c = cs[0];
-        for (int i = 0; i < c._len; ++i) {
-          int idx = (int) (i + c.start());
+      public void map(ChunkAry cs, NewChunkAry ncs) {
+        for (int i = 0; i < cs._len; ++i) {
+          int idx = (int) (i + cs.start());
           if (cnts[idx] > 0) {
-            nc0.addNum(idx + minVal);
-            nc1.addNum(cnts[idx]);
+            ncs.addNum(0,idx + minVal);
+            ncs.addNum(1,cnts[idx]);
           }
         }
       }
     }.doAll(new byte[]{Vec.T_NUM, Vec.T_NUM}, dataLayoutVec).outputFrame(new String[]{colname, "Count"},
-        new String[][]{v1.domain(), null});
+        new String[][]{v1.domain(0), null});
     dataLayoutVec.remove();
     return new ValFrame(fr);
   }
@@ -109,7 +104,7 @@ public class AstTable extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk c) {
+    public void map(ChunkAry c) {
       _cnts = new long[_span];
       for (int i = 0; i < c._len; i++)
         if (!c.isNA(i))
@@ -148,7 +143,7 @@ public class AstTable extends AstPrimitive {
 
       Frame res = new Frame();
       Vec rowlabel = Vec.makeVec(dcols, Vec.VectorGroup.VG_LEN1.addVec());
-      rowlabel.setDomain(v1.domain());
+      rowlabel.setDomain(0,v1.domain(0));
       res.add(colnames[0], rowlabel);
       long cnts[] = new long[dcols.length];
       for (int col = 0; col < dcols.length; col++) {
@@ -157,7 +152,7 @@ public class AstTable extends AstPrimitive {
         AtomicLong al = colx.get(lkey);
         cnts[col] = al.get();
       }
-      Vec vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
+      Vec vec = Vec.makeVec(cnts, Vec.VectorGroup.VG_LEN1.addVec());
       res.add("Counts", vec);
       return new ValFrame(res);
     }
@@ -185,7 +180,7 @@ public class AstTable extends AstPrimitive {
       // Frame result.  Rowlabel for first column.
 
       Vec rowlabel = Vec.makeVec(drows, Vec.VectorGroup.VG_LEN1.addVec());
-      rowlabel.setDomain(v1.domain());
+      rowlabel.setDomain(0,v1.domain(0));
       res.add(colnames[0], rowlabel);
       long cnts[] = new long[drows.length];
       for (int col = 0; col < dcols.length; col++) {
@@ -194,8 +189,8 @@ public class AstTable extends AstPrimitive {
           AtomicLong al = colx.get(Double.doubleToRawLongBits(drows[row]));
           cnts[row] = al == null ? 0 : al.get();
         }
-        Vec vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
-        res.add(v2.isCategorical() ? v2.domain()[col] : Double.toString(dcols[col]), vec);
+        Vec vec = Vec.makeVec(cnts, Vec.VectorGroup.VG_LEN1.addVec());
+        res.add(v2.isCategorical() ? v2.domain(0)[col] : Double.toString(dcols[col]), vec);
       }
     } else {
 
@@ -231,12 +226,12 @@ public class AstTable extends AstPrimitive {
       }
 
       Vec vec = Vec.makeVec(left_categ, Vec.VectorGroup.VG_LEN1.addVec());
-      if (v1.isCategorical()) vec.setDomain(v1.domain());
+      if (v1.isCategorical()) vec.setDomain(0,v1.domain(0));
       res.add(colnames[0], vec);
       vec = Vec.makeVec(right_categ, Vec.VectorGroup.VG_LEN1.addVec());
-      if (v2.isCategorical()) vec.setDomain(v2.domain());
+      if (v2.isCategorical()) vec.setDomain(0,v2.domain(0));
       res.add(colnames[1], vec);
-      vec = Vec.makeVec(cnts, null, Vec.VectorGroup.VG_LEN1.addVec());
+      vec = Vec.makeVec(cnts, Vec.VectorGroup.VG_LEN1.addVec());
       res.add("Counts", vec);
     }
     return new ValFrame(res);
@@ -270,14 +265,14 @@ public class AstTable extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk c0, Chunk c1) {
-      for (int i = 0; i < c0._len; i++) {
+    public void map(ChunkAry cs) {
+      for (int i = 0; i < cs._len; i++) {
 
-        double d0 = c0.atd(i);
+        double d0 = cs.atd(i,0);
         if (Double.isNaN(d0)) continue;
         long l0 = Double.doubleToRawLongBits(d0);
 
-        double d1 = c1.atd(i);
+        double d1 = cs.atd(i,1);
         if (Double.isNaN(d1)) continue;
         long l1 = Double.doubleToRawLongBits(d1);
 

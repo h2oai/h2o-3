@@ -109,7 +109,6 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
  */
 
 public abstract class Chunk extends Iced<Chunk> {
-
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
 
@@ -751,4 +750,5 @@ public abstract class Chunk extends Iced<Chunk> {
       sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     throw new RuntimeException(sb.toString());
   }
+  abstract void add2Chunk(NewChunkAry nchks, int dstCol, int[] rows);
 }

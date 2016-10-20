@@ -21,19 +21,24 @@ public class DataInfo extends Keyed<DataInfo> {
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
   public int _responses;   // number of responses
   public int _outpus; // number of outputs
+  private int _weightsId = -1;
+  private int _responseId = -1;
+  private int _offsetId = -1;
+  private int _foldId = -1;
+  private int _outputId = -1;
 
   public Vec setWeights(String name, Vec vec) {
-    if(_weights)
-      return _adaptedFrame.replace(weightChunkId(),vec);
-    _adaptedFrame.insertVec(weightChunkId(),name,vec);
-    _weights = true;
+    if(_weightsId != -1)
+      return _adaptedFrame.replace(_weightsId,vec);
+    _weightsId = _adaptedFrame.numCols();
+    _adaptedFrame.add(name,vec);
     return null;
   }
 
   public void dropWeights() {
-    if(!_weights)return;
-    _adaptedFrame.remove(weightChunkId());
-    _weights = false;
+    if(_weightsId == -1)return;
+    _adaptedFrame.remove(_weightsId);
+    _weightsId = -1;
   }
 
   public void dropInteractions() { // only called to cleanup the InteractionWrappedVecs!
@@ -52,9 +57,10 @@ public class DataInfo extends Keyed<DataInfo> {
     return res;
   }
 
-  public void addResponse(String [] names, Vec[] vecs) {
+  public void addResponse(String [] names, Vec... vecs) {
     _adaptedFrame.add(names,vecs);
-    _responses += vecs.length;
+    for(Vec v:vecs)
+      _responses += v.numCols();
   }
 
   public int[] catNAFill() {return _catNAFill;}
@@ -106,24 +112,30 @@ public class DataInfo extends Keyed<DataInfo> {
   public double [] _normRespSub;  // subtract from the response column this value
   public double [] _numMeans;
   public boolean _intercept = true;
-  public boolean _offset;
-  public boolean _weights;
-  public boolean _fold;
+
   public Model.InteractionPair[] _interactions; // raw set of interactions
   public String[] _interactionColumns; // the names of the columns to interact
   public int _interactionVecs[]; // the interaction columns appearing in _adaptedFrame
   public int[] _numOffsets; // offset column indices used by numerical interactions: total number of numerical columns is given by _numOffsets[_nums] - _numOffsets[0]
-  public int responseChunkId(int n){return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0);}
-  public int foldChunkId(){return _cats + _nums + (_weights?1:0) + (_offset?1:0);}
+  public int responseChunkId(int n){return _responseId;}
+  public int foldChunkId(){return _foldId;}
 
-  public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
-  public int weightChunkId(){return _cats + _nums;}
+  public int offsetChunkId(){return _offsetId;}
+  public int weightChunkId(){return _weightsId;}
   public int outputChunkId() { return outputChunkId(0);}
-  public int outputChunkId(int n) { return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + _responses;}
-  public void addOutput(String name, Vec v) {_adaptedFrame.add(name,v);}
-  public Vec getOutputVec(int i) {return _adaptedFrame.vec(outputChunkId(i));}
-  public void setResponse(String name, Vec v){ setResponse(name,v,0);}
-  public void setResponse(String name, Vec v, int n){ _adaptedFrame.insertVec(responseChunkId(n),name,v);}
+  public int outputChunkId(int n) { return _outputId;}
+  public void addOutput(String name, Vec v) {
+    if(_offsetId == -1)
+      _offsetId = _adaptedFrame.numCols();
+    _adaptedFrame.add(name,v);
+  }
+  public Vec getOutputVec(int i) {return _adaptedFrame.vec(_outputId+i);}
+
+  public void setResponse(String name, Vec v){
+    if(_responseId == -1)
+      _responseId = _adaptedFrame.numCols();
+    _adaptedFrame.add(name,v);
+  }
 
   public final boolean _skipMissing;
   public final boolean _imputeMissing;
@@ -131,7 +143,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int [][] _catLvls; // cat lvls post filter (e.g. by strong rules)
   public final int [][] _intLvls; // interaction lvls post filter (e.g. by strong rules)
 
-  private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false; _offset = false; _weights = false; _fold = false; }
+  private DataInfo() {  _intLvls=null; _catLvls = null; _skipMissing = true; _imputeMissing = false; _valid = false;  }
   public String[] _coefNames;
   @Override protected long checksum_impl() {throw H2O.unimpl();} // don't really need checksum
 
@@ -142,7 +154,7 @@ public class DataInfo extends Keyed<DataInfo> {
     this(train, valid, 0, useAllFactorLevels, predictor_transform, TransformType.NONE, skipMissing, imputeMissing, missingBucket, /* weight */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
   }
 
-  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold) {
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, String weight, String offset, String fold) {
     this(train,valid,nResponses,useAllFactorLevels,predictor_transform,response_transform,skipMissing,imputeMissing,missingBucket,weight,offset,fold,null);
   }
 
@@ -167,14 +179,11 @@ public class DataInfo extends Keyed<DataInfo> {
    *    A. As a list of pairs of column indices.
    *    B. As a list of pairs of column indices with limited enums.
    */
-  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, String[] interactions) {
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, String weight, String offset, String fold, String[] interactions) {
     super(Key.<DataInfo>make());
     _valid = valid != null;
     assert predictor_transform != null;
     assert  response_transform != null;
-    _offset = offset;
-    _weights = weight;
-    _fold = fold;
     assert !(skipMissing && imputeMissing) : "skipMissing and imputeMissing cannot both be true";
     _skipMissing = skipMissing;
     _imputeMissing = imputeMissing;
@@ -205,15 +214,15 @@ public class DataInfo extends Keyed<DataInfo> {
     }
 
     _permutation = new int[train.numCols()];
-    final Vec[] tvecs = train.vecs();
+    final VecAry tvecs = train.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0) - (fold?1:0);
+    final int n = tvecs._numCols-_responses - (offset != null?1:0) - (weight != null?1:0) - (fold != null?1:0);
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
     for(int i = 0; i < n; ++i)
-      if (tvecs[i].isCategorical())
+      if (tvecs.isCategorical(i))
         cats[ncats++] = i;
       else
         nums[nnums++] = i;
@@ -225,7 +234,7 @@ public class DataInfo extends Keyed<DataInfo> {
     // sort the cats in the decreasing order according to their size
     for(int i = 0; i < ncats; ++i)
       for(int j = i+1; j < ncats; ++j)
-        if( tvecs[cats[i]].domain().length < tvecs[cats[j]].domain().length ) {
+        if( tvecs.domain(cats[i]).length < tvecs.domain(cats[j]).length ) {
           int x = cats[i];
           cats[i] = cats[j];
           cats[j] = x;
@@ -243,8 +252,8 @@ public class DataInfo extends Keyed<DataInfo> {
     ArrayList<Integer> interactionIds;
     if( _interactions==null ) {
       interactionIds = new ArrayList<>();
-      for(int i=0;i<tvecs.length;++i)
-        if( tvecs[i] instanceof InteractionWrappedVec ) interactionIds.add(i);
+//      for(int i=0;i<tvecs._numCols;++i)
+//        if( tvecs[i] instanceof InteractionWrappedVec ) interactionIds.add(i);
       if( interactionIds.size() > 0 ) {
         _interactionVecs = new int[interactionIds.size()];
         for (int i = 0; i < _interactionVecs.length; ++i)
@@ -253,16 +262,15 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     for(int i = 0; i < ncats; ++i) {
       names[i] = train._names[cats[i]];
-      Vec v = (tvecs2[i] = tvecs[cats[i]]);
       _catMissing[i] = missingBucket; //needed for test time
-      if( v instanceof InteractionWrappedVec ) {
-        if( _interactions!=null ) _interactions[interactionIdx].vecIdx=i;
-        _interactionVecs[interactionIdx++]=i;  // i (and not cats[i]) because this is the index in _adaptedFrame
-        _catOffsets[i + 1] = (len += v.domain().length + (missingBucket ? 1 : 0));
-      }
-      else
-        _catOffsets[i+1] = (len += v.domain().length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
-      _catNAFill[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?v.domain().length - (_useAllFactorLevels || isInteractionVec(i)?0:1):-100;
+//      if( v instanceof InteractionWrappedVec ) {
+//        if( _interactions!=null ) _interactions[interactionIdx].vecIdx=i;
+//        _interactionVecs[interactionIdx++]=i;  // i (and not cats[i]) because this is the index in _adaptedFrame
+//        _catOffsets[i + 1] = (len += v.domain().length + (missingBucket ? 1 : 0));
+//      }
+//      else
+        _catOffsets[i+1] = (len += tvecs.domain(cats[i]).length - (useAllFactorLevels?0:1) + (missingBucket? 1 : 0)); //missing values turn into a new factor level
+      _catNAFill[i] = imputeMissing?imputeCat(train.vec(cats[i])):_catMissing[i]?tvecs.domain(cats[i]).length - (_useAllFactorLevels || isInteractionVec(i)?0:1):-100;
       _permutation[i] = cats[i];
     }
     _numOffsets = MemoryManager.malloc4(nnums+1);

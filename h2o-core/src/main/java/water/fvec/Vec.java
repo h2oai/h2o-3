@@ -155,7 +155,7 @@ import java.util.UUID;
  */
 public class Vec extends Keyed<Vec> {
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
-  byte _type;                   // Vec Type
+  byte [] _types;                   // Vec Type
 
   /** Element-start per chunk, i.e. the row layout.  Defined in the
    *  VectorGroup.  This field is dead/ignored in subclasses that are
@@ -168,27 +168,25 @@ public class Vec extends Keyed<Vec> {
   private transient long _espc[];
 
   // String domain, only for Categorical columns
-  private String[] _domain;
+  protected String[][] _domains;
 
-  // Rollup stats key.  Every ask of a rollup stats (e.g. min/mean/max or
-  // bytesize) bounces through the DKV to fetch the latest copy of the Rollups
-  // - lest a Vec.set changes the rollups and we return a stale copy.
-  transient private Key _rollupStatsKey;
+  protected Vec() {}
+
 
   /** Returns the categorical toString mapping array, or null if not an categorical column.
    *  Not a defensive clone (to expensive to clone; coding error to change the
    *  contents).
    *  @return the categorical / factor / categorical mapping array, or null if not a categorical column */
-  public String[] domain() { return _domain; }   // made no longer final so that InteractionWrappedVec which are _type==T_NUM but have a categorical interaction
+  public String[] domain(int c) { return _domains[c]; }   // made no longer final so that InteractionWrappedVec which are _type==T_NUM but have a categorical interaction
   /** Returns the {@code i}th factor for this categorical column.
    *  @return The {@code i}th factor */
-  public final String factor( long i ) { return _domain[(int)i]; }
+  public final String factor( int c, int i ) { return _domains[c][i]; }
   /** Set the categorical/factor names.  No range-checking on the actual
    *  underlying numeric domain; user is responsible for maintaining a mapping
    *  which is coherent with the Vec contents. */
-  public final void setDomain(String[] domain) { _domain = domain; if( domain != null ) _type = T_CAT; }
+  public final Vec setDomain(int c, String[] domain) { _domains[c] = domain; if( domain != null ) _types[c] = T_CAT; return this; }
   /** Returns cardinality for categorical domain or -1 for other types. */
-  public final int cardinality() { return isCategorical() ? _domain.length : -1; }
+  public final int cardinality(int c) { return isCategorical(c) ? _domains[c].length : -1; }
 
   // Vec internal type
   public static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
@@ -204,54 +202,50 @@ public class Vec extends Keyed<Vec> {
   /** True if this is an categorical column.  All categorical columns are also
    *  {@link #isInt}, but not vice-versa.
    *  @return true if this is an categorical column.  */
-  public final boolean isCategorical() {
-    assert (_type==T_CAT && _domain!=null) || (_type!=T_CAT && _domain==null) || (_type==T_NUM && this instanceof InteractionWrappedVec && _domain!=null);
-    return _type==T_CAT;
+  public final boolean isCategorical() { return isCategorical(0);}
+  public final boolean isCategorical(int c) {
+    assert (_types[c]==T_CAT && _domains[c]!=null) || (_types[c]!=T_CAT && _domains[c]==null) || (_types[c]==T_NUM && this instanceof InteractionWrappedVec && _domains[c]!=null);
+    return _types[c]==T_CAT;
   }
 
-  public final double sparseRatio() {
-    return rollupStats()._nzCnt/(double)length();
+  public final double sparseRatio(int c) {
+    return rollupStats().getRollups(c)._nzCnt/(double)length();
   }
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
-  public final boolean isUUID   (){ return _type==T_UUID; }
+  public final boolean isUUID   (int c){ return _types[c]==T_UUID; }
   /** True if this is a String column.  
    *  @return true if this is a String column.  */
-  public final boolean isString (){ return _type==T_STR; }
+  public final boolean isString (int c){ return _types[c]==T_STR; }
   /** True if this is a numeric column, excluding categorical and time types.
    *  @return true if this is a numeric column, excluding categorical and time types  */
-  public final boolean isNumeric(){ return _type==T_NUM; }
+  public final boolean isNumeric(int c){ return _types[c]==T_NUM; }
   /** True if this is a time column.  All time columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is a time column.  */
-  public final boolean isTime   (){ return _type==T_TIME; }
+  public final boolean isTime   (int c){ return _types[c]==T_TIME; }
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
    *  {@code espc} array).
    */
-  public Vec( Key<Vec> key, int rowLayout) { this(key, rowLayout, null, T_NUM); }
-
-  /** Build a numeric-type or categorical-type Vec; the caller understands Chunk
-   *  layout (via the {@code espc} array); categorical Vecs need to pass the
-   *  domain.
-   */
-  Vec( Key<Vec> key, int rowLayout, String[] domain) { this(key,rowLayout,domain, (domain==null?T_NUM:T_CAT)); }
+  public Vec( Key<Vec> key, int rowLayout, int numCols) { this(key, rowLayout, null, ArrayUtils.makeConst(numCols, T_NUM)); }
 
   /** Main default constructor; the caller understands Chunk layout (via the
    *  {@code espc} array), plus categorical/factor the {@code domain} (or null for
    *  non-categoricals), and the Vec type. */
-  public Vec( Key<Vec> key, int rowLayout, String[] domain, byte type ) {
+  public Vec( Key<Vec> key, int rowLayout, String[][] domains, byte [] types ) {
     super(key);
     assert key._kb[0]==Key.VEC;
-    assert domain==null || type==T_CAT;
-    assert T_BAD <= type && type <= T_TIME; // Note that T_BAD is allowed for all-NA Vecs
-    setMeta(type,domain);
     _rowLayout = rowLayout;
-    _type = type;
-    _domain = domain;
+    _types = types;
+    _domains = domains;
     _espc = ESPC.espc(this);
   }
 
+  public int vecId(){
+    if(_key == null) return -1;
+    return UnsafeUtils.get4(_key._kb,2);
+  }
   public long[] espc() { if( _espc==null ) _espc = ESPC.espc(this); return _espc; }
 
   /** Number of elements in the vector; returned as a {@code long} instead of
@@ -286,22 +280,21 @@ public class Vec extends Keyed<Vec> {
   boolean readable() { return true ; }
   /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
   boolean writable() { return true; }
-  public void setBad() { _type = T_BAD; }
+  public void setBad(int c) { _types[c] = T_BAD; }
   /** Get the column type. */
-  public byte get_type() { return _type; }
-  public String get_type_str() { return TYPE_STR[_type]; }
-
-  public boolean isBinary(){
-    RollupStats rs = rollupStats();
+  public byte get_type(int c) { return _types[c]; }
+  public String get_type_str(int c) { return TYPE_STR[_types[c]]; }
+  public String get_type_str() {
+    String[] res = new String[_types.length];
+    for (int i = 0; i < res.length; ++i)
+      res[i] = get_type_str(i);
+    return Arrays.toString(res);
+  }
+  public boolean isBinary(){return isBinary(0);}
+  public boolean isBinary(int c){
+    RollupStats rs = rollupStats().getRollups(c);
     return rs._isInt && rs._mins[0] >= 0 && rs._maxs[0] <= 1;
   }
-
-  private void setMeta( byte type, String[] domain) {
-    if( domain==null && type==T_CAT ) type = T_NUM; // Until you have some strings, you are just a numeric column
-    _domain = domain;
-    _type = type;
-  }
-  public void copyMeta( Vec src, Futures fs ) { setMeta(src._type,src._domain); DKV.put(this,fs); }
 
   // ======= Create zero/constant Vecs ======
   /** Make a new zero-filled vec **/
@@ -366,85 +359,52 @@ public class Vec extends Keyed<Vec> {
     return makeCon(x,vg,ESPC.rowLayout(vg._key,espc));
   }
 
-  public Vec [] makeDoubles(int n, double [] values) {
-    Key [] keys = group().addVecs(n);
-    Vec [] res = new Vec[n];
-    for(int i = 0; i < n; ++i)
-      res[i] = new Vec(keys[i],_rowLayout);
-    fillDoubleChunks(this,res, values);
-    Futures fs = new Futures();
-    for(Vec v:res)
-      DKV.put(v,fs);
-    fs.blockForPending();
-    System.out.println("made vecs " + Arrays.toString(res));
-    return res;
-  }
-
-
-  private static void fillDoubleChunks(Vec v, final Vec[] ds, final double [] values){
-    new MRTask(){
-      public void map(Chunk c){
-        for(int i = 0; i < ds.length; ++i)
-          DKV.put(ds[i].chunkKey(c.cidx()),new C0DChunk(values[i],c._len << 3));
-      }
-    }.doAll(v);
-  }
   /** Make a new vector with the same size and data layout as the current one,
    *  and initialized to zero.
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to zero.  */
-  public Vec makeZero() { return makeCon(0, null, group(), _rowLayout); }
+  public Vec makeZero() { return makeCons(0); }
 
   /** A new vector with the same size and data layout as the current one, and
    *  initialized to zero, with the given categorical domain.
    *  @return A new vector with the same size and data layout as the current
    *  one, and initialized to zero, with the given categorical domain. */
-  public Vec makeZero(String[] domain) { return makeCon(0, domain, group(), _rowLayout); }
+  public Vec makeZero(String[] domain) {
+    return makeCons(domain,0);
+  }
 
   /** A new vector which is a copy of {@code this} one.
    *  @return a copy of the vector.  */
-  public Vec makeCopy() { return makeCopy(domain()); }
+  public Vec makeCopy() { return makeCopy(_domains); }
 
   /** A new vector which is a copy of {@code this} one.
    *  @return a copy of the vector.  */
-  public Vec makeCopy(String[] domain){ return makeCopy(domain, _type); }
+  public Vec makeCopy(String[][] domains){ return makeCopy(domains, _types); }
 
-  public Vec makeCopy(String[] domain, byte type) {
+  public Vec makeCopy(String[][] domains, byte [] types) {
     Vec v = doCopy();
-    v.setMeta(type,domain);
+    v._types = types;
+    v._domains = domains;
     DKV.put(v);
     return v;
   }
 
   public Vec doCopy() {
-    final Vec v = new Vec(group().addVec(),_rowLayout);
+    final Vec v = new Vec(group().addVec(),_rowLayout,_domains,_types);
     new MRTask(){
-      @Override public void map(Chunk c){
-        Chunk c2 = c.deepCopy();
-        DKV.put(v.chunkKey(c.cidx()), c2, _fs);
+      @Override public void map(ChunkAry c){
+        DBlock db = new DBlock(c._cs,c._ids);
+        for(int i = 0; i < c._cs.length; ++i)
+          db._cs[i] = db._cs[i].deepCopy();
+        DKV.put(v.chunkKey(c._cidx), db, _fs);
       }
     }.doAll(this);
     return v;
   }
 
-  public static Vec makeCon( final long l, String[] domain, VectorGroup group, int rowLayout ) {
-    final Vec v0 = new Vec(group.addVec(), rowLayout, domain);
-    final int nchunks = v0.nChunks();
-    new MRTask() {              // Body of all zero chunks
-      @Override protected void setupLocal() {
-        for( int i=0; i<nchunks; i++ ) {
-          Key k = v0.chunkKey(i);
-          if( k.home() ) DKV.put(k,new C0LChunk(l,v0.chunkLen(i)),_fs);
-        }
-      }
-    }.doAllNodes();
-    DKV.put(v0._key, v0);        // Header last
-    return v0;
-  }
-
   public static Vec makeVec(double [] vals, Key<Vec> vecKey){
-    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}));
-    NewChunk nc = new NewChunk(v,0);
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}),1);
+    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(v,0)},null);
     Futures fs = new Futures();
     for(double d:vals)
       nc.addNum(d);
@@ -456,25 +416,23 @@ public class Vec extends Keyed<Vec> {
 
   // allow missing (NaN) categorical values
   public static Vec makeVec(double [] vals, String [] domain, Key<Vec> vecKey){
-    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
-    NewChunk nc = new NewChunk(v,0);
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), new String[][]{domain}, new byte[]{Vec.T_CAT});
+    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(v,0)},null);
     Futures fs = new Futures();
-    for(double d:vals) {
-      assert(Double.isNaN(d) || (long)d == d);
-      nc.addNum(d);
-    }
+    for(double d:vals)
+      nc.addInteger(d);
     nc.close(fs);
     DKV.put(v._key, v, fs);
     fs.blockForPending();
     return v;
   }
   // Warning: longs are lossily converted to doubles in nc.addNum(d)
-  public static Vec makeVec(long [] vals, String [] domain, Key<Vec> vecKey){
-    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);
-    NewChunk nc = new NewChunk(v,0);
+  public static Vec makeVec(long [] vals, Key<Vec> vecKey){
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}),1);
+    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(v,0)},null);
     Futures fs = new Futures();
     for(long d:vals)
-      nc.addNum(d);
+      nc.addInteger(d);
     nc.close(fs);
     DKV.put(v._key, v, fs);
     fs.blockForPending();
@@ -493,74 +451,72 @@ public class Vec extends Keyed<Vec> {
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.  */
   public Vec makeCon( final double d ) { return makeCon(d, group(), _rowLayout); }
+  public Vec makeCons( final double... d ) { return makeCons(group(), _rowLayout,d); }
+  public Vec makeCons( String [] domain, final double... d ) {
+    Vec v = makeCons(d);
+    v.setDomain(0,domain);
+    DKV.put(v);
+    return v;
+  }
 
-  private static Vec makeCon( final double d, VectorGroup group, int rowLayout ) {
-    if( (long)d==d ) return makeCon((long)d, null, group, rowLayout);
-    final Vec v0 = new Vec(group.addVec(), rowLayout, null, T_NUM);
+  private static Vec makeCons(VectorGroup group, int rowLayout, final double... d) {
+    final Vec v0 = new Vec(group.addVec(), rowLayout, d.length);
     final int nchunks = v0.nChunks();
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
         for( int i=0; i<nchunks; i++ ) {
-          Key k = v0.chunkKey(i);
-          if( k.home() ) DKV.put(k,new C0DChunk(d,v0.chunkLen(i)),_fs);
+          if(v0.isLocal(i)) {
+            Key k = v0.newChunkKey(i);
+            Chunk[] cs = new Chunk[d.length];
+            for(int j = 0; j < cs.length; ++j)
+              cs[j] = new C0DChunk(d[j],0);
+            if (k.home()) DKV.put(k, new DBlock(cs,null), _fs);
+          }
         }
       }
     }.doAllNodes();
     DKV.put(v0._key, v0);        // Header last
     return v0;
   }
-
-  public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
-  public Vec [] makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n, 0, domain, types);}
-
-  // Make a bunch of compatible zero Vectors
-  public Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
-    final int nchunks = nChunks();
-    Key<Vec>[] keys = group().addVecs(n);
-    final Vec[] vs = new Vec[keys.length];
-    for(int i = 0; i < vs.length; ++i)
-      vs[i] = new Vec(keys[i],_rowLayout, 
-                      domains== null ? null : domains[i], 
-                      types  == null ? T_NUM: types[i]);
-    new MRTask() {
-      @Override protected void setupLocal() {
-        for (Vec v1 : vs) {
-          for (int i = 0; i < nchunks; i++) {
-            Key k = v1.chunkKey(i);
-            if (k.home()) DKV.put(k, new C0LChunk(l, chunkLen(i)), _fs);
-          }
-        }
-        for( Vec v : vs ) if( v._key.home() ) DKV.put(v._key,v,_fs);
-      }
-    }.doAllNodes();
-    return vs;
+  private static Vec makeCon( final double d, VectorGroup group, int rowLayout ) {
+    return makeCons(group,rowLayout,d);
   }
 
-  /** A Vec from an array of doubles
-   *  @param rows Data
-   *  @return The Vec  */
-  public static Vec makeCon(Key<Vec> k, double ...rows) {
-    k = k==null?Vec.VectorGroup.VG_LEN1.addVec():k;
-    Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k, T_NUM);
-    NewChunk chunk = new NewChunk(avec, 0);
-    for( double r : rows ) chunk.addNum(r);
-    chunk.close(0, fs);
-    Vec vec = avec.layout_and_close(fs);
-    fs.blockForPending();
-    return vec;
+  public Vec makeZeros(int n){return makeZeros(n,null,null);}
+  public Vec makeZeros(int n, String [][] domain, byte[] types){ return makeCons(_rowLayout,0,domain,types);}
+
+  // Make a bunch of compatible zero Vectors
+  public Vec makeCons(int n, final long l, String[][] domains, byte[] types) {
+    final int nchunks = nChunks();
+    Key<Vec> key = group().addVec();
+    final Vec res = new Vec(key,_rowLayout,domains,types);
+    new MRTask() {
+      @Override protected void setupLocal() {
+      for(int i = 0; i < nchunks; ++i) {
+        if(res.isLocal(i)){
+          Key k = res.newChunkKey(i);
+          Chunk [] cs = new Chunk[res.numCols()];
+          for(int j = 0; j < cs.length; ++j)
+            cs[j] = new C0LChunk(l, 0);
+            DKV.put(k,new DBlock(cs,null), _fs);
+        }
+      }
+      }
+    }.doAllNodes();
+    DKV.put(res);
+    return res;
   }
 
   /** Make a new vector initialized to increasing integers, starting with 1.
    *  @return A new vector initialized to increasing integers, starting with 1. */
   public static Vec makeSeq( long len, boolean redistribute) {
     return new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for( Chunk c : cs )
-          for( int r = 0; r < c._len; r++ )
-            c.set(r, r + 1 + c._start);
+      @Override public void map(ChunkAry cs) {
+        for( int c = 0; c < cs._numCols; ++c )
+          for(int r = 0; r < cs._len; r++ )
+            cs.set(r,c, r + 1 + cs._start);
       }
-    }.doAll(makeZero(len, redistribute))._fr.vecs()[0];
+    }.doAll(makeZero(len, redistribute))._fr.vecs();
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.
@@ -568,12 +524,12 @@ public class Vec extends Keyed<Vec> {
    */
   public static Vec makeSeq(final long min, long len) {
     return new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for (Chunk c : cs)
-          for (int r = 0; r < c._len; r++)
-            c.set(r, r + min + c._start);
+      @Override public void map(ChunkAry cs) {
+        for (int c = 0; c < cs._numCols; ++c)
+          for (int r = 0; r < cs._len; r++)
+            cs.set(r,c, r + min + cs._start);
       }
-    }.doAll(makeZero(len))._fr.vecs()[0];
+    }.doAll(makeZero(len))._fr.vecs();
   }
 
   /** Make a new vector initialized to increasing integers, starting with `min`.
@@ -581,12 +537,12 @@ public class Vec extends Keyed<Vec> {
    */
   public static Vec makeSeq(final long min, long len, boolean redistribute) {
     return new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for (Chunk c : cs)
-          for (int r = 0; r < c._len; r++)
-            c.set(r, r + min + c._start);
+      @Override public void map(ChunkAry cs) {
+        for (int c = 0; c < cs._numCols; ++c)
+          for (int r = 0; r < cs._len; r++)
+            cs.set(r, c, r + min + cs._start);
       }
-    }.doAll(makeZero(len, redistribute))._fr.vecs()[0];
+    }.doAll(makeZero(len, redistribute))._fr.vecs();
   }
 
   /** Make a new vector initialized to increasing integers mod {@code repeat}.
@@ -594,19 +550,19 @@ public class Vec extends Keyed<Vec> {
    */
   public static Vec makeRepSeq( long len, final long repeat ) {
     return new MRTask() {
-      @Override public void map(Chunk[] cs) {
-        for( Chunk c : cs )
-          for( int r = 0; r < c._len; r++ )
-            c.set(r, (r + c._start) % repeat);
+      @Override public void map(ChunkAry cs) {
+        for(int c = 0; c < cs._len; ++c )
+          for(int r = 0; r < cs._len; ++r )
+            cs.set(r,c, (r + cs._start) % repeat);
       }
-    }.doAll(makeZero(len))._fr.vecs()[0];
+    }.doAll(makeZero(len))._fr.vecs();
   }
 
   /** Make a new vector initialized to random numbers with the given seed */
   public Vec makeRand( final long seed ) {
     Vec randVec = makeZero();
     new MRTask() {
-      @Override public void map(Chunk c){
+      @Override public void map(ChunkAry c){
         Random rng = new RandomUtils.PCGRNG(c._start,1);
         for(int i = 0; i < c._len; ++i) {
           rng.setSeed(seed+c._start+i); // Determinstic per-row
@@ -621,16 +577,20 @@ public class Vec extends Keyed<Vec> {
 
   /** Vec's minimum value 
    *  @return Vec's minimum value */
-  public double min()  { return mins()[0]; }
+  public double min() {return min(0);}
+  public double min(int c)  { return mins(c)[0]; }
   /** Vec's 5 smallest values 
    *  @return Vec's 5 smallest values */
-  public double[] mins(){ return rollupStats()._mins; }
+  public double [] mins(){return mins(0);}
+  public double [] mins(int c){ return rollupStats().getRollups(c)._mins; }
   /** Vec's maximum value 
    *  @return Vec's maximum value */
-  public double max()  { return maxs()[0]; }
+  public double max()  { return max(0); }
+  public double max(int c)  { return maxs(c)[0]; }
   /** Vec's 5 largest values 
    *  @return Vec's 5 largeest values */
-  public double[] maxs(){ return rollupStats()._maxs; }
+  public double[] maxs() { return maxs(0); }
+  public double[] maxs(int c){ return rollupStats().getRollups(c)._maxs; }
   /** True if the column contains only a constant value and it is not full of NAs 
    *  @return True if the column is constant */
   public final boolean isConst() { return min() == max(); }
@@ -639,38 +599,53 @@ public class Vec extends Keyed<Vec> {
   public final boolean isBad() { return naCnt()==length(); }
   /** Vecs's mean 
    *  @return Vec's mean */
-  public double mean() { 
-    return rollupStats()._mean; }
+  public double mean() {return mean(0);}
+  public double mean(int c) {
+    return rollupStats().getRollups(c)._mean;
+  }
   /** Vecs's standard deviation
    *  @return Vec's standard deviation */
-  public double sigma(){ return rollupStats()._sigma; }
+  public double sigma(){ return sigma(0); }
+  public double sigma(int c){ return rollupStats().getRollups(c)._sigma; }
   /** Vecs's mode
    * @return Vec's mode */
-  public int mode() {
-    if (!isCategorical()) throw H2O.unimpl();
-    long[] bins = bins();
+  public int mode(){return mode(0);}
+  public int mode(int c) {
+    if (!isCategorical(c)) throw H2O.unimpl();
+    long[] bins = bins(c);
     return ArrayUtils.maxIndex(bins);
   }
   /** Count of missing elements
    *  @return Count of missing elements */
-  public long  naCnt() { return rollupStats()._naCnt; }
+  public long  naCnt() { return naCnt(0); }
+  public long  naCnt(int c) { return rollupStats().getRollups(c)._naCnt; }
   /** Count of non-zero elements
    *  @return Count of non-zero elements */
-  public long  nzCnt() { return rollupStats()._nzCnt; }
+  public long  nzCnt(int c) { return rollupStats().getRollups(c)._nzCnt; }
+  public long  nzCnt() { return nzCnt(0); }
   /** Count of positive infinities
    *  @return Count of positive infinities */
-  public long  pinfs() { return rollupStats()._pinfs; }
+  public long  pinfs(int c) { return rollupStats().getRollups(c)._pinfs; }
+  public long  pinfs() { return pinfs(0); }
   /** Count of negative infinities
    *  @return Count of negative infinities */
-  public long  ninfs() { return rollupStats()._ninfs; }
+  public long  ninfs(int c) { return rollupStats().getRollups(c)._ninfs; }
+  public long  ninfs() { return ninfs(0); }
   /** <b>isInt</b> is a property of numeric Vecs and not a type; this
    *  property can be changed by assigning non-integer values into the Vec (or
    *  restored by overwriting non-integer values with integers).  This is a
    *  strong type for {@link #isCategorical} and {@link #isTime} Vecs.
    *  @return true if the Vec is all integers */
-  public boolean isInt(){return rollupStats()._isInt; }
+  public boolean isInt(int c) {return rollupStats().getRollups(c)._isInt; }
+  public boolean isInt() {return isInt(0); }
   /** Size of compressed vector data. */
-  public long byteSize(){return rollupStats()._size; }
+  public long byteSize(int c) {return rollupStats().getRollups(c)._size; }
+  public long byteSize() {
+    long s = 0;
+    for(int i = 0; i < numCols(); ++i)
+      s += byteSize(i);
+    return s;
+  }
 
   /** Default percentiles for approximate (single-pass) quantile computation (histogram-based). */
   public static final double PERCENTILES[] = {0.001,0.01,0.1,0.2,0.25,0.3,1.0/3.0,0.4,0.5,0.6,2.0/3.0,0.7,0.75,0.8,0.9,0.99,0.999};
@@ -679,48 +654,116 @@ public class Vec extends Keyed<Vec> {
    *  bin's range is computed from {@link #base} and {@link #stride}.  The
    *  histogram is computed on first use and cached thereafter.
    *  @return A set of histogram bins, or null for String columns */
-  public long[] bins() { return RollupStats.get(this, true)._bins;      }
+  public long[] bins(int c) { return rollupStats(true).getRollups(c)._bins;      }
   /** Optimistically return the histogram bins, or null if not computed 
    *  @return the histogram bins, or null if not computed */
-  public long[] lazy_bins() { return rollupStats()._bins; }
+  public long[] lazy_bins(int c) { return rollupStats(false).getRollups(c)._bins;      }
   /** The {@code base} for a simple and cheap histogram of the Vec, useful
    *  for getting a broad overview of the data.  This returns the base of
    *  {@code bins()[0]}.
    *  @return the base of {@code bins()[0]} */
-  public double base()      { return RollupStats.get(this,true).h_base(); }
+  public double base(int c)      { return rollupStats().getRollups(c).h_base(); }
   /** The {@code stride} for a a simple and cheap histogram of the Vec, useful
    *  for getting a broad overview of the data.  This returns the stride
    *  between any two bins.
    *  @return the stride between any two bins */
-  public double stride()    { return RollupStats.get(this,true).h_stride(); }
+  public double stride(int c)    { return rollupStats().getRollups(c).h_stride(); }
 
   /** A simple and cheap percentiles of the Vec, useful for getting a broad
    *  overview of the data.  The specific percentiles are take from {@link #PERCENTILES}. 
    *  @return A set of percentiles */
-  public double[] pctiles() { return RollupStats.get(this, true)._pctiles;   }
+  public double[] pctiles(int c) { return rollupStats().getRollups(c)._pctiles;   }
 
+
+  private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
+
+
+
+  private static class RemoveColsFromRollupsTsk extends TAtomic<RollupsAry>{
+    final int _ncols;
+    final int [] _ids;
+
+    public RemoveColsFromRollupsTsk(int ncols, int [] ids){
+      _ncols = ncols;
+      _ids = ids;
+    }
+    @Override
+    protected RollupsAry atomic(RollupsAry old) {
+      if(old == null) old = new RollupsAry(_ncols);
+      for(int c:_ids)
+        old.markRemoved(c);
+      return old;
+    }
+  }
+
+  public void removeCols(final int... ids){
+    new RemoveColsFromRollupsTsk(numCols(),ids).invoke(rollupStatsKey());
+    new MRTask(){
+      @Override public void setupLocal(){
+        for(int i = 0; i < nChunks(); ++i){
+          Key k = chunkKey(i);
+          if(k.home()){
+            DBlock db = DKV.getGet(k);
+            db.removeChunks(ids);
+            DKV.put(k,db,_fs);
+          }
+        }
+      }
+    }.doAllNodes();
+  }
+
+  public RollupsAry tryFetchRollups(){
+    // Fetch if present, but do not compute
+    Value val = DKV.get(rollupStatsKey());
+    if( val == null )           // No rollup stats present?
+      return length() > 0 ? /*not computed*/null : /*empty vec*/new RollupsAry(0);
+      RollupsAry rs = val.get();
+      return rs;
+  }
 
   /** Compute the roll-up stats as-needed */
-  private RollupStats rollupStats() { return RollupStats.get(this); }
+  public RollupsAry rollupStats() { return rollupStats(false);}
 
-  public void startRollupStats(Futures fs) { startRollupStats(fs,false);}
+  public Futures startRollups(Futures fs) { return startRollups(false,fs);}
+  public Futures startRollups(boolean computeHisto, Futures fs) {
+    RollupsAry rs = tryFetchRollups();
+    if(rs == null || !rs.isReady(this,computeHisto))
+      fs.add(new RPC(rollupStatsKey().home_node(),new RollupStats.ComputeRollupsTask(this,computeHisto)).addCompleter(new H2O.H2OCallback() {
+        @Override public void callback(H2O.H2OCountedCompleter h2OCountedCompleter) {
+          DKV.get(rollupStatsKey()); // fetch new results via DKV to enable caching of the results.
+        }
+      }).call());
+    return fs;
+  }
 
-  /**
-   * Check if we have local cached copy of basic Vec stats (including histogram if requested) and if not start task to compute and fetch them;
-   * useful when launching a bunch of them in parallel to avoid single threaded execution later (e.g. for-loop accessing min/max of every vec in a frame).
-   *
-   * Does *not* guarantee rollup stats will be cached locally when done since there may be racy changes to vec which will flush local caches.
-   *
-   * @param fs Futures allow to wait for this task to finish.
-   * @param doHisto Also compute histogram, requires second pass over data amd is not computed by default.
-   *
-   */
-  public void startRollupStats(Futures fs, boolean doHisto) { RollupStats.start(this,fs,doHisto); }
+  public RollupsAry rollupStats(boolean computeHisto) {
+    if( DKV.get(_key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+_key);
+    final Key rskey = rollupStatsKey();
+    RollupsAry rs = DKV.getGet(rskey);
+    while(rs == null || (!rs.isReady(this,computeHisto))){
+      // 1. compute only once
+      try {
+        RPC rpcNew = new RPC(rskey.home_node(),new RollupStats.ComputeRollupsTask(this, computeHisto));
+        RPC rpcOld = _pendingRollups.putIfAbsent(rskey, rpcNew);
+        if(rpcOld == null) {  // no prior pending task, need to send this one
+          rpcNew.call().get();
+          _pendingRollups.remove(rskey);
+        } else // rollups computation is already in progress, wait for it to finish
+          rpcOld.get();
+      } catch( Throwable t ) {
+        System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
+        throw new RuntimeException(t);
+      }
+      // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
+      rs = DKV.getGet(rskey);
+    }
+    return rs;
+  }
 
   /** A high-quality 64-bit checksum of the Vec's content, useful for
    *  establishing dataset identity.
    *  @return Checksum of the Vec's content  */
-  @Override protected long checksum_impl() { return rollupStats()._checksum;}
+  @Override protected long checksum_impl() {return rollupStats()._checksum;}
 
 
   private static class SetMutating extends TAtomic<RollupStats> {
@@ -763,6 +806,8 @@ public class Vec extends Keyed<Vec> {
   }
 
 
+
+
   // ======= Key and Chunk Management ======
 
   /** Convert a row# to a chunk#.  For constant-sized chunks this is a little
@@ -785,6 +830,8 @@ public class Vec extends Keyed<Vec> {
   public int numCols(){throw H2O.unimpl();}
   public int numRows(){throw H2O.unimpl();}
 
+
+
   /** Get a Vec Key from Chunk Key, without loading the Chunk.
    *  @return the Vec Key for the Chunk Key */
   public static Key getVecKey( Key chk_key ) {
@@ -805,6 +852,7 @@ public class Vec extends Keyed<Vec> {
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index */
   protected Key chunkKey(int cidx ) { return chunkKey(keyTemplate(),cidx); }
+  public boolean isLocal(int cidx){return chunkKey(cidx).home();}
 
   public Key newChunkKey(int cidx ) {
     return chunkKey(Key.make(_key._kb.clone()),cidx);
@@ -821,10 +869,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   // Filled in lazily and racily... but all writers write the exact identical Key
-  public Key rollupStatsKey() { 
-    if( _rollupStatsKey==null ) _rollupStatsKey=chunkKey(-2);
-    return _rollupStatsKey;
-  }
+  public Key rollupStatsKey() {return chunkKey(-2);}
 
   /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
@@ -871,7 +916,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   /** Make a Vector-group key.  */
-  private Key groupKey(){
+  protected Key groupKey(){
     byte [] bits = _key._kb.clone();
     bits[0] = Key.GRP;
     UnsafeUtils.set4(bits, 2, -1);
@@ -919,6 +964,11 @@ public class Vec extends Keyed<Vec> {
   public final long  at8( long i, int j ) {
     ChunkAry ary = chunkForRow(i);
     return ary.at8(ary.chunkRelativeOffset(i),j);
+  }
+
+  public int at4(long i, int j) {
+    ChunkAry ary = chunkForRow(i);
+    return ary.at4(ary.chunkRelativeOffset(i),j);
   }
 
   /** Fetch element the slow way, as a double, or Double.NaN is missing.
@@ -979,7 +1029,7 @@ public class Vec extends Keyed<Vec> {
     private ChunkAry _cache;
     private ChunkAry chk(long i) {
       ChunkAry c = _cache;
-      return (c != null && c.start() <= i && i < c.start()+ c._numRows) ? c : (_cache = chunkForRow(i));
+      return (c != null && c.start() <= i && i < c.start()+ c._len) ? c : (_cache = chunkForRow(i));
     }
     public final long    at8( long i) { return at8(i,0); }
     public final long    at8( long i, int j ) {
@@ -1057,7 +1107,7 @@ public class Vec extends Keyed<Vec> {
     int _j;
     private ChunkAry chk(long i) {
       ChunkAry c = _cache;
-      return (c != null && c.start() <= i && i < c.start()+ c._numRows) ? c : (_cache = chunkForRow(i));
+      return (c != null && c.start() <= i && i < c.start()+ c._len) ? c : (_cache = chunkForRow(i));
     }
     private Writer() { this(0);}
     private Writer(int j) { preWriting(); }
@@ -1105,11 +1155,12 @@ public class Vec extends Keyed<Vec> {
     return fs;                  // Flow-coding
   }
 
+
   /** Pretty print the Vec: {@code [#elems, min/mean/max]{chunks,...}}
    *  @return Brief string representation of a Vec */
   @Override public String toString() {
-    RollupStats rs = RollupStats.getOrNull(this,rollupStatsKey());
-    String s = "["+length()+(rs == null ? ", {" : ","+rs._mins[0]+"/"+rs._mean+"/"+rs._maxs[0]+", "+PrettyPrint.bytes(rs._size)+", {");
+    RollupsAry rs = tryFetchRollups();
+    String s = " len = " + length() + ", " + ((rs == null)?"[rollups not computed]":rs.toString());
     int nc = nChunks();
     for( int i=0; i<nc; i++ ) {
       s += chunkKey(i).home_node()+":"+chunk2StartElem(i)+":";
@@ -1216,7 +1267,7 @@ public class Vec extends Keyed<Vec> {
    * @return a copy of vec which shared the same {@link VectorGroup} with this vector
    */
   public Vec align(final Vec vec) {
-    return new Frame(this).makeCompatible(new Frame(vec),true)[0];
+    return new Frame(this).makeCompatible(new Frame(vec),true);
   }
 
 
@@ -1341,8 +1392,8 @@ public class Vec extends Keyed<Vec> {
 
     // -------------------------------------------------
     static boolean sameGroup(Vec v1, Vec v2) {
-      byte[] bits1 = v1._key._kb;
-      byte[] bits2 = v2._key._kb;
+      byte[] bits1 = v1.groupKey()._kb;
+      byte[] bits2 = v2.groupKey()._kb;
       if( bits1.length != bits2.length )
         return false;
       int res  = 0;
@@ -1513,4 +1564,5 @@ public class Vec extends Keyed<Vec> {
     public static void clear() { ESPCS.clear(); }
     @Override protected long checksum_impl() { throw H2O.fail(); }
   }
+  public Vec[] vecs() {return new Vec[]{this};}
 }

@@ -64,76 +64,61 @@ public class Frame extends Lockable<Frame> {
   /** Vec names */
   public String[] _names;
   private boolean _lastNameBig; // Last name is "Cxxx" and has largest number
-  private Key<Vec>[] _keys;     // Keys for the vectors
-  private transient Vec[] _vecs; // The Vectors (transient to avoid network traffic)
-  private transient Vec _col0; // First readable vec; fast access to the VectorGroup's Chunk layout
+  private transient VecAry _vecs; // The Vectors (transient to avoid network traffic)
 
   public boolean hasNAs(){
-    for(Vec v:_vecs)
-      if(v.naCnt() > 0) return true;
+    RollupsAry rsa = _vecs.rollupStats();
+    for(int i = 0; i < _vecs.numCols(); ++i)
+      if (rsa.getRollups(i)._naCnt > 0) return true;
     return false;
   }
 
+  public Frame(Vec... vecs){this(null,vecs);}
   /** Creates an internal frame composed of the given Vecs and default names.  The frame has no key. */
-  public Frame(Vec... vecs){
-    this(null, vecs);
-  }
 
   /** Creates an internal frame composed of the given Vecs and names.  The frame has no key. */
-  public Frame(String names[], Vec vecs[]) {
+  public Frame(String names[], Vec... vecs) {
     this(null, names, vecs);
   }
 
   /** Creates an empty frame with given key. */
   public Frame(Key<Frame> key) {
-    this(key, null, new Vec[0]);
+    this(key, null, null);
   }
 
   /**
    * Special constructor for data with unnamed columns (e.g. svmlight) bypassing *all* checks.
    */
-  public Frame(Key<Frame> key, Vec vecs[], boolean noChecks) {
+  public Frame(Key<Frame> key, VecAry vecs, boolean noChecks) {
     super(key);
     assert noChecks;
     _vecs = vecs;
-    _names = new String[vecs.length];
-    _keys = makeVecKeys(vecs.length);
-    for (int i = 0; i < vecs.length; i++) {
+    _names = new String[vecs.numCols()];
+    for (int i = 0; i < vecs.numCols(); i++)
       _names[i] = defaultColName(i);
-      _keys[i] = vecs[i]._key;
-    }
   }
 
   /** Creates a frame with given key, names and vectors. */
-  public Frame(Key<Frame> key, String names[], Vec vecs[] ) {
+  public Frame(Key<Frame> key, String names[], Vec... vecs) { // allways only 1 vec
     super(key);
-
     // Require all Vecs already be installed in the K/V store
-    for( Vec vec : vecs ) DKV.prefetch(vec._key);
-    for( Vec vec : vecs ) assert DKV.get(vec._key) != null : " null vec: "+vec._key;
-
+    _vecs = new VecAry(vecs);
     // Always require names
     if( names==null ) {         // Make default names, all known to be unique
-      _names = new String[vecs.length];
-      _keys = makeVecKeys(vecs.length);
-      _vecs  = vecs;
-      for( int i=0; i<vecs.length; i++ ) _names[i] = defaultColName(i);
-      for( int i=0; i<vecs.length; i++ ) _keys [i] = vecs[i]._key;
-      for( int i=0; i<vecs.length; i++ ) checkCompatible(_names[i],vecs[i]);
+      _names = new String[_vecs.numCols()];
+
+      for( int i=0; i<_vecs.numCols(); i++ ) _names[i] = defaultColName(i);
       _lastNameBig = true;
     } else {
       // Make empty to dodge asserts, then "add()" them all which will check
       // for compatible Vecs & names.
-      _names = new String[0];
-      _keys = makeVecKeys(0);
-      _vecs  = new Vec   [0];
-      add(names,vecs);
+      _names = names;
     }
-    assert _names.length == vecs.length;
+    assert _names.length == _vecs.numCols();
   }
 
   public void setNames(String[] columns){
-    if(columns.length!= _vecs.length){
+    if(columns.length!= _vecs.numCols()){
       throw new IllegalArgumentException("Size of array containing column names does not correspond to the number of vecs!");
     }
     _names = columns;
@@ -144,8 +129,7 @@ public class Frame extends Lockable<Frame> {
   public Frame( Frame fr ) {
     super( Key.<Frame>make() );
     _names= fr._names.clone();
-    _keys = fr._keys .clone();
-    _vecs = fr.vecs().clone();
+    _vecs = new VecAry(fr.vecs());
     _lastNameBig = fr._lastNameBig;
   }
 
@@ -216,29 +200,19 @@ public class Frame extends Lockable<Frame> {
   public boolean isCompatible( Frame fr ) {
     if( numCols() != fr.numCols() ) return false;
     if( numRows() != fr.numRows() ) return false;
-    for( int i=0; i<vecs().length; i++ )
-      if( !vecs()[i].checkCompatible(fr.vecs()[i]) )
-        return false;
-    return true;
+    return vecs().checkCompatible(fr.vecs());
   }
 
   /** Number of columns
    *  @return Number of columns */
-  public int  numCols() { return _keys == null? 0 : _keys.length; }
+  public int  numCols() { return _vecs.numCols(); }
   /** Number of rows
    *  @return Number of rows */
   public long numRows() { Vec v = anyVec(); return v==null ? 0 : v.length(); }
 
   /** Returns the first readable vector.
    *  @return the first readable Vec */
-  public final Vec anyVec() {
-    Vec c0 = _col0; // single read
-    if( c0 != null ) return c0;
-    for( Vec v : vecs() )
-      if( v.readable() )
-        return (_col0 = v);
-    return null;
-  }
+  public final Vec anyVec() {return _vecs;}
 
   /** The array of column names.
    *  @return the array of column names */
@@ -250,46 +224,20 @@ public class Frame extends Lockable<Frame> {
     return _names[i];
   }
 
-  /** The array of keys.
-   * @return the array of keys for each vec in the frame.
-   */
-  public Key<Vec>[] keys() { return _keys; }
-  public Iterable<Key<Vec>> keysList() { return Arrays.asList(_keys); }
-
-  /** The internal array of Vecs.  For efficiency Frames contain an array of
-   *  Vec Keys - and the Vecs themselves are lazily loaded from the {@link DKV}.
-   *  @return the internal array of Vecs */
-  public final Vec[] vecs() {
-    Vec[] tvecs = _vecs; // read the content
-    return tvecs == null ? (_vecs=vecs_impl()) : tvecs;
-  }
-  public final Vec[] vecs(int [] idxs) {
-    Vec [] all = vecs();
-    Vec [] res = new Vec[idxs.length];
-    for(int i = 0; i < idxs.length; ++i)
-      res[i] = all[idxs[i]];
-    return res;
+  public final VecAry vecs(int... idxs) {
+    return idxs.length == 0?new VecAry(_vecs):_vecs.select(idxs);
   }
 
-  public Vec[] vecs(String[] names) {
-    Vec [] res = new Vec[names.length];
-    for(int i = 0; i < names.length; ++i)
-      res[i] = vec(names[i]);
-    return res;
+  public VecAry vecs(String[] names) {
+    return vecs(find(names));
   }
 
-  // Compute vectors for caching
-  private Vec[] vecs_impl() {
-    // Load all Vec headers; load them all in parallel by starting prefetches
-    for( Key<Vec> key : _keys ) DKV.prefetch(key);
-    Vec [] vecs = new Vec[_keys.length];
-    for( int i=0; i<_keys.length; i++ ) vecs[i] = _keys[i].get();
-    return vecs;
-  }
 
   /** Convenience to accessor for last Vec
    *  @return last Vec */
-  public Vec lastVec() { vecs(); return _vecs [_vecs.length -1]; }
+  public VecAry lastVec() {
+    throw H2O.unimpl();
+  }
   /** Convenience to accessor for last Vec name
    *  @return last Vec name */
   public String lastVecName() {  return _names[_names.length-1]; }
@@ -298,16 +246,16 @@ public class Frame extends Lockable<Frame> {
    *  remotely, or that the _vecs array was shared and now needs to be a
    *  defensive copy.
    *  @return the new instance of the Frame's Vec[] */
-  public final Vec[] reloadVecs() { _vecs=null; return vecs(); }
+  public final VecAry reloadVecs() { _vecs.reloadVecs(); return _vecs; }
 
   /** Returns the Vec by given index, implemented by code: {@code vecs()[idx]}.
    *  @param idx idx of column
    *  @return this frame idx-th vector, never returns <code>null</code> */
-  public final Vec vec(int idx) { return vecs()[idx]; }
+  public final Vec vec(int idx) { return _vecs.select(idx); }
 
   /**  Return a Vec by name, or null if missing
    *  @return a Vec by name, or null if missing */
-  public Vec vec(String name) { int idx = find(name); return idx==-1 ? null : vecs()[idx]; }
+  public Vec vec(String name) { int idx = find(name); return idx==-1 ? null : _vecs.select(idx); }
 
   /**   Finds the column index with a matching name, or -1 if missing
    *  @return the column index with a matching name, or -1 if missing */
@@ -321,25 +269,6 @@ public class Frame extends Lockable<Frame> {
     return -1;
   }
 
-  /**   Finds the matching column index, or -1 if missing
-   *  @return the matching column index, or -1 if missing */
-  public int find( Vec vec ) {
-    Vec[] vecs = vecs(); //warning: side-effect
-    if (vec == null) return -1;
-    for( int i=0; i<vecs.length; i++ )
-      if( vec.equals(vecs[i]) )
-        return i;
-    return -1;
-  }
-
-  /**   Finds the matching column index, or -1 if missing
-   *  @return the matching column index, or -1 if missing */
-  public int find( Key key ) {
-    for( int i=0; i<_keys.length; i++ )
-      if( key.equals(_keys[i]) )
-        return i;
-    return -1;
-  }
 
   /** Bulk {@link #find(String)} api
    *  @return An array of column indices matching the {@code names} array */
@@ -349,24 +278,6 @@ public class Frame extends Lockable<Frame> {
     for(int i = 0; i < names.length; ++i)
       res[i] = find(names[i]);
     return res;
-  }
-
-  public void insertVec(int i, String name, Vec vec) {
-    String [] names = new String[_names.length+1];
-    Vec [] vecs = new Vec[_vecs.length+1];
-    Key<Vec>[] keys = makeVecKeys(_keys.length + 1);
-    System.arraycopy(_names,0,names,0,i);
-    System.arraycopy(_vecs,0,vecs,0,i);
-    System.arraycopy(_keys,0,keys,0,i);
-    names[i] = name;
-    vecs[i] = vec;
-    keys[i] = vec._key;
-    System.arraycopy(_names,i,names,i+1,_names.length-i);
-    System.arraycopy(_vecs,i,vecs,i+1,_vecs.length-i);
-    System.arraycopy(_keys,i,keys,i+1,_keys.length-i);
-    _names = names;
-    _vecs = vecs;
-    _keys = keys;
   }
 
   /** Pair of (column name, Frame key). */
@@ -385,79 +296,58 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Type for every Vec */
-  public byte[] types() {
-    Vec[] vecs = vecs();
-    byte bs[] = new byte[vecs.length];
-    for( int i=0; i<vecs.length; i++ )
-      bs[i] = vecs[i]._type;
-    return bs;
-  }
+  public byte[] types() {return _vecs._types;}
 
   /** String name for each Vec type */
   public String[] typesStr() {  // typesStr not strTypes since shows up in intelliJ next to types
-    Vec[] vecs = vecs();
-    String s[] = new String[vecs.length];
-    for(int i=0;i<vecs.length;++i)
-      s[i] = vecs[i].get_type_str();
-    return s;
+    String [] res = new String[_vecs._numCols];
+    for(int i = 0; i < res.length; ++i)
+      res[i] = _vecs.get_type_str(i);
+    return res;
   }
 
   /** All the domains for categorical columns; null for non-categorical columns.
    *  @return the domains for categorical columns */
-  public String[][] domains() {
-    Vec[] vecs = vecs();
-    String ds[][] = new String[vecs.length][];
-    for( int i=0; i<vecs.length; i++ )
-      ds[i] = vecs[i].domain();
-    return ds;
-  }
+  public String[][] domains() {return _vecs._domains;}
 
   /** Number of categorical levels for categorical columns; -1 for non-categorical columns.
    * @return the number of levels for categorical columns */
   public int[] cardinality() {
-    Vec[] vecs = vecs();
-    int[] card = new int[vecs.length];
-    for( int i=0; i<vecs.length; i++ )
-      card[i] = vecs[i].cardinality();
+
+    int[] card = new int[_vecs._numCols];
+    for( int i=0; i<_vecs._numCols; i++ )
+      card[i] = _vecs.cardinality(i);
     return card;
   }
 
-  public Vec[] bulkRollups() {
-    Futures fs = new Futures();
-    Vec[] vecs = vecs();
-    for(Vec v : vecs)  v.startRollupStats(fs);
-    fs.blockForPending();
-    return vecs;
-  }
+  public RollupsAry bulkRollups() {return _vecs.rollupStats();}
 
   /** Majority class for categorical columns; -1 for non-categorical columns.
    * @return the majority class for categorical columns */
   public int[] modes() {
-    Vec[] vecs = bulkRollups();
-    int[] modes = new int[vecs.length];
-    for( int i = 0; i < vecs.length; i++ ) {
-      modes[i] = vecs[i].isCategorical() ? vecs[i].mode() : -1;
-    }
+    int[] modes = new int[_vecs._numCols];
+    for( int i = 0; i < modes.length; i++ )
+      modes[i] = _vecs.isCategorical(i) ? _vecs.mode(i) : -1;
     return modes;
   }
 
   /** All the column means.
    *  @return the mean of each column */
   public double[] means() {
-    Vec[] vecs = bulkRollups();
-    double[] means = new double[vecs.length];
-    for( int i = 0; i < vecs.length; i++ )
-      means[i] = vecs[i].mean();
+    RollupsAry rs = _vecs.rollupStats();
+    double[] means = new double[_vecs._numCols];
+    for( int i = 0; i < _vecs._numCols; i++ )
+      means[i] = rs.getRollups(i)._mean;
     return means;
   }
 
   /** One over the standard deviation of each column.
    *  @return Reciprocal the standard deviation of each column */
   public double[] mults() {
-    Vec[] vecs = bulkRollups();
-    double[] mults = new double[vecs.length];
-    for( int i = 0; i < vecs.length; i++ ) {
-      double sigma = vecs[i].sigma();
+    RollupsAry rs = _vecs.rollupStats();
+    double[] mults = new double[_vecs._numCols];
+    for( int i = 0; i < _vecs._numCols; i++ ) {
+      double sigma = rs.getRollups(i)._sigma;
       mults[i] = standardize(sigma) ? 1.0 / sigma : 1.0;
     }
     return mults;
@@ -472,9 +362,10 @@ public class Frame extends Lockable<Frame> {
    *  @return the {@code Vec.byteSize} of all Vecs */
   public long byteSize() {
     try {
-      Vec[] vecs = bulkRollups();
+      RollupsAry rs = _vecs.rollupStats();
       long sum = 0;
-      for (Vec vec : vecs) sum += vec.byteSize();
+      for (int i = 0; i < _vecs._numCols; ++i)
+        sum += rs.getRollups(i)._size;
       return sum;
     } catch(RuntimeException ex) {
       Log.debug("Failure to obtain byteSize() - missing chunks?");
@@ -488,267 +379,117 @@ public class Frame extends Lockable<Frame> {
    *  consistent across reparses.
    *  @return 64-bit Frame checksum */
   @Override protected long checksum_impl() {
-    Vec[] vecs = vecs();
-    long _checksum = 0;
+    RollupsAry rs = _vecs.rollupStats();
+    long _checksum = 0; //_vecs.rollupStats()._checksum;
     for( int i = 0; i < _names.length; ++i ) {
-      long vec_checksum = vecs[i].checksum();
+      long vec_checksum = rs.getRollups(i)._checksum;
       _checksum ^= vec_checksum;
       long tmp = (2147483647L * i);
       _checksum ^= tmp;
     }
     _checksum *= (0xBABE + Arrays.hashCode(_names));
-
     // TODO: include column types?  Vec.checksum() should include type?
     return _checksum;
   }
 
   // Add a bunch of vecs
-  public void add( String[] names, Vec[] vecs) {
+  public void add( String[] names, VecAry vecs) {
     bulkAdd(names, vecs);
   }
-  public void add( String[] names, Vec[] vecs, int cols ) {
+  public void add( String[] names, VecAry vecs, int cols ) {
     if (null == vecs || null == names) return;
-    if (cols == names.length && cols == vecs.length) {
-      bulkAdd(names, vecs);
-    } else {
-      for (int i = 0; i < cols; i++)
-        add(names[i], vecs[i]);
-    }
+    bulkAdd(names, vecs);
   }
 
   /** Append multiple named Vecs to the Frame.  Names are forced unique, by appending a
    *  unique number if needed.
    */
-  private void bulkAdd(String[] names, Vec[] vecs) {
+  private void bulkAdd(String[] names, VecAry vecs) {
     String[] tmpnames = names.clone();
     int N = names.length;
-    assert(names.length == vecs.length):"names = " + Arrays.toString(names) + ", vecs len = " + vecs.length;
-    for (int i=0; i<N; ++i) {
-      vecs[i] = vecs[i] != null ? makeCompatible(new Frame(vecs[i]))[0] : null;
-      checkCompatible(tmpnames[i]=uniquify(tmpnames[i]),vecs[i]);  // Throw IAE is mismatch
-    }
-
-    int ncols = _keys.length;
-
+    assert(names.length == vecs._numCols):"names = " + Arrays.toString(names) + ", vecs len = " + vecs._numCols;
+    int ncols = _names.length;
     // make temp arrays and don't assign them back until they are fully filled - otherwise vecs() can cache null's and NPE.
     String[] tmpnam = Arrays.copyOf(_names, ncols+N);
-    Key<Vec>[] tmpkeys = Arrays.copyOf(_keys, ncols+N);
-    Vec[] tmpvecs = Arrays.copyOf(_vecs, ncols+N);
-    for (int i=0; i<N; ++i) {
+    for (int i=0; i<N; ++i)
       tmpnam[ncols+i] = tmpnames[i];
-      tmpkeys[ncols+i] = vecs[i]._key;
-      tmpvecs[ncols+i] = vecs[i];
-    }
+    _vecs.append(vecs);
     _names = tmpnam;
-    _keys = tmpkeys;
-    _vecs = tmpvecs;
   }
 
   /** Append a named Vec to the Frame.  Names are forced unique, by appending a
    *  unique number if needed.
    *  @return the added Vec, for flow-coding */
   public Vec add( String name, Vec vec ) {
-    vec = makeCompatible(new Frame(vec))[0];
+    vec = makeCompatible(new Frame(vec));
     checkCompatible(name=uniquify(name),vec);  // Throw IAE is mismatch
-    int ncols = _keys.length;
+    int ncols = _names.length;
     String[] names = Arrays.copyOf(_names,ncols+1);  names[ncols] = name;
-    Key<Vec>[] keys = Arrays.copyOf(_keys ,ncols+1);  keys [ncols] = vec._key;
-    Vec[] vecs  = Arrays.copyOf(_vecs ,ncols+1);  vecs [ncols] = vec;
     _names = names;
-    _keys = keys;
-    _vecs = vecs;
+    _vecs.append(vec);
     return vec;
   }
 
   /** Append a Frame onto this Frame.  Names are forced unique, by appending
    *  unique numbers if needed.
    *  @return the expanded Frame, for flow-coding */
-  public Frame add( Frame fr ) { add(fr._names,fr.vecs().clone(),fr.numCols()); return this; }
+  public Frame add( Frame fr ) { add(fr._names,fr.vecs(),fr.numCols()); return this; }
 
   /** Insert a named column as the first column */
   public Frame prepend( String name, Vec vec ) {
     if( find(name) != -1 ) throw new IllegalArgumentException("Duplicate name '"+name+"' in Frame");
-    if( _vecs.length != 0 ) {
-      if( !anyVec().group().equals(vec.group()) && !Arrays.equals(anyVec().espc(),vec.espc()) )
-        throw new IllegalArgumentException("Vector groups differs - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
-      if( numRows() != vec.length() )
-        throw new IllegalArgumentException("Vector lengths differ - adding vec '"+name+"' into the frame " + Arrays.toString(_names));
-    }
+    _vecs = new VecAry(vec).append(_vecs);
     final int len = _names != null ? _names.length : 0;
     String[] _names2 = new String[len + 1];
-    Vec[] _vecs2 = new Vec[len + 1];
-    Key<Vec>[] _keys2 = makeVecKeys(len + 1);
     _names2[0] = name;
-    _vecs2 [0] = vec;
-    _keys2 [0] = vec._key;
-    if (_names != null) {
+    if (_names != null)
       System.arraycopy(_names, 0, _names2, 1, len);
-      System.arraycopy(_vecs,  0, _vecs2,  1, len);
-      System.arraycopy(_keys,  0, _keys2,  1, len);
-    }
     _names = _names2;
-    _vecs  = _vecs2;
-    _keys  = _keys2;
     return this;
   }
 
   /** Swap two Vecs in-place; useful for sorting columns by some criteria */
   public void swap( int lo, int hi ) {
-    assert 0 <= lo && lo < _keys.length;
-    assert 0 <= hi && hi < _keys.length;
+    assert 0 <= lo && lo < numCols();
+    assert 0 <= hi && hi < numCols();
     if( lo==hi ) return;
-    Vec vecs[] = vecs();
-    Vec v   = vecs [lo]; vecs  [lo] = vecs  [hi]; vecs  [hi] = v;
-    Key<Vec> k = _keys[lo]; _keys[lo] = _keys[hi]; _keys[hi] = k;
+    _vecs.swap(lo,hi);
     String n=_names[lo]; _names[lo] = _names[hi]; _names[hi] = n;
   }
 
   /** move the provided columns to be first, in-place. For Merge currently since method='hash' was coded like that */
   public void moveFirst( int cols[] ) {
-    boolean colsMoved[] = new boolean[_keys.length];
-    Vec tmpvecs[] = vecs().clone();
-    Key<Vec> tmpkeys[] = _keys.clone();
-    String tmpnames[] = _names.clone();
-
-    // Move the desired ones first
-    for (int i=0; i<cols.length; i++) {
-      int w = cols[i];
-      if (colsMoved[w]) throw new IllegalArgumentException("Duplicates in column numbers passed in");
-      if (w<0 || w>=_keys.length) throw new IllegalArgumentException("column number out of 0-based range");
-      colsMoved[w] = true;
-      tmpvecs[i] = _vecs[w];
-      tmpkeys[i] = _keys[w];
-      tmpnames[i] = _names[w];
+    String [] names = new String[_names.length];
+    int j = 0, k = cols.length;
+    for(int i = 0; i < _names.length; ++i){
+      if(i == cols[j]){
+        names[j++] = _names[i];
+      } else
+        names[k++] = _names[i];
     }
-
-    // Put the other ones afterwards
-    int w = cols.length;
-    for (int i=0; i<_keys.length; i++) {
-      if (!colsMoved[i]) {
-        tmpvecs[w] = _vecs[i];
-        tmpkeys[w] = _keys[i];
-        tmpnames[w] = _names[i];
-        w++;
-      }
-    }
-
-    // Copy back over the original in-place
-    for (int i=0; i<_keys.length; i++) {
-      _vecs[i] = tmpvecs[i];
-      _keys[i] = tmpkeys[i];
-      _names[i] = tmpnames[i];
-    }
+    _names = names;
+    _vecs.moveFirst(cols);
   }
 
-  /** Returns a subframe of this frame containing only vectors with desired names.
-   *
-   *  @param names list of vector names
-   *  @return a new frame which collects vectors from this frame with desired names.
-   *  @throws IllegalArgumentException if there is no vector with desired name in this frame.
-   */
-  public Frame subframe(String[] names) { return subframe(names, false, 0)[0]; }
-
-  /** Create a subframe from this frame based on desired names.
-   *  Throws an exception if desired column is not in this frame and <code>replaceBy</code> is <code>false</code>.
-   *  Else replace a missing column by a constant column with given value.
-   *
-   *  @param names list of column names to extract
-   *  @param replaceBy should be missing column replaced by a constant column
-   *  @param c value for constant column
-   *  @return array of 2 frames, the first is containing a desired subframe, the second one contains newly created columns or null
-   *  @throws IllegalArgumentException if <code>replaceBy</code> is false and there is a missing column in this frame
-   */
-  private Frame[] subframe(String[] names, boolean replaceBy, double c){
-    Vec [] vecs     = new Vec[names.length];
-    Vec [] cvecs    = replaceBy ? new Vec   [names.length] : null;
-    String[] cnames = replaceBy ? new String[names.length] : null;
-    int ccv = 0; // counter of constant columns
-    vecs();                     // Preload the vecs
-    HashMap<String, Integer> map = new HashMap<>((int) ((names.length/0.75f)+1)); // avoid rehashing by set up initial capacity
-    for(int i = 0; i < _names.length; ++i) map.put(_names[i], i);
-    for(int i = 0; i < names.length; ++i)
-      if(map.containsKey(names[i])) vecs[i] = _vecs[map.get(names[i])];
-      else if (replaceBy) {
-        Log.warn("Column " + names[i] + " is missing, filling it in with " + c);
-        cnames[ccv] = names[i];
-        vecs[i] = cvecs[ccv++] = anyVec().makeCon(c);
-      }
-    return new Frame[] {
-      new Frame(Key.<Frame>make("subframe" + Key.make().toString()), names, vecs),
-      ccv > 0? new Frame(Key.<Frame>make("subframe" + Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null
-    };
-  }
 
   /** Allow rollups for all written-into vecs; used by {@link MRTask} once
    *  writing is complete.
    *  @return the original Futures, for flow-coding */
   public Futures postWrite(Futures fs) {
-    for( Vec v : vecs() ) v.postWrite(fs);
-    return fs;
+    return _vecs.postWrite(fs);
   }
 
   /** Actually remove/delete all Vecs from memory, not just from the Frame.
    *  @return the original Futures, for flow-coding */
   @Override protected Futures remove_impl(Futures fs) {
-    final Key[] keys = _keys;
-    if( keys.length==0 ) return fs;
-
-    // Get the nChunks without calling anyVec - which loads all Vecs eagerly,
-    // only to delete them.  Supports Frames with some Vecs already deleted, as
-    // a Scope cleanup action might delete Vecs out of order.
-    Vec v = _col0;
-    if (v == null) {
-      Vec[] vecs = _vecs;       // Read once, in case racily being cleared
-      if (vecs != null)
-        for (Vec vec : vecs)
-          if ((v = vec) != null) // Stop on finding the 1st Vec
-            break;
-    }
-    if (v == null)             // Ok, now do DKV gets
-      for (Key<Vec> _key1 : _keys)
-        if ((v = _key1.get()) != null)
-          break;                // Stop on finding the 1st Vec
-    if (v == null)
-      return fs;
-
-    final int ncs = v.nChunks();
-    _names = new String[0];
-    _vecs = new Vec[0];
-    _keys = makeVecKeys(0);
-    // Bulk dumb local remove - no JMM, no ordering, no safety.
-    new MRTask() {
-      @Override public void setupLocal() {
-        for( Key k : keys ) if( k != null ) Vec.bulk_remove(k,ncs);
-      }
-    }.doAllNodes();
-
-    return fs;
-  }
-
-  /** Write out K/V pairs, in this case Vecs. */
-  @Override protected AutoBuffer writeAll_impl(AutoBuffer ab) {
-    for( Key k : _keys )
-      ab.putKey(k);
-    return super.writeAll_impl(ab);
-  }
-  @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
-    for( Key k : _keys )
-      ab.getKey(k,fs);
-    return super.readAll_impl(ab,fs);
+    return _vecs.remove(fs);
   }
 
   /** Replace one column with another. Caller must perform global update (DKV.put) on
    *  this updated frame.
    *  @return The old column, for flow-coding */
-  public Vec replace(int col, Vec nv) {
-    Vec rv = vecs()[col];
-    nv = ((new Frame(rv)).makeCompatible(new Frame(nv)))[0];
-    DKV.put(nv);
-    assert DKV.get(nv._key)!=null; // Already in DKV
-    assert rv.checkCompatible(nv);
-    _vecs[col] = nv;
-    _keys[col] = nv._key;
-    return rv;
+  public VecAry replace(int col, Vec nv) {
+    return _vecs.replace(col,nv);
   }
 
   /** Create a subframe from given interval of columns.
@@ -756,7 +497,7 @@ public class Frame extends Lockable<Frame> {
    *  @param endIdx index of the last column (exclusive)
    *  @return a new Frame containing specified interval of columns  */
   public Frame subframe(int startIdx, int endIdx) {
-    return new Frame(Arrays.copyOfRange(_names,startIdx,endIdx),Arrays.copyOfRange(vecs(),startIdx,endIdx));
+    return new Frame(Arrays.copyOfRange(_names,startIdx,endIdx),_vecs.select(ArrayUtils.seq(startIdx,endIdx)));
   }
 
   /** Split this Frame; return a subframe created from the given column interval, and
@@ -782,163 +523,36 @@ public class Frame extends Lockable<Frame> {
 
   /** Removes a list of columns by index; the index list must be sorted
    *  @return an array of the removed columns */
-  public Vec[] remove( int[] idxs ) {
-    for( int i : idxs )
-      if(i < 0 || i >= vecs().length)
-        throw new ArrayIndexOutOfBoundsException();
-    Arrays.sort(idxs);
-    Vec[] res = new Vec[idxs.length];
-    Vec[] rem = new Vec[_vecs.length-idxs.length];
-    String[] names = new String[rem.length];
-    Key<Vec>[] keys = makeVecKeys(rem.length);
-    int j = 0;
-    int k = 0;
-    int l = 0;
-    for(int i = 0; i < _vecs.length; ++i) {
-      if(j < idxs.length && i == idxs[j]) {
-        ++j;
-        res[k++] = _vecs[i];
-      } else {
-        rem  [l] = _vecs [i];
-        names[l] = _names[i];
-        keys [l] = _keys [i];
-        ++l;
-      }
+  public VecAry remove( int... idxs ) {
+    VecAry res = _vecs.remove(idxs);
+    if(!ArrayUtils.isSorted(idxs)){
+      idxs = idxs.clone();
+      Arrays.sort(idxs);
     }
-    _vecs = rem;
-    _names= names;
-    _keys = keys;
-    assert l == rem.length && k == idxs.length;
+    String [] names = new String[_names.length - idxs.length];int j = 0, k = 0;
+    for(int i = 0; i < _names.length; ++i)
+      if(i == idxs[j])++j;
+      else names[k++] = _names[i];
+    _names = names;
+    assert _names.length == _vecs._numCols;
     return res;
-  }
-
-  /**  Removes a numbered column.
-   *  @return the removed column */
-  public final Vec remove( int idx ) {
-    int len = _names.length;
-    if( idx < 0 || idx >= len ) return null;
-    Vec v = vecs()[idx];
-    if( v == _col0 ) _col0 = null;
-    _vecs = ArrayUtils.remove(_vecs, idx);
-    _names = ArrayUtils.remove(_names, idx);
-    _keys = ArrayUtils.remove(_keys, idx);
-    return v;
   }
 
   /** Remove given interval of columns from frame.  Motivated by R intervals.
    *  @param startIdx - start index of column (inclusive)
    *  @param endIdx - end index of column (exclusive)
    *  @return array of removed columns  */
-  Vec[] remove(int startIdx, int endIdx) {
-    int len = _names.length;
-    int nlen = len - (endIdx-startIdx);
-    String[] names = new String[nlen];
-    Key<Vec>[] keys = makeVecKeys(nlen);
-    Vec[] vecs = new Vec[nlen];
-    vecs();
-    if (startIdx > 0) {
-      System.arraycopy(_names, 0, names, 0, startIdx);
-      System.arraycopy(_vecs,  0, vecs,  0, startIdx);
-      System.arraycopy(_keys,  0, keys,  0, startIdx);
-    }
-    nlen -= startIdx;
-    if (endIdx < _names.length+1) {
-      System.arraycopy(_names, endIdx, names, startIdx, nlen);
-      System.arraycopy(_vecs,  endIdx, vecs,  startIdx, nlen);
-      System.arraycopy(_keys,  endIdx, keys,  startIdx, nlen);
-    }
+  VecAry remove(int startIdx, int endIdx) {return remove(ArrayUtils.seq(startIdx,endIdx));}
 
-    Vec[] vecX = Arrays.copyOfRange(_vecs,startIdx,endIdx);
-    _names = names;
-    _vecs = vecs;
-    _keys = keys;
-    _col0 = null;
-    return vecX;
-  }
-
-  /** Restructure a Frame completely */
-  public void restructure( String[] names, Vec[] vecs) {
-    restructure(names, vecs, vecs.length);
-  }
 
   /** Restructure a Frame completely, but only for a specified number of columns (counting up)  */
-  public void restructure( String[] names, Vec[] vecs, int cols) {
+  public void restructure( String[] names, VecAry vecs) {
     // Make empty to dodge asserts, then "add()" them all which will check for
     // compatible Vecs & names.
     _names = new String[0];
-    _keys  = makeVecKeys(0);
-    _vecs  = new Vec   [0];
-    add(names,vecs,cols);
+    _vecs = vecs;
   }
 
-  // --------------------------------------------
-  // Utilities to help external Frame constructors, e.g. Spark.
-
-  // Make an initial Frame & lock it for writing.  Build Vec Keys.
-  void preparePartialFrame( String[] names ) {
-    // Nuke any prior frame (including freeing storage) & lock this one
-    if( _keys != null ) delete_and_lock();
-    else write_lock();
-    _names = names;
-    _keys = new Vec.VectorGroup().addVecs(names.length);
-    // No Vectors tho!!! These will be added *after* the import
-  }
-
-  // Only serialize strings, not H2O internal structures
-
-  // Make NewChunks to for holding data from e.g. Spark.  Once per set of
-  // Chunks in a Frame, before filling them.  This can be called in parallel
-  // for different Chunk#'s (cidx); each Chunk can be filled in parallel.
-  static NewChunk[] createNewChunks(String name, byte[] type, int cidx) {
-    Frame fr = (Frame) Key.make(name).get();
-    NewChunk[] nchks = new NewChunk[fr.numCols()];
-    for (int i = 0; i < nchks.length; i++) {
-      nchks[i] = new NewChunk(new AppendableVec(fr._keys[i], type[i]), cidx);
-    }
-    return nchks;
-  }
-
-  // Compress & DKV.put NewChunks.  Once per set of Chunks in a Frame, after
-  // filling them.  Can be called in parallel for different sets of Chunks.
-  static void closeNewChunks(NewChunk[] nchks) {
-    Futures fs = new Futures();
-    for (NewChunk nchk : nchks) {
-      nchk.close(fs);
-    }
-    fs.blockForPending();
-  }
-
-  // Build real Vecs from loose Chunks, and finalize this Frame.  Called once
-  // after any number of [create,close]NewChunks.
-  void finalizePartialFrame( long[] espc, String[][] domains, byte[] types ) {
-    // Compute elems-per-chunk.
-    // Roll-up elem counts, so espc[i] is the starting element# of chunk i.
-    int nchunk = espc.length;
-    long espc2[] = new long[nchunk+1]; // Shorter array
-    long x=0;                   // Total row count so far
-    for( int i=0; i<nchunk; i++ ) {
-      espc2[i] = x;             // Start elem# for chunk i
-      x += espc[i];             // Raise total elem count
-    }
-    espc2[nchunk]=x;            // Total element count in last
-
-    // For all Key/Vecs - insert Vec header
-    Futures fs = new Futures();
-    _vecs = new Vec[_keys.length];
-    for( int i=0; i<_keys.length; i++ ) {
-      // Insert Vec header
-      Vec vec = _vecs[i] = new Vec( _keys[i],
-                                    Vec.ESPC.rowLayout(_keys[i],espc2),
-                                    domains!=null ? domains[i] : null,
-                                    types[i]);
-      // Here we have to save vectors since
-      // saving during unlock will invoke Frame vector
-      // refresh
-      DKV.put(_keys[i],vec,fs);
-    }
-    fs.blockForPending();
-    unlock();
-  }
 
   // --------------------------------------------------------------------------
   static final int MAX_EQ2_COLS = 100000; // Limit of columns user is allowed to request
@@ -1002,11 +616,11 @@ public class Frame extends Lockable<Frame> {
     // orows is either a long[] or a Vec
     if (numRows() == 0) {
       return new MRTask() {
-        @Override public void map(Chunk[] chks, NewChunk[] nchks) { for (NewChunk nc : nchks) nc.addNA(); }
+        @Override public void map(ChunkAry chks, NewChunkAry nchks) { for (int i = 0; i < nchks._numCols; ++i) nchks.addNA(i); }
       }.doAll(types(c2), this).outputFrame(names(c2), domains(c2));
     }
     if (orows == null)
-      return new DeepSlice(null,c2,vecs()).doAll(types(c2),this).outputFrame(names(c2),domains(c2));
+      return new DeepSlice(null,c2,_vecs).doAll(types(c2),this).outputFrame(names(c2),domains(c2));
     else if (orows instanceof long[]) {
       final long CHK_ROWS=1000000;
       final long[] rows = (long[])orows;
@@ -1017,7 +631,7 @@ public class Frame extends Lockable<Frame> {
         if (rows.length != 0 && rows[0] < 0) {
           Vec v0 = this.anyVec().makeZero();
           Vec v = new MRTask() {
-            @Override public void map(Chunk cs) {
+            @Override public void map(ChunkAry cs) {
               for (long er : rows) {
                 if (er >= 0) continue;
                 er = Math.abs(er);
@@ -1050,7 +664,7 @@ public class Frame extends Lockable<Frame> {
       }
       Vec c0 = av.layout_and_close(fs);   // c0 is the row index vec
       fs.blockForPending();
-      Frame ff = new Frame(new String[]{"rownames"}, new Vec[]{c0});
+      Frame ff = new Frame(new String[]{"rownames"}, c0);
       Frame fr2 = new Slice(c2, this).doAll(types(c2),ff).outputFrame(names(c2), domains(c2));
       Keyed.remove(c0._key);
       Keyed.remove(av._key);
@@ -1060,12 +674,8 @@ public class Frame extends Lockable<Frame> {
     Frame frows = (Frame)orows;
     // It's a compatible Vec; use it as boolean selector.
     // Build column names for the result.
-    Vec [] vecs = new Vec[c2.length];
-    String [] names = new String[c2.length];
-    for(int i = 0; i < c2.length; ++i){
-      vecs[i] = _vecs[c2[i]];
-      names[i] = _names[c2[i]];
-    }
+    VecAry vecs = _vecs.select(c2);
+    String [] names = ArrayUtils.select(_names,c2);
     Frame ff = new Frame(names, vecs);
     ff.add("predicate", frows.anyVec());
     return new DeepSelect().doAll(types(c2),ff).outputFrame(names(c2),domains(c2));
@@ -1074,39 +684,37 @@ public class Frame extends Lockable<Frame> {
   // Slice and return in the form of new chunks.
   private static class Slice extends MRTask<Slice> {
     final Frame  _base;   // the base frame to slice from
+    final VecAry _vecs;
     final int[]  _cols;
-    Slice(int[] cols, Frame base) { _cols = cols; _base = base; }
-    @Override public void map(Chunk[] ix, NewChunk[] ncs) {
-      final Vec[] vecs = new Vec[_cols.length];
-      final Vec   anyv = _base.anyVec();
-      final long  nrow = anyv.length();
-      long  r    = ix[0].at8(0);
-      int   last_ci = anyv.elem2ChunkIdx(r<nrow?r:0); // memoize the last chunk index
-      long  last_c0 = anyv.espc()[last_ci];            // ...         last chunk start
-      long  last_c1 = anyv.espc()[last_ci + 1];        // ...         last chunk end
-      Chunk[] last_cs = new Chunk[vecs.length];       // ...         last chunks
-      for (int c = 0; c < _cols.length; c++) {
-        vecs[c] = _base.vecs()[_cols[c]];
-        last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
-      }
-      for (int i = 0; i < ix[0]._len; i++) {
+    Slice(int[] cols, Frame base) { _cols = cols; _base = base; _vecs = _base._vecs.select(_cols);}
+    @Override public void map(ChunkAry ix, NewChunkAry ncs) {
+      BufferedString bs = new BufferedString();
+      final VecAry vecs = _base._vecs.select(_cols);
+      final long  nrow = _vecs.length();
+      long  r    = ix.at8(0,0);
+      int   last_ci = vecs.elem2ChunkIdx(r<nrow?r:0); // memoize the last chunk index
+      long  last_c0 = vecs.espc()[last_ci];            // ...         last chunk start
+      long  last_c1 = vecs.espc()[last_ci + 1];        // ...         last chunk end
+      ChunkAry last_cs = _vecs.chunkForChunkIdx(last_ci);
+
+      for (int i = 0; i < ix._len; i++) {
         // select one row
-        r = ix[0].at8(i);   // next row to select
+        r = ix.at8(i,0);   // next row to select
         if (r < 0) continue;
         if (r >= nrow) {
-          for (int c = 0; c < vecs.length; c++) ncs[c].addNum(Double.NaN);
+          for (int c = 0; c < _vecs._numCols; c++) ncs.addNum(c,Double.NaN);
         } else {
           if (r < last_c0 || r >= last_c1) {
-            last_ci = anyv.elem2ChunkIdx(r);
-            last_c0 = anyv.espc()[last_ci];
-            last_c1 = anyv.espc()[last_ci + 1];
-            for (int c = 0; c < vecs.length; c++)
-              last_cs[c] = vecs[c].chunkForChunkIdx(last_ci);
+            last_ci = vecs.elem2ChunkIdx(r);
+            last_c0 = vecs.espc()[last_ci];
+            last_c1 = vecs.espc()[last_ci + 1];
+            last_cs = vecs.chunkForChunkIdx(last_ci);
           }
-          for (int c = 0; c < vecs.length; c++)
-            if( vecs[c].isUUID() ) ncs[c].addUUID(last_cs[c], r);
-            else if( vecs[c].isString() ) ncs[c].addStr(last_cs[c],r);
-            else                   ncs[c].addNum (last_cs[c].at_abs(r));
+          int rowInChunk = last_cs.chunkRelativeOffset(r);
+          for (int c = 0; c < vecs._numCols; c++)
+            if( vecs.isUUID(c) ) ncs.addUUID(c,last_cs.at16l(rowInChunk,c),last_cs.at16h(rowInChunk,c));
+            else if( vecs.isString(c) ) ncs.addStr(c,last_cs.atStr(bs,rowInChunk,c));
+            else                        ncs.addNum (c,last_cs.atd(rowInChunk,c));
         }
       }
     }
@@ -1143,52 +751,54 @@ public class Frame extends Lockable<Frame> {
     }
 
     final int ncols = numCols();
-    final Vec[] vecs = vecs();
+
     String[] coltypes = new String[ncols];
     String[][] strCells = new String[len+H][ncols];
     double[][] dblCells = new double[len+H][ncols];
     final BufferedString tmpStr = new BufferedString();
+    RollupsAry rs = _vecs.rollupStats();
     for( int i=0; i<ncols; i++ ) {
-      if( DKV.get(_keys[i]) == null ) { // deleted Vec in Frame
+      if(rs.isRemoved(i)){
         coltypes[i] = "string";
         for( int j=0; j<len+H; j++ ) dblCells[j][i] = TwoDimTable.emptyDouble;
         for( int j=0; j<len; j++ ) strCells[j+H][i] = "NO_VEC";
         continue;
       }
-      Vec vec = vecs[i];
-      if( rollups ) {
-        dblCells[0][i] = vec.min();
-        dblCells[1][i] = vec.mean();
-        dblCells[2][i] = vec.sigma();
-        dblCells[3][i] = vec.max();
-        dblCells[4][i] = vec.naCnt();
+      if( rollups && rs.isReady(_vecs,false)) {
+        RollupStats x = rs.getRollups(i);
+        dblCells[0][i] = x._mins[0];
+        dblCells[1][i] = x._mean;
+        dblCells[2][i] = x._sigma;
+        dblCells[3][i] = x._maxs[0];
+        dblCells[4][i] = x._naCnt;
       }
-      switch( vec.get_type() ) {
+
+      switch( _vecs.get_type(i) ) {
       case Vec.T_BAD:
         coltypes[i] = "string";
         for( int j=0; j<len; j++ ) { strCells[j+H][i] = null; dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_STR :
         coltypes[i] = "string";
-        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.atStr(tmpStr,off+j).toString(); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = _vecs.isNA(off+j) ? "" : _vecs.atStr(tmpStr,off+j).toString(); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_CAT:
         coltypes[i] = "string";
-        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : vec.factor(vec.at8(off+j));  dblCells[j+H][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = _vecs.isNA(off+j) ? "" : _vecs.factor(i,_vecs.at4(off+j,i));  dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_TIME:
         coltypes[i] = "string";
         DateTimeFormatter fmt = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-        for( int j=0; j<len; j++ ) { strCells[j+H][i] = vec.isNA(off+j) ? "" : fmt.print(vec.at8(off+j)); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
+        for( int j=0; j<len; j++ ) { strCells[j+H][i] = _vecs.isNA(off+j) ? "" : fmt.print(_vecs.at8(off+j)); dblCells[j+H][i] = TwoDimTable.emptyDouble; }
         break;
       case Vec.T_NUM:
-        coltypes[i] = vec.isInt() ? "long" : "double";
-        for( int j=0; j<len; j++ ) { dblCells[j+H][i] = vec.isNA(off+j) ? TwoDimTable.emptyDouble : vec.at(off + j); strCells[j+H][i] = null; }
+        coltypes[i] = _vecs.isInt() ? "long" : "double";
+        for( int j=0; j<len; j++ ) { dblCells[j+H][i] = _vecs.isNA(off+j) ? TwoDimTable.emptyDouble : _vecs.at(off + j); strCells[j+H][i] = null; }
         break;
       case Vec.T_UUID:
         throw H2O.unimpl();
       default:
-        System.err.println("bad vector type during debug print: "+vec.get_type());
+        System.err.println("bad vector type during debug print: "+_vecs.get_type(i));
         throw H2O.fail();
       }
     }
@@ -1202,19 +812,19 @@ public class Frame extends Lockable<Frame> {
     final int  _cols[];
     final long _rows[];
     final byte _isInt[];
-    DeepSlice( long rows[], int cols[], Vec vecs[] ) {
+    DeepSlice( long rows[], int cols[], VecAry vecs ) {
       _cols=cols;
       _rows=rows;
       _isInt = new byte[cols.length];
       for( int i=0; i<cols.length; i++ )
-        _isInt[i] = (byte)(vecs[cols[i]].isInt() ? 1 : 0);
+        _isInt[i] = (byte)(vecs.isInt(cols[i]) ? 1 : 0);
     }
 
     @Override public boolean logVerbose() { return false; }
 
-    @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-      long rstart = chks[0]._start;
-      int rlen = chks[0]._len;  // Total row count
+    @Override public void map( ChunkAry chks, NewChunkAry nchks ) {
+      long rstart = chks._start;
+      int rlen = chks._len;  // Total row count
       int rx = 0;               // Which row to in/ex-clude
       int rlo = 0;              // Lo/Hi for this block of rows
       int rhi = rlen;
@@ -1234,19 +844,19 @@ public class Frame extends Lockable<Frame> {
         // For all cols in the new set;
         BufferedString tmpStr = new BufferedString();
         for (int i = 0; i < _cols.length; i++) {
-          Chunk oc = chks[_cols[i]];
-          NewChunk nc = nchks[i];
+          int oc = _cols[i];
+
           if (_isInt[i] == 1) { // Slice on integer columns
             for (int j = rlo; j < rhi; j++)
-              if (oc._vec.isUUID()) nc.addUUID(oc, j);
-              else if (oc.isNA(j)) nc.addNA();
-              else nc.addNum(oc.at8(j), 0);
-          } else if (oc._vec.isString()) {
+              if (chks._vec.isUUID(oc)) nchks.addUUID(i,oc, j);
+              else if (chks.isNA(j,oc)) nchks.addNA(i);
+              else nchks.addNum(i,chks.at8(j,oc), 0);
+          } else if (chks._vec.isString(oc)) {
             for (int j = rlo; j < rhi; j++)
-              nc.addStr(oc.atStr(tmpStr, j));
+              nchks.addStr(i,chks.atStr(tmpStr, j, oc));
           } else {// Slice on double columns
             for (int j = rlo; j < rhi; j++)
-              nc.addNum(oc.atd(j));
+              nchks.addNum(i,chks.atd(j,oc));
           }
         }
         rlo = rhi;
@@ -1255,6 +865,18 @@ public class Frame extends Lockable<Frame> {
     }
   }
 
+  public static Frame deepCopy(Frame src, String keyName){
+    final Vec v = new Vec(src.anyVec().group().addVec(),src.anyVec()._rowLayout,src.domains(),src.types());
+    new MRTask() {
+      @Override public void map(ChunkAry cs) {
+        Chunk [] chks = cs.getChunks().clone();
+        for(int i = 0; i < chks.length; ++i)
+          chks[i] = chks[i].deepCopy();
+        DKV.put(v.chunkKey(cs._cidx),new DBlock(chks,null),_fs);
+      }
+    }.doAll(src);
+    return new Frame(keyName == null?null:Key.<Frame>make(keyName),src.names().clone(),v);
+  }
   /**
    * Create a copy of the input Frame and return that copied Frame. All Vecs in this are copied in parallel.
    * Caller mut do the DKV.put
@@ -1262,107 +884,28 @@ public class Frame extends Lockable<Frame> {
    * @return The fresh copy of fr.
    */
   public Frame deepCopy(String keyName) {
-    return new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        for(int col=0;col<cs.length;++col)
-          for(int row=0;row<cs[0]._len;++row) {
-            if( cs[col].isNA(row) ) ncs[col].addNA();
-            else if( cs[col] instanceof CStrChunk ) ncs[col].addStr(cs[col], row);
-            else if( cs[col] instanceof C16Chunk ) ncs[col].addUUID(cs[col], row);
-            else if( !cs[col].hasFloat() ) ncs[col].addNum(cs[col].at8(row), 0);
-            else ncs[col].addNum(cs[col].atd(row));
-          }
-      }
-    }.doAll(this.types(),this).outputFrame(keyName==null?null:Key.make(keyName),this.names(),this.domains());
-  }
-
-  // _vecs put into kv store already
-  private class DoCopyFrame extends MRTask<DoCopyFrame> {
-    final Vec[] _vecs;
-    DoCopyFrame(Vec[] vecs) {
-      _vecs = new Vec[vecs.length];
-      int rowLayout = _vecs[0]._rowLayout;
-      for(int i=0;i<vecs.length;++i)
-        _vecs[i] = new Vec(vecs[i].group().addVec(),rowLayout, vecs[i].domain(), vecs[i]._type);
-    }
-    @Override public void map(Chunk[] cs) {
-      int i=0;
-      for(Chunk c: cs) {
-        Chunk c2 = c.clone();
-        c2._vec=null;
-        c2._start=-1;
-        c2._cidx=-1;
-        c2._mem = c2._mem.clone();
-        DKV.put(_vecs[i++].chunkKey(c.cidx()), c2, _fs, true);
-      }
-    }
-    @Override public void postGlobal() { for( Vec _vec : _vecs ) DKV.put(_vec); }
+   return deepCopy(this,keyName);
   }
 
   /**
    *  Last column is a bit vec indicating whether or not to take the row.
    */
   public static class DeepSelect extends MRTask<DeepSelect> {
-
-    @Override public void map( Chunk chks[], NewChunk nchks[] ) {
-      Chunk pred = chks[chks.length - 1];
-      int[] ids = new int[pred._len];
-      double[] vals = new double[ids.length];
-      int selected = pred.nonzeros(ids);
-      int[] selectedIds = new int[selected];
-      // todo keeping old behavior of ignoring missing, while R does insert missing into result
-      // filter out missing
-      int non_nas = 0;
-      for(int i = 0; i < selected; ++i)
-        if(!pred.isNA(ids[i]))
-          selectedIds[non_nas++] = ids[i];
-      selected = non_nas;
-      for (int i = 0; i < chks.length - 1; ++i) {
-        Chunk c = chks[i]; // do not need to inflate cause sparse does not compress doubles
-        NewChunk nc = nchks[i];
-        if (c.isSparseZero() || c.isSparseNA()) {
-          nc.alloc_indices(selectedIds.length);
-          nc.alloc_doubles(selectedIds.length);
-          nc._sparseNA = c.isSparseNA();
-          int n = c.asSparseDoubles(vals, ids);
-          int k = 0;
-          int l = -1;
-          for (int j = 0; j < n; ++j) {
-            while (k < selected && selectedIds[k] < ids[j]) ++k;
-            if (k == selected) break;
-            if (selectedIds[k] == ids[j]) {
-              int add = k - l - 1;
-              if(add > 0) {
-                if (c.isSparseZero()) nc.addZeros(add);
-                else nc.addNAs(add);
-              }
-              nc.addNum(vals[j]);
-              l = k;
-              k++;
-            }
-          }
-          int add = selected - l - 1;
-          if(add > 0) {
-            if (c.isSparseZero()) nc.addZeros(add);
-            else nc.addNAs(add);
-          }
-          assert nc.len() == selected:"len = " + nc.len() + ", selected = " + selected;
-        } else {
-          NewChunk src = new NewChunk(c);
-          src = c.inflate_impl(src);
-//          if(src.sparseNA() || src.sparseZero())
-//            src.cancel_sparse();
-          for (int j = 0; j < selected; ++j)
-            src.add2Chunk(nc, selectedIds[j]);
-        }
-      }
+    @Override public void map( ChunkAry chks, NewChunkAry nchks ) {
+      int pred = chks._numCols - 1;
+      int[] ids = new int[chks._len];
+      int selected = 0;
+      for(int i = 0; i < chks._len; ++i)
+        if(!chks.isNA(i,pred) && chks.at4(i,pred) != 0)ids[selected++] = i;
+      ids = Arrays.copyOf(ids,selected);
+      for (int c = 0; c < pred; ++c)
+        chks.add2Chunk(c,nchks,c,ids);
     }
   }
   private String[][] domains(int [] cols){
-    Vec[] vecs = vecs();
     String[][] res = new String[cols.length][];
     for(int i = 0; i < cols.length; ++i)
-      res[i] = vecs[cols[i]].domain();
+      res[i] = _vecs.domain(cols[i]);
     return res;
   }
 
@@ -1375,19 +918,18 @@ public class Frame extends Lockable<Frame> {
   }
 
   private byte[] types(int [] cols){
-    Vec[] vecs = vecs();
     byte[] res = new byte[cols.length];
     for(int i = 0; i < cols.length; ++i)
-      res[i] = vecs[cols[i]]._type;
+      res[i] = _vecs.get_type(cols[i]);
     return res;
   }
 
-  public Vec[] makeCompatible( Frame f) {return makeCompatible(f,false);}
+  public VecAry makeCompatible( Frame f) {return makeCompatible(f,false);}
   /** Return array of Vectors if 'f' is compatible with 'this', else return a new
    *  array of Vectors compatible with 'this' and a copy of 'f's data otherwise.  Note
    *  that this can, in the worst case, copy all of {@code this}s' data.
    *  @return This Frame's data in an array of Vectors that is compatible with {@code f}. */
-  public Vec[] makeCompatible( Frame f, boolean force) {
+  public VecAry makeCompatible( Frame f, boolean force) {
     // Small data frames are always "compatible"
     if (anyVec() == null)      // Or it is small
       return f.vecs();                 // Then must be compatible
@@ -1402,7 +944,7 @@ public class Frame extends Lockable<Frame> {
     H2O.submitTask(new RebalanceDataSet(this, f, k)).join();
     Frame f2 = (Frame)k.get();
     DKV.remove(k);
-    for (Vec v : f2.vecs()) Scope.track(v);
+    for (Vec v : f2._vecs.vecs()) Scope.track(v);
     return f2.vecs();
   }
 
@@ -1439,7 +981,7 @@ public class Frame extends Lockable<Frame> {
     byte[] _line;
     int _position;
     int _chkRow;
-    Chunk[] _curChks;
+    ChunkAry _curChks;
     int _lastChkIdx;
     public volatile int _curChkIdx; // used only for progress reporting
 
@@ -1447,21 +989,17 @@ public class Frame extends Lockable<Frame> {
       this(firstChunks(fr), headers ? fr.names() : null, fr.anyVec().nChunks(), hex_string);
     }
 
-    private static Chunk[] firstChunks(Frame fr) {
+    private static ChunkAry firstChunks(Frame fr) {
       Vec anyvec = fr.anyVec();
       if (anyvec == null || anyvec.nChunks() == 0 || anyvec.length() == 0) {
         return null;
       }
-      Chunk[] chks = new Chunk[fr.vecs().length];
-      for (int i = 0; i < fr.vecs().length; i++) {
-        chks[i] = fr.vec(i).chunkForRow(0);
-      }
-      return chks;
+      return fr._vecs.chunkForChunkIdx(0);
     }
 
-    public CSVStream(Chunk[] chks, String[] names, int nChunks, boolean hex_string) {
+    public CSVStream(ChunkAry chks, String[] names, int nChunks, boolean hex_string) {
       if (chks == null) nChunks = 0;
-      _lastChkIdx = (chks != null) ? chks[0].cidx() + nChunks - 1 : -1;
+      _lastChkIdx = (chks != null) ? chks._cidx + nChunks - 1 : -1;
       _hex_string = hex_string;
       StringBuilder sb = new StringBuilder();
       if (names != null) {
@@ -1484,16 +1022,15 @@ public class Frame extends Lockable<Frame> {
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
       BufferedString tmpStr = new BufferedString();
-      for (int i = 0; i < _curChks.length; i++ ) {
-        Vec v = _curChks[i]._vec;
+      for (int i = 0; i < _curChks._numCols; i++ ) {
         if(i > 0) sb.append(',');
-        if(!_curChks[i].isNA(_chkRow)) {
-          if( v.isCategorical() ) sb.append('"').append(v.factor(_curChks[i].at8(_chkRow))).append('"');
-          else if( v.isUUID() ) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
-          else if( v.isInt() ) sb.append(_curChks[i].at8(_chkRow));
-          else if (v.isString()) sb.append('"').append(_curChks[i].atStr(tmpStr, _chkRow)).append('"');
+        if(!_curChks.isNA(_chkRow,i)) {
+          if( _curChks._vec.isCategorical(i) ) sb.append('"').append(_curChks._vec.factor(i,_curChks.at4(_chkRow,i))).append('"');
+          else if( _curChks._vec.isUUID(i) ) sb.append(PrettyPrint.UUID(_curChks.at16l(_chkRow,i), _curChks.at16h(_chkRow,i)));
+          else if( _curChks._vec.isInt(i) ) sb.append(_curChks.at8(_chkRow,i));
+          else if (_curChks._vec.isString(i)) sb.append('"').append(_curChks.atStr(tmpStr, _chkRow,i)).append('"');
           else {
-            double d = _curChks[i].atd(_chkRow);
+            double d = _curChks.atd(_chkRow,i);
             // R 3.1 unfortunately changed the behavior of read.csv().
             // (Really type.convert()).
             //
@@ -1524,31 +1061,29 @@ public class Frame extends Lockable<Frame> {
       }
 
       _chkRow++;
-      Chunk anyChunk = _curChks[0];
+
 
       // Case 3:  Out of data.
-      if (anyChunk._start + _chkRow == anyChunk._vec.length()) {
+      if (_curChks._start + _chkRow == _curChks._vec.length()) {
         return 0;
       }
 
       // Case 4:  Out of data in the current chunks => fast-forward to the next set of non-empty chunks.
-      if (_chkRow == anyChunk.len()) {
-        _curChkIdx = anyChunk._vec.elem2ChunkIdx(anyChunk._start + _chkRow); // skips empty chunks
+      if (_chkRow == _curChks._len) {
+        _curChkIdx = _curChks._vec.elem2ChunkIdx(_curChks._start + _chkRow); // skips empty chunks
         // Case 4:  Processed all requested chunks.
         if (_curChkIdx > _lastChkIdx) {
           return 0;
         }
         // fetch the next non-empty chunks
-        Chunk[] newChks = new Chunk[_curChks.length];
-        for (int i = 0; i < _curChks.length; i++) {
-          newChks[i] = _curChks[i]._vec.chunkForChunkIdx(_curChkIdx);
-          // flush the remote chunk
-          Key oldKey = _curChks[i]._vec.chunkKey(_curChks[i]._cidx);
+        ChunkAry newChunks = _curChks._vec.chunkForChunkIdx(_curChkIdx);
+        for (Vec v :newChunks._vec.vecs()) {
+          Key oldKey = v.chunkKey(_curChks._cidx);
           if (! oldKey.home()) {
             H2O.raw_remove(oldKey);
           }
         }
-        _curChks = newChks;
+        _curChks = newChunks;
         _chkRow = 0;
       }
 

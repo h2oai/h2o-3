@@ -3,6 +3,7 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
+import water.util.ArrayUtils;
 import water.util.DistributedException;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
@@ -143,11 +144,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
 
   /** New Output vectors; may be null.
    * @return the set of AppendableVec instances or null if _output_types is null  */
-  public AppendableVec[] appendables() { return _appendables; }
+  public AppendableVec appendables() { return _appendables; }
 
   /** Appendables are treated separately (roll-ups computed in map/reduce
    *  style, can not be passed via K/V store).*/
-  protected AppendableVec[] _appendables;
+  protected AppendableVec _appendables;
 
   /** Internal field to track the left &amp; right remote nodes/JVMs to work on */
   transient protected RPC<T> _nleft, _nrite;
@@ -227,61 +228,18 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   private Frame closeFrame(Key key, String[] names, String[][] domains, Futures fs) {
     if( _output_types == null ) return null;
     final int noutputs = _output_types.length;
-    Vec[] vecs = new Vec[noutputs];
-    if( _appendables==null || _appendables.length == 0)  // Zero rows?
-      for( int i = 0; i < noutputs; i++ )
-        vecs[i] = _fr.anyVec().makeZero();
-    else {
-      int rowLayout = _appendables[0].compute_rowLayout();
-      for( int i = 0; i < noutputs; i++ ) {
-        _appendables[i].setDomain(domains==null ? null : domains[i]);
-        vecs[i] = _appendables[i].close(rowLayout,fs);
-      }
-    }
-    return new Frame(key,names,vecs);
+    int rowLayout = _appendables.compute_rowLayout();
+    _appendables.setDomains(domains);
+    return new Frame(key,names,_appendables.close(rowLayout,fs));
   }
 
-  /** Override with your map implementation.  This overload is given a single
-   *  <strong>local</strong> input Chunk.  It is meant for map/reduce jobs that use a
-   *  single column in a input Frame.  All map variants are called, but only one is
-   *  expected to be overridden. */
-  public void map( Chunk c ) { }
-  public void map( Chunk c, NewChunk nc ) { }
 
-  /** Override with your map implementation.  This overload is given two
-   *  <strong>local</strong> Chunks.  All map variants are called, but only one
-   *  is expected to be overridden. */
-  public void map( Chunk c0, Chunk c1 ) { }
-  //public void map( Chunk c0, Chunk c1, NewChunk nc) { }
-  //public void map( Chunk c0, Chunk c1, NewChunk nc1, NewChunk nc2 ) { }
-
-  /** Override with your map implementation.  This overload is given three
-   * <strong>local</strong> input Chunks.  All map variants are called, but only one
-   * is expected to be overridden. */
-  public void map( Chunk c0, Chunk c1, Chunk c2 ) { }
-  //public void map( Chunk c0, Chunk c1, Chunk c2, NewChunk nc ) { }
-  //public void map( Chunk c0, Chunk c1, Chunk c2, NewChunk nc1, NewChunk nc2 ) { }
-
-  /** Override with your map implementation.  This overload is given an array
-   *  of <strong>local</strong> input Chunks, for Frames with arbitrary column
-   *  numbers.  All map variants are called, but only one is expected to be
-   *  overridden. */
-  public void map( Chunk cs[] ) { }
-
-  /** The handy method to generate a new vector based on existing vectors.
-   *
-   * Note: This method is used by Sparkling Water examples.
-   *
-   * @param cs  input vectors
-   * @param nc  output vector
-   */
-  public void map( Chunk cs[], NewChunk nc ) { }
-  public void map( Chunk cs[], NewChunk nc1, NewChunk nc2 ) { }
-  public void map( Chunk cs[], NewChunk [] ncs ) { }
+  public void map(ChunkAry cs){throw H2O.unimpl("should've been overriden");}
+  public void map(ChunkAry cs, NewChunkAry ncs){throw H2O.unimpl("should've been overriden");}
 
   /** Override with your map implementation.  Used when doAll is called with
    *  an array of Keys, and called once-per-Key on the Key's Home node */
-  public void map( Key key ) { }
+  public void map( Key key ) { throw H2O.unimpl("should've been overriden");}
 
   /** Override to combine results from 'mrt' into 'this' MRTask.  Both 'this'
    *  and 'mrt' are guaranteed to either have map() run on them, or be the
@@ -598,57 +556,28 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       }
     } else if( _hi > _lo ) {    // Frame, Single chunk?
       Vec v0 = _fr.anyVec();
-      if( _run_local || v0.chunkKey(_lo).home() ) { // And chunk is homed here?
+      if( _run_local || v0.isLocal(_lo) ) { // And chunk is homed here?
         assert(_run_local || !H2O.ARGS.client) : "Client node should not process any keys in MRTask!";
-
-        // Make decompression chunk headers for these chunks
-        Vec vecs[] = _fr.vecs();
-        Chunk bvs[] = new Chunk[vecs.length];
-        NewChunk [] appendableChunks = null;
-        for( int i=0; i<vecs.length; i++ )
-          if( vecs[i] != null ) {
-            assert _run_local || vecs[i].chunkKey(_lo).home()
-              : "Chunk="+_lo+" v0="+v0+", k="+v0.chunkKey(_lo)+"   v["+i+"]="+vecs[i]+", k="+vecs[i].chunkKey(_lo);
-            bvs[i] = vecs[i].chunkForChunkIdx(_lo);
-          }
-
-        if(_output_types != null) {
-          final VectorGroup vg = vecs[0].group();
-          _appendables = new AppendableVec[_output_types.length];
-          appendableChunks = new NewChunk[_output_types.length];
-          for(int i = 0; i < _appendables.length; ++i) {
-            _appendables[i] = new AppendableVec(vg.vecKey(_vid+i),_output_types[i]);
-            appendableChunks[i] = _appendables[i].chunkForChunkIdx(_lo);
-          }
-        }
-        // Call all the various map() calls that apply
+        ChunkAry cs = v0.chunkForChunkIdx(_lo);
         if(_profile!=null)
           _profile._userstart = System.currentTimeMillis();
-        if( _fr.vecs().length == 1 ) map(bvs[0]);
-        if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1]);
-        if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2]);
-        if( true                  )  map(bvs );
-        if( _output_types != null && _output_types.length == 1 ) { // convenience versions for cases with single output.
-          if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
-          if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0]);
-          if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0]);
-          //if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0]);
-          //if( true                  )  map(bvs,    appendableChunks[0]);
+        if(_output_types != null){
+          final VectorGroup vg = v0.group();
+          _appendables = new AppendableVec(vg.vecKey(_vid),_output_types);
+          NewChunkAry ncs = _appendables.chunkForChunkIdx(_lo);
+          map(cs,ncs);
+          if(_profile!=null)
+            _profile._closestart = System.currentTimeMillis();
+          cs.close(_fs);
+          ncs.close(_fs);
+        } else {
+          map(cs);
+          if(_profile!=null)
+            _profile._closestart = System.currentTimeMillis();
+          cs.close(_fs);
         }
-        if( _output_types != null && _output_types.length == 2) { // convenience versions for cases with 2 outputs (e.g split).
-          if( appendableChunks == null ) throw H2O.fail(); // Silence IdeaJ warnings
-          if( _fr.vecs().length == 1 ) map(bvs[0], appendableChunks[0],appendableChunks[1]);
-          //if( _fr.vecs().length == 2 ) map(bvs[0], bvs[1],appendableChunks[0],appendableChunks[1]);
-          //if( _fr.vecs().length == 3 ) map(bvs[0], bvs[1], bvs[2],appendableChunks[0],appendableChunks[1]);
-          if( true                  )  map(bvs,    appendableChunks[0],appendableChunks[1]);
-        }
-        map(bvs,appendableChunks);
         _res = self();          // Save results since called map() at least once!
         // Further D/K/V put any new vec results.
-        if(_profile!=null)
-          _profile._closestart = System.currentTimeMillis();
-        for( Chunk bv : bvs )  bv.close(_lo,_fs);
-        if( _output_types != null) for(NewChunk nch:appendableChunks)nch.close(_lo, _fs);
       }
     }
     if(_profile!=null)
@@ -736,8 +665,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   void reduce4( T mrt ) {
     // Reduce any AppendableVecs
     if( _output_types != null )
-      for( int i=0; i<_appendables.length; i++ )
-        _appendables[i].reduce(mrt._appendables[i]);
+      _appendables.reduce(mrt._appendables);
     if( _ex == null ) _ex = mrt._ex;
     // User's reduction
     reduce(mrt);

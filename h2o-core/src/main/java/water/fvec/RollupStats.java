@@ -31,8 +31,6 @@ final class RollupStats extends Iced {
    *  modified!), or -1 if rollups have not been computed since the last
    *  modification.   */
 
-  volatile transient ForkJoinTask _tsk;
-
   // Computed in 1st pass
   volatile long _naCnt; //count(!isNA(X))
   double _mean, _sigma; //sum(X) and sum(X^2) for non-NA values
@@ -60,11 +58,11 @@ final class RollupStats extends Iced {
   // Check for: Vector is mutating and rollups cannot be asked for
   boolean isMutating() { return _naCnt==-2; }
   // Check for: Rollups currently being computed
-  private boolean isComputing() { return _naCnt==-1; }
+  protected boolean isComputing() { return _naCnt==-1; }
   // Check for: Rollups available
-  private boolean isReady() { return _naCnt>=0; }
+  protected boolean isReady() { return !isComputing(); }
 
-  private RollupStats(int mode) {
+  RollupStats(int mode) {
     _mins = new double[5];
     _maxs = new double[5];
     Arrays.fill(_mins, Double.MAX_VALUE);
@@ -78,31 +76,32 @@ final class RollupStats extends Iced {
   private static RollupStats makeComputing() { return new RollupStats(-1); }
   static RollupStats makeMutating () { return new RollupStats(-2); }
 
-  private RollupStats map( Chunk c ) {
-    _size = c.byteSize();
-    boolean isUUID = c._vec.isUUID();
-    boolean isString = c._vec.isString();
+
+  private RollupStats map( ChunkAry ca, int col ) {
+    _size = ca.byteSize();
+    boolean isUUID = ca._vec.isUUID(col);
+    boolean isString = ca._vec.isString(col);
     BufferedString tmpStr = new BufferedString();
     if (isString) _isInt = false;
     // Checksum support
     long checksum = 0;
-    long start = c._start;
+    long start = ca._start;
     long l = 81985529216486895L;
 
     // Check for popular easy cases: All Constant
-    double min=c.min(), max=c.max();
+    double min=ca.min(col), max=ca.max(col);
     if( min==max  ) {              // All constant or all NaN
       double d = min;             // It's the min, it's the max, it's the alpha and omega
-      _checksum = (c.hasFloat()?Double.doubleToRawLongBits(d):(long)d)*c._len;
+      _checksum = (ca.hasFloat()?Double.doubleToRawLongBits(d):(long)d)*ca._len;
       Arrays.fill(_mins, d);
       Arrays.fill(_maxs, d);
       if( d == Double.POSITIVE_INFINITY) _pinfs++;
       else if( d == Double.NEGATIVE_INFINITY) _ninfs++;
       else {
-        if( Double.isNaN(d)) _naCnt=c._len;
-        else if( d != 0 ) _nzCnt=c._len;
+        if( Double.isNaN(d)) _naCnt=ca._len;
+        else if( d != 0 ) _nzCnt=ca._len;
         _mean = d;
-        _rows=c._len;
+        _rows=ca._len;
       }
       _isInt = ((long)d) == d;
       _sigma = 0;               // No variance for constants
@@ -110,23 +109,23 @@ final class RollupStats extends Iced {
     }
 
     //all const NaNs
-    if ((c instanceof C0DChunk && c.isNA_impl(0))) {
+    if (Double.isNaN(min) && Double.isNaN(max)) {
       _sigma=0; //count of non-NAs * variance of non-NAs
       _mean = 0; //sum of non-NAs (will get turned into mean)
-      _naCnt=c._len;
+      _naCnt=ca._len;
       _nzCnt=0;
       return this;
     }
 
     // Check for popular easy cases: Boolean, possibly sparse, possibly NaN
     if( min==0 && max==1 ) {
-      int zs = c._len-c.sparseLenZero(); // Easy zeros
+      int zs = ca._len -ca.sparseLenZero(); // Easy zeros
       int nans = 0;
       // Hard-count sparse-but-zero (weird case of setting a zero over a non-zero)
-      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) )
-        if( c.isNA(i) ) nans++;
-        else if( c.at8(i)==0 ) zs++;
-      int os = c._len-zs-nans;  // Ones
+      for(int i = ca.nextNZ(-1,col); i< ca._len; i=ca.nextNZ(i,col) )
+        if( ca.isNA(i,col) ) nans++;
+        else if( ca.at8(i,col)==0 ) zs++;
+      int os = ca._len -zs-nans;  // Ones
       _nzCnt += os;
       _naCnt += nans;
       for( int i=0; i<Math.min(_mins.length,zs); i++ ) { min(0); max(0); }
@@ -140,10 +139,10 @@ final class RollupStats extends Iced {
 
     // Walk the non-zeros
     if( isUUID ) {   // UUID columns do not compute min/max/mean/sigma
-      for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
-        if( c.isNA(i) ) _naCnt++;
+      for(int i = ca.nextNZ(-1,col); i< ca._len; i=ca.nextNZ(i,col) ) {
+        if( ca.isNA(i,col) ) _naCnt++;
         else {
-          long lo = c.at16l(i), hi = c.at16h(i);
+          long lo = ca.at16l(i,col), hi = ca.at16h(i,col);
           if (lo != 0 || hi != 0) _nzCnt++;
           l = lo ^ 37*hi;
         }
@@ -152,39 +151,17 @@ final class RollupStats extends Iced {
       }
 
     } else if( isString ) { // String columns do not compute min/max/mean/sigma
-      for (int i = c.nextNZ(-1); i < c._len; i = c.nextNZ(i)) {
-        if (c.isNA(i)) _naCnt++;
+      for (int i = ca.nextNZ(-1,col); i < ca._len; i = ca.nextNZ(i,col)) {
+        if (ca.isNA(i,col)) _naCnt++;
         else {
           _nzCnt++;
-          l = c.atStr(tmpStr, i).hashCode();
+          l = ca.atStr(tmpStr, i, col).hashCode();
         }
         if (l != 0) // ignore 0s in checksum to be consistent with sparse chunks
           checksum ^= (17 * (start + i)) ^ 23 * l;
       }
     } else {
-      // Work off all numeric rows, or only the nonzeros for sparse
-      if (c instanceof C1Chunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C1Chunk) c, start, checksum);
-      else if (c instanceof C1SChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C1SChunk) c, start, checksum);
-      else if (c instanceof C1NChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C1NChunk) c, start, checksum);
-      else if (c instanceof C2Chunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C2Chunk) c, start, checksum);
-      else if (c instanceof C2SChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C2SChunk) c, start, checksum);
-      else if (c instanceof C4SChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C4SChunk) c, start, checksum);
-      else if (c instanceof C4FChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C4FChunk) c, start, checksum);
-      else if (c instanceof C4Chunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C4Chunk) c, start, checksum);
-      else if (c instanceof C8Chunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C8Chunk) c, start, checksum);
-      else if (c instanceof C8DChunk)
-        checksum=new RollupStatsHelpers(this).numericChunkRollup((C8DChunk) c, start, checksum);
-      else
-        checksum=new RollupStatsHelpers(this).numericChunkRollup(c, start, checksum);
+      checksum=new RollupStatsHelpers(this).numericChunkRollup(ca, col, checksum);
 
       // special case for sparse chunks
       // we need to merge with the mean (0) and variance (0) of the zeros count of 0s of the sparse chunk - which were skipped above
@@ -192,8 +169,8 @@ final class RollupStats extends Iced {
       // _mean is the mean of non-zero rows
       // _sigma is the mean of non-zero rows
       // handle the zeros
-      if( c.isSparseZero() ) {
-        int zeros = c._len - c.sparseLenZero();
+      if( ca.isSparseZero(col) ) {
+        int zeros = ca._len - ca.sparseLenZero(col);
         if (zeros > 0) {
           for( int i=0; i<Math.min(_mins.length,zeros); i++ ) { min(0); max(0); }
           double zeromean = 0;
@@ -216,7 +193,7 @@ final class RollupStats extends Iced {
     return this;
   }
 
-  private void reduce( RollupStats rs ) {
+  void reduce( RollupStats rs ) {
     for( double d : rs._mins ) if (!Double.isNaN(d)) min(d);
     for( double d : rs._maxs ) if (!Double.isNaN(d)) max(d);
     _naCnt += rs._naCnt;
@@ -252,24 +229,25 @@ final class RollupStats extends Iced {
 
   private static class Roll extends MRTask<Roll> {
     final Key _rskey;
-    RollupStats _rs;
+    RollupsAry _rs;
     Roll( H2OCountedCompleter cmp, Key rskey ) { super(cmp); _rskey=rskey; }
-    @Override public void map( Chunk c ) { _rs = new RollupStats(0).map(c); }
+    @Override public void map( ChunkAry c ) {
+      RollupStats [] ary = new RollupStats[c._numCols];
+      for(int i = 0; i < c._numCols; ++i)
+        ary[i] = new RollupStats(0).map(c,i);
+      _rs = new RollupsAry(ary);
+    }
     @Override public void reduce( Roll roll ) { _rs.reduce(roll._rs); }
     @Override public void postGlobal() {
       if( _rs == null )
-        _rs = new RollupStats(0);
+        _rs = new RollupsAry(0);
       else {
-        _rs._sigma = Math.sqrt(_rs._sigma/(_rs._rows-1));
-        if (_rs._rows == 1) _rs._sigma = 0;
-        if (_rs._rows < 5) for (int i=0; i<5-_rs._rows; i++) {  // Fix PUBDEV-150 for files under 5 rows
-          _rs._maxs[4-i] = Double.NaN;
-          _rs._mins[4-i] = Double.NaN;
-        }
+        _rs.postGlobal();
       }
-      // mean & sigma not allowed on more than 2 classes; for 2 classes the assumption is that it's true/false
-      if( _fr.anyVec().isCategorical() && _fr.anyVec().domain().length > 2 )
-        _rs._mean = _rs._sigma = Double.NaN;
+      for(int i = 0; i < _fr.numCols(); ++i)
+        // mean & sigma not allowed on more than 2 classes; for 2 classes the assumption is that it's true/false
+        if( _fr.anyVec().isCategorical(i) && _fr.anyVec().domain(i).length > 2 )
+          _rs.setCategorical(i);
     }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }
@@ -281,60 +259,8 @@ final class RollupStats extends Iced {
     @Override public String toString(){return "Roll(" + _fr.anyVec()._key +")";}
   }
 
-  static void start(final Vec vec, Futures fs, boolean computeHisto) {
-    if( vec instanceof InteractionWrappedVec ) return;
-    if( DKV.get(vec._key)== null )
-      throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
-    if( vec.isString() ) computeHisto = false; // No histogram for string columns
-    final Key rskey = vec.rollupStatsKey();
-    RollupStats rs = getOrNull(vec,rskey);
-    if(rs == null || (computeHisto && !rs.hasHisto()))
-      fs.add(new RPC(rskey.home_node(),new ComputeRollupsTask(vec,computeHisto)).addCompleter(new H2OCallback() {
-        @Override public void callback(H2OCountedCompleter h2OCountedCompleter) {
-          DKV.get(rskey); // fetch new results via DKV to enable caching of the results.
-        }
-      }).call());
-  }
-
   private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
 
-  static RollupStats get(Vec vec, boolean computeHisto) {
-    if( DKV.get(vec._key)== null ) throw new RuntimeException("Rollups not possible, because Vec was deleted: "+vec._key);
-    if( vec.isString() ) computeHisto = false; // No histogram for string columns
-    final Key rskey = vec.rollupStatsKey();
-    RollupStats rs = DKV.getGet(rskey);
-    while(rs == null || (!rs.isReady() || (computeHisto && !rs.hasHisto()))){
-      if(rs != null && rs.isMutating())
-        throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (1)");
-      // 1. compute only once
-      try {
-        RPC rpcNew = new RPC(rskey.home_node(),new ComputeRollupsTask(vec, computeHisto));
-        RPC rpcOld = _pendingRollups.putIfAbsent(rskey, rpcNew);
-        if(rpcOld == null) {  // no prior pending task, need to send this one
-          rpcNew.call().get();
-          _pendingRollups.remove(rskey);
-        } else // rollups computation is already in progress, wait for it to finish
-          rpcOld.get();
-      } catch( Throwable t ) {
-        System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
-        throw new RuntimeException(t);
-      }
-      // 2. fetch - done in two steps to go through standard DKV.get and enable local caching
-      rs = DKV.getGet(rskey);
-    }
-    return rs;
-  }
-  // Allow a bunch of rollups to run in parallel.  If Futures is passed in, run
-  // the rollup in the background and do not return.
-  static RollupStats get(Vec vec) { return get(vec,false);}
-  // Fetch if present, but do not compute
-  static RollupStats getOrNull(Vec vec, final Key rskey ) {
-    Value val = DKV.get(rskey);
-    if( val == null )           // No rollup stats present?
-      return vec.length() > 0 ? /*not computed*/null : /*empty vec*/new RollupStats(0);
-    RollupStats rs = val.get(RollupStats.class);
-    return rs.isReady() ? rs : null;
-  }
   // Histogram base & stride
   double h_base() { return _mins[0]; }
   double h_stride() { return h_stride(_bins.length); }
@@ -346,7 +272,7 @@ final class RollupStats extends Iced {
     final int _nbins;            // Inputs
     long[] _bins;                // Outputs
     Histo( H2OCountedCompleter cmp, RollupStats rs, int nbins ) { super(cmp);_base = rs.h_base(); _stride = rs.h_stride(nbins); _nbins = nbins; }
-    @Override public void map( Chunk c ) {
+    @Override public void map( ChunkAry c ) {
       _bins = new long[_nbins];
       for( int i=c.nextNZ(-1); i< c._len; i=c.nextNZ(i) ) {
         double d = c.atd(i);
@@ -382,16 +308,13 @@ final class RollupStats extends Iced {
     }
 
     private Value makeComputing(){
-      RollupStats newRs = RollupStats.makeComputing();
       CountedCompleter cc = getCompleter(); // should be null or RPCCall
       if(cc != null) assert cc.getCompleter() == null;
-      newRs._tsk = cc == null?this:cc;
-      return new Value(_rsKey,newRs);
+      return new Value(_rsKey,RollupsAry.makeComputing(cc == null?this:cc));
     }
-    private void installResponse(Value nnn, RollupStats rs) {
+    private void installResponse(Value nnn, RollupsAry rs) {
       Futures fs = new Futures();
       Value old = DKV.DputIfMatch(_rsKey, new Value(_rsKey, rs), nnn, fs);
-      assert rs.isReady();
       if(old != nnn)
         throw new IllegalArgumentException("Can not compute rollup stats while vec is being modified. (2)");
       fs.blockForPending();
@@ -403,7 +326,7 @@ final class RollupStats extends Iced {
       final Vec vec = DKV.getGet(_vecKey);
       while(true) {
         Value v = DKV.get(_rsKey);
-        RollupStats rs = (v == null) ? null : v.<RollupStats>get();
+        RollupsAry rs = (v == null) ? null : v.<RollupsAry>get();
         // Fetched current rs from the DKV, rs can be:
         //   a) computed
         //        a.1) has histo or histo not required => do nothing
@@ -412,8 +335,8 @@ final class RollupStats extends Iced {
         //   c) mutating  => throw IAE
         //   d) null      => compute new rollups
         if (rs != null) {
-          if (rs.isReady()) {
-            if (_computeHisto && !rs.hasHisto()) { // a.2 => compute rollups
+          if (rs.isReady(vec,false)) {
+            if (_computeHisto && !rs.isReady(vec,true)) { // a.2 => compute rollups
               CountedCompleter cc = getCompleter(); // should be null or RPCCall
               if(cc != null) assert cc.getCompleter() == null;
               // note: if cc == null then onExceptionalCompletion tasks waiting on this may be woken up before exception handling iff exception is thrown.
@@ -451,65 +374,66 @@ final class RollupStats extends Iced {
       tryComplete();
     }
 
-    final void computeHisto(final RollupStats rs, Vec vec, final Value nnn) {
-      // All NAs or non-math; histogram has zero bins
-      if (rs._naCnt == vec.length() || vec.isUUID()) {
-        rs._bins = new long[0];
-        installResponse(nnn, rs);
-        return;
+    final void computeHisto(final RollupsAry rsa, Vec vec, final Value nnn) {
+      for (int c = 0; c < rsa.numCols(); ++c) {
+        RollupStats rs = rsa.getRollups(c);
+        // All NAs or non-math; histogram has zero bins
+        if (rs._naCnt == vec.length() || vec.isUUID(c)) {
+          rs._bins = new long[0];
+          continue;
+        }
+        // Constant: use a single bin
+        double span = rs._maxs[0] - rs._mins[0];
+        final long rows = vec.length() - rs._naCnt;
+        assert rows > 0 : "rows = " + rows + ", vec.len() = " + vec.length() + ", naCnt = " + rs._naCnt;
+        if (span == 0) {
+          rs._bins = new long[]{rows};
+          continue;
+        }
+        // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
+        // - unless the count gets too high; allow a very high count for categoricals.
+        int nbins = MAX_SIZE;
+        if (rs._isInt && span < Integer.MAX_VALUE) {
+          nbins = (int) span + 1;      // 1 bin per int
+          int lim = vec.isCategorical() ? Categorical.MAX_CATEGORICAL_COUNT : MAX_SIZE;
+          nbins = Math.min(lim, nbins); // Cap nbins at sane levels
+        }
+        Histo histo = new Histo(null, rs, nbins).doAll(vec);
+        assert ArrayUtils.sum(histo._bins) == rows;
+        rs._bins = histo._bins;
+        // Compute percentiles from histogram
+        rs._pctiles = new double[Vec.PERCENTILES.length];
+        int j = 0;                 // Histogram bin number
+        int k = 0;                 // The next non-zero bin after j
+        long hsum = 0;             // Rolling histogram sum
+        double base = rs.h_base();
+        double stride = rs.h_stride();
+        double lastP = -1.0;       // any negative value to pass assert below first time
+        for (int i = 0; i < Vec.PERCENTILES.length; i++) {
+          final double P = Vec.PERCENTILES[i];
+          assert P >= 0 && P <= 1 && P >= lastP;   // rely on increasing percentiles here. If P has dup then strange but accept, hence >= not >
+          lastP = P;
+          double pdouble = 1.0 + P * (rows - 1);   // following stats:::quantile.default type 7
+          long pint = (long) pdouble;          // 1-based into bin vector
+          double h = pdouble - pint;           // any fraction h to linearly interpolate between?
+          assert P != 1 || (h == 0.0 && pint == rows);  // i.e. max
+          while (hsum < pint) hsum += rs._bins[j++];
+          // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to either exactly right or too big
+          // pint now falls in bin j-1 (the ++ happened even when hsum==pint), so grab that bin value now
+          rs._pctiles[i] = base + stride * (j - 1);
+          if (h > 0 && pint == hsum) {
+            // linearly interpolate between adjacent non-zero bins
+            //      i) pint is the last of (j-1)'s bin count (>1 when either duplicates exist in input, or stride makes dups at lower accuracy)
+            // AND ii) h>0 so we do need to find the next non-zero bin
+            if (k < j) k = j; // if j jumped over the k needed for the last P, catch k up to j
+            // Saves potentially winding k forward over the same zero stretch many times
+            while (rs._bins[k] == 0) k++;  // find the next non-zero bin
+            rs._pctiles[i] += h * stride * (k - j + 1);
+          } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
+          // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
+        }
       }
-      // Constant: use a single bin
-      double span = rs._maxs[0] - rs._mins[0];
-      final long rows = vec.length() - rs._naCnt;
-      assert rows > 0 : "rows = " + rows + ", vec.len() = " + vec.length() + ", naCnt = " + rs._naCnt;
-      if (span == 0) {
-        rs._bins = new long[]{rows};
-        installResponse(nnn, rs);
-        return;
-      }
-      // Number of bins: MAX_SIZE by default.  For integers, bins for each unique int
-      // - unless the count gets too high; allow a very high count for categoricals.
-      int nbins = MAX_SIZE;
-      if (rs._isInt && span < Integer.MAX_VALUE) {
-        nbins = (int) span + 1;      // 1 bin per int
-        int lim = vec.isCategorical() ? Categorical.MAX_CATEGORICAL_COUNT : MAX_SIZE;
-        nbins = Math.min(lim, nbins); // Cap nbins at sane levels
-      }
-      Histo histo = new Histo(null, rs, nbins).doAll(vec);
-      assert ArrayUtils.sum(histo._bins) == rows;
-      rs._bins = histo._bins;
-      // Compute percentiles from histogram
-      rs._pctiles = new double[Vec.PERCENTILES.length];
-      int j = 0;                 // Histogram bin number
-      int k = 0;                 // The next non-zero bin after j
-      long hsum = 0;             // Rolling histogram sum
-      double base = rs.h_base();
-      double stride = rs.h_stride();
-      double lastP = -1.0;       // any negative value to pass assert below first time
-      for (int i = 0; i < Vec.PERCENTILES.length; i++) {
-        final double P = Vec.PERCENTILES[i];
-        assert P >= 0 && P <= 1 && P >= lastP;   // rely on increasing percentiles here. If P has dup then strange but accept, hence >= not >
-        lastP = P;
-        double pdouble = 1.0 + P * (rows - 1);   // following stats:::quantile.default type 7
-        long pint = (long) pdouble;          // 1-based into bin vector
-        double h = pdouble - pint;           // any fraction h to linearly interpolate between?
-        assert P != 1 || (h == 0.0 && pint == rows);  // i.e. max
-        while (hsum < pint) hsum += rs._bins[j++];
-        // j overshot by 1 bin; we added _bins[j-1] and this goes from too low to either exactly right or too big
-        // pint now falls in bin j-1 (the ++ happened even when hsum==pint), so grab that bin value now
-        rs._pctiles[i] = base + stride * (j - 1);
-        if (h > 0 && pint == hsum) {
-          // linearly interpolate between adjacent non-zero bins
-          //      i) pint is the last of (j-1)'s bin count (>1 when either duplicates exist in input, or stride makes dups at lower accuracy)
-          // AND ii) h>0 so we do need to find the next non-zero bin
-          if (k < j) k = j; // if j jumped over the k needed for the last P, catch k up to j
-          // Saves potentially winding k forward over the same zero stretch many times
-          while (rs._bins[k] == 0) k++;  // find the next non-zero bin
-          rs._pctiles[i] += h * stride * (k - j + 1);
-        } // otherwise either h==0 and we know which bin, or fraction is between two positions that fall in the same bin
-        // this guarantees we are within one bin of the exact answer; i.e. within (max-min)/MAX_SIZE
-      }
-      installResponse(nnn, rs);
+      installResponse(nnn, rsa);
     }
   }
 }

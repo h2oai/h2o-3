@@ -3,6 +3,7 @@ package water.fvec;
 import water.Iced;
 import water.Key;
 import water.Keyed;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
@@ -19,6 +20,22 @@ public class DBlock extends Iced<DBlock> {
     _ids = id;
   }
 
+  public void removeChunks(int [] ids){
+    if(_ids != null)
+      cancelSparse();
+    for(int id:ids)
+      _cs[id] = null;
+  }
+
+  private void cancelSparse(){
+    Chunk [] ncs = new Chunk[_numCols];
+    for(int k = 0; k < _numCols; ++k)
+      ncs[k] = new C0DChunk(0,0);
+    for(int k = 0; k < _ids.length; ++k)
+      ncs[_ids[k]] = _cs[k];
+    _cs = ncs;
+    _ids = null;
+  }
   public void setChunk(int i, Chunk chunk) {
     if(_ids != null){
       int j = Arrays.binarySearch(_ids,i);
@@ -27,12 +44,7 @@ public class DBlock extends Iced<DBlock> {
         return;
       }
       // else cancel sparse
-      Chunk [] ncs = new Chunk[_numCols];
-      for(int k = 0; k < _numCols; ++k)
-        ncs[k] = new C0DChunk(0,0);
-      for(int k = 0; i < _ids.length; ++k)
-        ncs[_ids[k]] = _cs[k];
-      _cs = ncs;
+      cancelSparse();
     }
     _cs[i] = chunk;
   }

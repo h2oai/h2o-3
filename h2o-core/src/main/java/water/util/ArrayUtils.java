@@ -15,6 +15,11 @@ import static water.util.RandomUtils.getRNG;
 public class ArrayUtils {
   private static final byte[] EMPTY_BYTE_ARRAY = new byte[] {};
 
+  public static byte [] makeConst(int sz, byte b){
+    byte [] ary = MemoryManager.malloc1(sz);
+    Arrays.fill(ary,b);
+    return ary;
+  }
   // Sum elements of an array
   public static long sum(final long[] from) {
     long result = 0;
@@ -893,7 +898,11 @@ public class ArrayUtils {
     if (ib < b.length) while (ib<b.length) r[i++] = b[ib++];
     return Arrays.copyOf(r, i);
   }
-
+  public static int[] join(int[] a, int[] b) {
+    int[] res = Arrays.copyOf(a, a.length+b.length);
+    System.arraycopy(b, 0, res, a.length, b.length);
+    return res;
+  }
   public static long[] join(long[] a, long[] b) {
     long[] res = Arrays.copyOf(a, a.length+b.length);
     System.arraycopy(b, 0, res, a.length, b.length);
@@ -1102,6 +1111,20 @@ public class ArrayUtils {
       else c[k] = a[i++];
     }
     return c;
+  }
+  public static int [] sortedUnion(int[] a, int [] b) {
+    int [] c = MemoryManager.malloc4(a.length + b.length);
+    int i = 0, j = 0, k = 0;
+    while(i < a.length || j < b.length){
+      if(i == a.length) c[k] = b[j++];
+      else if(j == b.length)c[k] = a[i++];
+      else if(b[j] < a[i]) c[k] = b[j++];
+      else c[k] = a[i++];
+      while(i < a.length && a[i] == c[k])++i;
+      while(j < b.length && b[j] == c[k])++j;
+      k++;
+    }
+    return k < c.length?Arrays.copyOf(c,k):c;
   }
   // sparse sortedMerge (ids and vals)
   public static void sortedMerge(int[] aIds, double [] aVals, int[] bIds, double [] bVals, int [] resIds, double [] resVals) {
@@ -1565,6 +1588,29 @@ public class ArrayUtils {
       if (value == lhValue) return true;
     }
     return false;
+  }
+
+  public static boolean isSorted(int[] ids) {
+    for(int i = 1; i < ids.length; ++i)
+      if(ids[i-1] > ids[i]) return false;
+    return true;
+  }
+  public static int [] reversePermutation(int [] perm){
+    int [] rperm = perm.clone();
+    for(int i = 0; i < perm.length; ++i)
+      rperm[perm[i]] = i;
+    return perm;
+  }
+
+  public static int[] complement(int[] idxs, int N) {
+    assert isSorted(idxs);
+    int [] res = MemoryManager.malloc4(N-idxs.length);
+    int k = 0,l = 0;
+    for(int i = 0; i < N; ++i){
+      if(i == idxs[k]) k++;
+      else res[l++] = i;
+    }
+    return res;
   }
 
   public static final class IntAry {
