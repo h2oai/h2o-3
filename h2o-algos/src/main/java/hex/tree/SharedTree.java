@@ -334,7 +334,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       for (int i = 0; i < ntreesFromCheckpoint; i++) _rand.nextLong(); //for determinism
       Log.info("Reconstructing OOB stats from checkpoint took " + t);
       if (DEV_DEBUG) {
-        System.out.println(_train.toString());
+        System.out.println(_train.toTwoDimTable());
       }
     }
 
@@ -394,12 +394,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
       int nidIdx  = fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
       if (DEV_DEBUG) {
-        System.out.println("Building a layer for class " + k + ":\n" + fr2.toString());
+        System.out.println("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
       }
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, weightIdx, workIdx, nidIdx));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, _improvPerVar, weightIdx, workIdx, nidIdx, _parms));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -416,7 +416,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
                         vecs[idx_work(k)],
                         vecs[idx_nids(k)]
                 }
-        ).toString());
+        ).toTwoDimTable());
       }
     }
     // The layer is done.
@@ -430,7 +430,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final int _nbins_cats;      // Categorical columns: Number of histogram bins
     final DTree _tree;
     final int _leafOffsets[/*nclass*/]; //Index of the first leaf node. Leaf indices range from _leafOffsets[k] to _tree._len-1
-    final DHistogram _hcs[/*nclass*/][][];
+    final DHistogram _hcs[/*nclass*/][/*leaves*/][/*cols*/];
     final Frame _fr2;
     final boolean _build_tree_one_node;
     final float[] _improvPerVar;      // Squared Error improvement per variable per split
@@ -438,9 +438,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final int _weightIdx;
     final int _workIdx;
     final int _nidIdx;
+    SharedTreeModel.SharedTreeParameters _params;
 
     boolean _did_split;
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family, int weightIdx, int workIdx, int nidIdx) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2,
+                      float[] improvPerVar, int weightIdx, int workIdx, int nidIdx,
+                      SharedTreeModel.SharedTreeParameters params) {
+      _params = params;
+      _nidIdx = nidIdx;
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -449,12 +454,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _leafOffsets = leafs;
       _hcs  = hcs;
       _fr2  = fr2;
-      _build_tree_one_node = build_tree_one_node;
+      _build_tree_one_node = _params._build_tree_one_node;
       _improvPerVar = improvPerVar;
-      _family = family;
+      _family = _params._distribution;
       _weightIdx = weightIdx;
       _workIdx = workIdx;
-      _nidIdx = nidIdx;
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -473,11 +477,50 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
       final int leafOffset = _leafOffsets[_k];
       int tmax = _tree.len();   // Number of total splits in tree K
+
+      // fill in missing histograms
+      for(int leaf = leafOffset; leaf<tmax; leaf++ ) {
+        DTree.UndecidedNode udn = _tree.undecided(leaf);
+        if (udn._lazy) {
+          udn._lazy = false;
+          DTree.DecidedNode parent = _tree.decided(udn._pid);
+          int[] children = parent._nids;
+
+          int othernid = children[0] == leaf ? children[1] : children[0];
+          DTree.UndecidedNode otherNode = null;
+          if( othernid >= 0 && _tree.node(othernid) instanceof DTree.UndecidedNode ) {
+            otherNode = _tree.undecided(othernid);
+          }
+          if (udn._scoreCols!=null) {
+            for (int c : udn._scoreCols) {
+              DHistogram my = udn._hs[c];
+              if (otherNode != null) {
+                Log.info("Filling up histogram for node " + udn._nid + " and col " + c);
+                my.setToDiff(otherNode._hs[c], parent._histos[c]);
+              }
+            }
+          } else {
+            for (int c=0; c<udn._hs.length; ++c) {
+              DHistogram my = udn._hs[c];
+              if (otherNode != null) {
+                Log.info("Filling up histogram for node " + udn._nid + " and col " + c);
+                my.setToDiff(otherNode._hs[c], parent._histos[c]);
+              }
+            }
+          }
+        }
+      }
+
+      // Do the actual splitting
       for(int leaf = leafOffset; leaf<tmax; leaf++ ) { // Visit all the new splits (leaves)
         DTree.UndecidedNode udn = _tree.undecided(leaf);
-//        System.out.println((_st._nclass==1?"Regression":("Class "+_st._response.domain()[_k]))+",\n  Undecided node:"+udn);
-        // Replace the Undecided with the Split decision
+        // Split the leaf (find the best column), create (up to) two new undecided leaf nodes (and their histograms), return this now decided (split) node
         DTree.DecidedNode dn = _st.makeDecided(udn,sbh._hcs[leaf-leafOffset]);
+        if (_params._histogram_type == SharedTreeModel.SharedTreeParameters.HistogramType.Uniform &&
+            dn._nids != null && dn._nids[0] >= 0 && dn._nids[1] >= 0) {
+          _tree.undecided(dn._nids[1])._lazy = true; //mark one of the children as to be computed lazily (from parent - other child)
+        }
+
 //        System.out.println(dn + "\n" + dn._split);
         if( dn._split == null ) udn.do_not_split();
         else {

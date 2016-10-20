@@ -185,6 +185,26 @@ public class HistogramTest extends TestUtil {
     assert(hist.bin(maxEx-1e-15) == nbins-1);
   }
 
+  @Test public void testQuantilesFastRange() {
+    int nbins = 13;
+    int nbins_cats = nbins;
+    byte isInt = 0;
+    double min = 1;
+    double maxEx = 6.900000000000001;
+    long seed = 1234;
+    SharedTreeModel.SharedTreeParameters.HistogramType histoType = SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesFast;
+    double[] splitPts = new double[]{1,1.5,2,2.5,3,4,5,6.1,6.2,6.3,6.7,6.8,6.85};
+    Key k = Key.make();
+    DKV.put(new DHistogram.HistoQuantiles(k,splitPts));
+    DHistogram hist = new DHistogram("myhisto",nbins,nbins_cats,isInt,min,maxEx,0,histoType,seed,k);
+    hist.init();
+    assert(hist.binAt(0)==min);
+    assert(hist.binAt(nbins-1)<maxEx);
+    assert(hist.bin(min) == 0);
+    assert(hist.bin(maxEx-1e-15) == nbins-1);
+    k.remove();
+  }
+
   @Test public void testQuantilesRange() {
     int nbins = 13;
     int nbins_cats = nbins;

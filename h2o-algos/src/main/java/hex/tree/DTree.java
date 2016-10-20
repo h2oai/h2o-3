@@ -286,7 +286,10 @@ public class DTree extends Iced {
         if( h._isInt > 0 && !(min+1 < maxEx ) )
           continue; // This column will not split again
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
-        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey);
+        if (h._histoType== SharedTreeModel.SharedTreeParameters.HistogramType.Uniform) //keep nbins/min/max from the parent (i.e., top-level)
+          nhists[j] = DHistogram.make(h._name, h.nbins(), h._isInt, h._min, h._maxEx, h._seed*0xDECAF+(way+1), parms, null);
+        else
+          nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
@@ -312,6 +315,7 @@ public class DTree extends Iced {
   // any split-decision.
   public static class UndecidedNode extends Node {
     public transient DHistogram[] _hs; //(up to) one histogram per column
+    public boolean _lazy;
     public final int _scoreCols[];      // A list of columns to score; could be null for all
     public UndecidedNode( DTree tree, int pid, DHistogram[] hs ) {
       super(tree,pid);
@@ -459,6 +463,7 @@ public class DTree extends Iced {
 
     transient byte _nodeType; // Complex encoding: see the compressed struct comments
     transient int _size = 0;  // Compressed byte size of this subtree
+    public final DHistogram[] _histos;
 
     // Make a correctly flavored Undecided
     public UndecidedNode makeUndecidedNode(DHistogram hs[]) {
@@ -511,6 +516,7 @@ public class DTree extends Iced {
 
     public DecidedNode( UndecidedNode n, DHistogram hs[], long seed ) {
       super(n._tree,n._pid,n._nid); // Replace Undecided with this DecidedNode
+      _histos = hs;
       _nids = new int[2];           // Split into 2 subsets
       _split = bestCol(n,hs,seed);  // Best split-point for this tree
       if( _split == null) {

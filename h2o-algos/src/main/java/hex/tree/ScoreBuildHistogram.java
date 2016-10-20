@@ -6,6 +6,7 @@ import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 /**  Score and Build Histogram
  *
@@ -244,7 +245,12 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     for (int c = 0; c < cols; c++) {
       boolean extracted = false;
       for (int n = 0; n < hcslen; n++) {
-        int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
+        DTree.UndecidedNode udn = _tree.undecided(n + _leaf);
+        if (udn._lazy) {
+          Log.info("Not computing histogram for node " + udn._nid + " and col " + c);
+          continue;
+        }
+        int sCols[] = udn._scoreCols; // Columns to score (null, or a list of selected cols)
         if (sCols == null || ArrayUtils.find(sCols,c) >= 0) {
           if (!extracted) {
             chks[c].getDoubles(cs, 0, cs.length);

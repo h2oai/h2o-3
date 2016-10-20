@@ -1898,8 +1898,8 @@ public class GBMTest extends TestUtil {
         Log.info("histoType: " + histoType[i] + " -> validation logloss: " + loglosses[i]);
       }
       int idx = ArrayUtils.minIndex(loglosses);
-      Log.info("Optimal randomization: " + histoType[idx]);
-      assertTrue(4 == idx);
+      Log.info("Optimal histo type: " + histoType[idx]);
+      assertTrue(6 == idx);
     } finally {
       if (tfr!=null) tfr.delete();
       if (ksplits[0]!=null) ksplits[0].remove();
@@ -2747,6 +2747,40 @@ public class GBMTest extends TestUtil {
         if (gbm != null) gbm.deleteCrossValidationModels();
         if (gbm != null) gbm.delete();
       }
+    }
+  }
+
+  @Test public void testNumericHisto() {
+    GBMModel gbm = null;
+    Frame fr = null;
+    try {
+      fr = parse_test_file("bigdata/laptop/airlines_all.05p.csv");
+      for (String s : new String[]{
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        fr.remove(s).remove();
+      }
+      DKV.put(fr);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._response_column = "IsDepDelayed";
+      parms._train = fr._key;
+      parms._ntrees = 10;
+      parms._max_depth = 5;
+      parms._learn_rate = 0.01;
+      parms._min_rows = 1;
+      parms._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.Uniform;
+      parms._nbins = 1000;
+      parms._nbins_top_level = 1000;
+
+      GBM job = new GBM(parms);
+      gbm = job.trainModel().get();
+    } finally {
+      if( fr  != null ) fr .remove();
+      if( gbm != null ) gbm.remove();
     }
   }
 

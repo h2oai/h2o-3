@@ -48,8 +48,8 @@ public final class DHistogram extends Iced {
   public double _step;     // Linear interpolation step per bin
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
   public double _w[];           // weighted count of observations per bin, shared, atomically incremented
-  private double _wY[], _wYY[]; // weighted response per bin and weighted squared response per bin, shared, atomically incremented
-  private AtomicDouble _wNA, _wYNA, _wYYNA; // same for missing observations
+  public double _wY[], _wYY[]; // weighted response per bin and weighted squared response per bin, shared, atomically incremented
+  public AtomicDouble _wNA, _wYNA, _wYYNA; // same for missing observations
 
   // Atomically updated double min/max
   protected    double  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
@@ -216,7 +216,7 @@ public final class DHistogram extends Iced {
          _splitPts[i] = rng.nextFloat() * (_nbin-1);
       Arrays.sort(_splitPts);
     }
-    else if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
+    else if (_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal || _histoType == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesFast) {
       assert (_splitPts == null);
       if (_globalQuantilesKey != null) {
         HistoQuantiles hq = DKV.getGet(_globalQuantilesKey);
@@ -224,9 +224,12 @@ public final class DHistogram extends Iced {
           _splitPts = ((HistoQuantiles) DKV.getGet(_globalQuantilesKey)).splitPts;
           if (_splitPts!=null) {
 //            Log.info("Obtaining global splitPoints: " + Arrays.toString(_splitPts));
-            _splitPts = ArrayUtils.limitToRange(_splitPts, _min, _maxEx);
-            if (_splitPts.length > 1 && _splitPts.length < _nbin)
-              _splitPts = ArrayUtils.padUniformly(_splitPts, _nbin);
+            // adapt and refine
+            if (_histoType == SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal) {
+              _splitPts = ArrayUtils.limitToRange(_splitPts, _min, _maxEx);
+              if (_splitPts.length > 1 && _splitPts.length < _nbin)
+                _splitPts = ArrayUtils.padUniformly(_splitPts, _nbin);
+            }
             if (_splitPts.length <= 1) {
               _splitPts = null; //abort, fall back to uniform binning
               _histoType = SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive;
@@ -240,8 +243,8 @@ public final class DHistogram extends Iced {
         }
       }
     }
-    else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
-    //otherwise AUTO/UniformAdaptive
+    else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive || _histoType == SharedTreeModel.SharedTreeParameters.HistogramType.Uniform);
+    //otherwise AUTO/UniformAdaptive/Uniform
     assert(_nbin>0);
     _w = MemoryManager.malloc8d(_nbin);
     _wY = MemoryManager.malloc8d(_nbin);
@@ -286,6 +289,23 @@ public final class DHistogram extends Iced {
     _wNA.addAndGet(dsh._wNA.get());
     _wYNA.addAndGet(dsh._wYNA.get());
     _wYYNA.addAndGet(dsh._wYYNA.get());
+  }
+
+  public void setToDiff( DHistogram a, DHistogram b ) {
+    assert _isInt == a._isInt && _nbin == a._nbin && _step == a._step && _min == a._min && _maxEx == a._maxEx;
+    assert _isInt == b._isInt && _nbin == b._nbin && _step == b._step && _min == b._min && _maxEx == b._maxEx;
+
+    assert (_w == null && a._w == null) || (_w != null && a._w != null);
+    assert (_w == null && b._w == null) || (_w != null && b._w != null);
+    assert ( a._w != null );
+    for (int i=0; i<_nbin; ++i) {
+      _w[i] = a._w[i] - b._w[i];
+      _wY[i] = a._wY[i] - b._wY[i];
+      _wYY[i] = a._wYY[i] - b._wYY[i];
+    }
+    _wNA.set(a._wNA.get() - b._wNA.get());
+    _wYNA.set(a._wYNA.get() - b._wYNA.get());
+    _wYYNA.set(a._wYYNA.get() - b._wYYNA.get());
   }
 
   // Inclusive min & max
@@ -615,8 +635,10 @@ public final class DHistogram extends Iced {
       double weight = ws[k];
       if (weight == 0) continue;
       double col_data = cs[k];
-      if( col_data < minmax[0] ) minmax[0] = col_data;
-      if( col_data > minmax[1] ) minmax[1] = col_data;
+      if (_histoType != SharedTreeModel.SharedTreeParameters.HistogramType.Uniform) {
+        if( col_data < minmax[0] ) minmax[0] = col_data;
+        if( col_data > minmax[1] ) minmax[1] = col_data;
+      }
       double y = ys[k];
       assert(!Double.isNaN(y));
       double wy = weight * y;
@@ -635,9 +657,11 @@ public final class DHistogram extends Iced {
       }
     }
 
-    // Atomically update histograms
-    setMin(minmax[0]);       // Track actual lower/upper bound per-bin
-    setMaxIn(minmax[1]);
+    if (_histoType != SharedTreeModel.SharedTreeParameters.HistogramType.Uniform) {
+      // Atomically update histograms
+      setMin(minmax[0]);       // Track actual lower/upper bound per-bin
+      setMaxIn(minmax[1]);
+    }
 
     final int len = _w.length;
     for( int b=0; b<len; b++ ) {
