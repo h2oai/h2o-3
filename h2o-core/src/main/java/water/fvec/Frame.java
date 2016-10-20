@@ -64,7 +64,7 @@ public class Frame extends Lockable<Frame> {
   /** Vec names */
   public String[] _names;
   private boolean _lastNameBig; // Last name is "Cxxx" and has largest number
-  private transient VecAry _vecs; // The Vectors (transient to avoid network traffic)
+  protected VecAry _vecs; // The Vectors (transient to avoid network traffic)
 
   public boolean hasNAs(){
     RollupsAry rsa = _vecs.rollupStats();
