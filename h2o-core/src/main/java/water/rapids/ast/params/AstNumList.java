@@ -156,12 +156,6 @@ public class AstNumList extends AstParameter {
     return sb.p(']').toString();
   }
 
-  // Strange count of args, due to custom parsing
-  @Override
-  public int nargs() {
-    return -1;
-  }
-
   @Override
   public String toJavaString() {
     double[] ary = expand();

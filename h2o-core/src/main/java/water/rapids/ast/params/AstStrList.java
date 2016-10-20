@@ -31,12 +31,6 @@ public class AstStrList extends AstParameter {
     _strs = strs.toArray(new String[strs.size()]);
   }
 
-  // Strange count of args, due to custom parsing
-  @Override
-  public int nargs() {
-    return -1;
-  }
-
   // This is a special syntatic form; the number-list never executes and hits the execution stack
   @Override
   public Val exec(Env env) {

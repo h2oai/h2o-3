@@ -65,7 +65,7 @@ public class AstExec extends AstRoot {
     Val fun = _asts[0].exec(env);
     if (!fun.isFun())
       throw new IllegalArgumentException("Expected a function but found " + fun.getClass());
-    AstRoot ast = fun.getFun();
+    AstPrimitive ast = fun.getFun();
     int nargs = ast.nargs();
     if (nargs != -1 && nargs != _asts.length)
       throw new IllegalArgumentException(
@@ -73,12 +73,6 @@ public class AstExec extends AstRoot {
     try (Env.StackHelp stk = env.stk()) {
       return env.returning(ast.apply(env, stk, _asts));
     }
-  }
-
-  // No expected argument count
-  @Override
-  public int nargs() {
-    return -1;
   }
 
   public String[] getArgs() {
