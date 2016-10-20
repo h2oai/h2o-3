@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 print_diff <- function(r, h2o) {
   if (!isTRUE(all.equal(r,h2o))) {
-    Log.info (paste("R :", r))
+    Log.info (paste("R :", r+1900))
     Log.info (paste("H2O :" , h2o))
   }
 }
@@ -49,7 +49,7 @@ test.rdoc_settimezone.golden <- function() {
   hdf$day <- day(hdf$dates)
   hdf$hour <- hour(hdf$dates)
   ldf <- as.data.frame(hdf)
-  edf <- data.frame(year = c(114, 114, 114, 114, 114, 114, 114),
+  edf <- data.frame(year = c(114 + 1900, 114 + 1900, 114 + 1900, 114 + 1900, 114 + 1900, 114 + 1900, 114 + 1900),
                    month = c(1, 1, 1, 2, 2, 10, 11),
                    day = c(7, 30, 31, 1, 2, 31, 1),
                    hour = c(0, 0, 0, 0, 0, 0, 0)) 
