@@ -9,6 +9,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.*;
+import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
@@ -41,11 +42,12 @@ public class AstRectangleAssign extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc = stk.track(asts[2].exec(env));
+    AstParameter col_list = (AstParameter) asts[3];
     // Column selection
-    AstNumList cols_numlist = new AstNumList(asts[3].columns(dst.names()));
+    AstNumList cols_numlist = new AstNumList(col_list.columns(dst.names()));
     // Special for AstAssign: "empty" really means "all"
     if (cols_numlist.isEmpty()) cols_numlist = new AstNumList(0, dst.numCols());
     // Allow R-like number list expansion: negative column numbers mean exclusion
