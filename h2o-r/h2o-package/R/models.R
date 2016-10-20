@@ -2721,7 +2721,7 @@ h2o.tabulate <- function(data, x, y,
 
 #' Plot an H2O Tabulate Heatmap
 #'
-#' Plots the simple co-occurrence based tabulation of X vs Y as a heatmap, where X and Y are two Vecs in a given dataset.
+#' Plots the simple co-occurrence based tabulation of X vs Y as a heatmap, where X and Y are two Vecs in a given dataset. This function requires suggested ggplot2 package.
 #'
 #' @param x An H2OTabulate object for which the heatmap plot is desired.
 #' @param xlab A title for the x-axis.  Defaults to what is specified in the given H2OTabulate object.
@@ -2744,6 +2744,10 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
   
   if (!inherits(x, "H2OTabulate")) {
     stop("Must be an H2OTabulate object")
+  }
+  
+  if (!requireNamespace("ggplot2", quietly = TRUE)) {
+    stop("In order to plot.H2OTabulate you must have ggplot2 package installed")
   }
   
   # Pull small counts table into R memory to plot
