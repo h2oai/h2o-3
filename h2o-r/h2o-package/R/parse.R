@@ -27,8 +27,9 @@
 #' @seealso \link{h2o.importFile}, \link{h2o.parseSetup}
 #' @export
 h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL,
-                         col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type=NULL, chunk_size=NULL) {
-  parse.params <- h2o.parseSetup(data,destination_frame,header,sep,col.names,col.types, na.strings=na.strings, parse_type=parse_type)
+                         col.types=NULL, na.strings=NULL, blocking=FALSE, parse_type = NULL, chunk_size = NULL) {
+  parse.params <- h2o.parseSetup(data, destination_frame, header, sep, col.names, col.types,
+                                 na.strings = na.strings, parse_type = parse_type, chunk_size = chunk_size)
   for(w in parse.params$warnings){
     cat('WARNING:',w,'\n')
   }
@@ -115,7 +116,8 @@ h2o.parseRaw <- function(data, destination_frame = "", header=NA, sep = "", col.
 #' @inheritParams h2o.parseRaw
 #' @seealso \link{h2o.parseRaw}
 #' @export
-h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", col.names=NULL, col.types=NULL, na.strings=NULL, parse_type=NULL) {
+h2o.parseSetup <- function(data, destination_frame = "", header = NA, sep = "", col.names = NULL, col.types = NULL,
+                           na.strings = NULL, parse_type = NULL, chunk_size = NULL) {
 
   # Allow single frame or list of frames; turn singleton into a list
   if( is.H2OFrame(data) ) data <- list(data)
@@ -185,9 +187,11 @@ h2o.parseSetup <- function(data, destination_frame = "", header=NA, sep = "", co
     } else { stop("`col.types` must be a character vector or list") }
   }
 
-  # check the parse_type
-  # currently valid types are ARFF, XLS, CSV, SVMLight
+  # set parse_type
   if( !is.null(parse_type) ) parseSetup$parse_type <- parse_type
+
+  # set chunk_size
+  if( !is.null(chunk_size) ) parseSetup$chunk_size <- chunk_size
 
   # make a name only if there was no destination_frame ( i.e. !nzchar("") == TRUE )
   if( !nzchar(destination_frame) ) destination_frame <- .key.make(parseSetup$destination_frame)
