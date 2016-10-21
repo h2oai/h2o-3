@@ -319,10 +319,6 @@ public class DeepWaterParameters extends Model.Parameters {
       if (!new File(_network_parameters_file).exists())
         dl.error("_network_parameters_file", "network_parameters_file " + _network_parameters_file + " not found.");
     }
-    if (_backend == Backend.caffe) {
-      dl.error("_backend", "Caffe backend is not yet supported.");
-    }
-
     if (_checkpoint!=null) {
       DeepWaterModel other = (DeepWaterModel) _checkpoint.get();
       if (other == null)
