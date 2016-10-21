@@ -209,8 +209,9 @@ class H2OLocalServer(object):
             if cwd_chunks[i - 1] == "h2o-3":
                 yield os.path.sep.join(cwd_chunks[:i] + ["build", "h2o.jar"])
         # Then check the backend/bin folder:
-        backend = os.path.split(os.path.realpath(__file__))[0]
-        yield os.path.join(backend, "bin", "h2o.jar")
+        # (the following works assuming this code is located in h2o/backend/server.py file)
+        backend_dir = os.path.split(os.path.realpath(__file__))[0]
+        yield os.path.join(backend_dir, "bin", "h2o.jar")
 
         # Then try several old locations where h2o.jar might have been installed
         prefix1 = prefix2 = sys.prefix
