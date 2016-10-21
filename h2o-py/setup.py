@@ -1,17 +1,26 @@
 # -*- encoding: utf-8 -*-
 from setuptools import setup, find_packages
 from codecs import open
-from os import path
+import os
+import shutil
 import h2o
 
-here = path.abspath(path.dirname(__file__))
+here = os.path.abspath(os.path.dirname(__file__))
 
 # Get the long description from the relevant file
-with open(path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
+with open(os.path.join(here, 'DESCRIPTION.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 packages = find_packages(exclude=["tests*"])
 print("Found packages: %r" % packages)
+
+# Copy h2o.jar to the source directory
+if not os.path.exists("h2o/backend/bin"):
+    os.makedirs("h2o/backend/bin")
+shutil.copyfile("../build/h2o.jar", "h2o/backend/bin/h2o.jar")
+
+if h2o.__version__ == "SUBST_PROJECT_VERSION":
+    h2o.__version__ = "3.14.15.92653"
 
 setup(
     name='h2o',
@@ -66,15 +75,10 @@ setup(
 
     packages=packages,
     package_data={"h2o": [
-        "LICENSE",
-        "h2o_data/*.*",
+        "h2o_data/*.*",     # several small datasets used in demos/examples
+        "backend/bin/*.*",  # h2o.jar core Java library
     ]},
 
     # run-time dependencies
     install_requires=["requests", "tabulate", "future", "colorama"],
-
-    # Additional data files to include into the distribution
-    data_files=[
-        ("h2o_jar", ["../build/h2o.jar"]),
-    ],
 )
