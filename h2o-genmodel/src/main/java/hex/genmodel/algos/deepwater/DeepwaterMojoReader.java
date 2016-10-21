@@ -24,9 +24,8 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
       throw new RuntimeException(e);
     }
     _model._backend = DeepwaterMojoModel.createDeepWaterBackend((String) readkv("backend"));
-    if (_model._backend == null) {
+    if (_model._backend == null)
       throw new RuntimeException("Couldn't instantiate native backend " + readkv("backend") + ". Cannot build a Deep Water model.");
-    }
     _model._problem_type = readkv("problem_type");
     _model._mini_batch_size = readkv("mini_batch_size");
     _model._height = readkv("height");
