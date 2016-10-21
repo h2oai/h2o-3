@@ -156,10 +156,6 @@ import java.util.UUID;
  */
 public class Vec extends Keyed<Vec> {
 
-  public interface VectorHolder {
-    Vec vec();
-  }
-
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
   byte _type;                   // Vec Type
 
