@@ -1,13 +1,16 @@
 package water;
 
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 
 import static org.junit.Assert.*;
 
 /**
  * Tests for Scope
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ScopeTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 
@@ -37,7 +40,7 @@ public class ScopeTest extends TestUtil {
     Scope.exit(k3, k2);
     assertEquals(v1, DKV.get(k1));
     assertEquals(1, numberOfLeakedKeys());
-    removeKeysRegardless();
+    DKV.remove(k1);
   }
 
   @Test
@@ -51,6 +54,7 @@ public class ScopeTest extends TestUtil {
     Scope.exit(k3, k1);
     assertEquals(v1, DKV.get(k1));
     assertEquals(1, numberOfLeakedKeys());
-    removeKeysRegardless();
+    DKV.remove(k1);
+    DKV.remove(k3);
   }
 }

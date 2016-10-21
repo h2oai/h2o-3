@@ -111,7 +111,8 @@ public class TestUtil extends Iced {
   }
 
   // Bulk brainless key removal.  Completely wipes all Keys without regard.
-  public static void removeKeysRegardless() {
+  // not to be used in any tests.
+  private static void removeKeysRegardless() {
     new MRTask(){
       @Override public void setupLocal() {  H2O.raw_clear();  Vec.ESPC.clear(); }
     }.doAllNodes();
