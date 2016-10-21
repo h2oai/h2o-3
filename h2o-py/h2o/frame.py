@@ -370,7 +370,11 @@ class H2OFrame(object):
             if use_pandas and can_use_pandas():
                 print(self.head().as_data_frame(True))
             else:
-                print(self.__unicode__())
+                s = self.__unicode__()
+                try:
+                    print(s)
+                except UnicodeEncodeError:
+                    print(s.encode("ascii", "replace"))
 
     def summary(self):
         """Summary includes min/mean/max/sigma and other rollup data."""
