@@ -22,7 +22,7 @@ def test_load_sparse():
         A[i + 1, i] = -2
     fr = h2o.H2OFrame(A)
     assert fr.shape == (1000, 1000)
-    means = fr.mean()  # .getrow()
+    means = fr.mean().getrow()
     assert means == [0.008] + [0.005] * 998 + [0.007]
 
     I = [0, 0, 1, 3, 1, 0, 0]
