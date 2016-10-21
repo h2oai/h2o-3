@@ -380,7 +380,7 @@ class H2OFrame(object):
     def __iter__(self):
         return (self[i] for i in range(self.ncol))
 
-    def __str__(self):
+    def __unicode__(self):
         if sys.gettrace() is None:
             if self._ex is None: return "This H2OFrame has been removed."
             table = self._frame()._ex._cache._tabulate("simple", False)
@@ -417,7 +417,11 @@ class H2OFrame(object):
             if use_pandas and can_use_pandas():
                 print(self.head().as_data_frame(True))
             else:
-                print(self)
+                s = self.__unicode__()
+                try:
+                    print(s)
+                except UnicodeEncodeError:
+                    print(s.encode("ascii", "replace"))
 
     def summary(self):
         """Summary includes min/mean/max/sigma and other rollup data."""
