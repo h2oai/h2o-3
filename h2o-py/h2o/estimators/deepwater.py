@@ -26,11 +26,12 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2ODeepWaterEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "checkpoint", "training_frame", "validation_frame", "nfolds", "balance_classes",
-                      "max_after_balance_size", "class_sampling_factors", "keep_cross_validation_predictions",
-                      "keep_cross_validation_fold_assignment", "fold_assignment", "fold_column", "response_column",
-                      "ignored_columns", "score_each_iteration", "categorical_encoding", "overwrite_with_best_model",
-                      "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp", "seed", "standardize",
+        names_list = {"model_id", "checkpoint", "autoencoder", "training_frame", "validation_frame", "nfolds",
+                      "balance_classes", "max_after_balance_size", "class_sampling_factors",
+                      "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
+                      "fold_column", "response_column", "offset_column", "weights_column", "ignored_columns",
+                      "score_each_iteration", "categorical_encoding", "overwrite_with_best_model", "epochs",
+                      "train_samples_per_iteration", "target_ratio_comm_to_comp", "seed", "standardize",
                       "learning_rate", "learning_rate_annealing", "momentum_start", "momentum_ramp", "momentum_stable",
                       "distribution", "score_interval", "score_training_samples", "score_validation_samples",
                       "score_duty_cycle", "stopping_rounds", "stopping_metric", "stopping_tolerance",
@@ -59,6 +60,17 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def checkpoint(self, checkpoint):
         assert_is_type(checkpoint, None, str, H2OEstimator)
         self._parms["checkpoint"] = checkpoint
+
+
+    @property
+    def autoencoder(self):
+        """bool: Auto-Encoder. (Default: False)"""
+        return self._parms.get("autoencoder")
+
+    @autoencoder.setter
+    def autoencoder(self, autoencoder):
+        assert_is_type(autoencoder, None, bool)
+        self._parms["autoencoder"] = autoencoder
 
 
     @property
@@ -192,6 +204,34 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def response_column(self, response_column):
         assert_is_type(response_column, None, str)
         self._parms["response_column"] = response_column
+
+
+    @property
+    def offset_column(self):
+        """
+        str: Offset column. This will be added to the combination of columns before applying the link function.
+        """
+        return self._parms.get("offset_column")
+
+    @offset_column.setter
+    def offset_column(self, offset_column):
+        assert_is_type(offset_column, None, str)
+        self._parms["offset_column"] = offset_column
+
+
+    @property
+    def weights_column(self):
+        """
+        str: Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it
+        from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice.
+        Negative weights are not allowed.
+        """
+        return self._parms.get("weights_column")
+
+    @weights_column.setter
+    def weights_column(self, weights_column):
+        assert_is_type(weights_column, None, str)
+        self._parms["weights_column"] = weights_column
 
 
     @property

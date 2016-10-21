@@ -36,7 +36,7 @@ Maintainer: Tom Kraljevic <tomk@0xdata.com>
 \itemize{
   \item \href{http://www.h2o.ai}{H2O.ai Homepage}
   \item \href{http://docs.h2o.ai}{H2O Documentation}
-  \item \href{https://github.com/h2oai/h2o-dev}{H2O on GitHub}
+  \item \href{https://github.com/h2oai/h2o-3}{H2O on GitHub}
   }
 }
 \keyword{ package }
