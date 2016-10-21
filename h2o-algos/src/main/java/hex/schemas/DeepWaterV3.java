@@ -13,6 +13,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     static public String[] fields = new String[] {
         "model_id",
         "checkpoint",
+        "autoencoder",
         "training_frame",
         "validation_frame",
         "nfolds",
@@ -24,6 +25,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "fold_assignment",
         "fold_column",
         "response_column",
+        "offset_column",
+        "weights_column",
         "ignored_columns",
         "score_each_iteration",
         "categorical_encoding",
