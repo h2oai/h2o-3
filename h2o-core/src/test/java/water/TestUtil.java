@@ -583,20 +583,13 @@ public class TestUtil extends Iced {
     }
   }
 
-  static Consumer<Vec> dropit = new Consumer<Vec>() {
-    @Override public void accept(Vec v) { v.remove(new Futures()).blockForPending(); }
-  };
-
   @BeforeClass
-  public static void hi() { stall_till_cloudsize(1); }
-  @AfterClass public static void bye() { toDrop.forEach(dropit); }
-
-  private static Set<Vec> toDrop = new HashSet<>();
-
-  protected static Vec willDrop(Vec v) { toDrop.add(v); return v; }
-
-  protected static <T extends Vec.VectorHolder> T willDrop(T vh) {
-    toDrop.add(vh.vec());
-    return vh;
+  public static void hi() { 
+    stall_till_cloudsize(1); 
+    Scope.enter();
   }
+
+  @AfterClass public static void bye() { Scope.exit(); }
+
+  protected static Vec willDrop(Vec v) { return Scope.track(v); }
 }

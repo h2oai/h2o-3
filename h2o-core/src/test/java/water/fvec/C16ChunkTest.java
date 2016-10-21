@@ -60,12 +60,7 @@ public class C16ChunkTest extends TestUtil {
 
     if (withNA) nc.addNA();
     for (UUID u : sampleVals) nc.addUUID(u.getLeastSignificantBits(), u.getMostSignificantBits());
-    nc.addNA();
-    nc.addNA();
-    nc.addNA();
-    nc.addNA();
-    nc.addNA();
-    nc.addNA();
+    for (int i = 0; i < 6; i++) nc.addNA();
 
     return nc.compress();
   }
