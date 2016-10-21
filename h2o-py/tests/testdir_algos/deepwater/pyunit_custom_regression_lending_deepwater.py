@@ -26,6 +26,8 @@ def deepwater_custom_regression():
 
   train = h2o.import_file(pyunit_utils.locate("bigdata/laptop/lending-club/LoanStats3a.csv"))
 
+  train = train[:30000,:]
+
   response = 'loan_amnt'
   predictors = list(set(train.names) - set([response, 'id','emp_title','title','desc','revol_util','zip_code'])) ## remove high-cardinality columns
 
@@ -33,7 +35,7 @@ def deepwater_custom_regression():
   net().save("/tmp/symbol-py.json")
 
   print("Importing the model architecture for training in H2O")
-  model = H2ODeepWaterEstimator(epochs=100, learning_rate=1e-4, mini_batch_size=64, hidden=[1], activation="tanh")
+  model = H2ODeepWaterEstimator(epochs=100)
                                 #network='user', network_definition_file="/tmp/symbol-py.json")
                                 
   model.train(x=predictors,y=response, training_frame=train, nfolds=3)
