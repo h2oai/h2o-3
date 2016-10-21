@@ -529,7 +529,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     int batch_size = 64;
     int classes = 10;
 
-    ImageDataSet dataset = new ImageDataSet(29, 28, 1);
+    ImageDataSet dataset = new ImageDataSet(28, 28, 1, classes);
     RuntimeOptions opts = new RuntimeOptions();
     opts.setUseGPU(true);
     opts.setSeed(1234);

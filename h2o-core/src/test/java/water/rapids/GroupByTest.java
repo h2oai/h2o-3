@@ -166,7 +166,7 @@ public class GroupByTest extends TestUtil {
 
   @Test public void testBasicDdply() {
     Frame fr = null;
-    String tree = "(ddply hex [1] { x . (mean (cols x 2) TRUE)})"; // Group-By on col 1 (not 0) mean of col 2
+    String tree = "(ddply hex [1] {x . (flatten (mean (cols x 2) TRUE))})"; // Group-By on col 1 (not 0) mean of col 2
     try {
       fr = chkTree(tree,"smalldata/iris/iris_wheader.csv");
       chkDim(fr,2,23);
@@ -180,9 +180,8 @@ public class GroupByTest extends TestUtil {
       chkFr(fr,1,22,1.5);
       fr.delete();
 
-      fr = chkTree("(ddply hex [1] { x . (sum (* (cols x 2) (cols x 3)))})","smalldata/iris/iris_wheader.csv");
+      fr = chkTree("(ddply hex [1] {x . (sum (* (cols x 2) (cols x 3)))})","smalldata/iris/iris_wheader.csv");
       chkDim(fr,2,23);
-
 
     } finally {
       if( fr != null ) fr.delete();
@@ -265,7 +264,7 @@ public class GroupByTest extends TestUtil {
       System.out.println(val.toString());
       if( val instanceof ValFrame )
         return val.getFrame();
-      throw new IllegalArgumentException("exepcted a frame return");
+      throw new IllegalArgumentException("expected a frame return");
     } catch( IllegalArgumentException iae ) {
       if( !expectThrow ) throw iae; // If not expecting a throw, then throw which fails the junit
       fr.delete();                  // If expecting, then cleanup

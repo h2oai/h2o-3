@@ -113,7 +113,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import PY2, viewitems
 
 __all__ = ("U", "I", "NOT", "Tuple", "Dict", "MagicType", "BoundInt", "BoundNumeric", "Enum",
-           "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray",
+           "numeric", "h2oframe", "pandas_dataframe", "numpy_ndarray", "scipy_sparse",
            "assert_is_type", "assert_matches", "assert_satisfies", "is_type")
 
 
@@ -360,10 +360,11 @@ class _LazyClass(MagicType):
         assert_is_type(fr, h2oframe, pandas_dataframe, numpy_ndarray)
     """
 
-    def __init__(self, module, symbol):
+    def __init__(self, module, symbol, checker=None):
         """Lazily load ``symbol`` from ``module``."""
         self._module = module
         self._symbol = symbol
+        self._checker = checker or (lambda value, t: isinstance(value, t))
         self._name = symbol if module.startswith("h2o") else module + "." + symbol
         # Initially this is None, but will contain the class object once the class is loaded. If the class cannot be
         # loaded, this will be set to False.
@@ -372,7 +373,7 @@ class _LazyClass(MagicType):
     def check(self, var):
         """Return True if the variable matches this type, and False otherwise."""
         if self._class is None: self._init()
-        return self._class and isinstance(var, self._class)
+        return self._class and self._checker(var, self._class)
 
     def _init(self):
         try:
@@ -416,6 +417,7 @@ numeric = U(int, float)
 h2oframe = _LazyClass("h2o", "H2OFrame")
 pandas_dataframe = _LazyClass("pandas", "DataFrame")
 numpy_ndarray = _LazyClass("numpy", "ndarray")
+scipy_sparse = _LazyClass("scipy.sparse", "issparse", lambda value, t: t(value))
 
 
 #-----------------------------------------------------------------------------------------------------------------------
