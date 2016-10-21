@@ -196,8 +196,7 @@ final public class DeepWaterModelInfo extends Iced {
   private void setupNativeBackend() {
     try {
       _backend = createDeepWaterBackend(parameters._backend.toString());
-      if (_backend == null)
-        throw new RuntimeException("Couldn't instantiate native backend " + parameters._backend.toString() + ". Cannot build a Deep Water model.");
+      if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
       ImageDataSet imageDataSet = getImageDataSet();
       RuntimeOptions opts = getRuntimeOptions();
       BackendParams bparms = getBackendParams();
@@ -305,9 +304,8 @@ final public class DeepWaterModelInfo extends Iced {
       return;
     }
     if (_backend ==null) {
-      _backend = createDeepWaterBackend(get_params()._backend.toString());
-      if (_backend == null)
-        throw new RuntimeException("Couldn't instantiate native backend " + get_params()._backend.toString() + ". Cannot build a Deep Water model.");
+      _backend = createDeepWaterBackend(get_params()._backend.toString()); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+      if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
     }
 
     if (network==null) network = _network;
