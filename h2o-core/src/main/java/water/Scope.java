@@ -34,7 +34,7 @@ public class Scope {
    *  enter call except for the listed Keys.
    *  @return Returns the list of kept keys. */
   static public Key[] exit(Key... keep) {
-    Set<Key> mustKeep = Sets.newHashSet(keep);
+    Set<Key> mustKeep = new HashSet<>(Arrays.asList(keep));
     Stack<HashSet<Key>> keys = _scope.get()._keys;
     if (!keys.empty()) {
       Futures fs = new Futures();

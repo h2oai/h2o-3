@@ -4,6 +4,7 @@ import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import water.fvec.Vec;
 
 import static org.junit.Assert.*;
 
@@ -21,40 +22,29 @@ public class ScopeTest extends TestUtil {
   }
 
   @Test
-  public void testEnterAndExit_with_something_to_keep() throws Exception {
+  public void testEnterAndExit_with_no_leakage() throws Exception {
     Scope.enter();
-    Key k1 = Key.make("k11");
-    Key k2 = Key.make("k12");
-    Key k3 = Key.make("k13");
-    Scope.exit(k3, k1, k2); // not supposed to leak anything
+    Vec v1 = Vec.makeCon(11.0, 10);
+    Vec v2 = Vec.makeCon(12.0, 10);
+    Vec v3 = Vec.makeCon(13.0, 10);
+    Scope.track(v1);
+    Scope.track(v2);
+    Scope.track(v3);
+    Scope.exit();
   }
 
   @Test
   public void testEnterAndExit_with_leakage() throws Exception {
     Scope.enter();
-    Key k1 = Key.make("k21");
-    Key k2 = Key.make("k22");
-    Key k3 = Key.make("k23");
-    Value v1 = new Value(k1, "v1");
-    DKV.put(k1, v1);
-    Scope.exit(k3, k2);
-    assertEquals(v1, DKV.get(k1));
-    assertEquals(1, numberOfLeakedKeys());
-    DKV.remove(k1);
-  }
-
-  @Test
-  public void testEnterAndExit_with_no_leakage() throws Exception {
-    Scope.enter();
-    Key k1 = Key.make("k21");
-    Key k2 = Key.make("k22");
-    Key k3 = Key.make("k23");
-    Value v1 = new Value(k1, "v1");
-    DKV.put(k1, v1);
-    Scope.exit(k3, k1);
-    assertEquals(v1, DKV.get(k1));
-    assertEquals(1, numberOfLeakedKeys());
-    DKV.remove(k1);
-    DKV.remove(k3);
+    Vec v1 = Vec.makeCon(21.0, 10);
+    Vec v2 = Vec.makeCon(22.0, 10);
+    Vec v3 = Vec.makeCon(23.0, 10);
+    Scope.track(v1);
+    Scope.track(v2);
+    Scope.track(v3);
+    Scope.exit(v3._key, v2._key);
+    assertEquals(6, numberOfLeakedKeys());
+    v2.remove();
+    v3.remove();
   }
 }
