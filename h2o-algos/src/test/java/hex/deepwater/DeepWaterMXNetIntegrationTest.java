@@ -28,8 +28,8 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
     for (boolean gpu : new boolean[]{true, false}) {
 
       // Set model parameters
-      int w = 224, h = 224, channels = 3;
-      ImageDataSet id = new ImageDataSet(w,h,channels);
+      int w = 224, h = 224, channels = 3, nclasses=1000;
+      ImageDataSet id = new ImageDataSet(w,h,channels,nclasses);
       RuntimeOptions opts = new RuntimeOptions();
       opts.setSeed(1234);
       opts.setUseGPU(gpu);
@@ -39,7 +39,7 @@ public class DeepWaterMXNetIntegrationTest extends DeepWaterAbstractIntegrationT
       // Load the model
 //    File file = new File(getClass().getClassLoader().getResource("deepwater/backends/mxnet/models/Inception/synset.txt").getFile()); //FIXME: Use the model in the resource
       String path = "../deepwater/mxnet/src/main/resources/deepwater/backends/mxnet/models/Inception/";
-      BackendModel _model = backend.buildNet(id, opts, bparm, 1000, StringUtils.expandPath(path + "Inception_BN-symbol.json"));
+      BackendModel _model = backend.buildNet(id, opts, bparm, nclasses, StringUtils.expandPath(path + "Inception_BN-symbol.json"));
       backend.loadParam(_model, StringUtils.expandPath(path + "Inception_BN-0039.params"));
       water.fvec.Frame labels = parse_test_file(path + "synset.txt");
       float[] mean = backend.loadMeanImage(_model, path + "mean_224.nd");

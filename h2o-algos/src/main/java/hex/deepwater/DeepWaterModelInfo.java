@@ -128,7 +128,7 @@ final public class DeepWaterModelInfo extends Iced {
   }
 
   private ImageDataSet getImageDataSet() {
-    return new ImageDataSet(_width, _height, _channels);
+    return new ImageDataSet(_width, _height, _channels, _classes);
   }
 
   /**
