@@ -78,7 +78,7 @@ public class TestUtil extends Iced {
 
   @AfterClass
   public static void checkLeakedKeys() {
-    int leaked_keys = H2O.store_size() - _initial_keycnt;
+    int leaked_keys = numberOfLeakedKeys();
     int cnt=0;
     if( leaked_keys > 0 ) {
       for( Key k : H2O.localKeySet() ) {
@@ -89,7 +89,11 @@ public class TestUtil extends Iced {
             (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
         } else {
-          System.out.println(k + " -> " + value.get());
+          try {
+            System.out.println(k + " -> " + value.get());
+          } catch(Exception x) {
+            System.out.println(k + " -> " + value);
+          }
           if( cnt++ < 10 )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
@@ -97,9 +101,19 @@ public class TestUtil extends Iced {
       if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
     }
     assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
-    // Bulk brainless key removal.  Completely wipes all Keys without regard.
+    removeKeysRegardless();
+
+  }
+
+  public static int numberOfLeakedKeys() {
+    return H2O.store_size() - _initial_keycnt;
+  }
+
+  // Bulk brainless key removal.  Completely wipes all Keys without regard.
+  // not to be used in any tests.
+  private static void removeKeysRegardless() {
     new MRTask(){
-      @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
+      @Override public void setupLocal() {  H2O.raw_clear();  Vec.ESPC.clear(); }
     }.doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
@@ -301,7 +315,7 @@ public class TestUtil extends Iced {
    *
    * @param fname name of folder
    * @param na_string string for NA in a column
-   * @return
+   * @return frame with parsed data
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);
