@@ -427,7 +427,7 @@ public class NewChunk extends Chunk {
       } else if( _ds != null ) { // Doubles?
         assert _xs==null;
         for(int i = 0; i < _sparseLen; ++i) {
-          if( Double.isNaN(_ds[i]) ) nas++;
+          if( Double.isNaN(_ds[i]) ) nas++; 
           else if( _ds[i]!=0 ) nzs++;
         }
       } else {
@@ -955,7 +955,7 @@ public class NewChunk extends Chunk {
           }
         }
         if(_missing != null && _missing.length() > num_noncompressibles)
-          _missing.clear(num_noncompressibles, _missing.length());
+            _missing.clear(num_noncompressibles, _missing.length());
       }
     } else {
       assert num_noncompressibles <= _ds.length;
@@ -1028,16 +1028,16 @@ public class NewChunk extends Chunk {
     Chunk res = compress2();
     byte type = type();
     assert _vec == null ||  // Various testing scenarios do not set a Vec
-        type == _vec._type || // Equal types
-        // Allow all-bad Chunks in any type of Vec
-        type == Vec.T_BAD ||
-        // Specifically allow the NewChunk to be a numeric type (better be all
-        // ints) and the selected Vec type an categorical - whose String mapping
-        // may not be set yet.
-        (type==Vec.T_NUM && _vec._type==Vec.T_CAT) ||
-        // Another one: numeric Chunk and Time Vec (which will turn into all longs/zeros/nans Chunks)
-        (type==Vec.T_NUM && _vec._type == Vec.T_TIME && !res.hasFloat())
-        : "NewChunk has type "+Vec.TYPE_STR[type]+", but the Vec is of type "+_vec.get_type_str();
+      type == _vec._type || // Equal types
+      // Allow all-bad Chunks in any type of Vec
+      type == Vec.T_BAD ||
+      // Specifically allow the NewChunk to be a numeric type (better be all
+      // ints) and the selected Vec type an categorical - whose String mapping
+      // may not be set yet.
+      (type==Vec.T_NUM && _vec._type==Vec.T_CAT) ||
+      // Another one: numeric Chunk and Time Vec (which will turn into all longs/zeros/nans Chunks)
+      (type==Vec.T_NUM && _vec._type == Vec.T_TIME && !res.hasFloat())
+      : "NewChunk has type "+Vec.TYPE_STR[type]+", but the Vec is of type "+_vec.get_type_str();
     assert _len == res._len : "NewChunk has length "+_len+", compressed Chunk has "+res._len;
     // Force everything to null after compress to free up the memory.  Seems
     // like a non-issue in the land of GC, but the NewChunk *should* be dead
@@ -1076,7 +1076,7 @@ public class NewChunk extends Chunk {
           setNA_impl2(i);
           ++_naCnt;
         }
-      // Smack any mismatched string/numbers
+        // Smack any mismatched string/numbers
     } else if( mode == Vec.T_NUM ) {
       for(int i = 0; i< _sparseLen; i++ )
         if(isCategorical2(i)) {
@@ -1216,8 +1216,8 @@ public class NewChunk extends Chunk {
     if (max == 1 && min == 0 && xmin == 0 && !overflow) {
       if(sparse) { // Very sparse?
         return  _naCnt==0
-            ? new CX0Chunk(_len, bufS(0))// No NAs, can store as sparse bitvector
-            : new CXIChunk(_len, 1,bufS(1)); // have NAs, store as sparse 1byte values
+          ? new CX0Chunk(_len, bufS(0))// No NAs, can store as sparse bitvector
+          : new CXIChunk(_len, 1,bufS(1)); // have NAs, store as sparse 1byte values
       }
       if(na_sparse) return new CNAXIChunk(_len, 1, bufS(1));
       int bpv = _catCnt +_naCnt > 0 ? 2 : 1;   // Bit-vector
@@ -1239,7 +1239,7 @@ public class NewChunk extends Chunk {
       int sz = 8;
       if( Short.MIN_VALUE <= min && max <= Short.MAX_VALUE ) sz = 2;
       else if( Integer.MIN_VALUE <= min && max <= Integer.MAX_VALUE ) sz = 4;
-      return new CNAXIChunk(_len,sz,bufS(sz));
+      return new CNAXIChunk(_len,sz,bufS(sz));      
     }
     // Exponent scaling: replacing numbers like 1.3 with 13e-1.  '13' fits in a
     // byte and we scale the column by 0.1.  A set of numbers like
@@ -1386,11 +1386,11 @@ public class NewChunk extends Chunk {
         ++j;
       }
       switch( log ) {
-        case 0:          bs [i    +off] = (byte)le ; break;
-        case 1: UnsafeUtils.set2(bs,(i<<1)+off,  (short)le); break;
-        case 2: UnsafeUtils.set4(bs, (i << 2) + off, (int) le); break;
-        case 3: UnsafeUtils.set8(bs, (i << 3) + off, le); break;
-        default: throw H2O.fail();
+      case 0:          bs [i    +off] = (byte)le ; break;
+      case 1: UnsafeUtils.set2(bs,(i<<1)+off,  (short)le); break;
+      case 2: UnsafeUtils.set4(bs, (i << 2) + off, (int) le); break;
+      case 3: UnsafeUtils.set8(bs, (i << 3) + off, le); break;
+      default: throw H2O.fail();
       }
     }
     assert j == _sparseLen :"j = " + j + ", _sparseLen = " + _sparseLen;
@@ -1414,7 +1414,7 @@ public class NewChunk extends Chunk {
         if (hs.size() < CUDChunk.MAX_UNIQUES) //still got space
           hs.put(Double.doubleToLongBits(d),dummy); //store doubles as longs to avoid NaN comparison issues during extraction
         else fitsInUnique = (hs.size() == CUDChunk.MAX_UNIQUES) && // full, but might not need more space because of repeats
-            hs.containsKey(Double.doubleToLongBits(d));
+                            hs.containsKey(Double.doubleToLongBits(d));
       }
       UnsafeUtils.set8d(bs, 8*i, d);
     }
@@ -1599,7 +1599,7 @@ public class NewChunk extends Chunk {
     // if exponent is Integer.MIN_VALUE (for missing value) or >=0, then go the integer path (at8_impl)
     // negative exponents need to be handled right here
     if( _ds == null ) return _xs.get(i) >= 0 ? at8_impl2(i) : _ms.get(i)*Math.pow(10,_xs.get(i));
-    assert _xs==null;
+    assert _xs==null; 
     return _ds[i];
   }
 
