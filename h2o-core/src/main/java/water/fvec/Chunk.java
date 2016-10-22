@@ -99,14 +99,14 @@ import java.util.UUID;
  *  <pre>{@code
 final double[] _point;                             // The given point
 public void map( Chunk[] chks ) {                  // Map over a set of same-numbered Chunks
-  for( int row=0; row < chks[0]._len; row++ ) {    // For all rows
-    double dist=0;                                 // Squared distance
-    for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
-      double d = chks[col].atd(row) - _point[col]; // Distance along this dimension
-      dist += d*d;                                 // Sum-squared-distance
-    }
-    chks[chks.length-1].set( row, dist );          // Store back the distance in the last col
-  }
+for( int row=0; row < chks[0]._len; row++ ) {    // For all rows
+double dist=0;                                 // Squared distance
+for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
+double d = chks[col].atd(row) - _point[col]; // Distance along this dimension
+dist += d*d;                                 // Sum-squared-distance
+}
+chks[chks.length-1].set( row, dist );          // Store back the distance in the last col
+}
 }}</pre>
  */
 
@@ -117,7 +117,6 @@ public abstract class Chunk extends Iced<Chunk> {
 
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
-   * @param vals holds extracted values, length must be >= this.sparseLen()
    * @param vals holds extracted chunk-relative row ids, length must be >= this.sparseLen()
    * @return number of extracted (non-zero) elements, equal to sparseLen()
    */
@@ -434,7 +433,7 @@ public abstract class Chunk extends Iced<Chunk> {
   }
 
   public Chunk deepCopy() {
-    Chunk c2 = (Chunk)clone();
+    Chunk c2 = clone();
     c2._vec=null;
     c2._start=-1;
     c2._cidx=-1;
@@ -567,22 +566,6 @@ public abstract class Chunk extends Iced<Chunk> {
     setNA(idx);
     return null;
   }
-
-  /**
-   * @param idx index of the value in Chunk
-   * @param x new value to set
-   * @return x on success, or null if something went wrong
-   */
-  public final Object setAny(int idx, Object x) {
-    return x instanceof String         ? set(idx, (String) x) :
-           x instanceof Double         ? set(idx, (Double)x) :
-           x instanceof Float          ? set(idx, (Float)x) :
-           x instanceof Long           ? set(idx, (Long)x) :
-           x instanceof Integer        ? set(idx, ((Integer)x).longValue()) :
-           x instanceof UUID           ? set(idx, (UUID) x) :
-           x instanceof java.util.Date ? set(idx, ((java.util.Date) x).getTime()) :
-           /* otherwise */               setUnknown(idx);
-      }
 
   /** After writing we must call close() to register the bulk changes.  If a
    *  NewChunk was needed, it will be compressed into some other kind of Chunk.
