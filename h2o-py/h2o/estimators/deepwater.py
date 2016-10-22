@@ -36,7 +36,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "distribution", "score_interval", "score_training_samples", "score_validation_samples",
                       "score_duty_cycle", "stopping_rounds", "stopping_metric", "stopping_tolerance",
                       "max_runtime_secs", "ignore_const_cols", "shuffle_training_data", "mini_batch_size",
-                      "clip_gradient", "network", "backend", "image_shape", "channels", "gpu", "device_id",
+                      "clip_gradient", "network", "backend", "image_shape", "channels", "sparse", "gpu", "device_id",
                       "network_definition_file", "network_parameters_file", "mean_image_file",
                       "export_native_parameters_prefix", "activation", "hidden", "input_dropout_ratio",
                       "hidden_dropout_ratios", "problem_type"}
@@ -610,6 +610,17 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def channels(self, channels):
         assert_is_type(channels, None, int)
         self._parms["channels"] = channels
+
+
+    @property
+    def sparse(self):
+        """bool: Sparse data handling (more efficient for data with lots of 0 values). (Default: False)"""
+        return self._parms.get("sparse")
+
+    @sparse.setter
+    def sparse(self, sparse):
+        assert_is_type(sparse, None, bool)
+        self._parms["sparse"] = sparse
 
 
     @property

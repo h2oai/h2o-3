@@ -73,6 +73,7 @@
 #' @param backend Deep Learning Backend. Must be one of: "auto", "mxnet", "caffe", "tensorflow". Defaults to mxnet.
 #' @param image_shape Width and height of image. Defaults to [0, 0].
 #' @param channels Number of (color) channels. Defaults to 3.
+#' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to False.
 #' @param gpu \code{Logical}. Whether to use a GPU (if available). Defaults to True.
 #' @param device_id Device IDs (which GPUs to use). Defaults to [0].
 #' @param network_definition_file Path of file containing network definition (graph, architecture).
@@ -137,6 +138,7 @@ h2o.deepwater <- function(x, y,
                           backend  = c("auto", "mxnet", "caffe", "tensorflow"), 
                           image_shape  = c(0, 0), 
                           channels  = 3, 
+                          sparse  = FALSE, 
                           gpu  = TRUE, 
                           device_id  = c(0), 
                           network_definition_file, 
@@ -273,6 +275,8 @@ h2o.deepwater <- function(x, y,
     parms$image_shape <- image_shape
   if (!missing(channels))
     parms$channels <- channels
+  if (!missing(sparse))
+    parms$sparse <- sparse
   if (!missing(gpu))
     parms$gpu <- gpu
   if (!missing(device_id))
