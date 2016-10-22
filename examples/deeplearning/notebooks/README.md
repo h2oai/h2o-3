@@ -14,7 +14,7 @@ Note: There are many more example scripts in h2o-3/h2o-py/tests/, h2o-3/h2o-py/d
 ### Python Jupyter notebooks
 - [MNIST image classification with fully-connected neural networks (GPU and CPU)](./deeplearning_mnist_fullyconnected.ipynb)
 - [MNIST image classification with convolutional neural networks (GPU)](./deeplearning_mnist_convnet.ipynb)
-- [CIFAR10 image classification with VGG convolutional neural network(GPU)](./deeplearning_cifar10_vgg.ipynb)
+- [CIFAR10 image classification with VGG convolutional neural network (GPU)](./deeplearning_cifar10_vgg.ipynb)
 
 ### R Jupyter notebooks
 - [Iris flower classification hyper-parameter optimization with H2O Deep Water (GPU)](./deeplearning_grid_iris.ipynb)
