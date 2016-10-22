@@ -734,7 +734,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   }
 
   @Test
-  public void MNIST() {
+  public void MNISTLenet() {
     Frame tr = null;
     Frame va = null;
     DeepWaterModel m = null;
@@ -758,7 +758,10 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         p._backend = getBackend();
         p._train = tr._key;
         p._valid = va._key;
-        p._hidden = new int[]{500,500};
+        p._image_shape = new int[]{28,28};
+        p._ignore_const_cols = false; //to keep it 28x28
+        p._channels = 1;
+        p._network = DeepWaterParameters.Network.lenet;
         DeepWater j = new DeepWater(p);
         m = j.trainModel().get();
         Assert.assertTrue(((ModelMetricsMultinomial)(m._output._validation_metrics)).mean_per_class_error() < 0.05);
