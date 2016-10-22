@@ -69,7 +69,7 @@
 #'        0.0.
 #' @param l2 L2 regularization (can add stability and improve generalization, causes many weights to be small. Defaults to
 #'        0.0.
-#' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. for Rectifier). Defaults to Infinity.
+#' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. for Rectifier). Defaults to 3.4028235e+38.
 #' @param initial_weight_distribution Initial weight distribution. Must be one of: "UniformAdaptive", "Uniform", "Normal". Defaults to
 #'        UniformAdaptive.
 #' @param initial_weight_scale Uniform: -value...value, Normal: stddev. Defaults to 1.0.
@@ -183,7 +183,7 @@ h2o.deeplearning <- function(x, y,
                              hidden_dropout_ratios, 
                              l1  = 0.0, 
                              l2  = 0.0, 
-                             max_w2  = Infinity, 
+                             max_w2  = 3.4028235e+38, 
                              initial_weight_distribution  = c("UniformAdaptive", "Uniform", "Normal"), 
                              initial_weight_scale  = 1.0, 
                              initial_weights, 

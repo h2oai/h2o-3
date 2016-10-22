@@ -1520,7 +1520,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * any one neuron. This tuning parameter is especially useful for unbound
      * activation functions such as Rectifier.
      */
-    public float _max_w2 = Float.POSITIVE_INFINITY;
+    public float _max_w2 = Float.MAX_VALUE;
 
   /*Initialization*/
     /**
