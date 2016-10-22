@@ -198,7 +198,17 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       dinfo = makeDataInfo(train, valid, parms);
       DKV.put(dinfo);
       setDataInfoToOutput(dinfo);
-      if (parms._image_shape != null) {
+      // either provide no image_shape (i.e., (0,0)), or provide both values and channels >= 1 (to turn it into an image problem)
+      if (parms._image_shape != null && parms._image_shape[0] != 0) {
+        if (parms._image_shape[0] < 0) {
+          throw new IllegalArgumentException("image_shape must either have both values == 0 or both values >= 1 for " + parms._problem_type.getClass().toString() + "=" + parms._problem_type.toString());
+        }
+        if (parms._image_shape[1] <= 0) {
+          throw new IllegalArgumentException("image_shape must either have both values == 0 or both values >= 1 for " + parms._problem_type.getClass().toString() + "=" + parms._problem_type.toString());
+        }
+        if (parms._channels <= 0) {
+          throw new IllegalArgumentException("channels must be >= 1 when image_shape is provided for " + parms._problem_type.getClass().toString() + "=" + parms._problem_type.toString());
+        }
         if (dinfo.fullN() != parms._image_shape[0] * parms._image_shape[1] * parms._channels) {
           throw new IllegalArgumentException("Data input size mismatch: Expect image_shape[0] x image_shape[1] x channels == #cols(H2OFrame), but got: "
               + parms._image_shape[0] + " x " + parms._image_shape[1] + " x " + parms._channels + " != " + dinfo.fullN() + ". Check these parameters, or disable ignore_const_cols.");

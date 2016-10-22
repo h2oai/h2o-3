@@ -285,6 +285,12 @@ public class DeepWaterParameters extends Model.Parameters {
     if (_clip_gradient<=0)
       dl.error("_clip_gradient", "Clip gradient must be >= 0");
 
+    if (_hidden != null && _network_definition_file != null)
+      dl.error("_hidden", "Cannot provide hidden layers and a network definition file at the same time.");
+
+    if (_activation != null && _network_definition_file != null)
+      dl.error("_activation", "Cannot provide activation functions and a network definition file at the same time.");
+
     if (_problem_type == ProblemType.image) {
       if (_image_shape.length != 2)
         dl.error("_image_shape", "image_shape must have 2 dimensions (width, height)");
