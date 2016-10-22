@@ -229,6 +229,14 @@ public class TwoDimTable extends Iced {
       cellValues[row][col] = new IcedWrapper(null);
     else if (o instanceof Double && Double.isNaN((double)o))
       cellValues[row][col] = new IcedWrapper(Double.NaN);
+    else if (o instanceof int[])
+      cellValues[row][col] = new IcedWrapper(Arrays.toString((int[])o));
+    else if (o instanceof long[])
+      cellValues[row][col] = new IcedWrapper(Arrays.toString((long[])o));
+    else if (o instanceof float[])
+      cellValues[row][col] = new IcedWrapper(Arrays.toString((float[])o));
+    else if (o instanceof double[])
+      cellValues[row][col] = new IcedWrapper(Arrays.toString((double[])o));
     else if (colTypes[col]=="string")
       cellValues[row][col] = new IcedWrapper(o.toString());
     else
