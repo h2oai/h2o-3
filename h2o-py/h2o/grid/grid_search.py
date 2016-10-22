@@ -65,11 +65,11 @@ class H2OGridSearch(backwards_compatible()):
           >>> gs.show()
         """
         super(H2OGridSearch, self).__init__()
-        assert_is_type(model, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
+        assert_is_type(model, None, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
         assert_is_type(hyper_params, dict)
         assert_is_type(grid_id, None, str)
         assert_is_type(search_criteria, None, dict)
-        if not is_type(model, H2OEstimator): model = model()
+        if not (model is None or is_type(model, H2OEstimator)): model = model()
         self._id = grid_id
         self.model = model
         self.hyper_params = dict(hyper_params)
