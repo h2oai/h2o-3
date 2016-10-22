@@ -171,7 +171,7 @@ class H2OFrame(object):
             raise H2OValueError("A sparse matrix expected, got %s" % type(matrix))
 
         tmp_handle, tmp_path = tempfile.mkstemp(suffix=".svmlight")
-        out = os.fdopen(tmp_handle, "wb")
+        out = os.fdopen(tmp_handle, "wt")
         if destination_frame is None:
             destination_frame = _py_tmp_key(h2o.connection().session_id)
 

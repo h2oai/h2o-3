@@ -1,4 +1,6 @@
+#!/usr/bin/env python
 from __future__ import division
+import sys; sys.path.insert(1, "../..")
 import h2o
 from tests import pyunit_utils
 
