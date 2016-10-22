@@ -5,7 +5,6 @@ import hex.grid.HyperSpaceWalker.BaseWalker;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.AtomicUtils;
 import water.util.Log;
 import water.util.PojoUtils;
 
@@ -165,7 +164,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     //                       ? grid._key + "_model_"
     //                       : _hyperSpaceWalker.getParams()._model_id.toString() + H2O.calcNextUniqueModelId("") + "_";
     String protoModelKey = grid._key + "_model_";
-    NumberFormat mSformatter = new DecimalFormat("#0.000");
 
     try {
       // Get iterator to traverse hyper space
@@ -180,7 +178,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         if (max_runtime_secs > 0) {
           time_remaining_secs = it.time_remaining_secs();
           if (time_remaining_secs < 0) {
-            Log.info("Grid max_runtime_secs of " + mSformatter.format(max_runtime_secs) + "S has expired; stopping early.");
+            Log.info("Grid max_runtime_secs of " + max_runtime_secs + " secs has expired; stopping early.");
             return;
           }
         }
@@ -199,11 +197,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             double scale = params._nfolds > 0 ? params._nfolds+1 : 1; //remaining time per cv model is less
             if (params._max_runtime_secs == 0) { // unlimited
               params._max_runtime_secs = time_remaining_secs/scale;
-              Log.info("Due to the grid time limit, changing model max runtime to: " + mSformatter.format(params._max_runtime_secs) + "S.");
+              Log.info("Due to the grid time limit, changing model max runtime to: " + params._max_runtime_secs + " secs.");
             } else {
               double was = params._max_runtime_secs;
               params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs/scale);
-              Log.info("Due to the grid time limit, changing model max runtime from: " + mSformatter.format(was) + " to: " + mSformatter.format(params._max_runtime_secs) + "S.");
+              Log.info("Due to the grid time limit, changing model max runtime from: " + was + " secs to: " + params._max_runtime_secs + " secs.");
             }
           }
 
