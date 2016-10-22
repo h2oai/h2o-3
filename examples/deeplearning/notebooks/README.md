@@ -6,15 +6,15 @@ Note: There are many more example scripts in h2o-3/h2o-py/tests/, h2o-3/h2o-py/d
 
 ## CPU Deep Learning using H2O Deep Learning
 ### Python Jupyter notebooks
-- [MNIST Example with H2O Deep Learning (CPU)](./deeplearning_mnist.ipynb)
-- [Anomaly Detection with H2O Deep Learning (CPU)](./deeplearning_anomaly_detection.ipynb)
-- [Image Reconstruction and Clustering with H2O Deep Learning (CPU)](./deeplearning_image_reconstruction_and_clustering.ipynb)
+- [Anomaly detection with H2O Deep Learning (CPU)](./deeplearning_anomaly_detection.ipynb)
+- [Image reconstruction and clustering with H2O Deep Learning (CPU)](./deeplearning_image_reconstruction_and_clustering.ipynb)
 
 ## GPU Deep Learning using H2O Deep Water (new!)
 
 ### Python Jupyter notebooks
-- [MNIST Image Classification with H2O Deep Water (GPU)](./deeplearning_mxnet_mnist.ipynb)
-- [CIFAR10 Image Classification with H2O Deep Water (GPU)](./deeplearning_mxnet_cifar10.ipynb)
+- [MNIST image classification with fully-connected neural networks (GPU and CPU)](./deeplearning_mnist.ipynb)
+- [MNIST image classification with convolutional neural networks (GPU)](./deeplearning_mxnet_mnist.ipynb)
+- [CIFAR10 image classification wiht convolutional neural networks(GPU)](./deeplearning_mxnet_cifar10.ipynb)
 
 ### R Jupyter notebooks
-- [Iris Flower Classification Hyper Parameter Optimization with H2O Deep Water (GPU)](./deeplearning_grid_iris.ipynb)
+- [Iris flower classification hyper-parameter optimization with H2O Deep Water (GPU)](./deeplearning_grid_iris.ipynb)
