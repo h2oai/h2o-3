@@ -26,20 +26,20 @@ class DeepWaterTextIterator extends DeepWaterIterator {
   private static ConcurrentHashMap<String,Integer> dict;
   static private ConcurrentHashMap getDict() {
     if (dict == null) {
-      try {
+//      try {
         dict = new ConcurrentHashMap<>();
         int count = 0;
         dict.put(PADDING_SYMBOL, count++);
-        // if available, pre-fill the dict
-        FileInputStream is = new FileInputStream("/home/arno/top100kwords.txt");
-        BufferedReader br = new BufferedReader(new InputStreamReader(is));
-        String line;
-        while ((line = br.readLine()) != null)
-          dict.put(line, count++);
-        is.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+//        // if available, pre-fill the dict
+//        FileInputStream is = new FileInputStream("/home/arno/top100kwords.txt");
+//        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+//        String line;
+//        while ((line = br.readLine()) != null)
+//          dict.put(line, count++);
+//        is.close();
+//      } catch (IOException e) {
+//        e.printStackTrace();
+//      }
     }
     return dict;
   }
