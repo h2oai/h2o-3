@@ -3,10 +3,7 @@ package water.rapids.ast.prims.assign;
 import water.DKV;
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.*;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -105,22 +102,22 @@ public class AstRectangleAssign extends AstPrimitive {
     // optimization happens here on the apply() exit.
     if (dst.numRows() == nrows && rows.isDense()) {
       for (int i = 0; i < cols.length; i++)
-        dst.replace(cols[i], src.vecs()[i]);
+        dst.replace(cols[i], src.vecs(i));
       if (dst._key != null) DKV.put(dst);
       return;
     }
 
     // Partial update; needs to preserve type, and may need to copy to support
     // copy-on-write
-    Vec[] dvecs = dst.vecs();
-    final Vec[] svecs = src.vecs();
+    VecAry dvecs = dst.vecs();
+    final VecAry svecs = src.vecs();
     for (int col = 0; col < cols.length; col++) {
-      int dtype = dvecs[cols[col]].get_type();
-      if (dtype != svecs[col].get_type())
+      int dtype = dvecs.get_type(cols[col]);
+      if (dtype != svecs.get_type(col))
         throw new IllegalArgumentException("Columns must be the same type; " +
-                "column " + col + ", \'" + dst._names[cols[col]] + "\', is of type " + dvecs[cols[col]].get_type_str() +
-                " and the source is " + svecs[col].get_type_str());
-      if ((dtype == Vec.T_CAT) && (! Arrays.equals(dvecs[cols[col]].domain(), svecs[col].domain())))
+                "column " + col + ", \'" + dst._names[cols[col]] + "\', is of type " + dvecs.get_type_str(cols[col]) +
+                " and the source is " + svecs.get_type_str(col));
+      if ((dtype == Vec.T_CAT) && (! Arrays.equals(dvecs.domain(cols[col]), svecs.domain(col))))
         throw new IllegalArgumentException("Cannot assign to a categorical column with a different domain; " +
                 "source column " + src._names[col] + ", target column " + dst._names[cols[col]]);
     }
@@ -131,46 +128,39 @@ public class AstRectangleAssign extends AstPrimitive {
       // Copy dst columns as-needed to allow update-in-place
       dvecs = ses.copyOnWrite(dst, cols); // Update dst columns
       long[] rownums = rows.expand8();   // Just these rows
-      for (int col = 0; col < svecs.length; col++)
+      for (int col = 0; col < svecs._numCols; col++)
         for (int ridx = 0; ridx < rownums.length; ridx++)
-          dvecs[cols[col]].set(rownums[ridx], svecs[col].at(ridx));
+          dvecs.set(rownums[ridx], cols[col], svecs.at(ridx,col));
       return;
     }
     // Handle large case
-    Vec[] vecs = ses.copyOnWrite(dst, cols);
-    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
-    for (int i = 0; i < cols.length; i++)
-      vecs2[i] = vecs[cols[i]];
+    VecAry vecs = ses.copyOnWrite(dst, cols);
+    VecAry vecs2 = vecs.select(cols);
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new AssignFrameFrameTask(rows, svecs).doAll(vecs2);
   }
 
   private static class AssignFrameFrameTask extends RowSliceTask {
-    private Vec[] _svecs;
-    private AssignFrameFrameTask(AstNumList rows, Vec[] svecs) {
+    private VecAry _svecs;
+    private AssignFrameFrameTask(AstNumList rows, VecAry svecs) {
       super(rows);
       _svecs = svecs;
     }
     @Override
-    void mapChunkSlice(Chunk[] cs, int chkOffset) {
-      long start = cs[0].start();
-      Chunk[] scs = null;
-      for (int i = chkOffset; i < cs[0]._len; ++i) {
+    void mapChunkSlice(ChunkAry cs, int chkOffset) {
+      long start = cs._start;
+      ChunkAry scs = null;
+      DVal dv = new DVal();
+      for (int i = chkOffset; i < cs._len; ++i) {
         long idx = _rows.index(start + i);
         if (idx < 0) continue;
-        if ((scs == null) || (scs[0].start() < idx) || (idx >= scs[0].start() + scs[0].len())) {
-          int sChkIdx = _svecs[0].elem2ChunkIdx(idx);
-          scs = new Chunk[_svecs.length];
-          for (int j = 0; j < _svecs.length; j++) {
-            scs[j] = _svecs[j].chunkForChunkIdx(sChkIdx);
-          }
+        if ((scs == null) || (scs._start < idx) || (idx >= scs._start + scs._len)) {
+          int sChkIdx = _svecs.elem2ChunkIdx(idx);
+          scs = _svecs.chunkForChunkIdx(sChkIdx);
         }
-        int si = (int) (idx - scs[0].start());
-        for (int j = 0; j < cs.length; j++) {
-          Chunk chk = cs[j];
-          Chunk schk = scs[j];
-          chk.set(i, schk.atd(si));
-        }
+        int si = (int) (idx - scs._start);
+        for (int j = 0; j < cs._len; j++)
+          cs.setInflated(i,j, scs.getInflated(si,j,dv));
       }
     }
   }
@@ -181,10 +171,10 @@ public class AstRectangleAssign extends AstPrimitive {
     // Handle fast small case
     long nrows = rows.cnt();
     if (nrows == 1) {
-      Vec[] vecs = ses.copyOnWrite(dst, cols);
+      VecAry vecs = ses.copyOnWrite(dst, cols);
       long drow = (long) rows._bases[0];
       for (int col : cols)
-        vecs[col].set(drow, src);
+        vecs.set(drow, col,  src);
       return;
     }
 
@@ -199,12 +189,9 @@ public class AstRectangleAssign extends AstPrimitive {
       if (dst._key != null) DKV.put(dst);
       return;
     }
-
     // Handle large case
-    Vec[] vecs = ses.copyOnWrite(dst, cols);
-    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
-    for (int i = 0; i < cols.length; i++)
-      vecs2[i] = vecs[cols[i]];
+    VecAry vecs = ses.copyOnWrite(dst, cols);
+    VecAry vecs2 = vecs.select(cols); // Just the selected columns get updated
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new AssignFrameScalarTask(rows, src).doAll(vecs2);
   }
@@ -216,12 +203,12 @@ public class AstRectangleAssign extends AstPrimitive {
       _src = src;
     }
     @Override
-    void mapChunkSlice(Chunk[] cs, int chkOffset) {
-      long start = cs[0].start();
-      for (int i = chkOffset; i < cs[0]._len; ++i)
+    void mapChunkSlice(ChunkAry cs, int chkOffset) {
+      long start = cs._start;
+      for (int i = chkOffset; i < cs._len; ++i)
         if (_rows.has(start + i))
-          for (Chunk chk : cs)
-            chk.set(i, _src);
+          for(int j = 0; j < cs._len; ++j)
+            cs.set(i,j, _src);
     }
   }
 
@@ -229,7 +216,7 @@ public class AstRectangleAssign extends AstPrimitive {
   private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, String src, Session ses) {
     // Check for needing to copy before updating
     // Handle fast small case
-    Vec[] dvecs = dst.vecs();
+    VecAry dvecs = dst.vecs();
     long nrows = rows.cnt();
     if( nrows==1 ) {
       long drow = (long)rows.expand()[0];
@@ -239,10 +226,8 @@ public class AstRectangleAssign extends AstPrimitive {
     }
 
     // Handle large case
-    Vec[] vecs = ses.copyOnWrite(dst, cols);
-    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
-    for (int i = 0; i < cols.length; i++)
-      vecs2[i] = vecs[cols[i]];
+    VecAry vecs = ses.copyOnWrite(dst, cols);
+    VecAry vecs2 = vecs.select(cols); // Just the selected columns get updated
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new AssignFrameStringScalarTask(rows, src).doAll(vecs2);
   }
@@ -254,12 +239,12 @@ public class AstRectangleAssign extends AstPrimitive {
       _src = src;
     }
     @Override
-    void mapChunkSlice(Chunk[] cs, int chkOffset) {
-      long start = cs[0].start();
-      for (int i = chkOffset; i < cs[0]._len; ++i)
+    void mapChunkSlice(ChunkAry cs, int chkOffset) {
+      long start = cs._start;
+      for (int i = chkOffset; i < cs._len; ++i)
         if (_rows.has(start + i))
-          for (Chunk chk : cs)
-            chk.set(i, _src);
+          for(int j = 0; j < cs._len; ++j)
+            cs.set(i,j, _src);
     }
   }
 
@@ -289,9 +274,9 @@ public class AstRectangleAssign extends AstPrimitive {
     RowSliceTask(AstNumList rows) { _rows = rows; }
 
     @Override
-    public void map(Chunk[] cs) {
-      long start = cs[0].start();
-      long end = start + cs[0]._len;
+    public void map(ChunkAry cs) {
+      long start = cs._start;
+      long end = start + cs._len;
       long min = (long) _rows.min(), max = (long) _rows.max() - 1; // exclusive max to inclusive max when stride == 1
       //     [ start, ...,  end ]     the chunk
       //1 []                          rows out left:  rows.max() < start
@@ -306,7 +291,7 @@ public class AstRectangleAssign extends AstPrimitive {
       }
     }
 
-    abstract void mapChunkSlice(Chunk[] cs, int chkOffset);
+    abstract void mapChunkSlice(ChunkAry cs, int chkOffset);
   }
 
 }

@@ -53,26 +53,26 @@ public class CXDChunk extends CXIChunk {
     return _sparseLen;
   }
 
-  @Override protected long at8_impl(int idx) {
+  @Override public long at8(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx)return 0;
     double d = getFValue(off);
     if(Double.isNaN(d)) throw new IllegalArgumentException("at8_abs but value is missing");
     return (long)d;
   }
-  @Override protected double atd_impl(int idx) {
+  @Override public double atd(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx)return 0;
     return getFValue(off);
   }
 
-  @Override protected boolean isNA_impl( int i ) {
+  @Override public boolean isNA( int i ) {
     int off = findOffset(i);
     return getId(off) == i && Double.isNaN(getFValue(off));
   }
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_len(_len);
+    nc._len = _len;
     nc.set_sparseLen(_sparseLen);
     nc.alloc_doubles(_sparseLen);
     nc.alloc_indices(_sparseLen);

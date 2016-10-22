@@ -105,7 +105,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
     final Vec vec = _fr.anyVec();
     assert vec != null;
     for (int c=0; c<vec.nChunks(); c++) {
-      int fromNode = vec.chunkKey(c).home_node().index();  // each chunk in the column may be on different nodes
+      int fromNode = vec.homeNodeIdx(c);  // each chunk in the column may be on different nodes
       // See long comment at the top of SendSplitMSB. One line from there repeated here :
       // " When the helper node (i.e. this one, now) (i.e the node doing all
       // the A's) gets the A's from that node, it must stack all the nodes' A's

@@ -11,11 +11,11 @@ abstract class WrappedVec extends Vec {
   transient Vec _masterVec;
   public WrappedVec(Key key, int rowLayout, Key masterVecKey ) { this(key,rowLayout,null,masterVecKey);  }
   public WrappedVec(Key key, int rowLayout, String[] domain, Key masterVecKey) {
-    super(key, rowLayout, domain);
+    super(key, rowLayout, new String[][]{domain}, new byte[]{domain == null?Vec.T_NUM:Vec.T_CAT});
     _masterVecKey = masterVecKey;
   }
 
   public Vec masterVec() { return _masterVec!=null ? _masterVec : (_masterVec = _masterVecKey.get()); }
   // Map from chunk-index to Chunk.  These wrappers are making custom Chunks
-  abstract public Chunk chunkForChunkIdx(int cidx);
+  abstract public DBlock chunkIdx(int cidx);
 }

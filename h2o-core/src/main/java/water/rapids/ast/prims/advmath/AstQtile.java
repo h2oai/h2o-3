@@ -13,6 +13,8 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 
+import java.util.Vector;
+
 /**
  * Quantiles:
  * (quantile %frame [numnber_list_probs] "string_interpolation_type")
@@ -63,12 +65,13 @@ public class AstQtile extends AstPrimitive {
     if (parms._weights_column != null) ncols--;
     Vec[] vecs = new Vec[1 /*1 more for the probs themselves*/ + ncols];
     String[] names = new String[vecs.length];
-    vecs[0] = Vec.makeCon(null, parms._probs);
+    Vec.VectorGroup vg = new Vec.VectorGroup();
+    vecs[0] = Vec.makeVec(parms._probs,vg.addVec());
     names[0] = "Probs";
     int w = 0;
     for (int i = 0; i < vecs.length - 1; ++i) {
       if (fr._names[i].equals(parms._weights_column)) w = 1;
-      vecs[i + 1] = Vec.makeCon(null, q._output._quantiles[i]);
+      vecs[i + 1] = Vec.makeVec(q._output._quantiles[i],vg.addVec());
       names[i + 1] = fr._names[w + i] + "Quantiles";
     }
     q.delete();

@@ -2,10 +2,7 @@ package water.rapids.ast.prims.reducers;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
@@ -47,9 +44,9 @@ public abstract class AstCumu extends AstPrimitive {
     Vec cumuVec = t.outputFrame().anyVec();
     new MRTask() {
       @Override
-      public void map(Chunk c) {
-        if (c.cidx() != 0) {
-          double d = chkCumu[c.cidx() - 1];
+      public void map(ChunkAry c) {
+        if (c._cidx != 0) {
+          double d = chkCumu[c._cidx - 1];
           for (int i = 0; i < c._len; ++i)
             c.set(i, op(c.atd(i), d));
         }
@@ -74,11 +71,11 @@ public abstract class AstCumu extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk c, NewChunk nc) {
+    public void map(ChunkAry c, NewChunkAry nc) {
       double acc = _init;
       for (int i = 0; i < c._len; ++i)
         nc.addNum(acc = op(acc, c.atd(i)));
-      _chkCumu[c.cidx()] = acc;
+      _chkCumu[c._cidx] = acc;
     }
 
     @Override

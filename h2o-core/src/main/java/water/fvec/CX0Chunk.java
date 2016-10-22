@@ -3,7 +3,6 @@ package water.fvec;
 import water.H2O;
 import water.util.UnsafeUtils;
 
-import java.util.Arrays;
 import java.util.Iterator;
 
 /** specialized subtype of SPARSE chunk for boolean (bitvector); no NAs.  contains just a list of rows that are non-zero. */
@@ -11,9 +10,9 @@ public final class CX0Chunk extends CXIChunk {
   // Sparse constructor
   protected CX0Chunk(int len, byte [] buf){super(len,0,buf);}
 
-  @Override protected final long at8_impl(int idx) {return getId(findOffset(idx)) == idx?1:0;}
-  @Override protected final double atd_impl(int idx) { return at8_impl(idx); }
-  @Override protected final boolean isNA_impl( int i ) { return false; }
+  @Override public final long at8(int idx) {return getId(findOffset(idx)) == idx?1:0;}
+  @Override public final double atd(int idx) { return at8(idx); }
+  @Override public final boolean isNA( int i ) { return false; }
   @Override double min() { return 0; }
   @Override double max() { return 1; }
   @Override public boolean hasNA() { return false; }
@@ -43,7 +42,7 @@ public final class CX0Chunk extends CXIChunk {
     for(int i = 0; i < _sparseLen; ++i)
       nc.addNum(1,0);
     nonzeros(nc.indices());
-    nc.set_len(_len);
+    nc._len = _len;
     assert nc._sparseLen == _sparseLen;
     return nc;
   }

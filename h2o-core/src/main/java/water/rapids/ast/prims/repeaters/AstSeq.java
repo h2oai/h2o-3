@@ -1,10 +1,7 @@
 package water.rapids.ast.prims.repeaters;
 
 import water.Futures;
-import water.fvec.AppendableVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -45,11 +42,11 @@ public class AstSeq extends AstPrimitive {
       else if (n > Double.MAX_VALUE) throw new IllegalArgumentException("'by' argument is much too small");
       Futures fs = new Futures();
       AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-      NewChunk nc = new NewChunk(av, 0);
+      NewChunkAry nc = av.chunkForChunkIdx(0);
       int len = (int) n + 1;
       for (int r = 0; r < len; r++) nc.addNum(from + r * by);
       // May need to adjust values = by > 0 ? min(values, to) : max(values, to)
-      nc.close(0, fs);
+      nc.close(fs);
       Vec vec = av.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));

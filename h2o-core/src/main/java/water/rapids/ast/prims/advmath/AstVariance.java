@@ -5,6 +5,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -67,12 +68,12 @@ public class AstVariance extends AstPrimitive {
   private ValNum scalar(Frame frx, Frame fry, Mode mode) {
     if (frx.numCols() != fry.numCols())
       throw new IllegalArgumentException("Single rows must have the same number of columns, found " + frx.numCols() + " and " + fry.numCols());
-    Vec vecxs[] = frx.vecs();
-    Vec vecys[] = fry.vecs();
+    VecAry vecxs = frx.vecs();
+    VecAry vecys = fry.vecs();
     double xmean = 0, ymean = 0, ncols = frx.numCols(), NACount = 0, xval, yval, ss = 0;
     for (int r = 0; r < ncols; r++) {
-      xval = vecxs[r].at(0);
-      yval = vecys[r].at(0);
+      xval = vecxs.at(0,r);
+      yval = vecys.at(0,r);
       if (Double.isNaN(xval) || Double.isNaN(yval))
         NACount++;
       else {
@@ -89,10 +90,10 @@ public class AstVariance extends AstPrimitive {
     }
 
     for (int r = 0; r < ncols; r++) {
-      xval = vecxs[r].at(0);
-      yval = vecys[r].at(0);
+      xval = vecxs.at(0,r);
+      yval = vecys.at(0,r);
       if (!(Double.isNaN(xval) || Double.isNaN(yval)))
-        ss += (vecxs[r].at(0) - xmean) * (vecys[r].at(0) - ymean);
+        ss += (vecxs.at(0,r) - xmean) * (vecys.at(0,r) - ymean);
     }
     return new ValNum(ss / (ncols - NACount - 1));
   }
@@ -101,32 +102,32 @@ public class AstVariance extends AstPrimitive {
   // against each other.  Return a matrix of covariances which is frx.numCols
   // wide and fry.numCols tall.
   private Val array(Frame frx, Frame fry, Mode mode, boolean symmetric) {
-    Vec[] vecxs = frx.vecs();
-    int ncolx = vecxs.length;
-    Vec[] vecys = fry.vecs();
-    int ncoly = vecys.length;
+    VecAry vecxs = frx.vecs();
+    int ncolx = vecxs.numCols();
+    VecAry vecys = fry.vecs();
+    int ncoly = vecys.numCols();
 
     if (mode.equals(Mode.Everything) || mode.equals(Mode.AllObs)) {
 
       if (mode.equals(Mode.AllObs)) {
-        for (Vec v : vecxs)
-          if (v.naCnt() != 0)
+        for(int i = 0; i < vecxs._numCols; ++i)
+          if (vecxs.naCnt(i) != 0)
             throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
         if (!symmetric)
-          for (Vec v : vecys)
-            if (v.naCnt() != 0)
+          for(int i = 0; i < vecys._numCols; ++i)
+            if (vecys.naCnt(i) != 0)
               throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
       }
       CoVarTaskEverything[] cvs = new CoVarTaskEverything[ncoly];
 
       double[] xmeans = new double[ncolx];
       for (int x = 0; x < ncoly; x++)
-        xmeans[x] = vecxs[x].mean();
+        xmeans[x] = vecxs.mean(x);
 
       if (symmetric) {
         //1-col returns scalar
         if (ncoly == 1)
-          return new ValNum(vecys[0].naCnt() == 0 ? vecys[0].sigma() * vecys[0].sigma() : Double.NaN);
+          return new ValNum(vecys.naCnt(0) == 0 ? vecys.sigma(0) * vecys.sigma(0) : Double.NaN);
 
         int[] idx = new int[ncoly];
         for (int y = 1; y < ncoly; y++) idx[y] = y;
@@ -136,14 +137,14 @@ public class AstVariance extends AstPrimitive {
         for (int y = 0; y < ncoly - 1; y++) {
           idx = ArrayUtils.removeIds(idx, first_index);
           reduced_fr = new Frame(frx.vecs(idx));
-          cvs[y] = new CoVarTaskEverything(vecys[y].mean(), xmeans).dfork(new Frame(vecys[y]).add(reduced_fr));
+          cvs[y] = new CoVarTaskEverything(vecys.mean(y), xmeans).dfork(new Frame(vecys.select(y)).add(reduced_fr));
         }
 
         double[][] res_array = new double[ncoly][ncoly];
 
         //fill in the diagonals (variances) using sigma from rollupstats
         for (int y = 0; y < ncoly; y++)
-          res_array[y][y] = vecys[y].naCnt() == 0 ? vecys[y].sigma() * vecys[y].sigma() : Double.NaN;
+          res_array[y][y] = vecys.naCnt(y) == 0 ? vecys.sigma(y) * vecys.sigma(y) : Double.NaN;
 
 
         //arrange the results into the bottom left of res_array. each successive cvs is 1 smaller in length
@@ -167,7 +168,7 @@ public class AstVariance extends AstPrimitive {
 
       // Launch tasks; each does all Xs vs one Y
       for (int y = 0; y < ncoly; y++)
-        cvs[y] = new CoVarTaskEverything(vecys[y].mean(), xmeans).dfork(new Frame(vecys[y]).add(frx));
+        cvs[y] = new CoVarTaskEverything(vecys.mean(y), xmeans).dfork(new Frame(vecys.select(y)).add(frx));
 
       // 1-col returns scalar 
       if (ncolx == 1 && ncoly == 1) {
@@ -186,7 +187,7 @@ public class AstVariance extends AstPrimitive {
 
       if (symmetric) {
         if (ncoly == 1)
-          return new ValNum(vecys[0].sigma() * vecys[0].sigma());
+          return new ValNum(vecys.sigma(0) * vecys.sigma(0));
 
         CoVarTaskCompleteObsMeanSym taskCompleteObsMeanSym = new CoVarTaskCompleteObsMeanSym().doAll(fry);
         long NACount = taskCompleteObsMeanSym._NACount;

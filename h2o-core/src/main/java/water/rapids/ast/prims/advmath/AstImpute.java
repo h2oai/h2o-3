@@ -5,6 +5,7 @@ import water.Freezable;
 import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.*;
@@ -176,7 +177,7 @@ public class AstImpute extends AstPrimitive {
           if (doAllVecs) {
             for (int i = 0; i < res.length; ++i)
               if (fr.vec(i).isNumeric() || fr.vec(i).isCategorical())
-                res[i] = fr.vec(i).isNumeric() ? fr.vec(i).mean() : ArrayUtils.maxIndex(fr.vec(i).bins());
+                res[i] = fr.vec(i).isNumeric() ? fr.vec(i).mean() : ArrayUtils.maxIndex(fr.vecs().bins(i));
           } else {
             Arrays.fill(res, Double.NaN);
             if (method instanceof AstMean) res[col] = vec.mean();
@@ -187,14 +188,14 @@ public class AstImpute extends AstPrimitive {
         }
         new MRTask() {
           @Override
-          public void map(Chunk[] cs) {
-            int len = cs[0]._len;
+          public void map(ChunkAry cs) {
+            int len = cs._len;
             // run down each chk
-            for (int c = 0; c < cs.length; ++c)
+            for (int c = 0; c < cs._len; ++c)
               if (!Double.isNaN(res[c]))
                 for (int row = 0; row < len; ++row)
-                  if (cs[c].isNA(row))
-                    cs[c].set(row, res[c]);
+                  if (cs.isNA(row,c))
+                    cs.set(row, c, res[c]);
           }
         }.doAll(fr);
         return new ValNums(res);
@@ -243,15 +244,15 @@ public class AstImpute extends AstPrimitive {
       final int[] bycols = by2.expand4();
       new MRTask() {
         @Override
-        public void map(Chunk cs[]) {
+        public void map(ChunkAry cs) {
           Set<Integer> _bycolz = new HashSet<>();
           for (int b : bycols) _bycolz.add(b);
           AstGroup.G g = new AstGroup.G(bycols.length, null);
-          for (int row = 0; row < cs[0]._len; row++)
-            for (int c = 0; c < cs.length; ++c)
+          for (int row = 0; row < cs._len; row++)
+            for (int c = 0; c < cs._len; ++c)
               if (!_bycolz.contains(c))
-                if (cs[c].isNA(row))
-                  cs[c].set(row, ((IcedDouble) final_group_impute_map.get(g.fill(row, cs, bycols))[c])._val);
+                if (cs.isNA(row,c))
+                  cs.set(row, c, ((IcedDouble) final_group_impute_map.get(g.fill(row, cs, bycols))[c])._val);
         }
       }.doAll(fr);
       return new ValFrame(imputes);
@@ -281,14 +282,14 @@ public class AstImpute extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk cs[]) {
+    public void map(ChunkAry cs) {
       _group_impute_map = new IcedHashMap<>();
-      for (int row = 0; row < cs[0]._len; ++row) {
+      for (int row = 0; row < cs._len; ++row) {
         IcedDouble[] imputes = new IcedDouble[_ncol];
         for (int c = 0, z = _byCols.length; c < imputes.length; ++c, ++z) {  // z used to skip over the gby cols into the columns containing the aggregated columns
           if (_imputedCol != -1)
-            imputes[c] = c == _imputedCol ? new IcedDouble(cs[cs.length - 1].atd(row)) : new IcedDouble(Double.NaN);
-          else imputes[c] = _localbyColzSet.contains(c) ? new IcedDouble(Double.NaN) : new IcedDouble(cs[z].atd(row));
+            imputes[c] = c == _imputedCol ? new IcedDouble(cs.atd(row,cs._len - 1)) : new IcedDouble(Double.NaN);
+          else imputes[c] = _localbyColzSet.contains(c) ? new IcedDouble(Double.NaN) : new IcedDouble(cs.atd(row,z));
         }
         _group_impute_map.put(new AstGroup.G(_byCols.length, null).fill(row, cs, _byCols), imputes);
       }

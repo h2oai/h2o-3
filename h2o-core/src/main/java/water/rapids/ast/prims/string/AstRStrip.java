@@ -83,7 +83,7 @@ public class AstRStrip extends AstPrimitive {
     if (strippedToOldDomainIndices.size() < doms.length)
       return VecUtils.DomainDedupe.domainDeduper(vec, strippedToOldDomainIndices);
 
-    return vec.makeCopy(doms);
+    return vec.makeCopy(new String[][]{doms});
   }
 
   private Vec rstripStringCol(Vec vec, String set) {

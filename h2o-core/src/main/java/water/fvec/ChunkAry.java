@@ -20,6 +20,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
   C [] _cs;
   int [] _ids;
 
+  public ChunkAry(Vec v,int cidx, C... cs){this(v,cidx,cs,null);}
   public ChunkAry(Vec v,int cidx, C [] cs, int [] ids){
     _vec = v;
     _cidx = cidx;
@@ -50,13 +51,20 @@ public class ChunkAry<C extends Chunk> extends Iced {
       return fs;
     for(int i = 0; i < _cs.length; ++i)
       _cs[i] = (C)_cs[i].compress();
-    return _vec.closeChunk(_cidx,this,fs);
+    return _vec.closeChunk(this,fs);
   }
 
 
 
   private boolean isSparse(){return _ids != null;}
   public Chunk getChunk(int c){return _cs[c];}
+  public NewChunk getChunkInflated(int c){
+    if(!(_cs[c] instanceof NewChunk))
+      _cs[c] = (C)_cs[c].inflate_impl(new NewChunk(_vec.get_type(c)));
+    return (NewChunk) _cs[c];
+  }
+
+
   public Chunk[] getChunks(){return _cs;}
 
   private void setWrite(int j){
@@ -65,10 +73,15 @@ public class ChunkAry<C extends Chunk> extends Iced {
   }
 
   public final double set(int i, double d){ set(i,0,d); return d; }
+
+  public final void set(int i, C ck){
+    _cs[i] = ck;
+    _changedCols.add(i);
+  }
   public final double set(int i, int j, double d){
     setWrite(j);
     if(!_cs[j].set_impl(i,d)){
-      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk());
+      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.get_type(j)));
       _cs[j].set_impl(i,d);
     }
     return d;
@@ -77,7 +90,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public long set(int i, int j, long l){
     setWrite(j);
     if(!_cs[j].set_impl(i,l)){
-      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk());
+      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.get_type(j)));
       _cs[j].set_impl(i,l);
     }
     return l;
@@ -98,7 +111,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
       j = Arrays.binarySearch(_ids,j);
       if(j < 0) return 0;
     }
-    return _cs[j].atd_impl(i);
+    return _cs[j].atd(i);
   }
 
   public int chunkRelativeOffset(long globalRowId){
@@ -116,7 +129,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
       j = Arrays.binarySearch(_ids,j);
       if(j < 0) throw new IllegalArgumentException("not a UUId chunk"); // UUID chunks should not be 0-sparse
     }
-    return _cs[j].at16l_impl(i);
+    return _cs[j].at16l(i);
   }
   public final long at16h(int i){ return at16h(i,0);}
   public final long at16h(int i, int j){
@@ -126,7 +139,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
       j = Arrays.binarySearch(_ids,j);
       if(j < 0) throw new IllegalArgumentException("not a UUId chunk"); // UUID chunks should not be 0-sparse
     }
-    return _cs[j].at16h_impl(i);
+    return _cs[j].at16h(i);
   }
 
 
@@ -136,7 +149,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
       j = Arrays.binarySearch(_ids,j);
       if(j < 0) return false;
     }
-    return _cs[j].isNA_impl(i);
+    return _cs[j].isNA(i);
   }
 
   public long at8(int i){ return at8(i,0);}
@@ -145,7 +158,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
       j = Arrays.binarySearch(_ids,j);
       if(j < 0) return 0;
     }
-    return _cs[j].at8_impl(i);
+    return _cs[j].at8(i);
   }
 
   public int at4(int i){ return at4(i,0);}
@@ -154,7 +167,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
       j = Arrays.binarySearch(_ids,j);
       if(j < 0) return 0;
     }
-    return _cs[j].at4_impl(i);
+    return _cs[j].at4(i);
   }
 
   public BufferedString atStr(BufferedString str,int i){
@@ -165,7 +178,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
       j = Arrays.binarySearch(_ids,j);
       if(j < 0) throw new ArrayIndexOutOfBoundsException(j);
     }
-    return _cs[j].atStr_impl(str,i);
+    return _cs[j].atStr(str,i);
   }
 
   public String set(int i, int j, String str){
@@ -173,7 +186,9 @@ public class ChunkAry<C extends Chunk> extends Iced {
       j = Arrays.binarySearch(_ids,j);
       if(j < 0) throw new ArrayIndexOutOfBoundsException(j);
     }
-    return _cs[j].set(i,str);
+    if(!_cs[j].set_impl(i,str))
+      (_cs[j] = (C)_cs[j].inflate_impl(new NewChunk(Vec.T_STR))).set_impl(i,str);
+    return str;
   }
 
   private Chunk getOrMakeSparseChunk(int j){
@@ -251,4 +266,24 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public void add2Chunk(int srcCol, NewChunkAry nchks, int dstCol, int... rows) {
     _cs[srcCol].add2Chunk(nchks,dstCol,rows);
   }
+  public void add2Chunk(int srcCol, NewChunk nc, int from, int to) {
+    _cs[srcCol].add2Chunk(nc,from,to);
+  }
+
+  public boolean isString(int c) {return _cs[c] instanceof CStrChunk;}
+  public boolean isUUID(int c) {return _cs[c] instanceof C16Chunk;}
+  public byte precision(int c){ return getChunk(c).precision();}
+  public byte precision(){ return precision(0);}
+
+  public DVal getInflated(int i, int j, DVal v){
+    return _cs[j].getInflated(i,v);
+  }
+
+  public void setInflated(int i, int j, DVal v){
+    if(!_cs[j].setInflated(i,v)){
+      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.get_type(j)));
+      _cs[j].setInflated(i,v);
+    }
+  }
+
 }

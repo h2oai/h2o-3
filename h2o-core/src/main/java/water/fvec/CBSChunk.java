@@ -28,24 +28,23 @@ public class CBSChunk extends Chunk {
       }
     }
     _mem = bytes;
-    _start = -1;
-    set_len(((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
+    _len = ((_mem.length - _OFF)*8 - _gap) / _bpv; // number of boolean items
   }
   public CBSChunk(byte[] bs, byte gap, byte bpv) {
     assert gap < 8; assert bpv == 1 || bpv == 2;
-    _mem = bs; _start = -1; _gap = gap; _bpv = bpv;
-    set_len(((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
+    _mem = bs; _gap = gap; _bpv = bpv;
+    _len = (((_mem.length - _OFF)*8 - _gap) / _bpv); // number of boolean items
   }
-  @Override protected long at8_impl(int idx) {
+  @Override public long at8(int idx) {
     byte b = atb(idx);
     if( b == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
     return b;
   }
-  @Override protected double atd_impl(int idx) {
+  @Override public double atd(int idx) {
     byte b = atb(idx);
     return b == _NA ? Double.NaN : b;
   }
-  @Override protected final boolean isNA_impl( int i ) { return atb(i)==_NA; }
+  @Override public final boolean isNA( int i ) { return atb(i)==_NA; }
   protected byte atb(int idx) {
     int vpb = 8 / _bpv;  // values per byte (= 8 / bits_per_value)
     int bix = _OFF + idx / vpb; // byte index
@@ -58,12 +57,12 @@ public class CBSChunk extends Chunk {
     }
     return -1;
   }
-  @Override boolean set_impl(int idx, long l)   { return false; }
-  @Override boolean set_impl(int idx, double d) { return false; }
-  @Override boolean set_impl(int idx, float f ) { return false; }
-  @Override boolean setNA_impl(int idx) {  return false; }
+  @Override protected boolean set_impl(int idx, long l)   { return false; }
+  @Override protected boolean set_impl(int idx, double d) { return false; }
+  @Override protected boolean set_impl(int idx, float f ) { return false; }
+  @Override protected boolean setNA_impl(int idx) {  return false; }
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(nc.set_len(0));
+    nc.set_sparseLen(nc._len = 0);
     for (int i=0; i< _len; i++) {
       int res = atb(i);
       if (res == _NA) nc.addNA();
@@ -97,10 +96,9 @@ public class CBSChunk extends Chunk {
   @Override double max() { return 1; }
 
   @Override protected final void initFromBytes () {
-    _start = -1;  _cidx = -1;
     _gap   = _mem[0];
     _bpv   = _mem[1];
-    set_len(((_mem.length - _OFF)*8 - _gap) / _bpv);
+    _len = (((_mem.length - _OFF)*8 - _gap) / _bpv);
   }
 
   @Override

@@ -3,6 +3,7 @@ package water.rapids.ast.prims.advmath;
 import water.DKV;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
@@ -37,7 +38,7 @@ public class AstUnique extends AstPrimitive {
       throw new IllegalArgumentException("Unique applies to a single column only.");
     if (fr.anyVec().isCategorical()) {
       v = Vec.makeSeq(0, (long) fr.anyVec().domain().length, true);
-      v.setDomain(fr.anyVec().domain());
+      v.setDomain(0,fr.anyVec().domain());
       DKV.put(v);
     } else {
       UniqTask t = new UniqTask().doAll(fr);
@@ -46,8 +47,8 @@ public class AstUnique extends AstPrimitive {
       v = Vec.makeZero(nUniq);
       new MRTask() {
         @Override
-        public void map(Chunk c) {
-          int start = (int) c.start();
+        public void map(ChunkAry c) {
+          int start = (int) c._start;
           for (int i = 0; i < c._len; ++i) c.set(i, uniq[i + start]._gs[0]);
         }
       }.doAll(v);

@@ -16,11 +16,13 @@ import java.util.Arrays;
  */
 public class AppendableVec extends Vec {
   // Temporary ESPC, for uses which do not know the number of Chunks up front.
+
   public long _tmp_espc[];
+  private int [] _blocks;
   // Allow Chunks to have their final Chunk index (set at closing) offset by
   // this much.  Used by the Parser to fold together multi-file AppendableVecs.
   public final int _chunkOff;
-
+  private int _numCols;
 
   public AppendableVec( Key<Vec> key, byte... types ) { this(key, new long[4], types, 0); }
 
@@ -28,26 +30,43 @@ public class AppendableVec extends Vec {
     super( key, -1/*no rowLayout yet*/, null, types );
     _tmp_espc = tmp_espc;
     _chunkOff = chunkOff;
+    _blocks = new int[]{numCols()};
   }
+  public AppendableVec setBlocks(int [] blocks){_blocks = blocks; return this;}
   // A NewVector chunk was "closed" - completed.  Add it's info to the roll-up.
   // This call is made in parallel across all node-local created chunks, but is
   // not called distributed.
-  synchronized void closeChunk( int cidx, int len ) {
+
+  @Override Futures closeChunk(ChunkAry ncs, Futures fs) {
     // The Parser will pre-allocate the _tmp_espc large enough (the Parser
     // knows how many final Chunks there will be up front).  Other users are
     // encouraged to set a "large enough" espc - and a shared one at that - to
     // avoid these copies.
-
+    int cidx = ncs._cidx;
+    int off = 0;
+    int vecId = vecId();
+    for(int i = 0; i < _blocks.length; ++i) {
+      Chunk [] cs = Arrays.copyOfRange(ncs._cs,off,off+_blocks[i]);
+      Key k = Vec.setVecId(newChunkKey(cidx),vecId+i);
+      DKV.put(k, new DBlock(cs), fs);
+    }
+    _numCols = Math.max(ncs._cs.length,_numCols);
     // Set the length into the temp ESPC at the Chunk index (accounting for _chunkOff)
     cidx -= _chunkOff;
     while( cidx >= _tmp_espc.length ) // should not happen if espcs are preallocated and shared!
       _tmp_espc = Arrays.copyOf(_tmp_espc, _tmp_espc.length<<1);
-    _tmp_espc[cidx] = len;
+    _tmp_espc[cidx] = ncs._len;
+    return fs;
   }
 
-  public static Vec[] closeAll(AppendableVec [] avs) {
+  public Vec[] closeAll() {
+    VectorGroup vg = group();
+    int idStart = vecId();
     Futures fs = new Futures();
-    Vec [] res = closeAll(avs,fs);
+    int row_layout = compute_rowLayout();
+    Vec [] res = new Vec[_blocks.length];
+    for(int i = 0; i < _blocks.length; ++i)
+      DKV.put(res[i] = new Vec(vg.vecKey(idStart + i), row_layout, new String[_blocks[i]][], _types),fs);
     fs.blockForPending();
     return res;
   }
@@ -121,11 +140,11 @@ public class AppendableVec extends Vec {
   @Override public NewChunkAry chunkForChunkIdx(int cidx) {
     NewChunk [] ncs = new NewChunk[numCols()];
     for(int i = 0; i < ncs.length; ++i)
-      ncs[i] = new NewChunk();
+      ncs[i] = new NewChunk(_types[i]);
     return new NewChunkAry(this,cidx,ncs,null);
   }
   // None of these are supposed to be called while building the new vector
-  @Override public Value chunkIdx( int cidx ) { throw H2O.fail(); }
+  @Override public DBlock chunkIdx( int cidx ) { throw H2O.fail(); }
   @Override public long length() { throw H2O.fail(); }
   @Override public int nChunks() { throw H2O.fail(); }
   @Override public int elem2ChunkIdx( long i ) { throw H2O.fail(); }

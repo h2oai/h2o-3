@@ -14,9 +14,7 @@ import java.util.Arrays;
  */
 public class ByteVec extends Vec {
 
-  public ByteVec( Key key, int rowLayout ) { super(key, rowLayout); }
-
-  @Override public C1NChunk chunkForChunkIdx(int cidx) { return (C1NChunk)super.chunkForChunkIdx(cidx); }
+  public ByteVec( Key key, int rowLayout ) { super(key, rowLayout,1); }
 
   /** Return column missing-element-count - ByteVecs do not allow any "missing elements" */
   @Override public long naCnt() { return 0; }
@@ -27,7 +25,8 @@ public class ByteVec extends Vec {
    *  length Vec.DFLT_CHUNK_SIZE but no guarantees.  Useful for previewing the start
    *  of large files.
    *  @return array of initial bytes */
-  public byte[] getFirstBytes() { return chunkForChunkIdx(0)._mem; }
+  public byte[] getChunkBytes(int cidx) { return chunkIdx(cidx)._cs[0]._mem; }
+  public byte[] getFirstBytes() { return getChunkBytes(0); }
 
   static final byte CHAR_CR = 13;
   static final byte CHAR_LF = 10;
@@ -41,10 +40,10 @@ public class ByteVec extends Vec {
     if (chkIdx >= nChunks())
       throw new H2OIllegalArgumentException("Asked for chunk index beyond the number of chunks.");
     if (chkIdx == 0)
-      return chunkForChunkIdx(chkIdx)._mem;
+      return getFirstBytes();
     else { //must eat partial lines
       // FIXME: a hack to consume partial lines since each preview chunk is seen as cidx=0
-      byte[] mem = chunkForChunkIdx(chkIdx)._mem;
+      byte[] mem = getChunkBytes(chkIdx);
       int i = 0, j = mem.length-1;
       while (i < mem.length && mem[i] != CHAR_CR && mem[i] != CHAR_LF) i++;
       while (j > i && mem[j] != CHAR_CR && mem[j] != CHAR_LF) j--;
@@ -67,7 +66,7 @@ public class ByteVec extends Vec {
         if (_c0 == null || _sz >= _c0._len) {
           sz[0] += _c0 != null ? _c0._len : 0;
           if (_cidx >= nChunks()) return 0;
-          _c0 = chunkForChunkIdx(_cidx++);
+          _c0 = (C1NChunk) chunkIdx(_cidx++)._cs[0];
           _sz = C1NChunk._OFF;
           if (job_key != null)
             Job.update(_c0._len, job_key);

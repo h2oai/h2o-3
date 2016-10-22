@@ -2,7 +2,6 @@ package water.fvec;
 
 import com.google.common.base.Charsets;
 import water.AutoBuffer;
-import water.Futures;
 import water.H2O;
 import water.MemoryManager;
 import water.parser.BufferedString;
@@ -13,6 +12,8 @@ import java.util.*;
 
 // An uncompressed chunk of data, supporting an append operation
 public class NewChunk extends Chunk {
+
+  final byte _type;
 
   public void alloc_mantissa(int sparseLen) {_ms = new Mantissas(sparseLen);}
 
@@ -204,8 +205,6 @@ public class NewChunk extends Chunk {
       else if(_vals8 != null) _vals8 = Arrays.copyOf(_vals8,len);
     }
   }
-
-  public final int _cidx;
   // We can record the following (mixed) data types:
   // 1- doubles, in _ds including NaN for NA & 0; _ls==_xs==null
   // 2- scaled decimals from parsing, in _ls & _xs; _ds==null
@@ -269,20 +268,10 @@ public class NewChunk extends Chunk {
   private int _sparseRatio = MIN_SPARSE_RATIO;
   public boolean _isAllASCII = true; //For cat/string col, are all characters in chunk ASCII?
 
-  public NewChunk() {
-    _vec = null;
-    _cidx = -1;
-    _ms = new Mantissas(4);
-    _xs = new Exponents(4);
-  }
-  public NewChunk( Vec vec, int cidx ) {
-    _vec = vec; _cidx = cidx;
-    _ms = new Mantissas(4);
-    _xs = new Exponents(4);
-  }
+  public NewChunk(byte t) {this(t,false);}
 
-  public NewChunk( Vec vec, int cidx, boolean sparse ) {
-    _vec = vec; _cidx = cidx;
+  public NewChunk( byte t, boolean sparse ) {
+    _type = t;
     _ms = new Mantissas(4);
     _xs = new Exponents(4);
     if(sparse) _id = new int[4];
@@ -290,12 +279,11 @@ public class NewChunk extends Chunk {
   }
 
   public NewChunk(double [] ds) {
-    _cidx = -1;
-    _vec = null;
+    _type = Vec.T_NUM;
     setDoubles(ds);
   }
-  public NewChunk( Vec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
-    _vec = vec; _cidx = cidx;
+  public NewChunk( byte t, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
+    _type = t;
     _ms = new Mantissas(mantissa.length);
     _xs = new Exponents(exponent.length);
     for(int i = 0; i < mantissa.length; ++i) {
@@ -304,31 +292,17 @@ public class NewChunk extends Chunk {
     }
     _id = indices;
     _ds = doubles;
-    if (_ms != null && _sparseLen==0) set_sparseLen(set_len(mantissa.length));
-    if (_ds != null && _sparseLen==0) set_sparseLen(set_len(_ds.length));
+    if (_ms != null && _sparseLen==0) _sparseLen = _len = mantissa.length;
+    if (_ds != null && _sparseLen==0) _sparseLen = _len = _ds.length;
     if (_id != null && _sparseLen==0) set_sparseLen(_id.length);
   }
 
-  // Constructor used when inflating a Chunk.
-  public NewChunk( Chunk c ) {
-    this(c._vec, c.cidx());
-    _start = c._start;
-  }
-
-  // Constructor used when inflating a Chunk.
-  public NewChunk( Chunk c, double [] vals) {
-    _vec = c._vec; _cidx = c.cidx();
-    _start = c._start;
-    _ds = vals;
-    _sparseLen = _len = _ds.length;
-  }
-
   // Pre-sized newchunks.
-  public NewChunk( Vec vec, int cidx, int len ) {
-    this(vec,cidx);
+  public NewChunk( int len ) {
+    _type = Vec.T_NUM;
     _ds = new double[len];
     Arrays.fill(_ds, Double.NaN);
-    set_sparseLen(set_len(len));
+    set_sparseLen(_len = len);
   }
 
   public NewChunk setSparseRatio(int s) {
@@ -342,9 +316,6 @@ public class NewChunk extends Chunk {
     _ms = null;
     _xs = null;
   }
-
-  public void set_vec(Vec vec) { _vec = vec; }
-
 
   public final class Value {
     int _gId; // row number in dense (ie counting zeros)
@@ -422,49 +393,7 @@ public class NewChunk extends Chunk {
   }
 
   // Heuristic to decide the basic type of a column
-  byte type() {
-    if( _naCnt == -1 ) {        // No rollups yet?
-      int nas=0, es=0, nzs=0, ss=0;
-      if( _ds != null && _ms != null ) { // UUID?
-        for(int i = 0; i< _sparseLen; i++ )
-          if( _xs != null && _xs.get(i)==Integer.MIN_VALUE )  nas++;
-          else if( _ds[i] !=0 || _ms.get(i) != 0 ) nzs++;
-        _uuidCnt = _len -nas;
-      } else if( _ds != null ) { // Doubles?
-        assert _xs==null;
-        for(int i = 0; i < _sparseLen; ++i) {
-          if( Double.isNaN(_ds[i]) ) nas++; 
-          else if( _ds[i]!=0 ) nzs++;
-        }
-      } else {
-        if( _ms != null && _sparseLen > 0) // Longs and categoricals?
-          for(int i = 0; i< _sparseLen; i++ )
-            if( isNA2(i) ) nas++;
-            else {
-              if( isCategorical2(i)   ) es++;
-              if( _ms.get(i) != 0 ) nzs++;
-            }
-        if( _is != null )  // Strings
-          for(int i = 0; i< _sparseLen; i++ )
-            if( isNA2(i) ) nas++;
-            else ss++;
-      }
-      if (_sparseNA) nas += (_len - _sparseLen);
-      _nzCnt=nzs;  _catCnt =es;  _naCnt=nas; _strCnt = ss;
-    }
-    // Now run heuristic for type
-    if(_naCnt == _len)          // All NAs ==> NA Chunk
-      return Vec.T_BAD;
-    if(_strCnt > 0)
-      return Vec.T_STR;
-    if(_catCnt > 0 && _catCnt + _naCnt + (isSparseZero()? _len-_sparseLen : 0) == _len)
-      return Vec.T_CAT; // All are Strings+NAs ==> Categorical Chunk
-    // UUIDs?
-    if( _uuidCnt > 0 ) return Vec.T_UUID;
-    // Larger of time & numbers
-    int nums = _len -_naCnt-_timCnt;
-    return _timCnt >= nums ? Vec.T_TIME : Vec.T_NUM;
-  }
+  byte type() {return _type;}
 
   //what about sparse reps?
   protected final boolean isNA2(int idx) {
@@ -632,21 +561,9 @@ public class NewChunk extends Chunk {
         set_sparseLen(_sparseLen + 1);
       }
     }
-    set_len(_len + 1);
+    _len++;
     assert _sparseLen <= _len;
   }
-
-  // TODO: FIX isAllASCII test to actually inspect string contents
-  public void addStr(Chunk c, long row) {
-    if( c.isNA_abs(row) ) addNA();
-    else { addStr(c.atStr_abs(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
-  }
-
-  public void addStr(Chunk c, int row) {
-    if( c.isNA(row) ) addNA();
-    else { addStr(c.atStr(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
-  }
-
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
@@ -658,14 +575,7 @@ public class NewChunk extends Chunk {
     _len++;
     assert _sparseLen <= _len;
   }
-  public void addUUID( Chunk c, long row ) {
-    if( c.isNA_abs(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
-    else addUUID(c.at16l_abs(row),c.at16h_abs(row));
-  }
-  public void addUUID( Chunk c, int row ) {
-    if( c.isNA(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
-    else addUUID(c.at16l(row),c.at16h(row));
-  }
+
 
   public final boolean isUUID(){return _ms != null && _ds != null; }
   public final boolean isString(){return _is != null; }
@@ -674,7 +584,7 @@ public class NewChunk extends Chunk {
 
   public void addZeros(int n){
     if(!sparseZero()) for(int i = 0; i < n; ++i)addNum(0,0);
-    else set_len(_len + n);
+    else _len += n;
   }
   
   public void addNAs(int n) {
@@ -682,16 +592,15 @@ public class NewChunk extends Chunk {
       for (int i = 0; i <n; ++i) {
         addNA();
         if(sparseNA()) {
-          set_len(_len + n - i -1);
+          _len += n - i -1;
           return;
         }
       }
-    else set_len(_len + n);
+    else _len += n;
   }
   
   // Append all of 'nc' onto the current NewChunk.  Kill nc.
   public void add( NewChunk nc ) {
-    assert _cidx >= 0;
     assert _sparseLen <= _len;
     assert nc._sparseLen <= nc._len :"_sparseLen = " + nc._sparseLen + ", _len = " + nc._len;
     if( nc._len == 0 ) return;
@@ -703,7 +612,7 @@ public class NewChunk extends Chunk {
       _is = nc._is; nc._is = null;
       _ss = nc._ss; nc._ss = null;
       set_sparseLen(nc._sparseLen);
-      set_len(nc._len);
+      _len = nc._len;
       return;
     }
     if(nc.sparseZero() != sparseZero() || nc.sparseNA() != sparseNA()){ // for now, just make it dense
@@ -723,8 +632,8 @@ public class NewChunk extends Chunk {
     } else assert nc._id == null;
 
     set_sparseLen(_sparseLen + nc._sparseLen);
-    set_len(_len + nc._len);
-    nc._ms = null;  nc._xs = null; nc._id = null; nc.set_sparseLen(nc.set_len(0));
+    _len += nc._len;
+    nc._ms = null;  nc._xs = null; nc._id = null; nc.set_sparseLen(_len = 0);
     assert _sparseLen <= _len;
   }
 
@@ -877,17 +786,6 @@ public class NewChunk extends Chunk {
     assert _sparseLen <= _len;
   }
 
-  // Do any final actions on a completed NewVector.  Mostly: compress it, and
-  // do a DKV put on an appropriate Key.  The original NewVector goes dead
-  // (does not live on inside the K/V store).
-  public Chunk new_close() {
-    Chunk chk = compress();
-    if(_vec instanceof AppendableVec)
-      ((AppendableVec)_vec).closeChunk(_cidx,chk._len);
-    return chk;
-  }
-  public void close(Futures fs) { close(_cidx,fs); }
-
   private void switch_to_doubles(){
     assert _ds == null;
     double [] ds = MemoryManager.malloc8d(_sparseLen);
@@ -1022,17 +920,6 @@ public class NewChunk extends Chunk {
   public Chunk compress() {
     Chunk res = compress2();
     byte type = type();
-    assert _vec == null ||  // Various testing scenarios do not set a Vec
-      type == _vec._type || // Equal types
-      // Allow all-bad Chunks in any type of Vec
-      type == Vec.T_BAD ||
-      // Specifically allow the NewChunk to be a numeric type (better be all
-      // ints) and the selected Vec type an categorical - whose String mapping
-      // may not be set yet.
-      (type==Vec.T_NUM && _vec._type==Vec.T_CAT) ||
-      // Another one: numeric Chunk and Time Vec (which will turn into all longs/zeros/nans Chunks)
-      (type==Vec.T_NUM && _vec._type == Vec.T_TIME && !res.hasFloat())
-      : "NewChunk has type "+Vec.TYPE_STR[type]+", but the Vec is of type "+_vec.get_type_str();
     assert _len == res._len : "NewChunk has length "+_len+", compressed Chunk has "+res._len;
     // Force everything to null after compress to free up the memory.  Seems
     // like a non-issue in the land of GC, but the NewChunk *should* be dead
@@ -1414,8 +1301,8 @@ public class NewChunk extends Chunk {
       UnsafeUtils.set8d(bs, 8*i, d);
     }
     assert j == _sparseLen :"j = " + j + ", _len = " + _sparseLen;
-    if (fitsInUnique && CUDChunk.computeByteSize(hs.size(), len()) < 0.8 * bs.length)
-      return new CUDChunk(bs, hs, len());
+    if (fitsInUnique && CUDChunk.computeByteSize(hs.size(), _len) < 0.8 * bs.length)
+      return new CUDChunk(bs, hs, _len);
     else
       return new C8DChunk(bs);
   }
@@ -1483,7 +1370,7 @@ public class NewChunk extends Chunk {
   // chunk.  At this point the NewChunk is full size, no more appends allowed,
   // and the xs exponent array should be only full of zeros.  Accesses must be
   // in-range and refer to the inflated values of the original Chunk.
-  @Override boolean set_impl(int i, long l) {
+  @Override protected boolean set_impl(int i, long l) {
     if( _ds   != null ) return set_impl(i,(double)l);
     if(_sparseLen != _len){ // sparse?
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);
@@ -1521,9 +1408,9 @@ public class NewChunk extends Chunk {
     _naCnt = -1;
     return true;
   }
-  @Override boolean set_impl(int i, float f) {  return set_impl(i,(double)f); }
+  @Override protected boolean set_impl(int i, float f) {  return set_impl(i,(double)f); }
 
-  @Override boolean set_impl(int i, String str) {
+  @Override protected boolean set_impl(int i, String str) {
     if(_is == null && _len > 0) {
       assert _sparseLen == 0;
       alloc_str_indices(_len);
@@ -1554,8 +1441,8 @@ public class NewChunk extends Chunk {
     _naCnt = -1;
     return true;
   }
-  @Override boolean setNA_impl(int i) {
-    if( isNA_impl(i) ) return true;
+  @Override protected boolean setNA_impl(int i) {
+    if( isNA(i) ) return true;
     if(_sparseLen != _len){
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);
       if(idx >= 0) i = idx;
@@ -1570,7 +1457,7 @@ public class NewChunk extends Chunk {
     return _ms.get(i)*PrettyPrint.pow10i(_xs.get(i));
   }
   
-  @Override public long at8_impl( int i ) {
+  @Override public long at8(int i ) {
     if( _len != _sparseLen) {
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);
       if(idx >= 0) i = idx;
@@ -1581,29 +1468,29 @@ public class NewChunk extends Chunk {
     }
     return at8_impl2(i);
   }
-  @Override public double atd_impl( int i ) {
+  @Override public double atd(int i ) {
     if( _len != _sparseLen) {
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);
       if(idx >= 0) i = idx;
       else return sparseNA() ? Double.NaN : 0;
     }
     if (isNA2(i)) return Double.NaN;
-    // if exponent is Integer.MIN_VALUE (for missing value) or >=0, then go the integer path (at8_impl)
+    // if exponent is Integer.MIN_VALUE (for missing value) or >=0, then go the integer path (at8)
     // negative exponents need to be handled right here
     if( _ds == null ) return _xs.get(i) >= 0 ? at8_impl2(i) : _ms.get(i)*Math.pow(10,_xs.get(i));
     assert _xs==null; 
     return _ds[i];
   }
-  @Override protected long at16l_impl(int idx) {
+  @Override public long at16l(int idx) {
     if(_ms.get(idx) == C16Chunk._LO_NA) throw new RuntimeException("Attempting to access NA as integer value.");
     return _ms.get(idx);
   }
-  @Override protected long at16h_impl(int idx) {
+  @Override public long at16h(int idx) {
     long hi = Double.doubleToRawLongBits(_ds[idx]);
     if(hi == C16Chunk._HI_NA) throw new RuntimeException("Attempting to access NA as integer value.");
     return hi;
   }
-  @Override public boolean isNA_impl( int i ) {
+  @Override public boolean isNA( int i ) {
     if (_len != _sparseLen) {
       int idx = Arrays.binarySearch(_id, 0, _sparseLen, i);
       if (idx >= 0) i = idx;
@@ -1611,7 +1498,7 @@ public class NewChunk extends Chunk {
     }
     return !sparseNA() && isNA2(i);
   }
-  @Override public BufferedString atStr_impl( BufferedString bStr, int i ) {
+  @Override public BufferedString atStr(BufferedString bStr, int i ) {
     if( _sparseLen != _len ) {
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);
       if(idx >= 0) i = idx;
@@ -1625,13 +1512,14 @@ public class NewChunk extends Chunk {
     return bStr.set(_ss, _is[i], len);
   }
   @Override protected final void initFromBytes () {throw H2O.fail();}
+
+  @Override
+  void add2Chunk(ChunkAry nchks, int dstCol, int[] rows) {
+    throw new UnsupportedOperationException("should not be called on a new chunk");
+  }
+
   public static AutoBuffer write_impl(NewChunk nc,AutoBuffer bb) { throw H2O.fail(); }
   @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
   @Override public String toString() { return "NewChunk._sparseLen="+ _sparseLen; }
 
-  // We have to explicitly override cidx implementation since we hide _cidx field with new version
-  @Override
-  public int cidx() {
-    return _cidx;
-  }
 }

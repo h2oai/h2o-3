@@ -800,7 +800,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap categoricals
     ArrayList<String> msgs = new ArrayList<>();
-    Vec vvecs[] = new Vec[names.length];
+    VecAry vvecs = new VecAry();
     int good = 0;               // Any matching column names, at all?
     int convNaN = 0;
     for( int i=0; i<names.length; i++ ) {
@@ -833,7 +833,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             vec = test.anyVec().makeCon(missing);
             convNaN++;
           }
-          vec.setDomain(domains[i]);
+          vec.setDomain(0,domains[i]);
         }
         msgs.add(str);
       }
@@ -864,12 +864,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           good++;      // Assumed compatible; not checking e.g. Strings vs UUID
         }
       }
-      vvecs[i] = vec;
+      vvecs.append(vec);
     }
     if( good == convNaN )
       throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
-      test.restructure(names,vvecs,good);
+      test.restructure(names,vvecs);
 
     if (expensive) {
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
@@ -924,7 +924,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
     // Log modest confusion matrices
-    Vec predicted = output.vecs()[0]; // Modeled/predicted response
+    Vec predicted = output.vecs(0); // Modeled/predicted response
     String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
 
     // Output is in the model's domain, but needs to be mapped to the scored
@@ -1008,10 +1008,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // Remove temp keys.  TODO: Really should use Scope but Scope does not
   // currently allow nested-key-keepers.
   static protected void cleanup_adapt( Frame adaptFr, Frame fr ) {
-    Key[] keys = adaptFr.keys();
-    for( int i=0; i<keys.length; i++ )
-      if( fr.find(keys[i]) == -1 ) //only delete vecs that aren't shared
-        keys[i].remove();
+    Vec [] vecs = adaptFr.vecs().vecs();
+    for( int i=0; i<vecs.length; i++ )
+      if( fr.find(vecs[i]) == -1 ) //only delete vecs that aren't shared
+        vecs[i].remove();
     DKV.remove(adaptFr._key); //delete the frame header
   }
 
@@ -1614,8 +1614,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         throw H2O.fail("Internal POJO compilation failed",e);
       }
 
-      Vec[] dvecs = fr.vecs();
-      Vec[] pvecs = model_predictions.vecs();
+      VecAry dvecs = fr.vecs();
+      VecAry pvecs = model_predictions.vecs();
 
       double features[] = MemoryManager.malloc8d(genmodel._names.length);
       double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
@@ -1627,10 +1627,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
         // Native Java API
         for (int col = 0; col < features.length; col++) // Build feature set
-          features[col] = dvecs[col].at(row);
+          features[col] = dvecs.at(row,col);
         genmodel.score0(features, predictions);            // POJO predictions
-        for (int col = 0; col < pvecs.length; col++) { // Compare predictions
-          double d = pvecs[col].at(row);                  // Load internal scoring predictions
+        for (int col = 0; col < pvecs._numCols; col++) { // Compare predictions
+          double d = pvecs.at(row,col);                  // Load internal scoring predictions
           if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
           if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
             if (miss++ < 10)
@@ -1646,7 +1646,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
         if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
         for (int col = 0; col < features.length; col++) {
-          double val = dvecs[col].at(row);
+          double val = dvecs.at(row,col);
           rowData.put(
                   genmodel._names[col],
                   genmodel._domains[col] == null ? (Double) val
@@ -1657,8 +1657,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         AbstractPrediction p;
         try { p=epmw.predict(rowData); }
         catch (PredictException e) { continue; }
-        for (int col = 0; col < pvecs.length; col++) { // Compare predictions
-          double d = pvecs[col].at(row); // Load internal scoring predictions
+        for (int col = 0; col < pvecs._numCols; col++) { // Compare predictions
+          double d = pvecs.at(row,col); // Load internal scoring predictions
           if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
           double d2 = Double.NaN;
           switch( genmodel.getModelCategory()) {

@@ -1,10 +1,7 @@
 package water.rapids.ast.prims.operators;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.vals.ValFrame;
 import water.util.MathUtils;
@@ -26,14 +23,15 @@ public class AstEq extends AstBinOp {
     return new ValFrame(new MRTask() {
       @Override
       public void map(Chunk[] chks, NewChunk[] cress) {
+        VecAry vecs = _fr.vecs();
         for (int c = 0; c < chks.length; c++) {
           Chunk chk = chks[c];
           NewChunk cres = cress[c];
           BufferedString bStr = new BufferedString();
-          if (chk.vec().isString())
+          if (vecs.isString(c))
             for (int i = 0; i < chk._len; i++)
               cres.addNum(str_op(chk.atStr(bStr, i), Double.isNaN(d) ? null : new BufferedString(String.valueOf(d))));
-          else if (!chk.vec().isNumeric()) cres.addZeros(chk._len);
+          else if (!vecs.isNumeric(c)) cres.addZeros(chk._len);
           else
             for (int i = 0; i < chk._len; i++)
               cres.addNum(op(chk.atd(i), d));

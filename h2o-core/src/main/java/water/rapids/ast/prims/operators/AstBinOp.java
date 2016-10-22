@@ -2,10 +2,7 @@ package water.rapids.ast.prims.operators;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.*;
 import water.rapids.ast.AstPrimitive;
@@ -202,11 +199,11 @@ abstract public class AstBinOp extends AstPrimitive {
   // Ops do not make sense on categoricals, except EQ/NE; flip such ops to NAs
   private ValFrame cleanCategorical(Frame oldfr, Frame newfr) {
     final boolean categoricalOK = categoricalOK();
-    final Vec oldvecs[] = oldfr.vecs();
-    final Vec newvecs[] = newfr.vecs();
-    for (int i = 0; i < oldvecs.length; i++)
-      if ((oldvecs[i].isCategorical() && !categoricalOK)) // categorical are OK (op is EQ/NE)
-        newvecs[i] = newvecs[i].makeCon(Double.NaN);
+    final VecAry oldvecs = oldfr.vecs();
+    final VecAry newvecs = newfr.vecs();
+    for (int i = 0; i < oldvecs._numCols; i++)
+      if ((oldvecs.isCategorical(i) && !categoricalOK)) // categorical are OK (op is EQ/NE)
+        newvecs.replace(i,newvecs.makeCon(Double.NaN));
     return new ValFrame(newfr);
   }
 
@@ -217,17 +214,17 @@ abstract public class AstBinOp extends AstPrimitive {
     Frame res = new MRTask() {
       @Override
       public void map(Chunk[] chks, NewChunk[] cress) {
+        VecAry vecs = _fr.vecs();
         BufferedString vstr = new BufferedString();
         for (int c = 0; c < chks.length; c++) {
           Chunk chk = chks[c];
           NewChunk cres = cress[c];
-          Vec vec = chk.vec();
           // String Vectors: apply str_op as BufferedStrings to all elements
-          if (vec.isString()) {
+          if (vecs.isString(c)) {
             final BufferedString conStr = new BufferedString(str);
             for (int i = 0; i < chk._len; i++)
               cres.addNum(str_op(chk.atStr(vstr, i), conStr));
-          } else if (vec.isCategorical()) {
+          } else if (vecs.isCategorical(c)) {
             // categorical Vectors: convert string to domain value; apply op (not
             // str_op).  Not sure what the "right" behavior here is, can
             // easily argue that should instead apply str_op to the categorical
@@ -236,7 +233,7 @@ abstract public class AstBinOp extends AstPrimitive {
             // doubles vs comparing strings.  Note that if the string is not
             // part of the categorical domain, the find op returns -1 which is never
             // equal to any categorical dense integer (which are always 0+).
-            final double d = (double) ArrayUtils.find(vec.domain(), str);
+            final double d = (double) ArrayUtils.find(vecs.domain(c), str);
             for (int i = 0; i < chk._len; i++)
               cres.addNum(op(chk.atd(i), d));
           } else { // mixing string and numeric
@@ -258,23 +255,24 @@ abstract public class AstBinOp extends AstPrimitive {
       @Override
       public void map(Chunk[] chks, NewChunk[] cress) {
         BufferedString vstr = new BufferedString();
+        VecAry vecs = _fr.vecs();
         for (int c = 0; c < chks.length; c++) {
           Chunk chk = chks[c];
           NewChunk cres = cress[c];
-          Vec vec = chk.vec();
+
           // String Vectors: apply str_op as BufferedStrings to all elements
-          if (vec.isString()) {
+          if (vecs.isString(c)) {
             final BufferedString conStr = new BufferedString(str);
             for (int i = 0; i < chk._len; i++)
               cres.addNum(str_op(conStr, chk.atStr(vstr, i)));
-          } else if (vec.isCategorical()) {
+          } else if (vecs.isCategorical(c)) {
             // categorical Vectors: convert string to domain value; apply op (not
             // str_op).  Not sure what the "right" behavior here is, can
             // easily argue that should instead apply str_op to the categorical
             // string domain value - except that this whole operation only
             // makes sense for EQ/NE, and is much faster when just comparing
             // doubles vs comparing strings.
-            final double d = (double) ArrayUtils.find(vec.domain(), str);
+            final double d = (double) ArrayUtils.find(vecs.domain(c), str);
             for (int i = 0; i < chk._len; i++)
               cres.addNum(op(d, chk.atd(i)));
           } else { // mixing string and numeric
@@ -306,14 +304,15 @@ abstract public class AstBinOp extends AstPrimitive {
     }
     if (lf.numCols() == 0) return new ValFrame(lf);
     if (rt.numCols() == 0) return new ValFrame(rt);
-    if (lf.numCols() == 1 && rt.numCols() > 1) return vec_op_frame(lf.vecs()[0], rt);
-    if (rt.numCols() == 1 && lf.numCols() > 1) return frame_op_vec(lf, rt.vecs()[0]);
+    if (lf.numCols() == 1 && rt.numCols() > 1) return vec_op_frame(lf.vecs(0), rt);
+    if (rt.numCols() == 1 && lf.numCols() > 1) return frame_op_vec(lf, rt.vecs(0));
     if (lf.numCols() != rt.numCols())
       throw new IllegalArgumentException("Frames must have same columns, found " + lf.numCols() + " columns and " + rt.numCols() + " columns.");
 
     Frame res = new MRTask() {
       @Override
       public void map(Chunk[] chks, NewChunk[] cress) {
+        VecAry vecs = _fr.vecs();
         BufferedString lfstr = new BufferedString();
         BufferedString rtstr = new BufferedString();
         assert (cress.length << 1) == chks.length;
@@ -321,7 +320,7 @@ abstract public class AstBinOp extends AstPrimitive {
           Chunk clf = chks[c];
           Chunk crt = chks[c + cress.length];
           NewChunk cres = cress[c];
-          if (clf.vec().isString())
+          if (vecs.isString(c))
             for (int i = 0; i < clf._len; i++)
               cres.addNum(str_op(clf.atStr(lfstr, i), crt.atStr(rtstr, i)));
           else
@@ -336,15 +335,16 @@ abstract public class AstBinOp extends AstPrimitive {
   private ValFrame frame_op_row(Frame lf, Frame row) {
     final double[] rawRow = new double[row.numCols()];
     for (int i = 0; i < rawRow.length; ++i)
-      rawRow[i] = row.vec(i).isNumeric() ? row.vec(i).at(0) : Double.NaN; // is numeric, if not then NaN
+      rawRow[i] = row.vecs().isNumeric(i) ? row.vec(i).at(0) : Double.NaN; // is numeric, if not then NaN
     Frame res = new MRTask() {
       @Override
       public void map(Chunk[] chks, NewChunk[] cress) {
+        VecAry vecs = _fr.vecs();
         for (int c = 0; c < cress.length; c++) {
           Chunk clf = chks[c];
           NewChunk cres = cress[c];
           for (int r = 0; r < clf._len; ++r) {
-            if (clf.vec().isString())
+            if (vecs.isString(c))
               cres.addNum(Double.NaN); // TODO: improve
             else
               cres.addNum(op(clf.atd(r), rawRow[c]));

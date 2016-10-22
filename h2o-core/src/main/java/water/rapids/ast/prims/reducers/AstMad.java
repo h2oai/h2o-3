@@ -4,10 +4,7 @@ import hex.quantile.QuantileModel;
 import water.DKV;
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstPrimitive;
@@ -35,9 +32,9 @@ public class AstMad extends AstPrimitive {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] vecs = fr.vecs();
-    if (vecs.length == 0 || vecs[0].naCnt() > 0) return new ValNum(Double.NaN);
-    if (vecs.length > 1) throw new IllegalArgumentException("MAD expects a single numeric column");
+    VecAry vecs = fr.vecs();
+    if (vecs._numCols == 0 || vecs.naCnt(0) > 0) return new ValNum(Double.NaN);
+    if (vecs._numCols > 1) throw new IllegalArgumentException("MAD expects a single numeric column");
     QuantileModel.CombineMethod cm = QuantileModel.CombineMethod.valueOf(asts[2].exec(env).getStr().toUpperCase());
     double constant = asts[3].exec(env).getNum();
     return new ValNum(mad(fr, cm, constant));

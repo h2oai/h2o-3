@@ -7,9 +7,7 @@ import water.api.schemas3.FrameV3;
 import water.exceptions.H2OColumnNotFoundArgumentException;
 import water.exceptions.H2OCategoricalLevelNotFoundArgumentException;
 import water.exceptions.H2OIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.IcedHashMapGeneric;
@@ -27,24 +25,24 @@ class FindHandler extends Handler {
     }
 
     // Convert the search string into a column-specific flavor
-    Vec[] vecs = frame.vecs();
-    double ds[] = new double[vecs.length];
-    for( int i=0; i<vecs.length; i++ ) {
-      if( vecs[i].isCategorical() ) {
-        int idx = ArrayUtils.find(vecs[i].domain(),find.match);
-        if( idx==-1 && vecs.length==1 ) throw new H2OCategoricalLevelNotFoundArgumentException("match", find.match, frame._key.toString(), frame.name(i));
+    VecAry vecs = frame.vecs();
+    double ds[] = new double[vecs._numCols];
+    for( int i=0; i<vecs._numCols; i++ ) {
+      if( vecs.isCategorical(i) ) {
+        int idx = ArrayUtils.find(vecs.domain(i),find.match);
+        if( idx==-1 && vecs._numCols==1 ) throw new H2OCategoricalLevelNotFoundArgumentException("match", find.match, frame._key.toString(), frame.name(i));
         ds[i] = idx;
-      } else if( vecs[i].isUUID() ) {
+      } else if( vecs.isUUID(i) ) {
         throw H2O.unimpl();
-      } else if( vecs[i].isString() ) {
+      } else if( vecs.isString(i) ) {
         throw H2O.unimpl();
-      } else if( vecs[i].isTime() ) {
+      } else if( vecs.isTime(i) ) {
         throw H2O.unimpl();
       } else {
         try {
           ds[i] = find.match==null ? Double.NaN : Double.parseDouble(find.match);
         } catch( NumberFormatException e ) {
-          if( vecs.length==1 ) {
+          if( vecs._numCols==1 ) {
             // There's only one Vec and it's a numeric Vec and our search string isn't a number
             IcedHashMapGeneric.IcedHashMapStringObject values = new IcedHashMapGeneric.IcedHashMapStringObject();
             String msg = "Frame: " + frame._key.toString() + " as only one column, it is numeric, and the find pattern is not numeric: " + find.match;
@@ -72,12 +70,11 @@ class FindHandler extends Handler {
       super((byte)(H2O.GUI_PRIORITY - 2));
       _row = row; _ds = ds; _prev = -1; _next = Long.MAX_VALUE; 
     }
-    @Override public void map( Chunk cs[] ) {
-      for( int col = 0; col<cs.length; col++ ) {
-        Chunk C = cs[col];
-        for( int row=0; row<C._len; row++ ) {
-          if( C.atd(row) == _ds[col] || (C.isNA(row) && Double.isNaN(_ds[col])) ) {
-            long r = C.start()+row;
+    @Override public void map( ChunkAry cs ) {
+      for( int col = 0; col<cs._numCols; col++ ) {
+        for( int row=0; row<cs._len; row++ ) {
+          if( cs.atd(row,col) == _ds[col] || (cs.isNA(row,col) && Double.isNaN(_ds[col])) ) {
+            long r = cs._start+row;
             if( r < _row ) { if( r > _prev ) _prev = r; }
             else if( r > _row ) { if( r < _next ) _next = r; }
           }

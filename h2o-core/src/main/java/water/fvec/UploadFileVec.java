@@ -15,16 +15,13 @@ public class UploadFileVec extends FileVec {
 
   public void addAndCloseChunk(Chunk c, Futures fs) {
     assert _len==-1;            // Not closed
-    assert (c._vec == null);    // Don't try to re-purpose a chunk.
-    c._vec = this;              // Attach chunk to this vec.
-    DKV.put(chunkKey(_nchunks++),c,fs); // Write updated chunk back into K/V
+    DKV.put(chunkKey(_nchunks++),new DBlock(c),fs); // Write updated chunk back into K/V
   }
 
   // Close, and possible replace the prior chunk with a new, larger Chunk
   public void close(C1NChunk c, int cidx, Futures fs) {
     assert _len==-1;            // Not closed
-    c._vec = this;              // Attach chunk to this vec.
-    DKV.put(chunkKey(cidx),c,fs); // Write updated chunk back into K/V
+    DKV.put(chunkKey(cidx),new DBlock(c),fs); // Write updated chunk back into K/V
     long l = _nchunks-1L;
     _len = l*_chunkSize +c._len;
   }
@@ -35,10 +32,10 @@ public class UploadFileVec extends FileVec {
     return false;
   }
 
-  @Override public Value chunkIdx( int cidx ) {
+  @Override public DBlock chunkIdx( int cidx ) {
     Value val = DKV.get(chunkKey(cidx));
     assert checkMissing(cidx,val);
-    return val;
+    return val.get();
   }
 
   // ---------------------------------------------------------------------------

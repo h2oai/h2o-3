@@ -52,9 +52,9 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
   static public ModelMetricsRegression make(Vec predicted, Vec actual, DistributionFamily family) {
     if (predicted == null || actual == null)
       throw new IllegalArgumentException("Missing actual or predicted targets for regression metrics!");
-    if (!predicted.isNumeric())
+    if (!predicted.isNumeric(0))
       throw new IllegalArgumentException("Predicted values must be numeric for regression metrics.");
-    if (!actual.isNumeric())
+    if (!actual.isNumeric(0))
       throw new IllegalArgumentException("Actual values must be numeric for regression metrics.");
     if (family == DistributionFamily.quantile || family == DistributionFamily.tweedie || family == DistributionFamily.huber)
       throw new IllegalArgumentException("Unsupported distribution family, requires additional parameters which cannot be specified right now.");

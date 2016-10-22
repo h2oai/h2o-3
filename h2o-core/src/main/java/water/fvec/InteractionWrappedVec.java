@@ -100,6 +100,9 @@ public class InteractionWrappedVec extends WrappedVec {
     return sigma==0?1:1./sigma;
   }
 
+  @Override
+  public DBlock chunkIdx(int cidx) {throw H2O.unimpl();}
+
   private static class GetMeanTask extends MRTask<GetMeanTask> {
     private double  _d[];    // means, NA skipped
     private double _sigma[]; // sds, NA skipped
@@ -167,9 +170,9 @@ public class InteractionWrappedVec extends WrappedVec {
       _v2Domain = _masterVec2.domain();
       if( _v1Domain!=null && _v2Domain!=null ) {
         CombineDomainTask t =new CombineDomainTask(_v1Domain, _v2Domain,_v1Enums,_v2Enums, _useAllFactorLevels,_skipMissing).doAll(_masterVec1, _masterVec2);
-        setDomain(t._dom);
+        setDomain(0,t._dom);
         _bins=t._bins;
-        _type = Vec.T_CAT; // vec is T_NUM up to this point
+        _types[0] = Vec.T_CAT; // vec is T_NUM up to this point
         _missingDomains=t._missingDom;
       } else
         t = standardize?new GetMeanTask(v1Domain()==null?v2Domain().length:v1Domain().length):null;
@@ -280,16 +283,16 @@ public class InteractionWrappedVec extends WrappedVec {
     }
   }
 
-  @Override public Chunk chunkForChunkIdx(int cidx) {
+  @Override public ChunkAry chunkForChunkIdx(int cidx) {
     Chunk[] cs = new Chunk[2];
-    cs[0] = (_masterVec1!=null?_masterVec1: (_masterVec1=_masterVecKey1.get())).chunkForChunkIdx(cidx);
-    cs[1] = (_masterVec2!=null?_masterVec2: (_masterVec2=_masterVecKey2.get())).chunkForChunkIdx(cidx);
-    return new InteractionWrappedChunk(this, cs);
+    cs[0] = (_masterVec1!=null?_masterVec1: (_masterVec1=_masterVecKey1.get())).chunkForChunkIdx(cidx).getChunk(0);
+    cs[1] = (_masterVec2!=null?_masterVec2: (_masterVec2=_masterVecKey2.get())).chunkForChunkIdx(cidx).getChunk(0);
+    return new ChunkAry(this,cidx,new InteractionWrappedChunk(this, cs));
   }
 
   @Override public Vec doCopy() {
     InteractionWrappedVec v = new InteractionWrappedVec(group().addVec(), _rowLayout,_v1Enums,_v2Enums, _useAllFactorLevels, _skipMissing, _standardize, _masterVecKey1, _masterVecKey2);
-    if( null!=domain()  ) v.setDomain(domain());
+    if( null!=domain()  ) v.setDomain(0,domain(0));
     if( null!=_v1Domain ) v._v1Domain=_v1Domain.clone();
     if( null!=_v2Domain ) v._v2Domain=_v2Domain.clone();
     return v;
@@ -325,38 +328,52 @@ public class InteractionWrappedVec extends WrappedVec {
     public final boolean _isCat;   // this vec is categorical
     InteractionWrappedChunk(InteractionWrappedVec transformWrappedVec, Chunk[] c) {
       // set all the chunk fields
-      _c = c; set_len(_c[0]._len);
-      _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
-      _c1IsCat=_c[0]._vec.isCategorical();
-      _c2IsCat=_c[1]._vec.isCategorical();
-      _isCat = _vec.isCategorical();
+      _c = c;
+      _c1IsCat= transformWrappedVec._masterVec.isCategorical(0);
+      _c2IsCat= transformWrappedVec._masterVec.isCategorical(1);
+      _isCat = transformWrappedVec.isCategorical();
     }
 
-    @Override public double atd_impl(int idx) {
-      if( _isCat )
-        if( isNA_impl(idx) ) return Double.NaN;
-      return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1: (_c[0].atd(idx))) * ( _c2IsCat?1: (_c[1].atd(idx)) );
+    @Override public double atd(int idx) {
+      throw H2O.unimpl();
+//      if( _isCat )
+//        if( isNA_impl(idx) ) return Double.NaN;
+//      return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1: (_c[0].atd(idx))) * ( _c2IsCat?1: (_c[1].atd(idx)) );
     }
-    @Override public long at8_impl(int idx)   { return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1:_c[0].at8(idx) ) * ( _c2IsCat?1:_c[1].at8(idx) ); }
-    private String getKey(int idx) { return _c[0]._vec.domain()[(int)_c[0].at8(idx)] + "_" + _c[1]._vec.domain()[(int)_c[1].at8(idx)]; }
-    @Override public boolean isNA_impl(int idx) { return _c[0].isNA(idx) || _c[1].isNA(idx); }
+    @Override public long at8(int idx)   {
+      throw H2O.unimpl();
+//      return _isCat ? Arrays.binarySearch(_vec.domain(), getKey(idx)) : ( _c1IsCat?1:_c[0].at8(idx) ) * ( _c2IsCat?1:_c[1].at8(idx) );
+    }
+
+    private String getKey(int idx) {
+//      return _c[0]._vec.domain()[(int)_c[0].at8(idx)] + "_" + _c[1]._vec.domain()[(int)_c[1].at8(idx)];
+      throw H2O.unimpl();
+    }
+    @Override public boolean isNA(int idx) {
+      return _c[0].isNA(idx) || _c[1].isNA(idx);
+    }
     // Returns true if the masterVec is missing, false otherwise
     @Override public boolean set_impl(int idx, long l)   { return false; }
     @Override public boolean set_impl(int idx, double d) { return false; }
     @Override public boolean set_impl(int idx, float f)  { return false; }
     @Override public boolean setNA_impl(int idx)         { return false; }
     @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
-      if( _vec.isCategorical() )
-        for(int i=0;i<_len;++i)
-          if( isNA(i) ) nc.addNA();
-          else          nc.addNum(at8(i),0);
-      else
-        for( int i=0; i< _len; i++ )
-          if( isNA(i) ) nc.addNA();
-          else          nc.addNum(atd(i));
-      return nc;
+      throw H2O.unimpl();
+//      if( _vec.isCategorical() )
+//        for(int i=0;i<_len;++i)
+//          if( isNA(i) ) nc.addNA();
+//          else          nc.addNum(at8(i),0);
+//      else
+//        for( int i=0; i< _len; i++ )
+//          if( isNA(i) ) nc.addNA();
+//          else          nc.addNum(atd(i));
+//      return nc;
     }
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
+
+    @Override
+    void add2Chunk(ChunkAry nchks, int dstCol, int[] rows) {
+      throw H2O.unimpl();
+    }
   }
 }

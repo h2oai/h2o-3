@@ -2,6 +2,7 @@ package water.rapids.ast.prims.repeaters;
 
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
@@ -41,12 +42,12 @@ public class AstRepLen extends AstPrimitive {
       Vec vec = Vec.makeRepSeq(length, fr.numRows());
       new MRTask() {
         @Override
-        public void map(Chunk c) {
+        public void map(ChunkAry c) {
           for (int i = 0; i < c._len; ++i)
             c.set(i, fr.anyVec().at((long) c.atd(i)));
         }
       }.doAll(vec);
-      vec.setDomain(fr.anyVec().domain());
+      vec.setDomain(0,fr.anyVec().domain());
       return new ValFrame(new Frame(vec));
     } else {
       Frame f = new Frame();

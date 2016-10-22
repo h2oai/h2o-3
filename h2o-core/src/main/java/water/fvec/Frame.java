@@ -212,7 +212,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Returns the first readable vector.
    *  @return the first readable Vec */
-  public final Vec anyVec() {return _vecs;}
+  public final VecAry anyVec() {return _vecs;}
 
   /** The array of column names.
    *  @return the array of column names */
@@ -269,9 +269,13 @@ public class Frame extends Lockable<Frame> {
     return -1;
   }
 
+  public int find( Vec v ) {
+    int id = v.vecId();
+    return ArrayUtils.find(_vecs._vecIds,id);
+  }
 
-  /** Bulk {@link #find(String)} api
-   *  @return An array of column indices matching the {@code names} array */
+    /** Bulk {@link #find(String)} api
+     *  @return An array of column indices matching the {@code names} array */
   public int[] find(String[] names) {
     if( names == null ) return null;
     int[] res = new int[names.length];
@@ -658,12 +662,12 @@ public class Frame extends Lockable<Frame> {
       int r = 0;
       int c = 0;
       while (r < rows.length) {
-        NewChunk nc = new NewChunk(av, c);
+        NewChunkAry nc =av.chunkForChunkIdx(c++);
         long end = Math.min(r+CHK_ROWS, rows.length);
         for (; r < end; r++) {
           nc.addNum(rows[r]);
         }
-        nc.close(c++, fs);
+        nc.close(fs);
       }
       Vec c0 = av.layout_and_close(fs);   // c0 is the row index vec
       fs.blockForPending();

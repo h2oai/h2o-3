@@ -79,7 +79,7 @@ public class AstTrim extends AstPrimitive {
     if (trimmedToOldDomainIndices.size() < doms.length)
       return VecUtils.DomainDedupe.domainDeduper(vec, trimmedToOldDomainIndices);
 
-    return vec.makeCopy(doms);
+    return vec.makeCopy(new String[][]{doms});
   }
 
   private Vec trimStringCol(Vec vec) {

@@ -59,7 +59,7 @@ public class AstMatch extends AstPrimitive {
     Frame rez = new MRTask() {
       @Override
       public void map(Chunk c, NewChunk n) {
-        String[] domain = c.vec().domain();
+        String[] domain = _fr.vecs().domain(0);
         double x;
         int rows = c._len;
         for (int r = 0; r < rows; ++r) {

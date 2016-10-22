@@ -6,6 +6,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.nbhm.*;
 import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
@@ -96,7 +97,7 @@ public class Session {
     // (disappearing) session.
     if (returning != null && returning.isFrame()) {
       Frame fr = returning.getFrame();
-      Vec[] vecs = fr.vecs();
+      Vec[] vecs = fr.vecs().vecs();
       for (int i = 0; i < vecs.length; i++) {
         _addRefCnt(vecs[i], -1); // Returning frame has refcnt +1, lower it now; should go to zero internal refcnts.
         if (GLOBALS.contains(vecs[i])) // Copy if shared with globals
@@ -117,7 +118,7 @@ public class Session {
       GLOBALS.clear();
       Futures fs = new Futures();
       for (Frame fr : FRAMES.values()) {
-        for (Vec vec : fr.vecs()) {
+        for (Vec vec : fr.vecs().vecs()) {
           Integer I = REFCNTS.get(vec);
           int i = (I == null ? 0 : I) - 1;
           if (i > 0) REFCNTS.put(vec, i);
@@ -180,7 +181,7 @@ public class Session {
    */
   Frame addRefCnt(Frame fr, int i) {
     if (fr != null)  // Allow and ignore null Frame, easier calling convention
-      for (Vec vec : fr.vecs()) _addRefCnt(vec, i);
+      for (Vec vec : fr.vecs().vecs()) _addRefCnt(vec, i);
     return fr;                  // Flow coding
   }
 
@@ -214,7 +215,7 @@ public class Session {
     if (fr == null) return;
     Futures fs = new Futures();
     if (!FRAMES.containsKey(fr._key)) { // In globals and not temps?
-      for (Vec vec : fr.vecs()) {
+      for (Vec vec : fr.vecs().vecs()) {
         GLOBALS.remove(vec);         // Not a global anymore
         if (REFCNTS.get(vec) == null) // If not shared with temps
           vec.remove(fs);            // Remove unshared dead global
@@ -232,7 +233,7 @@ public class Session {
    * Passed in a Futures which is returned, and set to non-null if something gets deleted.
    */
   Futures downRefCnt(Frame fr, Futures fs) {
-    for (Vec vec : fr.vecs())    // Refcnt -1 all Vecs
+    for (Vec vec : fr.vecs().vecs())    // Refcnt -1 all Vecs
       if (addRefCnt(vec, -1) == 0) {
         if (fs == null) fs = new Futures();
         vec.remove(fs);
@@ -252,7 +253,7 @@ public class Session {
     // may be deleted.
     Frame fr = DKV.getGet(id);
     if (fr != null) {          // Prior frame exists
-      for (Vec vec : fr.vecs()) {
+      for (Vec vec : fr.vecs().vecs()) {
         if (GLOBALS.remove(vec) && _getRefCnt(vec) == 0)
           vec.remove(fs);       // Remove unused global vec
       }
@@ -261,7 +262,7 @@ public class Session {
     // already globals - this new global must be independent of any other
     // global Vecs - because global Vecs get side-effected by unrelated
     // operations.
-    Vec[] svecs = src.vecs().clone();
+    Vec[] svecs = src.vecs().vecs().clone();
     for (int i = 0; i < svecs.length; i++)
       if (GLOBALS.contains(svecs[i]))
         svecs[i] = svecs[i].makeCopy();
@@ -277,18 +278,21 @@ public class Session {
    * Support C-O-W optimizations: the following list of columns are about to be updated.  Copy them as-needed and
    * replace in the Frame.  Return the updated Frame vecs for flow-coding.
    */
-  public Vec[] copyOnWrite(Frame fr, int[] cols) {
+  public VecAry copyOnWrite(Frame fr, int[] cols) {
     Vec did_copy = null;        // Did a copy?
-    Vec[] vecs = fr.vecs();
+    Vec[] vecs = fr.vecs().vecs();
     for (int col : cols) {
       Vec vec = vecs[col];
       int refcnt = getRefCnt(vec);
       assert refcnt > 0;
-      if (refcnt > 1)          // If refcnt is 1, we allow the update to take in-place
-        fr.replace(col, (did_copy = vec.makeCopy()));
+      if (refcnt > 1) {          // If refcnt is 1, we allow the update to take in-place
+        fr.restructure(fr._names, new VecAry(fr.vecs().makeCopy()));
+        if(fr._key != null)
+          DKV.put(fr);
+        return fr.vecs();
+      }
     }
-    if (did_copy != null && fr._key != null) DKV.put(fr); // Then update frame in the DKV
-    return vecs;
+    return fr.vecs();
   }
 
   /**
@@ -305,14 +309,14 @@ public class Session {
     // calls the only tracked Vecs should be those from tracked frames.
     NonBlockingHashMap<Vec, Integer> refcnts = new NonBlockingHashMap<>(REFCNTS.size());
     for (Frame fr : FRAMES.values())
-      for (Vec vec : fr.vecs()) {
+      for (Vec vec : fr.vecs().vecs()) {
         Integer count = refcnts.get(vec);
         refcnts.put(vec, count == null ? 1 : count + 1);
       }
     // Now account for the returning frame (if it is a Frame). Note that it is entirely possible that this frame is
     // already in the FRAMES list, however we need to account for it anyways -- this is how Env works...
     if (returning != null && returning.isFrame())
-      for (Vec vec : returning.getFrame().vecs()) {
+      for (Vec vec : returning.getFrame().vecs().vecs()) {
         Integer count = refcnts.get(vec);
         refcnts.put(vec, count == null ? 1 : count + 1);
       }

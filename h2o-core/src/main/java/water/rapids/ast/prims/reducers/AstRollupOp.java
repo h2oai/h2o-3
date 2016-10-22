@@ -2,6 +2,7 @@ package water.rapids.ast.prims.reducers;
 
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValNum;
@@ -32,12 +33,12 @@ public abstract class AstRollupOp extends AstReducerOp {
 
     // Normal column-wise operation
     Frame fr = stk.track(arg1).getFrame();
-    Vec[] vecs = fr.vecs();
-    if (vecs.length == 0 || vecs[0].naCnt() > 0) return new ValNum(Double.NaN);
-    double d = rup(vecs[0]);
-    for (int i = 1; i < vecs.length; i++) {
-      if (vecs[i].naCnt() > 0) return new ValNum(Double.NaN);
-      d = op(d, rup(vecs[i]));
+    VecAry vecs = fr.vecs();
+    if (vecs._numCols == 0 || vecs.naCnt() > 0) return new ValNum(Double.NaN);
+    double d = rup(vecs.select(0));
+    for (int i = 1; i < vecs._numCols; i++) {
+      if (vecs.naCnt(i) > 0) return new ValNum(Double.NaN);
+      d = op(d, rup(vecs.select(i)));
     }
     return new ValNum(d);
   }

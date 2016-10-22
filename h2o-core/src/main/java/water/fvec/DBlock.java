@@ -14,7 +14,7 @@ public class DBlock extends Iced<DBlock> {
   int _numCols;
   Chunk [] _cs; // chunks containing the data
   int [] _ids;  // ids of non-zero chunks, null if not sparse
-  public DBlock(){}
+  public DBlock(Chunk... c){this(c,null);}
   public DBlock(Chunk [] cs, int [] id){
     _cs = cs;
     _ids = id;

@@ -18,8 +18,8 @@ public class C0LChunk extends Chunk {
   }
   @Override public boolean hasFloat() { return false; }
   @Override public boolean hasNA() { return false; }
-  @Override protected final long at8_impl( int i ) { return _con; }
-  @Override protected final double atd_impl( int i ) {return _con; }
+  @Override protected final long at8(int i ) { return _con; }
+  @Override protected final double atd(int i ) {return _con; }
   @Override protected final boolean isNA_impl( int i ) { return false; }
   @Override boolean set_impl(int idx, long l) { return l==_con; }
   @Override boolean set_impl(int i, double d) { return d==_con; }

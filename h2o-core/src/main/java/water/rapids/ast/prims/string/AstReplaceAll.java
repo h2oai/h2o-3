@@ -71,7 +71,7 @@ public class AstReplaceAll extends AstPrimitive {
           ? doms[i].toLowerCase(Locale.ENGLISH).replaceAll(pattern, replacement)
           : doms[i].replaceAll(pattern, replacement);
 
-    return vec.makeCopy(doms);
+    return vec.makeCopy(new String[][]{doms});
   }
 
   private Vec replaceAllStringCol(Vec vec, String pat, String rep, boolean ic) {

@@ -34,11 +34,11 @@ public class AstWhich extends AstPrimitive {
     // The 1-row version
     if (f.numRows() == 1 && f.numCols() > 1) {
       AppendableVec v = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec(), Vec.T_NUM);
-      NewChunk chunk = new NewChunk(v, 0);
+      NewChunkAry chunk = v.chunkForChunkIdx(0);
       for (int i = 0; i < f.numCols(); i++)
-        if (f.vecs()[i].at8(0) != 0)
+        if (f.vecs().at8(0,i) != 0)
           chunk.addNum(i);
-      Futures fs = chunk.close(0, new Futures());
+      Futures fs = chunk.close(new Futures());
       Vec vec = v.layout_and_close(fs);
       fs.blockForPending();
       return new ValFrame(new Frame(vec));
@@ -50,8 +50,8 @@ public class AstWhich extends AstPrimitive {
       throw new IllegalArgumentException("which requires a single integer column");
     Frame f2 = new MRTask() {
       @Override
-      public void map(Chunk c, NewChunk nc) {
-        long start = c.start();
+      public void map(ChunkAry c, NewChunkAry nc) {
+        long start = c._start;
         for (int i = 0; i < c._len; ++i)
           if (c.at8(i) != 0) nc.addNum(start + i);
       }

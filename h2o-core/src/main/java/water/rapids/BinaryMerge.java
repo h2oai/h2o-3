@@ -4,10 +4,8 @@ package water.rapids;
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
 
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
+
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
 
@@ -63,7 +61,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
       _chunkNode = vec==null ? null : new int[vec.nChunks()];
       if( vec == null ) return; // Zero-columns for Sort
       for( int i=0; i<_chunkNode.length; i++ )
-        _chunkNode[i] = vec.chunkKey(i).home_node().index();
+        _chunkNode[i] = vec.homeNodeIdx(i);
     }
 
     long min() { return (((long)_msb  ) << _shift) + _base[0]-1; } // the first key possible in this bucket
@@ -721,15 +719,15 @@ class BinaryMerge extends DTask<BinaryMerge> {
         cidx[row] = anyVec.elem2ChunkIdx(_rows[row]);  // binary search of espc array.  TODO: sort input row numbers to avoid
         offset[row] = (int)(_rows[row] - anyVec.espc()[cidx[row]]);
       }
-      Chunk c[] = new Chunk[anyVec.nChunks()];
-      for (int col=0; col<_fr.numCols(); col++) {
-        Vec v = _fr.vec(col);
-        for (int i=0; i<c.length; i++) c[i] = v.chunkKey(i).home() ? v.chunkForChunkIdx(i) : null;
-        for (int row=0; row<_rows.length; row++) {
-          _chk[col][row] = c[cidx[row]].atd(offset[row]);
+      VecAry vecs = _fr.vecs();
+      for(int i = 0; i < vecs._numCols; ++i){
+        if(vecs.isHome(i)){
+          ChunkAry c = vecs.chunkForChunkIdx(i);
+          for (int row=0; row<_rows.length; row++) {
+            _chk[i][row] = c.atd(offset[row],cidx[row]);
+          }
         }
       }
-
       // tell remote node to fill up Chunk[/*batch*/][/*rows*/]
       // perNodeRows[node] has perNodeRows[node].length batches of row numbers to fetch
       _rows=null;

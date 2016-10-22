@@ -72,7 +72,7 @@ public class GainsLift extends Iced {
               //             0      1    2    3    4     5        6          7    8   9   10          11    12   13   14    15, 16
               new double[]{0.001, 0.01, 0.1, 0.2, 0.25, 0.3,    1.0 / 3.0, 0.4, 0.5, 0.6, 2.0 / 3.0, 0.7, 0.75, 0.8, 0.9, 0.99, 0.999}));
       //HACK: hardcoded quantiles for simplicity (0.9,0.8,...,0.1,0)
-      double[] rq = _preds.pctiles(); //might do a full pass over the Vec
+      double[] rq = _preds.pctiles(0); //might do a full pass over the Vec
       _quantiles = new double[]{
               rq[14], rq[13], rq[11], rq[9], rq[8], rq[7], rq[5], rq[3], rq[2], 0 /*ignored*/
       };

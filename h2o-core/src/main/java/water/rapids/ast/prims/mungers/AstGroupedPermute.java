@@ -110,7 +110,7 @@ public class AstGroupedPermute extends AstPrimitive {
 
     @Override
     public void map(Chunk[] chks) {
-      String[] dom = chks[_permuteBy].vec().domain();
+      String[] dom = _fr.vecs().domain(_permuteBy);
       IcedHashMap<Long, IcedHashMap<Long, double[]>[]> grps = new IcedHashMap<>();
       for (int row = 0; row < chks[0]._len; ++row) {
         long jid = chks[_gbCols[0]].at8(row);

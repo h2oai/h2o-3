@@ -3,10 +3,7 @@ package water.rapids.ast.prims.mungers;
 import water.H2O;
 import water.Iced;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
@@ -299,15 +296,15 @@ public class AstGroup extends AstPrimitive {
 
     MRTask mrfill = new MRTask() {
       @Override
-      public void map(Chunk[] c, NewChunk[] ncs) {
-        int start = (int) c[0].start();
-        for (int i = 0; i < c[0]._len; ++i) {
+      public void map(ChunkAry c, NewChunkAry ncs) {
+        int start = (int) c._start;
+        for (int i = 0; i < c._len; ++i) {
           G g = grps[i + start];  // One Group per row
           int j;
           for (j = 0; j < g._gs.length; j++) // The Group Key, as a row
-            ncs[j].addNum(g._gs[j]);
+            ncs.addNum(j,g._gs[j]);
           for (int a = 0; a < aggs.length; a++)
-            ncs[j++].addNum(aggs[a]._fcn.postPass(g._dss[a], g._ns[a]));
+            ncs.addNum(j++,aggs[a]._fcn.postPass(g._dss[a], g._ns[a]));
         }
       }
     };
@@ -422,12 +419,12 @@ public class AstGroup extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk[] cs) {
+    public void map(ChunkAry cs) {
       // Groups found in this Chunk
       IcedHashMap<G, String> gs = new IcedHashMap<>();
       G gWork = new G(_gbCols.length, _aggs); // Working Group
       G gOld;                   // Existing Group to be filled in
-      for (int row = 0; row < cs[0]._len; row++) {
+      for (int row = 0; row < cs._len; row++) {
         // Find the Group being worked on
         gWork.fill(row, cs, _gbCols);            // Fill the worker Group for the hashtable lookup
         if (gs.putIfAbsent(gWork, "") == null) { // Insert if not absent (note: no race, no need for atomic)
@@ -436,7 +433,7 @@ public class AstGroup extends AstPrimitive {
         } else gOld = gs.getk(gWork);            // Else get existing group
 
         for (int i = 0; i < _aggs.length; i++) // Accumulate aggregate reductions
-          _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row));
+          _aggs[i].op(gOld._dss, gOld._ns, i, cs.atd(row,_aggs[i]._col));
       }
       // This is a racy update into the node-local shared table of groups
       reduce(gs);               // Atomically merge Group stats
@@ -479,9 +476,9 @@ public class AstGroup extends AstPrimitive {
       for (int i = 0; i < len; i++) _dss[i] = aggs[i].initVal();
     }
 
-    public G fill(int row, Chunk chks[], int cols[]) {
+    public G fill(int row, ChunkAry chks, int cols[]) {
       for (int c = 0; c < cols.length; c++) // For all selection cols
-        _gs[c] = chks[cols[c]].atd(row); // Load into working array
+        _gs[c] = chks.atd(row,cols[c]); // Load into working array
       _hash = hash();
       return this;
     }

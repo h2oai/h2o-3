@@ -89,8 +89,8 @@ public class FrameUtils {
     @Override public void setupLocal(){
       res = MemoryManager.malloc8d(N);
     }
-    @Override public void map(Chunk c){
-      final int off = (int)c.start();
+    @Override public void map(ChunkAry c){
+      final int off = (int)c._start;
       for(int i = 0; i < c._len; i = c.nextNZ(i))
         res[off+i] = c.atd(i);
     }
@@ -116,8 +116,8 @@ public class FrameUtils {
     @Override public void setupLocal(){
       res = MemoryManager.malloc4(N);
     }
-    @Override public void map(Chunk c){
-      final int off = (int)c.start();
+    @Override public void map(ChunkAry c){
+      final int off = (int)c._start;
       for(int i = 0; i < c._len; i = c.nextNZ(i))
         res[off+i] = (int)c.at8(i);
     }
@@ -181,12 +181,12 @@ public class FrameUtils {
       @Override
       public void compute2() {
         new MRTask() {
-          @Override public void map (Chunk[]cs){
+          @Override public void map (ChunkAry cs){
             final Random rng = RandomUtils.getRNG(0);
-            for (int c = 0; c < cs.length; c++) {
-              for (int r = 0; r < cs[c]._len; r++) {
-                rng.setSeed(_seed + 1234 * c ^ 1723 * (cs[c].start() + r));
-                if (rng.nextDouble() < _fraction) cs[c].setNA(r);
+            for (int c = 0; c < cs._numCols; c++) {
+              for (int r = 0; r < cs._len; r++) {
+                rng.setSeed(_seed + 1234 * c ^ 1723 * (cs._start + r));
+                if (rng.nextDouble() < _fraction) cs.setNA(r,c);
               }
             }
             _job.update(1);
@@ -203,7 +203,7 @@ public class FrameUtils {
       if (_fraction < 0 || _fraction > 1 ) throw new IllegalArgumentException("fraction must be between 0 and 1.");
       final Frame frame = DKV.getGet(_dataset);
       MissingInserterDriver mid = new MissingInserterDriver(frame);
-      int work = frame.vecs()[0].nChunks();
+      int work = frame.vecs().nChunks();
       return _job.start(mid, work);
     }
   }
@@ -218,9 +218,9 @@ public class FrameUtils {
     double reg = 1.0/chks.length;
     for(Chunk c :chks)
       if(c.isSparseNA()){
-        cnt += c.sparseLenNA()/(double)c.len();
+        cnt += c.sparseLenNA()/(double)c._len;
       } else if(c.isSparseZero()){
-        cnt += c.sparseLenZero()/(double)c.len();
+        cnt += c.sparseLenZero()/(double)c._len;
       } else cnt += 1;
     return cnt * reg;
   }
@@ -228,8 +228,9 @@ public class FrameUtils {
   public static double sparseRatio(Frame fr) {
     double reg = 1.0/fr.numCols();
     double res = 0;
-    for(Vec v:fr.vecs())
-      res += v.sparseRatio();
+    VecAry vecs = fr.vecs();
+    for(int c = 0; c < fr.numCols(); ++c)
+      res += vecs.sparseRatio(c);
     return res * reg;
   }
 
@@ -328,12 +329,12 @@ public class FrameUtils {
       long _size;
 
       @Override
-      public void map(Chunk[] cs) {
-        if (cs[0]._len == 0) return;
+      public void map(ChunkAry cs) {
+        if (cs._len == 0) return;
         Frame.CSVStream is = new Frame.CSVStream(cs, null, 1, false);
         try {
           _nNonEmpty++;
-          _size += is.getCurrentRowSize() * cs[0]._len;
+          _size += is.getCurrentRowSize() * cs._len;
         } catch (IOException e) {
           throw new RuntimeException(e);
         } finally {
@@ -407,15 +408,14 @@ public class FrameUtils {
       }
 
       @Override
-      public void map(Chunk[] cs) {
-        Chunk anyChunk = cs[0];
-        if (anyChunk.cidx() % _length > 0) {
+      public void map(ChunkAry cs) {
+        if (cs._cidx % _length > 0) {
           return;
         }
-        int partIdx = anyChunk.cidx() / _length;
+        int partIdx = cs._cidx / _length;
         String partPath = _path + "/part-m-" + String.valueOf(100000 + partIdx).substring(1);
         Frame.CSVStream is = new Frame.CSVStream(cs, _colNames, _length, false);
-        exportCSVStream(is, partPath, anyChunk.cidx());
+        exportCSVStream(is, partPath, cs._cidx);
       }
 
       @Override
@@ -466,10 +466,10 @@ public class FrameUtils {
       }
 
       @Override public void compute2() {
-        Vec[] frameVecs = _frame.vecs();
+        VecAry frameVecs = _frame.vecs();
         int numCategoricals = 0;
-        for (int i=0;i<frameVecs.length;++i)
-          if (frameVecs[i].isCategorical() && ArrayUtils.find(_skipCols, _frame._names[i])==-1)
+        for (int i=0;i<frameVecs._numCols;++i)
+          if (frameVecs.isCategorical(i) && ArrayUtils.find(_skipCols, _frame._names[i])==-1)
             numCategoricals++;
 
         Vec[] extraVecs = new Vec[_skipCols.length];
@@ -483,11 +483,11 @@ public class FrameUtils {
         int[] categorySizes = new int[numCategoricals];
         int numOutputColumns = 0;
         List<String> catnames= new ArrayList<>();
-        for (int i = 0, j = 0; i < frameVecs.length; ++i) {
+        for (int i = 0, j = 0; i < frameVecs._numCols; ++i) {
           if (ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
-          int numCategories = frameVecs[i].cardinality(); // Returns -1 if non-categorical variable
+          int numCategories = frameVecs.cardinality(i); // Returns -1 if non-categorical variable
           if (numCategories > 0) {
-            categoricalFrame.add(_frame.name(i), frameVecs[i]);
+            categoricalFrame.add(_frame.name(i), frameVecs.select(i));
             categorySizes[j] = numCategories + 1/* for NAs */;
             numOutputColumns += categorySizes[j];
             catnames.add(_frame.name(i) + ".missing(NA)");
@@ -496,7 +496,7 @@ public class FrameUtils {
             ++j;
           } else {
             catnames.add(_frame.name(i));
-            outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
+            outputFrame.add(_frame.name(i), frameVecs.select(i).makeCopy());
           }
         }
         OneHotConverter mrtask = new OneHotConverter(categorySizes);
@@ -573,10 +573,10 @@ public class FrameUtils {
       }
 
       @Override public void compute2() {
-        Vec[] frameVecs = _frame.vecs();
+        VecAry frameVecs = _frame.vecs();
         int numCategoricals = 0;
-        for (int i=0;i<frameVecs.length;++i)
-          if (frameVecs[i].isCategorical() && (_skipCols==null || ArrayUtils.find(_skipCols, _frame._names[i])==-1))
+        for (int i=0;i<frameVecs._numCols;++i)
+          if (frameVecs.isCategorical(i) && (_skipCols==null || ArrayUtils.find(_skipCols, _frame._names[i])==-1))
             numCategoricals++;
 
         Vec[] extraVecs = _skipCols==null?null:new Vec[_skipCols.length];
@@ -591,16 +591,16 @@ public class FrameUtils {
         Frame outputFrame = new Frame(_destKey);
         int[] binaryCategorySizes = new int[numCategoricals];
         int numOutputColumns = 0;
-        for (int i = 0, j = 0; i < frameVecs.length; ++i) {
+        for (int i = 0, j = 0; i < frameVecs._numCols; ++i) {
           if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
-          int numCategories = frameVecs[i].cardinality(); // Returns -1 if non-categorical variable
+          int numCategories = frameVecs.cardinality(i); // Returns -1 if non-categorical variable
           if (numCategories > 0) {
-            categoricalFrame.add(_frame.name(i), frameVecs[i]);
+            categoricalFrame.add(_frame.name(i), frameVecs.select(i));
             binaryCategorySizes[j] = 1 + MathUtils.log2(numCategories - 1 + 1/* for NAs */);
             numOutputColumns += binaryCategorySizes[j];
             ++j;
           } else
-            outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
+            outputFrame.add(_frame.name(i), frameVecs.select(i).makeCopy());
         }
         BinaryConverter mrtask = new BinaryConverter(binaryCategorySizes);
         Frame binaryCols = mrtask.doAll(numOutputColumns, Vec.T_NUM, categoricalFrame).outputFrame();
@@ -661,19 +661,19 @@ public class FrameUtils {
       }
 
       @Override public void compute2() {
-        Vec[] frameVecs = _frame.vecs();
+        VecAry frameVecs = _frame.vecs();
         Vec[] extraVecs = new Vec[_skipCols==null?0:_skipCols.length];
         for (int i=0; i< extraVecs.length; ++i) {
           Vec v = _skipCols==null||_skipCols.length<=i?null:_frame.vec(_skipCols[i]); //can be null
           if (v!=null) extraVecs[i] = v;
         }
         Frame outputFrame = new Frame(_destKey);
-        for (int i = 0; i < frameVecs.length; ++i) {
+        for (int i = 0; i < frameVecs._numCols; ++i) {
           if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
-          if (frameVecs[i].isCategorical())
-            outputFrame.add(_frame.name(i), _tev.toEigenVec(frameVecs[i]));
+          if (frameVecs.isCategorical(i))
+            outputFrame.add(_frame.name(i), _tev.toEigenVec(frameVecs.select(i)));
           else
-            outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
+            outputFrame.add(_frame.name(i), frameVecs.select(i).makeCopy());
         }
         for (int i=0;i<extraVecs.length;++i) {
           if (extraVecs[i]!=null)

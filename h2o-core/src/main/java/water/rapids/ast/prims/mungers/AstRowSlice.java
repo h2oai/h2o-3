@@ -2,6 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.*;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
@@ -70,11 +71,12 @@ public class AstRowSlice extends AstPrimitive {
 
       returningFrame = new MRTask() {
         @Override
-        public void map(Chunk[] cs, NewChunk[] ncs) {
+        public void map(ChunkAry cs, NewChunkAry ncs) {
+          BufferedString bs = new BufferedString();
           if (nums.cnt() == 0) return;
           if (ls != null && ls.length == 0) return;
-          long start = cs[0].start();
-          long end = start + cs[0]._len;
+          long start = cs._start;
+          long end = start + cs._len;
           long min = ls == null ? (long) nums.min() : ls[0], max = ls == null ? (long) nums.max() - 1 : ls[ls.length - 1]; // exclusive max to inclusive max when stride == 1
           //     [ start, ...,  end ]     the chunk
           //1 []                          nums out left:  nums.max() < start
@@ -84,13 +86,13 @@ public class AstRowSlice extends AstPrimitive {
           //5                   [ nums ]  nums run rite:  start <= nums.min() && end < nums.max()
           if (!(max < start || min > end)) {   // not situation 1 or 2 above
             long startOffset = (min > start ? min : start);  // situation 4 and 5 => min > start;
-            for (int i = (int) (startOffset - start); i < cs[0]._len; ++i) {
+            for (int i = (int) (startOffset - start); i < cs._len; ++i) {
               if ((ls == null && nums.has(start + i)) || (ls != null && Arrays.binarySearch(ls, start + i) >= 0)) {
-                for (int c = 0; c < cs.length; ++c) {
-                  if (cs[c] instanceof CStrChunk) ncs[c].addStr(cs[c], i);
-                  else if (cs[c] instanceof C16Chunk) ncs[c].addUUID(cs[c], i);
-                  else if (cs[c].isNA(i)) ncs[c].addNA();
-                  else ncs[c].addNum(cs[c].atd(i));
+                for (int c = 0; c < cs._numCols; ++c) {
+                  if (cs.isString(c)) ncs.addStr(c,cs.atStr(bs,i,c));
+                  else if (cs.isUUID(c)) ncs.addUUID(c,cs.at16l(i,c), cs.at16h(i,c));
+                  else if (cs.isNA(i,c)) ncs.addNA(c);
+                  else ncs.addNum(c,cs.atd(i,c));
                 }
               }
             }

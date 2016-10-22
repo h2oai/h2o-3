@@ -2,10 +2,7 @@ package water.rapids.ast.prims.advmath;
 
 import sun.misc.Unsafe;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.UtilUnsafe;
 import water.rapids.ast.prims.reducers.AstMad;
 import water.rapids.Env;
@@ -104,18 +101,18 @@ public class AstHist extends AstPrimitive {
     Vec layoutVec = Vec.makeZero(brks.length);
     fr2 = new MRTask() {
       @Override
-      public void map(Chunk[] c, NewChunk[] nc) {
-        int start = (int) c[0].start();
-        for (int i = 0; i < c[0]._len; ++i) {
-          nc[0].addNum(brks[i + start]);
+      public void map(ChunkAry c, NewChunkAry nc) {
+        int start = (int) c._start;
+        for (int i = 0; i < c._start; ++i) {
+          nc.addNum(0,brks[i + start]);
           if (i == 0) {
-            nc[1].addNA();
-            nc[2].addNA();
-            nc[3].addNA();
+            nc.addNA(1);
+            nc.addNA(2);
+            nc.addNA(3);
           } else {
-            nc[1].addNum(cnts[(i - 1) + start]);
-            nc[2].addNum(mids_true[(i - 1) + start]);
-            nc[3].addNum(mids[(i - 1) + start]);
+            nc.addNum(1,cnts[(i - 1) + start]);
+            nc.addNum(2,mids_true[(i - 1) + start]);
+            nc.addNum(3,mids[(i - 1) + start]);
           }
         }
       }

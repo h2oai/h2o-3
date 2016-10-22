@@ -2,6 +2,7 @@ package water.rapids;
 
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import java.util.ArrayList;
@@ -228,17 +229,17 @@ public class Merge {
     final String[][] doms = new String[numColsInResult][];
     final String[] names = new String[numColsInResult];
     for (int j=0; j<numLeftCols; j++) {
-      types[j] = leftFrame.vec(j).get_type();
+      types[j] = leftFrame.vecs().get_type(j);
       doms[j] = leftFrame.domains()[j];
       names[j] = leftFrame.names()[j];
     }
     for (int j=0; j<riteFrame.numCols()-numJoinCols; j++) {
-      types[numLeftCols + j] = riteFrame.vec(j+numJoinCols).get_type();
+      types[numLeftCols + j] = riteFrame.vecs().get_type(j+numJoinCols);
       doms[numLeftCols + j] = riteFrame.domains()[j+numJoinCols];
       names[numLeftCols + j] = riteFrame.names()[j+numJoinCols];
     }
     Key<Vec> key = Vec.newKey();
-    Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
+    Vec vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc),types.length).makeCons(numColsInResult, 0, doms, types);
     System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
 
     System.out.print("Finally stitch together by overwriting dummies ...");
@@ -278,18 +279,14 @@ public class Merge {
       _chunkBatch   = chunkBatch;
     }
     @Override
-    public void map(Chunk[] cs) {
-      int chkIdx = cs[0].cidx();
-      Futures fs = new Futures();
-      for (int i=0;i<cs.length;++i) {
-        Key destKey = cs[i].vec().chunkKey(chkIdx);
-        assert(cs[i].len() == _chunkSizes[chkIdx]);
+    public void map(ChunkAry cs) {
+      int chkIdx = cs._cidx;
+      for (int i=0;i<cs._numCols;++i) {
         Key k = BinaryMerge.getKeyForMSBComboPerCol(_chunkLeftMSB[chkIdx], _chunkRightMSB[chkIdx], i, _chunkBatch[chkIdx]);
         Chunk ck = DKV.getGet(k);
-        DKV.put(destKey, ck, fs, /*don't cache*/true);
-        DKV.remove(k);
+        DKV.remove(k,_fs);
+        cs.set(i,ck);
       }
-      fs.blockForPending();
     }
   }
 }

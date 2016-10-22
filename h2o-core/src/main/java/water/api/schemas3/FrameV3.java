@@ -148,12 +148,12 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
       
       // Histogram data is only computed on-demand.  By default here we do NOT
       // compute it, but will return any prior computed & cached histogram.
-      histogram_bins  = vec.lazy_bins();
-      histogram_base  = histogram_bins ==null ? 0 : vec.base();
-      histogram_stride= histogram_bins ==null ? 0 : vec.stride();
-      percentiles     = histogram_bins ==null ? null : vec.pctiles();
+      histogram_bins  = vec.lazy_bins(0);
+      histogram_base  = histogram_bins ==null ? 0 : vec.base(0);
+      histogram_stride= histogram_bins ==null ? 0 : vec.stride(0);
+      percentiles     = histogram_bins ==null ? null : vec.pctiles(0);
 
-      type  = vec.isCategorical() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
+      type  = vec.isCategorical() ? "enum" : vec.isUUID(0) ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime(0) ? "time" : "int") : "real");
       domain = vec.domain();
       if (vec.isCategorical()) {
         domain_cardinality = domain.length;
@@ -232,18 +232,16 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
     this.column_count = column_count;
 
     this.columns = new ColV3[column_count];
-    Vec[] vecs = f.vecs();
+    VecAry vecs = f.vecs();
     Futures fs = new Futures();
     // Compute rollups in parallel as needed, by starting all of them and using
     // them when filling in the ColV3 Schemas
+    vecs.startRollupStats(fs,false);
     for( int i = 0; i < column_count; i++ )
-      vecs[column_offset + i].startRollupStats(fs);
-    for( int i = 0; i < column_count; i++ )
-      columns[i] = new ColV3(f._names[column_offset + i], vecs[column_offset + i], this.row_offset, this.row_count);
+      columns[i] = new ColV3(f._names[column_offset + i], vecs.select(column_offset + i), this.row_offset, this.row_count);
     fs.blockForPending();
-    this.is_text = f.numCols()==1 && vecs[0] instanceof ByteVec;
+    this.is_text = f.numCols()==1 && vecs.vecs()[0] instanceof ByteVec;
     this.default_percentiles = Vec.PERCENTILES;
-
     ChunkSummary cs = FrameUtils.chunkSummary(f);
 
     this.chunk_summary = new TwoDimTableV3(cs.toTwoDimTableChunkTypes());
@@ -275,7 +273,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
       if (str == null) return "-";
       return "<b style=\"font-family:monospace;\">" + str + "</b>";
     } else {
-      Chunk chk = c._vec.chunkForRow(row_offset);
+      Chunk chk = c._vec.chunkForRow(row_offset).getChunk(0);
       return PrettyPrint.number(chk, d, precision);
     }
   }

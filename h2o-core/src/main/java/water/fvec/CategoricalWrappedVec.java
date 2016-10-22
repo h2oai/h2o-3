@@ -45,8 +45,8 @@ public class CategoricalWrappedVec extends WrappedVec {
     return tmp._map;
   }
 
-  @Override public Chunk chunkForChunkIdx(int cidx) {
-    return new CategoricalWrappedChunk(masterVec().chunkForChunkIdx(cidx), this);
+  @Override public DBlock chunkIdx(int cidx) {
+    return new DBlock(new CategoricalWrappedChunk(masterVec().chunkIdx(cidx)._cs[0], this));
   }
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in
@@ -71,7 +71,7 @@ public class CategoricalWrappedVec extends WrappedVec {
     // Identity? Build the cheapo non-map
     if( from==to || Arrays.equals(from,to) ) {
       _map = ArrayUtils.seq(0,to.length);
-      setDomain(to);
+      setDomain(0,to);
       return;
     }
 
@@ -79,7 +79,7 @@ public class CategoricalWrappedVec extends WrappedVec {
     // to[] mapping has the set of unique numbers, we need to map from those
     // numbers to the index to the numbers.
     if( from==null ) {
-      setDomain(to);
+      setDomain(0,to);
       if( fromIsBad ) { _map = new int[0]; return; }
       int min = Integer.valueOf(to[0]);
       int max = Integer.valueOf(to[to.length-1]);
@@ -133,7 +133,7 @@ public class CategoricalWrappedVec extends WrappedVec {
         actualLen = extra;
       }
     }
-    setDomain(Arrays.copyOf(ss, actualLen));
+    setDomain(0,Arrays.copyOf(ss, actualLen));
   }
 
   @Override
@@ -147,40 +147,52 @@ public class CategoricalWrappedVec extends WrappedVec {
     final transient int   _p;
 
     CategoricalWrappedChunk(Chunk c, CategoricalWrappedVec vec) {
-      _c  = c; set_len(_c._len);
-      _start = _c._start; _vec = vec; _cidx = _c._cidx;
+      _c  = c; _len = _c._len;
       _map = vec._map; _p = vec._p;
     }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
     // master Chunk, so no AIOOBE.  Missing values in the master Chunk return
     // the usual NaN.
-    @Override protected double atd_impl(int idx) { return _c.isNA_impl(idx) ? Double.NaN : at8_impl(idx); }
+    @Override public double atd(int idx) { return _c.isNA(idx) ? Double.NaN : at8(idx); }
 
     // Returns the mapped value.  {@code _map} covers all the values in the
     // master Chunk, so no AIOOBE.  Missing values in the master Chunk throw
     // the normal missing-value exception when loading from the master.
-    @Override protected long at8_impl(int idx) {
-      int at8 = (int)_c.at8_impl(idx);
+    @Override public long at8(int idx) {
+      int at8 = (int)_c.at8(idx);
       if( at8 >= 0 ) return _map[at8];
       else return _map[-1*at8+_p];
     }
+    @Override public int at4(int idx) {
+      int at4 = _c.at4(idx);
+      if( at4 >= 0 ) return _map[at4];
+      else return _map[-1*at4+_p];
+    }
+
+    @Override
+    public boolean isNA(int idx) {return _c.isNA(idx);}
 
     // Returns true if the masterVec is missing, false otherwise
-    @Override protected boolean isNA_impl(int idx) { return _c.isNA_impl(idx); }
-    @Override boolean set_impl(int idx, long l)   { return false; }
-    @Override boolean set_impl(int idx, double d) { return false; }
-    @Override boolean set_impl(int idx, float f)  { return false; }
-    @Override boolean setNA_impl(int idx)         { return false; }
+    @Override protected boolean set_impl(int idx, long l)   { return false; }
+    @Override protected boolean set_impl(int idx, double d) { return false; }
+    @Override protected boolean set_impl(int idx, float f)  { return false; }
+    @Override protected boolean setNA_impl(int idx)         { return false; }
     @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
       for( int i=0; i< _len; i++ )
         if(isNA(i))nc.addNA();
-        else nc.addNum(at8(i),0);
+        else nc.addNum(at4(i),0);
       return nc;
     }
     public static AutoBuffer write_impl(CategoricalWrappedVec v,AutoBuffer bb) { throw water.H2O.fail(); }
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
+
+    @Override
+    void add2Chunk(ChunkAry nchks, int dstCol, int[] rows) {
+      for(int r:rows)
+        nchks.addInteger(at4(r));
+    }
+
     @Override public boolean hasNA() { return false; }
   }
 }

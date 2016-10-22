@@ -33,7 +33,7 @@ public class AstListTimeZones extends AstPrimitive {
     double ds[] = new double[domain.length];
     for (int i = 0; i < domain.length; i++) ds[i] = i;
     Vec vec = Vec.makeVec(ds, Vec.VectorGroup.VG_LEN1.addVec());
-    vec.setDomain(domain);
+    vec.setDomain(0,domain);
     return new ValFrame(new Frame(new String[]{"Timezones"}, new Vec[]{vec}));
   }
 }

@@ -34,18 +34,18 @@ public class CNAXIChunk extends CXIChunk {
     return _sparseLen;
   }
 
-  @Override protected long at8_impl(int idx) {
+  @Override public long at8(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx) throw new IllegalArgumentException("at8_abs but value is missing");
     return getIValue(off);
   }
-  @Override protected double atd_impl(int idx) {
+  @Override public double atd(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx)return Double.NaN;
     return getIValue(off);
   }
   
-  @Override protected boolean isNA_impl( int i ) {
+  @Override public boolean isNA( int i ) {
     int off = findOffset(i);
     return getId(off) != i;
   }
@@ -62,7 +62,7 @@ public class CNAXIChunk extends CXIChunk {
       nc.addNAs(id-nc._len);
       nc.addNum(v,0);
     }
-    nc.set_len(_len);
+    nc._len = _len;
     return nc;
   }
 

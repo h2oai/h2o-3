@@ -12,7 +12,7 @@ import java.util.NoSuchElementException;
 /**
  * Created by tomas on 10/5/16.
  */
-public class VecAry extends Vec {
+public class VecAry extends Vec implements Iterable<Vec> {
   int [] _vecIds;
   int [] _colFilter; // positive, negative or permuted positive column filter or null
   // permutation  ChunkAry id -> (flattened) Vec[] id.
@@ -76,6 +76,13 @@ public class VecAry extends Vec {
   }
 
 
+  @Override public DBlock chunkIdx(int cidx){
+    if(_numCols == 1){ // needed for wrapped vecs, otherwise should not be used
+      ChunkAry cary = chunkForChunkIdx(cidx);
+      return new DBlock(cary.getChunk(0));
+    }
+    throw new UnsupportedOperationException();
+  }
   @Override
   public ChunkAry chunkForChunkIdx(int cidx) {
     fetchVecs();
@@ -83,7 +90,7 @@ public class VecAry extends Vec {
     int s = 0;
     Chunk [] csall = new Chunk[numCols()];
     for(int i = 0; i < _vecIds.length;++i) {
-      DBlock db = DKV.getGet(Vec.setVecId(k,_vecIds[i]));
+      DBlock db = _vecs[i].chunkIdx(cidx);
       int n = _vecs[i].numCols();
       System.arraycopy(db._cs,0,csall,s,n);
       s += n;
@@ -92,7 +99,8 @@ public class VecAry extends Vec {
   }
 
   @Override // update changed blocks, need to reverse the mapping
-  Futures closeChunk(int cidx, ChunkAry c, Futures fs) {
+  Futures closeChunk(ChunkAry c, Futures fs) {
+    int cidx = c._cidx;
     // columns changed
     Vec [] vecs = fetchVecs();
     int nextId = 0;
@@ -274,4 +282,23 @@ public class VecAry extends Vec {
   }
   @Override
   public Vec[] vecs() {return fetchVecs();}
+
+  // TODO: remove in the future
+  // Not very efficient. I don't want to be fixing all for(Vec v:fr.vecs()) loops right now. Probably should be removed later.
+  @Override
+  public Iterator<Vec> iterator() {
+    return new Iterator<Vec>() {
+      int _id;
+      @Override
+      public boolean hasNext() {
+        return _id < _numCols;
+      }
+
+      @Override
+      public Vec next() {
+        return select(_id++);
+      }
+      @Override public void remove(){throw new UnsupportedOperationException();}
+    };
+  }
 }

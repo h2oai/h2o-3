@@ -5,6 +5,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -67,12 +68,12 @@ public class AstCorrelation extends AstPrimitive {
   private ValNum scalar(Frame frx, Frame fry, Mode mode) {
     if (frx.numCols() != fry.numCols())
       throw new IllegalArgumentException("Single rows must have the same number of columns, found " + frx.numCols() + " and " + fry.numCols());
-    Vec vecxs[] = frx.vecs();
-    Vec vecys[] = fry.vecs();
+    VecAry vecxs = frx.vecs();
+    VecAry vecys = fry.vecs();
     double xmean = 0, ymean = 0, xvar = 0, yvar = 0, xsd = 0, ysd = 0, ncols = frx.numCols(), NACount = 0, xval, yval, ss = 0;
     for (int r = 0; r < ncols; r++) {
-      xval = vecxs[r].at(0);
-      yval = vecys[r].at(0);
+      xval = vecxs.at(0,r);
+      yval = vecys.at(0,r);
       if (Double.isNaN(xval) || Double.isNaN(yval))
         NACount++;
       else {
@@ -84,14 +85,14 @@ public class AstCorrelation extends AstPrimitive {
     ymean /= (ncols - NACount);
 
     for (int r = 0; r < ncols; r++) {
-      xval = vecxs[r].at(0);
-      yval = vecys[r].at(0);
+      xval = vecxs.at(0,r);
+      yval = vecys.at(0,r);
       if (!(Double.isNaN(xval) || Double.isNaN(yval))) {
         //Compute variance of x and y vars
-        xvar += Math.pow((vecxs[r].at(0) - xmean), 2);
-        yvar += Math.pow((vecys[r].at(0) - ymean), 2);
+        xvar += Math.pow((vecxs.at(0,r) - xmean), 2);
+        yvar += Math.pow((vecys.at(0,r) - ymean), 2);
         //Compute sum of squares of x and y
-        ss += (vecxs[r].at(0) - xmean) * (vecys[r].at(0) - ymean);
+        ss += (vecxs.at(0,r) - xmean) * (vecys.at(0,r) - ymean);
       }
     }
     xsd = Math.sqrt(xvar / (frx.numRows())); //Sample Standard Deviation
@@ -104,10 +105,10 @@ public class AstCorrelation extends AstPrimitive {
     }
 
     for (int r = 0; r < ncols; r++) {
-      xval = vecxs[r].at(0);
-      yval = vecys[r].at(0);
+      xval = vecxs.at(0,r);
+      yval = vecys.at(0,r);
       if (!(Double.isNaN(xval) || Double.isNaN(yval)))
-        ss += (vecxs[r].at(0) - xmean) * (vecys[r].at(0) - ymean);
+        ss += (vecxs.at(0,r) - xmean) * (vecys.at(0,r) - ymean);
     }
 
     return new ValNum(ss / cor_denom); //Pearson's Correlation Coefficient
@@ -117,14 +118,14 @@ public class AstCorrelation extends AstPrimitive {
   // Compute correlation between all columns from each Frame against each other.
   // Return a matrix of correlations which is frx.numCols wide and fry.numCols tall.
   private Val array(Frame frx, Frame fry, Mode mode) {
-    Vec[] vecxs = frx.vecs();
-    int ncolx = vecxs.length;
-    Vec[] vecys = fry.vecs();
-    int ncoly = vecys.length;
+    VecAry vecxs = frx.vecs();
+    int ncolx = vecxs._numCols;
+    VecAry vecys = fry.vecs();
+    int ncoly = vecys._numCols;
 
     if (mode.equals(Mode.AllObs)) {
-      for (Vec v : vecxs)
-        if (v.naCnt() != 0)
+      for (int i = 0; i < ncolx; ++i)
+        if (vecxs.naCnt(i) != 0)
           throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
     }
 
@@ -139,7 +140,7 @@ public class AstCorrelation extends AstPrimitive {
 
     // Launch tasks; each does all Xs vs one Y
     for (int y = 0; y < ymeans.length; y++)
-      cvs[y] = new CorTask(ymeans[y], xmeans,true).dfork(new Frame(vecys[y]).add(frx));
+      cvs[y] = new CorTask(ymeans[y], xmeans,true).dfork(new Frame(vecys.select(y)).add(frx));
 
     // 1-col returns scalar
     if (ncolx == 1 && ncoly == 1) {

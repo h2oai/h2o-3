@@ -6,6 +6,7 @@ import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.fvec.ByteVec;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 
 /**
  * The minimal amount of information on a Frame.
@@ -23,13 +24,13 @@ public class FrameSynopsisV3 extends FrameBaseV3<Iced, FrameSynopsisV3> {
   public long columns;
 
   public FrameSynopsisV3(Frame fr) {
-    Vec[] vecs = fr.vecs();
+    VecAry vecs = fr.vecs();
 
     frame_id = new FrameKeyV3(fr._key);
     _fr = fr;
     rows = fr.numRows();
-    columns = vecs.length;
+    columns = vecs._numCols;
     byte_size = fr.byteSize();
-    is_text = fr.numCols()==1 && vecs[0] instanceof ByteVec;
+    is_text = fr.numCols()==1 && vecs.vecs()[0] instanceof ByteVec;
   }
 }

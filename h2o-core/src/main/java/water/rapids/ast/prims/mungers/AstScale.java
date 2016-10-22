@@ -2,6 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
@@ -75,10 +76,10 @@ public class AstScale extends AstPrimitive {
     final double[] fmults = mults; // Make final copy for closure
     new MRTask() {
       @Override
-      public void map(Chunk[] cs) {
-        for (int i = 0; i < cs.length; i++)
-          for (int row = 0; row < cs[i]._len; row++)
-            cs[i].set(row, (cs[i].atd(row) - fmeans[i]) * fmults[i]);
+      public void map(ChunkAry cs) {
+        for (int i = 0; i < cs._numCols; i++)
+          for (int row = 0; row < cs._len; row++)
+            cs.set(row,i, (cs.atd(row,i) - fmeans[i]) * fmults[i]);
       }
     }.doAll(fr);
     return new ValFrame(fr);

@@ -2,6 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
@@ -31,24 +32,13 @@ public class AstAsFactor extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
-    Vec[] nvecs = new Vec[ary.numCols()];
-
+    VecAry vary = ary.vecs();
     // Type check  - prescreen for correct types
-    for (Vec v : ary.vecs())
-      if (!(v.isCategorical() || v.isString() || v.isNumeric()))
+    for (int i = 0; i < vary.numCols(); ++i)
+      if (!(vary.isCategorical(i) || vary.isString(i) || vary.isNumeric(i)))
         throw new IllegalArgumentException("asfactor() requires a string, categorical, or numeric column. "
             + "Received " + ary.anyVec().get_type_str()
             + ". Please convert column to a string or categorical first.");
-    Vec vv;
-    for (int c = 0; c < nvecs.length; ++c) {
-      vv = ary.vec(c);
-      try {
-        nvecs[c] = vv.toCategoricalVec();
-      } catch (Exception e) {
-        VecUtils.deleteVecs(nvecs, c);
-        throw e;
-      }
-    }
-    return new ValFrame(new Frame(ary._names, nvecs));
+    return new ValFrame(new Frame(ary._names, new VecAry(vary.toCategoricalVec())));
   }
 }

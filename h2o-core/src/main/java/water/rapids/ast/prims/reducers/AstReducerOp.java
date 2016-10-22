@@ -44,8 +44,9 @@ public abstract class AstReducerOp extends AstPrimitive {
     @Override
     public void map(Chunk chks[]) {
       int rows = chks[0]._len;
-      for (Chunk C : chks) {
-        if (!C.vec().isNumeric()) throw new IllegalArgumentException("Numeric columns only");
+      for (int i = 0; i < chks.length; ++i) {
+        Chunk C = chks[i];
+        if (!_fr.vecs().isNumeric(i)) throw new IllegalArgumentException("Numeric columns only");
         double sum = _d;
         for (int r = 0; r < rows; r++)
           sum = op(sum, C.atd(r));

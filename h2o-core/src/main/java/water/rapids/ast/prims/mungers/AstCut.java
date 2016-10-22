@@ -43,7 +43,7 @@ public class AstCut extends AstPrimitive {
     final boolean rite = asts[5].exec(env).getNum() == 1;
     final int digits = Math.min((int) asts[6].exec(env).getNum(), 12); // cap at 12
 
-    if (fr.vecs().length != 1 || fr.vecs()[0].isCategorical())
+    if (fr.vecs()._numCols != 1 || fr.vecs().isCategorical(0))
       throw new IllegalArgumentException("First argument must be a numeric column vector");
 
     double fmin = fr.anyVec().min();

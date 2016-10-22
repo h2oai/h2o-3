@@ -4,7 +4,6 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.MRTask;
-import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
 import water.rapids.Env;
 import water.rapids.ast.params.AstNum;
@@ -33,20 +32,18 @@ import water.rapids.ast.params.AstNum;
  * @author spencer
  */
 public class TransformWrappedVec extends WrappedVec {
-
-  private final Key<Vec>[] _masterVecKeys;
-  private transient Vec[] _masterVecs;
+  private transient VecAry _masterVecs;
   private final AstRoot _fun;
 
-  public TransformWrappedVec(Key key, int rowLayout, AstRoot fun, Key<Vec>... masterVecKeys) {
+  public TransformWrappedVec(Key key, int rowLayout, AstRoot fun, VecAry masterVecs) {
     super(key, rowLayout, null);
     _fun=fun;
-    _masterVecKeys = masterVecKeys;
+    _masterVec = masterVecs;
     DKV.put(this);
   }
 
-  public TransformWrappedVec(Vec v, AstRoot fun) {
-    this(v.group().addVec(), v._rowLayout, fun, v._key);
+  public TransformWrappedVec(VecAry v, AstRoot fun) {
+    this(v.group().addVec(), v._rowLayout, fun, v);
   }
 
   public Vec makeVec() {
@@ -60,38 +57,29 @@ public class TransformWrappedVec extends WrappedVec {
     return v;
   }
 
-
-
-  @Override public Chunk chunkForChunkIdx(int cidx) {
-    Chunk[] cs = new Chunk[_masterVecKeys.length];
-    if( _masterVecs==null )
-      _masterVecs = new Vec[_masterVecKeys.length];
-    for(int i=0; i<cs.length;++i)
-      cs[i] = (_masterVecs[i]!=null?_masterVecs[i]:(_masterVecs[i] = _masterVecKeys[i].get())).chunkForChunkIdx(cidx);
-    return new TransformWrappedChunk(_fun, this, cs);
+  @Override public Vec doCopy() {
+    Vec v = new TransformWrappedVec(group().addVec(), _rowLayout, _fun, _masterVecs);
+    v.setDomain(0,domain()==null?null:domain().clone());
+    return v;
   }
 
-  @Override public Vec doCopy() {
-    Vec v = new TransformWrappedVec(group().addVec(), _rowLayout, _fun, _masterVecKeys);
-    v.setDomain(domain()==null?null:domain().clone());
-    return v;
+  @Override
+  public DBlock chunkIdx(int cidx) {
+    return new DBlock(new TransformWrappedChunk(_fun, this, _masterVecs.chunkForChunkIdx(cidx)));
   }
 
   public static class TransformWrappedChunk extends Chunk {
     public final AstRoot _fun;
-    public final transient Chunk _c[];
+    public final transient ChunkAry _c;
 
     private final AstRoot[] _asts;
     private final Env _env;
 
-    TransformWrappedChunk(AstRoot fun, Vec transformWrappedVec, Chunk... c) {
-
+    TransformWrappedChunk(AstRoot fun, Vec transformWrappedVec, ChunkAry c) {
       // set all the chunk fields
-      _c = c; set_len(_c[0]._len);
-      _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
-
+      _c = c; _len = (_c._len);
       _fun=fun;
-      _asts = new AstRoot[1+_c.length];
+      _asts = new AstRoot[1+_c._numCols];
       _asts[0]=_fun;
       for(int i=1;i<_asts.length;++i)
         _asts[i] = new AstNum(0);
@@ -100,22 +88,22 @@ public class TransformWrappedVec extends WrappedVec {
 
 
     // applies the function to a row of doubles
-    @Override public double atd_impl(int idx) {
-      if( null==_fun ) return _c[0].atd(idx);  // simple wrapping of 1 vec
+    @Override public double atd(int idx) {
+      if( null==_fun ) return _c.atd(idx);  // simple wrapping of 1 vec
       for(int i=1;i<_asts.length;++i)
-        ((AstNum)_asts[i]).setNum(_c[i-1].atd(idx)); // = new AstNum(_c[i-1].atd(idx));
+        ((AstNum)_asts[i]).setNum(_c.atd(idx,i-1)); // = new AstNum(_c[i-1].atd(idx));
       return _fun.apply(_env,_env.stk(),_asts).getNum();   // Make the call per-row
     }
 
-    @Override public long at8_impl(int idx) { throw H2O.unimpl(); }
-    @Override public boolean isNA_impl(int idx) { return Double.isNaN(atd_impl(idx)); }  // ouch, not quick! runs thru atd_impl
+    @Override public long at8(int idx) { throw H2O.unimpl(); }
+    @Override public boolean isNA(int idx) { return Double.isNaN(atd(idx)); }  // ouch, not quick! runs thru atd
     // Returns true if the masterVec is missing, false otherwise
     @Override public boolean set_impl(int idx, long l)   { return false; }
     @Override public boolean set_impl(int idx, double d) { return false; }
     @Override public boolean set_impl(int idx, float f)  { return false; }
     @Override public boolean setNA_impl(int idx)         { return false; }
     @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc.set_len(0));
+      nc.set_sparseLen(nc._len = 0);
       for( int i=0; i< _len; i++ )
         if( isNA(i) ) nc.addNA();
         else          nc.addNum(atd(i));

@@ -21,7 +21,7 @@ public class CXIChunk extends Chunk {
 
   protected CXIChunk(int len, int valsz, byte [] buf){
     assert (valsz == 0 || valsz == 1 || valsz == 2 || valsz == 4 || valsz == 8);
-    set_len(len);
+    _len = len;
     int log = 0;
     while((1 << log) < valsz)++log;
     assert valsz == 0 || (1 << log) == valsz;
@@ -68,7 +68,7 @@ public class CXIChunk extends Chunk {
       else
         nc.addNum(v,0);
     }
-    nc.set_len(_len);
+    nc._len = (_len);
     assert nc._sparseLen == _sparseLen;
     return nc;
   }
@@ -162,12 +162,12 @@ public class CXIChunk extends Chunk {
     return _sparseLen;
   }
   
-  @Override boolean set_impl(int idx, long l)   { return false; }
-  @Override boolean set_impl(int idx, double d) { return false; }
-  @Override boolean set_impl(int idx, float f ) { return false; }
-  @Override boolean setNA_impl(int idx)         { return false; }
+  @Override protected boolean set_impl(int idx, long l)   { return false; }
+  @Override protected boolean set_impl(int idx, double d) { return false; }
+  @Override protected boolean set_impl(int idx, float f ) { return false; }
+  @Override protected boolean setNA_impl(int idx)         { return false; }
 
-  @Override protected long at8_impl(int idx) {
+  @Override public long at8(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx)return 0;
     long v = getIValue(off);
@@ -175,14 +175,14 @@ public class CXIChunk extends Chunk {
       throw new IllegalArgumentException("at8_abs but value is missing");
     return v;
   }
-  @Override protected double atd_impl(int idx) {
+  @Override public double atd(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx)return 0;
     long v =  getIValue(off);
     return (v == NAS[_valsz_log])?Double.NaN:v;
   }
 
-  @Override protected boolean isNA_impl( int i ) {
+  @Override public boolean isNA( int i ) {
     int off = findOffset(i);
     return getId(off) == i && getIValue(off) == NAS[_valsz_log];
   }
@@ -246,8 +246,7 @@ public class CXIChunk extends Chunk {
   }
 
   @Override public final void initFromBytes () {
-    _start = -1;  _cidx = -1;
-    set_len(UnsafeUtils.get4(_mem,0));
+    _len = (UnsafeUtils.get4(_mem,0));
     _ridsz = _mem[4];
     _valsz = _mem[5];
     int x = _valsz;

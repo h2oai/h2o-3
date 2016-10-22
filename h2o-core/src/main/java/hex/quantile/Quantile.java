@@ -74,19 +74,18 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
         // ---
         // Run the main Quantile Loop
-        Vec vecs[] = train().vecs();
+        VecAry vecs = train().vecs();
         for( int n=0; n<_ncols; n++ ) {
           if( stop_requested() ) return; // Stopped/cancelled
-          Vec vec = vecs[n];
-          if (vec.isBad() || vec.isCategorical() || vec.isString() || vec.isTime() || vec.isUUID()) {
+          if (vecs.isBad(n) || vecs.isCategorical(n) || vecs.isString(n) || vecs.isTime(n) || vecs.isUUID(n)) {
             model._output._quantiles[n] = new double[_parms._probs.length];
             Arrays.fill(model._output._quantiles[n], Double.NaN);
             continue;
           }
-          double sumRows=_weights == null ? vec.length()-vec.naCnt() : new SumWeights().doAll(vec, _weights).sum;
+          double sumRows=_weights == null ? vecs.length()-vecs.naCnt(n) : new SumWeights().doAll(vecs.select(n), _weights).sum;
           // Compute top-level histogram
-          Histo h1 = new Histo(vec.min(),vec.max(),0,sumRows,vec.isInt());
-          h1 = _weights==null ? h1.doAll(vec) : h1.doAll(vec, _weights);
+          Histo h1 = new Histo(vecs.min(n),vecs.max(n),0,sumRows,vecs.isInt(n));
+          h1 = _weights==null ? h1.doAll(vecs.select(n)) : h1.doAll(vecs.select(n), _weights);
 
           // For each probability, see if we have it exactly - or else run
           // passes until we do.
@@ -96,7 +95,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
             model._output._iterations++; // At least one iter per-prob-per-column
             while( Double.isNaN(model._output._quantiles[n][p] = h.findQuantile(prob,_parms._combine_method)) ) {
-              h = _weights == null ? h.refinePass(prob).doAll(vec) : h.refinePass(prob).doAll(vec, _weights); // Full pass at higher resolution
+              h = _weights == null ? h.refinePass(prob).doAll(vecs.select(n)) : h.refinePass(prob).doAll(vecs.select(n), _weights); // Full pass at higher resolution
               model._output._iterations++; // also count refinement iterations
             }
 
@@ -175,11 +174,11 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     private static class KeepOnlyOneStrata extends MRTask<KeepOnlyOneStrata> {
       KeepOnlyOneStrata(int stratumToKeep) { this.stratumToKeep = stratumToKeep; }
       int stratumToKeep;
-      @Override public void map(Chunk strata, Chunk newW) {
-        for (int i=0; i<strata._len; ++i) {
+      @Override public void map(ChunkAry cs) {
+        for (int i=0; i<cs._len; ++i) {
 //          Log.info("NID:" + ((int) strata.at8(i)));
-          if ((int) strata.at8(i) != stratumToKeep)
-            newW.set(i, 0);
+          if ((int) cs.at8(i,0) != stratumToKeep)
+            cs.set(i,1, 0);
         }
       }
     }

@@ -52,7 +52,7 @@ public class AstColPySlice extends AstPrimitive {
       throw new IllegalArgumentException("Column must be an integer from 0 to " + (fr.numCols() - 1));
     for (int col : cols)       // For all included columns
       if (col >= 0 && col < fr.numCols()) // Ignoring out-of-range ones
-        fr2.add(fr.names()[col], fr.vecs()[col]);
+        fr2.add(fr.names()[col], fr.vecs().select(col));
     return new ValFrame(fr2);
   }
 }

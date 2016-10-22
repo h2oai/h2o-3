@@ -2,10 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.Futures;
 import water.Key;
-import water.fvec.AppendableVec;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
@@ -45,15 +42,15 @@ public class AstLevels extends AstPrimitive {
     final int rowLayout = Vec.ESPC.rowLayout(keys[0], new long[]{0, max});
     for (int i = 0; i < f.numCols(); ++i) {
       AppendableVec v = new AppendableVec(keys[i], Vec.T_NUM);
-      NewChunk nc = new NewChunk(v, 0);
+      NewChunkAry nc = v.chunkForChunkIdx(0);
       String[] dom = f.vec(i).domain();
       int numToPad = dom == null ? max : max - dom.length;
       if (dom != null)
         for (int j = 0; j < dom.length; ++j) nc.addNum(j);
-      for (int j = 0; j < numToPad; ++j) nc.addNA();
-      nc.close(0, fs);
+      for (int j = 0; j < numToPad; ++j) nc.addNA(0);
+      nc.close(fs);
       vecs[i] = v.close(rowLayout, fs);
-      vecs[i].setDomain(dom);
+      vecs[i].setDomain(0,dom);
     }
     fs.blockForPending();
     Frame fr2 = new Frame(vecs);

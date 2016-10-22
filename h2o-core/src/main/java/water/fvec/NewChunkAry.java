@@ -1,6 +1,9 @@
 package water.fvec;
 
+import water.H2O;
 import water.parser.BufferedString;
+
+import java.util.Arrays;
 
 /**
  * Created by tomas on 10/11/16.
@@ -41,5 +44,24 @@ public class NewChunkAry extends ChunkAry<NewChunk> {
 
   public void setDoubles(int c, double[] vals) {
     _cs[c].setDoubles(vals);
+  }
+
+  public long len(int c) {return _cs[c]._len;}
+
+  public void addNumCols(int n){
+    int oldN = _cs.length;
+    _cs = Arrays.copyOf(_cs,oldN+n);
+    for(int i = oldN; i < _cs.length; ++i)
+      _cs[i] = new NewChunk(Vec.T_NUM);
+  }
+
+  public void addVal(int i, DVal inflated) {
+    switch(inflated._t){
+      case N: addNum(i,inflated._m,inflated._e); break;
+      case D: addNum(i,inflated._d); break;
+      case S: addStr(i,inflated._str); break;
+      case U:
+        throw H2O.unimpl();
+    }
   }
 }

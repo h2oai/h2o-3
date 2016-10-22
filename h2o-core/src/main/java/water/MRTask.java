@@ -121,6 +121,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   protected MRTask(H2O.H2OCountedCompleter cmp) {super(cmp); }
   protected MRTask(byte prior) { super(prior); }
 
+  protected int[] outBlocks(){return new int[]{_output_types == null?0:1};}
+
   /**
    * This Frame instance is the handle for computation over a set of Vec instances. Recall
    * that a Frame is a collection Vec instances, so this includes any invocation of
@@ -137,18 +139,18 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** The number and type of output Vec instances produced by an MRTask.  If
    *  null then there are no outputs, _appendables will be null, and calls to
    *  <code>outputFrame</code> will return null. */
-  private byte _output_types[];
+  protected byte[] _output_types;
 
   /** First reserved VectorGroup key index for all output Vecs */
   private int _vid;
 
   /** New Output vectors; may be null.
    * @return the set of AppendableVec instances or null if _output_types is null  */
-  public AppendableVec appendables() { return _appendables; }
+  public AppendableVec [] appendables() { return _appendables; }
 
   /** Appendables are treated separately (roll-ups computed in map/reduce
    *  style, can not be passed via K/V store).*/
-  protected AppendableVec _appendables;
+  protected AppendableVec [] _appendables;
 
   /** Internal field to track the left &amp; right remote nodes/JVMs to work on */
   transient protected RPC<T> _nleft, _nrite;
@@ -227,15 +229,54 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   // the work-horse for the outputFrame calls
   private Frame closeFrame(Key key, String[] names, String[][] domains, Futures fs) {
     if( _output_types == null ) return null;
-    final int noutputs = _output_types.length;
-    int rowLayout = _appendables.compute_rowLayout();
-    _appendables.setDomains(domains);
-    return new Frame(key,names,_appendables.close(rowLayout,fs));
+    assert _appendables.length == 1:"OutputFrame should only be created if there is only one appendable vec (i.e. one espc)";
+    int rowLayout = _appendables[0].compute_rowLayout();
+    _appendables[0].setDomains(domains);
+    return new Frame(key,names,_appendables[0].close(rowLayout,fs));
   }
 
 
-  public void map(ChunkAry cs){throw H2O.unimpl("should've been overriden");}
-  public void map(ChunkAry cs, NewChunkAry ncs){throw H2O.unimpl("should've been overriden");}
+  public void map(ChunkAry cs){
+    if(cs._numCols == 1){
+      map(cs.getChunk(0));
+    } else if(cs._numCols == 2){
+      map(cs.getChunk(0),cs.getChunk(1));
+    } else if(cs._numCols == 3){
+      map(cs.getChunk(0),cs.getChunk(1), cs.getChunk(2));
+    }
+    map(cs.getChunks());
+  }
+  public void map(Chunk c){}
+  public void map(Chunk c0, Chunk c1){}
+  public void map(Chunk [] cs){}
+  public void map(Chunk [] cs, NewChunk [] ncs){}
+  public void map(Chunk c0, Chunk c1, NewChunk nc){}
+  public void map(Chunk c0, Chunk c1, Chunk c2){}
+  public void map(Chunk c0, NewChunk nc){}
+
+  public void map(ChunkAry cs, NewChunkAry ncs){
+    if(cs._numCols == 1){
+      Chunk c = cs.getChunk(0);
+      if(ncs._numCols == 1)
+        map(c,(NewChunk)ncs.getChunk(0));
+    } else if(cs._numCols == 2){
+      Chunk c0 = cs.getChunk(0);
+      Chunk c1 = cs.getChunk(1);
+      if(ncs._numCols == 1)
+        map(c0,c1,(NewChunk)ncs.getChunk(0));
+    }
+    map(cs.getChunks(),(NewChunk[])ncs.getChunks());
+  }
+
+  public void map(ChunkAry cs, NewChunkAry [] ncs){
+    NewChunk [] nary = new NewChunk[_output_types.length];
+    int off = 0;
+    for(int i = 0; i < ncs.length; ++i) {
+      System.arraycopy(ncs[i].getChunks(), 0, nary, off, ncs[i]._numCols);
+      off += ncs[i]._numCols;
+    }
+     map(cs.getChunks(),nary);
+  }
 
   /** Override with your map implementation.  Used when doAll is called with
    *  an array of Keys, and called once-per-Key on the Key's Home node */
@@ -562,14 +603,24 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if(_profile!=null)
           _profile._userstart = System.currentTimeMillis();
         if(_output_types != null){
+
           final VectorGroup vg = v0.group();
-          _appendables = new AppendableVec(vg.vecKey(_vid),_output_types);
-          NewChunkAry ncs = _appendables.chunkForChunkIdx(_lo);
-          map(cs,ncs);
+          int [] oblocks = outBlocks();
+          _appendables = new AppendableVec[oblocks.length];
+          int off = 0;
+          for(int i = 0; i < oblocks.length; ++i){
+            _appendables[i] = new AppendableVec(vg.vecKey(_vid+off),Arrays.copyOfRange(_output_types,off,off+oblocks[i]));
+            off += oblocks[i];
+          }
+          NewChunkAry [] ncs = new NewChunkAry[_appendables.length];
+          for(int i = 0; i < _appendables.length; ++i)
+            ncs[i] = _appendables[i].chunkForChunkIdx(_lo);
+          if(ncs.length == 1) map(cs,ncs[1]);
+          else map(cs,ncs);
           if(_profile!=null)
             _profile._closestart = System.currentTimeMillis();
           cs.close(_fs);
-          ncs.close(_fs);
+          for(NewChunkAry n:ncs)n.close(_fs);
         } else {
           map(cs);
           if(_profile!=null)
@@ -665,7 +716,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   void reduce4( T mrt ) {
     // Reduce any AppendableVecs
     if( _output_types != null )
-      _appendables.reduce(mrt._appendables);
+      for(int i = 0; i < _appendables.length; ++i)
+        _appendables[i].reduce(mrt._appendables[i]);
     if( _ex == null ) _ex = mrt._ex;
     // User's reduction
     reduce(mrt);

@@ -36,7 +36,7 @@ public class Interaction extends Iced {
     for (String v: _factor_columns) {
       int idx = source_frame.find(v);
       if (idx >= 0) {
-        if (!source_frame.vecs()[idx].isCategorical()) {
+        if (!source_frame.vecs().isCategorical(idx)) {
           throw new IllegalArgumentException("Column " + v + " is not categorical.");
         }
         _factors[count++] = idx;

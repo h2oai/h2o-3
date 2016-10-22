@@ -1364,9 +1364,9 @@ public class ArrayUtils {
     int rowLayout = -1;
     for( int c = 0; c < vecs.length; c++ ) {
       AppendableVec vec = new AppendableVec(keys[c], Vec.T_NUM);
-      NewChunk chunk = new NewChunk(vec, 0);
-      for (double[] row : rows) chunk.addNum(row[c]);
-      chunk.close(0, fs);
+      NewChunkAry nc = vec.chunkForChunkIdx(0);
+      for (double[] row : rows) nc.addNum(row[c]);
+      nc.close(fs);
       if( rowLayout== -1) rowLayout = vec.compute_rowLayout();
       vecs[c] = vec.close(rowLayout,fs);
     }

@@ -79,8 +79,8 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
       assert espc[espc.length - 1] == _in.numRows() : "unexpected number of rows, expected " + _in.numRows() + ", got " + espc[espc.length - 1];
     }
     final int rowLayout = Vec.ESPC.rowLayout(_vg._key,espc);
-    final Vec[] srcVecs = _in.vecs();
-    _out = new Frame(_okey,_in.names(), new Vec(_vg.addVec(),rowLayout).makeCons(srcVecs.length,0L,_in.domains(),_in.types()));
+    final VecAry srcVecs = _in.vecs();
+    _out = new Frame(_okey,_in.names(), new Vec(_vg.addVec(),rowLayout,1).makeCons(srcVecs.numRows(),0L,_in.domains(),_in.types()));
     _out.delete_and_lock(_jobKey);
     new RebalanceTask(this,srcVecs).dfork(_out);
   }
@@ -99,47 +99,26 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
   }
 
   public static class RebalanceTask extends MRTask<RebalanceTask> {
-    final Vec [] _srcVecs;
-    public RebalanceTask(H2O.H2OCountedCompleter cmp, Vec... srcVecs){super(cmp);_srcVecs = srcVecs;}
+    final VecAry _srcVecs;
+    public RebalanceTask(H2O.H2OCountedCompleter cmp, VecAry srcVecs){super(cmp);_srcVecs = srcVecs;}
 
     @Override public boolean logVerbose() { return false; }
 
-    private void rebalanceChunk(Vec srcVec, Chunk chk){
-      NewChunk dst = new NewChunk(chk);
-      int rem = chk._len;
-      while(rem > 0 && dst._len < chk._len){
-        Chunk srcRaw = srcVec.chunkForRow(chk._start+ dst._len);
-        NewChunk src = new NewChunk((srcRaw));
-        src = srcRaw.inflate_impl(src);
-        assert src._len == srcRaw._len;
-        int srcFrom = (int)(chk._start+ dst._len - src._start);
-        final int srcTo = srcFrom + rem;
-        int off = srcFrom-1;
-        Iterator<NewChunk.Value> it = src.values(Math.max(0,srcFrom),srcTo);
-        while(it.hasNext()){
-          NewChunk.Value v = it.next();
-          final int rid = v.rowId0();
-          assert  rid < srcTo;
-          int add = rid - off;
-          off = rid;
-          if (src.isSparseZero()) dst.addZeros(add-1);
-          else dst.addNAs(add-1);
-          v.add2Chunk(dst);
-          rem -= add;
-          assert rem >= 0;
-        }
-        int trailingZeros = Math.min(rem, src._len - off -1);
-        if (src.isSparseZero()) dst.addZeros(trailingZeros);
-        else dst.addNAs(trailingZeros);
-        rem -= trailingZeros;
+    @Override public void map(ChunkAry chks){
+      int N = chks._len;
+      NewChunk [] ncs = new NewChunk[chks._numCols];
+      for(int i = 0; i < ncs.length; ++i)
+        ncs[i] = new NewChunk(_srcVecs.get_type(i));
+      int len = 0;
+      while(N > len) {
+        ChunkAry srcRaw = _srcVecs.chunkForRow(chks._start+ len);
+        int x = Math.min(N-len,srcRaw._len);
+        for(int i = 0; i < srcRaw._numCols; ++i)
+          srcRaw.add2Chunk(i,ncs[i],0,x);
+        len += x;
       }
-      assert rem == 0:"rem = " + rem;
-      assert dst._len == chk._len :"len = " + dst._len + ", _len = " + chk._len;
-      dst.close(dst.cidx(),_fs);
-    }
-    @Override public void map(Chunk [] chks){
-      for(int i = 0; i < chks.length; ++i)
-        rebalanceChunk(_srcVecs[i],chks[i]);
+      for(int i = 0; i < chks._len; ++i)
+        chks.set(i,ncs[i].compress());
     }
   }
 }

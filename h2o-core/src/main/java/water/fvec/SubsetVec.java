@@ -17,11 +17,7 @@ public class SubsetVec extends WrappedVec {
     return _rows;
   }
 
-  // A subset chunk
-  @Override public Chunk chunkForChunkIdx(int cidx) {
-    Chunk crows = rows().chunkForChunkIdx(cidx);
-    return new SubsetChunk(crows,this,masterVec());
-  }
+
 
   @Override public Futures remove_impl(Futures fs) {
     Keyed.remove(_subsetRowsKey,fs);
@@ -38,35 +34,38 @@ public class SubsetVec extends WrappedVec {
     return super.readAll_impl(ab,fs);
   }
 
+  @Override
+  public DBlock chunkIdx(int cidx) {
+    Chunk crows = rows().chunkForChunkIdx(cidx).getChunk(0);
+    return new DBlock(new SubsetChunk(crows,this,masterVec()));
+  }
+
   // 
   static class SubsetChunk extends Chunk {
     final Chunk _crows;
     final Vec _masterVec;
     protected SubsetChunk(Chunk crows, SubsetVec vec, Vec masterVec) {
-      _vec = vec;
       _masterVec = masterVec;
       _len = crows._len;
-      _start = crows._start;
       _crows  = crows;
-      _cidx = crows._cidx;
     }
-    @Override protected double atd_impl(int idx) {
-      long rownum = _crows.at8_impl(idx);
+    @Override public double atd(int idx) {
+      long rownum = _crows.at8(idx);
       return _masterVec.at(rownum);
     }
-    @Override protected long   at8_impl(int idx) {
-      long rownum = _crows.at8_impl(idx);
+    @Override public long at8(int idx) {
+      long rownum = _crows.at8(idx);
       return _masterVec.at8(rownum);
     }
-    @Override protected boolean isNA_impl(int idx) {
-      long rownum = _crows.at8_impl(idx);
+    @Override public boolean isNA(int idx) {
+      long rownum = _crows.at8(idx);
       return _masterVec.isNA(rownum);
     }
 
-    @Override boolean set_impl(int idx, long l)   { return false; }
-    @Override boolean set_impl(int idx, double d) { return false; }
-    @Override boolean set_impl(int idx, float f)  { return false; }
-    @Override boolean setNA_impl(int idx)         { return false; }
+    @Override protected boolean set_impl(int idx, long l)   { return false; }
+    @Override protected boolean set_impl(int idx, double d) { return false; }
+    @Override protected boolean set_impl(int idx, float f)  { return false; }
+    @Override protected boolean setNA_impl(int idx)         { return false; }
     @Override public boolean hasFloat() { return false; }
     @Override
     public NewChunk inflate_impl(NewChunk nc)     { throw H2O.fail(); }

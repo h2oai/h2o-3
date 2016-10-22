@@ -2,9 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.DKV;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
@@ -38,7 +36,7 @@ public class AstSetDomain extends AstPrimitive {
     String[] _domains = ((AstStrList) asts[2])._strs;
     if (f.numCols() != 1)
       throw new IllegalArgumentException("Must be a single column. Got: " + f.numCols() + " columns.");
-    Vec v = f.anyVec();
+    VecAry v = f.anyVec();
     if (!v.isCategorical())
       throw new IllegalArgumentException("Vector must be a factor column. Got: " + v.get_type_str());
     if (_domains != null && _domains.length != v.domain().length) {
@@ -50,7 +48,7 @@ public class AstSetDomain extends AstPrimitive {
         throw new IllegalArgumentException("Number of replacement factors must equal current number of levels. Current number of levels: " + dom.length + " != " + _domains.length);
       new MRTask() {
         @Override
-        public void map(Chunk c) {
+        public void map(ChunkAry c) {
           for (int i = 0; i < c._len; ++i) {
             if (!c.isNA(i)) {
               long num = Arrays.binarySearch(dom, c.at8(i));
@@ -61,8 +59,9 @@ public class AstSetDomain extends AstPrimitive {
         }
       }.doAll(v);
     }
-    v.setDomain(_domains);
-    DKV.put(v);
+    v.setDomain(0,_domains);
+    for(Vec x:v.vecs())
+      DKV.put(x);
     return new ValFrame(f);
   }
 }

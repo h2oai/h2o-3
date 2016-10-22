@@ -2,6 +2,7 @@ package water.rapids;
 
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -105,10 +106,10 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   }
 
 
-  @Override public void map(Chunk chk[]) {
-    long myCounts[] = _counts[chk[0].cidx()]; //cumulative offsets into o and x
+  @Override public void map(ChunkAry chk) {
+    long myCounts[] = _counts[chk._cidx]; //cumulative offsets into o and x
     if (myCounts == null) {
-      System.out.println("myCounts empty for chunk " + chk[0].cidx());
+      System.out.println("myCounts empty for chunk " + chk._cidx);
       return;
     }
 
@@ -121,11 +122,11 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // although, it will be most cache efficient (holding one page of each
     // column's _mem, plus a page of this_x, all contiguous.  At the cost of
     // more instructions.
-    for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
+    for (int r=0; r<chk._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       int MSBvalue = 0;  // default for NA
       long thisx = 0;
-      if (!chk[0].isNA(r)) {
-        thisx = chk[0].at8(r);
+      if (!chk.isNA(r,0)) {
+        thisx = chk.at8(r,0);
         // TODO: restore branch-free again, go by column and retain original
         // compression with no .at8()
         if (_isLeft && _id_maps[0]!=null) thisx = _id_maps[0][(int)thisx] + 1;
@@ -138,7 +139,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       int batch = (int) (target / _batchSize);
       int offset = (int) (target % _batchSize);
       assert _o[MSBvalue] != null;
-      _o[MSBvalue][batch][offset] = (long) r + chk[0].start();    // move i and the index.
+      _o[MSBvalue][batch][offset] = (long) r + chk._start;    // move i and the index.
 
       byte this_x[] = _x[MSBvalue][batch];
       offset *= _keySize; // can't overflow because batchsize was chosen above to be maxByteSize/max(keysize,8)
@@ -146,10 +147,10 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         this_x[offset + i] = (byte) (thisx & 0xFFL);
         thisx >>= 8;
       }
-      for (int c=1; c<chk.length; c++) {  // TO DO: left align subsequent
+      for (int c=1; c<chk._numCols; c++) {  // TO DO: left align subsequent
         offset += _bytesUsed[c-1];     // advance offset by the previous field width
-        if (chk[c].isNA(r)) continue;  // NA is a zero field so skip over as java initializes memory to 0 for us always
-        thisx = chk[c].at8(r);         // TODO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
+        if (chk.isNA(r,c)) continue;  // NA is a zero field so skip over as java initializes memory to 0 for us always
+        thisx = chk.at8(r,c);         // TODO : compress with a scale factor such as dates stored as ms since epoch / 3600000L
         if (_isLeft && _id_maps[c] != null) thisx = _id_maps[c][(int)thisx] + 1;
         else thisx = thisx - _base[c] + 1;
         for (int i = _bytesUsed[c] - 1; i >= 0; i--) {

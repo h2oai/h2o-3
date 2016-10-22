@@ -59,11 +59,11 @@ public class AstToLower extends AstPrimitive {
   }
 
   private Vec toLowerCategoricalCol(Vec vec) {
+    assert vec.numCols() == 1;
     String[] dom = vec.domain().clone();
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toLowerCase(Locale.ENGLISH);
-
-    return vec.makeCopy(dom);
+    return vec.makeCopy(new String[][]{dom});
   }
 
   private Vec toLowerStringCol(Vec vec) {

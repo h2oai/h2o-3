@@ -2,6 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNum;
@@ -29,7 +30,9 @@ public class AstAnyFactor extends AstPrimitive {
   @Override
   public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    for (Vec vec : fr.vecs()) if (vec.isCategorical()) return new ValNum(1);
+    VecAry vecs = fr.vecs();
+    for(int c = 0; c < vecs._numCols; ++c)
+      if (vecs.isCategorical(c)) return new ValNum(1);
     return new ValNum(0);
   }
 }

@@ -117,8 +117,8 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
       chunk_byte_sizes[j] += c.byteSize();
       byte_size_per_node[H2O.SELF.index()] += c.byteSize();
     }
-    row_count_per_node[H2O.SELF.index()] += cs[0].len();
-    total_row_count +=  cs[0].len();
+    row_count_per_node[H2O.SELF.index()] += cs[0]._len;
+    total_row_count +=  cs[0]._len;
     chunk_count_per_col_per_node[H2O.SELF.index()]++;
     total_chunk_count_per_col++;
   }
@@ -148,7 +148,7 @@ public class ChunkSummary extends MRTask<ChunkSummary> {
     }
 
     long check = 0;
-    for (Vec v : _fr.vecs())
+    for (Vec v : _fr.vecs().vecs())
       check += v.nChunks();
     assert(total_chunk_count == check);
 

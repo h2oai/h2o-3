@@ -98,16 +98,16 @@ public class AstDdply extends AstPrimitive {
 
     MRTask mrfill = new MRTask() {
       @Override
-      public void map(Chunk[] c, NewChunk[] ncs) {
-        int start = (int) c[0].start();
-        for (int i = 0; i < c[0]._len; ++i) {
+      public void map(ChunkAry c, NewChunkAry ncs) {
+        int start = (int) c._start;
+        for (int i = 0; i < c._len; ++i) {
           AstGroup.G g = grps[i + start];  // One Group per row
           int j;
           for (j = 0; j < g._gs.length; j++) // The Group Key, as a row
-            ncs[j].addNum(g._gs[j]);
+            ncs.addNum(j,g._gs[j]);
           double[] res = remoteTasks[i + start]._result;
           for (int a = 0; a < res0.length; a++)
-            ncs[j++].addNum(res[a]);
+            ncs.addNum(j++,res[a]);
         }
       }
     };
@@ -123,6 +123,13 @@ public class AstDdply extends AstPrimitive {
   private static class BuildGroup extends MRTask<BuildGroup> {
     final IcedHashMap<AstGroup.G, String> _gss;
     final int[] _gbCols;
+
+    @Override
+    protected int[] outBlocks(){
+      int [] res = new int[_output_types.length];
+      Arrays.fill(res,1);
+      return res;
+    }
 
     BuildGroup(int[] gbCols, IcedHashMap<AstGroup.G, String> gss) {
       _gbCols = gbCols;
@@ -182,18 +189,18 @@ public class AstDdply extends AstPrimitive {
       final Vec[] groupVecs = new Vec[_data.numCols()];
       Futures fs = new Futures();
       for (int i = 0; i < _data.numCols(); i++)
-        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec._rowLayout, gvec.domain(), gvec.get_type()), fs);
+        DKV.put(groupVecs[i] = new Vec(groupKeys[i], gvec._rowLayout, gvec.allDomains(), gvec.get_types().clone()), fs);
       fs.blockForPending();
       // Fill in the chunks
       new MRTask() {
         @Override
         public void setupLocal() {
-          Vec[] data_vecs = _data.vecs();
+          VecAry data_vecs = _data.vecs();
           for (int i = 0; i < gvec.nChunks(); i++)
-            if (data_vecs[0].chunkKey(i).home()) {
-              Chunk rowchk = gvec.chunkForChunkIdx(i);
-              for (int col = 0; col < data_vecs.length; col++)
-                DKV.put(Vec.chunkKey(groupVecs[col]._key, i), new SubsetChunk(data_vecs[col].chunkForChunkIdx(i), rowchk, groupVecs[col]), _fs);
+            if (data_vecs.isHome(i)) {
+              ChunkAry rowchk = gvec.chunkForChunkIdx(i);
+              for (int col = 0; col < data_vecs._numCols; col++)
+                DKV.put(Vec.chunkKey(groupVecs[col]._key, i), new SubsetChunk(data_vecs.chunkForChunkIdx(i).getChunk(col), rowchk.getChunk(0), groupVecs[col]), _fs);
             }
         }
       }.doAllNodes();

@@ -4,11 +4,8 @@ import water.*;
 import water.H2O.FJWThr;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
+import water.fvec.*;
 import water.fvec.NewChunk.Value;
-import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -49,7 +46,7 @@ public class DMatrix  {
     }
     Key key = Vec.newKey();
     int rowLayout = Vec.ESPC.rowLayout(key,espc);
-    return transpose(src, new Frame(new Vec(key,rowLayout).makeZeros((int)src.numRows())));
+    return transpose(src, new Frame(new Vec(key,rowLayout,1).makeZeros((int)src.numRows())));
   }
 
   /**
@@ -86,46 +83,48 @@ public class DMatrix  {
   public static class TransposeTsk extends MRTask<TransposeTsk> {
     final Frame _tgt; // Target dataset, should be created up front, e.g. via Vec.makeZeros(n) call.
     public TransposeTsk(Frame tgt){ _tgt = tgt;}
-    public void map(final Chunk[] chks) {
-      final Frame tgt = _tgt;
-      final long [] espc = tgt.anyVec().espc();
-      final int colStart = (int)chks[0].start();
-//      addToPendingCount(espc.length - 2);
-      for (int i = 0; i < espc.length - 1; ++i) {
-        final int fi = i;
-//        new CountedCompleter(this) {
-//          @Override
-//          public void compute() {
-        final NewChunk[] tgtChunks = new NewChunk[chks[0]._len];
-        for (int j = 0; j < tgtChunks.length; ++j)
-          tgtChunks[j] = new NewChunk(tgt.vec(j + colStart), fi);
-        for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
-          NewChunk nc = chks[c].inflate();
-          if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?
-          Iterator<Value> it = nc.values();
-          while (it.hasNext()) {
-            Value v = it.next();
-            NewChunk t = tgtChunks[v.rowId0()];
-            t.addZeros(c - (int) espc[fi] - t.len());
-            v.add2Chunk(t);
-          }
-        }
-//            addToPendingCount(tgtChunks.length - 1);
-        for (int j = 0; j < tgtChunks.length; ++j) { // finalize the target chunks and close them
-          final int fj = j;
-//              new CountedCompleter(this) {
-//                @Override
-//                public void compute() {
-          tgtChunks[fj].addZeros((int) (espc[fi + 1] - espc[fi]) - tgtChunks[fj]._len);
-          tgtChunks[fj].close(_fs);
-          tgtChunks[fj] = null;
-//                  tryComplete();
-        }
-//              }.fork();
-//            }
+    public void map(final ChunkAry chks) {
+      throw H2O.unimpl();
+
+//      final Frame tgt = _tgt;
+//      final long [] espc = tgt.anyVec().espc();
+//      final int colStart = (int)chks._start;
+////      addToPendingCount(espc.length - 2);
+//      for (int i = 0; i < espc.length - 1; ++i) {
+//        final int fi = i;
+////        new CountedCompleter(this) {
+////          @Override
+////          public void compute() {
+//        final NewChunk[] tgtChunks = new NewChunk[chks._len];
+//        for (int j = 0; j < tgtChunks.length; ++j)
+//          tgtChunks[j] = new NewChunk(tgt.vec(j + colStart), fi);
+//        for (int c = ((int) espc[fi]); c < (int) espc[fi + 1]; ++c) {
+//          NewChunk nc = chks[c].inflate();
+//          if (nc.isSparseNA()) nc.cancel_sparse(); //what is the better fix?
+//          Iterator<Value> it = nc.values();
+//          while (it.hasNext()) {
+//            Value v = it.next();
+//            NewChunk t = tgtChunks[v.rowId0()];
+//            t.addZeros(c - (int) espc[fi] - t.len());
+//            v.add2Chunk(t);
 //          }
-//        }.fork();
-      }
+//        }
+////            addToPendingCount(tgtChunks.length - 1);
+//        for (int j = 0; j < tgtChunks.length; ++j) { // finalize the target chunks and close them
+//          final int fj = j;
+////              new CountedCompleter(this) {
+////                @Override
+////                public void compute() {
+//          tgtChunks[fj].addZeros((int) (espc[fi + 1] - espc[fi]) - tgtChunks[fj]._len);
+//          tgtChunks[fj].close(_fs);
+//          tgtChunks[fj] = null;
+////                  tryComplete();
+//        }
+////              }.fork();
+////            }
+////          }
+////        }.fork();
+//      }
     }
   }
 
@@ -192,7 +191,8 @@ public class DMatrix  {
       new GetNonZerosTsk(new H2OCallback<GetNonZerosTsk>(this) {
         @Override
         public void callback(GetNonZerosTsk gnz) {
-          new VecTsk(new Callback(), _progressKey, gnz._vals).dfork(ArrayUtils.append(_x.vecs(gnz._idxs), _z.vec(i)));
+          throw H2O.unimpl();
+//          new VecTsk(new Callback(), _progressKey, gnz._vals).dfork(ArrayUtils.append(_x.vecs(gnz._idxs), _z.vec(i)));
         }
       }).dfork(_y.vec(i));
     }
@@ -219,19 +219,21 @@ public class DMatrix  {
     public GetNonZerosTsk(H2OCountedCompleter cmp, int maxsz){super(cmp); _maxsz = maxsz;}
 
     @Override public void map(Chunk c){
-      int istart = (int)c.start();
-      assert (c.start() + c._len) == (istart + c._len);
-      final int n = c.sparseLenZero();
-      _idxs = MemoryManager.malloc4(n);
-      _vals = MemoryManager.malloc8d(n);
-      int j = 0;
-      for(int i = c.nextNZ(-1); i < c._len; i = c.nextNZ(i),++j) {
-        _idxs[j] = i + istart;
-        _vals[j] = c.atd(i);
-      }
-      assert j == n;
-      if(_idxs.length > _maxsz)
-        throw new RuntimeException("too many nonzeros! found at least " + _idxs.length + " nonzeros.");
+      throw H2O.unimpl();
+//      int istart = (int)c.start();
+//      assert (c.start() + c._len) == (istart + c._len);
+//      final int n = c.sparseLenZero();
+//      _idxs = MemoryManager.malloc4(n);
+//      _vals = MemoryManager.malloc8d(n);
+//      int j = 0;
+//      for(int i = c.nextNZ(-1); i < c._len; i = c.nextNZ(i),++j) {
+//        throw H2O.unimpl();
+////        y_idxs[j] = i + istart;
+//        _vals[j] = c.atd(i);
+//      }
+//      assert j == n;
+//      if(_idxs.length > _maxsz)
+//        throw new RuntimeException("too many nonzeros! found at least " + _idxs.length + " nonzeros.");
     }
 
     @Override public void reduce(GetNonZerosTsk gnz){
@@ -270,7 +272,7 @@ public class DMatrix  {
       Chunk modChunk = new NewChunk(res).setSparseRatio(2).compress();
       if(_progressKey != null)
         new UpdateProgress(modChunk.getBytes().length,modChunk.frozenType()).fork(_progressKey);
-      DKV.put(zChunk.vec().chunkKey(zChunk.cidx()),modChunk,_fs);
+//      DKV.put(zChunk.vec().chunkKey(zChunk.cidx()),modChunk,_fs);
     }
     @Override public void closeLocal(){
       _y = null; // drop inputs

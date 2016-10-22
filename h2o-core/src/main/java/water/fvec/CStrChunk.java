@@ -14,10 +14,9 @@ public class CStrChunk extends Chunk {
 
   public CStrChunk() {}
   public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] strIdx, boolean isAllASCII) {
-    _start = -1;
     _valstart = _OFF + (idxLen<<2);
     _isAllASCII = isAllASCII;
-    set_len(idxLen);
+    _len = (idxLen);
 
     _mem = MemoryManager.malloc1(CStrChunk._OFF + idxLen*4 + sslen, false);
     UnsafeUtils.set4(_mem, 0, CStrChunk._OFF + idxLen * 4); // location of start of strings
@@ -32,20 +31,20 @@ public class CStrChunk extends Chunk {
       _mem[CStrChunk._OFF + idxLen*4 + i] = ss[i];
   }
 
-  @Override public boolean setNA_impl(int idx) { return false; }
-  @Override public boolean set_impl(int idx, float f) { if (Float.isNaN(f)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
-  @Override public boolean set_impl(int idx, double d) { if (Double.isNaN(d)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
-  @Override public boolean set_impl(int idx, long l) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
-  @Override public boolean set_impl(int idx, String str) { return false; }
+  @Override protected  boolean setNA_impl(int idx) { return false; }
+  @Override protected  boolean set_impl(int idx, float f) { if (Float.isNaN(f)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override protected  boolean set_impl(int idx, double d) { if (Double.isNaN(d)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override protected  boolean set_impl(int idx, long l) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override protected  boolean set_impl(int idx, String str) { return false; }
 
-  @Override public boolean isNA_impl(int idx) {
+  @Override public boolean isNA(int idx) {
     int off = UnsafeUtils.get4(_mem,(idx<<2)+_OFF);
     return off == NA;
   }
 
-  @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
-  @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
-  @Override public BufferedString atStr_impl(BufferedString bStr, int idx) {
+  @Override public long at8(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override public double atd(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
+  @Override public BufferedString atStr(BufferedString bStr, int idx) {
     int off = UnsafeUtils.get4(_mem,(idx<<2)+_OFF);
     if( off == NA ) return null;
     int len = 0;
@@ -54,14 +53,13 @@ public class CStrChunk extends Chunk {
   }
 
   @Override protected final void initFromBytes () {
-    _start = -1;  _cidx = -1;
     _valstart = UnsafeUtils.get4(_mem,0);
     byte b = UnsafeUtils.get1(_mem,4);
     _isAllASCII = b != 0;
-    set_len((_valstart-_OFF)>>2);
+    _len = ((_valstart-_OFF)>>2);
   }
   @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(nc.set_len(_len));
+    nc.set_sparseLen(nc._len = (_len));
     nc._isAllASCII = _isAllASCII;
     int [] ids = nc.alloc_str_indices(_len);
     for( int i = 0; i < _len; i++ )

@@ -63,7 +63,7 @@ public class AstToUpper extends AstPrimitive {
     for (int i = 0; i < dom.length; ++i)
       dom[i] = dom[i].toUpperCase(Locale.ENGLISH);
 
-    return vec.makeCopy(dom);
+    return vec.makeCopy(new String[][]{dom});
   }
 
   private Vec toUpperStringCol(Vec vec) {

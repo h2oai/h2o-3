@@ -236,68 +236,68 @@ public class SQLManager {
     }
 
     @Override
-    public void map(Chunk[] cs, NewChunk[] ncs) {
+    public void map(ChunkAry cs, NewChunkAry ncs) {
       if (isCancelled() || _job != null && _job.stop_requested()) return;
       //fetch data from sql table with limit and offset
       Connection conn = null;
       Statement stmt = null;
       ResultSet rs = null;
-      Chunk c0 = cs[0];
+
       String sqlText = "SELECT " + _columns + " FROM " + _table;
       if (_needFetchClause)
-        sqlText += " OFFSET " + c0.start() + " ROWS FETCH NEXT " + c0._len + " ROWS ONLY";
+        sqlText += " OFFSET " + cs._start + " ROWS FETCH NEXT " + cs._len + " ROWS ONLY";
       else
-        sqlText += " LIMIT " + c0._len + " OFFSET " + c0.start();
+        sqlText += " LIMIT " + cs._len + " OFFSET " + cs._start;
       try {
         conn = sqlConn.take();
         stmt = conn.createStatement();
         //set fetch size for best performance
-        stmt.setFetchSize(c0._len);
+        stmt.setFetchSize(cs._len);
         rs = stmt.executeQuery(sqlText);
         while (rs.next()) {
           for (int i = 0; i < _numCol; i++) {
             Object res = rs.getObject(i + 1);
-            if (res == null) ncs[i].addNA();
+            if (res == null) ncs.addNA(i);
             else {
               switch (res.getClass().getSimpleName()) {
                 case "Double":
-                  ncs[i].addNum((double) res);
+                  ncs.addNum(i,(double) res);
                   break;
                 case "Integer":
-                  ncs[i].addNum((long) (int) res, 0);
+                  ncs.addNum(i,(long) (int) res, 0);
                   break;
                 case "Long":
-                  ncs[i].addNum((long) res, 0);
+                  ncs.addNum(i,(long) res, 0);
                   break;
                 case "Float":
-                  ncs[i].addNum((double) (float) res);
+                  ncs.addNum(i,(double) (float) res);
                   break;
                 case "Short":
-                  ncs[i].addNum((long) (short) res, 0);
+                  ncs.addNum(i,(long) (short) res, 0);
                   break;
                 case "Byte":
-                  ncs[i].addNum((long) (byte) res, 0);
+                  ncs.addNum(i,(long) (byte) res, 0);
                   break;
                 case "BigDecimal":
-                  ncs[i].addNum(((BigDecimal) res).doubleValue());
+                  ncs.addNum(i,((BigDecimal) res).doubleValue());
                   break;
                 case "Boolean":
-                  ncs[i].addNum(((boolean) res ? 1 : 0), 0);
+                  ncs.addNum(i,((boolean) res ? 1 : 0), 0);
                   break;
                 case "String":
-                  ncs[i].addStr(new BufferedString((String) res));
+                  ncs.addStr(i,new BufferedString((String) res));
                   break;
                 case "Date":
-                  ncs[i].addNum(((Date) res).getTime(), 0);
+                  ncs.addNum(i,((Date) res).getTime(), 0);
                   break;
                 case "Time":
-                  ncs[i].addNum(((Time) res).getTime(), 0);
+                  ncs.addNum(i,((Time) res).getTime(), 0);
                   break;
                 case "Timestamp":
-                  ncs[i].addNum(((Timestamp) res).getTime(), 0);
+                  ncs.addNum(i,((Timestamp) res).getTime(), 0);
                   break;
                 default:
-                  ncs[i].addNA();
+                  ncs.addNA(i);
               }
             }
           }

@@ -91,7 +91,7 @@ public class NewChunkTest extends TestUtil {
     assertEquals(0,nc.exponentSize());
     assertEquals(0,nc.missingSize());
     for(int i = 0; i < values.length; ++i)
-      assertEquals(values[i],nc.at8_impl(i));
+      assertEquals(values[i],nc.at8(i));
     for(int i = 0; i < values.length; i += 5)
       nc.setNA_impl(i);
     c = nc.compress();
@@ -99,7 +99,7 @@ public class NewChunkTest extends TestUtil {
       if(i % 5 == 0)
         assertTrue(c.isNA(i));
       else
-        assertEquals(values[i], c.at8_impl(i));
+        assertEquals(values[i], c.at8(i));
     }
 
     // test with exponent
@@ -128,7 +128,7 @@ public class NewChunkTest extends TestUtil {
       if(i % 5 == 0)
         assertTrue(c.isNA(i));
       else
-        assertEquals(values[i], c.at8_impl(i));
+        assertEquals(values[i], c.at8(i));
     }
     assertEquals(Math.PI,c.atd(values.length),0);
     // test switch to sparse zero

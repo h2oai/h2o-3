@@ -17,13 +17,13 @@ public class CNAXDChunk extends CNAXIChunk {
     throw H2O.fail();
   }
 
-  @Override protected long at8_impl(int idx) {
+  @Override public long at8(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx) throw new IllegalArgumentException("at8_abs but value is missing");
     double d = getFValue(off);
     return (long)d;
   }
-  @Override protected double atd_impl(int idx) {
+  @Override public double atd(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx)return Double.NaN;
     return getFValue(off);
@@ -31,7 +31,7 @@ public class CNAXDChunk extends CNAXIChunk {
 
   @Override public NewChunk inflate_impl(NewChunk nc) {
     nc.setSparseNA();
-    nc.set_len(_len);
+    nc._len = _len;
     nc.set_sparseLen(_sparseLen);
     nc.alloc_doubles(_sparseLen);
     nc.alloc_indices(_sparseLen);

@@ -46,7 +46,7 @@ public class AstStrSplit extends AstPrimitive {
     // Transform each vec
     ArrayList<Vec> vs = new ArrayList<>(fr.numCols());
     for (Vec v : fr.vecs()) {
-      Vec[] splits;
+      VecAry splits;
       if (v.isCategorical()) {
         splits = strSplitCategoricalCol(v, splitRegEx);
         for (Vec split : splits) vs.add(split);
@@ -59,7 +59,7 @@ public class AstStrSplit extends AstPrimitive {
     return new ValFrame(new Frame(vs.toArray(new Vec[vs.size()])));
   }
 
-  private Vec[] strSplitCategoricalCol(Vec vec, String splitRegEx) {
+  private VecAry strSplitCategoricalCol(Vec vec, String splitRegEx) {
     final String[] old_domains = vec.domain();
     final String[][] new_domains = newDomains(old_domains, splitRegEx);
 
@@ -122,7 +122,7 @@ public class AstStrSplit extends AstPrimitive {
     return doms;
   }
 
-  private Vec[] strSplitStringCol(Vec vec, final String splitRegEx) {
+  private VecAry strSplitStringCol(Vec vec, final String splitRegEx) {
     final int newColCnt = (new AstStrSplit.CountSplits(splitRegEx)).doAll(vec)._maxSplits;
     return new MRTask() {
       @Override

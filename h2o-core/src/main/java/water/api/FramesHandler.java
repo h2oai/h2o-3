@@ -7,6 +7,7 @@ import water.api.schemas3.*;
 import water.exceptions.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.Log;
 
 import java.util.*;
@@ -68,7 +69,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
         Frame frame = getFromDKV("(none)", key);
         // Weed out frames with vecs that are no longer in DKV
         boolean skip = false;
-        for( Vec vec : frame.vecs() ) {
+        for( Vec vec : frame.vecs().vecs() ) {
           if (vec == null || DKV.get(vec._key) == null) {
             Log.warn("Leaked frame: Frame "+frame._key+" points to one or more deleted vecs.");
             skip = true;
@@ -202,16 +203,15 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public FramesV3 columnSummary(int version, FramesV3 s) {
     Frame frame = getFromDKV("key", s.frame_id.key()); // safe
-    Vec vec = frame.vec(s.column);
-    if (null == vec)
+    int id = frame.find(s.column);
+    if (id == -1)
       throw new H2OColumnNotFoundArgumentException("column", s.frame_id.toString(), s.column);
 
     // Compute second pass of rollups: the histograms.
-    vec.bins();
-
+    frame.vecs().bins(id);
     // Cons up our result
     s.frames = new FrameV3[1];
-    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column}, new Vec[]{vec}), s.row_offset, s.row_count, s.column_offset, s.column_count);
+    s.frames[0] = new FrameV3().fillFromImpl(new Frame(new String[]{s.column},frame.vec(id)), s.row_offset, s.row_count, s.column_offset, s.column_count);
     return s;
   }
 
@@ -266,7 +266,7 @@ public class FramesHandler<I extends FramesHandler.Frames, S extends SchemaV3<I,
 
     if( null != frame) {
       Futures fs = new Futures();
-      for( Vec v : frame.vecs() )
+      for( Vec v : frame.vecs().vecs() )
         v.startRollupStats(fs, Vec.DO_HISTOGRAMS);
       fs.blockForPending();
     }

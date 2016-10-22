@@ -2,6 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.MRTask;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
@@ -32,22 +33,21 @@ public class AstNaOmit extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame fr2 = new MRTask() {
-      private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
-        for (int i = 0; i < cs.length; ++i) {
-          if (cs[i] instanceof CStrChunk) ncs[i].addStr(cs[i], row);
-          else if (cs[i] instanceof C16Chunk) ncs[i].addUUID(cs[i], row);
-          else if (cs[i].hasFloat()) ncs[i].addNum(cs[i].atd(row));
-          else ncs[i].addNum(cs[i].at8(row), 0);
-        }
+
+      DVal _dv;
+      private void copyRow(int row, ChunkAry cs, NewChunkAry ncs) {
+        for (int i = 0; i < cs._numCols; ++i)
+          ncs.addVal(i,cs.getInflated(row,i,_dv));
       }
 
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
+      public void map(ChunkAry cs, NewChunkAry ncs) {
+        _dv = new DVal();
         int col;
-        for (int row = 0; row < cs[0]._len; ++row) {
-          for (col = 0; col < cs.length; ++col)
-            if (cs[col].isNA(row)) break;
-          if (col == cs.length) copyRow(row, cs, ncs);
+        for (int row = 0; row < cs._len; ++row) {
+          for (col = 0; col < cs._numCols; ++col)
+            if (cs.isNA(row,col)) break;
+          if (col == cs._numCols) copyRow(row, cs, ncs);
         }
       }
     }.doAll(fr.types(), fr).outputFrame(fr.names(), fr.domains());

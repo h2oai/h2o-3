@@ -12,21 +12,18 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   protected final Vec.VectorGroup _vg;
   int _vecIdStart;
 
-  public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, int chunkSize, AppendableVec[] avs){
+  public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, int chunkSize, AppendableVec avs){
     super(vg, cidx, null, null, chunkSize, avs);
     _vg = vg;
     _vecIdStart = vecIdStart;
-    _nvs = new NewChunk[avs.length];
-    for(int i = 0; i < _nvs.length; ++i)
-      _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
     _col = 0;
   }
 
   @Override public void addNumCol(int colIdx, long number, int exp) {
     assert colIdx >= _col;
-    if(colIdx >= _vecs.length) addColumns(colIdx+1);
-    _nvs[colIdx].addZeros((int)_nLines - _nvs[colIdx]._len);
-    _nvs[colIdx].addNum(number, exp);
+    if(colIdx >= _vecs.numCols()) addColumns(colIdx+1);
+    _nvs.addZeros(colIdx,(int)(_nLines - _nvs.len(colIdx)));
+    _nvs.addNum(colIdx,number, exp);
     _col = colIdx+1;
   }
   @Override
@@ -38,23 +35,16 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   @Override public boolean isString(int idx){return false;}
   @Override public FVecParseWriter close(Futures fs) {
     if (_nvs != null) {
-    for(NewChunk nc:_nvs) {
-      nc.addZeros((int) _nLines - nc._len);
-      assert nc._len == _nLines:"incompatible number of lines after parsing chunk, " + _nLines + " != " + nc._len;
+      for (int i = 0; i < _nvs._numCols; ++i)
+        _nvs.addZeros(i, (int) (_nLines - _nvs.len(i)));
+      _nCols = _nvs._numCols;
     }
-    }
-    _nCols = _nvs == null ? 0 : _nvs.length;
     return super.close(fs);
   }
   private void addColumns(int newColCnt){
-    int oldColCnt = _vecs.length;
+    int oldColCnt = _vecs.numCols();
     if(newColCnt > oldColCnt){
-      _nvs   = Arrays.copyOf(_nvs, newColCnt);
-      _vecs  = Arrays.copyOf(_vecs  , newColCnt);
-      for(int i = oldColCnt; i < newColCnt; ++i) {
-        _vecs[i] = new AppendableVec(_vg.vecKey(i+_vecIdStart),_vecs[0]._tmp_espc,Vec.T_NUM,_vecs[0]._chunkOff);
-        _nvs[i] = new NewChunk(_vecs[i], _cidx, true);
-      }
+      _nvs.addNumCols(newColCnt);
       _nCols = newColCnt;
     }
   }

@@ -177,7 +177,9 @@ public class Vec extends Keyed<Vec> {
    *  Not a defensive clone (to expensive to clone; coding error to change the
    *  contents).
    *  @return the categorical / factor / categorical mapping array, or null if not a categorical column */
-  public String[] domain(int c) { return _domains[c]; }   // made no longer final so that InteractionWrappedVec which are _type==T_NUM but have a categorical interaction
+  public String[] domain(int c) { return _domains[c]; }
+  public String[] domain() { return domain(0); }
+  public String[][] allDomains(){return _domains;}
   /** Returns the {@code i}th factor for this categorical column.
    *  @return The {@code i}th factor */
   public final String factor( int c, int i ) { return _domains[c][i]; }
@@ -187,6 +189,7 @@ public class Vec extends Keyed<Vec> {
   public final Vec setDomain(int c, String[] domain) { _domains[c] = domain; if( domain != null ) _types[c] = T_CAT; return this; }
   /** Returns cardinality for categorical domain or -1 for other types. */
   public final int cardinality(int c) { return isCategorical(c) ? _domains[c].length : -1; }
+  public final int cardinality() { return cardinality(0); }
 
   // Vec internal type
   public static final byte T_BAD  =  0; // No none-NA rows (triple negative! all NAs or zero rows)
@@ -214,16 +217,20 @@ public class Vec extends Keyed<Vec> {
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
   public final boolean isUUID   (int c){ return _types[c]==T_UUID; }
+  public final boolean isUUID   (){ return isUUID(0); }
   /** True if this is a String column.  
    *  @return true if this is a String column.  */
   public final boolean isString (int c){ return _types[c]==T_STR; }
+  public final boolean isString (){ return isString(0); }
   /** True if this is a numeric column, excluding categorical and time types.
    *  @return true if this is a numeric column, excluding categorical and time types  */
   public final boolean isNumeric(int c){ return _types[c]==T_NUM; }
+  public final boolean isNumeric(){ return isNumeric(0); }
   /** True if this is a time column.  All time columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is a time column.  */
   public final boolean isTime   (int c){ return _types[c]==T_TIME; }
+  public final boolean isTime   (){ return isTime(0); }
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
    *  {@code espc} array).
@@ -404,7 +411,7 @@ public class Vec extends Keyed<Vec> {
 
   public static Vec makeVec(double [] vals, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}),1);
-    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(v,0)},null);
+    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(Vec.T_NUM)},null);
     Futures fs = new Futures();
     for(double d:vals)
       nc.addNum(d);
@@ -417,7 +424,7 @@ public class Vec extends Keyed<Vec> {
   // allow missing (NaN) categorical values
   public static Vec makeVec(double [] vals, String [] domain, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), new String[][]{domain}, new byte[]{Vec.T_CAT});
-    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(v,0)},null);
+    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(Vec.T_NUM)},null);
     Futures fs = new Futures();
     for(double d:vals)
       nc.addInteger(d);
@@ -429,7 +436,7 @@ public class Vec extends Keyed<Vec> {
   // Warning: longs are lossily converted to doubles in nc.addNum(d)
   public static Vec makeVec(long [] vals, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}),1);
-    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(v,0)},null);
+    NewChunkAry nc = new NewChunkAry(v,0,new NewChunk[]{new NewChunk(Vec.T_NUM)},null);
     Futures fs = new Futures();
     for(long d:vals)
       nc.addInteger(d);
@@ -597,6 +604,7 @@ public class Vec extends Keyed<Vec> {
   public final boolean isConst(int c) { return min(c) == max(c); }
   /** True if the column contains only NAs
    *  @return True if the column contains only NAs */
+  public final boolean isBad() { return isBad(0); }
   public final boolean isBad(int c) { return naCnt(c)==length(); }
   /** Vecs's mean 
    *  @return Vec's mean */
@@ -678,6 +686,7 @@ public class Vec extends Keyed<Vec> {
 
   private static NonBlockingHashMap<Key,RPC> _pendingRollups = new NonBlockingHashMap<>();
 
+  public byte[] get_types() {return _types;}
 
 
   private static class RemoveColsFromRollupsTsk extends TAtomic<RollupsAry>{
@@ -725,8 +734,8 @@ public class Vec extends Keyed<Vec> {
   /** Compute the roll-up stats as-needed */
   public RollupsAry rollupStats() { return rollupStats(false);}
 
-  public Futures startRollups(Futures fs) { return startRollups(false,fs);}
-  public Futures startRollups(boolean computeHisto, Futures fs) {
+  public Futures startRollupStats(Futures fs) { return startRollupStats(fs,false);}
+  public Futures startRollupStats(Futures fs,boolean computeHisto) {
     RollupsAry rs = tryFetchRollups();
     if(rs == null || !rs.isReady(this,computeHisto))
       fs.add(new RPC(rollupStatsKey().home_node(),new RollupStats.ComputeRollupsTask(this,computeHisto)).addCompleter(new H2O.H2OCallback() {
@@ -853,6 +862,8 @@ public class Vec extends Keyed<Vec> {
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index */
   protected Key chunkKey(int cidx ) { return chunkKey(keyTemplate(),cidx); }
+  public boolean isHome(int cidx ) { return chunkKey(keyTemplate(),cidx).home(); }
+  public int homeNodeIdx(int cidx ) { return chunkKey(keyTemplate(),cidx).home_node().index(); }
   public boolean isLocal(int cidx){return chunkKey(cidx).home();}
 
   public Key newChunkKey(int cidx ) {
@@ -875,10 +886,10 @@ public class Vec extends Keyed<Vec> {
   /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
    *  on every Chunk index on the same node will probably trigger an OOM!  */
-  public Value chunkIdx( int cidx ) {
+  public DBlock chunkIdx( int cidx ) {
     Value val = DKV.get(chunkKey(cidx));
     assert checkMissing(cidx,val) : "Missing chunk " + chunkKey(cidx);
-    return val;
+    return val.get();
   }
 
   private boolean checkMissing(int cidx, Value val) {
@@ -925,8 +936,8 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
-  Futures closeChunk(int cidx, ChunkAry c, Futures fs){
-    Key k = newChunkKey(cidx);
+  Futures closeChunk(ChunkAry c, Futures fs){
+    Key k = newChunkKey(c._cidx);
     DKV.put(k,new DBlock(c._cs, c._ids),fs);
     return fs;
   }
@@ -946,9 +957,11 @@ public class Vec extends Keyed<Vec> {
    *  call on every Chunk index on the same node will probably trigger an OOM!
    *  @return Chunk for a chunk# */
   public ChunkAry chunkForChunkIdx(int cidx) {
-    DBlock data = chunkIdx(cidx).get();        // Chunk# to chunk data
+    DBlock data = chunkIdx(cidx);        // Chunk# to chunk data
     return new ChunkAry(this,cidx,data._cs,data._ids);
   }
+
+
 
   /** The Chunk for a row#.  Warning: this pulls the data locally; using this
    *  call on every Chunk index on the same node will probably trigger an OOM!

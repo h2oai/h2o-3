@@ -120,12 +120,12 @@ public abstract class FileVec extends ByteVec {
   // Convert a chunk# into a chunk - does lazy-chunk creation. As chunks are
   // asked-for the first time, we make the Key and an empty backing DVec.
   // Touching the DVec will force the file load.
-  @Override public Value chunkIdx( int cidx ) {
+  @Override public DBlock chunkIdx( int cidx ) {
     final long nchk = nChunks();
     assert 0 <= cidx && cidx < nchk;
     Key dkey = chunkKey(cidx);
     Value val1 = DKV.get(dkey);// Check for an existing one... will fetch data as needed
-    if( val1 != null ) return val1; // Found an existing one?
+    if( val1 != null ) return val1.get(); // Found an existing one?
     // Lazily create a DVec for this chunk
     int len = (int)(cidx < nchk-1 ? _chunkSize : (_len-chunk2StartElem(cidx)));
     // DVec is just the raw file data with a null-compression scheme
@@ -139,7 +139,7 @@ public abstract class FileVec extends ByteVec {
     // Atomically insert: fails on a race, but then return the old version
     Value val3 = DKV.DputIfMatch(dkey,val2,null,fs);
     if( !dkey.home() && fs != null ) fs.blockForPending();
-    return val3 == null ? val2 : val3;
+    return val3 == null ? val2.<DBlock>get() : val3.<DBlock>get();
   }
 
   /**
