@@ -23,9 +23,10 @@ def iris_dl_grid():
   hyper_parameters["hidden"] = hidden_opts
   print("DL grid with the following hyper_parameters:", hyper_parameters)
 
-  gs = H2OGridSearch(H2ODeepLearningEstimator, hyper_params=hyper_parameters)
+  gs = H2OGridSearch(H2ODeepLearningEstimator, hyper_params=hyper_parameters, grid_id="mygrid")
   gs.train(x=list(range(4)), y=4, training_frame=train)
   print(gs.sort_by("mse"))
+#  h2o.get_grid("mygrid")
 
   for model in gs:
     assert isinstance(model, H2ODeepLearningEstimator)
