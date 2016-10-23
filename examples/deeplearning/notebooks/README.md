@@ -18,4 +18,4 @@ Note: There are many more example scripts in [h2o-py/tests](https://github.com/h
 - [Cat/Dog/Mouse image classification with Inception Resnet V2 convolutional neural network (GPU)](./deeplearning_inception_resnetv2.ipynb)
 
 ### R Jupyter notebooks
-- [Iris flower classification hyper-parameter optimization with H2O Deep Water (GPU)](./deeplearning_grid_iris.ipynb)
+- [Iris flower classification hyper-parameter optimization with H2O Deep Water (GPU)](./deeplearning_grid_iris_R.ipynb)
