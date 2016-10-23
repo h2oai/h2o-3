@@ -15,7 +15,8 @@ Note: There are many more example scripts in [h2o-py/tests](https://github.com/h
 - [MNIST image classification with fully-connected neural networks (GPU and CPU)](./deeplearning_mnist_fullyconnected.ipynb)
 - [MNIST image classification with convolutional neural networks (GPU)](./deeplearning_mnist_convnet.ipynb)
 - [CIFAR10 image classification with VGG convolutional neural network (GPU)](./deeplearning_cifar10_vgg.ipynb)
-- [Cat/Dog/Mouse image classification with Inception Resnet V2 convolutional neural network (GPU)](./deeplearning_inception_resnetv2.ipynb)
+- [Cat/Dog/Mouse image classification with Lenet convolutional neural network (GPU)](./deeplearning_cat_dog_mouse_lenet.ipynb)
+- [Cat/Dog/Mouse image classification with Inception Resnet V2 convolutional neural network (GPU)](./deeplearning_cat_dog_mouse_inception_resnetv2.ipynb)
 
 ### R Jupyter notebooks
 - [Iris flower classification hyper-parameter optimization with H2O Deep Water (GPU)](./deeplearning_grid_iris_R.ipynb)
