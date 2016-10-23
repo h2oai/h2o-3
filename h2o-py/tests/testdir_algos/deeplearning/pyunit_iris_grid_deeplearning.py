@@ -25,8 +25,7 @@ def iris_dl_grid():
 
   gs = H2OGridSearch(H2ODeepLearningEstimator, hyper_params=hyper_parameters, grid_id="mygrid")
   gs.train(x=list(range(4)), y=4, training_frame=train)
-  print(gs.sort_by("mse"))
-  h2o.get_grid("mygrid")
+  print(gs.get_grid(sort_by="mse"))
 
   for model in gs:
     assert isinstance(model, H2ODeepLearningEstimator)
