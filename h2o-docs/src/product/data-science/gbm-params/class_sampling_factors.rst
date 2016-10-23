@@ -137,6 +137,6 @@ Example
 	# train using the grid
 	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# sort the grid models by increasing logloss
+	# sort the grid models by logloss
 	sorted_grid = grid.get_grid(sort_by='logloss', decreasing=False)
 	print(sorted_grid)
