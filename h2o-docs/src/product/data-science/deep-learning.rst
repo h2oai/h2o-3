@@ -235,7 +235,6 @@ recommended, as model performance can vary greatly.
    - ``logloss``
    - ``MSE``
    - ``AUC``
-   - ``r2``
    - ``lift_top_group``
    - ``misclassification``
    - ``mean_per_square_error``
