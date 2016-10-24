@@ -171,7 +171,7 @@ Defining a DRF Model
    - ``AUC``
    - ``lift_top_group``
    - ``misclassification``
-   - ``mean_per_square_error``
+   - ``mean_per_class_error``
 
 -  **stopping\_tolerance**: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
