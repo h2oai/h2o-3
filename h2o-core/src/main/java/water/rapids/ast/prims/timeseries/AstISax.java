@@ -16,10 +16,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * The iSAX 2.0 algorithm is a time series indexing strategy that reduces the dimensionality of a time series along the time axis.
+ * The Sax algorithm is a time series indexing strategy that reduces the dimensionality of a time series along the time axis.
  * For example, if a time series had 1000 unique values with data across 500 rows, reduce this data set to a time series that
  * uses 100 unique values, across 10 buckets along the time span.
- * http://www.cs.ucr.edu/~eamonn/iSAX_2.0.pdf
  * http://www.cs.ucr.edu/~eamonn/SAX.pdf
  *
  * Note: This approach assumes the frame has the form of TS-i x T where TS-i is a single time series and T is time:
