@@ -130,6 +130,7 @@
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
+#' @examples
 #' \donttest{
 #' library(h2o)
 #' h2o.init()
