@@ -20,7 +20,7 @@ plot.ts(df)
 fr_t = t(fr)
 
 #Run sax
-res = h2o.sax(fr_t,num_words=10,max_cardinality=10,optimize_card = FALSE) #Non optimized cardinalty search
+res = h2o.isax(fr_t,num_words=10,max_cardinality=10,optimize_card = FALSE) #Non optimized cardinalty search
 res2 = h2o.isax(fr_t,num_words=10,max_cardinality=10,optimize_card = TRUE) #Optimized cardinality search
 
 #Explore indexes produced
