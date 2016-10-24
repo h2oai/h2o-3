@@ -53,15 +53,18 @@ def deepwater_custom_lenet_mnist():
                                 momentum_start=0.9,
                                 momentum_stable=0.9,
                                 mini_batch_size=128,
+                                train_samples_per_iteration=0,
+                                score_duty_cycle=0,
+                                stopping_rounds=0,
                                 ignore_const_cols=False,
                                 network_definition_file="/tmp/symbol_lenet-py.json",
 				image_shape=[28,28],
                                 channels=1)
                                 
-  model.train(x=predictors,y=resp, training_frame=train, validation_frame=test)
+  model.train(x=predictors,y=resp, training_frame=train)
   model.show()
   print(model.model_performance(valid=True))
-  error = model.model_performance(valid=True).mean_per_class_error()
+  error = model.model_performance(test).mean_per_class_error()
   assert error < 0.1, "mean classification error on validation set is too high : " + str(error)
 
 if __name__ == "__main__":
