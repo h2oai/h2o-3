@@ -1,7 +1,6 @@
 package water.api;
 
 import water.DKV;
-import water.Job;
 import water.Key;
 import water.api.schemas3.JobV3;
 import water.api.schemas3.ParseSVMLightV3;
@@ -50,11 +49,12 @@ class ParseHandler extends Handler {
     return names;
   }
 
+  @SuppressWarnings("unused")  // called through reflection by RequestServer
   public JobV3 parseSVMLight(int version, ParseSVMLightV3 parse) {
     Key [] fkeys = new Key[parse.source_frames.length];
     for(int i = 0; i < fkeys.length; ++i)
       fkeys[i] = parse.source_frames[i].key();
-    Key destKey = parse.destination_frame == null?null:parse.destination_frame.key();
+    Key<Frame> destKey = parse.destination_frame == null? null : parse.destination_frame.key();
     if(destKey == null)
       destKey = Key.make(ParseSetup.createHexName(parse.source_frames[0].toString()));
     ParseSetup setup = ParseSetup.guessSetup(fkeys,ParseSetup.makeSVMLightSetup());

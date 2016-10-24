@@ -38,7 +38,7 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
     _model._normRespSub = readkv("norm_resp_sub");
     _model._useAllFactorLevels = readkv("use_all_factor_levels");
 
-    _model._imageDataSet = new ImageDataSet(_model._width, _model._height, _model._channels);
+    _model._imageDataSet = new ImageDataSet(_model._width, _model._height, _model._channels, _model._nclasses);
 
     _model._opts = new RuntimeOptions();
     _model._opts.setSeed(0); // ignored - not needed during scoring

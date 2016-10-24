@@ -15,7 +15,6 @@ import water.util.RandomUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
@@ -159,7 +158,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
       }
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
         assert (_localmodel._dataInfo != null);
-        iter = new DeepWaterFrameIterator(trainData, trainLabels, _localmodel._dataInfo, batchSize, _localmodel.get_params()._cache_data);
+        iter = new DeepWaterDatasetIterator(trainData, trainLabels, _localmodel._dataInfo, batchSize, _localmodel.get_params()._cache_data);
       }
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
         iter = new DeepWaterTextIterator(trainData, trainLabels, batchSize, 100/*FIXME*/, _localmodel.get_params()._cache_data);

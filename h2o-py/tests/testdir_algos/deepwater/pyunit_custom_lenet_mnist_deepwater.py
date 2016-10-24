@@ -9,22 +9,27 @@ def lenet(num_classes):
     import mxnet as mx
     data = mx.symbol.Variable('data')
     # first conv
-    conv1 = mx.symbol.Convolution(data=data, kernel=(5,5), num_filter=20)
-    tanh1 = mx.symbol.Activation(data=conv1, act_type="tanh")
-    pool1 = mx.symbol.Pooling(data=tanh1, pool_type="max", kernel=(2,2), stride=(2,2))
+    conv1 = mx.symbol.Convolution(data=data, kernel=(4,4), num_filter=32)
+    relu1 = mx.symbol.Activation(data=conv1, act_type="relu")
+    pool1 = mx.symbol.Pooling(data=relu1, pool_type="max", kernel=(2,2), stride=(2,2))
     # second conv
-    conv2 = mx.symbol.Convolution(data=pool1, kernel=(5,5), num_filter=50)
-    tanh2 = mx.symbol.Activation(data=conv2, act_type="tanh")
-    pool2 = mx.symbol.Pooling(data=tanh2, pool_type="max", kernel=(2,2), stride=(2,2))
+    conv2 = mx.symbol.Convolution(data=pool1, kernel=(3,3), num_filter=16)
+    relu2 = mx.symbol.Activation(data=conv2, act_type="relu")
+    pool2 = mx.symbol.Pooling(data=relu2, pool_type="max", kernel=(2,2), stride=(2,2))
+    drop = mx.symbol.Dropout(data=pool2, p=0.2)
+
     # first fullc
-    flatten = mx.symbol.Flatten(data=pool2)
-    fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=500)
-    tanh3 = mx.symbol.Activation(data=fc1, act_type="tanh")
+    flatten = mx.symbol.Flatten(data=drop)
+    fc1 = mx.symbol.FullyConnected(data=flatten, num_hidden=128)
+    relu3 = mx.symbol.Activation(data=fc1, act_type="relu")
+
+    fc2 = mx.symbol.FullyConnected(data=relu3, num_hidden=64)
+    relu4 = mx.symbol.Activation(data=fc2, act_type="relu")
+
     # second fullc
-    fc2 = mx.symbol.FullyConnected(data=tanh3, num_hidden=num_classes)
-    # loss
-    lenet = mx.symbol.SoftmaxOutput(data=fc2, name='softmax')
-    return lenet
+    fc3 = mx.symbol.FullyConnected(data=relu4, num_hidden=num_classes)
+    net = mx.symbol.SoftmaxOutput(data=fc3, name='softmax')
+    return net
 
 def deepwater_custom_lenet_mnist():
   if not H2ODeepWaterEstimator.available(): return
@@ -42,13 +47,24 @@ def deepwater_custom_lenet_mnist():
   lenet(nclasses).save("/tmp/symbol_lenet-py.json")
 
   print("Importing the lenet model architecture for training in H2O")
-  model = H2ODeepWaterEstimator(epochs=100, learning_rate=1e-3, mini_batch_size=64,
-                                network='user', network_definition_file="/tmp/symbol_lenet-py.json",
-				image_shape=[28,28], channels=1)
+  model = H2ODeepWaterEstimator(epochs=10,
+                                learning_rate=0.05, 
+                                learning_rate_annealing=1e-5, 
+                                momentum_start=0.9,
+                                momentum_stable=0.9,
+                                mini_batch_size=128,
+                                train_samples_per_iteration=0,
+                                score_duty_cycle=0,
+                                stopping_rounds=0,
+                                ignore_const_cols=False,
+                                network_definition_file="/tmp/symbol_lenet-py.json",
+				image_shape=[28,28],
+                                channels=1)
                                 
-  model.train(x=predictors,y=resp, training_frame=train, validation_frame=test)
+  model.train(x=predictors,y=resp, training_frame=train)
   model.show()
-  error = model.model_performance(valid=True).mean_per_class_error()
+  print(model.model_performance(valid=True))
+  error = model.model_performance(test).mean_per_class_error()
   assert error < 0.1, "mean classification error on validation set is too high : " + str(error)
 
 if __name__ == "__main__":

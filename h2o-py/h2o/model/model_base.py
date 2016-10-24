@@ -780,7 +780,7 @@ class ModelBase(backwards_compatible()):
             plt.title("Validation Scoring History")
             plt.plot(scoring_history[timestep], scoring_history[metric])
 
-        elif self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
+        elif self._model_json["algo"] in ("deeplearning", "deepwater", "drf", "gbm"):
             # Set timestep
             if self._model_json["algo"] in ("gbm", "drf"):
                 assert_is_type(timestep, "AUTO", "duration", "number_of_trees")

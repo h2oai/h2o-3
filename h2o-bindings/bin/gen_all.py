@@ -6,6 +6,7 @@ import gen_csharp
 import gen_docs_json
 import gen_java
 import gen_python
+import gen_R
 import gen_thrift
 import bindings
 import sys
@@ -43,6 +44,7 @@ sys.argv.insert(2, "%s:%s" % (cloud.get_ip(), cloud.get_port()))
 
 # Actually generate all the bindings
 print()
+gen_R.main()
 gen_python.main()
 gen_docs_json.main()
 gen_thrift.main()

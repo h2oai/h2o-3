@@ -653,7 +653,7 @@ class H2OBinomialModel(ModelBase):
             A unit of measurement for the y-axis.
         """
         assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse")
-        if self._model_json["algo"] in ("deeplearning", "drf", "gbm"):
+        if self._model_json["algo"] in ("deeplearning", "deepwater", "drf", "gbm"):
             if metric == "AUTO":
                 metric = "logloss"
         self._plot(timestep=timestep, metric=metric, server=server)

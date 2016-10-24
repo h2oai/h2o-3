@@ -11,15 +11,35 @@
 #' @param y The name of the response variable in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param checkpoint Model checkpoint to resume training with.
+<<<<<<< HEAD
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+=======
+#' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to False.
+#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+#' @param validation_frame Id of the validation data frame.
+#' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
+#'        False.
+#' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
+#'        balance_classes. Defaults to 5.0.
+#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
+#'        be automatically computed to obtain class balance during training. Requires balance_classes.
+>>>>>>> master
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to False.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to False.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
+<<<<<<< HEAD
+=======
+#' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
+#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+#'        weights are not allowed.
+>>>>>>> master
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen". Defaults to AUTO.
@@ -54,8 +74,12 @@
 #'        much) Defaults to 0.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
+<<<<<<< HEAD
 #' @param shuffle_training_data \code{Logical}. Enable shuffling of training data (recommended if training data is replicated and
 #'        train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes). Defaults to True.
+=======
+#' @param shuffle_training_data \code{Logical}. Enable global shuffling of training data. Defaults to True.
+>>>>>>> master
 #' @param mini_batch_size Mini-batch size (smaller leads to better fit, larger can speed up and generalize better). Defaults to 32.
 #' @param clip_gradient Clip gradients once their absolute value is larger than this value. Defaults to 10.0.
 #' @param network Network architecture. Must be one of: "auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn",
@@ -63,6 +87,10 @@
 #' @param backend Deep Learning Backend. Must be one of: "auto", "mxnet", "caffe", "tensorflow". Defaults to mxnet.
 #' @param image_shape Width and height of image. Defaults to [0, 0].
 #' @param channels Number of (color) channels. Defaults to 3.
+<<<<<<< HEAD
+=======
+#' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to False.
+>>>>>>> master
 #' @param gpu \code{Logical}. Whether to use a GPU (if available). Defaults to True.
 #' @param device_id Device IDs (which GPUs to use). Defaults to [0].
 #' @param network_definition_file Path of file containing network definition (graph, architecture).
@@ -84,13 +112,28 @@
 h2o.deepwater <- function(x, y, 
                           model_id, 
                           checkpoint, 
+<<<<<<< HEAD
                           training_frame, 
                           validation_frame, 
                           nfolds  = 0, 
+=======
+                          autoencoder  = FALSE, 
+                          training_frame, 
+                          validation_frame, 
+                          nfolds  = 0, 
+                          balance_classes  = FALSE, 
+                          max_after_balance_size  = 5.0, 
+                          class_sampling_factors, 
+>>>>>>> master
                           keep_cross_validation_predictions  = FALSE, 
                           keep_cross_validation_fold_assignment  = FALSE, 
                           fold_assignment  = c("AUTO", "Random", "Modulo", "Stratified"), 
                           fold_column, 
+<<<<<<< HEAD
+=======
+                          offset_column, 
+                          weights_column, 
+>>>>>>> master
                           score_each_iteration  = FALSE, 
                           categorical_encoding  = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"), 
                           overwrite_with_best_model  = TRUE, 
@@ -121,6 +164,10 @@ h2o.deepwater <- function(x, y,
                           backend  = c("auto", "mxnet", "caffe", "tensorflow"), 
                           image_shape  = c(0, 0), 
                           channels  = 3, 
+<<<<<<< HEAD
+=======
+                          sparse  = FALSE, 
+>>>>>>> master
                           gpu  = TRUE, 
                           device_id  = c(0), 
                           network_definition_file, 
@@ -144,18 +191,31 @@ h2o.deepwater <- function(x, y,
   }
 
   # Required args: training_frame
+<<<<<<< HEAD
   if( missing(training_frame) ) stop("argument "training_frame" is missing, with no default")
+=======
+  if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
+  if( missing(validation_frame) ) validation_frame = NULL
+>>>>>>> master
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
            error = function(err) {
+<<<<<<< HEAD
              stop("argument "training_frame" must be a valid H2OFrame or key")
+=======
+             stop("argument 'training_frame' must be a valid H2OFrame or key")
+>>>>>>> master
            })
   if (!is.null(validation_frame)) {
      if (!is.H2OFrame(validation_frame))
          tryCatch(validation_frame <- h2o.getFrame(validation_frame),
              error = function(err) {
+<<<<<<< HEAD
                  stop("argument "validation_frame" must be a valid H2OFrame or key")
+=======
+                 stop("argument 'validation_frame' must be a valid H2OFrame or key")
+>>>>>>> master
              })
   }
   # Parameter list to send to model builder
@@ -172,10 +232,24 @@ h2o.deepwater <- function(x, y,
     parms$model_id <- model_id
   if (!missing(checkpoint))
     parms$checkpoint <- checkpoint
+<<<<<<< HEAD
+=======
+  if (!missing(autoencoder))
+    parms$autoencoder <- autoencoder
+>>>>>>> master
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
   if (!missing(nfolds))
     parms$nfolds <- nfolds
+<<<<<<< HEAD
+=======
+  if (!missing(balance_classes))
+    parms$balance_classes <- balance_classes
+  if (!missing(max_after_balance_size))
+    parms$max_after_balance_size <- max_after_balance_size
+  if (!missing(class_sampling_factors))
+    parms$class_sampling_factors <- class_sampling_factors
+>>>>>>> master
   if (!missing(keep_cross_validation_predictions))
     parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
   if (!missing(keep_cross_validation_fold_assignment))
@@ -184,6 +258,13 @@ h2o.deepwater <- function(x, y,
     parms$fold_assignment <- fold_assignment
   if (!missing(fold_column))
     parms$fold_column <- fold_column
+<<<<<<< HEAD
+=======
+  if (!missing(offset_column))
+    parms$offset_column <- offset_column
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+>>>>>>> master
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
   if (!missing(categorical_encoding))
@@ -244,6 +325,11 @@ h2o.deepwater <- function(x, y,
     parms$image_shape <- image_shape
   if (!missing(channels))
     parms$channels <- channels
+<<<<<<< HEAD
+=======
+  if (!missing(sparse))
+    parms$sparse <- sparse
+>>>>>>> master
   if (!missing(gpu))
     parms$gpu <- gpu
   if (!missing(device_id))
@@ -268,3 +354,21 @@ h2o.deepwater <- function(x, y,
     parms$problem_type <- problem_type
   .h2o.modelJob('deepwater', parms, h2oRestApiVersion=3) 
 }
+<<<<<<< HEAD
+=======
+
+        # Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
+        #' Returns True if a deep water model can be built, or False otherwise.
+        #' @param h2oRestApiVersion (Optional) Specific version of the REST API to use
+        #'
+        h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+            visibility = .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS("deepwater"))$model_builders[["deepwater"]][["visibility"]]
+            if (visibility == "Experimental") {
+                print("Cannot build a Deep Water model - no backend found.")
+                return(FALSE)
+            } else {
+                return(TRUE)
+            }
+        }
+        
+>>>>>>> master
