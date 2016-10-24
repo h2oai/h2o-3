@@ -29,27 +29,11 @@ public class AstFunction extends AstPrimitive {
     _parent = null;
   }
 
-  public AstFunction(Rapids e) {
-    e.xpeek('{');
-    ArrayList<String> ids = new ArrayList<>();
-    ids.add("");                // 1-based ID list
-
-    while (e.skipWS() != '.') {
-      String id = e.token();
-      if (!Character.isJavaIdentifierStart(id.charAt(0)))
-        throw new Rapids.IllegalASTException("variable must be a valid Java identifier: " + id);
-      for (char c : id.toCharArray())
-        if (!Character.isJavaIdentifierPart(c))
-          throw new Rapids.IllegalASTException("variable must be a valid Java identifier: " + id);
-      ids.add(id);
-    }
-    e.xpeek('.');
+  public AstFunction(ArrayList<String> ids, AstRoot body) {
     _ids = ids.toArray(new String[ids.size()]);
-    _body = e.parse();
+    _body = body;
     _args = null;  // This is a template of an uncalled function
     _parent = null;
-    e.skipWS();
-    e.xpeek('}');
   }
 
   // A function applied to arguments

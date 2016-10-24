@@ -75,8 +75,10 @@ public class Env extends Iced {
     CONSTS.put("true", AstConst.TRUE);
     CONSTS.put("NaN", AstConst.NAN);
     CONSTS.put("NA", AstConst.NAN);
+    CONSTS.put("nan", AstConst.NAN);
     CONSTS.put("PI", AstConst.PI);
     CONSTS.put("Pi", AstConst.PI);
+    CONSTS.put("null", null);
 
     // Standard math functions
     init(new AstAbs());
