@@ -46,7 +46,7 @@ Example
 	print(h2o.table(covtype['C55']))
 
 	# try using the max_after_balance_size parameter:
-	max = .85
+	max <- .85
 	cov_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
 	                   validation_frame = valid, balance_classes = TRUE, 
 	                   max_after_balance_size = max, seed = 1234)
@@ -132,6 +132,6 @@ Example
 	# train using the grid
 	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# sort the grid models by increasing logloss
+	# sort the grid models by logloss
 	sorted_grid = grid.get_grid(sort_by='logloss', decreasing=False)
 	print(sorted_grid)

@@ -13,9 +13,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 
-class DeepWaterFrameIterator extends DeepWaterIterator {
+class DeepWaterDatasetIterator extends DeepWaterIterator {
 
-  DeepWaterFrameIterator(ArrayList<Integer> rows, ArrayList<Float> labels, DataInfo dinfo, int batch_size, boolean cache) throws IOException {
+  DeepWaterDatasetIterator(ArrayList<Integer> rows, ArrayList<Float> labels, DataInfo dinfo, int batch_size, boolean cache) throws IOException {
     super(batch_size, dinfo.fullN(), cache);
     _rows_lst = rows;
     _label_lst = labels;

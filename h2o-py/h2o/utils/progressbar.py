@@ -562,7 +562,7 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
         """Find current STDOUT's width, in characters."""
         # If output is not terminal but a regular file, assume 100 chars width
         if not sys.stdout.isatty():
-            return 100
+            return 80
 
         # Otherwise, first try getting the dimensions from shell command `stty`:
         try:
@@ -584,7 +584,7 @@ class _ProgressBarCompoundWidget(ProgressBarWidget):
             pass
 
         # Finally check the COLUMNS environment variable
-        return int(os.environ.get("COLUMNS", 100))
+        return int(os.environ.get("COLUMNS", 80))
 
 
 

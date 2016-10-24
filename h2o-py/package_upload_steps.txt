@@ -1,5 +1,7 @@
 
-To Upload:
+====================================
+Upload to PyPi
+====================================
 
 Step 1:
 python setup.py bdist_wheel
@@ -29,8 +31,29 @@ If it's your first time:
 pip install --pre h2o
 
 
+====================================
+Upload to Anaconda
+====================================
+
+1. If this is your first time, then run
+
+        $ conda config --set anaconda_upload yes
+
+2. (This step can be skipped if you just built package for PyPi)
+
+        $ python setup.py bdist_wheel
+
+3. Modify package version number within this file (we need to automate this step somehow):
+
+        $ sublime conda/h2o/meta.yaml
+
+4. Build the conda package and upload to anaconda automatically
+        $ cd conda
+        $ conda build h2o
 
 
-To build the sphinx documentation:
+===================================
+Build Sphinx documentation
+===================================
 
 /usr/local/bin/sphinx-build -b html docs/ docs/docs/

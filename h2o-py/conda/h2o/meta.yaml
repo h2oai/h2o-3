@@ -1,0 +1,27 @@
+package:
+  name: h2o
+  version: "3.10.0.8"
+
+source:
+  path: ../..
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - colorama
+    - future
+    - tabulate
+    - requests
+
+  run:
+    - python
+    - colorama
+    - future
+    - requests
+    - tabulate
+
+about:
+  home: https://github.com/h2oai/h2o-3.git
+  license: Apache License Version 2.0
+  license_family: Apache

@@ -150,7 +150,7 @@ function() {
         # source h2o-r/h2o-package/R. overrides h2o package load
         to_src <- c("classes.R", "connection.R", "constants.R", "logging.R", "communication.R", "kvstore.R",
                     "frame.R", "astfun.R", "import.R", "parse.R", "export.R", "models.R", "edicts.R", "gbm.R",
-                    "glm.R", "glrm.R", "kmeans.R", "deeplearning.R", "randomforest.R", "naivebayes.R", "pca.R",
+                    "glm.R", "glrm.R", "kmeans.R", "deeplearning.R", "deepwater.R", "randomforest.R", "naivebayes.R", "pca.R",
                     "svd.R", "locate.R","grid.R")
         src_path <- paste(h2oRDir,"h2o-package","R",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))

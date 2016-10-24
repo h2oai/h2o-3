@@ -597,7 +597,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def max_w2(self):
-        """float: Constraint for squared sum of incoming weights per unit (e.g. for Rectifier). (Default: ∞)"""
+        """
+        float: Constraint for squared sum of incoming weights per unit (e.g. for Rectifier). (Default: 3.4028235e+38)
+        """
         return self._parms.get("max_w2")
 
     @max_w2.setter

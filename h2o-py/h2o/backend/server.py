@@ -203,12 +203,17 @@ class H2OLocalServer(object):
     @staticmethod
     def _jar_paths():
         """Produce potential paths for an h2o.jar executable."""
-        # Check if running from an h2o-3 src folder, in which case use the freshly-built h2o.jar
+        # Check if running from an h2o-3 src folder (or any subfolder), in which case use the freshly-built h2o.jar
         cwd_chunks = os.path.abspath(".").split(os.path.sep)
         for i in range(len(cwd_chunks), 0, -1):
             if cwd_chunks[i - 1] == "h2o-3":
                 yield os.path.sep.join(cwd_chunks[:i] + ["build", "h2o.jar"])
-        # Finally try several alternative locations where h2o.jar might be installed
+        # Then check the backend/bin folder:
+        # (the following works assuming this code is located in h2o/backend/server.py file)
+        backend_dir = os.path.split(os.path.realpath(__file__))[0]
+        yield os.path.join(backend_dir, "bin", "h2o.jar")
+
+        # Then try several old locations where h2o.jar might have been installed
         prefix1 = prefix2 = sys.prefix
         # On Unix-like systems Python typically gets installed into /Library/... or /System/Library/... If one of
         # those paths is sys.prefix, then we also build its counterpart.
