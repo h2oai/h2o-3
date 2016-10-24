@@ -52,6 +52,7 @@ def gen_module(schema, algo):
         #    yield "#' %s" % line.lstrip()
         yield "#' @references %s" % bi.wrap(help_references, indent=("#'             "), indent_first=False)
     if help_example:
+        yield "#' @examples"
         lines = help_example.split("\n")
         for line in lines:
             yield "#' %s" % line.lstrip()
