@@ -1899,7 +1899,7 @@ public class GBMTest extends TestUtil {
       }
       int idx = ArrayUtils.minIndex(loglosses);
       Log.info("Optimal histo type: " + histoType[idx]);
-      assertTrue(6 == idx);
+      assertTrue(4 == idx);
     } finally {
       if (tfr!=null) tfr.delete();
       if (ksplits[0]!=null) ksplits[0].remove();

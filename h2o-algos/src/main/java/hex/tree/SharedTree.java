@@ -493,6 +493,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           }
           if (udn._scoreCols!=null) {
             for (int c : udn._scoreCols) {
+              assert(udn._hs.length == parent._histos.length);
+              assert(udn._hs.length == otherNode._hs.length);
               DHistogram my = udn._hs[c];
               if (otherNode != null) {
                 Log.info("Filling up histogram for node " + udn._nid + " and col " + c);
