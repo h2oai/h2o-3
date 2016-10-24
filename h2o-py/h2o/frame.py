@@ -2241,22 +2241,24 @@ class H2OFrame(object):
         else:
             return frame
 
-    def isax(self, num_words, max_cardinality, **kwargs):
-        """ Compute the iSAX http://www.cs.ucr.edu/~eamonn/iSAX_2.0.pdf index for DataFrame which is
+    def sax(self, num_words, max_cardinality,optimize_card = False, **kwargs):
+        """ Compute the SAX(http://www.cs.ucr.edu/~eamonn/SAX.pdf) index for DataFrame which is
         assumed to be numeric time series data
         Parameters
         ----------
           num_words : int
-            Number of iSAX words for the timeseries. ie granularity along the time series
+            Number of SAX words for the timeseries. ie granularity along the time series
           max_cardinality : int
-            Maximum cardinality of the iSAX word. Each word can have less than the max
+            Maximum cardinality of the SAX word. Each word can have less than the max
+          optimized_card : boolean, default = False
+            An optimization flag that will find the max cardinality regardless of what is passed in for max_cardinality.
         Returns
         -------
-          An H2OFrame with the name of time series, string representation of iSAX word, followed by binary representation
+          An H2OFrame with the name of time series, string representation of SAX word, followed by binary representation
         """
         assert num_words > 0, "num_words must be greater than 0!"
         assert max_cardinality > 0, "max_cardinality must be greater than 0!"
-        frame = H2OFrame._expr(expr=ExprNode("isax", self, num_words, max_cardinality))._frame()
+        frame = H2OFrame._expr(expr=ExprNode("sax", self, num_words, max_cardinality, optimize_card))._frame()
         return frame
 
     def sub(self, pattern, replacement, ignore_case=False):

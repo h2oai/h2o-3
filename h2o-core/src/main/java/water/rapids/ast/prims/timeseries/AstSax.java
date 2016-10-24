@@ -16,7 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * The Sax algorithm is a time series indexing strategy that reduces the dimensionality of a time series along the time axis.
+ * The SAX algorithm is a time series indexing strategy that reduces the dimensionality of a time series along the time axis.
  * For example, if a time series had 1000 unique values with data across 500 rows, reduce this data set to a time series that
  * uses 100 unique values, across 10 buckets along the time span.
  * http://www.cs.ucr.edu/~eamonn/SAX.pdf
@@ -34,27 +34,28 @@ import java.util.Arrays;
  *
  * @author markchan & navdeepgill
  */
-public class AstISax extends AstPrimitive {
+public class AstSax extends AstPrimitive {
     protected double[][] _domain_hm = null;
     @Override
-    public String[] args() { return new String[]{"ary", "numWords", "maxCardinality"}; }
+    public String[] args() { return new String[]{"ary", "numWords", "maxCardinality", "optimize_card"}; }
 
     @Override
-    public int nargs() { return 1 + 3; } // (ary isax numWords maxCardinality)
+    public int nargs() { return 1 + 4; } // (ary Sax numWords maxCardinality)
 
     @Override
-    public String str() { return "isax"; }
+    public String str() { return "sax"; }
 
     @Override
     public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
         Frame f = stk.track(asts[1].exec(env)).getFrame();
         AstRoot n = asts[2];
         AstRoot mc = asts[3];
+        boolean optm_card = asts[4].exec(env).getNum() == 1;
 
         //Check vecs are numeric
         for(Vec v : f.vecs()){
             if(!v.isNumeric()){
-                throw new IllegalArgumentException("iSAX only applies to numeric columns!");
+                throw new IllegalArgumentException("Sax only applies to numeric columns!");
             }
         }
 
@@ -73,7 +74,7 @@ public class AstISax extends AstPrimitive {
         for (int i = 0; i < numWords; i++) {
             columns.add("c"+i);
         }
-        Frame fr2 = new AstISax.ISaxTask(numWords, maxCardinality)
+        Frame fr2 = new AstSax.SaxTask(numWords, maxCardinality)
                 .doAll(numWords, Vec.T_NUM, f).outputFrame(null, columns.toArray(new String[numWords]), null);
 
         _domain_hm = new double[numWords][maxCardinality];
@@ -88,30 +89,42 @@ public class AstISax extends AstPrimitive {
         }
 
         int[] maxCards = new int[numWords];
-        // get the cardinalities of each word
-        for (int i = 0; i < numWords; i++) {
-            int cnt = 0;
-            for (double d : _domain_hm[i]) {
-                if (Double.isNaN(d)) break;
-                else cnt++;
+
+        if(optm_card) {
+            // get the cardinalities of each word
+            for (int i = 0; i < numWords; i++) {
+                int cnt = 0;
+                for (double d : _domain_hm[i]) {
+                    if (Double.isNaN(d)) break;
+                    else cnt++;
+                }
+                maxCards[i] = cnt;
             }
-            maxCards[i] = cnt;
+            Frame fr2_reduced = new AstSax.SaxReduceCard(_domain_hm, maxCardinality).doAll(numWords, Vec.T_NUM, fr2)
+                    .outputFrame(null, columns.toArray(new String[numWords]), null);
+            Frame fr3 = new AstSax.SaxStringTask(maxCards).doAll(1, Vec.T_STR, fr2_reduced)
+                    .outputFrame(null, new String[]{"Sax_index"}, null);
+
+            fr2.delete(); //Not needed anymore
+            fr3.add(fr2_reduced);
+
+            return new ValFrame(fr3);
         }
+        for(int i = 0; i < numWords; ++i){
+            maxCards[i] = numWords;
+        }
+        Frame fr3 = new AstSax.SaxStringTask(maxCards).doAll(1, Vec.T_STR, fr2)
+                .outputFrame(null, new String[]{"Sax_index"}, null);
 
-        Frame fr2_reduced = new AstISax.ISaxReduceCard(_domain_hm,maxCardinality).doAll(numWords, Vec.T_NUM,fr2)
-                .outputFrame(null,columns.toArray(new String[numWords]),null);
-        Frame fr3 = new AstISax.ISaxStringTask(maxCards).doAll(1,Vec.T_STR,fr2_reduced)
-                .outputFrame(null,new String[]{"isax_index"},null);
+        fr3.add(fr2);
 
-        fr2.delete(); //Not needed anymore
-        fr3.add(fr2_reduced);
         return new ValFrame(fr3);
     }
 
-    public static class ISaxReduceCard extends MRTask<AstISax.ISaxReduceCard> {
+    public static class SaxReduceCard extends MRTask<AstSax.SaxReduceCard> {
         double[][] _domain_hm;
         int maxCardinality;
-        ISaxReduceCard(double[][] dm, int mc) {
+        SaxReduceCard(double[][] dm, int mc) {
             _domain_hm = dm;
             maxCardinality = mc;
         }
@@ -133,9 +146,9 @@ public class AstISax extends AstPrimitive {
             }
         }
     }
-    public static class ISaxStringTask extends MRTask<AstISax.ISaxStringTask> {
+    public static class SaxStringTask extends MRTask<AstSax.SaxStringTask> {
         int[] maxCards;
-        ISaxStringTask(int[] mc) { maxCards = mc; }
+        SaxStringTask(int[] mc) { maxCards = mc; }
 
         @Override
         public void map(Chunk cs[], NewChunk nc[]) {
@@ -152,13 +165,13 @@ public class AstISax extends AstPrimitive {
 
     }
 
-    public static class ISaxTask extends MRTask<AstISax.ISaxTask> {
+    public static class SaxTask extends MRTask<AstSax.SaxTask> {
         private int nw;
         private int mc;
         private static NormalDistribution nd = new NormalDistribution();
-        private ArrayList<Double> probBoundaries; // for tokenizing iSAX
+        private ArrayList<Double> probBoundaries; // for tokenizing Sax
 
-        ISaxTask(int numWords, int maxCardinality) {
+        SaxTask(int numWords, int maxCardinality) {
             nw = numWords;
             mc = maxCardinality;
             // come up with NormalDist boundaries

@@ -19,8 +19,10 @@ plot.ts(df)
 #Transpose frame as Isax expects a single time series per row
 fr_t = t(fr)
 
-#Run isax
-res = h2o.isax(fr_t,num_words=10,max_cardinality=10)
+#Run sax
+res = h2o.sax(fr_t,num_words=10,max_cardinality=10,optimize_card = FALSE) #Non optimized cardinalty search
+res2 = h2o.isax(fr_t,num_words=10,max_cardinality=10,optimize_card = TRUE) #Optimized cardinality search
 
 #Explore indexes produced
 res
+res2
