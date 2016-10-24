@@ -43,11 +43,8 @@ Upload to Anaconda
 
         $ python setup.py bdist_wheel
 
-3. Modify package version number within this file (we need to automate this step somehow):
+3. Build the conda package and upload to anaconda automatically
 
-        $ sublime conda/h2o/meta.yaml
-
-4. Build the conda package and upload to anaconda automatically
         $ cd conda
         $ conda build h2o
 
