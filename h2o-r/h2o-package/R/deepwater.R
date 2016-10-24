@@ -65,8 +65,6 @@
 #'        much) Defaults to 0.0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
-#' @param shuffle_training_data \code{Logical}. Enable shuffling of training data (recommended if training data is replicated and
-#'        train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes). Defaults to True.
 #' @param shuffle_training_data \code{Logical}. Enable global shuffling of training data. Defaults to True.
 #' @param mini_batch_size Mini-batch size (smaller leads to better fit, larger can speed up and generalize better). Defaults to 32.
 #' @param clip_gradient Clip gradients once their absolute value is larger than this value. Defaults to 10.0.
