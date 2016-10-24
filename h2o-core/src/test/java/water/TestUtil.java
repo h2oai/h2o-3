@@ -78,29 +78,34 @@ public class TestUtil extends Iced {
 
   @AfterClass
   public static void checkLeakedKeys() {
-    int leaked_keys = numberOfLeakedKeys();
+    int numberOfLeakedKeys = numberOfLeakedKeys();
     int cnt=0;
-    if( leaked_keys > 0 ) {
+    List<String> leakedKeys = new LinkedList<>();
+    if( numberOfLeakedKeys > 0 ) {
       for( Key k : H2O.localKeySet() ) {
         Value value = Value.STORE_get(k);
         // Ok to leak VectorGroups and the Jobs list
         if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
             // Also leave around all attempted Jobs for the Jobs list
             (value.isJob() && value.<Job>get().isStopped()) ) {
-          leaked_keys--;
+          numberOfLeakedKeys--;
         } else {
           try {
-            System.out.println(k + " -> " + value.get());
+            String msg = k + " -> " + value.get();
+            System.out.println(msg);
+            if (leakedKeys.size() < 10) leakedKeys.add(msg);
           } catch(Exception x) {
-            System.out.println(k + " -> " + value);
+            String msg = k + " -> " + value;
+            System.out.println(msg);
+            if (leakedKeys.size() < 10) leakedKeys.add(msg);
           }
           if( cnt++ < 10 )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
       }
-      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
+      if( 10 < numberOfLeakedKeys ) System.err.println("... and "+(numberOfLeakedKeys-10)+" more leaked keys");
     }
-    assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
+    assertTrue(numberOfLeakedKeys + " leaked: " + StringUtils.join(",", leakedKeys) + ", cnt = " + cnt, numberOfLeakedKeys <= 0 || cnt == 0);
     removeKeysRegardless();
 
   }

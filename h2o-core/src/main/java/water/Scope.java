@@ -33,13 +33,18 @@ public class Scope {
   /** Exit the inner-most Scope, remove all Keys created since the matching
    *  enter call except for the listed Keys.
    *  @return Returns the list of kept keys. */
-  static public Key[] exit(Key... keep) {
-    Set<Key> mustKeep = new HashSet<>(Arrays.asList(keep));
+  static public void exit() {
+    exit(Collections.EMPTY_LIST);
+  }
+
+  public static <T extends Keyed<T>> Iterable<Key<T>> exit(Collection<Key<T>> keep) {
+    Set<Key> mustKeep = new HashSet<Key>(keep);
     Stack<HashSet<Key>> keys = _scope.get()._keys;
-    if (!keys.empty()) {
+    Set<Key> keysToDrop = keys.isEmpty() ? Collections.EMPTY_SET : keys.pop();
+    if (!keysToDrop.isEmpty()) {
       Futures fs = new Futures();
-      for (Key key : keys.pop()) {
-        if (!mustKeep.contains(key)) Keyed.remove(key, fs);
+      for (Key key : keysToDrop) {
+        if (key != null && !mustKeep.contains(key)) Keyed.remove(key, fs);
       }
       fs.blockForPending();
     }
