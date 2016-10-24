@@ -19,6 +19,7 @@ public class AutoMLBuildSpec extends Iced {
    * Default constructor provides the default behavior.
    */
   public AutoMLBuildSpec() {
+    this.input_spec = new AutoMLInput();
     this.build_control = new AutoMLBuildControl();
     // Note: no defaults for input_spec!
     this.feature_engineering = new AutoMLFeatureEngineering();
