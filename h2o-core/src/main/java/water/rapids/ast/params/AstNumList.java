@@ -36,64 +36,29 @@ public class AstNumList extends AstParameter {
   public final boolean _isList; // True if an unordered list of numbers (cnts are 1, stride is ignored)
   public boolean _isSort; // True if bases are sorted.  May get updated later.
 
-  public AstNumList(Rapids e) {
-    ArrayList<Double> bases = new ArrayList<>();
-    ArrayList<Double> strides = new ArrayList<>();
-    ArrayList<Long> cnts = new ArrayList<>();
-
-    // Parse a number list
-    while (true) {
-      char c = e.skipWS();
-      if (c == ']') break;
-      if (c == '#') e.xpeek('#');
-      double base = e.number(), cnt = 1, stride = 1;
-      c = e.skipWS();
-      if (c == ':') {
-        e.xpeek(':');
-        e.skipWS();
-        cnt = e.number();
-        if (cnt < 1 || ((long) cnt) != cnt)
-          throw new IllegalArgumentException("Count must be a integer larger than zero, " + cnt);
-        c = e.skipWS();
-        if (c == ':') {
-          e.xpeek(':');
-          e.skipWS();
-          stride = e.number();
-          if (stride < 0)
-            throw new IllegalArgumentException("Stride must be positive, " + stride);
-          c = e.skipWS();
-        }
-      }
-      if (cnt == 1 && stride != 1)
-        throw new IllegalArgumentException("If count is 1, then stride must be one (and ignored)");
-      bases.add(base);
-      cnts.add((long) cnt);
-      strides.add(stride);
-      // Optional comma seperating span
-      if (c == ',') e.xpeek(',');
-    }
-    e.xpeek(']');
-
-    // Convert fixed-sized arrays
-    _bases = new double[bases.size()];
-    _strides = new double[bases.size()];
-    _cnts = new long[bases.size()];
+  public AstNumList(ArrayList<Double> bases, ArrayList<Double> strides, ArrayList<Long> counts) {
+    int n = bases.size();
+    // Convert to fixed-sized arrays
+    _bases = new double[n];
+    _strides = new double[n];
+    _cnts = new long[n];
     boolean isList = true;
-    for (int i = 0; i < _bases.length; i++) {
+    for (int i = 0; i < n; i++) {
       _bases[i] = bases.get(i);
-      _cnts[i] = cnts.get(i);
+      _cnts[i] = counts.get(i);
       _strides[i] = strides.get(i);
       if (_cnts[i] != 1) isList = false;
     }
     _isList = isList;
 
     // Complain about unordered bases, unless it's a simple number list
-    boolean isSort = true;
-    for (int i = 1; i < _bases.length; i++)
-      if (_bases[i - 1] >= _bases[i])
-        if (_isList) isSort = false;
-        else throw new IllegalArgumentException("Bases must be monotonically increasing");
-    _isSort = isSort;
+    boolean isSorted = true;
+    for (int i = 1; i < n; i++)
+      if (_bases[i-1] + (_cnts[i-1] - 1) * _strides[i-1] >= _bases[i]) {
+        if (_isList) isSorted = false;
+        else throw new IllegalArgumentException("Overlapping numeric ranges");
+      }
+    _isSort = isSorted;
   }
 
   // A simple AstNumList of 1 number

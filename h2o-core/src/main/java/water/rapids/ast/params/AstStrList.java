@@ -19,17 +19,10 @@ public class AstStrList extends AstParameter {
     _strs = null;
   }
 
-  public AstStrList(Rapids e) {
-    ArrayList<String> strs = new ArrayList<>();
-    while (true) {
-      char c = e.skipWS();
-      if (c == ']') break;
-      if (Rapids.isQuote(c)) strs.add(e.match(c));
-      else throw new IllegalArgumentException("Expecting the start of a string");
-    }
-    e.xpeek(']');
+  public AstStrList(ArrayList<String> strs) {
     _strs = strs.toArray(new String[strs.size()]);
   }
+
 
   // This is a special syntatic form; the number-list never executes and hits the execution stack
   @Override

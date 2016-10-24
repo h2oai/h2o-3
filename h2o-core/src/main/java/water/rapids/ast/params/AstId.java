@@ -2,7 +2,6 @@ package water.rapids.ast.params;
 
 import water.fvec.Frame;
 import water.rapids.Env;
-import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.AstParameter;
 
@@ -14,10 +13,6 @@ public class AstId extends AstParameter {
 
   public AstId() {
     _id = null;
-  }
-
-  public AstId(Rapids e) {
-    _id = e.token();
   }
 
   public AstId(String id) {

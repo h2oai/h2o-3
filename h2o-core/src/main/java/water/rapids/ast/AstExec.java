@@ -14,25 +14,14 @@ public class AstExec extends AstRoot {
   public final AstRoot[] _asts;
 
   public AstExec() {
-    _asts = null;
+    this((AstRoot[])null);
   }
 
   public AstExec(AstRoot[] asts) {
     _asts = asts;
   }
 
-  public AstExec(Rapids e) {
-    e.xpeek('(');
-    AstRoot ast = e.parse();
-    // An eager "must fail at runtime" test.  Not all AstId's will yield a
-    // function, so still need a runtime test.
-    if (!(ast instanceof AstExec) && !(ast instanceof AstId) && !(ast instanceof AstFunction))
-      e.throwErr("Expected a function but found a " + ast.getClass());
-    ArrayList<AstRoot> asts = new ArrayList<>();
-    asts.add(0, ast);
-    while (e.skipWS() != ')')
-      asts.add(e.parse());
-    e.xpeek(')');
+  public AstExec(ArrayList<AstRoot> asts) {
     _asts = asts.toArray(new AstRoot[asts.size()]);
   }
 
