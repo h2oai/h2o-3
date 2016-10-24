@@ -4,6 +4,7 @@ package ai.h2o.automl;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
+import water.api.schemas3.ImportFilesV3;
 import water.fvec.Frame;
 
 public class AutoMLTest extends TestUtil {
@@ -50,7 +51,15 @@ public class AutoMLTest extends TestUtil {
     Frame fr=null;
     AutoML aml=null;
     try {
-      aml=AutoML.makeAutoML(Key.<AutoML>make(),"smalldata/santander/train.csv.zip", null, "TARGET","MSE", 3600,-1,true,null,true);
+      // was: makeAutoML(Key<AutoML> key, String datasetPath, String[] relationPaths, String responseName, String loss, long maxTime, double minAccuracy, boolean ensemble, algo[] excludeAlgos, boolean tryMutations )
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      autoMLBuildSpec.input_spec.training_path = new ImportFilesV3.ImportFiles();
+      autoMLBuildSpec.input_spec.training_path.path = "smalldata/santander/train.csv.zip";
+      autoMLBuildSpec.input_spec.response_column = "TARGET";
+      autoMLBuildSpec.build_control.loss = "MSE";
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(3600);
+
+      aml = AutoML.makeAutoML(Key.<AutoML>make(), autoMLBuildSpec);
       aml.learn();
     } finally {
       // cleanup
