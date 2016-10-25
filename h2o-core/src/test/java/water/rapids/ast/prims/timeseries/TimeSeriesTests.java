@@ -1,24 +1,20 @@
 package water.rapids.ast.prims.timeseries;
 
+import org.junit.Assert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
-import water.Key;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
-import water.rapids.vals.ValFrame;
-import water.rapids.vals.ValRow;
 import hex.CreateFrame;
-import java.util.ArrayList;
 
-import static org.junit.Assert.*;
 
 public class TimeSeriesTests extends TestUtil{
-    private static Frame f = null;
+    private static Frame f = null, fr1=null, fr2=null;
     private static CreateFrame cf = null;
 
     @BeforeClass public static void setup() {
@@ -30,16 +26,22 @@ public class TimeSeriesTests extends TestUtil{
         cf.binary_ones_fraction = 0.0;
         cf.categorical_fraction = 0.0;
         cf.integer_fraction = 0.0;
+        cf.missing_fraction = 0.0;
+        cf.seed = 123;
         f = cf.execImpl().get();
     }
 
     @AfterClass public static void teardown() {
-        f.delete();
+        f.delete(); fr1.delete(); fr2.delete();
     }
 
     @Test public void testIsax() {
-        Val res = Rapids.exec("(isax (cumsum " + f._key + " 1) 10 10 0)"); // 10 words 10 max cardinality 0 optimize card
-        Frame fr2 = res.getFrame();
-
+        Val res1 = Rapids.exec("(cumsum " + f._key + " 1)"); //
+        fr1 = res1.getFrame();
+        DKV.put(fr1);
+        Val res2 = Rapids.exec("(isax " + fr1._key + " 10 10 0)"); // 10 words 10 max cardinality 0 optimize card
+        fr2 = res2.getFrame();
+        String isaxIDX = "0^10_0^10_0^10_0^10_5^10_7^10_8^10_9^10_9^10_8^10";
+        Assert.assertEquals(fr2.vec(0).atStr(new BufferedString(),0),isaxIDX);
     }
 }
