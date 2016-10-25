@@ -24,7 +24,7 @@ public abstract class AstCumu extends AstPrimitive {
 
   @Override
   public int nargs() {
-    return 1 + 2;
+    return 1 + 1;
   } // (cumu x)
 
   @Override
@@ -40,7 +40,10 @@ public abstract class AstCumu extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     AstRoot axisAR = asts[2];
-    if (!f.anyVec().isNumeric()) throw new IllegalArgumentException("Column must be numeric.");
+    for (Vec v:f.vecs()) {
+      if(v.isCategorical() || v.isString()) throw new IllegalArgumentException(
+              "Cumulative functions not applicable to enum or string values");
+    }
     int axis = (int) axisAR.exec(env).getNum();
 
     if (f.numCols() == 1) {
