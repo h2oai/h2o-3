@@ -44,8 +44,8 @@ public abstract class AstCumu extends AstPrimitive {
       if(v.isCategorical() || v.isString() || v.isUUID()) throw new IllegalArgumentException(
               "Cumulative functions not applicable to enum, string, or UUID values");
     }
+    if (axisAR.exec(env).getNum() != 1 && axisAR.exec(env).getNum() != 0) throw new IllegalArgumentException("Axis must be 0 or 1");
     int axis = (int) axisAR.exec(env).getNum();
-    if (axis > 1 || axis < 0) throw new IllegalArgumentException("Axis must be 0 or 1");
     if (f.numCols() == 1) {
       if (axis == 0) {
         AstCumu.CumuTask t = new AstCumu.CumuTask(f.anyVec().nChunks(), init());
