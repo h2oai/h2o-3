@@ -541,6 +541,7 @@ public class RapidsTest extends TestUtil {
       DKV.put(fr);
       x = String.format("(cumsum %s 1)", fr._key);
       Val val = Rapids.exec(x);
+      Assert.assertTrue(val instanceof ValFrame);
       if (val instanceof ValFrame ) {
         fr2 = val.getFrame();
         Assert.assertEquals(fr2.vec(0).at8(0L), 1);
@@ -551,6 +552,7 @@ public class RapidsTest extends TestUtil {
       }
       x = String.format("(cumsum %s 0)", fr._key);
       val = Rapids.exec(x);
+      Assert.assertTrue(val instanceof ValFrame);
       if (val instanceof ValFrame ) {
         fr2 = val.getFrame();
         Assert.assertEquals(fr2.vec(0).at8(1L), 2);
@@ -561,6 +563,7 @@ public class RapidsTest extends TestUtil {
       }
       x = String.format("(cummax %s 1)", fr._key);
       val = Rapids.exec(x);
+      Assert.assertTrue(val instanceof ValFrame);
       if (val instanceof ValFrame ) {
         fr2 = val.getFrame();
         Assert.assertEquals(fr2.vec(0).at8(0L), 1);
