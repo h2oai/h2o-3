@@ -103,6 +103,7 @@ public class Rapids {
   private static HashSet<Character> invalidTokenCharacters =
           new HashSet<>(Chars.asList("({[]}) \t\r\n\\\"\'".toCharArray()));
 
+  // Set of characters that may appear in a number. Note that "NaN" or "nan" is also a number.
   private static HashSet<Character> validNumberCharacters =
           new HashSet<>(Chars.asList("0123456789.-+eEnNaA".toCharArray()));
 
@@ -141,6 +142,9 @@ public class Rapids {
     }
   }
 
+  /**
+   * Parse "function application" expression, i.e. pattern of the form "(func ...args)"
+   */
   private AstExec parseFunctionApplication() {
     eatChar('(');
     ArrayList<AstRoot> asts = new ArrayList<>();
@@ -157,6 +161,9 @@ public class Rapids {
     return res;
   }
 
+  /**
+   * Parse and return a user defined function of the form "{arg1 arg2 . (expr)}"
+   */
   private AstFunction parseFunctionDefinition() {
     eatChar('{');
 
@@ -185,6 +192,10 @@ public class Rapids {
     return new AstFunction(ids, body);
   }
 
+  /**
+   * Parse and return a list of tokens: either a list of strings, or a list of numbers.
+   * We do not support lists of mixed types, or lists containing variables (for now).
+   */
   private AstParameter parseList() {
     eatChar('[');
     char nextChar = skipWS();
@@ -193,6 +204,9 @@ public class Rapids {
     return res;
   }
 
+  /**
+   * Parse a list of strings. Strings can be either in single- or in double quotes.
+   */
   private AstStrList parseStringList() {
     ArrayList<String> strs = new ArrayList<>(10);
     while (isQuote(skipWS())) {
@@ -201,6 +215,12 @@ public class Rapids {
     return new AstStrList(strs);
   }
 
+  /**
+   * Parse a "num list". This could be either a plain list of numbers, or a range, or a list of ranges. For example
+   * [2 3 4 5 6 7] can also be written as [2:6] or [2:2 4:4:1]. The format of each "range" is `start:count[:stride]`,
+   * and it denotes the sequence {start, start + stride, ..., start + (count-1)*stride}. Here start and stride may
+   * be real numbers, however count must be a non-negative integer. Negative strides are also not allowed.
+   */
   private AstNumList parseNumList() {
     ArrayList<Double> bases = new ArrayList<>();
     ArrayList<Double> strides = new ArrayList<>();
@@ -208,14 +228,14 @@ public class Rapids {
 
     while (skipWS() != ']') {
       double base = number();
-      double cnt = 1;
+      double count = 1;
       double stride = 1;
       if (skipWS() == ':') {
         eatChar(':');
         skipWS();
-        cnt = number();
-        if (cnt < 1 || ((long) cnt) != cnt)
-          throw new IllegalASTException("Count must be an integer larger than zero, got " + cnt);
+        count = number();
+        if (count < 1 || ((long) count) != count)
+          throw new IllegalASTException("Count must be a positive integer, got " + count);
       }
       if (skipWS() == ':') {
         eatChar(':');
@@ -224,10 +244,10 @@ public class Rapids {
         if (stride < 0)
           throw new IllegalASTException("Stride must be positive, got " + stride);
       }
-      if (cnt == 1 && stride != 1)
+      if (count == 1 && stride != 1)
         throw new IllegalASTException("If count is 1, then stride must be one (and ignored)");
       bases.add(base);
-      counts.add((long) cnt);
+      counts.add((long) count);
       strides.add(stride);
       // Optional comma separating span
       if (skipWS() == ',') eatChar(',');
@@ -279,19 +299,23 @@ public class Rapids {
   /**
    * Parse a number from the token stream.
    */
-  public double number() {
+  private double number() {
     int start = _x;
     while (validNumberCharacters.contains(peek(0))) _x++;
     if (start == _x) throw new IllegalASTException("Missing a number");
     String s = _str.substring(start, _x);
     if (s.toLowerCase().equals("nan")) return Double.NaN;
-    return Double.valueOf(s);
+    try {
+      return Double.valueOf(s);
+    } catch (NumberFormatException e) {
+      throw new IllegalASTException(e.toString());
+    }
   }
 
   /**
    * Parse a string from the token stream.
    */
-  public String string() {
+  private String string() {
     char quote = peek(0);
     int start = ++_x;
     boolean has_escapes = false;
@@ -319,10 +343,16 @@ public class Rapids {
     throw new IllegalASTException("Unterminated string at " + start);
   }
 
+  /**
+   * Return true if `c` is a whitespace character.
+   */
   private static boolean isWS(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\r';
   }
 
+  /**
+   * Return true if `c` is a quote character.
+   */
   private static boolean isQuote(char c) {
     return c == '\'' || c == '\"';
   }
