@@ -1067,13 +1067,15 @@ class H2OFrame(object):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-    def as_data_frame(self, use_pandas=True):
+    def as_data_frame(self, use_pandas=True, header=True):
         """Obtain the dataset as a python-local object.
 
         Parameters
         ----------
           use_pandas : bool, default=True
             A flag specifying whether or not to return a pandas DataFrame.
+          header : bool, default=True
+            If True, return column names as first element in list
 
         Returns
         -------
@@ -1084,7 +1086,10 @@ class H2OFrame(object):
         if can_use_pandas() and use_pandas:
             import pandas
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False)
-        return [row for row in csv.reader(StringIO(self.get_frame_data()))]
+        frame = [row for row in csv.reader(StringIO(self.get_frame_data()))]
+        if not header:
+            frame.pop(0)
+        return frame
 
     def get_frame_data(self):
         """Get frame data as str in csv format

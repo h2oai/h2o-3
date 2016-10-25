@@ -1113,10 +1113,7 @@ def as_list(data, use_pandas=True, header=True):
     assert_is_type(data, H2OFrame)
     assert_is_type(use_pandas, bool)
     assert_is_type(header, bool)
-    frame = H2OFrame.as_data_frame(data, use_pandas=use_pandas)
-    if not header:
-        frame.pop(0)
-    return frame
+    return H2OFrame.as_data_frame(data, use_pandas=use_pandas, header=header)
 
 
 def demo(funcname, interactive=True, echo=True, test=False):
