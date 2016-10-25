@@ -85,9 +85,7 @@ Shared Tree Hyperparameters
 -  ``nbins``
 -  ``nbins_top_level``
 -  ``nbins_cats``
--  ``r2_stopping``
 -  ``seed``
--  ``build_tree_one_node``
 -  ``sample_rate``
 -  ``sample_rate_per_class``
 -  ``col_sample_rate_per_tree``

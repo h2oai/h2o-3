@@ -24,7 +24,7 @@ Available options for ``stopping_metric`` include the following:
 - ``AUC``
 - ``lift_top_group``
 - ``misclassification``
-- ``mean_per_square_error``
+- ``mean_per_class_error``
 
 **Note**: ``stopping_rounds`` must be enabled for ``stopping_metric`` or ``stopping_tolerance`` to work.
 
