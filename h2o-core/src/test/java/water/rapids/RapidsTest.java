@@ -57,6 +57,7 @@ public class RapidsTest extends TestUtil {
     parse_err("[#1 #2 #3]");
     parse_err("[0 1 'hello']");
     parse_err("[1:0]");
+    parse_err("[0:nan:2]");
     parse_err("[1:0:5]");
     parse_err("[1:-20]");
     parse_err("[1:20:-5]");
