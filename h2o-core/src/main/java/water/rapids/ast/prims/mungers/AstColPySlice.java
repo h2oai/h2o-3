@@ -35,13 +35,13 @@ public class AstColPySlice extends AstPrimitive {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Val v = stk.track(asts[1].exec(env));
-    AstParameter col_list = (AstParameter) asts[2];
+    AstParameter colList = (AstParameter) asts[2];
     if (v instanceof ValRow) {
       ValRow vv = (ValRow) v;
-      return vv.slice(col_list.columns(vv.getNames()));
+      return vv.slice(colList.columns(vv.getNames()));
     }
     Frame fr = v.getFrame();
-    int[] cols = col_list.columns(fr.names());
+    int[] cols = colList.columns(fr.names());
 
     Frame fr2 = new Frame();
     if (cols.length == 0)        // Empty inclusion list?
