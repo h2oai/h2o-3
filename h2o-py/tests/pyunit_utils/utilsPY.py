@@ -255,7 +255,7 @@ def javamunge(assembly, pojoname, test, compile_only=False):
     """
     print("Downloading munging POJO code from H2O")
     tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "results", pojoname))
-    os.makedirs(tmpdir)
+    os.mkdir(tmpdir)
     assembly.to_pojo(pojoname, path=tmpdir, get_jar=True)
     h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
