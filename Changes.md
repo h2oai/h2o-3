@@ -22,6 +22,8 @@
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3585'>PUBDEV-3585</a>] -         Optimize algorithm for automatic estimation of K for K-Means
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-646'>HEXDEV-646</a>] -         include flow, /3/ API accessible Aggregator model in h2o-3
+</li>
 </ul>
 
 ###Turing (3.10.0.8) - 10/10/2016
