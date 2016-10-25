@@ -4,10 +4,7 @@ import water.parser.BufferedString;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * String manipulation utilities.
@@ -158,5 +155,19 @@ public class StringUtils {
       sb.append(item);
     }
     return sb.toString();
+  }
+
+  /**
+   * Convert a string into the set of its characters.
+   *
+   * @param src Source string
+   * @return Set of characters within the source string
+   */
+  public static HashSet<Character> toCharacterSet(String src) {
+    int n = src.length();
+    HashSet<Character> res = new HashSet<>(n);
+    for (int i = 0; i < n; i++)
+      res.add(src.charAt(i));
+    return res;
   }
 }

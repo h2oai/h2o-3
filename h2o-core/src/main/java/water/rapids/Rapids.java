@@ -1,15 +1,15 @@
 package water.rapids;
 
-import com.google.common.primitives.Chars;
 import water.fvec.Frame;
 import water.rapids.ast.AstExec;
 import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.*;
+import water.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Set;
 
 /**
  * <p> Rapids is an interpreter of abstract syntax trees.
@@ -100,12 +100,10 @@ public class Rapids {
   //--------------------------------------------------------------------------------------------------------------------
 
   // Set of characters that cannot appear inside a token
-  private static HashSet<Character> invalidTokenCharacters =
-          new HashSet<>(Chars.asList("({[]}) \t\r\n\\\"\'".toCharArray()));
+  private static Set<Character> invalidTokenCharacters = StringUtils.toCharacterSet("({[]}) \t\r\n\\\"\'");
 
   // Set of characters that may appear in a number. Note that "NaN" or "nan" is also a number.
-  private static HashSet<Character> validNumberCharacters =
-          new HashSet<>(Chars.asList("0123456789.-+eEnNaA".toCharArray()));
+  private static Set<Character> validNumberCharacters = StringUtils.toCharacterSet("0123456789.-+eEnNaA");
 
   /**
    * The constructor is private: rapids expression can be parsed into an AST tree, or executed, but the "naked" Rapids
