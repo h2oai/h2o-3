@@ -1,6 +1,5 @@
 package water;
 
-import com.google.common.collect.Sets;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -32,15 +31,19 @@ public class Scope {
 
   /** Exit the inner-most Scope, remove all Keys created since the matching
    *  enter call except for the listed Keys.
-   *  @return Returns the list of kept keys. */
+   */
   static public void exit() {
-    exit(Collections.EMPTY_LIST);
+    exit(Collections.<Key>emptyList());
   }
 
-  public static <T extends Keyed<T>> Iterable<Key<T>> exit(Collection<Key<T>> keep) {
+  public static void exit(Key... keep) {
+    exit(Arrays.asList(keep));
+  }
+  
+  public static void exit(Collection<Key> keep) {
     Set<Key> mustKeep = new HashSet<Key>(keep);
     Stack<HashSet<Key>> keys = _scope.get()._keys;
-    Set<Key> keysToDrop = keys.isEmpty() ? Collections.EMPTY_SET : keys.pop();
+    Set<Key> keysToDrop = keys.isEmpty() ? Collections.<Key>emptySet() : keys.pop();
     if (!keysToDrop.isEmpty()) {
       Futures fs = new Futures();
       for (Key key : keysToDrop) {
@@ -48,14 +51,6 @@ public class Scope {
       }
       fs.blockForPending();
     }
-    return keep;
-  }
-
-  /** Pop-scope (same as exit-scope) but return all keys that are tracked (and
-   *  would have been deleted). */
-  static public Key[] pop() {
-    Stack<HashSet<Key>> keys = _scope.get()._keys;
-    return keys.size() > 0 ? keys.pop().toArray(new Key[0]) : null;
   }
 
   static void track_internal( Key k ) {

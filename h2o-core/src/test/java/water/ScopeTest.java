@@ -44,7 +44,7 @@ public class ScopeTest extends TestUtil {
     Scope.track(v1);
     Scope.track(v2);
     Scope.track(v3);
-    Scope.exit(Arrays.asList(v3._key, v2._key));
+    Scope.exit(v3._key, v2._key);
     assertTrue(numberOfLeakedKeys() > 0);
     Futures fs = new Futures();
     Keyed.remove(v2._key);
