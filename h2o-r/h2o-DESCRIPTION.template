@@ -23,7 +23,8 @@ Imports: graphics,
          RCurl,
          jsonlite
 Suggests: ggplot2,
-          mlbench
+          mlbench,
+          Matrix
 Collate:
          'astfun.R'
          'classes.R'
