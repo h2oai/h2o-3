@@ -276,7 +276,8 @@ final class RollupStats extends Iced {
       if( ss != null ) {
         long dsz = (2/*hdr*/+1/*len*/+ss.length)*8;  // Size of base domain array
         for( String s : vec.domain() )
-          dsz += 2*s.length() + (2/*hdr*/+1/*value*/+1/*hash*/+2/*hdr*/+1/*len*/)*8;
+          if( s != null )
+            dsz += 2*s.length() + (2/*hdr*/+1/*value*/+1/*hash*/+2/*hdr*/+1/*len*/)*8;
         _rs._size += dsz;             // Account for domain size in Vec size
         // Account for Chunk key size
         int keysize = (2/*hdr*/+1/*kb*/+1/*hash*/+2/*hdr*/+1/*len*/)*8+ vec._key._kb.length;
