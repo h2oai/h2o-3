@@ -112,7 +112,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // --- hash ----------------------------------------------------------------
   // Helper function to spread lousy hashCodes
   private static final int hash(final Object key) {
-    int h = key == null ? 0 : key.hashCode();     // The real hashCode call
+    int h = key.hashCode();     // The real hashCode call
     h ^= (h>>>20) ^ (h>>>12);
     h ^= (h>>> 7) ^ (h>>> 4);
     h += h<<7; // smear low bits up high, for hashcodes that only differ by 1
