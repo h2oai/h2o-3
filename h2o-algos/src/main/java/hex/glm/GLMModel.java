@@ -461,7 +461,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(mu < Double.MIN_NORMAL) mu = Double.MIN_NORMAL;
       return y * Math.log(y / mu);
     }
-  }
+  } // GLMParameters
 
   public static class GLMWeights {
     public double mu = 0;
