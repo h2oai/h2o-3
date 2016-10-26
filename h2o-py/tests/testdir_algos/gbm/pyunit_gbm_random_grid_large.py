@@ -39,7 +39,7 @@ def airline_gbm_random_grid():
                    }
 
   air_grid = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_params_tune, search_criteria=search_criteria_tune)
-  air_grid.train(x=myX, y="IsDepDelayed", training_frame=air_hex, distribution="bernoulli", seed=1234)
+  air_grid.train(x=myX, y="IsDepDelayed", training_frame=air_hex, distribution="bernoulli", seed=1234, nfolds=5, fold_assignment='Modulo', keep_cross_validation_predictions=True)
 
   assert(len(air_grid.get_grid())==5)
   print(air_grid.get_grid("logloss"))

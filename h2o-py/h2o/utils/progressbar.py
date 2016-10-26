@@ -645,7 +645,7 @@ class PBWBar(ProgressBarFlexibleWidget):
             out += self._bar_symbols[frac_chars - 1] if frac_chars > 0 else ""
             rendered_len = len(out)
             if status:
-                out += colorama.Fore.LIGHTRED_EX + " (" + status + ")" + colorama.Style.RESET_ALL
+                out += colorama.Fore.RED + " (" + status + ")" + colorama.Style.RESET_ALL
                 rendered_len += 3 + len(status)
             out += " " * (width - 1 - rendered_len)
             out += endl

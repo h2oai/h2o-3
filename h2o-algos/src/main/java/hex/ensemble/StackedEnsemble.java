@@ -1,9 +1,15 @@
 package hex.ensemble;
 
+import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.StackedEnsembleModel;
+import water.DKV;
+import water.Key;
+import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
+import water.fvec.Frame;
+import water.util.Log;
 
 /**
  * An ensemble of other models, created by <i>stacking</i> with the SuperLearner algorithm or a variation.
@@ -37,6 +43,39 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
   private class StackedEnsembleDriver extends Driver {
 
+    private Frame prepareLevelOneFrame(StackedEnsembleModel.StackedEnsembleParameters parms) {
+      Frame levelOneFrame = new Frame(Key.<Frame>make("levelone_" + _model._key.toString()));
+      for (Key<Model> k : _parms._base_models) {
+        Model aModel = DKV.getGet(k);
+        if (null == aModel) {
+          Log.info("Failed to find base model; skipping: " + k);
+          continue;
+        }
+
+        if (null == aModel._output._cross_validation_holdout_predictions_frame_id)
+          throw new H2OIllegalArgumentException("Failed to find the xval predictions frame id. . .  Looks like keep_cross_validation_predictions wasn't set when building the models.");
+
+        // add the predictions for aModel to levelOneFrame
+        // TODO: multinomial classification:
+        Frame aModelsPredictions = aModel._output._cross_validation_holdout_predictions_frame_id.get();
+        if (aModel._output.isBinomialClassifier())
+          levelOneFrame.add(aModel._key.toString(), aModel._parms.train().vec(2)); // predictions are in the third col
+        else if (aModel._output.isClassifier())
+          throw new H2OIllegalArgumentException("Don't yet know how to stack multinomial classifiers: " + aModel._key);
+        else if (aModel._output.isAutoencoder())
+          throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
+        else if (!aModel._output.isSupervised())
+          throw new H2OIllegalArgumentException("Don't yet know how to stack unsupervised models: " + aModel._key);
+        else
+          levelOneFrame.add(aModel._key.toString(), aModel._parms.train().vec(0));
+
+      } // for all base_models
+
+      levelOneFrame.add(_model.responseColumn, _model.commonTrainingFrame.vec(_model.responseColumn));
+      levelOneFrame.delete_and_lock(_job);
+      Log.info("Finished creating \"level one\" frame for stacking: " + levelOneFrame.toString());
+      return levelOneFrame;
+    }
     public void computeImpl() {
       init(true);
       if (error_count() > 0)
@@ -45,13 +84,36 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       _model = new StackedEnsembleModel(dest(), _parms);
       _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
-      // TODO: stuff
       _model.checkAndInheritModelProperties();
 
-      // finally:
-      _model.update(_job);
+      Frame levelOneFrame = prepareLevelOneFrame(_parms);
 
-    }
+      /* TODO: not quite. . .
+      // train the metalearner model
+      // TODO: allow types other than GLM
+      // Default Job for just this training
+      Job job = new Job<>(_model._key, ModelBuilder.javaName("GLM"), "GLM");
+      GLM metaBuilder = ModelBuilder.make("GLM", job, Key.<Model>make("metalearner_" + _model._key));
+      metaBuilder._parms._non_negative = true;
+      metaBuilder._parms._train = levelOneFrame._key;
+      metaBuilder._parms._response_column = _model.responseColumn;
+      metaBuilder._parms._family = _model.modelCategory == ModelCategory.Regression ? GLMModel.GLMParameters.Family.gaussian : GLMModel.GLMParameters.Family.binomial;
+
+      metaBuilder.init(false);
+
+      Job<GLMModel> j = metaBuilder.trainModel();
+
+      while (j.isRunning()) {
+        try {
+          _job.update(j._work, "training metalearner");
+          Thread.sleep(100);
+        }
+        catch (InterruptedException e) {}
+      }
+*/
+      Log.info("Finished training metalearner model.");
+
+    } // computeImpl
   }
 
 
