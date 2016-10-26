@@ -1,4 +1,4 @@
-# H2O DeepLearning Jupyter Notebooks
+# H2O Deep Learning Jupyter Notebooks
 
 Note: There are many more example scripts in [h2o-py/tests](https://github.com/h2oai/h2o-3/tree/master/h2o-py/tests), [h2o-py/demos](https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos), [h2o-r/tests](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests) and [h2o-r/demos](https://github.com/h2oai/h2o-3/tree/master/h2o-r/demos).
 
