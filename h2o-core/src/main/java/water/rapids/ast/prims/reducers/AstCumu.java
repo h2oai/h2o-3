@@ -44,10 +44,10 @@ public abstract class AstCumu extends AstPrimitive {
       if(v.isCategorical() || v.isString() || v.isUUID()) throw new IllegalArgumentException(
               "Cumulative functions not applicable to enum, string, or UUID values");
     }
-    if (axisAR.exec(env).getNum() != 1 && axisAR.exec(env).getNum() != 0) throw new IllegalArgumentException("Axis must be 0 or 1");
-    int axis = (int) axisAR.exec(env).getNum();
+    double axis = axisAR.exec(env).getNum();
+    if (axis != 1.0 && axis != 0.0) throw new IllegalArgumentException("Axis must be 0 or 1");
     if (f.numCols() == 1) {
-      if (axis == 0) {
+      if (axis == 0.0) {
         AstCumu.CumuTask t = new AstCumu.CumuTask(f.anyVec().nChunks(), init());
         t.doAll(new byte[]{Vec.T_NUM}, f.anyVec());
         final double[] chkCumu = t._chkCumu;
@@ -69,7 +69,7 @@ public abstract class AstCumu extends AstPrimitive {
     }
     else {
 
-      if (axis == 0) {  // down the column implementation
+      if (axis == 0.0) {  // down the column implementation
 
         AstCumu.CumuTaskWholeFrame t = new AstCumu.CumuTaskWholeFrame(f.anyVec().nChunks(), init(), f.numCols());
           Frame fr2 = t.doAll(f.numCols(), Vec.T_NUM, f).outputFrame(null, f.names(), null);
