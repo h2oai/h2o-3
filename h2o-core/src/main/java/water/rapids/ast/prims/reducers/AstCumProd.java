@@ -4,9 +4,7 @@ package water.rapids.ast.prims.reducers;
  */
 public class AstCumProd extends AstCumu {
   @Override
-  public int nargs() {
-    return 1 + 1;
-  } // (cumprod x)
+  public int nargs() { return 1 + 2; } // (cumprod x)
 
   @Override
   public String str() {
