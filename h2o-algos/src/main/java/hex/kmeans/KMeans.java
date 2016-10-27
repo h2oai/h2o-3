@@ -258,7 +258,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         final double[] mults = _parms._standardize ? _train.mults() : null;
         final int   [] impute_cat = new int[vecs.length];
         for(int i = 0; i < vecs.length; i++)
-          impute_cat[i] = vecs[i].isNumeric() ? -1 : DataInfo.imputeCat(vecs[i]);
+          impute_cat[i] = vecs[i].isNumeric() ? -1 : DataInfo.imputeCat(vecs[i],true);
         model._output._normSub = means;
         model._output._normMul = mults;
         // Initialize cluster centers and standardize if requested

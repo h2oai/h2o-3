@@ -2,21 +2,22 @@ package hex.api;
 
 import hex.DataInfo;
 import hex.DataInfo.TransformType;
+import hex.genmodel.utils.ArrayUtils;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMOutput;
-import hex.schemas.DataInfoFrameV3;
-import hex.schemas.GLMModelV3;
-import hex.schemas.GLMRegularizationPathV3;
-import hex.schemas.MakeGLMModelV3;
+import hex.gram.Gram;
+import hex.schemas.*;
 import water.DKV;
 import water.Key;
 import water.MRTask;
 import water.api.Handler;
 import water.api.schemas3.KeyV3;
 import water.fvec.*;
+import water.rapids.vals.ValFrame;
 
 import java.util.Arrays;
 import java.util.Map;
+import water.fvec.Vec.VectorGroup;
 
 /**
  * Created by tomasnykodym on 3/25/15.
@@ -123,5 +124,45 @@ public class MakeGLMModelHandler extends Handler {
     dinfo.dropInteractions();
     dinfo.remove();
     return res;
+  }
+  public GramV3 computeGram(int v, GramV3 input){
+    if(DKV.get(input.X.key()) == null)
+      throw new IllegalArgumentException("Frame " + input.X.key() + " does not exist.");
+    Frame fr = input.X.key().get();
+    Frame frcpy = new Frame(fr._names.clone(),fr.vecs().clone());
+    String wname = null;
+    Vec weight = null;
+    if(input.W != null && !input.W.column_name.isEmpty()) {
+      wname = input.W.column_name;
+      if(fr.find(wname) == -1) throw new IllegalArgumentException("Did not find weight vector " + wname);
+      weight = frcpy.remove(wname);
+    }
+    DataInfo dinfo = new DataInfo(frcpy,null,0,input.use_all_factor_levels,input.standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,input.skip_missing,false,!input.skip_missing,/* weight */ false, /* offset */ false, /* fold */ false, /* intercept */ true);
+    DKV.put(dinfo);
+    if(weight != null)dinfo.setWeights(wname,weight);
+    Gram.GramTask gt = new Gram.GramTask(null,dinfo,false,true).doAll(dinfo._adaptedFrame);
+    double [][] gram = gt._gram.getXX();
+    dinfo.remove();
+    String [] names = water.util.ArrayUtils.append(dinfo.coefNames(),"Intercept");
+    Vec [] vecs = new Vec[gram.length];
+    Key[] keys = new VectorGroup().addVecs(vecs.length);
+    for(int i = 0; i < vecs.length; ++i)
+      vecs[i] = Vec.makeVec(gram[i],keys[i]);
+    input.destination_frame = new KeyV3.FrameKeyV3();
+    String keyname = input.X.key().toString();
+    if(keyname.endsWith(".hex"))
+      keyname = keyname.substring(0,keyname.lastIndexOf("."));
+    keyname = keyname + "_gram";
+    if(weight != null)
+      keyname = keyname + "_" + wname;
+    Key k = Key.make(keyname);
+    if(DKV.get(k) != null){
+      int cnt = 0;
+      while(cnt < 1000 && DKV.get(k = Key.make(keyname + "_" + cnt)) != null)cnt++;
+      if(cnt == 1000) throw new IllegalArgumentException("unable to make unique key");
+    }
+    input.destination_frame.fillFromImpl(k);
+    DKV.put(new Frame(k, names,vecs));
+    return input;
   }
 }

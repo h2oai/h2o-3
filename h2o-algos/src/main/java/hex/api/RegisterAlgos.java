@@ -51,6 +51,10 @@ public class RegisterAlgos extends water.api.AbstractRegister {
         "glm_regularization_path",
         "Get full regularization path");
 
+    H2O.register("GET /3/ComputeGram", MakeGLMModelHandler.class, "computeGram",
+        "weighted_gram_matrix",
+        "Get weighted gram matrix");
+
     H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "glm_datainfo_frame",
         "Test only");
   }
