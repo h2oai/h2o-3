@@ -529,4 +529,53 @@ public class RapidsTest extends TestUtil {
     }
   }
 
+ @Test public void testCumu() {
+    Frame fr = null,fr2=null;
+    String x = null;
+    try {
+      fr = ArrayUtils.frame("c1",vec(ari(1,1)));
+      fr.    add("c2"  ,vec(ari(2,2)));
+      fr.    add("c3"  ,vec(ari(3,3)));
+      fr.    add("c4"  ,vec(ari(4,4)));
+      fr = new Frame(fr);
+      DKV.put(fr);
+      x = String.format("(cumsum %s 1)", fr._key);
+      Val val = Rapids.exec(x);
+      Assert.assertTrue(val instanceof ValFrame);
+      if (val instanceof ValFrame ) {
+        fr2 = val.getFrame();
+        Assert.assertEquals(fr2.vec(0).at8(0L), 1);
+        Assert.assertEquals(fr2.vec(1).at8(0L), 3);
+        Assert.assertEquals(fr2.vec(2).at8(0L), 6);
+        Assert.assertEquals(fr2.vec(3).at8(0L), 10);
+        fr2.remove();
+      }
+      x = String.format("(cumsum %s 0)", fr._key);
+      val = Rapids.exec(x);
+      Assert.assertTrue(val instanceof ValFrame);
+      if (val instanceof ValFrame ) {
+        fr2 = val.getFrame();
+        Assert.assertEquals(fr2.vec(0).at8(1L), 2);
+        Assert.assertEquals(fr2.vec(1).at8(1L), 4);
+        Assert.assertEquals(fr2.vec(2).at8(1L), 6);
+        Assert.assertEquals(fr2.vec(3).at8(1L), 8);
+        fr2.remove();
+      }
+      x = String.format("(cummax %s 1)", fr._key);
+      val = Rapids.exec(x);
+      Assert.assertTrue(val instanceof ValFrame);
+      if (val instanceof ValFrame ) {
+        fr2 = val.getFrame();
+        Assert.assertEquals(fr2.vec(0).at8(0L), 1);
+        Assert.assertEquals(fr2.vec(1).at8(0L), 2);
+        Assert.assertEquals(fr2.vec(2).at8(0L), 3);
+        Assert.assertEquals(fr2.vec(3).at8(0L), 4);
+        fr2.remove();
+      }
+    } finally {
+      if (fr!=null) fr.delete();
+    }
+  }
+
+
 }

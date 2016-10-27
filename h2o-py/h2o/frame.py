@@ -899,21 +899,57 @@ class H2OFrame(object):
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
 
-    def cumsum(self):
-        """The cumulative sum over the column."""
-        return H2OFrame._expr(expr=ExprNode("cumsum", self), cache=self._ex._cache)
+    def cumsum(self,  axis=0):
+        """The cumulative sum over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
 
-    def cumprod(self):
-        """The cumulative product over the column."""
-        return H2OFrame._expr(expr=ExprNode("cumprod", self), cache=self._ex._cache)
+        Returns
+        -------
+         An H2OFrame instance
+        """
+        return H2OFrame._expr(expr=ExprNode("cumsum", self, axis), cache=self._ex._cache)
 
-    def cummin(self):
-        """The cumulative min over the column."""
-        return H2OFrame._expr(expr=ExprNode("cummin", self), cache=self._ex._cache)
+    def cumprod(self, axis=0):
+        """The cumulative product over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
 
-    def cummax(self):
-        """The cumulative max over the column."""
-        return H2OFrame._expr(expr=ExprNode("cummax", self), cache=self._ex._cache)
+        Returns
+        -------
+         An H2OFrame instance
+        """
+        return H2OFrame._expr(expr=ExprNode("cumprod", self, axis), cache=self._ex._cache)
+
+    def cummin(self, axis=0):
+        """The cumulative min over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
+        """
+        return H2OFrame._expr(expr=ExprNode("cummin", self, axis), cache=self._ex._cache)
+
+    def cummax(self, axis=0):
+        """The cumulative max over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
+        """
+        return H2OFrame._expr(expr=ExprNode("cummax", self, axis), cache=self._ex._cache)
 
     def prod(self, na_rm=False):
         """
