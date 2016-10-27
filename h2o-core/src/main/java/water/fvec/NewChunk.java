@@ -48,7 +48,7 @@ public class NewChunk extends Chunk {
       }
       if(_vals1 != null){
         byte b = (byte)x;
-        if(x == b && b > Byte.MIN_VALUE-1) {
+        if(x == b) {
           _vals1[idx] = b;
         } else {
           // need to switch to 4 byte values
@@ -165,8 +165,7 @@ public class NewChunk extends Chunk {
     }
 
     public void switchToLongs() {
-      int len = Math.max(_vals1 == null?0:_vals1.length,_vals4 == null?0:_vals4.length);
-      int newlen = len;
+      int newlen = Math.max(_vals1 == null?0:_vals1.length,_vals4 == null?0:_vals4.length);
       _vals8 = MemoryManager.malloc8(newlen);
       if(_vals1 != null)
         for(int i = 0; i < _vals1.length; ++i)
@@ -503,7 +502,7 @@ public class NewChunk extends Chunk {
         addNum(Double.NaN);
         return;
       } else {
-        if (!_sparseNA && _sparseLen == _ms.len())
+        if (_sparseLen == _ms.len())
           append2slow();
         if(!_sparseNA) {
           if(_missing == null) _missing = new BitSet();
@@ -549,7 +548,7 @@ public class NewChunk extends Chunk {
   // Fast-path append double data
   public void addNum(double d) {
     if( isUUID() || isString() ) { addNA(); return; }
-    boolean predicate = _sparseNA ? !Double.isNaN(d) : isSparseZero()?d != 0:true;
+    boolean predicate = _sparseNA ? !Double.isNaN(d) : (isSparseZero() || d != 0);
     if(predicate) {
       if(_ms != null) {
         if((long)d == d){
@@ -621,7 +620,7 @@ public class NewChunk extends Chunk {
           append_ss((BufferedString) str);
         else // this spares some callers from an unneeded conversion to BufferedString first
           append_ss((String) str);
-      } else if (_id == null) {
+      } else {
         _is[_sparseLen] = CStrChunk.NA;
         set_sparseLen(_sparseLen + 1);
       }
@@ -648,15 +647,7 @@ public class NewChunk extends Chunk {
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
-<<<<<<< c12f9c278ec6192054df575a368b1e124326325a
     set_impl(_sparseLen, lo, hi);
-=======
-    if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
-      append2slowUUID();
-    _ms.set(_sparseLen,lo);
-    _ds[_sparseLen] = Double.longBitsToDouble(hi);
-    if (_id != null) _id[_sparseLen] = _len;
->>>>>>> PUBDEV-3505 Fixed handling of (na) sparse uuid columns, added test.
     _sparseLen++;
     _len++;
     assert _sparseLen <= _len;
@@ -1007,7 +998,7 @@ public class NewChunk extends Chunk {
         for (int i = 0; i < _sparseLen; ++i) {
           xs.set(_id[i], _xs.get(i));
           ms.set(_id[i], _ms.get(i));
-          missing.set(_id[i], _sparseNA || _missing == null?false:_missing.get(i));
+          missing.set(_id[i], !_sparseNA && _missing != null && _missing.get(i));
         }
         assert _sparseNA || (ms._nzs == _ms._nzs):_ms._nzs + " != " + ms._nzs;
         ms._nzs = _ms._nzs;
