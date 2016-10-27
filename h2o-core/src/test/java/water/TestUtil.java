@@ -1,10 +1,7 @@
 package water;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -22,6 +19,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -30,6 +32,11 @@ import static org.junit.Assert.assertTrue;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
+  {
+    ClassLoader loader = getClass().getClassLoader();
+    loader.setDefaultAssertionStatus(true);
+  }
+
   public final static boolean JACOCO_ENABLED = Boolean.parseBoolean(System.getProperty("test.jacocoEnabled", "false"));
   private static boolean _stall_called_before = false;
   private static String[] ignoreTestsNames;
@@ -702,4 +709,20 @@ public class TestUtil extends Iced {
     }
   }
 
+  static Consumer<Vec> dropit = new Consumer<Vec>() {
+    @Override public void accept(Vec v) { v.remove(new Futures()).blockForPending(); }
+  };
+
+  @BeforeClass
+  public static void hi() { stall_till_cloudsize(1); }
+  @AfterClass public static void bye() { toDrop.forEach(dropit); }
+
+  private static Set<Vec> toDrop = new HashSet<>();
+
+  protected static Vec willDrop(Vec v) { toDrop.add(v); return v; }
+
+  protected static <T extends Vec.Holder> T willDrop(T vh) {
+    toDrop.add(vh.vec());
+    return vh;
+  }
 }
