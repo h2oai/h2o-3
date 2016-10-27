@@ -81,6 +81,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 
 .h2o.__GLMMakeModel <- "MakeGLMModel"
 .h2o.__GLMRegPath <- "GetGLMRegPath"
+.h2o.__ComputeGram <- "ComputeGram"
 
 
 #' Rapids Endpoint
