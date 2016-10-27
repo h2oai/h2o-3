@@ -9,8 +9,6 @@ import water.rapids.vals.*;
 
 /**
  * Base class for all nodes in Rapids language Abstract Syntax Tree.
- *
- * TODO: rename to Ast
  */
 public abstract class AstRoot extends Iced<AstRoot> {
 

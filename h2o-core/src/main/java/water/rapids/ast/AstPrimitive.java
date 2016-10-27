@@ -10,8 +10,6 @@ import water.util.StringUtils;
 /**
  * A primitive operation.  Execution just returns the function.  *Application* (not execution) applies the function
  * to the arguments.
- *
- * TODO: rename to AstFunction
  */
 public abstract class AstPrimitive extends AstRoot {
   private transient ValFun _v;

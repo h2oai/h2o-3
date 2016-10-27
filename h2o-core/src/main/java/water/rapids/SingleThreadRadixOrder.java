@@ -1,11 +1,5 @@
 package water.rapids;
 
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-//
-// TODO: move to water.rapids.ast.prims.mungers (this is a helper class for AstMerge / AstSort)
-//
-//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
 // General principle here is that several parallel, tight, branch free loops,
 // faster than one heavy DKV pass per row
 

@@ -12,8 +12,6 @@ import java.util.ArrayList;
  * Define a function
  * Syntax: { ids... . expr }
  * IDs are bound within expr
- *
- * TODO: rename to AstUserDefinedFunction
  */
 public class AstFunction extends AstPrimitive {
   final String[] _ids;          // Identifier names
