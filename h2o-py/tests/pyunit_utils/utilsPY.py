@@ -175,7 +175,7 @@ def javapredict(algo, equality, train, test, x, y, compile_only=False, **kwargs)
 
     print("Downloading Java prediction model code from H2O")
     tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "results", pojoname))
-    os.mkdir(tmpdir)
+    os.makedirs(tmpdir)
     h2o.download_pojo(model, path=tmpdir)
     h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
@@ -255,7 +255,7 @@ def javamunge(assembly, pojoname, test, compile_only=False):
     """
     print("Downloading munging POJO code from H2O")
     tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "results", pojoname))
-    os.mkdir(tmpdir)
+    os.makedirs(tmpdir)
     assembly.to_pojo(pojoname, path=tmpdir, get_jar=True)
     h2o_genmodel_jar = os.path.join(tmpdir, "h2o-genmodel.jar")
     assert os.path.exists(h2o_genmodel_jar), "Expected file {0} to exist, but it does not.".format(h2o_genmodel_jar)
@@ -1468,7 +1468,7 @@ def make_Rsandbox_dir(base_dir, test_name, make_dir):
         shutil.rmtree(syndatasets_dir)
 
     if make_dir:    # create Rsandbox directory if make_dir is True
-        os.mkdir(syndatasets_dir)
+        os.makedirs(syndatasets_dir)
 
     return syndatasets_dir
 
