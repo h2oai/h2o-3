@@ -1094,7 +1094,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     return get_frame(parms["dest"])
 
 
-def as_list(data, use_pandas=True):
+def as_list(data, use_pandas=True, header=True):
     """
     Convert an H2O data object into a python-specific object.
 
@@ -1106,13 +1106,14 @@ def as_list(data, use_pandas=True):
 
     :param data: an H2O data object.
     :param use_pandas: If True, try to use pandas for reading in the data.
+    :param header: If True, return column names as first element in list
 
     :returns: List of list (Rows x Columns).
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(use_pandas, bool)
-    return H2OFrame.as_data_frame(data, use_pandas=use_pandas)
-
+    assert_is_type(header, bool)
+    return H2OFrame.as_data_frame(data, use_pandas=use_pandas, header=header)
 
 
 def demo(funcname, interactive=True, echo=True, test=False):
