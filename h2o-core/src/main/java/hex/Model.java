@@ -1513,7 +1513,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             throw H2O.fail("Internal MOJO loading failed", e1);
           } finally {
             boolean deleted = new File(filename).delete();
-            assert deleted : "Failed to delete the file";
+            if (!deleted) Log.warn("Failed to delete the file");
           }
         }
 
