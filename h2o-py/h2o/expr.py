@@ -18,8 +18,8 @@ import tabulate
 import h2o
 from h2o.backend.connection import H2OConnectionError
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.compatibility import repr2
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
-from h2o.utils.typechecks import numeric, is_type
 
 
 class ExprNode(object):
@@ -139,14 +139,12 @@ class ExprNode(object):
         if isinstance(arg, ASTId):
             return str(arg)
         if isinstance(arg, (list, tuple, range)):
-            return "[%s]" % " ".join(repr(x) for x in arg)
+            return "[%s]" % " ".join(repr2(x) for x in arg)
         if isinstance(arg, slice):
             return "[{}:{}]".format(0 if arg.start is None else arg.start,
                                     "NaN" if (arg.stop is None or math.isnan(arg.stop)) else
                                     (arg.stop) if arg.start is None else (arg.stop - arg.start))
-        s = repr(arg)
-        if s.startswith("u'") or s.startswith('u"'): s = s[1:]
-        return s
+        return repr2(arg)
 
     def __del__(self):
         try:
