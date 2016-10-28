@@ -1,7 +1,6 @@
 package water.rapids.ast.params;
 
 import water.rapids.Env;
-import water.rapids.Rapids;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstParameter;
 
@@ -12,11 +11,7 @@ public class AstNum extends AstParameter {
   private final ValNum _v;
 
   public AstNum() {
-    _v = null;
-  }
-
-  public AstNum(Rapids e) {
-    _v = new ValNum(Double.valueOf(e.token()));
+    this(0);
   }
 
   public AstNum(double d) {

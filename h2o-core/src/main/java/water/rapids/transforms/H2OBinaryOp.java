@@ -4,10 +4,13 @@ import water.H2O;
 import water.fvec.Frame;
 import water.rapids.ast.AstExec;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.params.AstId;
+import water.rapids.ast.params.AstStr;
 
 import java.util.HashMap;
 
-public class H2OBinaryOp extends H2OColOp { // called thru reflection
+@SuppressWarnings("unused")  // called thru reflection
+public class H2OBinaryOp extends H2OColOp {
   boolean _leftIsCol;
   boolean _riteIsCol;
   String _binCol;  // !=null only if _leftIsCol || _riteIsCol
@@ -36,12 +39,12 @@ public class H2OBinaryOp extends H2OColOp { // called thru reflection
       _leftIsCol = args[i].equals("leftArg");
       _riteIsCol = !_leftIsCol;
       _binCol = ((AstExec)_ast._asts[i+1])._asts[2].str();
-      _params.put(args[i], AstRoot.newAstStr(((AstExec) _ast._asts[i + 1])._asts[2].str()));
+      _params.put(args[i], new AstStr(((AstExec) _ast._asts[i + 1])._asts[2].str()));
     } else super.setupParamsImpl(i,args);
   }
 
   @Override protected Frame transformImpl(Frame f) {
-    if( paramIsRow() ) ((AstExec)_ast._asts[2])._asts[1] = AstRoot.newAstFrame(f);
+    if( paramIsRow() ) ((AstExec)_ast._asts[2])._asts[1] = new AstId(f);
     return super.transformImpl(f);
   }
 

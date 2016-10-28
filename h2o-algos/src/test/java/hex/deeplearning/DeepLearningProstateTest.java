@@ -441,7 +441,9 @@ public class DeepLearningProstateTest extends TestUtil {
                                             System.err.println(ex);
                                             throw H2O.fail("should not get here");
                                           } catch (RuntimeException t) {
-                                            Assert.assertTrue(t.getMessage().contains("unstable") || (t.getCause() != null && t.getCause().getMessage().contains("unstable")));
+                                            String msg = "" + t.getMessage() + // this way we evade null messages
+                                                (t.getCause() == null ? "" : t.getCause().getMessage());
+                                            Assert.assertTrue("Unexpected exception " + t + ": " + msg, msg.contains("unstable"));
                                           } catch (Throwable t) {
                                             t.printStackTrace();
                                             throw new RuntimeException(t);

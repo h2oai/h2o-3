@@ -96,23 +96,15 @@ Defining a GBM Model
 
 -  **distribution**: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie.
 
-       -  If the distribution is **multinomial**, the response column
-          must be categorical.
-       -  If the distribution is **poisson**, the response column must
-          be numeric.
-       -  If the distribution is **gamma**, the response column must be
-          numeric.
-       -  If the distribution is **tweedie**, the response column must
-          be numeric.
-       -  If the distribution is **gaussian**, the response column must
-          be numeric.
-       -  If the distribution is **huber**, the response column must
-          be numeric.
-       -  If the distribution is **gamma**, the response column must be
-          numeric.
-       -  If the distribution is **quantile**, the response column must
-          be numeric.
-          
+  - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
+  - If the distribution is ``multinomial``, the response column must be categorical.
+  - If the distribution is ``poisson``, the response column must be numeric.
+  - If the distribution is ``laplace``, the response column must be numeric.
+  - If the distribution is ``tweedie``, the response column must be numeric.
+  - If the distribution is ``gaussian``, the response column must be numeric.
+  - If the distribution is ``huber``, the response column must be numeric.
+  - If the distribution is ``gamma``, the response column must be numeric.
+  - If the distribution is ``quantile``, the response column must be numeric.
 
 -  **sample\_rate**: Specify the row sampling rate (x-axis). The range
    is 0.0 to 1.0. Higher values may improve training accuracy. Test
@@ -139,6 +131,8 @@ Defining a GBM Model
 	  level 4: **col\_sample_rate** * **factor^3**
 	
 	  etc. 
+
+-  **col\_sample\_rate\_per\_tree**: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
 
 -  **max\_abs\_leafnode\_pred**: When building a GBM classification model, this option reduces overfitting by limiting the maximum absolute value of a leaf node prediction. This option defaults to Double.MAX_VALUE.
 
@@ -202,32 +196,31 @@ Defining a GBM Model
    predictions to use for hit ratio computation. Applicable to
    multi-class only. To disable, enter 0.
 
--  **r2\_stopping**: r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds, stopping_metric and stopping_tolerance instead.
+-  **r2\_stopping**: ``r2_stopping`` is no longer supported and will be ignored if set - please use ``stopping_rounds``, ``stopping_metric``, and ``stopping_tolerance`` instead.
 
 -  **stopping\_rounds**: Stops training when the option selected for
    **stopping\_metric** doesn't improve for the specified number of
    training rounds, based on a simple moving average. To disable this
    feature, specify ``0``. The metric is computed on the validation data
-   (if provided); otherwise, training data is used. When used with
-   **overwrite\_with\_best\_model**, the final model is the best model
-   generated for the given **stopping\_metric** option. 
+   (if provided); otherwise, training data is used.
    
    **Note**: If cross-validation is enabled:
 
-    1. All cross-validation models stop training when the validation metric doesn't improve.
-    2. The main model runs for the mean number of epochs.
-    3. N+1 models do *not* use **overwrite\_with\_best\_model**
-    4. N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
 -  **stopping\_metric**: Specify the metric to use for early stopping.
    The available options are:
 
-   -  **AUTO**: Logloss for classification, deviance for regression
-   -  **deviance**
-   -  **logloss**
-   -  **MSE**
-   -  **AUC**
-   -  **misclassification**
+   - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+   - ``deviance``
+   - ``logloss``
+   - ``MSE``
+   - ``AUC``
+   - ``lift_top_group``
+   - ``misclassification``
+   - ``mean_per_class_error``
 
 -  **stopping\_tolerance**: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
@@ -408,8 +401,7 @@ a Rejoinder by the Authors)." The Annals of Statistics 28.2 (2000):
 
 `Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. The
 Elements of Statistical Learning. Vol.1. N.p., page 339: Springer New
-York,
-2001. <http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf>`__
+York, 2001. <http://statweb.stanford.edu/~tibs/ElemStatLearn/>`__
 
 FAQ
 ~~~

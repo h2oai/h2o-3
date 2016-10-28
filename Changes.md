@@ -2,6 +2,30 @@
 
 ##H2O
 
+###Turing (3.10.0.9) - 10/25/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3546'>PUBDEV-3546</a>] -         h2o.year() method does not return year
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3559'>PUBDEV-3559</a>] -         Regression Training Metrics: Deviance and MAE were swapped
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3568'>PUBDEV-3568</a>] -         h2o.max returns NaN even when na.rf condition is set to TRUE
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3593'>PUBDEV-3593</a>] -         Fix display of array-valued entries in TwoDimTables such as grid search results
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3585'>PUBDEV-3585</a>] -         Optimize algorithm for automatic estimation of K for K-Means
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-646'>HEXDEV-646</a>] -         include flow, /3/ API accessible Aggregator model in h2o-3
+</li>
+</ul>
+
 ###Turing (3.10.0.8) - 10/10/2016
 
 <h4>        Technical task

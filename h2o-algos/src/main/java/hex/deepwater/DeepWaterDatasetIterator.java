@@ -22,24 +22,20 @@ class DeepWaterDatasetIterator extends DeepWaterIterator {
     _dinfo = dinfo;
   }
 
-  // Row-based storage, potentially sparse
+  // Row-based storage, dense - direct mapping to float[]
   static class IcedRow extends Iced<IcedRow> {
-    int size() { return _chunk._len; }
-    float getVal(int i) { return (float) _chunk.atd(i); }
-    public IcedRow() {}
-    IcedRow(float[] fs) {
-      double[] ds = new double[fs.length];
-      for (int i = 0; i< fs.length; i++) ds[i]= fs[i];
-      _chunk = new NewChunk(ds).compress();
-      //Explicitly fall back to C4FChunk to save 50% memory overhead
-      if (_chunk instanceof C8DChunk) {
-        byte[] mem = new byte[fs.length*4];
-        for (int i = 0; i< fs.length; ++i)
-          UnsafeUtils.set4f(mem,i<<2, fs[i]);
-        _chunk = new C4FChunk(mem);
+    int size() { return _data.length; }
+    float getVal(int i) { return _data[i]; }
+    void insertValuesIntoArray(float[] vals, int offset) {
+      for (int i=0; i<_data.length; ++i) {
+        vals[offset+i] = _data[i];
       }
     }
-    private Chunk _chunk;
+    public IcedRow() {}
+    IcedRow(float[] fs) {
+      _data = fs;
+    }
+    private float[] _data;
   }
 
   static class FrameDataConverter extends H2O.H2OCountedCompleter<FrameDataConverter> {
@@ -64,14 +60,12 @@ class DeepWaterDatasetIterator extends DeepWaterIterator {
     public void compute2() {
       _destLabel[_index] = _label;
       final int start=_index*_dinfo.fullN();
-      Key rowKey = Key.make(_dinfo._adaptedFrame._key + "_" + _dinfo._adaptedFrame.byteSize() + "_row_" + Integer.toString(_globalIndex) + "_" + DeepWaterModel.CACHE_MARKER);
+      Key rowKey = Key.make(_dinfo._adaptedFrame._key + "_" + _dinfo.fullN() + "_row_" + Integer.toString(_globalIndex) + "_" + DeepWaterModel.CACHE_MARKER);
       boolean status = false;
       if (_cache) {
         IcedRow icedRow = DKV.getGet(rowKey);
         if (icedRow != null) {
-          // place the cached row the right minibatch slot
-          for (int i = 0; i< icedRow.size(); ++i)
-            _destData[start+i] = icedRow.getVal(i);
+          icedRow.insertValuesIntoArray(_destData, start);
           status = true;
         }
       }

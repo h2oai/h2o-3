@@ -571,7 +571,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       DataInfo dinfo = null, xinfo = null, tinfo = null;
       Frame fr = null;
       boolean overwriteX = false;
-      long curtime = 0;
 
       try {
         init(true);   // Initialize + Validate parameters
@@ -632,18 +631,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Use closed form solution for X if quadratic loss and regularization
         _job.update(1, "Initializing X and Y matrices");   // One unit of work
 
-        curtime = System.currentTimeMillis();
         double[/*k*/][/*features*/] yinit = initialXY(tinfo, dinfo._adaptedFrame, model, na_cnt); // on normalized A
         
         // Store Y' for more efficient matrix ops (rows = features, cols = k rank)
         Archetypes yt = new Archetypes(ArrayUtils.transpose(yinit), true, tinfo._catOffsets, numLevels);
         Archetypes ytnew = yt;
-        Log.info("Time taken (ms) to initializeXY with (Y operation single thread) is "
-                +(System.currentTimeMillis()-curtime));
 
-        curtime = System.currentTimeMillis();
         double yreg = _parms._regularization_y.regularize(yt._archetypes);
-        Log.info("Time taken (ms) to calculate regularize_y in single thread is "+(System.currentTimeMillis()-curtime));
         // Set X to closed-form solution of ALS equation if possible for better accuracy
         if (!(_parms._init == GlrmInitialization.User && _parms._user_x != null) && hasClosedForm(na_cnt))
           initialXClosedForm(dinfo, yt, model._output._normSub, model._output._normMul);
@@ -653,13 +647,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Assume regularization on initial X is finite, else objective can be NaN if \gamma_x = 0
         boolean regX = _parms._regularization_x != GlrmRegularizer.None && _parms._gamma_x != 0;
 
-        curtime = System.currentTimeMillis();
         ObjCalc objtsk = new ObjCalc(_parms, yt, _ncolA, _ncolX, dinfo._cats, model._output._normSub,
                                      model._output._normMul, model._output._lossFunc, weightId, regX);
-
         objtsk.doAll(dinfo._adaptedFrame);
-        Log.info("Time taken (ms) to calculate regularize_x and calculate objective function value is "
-                +(System.currentTimeMillis()-curtime));
 
         model._output._objective = objtsk._loss + _parms._gamma_x * objtsk._xold_reg + _parms._gamma_y * yreg;
         model._output._archetypes_raw = yt;
@@ -680,15 +670,12 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
           // 1) Update X matrix given fixed Y
 
           // find out how much time it takes to update x
-          curtime = System.currentTimeMillis();
           UpdateX xtsk = new UpdateX(_parms, yt, step/_ncolA, overwriteX, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
 
           xtsk.doAll(dinfo._adaptedFrame);
           model._output._updates++;
-          Log.info("Time taken (ms) to updateX is "+(System.currentTimeMillis()-curtime));
 
           // 2) Update Y matrix given fixed X
-          curtime = System.currentTimeMillis();
           if (model._output._updates < _parms._max_updates) {
             // If max_updates is odd, we will terminate after the X update
             UpdateY ytsk = new UpdateY(_parms, yt, step/_ncolA, _ncolA, _ncolX, dinfo._cats, model._output._normSub,
@@ -698,21 +685,15 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
             yreg = ytsk._yreg;
             model._output._updates++;
           }
-          Log.info("Time taken (ms) to updateY is "+(System.currentTimeMillis()-curtime));
 
           // 3) Compute average change in objective function
-          curtime = System.currentTimeMillis();
-
           objtsk = new ObjCalc(_parms, ytnew, _ncolA, _ncolX, dinfo._cats, model._output._normSub, model._output._normMul, model._output._lossFunc, weightId);
           objtsk.doAll(dinfo._adaptedFrame);
           double obj_new = objtsk._loss + _parms._gamma_x * xtsk._xreg + _parms._gamma_y * yreg;
-          Log.info("Time taken (ms) to calculate new objective function value is "
-                  +(System.currentTimeMillis()-curtime));
           model._output._avg_change_obj = (model._output._objective - obj_new) / nobs;
           model._output._iterations++;
 
           // step = 1.0 / model._output._iterations;   // Step size \alpha_k = 1/iters
-          curtime = System.currentTimeMillis();
           if (model._output._avg_change_obj > 0) {   // Objective decreased this iteration
             yt = ytnew;
             model._output._archetypes_raw = ytnew;  // Need full archetypes object for scoring
@@ -731,16 +712,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
                       "; reducing step size to " + step);
             }
           }
-          Log.info("Time taken (ms) to set the step size is "+(System.currentTimeMillis()-curtime));
 
           // Add to scoring history
-          curtime = System.currentTimeMillis();
           model._output._training_time_ms.add(System.currentTimeMillis());
           model._output._history_step_size.add(step);
           model._output._history_objective.add(model._output._objective);
           model._output._scoring_history = createScoringHistoryTable(model._output);
           model.update(_job); // Update model in K/V store
-          Log.info("Time taken (ms) to history of run is "+(System.currentTimeMillis()-curtime));
         }
 
         // 4) Save solution to model output

@@ -168,9 +168,17 @@ recommended, as model performance can vary greatly.
     - Use **Absolute**, **Quadratic**, or **Huber** for regression 
     - Use **Absolute**, **Quadratic**, **Huber**, or **CrossEntropy** for classification
 
--  **distribution**: Specify the distribution type from the drop-down
-   list. The options are auto, bernoulli, multinomial, gaussian,
-   poisson, gamma, laplace, quantile or tweedie.
+-  **distribution**: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie.
+
+  - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
+  - If the distribution is ``multinomial``, the response column must be categorical.
+  - If the distribution is ``poisson``, the response column must be numeric.
+  - If the distribution is ``laplace``, the response column must be numeric.
+  - If the distribution is ``tweedie``, the response column must be numeric.
+  - If the distribution is ``gaussian``, the response column must be numeric.
+  - If the distribution is ``huber``, the response column must be numeric.
+  - If the distribution is ``gamma``, the response column must be numeric.
+  - If the distribution is ``quantile``, the response column must be numeric.
 
 -  **quantile\_alpha**: (Only applicable if *Quantile* is specified for
    **distribution**) Specify the quantile to be used for Quantile
@@ -222,13 +230,14 @@ recommended, as model performance can vary greatly.
 -  **stopping\_metric**: Specify the metric to use for early stopping.
    The available options are:
 
-   -  **AUTO**: Logloss for classification, deviance for regression
-   -  **deviance**
-   -  **logloss**
-   -  **MSE**
-   -  **AUC**
-   -  **r2**
-   -  **misclassification**
+   - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+   - ``deviance``
+   - ``logloss``
+   - ``MSE``
+   - ``AUC``
+   - ``lift_top_group``
+   - ``misclassification``
+   - ``mean_per_class_error``
 
 -  **stopping\_tolerance**: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
