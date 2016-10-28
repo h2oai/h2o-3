@@ -8,32 +8,15 @@ import water.util.PrettyPrint;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 /**
  * An adapter to Vec, allows type-safe access to data
  */
-public class Col {
-
-  public interface Column<T> {
-    T get(long idx);
-
-    void set(long idx, T value);
-
-    String getString(long idx);
-
-    Vec vec();
-  }
-
-  public static abstract class TypedChunk<T> {
-    private Chunk c;
-
-    public TypedChunk(Chunk c) { this.c = c; }
-    boolean isNA(int i) { return c.isNA(i); }
-    abstract T get(int idx);
-    abstract void set(int idx, T value);
-  }
+public class MaterializedColumns {
 
   public static abstract class Factory<T> implements Serializable {
     protected Factory(byte typeCode) {
@@ -45,6 +28,10 @@ public class Col {
     public final byte typeCode;
     public TypedVector<T> newColumn(long len, final Function<Long, T> f) throws IOException {
       return newColumn(makeVec(len, f));
+    }
+
+    public TypedVector<T> newColumn(final List<T> xs) throws IOException {
+      return newColumn(makeVec(xs.size(), Functions.onList(xs)));
     }
 
     protected Vec makeVec(long len, final Function<Long, T> f) throws IOException {
@@ -63,16 +50,17 @@ public class Col {
         }
       }.doAll(vec0)._fr.vecs()[0];
     }
-
   }
 
-  public abstract static class TypedVector<T> implements Column<T>, Vec.Holder {
+  public abstract static class TypedVector<T> implements MutableColumn<T>, Vec.Holder {
     protected Vec vec;
+    public final byte type;
 
     protected TypedVector(Vec vec, byte type) {
       this.vec = vec;
+      this.type = type;
     }
-
+    
     public boolean isNA(long idx) { return vec.isNA(idx); }
 
     public String getString(long idx) { return isNA(idx) ? "(N/A)" : String.valueOf(get(idx)); }
@@ -109,7 +97,10 @@ public class Col {
     }
 
     @Override public TypedVector<Double> newColumn(final Vec vec) {
+      if (vec.get_type() != Vec.T_NUM)
+        throw new IllegalArgumentException("Expected type T_NUM, got " + vec.get_type_str());
       return new TypedVector<Double>(vec, typeCode) {
+        
         @Override public Double get(long idx) { return vec.at(idx); }
 
         @Override public void set(long idx, Double value) {
@@ -133,9 +124,13 @@ public class Col {
     }
 
     @Override public TypedVector<String> newColumn(final Vec vec) {
+      if (vec.get_type() != Vec.T_STR)
+        throw new IllegalArgumentException("Expected type T_STR, got " + vec.get_type_str());
       return new TypedVector<String>(vec, typeCode) {
         @Override
-        public String get(long idx) { return asString(vec.atStr(new BufferedString(), idx)); }
+        public String get(long idx) { 
+          return asString(vec.atStr(new BufferedString(), idx)); 
+        }
 
         @Override
         public void set(long idx, String value) {
@@ -170,6 +165,8 @@ public class Col {
     }
 
     @Override public TypedVector<Integer> newColumn(final Vec vec) {
+      if (vec.get_type() != Vec.T_CAT)
+        throw new IllegalArgumentException("Expected type T_CAT, got " + vec.get_type_str());
       return new TypedVector<Integer>(vec, typeCode) {
         private final String[] domain = vec.domain();
         {
@@ -210,6 +207,8 @@ public class Col {
     }
 
     @Override public TypedVector<UUID> newColumn(final Vec vec) {
+      if (vec.get_type() != Vec.T_UUID)
+        throw new IllegalArgumentException("Expected a type UUID, got " + vec.get_type_str());
       return new TypedVector<UUID>(vec, typeCode) {
         @Override public UUID get(long idx) { return isNA(idx) ? null : new UUID(vec.at16h(idx), vec.at16l(idx)); }
         @Override public String getString(long idx) { return PrettyPrint.uuid(get(idx)); }
@@ -232,6 +231,8 @@ public class Col {
     }
 
     @Override public TypedVector<Date> newColumn(final Vec vec) {
+      if (vec.get_type() != Vec.T_TIME && vec.get_type() != Vec.T_NUM) 
+        throw new IllegalArgumentException("Expected a type compatible with Dates, got " + vec.get_type_str());
       return new TypedVector<Date>(vec, typeCode) {
         @Override public Date get(long idx) { return isNA(idx) ? null : new Date(vec.at8(idx)); }
 
