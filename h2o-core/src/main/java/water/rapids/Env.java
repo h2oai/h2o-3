@@ -4,6 +4,7 @@ import water.*;
 import water.fvec.Frame;
 import water.rapids.ast.*;
 import water.rapids.ast.params.AstConst;
+import water.rapids.ast.params.AstId;
 import water.rapids.ast.prims.advmath.*;
 import water.rapids.ast.prims.assign.*;
 import water.rapids.ast.prims.math.*;
@@ -362,7 +363,7 @@ public class Env extends Iced {
     }
 
     // Now the DKV
-    Value value = DKV.get(Key.make(id));
+    Value value = DKV.get(Key.make(expand(id)));
     if (value != null) {
       if (value.isFrame())
         return addGlobals((Frame) value.get());
@@ -376,6 +377,10 @@ public class Env extends Iced {
       return new ValFun(ast);
 
     throw new IllegalArgumentException("Name lookup of '" + id + "' failed");
+  }
+
+  public String expand(String id) {
+    return id.startsWith("$")? id.substring(1) + "~" + _ses.id() : id;
   }
 
   // Add these Vecs to the global list, and make a new defensive copy of the
