@@ -15,6 +15,7 @@ import os
 import re
 import sys
 
+from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
@@ -26,6 +27,18 @@ def _py_tmp_key(append):
     global _id_ctr
     _id_ctr += 1
     return "py_" + str(_id_ctr) + append
+
+
+def check_frame_id(frame_id: str) -> None:
+    """Check that the provided frame id is valid in Rapids language."""
+    if frame_id.strip() == "":
+        raise H2OValueError("Frame id cannot be an empty string: %r" % frame_id)
+    for ch in frame_id:
+        if ch in " '\"\t\n\r\\()[]{}~":
+            raise H2OValueError("Character '%s' is illegal in frame id: %s" % (ch, frame_id))
+    if re.match(r"-?[0-9]", frame_id):
+        raise H2OValueError("Frame id cannot start with a number: %s" % frame_id)
+
 
 
 def temp_ctr():
