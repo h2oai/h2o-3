@@ -132,29 +132,21 @@ class ExprNode(object):
 
     @staticmethod
     def _arg_to_expr(arg):
-        if arg is not None and isinstance(arg, range): arg = list(arg)
         if arg is None:
             return "[]"  # empty list
-        elif isinstance(arg, ExprNode):
+        if isinstance(arg, ExprNode):
             return arg._get_ast_str(False)
-        elif isinstance(arg, ASTId):
+        if isinstance(arg, ASTId):
             return str(arg)
-        elif isinstance(arg, bool):
-            return "{}".format("TRUE" if arg else "FALSE")
-        elif is_type(arg, numeric):
-            return "{}".format("NaN" if math.isnan(arg) else arg)
-        elif is_type(arg, str):
-            return '"' + arg + '"'
-        elif isinstance(arg, slice):
+        if isinstance(arg, (list, tuple, range)):
+            return "[%s]" % " ".join(repr(x) for x in arg)
+        if isinstance(arg, slice):
             return "[{}:{}]".format(0 if arg.start is None else arg.start,
                                     "NaN" if (arg.stop is None or math.isnan(arg.stop)) else
                                     (arg.stop) if arg.start is None else (arg.stop - arg.start))
-        elif isinstance(arg, list):
-            if is_type(arg, [str]):
-                return "[%s]" % " ".join('"%s"' % elem for elem in arg)
-            else:
-                return "[%s]" % " ".join("NaN" if i == 'NaN' or math.isnan(i) else str(i) for i in arg)
-        raise ValueError("Unexpected arg type: %s %s %r" % (type(arg), arg.__class__, arg))
+        s = repr(arg)
+        if s.startswith("u'") or s.startswith('u"'): s = s[1:]
+        return s
 
     def __del__(self):
         try:
