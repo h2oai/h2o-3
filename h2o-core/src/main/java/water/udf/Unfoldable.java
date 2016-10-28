@@ -1,0 +1,10 @@
+package water.udf;
+
+import java.util.List;
+
+/**
+ * Takes a value of type X, produces a multitude of values of type Y
+ */
+public interface Unfoldable<X, Y> {
+  List<Y> apply(X x);
+}
