@@ -359,7 +359,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         """
         float: r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds,
         stopping_metric and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2
-        metric equals or exceeds this (Default: 1.79769313486e+308)
+        metric equals or exceeds this (Default: 1.7976931348623157e+308)
         """
         return self._parms.get("r2_stopping")
 
@@ -615,7 +615,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def max_abs_leafnode_pred(self):
-        """float: Maximum absolute value of a leaf node prediction (Default: 1.79769313486e+308)"""
+        """float: Maximum absolute value of a leaf node prediction (Default: 1.7976931348623157e+308)"""
         return self._parms.get("max_abs_leafnode_pred")
 
     @max_abs_leafnode_pred.setter
