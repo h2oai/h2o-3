@@ -29,7 +29,7 @@ def _py_tmp_key(append):
     return "py_" + str(_id_ctr) + append
 
 
-def check_frame_id(frame_id: str) -> None:
+def check_frame_id(frame_id):
     """Check that the provided frame id is valid in Rapids language."""
     if frame_id.strip() == "":
         raise H2OValueError("Frame id cannot be an empty string: %r" % frame_id)
