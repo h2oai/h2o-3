@@ -21,9 +21,9 @@ public class HeartBeat extends Iced<HeartBeat> {
   public int _pid;              // Process ID
 
   // Static cpus & threads
-  public char _num_cpus;        // Number of CPUs on this Node
-  public char _cpus_allowed;    // Number of CPUs allowed by process
-  public char _nthreads;        // Number of threads allowed by cmd line
+  public short _num_cpus;        // Number of CPUs on this Node
+  public short _cpus_allowed;    // Number of CPUs allowed by process
+  public short _nthreads;        // Number of threads allowed by cmd line
 
   // Dynamic resource usage: ticks, files
   public float _system_load_average;
