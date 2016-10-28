@@ -241,10 +241,19 @@ public class TestUtil extends Iced {
    *  @return      Frame or NPE */
   public static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
   public static Frame parse_test_file( Key outputKey, String fname) {
+    Vec data = loadFile(fname);
+    return ParseDataset.parse(outputKey, data._key);
+  }
+
+  public static Vec loadFile(String fname) {
+    File f = getFile(fname);
+    return NFSFileVec.make(f);
+  }
+
+  public static File getFile(String fname) {
     File f = find_test_file_static(fname);
     checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
-    return ParseDataset.parse(outputKey, nfs._key);
+    return f;
   }
 
   protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
@@ -255,11 +264,9 @@ public class TestUtil extends Iced {
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
-    File f = find_test_file_static(fname);
-    checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
+    Vec data = loadFile(fname);
 
-    Key[] res = {nfs._key};
+    Key[] res = {data._key};
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
@@ -308,7 +315,7 @@ public class TestUtil extends Iced {
    *
    * @param fname name of folder
    * @param na_string string for NA in a column
-   * @return
+   * @return resulting frame
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);
