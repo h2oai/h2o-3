@@ -32,7 +32,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems, viewvalues
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
-                                    can_use_pandas, quote)
+                                    can_use_pandas, quote, check_frame_id)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, numeric, numpy_ndarray,
                                   pandas_dataframe, scipy_sparse, U)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
@@ -126,7 +126,8 @@ class H2OFrame(object):
         assert_is_type(separator, I(str, lambda s: len(s) == 1))
         assert_is_type(column_names, None, [str])
         assert_is_type(column_types, None, [coltype], {str: coltype})
-        assert_is_type(na_strings, None, [str], [[str]], { str: [str] })
+        assert_is_type(na_strings, None, [str], [[str]], {str: [str]})
+        check_frame_id(destination_frame)
         fr = H2OFrame()
         fr._upload_python_object(python_obj, destination_frame, header, separator, column_names, column_types,
                                  na_strings)
@@ -280,6 +281,7 @@ class H2OFrame(object):
 
     @frame_id.setter
     def frame_id(self, newid):
+        check_frame_id(newid)
         if self._ex._cache._id is None:
             h2o.assign(self, newid)
         else:

@@ -15,7 +15,7 @@ from h2o.backend import H2OConnection
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
 from h2o.utils.config import H2OConfigReader
-from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_tmp_key, quoted, urlopen
+from h2o.utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
@@ -315,6 +315,7 @@ def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, 
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    check_frame_id(destination_frame)
     if path.startswith("~"):
         path = os.path.expanduser(path)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
@@ -366,6 +367,7 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep=None,
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
     if any(os.path.split(p)[0] == "~" for p in patharr):
         raise H2OValueError("Paths relative to a current user (~) are not valid in the server environment. "
@@ -507,6 +509,7 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
     assert_is_type(column_names, [str], None)
     assert_is_type(column_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    check_frame_id(destination_frame)
 
     # The H2O backend only accepts things that are quoted
     if is_type(raw_frames, str): raw_frames = [raw_frames]
@@ -565,9 +568,9 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
                 idx = j["column_names"].index(name)
                 if is_type(na, str): na = [na]
                 for n in na: j["na_strings"][idx].append(quoted(n))
-        elif is_list_of_lists(na_strings):
-            if len(na_strings) != len(j["column_types"]): raise ValueError(
-                "length of na_strings should be equal to the number of columns")
+        elif is_type(na_strings, [[str]]):
+            if len(na_strings) != len(j["column_types"]):
+                raise ValueError("length of na_strings should be equal to the number of columns")
             j["na_strings"] = [[quoted(na) for na in col] if col is not None else [] for col in na_strings]
         elif isinstance(na_strings, list):
             j["na_strings"] = [[quoted(na) for na in na_strings]] * len(j["column_types"])
@@ -609,6 +612,7 @@ def assign(data, xid):
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
     assert_satisfies(xid, xid != data.frame_id)
+    check_frame_id(xid)
     data._ex = ExprNode("assign", xid, data)._eval_driver(False)
     data._ex._cache._id = xid
     data._ex._children = None
@@ -619,6 +623,7 @@ def deep_copy(data, xid):
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
     assert_satisfies(xid, xid != data.frame_id)
+    check_frame_id(xid)
     duplicate = data.apply(lambda x: x)
     duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver(False)
     duplicate._ex._cache._id = xid
@@ -995,6 +1000,7 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     assert_is_type(positive_response, bool)
     assert_is_type(seed, int, None)
     assert_is_type(seed_for_column_types, int, None)
+    check_frame_id(frame_id)
     if (categorical_fraction or integer_fraction) and not randomize:
         raise H2OValueError("`randomize` should be True when either categorical or integer columns are used.")
 
