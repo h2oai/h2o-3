@@ -133,7 +133,7 @@ final public class H2O {
             "\n" +
             "    -nthreads <#threads>\n" +
             "          Maximum number of threads in the low priority batch-work queue.\n" +
-            "          (The default is 99.)\n" +
+            "          (The default is " + (char)Runtime.getRuntime().availableProcessors() + ".)\n" +
             "\n" +
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
@@ -249,7 +249,7 @@ final public class H2O {
     public boolean cleaner = false;
 
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public char nthreads= (char)Runtime.getRuntime().availableProcessors();
+    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
 
     /** -log_dir=/path/to/dir; directory to save logs in */
     public String log_dir;
@@ -460,8 +460,11 @@ final public class H2O {
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
         int nthreads = s.parseInt(args[i]);
-        if (nthreads >= 1) //otherwise keep default (all cores)
-          ARGS.nthreads = (char) nthreads;
+        if (nthreads >= 1) { //otherwise keep default (all cores)
+          if (nthreads > Short.MAX_VALUE)
+            throw H2O.unimpl("Can't handle more than " + Short.MAX_VALUE + " threads.");
+          ARGS.nthreads = (short) nthreads;
+        }
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
