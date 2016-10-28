@@ -1,7 +1,7 @@
 ``fold_assignment``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, K-MeansF
+- Available in: GBM, DRF, Deep Learning, GLM, K-Means
 - Hyperparameter: no
 
 
