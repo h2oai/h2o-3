@@ -5,14 +5,10 @@ description = "H2O Scala API (Scala version ${scalaVersion})"
 
 dependencies {
   compile project(":h2o-core")
-  compile project(":h2o-algos")
   compile "org.scala-lang:scala-library:$scalaVersion"
   
   testCompile project(path: ":h2o-core", configuration: "testArchives")
-
-  // And use scalatest for Scala testing
-  testCompile "org.scalatest:scalatest_${scalaBaseVersion}:2.2.1"
-  testCompile "junit:junit:4.11"
+  testCompile "junit:junit:${junitVersion}"
 }
 
 // The default 'test' behavior is broken in that it does not grok clusters.
