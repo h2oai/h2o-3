@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.genmodel.easy.exception.PredictException;
+import hex.genmodel.easy.exception.PredictNumberFormatException;
 import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.exception.PredictUnknownTypeException;
 import hex.genmodel.easy.prediction.*;
@@ -460,7 +461,11 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
           }
           else {
             // numeric
-            value = Double.parseDouble(s);
+            try {
+              value = Double.parseDouble(s);
+            } catch(NumberFormatException nfe) {
+              throw new PredictNumberFormatException("Unable to parse value: " + s + ", from column: "+ dataColumnName + ", as Double; " + nfe.getMessage());
+            }
           }
         } else if (o instanceof Double) {
           value = (Double) o;
