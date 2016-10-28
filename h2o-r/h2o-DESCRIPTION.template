@@ -16,17 +16,13 @@ NeedsCompilation: no
 SystemRequirements: Java (>= 1.7)
 Depends: R (>= 2.13.0),
          methods,
-         statmod,
          stats
 Imports: graphics,
-         RCurl,
-         jsonlite,
          tools,
-         utils
-Suggests: devtools,
-          roxygen2,
-          testthat,
-          ggplot2,
+         utils,
+         RCurl,
+         jsonlite
+Suggests: ggplot2,
           mlbench
 Collate:
          'astfun.R'
