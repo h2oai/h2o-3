@@ -899,12 +899,16 @@ class H2OFrame(object):
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
 
-    def cumsum(self, axis=0):
+    def cumsum(self,  axis=0):
         """The cumulative sum over the column.
         Parameters
         ----------
           axis : int
              0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
         """
         return H2OFrame._expr(expr=ExprNode("cumsum", self, axis), cache=self._ex._cache)
 
@@ -914,6 +918,10 @@ class H2OFrame(object):
         ----------
           axis : int
              0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
         """
         return H2OFrame._expr(expr=ExprNode("cumprod", self, axis), cache=self._ex._cache)
 
@@ -923,6 +931,10 @@ class H2OFrame(object):
         ----------
           axis : int
              0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
         """
         return H2OFrame._expr(expr=ExprNode("cummin", self, axis), cache=self._ex._cache)
 
@@ -932,6 +944,10 @@ class H2OFrame(object):
         ----------
           axis : int
              0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
         """
         return H2OFrame._expr(expr=ExprNode("cummax", self, axis), cache=self._ex._cache)
 
@@ -1087,13 +1103,15 @@ class H2OFrame(object):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-    def as_data_frame(self, use_pandas=True):
+    def as_data_frame(self, use_pandas=True, header=True):
         """Obtain the dataset as a python-local object.
 
         Parameters
         ----------
           use_pandas : bool, default=True
             A flag specifying whether or not to return a pandas DataFrame.
+          header : bool, default=True
+            If True, return column names as first element in list
 
         Returns
         -------
@@ -1104,7 +1122,10 @@ class H2OFrame(object):
         if can_use_pandas() and use_pandas:
             import pandas
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False)
-        return [row for row in csv.reader(StringIO(self.get_frame_data()))]
+        frame = [row for row in csv.reader(StringIO(self.get_frame_data()))]
+        if not header:
+            frame.pop(0)
+        return frame
 
     def get_frame_data(self):
         """Get frame data as str in csv format

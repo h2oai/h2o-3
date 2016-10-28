@@ -1,7 +1,6 @@
 package water.rapids.ast.params;
 
 import water.rapids.Env;
-import water.rapids.Rapids;
 import water.rapids.ast.AstParameter;
 import water.rapids.vals.ValStr;
 
@@ -12,15 +11,11 @@ public class AstStr extends AstParameter {
   private final ValStr _v;
 
   public AstStr() {
-    _v = null;
+    this(null);
   }
 
   public AstStr(String str) {
     _v = new ValStr(str);
-  }
-
-  public AstStr(Rapids e, char c) {
-    _v = new ValStr(e.match(c));
   }
 
   @Override

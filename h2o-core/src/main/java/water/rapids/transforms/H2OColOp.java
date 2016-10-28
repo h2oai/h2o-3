@@ -8,6 +8,7 @@ import water.rapids.*;
 import water.rapids.ast.AstExec;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.params.AstId;
 
 public class H2OColOp extends Transform<H2OColOp> {
   protected final String _fun;
@@ -37,7 +38,7 @@ public class H2OColOp extends Transform<H2OColOp> {
 
   @Override public Transform<H2OColOp> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
-    ((AstExec)_ast._asts[1])._asts[1] = AstRoot.newAstFrame(f);
+    ((AstExec)_ast._asts[1])._asts[1] = new AstId(f);
     Session ses = new Session();
     Frame fr = ses.exec(_ast, null).getFrame();
     _newCol = _newNames==null?new String[fr.numCols()]:_newNames;

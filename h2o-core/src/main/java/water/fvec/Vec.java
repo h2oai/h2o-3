@@ -458,6 +458,18 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
+  public static Vec makeVec(String [] vals, Key<Vec> vecKey){
+    Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}),null, Vec.T_STR);
+    NewChunk nc = new NewChunk(v,0);
+    Futures fs = new Futures();
+    for(String s:vals)
+      nc.addStr(s);
+    nc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
   // allow missing (NaN) categorical values
   public static Vec makeVec(double [] vals, String [] domain, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey, new long[]{0, vals.length}), domain);

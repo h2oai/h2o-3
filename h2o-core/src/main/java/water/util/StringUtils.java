@@ -4,9 +4,7 @@ import water.parser.BufferedString;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * String manipulation utilities.
@@ -140,11 +138,36 @@ public class StringUtils {
    * @return a single string containing all elements in `arr` joined together
    */
   public static String join(String delimiter, String[] arr) {
+    return join(delimiter, Arrays.asList(arr));
+  }
+
+  /**
+   * Join the array with the given delimiter, and return it as a string.
+   *
+   * @param delimiter string to be used as a separator between array elements
+   * @param strings the strings to join
+   * @return a single string containing all elements in `strings` joined together
+   */
+  public static String join(String delimiter, Iterable<String> strings) {
     StringBuilder sb = new StringBuilder();
-    for (String item : arr) {
+    for (String item : strings) {
       if (sb.length() > 0) sb.append(delimiter);
       sb.append(item);
     }
     return sb.toString();
+  }
+
+  /**
+   * Convert a string into the set of its characters.
+   *
+   * @param src Source string
+   * @return Set of characters within the source string
+   */
+  public static HashSet<Character> toCharacterSet(String src) {
+    int n = src.length();
+    HashSet<Character> res = new HashSet<>(n);
+    for (int i = 0; i < n; i++)
+      res.add(src.charAt(i));
+    return res;
   }
 }

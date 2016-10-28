@@ -492,11 +492,10 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{col\_sample\_rate}}: Column sample rate (per split) (from 0.0 to 1.0). 
 \item {\texttt{col\_sample\_rate\_change\_per\_level}}: Specifies to change the column sampling rate as a function of the depth in the tree.
 \item {\texttt{min\_split\_improvement}}: The minimum relative improvement in squared error reduction in order for a split to happen. 
-\item {\texttt{random\_split\_points}}: When enabled, sample N-1 points from min...max and use the sorted list of those for split finding. 
 \item {\texttt{col\_sample\_rate\_per\_tree}}: Column sample rate per tree (from 0.0 to 1.0). 
 \item {\texttt{learn\_rate}}: An integer that defines the learning rate. The default is 0.1 and the range is 0.0 to 1.0.
 \item {\texttt{learn\_rate\_annealing}}: Reduces the {\texttt{learn\_rate}} by this factor after every tree. 
-\item {\texttt{distribution}}: The distribution function options: \texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace,} \\\texttt{quantile} or {\texttt{tweedie}}. The default is {\texttt{AUTO}}.
+\item {\texttt{distribution}}: The distribution function options: \texttt{AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace,} \\\texttt{quantile}, \texttt{huber}, or {\texttt{tweedie}}. The default is {\texttt{AUTO}}.
 \item {\texttt{score\_each\_iteration}}: A boolean indicating whether to score during each iteration of model training.  The default is  {\texttt{FALSE}}.
 \item {\texttt{score\_tree\_interval}}: Score the model after every so many trees. Disabled if set to 0.
 \item \texttt{fold\_assignment}: Cross-validation fold assignment scheme, if  \\ \texttt{fold\_column} is not specified. The following options are supported: \texttt{AUTO, Random, Stratified} or \texttt{Modulo}. 
@@ -508,7 +507,7 @@ This section describes the functions of the parameters for GBM.
 \item {\texttt{max\_hit\_ratio\_k}}: (for multi-class only) Maximum number (top K) of predictions to use for hit ratio computation.  To disable, enter  {\texttt{0}}. The default is 10.
 \item {\texttt{r2\_stopping}}: \\\texttt{r2\_stopping} is no longer supported and will be ignored if set. Please use \\\texttt{stopping\_rounds}, \\\texttt{stopping\_metric} and \\\texttt{stopping\_tolerance} instead.
 \item \texttt{stopping\_rounds}: Early stopping based on convergence of \\\texttt{stopping\_metric}. Stop if simple moving average of length k of the \texttt{stopping\_metric} does not improve for k:=\texttt{stopping\_rounds} scoring events. Can only trigger after at least 2k scoring events. To disable, specify \texttt{0}.
-\item \texttt{stopping\_metric}: Metric to use for early stopping (\texttt{AUTO}: \texttt{logloss} for classification, \texttt{deviance} for regression). Can be any of \texttt{AUTO, deviance, logloss, MSE, AUC, misclassification}.
+\item \texttt{stopping\_metric}: Metric to use for early stopping (\texttt{AUTO}: \texttt{logloss} for classification, \texttt{deviance} for regression). Can be any of \texttt{AUTO}, \texttt{deviance}, \texttt{logloss}, \texttt{misclassification}, \texttt{lift\_top\_gain}, \texttt{MSE}, \texttt{AUC}, and \texttt{mean\_per\_class\_error}.
 \item \texttt{stopping\_tolerance}: Relative tolerance for metric-based stopping criterion Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much).
 \item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
 \item {\texttt{build\_tree\_one\_node}}: Specify if GBM should be run on one node only; no network overhead but fewer CPUs used. Suitable for small datasets.  The default is {\texttt{FALSE}}.

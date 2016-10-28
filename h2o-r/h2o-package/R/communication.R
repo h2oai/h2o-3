@@ -8,7 +8,6 @@
 #' @import RCurl
 #' @importFrom graphics barplot lines
 #' @importFrom stats binomial Gamma gaussian poisson runif quantile screeplot na.omit
-#' @importFrom statmod tweedie
 #' @importFrom tools md5sum
 #' @importFrom utils download.file packageVersion read.csv
 #'           setTxtProgressBar txtProgressBar URLencode write.csv head tail

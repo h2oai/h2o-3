@@ -4,6 +4,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
+import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValRow;
@@ -35,12 +36,13 @@ public class AstColSlice extends AstPrimitive {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Val v = stk.track(asts[1].exec(env));
+    AstParameter col_list = (AstParameter) asts[2];
     if (v instanceof ValRow) {
       ValRow vv = (ValRow) v;
-      return vv.slice(asts[2].columns(vv.getNames()));
+      return vv.slice(col_list.columns(vv.getNames()));
     }
     Frame src = v.getFrame();
-    int[] cols = col_select(src.names(), asts[2]);
+    int[] cols = col_select(src.names(), col_list);
     Frame dst = new Frame();
     Vec[] vecs = src.vecs();
     for (int col : cols) dst.add(src._names[col], vecs[col]);
@@ -49,7 +51,7 @@ public class AstColSlice extends AstPrimitive {
 
   // Complex column selector; by list of names or list of numbers or single
   // name or number.  Numbers can be ranges or negative.
-  public static int[] col_select(String[] names, AstRoot col_selector) {
+  public static int[] col_select(String[] names, AstParameter col_selector) {
     int[] cols = col_selector.columns(names);
     if (cols.length == 0) return cols; // Empty inclusion list?
     if (cols[0] >= 0) { // Positive (inclusion) list

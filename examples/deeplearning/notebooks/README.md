@@ -1,4 +1,6 @@
-# H2O DeepLearning Jupyter Notebooks
+# H2O Deep Learning Jupyter Notebooks
+
+To run, you first need to get a special build of H2O that has built-in support for native GPU backends, see [deepwater](https://github.com/h2oai/deepwater).
 
 Note: There are many more example scripts in [h2o-py/tests](https://github.com/h2oai/h2o-3/tree/master/h2o-py/tests), [h2o-py/demos](https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos), [h2o-r/tests](https://github.com/h2oai/h2o-3/tree/master/h2o-r/tests) and [h2o-r/demos](https://github.com/h2oai/h2o-3/tree/master/h2o-r/demos).
 
