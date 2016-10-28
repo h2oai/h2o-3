@@ -4,9 +4,7 @@ package water.rapids.ast.prims.reducers;
  */
 public class AstCumSum extends AstCumu {
   @Override
-  public int nargs() {
-    return 1 + 1;
-  } // (cumsum x)
+  public int nargs() { return 1 + 2; } // (cumsum x)
 
   @Override
   public String str() {

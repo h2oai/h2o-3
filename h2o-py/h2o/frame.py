@@ -34,7 +34,7 @@ from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_fra
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, numeric, numpy_ndarray,
-                                  pandas_dataframe, U)
+                                  pandas_dataframe, scipy_sparse, U)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
 __all__ = ("H2OFrame", )
@@ -134,7 +134,10 @@ class H2OFrame(object):
 
     def _upload_python_object(self, python_obj, destination_frame=None, header=0, separator=",",
                               column_names=None, column_types=None, na_strings=None):
-        assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe)
+        assert_is_type(python_obj, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
+        if is_type(python_obj, scipy_sparse):
+            self._upload_sparse_matrix(python_obj, destination_frame=destination_frame)
+            return
         # TODO: all these _handle*rs should really belong to this class, not to shared_utils.
         processor = (_handle_pandas_data_frame if is_type(python_obj, pandas_dataframe) else
                      _handle_numpy_array if is_type(python_obj, numpy_ndarray) else
@@ -161,6 +164,49 @@ class H2OFrame(object):
         self._upload_parse(tmp_path, destination_frame, 1, separator, column_names, column_types, na_strings)
         os.remove(tmp_path)  # delete the tmp file
 
+
+    def _upload_sparse_matrix(self, matrix, destination_frame=None):
+        import scipy.sparse as sp
+        if not sp.issparse(matrix):
+            raise H2OValueError("A sparse matrix expected, got %s" % type(matrix))
+
+        tmp_handle, tmp_path = tempfile.mkstemp(suffix=".svmlight")
+        out = os.fdopen(tmp_handle, "wt")
+        if destination_frame is None:
+            destination_frame = _py_tmp_key(h2o.connection().session_id)
+
+        # sp.find(matrix) returns (row indices, column indices, values) of the non-zero elements of A. Unfortunately
+        # there is no guarantee that those elements are returned in the correct order, so need to sort
+        data = zip(*sp.find(matrix))
+        if not isinstance(data, list): data = list(data)  # possibly convert from iterator to a list
+        data.sort()
+        idata = 0  # index of the next element to be consumed from `data`
+        for irow in range(matrix.shape[0]):
+            if idata < len(data) and data[idata][0] == irow and data[idata][1] == 0:
+                y = data[idata][2]
+                idata += 1
+            else:
+                y = 0
+            out.write(str(y))
+            while idata < len(data) and data[idata][0] == irow:
+                out.write(" ")
+                out.write(str(data[idata][1]))
+                out.write(":")
+                out.write(str(data[idata][2]))
+                idata += 1
+            out.write("\n")
+        out.close()
+
+        ret = h2o.api("POST /3/PostFile", filename=tmp_path)
+        os.remove(tmp_path)
+        rawkey = ret["destination_frame"]
+
+        p = {"source_frames": [rawkey], "destination_frame": destination_frame}
+        H2OJob(h2o.api("POST /3/ParseSVMLight", data=p), "Parse").poll()
+        self._ex._cache._id = destination_frame
+        self._ex._cache.fill()
+
+
     @staticmethod
     def get_frame(frame_id):
         """
@@ -180,6 +226,7 @@ class H2OFrame(object):
         """Reload frame information from the backend h2o server."""
         self._ex._cache.flush()
         self._frame(True)
+
 
     #-------------------------------------------------------------------------------------------------------------------
     # Frame properties
@@ -333,7 +380,7 @@ class H2OFrame(object):
     def __iter__(self):
         return (self[i] for i in range(self.ncol))
 
-    def __str__(self):
+    def __unicode__(self):
         if sys.gettrace() is None:
             if self._ex is None: return "This H2OFrame has been removed."
             table = self._frame()._ex._cache._tabulate("simple", False)
@@ -370,7 +417,11 @@ class H2OFrame(object):
             if use_pandas and can_use_pandas():
                 print(self.head().as_data_frame(True))
             else:
-                print(self)
+                s = self.__unicode__()
+                try:
+                    print(s)
+                except UnicodeEncodeError:
+                    print(s.encode("ascii", "replace"))
 
     def summary(self):
         """Summary includes min/mean/max/sigma and other rollup data."""
@@ -848,21 +899,57 @@ class H2OFrame(object):
             fr._ex._cache.types = {k: "int" for k in self._ex._cache.types.keys()}
         return fr
 
-    def cumsum(self):
-        """The cumulative sum over the column."""
-        return H2OFrame._expr(expr=ExprNode("cumsum", self), cache=self._ex._cache)
+    def cumsum(self,  axis=0):
+        """The cumulative sum over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
 
-    def cumprod(self):
-        """The cumulative product over the column."""
-        return H2OFrame._expr(expr=ExprNode("cumprod", self), cache=self._ex._cache)
+        Returns
+        -------
+         An H2OFrame instance
+        """
+        return H2OFrame._expr(expr=ExprNode("cumsum", self, axis), cache=self._ex._cache)
 
-    def cummin(self):
-        """The cumulative min over the column."""
-        return H2OFrame._expr(expr=ExprNode("cummin", self), cache=self._ex._cache)
+    def cumprod(self, axis=0):
+        """The cumulative product over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
 
-    def cummax(self):
-        """The cumulative max over the column."""
-        return H2OFrame._expr(expr=ExprNode("cummax", self), cache=self._ex._cache)
+        Returns
+        -------
+         An H2OFrame instance
+        """
+        return H2OFrame._expr(expr=ExprNode("cumprod", self, axis), cache=self._ex._cache)
+
+    def cummin(self, axis=0):
+        """The cumulative min over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
+        """
+        return H2OFrame._expr(expr=ExprNode("cummin", self, axis), cache=self._ex._cache)
+
+    def cummax(self, axis=0):
+        """The cumulative max over the column.
+        Parameters
+        ----------
+          axis : int
+             0 for columnar, 1 for rows
+
+        Returns
+        -------
+         An H2OFrame instance
+        """
+        return H2OFrame._expr(expr=ExprNode("cummax", self, axis), cache=self._ex._cache)
 
     def prod(self, na_rm=False):
         """
@@ -1016,13 +1103,15 @@ class H2OFrame(object):
             else:
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
-    def as_data_frame(self, use_pandas=True):
+    def as_data_frame(self, use_pandas=True, header=True):
         """Obtain the dataset as a python-local object.
 
         Parameters
         ----------
           use_pandas : bool, default=True
             A flag specifying whether or not to return a pandas DataFrame.
+          header : bool, default=True
+            If True, return column names as first element in list
 
         Returns
         -------
@@ -1033,7 +1122,10 @@ class H2OFrame(object):
         if can_use_pandas() and use_pandas:
             import pandas
             return pandas.read_csv(StringIO(self.get_frame_data()), low_memory=False)
-        return [row for row in csv.reader(StringIO(self.get_frame_data()))]
+        frame = [row for row in csv.reader(StringIO(self.get_frame_data()))]
+        if not header:
+            frame.pop(0)
+        return frame
 
     def get_frame_data(self):
         """Get frame data as str in csv format

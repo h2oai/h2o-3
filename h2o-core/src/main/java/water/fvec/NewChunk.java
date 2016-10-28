@@ -663,7 +663,8 @@ public class NewChunk extends Chunk {
     else addUUID(c.at16l_abs(row),c.at16h_abs(row));
   }
   public void addUUID( Chunk c, int row ) {
-    addUUID(c, (long) row);
+    if( c.isNA(row) ) addNA();
+    else addUUID(c.at16l(row),c.at16h(row));
   }
 
   public final boolean isUUID(){return _ms != null && _ds != null; }

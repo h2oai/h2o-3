@@ -7,6 +7,7 @@ import water.fvec.Frame;
 import water.rapids.*;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.params.AstId;
 import water.rapids.ast.params.AstStr;
 import water.rapids.ast.params.AstStrList;
 
@@ -24,7 +25,7 @@ public class H2OColSelect extends Transform<H2OColSelect> {
 
   @Override public Transform<H2OColSelect> fit(Frame f) { return this; }
   @Override protected Frame transformImpl(Frame f) {
-    _ast._asts[1] = AstRoot.newAstFrame(f);
+    _ast._asts[1] = new AstId(f);
 //    throw water.H2O.unimpl();
     Session ses = new Session();
     Frame fr = ses.exec(_ast,null).getFrame();

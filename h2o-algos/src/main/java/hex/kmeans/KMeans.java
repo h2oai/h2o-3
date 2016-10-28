@@ -258,7 +258,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         final double[] mults = _parms._standardize ? _train.mults() : null;
         final int   [] impute_cat = new int[vecs.length];
         for(int i = 0; i < vecs.length; i++)
-          impute_cat[i] = vecs[i].isNumeric() ? -1 : DataInfo.imputeCat(vecs[i]);
+          impute_cat[i] = vecs[i].isNumeric() ? -1 : DataInfo.imputeCat(vecs[i],true);
         model._output._normSub = means;
         model._output._normMul = mults;
         // Initialize cluster centers and standardize if requested
@@ -270,7 +270,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // Run the main KMeans Clustering loop
         // Stop after enough iterations or reassigned_count < TOLERANCE * num_rows
         double sum_squares = 0;
-        final double rel_improvement_cutoff = Math.min(20.0 / train().numRows() + 0.5 / model._output.nfeatures(), .9);
+        final double rel_improvement_cutoff = Math.min(0.028 + 2.4 / Math.pow(model._output.nfeatures(), 2), 0.8);
         if (_parms._estimate_k)
           Log.info("Cutoff for relative improvement in within_cluster_sum_of_squares: " + rel_improvement_cutoff);
         Vec[] vecs2 = Arrays.copyOf(vecs, vecs.length+1);

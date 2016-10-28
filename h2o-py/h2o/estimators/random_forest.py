@@ -354,7 +354,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         float: r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds,
         stopping_metric and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2
-        metric equals or exceeds this (Default: 1.79769313486e+308)
+        metric equals or exceeds this (Default: 1.7976931348623157e+308)
         """
         return self._parms.get("r2_stopping")
 
@@ -459,7 +459,7 @@ class H2ORandomForestEstimator(H2OEstimator):
 
     @property
     def sample_rate(self):
-        """float: Row sample rate per tree (from 0.0 to 1.0) (Default: 0.632000029087)"""
+        """float: Row sample rate per tree (from 0.0 to 1.0) (Default: 0.6320000290870667)"""
         return self._parms.get("sample_rate")
 
     @sample_rate.setter

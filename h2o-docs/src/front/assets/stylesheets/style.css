@@ -11,7 +11,7 @@
     Text Domain: h2o2016
 */
 
-@import '../fonts/fonts.css?family=Heebo:300,400,500|Oswald:400,700';
+@import '../fonts/fonts.css?family=Heebo:300,400,500|Oswald:400,700'; 
 
 *, *:before, *:after {
     -moz-box-sizing: border-box;
@@ -689,7 +689,7 @@ h1 {
 
 h3 {
     font-family: 'Oswald', sans-serif;
-    font-size: 2em;
+    font-size: 2.2em;
     font-weight: 400;
     line-height: 1.5;
     margin: 0 0 .5em;
@@ -946,7 +946,7 @@ p + h4 + p {
 }
 
 li a, p + a {
-    color: rgb(252,204,0);
+    color: rgb(66,139,202);
 }
 
 
@@ -1194,6 +1194,10 @@ p > a {
     #home {
     margin: 76px 0 0 20px;
     z-index: auto;
+    }
+
+    .no-hero {
+        height: 130px;        
     }
 }
 
@@ -1543,12 +1547,13 @@ and (orientation : landscape) {
 
 @media only screen and (min-device-width : 768px) and (max-device-width : 1024px)  { 
 
-.hero-pd {
-    
-    background-size: cover;
+    .hero-pd {
+        background-size: cover;
+    }
 
-}
-
+    .no-hero {
+        130px;
+    }
 }
 
 /* Begin styles for "Back to Top" button */

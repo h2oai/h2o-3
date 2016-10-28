@@ -147,35 +147,31 @@ Defining a DRF Model
    predictions to use for hit ratio computation. Applicable to
    multi-class only. To disable, enter 0.
 
--  **r2\_stopping**: Specify a threshold for the coefficient of
-   determination :math:`(r^2)` metric value. When this threshold is met or
-   exceeded, H2O stops making trees.
+-  **r2\_stopping**: ``r2_stopping`` is no longer supported and will be ignored if set - please use ``stopping_rounds``, ``stopping_metric``, and ``stopping_tolerance`` instead.
 
 -  **stopping\_rounds**: Stops training when the option selected for
    **stopping\_metric** doesn't improve for the specified number of
    training rounds, based on a simple moving average. To disable this
    feature, specify ``0``. The metric is computed on the validation data
-   (if provided); otherwise, training data is used. When used with
-   **overwrite\_with\_best\_model**, the final model is the best model
-   generated for the given **stopping\_metric** option. 
+   (if provided); otherwise, training data is used. 
    
-     **Note**: If cross-validation is enabled:
+   **Note**: If cross-validation is enabled:
 
-     1. All cross-validation models stop training when the validation metric doesn't improve.
-     2. The main model runs for the mean number of epochs.
-     3. N+1 models do *not* use **overwrite\_with\_best\_model**
-     4. N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
 -  **stopping\_metric**: Specify the metric to use for early stopping.
    The available options are:
 
-   -  **AUTO**: Logloss for classification, deviance for regression
-   -  **deviance**
-   -  **logloss**
-   -  **MSE**
-   -  **AUC**
-   -  **r2**
-   -  **misclassification**
+   - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+   - ``deviance``
+   - ``logloss``
+   - ``MSE``
+   - ``AUC``
+   - ``lift_top_group``
+   - ``misclassification``
+   - ``mean_per_class_error``
 
 -  **stopping\_tolerance**: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
@@ -209,11 +205,9 @@ Defining a DRF Model
 	
 	 etc.
 
--  **col\_sample\_rate\_per\_tree**: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0.
+-  **col\_sample\_rate\_per\_tree**: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
 
 -  **min\_split\_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
-
-- **random\_split_points**: By default DRF bins from min...max in steps of (max-min)/N. When this option is enabled, DRF will instead sample N-1 points from min...max and use the sorted list of those for split finding.
 
 -  **histogram_type**: By default (AUTO) DRF bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 

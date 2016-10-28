@@ -23,12 +23,19 @@ test.prim <- function(){
  expect_equal(h2o.sum(fr[,1]),sum(fr[,1]))
  expect_equal(h2o.prod(fr[,1]),prod(fr[,1]))
  expect_equal(h2o.all(fr[,1] < 1000),all(fr[,1 < 1000]))
- expect_true(h2o.any(fr[,1] < 1000),any(fr[,1] < 1000))
+ expect_equal(h2o.any(fr[,1] < 1000),any(fr[,1] < 1000))
  expect_equal(h2o.min(fr[,1]),min(fr[,1]))
  expect_equal(h2o.max(fr[,1]),max(fr[,1]))
  expect_equal(h2o.nrow(fr[,1]),nrow(fr[,1]))
  expect_equal(h2o.ncol(fr[,1]),ncol(fr[,1]))
  expect_equal(h2o.length(fr[,1]),length(fr[,1]))
  expect_equal(h2o.range(fr[,1]),range(fr[,1]))
+
+ #Check if NA's are present with na.rm = TRUE
+ x = as.h2o(c(1,2,3,4,5,6,7,8,9,10,NA,NA,NA))
+ expect_equal(h2o.max(x,na.rm=TRUE),max(x,na.rm=TRUE))
+ expect_equal(h2o.min(x,na.rm=TRUE),min(x,na.rm=TRUE))
+ expect_equal(h2o.range(x,na.rm=TRUE),range(x,na.rm=TRUE))
+
 }
 doTest("Primitive PUBDEV-2702", test.prim)

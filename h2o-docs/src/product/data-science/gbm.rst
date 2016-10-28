@@ -42,12 +42,12 @@ Defining a GBM Model
    model. **NOTE**: In Flow, if you click the **Build a model** button from the
    ``Parse`` cell, the training frame is entered automatically.
 
--  **validation\_frame**: (Optional) Specify the dataset used to evaluate
+-  `validation_frame <gbm-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
--  **nfolds**: Specify the number of folds for cross-validation.
+-  `nfolds <gbm-params/nfolds.html>`__: Specify the number of folds for cross-validation.
 
--  **response\_column**: (Required) Specify the column to use as the
+-  `y <gbm-params/y.html>`__: (Required) Specify the column to use as the
    independent variable. The data can be numeric or categorical.
 
 -  **ignored\_columns**: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
@@ -96,23 +96,15 @@ Defining a GBM Model
 
 -  **distribution**: Specify the distribution (i.e., the loss function). The options are AUTO, bernoulli, multinomial, gaussian, poisson, gamma, laplace, quantile, huber, or tweedie.
 
-       -  If the distribution is **multinomial**, the response column
-          must be categorical.
-       -  If the distribution is **poisson**, the response column must
-          be numeric.
-       -  If the distribution is **gamma**, the response column must be
-          numeric.
-       -  If the distribution is **tweedie**, the response column must
-          be numeric.
-       -  If the distribution is **gaussian**, the response column must
-          be numeric.
-       -  If the distribution is **huber**, the response column must
-          be numeric.
-       -  If the distribution is **gamma**, the response column must be
-          numeric.
-       -  If the distribution is **quantile**, the response column must
-          be numeric.
-          
+  - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
+  - If the distribution is ``multinomial``, the response column must be categorical.
+  - If the distribution is ``poisson``, the response column must be numeric.
+  - If the distribution is ``laplace``, the response column must be numeric.
+  - If the distribution is ``tweedie``, the response column must be numeric.
+  - If the distribution is ``gaussian``, the response column must be numeric.
+  - If the distribution is ``huber``, the response column must be numeric.
+  - If the distribution is ``gamma``, the response column must be numeric.
+  - If the distribution is ``quantile``, the response column must be numeric.
 
 -  **sample\_rate**: Specify the row sampling rate (x-axis). The range
    is 0.0 to 1.0. Higher values may improve training accuracy. Test
@@ -140,6 +132,8 @@ Defining a GBM Model
 	
 	  etc. 
 
+-  **col\_sample\_rate\_per\_tree**: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+
 -  **max\_abs\_leafnode\_pred**: When building a GBM classification model, this option reduces overfitting by limiting the maximum absolute value of a leaf node prediction. This option defaults to Double.MAX_VALUE.
 
 -  **pred\_noise\_bandwidth**: The bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions. If this parameter is specified with a value greater than 0, then every leaf node prediction is randomly scaled by a number drawn from a Normal distribution centered around 1 with a bandwidth given by this parameter. The default is 0 (disabled). 
@@ -154,8 +148,6 @@ Defining a GBM Model
 
 -  **min\_split\_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.  
 
--  **random\_split_points**: By default GBM bins from min...max in steps of (max-min)/N. When this option is enabled, GBM will instead sample N-1 points from min...max and use the sorted list of those for split finding.
-
 -  **histogram_type**: By default (AUTO) GBM bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 
 	- AUTO
@@ -167,7 +159,7 @@ Defining a GBM Model
 -  **score\_each\_iteration**: (Optional) Specify whether to score
    during each iteration of the model training.
 
--  **fold\_assignment**: (Applicable only if a value for **nfolds** is
+-  `fold_assignment <gbm-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is
    specified and **fold\_column** is not specified) Specify the
    cross-validation fold assignment scheme. The available options are
    AUTO (which is Random), Random, 
@@ -176,15 +168,15 @@ Defining a GBM Model
 -  **score\_tree\_interval**: Score the model after every so many trees.
    Disabled if set to 0.
 
--  **fold\_column**: Specify the column that contains the
+-  `fold_column <gbm-params/fold_column.html>`__: Specify the column that contains the
    cross-validation fold index assignment per observation.
 
--  **offset\_column**: (Not applicable if the **distribution** is
+-  `offset_column <gbm-params/offset_column.html>`__: (Not applicable if the **distribution** is
    **multinomial**) Specify a column to use as the offset.
    
 	**Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__. If the **distribution** is **Bernoulli**, the value must be less than one.
 
--  **weights\_column**: Specify a column to use for the observation
+-  `weights_column <gbm-params/weights_column.html>`__: Specify a column to use for the observation
    weights, which are used for bias correction. The specified
    ``weights_column`` must be included in the specified
    ``training_frame``. 
@@ -202,34 +194,33 @@ Defining a GBM Model
    predictions to use for hit ratio computation. Applicable to
    multi-class only. To disable, enter 0.
 
--  **r2\_stopping**: r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds, stopping_metric and stopping_tolerance instead.
+-  **r2\_stopping**: ``r2_stopping`` is no longer supported and will be ignored if set - please use ``stopping_rounds``, ``stopping_metric``, and ``stopping_tolerance`` instead.
 
--  **stopping\_rounds**: Stops training when the option selected for
+-  `stopping_rounds <gbm-params/stopping_rounds.html>`__: Stops training when the option selected for
    **stopping\_metric** doesn't improve for the specified number of
    training rounds, based on a simple moving average. To disable this
    feature, specify ``0``. The metric is computed on the validation data
-   (if provided); otherwise, training data is used. When used with
-   **overwrite\_with\_best\_model**, the final model is the best model
-   generated for the given **stopping\_metric** option. 
+   (if provided); otherwise, training data is used.
    
    **Note**: If cross-validation is enabled:
 
-    1. All cross-validation models stop training when the validation metric doesn't improve.
-    2. The main model runs for the mean number of epochs.
-    3. N+1 models do *not* use **overwrite\_with\_best\_model**
-    4. N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
--  **stopping\_metric**: Specify the metric to use for early stopping.
+-  `stopping_metric <gbm-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
 
-   -  **AUTO**: Logloss for classification, deviance for regression
-   -  **deviance**
-   -  **logloss**
-   -  **MSE**
-   -  **AUC**
-   -  **misclassification**
+   - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+   - ``deviance``
+   - ``logloss``
+   - ``MSE``
+   - ``AUC``
+   - ``lift_top_group``
+   - ``misclassification``
+   - ``mean_per_class_error``
 
--  **stopping\_tolerance**: Specify the relative tolerance for the
+-  `stopping_tolerance <gbm-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
    than this value.
 
@@ -408,8 +399,7 @@ a Rejoinder by the Authors)." The Annals of Statistics 28.2 (2000):
 
 `Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. The
 Elements of Statistical Learning. Vol.1. N.p., page 339: Springer New
-York,
-2001. <http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf>`__
+York, 2001. <http://statweb.stanford.edu/~tibs/ElemStatLearn/>`__
 
 FAQ
 ~~~

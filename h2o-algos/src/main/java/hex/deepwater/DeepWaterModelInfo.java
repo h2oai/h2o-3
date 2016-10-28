@@ -128,7 +128,7 @@ final public class DeepWaterModelInfo extends Iced {
   }
 
   private ImageDataSet getImageDataSet() {
-    return new ImageDataSet(_width, _height, _channels);
+    return new ImageDataSet(_width, _height, _channels, _classes);
   }
 
   /**
@@ -216,7 +216,7 @@ final public class DeepWaterModelInfo extends Iced {
       if (networkDef != null && !networkDef.isEmpty()) {
         File f = new File(networkDef);
         if(!f.exists() || f.isDirectory()) {
-          Log.err("Network definition file " + f + " not found.");
+          throw new RuntimeException("Network definition file " + f + " not found.");
         } else {
           Log.info("Loading the network from: " + f.getAbsolutePath());
           Log.info("Setting the optimizer and initializing the first and last layer.");
@@ -232,7 +232,7 @@ final public class DeepWaterModelInfo extends Iced {
       if (networkParms != null && !networkParms.isEmpty()) {
         File f = new File(networkParms);
         if(!f.exists() || f.isDirectory()) {
-          Log.err("Parameter file " + f + " not found.");
+          throw new RuntimeException("Network parameter file " + f + " not found.");
         } else {
           Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
           assert (_model != null);
@@ -243,8 +243,7 @@ final public class DeepWaterModelInfo extends Iced {
       }
       nativeToJava(); //store initial state as early as it's created
     } catch(Throwable t) {
-      Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
-      throw t;
+      throw new RuntimeException("Unable to initialize the native Deep Learning backend: " + t.getMessage());
     }
   }
 
