@@ -49,10 +49,10 @@ Example
 	train <- covtype.splits[[1]]
 	valid <- covtype.splits[[2]]
 
-	# # try using the balance_classes parameter (set to TRUE):
-	# cov_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-	#                    validation_frame = valid, balance_classes = TRUE, seed = 1234)
-	# print(h2o.logloss(cov_gbm, valid = TRUE))
+	# try using the balance_classes parameter (set to TRUE):
+	 cov_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
+	                    validation_frame = valid, balance_classes = TRUE, seed = 1234)
+	print(h2o.logloss(cov_gbm, valid = TRUE))
 
 	# grid over `balance_classes` (boolean parameter)
 	# select the values for `balance_classes` to grid over
@@ -94,9 +94,9 @@ Example
 	# split into train and validation sets
 	train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
 
-	# # try using the balance_classes parameter (set to True):
-	# cov_gbm = H2OGradientBoostingEstimator(balance_classes = True, seed = 1234)
-	# cov_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+	# try using the balance_classes parameter (set to True):
+	cov_gbm = H2OGradientBoostingEstimator(balance_classes = True, seed = 1234)
+	cov_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	print('logloss', cov_gbm.logloss(valid = True))
 
