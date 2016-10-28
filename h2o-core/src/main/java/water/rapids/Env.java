@@ -4,7 +4,6 @@ import water.*;
 import water.fvec.Frame;
 import water.rapids.ast.*;
 import water.rapids.ast.params.AstConst;
-import water.rapids.ast.params.AstId;
 import water.rapids.ast.prims.advmath.*;
 import water.rapids.ast.prims.assign.*;
 import water.rapids.ast.prims.math.*;
