@@ -2587,6 +2587,54 @@ h2o.prod <- function(x) {
 }
 
 #'
+#' Return the cumulative sum over a column or across a row
+#'
+#' @name h2o.cumsum
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cumsum}} for the base R implementation.
+#' @export
+h2o.cumsum <- function(x, axis = 0){
+  .newExpr("cumsum", chk.H2OFrame(x), axis)
+}
+
+#'
+#' Return the cumulative product over a column or across a row
+#'
+#' @name h2o.cumprod
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cumprod}} for the base R implementation.
+#' @export
+h2o.cumprod <- function(x, axis = 0){
+  .newExpr("cumprod", chk.H2OFrame(x), axis)
+}
+
+#'
+#' Return the cumulative min over a column or across a row
+#'
+#' @name h2o.cummin
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cummin}} for the base R implementation.
+#' @export
+h2o.cummin <- function(x, axis = 0){
+  .newExpr("cummin", chk.H2OFrame(x), axis)
+}
+
+#'
+#' Return the cumulative max over a column or across a row
+#'
+#' @name h2o.cummax
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cummax}} for the base R implementation.
+#' @export
+h2o.cummax <- function(x, axis = 0){
+  .newExpr("cummax", chk.H2OFrame(x), axis)
+}
+
+#'
 #' Given a set of logical vectors, are all of the values true?
 #'
 #' @name h2o.all
