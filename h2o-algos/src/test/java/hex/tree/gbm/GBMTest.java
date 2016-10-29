@@ -680,6 +680,51 @@ public class GBMTest extends TestUtil {
       assertEquals(0.21919655106803468, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
+  @Ignore
+  @Test public void testScoringAirline() {
+    Frame tfr=null;
+    int N=100;
+    Scope.enter();
+    try {
+      // Load data, hack frames
+      tfr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      for (String s : new String[]{
+              "DepTime", "ArrTime", "ActualElapsedTime",
+              "AirTime", "ArrDelay", "DepDelay", "Cancelled",
+              "CancellationCode", "CarrierDelay", "WeatherDelay",
+              "NASDelay", "SecurityDelay", "LateAircraftDelay", "IsArrDelayed"
+      }) {
+        tfr.remove(s).remove();
+      }
+      DKV.put(tfr);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = tfr._key;
+      parms._response_column = "IsDepDelayed";
+      parms._nbins = 10;
+      parms._nbins_cats = 500;
+      parms._ntrees = 7;
+      parms._max_depth = 5;
+      parms._min_rows = 10;
+      parms._distribution = DistributionFamily.bernoulli;
+      parms._balance_classes = true;
+      parms._seed = 0;
+
+      // Build a first model; all remaining models should be equal
+      GBMModel gbm = new GBM(parms).trainModel().get();
+      assertEquals(gbm._output._ntrees, parms._ntrees);
+
+      for (int i=0; i<N; ++i) {
+        Log.info("Scoring");
+        Frame pred = gbm.score(tfr);
+        pred.remove();
+      }
+      gbm.remove();
+    } finally {
+      if (tfr != null) tfr.remove();
+    }
+    Scope.exit();
+  }
+
   // HEXDEV-223
   @Test public void testCategorical() {
     Frame tfr=null;
