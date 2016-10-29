@@ -2,8 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.Merge;
-import water.rapids.Val;
+import water.rapids.ast.prims.mungers.merge.Merge;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;

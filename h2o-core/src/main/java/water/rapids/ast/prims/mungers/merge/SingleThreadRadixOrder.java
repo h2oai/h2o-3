@@ -1,4 +1,4 @@
-package water.rapids;
+package water.rapids.ast.prims.mungers.merge;
 
 // General principle here is that several parallel, tight, branch free loops,
 // faster than one heavy DKV pass per row

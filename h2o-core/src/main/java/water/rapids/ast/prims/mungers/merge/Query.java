@@ -1,4 +1,4 @@
-package water.rapids;
+package water.rapids.ast.prims.mungers.merge;
 
 import water.H2O;
 import water.MRTask;
