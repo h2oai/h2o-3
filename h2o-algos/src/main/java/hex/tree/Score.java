@@ -27,7 +27,12 @@ public class Score extends MRTask<Score> {
    */
   public Score(SharedTree bldr, boolean is_train, boolean oob, Key<Vec> kresp, ModelCategory mcat, boolean computeGainsLift) { _bldr = bldr; _is_train = is_train; _oob = oob; _kresp = kresp; _mcat = mcat; _computeGainsLift = computeGainsLift; }
 
-  @Override public void map( Chunk chks[] ) {
+  @Override
+  protected void setupLocal() {
+    _bldr._model.scoreSetupLocal();
+  }
+
+  @Override public void map(Chunk chks[] ) {
     Chunk ys = _bldr.chk_resp(chks);  // Response
     Model m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
