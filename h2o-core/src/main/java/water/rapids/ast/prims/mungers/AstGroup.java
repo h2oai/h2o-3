@@ -12,7 +12,7 @@ import water.rapids.Val;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValFun;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.util.ArrayUtils;
@@ -33,7 +33,7 @@ import java.util.Arrays;
  * <p/>
  * The returned column(s).
  */
-public class AstGroup extends AstPrimitive {
+public class AstGroup extends AstFunction {
   public enum NAHandling {ALL, RM, IGNORE}
 
   // Functions handled by GroupBy

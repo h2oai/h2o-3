@@ -3,7 +3,7 @@ package water.rapids.ast.prims.math;
 import water.*;
 import water.fvec.*;
 import water.rapids.*;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
@@ -12,7 +12,7 @@ import water.rapids.vals.ValRow;
 /**
  * Subclasses auto-widen between scalars and Frames, and have exactly one argument
  */
-public abstract class AstUniOp extends AstPrimitive {
+public abstract class AstUniOp extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

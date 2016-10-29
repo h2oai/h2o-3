@@ -5,12 +5,12 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 
 /**
  * Any columns factor/categorical?
  */
-public class AstAnyFactor extends AstPrimitive {
+public class AstAnyFactor extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

@@ -9,7 +9,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.*;
 import water.rapids.ast.AstFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
@@ -69,7 +69,7 @@ import java.util.Set;
  * <p/>
  * If col is -1, then the entire Frame will be imputed using mean/mode where appropriate.
  */
-public class AstImpute extends AstPrimitive {
+public class AstImpute extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "col", "method", "combineMethod", "groupByCols", "groupByFrame", "values"};

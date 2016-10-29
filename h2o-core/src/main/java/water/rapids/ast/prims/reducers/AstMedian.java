@@ -8,12 +8,12 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValNums;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  */
-public class AstMedian extends AstPrimitive {
+public class AstMedian extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "method"};

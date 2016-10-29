@@ -6,7 +6,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.*;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
@@ -17,7 +17,7 @@ import water.util.MathUtils;
 
 import java.util.Arrays;
 
-public class AstCut extends AstPrimitive {
+public class AstCut extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "breaks", "labels", "include_lowest", "right", "digits"};

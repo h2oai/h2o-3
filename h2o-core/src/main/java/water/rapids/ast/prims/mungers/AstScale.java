@@ -7,7 +7,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 
@@ -17,7 +17,7 @@ import java.util.Arrays;
  * Center and scale a frame.  Can be passed in the centers and scales (one per column in an number list), or a
  * TRUE/FALSE.
 */
-public class AstScale extends AstPrimitive {
+public class AstScale extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "center", "scale"};

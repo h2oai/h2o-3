@@ -7,13 +7,13 @@ import water.Value;
 import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Remove by ID.  Removing a Frame updates refcnts.  Returns 1 for removing, 0 if id does not exist.
  */
-public class AstRm extends AstPrimitive {
+public class AstRm extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"id"};

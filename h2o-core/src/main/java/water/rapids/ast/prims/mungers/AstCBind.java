@@ -7,12 +7,12 @@ import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 
 /**
  * cbind: bind columns together into a new frame
  */
-public class AstCBind extends AstPrimitive {
+public class AstCBind extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"..."};

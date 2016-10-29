@@ -5,12 +5,12 @@ import water.fvec.Vec;
 import water.parser.ParseTime;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  */
-public class AstListTimeZones extends AstPrimitive {
+public class AstListTimeZones extends AstFunction {
   @Override
   public String[] args() {
     return null;

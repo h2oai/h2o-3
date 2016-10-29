@@ -3,11 +3,10 @@ package water.rapids.ast.prims.mungers;
 import water.*;
 import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstExec;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.params.AstId;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
@@ -17,7 +16,7 @@ import java.util.*;
 /**
  * Row Slice
  */
-public class AstRowSlice extends AstPrimitive {
+public class AstRowSlice extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "rows"};

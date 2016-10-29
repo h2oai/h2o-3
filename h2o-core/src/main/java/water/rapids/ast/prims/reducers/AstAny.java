@@ -4,13 +4,13 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Bulk OR operation on boolean column; NAs count as true.  Returns 0 or 1.
  */
-public class AstAny extends AstPrimitive {
+public class AstAny extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

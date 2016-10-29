@@ -7,9 +7,8 @@ import water.Job;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 
@@ -17,7 +16,7 @@ import water.rapids.ast.params.AstNumList;
  * Quantiles:
  * (quantile %frame [numnber_list_probs] "string_interpolation_type")
  */
-public class AstQtile extends AstPrimitive {
+public class AstQtile extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "probs", "interpolationMethod", "weights_column"};

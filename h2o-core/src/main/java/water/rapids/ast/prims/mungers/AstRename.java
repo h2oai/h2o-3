@@ -8,11 +8,11 @@ import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 
 /**
  */
-public class AstRename extends AstPrimitive {
+public class AstRename extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"oldId", "newId"};

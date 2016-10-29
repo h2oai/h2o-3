@@ -6,7 +6,7 @@ import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 import java.util.Locale;
@@ -20,7 +20,7 @@ import java.util.Locale;
  * replaceAll - Replaces each substring of this string that matches the given regular expression
  * with the given replacement.
  */
-public class AstReplaceAll extends AstPrimitive {
+public class AstReplaceAll extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "pattern", "replacement", "ignore_case"};

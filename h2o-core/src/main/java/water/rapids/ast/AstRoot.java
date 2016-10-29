@@ -29,7 +29,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
    *
    * <p>Execution of {@link AstExec} will execute its first argument, _asts[0],
    * verify that it produces a function ({@link ValFun}), then call
-   * {@link AstPrimitive#apply(Env, Env.StackHelp, AstRoot[])} on that function
+   * {@link AstFunction#apply(Env, Env.StackHelp, AstRoot[])} on that function
    * passing down the list of _asts arguments.</p>
    *
    * <p>The {@link AstMean} class will in turn execute all its arguments,
@@ -44,7 +44,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
 
   /**
    * String representation of this Ast object in the Rapids language. For
-   * {@link AstPrimitive}s this is the name of the function; for
+   * {@link AstFunction}s this is the name of the function; for
    * {@link AstParameter}s this is either the name of the variable, or the
    * value of the numeric constant that the parameter represents. For more
    * complicated constructs such as {@link AstExec} or {@link AstUserDefinedFunction}
@@ -64,7 +64,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
    * different from {@link #str()}, in particular it must provide a valid
    * example even in a static context. For example, an {@link AstStr} may
    * return <code>"Hello, world!"</code> as an example. At the same time,
-   * for different {@link AstPrimitive}s this method should generally provide
+   * for different {@link AstFunction}s this method should generally provide
    * a typical example of how that function is to be used.</p>
    *
    * <p>Return <code>null</code> to indicate that the object should not be

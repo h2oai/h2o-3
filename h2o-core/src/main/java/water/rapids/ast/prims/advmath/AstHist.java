@@ -9,16 +9,15 @@ import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.rapids.ast.prims.reducers.AstMad;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.util.ArrayUtils;
 
-public class AstHist extends AstPrimitive {
+public class AstHist extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "breaks"};

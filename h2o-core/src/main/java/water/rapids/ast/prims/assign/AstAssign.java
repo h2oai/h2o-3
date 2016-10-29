@@ -4,13 +4,13 @@ import water.*;
 import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Assign a whole frame over a global.  Copy-On-Write optimizations make this cheap.
  */
-public class AstAssign extends AstPrimitive {
+public class AstAssign extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"id", "frame"};

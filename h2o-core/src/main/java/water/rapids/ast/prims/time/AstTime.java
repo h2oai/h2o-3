@@ -11,14 +11,14 @@ import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Basic time accessors; extract hours/days/years/etc from H2O's internal
  * msec-since-Unix-epoch time
  */
-public abstract class AstTime extends AstPrimitive {
+public abstract class AstTime extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"time"};

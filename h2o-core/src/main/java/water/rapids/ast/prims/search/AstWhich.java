@@ -5,13 +5,13 @@ import water.MRTask;
 import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Indices of which entries are not equal to 0
  */
-public class AstWhich extends AstPrimitive {
+public class AstWhich extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

@@ -2,14 +2,13 @@ package water.rapids.ast.prims.mungers;
 
 import water.fvec.Frame;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  */
-public class AstNcol extends AstPrimitive {
+public class AstNcol extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

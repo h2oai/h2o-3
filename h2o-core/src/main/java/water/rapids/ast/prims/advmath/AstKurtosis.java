@@ -3,11 +3,11 @@ package water.rapids.ast.prims.advmath;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNums;
 
-public class AstKurtosis extends AstPrimitive {
+public class AstKurtosis extends AstFunction {
     @Override
     public String[] args() {
         return new String[]{"ary", "na_rm"};

@@ -2,8 +2,7 @@ package water.rapids;
 
 import water.fvec.Frame;
 import water.Iced;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
 
 /**
  * Generic execution values for the untyped stack.
@@ -36,7 +35,7 @@ abstract public class Val extends Iced {
   public String[] getStrs()  { throw badValue("String array"); }
   public Frame    getFrame() { throw badValue("Frame"); }
   public double[] getRow()   { throw badValue("Row"); }
-  public AstPrimitive getFun() { throw badValue("function"); }
+  public AstFunction getFun() { throw badValue("function"); }
 
   private IllegalArgumentException badValue(String expectedType) {
     return new IllegalArgumentException("Expected a " + expectedType + " but found a " + getClass());

@@ -8,12 +8,12 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  */
-public class AstLevels extends AstPrimitive {
+public class AstLevels extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

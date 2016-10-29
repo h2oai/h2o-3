@@ -11,7 +11,7 @@ import water.util.StringUtils;
  * A primitive operation.  Execution just returns the function.  *Application* (not execution) applies the function
  * to the arguments.
  */
-public abstract class AstPrimitive extends AstRoot {
+public abstract class AstFunction extends AstRoot {
   private transient ValFun _v;
 
   /**

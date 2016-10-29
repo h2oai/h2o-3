@@ -19,7 +19,7 @@ import java.util.Arrays;
  * Returns a set of grouping columns, with the single answer column, with one
  * row per unique group.
  */
-public class AstDdply extends AstPrimitive {
+public class AstDdply extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "groupByCols", "fun"};

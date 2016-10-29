@@ -10,7 +10,7 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.*;
 import water.rapids.ast.AstParameter;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
@@ -25,7 +25,7 @@ import java.util.Arrays;
  * fresh Frame.  Copy-On-Write optimizations lower the cost to be proportional
  * to the over-written sections.
  */
-public class AstRectangleAssign extends AstPrimitive {
+public class AstRectangleAssign extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"dst", "src", "col_expr", "row_expr"};

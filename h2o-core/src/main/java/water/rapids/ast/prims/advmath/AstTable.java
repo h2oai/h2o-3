@@ -8,9 +8,8 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMapLong;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.util.ArrayUtils;
 
@@ -24,7 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * (table X Y) ==>
  * (groupby (cbind X Y) [X Y] nrow TRUE)
  */
-public class AstTable extends AstPrimitive {
+public class AstTable extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"X", "Y", "dense"};

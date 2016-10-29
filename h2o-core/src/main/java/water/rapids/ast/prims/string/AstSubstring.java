@@ -5,7 +5,7 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.util.VecUtils;
@@ -15,7 +15,7 @@ import java.util.HashMap;
 
 /**
  */
-public class AstSubstring extends AstPrimitive {
+public class AstSubstring extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "startIndex", "endIndex"};

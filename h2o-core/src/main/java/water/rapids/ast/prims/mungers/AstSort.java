@@ -4,14 +4,14 @@ import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.ast.prims.mungers.merge.Merge;
 import water.rapids.ast.AstParameter;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 
 
 /** Sort the whole frame by the given columns
  */
-public class AstSort extends AstPrimitive {
+public class AstSort extends AstFunction {
   @Override public String[] args() { return new String[]{"ary","cols"}; }
   @Override public String str(){ return "sort";}
   @Override public int nargs() { return 1+2; } // (sort ary [cols])

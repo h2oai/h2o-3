@@ -8,7 +8,7 @@ import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValRow;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 
 import java.util.Arrays;
 
@@ -17,7 +17,7 @@ import java.util.Arrays;
  * Numbers past the largest column are an error.
  * Negative numbers and number lists are allowed, and represent an *exclusion* list
  */
-public class AstColSlice extends AstPrimitive {
+public class AstColSlice extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "cols"};

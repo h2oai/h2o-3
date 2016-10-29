@@ -8,7 +8,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.util.ArrayUtils;
 
@@ -16,7 +16,7 @@ import java.util.Arrays;
 
 /**
  */
-public abstract class AstCumu extends AstPrimitive {
+public abstract class AstCumu extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary","axis"};

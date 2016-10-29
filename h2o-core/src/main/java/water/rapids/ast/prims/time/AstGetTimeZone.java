@@ -3,11 +3,11 @@ package water.rapids.ast.prims.time;
 import water.parser.ParseTime;
 import water.rapids.Env;
 import water.rapids.vals.ValStr;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 
-public class AstGetTimeZone extends AstPrimitive {
+public class AstGetTimeZone extends AstFunction {
   @Override
   public String[] args() {
     return null;

@@ -8,7 +8,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.*;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
@@ -21,7 +21,7 @@ import java.util.Arrays;
  * Binary operator.
  * Subclasses auto-widen between scalars and Frames, and have exactly two arguments
  */
-abstract public class AstBinOp extends AstPrimitive {
+abstract public class AstBinOp extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"leftArg", "rightArg"};

@@ -3,12 +3,12 @@ package water.rapids.ast.prims.reducers;
 import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.vals.ValNums;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  */
-public class AstNaCnt extends AstPrimitive {
+public class AstNaCnt extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

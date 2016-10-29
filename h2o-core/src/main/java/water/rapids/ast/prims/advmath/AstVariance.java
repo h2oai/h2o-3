@@ -9,7 +9,7 @@ import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.util.ArrayUtils;
 
@@ -18,7 +18,7 @@ import java.util.Arrays;
 /**
  * Variance between columns of a frame
  */
-public class AstVariance extends AstPrimitive {
+public class AstVariance extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "x", "y", "use", "symmetric"};

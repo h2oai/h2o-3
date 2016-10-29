@@ -5,13 +5,13 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNums;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 
 import java.util.ArrayList;
 
 /**
  */
-public class AstFilterNaCols extends AstPrimitive {
+public class AstFilterNaCols extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "fraction"};

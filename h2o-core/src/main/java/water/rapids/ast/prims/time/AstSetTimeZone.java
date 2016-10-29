@@ -5,14 +5,14 @@ import water.MRTask;
 import water.parser.ParseTime;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 import java.util.Set;
 
 /**
  */
-public class AstSetTimeZone extends AstPrimitive {
+public class AstSetTimeZone extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"tz"};

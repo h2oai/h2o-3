@@ -12,7 +12,7 @@ import java.util.ArrayList;
  * Syntax: { ids... . expr }
  * IDs are bound within expr
  */
-public class AstUserDefinedFunction extends AstPrimitive {
+public class AstUserDefinedFunction extends AstFunction {
   final String[] _ids;          // Identifier names
   final AstRoot _body;              // The function body
   // If this function is being evaluated, record the arguments and parent lexical scope

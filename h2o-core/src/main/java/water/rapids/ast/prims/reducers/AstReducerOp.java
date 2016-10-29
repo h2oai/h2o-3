@@ -5,13 +5,13 @@ import water.fvec.Chunk;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Subclasses take a Frame and produces a scalar.  NAs -> NAs
  */
-public abstract class AstReducerOp extends AstPrimitive {
+public abstract class AstReducerOp extends AstFunction {
   @Override
   public int nargs() {
     return -1;

@@ -6,12 +6,12 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  */
-public class AstAppend extends AstPrimitive {
+public class AstAppend extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"dst", "src", "colName"};

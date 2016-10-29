@@ -2,16 +2,15 @@ package water.rapids.ast.prims.repeaters;
 
 import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 
 /**
  * Simple sequence of length n
  */
-public class AstSeqLen extends AstPrimitive {
+public class AstSeqLen extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"length"};

@@ -3,13 +3,13 @@ package water.rapids.ast.prims.misc;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Evaluate any number of expressions, returning the last one
  */
-public class AstComma extends AstPrimitive {
+public class AstComma extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"..."};

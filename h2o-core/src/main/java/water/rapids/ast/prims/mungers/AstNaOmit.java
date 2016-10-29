@@ -3,16 +3,15 @@ package water.rapids.ast.prims.mungers;
 import water.MRTask;
 import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 
 /**
  * Remove rows with NAs from the H2OFrame
  * Note: Current implementation is NOT in-place replacement
  */
-public class AstNaOmit extends AstPrimitive {
+public class AstNaOmit extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

@@ -3,14 +3,13 @@ package water.rapids.ast.prims.advmath;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 import java.util.Random;
 
-public class AstRunif extends AstPrimitive {
+public class AstRunif extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "seed"};

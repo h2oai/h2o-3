@@ -7,7 +7,7 @@ import water.rapids.Env;
 import water.rapids.ast.prims.mungers.merge.Merge;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.util.IcedHashMap;
@@ -35,7 +35,7 @@ import java.util.Arrays;
  * there is no matching row in the rightFrame, and vice-versa for
  * allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
  */
-public class AstMerge extends AstPrimitive {
+public class AstMerge extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"left", "rite", "all_left", "all_rite", "by_left", "by_right", "method"};

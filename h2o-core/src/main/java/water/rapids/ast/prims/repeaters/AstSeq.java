@@ -6,15 +6,14 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Same logic as R's generic seq method
  */
-public class AstSeq extends AstPrimitive {
+public class AstSeq extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"from", "to", "by"};

@@ -11,14 +11,14 @@ import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstExec;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstId;
 
 /**
  * Convert year, month, day, hour, minute, sec, msec to Unix epoch time
  */
-public class AstMktime extends AstPrimitive {
+public class AstMktime extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"yr", "mo", "dy", "hr", "mi", "se", "ms"};

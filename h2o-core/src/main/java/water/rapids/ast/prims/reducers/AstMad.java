@@ -10,13 +10,13 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Median absolute deviation
  */
-public class AstMad extends AstPrimitive {
+public class AstMad extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "combineMethod", "const"};

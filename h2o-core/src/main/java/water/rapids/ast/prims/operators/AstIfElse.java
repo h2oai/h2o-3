@@ -7,7 +7,7 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.*;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
@@ -31,7 +31,7 @@ import java.util.Arrays;
  * evaluated result is returned.  The unevaluated side is not checked for being a compatible frame.  It is an error
  * if one side is typed as a scalar and the other as a Frame.
  */
-public class AstIfElse extends AstPrimitive {
+public class AstIfElse extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"test", "true", "false"};

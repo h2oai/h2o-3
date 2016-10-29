@@ -6,7 +6,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.util.VecUtils;
 
@@ -14,7 +14,7 @@ import java.util.Random;
 
 import static water.util.RandomUtils.getRNG;
 
-public class AstKFold extends AstPrimitive {
+public class AstKFold extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "nfolds", "seed"};

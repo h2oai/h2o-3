@@ -5,14 +5,14 @@ import water.Key;
 import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Assign a temp.  All such assignments are final (cannot change), but the temp can be deleted.  Temp is returned for
  * immediate use, and also set in the DKV.  Must be globally unique in the DKV.
  */
-public class AstTmpAssign extends AstPrimitive {
+public class AstTmpAssign extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"id", "frame"};

@@ -4,9 +4,8 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 import java.util.Locale;
@@ -18,7 +17,7 @@ import java.util.Locale;
  * <p/>
  * toUpper - Converts all of the characters in this String to upper case.
  */
-public class AstToUpper extends AstPrimitive {
+public class AstToUpper extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

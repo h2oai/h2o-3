@@ -12,7 +12,7 @@ import water.rapids.vals.ValFrame;
  * Apply a Function to a frame
  * Typically, column-by-column, produces a 1-row frame as a result
  */
-public class AstApply extends AstPrimitive {
+public class AstApply extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "margin", "fun"};
@@ -32,7 +32,7 @@ public class AstApply extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double margin = stk.track(asts[2].exec(env)).getNum();
-    AstPrimitive fun = stk.track(asts[3].exec(env)).getFun();
+    AstFunction fun = stk.track(asts[3].exec(env)).getFun();
 
     int nargs = fun.nargs();
     if (nargs != -1 && nargs != 2)
@@ -49,7 +49,7 @@ public class AstApply extends AstPrimitive {
   }
 
   // --------------------------------------------------------------------------
-  private ValFrame colwise(Env env, Env.StackHelp stk, Frame fr, AstPrimitive fun) {
+  private ValFrame colwise(Env env, Env.StackHelp stk, Frame fr, AstFunction fun) {
     // Break each column into it's own Frame, then execute the function passing
     // the 1 argument.  All columns are independent, and this loop should be
     // parallized over each column.
@@ -104,7 +104,7 @@ public class AstApply extends AstPrimitive {
   // --------------------------------------------------------------------------
   // Break each row into it's own Row, then execute the function passing the
   // 1 argument.  All rows are independent, and run in parallel
-  private ValFrame rowwise(Env env, Frame fr, final AstPrimitive fun) {
+  private ValFrame rowwise(Env env, Frame fr, final AstFunction fun) {
     final String[] names = fr._names;
 
     final AstUserDefinedFunction scope = env._scope;  // Current execution scope; needed to lookup variables

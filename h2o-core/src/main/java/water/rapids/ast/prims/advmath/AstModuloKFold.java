@@ -4,10 +4,10 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
-public class AstModuloKFold extends AstPrimitive {
+public class AstModuloKFold extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "nfolds"};

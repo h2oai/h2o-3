@@ -4,13 +4,13 @@ import hex.DMatrix;
 import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Matrix multiplication
  */
-public class AstMMult extends AstPrimitive {
+public class AstMMult extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "ary2"};

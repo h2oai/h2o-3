@@ -8,7 +8,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.params.AstStrList;
 import water.util.VecUtils;
 
@@ -16,7 +16,7 @@ import java.util.Arrays;
 
 /**
  */
-public class AstSetDomain extends AstPrimitive {
+public class AstSetDomain extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "newDomains"};

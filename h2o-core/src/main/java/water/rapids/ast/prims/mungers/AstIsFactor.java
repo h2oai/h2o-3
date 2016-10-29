@@ -4,12 +4,12 @@ import water.fvec.Frame;
 import water.rapids.Env;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNums;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 
 /**
  * Is a factor/categorical?
  */
-public class AstIsFactor extends AstPrimitive {
+public class AstIsFactor extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

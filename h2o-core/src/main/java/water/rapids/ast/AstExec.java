@@ -1,7 +1,6 @@
 package water.rapids.ast;
 
 import water.rapids.*;
-import water.rapids.ast.params.AstId;
 import water.rapids.vals.ValFun;
 import water.util.SB;
 
@@ -54,7 +53,7 @@ public class AstExec extends AstRoot {
     Val fun = _asts[0].exec(env);
     if (!fun.isFun())
       throw new IllegalArgumentException("Expected a function but found " + fun.getClass());
-    AstPrimitive ast = fun.getFun();
+    AstFunction ast = fun.getFun();
     int nargs = ast.nargs();
     if (nargs != -1 && nargs != _asts.length)
       throw new IllegalArgumentException(

@@ -5,7 +5,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.*;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
@@ -13,7 +13,7 @@ import water.rapids.vals.ValStr;
 
 /**
  */
-public class AstFlatten extends AstPrimitive {
+public class AstFlatten extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

@@ -6,12 +6,12 @@ import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValRow;
 
 
-public class AstMean extends AstPrimitive {
+public class AstMean extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"frame", "na_rm", "axis"};

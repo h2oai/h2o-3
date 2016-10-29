@@ -9,7 +9,7 @@ import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.util.ArrayUtils;
 import java.util.Arrays;
@@ -20,7 +20,7 @@ import java.util.Arrays;
  * Formula:
  * Pearson's Correlation Coefficient = Cov(X,Y)/sigma(X) * sigma(Y)
  */
-public class AstCorrelation extends AstPrimitive {
+public class AstCorrelation extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "x", "y", "use"};

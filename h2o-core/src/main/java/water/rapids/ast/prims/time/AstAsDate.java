@@ -10,15 +10,14 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseTime;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 /**
  * Convert a String to a Time (msec since Unix Epoch) via a given parse format
  */
-public class AstAsDate extends AstPrimitive {
+public class AstAsDate extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"time", "format"};

@@ -57,11 +57,11 @@ public class Env extends Iced {
   private ArrayList<Frame> _stk = new ArrayList<>();
 
   // Built-in constants, checked before other namespace lookups happen
-  private static final HashMap<String, AstPrimitive> PRIMS = new HashMap<>();
+  private static final HashMap<String, AstFunction> PRIMS = new HashMap<>();
   // Built-in primitives, done after other namespace lookups happen
   private static final HashMap<String, AstParameter> CONSTS = new HashMap<>();
 
-  static void init(AstPrimitive ast) {
+  static void init(AstFunction ast) {
     PRIMS.put(ast.str(), ast);
   }
 
@@ -371,7 +371,7 @@ public class Env extends Iced {
     }
 
     // Now the built-ins
-    AstPrimitive ast = PRIMS.get(id);
+    AstFunction ast = PRIMS.get(id);
     if (ast != null)
       return new ValFun(ast);
 

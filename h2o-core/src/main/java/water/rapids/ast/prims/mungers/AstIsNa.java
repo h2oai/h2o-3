@@ -11,14 +11,14 @@ import water.rapids.Val;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 
 /**
  * Split out in it's own function, instead of Yet Another UniOp, because it
  * needs a "is.NA" check instead of just using the Double.isNaN hack... because
  * it works on UUID and String columns.
  */
-public class AstIsNa extends AstPrimitive {
+public class AstIsNa extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

@@ -4,7 +4,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.util.ArrayUtils;
 import water.util.MRUtils;
@@ -12,7 +12,7 @@ import water.util.MRUtils;
 /**
  * Find the mode: the most popular element.
  */
-public class AstMode extends AstPrimitive {
+public class AstMode extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};

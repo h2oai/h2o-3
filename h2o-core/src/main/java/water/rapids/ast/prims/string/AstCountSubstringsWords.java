@@ -6,7 +6,7 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 
 import java.io.File;
@@ -15,7 +15,7 @@ import java.util.HashSet;
 
 /**
  */
-public class AstCountSubstringsWords extends AstPrimitive {
+public class AstCountSubstringsWords extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "words"};
