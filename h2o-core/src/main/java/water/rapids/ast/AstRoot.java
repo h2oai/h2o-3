@@ -47,7 +47,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
    * {@link AstPrimitive}s this is the name of the function; for
    * {@link AstParameter}s this is either the name of the variable, or the
    * value of the numeric constant that the parameter represents. For more
-   * complicated constructs such as {@link AstExec} or {@link AstFunction}
+   * complicated constructs such as {@link AstExec} or {@link AstUserDefinedFunction}
    * this method should return those objects as a Rapids string.
    */
   public abstract String str();

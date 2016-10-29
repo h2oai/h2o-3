@@ -44,7 +44,7 @@ public class AstDdply extends AstPrimitive {
     int[] gbCols = groupby.expand4();
 
     AstRoot fun = asts[3].exec(env).getFun();
-    AstFunction scope = env._scope;  // Current execution scope; needed to lookup variables
+    AstUserDefinedFunction scope = env._scope;  // Current execution scope; needed to lookup variables
 
     // Pass 1: Find all the groups (and count rows-per-group)
     IcedHashMap<AstGroup.G, String> gss = AstGroup.doGroups(fr, gbCols, AstGroup.aggNRows());
@@ -156,10 +156,10 @@ public class AstDdply extends AstPrimitive {
     private Frame _data;        // Data frame
     private Key<Vec> _vKey;     // the group to process...
     private AstRoot _fun;           // the ast to execute on the group
-    private AstFunction _scope;      // Execution environment
+    private AstUserDefinedFunction _scope;      // Execution environment
     private double[] _result;   // result is 1 row per group!
 
-    RemoteRapids(Frame data, Key<Vec> vKey, AstRoot fun, AstFunction scope) {
+    RemoteRapids(Frame data, Key<Vec> vKey, AstRoot fun, AstUserDefinedFunction scope) {
       _data = data;
       _vKey = vKey;
       _fun = fun;

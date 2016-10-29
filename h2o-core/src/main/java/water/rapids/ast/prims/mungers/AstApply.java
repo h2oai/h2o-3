@@ -107,7 +107,7 @@ public class AstApply extends AstPrimitive {
   private ValFrame rowwise(Env env, Frame fr, final AstPrimitive fun) {
     final String[] names = fr._names;
 
-    final AstFunction scope = env._scope;  // Current execution scope; needed to lookup variables
+    final AstUserDefinedFunction scope = env._scope;  // Current execution scope; needed to lookup variables
 
     // do a single row of the frame to determine the size of the output.
     double[] ds = new double[fr.numCols()];

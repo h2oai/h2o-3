@@ -48,7 +48,7 @@ public class Env extends Iced {
   public final Session _ses;
 
   // Current lexical scope lookup
-  public AstFunction _scope;
+  public AstUserDefinedFunction _scope;
 
 
   // Frames that are alive in mid-execution; usually because we have evaluated

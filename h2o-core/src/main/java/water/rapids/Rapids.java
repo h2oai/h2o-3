@@ -2,7 +2,7 @@ package water.rapids;
 
 import water.fvec.Frame;
 import water.rapids.ast.AstExec;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstUserDefinedFunction;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.*;
@@ -170,7 +170,7 @@ public class Rapids {
   /**
    * Parse and return a user defined function of the form "{arg1 arg2 . (expr)}"
    */
-  private AstFunction parseFunctionDefinition() {
+  private AstUserDefinedFunction parseFunctionDefinition() {
     eatChar('{');
 
     // Parse the list of ids
@@ -195,7 +195,7 @@ public class Rapids {
       throw new IllegalASTException("Expected the end of the function, but found '" + peek(0) + "'");
     eatChar('}');
 
-    return new AstFunction(ids, body);
+    return new AstUserDefinedFunction(ids, body);
   }
 
   /**

@@ -7,7 +7,7 @@ import water.MRTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.*;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstUserDefinedFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.prims.operators.AstPlus;
 import water.util.Log;
@@ -66,7 +66,7 @@ public class Session {
    * @param scope ?
    * @return the result from the Rapids expression
    */
-  public Val exec(AstRoot ast, AstFunction scope) {
+  public Val exec(AstRoot ast, AstUserDefinedFunction scope) {
     sanity_check_refs(null);
 
     // Execute

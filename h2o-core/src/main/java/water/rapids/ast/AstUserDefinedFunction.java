@@ -1,7 +1,6 @@
 package water.rapids.ast;
 
 import water.rapids.Env;
-import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFun;
 import water.util.SB;
@@ -13,21 +12,21 @@ import java.util.ArrayList;
  * Syntax: { ids... . expr }
  * IDs are bound within expr
  */
-public class AstFunction extends AstPrimitive {
+public class AstUserDefinedFunction extends AstPrimitive {
   final String[] _ids;          // Identifier names
   final AstRoot _body;              // The function body
   // If this function is being evaluated, record the arguments and parent lexical scope
   final Val[] _args;            // Evaluated arguments to a function
-  final AstFunction _parent;         // Parent lexical scope
+  final AstUserDefinedFunction _parent;         // Parent lexical scope
 
-  public AstFunction() {
+  public AstUserDefinedFunction() {
     _ids = null;
     _body = null;
     _args = null;
     _parent = null;
   }
 
-  public AstFunction(ArrayList<String> ids, AstRoot body) {
+  public AstUserDefinedFunction(ArrayList<String> ids, AstRoot body) {
     _ids = ids.toArray(new String[ids.size()]);
     _body = body;
     _args = null;  // This is a template of an uncalled function
@@ -35,7 +34,7 @@ public class AstFunction extends AstPrimitive {
   }
 
   // A function applied to arguments
-  public AstFunction(AstFunction fun, Val[] args, AstFunction parent) {
+  public AstUserDefinedFunction(AstUserDefinedFunction fun, Val[] args, AstUserDefinedFunction parent) {
     _ids = fun._ids;
     _body = fun._body;
     _parent = parent;
@@ -78,7 +77,7 @@ public class AstFunction extends AstPrimitive {
   // capture the existing global scope.
   @Override
   public ValFun exec(Env env) {
-    return new ValFun(new AstFunction(this, null, env._scope));
+    return new ValFun(new AstUserDefinedFunction(this, null, env._scope));
   }
 
   // Expected argument count, plus self
@@ -107,8 +106,8 @@ public class AstFunction extends AstPrimitive {
     Val[] args = new Val[asts.length];
     for (int i = 1; i < asts.length; i++)
       args[i] = stk.track(asts[i].exec(env));
-    AstFunction old = env._scope;
-    env._scope = new AstFunction(this, args, _parent); // Push a new lexical scope, extended from the old
+    AstUserDefinedFunction old = env._scope;
+    env._scope = new AstUserDefinedFunction(this, args, _parent); // Push a new lexical scope, extended from the old
 
     Val res = stk.untrack(_body.exec(env));
 
