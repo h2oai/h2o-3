@@ -15,6 +15,7 @@ import water.rapids.ast.AstFunction;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.prims.mungers.AstColSlice;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 
 import java.util.Arrays;

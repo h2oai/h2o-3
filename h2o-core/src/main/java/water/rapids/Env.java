@@ -17,6 +17,7 @@ import water.rapids.ast.prims.search.*;
 import water.rapids.ast.prims.string.*;
 import water.rapids.ast.prims.time.*;
 import water.rapids.ast.prims.timeseries.*;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValFun;
 

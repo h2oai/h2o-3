@@ -7,6 +7,7 @@ import water.parser.BufferedString;
 import water.rapids.*;
 import water.rapids.ast.Ast;
 import water.rapids.ast.AstFunction;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValStr;

@@ -6,6 +6,7 @@ import water.*;
 import water.fvec.*;
 import water.nbhm.NonBlockingHashMapLong;
 import water.rapids.ast.prims.mungers.merge.Merge;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 
 import java.util.Random;

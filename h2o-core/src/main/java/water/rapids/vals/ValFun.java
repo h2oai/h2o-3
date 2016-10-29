@@ -1,6 +1,5 @@
 package water.rapids.vals;
 
-import water.rapids.Val;
 import water.rapids.ast.AstFunction;
 
 /**

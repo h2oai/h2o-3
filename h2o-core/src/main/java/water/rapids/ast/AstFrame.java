@@ -2,7 +2,7 @@ package water.rapids.ast;
 
 import water.fvec.Frame;
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 
 /**

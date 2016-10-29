@@ -5,6 +5,7 @@ import water.fvec.*;
 import water.rapids.*;
 import water.rapids.ast.*;
 import water.rapids.ast.params.AstNumList;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 import water.util.*;
 

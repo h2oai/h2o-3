@@ -10,6 +10,7 @@ import water.nbhm.*;
 import water.rapids.ast.Ast;
 import water.rapids.ast.AstUserDefinedFunction;
 import water.rapids.ast.prims.operators.AstPlus;
+import water.rapids.vals.Val;
 import water.util.Log;
 
 import java.util.Collections;

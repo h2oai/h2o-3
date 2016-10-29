@@ -1,7 +1,5 @@
 package water.rapids.vals;
 
-import water.rapids.Val;
-
 import java.util.Arrays;
 
 /**

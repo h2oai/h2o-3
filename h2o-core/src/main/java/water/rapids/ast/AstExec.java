@@ -1,6 +1,7 @@
 package water.rapids.ast;
 
 import water.rapids.*;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFun;
 import water.util.SB;
 

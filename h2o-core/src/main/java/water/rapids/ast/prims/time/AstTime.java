@@ -8,7 +8,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.ParseTime;
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;

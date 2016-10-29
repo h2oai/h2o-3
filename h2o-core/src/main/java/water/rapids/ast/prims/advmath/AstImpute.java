@@ -18,6 +18,7 @@ import water.rapids.ast.params.AstStrList;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.ast.prims.reducers.AstMean;
 import water.rapids.ast.prims.reducers.AstMedian;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNums;
 import water.util.ArrayUtils;

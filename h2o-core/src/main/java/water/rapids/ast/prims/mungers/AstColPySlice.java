@@ -2,7 +2,7 @@ package water.rapids.ast.prims.mungers;
 
 import water.fvec.Frame;
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.ast.Ast;
 import water.rapids.ast.AstParameter;
 import water.rapids.vals.ValFrame;

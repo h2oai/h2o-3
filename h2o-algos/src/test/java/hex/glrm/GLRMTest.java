@@ -16,7 +16,7 @@ import water.fvec.UploadFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.rapids.Rapids;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.Log;

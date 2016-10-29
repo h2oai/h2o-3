@@ -3,7 +3,7 @@ package water.rapids.ast.prims.reducers;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.ast.Ast;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstFunction;

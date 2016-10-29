@@ -1,7 +1,7 @@
 package water.rapids.ast.prims.misc;
 
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstFunction;
 import water.rapids.ast.Ast;

@@ -2,8 +2,7 @@ package water.rapids.ast.params;
 
 import water.H2O;
 import water.rapids.Env;
-import water.rapids.Rapids;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.ast.AstParameter;
 import water.util.ArrayUtils;
 import water.util.SB;

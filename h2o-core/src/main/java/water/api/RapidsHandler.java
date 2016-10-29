@@ -9,7 +9,7 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.rapids.ast.Ast;
 import water.rapids.Rapids;
 import water.rapids.Session;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.util.Log;
 import water.util.StringUtils;
 

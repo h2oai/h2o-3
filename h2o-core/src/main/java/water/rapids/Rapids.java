@@ -7,6 +7,7 @@ import water.rapids.ast.AstUserDefinedFunction;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.params.*;
 import water.util.CollectionUtils;
+import water.rapids.vals.Val;
 import water.util.StringUtils;
 
 import java.util.ArrayList;

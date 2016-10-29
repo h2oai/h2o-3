@@ -1,4 +1,4 @@
-package water.rapids;
+package water.rapids.vals;
 
 import water.fvec.Frame;
 import water.Iced;

@@ -8,6 +8,7 @@ import water.Key;
 import water.Keyed;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 
 public class GroupByTest extends TestUtil {

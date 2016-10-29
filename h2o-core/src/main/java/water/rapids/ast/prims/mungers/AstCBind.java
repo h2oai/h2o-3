@@ -4,7 +4,7 @@ import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
