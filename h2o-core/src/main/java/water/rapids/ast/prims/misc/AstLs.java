@@ -10,7 +10,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 
 import java.util.ArrayList;
 
@@ -37,7 +37,7 @@ public class AstLs extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     ArrayList<String> domain = new ArrayList<>();
     Futures fs = new Futures();
     AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec(), Vec.T_CAT);

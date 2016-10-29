@@ -8,9 +8,9 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.*;
+import water.rapids.ast.Ast;
 import water.rapids.ast.AstFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
@@ -86,7 +86,7 @@ public class AstImpute extends AstFunction {
   } // (h2o.impute data col method combine_method groupby groupByFrame values)
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     // Argument parsing and sanity checking
     // Whole frame being imputed
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
@@ -99,7 +99,7 @@ public class AstImpute extends AstFunction {
     final Vec vec = doAllVecs ? null : fr.vec(col);
 
     // Technique used for imputation
-    AstRoot method = null;
+    Ast method = null;
     boolean ffill0 = false, bfill0 = false;
     switch (asts[3].exec(env).getStr().toUpperCase()) {
       case "MEAN":
@@ -125,7 +125,7 @@ public class AstImpute extends AstFunction {
     QuantileModel.CombineMethod combine = QuantileModel.CombineMethod.valueOf(asts[4].exec(env).getStr().toUpperCase());
 
     // Group-by columns.  Empty is allowed, and perfectly normal.
-    AstRoot ast = asts[5];
+    Ast ast = asts[5];
     AstNumList by2;
     if (ast instanceof AstNumList) by2 = (AstNumList) ast;
     else if (ast instanceof AstNum) by2 = new AstNumList(((AstNum) ast).getNum());
@@ -140,7 +140,7 @@ public class AstImpute extends AstFunction {
     } else throw new IllegalArgumentException("Requires a number-list, but found a " + ast.getClass());
 
     Frame groupByFrame = asts[6].str().equals("_") ? null : stk.track(asts[6].exec(env)).getFrame();
-    AstRoot vals = asts[7];
+    Ast vals = asts[7];
     AstNumList values;
     if (vals instanceof AstNumList) values = (AstNumList) vals;
     else if (vals instanceof AstNum) values = new AstNumList(((AstNum) vals).getNum());
@@ -209,7 +209,7 @@ public class AstImpute extends AstFunction {
 
         // simple case where user specified a column... col == -1 means do all columns
         if (doAllVecs) {
-          AstRoot[] aggs = new AstRoot[(int) (3 + 3 * (fr.numCols() - by2.cnt()))];
+          Ast[] aggs = new Ast[(int) (3 + 3 * (fr.numCols() - by2.cnt()))];
           aggs[0] = ast_grp;
           aggs[1] = new AstFrame(fr);
           aggs[2] = by2;
@@ -224,7 +224,7 @@ public class AstImpute extends AstFunction {
           }
           imputes = ast_grp.apply(env, stk, aggs).getFrame();
         } else
-          imputes = ast_grp.apply(env, stk, new AstRoot[]{ast_grp, new AstFrame(fr), by2,  /**/method, new AstNumList(col, col + 1), new AstStr("rm") /**/}).getFrame();
+          imputes = ast_grp.apply(env, stk, new Ast[]{ast_grp, new AstFrame(fr), by2,  /**/method, new AstNumList(col, col + 1), new AstStr("rm") /**/}).getFrame();
       }
       if (by2.isEmpty() && imputes.numCols() > 2) // >2 makes it ambiguous which columns are groupby cols and which are aggs, throw IAE
         throw new IllegalArgumentException("Ambiguous group-by frame. Supply the `by` columns to proceed.");

@@ -36,14 +36,14 @@ public class AstDdply extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 
     AstNumList groupby = AstGroup.check(ncols, asts[2]);
     int[] gbCols = groupby.expand4();
 
-    AstRoot fun = asts[3].exec(env).getFun();
+    Ast fun = asts[3].exec(env).getFun();
     AstUserDefinedFunction scope = env._scope;  // Current execution scope; needed to lookup variables
 
     // Pass 1: Find all the groups (and count rows-per-group)
@@ -155,11 +155,11 @@ public class AstDdply extends AstFunction {
   private static class RemoteRapids extends DTask<RemoteRapids> {
     private Frame _data;        // Data frame
     private Key<Vec> _vKey;     // the group to process...
-    private AstRoot _fun;           // the ast to execute on the group
+    private Ast _fun;           // the ast to execute on the group
     private AstUserDefinedFunction _scope;      // Execution environment
     private double[] _result;   // result is 1 row per group!
 
-    RemoteRapids(Frame data, Key<Vec> vKey, AstRoot fun, AstUserDefinedFunction scope) {
+    RemoteRapids(Frame data, Key<Vec> vKey, Ast fun, AstUserDefinedFunction scope) {
       _data = data;
       _vKey = vKey;
       _fun = fun;
@@ -202,7 +202,7 @@ public class AstDdply extends AstFunction {
       // Now run the function on the group frame
       Session ses = new Session();
       // Build an environment with proper lookup scope, and execute in a temp session
-      Val val = ses.exec(new AstExec(new AstRoot[]{_fun, new AstFrame(groupFrame)}), _scope);
+      Val val = ses.exec(new AstExec(new Ast[]{_fun, new AstFrame(groupFrame)}), _scope);
       val = ses.end(val);
 
       // Result into a double[]

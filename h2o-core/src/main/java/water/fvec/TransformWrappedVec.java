@@ -4,8 +4,8 @@ import water.DKV;
 import water.H2O;
 import water.Key;
 import water.MRTask;
+import water.rapids.ast.Ast;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 import water.rapids.Env;
 import water.rapids.ast.params.AstNum;
 
@@ -81,7 +81,7 @@ public class TransformWrappedVec extends WrappedVec {
     public final AstFunction _fun;
     public final transient Chunk _c[];
 
-    private final AstRoot[] _asts;
+    private final Ast[] _asts;
     private final Env _env;
 
     TransformWrappedChunk(AstFunction fun, Vec transformWrappedVec, Chunk... c) {
@@ -91,7 +91,7 @@ public class TransformWrappedVec extends WrappedVec {
       _start = _c[0]._start; _vec = transformWrappedVec; _cidx = _c[0]._cidx;
 
       _fun=fun;
-      _asts = new AstRoot[1+_c.length];
+      _asts = new Ast[1+_c.length];
       _asts[0]=_fun;
       for(int i=1;i<_asts.length;++i)
         _asts[i] = new AstNum(0);

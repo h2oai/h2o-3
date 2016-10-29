@@ -6,9 +6,9 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
@@ -36,7 +36,7 @@ public class AstMatch extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1 || !fr.anyVec().isCategorical())
       throw new IllegalArgumentException("can only match on a single categorical column.");

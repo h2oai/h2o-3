@@ -6,7 +6,7 @@ import water.Key;
 import water.api.schemas3.*;
 import water.api.schemas3.RapidsHelpV3.RapidsExpressionV3;
 import water.exceptions.H2OIllegalArgumentException;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.Rapids;
 import water.rapids.Session;
 import water.rapids.Val;
@@ -60,13 +60,13 @@ public class RapidsHandler extends Handler {
   public RapidsHelpV3 genHelp(int version, SchemaV3 noschema) {
     Reflections reflections = new Reflections("water.rapids");
     RapidsHelpV3 res = new RapidsHelpV3();
-    res.syntax = processAstClass(AstRoot.class, reflections);
+    res.syntax = processAstClass(Ast.class, reflections);
     return res;
   }
 
-  private RapidsExpressionV3 processAstClass(Class<? extends AstRoot> clz, Reflections refl) {
+  private RapidsExpressionV3 processAstClass(Class<? extends Ast> clz, Reflections refl) {
     ArrayList<RapidsExpressionV3> subs = new ArrayList<>();
-    for (Class<? extends AstRoot> subclass : refl.getSubTypesOf(clz))
+    for (Class<? extends Ast> subclass : refl.getSubTypesOf(clz))
       if (subclass.getSuperclass() == clz)
         subs.add(processAstClass(subclass, refl));
 
@@ -75,7 +75,7 @@ public class RapidsHandler extends Handler {
     target.is_abstract = Modifier.isAbstract(clz.getModifiers());
     if (!target.is_abstract) {
       try {
-        AstRoot m = clz.newInstance();
+        Ast m = clz.newInstance();
         target.pattern = m.example();
         target.description = m.description();
       }

@@ -5,9 +5,9 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 import water.util.VecUtils;
 
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ public class AstRStrip extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String set = asts[2].exec(env).getStr();
 

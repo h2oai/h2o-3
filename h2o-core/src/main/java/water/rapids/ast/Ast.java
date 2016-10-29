@@ -10,7 +10,7 @@ import water.rapids.vals.*;
 /**
  * Base class for all nodes in Rapids language Abstract Syntax Tree.
  */
-public abstract class AstRoot extends Iced<AstRoot> {
+public abstract class Ast extends Iced<Ast> {
 
   /**
    * <p>"Execute" this AST expression, and return the result. For different ASTs
@@ -29,7 +29,7 @@ public abstract class AstRoot extends Iced<AstRoot> {
    *
    * <p>Execution of {@link AstExec} will execute its first argument, _asts[0],
    * verify that it produces a function ({@link ValFun}), then call
-   * {@link AstFunction#apply(Env, Env.StackHelp, AstRoot[])} on that function
+   * {@link AstFunction#apply(Env, Env.StackHelp, Ast[])} on that function
    * passing down the list of _asts arguments.</p>
    *
    * <p>The {@link AstMean} class will in turn execute all its arguments,

@@ -5,7 +5,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValNums;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 
 /**
  * TODO: allow for multiple columns, package result into Frame
@@ -27,7 +27,7 @@ public class AstSdev extends AstFunction {
   }
 
   @Override
-  public ValNums apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNums apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     boolean narm = asts[2].exec(env).getNum() == 1;
     double[] ds = new double[fr.numCols()];

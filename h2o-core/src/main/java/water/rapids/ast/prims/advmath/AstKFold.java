@@ -7,7 +7,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.util.VecUtils;
 
 import java.util.Random;
@@ -116,7 +116,7 @@ public class AstKFold extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Vec foldVec = stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero();
     int nfolds = (int) asts[2].exec(env).getNum();
     long seed = (long) asts[3].exec(env).getNum();

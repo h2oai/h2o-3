@@ -5,7 +5,7 @@ import water.fvec.*;
 import water.MRTask;
 import water.rapids.*;
 import water.rapids.ast.*;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 
 /**
@@ -29,7 +29,7 @@ public class AstApply extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double margin = stk.track(asts[2].exec(env)).getNum();
     AstFunction fun = stk.track(asts[3].exec(env)).getFun();
@@ -55,7 +55,7 @@ public class AstApply extends AstFunction {
     // parallized over each column.
     Vec vecs[] = fr.vecs();
     Val vals[] = new Val[vecs.length];
-    AstRoot[] asts = new AstRoot[]{fun, null};
+    Ast[] asts = new Ast[]{fun, null};
     for (int i = 0; i < vecs.length; i++) {
       asts[1] = new AstFrame(new Frame(new String[]{fr._names[i]}, new Vec[]{vecs[i]}));
       try (Env.StackHelp stk_inner = env.stk()) {
@@ -113,13 +113,13 @@ public class AstApply extends AstFunction {
     double[] ds = new double[fr.numCols()];
     for (int col = 0; col < fr.numCols(); ++col)
       ds[col] = fr.vec(col).at(0);
-    int noutputs = fun.apply(env, env.stk(), new AstRoot[]{fun, new AstRow(ds, fr.names())}).getRow().length;
+    int noutputs = fun.apply(env, env.stk(), new Ast[]{fun, new AstRow(ds, fr.names())}).getRow().length;
 
     Frame res = new MRTask() {
       @Override
       public void map(Chunk chks[], NewChunk[] nc) {
         double ds[] = new double[chks.length]; // Working row
-        AstRoot[] asts = new AstRoot[]{fun, new AstRow(ds, names)}; // Arguments to be called; they are reused endlessly
+        Ast[] asts = new Ast[]{fun, new AstRow(ds, names)}; // Arguments to be called; they are reused endlessly
         Session ses = new Session();                      // Session, again reused endlessly
         Env env = new Env(ses);
         env._scope = scope;                               // For proper namespace lookup

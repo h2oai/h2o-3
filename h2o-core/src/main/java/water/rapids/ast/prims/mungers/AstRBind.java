@@ -11,7 +11,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
 
@@ -40,14 +40,14 @@ public class AstRBind extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
 
     // Execute all args.  Find a canonical frame; all Frames must look like this one.
     // Each argument turns into either a Frame (whose rows are entirely
     // inlined) or a scalar (which is replicated across as a single row).
     Frame fr = null; // Canonical Frame; all frames have the same column count, types and names
     int nchks = 0;     // Total chunks
-    Val vals[] = new Val[asts.length]; // Computed AstRoot results
+    Val vals[] = new Val[asts.length]; // Computed Ast results
     for (int i = 1; i < asts.length; i++) {
       vals[i] = stk.track(asts[i].exec(env));
       if (vals[i].isFrame()) {

@@ -3,9 +3,9 @@ package water.rapids.ast.prims.advmath;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 
 import java.util.Random;
 
@@ -26,7 +26,7 @@ public class AstRunif extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     long seed = (long) asts[2].exec(env).getNum();
     if (seed == -1) seed = new Random().nextLong();

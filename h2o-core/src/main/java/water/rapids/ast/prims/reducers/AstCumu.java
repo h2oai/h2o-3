@@ -7,9 +7,9 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -37,9 +37,9 @@ public abstract class AstCumu extends AstFunction {
   public abstract double init();
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
-    AstRoot axisAR = asts[2];
+    Ast axisAR = asts[2];
     for (Vec v:f.vecs()) {
       if(v.isCategorical() || v.isString() || v.isUUID()) throw new IllegalArgumentException(
               "Cumulative functions not applicable to enum, string, or UUID values");

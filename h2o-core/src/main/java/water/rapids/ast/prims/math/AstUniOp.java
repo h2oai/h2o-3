@@ -3,8 +3,8 @@ package water.rapids.ast.prims.math;
 import water.*;
 import water.fvec.*;
 import water.rapids.*;
+import water.rapids.ast.Ast;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValRow;
@@ -24,7 +24,7 @@ public abstract class AstUniOp extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Val val = stk.track(asts[1].exec(env));
     switch (val.type()) {
       case Val.NUM:

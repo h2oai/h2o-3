@@ -7,9 +7,9 @@ import water.Job;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 
 /**
@@ -33,7 +33,7 @@ public class AstQtile extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame fr_wkey = new Frame(fr); // Force a bogus Key for Quantiles ModelBuilder

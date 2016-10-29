@@ -3,8 +3,8 @@ package water.rapids.ast.prims.advmath;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNums;
 
 public class AstKurtosis extends AstFunction {
@@ -20,7 +20,7 @@ public class AstKurtosis extends AstFunction {
     public int nargs() {return 1 + 2;} // (kurtosis ary na.rm)
 
     @Override
-    public ValNums apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    public ValNums apply(Env env, Env.StackHelp stk, Ast asts[]) {
         Frame fr = stk.track(asts[1].exec(env)).getFrame();
         boolean narm = asts[2].exec(env).getNum() == 1;
         double[] ds = new double[fr.numCols()];

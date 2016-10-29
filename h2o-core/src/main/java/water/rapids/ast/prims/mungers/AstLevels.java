@@ -9,7 +9,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 
 /**
  */
@@ -30,7 +30,7 @@ public class AstLevels extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     Futures fs = new Futures();
     Key[] keys = Vec.VectorGroup.VG_LEN1.addVecs(f.numCols());

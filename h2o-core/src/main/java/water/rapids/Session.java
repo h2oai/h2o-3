@@ -7,8 +7,8 @@ import water.MRTask;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.*;
+import water.rapids.ast.Ast;
 import water.rapids.ast.AstUserDefinedFunction;
-import water.rapids.ast.AstRoot;
 import water.rapids.ast.prims.operators.AstPlus;
 import water.util.Log;
 
@@ -61,12 +61,12 @@ public class Session {
   }
 
   /**
-   * Execute an AstRoot in the current Session with much assertion-checking
+   * Execute an Ast in the current Session with much assertion-checking
    * @param ast Rapids expression to execute
    * @param scope ?
    * @return the result from the Rapids expression
    */
-  public Val exec(AstRoot ast, AstUserDefinedFunction scope) {
+  public Val exec(Ast ast, AstUserDefinedFunction scope) {
     sanity_check_refs(null);
 
     // Execute
@@ -338,7 +338,7 @@ public class Session {
   }
 
   // To avoid a class-circularity hang, we need to force other members of the
-  // cluster to load the Rapids & AstRoot classes BEFORE trying to execute code
+  // cluster to load the Rapids & Ast classes BEFORE trying to execute code
   // remotely, because e.g. ddply runs functions on all nodes.
   private static volatile boolean _initialized; // One-shot init
 

@@ -3,9 +3,9 @@ package water.rapids.ast.prims.matrix;
 import hex.DMatrix;
 import water.fvec.Frame;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 
 /**
  * Matrix multiplication
@@ -27,7 +27,7 @@ public class AstMMult extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame X1 = stk.track(asts[1].exec(env)).getFrame();
     Frame X2 = stk.track(asts[2].exec(env)).getFrame();
     return new ValFrame(DMatrix.mmul(X1, X2));

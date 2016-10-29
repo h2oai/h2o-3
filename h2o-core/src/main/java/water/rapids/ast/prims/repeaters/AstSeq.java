@@ -8,7 +8,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 
 /**
  * Same logic as R's generic seq method
@@ -31,7 +31,7 @@ public class AstSeq extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     double from = asts[1].exec(env).getNum();
     double to = asts[2].exec(env).getNum();
     double by = asts[3].exec(env).getNum();

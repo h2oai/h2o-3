@@ -6,7 +6,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
 import water.rapids.ast.params.AstStrList;
@@ -33,7 +33,7 @@ public class AstSetDomain extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
     String[] _domains = ((AstStrList) asts[2])._strs;
     if (f.numCols() != 1)

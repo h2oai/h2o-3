@@ -4,9 +4,9 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValRow;
-import water.rapids.ast.AstRoot;
 
 /**
  * Optimization for the RollupStats: use them directly
@@ -20,7 +20,7 @@ public abstract class AstRollupOp extends AstReducerOp {
   public abstract double rup(Vec vec);
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Val arg1 = asts[1].exec(env);
     if (arg1.isRow()) {        // Row-wise operation
       double[] ds = arg1.getRow();

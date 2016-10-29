@@ -9,7 +9,7 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
@@ -635,7 +635,7 @@ public class RapidsTest extends TestUtil {
   }
 
   private static void astStr_ok(String expr, String expected) {
-    AstRoot res = Rapids.parse(expr);
+    Ast res = Rapids.parse(expr);
     assertTrue(res instanceof AstStr);
     assertEquals(expected, ((AstStr)res).getStr());
   }

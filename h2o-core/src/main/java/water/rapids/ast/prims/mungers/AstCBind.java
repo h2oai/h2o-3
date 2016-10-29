@@ -5,7 +5,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
 
@@ -29,7 +29,7 @@ public class AstCBind extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
 
     // Compute the variable args.  Find the common row count
     Val vals[] = new Val[asts.length];

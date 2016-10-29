@@ -11,7 +11,7 @@ import water.rapids.ast.prims.reducers.AstMad;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
@@ -34,7 +34,7 @@ public class AstHist extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     // stack is [ ..., ary, breaks]
     // handle the breaks
     Frame fr2;
@@ -45,7 +45,7 @@ public class AstHist extends AstFunction {
     //TODO Add case when vec is a constant numeric
     if(vec.isConst()) throw new IllegalArgumentException("Hist does not apply to constant numeric columns.");
 
-    AstRoot a = asts[2];
+    Ast a = asts[2];
     String algo = null;
     int numBreaks = -1;
     double[] breaks = null;

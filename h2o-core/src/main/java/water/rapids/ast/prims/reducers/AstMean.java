@@ -7,7 +7,7 @@ import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValRow;
 
 
@@ -49,7 +49,7 @@ public class AstMean extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
+  public Val apply(Env env, Env.StackHelp stk, Ast[] asts) {
     Val val1 = asts[1].exec(env);
     if (val1 instanceof ValFrame) {
       Frame fr = stk.track(val1).getFrame();

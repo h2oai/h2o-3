@@ -4,7 +4,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValRow;
 
 /**
@@ -34,7 +34,7 @@ public class AstGetrow extends AstFunction {
   }
 
   @Override
-  public ValRow apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValRow apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numRows() != 1)
       throw new IllegalArgumentException("The frame should have only 1 row; found " + fr.numRows() + " rows.");

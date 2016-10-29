@@ -2,7 +2,7 @@ package water.rapids.ast.prims.operators;
 
 import water.rapids.Env;
 import water.rapids.Val;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 
 /**
  * Logical-OR.  If the first arg is true, do not execute the 2nd arg.
@@ -13,7 +13,7 @@ public class AstLOr extends AstBinOp {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Val left = stk.track(asts[1].exec(env));
     // If the left is 1, just return the left
     if (left.isNum()) {

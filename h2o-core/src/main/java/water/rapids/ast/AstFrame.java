@@ -8,7 +8,7 @@ import water.rapids.vals.ValFrame;
 /**
  * A Frame.  Execution is just to return the constant.
  */
-public class AstFrame extends AstRoot {
+public class AstFrame extends Ast {
   final ValFrame _fr;
 
   public AstFrame() {

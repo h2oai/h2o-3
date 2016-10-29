@@ -9,7 +9,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValFun;
 import water.rapids.ast.AstFunction;
@@ -241,7 +241,7 @@ public class AstGroup extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 
@@ -317,7 +317,7 @@ public class AstGroup extends AstFunction {
   }
 
   // Argument check helper
-  public static AstNumList check(long dstX, AstRoot ast) {
+  public static AstNumList check(long dstX, Ast ast) {
     // Sanity check vs dst.  To simplify logic, jam the 1 col/row case in as a AstNumList
     AstNumList dim;
     if (ast instanceof AstNumList) dim = (AstNumList) ast;

@@ -5,7 +5,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 
 /**
  *
@@ -27,7 +27,7 @@ public class AstNLevels extends AstFunction {
   }
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNum apply(Env env, Env.StackHelp stk, Ast asts[]) {
     int nlevels;
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() == 1) {

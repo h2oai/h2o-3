@@ -11,7 +11,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 
 /**
  * Median absolute deviation
@@ -33,7 +33,7 @@ public class AstMad extends AstFunction {
   }
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNum apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec[] vecs = fr.vecs();
     if (vecs.length == 0 || vecs[0].naCnt() > 0) return new ValNum(Double.NaN);

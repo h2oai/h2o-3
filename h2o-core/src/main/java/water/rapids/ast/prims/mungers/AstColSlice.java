@@ -5,7 +5,7 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstParameter;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValRow;
 import water.rapids.ast.AstFunction;
@@ -34,7 +34,7 @@ public class AstColSlice extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Val v = stk.track(asts[1].exec(env));
     AstParameter col_list = (AstParameter) asts[2];
     if (v instanceof ValRow) {

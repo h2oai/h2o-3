@@ -9,7 +9,7 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.*;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValRow;
@@ -33,7 +33,7 @@ abstract public class AstBinOp extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Val left = stk.track(asts[1].exec(env));
     Val rite = stk.track(asts[2].exec(env));
     return prim_apply(left, rite);

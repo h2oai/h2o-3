@@ -3,7 +3,7 @@ package water.rapids.ast.prims.mungers;
 import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValNums;
 import java.util.ArrayList;
 
@@ -38,7 +38,7 @@ public class AstColumnsByType extends AstFunction {
     } //ary type
 
     @Override
-    public ValNums apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    public ValNums apply(Env env, Env.StackHelp stk, Ast asts[]) {
         Frame fr = stk.track(asts[1].exec(env)).getFrame();
         String type = stk.track(asts[2].exec(env)).getStr();
         DType dtype;

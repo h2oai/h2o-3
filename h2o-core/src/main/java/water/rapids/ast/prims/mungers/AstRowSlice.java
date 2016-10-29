@@ -3,7 +3,7 @@ package water.rapids.ast.prims.mungers;
 import water.*;
 import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstExec;
 import water.rapids.ast.AstFunction;
@@ -34,7 +34,7 @@ public class AstRowSlice extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame returningFrame;
     long nrows = fr.numRows();

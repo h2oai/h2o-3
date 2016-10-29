@@ -4,9 +4,9 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.ParseTime;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 
 /**
  */
@@ -28,7 +28,7 @@ public class AstListTimeZones extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     String[] domain = ParseTime.listTimezones().split("\n");
     double ds[] = new double[domain.length];
     for (int i = 0; i < domain.length; i++) ds[i] = i;

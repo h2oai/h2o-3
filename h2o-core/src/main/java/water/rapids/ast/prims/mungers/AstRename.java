@@ -6,7 +6,7 @@ import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 import water.rapids.Env;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstFunction;
 
@@ -29,7 +29,7 @@ public class AstRename extends AstFunction {
   }
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNum apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Key oldKey = Key.make(asts[1].exec(env).getStr());
     Key newKey = Key.make(asts[2].exec(env).getStr());
     Iced o = DKV.remove(oldKey).get();

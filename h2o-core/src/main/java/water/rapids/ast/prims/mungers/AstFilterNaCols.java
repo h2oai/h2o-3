@@ -3,7 +3,7 @@ package water.rapids.ast.prims.mungers;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValNums;
 import water.rapids.ast.AstFunction;
 
@@ -29,7 +29,7 @@ public class AstFilterNaCols extends AstFunction {
   }
 
   @Override
-  public ValNums apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNums apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double frac = asts[2].exec(env).getNum();
     double nrow = fr.numRows() * frac;

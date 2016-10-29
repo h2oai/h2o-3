@@ -9,10 +9,10 @@ import water.fvec.Vec;
 import water.parser.ParseTime;
 import water.rapids.Env;
 import water.rapids.Val;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 
 /**
  * Basic time accessors; extract hours/days/years/etc from H2O's internal
@@ -43,7 +43,7 @@ public abstract class AstTime extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Val val = asts[1].exec(env);
     switch (val.type()) {
       case Val.NUM:

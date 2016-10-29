@@ -12,7 +12,7 @@ import water.parser.ParseTime;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 
 /**
  * Convert a String to a Time (msec since Unix Epoch) via a given parse format
@@ -35,7 +35,7 @@ public class AstAsDate extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec vec = fr.vecs()[0];
     if (fr.vecs().length != 1 || !(vec.isCategorical() || vec.isString()))

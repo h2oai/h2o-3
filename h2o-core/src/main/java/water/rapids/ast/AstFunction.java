@@ -11,7 +11,7 @@ import water.util.StringUtils;
  * A primitive operation.  Execution just returns the function.  *Application* (not execution) applies the function
  * to the arguments.
  */
-public abstract class AstFunction extends AstRoot {
+public abstract class AstFunction extends Ast {
   private transient ValFun _v;
 
   /**
@@ -43,12 +43,12 @@ public abstract class AstFunction extends AstRoot {
    *
    * @param env Current execution environment. Variables are looked up here.
    * @param stk TODO need clarification
-   * @param asts List of AstRoot expressions that are arguments to the
+   * @param asts List of Ast expressions that are arguments to the
    *             function. First element in this list is the function itself.
    * @return value resulting from calling the function with the provided list
    *         of arguments.
    */
-  public Val apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
+  public Val apply(Env env, Env.StackHelp stk, Ast[] asts) {
     Val[] args = new Val[asts.length];
     args[0] = null;
     for (int i = 1; i < asts.length; i++) {

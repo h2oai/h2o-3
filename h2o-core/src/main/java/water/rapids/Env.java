@@ -28,7 +28,7 @@ import java.util.HashMap;
  * Execute a set of instructions in the context of an H2O cloud.
  * <p/>
  * An Env (environment) object is a classic stack of values used during
- * execution of an AstRoot.  The stack is hidden in the normal Java execution
+ * execution of an Ast.  The stack is hidden in the normal Java execution
  * stack and is not explicit.
  * <p/>
  * For efficiency, reference counting is employed to recycle objects already
@@ -301,7 +301,7 @@ public class Env extends Iced {
     final int _sp = sp();
 
     // Push & track.  Called on every Val that spans a (nested) exec call.
-    // Used to track Frames with lifetimes spanning other AstRoot executions.
+    // Used to track Frames with lifetimes spanning other Ast executions.
     public Val track(Val v) {
       if (v instanceof ValFrame) track(v.getFrame());
       return v;

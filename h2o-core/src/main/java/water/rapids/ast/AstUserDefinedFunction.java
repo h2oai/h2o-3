@@ -14,7 +14,7 @@ import java.util.ArrayList;
  */
 public class AstUserDefinedFunction extends AstFunction {
   final String[] _ids;          // Identifier names
-  final AstRoot _body;              // The function body
+  final Ast _body;              // The function body
   // If this function is being evaluated, record the arguments and parent lexical scope
   final Val[] _args;            // Evaluated arguments to a function
   final AstUserDefinedFunction _parent;         // Parent lexical scope
@@ -26,7 +26,7 @@ public class AstUserDefinedFunction extends AstFunction {
     _parent = null;
   }
 
-  public AstUserDefinedFunction(ArrayList<String> ids, AstRoot body) {
+  public AstUserDefinedFunction(ArrayList<String> ids, Ast body) {
     _ids = ids.toArray(new String[ids.size()]);
     _body = body;
     _args = null;  // This is a template of an uncalled function
@@ -101,7 +101,7 @@ public class AstUserDefinedFunction extends AstFunction {
   // the IDs to the ARGs, then evaluate the body.  After execution pop the
   // lexical scope and return the results.
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     // Evaluation all arguments
     Val[] args = new Val[asts.length];
     for (int i = 1; i < asts.length; i++)

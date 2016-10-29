@@ -10,7 +10,7 @@ import water.nbhm.NonBlockingHashMapLong;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -40,7 +40,7 @@ public class AstTable extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr1 = stk.track(asts[1].exec(env)).getFrame();
     final boolean dense = asts[asts.length - 1].exec(env).getNum() == 1;
     Frame fr2 = asts.length == 4 ? stk.track(asts[2].exec(env)).getFrame() : null;

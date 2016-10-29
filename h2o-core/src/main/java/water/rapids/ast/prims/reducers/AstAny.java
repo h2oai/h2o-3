@@ -3,9 +3,9 @@ package water.rapids.ast.prims.reducers;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstFunction;
-import water.rapids.ast.AstRoot;
 
 /**
  * Bulk OR operation on boolean column; NAs count as true.  Returns 0 or 1.
@@ -27,7 +27,7 @@ public class AstAny extends AstFunction {
   }
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNum apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Val val = stk.track(asts[1].exec(env));
     if (val.isNum()) return new ValNum(val.getNum() == 0 ? 0 : 1);
     for (Vec vec : val.getFrame().vecs())
