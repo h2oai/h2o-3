@@ -1564,4 +1564,18 @@ public class ArrayUtils {
     }
     return false;
   }
+
+  /**
+   * Convert an array of primitive types into an array of corresponding boxed types. Due to quirks of Java language
+   * this cannot be done in any generic way -- there should be a separate function for each use case...
+   * @param arr input array of `char`s
+   * @return output array of `Character`s
+   */
+  public static Character[] box(char[] arr) {
+    Character[] res = new Character[arr.length];
+    for (int i = 0; i < arr.length; i++)
+      res[i] = arr[i];
+    return res;
+  }
+
 }
