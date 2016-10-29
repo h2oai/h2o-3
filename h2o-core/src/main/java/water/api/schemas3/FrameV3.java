@@ -160,7 +160,11 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
       histogram_stride= histogram_bins ==null ? 0 : vec.stride();
       percentiles     = histogram_bins ==null ? null : vec.pctiles();
 
-      type  = vec.isCategorical() ? "enum" : vec.isUUID() ? "uuid" : vec.isString() ? "string" : (vec.isInt() ? (vec.isTime() ? "time" : "int") : "real");
+      type = vec.isUUID()? "uuid" :
+             vec.isString()? "string" :
+             vec.isCategorical()? "enum" :
+             vec.isTime()? "time" :
+             vec.isInt() ? "int" : "real";
       domain = vec.domain();
       if (vec.isCategorical()) {
         domain_cardinality = domain.length;
