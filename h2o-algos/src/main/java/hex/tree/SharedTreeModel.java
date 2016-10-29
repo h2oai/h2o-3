@@ -142,6 +142,7 @@ public abstract class SharedTreeModel<
 
     /** Trees get big, so store each one separately in the DKV. */
     public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    transient public CompressedTree[/*_ntrees*/][/*_nclass*/] _compressedTrees;
 
     public ScoreKeeper[/*ntrees+1*/] _scored_train;
     public ScoreKeeper[/*ntrees+1*/] _scored_valid;
@@ -281,14 +282,27 @@ public abstract class SharedTreeModel<
 
   // Score per line per tree
   private void score0(double[] data, double[] preds, int treeIdx) {
+    CompressedTree[][] ct = loadCompressedTrees();
     Key[] keys = _output._treeKeys[treeIdx];
     for( int c=0; c<keys.length; c++ ) {
-      if (keys[c] != null) {
-        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data);
+      if (ct[treeIdx][c] != null) {
+        double pred = ct[treeIdx][c].score(data);
         assert (!Double.isInfinite(pred));
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
     }
+  }
+
+  private CompressedTree[][] loadCompressedTrees() {
+    if (_output._compressedTrees == null || _output._compressedTrees.length < _output._treeKeys.length) {
+      _output._compressedTrees = new CompressedTree[_output._treeKeys.length][_output._treeKeys[0].length];
+      for (int t=0; t<_output._treeKeys.length; ++t) {
+        for (int c=0; c<_output._treeKeys[0].length; ++c) {
+          _output._compressedTrees[t][c] = DKV.getGet(_output._treeKeys[t][c]);
+        }
+      }
+    }
+    return _output._compressedTrees;
   }
 
   /** Performs deep clone of given model.  */
