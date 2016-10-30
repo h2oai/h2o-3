@@ -292,6 +292,25 @@ def print2(msg, flush=False, end="\n"):
     if flush: sys.stdout.flush()
 
 
+def normalize_slice(s, total):
+    """
+    Return a "canonical" version of slice ``s``.
+
+    :param slice s: the original slice expression
+    :param total int: total number of elements in the collection sliced by ``s``
+    :return slice: a slice equivalent to ``s`` but not containing any negative indices or Nones.
+    """
+    newstart = 0 if s.start is None else max(0, s.start + total) if s.start < 0 else min(s.start, total)
+    newstop = total if s.stop is None else max(0, s.stop + total) if s.stop < 0 else min(s.stop, total)
+    newstep = 1 if s.step is None else s.step
+    return slice(newstart, newstop, newstep)
+
+
+def slice_is_normalized(s):
+    """Return True if slice ``s`` in "normalized" form."""
+    return (s.start is not None and s.stop is not None and s.step is not None and s.start <= s.stop)
+
+
 gen_header = _gen_header
 py_tmp_key = _py_tmp_key
 locate = _locate

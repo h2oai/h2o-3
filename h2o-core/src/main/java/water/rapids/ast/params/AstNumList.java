@@ -227,7 +227,7 @@ public class AstNumList extends AstParameter {
     idx = -idx - 2;  // See Arrays.binarySearch; returns (-idx-1), we want +idx-1  ... if idx == -1 => then this transformation has no effect
     if (idx < 0) return false;
     assert _bases[idx] < v;     // Sanity check binary search, AND idx >= 0
-    return v < _bases[idx] + _cnts[idx] * _strides[idx];
+    return v < _bases[idx] + _cnts[idx] * _strides[idx] && (v - _bases[idx]) % _strides[idx] == 0;
   }
 
   /**

@@ -141,9 +141,14 @@ class ExprNode(object):
         if isinstance(arg, (list, tuple, range)):
             return "[%s]" % " ".join(repr2(x) for x in arg)
         if isinstance(arg, slice):
-            return "[{}:{}]".format(0 if arg.start is None else arg.start,
-                                    "NaN" if (arg.stop is None or math.isnan(arg.stop)) else
-                                    (arg.stop) if arg.start is None else (arg.stop - arg.start))
+            start = 0 if arg.start is None else arg.start
+            stop = float("nan") if arg.stop is None else arg.stop
+            step = 1 if arg.step is None else arg.step
+            assert start >= 0 and step >= 1 and (math.isnan(stop) or stop >= start + step)
+            if step == 1:
+                return "[%d:%s]" % (start, str(stop - start))
+            else:
+                return "[%d:%s:%d]" % (start, str((stop - start + step - 1) // step), step)
         return repr2(arg)
 
     def __del__(self):

@@ -7,8 +7,6 @@ from tests import pyunit_utils
 
 
 def multi_dim_slicing():
-    # Connect to a pre-existing cluster
-    
 
     prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
 
@@ -56,7 +54,6 @@ def multi_dim_slicing():
     assert pros[2,0] + 1 == 2, "Incorrect slicing result"
     assert pros[2,1] == 75, "Incorrect slicing result"
     assert pros[2,2] == 1, "Incorrect slicing result"
-
 
 
 if __name__ == "__main__":
