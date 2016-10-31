@@ -38,7 +38,7 @@ def pubdev_2118():
 
 
     m = H2OGradientBoostingEstimator(nfolds=3, seed=1234)
-    m.train(x=df.names,y="CAPSULE", training_frame=df, validation_frame=df, seed = 1234)
+    m.train(x=df.names,y="CAPSULE", training_frame=df, validation_frame=df)
     t = m.gains_lift(xval=True)
 
     #print t.cell_values
