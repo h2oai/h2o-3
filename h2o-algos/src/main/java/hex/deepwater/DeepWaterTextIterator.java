@@ -96,7 +96,7 @@ class DeepWaterTextIterator extends DeepWaterIterator {
         int[] data = StringUtils.tokensToArray(StringUtils.tokenize(_text), _wordsPerLine, DeepWaterTextIterator.getDict());
 //        System.err.println(Arrays.toString(data));
         for (int i = 0; i< _wordsPerLine; ++i) {
-          _destData[i] = (float)data[i];
+          _destData[start + i] = (float)data[i];
         }
         if (_cache) {
           byte[] mem = new byte[_wordsPerLine *4];
