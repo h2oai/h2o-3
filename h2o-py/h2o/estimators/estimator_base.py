@@ -95,7 +95,7 @@ class H2OEstimator(ModelBase):
 
 
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
-              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None, **ignored):
+              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None):
         """
         Train the H2O model.
 
