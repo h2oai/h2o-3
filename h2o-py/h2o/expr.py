@@ -12,13 +12,14 @@ import copy
 import gc
 import math
 import sys
+import time
 
 import tabulate
 
 import h2o
 from h2o.backend.connection import H2OConnectionError
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import repr2
+from h2o.utils.compatibility import repr2, viewitems, viewvalues
 from h2o.utils.shared_utils import _is_fr, _py_tmp_key
 
 
@@ -319,7 +320,7 @@ class H2OCache(object):
 
     #---- pretty printing ----
 
-    def _tabulate(self, tablefmt, rollups):
+    def _tabulate(self, tablefmt="simple", rollups=False):
         """Pretty tabulated string of all the cached data, and column names"""
         if not self.is_valid(): self.fill()
         # Pretty print cached data
@@ -332,9 +333,12 @@ class H2OCache(object):
         # For all columns...
         for k, v in viewitems(self._data):
             x = v['data']  # Data to display
-            domain = v['domain']  # Map to cat strings as needed
-            if domain:
+            t = v["type"]  # Column type
+            if t == "enum":
+                domain = v['domain']  # Map to cat strings as needed
                 x = ["" if math.isnan(idx) else domain[int(idx)] for idx in x]
+            elif t == "time":
+                x = ["" if math.isnan(z) else time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(z / 1000)) for z in x]
             if rollups:  # Rollups, if requested
                 mins = v['mins'][0] if v['mins'] else None
                 maxs = v['maxs'][0] if v['maxs'] else None
