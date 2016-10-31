@@ -12,10 +12,10 @@ test.cumsumminprodmax <- function() {
    cumprod1 = h2o.cumprod(fr[1:9,1])
    cummax1 = h2o.cummax(fr[,1])
 
-   cumsum2 = h2o.cumsum(fr[,2])
-   cummin2 = h2o.cummin(fr[,2])
-   cumprod2 = h2o.cumprod(fr[1:9,1])
-   cummax2 = h2o.cummax(fr[,2])
+   cumsum2 = base::cumsum(as.data.frame(fr[,2]))
+   cummin2 = base::cummin(as.data.frame(fr[,2]))
+   cumprod2 = base::cumprod(as.data.frame(fr[1:9,1]))
+   cummax2 = base::cummax(as.data.frame(fr[,2]))
 
    expect_equal(cumsum1[10,1], cumsum2[10,1])
    expect_equal(cummin1[10,1], cummin2[10,1])
