@@ -1182,11 +1182,14 @@ NULL
   if( !missing(col) ) {     # Have a column selector?
     if( is.logical(col) ) { # Columns by boolean choice
       col <- which(col)     # Pick out all the TRUE columns by index
-    } else if( base::is.character(col) ) {   # Columns by name
-      idx <- match(col,colnames(data)) # Match on name
-      if( any(is.na(idx)) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
-      col <- idx
-    }
+    } else if (base::is.character(col)) {
+       idx <- match(col, colnames(data))
+        if (any(is.na(idx))){
+          stop(paste0("No column '", col[which(is.na(idx))], "' found in ",
+            paste(colnames(data), collapse = ",")))
+            col <- idx
+       }
+     }
     idx <- .row.col.selector(col,envir=parent.frame()) # Generic R expression
     data <- .newExpr("cols",data,idx) # Column selector
   }
