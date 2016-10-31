@@ -183,7 +183,6 @@ public class AstCorrelation extends AstPrimitive {
       //Omit NA rows between X and Y.
       //This will help with cov, sigma & mean calculations later as we only want to calculate cov, sigma, & mean
       //for rows with no NAs
-      Frame frxy = new Frame(frx).add(fry);
       Frame frxy_naomit = new MRTask() {
         private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
           for (int i = 0; i < cs.length; ++i) {
@@ -203,14 +202,12 @@ public class AstCorrelation extends AstPrimitive {
             if (col == cs.length) copyRow(row, cs, ncs);
           }
         }
-      }.doAll(frxy.types(), frxy).outputFrame(frxy.names(), frxy.domains());
+      }.doAll(new Frame(frx).add(fry).types(), new Frame(frx).add(fry)).outputFrame(new Frame(frx).add(fry).names(), new Frame(frx).add(fry).domains());
 
       //Collect new vecs that do not contain NA rows
-      Frame frx_naomit = frxy_naomit.subframe(0, ncolx);
-      Frame fry_naomit = frxy_naomit.subframe(ncolx,frxy_naomit.vecs().length);
-      Vec[] vecxs_naomit = frx_naomit.vecs();
+      Vec[] vecxs_naomit = frxy_naomit.subframe(0, ncolx).vecs();
       int ncolx_naomit = vecxs_naomit.length;
-      Vec[] vecys_naomit = fry_naomit.vecs();
+      Vec[] vecys_naomit = frxy_naomit.subframe(ncolx, frxy_naomit.vecs().length).vecs();
       int ncoly_naomit = vecys_naomit.length;
 
       //Set up CoVarTask
@@ -230,7 +227,7 @@ public class AstCorrelation extends AstPrimitive {
       // Launch tasks; each does all Xs vs one Y
       for (int y = 0; y < ncoly_naomit; y++) {
         //Get covariance between x and y
-        cvs[y] = new CoVarTask(vecys_naomit[y].mean(), xmeans).dfork(new Frame(vecys_naomit[y]).add(frx_naomit));
+        cvs[y] = new CoVarTask(vecys_naomit[y].mean(), xmeans).dfork(new Frame(vecys_naomit[y]).add(frxy_naomit.subframe(0, ncolx)));
         //Get sigma of y vecs
         sigmay[y] = vecys_naomit[y].sigma();
       }
@@ -249,17 +246,17 @@ public class AstCorrelation extends AstPrimitive {
 
       // 1-col returns scalar
       if (ncolx_naomit == 1 && ncoly_naomit == 1) {
-        return new ValNum((cvs[0].getResult()._covs[0] / (fry_naomit.numRows() - 1)) / denom[0][0]);
+        return new ValNum((cvs[0].getResult()._covs[0] / (frxy_naomit.numRows() - 1)) / denom[0][0]);
       }
 
       //Gather final result, which is the correlation coefficient per column
       Vec[] res = new Vec[ncoly_naomit];
       Key<Vec>[] keys = Vec.VectorGroup.VG_LEN1.addVecs(ncoly_naomit);
       for (int y = 0; y < ncoly_naomit; y++) {
-        res[y] = Vec.makeVec(ArrayUtils.div(ArrayUtils.div(cvs[y].getResult()._covs, (fry_naomit.numRows() - 1)), denom[y]), keys[y]);
+        res[y] = Vec.makeVec(ArrayUtils.div(ArrayUtils.div(cvs[y].getResult()._covs, (frxy_naomit.numRows() - 1)), denom[y]), keys[y]);
       }
 
-      return new ValFrame(new Frame(fry_naomit._names, res));
+      return new ValFrame(new Frame(frxy_naomit.subframe(ncolx, frxy_naomit.vecs().length)._names, res));
     }
   }
 
