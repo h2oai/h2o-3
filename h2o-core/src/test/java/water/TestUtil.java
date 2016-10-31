@@ -436,6 +436,20 @@ public class TestUtil extends Iced {
     return vec;
   }
 
+  /** A string Vec from an array of strings */
+  public static Vec uvec(UUID...rows) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, Vec.T_UUID);
+    NewChunk chunk = new NewChunk(avec, 0);
+    for (UUID r : rows)
+      chunk.addUUID(r);
+    chunk.close(0, fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }
   public static String[][] ar (String[] ...a) { return a; }
@@ -463,6 +477,43 @@ public class TestUtil extends Iced {
     for(int i = 0; i < expecteds.length(); i++) {
       final String message = i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
       assertEquals(message, expecteds.at(i), actuals.at(i), delta);
+    }
+  }
+
+  public static void assertUUIDVecEquals(Vec expecteds, Vec actuals) {
+    assertEquals(expecteds.length(), actuals.length());
+    assertEquals("Vec types match", expecteds.get_type_str(), actuals.get_type_str());
+    for(int i = 0; i < expecteds.length(); i++) {
+      UUID expected = new UUID(expecteds.at16l(i), expecteds.at16h(i));
+      UUID actual = new UUID(actuals.at16l(i), actuals.at16h(i));
+      final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      assertEquals(message, expected, actual);
+    }
+  }
+
+  private static String toStr(BufferedString bs) { return bs != null ? bs.toString() : null; }
+
+  public static void assertStringVecEquals(Vec expecteds, Vec actuals) {
+    assertEquals(expecteds.length(), actuals.length());
+    assertEquals("Vec types match", expecteds.get_type_str(), actuals.get_type_str());
+    for(int i = 0; i < expecteds.length(); i++) {
+      String expected = toStr(expecteds.atStr(new BufferedString(), i));
+      String actual = toStr(actuals.atStr(new BufferedString(), i));
+      final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      assertEquals(message, expected, actual);
+    }
+  }
+
+  private static String getFactorAsString(Vec v, long row) { return v.isNA(row) ? null : v.factor((long) v.at(row)); }
+
+  public static void assertCatVecEquals(Vec expecteds, Vec actuals) {
+    assertEquals(expecteds.length(), actuals.length());
+    assertEquals("Vec types match", expecteds.get_type_str(), actuals.get_type_str());
+    for(int i = 0; i < expecteds.length(); i++) {
+      String expected = getFactorAsString(expecteds, i);
+      String actual = getFactorAsString(actuals, i);
+      final String message = i + ": " + expected + " != " + actual + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
+      assertEquals(message, expected, actual);
     }
   }
 

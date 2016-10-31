@@ -793,4 +793,105 @@ public abstract class Chunk extends Iced<Chunk> {
       sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     throw new RuntimeException(sb.toString());
   }
+
+  /**
+   * Generic abstraction over Chunk setter methods.
+   */
+  public interface ValueSetter {
+    /**
+     * Sets a value (possibly a constant) to a position of the Chunk.
+     * @param idx Chunk-local index
+     */
+    void setValue(int idx);
+  }
+
+  /**
+   * Create an instance of ValueSetter for a given scalar value.
+   * It creates setter of the appropriate type based on the type of the underlying Vec.
+   * @param value scalar value
+   * @return instance of ValueSetter
+   */
+  public ValueSetter createValueSetter(Object value) {
+    int type = vec().get_type();
+    switch (type) {
+      case Vec.T_CAT:
+        return new CatValueSetter(value);
+      case Vec.T_NUM:
+      case Vec.T_TIME:
+        return new NumValueSetter(value);
+      case Vec.T_STR:
+        return new StrValueSetter(value);
+      case Vec.T_UUID:
+        return new UUIDValueSetter(value);
+      default:
+        throw new IllegalArgumentException("Cannot create ValueSetter for type = " + type);
+    }
+  }
+
+  private class CatValueSetter implements ValueSetter {
+    private final int _val;
+
+    private CatValueSetter(Object val) {
+      if (! (val instanceof String)) {
+        throw new IllegalArgumentException("Value needs to be categorical, value = " + val);
+      }
+      int factorIdx = -1;
+      String[] domain = _vec.domain();
+      for (int i = 0; i < domain.length; i++) {
+        if (val.equals(domain[i])) {
+          factorIdx = i;
+          break;
+        }
+      }
+      _val = factorIdx;
+    }
+
+    @Override
+    public void setValue(int idx) { set(idx, _val); }
+  }
+
+  private class NumValueSetter implements ValueSetter {
+    private final double _val;
+
+    private NumValueSetter(Object val) {
+      if (! (val instanceof Number)) {
+        throw new IllegalArgumentException("Value needs to be numeric, value = " + val);
+      }
+      _val = ((Number) val).doubleValue();
+    }
+
+    @Override
+    public void setValue(int idx) { set(idx, _val); }
+  }
+
+  private class StrValueSetter implements ValueSetter {
+    private final String _val;
+
+    private StrValueSetter(Object val) {
+      if (! (val instanceof String)) {
+        throw new IllegalArgumentException("Value needs to be string, value = " + val);
+      }
+      _val = (String) val;
+    }
+
+    @Override
+    public void setValue(int idx) { set(idx, _val); }
+  }
+
+  private class UUIDValueSetter implements ValueSetter {
+    private final UUID _val;
+
+    private UUIDValueSetter(Object val) {
+      if (val instanceof String) {
+        val = UUID.fromString((String) val);
+      } else if (! (val instanceof UUID)) {
+        throw new IllegalArgumentException("Value needs to be an UUID, value = " + val);
+      }
+      _val = (UUID) val;
+    }
+
+    @Override
+    public void setValue(int idx) { set(idx, _val); }
+  }
+
 }

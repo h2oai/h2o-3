@@ -5,7 +5,6 @@ import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.*;
@@ -17,6 +16,7 @@ import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.prims.mungers.AstColSlice;
 import water.rapids.vals.ValFrame;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 /**
@@ -85,7 +85,8 @@ public class AstRectangleAssign extends AstPrimitive {
           assign_frame_scalar(dst, cols, rows, vsrc.getNum(), env._ses);
           break;
         case Val.STR:
-          throw H2O.unimpl();
+          assign_frame_scalar(dst, cols, rows, vsrc.getStr(), env._ses);
+          break;
         case Val.FRM:
           throw H2O.unimpl();
         default:
@@ -284,23 +285,78 @@ public class AstRectangleAssign extends AstPrimitive {
     }
   }
 
+  private boolean isScalarCompatible(Object scalar, Vec v) {
+    if (scalar == null)
+      return true;
+    else if (scalar instanceof Number)
+      return v.get_type() == Vec.T_NUM || v.get_type() == Vec.T_TIME;
+    else if (scalar instanceof String) {
+      if (v.get_type() == Vec.T_CAT) {
+        for (String f: v.domain()) if (f.equals(scalar)) return true;
+        return false;
+      } else
+        return v.get_type() == Vec.T_STR || (v.get_type() == Vec.T_UUID);
+    } else
+      return false;
+  }
+
   // Boolean assignment with a scalar
-  private void assign_frame_scalar(Frame dst, final int[] cols, Frame rows, final double src, Session ses) {
-    // TODO: COW without materializing vec and depending on assign_frame_frame
-    Frame src2 = new MRTask() {
-      @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk bool = cs[cs.length - 1];
-        for (int i = 0; i < cs[0]._len; ++i) {
-          int nc = 0;
-          if (bool.at8(i) == 1)
-            for (int ignored : cols) ncs[nc++].addNum(src);
-          else
-            for (int c : cols) ncs[nc++].addNum(cs[c].atd(i));
-        }
+  private void assign_frame_scalar(Frame dst, int[] cols, Frame rows, Object src, Session ses) {
+    // Bulk assign a numeric constant over a frame. Directly set columns without checking target type
+    // assuming the user just wants to overwrite everything: Copy-On-Write optimization happens here on the apply() exit.
+    // Note: this skips "scalar to Vec" compatibility check because the whole Vec is overwritten
+    Vec bool = rows.vec(0);
+    if (bool.isConst() && ((int) bool.min() == 1) && (src instanceof Number)) {
+      Vec anyVec = dst.anyVec();
+      assert anyVec != null;
+      Vec vsrc = anyVec.makeCon((double) src);
+      for (int col : cols)
+        dst.replace(col, vsrc);
+      if (dst._key != null) DKV.put(dst);
+      return;
+    }
+
+    // Make sure the scalar value is compatible with the target vector
+    for (int col: cols) {
+      if (! isScalarCompatible(src, dst.vec(col))) {
+        throw new IllegalArgumentException("Cannot assign value " + src + " into a vector of type " + dst.vec(col).get_type_str() + ".");
       }
-    }.doAll(cols.length, Vec.T_NUM, new Frame(dst).add(rows)).outputFrame();
-    assign_frame_frame(dst, cols, new AstNumList(0, dst.numRows()), src2, ses);
+    }
+
+    Vec[] vecs = ses.copyOnWrite(dst, cols);
+    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
+    for (int i = 0; i < cols.length; i++)
+      vecs2[i] = vecs[cols[i]];
+
+    new ConditionalAssignTask(src).doAssign(vecs2, rows.vec(0));
+  }
+
+  private static class ConditionalAssignTask extends MRTask<ConditionalAssignTask> {
+
+    final Serializable _value;
+
+    ConditionalAssignTask(Object value) {
+      _value = (Serializable) value;
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      Chunk.ValueSetter[] setters = new Chunk.ValueSetter[cs.length - 1];
+      for (int i = 0; i < setters.length; i++) setters[i] = cs[i].createValueSetter(_value);
+      Chunk bool = cs[cs.length - 1];
+      for (int row = 0; row < cs[0]._len; row++) {
+        if (bool.at8(row) == 1)
+          for (int col = 0; col < cs.length - 1; col++) setters[col].setValue(row);
+      }
+    }
+
+    void doAssign(Vec[] dst, Vec predicateVec) {
+      Vec[] vecs = new Vec[dst.length + 1];
+      System.arraycopy(dst, 0, vecs, 0, dst.length);
+      vecs[vecs.length - 1] = predicateVec;
+      doAll(vecs);
+    }
+
   }
 
   private static abstract class RowSliceTask extends MRTask<RowSliceTask> {
