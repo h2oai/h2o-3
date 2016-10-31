@@ -412,7 +412,7 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                                   // confirm that orig CM was made with the right threshold
                                                   // manually make labels with AUC-given default threshold
-                                                  String ast = "pred (> ( pred [2])" + threshold +")";
+                                                  String ast = "(as.factor (> (cols pred [2]) " + threshold + "))";
                                                   Frame tmp = Rapids.exec(ast).getFrame();
                                                   pred2labels = tmp.vecs()[0];
                                                   cm = buildCM(labels, pred2labels);

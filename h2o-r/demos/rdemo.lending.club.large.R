@@ -82,7 +82,7 @@ print("Convert emp_length column into numeric...")
 loanStats$emp_length <- h2o.sub(x = loanStats$emp_length, pattern = "([ ]*+[a-zA-Z].*)|(n/a)", replacement = "")
 loanStats$emp_length <- h2o.trim(loanStats$emp_length)
 loanStats$emp_length <- h2o.sub(x = loanStats$emp_length, pattern = "< 1", replacement = "0")
-loanStats$emp_length <- h2o.sub(x = loanStats$emp_length, pattern = "10\\+", replacement = "10")
+loanStats$emp_length <- h2o.sub(x = loanStats$emp_length, pattern = "10\\\\+", replacement = "10")
 loanStats$emp_length <- as.h2o(as.numeric(as.matrix(loanStats$emp_length)))
 # loanStats$emp_length <- as.numeric(loanStats$emp_length)
 
