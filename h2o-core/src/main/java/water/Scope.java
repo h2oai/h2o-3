@@ -3,6 +3,8 @@ package water;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.*;
 
 /** A "scope" for tracking Key lifetimes; an experimental API.
@@ -19,7 +21,7 @@ import java.util.*;
  *  higher nested scope - or escaped and become untracked at the top-level.</p>
  */
 
-public class Scope {
+public class Scope implements Closeable {
   // Thread-based Key lifetime tracking
   static private final ThreadLocal<Scope> _scope = new ThreadLocal<Scope>() {
     @Override protected Scope initialValue() { return new Scope(); }
@@ -27,21 +29,21 @@ public class Scope {
   private final Stack<HashSet<Key>> _keys = new Stack<>();
 
   /** Enter a new Scope */
-  static public void enter() { _scope.get()._keys.push(new HashSet<Key>()); }
+  public static void enter() { _scope.get()._keys.push(new HashSet<Key>()); }
 
   /** Exit the inner-most Scope, remove all Keys created since the matching
    *  enter call except for the listed Keys.
    */
-  static public void exit() {
+  public static void exit() {
     exit(Collections.<Key>emptyList());
   }
-
+  
   public static void exit(Key... keep) {
     exit(Arrays.asList(keep));
   }
   
   public static void exit(Collection<Key> keep) {
-    Set<Key> mustKeep = new HashSet<Key>(keep);
+    Set<Key> mustKeep = new HashSet<>(keep);
     Stack<HashSet<Key>> keys = _scope.get()._keys;
     Set<Key> keysToDrop = keys.isEmpty() ? Collections.<Key>emptySet() : keys.pop();
     if (!keysToDrop.isEmpty()) {
@@ -60,11 +62,10 @@ public class Scope {
     track_impl(scope, k);
   }
 
-  static public Vec track( Vec vec ) {
+  static public void track(Vec... vecs) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
-    track_impl(scope, vec._key);
-    return vec;
+    for (Vec vec: vecs) track_impl(scope, vec._key);
   }
 
   static public Frame track( Frame fr ) {
@@ -88,4 +89,7 @@ public class Scope {
     HashSet<Key> xkeys = scope._keys.peek();
     for (Key<Vec> key : keys) xkeys.remove(key); // Untrack key
   }
+
+  @Override
+  public void close() throws IOException { exit(Collections.<Key>emptyList()); }
 }

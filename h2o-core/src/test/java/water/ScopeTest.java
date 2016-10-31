@@ -26,6 +26,8 @@ public class ScopeTest extends TestUtil {
   @Test
   public void testEnterAndExit_with_no_leakage() throws Exception {
     Scope.enter();
+    assertEquals(0, countLeakedKeys());
+    assertTrue(countLeakedKeys() == 0);
     Vec v1 = Vec.makeCon(111.0, 11);
     Vec v2 = Vec.makeCon(112.0, 12);
     Vec v3 = Vec.makeCon(113.0, 13);
@@ -33,6 +35,7 @@ public class ScopeTest extends TestUtil {
     Scope.track(v2);
     Scope.track(v3);
     Scope.exit();
+    assertEquals(0, countLeakedKeys());
   }
 
   @Test
@@ -45,10 +48,35 @@ public class ScopeTest extends TestUtil {
     Scope.track(v2);
     Scope.track(v3);
     Scope.exit(v3._key, v2._key);
-    assertTrue(numberOfLeakedKeys() > 0);
+    assertTrue(countLeakedKeys() > 0);
     Futures fs = new Futures();
-    Keyed.remove(v2._key);
-    Keyed.remove(v3._key);
+    Keyed.remove(v2._key, fs);
+    Keyed.remove(v3._key, fs);
+    fs.blockForPending();
+  }
+
+  @Test
+  public void test_with_leakage_inside_try_block() throws Exception {
+    Scope.enter();
+    Vec v1 = Vec.makeCon(121.0, 21);
+    Vec v2 = Vec.makeCon(122.0, 22);
+    Vec v3 = Vec.makeCon(123.0, 23);
+    try {
+      Scope.track(v1);
+      Scope.track(v2);
+      Scope.track(v3);
+//      Scope.exit();
+      throw new Exception("Just checking if it works");
+    } catch (Exception e) {
+      // ignore it all
+    } finally {
+      Scope.exit(); // tribute to Java6
+    }
+    assertTrue(countLeakedKeys() == 0);
+    Futures fs = new Futures();
+    Keyed.remove(v1._key, fs);
+    Keyed.remove(v2._key, fs);
+    Keyed.remove(v3._key, fs);
     fs.blockForPending();
   }
 }
