@@ -101,8 +101,8 @@ def cv_cars_dw():
 
   # 3. fold_column and nfolds both specified
   try:
-    dl = H2ODeepWaterEstimator(nfolds=3)
-    dl.train(x=predictors, y=response_col, fold_column="fold_assignments", training_frame=cars, hidden=[20,20],epochs=10)
+    dl = H2ODeepWaterEstimator(nfolds=3, hidden=[20, 20], epochs=10)
+    dl.train(x=predictors, y=response_col, fold_column="fold_assignments", training_frame=cars)
     assert False, "Expected model-build to fail when fold_column and nfolds both specified"
   except EnvironmentError:
     assert True
