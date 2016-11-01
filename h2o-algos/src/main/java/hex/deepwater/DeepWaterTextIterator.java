@@ -101,7 +101,7 @@ class DeepWaterTextIterator extends DeepWaterIterator {
         if (_cache) {
           byte[] mem = new byte[_wordsPerLine *4];
           for (int i = 0; i< _wordsPerLine; ++i)
-            UnsafeUtils.set4f(mem,i<<2, _destData[i]);
+            UnsafeUtils.set4f(mem,i<<2, _destData[start + i]);
           DKV.put(txtKey, new C4FChunk(mem));
         }
       }
