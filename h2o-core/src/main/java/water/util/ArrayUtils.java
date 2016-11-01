@@ -1258,7 +1258,7 @@ public class ArrayUtils {
   }
 
   public static Object[][] zip(Object[] a, Object[] b) {
-    if (a.length != b.length) throw new IllegalArgumentException("Cannot zip arrays of different lenghts!");
+    if (a.length != b.length) throw new IllegalArgumentException("Cannot zip arrays of different lengths!");
     Object[][] result = new Object[a.length][2];
     for (int i = 0; i < a.length; i++) {
       result[i][0] = a[i];
