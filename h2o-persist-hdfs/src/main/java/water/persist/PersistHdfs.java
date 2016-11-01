@@ -382,7 +382,6 @@ public final class PersistHdfs extends Persist {
     } catch (Exception e) {
       Log.trace(e);
     } catch (Throwable t) {
-      t.printStackTrace();
       Log.warn(t);
     }
 
@@ -550,6 +549,16 @@ public final class PersistHdfs extends Persist {
     }
     catch (IOException e) {
       throw new HDFSIOException(path, CONF.toString(), e);
+    }
+  }
+
+  @Override
+  public boolean canHandle(String path) {
+    URI uri = new Path(path).toUri();
+    try {
+      return FileSystem.getFileSystemClass(uri.getScheme(), CONF) != null;
+    } catch (IOException e) {
+      return false;
     }
   }
 }
