@@ -432,7 +432,6 @@ public class DeepLearningProstateTest extends TestUtil {
                                                 pred = model2.score(valid);
                                                 // Build a POJO, validate same results
                                                 Assert.assertTrue(model2.testJavaScoring(frame, pred, 1e-6));
-                                                Assert.assertTrue(false);
                                               } finally {
                                                 if (pred != null) pred.delete();
                                               }
