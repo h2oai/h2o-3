@@ -24,8 +24,8 @@ _id_ctr = 0
 # The set of characters allowed in frame IDs. Since frame ids are used within REST API urls, they may
 # only contain characters allowed within the "segment" part of the URL (see RFC 3986).
 # Among those, we additionally forbid characters "'", "(", ")" since they have special meaning in the Rapids
-# language itself.
-_id_allowed_characters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&*+,;=")
+# language itself. Character ";" is also excluded for internal h2o reasons.
+_id_allowed_characters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&*+,=")
 
 
 def _py_tmp_key(append):
