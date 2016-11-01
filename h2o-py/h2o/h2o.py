@@ -269,7 +269,7 @@ def _import(path):
     return j["destination_frames"]
 
 
-def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, col_types=None,
+def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
@@ -309,7 +309,7 @@ def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, 
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
     assert_is_type(path, str)
-    assert_is_type(destination_frame, str)
+    assert_is_type(destination_frame, str, None)
     assert_is_type(header, -1, 0, 1)
     assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
     assert_is_type(col_names, [str], None)
@@ -321,7 +321,7 @@ def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, 
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
-def import_file(path=None, destination_frame="", parse=True, header=0, sep=None, col_names=None, col_types=None,
+def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Import a dataset that is already on the cluster.
@@ -360,7 +360,7 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep=None,
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
     assert_is_type(path, str, [str])
-    assert_is_type(destination_frame, str)
+    assert_is_type(destination_frame, str, None)
     assert_is_type(parse, bool)
     assert_is_type(header, -1, 0, 1)
     assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
@@ -464,7 +464,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     return get_frame(j.dest_key)
 
 
-def parse_setup(raw_frames, destination_frame="", header=0, separator=None, column_names=None,
+def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
@@ -525,7 +525,8 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
             warnings.warn(w)
     # TODO: really should be url encoding...
     # TODO: clean up all this
-    if destination_frame: j["destination_frame"] = destination_frame.replace("%", ".").replace("&", ".")
+    if destination_frame:
+        j["destination_frame"] = destination_frame
     if column_names is not None:
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
         if len(column_names) != len(j["column_types"]): raise ValueError(
@@ -598,7 +599,9 @@ def parse_raw(setup, id=None, first_line_is_header=0):
     assert_is_type(setup, dict)
     assert_is_type(id, str, None)
     assert_is_type(first_line_is_header, -1, 0, 1)
-    if id: setup["destination_frame"] = quoted(id).replace("%", ".").replace("&", ".")
+    check_frame_id(id)
+    if id:
+        setup["destination_frame"] = id
     if first_line_is_header != (-1, 0, 1):
         if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
         setup["check_header"] = first_line_is_header
