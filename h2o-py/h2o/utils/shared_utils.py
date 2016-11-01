@@ -19,8 +19,13 @@ from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
-# private static methods
 _id_ctr = 0
+
+# The set of characters allowed in frame IDs. Since frame ids are used within REST API urls, they may
+# only contain characters allowed within the "segment" part of the URL (see RFC 3986).
+# Among those, we additionally forbid characters "'", "(", ")" since they have special meaning in the Rapids
+# language itself.
+_id_allowed_characters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&*+,;=")
 
 
 def _py_tmp_key(append):
@@ -36,7 +41,7 @@ def check_frame_id(frame_id):
     if frame_id.strip() == "":
         raise H2OValueError("Frame id cannot be an empty string: %r" % frame_id)
     for ch in frame_id:
-        if ch in " '\"\t\n\r\\()[]{}~":
+        if ch not in _id_allowed_characters:
             raise H2OValueError("Character '%s' is illegal in frame id: %s" % (ch, frame_id))
     if re.match(r"-?[0-9]", frame_id):
         raise H2OValueError("Frame id cannot start with a number: %s" % frame_id)
