@@ -6,9 +6,11 @@ import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.*;
+import water.util.CollectionUtils;
 import water.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -104,6 +106,12 @@ public class Rapids {
 
   // Set of characters that may appear in a number. Note that "NaN" or "nan" is also a number.
   private static Set<Character> validNumberCharacters = StringUtils.toCharacterSet("0123456789.-+eEnNaA");
+
+  // List of all "simple" backslash-escape sequences (i.e. those that are only 2-characters long, i.e. '\n')
+  private static Map<Character, Character> simpleEscapeSequences =
+      CollectionUtils.createMap(StringUtils.toCharacterArray("ntrfb'\"\\"),
+                                StringUtils.toCharacterArray("\n\t\r\f\b'\"\\"));
+
 
   /**
    * The constructor is private: rapids expression can be parsed into an AST tree, or executed, but the "naked" Rapids
@@ -321,14 +329,43 @@ public class Rapids {
       char c = peek(0);
       if (c == '\\') {
         has_escapes = true;
-        _x += 2;
+        char cc = peek(1);
+        if (simpleEscapeSequences.containsKey(cc)) {
+          _x += 2;
+        } else if (cc == 'x') {
+          _x += 4;   // e.g: \x5A
+        } else if (cc == 'u') {
+          _x += 6;   // e.g: \u1234
+        } else if (cc == 'U') {
+          _x += 10;  // e.g: \U0010FFFF
+        } else
+          throw new IllegalASTException("Invalid escape sequence \\" + cc);
       } else if (c == quote) {
         _x++;
         if (has_escapes) {
           StringBuilder sb = new StringBuilder();
           for (int i = start; i < _x - 1; i++) {
             char ch = _str.charAt(i);
-            sb.append(ch == '\\'? _str.charAt(++i) : ch);
+            if (ch == '\\') {
+              char cc = _str.charAt(++i);
+              if (simpleEscapeSequences.containsKey(cc)) {
+                sb.append(simpleEscapeSequences.get(cc));
+              } else {
+                int n = (cc == 'x')? 2 : (cc == 'u')? 4 : (cc == 'U')? 8 : -1;
+                int hex = -1;
+                try {
+                  hex = StringUtils.unhex(_str.substring(i + 1, i + 1 + n));
+                } catch (NumberFormatException e) {
+                  throw new IllegalASTException(e.toString());
+                }
+                if (hex > 0x10FFFF)
+                  throw new IllegalASTException("Illegal unicode codepoint " + hex);
+                sb.append(Character.toChars(hex));
+                i += n;
+              }
+            } else {
+              sb.append(ch);
+            }
           }
           return sb.toString();
         } else {

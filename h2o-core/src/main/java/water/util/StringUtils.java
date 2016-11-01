@@ -11,6 +11,11 @@ import java.util.*;
  */
 public class StringUtils {
 
+  private static Map<Character, Integer> hexCode = CollectionUtils.createMap(
+      toCharacterArray("0123456789abcdefABCDEF"),
+      new Integer[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 10, 11, 12, 13, 14, 15}
+  );
+
   /**
    * Print exception stack trace into a string.
    *
@@ -168,6 +173,19 @@ public class StringUtils {
     HashSet<Character> res = new HashSet<>(n);
     for (int i = 0; i < n; i++)
       res.add(src.charAt(i));
+    return res;
+  }
+
+  public static Character[] toCharacterArray(String src) {
+    return ArrayUtils.box(src.toCharArray());
+  }
+
+  public static int unhex(String str) {
+    int res = 0;
+    for (char c : str.toCharArray()) {
+      if (!hexCode.containsKey(c)) throw new NumberFormatException("Not a hexademical character " + c);
+      res = (res << 4) + hexCode.get(c);
+    }
     return res;
   }
 }

@@ -39,9 +39,25 @@ public class RapidsTest extends TestUtil {
     astStr_ok("\"\\\\\"", "\\");
     astStr_ok("'test\"omg'", "test\"omg");
     astStr_ok("'sun\nmoon'", "sun\nmoon");
+    astStr_ok("'a\\nb'", "a\nb");
+    astStr_ok("'\\n\\r\\t\\b\\f\\'\\\"\\\\'", "\n\r\t\b\f\'\"\\");
+    astStr_ok("'\\x00\\xa2\\xBC\\xDe\\xFF\\xcb'", "\u0000\u00A2\u00BC\u00DE\u00FF\u00CB");
+    astStr_ok("\"\\uABCD\\u0000\\uffff\"", "\uABCD\u0000\uFFFF");
+    astStr_ok("\"\\U0001F578\"", new String(Character.toChars(0x1F578)));
+
     parse_err("\"hello");
     parse_err("\"one\"two\"");
     parse_err("\"something\'");
+    parse_err("'\\+'");
+    parse_err("'\\0'");
+    parse_err("'\\xA'");
+    parse_err("'\\xHI");
+    parse_err("'\\u123 spam'");
+    parse_err("'\\U'");
+    parse_err("'\\U12345678'");
+    parse_err("'\\U1F578'");
+    parse_err("'\\U+1F578'");
+    parse_err("'\\u{1F578}'");
   }
 
   @Test public void testParseNumList() {
