@@ -408,13 +408,13 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
         >>> password = "abc123"
         >>> my_citibike_data = h2o.import_sql_table(conn_url, table, username, password)
     """
-    assert_is_type(connection, str)
+    assert_is_type(connection_url, str)
     assert_is_type(table, str)
     assert_is_type(username, str)
     assert_is_type(password, str)
     assert_is_type(columns, [str], None)
     assert_is_type(optimize, bool)
-    p = {"connection": connection, "table": table, "username": username, "password": password, "optimize": optimize}
+    p = {"connection": connection_url, "table": table, "username": username, "password": password, "optimize": optimize}
     if columns:
         p["columns"] = ", ".join(columns)
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
