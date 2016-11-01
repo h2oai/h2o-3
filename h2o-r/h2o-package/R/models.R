@@ -2314,6 +2314,16 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #' @export
 plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
   df <- as.data.frame(x@model$scoring_history)
+
+  #Ensure metric and timestep can be passed in as upper case (by converting to lower case) if not "AUTO"
+  if(metric != "AUTO"){
+    metric = tolower(metric)
+  }
+
+  if(timestep != "AUTO"){
+    timestep = tolower(timestep)
+  }
+
   # Separate functionality for GLM since output is different from other algos
   if (x@algorithm == "glm") {
     # H2OBinomialModel and H2ORegressionModel have the same output
@@ -2338,19 +2348,19 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
       if (metric == "AUTO") {
         metric <- "logloss"
       } else if (!(metric %in% c("logloss","auc","classification_error","rmse"))) {
-        stop("metric for H2OBinomialModel must be one of: AUTO, logloss, auc, classification_error, rmse")
+        stop("metric for H2OBinomialModel must be one of: logloss, auc, classification_error, rmse")
       }
     } else if (is(x, "H2OMultinomialModel")) {
       if (metric == "AUTO") {
         metric <- "classification_error"
       } else if (!(metric %in% c("logloss","classification_error","rmse"))) {
-        stop("metric for H2OMultinomialModel must be one of: AUTO, logloss, classification_error, rmse")
+        stop("metric for H2OMultinomialModel must be one of: logloss, classification_error, rmse")
       }
     } else if (is(x, "H2ORegressionModel")) {
       if (metric == "AUTO") {
         metric <- "rmse"
       } else if (!(metric %in% c("rmse","deviance","mae"))) {
-        stop("metric for H2ORegressionModel must be one of: AUTO, rmse, mae, or deviance")
+        stop("metric for H2ORegressionModel must be one of: rmse, mae, or deviance")
       }
     } else {
       stop("Must be one of: H2OBinomialModel, H2OMultinomialModel or H2ORegressionModel")
