@@ -91,11 +91,14 @@ class H2OEstimator(ModelBase):
         """Wait until job's completion."""
         self._future = False
         self._job.poll()
+        model_key = self._job.dest_key
         self._job = None
+        model_json = h2o.api("GET /%d/Models/%s" % (self._rest_version, model_key))["models"][0]
+        self._resolve_model(model_key, model_json)
 
 
     def train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
-              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None, **ignored):
+              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None):
         """
         Train the H2O model.
 
@@ -184,53 +187,43 @@ class H2OEstimator(ModelBase):
                     if xi not in names:
                         raise H2OValueError("Column %s not in the training frame" % xi)
                     xset.add(xi)
+        x = list(xset)
 
-        parms["x"] = list(xset)
-        parms["y"] = y
-        parms["training_frame"] = training_frame
-        parms["validation_frame"] = validation_frame
         parms["offset_column"] = offset_column
         parms["fold_column"] = fold_column
         parms["weights_column"] = weights_column
         parms["max_runtime_secs"] = max_runtime_secs
-        self._build_model(parms)
 
-    def _build_model(self, algo_params):
-        """Helper for model.train()."""
-        if algo_params["training_frame"] is None: raise ValueError("Missing training_frame")
-        x = algo_params.pop("x")
-        y = algo_params.pop("y", None)
-        training_frame = algo_params.pop("training_frame")
-        validation_frame = algo_params.pop("validation_frame", None)
-        is_auto_encoder = "autoencoder" in algo_params and algo_params["autoencoder"]
+        # Step 2
+        is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]
         is_unsupervised = is_auto_encoder or self.algo in {"pca", "svd", "kmeans", "glrm"}
         if is_auto_encoder and y is not None: raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None: raise ValueError("Missing response")
-        self._model_build(x, y, training_frame, validation_frame, algo_params)
 
-    def _model_build(self, x, y, tframe, vframe, kwargs):
-        kwargs["training_frame"] = tframe
-        if vframe is not None: kwargs["validation_frame"] = vframe
-        if is_type(y, int): y = tframe.names[y]
-        if y is not None: kwargs["response_column"] = y
+        # Step 3
+        parms["training_frame"] = training_frame
+        if validation_frame is not None: parms["validation_frame"] = validation_frame
+        if is_type(y, int): y = training_frame.names[y]
+        if y is not None: parms["response_column"] = y
         if not isinstance(x, (list, tuple)): x = [x]
         if is_type(x[0], int):
-            x = [tframe.names[i] for i in x]
-        offset = kwargs["offset_column"]
-        folds = kwargs["fold_column"]
-        weights = kwargs["weights_column"]
-        ignored_columns = list(set(tframe.names) - set(x + [y, offset, folds, weights]))
-        kwargs["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
-        kwargs["interactions"] = (None if "interactions" not in kwargs or kwargs["interactions"] is None else
-                                  [quoted(col) for col in kwargs["interactions"]])
-        kwargs = {k: H2OEstimator._keyify_if_h2oframe(kwargs[k]) for k in kwargs}
-        rest_ver = kwargs.pop("_rest_version") if "_rest_version" in kwargs else 3
+            x = [training_frame.names[i] for i in x]
+        offset = parms["offset_column"]
+        folds = parms["fold_column"]
+        weights = parms["weights_column"]
+        ignored_columns = list(set(training_frame.names) - set(x + [y, offset, folds, weights]))
+        parms["ignored_columns"] = None if ignored_columns == [] else [quoted(col) for col in ignored_columns]
+        parms["interactions"] = (None if "interactions" not in parms or parms["interactions"] is None else
+                                 [quoted(col) for col in parms["interactions"]])
+        parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
+        rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
 
-        model = H2OJob(h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=kwargs),
+        model = H2OJob(h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms),
                        job_type=(self.algo + " Model Build"))
 
         if self._future:
             self._job = model
+            self._rest_version = rest_ver
             return
 
         model.poll()

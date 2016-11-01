@@ -9,12 +9,14 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 
 import colorama
 import inspect
+import re
 import sys
 from colorama import Style, Fore
 from types import ModuleType
 
 from h2o.exceptions import H2OJobCancelled, H2OSoftError
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.compatibility import viewkeys
 
 # Nothing to import; this module's only job is to install an exception hook for debugging.
 __all__ = ()
@@ -306,27 +308,15 @@ def _get_args_str(func, highlight=None):
     """
     Return function's declared arguments as a string.
 
-    For example for this function it returns "func"; for the ``_wrap`` function it returns
-    "text, wrap_at=100, indent=4". This should usually coincide with the function's declaration (the part
+    For example for this function it returns "func, highlight=None"; for the ``_wrap`` function it returns
+    "text, wrap_at=120, indent=4". This should usually coincide with the function's declaration (the part
     which is inside the parentheses).
     """
     if not func: return ""
-
-    def gen_args():
-        args_spec = inspect.getargspec(func)
-        defaults = args_spec.defaults or []
-        i0 = len(args_spec.args) - len(defaults)
-        for i in range(len(args_spec.args)):
-            var = args_spec.args[i]
-            if var == highlight:
-                var = Style.BRIGHT + Fore.WHITE + var + Fore.LIGHTBLACK_EX + Style.NORMAL
-            if i < i0:
-                yield var
-            else:
-                yield "%s=%r" % (var, defaults[i - i0])
-        if args_spec.varargs: yield "*" + args_spec.varargs
-        if args_spec.keywords: yield "**" + args_spec.keywords
-    return ", ".join(gen_args())
+    s = str(inspect.signature(func))[1:-1]
+    if highlight:
+        s = re.sub(r"\b%s\b" % highlight, Style.BRIGHT + Fore.WHITE + highlight + Fore.LIGHTBLACK_EX + Style.NORMAL, s)
+    return s
 
 
 def _wrap(text, wrap_at=120, indent=4):
