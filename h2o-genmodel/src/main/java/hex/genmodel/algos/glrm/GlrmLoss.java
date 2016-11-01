@@ -156,18 +156,26 @@ public enum GlrmLoss {
     @Override public boolean isForBinary() { return false; }
 
     @Override public double mloss(double[] u, int a) {
-      if (!(a >= 0 && a < u.length))
-        throw new IndexOutOfBoundsException("a must be between 0 and " + (u.length - 1));
+      return mloss(u, a, u.length);
+    }
+    // this function performs the same function as the one above but it is memory optimized for the original
+    // GLRM.java code.  See GLRM.java for details
+    @Override public double mloss(double[] u, int a, int u_len) {
+      if (!(a >= 0 && a < u_len))
+        throw new IndexOutOfBoundsException("a must be between 0 and " + (u_len - 1));
       double sum = 0;
-      for (double ui : u)
-        sum += Math.max(1 + ui, 0);
+      for (int ind=0; ind < u_len; ind++)
+        sum += Math.max(1 + u[ind], 0);
       sum += Math.max(1 - u[a], 0) - Math.max(1 + u[a], 0);
       return sum;
     }
     @Override public double[] mlgrad(double[] u, int a) {
-      if (!(a >= 0 && a < u.length)) throw new IndexOutOfBoundsException("a must be between 0 and " + (u.length - 1));
       double[] grad = new double[u.length];
-      for (int i = 0; i < u.length; i++)
+      return mlgrad(u, a, grad, u.length);
+    }
+    @Override public double[] mlgrad(double[] u, int a, double[] grad, int u_len) {
+      if (!(a >= 0 && a < u_len)) throw new IndexOutOfBoundsException("a must be between 0 and " + (u_len - 1));
+      for (int i = 0; i < u_len; i++)
         grad[i] = (1 + u[i] > 0) ? 1 : 0;
       grad[a] = (1 - u[a] > 0) ? -1 : 0;
       return grad;
@@ -189,10 +197,23 @@ public enum GlrmLoss {
         sum += a > i ? Math.max(1 - u[i], 0) : 1;
       return sum;
     }
+    @Override public double mloss(double[] u, int a, int u_len) {
+      if (!(a >= 0 && a < u_len)) throw new IndexOutOfBoundsException("a must be between 0 and " + (u_len - 1));
+      double sum = 0;
+      for (int i = 0; i < u_len - 1; i++)
+        sum += a > i ? Math.max(1 - u[i], 0) : 1;
+      return sum;
+    }
     @Override public double[] mlgrad(double[] u, int a) {
       if (!(a >= 0 && a < u.length)) throw new IndexOutOfBoundsException("a must be between 0 and " + (u.length - 1));
       double[] grad = new double[u.length];
       for (int i = 0; i < u.length - 1; i++)
+        grad[i] = (a > i && 1 - u[i] > 0) ? -1 : 0;
+      return grad;
+    }
+    @Override public double[] mlgrad(double[] u, int a, double[] grad, int u_len) {
+      if (!(a >= 0 && a < u_len)) throw new IndexOutOfBoundsException("a must be between 0 and " + (u_len - 1));
+      for (int i = 0; i < u_len - 1; i++)
         grad[i] = (a > i && 1 - u[i] > 0) ? -1 : 0;
       return grad;
     }
@@ -229,11 +250,20 @@ public enum GlrmLoss {
   /** \argmin_a L(u, a): Data imputation for real numeric values */
   public double impute(double u) { throw new UnsupportedOperationException(); }
 
-  /** Loss function for categorical variables */
+  /** Loss function for categorical variables where the size of u represents the true column length. */
   public double mloss(double[] u, int a) { throw new UnsupportedOperationException(); }
+
+  /** Loss function for categorical variables performing same function as mloss above.  However, in this case,
+   * the size of u can be much bigger than what is needed.  The actual length of u is now specified in u_len. */
+  public double mloss(double[] u, int a, int u_len) { throw new UnsupportedOperationException(); }
 
   /** \grad_u L(u,a): Gradient of multidimensional loss function with respect to u */
   public double[] mlgrad(double[] u, int a) { throw new UnsupportedOperationException(); }
+
+  /** \grad_u L(u,a): Gradient of multidimensional loss function with respect to u.  This method avoids the
+   * memory allocation compared to the method above by passing in a array prod which can be longer
+   * than the actual column length. The actual column length for prod is now specified by u_len. */
+  public double[] mlgrad(double[] u, int a, double[] prod, int u_len) { throw new UnsupportedOperationException(); }
 
   /** \argmin_a L(u, a): Data imputation for categorical values {0, 1, 2, ...} */
   public int mimpute(double[] u) { throw new UnsupportedOperationException(); }
