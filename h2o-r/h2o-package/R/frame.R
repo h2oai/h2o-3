@@ -2741,7 +2741,8 @@ h2o.class.map <- function() {
 
 destination_frame.guess <- function(x) {
   valid.key = isTRUE(try(.key.validate(x), silent=TRUE)) # simplify after .key.validate improvement
-  if (valid.key) x else ""
+  unique.key = !x %in% as.character(h2o.ls()$key)
+  if (valid.key && unique.key) x else ""
 }
 
 #'
@@ -2750,7 +2751,7 @@ destination_frame.guess <- function(x) {
 #' Import R object to the H2O cloud.
 #'
 #' @param x An \code{R} object.
-#' @param destination_frame A string with the desired name for the H2OFrame.
+#' @param destination_frame (Optional) character scalar, desired name for the H2OFrame.
 #' @param \dots arguments passed to method arguments.
 #' @export
 #' @examples 
@@ -2775,16 +2776,22 @@ destination_frame.guess <- function(x) {
 #'   stopifnot(is.h2o(hs), dim(hs)==dim(m))
 #' }
 #' }
-as.h2o <- function(x, destination_frame="", ...) {
-  .key.validate(destination_frame)
+as.h2o <- function(x, destination_frame=NULL, ...) {
+  if( !is.null(destination_frame) ) {
+    if( !(length(destination_frame)==1L && is.character(destination_frame)) )
+      stop("Argument 'destination_frame' must be a scalar character.")
+    .key.validate(destination_frame)
+    if( destination_frame %in% as.character(h2o.ls()$key) )
+      stop(paste0("Provided 'destination_frame' the H2O frame key '", destination_frame , "' already exists in your H2O Cluster. Please choose another key."))
+  }
   UseMethod("as.h2o")
 }
 
 #' @rdname as.h2o
 #' @method as.h2o default
 #' @export
-as.h2o.default <- function(x, destination_frame="", ...) {
-  if( destination_frame=="" ) destination_frame <- deparse(substitute(x)) # guessing is done in as.h2o.data.frame
+as.h2o.default <- function(x, destination_frame=paste(deparse(substitute(x), width.cutoff=500L), collapse=""), ...) {
+  force(destination_frame)
   x <- if( length(x)==1L )
     data.frame(C1=x)
   else
@@ -2795,30 +2802,27 @@ as.h2o.default <- function(x, destination_frame="", ...) {
 #' @rdname as.h2o
 #' @method as.h2o H2OFrame
 #' @export
-as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
-  if( destination_frame=="" ) {
-    subx <- destination_frame.guess(deparse(substitute(x)))
-    destination_frame <- .key.make(if(nzchar(subx)) subx else "copy")
-  }
+as.h2o.H2OFrame <- function(x, destination_frame=paste(deparse(substitute(x), width.cutoff=500L), collapse=""), ...) {
+  subx <- destination_frame.guess(destination_frame)
+  destination_frame <- if(nzchar(subx)) subx else .key.make("Copy")
   h2o.assign(x, key=destination_frame)
 }
 
 #' @rdname as.h2o
 #' @method as.h2o data.frame
 #' @export
-as.h2o.data.frame <- function(x, destination_frame="", ...) {
-  if( destination_frame=="" )
-    destination_frame <- deparse(substitute(x))
-  
-  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+as.h2o.data.frame <- function(x, destination_frame=paste(deparse(substitute(x), width.cutoff=500L), collapse=""), ...) {
+  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()" and duplicate
   .key.validate(destination_frame) # h2o.uploadFile already handle ""
   
-  # TODO: Be careful, there might be a limit on how long a vector you can define in console
-  tmpf <- tempfile(fileext = ".csv")
   # remap R data types to java data types
   types <- sapply(x, function(x) class(x)[1L]) # ensure vector returned
   class.map <- h2o.class.map()
   types[types %in% names(class.map)] <- class.map[types[types %in% names(class.map)]]
+  
+  # write csv and upload to h2o
+  # TODO: Be careful, there might be a limit on how long a vector you can define in console
+  tmpf <- tempfile(fileext = ".csv")
   write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
   h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
                         col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
@@ -2829,20 +2833,18 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
 #' @rdname as.h2o
 #' @method as.h2o Matrix
 #' @export
-as.h2o.Matrix <- function(x, destination_frame="", ...) {
-  
-  if( destination_frame=="")
-    destination_frame <- deparse(substitute(x))
-  
+as.h2o.Matrix <- function(x, destination_frame=paste(deparse(substitute(x), width.cutoff=500L), collapse=""), ...) {
+  force(destination_frame)
   sparse <- .h2o.is.sparse.matrix(x)
-  if(!sparse)
+  if( !sparse )
     return(as.h2o.default(x, destination_frame=destination_frame, ...))
   
-  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()" and duplicate
   .key.validate(destination_frame)
-  if ( destination_frame=="" ) # .h2o.readSVMLight wont handle ""
-    destination_frame <- .key.make("Matrix") # only used if `x` variable name not valid key
+  if ( destination_frame=="" ) # .h2o.readSVMLight might not handle "" (?)
+    destination_frame <- .key.make("Matrix") # only used if `x` variable name not valid key or duplicate
   
+  # write svm file
   tmpf <- tempfile(fileext = ".svm")
   .h2o.write.matrix.svmlight(x, file = tmpf)
   h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
