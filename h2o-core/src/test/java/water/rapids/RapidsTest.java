@@ -492,7 +492,7 @@ public class RapidsTest extends TestUtil {
       checkSaneFrame();
 
       exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_11 (dayOfWeek nary_op_5)) \"WeekDay\"))", ses);
-      exec_str("(rm 'nfs:\\C:\\Users\\cliffc\\Desktop\\h2o-3\\smalldata\\chicago\\chicagoCrimes10k.csv.zip')", ses);
+      exec_str("(rm 'nfs:\\\\C:\\\\Users\\\\cliffc\\\\Desktop\\\\h2o-3\\\\smalldata\\\\chicago\\\\chicagoCrimes10k.csv.zip')", ses);
 
       exec_str("(assign crimes.hex (append crimes.hex (tmp= unary_op_12 (hour nary_op_5)) \"HourOfDay\"))", ses);
 
