@@ -1,5 +1,7 @@
 package water.udf;
 
+import water.fvec.Vec;
+
 /**
  * This column depends on three other columns
  */
@@ -9,6 +11,10 @@ public class Fun3Column<X, Y, Z, T> implements Column<T> {
   private final Column<Y> ys;
   private final Column<Z> zs;
   
+  @Override public Vec vec() { return new VirtualVec(this); }
+
+  @Override public int rowLayout() { return xs.rowLayout(); }
+
   public Fun3Column(Function3<X, Y, Z, T> f, Column<X> xs, Column<Y> ys, Column<Z> zs) {
     this.f = f;
     this.xs = xs;

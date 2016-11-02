@@ -1,5 +1,6 @@
 package water.udf;
 
+import water.fvec.Vec;
 import water.util.StringUtils;
 
 import java.util.ArrayList;
@@ -14,6 +15,10 @@ public class UnfoldingColumn<X, Y> implements Column<List<Y>> {
   private final Unfoldable<X, Y> f;
   private final Column<X> column;
   private int requiredSize;
+
+  @Override public Vec vec() { return new VirtualVec(this); }
+
+  @Override public int rowLayout() { return column.rowLayout(); }
   
   public UnfoldingColumn(Unfoldable<X, Y> f, Column<X> column) {
     this.f = f;

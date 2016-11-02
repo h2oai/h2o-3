@@ -11,4 +11,7 @@ public interface Column<T> {
   boolean isNA(long idx);
   
   String getString(long idx);
+  
+  Vec vec();
+  int rowLayout();
 }
