@@ -44,11 +44,13 @@ run.cor.tests <- function (g,h,one_row=FALSE,has_nas=FALSE) {
       } else {
         h2o_cor <- cor(h2o_g, h2o_h, na.rm = na.rm, use = use)
       }
-      R_cor <- cor(g,h, na.rm = na.rm, use = use)
+      R_cor <- stats::cor(g,h, use = use)
       print("H2O cor():")
+      print(paste0("Use: ",use))
       print(h2o_cor)
 
       print("R cor():")
+      print(paste0("Use: ",use))
       print(R_cor)
       h2o_and_R_equal(h2o_cor, R_cor)
     }
