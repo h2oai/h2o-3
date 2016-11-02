@@ -8,8 +8,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
-import water.util.VecUtils;
+import water.util.FrameUtils;
 
 import java.util.Arrays;
 
@@ -97,29 +96,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     Frame ff = new Frame(orig.names(), orig.vecs());
     ff.add("predicate", booleanCol);
     Frame res = new Frame.DeepSelect().doAll(orig.types(),ff).outputFrame(destination_key, orig.names(), orig.domains());
-
-    // reduce the categorical domains to the actually observed set - to make visualization easier
-    for (Vec v : res.vecs()) {
-      if (v.isCategorical()) {
-        long[] uniques = new VecUtils.CollectDomainFast((int)v.max()).doAll(v).getResult().domain();
-        String[] newDomain = new String[uniques.length];
-        final int[] fromTo = new int[(int)ArrayUtils.maxValue(uniques)+1];
-        for (int i=0;i<newDomain.length;++i) {
-          newDomain[i] = v.domain()[(int) uniques[i]];
-          fromTo[(int)uniques[i]] = i; //helper for value mapping
-        }
-        new MRTask() {
-          @Override
-          public void map(Chunk c) {
-            for (int i=0;i<c._len;++i) {
-              if (c.isNA(i)) continue;
-              else c.set(i, fromTo[(int)c.at8(i)]);
-            }
-          }
-        }.doAll(v);
-        v.setDomain(newDomain);
-      }
-    }
+    FrameUtils.shrinkDomainsToObservedSubset(res);
     booleanCol.remove();
     assert(res.numRows()==_exemplars.length);
 
@@ -150,6 +127,8 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     Frame ff = new Frame(orig.names(), orig.vecs());
     ff.add("predicate", booleanCol);
     Frame res = new Frame.DeepSelect().doAll(orig.types(),ff).outputFrame(destination_key, orig.names(), orig.domains());
+    FrameUtils.shrinkDomainsToObservedSubset(res);
+    DKV.put(res);
     assert(res.numRows()==_counts[exemplarIdx]);
     booleanCol.remove();
     return res;
