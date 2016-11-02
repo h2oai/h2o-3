@@ -12,6 +12,7 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
+import water.fvec.Vec;
 import water.util.Log;
 
 public class AggregatorTest extends TestUtil {
@@ -227,6 +228,35 @@ public class AggregatorTest extends TestUtil {
 //    Assert.assertTrue(agg._exemplars.length==615);
     frame.delete();
     agg.remove();
+  }
+
+  @Test public void testDomains() {
+    Frame frame = parse_test_file("smalldata/junit/weather.csv");
+    for (String s : new String[]{"MaxWindSpeed", "RelHumid9am", "Cloud9am"}) {
+      Vec v = frame.vec(s);
+      Vec newV = v.toCategoricalVec();
+      frame.remove(s);
+      frame.add(s,newV);
+      v.remove();
+    }
+    DKV.put(frame);
+    AggregatorModel.AggregatorParameters parms = new AggregatorModel.AggregatorParameters();
+    parms._train = frame._key;
+    parms._radius_scale = 10;
+    AggregatorModel agg = new Aggregator(parms).trainModel().get();
+    Frame output = agg._output._output_frame.get();
+    Assert.assertTrue(output.numRows() < 0.5*frame.numRows());
+    boolean same = true;
+    for (int i=0;i<frame.numCols();++i) {
+      if (frame.vec(i).isCategorical()) {
+        same = (frame.domains()[i].length == output.domains()[i].length);
+        if (!same) break;
+      }
+    }
+    frame.remove();
+    output.remove();
+    agg.remove();
+    Assert.assertFalse(same);
   }
 
   @Ignore
