@@ -1,6 +1,5 @@
 package hex.schemas;
 
-import hex.Distribution;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import water.api.API;
@@ -65,6 +64,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 //      "min_threads",
 //      "shared_histo",
 //      "unordered"
+      "lambda"
     };
 
     // Input fields
@@ -94,5 +94,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 //    public boolean shared_histo;
 //    @API(help="Use with new histo task only! Access rows in order of the dataset, not in order of leafs ", level = API.Level.expert, gridable = false)
 //    public boolean unordered;
+    @API(help="L2 regularization. Higher values will make the model more conservative.", level = API.Level.expert, gridable = true)
+    public double lambda;
   }
 }

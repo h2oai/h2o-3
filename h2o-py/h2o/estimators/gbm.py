@@ -37,7 +37,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                       "learn_rate", "learn_rate_annealing", "distribution", "quantile_alpha", "tweedie_power",
                       "huber_alpha", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                       "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding"}
+                      "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
+                      "lambda_"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -649,5 +650,16 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen"))
         self._parms["categorical_encoding"] = categorical_encoding
+
+
+    @property
+    def lambda_(self):
+        """float: L2 regularization. Higher values will make the model more conservative. (Default: 1.0)"""
+        return self._parms.get("lambda")
+
+    @lambda_.setter
+    def lambda_(self, lambda_):
+        assert_is_type(lambda_, None, numeric)
+        self._parms["lambda"] = lambda_
 
 

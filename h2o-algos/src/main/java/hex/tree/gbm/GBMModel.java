@@ -21,6 +21,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     public int _min_threads = -1; // desired parallellism, i.e. minimum number of tasks launched. defaults number of cores. Controls how many threads are launched per column block.
     public boolean _shared_histo; // shared histo + CAS or private copies.
     public boolean _unordered;    // only if histo is not shared. walk rows in order of the dataset, do not pre-sort by leaf membership.
+    public double _lambda;
 
     public GBMParameters() {
       super();
@@ -32,6 +33,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
       _max_depth = 5;
       _max_abs_leafnode_pred = Double.MAX_VALUE;
       _pred_noise_bandwidth =0;
+      _lambda = 0;
     }
 
     public String algoName() { return "GBM"; }
