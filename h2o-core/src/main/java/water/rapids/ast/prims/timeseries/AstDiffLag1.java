@@ -6,16 +6,15 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.Ast;
 import water.util.ArrayUtils;
 
 /**
  * Compute a difference of a time series where lag = 1
  */
-public class AstDiffLag1 extends AstPrimitive {
+public class AstDiffLag1 extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};
@@ -32,7 +31,7 @@ public class AstDiffLag1 extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env).getFrame());
     if (fr.numCols() != 1)
       throw new IllegalArgumentException("Expected a single column for diff. Got: " + fr.numCols() + " columns.");

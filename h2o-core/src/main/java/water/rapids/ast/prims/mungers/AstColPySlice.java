@@ -2,12 +2,12 @@ package water.rapids.ast.prims.mungers;
 
 import water.fvec.Frame;
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
+import water.rapids.ast.Ast;
 import water.rapids.ast.AstParameter;
-import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValRow;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.params.AstNum;
 
 /**
@@ -16,7 +16,7 @@ import water.rapids.ast.params.AstNum;
  * error for single numbers.  Negative numbers have the number of columns
  * added to them, before being checked for range.
  */
-public class AstColPySlice extends AstPrimitive {
+public class AstColPySlice extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "cols"};
@@ -33,7 +33,7 @@ public class AstColPySlice extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Val v = stk.track(asts[1].exec(env));
     AstParameter colList = (AstParameter) asts[2];
     if (v instanceof ValRow) {

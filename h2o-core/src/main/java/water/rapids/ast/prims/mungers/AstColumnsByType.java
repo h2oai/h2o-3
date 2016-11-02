@@ -2,9 +2,8 @@ package water.rapids.ast.prims.mungers;
 
 import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.Val;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValNums;
 import java.util.ArrayList;
 
@@ -20,7 +19,7 @@ import java.util.ArrayList;
  * @since  3.10
  *
  */
-public class AstColumnsByType extends AstPrimitive {
+public class AstColumnsByType extends AstFunction {
     @Override
     public String[] args() {
         return new String[]{"ary","type"};
@@ -39,7 +38,7 @@ public class AstColumnsByType extends AstPrimitive {
     } //ary type
 
     @Override
-    public ValNums apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+    public ValNums apply(Env env, Env.StackHelp stk, Ast asts[]) {
         Frame fr = stk.track(asts[1].exec(env)).getFrame();
         String type = stk.track(asts[2].exec(env)).getStr();
         DType dtype;

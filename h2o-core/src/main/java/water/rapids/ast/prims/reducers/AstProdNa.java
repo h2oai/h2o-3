@@ -5,13 +5,13 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
 
 /**
  */
-public class AstProdNa extends AstPrimitive {
+public class AstProdNa extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};
@@ -28,7 +28,7 @@ public class AstProdNa extends AstPrimitive {
   }
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNum apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     for (Vec v : fr.vecs())
       if (v.isCategorical() || v.isUUID() || v.isString())

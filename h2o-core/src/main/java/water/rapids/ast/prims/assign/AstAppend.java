@@ -4,14 +4,14 @@ import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.Ast;
 
 /**
  */
-public class AstAppend extends AstPrimitive {
+public class AstAppend extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"dst", "src", "colName"};
@@ -28,7 +28,7 @@ public class AstAppend extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc = stk.track(asts[2].exec(env));
     String newColName = asts[3].exec(env).getStr();

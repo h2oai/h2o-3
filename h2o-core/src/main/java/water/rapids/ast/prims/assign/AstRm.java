@@ -6,14 +6,14 @@ import water.Keyed;
 import water.Value;
 import water.fvec.Frame;
 import water.rapids.Env;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
 
 /**
  * Remove by ID.  Removing a Frame updates refcnts.  Returns 1 for removing, 0 if id does not exist.
  */
-public class AstRm extends AstPrimitive {
+public class AstRm extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"id"};
@@ -30,7 +30,7 @@ public class AstRm extends AstPrimitive {
   }
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNum apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Key id = Key.make(asts[1].str());
     Value val = DKV.get(id);
     if (val == null) return new ValNum(0);

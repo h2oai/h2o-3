@@ -1,7 +1,6 @@
 package water.rapids.vals;
 
 import water.fvec.Frame;
-import water.rapids.Val;
 
 /**
  * Value that represents an H2O dataframe ({@link Frame}).

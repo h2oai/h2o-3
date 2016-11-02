@@ -5,7 +5,7 @@ import hex.PartialDependence;
 import hex.grid.Grid;
 import water.*;
 import water.api.API;
-import water.rapids.Assembly;
+import water.codegen.Assembly;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;

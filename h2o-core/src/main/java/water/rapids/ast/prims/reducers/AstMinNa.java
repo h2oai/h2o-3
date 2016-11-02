@@ -6,7 +6,7 @@ import water.fvec.Vec;
  * Subclasses take a Frame and produces a scalar.  NAs are dropped
  */
 //abstract class ASTNARedOp extends AstReducerOp {
-//  @Override ValNum apply( Env env, Env.StackHelp stk, AstRoot asts[] ) {
+//  @Override ValNum apply( Env env, Env.StackHelp stk, Ast asts[] ) {
 //    Frame fr = stk.track(asts[1].exec(env)).getFrame();
 //    return new ValNum(new NaRmRedOp().doAll(fr)._d);
 //  }

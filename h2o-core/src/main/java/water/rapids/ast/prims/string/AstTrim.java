@@ -3,10 +3,9 @@ package water.rapids.ast.prims.string;
 import water.MRTask;
 import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.Ast;
 import water.util.VecUtils;
 
 import java.util.ArrayList;
@@ -18,7 +17,7 @@ import java.util.HashMap;
  * Trimming removes all characters of value 0x20 or lower at the beginning and end of the
  * target string. Thus this only trims one of the 17 characters UTF considers as a space.
  */
-public class AstTrim extends AstPrimitive {
+public class AstTrim extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};
@@ -35,7 +34,7 @@ public class AstTrim extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     // Type check
     for (Vec v : fr.vecs())

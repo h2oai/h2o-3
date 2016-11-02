@@ -17,6 +17,7 @@ import water.rapids.ast.prims.search.*;
 import water.rapids.ast.prims.string.*;
 import water.rapids.ast.prims.time.*;
 import water.rapids.ast.prims.timeseries.*;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValFun;
 
@@ -28,7 +29,7 @@ import java.util.HashMap;
  * Execute a set of instructions in the context of an H2O cloud.
  * <p/>
  * An Env (environment) object is a classic stack of values used during
- * execution of an AstRoot.  The stack is hidden in the normal Java execution
+ * execution of an Ast.  The stack is hidden in the normal Java execution
  * stack and is not explicit.
  * <p/>
  * For efficiency, reference counting is employed to recycle objects already
@@ -48,7 +49,7 @@ public class Env extends Iced {
   public final Session _ses;
 
   // Current lexical scope lookup
-  public AstFunction _scope;
+  public AstUserDefinedFunction _scope;
 
 
   // Frames that are alive in mid-execution; usually because we have evaluated
@@ -57,11 +58,11 @@ public class Env extends Iced {
   private ArrayList<Frame> _stk = new ArrayList<>();
 
   // Built-in constants, checked before other namespace lookups happen
-  private static final HashMap<String, AstPrimitive> PRIMS = new HashMap<>();
+  private static final HashMap<String, AstFunction> PRIMS = new HashMap<>();
   // Built-in primitives, done after other namespace lookups happen
   private static final HashMap<String, AstParameter> CONSTS = new HashMap<>();
 
-  static void init(AstPrimitive ast) {
+  static void init(AstFunction ast) {
     PRIMS.put(ast.str(), ast);
   }
 
@@ -301,7 +302,7 @@ public class Env extends Iced {
     final int _sp = sp();
 
     // Push & track.  Called on every Val that spans a (nested) exec call.
-    // Used to track Frames with lifetimes spanning other AstRoot executions.
+    // Used to track Frames with lifetimes spanning other Ast executions.
     public Val track(Val v) {
       if (v instanceof ValFrame) track(v.getFrame());
       return v;
@@ -371,7 +372,7 @@ public class Env extends Iced {
     }
 
     // Now the built-ins
-    AstPrimitive ast = PRIMS.get(id);
+    AstFunction ast = PRIMS.get(id);
     if (ast != null)
       return new ValFun(ast);
 

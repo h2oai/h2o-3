@@ -6,7 +6,6 @@ import water.Key;
 import water.fvec.Frame;
 import water.rapids.*;
 import water.rapids.ast.AstParameter;
-import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstId;
 import water.rapids.ast.params.AstStr;
 import water.rapids.ast.params.AstStrList;

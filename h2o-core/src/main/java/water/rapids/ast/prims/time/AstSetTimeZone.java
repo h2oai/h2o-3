@@ -5,14 +5,14 @@ import water.MRTask;
 import water.parser.ParseTime;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.Ast;
 
 import java.util.Set;
 
 /**
  */
-public class AstSetTimeZone extends AstPrimitive {
+public class AstSetTimeZone extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"tz"};
@@ -29,7 +29,7 @@ public class AstSetTimeZone extends AstPrimitive {
   }
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValNum apply(Env env, Env.StackHelp stk, Ast asts[]) {
     final String tz = asts[1].exec(env).getStr();
     Set<String> idSet = DateTimeZone.getAvailableIDs();
     if (!idSet.contains(tz))

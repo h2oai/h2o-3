@@ -4,7 +4,7 @@ import water.DKV;
 import water.Key;
 import water.api.schemas3.KeyV3;
 import water.api.schemas99.AssemblyV99;
-import water.rapids.Assembly;
+import water.codegen.Assembly;
 import water.rapids.transforms.Transform;
 import water.fvec.Frame;
 

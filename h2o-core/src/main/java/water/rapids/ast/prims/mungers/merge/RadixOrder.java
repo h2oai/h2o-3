@@ -1,4 +1,4 @@
-package water.rapids;
+package water.rapids.ast.prims.mungers.merge;
 
 import water.*;
 import water.fvec.Frame;

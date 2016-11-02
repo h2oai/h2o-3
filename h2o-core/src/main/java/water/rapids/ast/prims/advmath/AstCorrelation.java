@@ -6,11 +6,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
 import water.util.ArrayUtils;
 import java.util.Arrays;
 
@@ -20,7 +20,7 @@ import java.util.Arrays;
  * Formula:
  * Pearson's Correlation Coefficient = Cov(X,Y)/sigma(X) * sigma(Y)
  */
-public class AstCorrelation extends AstPrimitive {
+public class AstCorrelation extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "x", "y", "use"};
@@ -39,7 +39,7 @@ public class AstCorrelation extends AstPrimitive {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame frx = stk.track(asts[1].exec(env)).getFrame();
     Frame fry = stk.track(asts[2].exec(env)).getFrame();
     if (frx.numRows() != fry.numRows())

@@ -9,9 +9,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Rapids;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.vals.ValRow;
 
 import java.util.ArrayList;
 

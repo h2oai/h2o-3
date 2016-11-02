@@ -3,22 +3,22 @@ package water.rapids.ast.prims.reducers;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.rapids.Env;
-import water.rapids.Val;
+import water.rapids.vals.Val;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
 
 /**
  * Subclasses take a Frame and produces a scalar.  NAs -> NAs
  */
-public abstract class AstReducerOp extends AstPrimitive {
+public abstract class AstReducerOp extends AstFunction {
   @Override
   public int nargs() {
     return -1;
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
     // NOTE: no *initial* value needed for the reduction.  Instead, the
     // reduction op is used between pairs of actual values, and never against
     // the empty list.  NaN is returned if there are *no* values in the

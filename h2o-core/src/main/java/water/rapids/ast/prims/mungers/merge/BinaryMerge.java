@@ -1,4 +1,4 @@
-package water.rapids;
+package water.rapids.ast.prims.mungers.merge;
 
 // Since we have a single key field in H2O (different to data.table), bmerge() becomes a lot simpler (no
 // need for recursion through join columns) with a downside of transfer-cost should we not need all the key.
@@ -8,7 +8,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
+import static water.rapids.ast.prims.mungers.merge.SingleThreadRadixOrder.getSortedOXHeaderKey;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;

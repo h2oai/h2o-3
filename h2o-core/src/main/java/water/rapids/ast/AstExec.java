@@ -1,7 +1,7 @@
 package water.rapids.ast;
 
 import water.rapids.*;
-import water.rapids.ast.params.AstId;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFun;
 import water.util.SB;
 
@@ -10,25 +10,25 @@ import java.util.ArrayList;
 /**
  * Apply A Function.  Basic function execution.
  */
-public class AstExec extends AstRoot {
-  public final AstRoot[] _asts;
+public class AstExec extends Ast {
+  public final Ast[] _asts;
 
   public AstExec() {
-    this((AstRoot[])null);
+    this((Ast[])null);
   }
 
-  public AstExec(AstRoot[] asts) {
+  public AstExec(Ast[] asts) {
     _asts = asts;
   }
 
-  public AstExec(ArrayList<AstRoot> asts) {
-    _asts = asts.toArray(new AstRoot[asts.size()]);
+  public AstExec(ArrayList<Ast> asts) {
+    _asts = asts.toArray(new Ast[asts.size()]);
   }
 
   @Override
   public String str() {
     SB sb = new SB().p('(');
-    for (AstRoot ast : _asts)
+    for (Ast ast : _asts)
       sb.p(ast.toString()).p(' ');
     return sb.p(')').toString();
   }
@@ -45,7 +45,7 @@ public class AstExec extends AstRoot {
         "to the function as arguments. For example: `(sqrt 16)`, `(+ 2 3)`, `(getTimeZone)`, etc.";
   }
 
-  // Function application.  Execute the first AstRoot and verify that it is a
+  // Function application.  Execute the first Ast and verify that it is a
   // function.  Then call that function's apply method.  Do not evaluate other
   // arguments; e.g. short-circuit logicals' apply calls may choose to not ever
   // evalute some arguments.
@@ -54,7 +54,7 @@ public class AstExec extends AstRoot {
     Val fun = _asts[0].exec(env);
     if (!fun.isFun())
       throw new IllegalArgumentException("Expected a function but found " + fun.getClass());
-    AstPrimitive ast = fun.getFun();
+    AstFunction ast = fun.getFun();
     int nargs = ast.nargs();
     if (nargs != -1 && nargs != _asts.length)
       throw new IllegalArgumentException(

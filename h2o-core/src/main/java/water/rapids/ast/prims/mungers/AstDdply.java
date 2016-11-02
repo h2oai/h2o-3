@@ -5,6 +5,7 @@ import water.fvec.*;
 import water.rapids.*;
 import water.rapids.ast.*;
 import water.rapids.ast.params.AstNumList;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 import water.util.*;
 
@@ -19,7 +20,7 @@ import java.util.Arrays;
  * Returns a set of grouping columns, with the single answer column, with one
  * row per unique group.
  */
-public class AstDdply extends AstPrimitive {
+public class AstDdply extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary", "groupByCols", "fun"};
@@ -36,15 +37,15 @@ public class AstDdply extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int ncols = fr.numCols();
 
     AstNumList groupby = AstGroup.check(ncols, asts[2]);
     int[] gbCols = groupby.expand4();
 
-    AstRoot fun = asts[3].exec(env).getFun();
-    AstFunction scope = env._scope;  // Current execution scope; needed to lookup variables
+    Ast fun = asts[3].exec(env).getFun();
+    AstUserDefinedFunction scope = env._scope;  // Current execution scope; needed to lookup variables
 
     // Pass 1: Find all the groups (and count rows-per-group)
     IcedHashMap<AstGroup.G, String> gss = AstGroup.doGroups(fr, gbCols, AstGroup.aggNRows());
@@ -155,11 +156,11 @@ public class AstDdply extends AstPrimitive {
   private static class RemoteRapids extends DTask<RemoteRapids> {
     private Frame _data;        // Data frame
     private Key<Vec> _vKey;     // the group to process...
-    private AstRoot _fun;           // the ast to execute on the group
-    private AstFunction _scope;      // Execution environment
+    private Ast _fun;           // the ast to execute on the group
+    private AstUserDefinedFunction _scope;      // Execution environment
     private double[] _result;   // result is 1 row per group!
 
-    RemoteRapids(Frame data, Key<Vec> vKey, AstRoot fun, AstFunction scope) {
+    RemoteRapids(Frame data, Key<Vec> vKey, Ast fun, AstUserDefinedFunction scope) {
       _data = data;
       _vKey = vKey;
       _fun = fun;
@@ -202,7 +203,7 @@ public class AstDdply extends AstPrimitive {
       // Now run the function on the group frame
       Session ses = new Session();
       // Build an environment with proper lookup scope, and execute in a temp session
-      Val val = ses.exec(new AstExec(new AstRoot[]{_fun, new AstFrame(groupFrame)}), _scope);
+      Val val = ses.exec(new AstExec(new Ast[]{_fun, new AstFrame(groupFrame)}), _scope);
       val = ses.end(val);
 
       // Result into a double[]

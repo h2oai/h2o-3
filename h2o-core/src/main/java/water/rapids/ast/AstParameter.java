@@ -1,7 +1,7 @@
 package water.rapids.ast;
 
 
-public abstract class AstParameter extends AstRoot {
+public abstract class AstParameter extends Ast {
 
   @Override
   public String example() {

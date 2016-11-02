@@ -7,10 +7,9 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Val;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.params.AstNumList;
 import water.util.IcedHashMap;
 import water.util.Log;
@@ -18,7 +17,7 @@ import water.util.Log;
 import java.util.HashMap;
 
 
-public class AstGroupedPermute extends AstPrimitive {
+public class AstGroupedPermute extends AstFunction {
   //   .newExpr("grouped_permute", fr, permCol, permByCol, groupByCols, keepCol)
   @Override
   public String[] args() {
@@ -36,7 +35,7 @@ public class AstGroupedPermute extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final int permCol = (int) asts[2].exec(env).getNum();
     AstNumList groupby = AstGroup.check(fr.numCols(), asts[3]);

@@ -7,7 +7,7 @@ import water.api.schemas99.AssemblyV99;
 import water.exceptions.*;
 import water.init.NodePersistentStorage;
 import water.nbhm.NonBlockingHashMap;
-import water.rapids.Assembly;
+import water.codegen.Assembly;
 import water.util.*;
 
 import javax.servlet.http.HttpServlet;

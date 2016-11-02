@@ -14,7 +14,7 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.Rapids;
-import water.rapids.Val;
+import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 
 import java.util.Arrays;

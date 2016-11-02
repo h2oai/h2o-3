@@ -6,7 +6,7 @@ import water.rapids.vals.ValRow;
 /**
  * A Row.  Execution is just to return the constant.
  */
-public class AstRow extends AstRoot {
+public class AstRow extends Ast {
   final ValRow _row;
 
   public AstRow(double[] ds, String[] names) {

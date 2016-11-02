@@ -5,13 +5,13 @@ import water.MRTask;
 import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
+import water.rapids.ast.AstFunction;
+import water.rapids.ast.Ast;
 
 /**
  * Indices of which entries are not equal to 0
  */
-public class AstWhich extends AstPrimitive {
+public class AstWhich extends AstFunction {
   @Override
   public String[] args() {
     return new String[]{"ary"};
@@ -28,7 +28,7 @@ public class AstWhich extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
     Frame f = stk.track(asts[1].exec(env)).getFrame();
 
     // The 1-row version
