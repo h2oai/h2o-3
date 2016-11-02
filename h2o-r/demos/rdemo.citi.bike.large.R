@@ -126,21 +126,21 @@ split_fit_predict <- function(data) {
   # 4- Score on holdout set & report
   train_logloss_gbm  <- h2o.logloss(gbm, train = TRUE)
   test_logloss_gbm   <- h2o.logloss(gbm, valid = TRUE)
-  hold_perf_gbm <- h2o.performance(model = gbm, data = hold)
+  hold_perf_gbm <- h2o.performance(model = gbm, newdata = hold)
   hold_logloss_gbm   <- h2o.logloss(object = hold_perf_gbm)
   print(paste0("GBM logloss TRAIN = ", train_logloss_gbm, ", logloss TEST = ", test_logloss_gbm, ", logloss HOLDOUT = ",
                hold_logloss_gbm))
 
   train_logloss_drf  <- h2o.logloss(drf, train = TRUE)
   test_logloss_drf   <- h2o.logloss(drf, valid = TRUE)
-  hold_perf_drf <- h2o.performance(model = drf, data = hold)
+  hold_perf_drf <- h2o.performance(model = drf, newdata = hold)
   hold_logloss_drf   <- h2o.logloss(object = hold_perf_drf)
   print(paste0("DRF logloss TRAIN = ", train_logloss_drf, ", logloss TEST = ", test_logloss_drf, ", logloss HOLDOUT = ",
                hold_logloss_drf))
 
   train_logloss_glm  <- h2o.logloss(glm, train = TRUE)
   test_logloss_glm   <- h2o.logloss(glm, valid = TRUE)
-  hold_perf_glm <- h2o.performance(model = glm, data = hold)
+  hold_perf_glm <- h2o.performance(model = glm, newdata = hold)
   hold_logloss_glm   <- h2o.logloss(hold_perf_glm)
   print(paste0("GLM logloss TRAIN = ", train_logloss_glm, ", logloss TEST = ", test_logloss_glm, ", logloss HOLDOUT = ",
                hold_logloss_glm))

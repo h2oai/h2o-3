@@ -102,7 +102,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     if (expensive) {
       byte[] types = _train.types();
       for (byte b : types) {
-        if (b != Vec.T_NUM) {
+        if (b != Vec.T_NUM && b != Vec.T_TIME) {
           error("_categorical_encoding", "Categorical features must be turned into numeric features. Specify categorical_encoding=\"Eigen\", \"OneHotExplicit\" or \"Binary\"");
         }
       }

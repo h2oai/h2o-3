@@ -57,9 +57,9 @@ def pyunit_make_metrics():
     print("\n\n======= BINOMIAL ========\n")
     response = "CAPSULE"
     predictors = list(set(fr.names) - {"ID", response})
-    model = H2OGradientBoostingEstimator()
-    model.train(x=predictors, y=response, distribution="bernoulli", training_frame=fr, ntrees=2, max_depth=3,
-                min_rows=1, learn_rate=0.01, nbins=20)
+    model = H2OGradientBoostingEstimator(distribution="bernoulli", ntrees=2, max_depth=3, min_rows=1,
+                                         learn_rate=0.01, nbins=20)
+    model.train(x=predictors, y=response, training_frame=fr)
     predicted = h2o.assign(model.predict(fr)[2], "pred")
     actual = h2o.assign(fr[response].asfactor(), "act")
     domain = ["0", "1"]
@@ -89,9 +89,9 @@ def pyunit_make_metrics():
     print("\n\n======= MULTINOMIAL ========\n")
     response = "RACE"
     predictors = list(set(fr.names) - {"ID", response})
-    model = H2OGradientBoostingEstimator()
-    model.train(x=predictors, y=response, distribution="multinomial", training_frame=fr, ntrees=2, max_depth=3,
-                min_rows=1, learn_rate=0.01, nbins=20)
+    model = H2OGradientBoostingEstimator(distribution="multinomial", ntrees=2, max_depth=3, min_rows=1,
+                                         learn_rate=0.01, nbins=20)
+    model.train(x=predictors, y=response, training_frame=fr)
     predicted = h2o.assign(model.predict(fr)[1:], "pred")
     actual = h2o.assign(fr[response].asfactor(), "act")
     domain = fr[response].levels()[0]

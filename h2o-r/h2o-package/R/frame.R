@@ -2587,6 +2587,54 @@ h2o.prod <- function(x) {
 }
 
 #'
+#' Return the cumulative sum over a column or across a row
+#'
+#' @name h2o.cumsum
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cumsum}} for the base R implementation.
+#' @export
+h2o.cumsum <- function(x, axis = 0){
+  .newExpr("cumsum", chk.H2OFrame(x), axis)
+}
+
+#'
+#' Return the cumulative product over a column or across a row
+#'
+#' @name h2o.cumprod
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cumprod}} for the base R implementation.
+#' @export
+h2o.cumprod <- function(x, axis = 0){
+  .newExpr("cumprod", chk.H2OFrame(x), axis)
+}
+
+#'
+#' Return the cumulative min over a column or across a row
+#'
+#' @name h2o.cummin
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cummin}} for the base R implementation.
+#' @export
+h2o.cummin <- function(x, axis = 0){
+  .newExpr("cummin", chk.H2OFrame(x), axis)
+}
+
+#'
+#' Return the cumulative max over a column or across a row
+#'
+#' @name h2o.cummax
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cummax}} for the base R implementation.
+#' @export
+h2o.cummax <- function(x, axis = 0){
+  .newExpr("cummax", chk.H2OFrame(x), axis)
+}
+
+#'
 #' Given a set of logical vectors, are all of the values true?
 #'
 #' @name h2o.all
@@ -2672,49 +2720,132 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 #-----------------------------------------------------------------------------------------------------------------------
 
 #'
-#' R data.frame -> H2OFrame
+#' Is H2O Frame object
 #'
-#' Import a local R data frame to the H2O cloud.
+#' Test if object is H2O Frame.
 #'
-#' @param x An \code{R} data frame.
-#' @param destination_frame A string with the desired name for the H2OFrame.
-#' @param sparse Optional boolean flag indicating whether parameter x should be treated as a sparse matrix.
-#'        Sparse matrices from package Matrix are automatically treated as sparse.
+#' @param x An \code{R} object.
 #' @export
-as.h2o <- function(x, destination_frame= "", sparse = NULL) {
+is.h2o <- function(x) inherits(x, "H2OFrame")
+
+h2o.class.map <- function() {
+  c("integer64"="numeric",
+    "integer"="numeric",
+    "double"="numeric",
+    "complex"="numeric",
+    "logical"="enum",
+    "factor"="enum",
+    "character"="string",
+    "Date"="Time")
+}
+
+destination_frame.guess <- function(x) {
+  valid.key = isTRUE(try(.key.validate(x), silent=TRUE)) # simplify after .key.validate improvement
+  if (valid.key) x else ""
+}
+
+#'
+#' Create H2OFrame
+#'
+#' Import R object to the H2O cloud.
+#'
+#' @param x An \code{R} object.
+#' @param destination_frame A string with the desired name for the H2OFrame.
+#' @param \dots arguments passed to method arguments.
+#' @export
+#' @examples 
+#' \donttest{
+#' h2o.init()
+#' hi <- as.h2o(iris)
+#' he <- as.h2o(euro)
+#' hl <- as.h2o(letters)
+#' hm <- as.h2o(state.x77)
+#' hh <- as.h2o(hi)
+#' stopifnot(is.h2o(hi), dim(hi)==dim(iris),
+#'           is.h2o(he), dim(he)==c(length(euro),1L),
+#'           is.h2o(hl), dim(hl)==c(length(letters),1L),
+#'           is.h2o(hm), dim(hm)==dim(state.x77),
+#'           is.h2o(hh), dim(hh)==dim(hi))
+#' if (requireNamespace("Matrix", quietly=TRUE)) {
+#'   data <- rep(0, 100)
+#'   data[(1:10)^2] <- 1:10 * pi
+#'   m <- matrix(data, ncol = 20, byrow = TRUE)
+#'   m <- Matrix::Matrix(m, sparse = TRUE)
+#'   hs <- as.h2o(m)
+#'   stopifnot(is.h2o(hs), dim(hs)==dim(m))
+#' }
+#' }
+as.h2o <- function(x, destination_frame="", ...) {
   .key.validate(destination_frame)
+  UseMethod("as.h2o")
+}
 
-  dest_name <- if( destination_frame=="") deparse(substitute(x)) else destination_frame
-  if( nzchar(dest_name) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", dest_name)[1L] == -1L )
-    dest_name <- destination_frame
+#' @rdname as.h2o
+#' @method as.h2o default
+#' @export
+as.h2o.default <- function(x, destination_frame="", ...) {
+  if( destination_frame=="" ) destination_frame <- deparse(substitute(x)) # guessing is done in as.h2o.data.frame
+  x <- if( length(x)==1L )
+    data.frame(C1=x)
+  else
+    as.data.frame(x, ...)
+  as.h2o.data.frame(x, destination_frame=destination_frame)
+}
 
-  if (is.null(sparse))
-    sparse = .h2o.is.sparse.matrix(x)
-
-  if (sparse) {
-    tmpf <- tempfile(fileext = ".svm")
-    .h2o.write.matrix.svmlight(x, file = tmpf)
-    h2f <- .h2o.readSVMLight(tmpf, destination_frame = dest_name)
-  } else {
-    # TODO: Be careful, there might be a limit on how long a vector you can define in console
-    if(!is.data.frame(x))
-      if( length(x)==1L ) x <- data.frame(C1=x)
-      else                x <- as.data.frame(x)
-    tmpf <- tempfile(fileext = ".csv")
-    types <- sapply(x, class)
-    types <- gsub("integer64", "numeric", types)
-    types <- gsub("integer", "numeric", types)
-    types <- gsub("double", "numeric", types)
-    types <- gsub("complex", "numeric", types)
-    types <- gsub("logical", "enum", types)
-    types <- gsub("factor", "enum", types)
-    types <- gsub("character", "string", types)
-    types <- gsub("Date", "Time", types)
-    write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
-    h2f <- h2o.uploadFile(tmpf, destination_frame = dest_name, header = TRUE, col.types=types,
-                          col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
+#' @rdname as.h2o
+#' @method as.h2o H2OFrame
+#' @export
+as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
+  if( destination_frame=="" ) {
+    subx <- destination_frame.guess(deparse(substitute(x)))
+    destination_frame <- .key.make(if(nzchar(subx)) subx else "copy")
   }
+  h2o.assign(x, key=destination_frame)
+}
 
+#' @rdname as.h2o
+#' @method as.h2o data.frame
+#' @export
+as.h2o.data.frame <- function(x, destination_frame="", ...) {
+  if( destination_frame=="" )
+    destination_frame <- deparse(substitute(x))
+  
+  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+  .key.validate(destination_frame) # h2o.uploadFile already handle ""
+  
+  # TODO: Be careful, there might be a limit on how long a vector you can define in console
+  tmpf <- tempfile(fileext = ".csv")
+  # remap R data types to java data types
+  types <- sapply(x, function(x) class(x)[1L]) # ensure vector returned
+  class.map <- h2o.class.map()
+  types[types %in% names(class.map)] <- class.map[types[types %in% names(class.map)]]
+  write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
+  h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
+                        col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
+  file.remove(tmpf)
+  h2f
+}
+
+#' @rdname as.h2o
+#' @method as.h2o Matrix
+#' @export
+as.h2o.Matrix <- function(x, destination_frame="", ...) {
+  
+  if( destination_frame=="")
+    destination_frame <- deparse(substitute(x))
+  
+  sparse <- .h2o.is.sparse.matrix(x)
+  if(!sparse)
+    return(as.h2o.default(x, destination_frame=destination_frame, ...))
+  
+  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+  .key.validate(destination_frame)
+  if ( destination_frame=="" ) # .h2o.readSVMLight wont handle ""
+    destination_frame <- .key.make("Matrix") # only used if `x` variable name not valid key
+  
+  tmpf <- tempfile(fileext = ".svm")
+  .h2o.write.matrix.svmlight(x, file = tmpf)
+  h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
   file.remove(tmpf)
   h2f
 }

@@ -269,8 +269,20 @@ final class RollupStats extends Iced {
         }
       }
       // mean & sigma not allowed on more than 2 classes; for 2 classes the assumption is that it's true/false
-      if( _fr.anyVec().isCategorical() && _fr.anyVec().domain().length > 2 )
+      Vec vec = _fr.anyVec();
+      String[] ss = vec.domain();
+      if( vec.isCategorical() && ss.length > 2 )
         _rs._mean = _rs._sigma = Double.NaN;
+      if( ss != null ) {
+        long dsz = (2/*hdr*/+1/*len*/+ss.length)*8;  // Size of base domain array
+        for( String s : vec.domain() )
+          if( s != null )
+            dsz += 2*s.length() + (2/*hdr*/+1/*value*/+1/*hash*/+2/*hdr*/+1/*len*/)*8;
+        _rs._size += dsz;             // Account for domain size in Vec size
+        // Account for Chunk key size
+        int keysize = (2/*hdr*/+1/*kb*/+1/*hash*/+2/*hdr*/+1/*len*/)*8+ vec._key._kb.length;
+        _rs._size += vec.nChunks()*(keysize*4/*key+value ptr in DKV, plus 50% fill rate*/);
+      }
     }
     // Just toooo common to report always.  Drowning in multi-megabyte log file writes.
     @Override public boolean logVerbose() { return false; }

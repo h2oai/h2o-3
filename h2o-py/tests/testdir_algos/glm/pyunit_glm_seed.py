@@ -29,7 +29,7 @@ def glm_seed():
           seed = 1234,
           max_active_predictors = 200)
 
-  h2oglm_1.train(x = predictors, y = y, training_frame  = cars, family = family)
+  h2oglm_1.train(x = predictors, y = y, training_frame  = cars)
 
 
   h2oglm_2 =  H2OGeneralizedLinearEstimator(
@@ -41,7 +41,7 @@ def glm_seed():
           seed = 1234,
           max_active_predictors = 200)
 
-  h2oglm_2.train(x = predictors, y = y, training_frame  = cars, family = family)
+  h2oglm_2.train(x = predictors, y = y, training_frame  = cars)
 
   assert h2oglm_1.coef() == h2oglm_2.coef()
 
@@ -56,7 +56,7 @@ def glm_seed():
           seed = 55555,
           max_active_predictors = 200)
 
-  h2oglm_3.train(x = predictors, y = y, training_frame  = cars, family = family)
+  h2oglm_3.train(x = predictors, y = y, training_frame  = cars)
 
 
   h2oglm_4 =  H2OGeneralizedLinearEstimator(
@@ -69,7 +69,7 @@ def glm_seed():
           max_active_predictors = 200)
 
 
-  h2oglm_4.train(x = predictors, y = y, training_frame  = cars, family = family)
+  h2oglm_4.train(x = predictors, y = y, training_frame  = cars)
 
   assert h2oglm_3.coef() != h2oglm_4.coef()
 

@@ -42,7 +42,7 @@ Example
 	airlines["Month"] <- as.factor(airlines["Month"])
 	airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
 	airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
-	airlines['FlightNum'] <- airlines['FlightNum'].asfactor()
+	airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
 
 	# set the predictor names and the response column name
 	predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", "DayOfWeek", "Month", "Distance", "FlightNum")
