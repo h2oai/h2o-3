@@ -1,6 +1,9 @@
 package water.udf;
 
+import water.fvec.Vec;
+
 import java.util.Arrays;
+import java.util.Iterator;
 
 /**
  * This column depends a plurality of columns
@@ -8,6 +11,13 @@ import java.util.Arrays;
 public class FoldingColumn<X, Y> implements Column<Y> {
   private final Foldable<X, Y> f;
   private final Iterable<Column<X>> columns;
+
+  @Override public int rowLayout() { 
+    Iterator<Column<X>> i = columns.iterator();
+    return i.hasNext() ? i.next().rowLayout() : 0;
+  }
+
+  @Override public Vec vec() { return new VirtualVec(this); }
   
   public FoldingColumn(Foldable<X, Y> f, Column<X>... columns) {
     this.f = f;
