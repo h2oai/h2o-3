@@ -7,18 +7,18 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.vals.Val;
-import water.rapids.ast.Ast;
+import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.ast.AstExec;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstId;
 
 /**
  * Convert year, month, day, hour, minute, sec, msec to Unix epoch time
  */
-public class AstMktime extends AstFunction {
+public class AstMktime extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"yr", "mo", "dy", "hr", "mi", "se", "ms"};
@@ -38,7 +38,7 @@ public class AstMktime extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     // Seven args, all required.  See if any are arrays.
     Frame fs[] = new Frame[nargs() - 1];
     int is[] = new int[nargs() - 1];

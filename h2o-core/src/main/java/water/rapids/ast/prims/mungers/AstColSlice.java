@@ -3,12 +3,12 @@ package water.rapids.ast.prims.mungers;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.vals.Val;
+import water.rapids.Val;
 import water.rapids.ast.AstParameter;
-import water.rapids.ast.Ast;
+import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValRow;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
 
 import java.util.Arrays;
 
@@ -17,7 +17,7 @@ import java.util.Arrays;
  * Numbers past the largest column are an error.
  * Negative numbers and number lists are allowed, and represent an *exclusion* list
  */
-public class AstColSlice extends AstFunction {
+public class AstColSlice extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "cols"};
@@ -34,7 +34,7 @@ public class AstColSlice extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Val v = stk.track(asts[1].exec(env));
     AstParameter col_list = (AstParameter) asts[2];
     if (v instanceof ValRow) {

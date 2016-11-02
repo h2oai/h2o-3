@@ -2,15 +2,16 @@ package water.rapids.ast.prims.repeaters;
 
 import water.fvec.*;
 import water.rapids.Env;
-import water.rapids.ast.Ast;
+import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 
 
 /**
  * Simple sequence of length n
  */
-public class AstSeqLen extends AstFunction {
+public class AstSeqLen extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"length"};
@@ -28,7 +29,7 @@ public class AstSeqLen extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     int len = (int) Math.ceil(asts[1].exec(env).getNum());
     if (len <= 0)
       throw new IllegalArgumentException("Error in seq_len(" + len + "): argument must be coercible to positive integer");

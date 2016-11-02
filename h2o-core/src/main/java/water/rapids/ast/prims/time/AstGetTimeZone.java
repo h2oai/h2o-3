@@ -2,12 +2,12 @@ package water.rapids.ast.prims.time;
 
 import water.parser.ParseTime;
 import water.rapids.Env;
-import water.rapids.ast.Ast;
 import water.rapids.vals.ValStr;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 
 
-public class AstGetTimeZone extends AstFunction {
+public class AstGetTimeZone extends AstPrimitive {
   @Override
   public String[] args() {
     return null;
@@ -25,7 +25,7 @@ public class AstGetTimeZone extends AstFunction {
   }
 
   @Override
-  public ValStr apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValStr apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     return new ValStr(ParseTime.getTimezone().toString());
   }
 }

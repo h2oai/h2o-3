@@ -5,15 +5,14 @@ import water.fvec.*;
 import water.MRTask;
 import water.rapids.*;
 import water.rapids.ast.*;
-import water.rapids.ast.Ast;
-import water.rapids.vals.Val;
+import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 
 /**
  * Apply a Function to a frame
  * Typically, column-by-column, produces a 1-row frame as a result
  */
-public class AstApply extends AstFunction {
+public class AstApply extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "margin", "fun"};
@@ -30,10 +29,10 @@ public class AstApply extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double margin = stk.track(asts[2].exec(env)).getNum();
-    AstFunction fun = stk.track(asts[3].exec(env)).getFun();
+    AstPrimitive fun = stk.track(asts[3].exec(env)).getFun();
 
     int nargs = fun.nargs();
     if (nargs != -1 && nargs != 2)
@@ -50,13 +49,13 @@ public class AstApply extends AstFunction {
   }
 
   // --------------------------------------------------------------------------
-  private ValFrame colwise(Env env, Env.StackHelp stk, Frame fr, AstFunction fun) {
+  private ValFrame colwise(Env env, Env.StackHelp stk, Frame fr, AstPrimitive fun) {
     // Break each column into it's own Frame, then execute the function passing
     // the 1 argument.  All columns are independent, and this loop should be
     // parallized over each column.
     Vec vecs[] = fr.vecs();
     Val vals[] = new Val[vecs.length];
-    Ast[] asts = new Ast[]{fun, null};
+    AstRoot[] asts = new AstRoot[]{fun, null};
     for (int i = 0; i < vecs.length; i++) {
       asts[1] = new AstFrame(new Frame(new String[]{fr._names[i]}, new Vec[]{vecs[i]}));
       try (Env.StackHelp stk_inner = env.stk()) {
@@ -105,22 +104,22 @@ public class AstApply extends AstFunction {
   // --------------------------------------------------------------------------
   // Break each row into it's own Row, then execute the function passing the
   // 1 argument.  All rows are independent, and run in parallel
-  private ValFrame rowwise(Env env, Frame fr, final AstFunction fun) {
+  private ValFrame rowwise(Env env, Frame fr, final AstPrimitive fun) {
     final String[] names = fr._names;
 
-    final AstUserDefinedFunction scope = env._scope;  // Current execution scope; needed to lookup variables
+    final AstFunction scope = env._scope;  // Current execution scope; needed to lookup variables
 
     // do a single row of the frame to determine the size of the output.
     double[] ds = new double[fr.numCols()];
     for (int col = 0; col < fr.numCols(); ++col)
       ds[col] = fr.vec(col).at(0);
-    int noutputs = fun.apply(env, env.stk(), new Ast[]{fun, new AstRow(ds, fr.names())}).getRow().length;
+    int noutputs = fun.apply(env, env.stk(), new AstRoot[]{fun, new AstRow(ds, fr.names())}).getRow().length;
 
     Frame res = new MRTask() {
       @Override
       public void map(Chunk chks[], NewChunk[] nc) {
         double ds[] = new double[chks.length]; // Working row
-        Ast[] asts = new Ast[]{fun, new AstRow(ds, names)}; // Arguments to be called; they are reused endlessly
+        AstRoot[] asts = new AstRoot[]{fun, new AstRow(ds, names)}; // Arguments to be called; they are reused endlessly
         Session ses = new Session();                      // Session, again reused endlessly
         Env env = new Env(ses);
         env._scope = scope;                               // For proper namespace lookup

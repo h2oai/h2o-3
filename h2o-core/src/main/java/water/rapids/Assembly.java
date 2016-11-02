@@ -1,4 +1,4 @@
-package water.codegen;
+package water.rapids;
 
 import water.H2O;
 import water.Key;

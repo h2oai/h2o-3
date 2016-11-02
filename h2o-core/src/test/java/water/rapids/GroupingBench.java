@@ -8,7 +8,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
-import water.rapids.ast.prims.mungers.merge.Merge;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
 

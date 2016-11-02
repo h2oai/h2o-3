@@ -3,15 +3,16 @@ package water.rapids.ast.prims.mungers;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.ast.Ast;
+import water.rapids.Val;
+import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
 import water.util.VecUtils;
 
 /**
  * Convert to StringVec
  */
-public class AstAsCharacter extends AstFunction {
+public class AstAsCharacter extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary"};
@@ -28,7 +29,7 @@ public class AstAsCharacter extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame ary = stk.track(asts[1].exec(env)).getFrame();
     Vec[] nvecs = new Vec[ary.numCols()];
     Vec vv;

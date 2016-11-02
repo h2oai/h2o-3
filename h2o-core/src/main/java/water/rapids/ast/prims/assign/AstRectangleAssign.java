@@ -9,13 +9,12 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.*;
-import water.rapids.ast.Ast;
 import water.rapids.ast.AstParameter;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.prims.mungers.AstColSlice;
-import water.rapids.vals.Val;
 import water.rapids.vals.ValFrame;
 
 import java.util.Arrays;
@@ -26,7 +25,7 @@ import java.util.Arrays;
  * fresh Frame.  Copy-On-Write optimizations lower the cost to be proportional
  * to the over-written sections.
  */
-public class AstRectangleAssign extends AstFunction {
+public class AstRectangleAssign extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"dst", "src", "col_expr", "row_expr"};
@@ -43,7 +42,7 @@ public class AstRectangleAssign extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast[] asts) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc = stk.track(asts[2].exec(env));
     AstParameter col_list = (AstParameter) asts[3];

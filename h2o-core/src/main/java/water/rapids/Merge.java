@@ -1,13 +1,12 @@
-package water.rapids.ast.prims.mungers.merge;
+package water.rapids;
 
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-
 import java.util.ArrayList;
 
-import static water.rapids.ast.prims.mungers.merge.SingleThreadRadixOrder.getSortedOXHeaderKey;
+import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 public class Merge {
 

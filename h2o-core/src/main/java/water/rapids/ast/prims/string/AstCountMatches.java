@@ -6,8 +6,8 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
-import water.rapids.ast.Ast;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstStrList;
 
 /**
@@ -18,7 +18,7 @@ import water.rapids.ast.params.AstStrList;
  * countMatches - Counts how many times the substring appears in the larger string.
  * If either the target string or substring are empty (""), 0 is returned.
  */
-public class AstCountMatches extends AstFunction {
+public class AstCountMatches extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "pattern"};
@@ -35,7 +35,7 @@ public class AstCountMatches extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     final String[] pattern = asts[2] instanceof AstStrList
         ? ((AstStrList) asts[2])._strs

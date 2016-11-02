@@ -10,13 +10,13 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstFunction;
-import water.rapids.ast.Ast;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 
 /**
  * Median absolute deviation
  */
-public class AstMad extends AstFunction {
+public class AstMad extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "combineMethod", "const"};
@@ -33,7 +33,7 @@ public class AstMad extends AstFunction {
   }
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Vec[] vecs = fr.vecs();
     if (vecs.length == 0 || vecs[0].naCnt() > 0) return new ValNum(Double.NaN);

@@ -5,9 +5,10 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
-import water.rapids.ast.Ast;
+import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.util.VecUtils;
 
 import java.util.ArrayList;
@@ -18,7 +19,7 @@ import java.util.HashMap;
  * Returns a new string column containing the rstripped versions of the strings in the target column.
  * Stripping removes all characters in the strings for the target columns that match the user provided set
  */
-public class AstRStrip extends AstFunction {
+public class AstRStrip extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "set"};
@@ -35,7 +36,7 @@ public class AstRStrip extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     String set = asts[2].exec(env).getStr();
 
