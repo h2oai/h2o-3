@@ -1,6 +1,5 @@
 package water.udf;
 
-import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
@@ -8,7 +7,6 @@ import water.util.PrettyPrint;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -26,35 +24,25 @@ public class MaterializedColumns {
     public abstract TypedChunk<T> newChunk(final Chunk c);
     public abstract TypedVector<T> newColumn(Vec vec);
     public final byte typeCode;
+    
+    protected TypedFrame1<T> newFrame1(long len, final Function<Long, T> f) throws IOException {
+      return new TypedFrame1<>(this, len, f);
+    }
+    
     public TypedVector<T> newColumn(long len, final Function<Long, T> f) throws IOException {
-      return newColumn(makeVec(len, f));
+      return newFrame1(len, f).newColumn();
     }
 
     public TypedVector<T> newColumn(final List<T> xs) throws IOException {
-      return newColumn(makeVec(xs.size(), Functions.onList(xs)));
-    }
-
-    protected Vec makeVec(long len, final Function<Long, T> f) throws IOException {
-      final Vec vec0 = Vec.makeZero(len, typeCode);
-
-      return new MRTask() {
-        @Override
-        public void map(Chunk[] cs) {
-          for (Chunk c : cs) {
-            TypedChunk<T> tc = newChunk(c);
-            for (int r = 0; r < c._len; r++) {
-              long i = r + c.start();
-              tc.set(r, f.apply(i));
-            }
-          }
-        }
-      }.doAll(vec0)._fr.vecs()[0];
+      return newColumn(xs.size(), Functions.onList(xs));
     }
   }
 
   public abstract static class TypedVector<T> implements MutableColumn<T>, Vec.Holder {
     protected Vec vec;
     public final byte type;
+
+    @Override public int rowLayout() { return vec._rowLayout; }
 
     protected TypedVector(Vec vec, byte type) {
       this.vec = vec;
@@ -159,9 +147,7 @@ public class MaterializedColumns {
     }
 
     public TypedVector<Integer> newColumn(long len, String[] domain, final Function<Long, Integer> f) throws IOException {
-      Vec vec = makeVec(len, f);
-      vec.setDomain(domain);
-      return newColumn(vec);
+      return new TypedFrame1.EnumFrame1(len, f, domain).newColumn();
     }
 
     @Override public TypedVector<Integer> newColumn(final Vec vec) {
