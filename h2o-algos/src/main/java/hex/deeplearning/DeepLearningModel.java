@@ -75,7 +75,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   void set_model_info(DeepLearningModelInfo mi) {
     assert(mi != null);
-    assert mi.data_info()._key.equals(model_info.data_info._key);
     model_info = mi;
   }
 
@@ -181,6 +180,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     _dist = new Distribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
+    if (actual_best_model_key.get() == null) {
+      DeepLearningModel best = IcedUtils.deepCopy(cp);
+      //best.model_info.data_info = model_info.data_info; // Note: we currently DO NOT use the checkpoint's data info - as data may change during checkpoint restarts
+      actual_best_model_key = Key.<DeepLearningModel>make(H2O.SELF);
+      DKV.put(actual_best_model_key, best);
+    }
     time_of_start_ms = cp.time_of_start_ms;
     total_training_time_ms = cp.total_training_time_ms;
     total_checkpointed_run_time_ms = cp.total_training_time_ms;
