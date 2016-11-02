@@ -4,10 +4,10 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
-import water.rapids.ast.Ast;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 
-public class AstModuloKFold extends AstFunction {
+public class AstModuloKFold extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "nfolds"};
@@ -24,7 +24,7 @@ public class AstModuloKFold extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Vec foldVec = stk.track(asts[1].exec(env)).getFrame().anyVec().makeZero();
     int nfolds = (int) asts[2].exec(env).getNum();
     return new ValFrame(new Frame(AstKFold.moduloKfoldColumn(foldVec, nfolds)));

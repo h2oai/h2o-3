@@ -1,5 +1,7 @@
 package water.rapids.vals;
 
+import water.rapids.Val;
+
 /**
  * Numeric value. We do not distinguish between integers and floating point numbers.
  */

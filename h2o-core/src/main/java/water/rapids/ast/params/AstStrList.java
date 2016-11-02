@@ -1,7 +1,8 @@
 package water.rapids.ast.params;
 
 import water.rapids.Env;
-import water.rapids.vals.Val;
+import water.rapids.Rapids;
+import water.rapids.Val;
 import water.rapids.ast.AstParameter;
 
 import java.util.ArrayList;

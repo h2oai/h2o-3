@@ -6,8 +6,8 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.*;
-import water.rapids.ast.AstFunction;
-import water.rapids.ast.Ast;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
@@ -17,7 +17,7 @@ import water.util.MathUtils;
 
 import java.util.Arrays;
 
-public class AstCut extends AstFunction {
+public class AstCut extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "breaks", "labels", "include_lowest", "right", "digits"};
@@ -34,7 +34,7 @@ public class AstCut extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     double[] cuts = check(asts[2]);
     Arrays.sort(cuts);
@@ -117,7 +117,7 @@ public class AstCut extends AstFunction {
     return rite ? "]" : ")";
   }
 
-  private double[] check(Ast ast) {
+  private double[] check(AstRoot ast) {
     double[] n;
     if (ast instanceof AstNumList) n = ((AstNumList) ast).expand();
     else if (ast instanceof AstNum)
@@ -126,7 +126,7 @@ public class AstCut extends AstFunction {
     return n;
   }
 
-  private String[] check2(Ast ast) {
+  private String[] check2(AstRoot ast) {
     String[] s = null;
     if (ast instanceof AstStrList) s = ((AstStrList) ast)._strs;
     else if (ast instanceof AstStr) s = new String[]{ast.str()};

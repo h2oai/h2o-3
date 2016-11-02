@@ -4,15 +4,15 @@ import water.DKV;
 import water.Key;
 import water.fvec.Frame;
 import water.rapids.Env;
-import water.rapids.ast.Ast;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 
 /**
  * Assign a temp.  All such assignments are final (cannot change), but the temp can be deleted.  Temp is returned for
  * immediate use, and also set in the DKV.  Must be globally unique in the DKV.
  */
-public class AstTmpAssign extends AstFunction {
+public class AstTmpAssign extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"id", "frame"};
@@ -29,7 +29,7 @@ public class AstTmpAssign extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Key<Frame> id = Key.make(asts[1].str());
     if (DKV.get(id) != null) throw new IllegalArgumentException("Temp ID " + id + " already exists");
     Frame src = stk.track(asts[2].exec(env)).getFrame();

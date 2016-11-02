@@ -4,10 +4,11 @@ import water.*;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
-import water.rapids.ast.prims.mungers.merge.Merge;
-import water.rapids.ast.Ast;
+import water.rapids.Merge;
+import water.rapids.Val;
+import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.util.IcedHashMap;
@@ -18,7 +19,7 @@ import java.util.Arrays;
 
 /**
  * plyr's merge: Join by any other name.
- * Sample Ast: (merge $leftFrame $rightFrame allLeftFlag allRightFlag)
+ * Sample AstRoot: (merge $leftFrame $rightFrame allLeftFlag allRightFlag)
  * <p/>
  * Joins two frames; all columns with the same names will be the join key.  If
  * you want to join on a subset of identical names, rename the columns first
@@ -35,7 +36,7 @@ import java.util.Arrays;
  * there is no matching row in the rightFrame, and vice-versa for
  * allRightFlag.  Missing data will appear as NAs.  Both flags can be true.
  */
-public class AstMerge extends AstFunction {
+public class AstMerge extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"left", "rite", "all_left", "all_rite", "by_left", "by_right", "method"};
@@ -58,7 +59,7 @@ public class AstMerge extends AstFunction {
   static final int MAX_HASH_SIZE = 120000000;
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame l = stk.track(asts[1].exec(env)).getFrame();
     Frame r = stk.track(asts[2].exec(env)).getFrame();
     boolean allLeft = asts[3].exec(env).getNum() == 1;
@@ -441,7 +442,7 @@ public class AstMerge extends AstFunction {
     }
   }
 
-  private int[] check(Ast ast) {
+  private int[] check(AstRoot ast) {
     double[] n;
     if (ast instanceof AstNumList) n = ((AstNumList) ast).expand();
     else if (ast instanceof AstNum)

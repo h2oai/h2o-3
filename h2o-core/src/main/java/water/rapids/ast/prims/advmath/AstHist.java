@@ -9,15 +9,16 @@ import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
 import water.rapids.ast.prims.reducers.AstMad;
 import water.rapids.Env;
+import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
-import water.rapids.ast.Ast;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.util.ArrayUtils;
 
-public class AstHist extends AstFunction {
+public class AstHist extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "breaks"};
@@ -34,7 +35,7 @@ public class AstHist extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     // stack is [ ..., ary, breaks]
     // handle the breaks
     Frame fr2;
@@ -45,7 +46,7 @@ public class AstHist extends AstFunction {
     //TODO Add case when vec is a constant numeric
     if(vec.isConst()) throw new IllegalArgumentException("Hist does not apply to constant numeric columns.");
 
-    Ast a = asts[2];
+    AstRoot a = asts[2];
     String algo = null;
     int numBreaks = -1;
     double[] breaks = null;

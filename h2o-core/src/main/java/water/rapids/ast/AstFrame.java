@@ -2,13 +2,13 @@ package water.rapids.ast;
 
 import water.fvec.Frame;
 import water.rapids.Env;
-import water.rapids.vals.Val;
+import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 
 /**
  * A Frame.  Execution is just to return the constant.
  */
-public class AstFrame extends Ast {
+public class AstFrame extends AstRoot {
   final ValFrame _fr;
 
   public AstFrame() {

@@ -7,9 +7,8 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.*;
-import water.rapids.ast.AstFunction;
-import water.rapids.ast.Ast;
-import water.rapids.vals.Val;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValRow;
@@ -32,7 +31,7 @@ import java.util.Arrays;
  * evaluated result is returned.  The unevaluated side is not checked for being a compatible frame.  It is an error
  * if one side is typed as a scalar and the other as a Frame.
  */
-public class AstIfElse extends AstFunction {
+public class AstIfElse extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"test", "true", "false"};
@@ -49,7 +48,7 @@ public class AstIfElse extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Val val = stk.track(asts[1].exec(env));
 
     if (val.isNum()) {         // Scalar test, scalar result
@@ -189,7 +188,7 @@ public class AstIfElse extends AstFunction {
     return map;
   }
 
-  Val exec_check(Env env, Env.StackHelp stk, Frame tst, Ast ast, Frame xfr) {
+  Val exec_check(Env env, Env.StackHelp stk, Frame tst, AstRoot ast, Frame xfr) {
     Val val = ast.exec(env);
     if (val.isFrame()) {
       Frame fr = stk.track(val).getFrame();

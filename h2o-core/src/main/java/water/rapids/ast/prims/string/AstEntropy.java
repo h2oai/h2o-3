@@ -5,14 +5,14 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
-import water.rapids.ast.Ast;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 
 import java.util.HashMap;
 
 /**
  */
-public class AstEntropy extends AstFunction {
+public class AstEntropy extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary"};
@@ -29,7 +29,7 @@ public class AstEntropy extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     //Type check
     for (Vec v : fr.vecs())

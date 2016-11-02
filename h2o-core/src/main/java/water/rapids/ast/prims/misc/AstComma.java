@@ -1,15 +1,15 @@
 package water.rapids.ast.prims.misc;
 
 import water.rapids.Env;
-import water.rapids.vals.Val;
+import water.rapids.Val;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstFunction;
-import water.rapids.ast.Ast;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 
 /**
  * Evaluate any number of expressions, returning the last one
  */
-public class AstComma extends AstFunction {
+public class AstComma extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"..."};
@@ -26,7 +26,7 @@ public class AstComma extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Val val = new ValNum(0);
     for (int i = 1; i < asts.length; i++)
       val = stk.track(asts[i].exec(env));  // Evaluate all expressions for side-effects

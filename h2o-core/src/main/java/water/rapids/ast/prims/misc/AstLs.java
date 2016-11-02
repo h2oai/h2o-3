@@ -8,9 +8,10 @@ import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.rapids.Env;
+import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
-import water.rapids.ast.Ast;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 
 import java.util.ArrayList;
 
@@ -20,7 +21,7 @@ import java.util.ArrayList;
  * This method is purely for the console right now.  Print stuff into the string buffer.
  * JSON response is not configured at all.
  */
-public class AstLs extends AstFunction {
+public class AstLs extends AstPrimitive {
   @Override
   public String[] args() {
     return null;
@@ -37,7 +38,7 @@ public class AstLs extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     ArrayList<String> domain = new ArrayList<>();
     Futures fs = new Futures();
     AppendableVec av = new AppendableVec(Vec.VectorGroup.VG_LEN1.addVec(), Vec.T_CAT);

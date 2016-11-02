@@ -4,10 +4,10 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
-import water.rapids.vals.Val;
-import water.rapids.ast.Ast;
+import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 
 import java.util.Locale;
 
@@ -20,7 +20,7 @@ import java.util.Locale;
  * replaceAll - Replaces each substring of this string that matches the given regular expression
  * with the given replacement.
  */
-public class AstReplaceAll extends AstFunction {
+public class AstReplaceAll extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "pattern", "replacement", "ignore_case"};
@@ -37,7 +37,7 @@ public class AstReplaceAll extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     final String pattern = asts[2].exec(env).getStr();
     final String replacement = asts[3].exec(env).getStr();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();

@@ -5,16 +5,15 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.*;
-import water.rapids.ast.Ast;
-import water.rapids.ast.AstFunction;
-import water.rapids.vals.Val;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValStr;
 
 /**
  */
-public class AstFlatten extends AstFunction {
+public class AstFlatten extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary"};
@@ -31,7 +30,7 @@ public class AstFlatten extends AstFunction {
   }
 
   @Override
-  public Val apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1 || fr.numRows() != 1) return new ValFrame(fr); // did not flatten
     Vec vec = fr.anyVec();

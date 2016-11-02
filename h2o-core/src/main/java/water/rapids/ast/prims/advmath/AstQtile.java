@@ -7,16 +7,17 @@ import water.Job;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.ast.Ast;
+import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
+import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 
 /**
  * Quantiles:
  * (quantile %frame [numnber_list_probs] "string_interpolation_type")
  */
-public class AstQtile extends AstFunction {
+public class AstQtile extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"ary", "probs", "interpolationMethod", "weights_column"};
@@ -33,7 +34,7 @@ public class AstQtile extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     Frame fr_wkey = new Frame(fr); // Force a bogus Key for Quantiles ModelBuilder

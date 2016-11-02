@@ -4,15 +4,15 @@ import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.vals.Val;
-import water.rapids.ast.Ast;
+import water.rapids.Val;
+import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
-import water.rapids.ast.AstFunction;
+import water.rapids.ast.AstPrimitive;
 
 /**
  * cbind: bind columns together into a new frame
  */
-public class AstCBind extends AstFunction {
+public class AstCBind extends AstPrimitive {
   @Override
   public String[] args() {
     return new String[]{"..."};
@@ -29,7 +29,7 @@ public class AstCBind extends AstFunction {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, Ast asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
 
     // Compute the variable args.  Find the common row count
     Val vals[] = new Val[asts.length];
