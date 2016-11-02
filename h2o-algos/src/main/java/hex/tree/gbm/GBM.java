@@ -467,7 +467,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      GammaPass gp = new GammaPass(ktrees, leaves, new Distribution(_parms));
+      GammaPass gp = new GammaPass(ktrees, leaves, new Distribution(_parms), _parms._lambda);
       gp.doAll(_train);
       if (_parms._distribution == DistributionFamily.laplace) {
         fitBestConstantsQuantile(ktrees, leaves[0], 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
@@ -797,12 +797,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
       final int _leafs[];  // Starting index of leaves (per class-tree)
       final Distribution _dist;
+      final double _lambda;
       private double _num[/*tree/klass*/][/*tree-relative node-id*/];
       private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
 
       double gamma(int tree, int nid) {
         if (_denom[tree][nid] == 0) return 0;
-        double g = _num[tree][nid]/ _denom[tree][nid];
+        double g = _num[tree][nid] / (_denom[tree][nid] + _lambda);
         assert (!Double.isInfinite(g) && !Double.isNaN(g));
         if (_dist.distribution == DistributionFamily.poisson ||
             _dist.distribution == DistributionFamily.gamma ||
@@ -816,11 +817,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       GammaPass(DTree trees[],
                 int leafs[],
-                Distribution distribution
-      ) {
+                Distribution distribution,
+                double lambda) {
         _leafs=leafs;
         _trees=trees;
         _dist = distribution;
+        _lambda = lambda;
       }
       @Override public void map( Chunk[] chks ) {
         _denom = new double[_nclass][];

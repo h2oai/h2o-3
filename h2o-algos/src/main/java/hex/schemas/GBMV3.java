@@ -1,6 +1,5 @@
 package hex.schemas;
 
-import hex.Distribution;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import water.api.API;
@@ -59,7 +58,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "histogram_type",
       "max_abs_leafnode_pred",
       "pred_noise_bandwidth",
-      "categorical_encoding"
+      "categorical_encoding",
+      "lambda"
     };
 
     // Input fields
@@ -77,5 +77,8 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 
     @API(help="Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions", level = API.Level.expert, gridable = true)
     public double pred_noise_bandwidth;
+
+    @API(help="L2 regularization. Higher values will make the model more conservative.", level = API.Level.expert, gridable = true)
+    public double lambda;
   }
 }
