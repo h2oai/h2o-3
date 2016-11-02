@@ -13,7 +13,7 @@ def additional_parameters():
     input_file = pyunit_utils.locate("smalldata/jira/hexdev_29.csv")
 
     # col_types as list
-    dest_frame = "-._~!$&*+,=0123456789"
+    dest_frame = "-._~0123456789"
     c_names = ["a", "b", "c"]
     c_types = ["enum", "enum", "string"]
 
@@ -30,7 +30,7 @@ def additional_parameters():
         assert col_summary[i]["type"] == c_types[i]
 
     # col_types as dictionary
-    dest_frame = "._~!$&-,=*+"
+    dest_frame = "._~---"
     c_names = ["a", "b", "c"]
     c_types = {"c": "string", "a": "string"}
 
@@ -55,7 +55,7 @@ def additional_parameters():
         except H2OValueError:
             pass
 
-    test_bad_id("ab;cd")
+    test_bad_id("xk;cd;1753")
     test_bad_id("one/two/three/four")
     test_bad_id("I'm_declaring_a_thumb_war")
     test_bad_id("five\\six\\seven\\eight")
@@ -64,6 +64,12 @@ def additional_parameters():
     test_bad_id("digits|cant|protect|themselves")
     test_bad_id("(thirteen,fourteen,fifteen,sixteen)")
     test_bad_id("UNSC_cant_intervene?")
+    test_bad_id("_17_18_19_20$")
+    test_bad_id("Death@Destruction_is_aplenty")
+    test_bad_id("_21&22&23&24")
+    test_bad_id("LifeOnEarthIsNoMore!")
+    test_bad_id("_25_26_27_28#")
+    test_bad_id("we+must+earth+repopulate")
 
 
 
