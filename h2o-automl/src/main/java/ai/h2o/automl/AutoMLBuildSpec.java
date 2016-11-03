@@ -36,12 +36,12 @@ public class AutoMLBuildSpec extends Iced {
 
       // reasonable defaults:
       stopping_criteria.set_max_runtime_secs(3600);
-      stopping_criteria.set_stopping_rounds(5);
+      stopping_criteria.set_stopping_rounds(3);
       stopping_criteria.set_stopping_tolerance(0.001);
       stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUTO);
     }
 
-    public String loss = "MSE";  // TODO: Auto
+    public String loss = "AUTO";  // TODO: Auto
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria stopping_criteria;
   }
 

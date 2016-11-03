@@ -229,11 +229,15 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
       gbmParameters._valid = validationFrame._key;
     gbmParameters._response_column = buildSpec.input_spec.response_column;
 
+    // required for stacking:
     gbmParameters._nfolds = 5;
-    gbmParameters._score_tree_interval = 20;
+    gbmParameters._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+    gbmParameters._keep_cross_validation_predictions = true;
+
+    gbmParameters._score_tree_interval = 5;
     gbmParameters._stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
-    gbmParameters._stopping_tolerance = 0.001;
-    gbmParameters._stopping_rounds = 2;
+    gbmParameters._stopping_tolerance = 0.0;
+    gbmParameters._stopping_rounds = 3;
     gbmParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
 
     Map<String, Object[]> searchParams = new HashMap<>();
@@ -241,12 +245,15 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     searchParams.put("max_depth", new Integer[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
     searchParams.put("min_rows", new Integer[]{1, 5, 10, 15, 30, 100});
     searchParams.put("learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
-    searchParams.put("sample_rate", new Double[]{0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00});
-    searchParams.put("col_sample_rate_per_tree", new Double[]{0.6, 1.00});
+    searchParams.put("sample_rate", new Double[]{0.50, 0.60, 0.70, 0.80, 0.90, 1.00});
+    searchParams.put("col_sample_rate", new Double[]{ 0.4, 0.7, 1.0});
+    searchParams.put("col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
     searchParams.put("min_split_improvement", new Double[]{1e-4, 1e-5});
 
+/*
     if (trainingFrame.numCols() > 1000 && responseVec.isCategorical() && responseVec.cardinality() > 2)
       searchParams.put("col_sample_rate_per_tree", new Double[]{0.4, 0.6, 0.8, 1.0});
+*/
 
     Log.info("AutoML: starting hyperparameter search");
 
