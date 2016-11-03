@@ -1,9 +1,6 @@
 package water.util;
 
-import water.DKV;
-import water.Futures;
-import water.Key;
-import water.MemoryManager;
+import water.*;
 import water.fvec.*;
 
 import java.text.DecimalFormat;
@@ -180,6 +177,17 @@ public class ArrayUtils {
     double [][] res = ary.clone();
     for(int i = 0 ; i < res.length; ++i)
       res[i] = ary[i].clone();
+    return res;
+  }
+
+  public static <T extends Iced> T[][] deepClone(T [][] ary){
+    T [][] res = ary.clone();
+    for(int i = 0 ; i < res.length; ++i) {
+      res[i] = ary[i].clone();
+      for(int j = 0; j < res[i].length; ++j)
+        if(res[i][j] != null)
+          res[i][j] = (T)res[i][j].clone();
+    }
     return res;
   }
 

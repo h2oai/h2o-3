@@ -193,7 +193,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       // Adds a layer to the trees each pass.
       int depth=0;
       for( ; depth<_parms._max_depth; depth++ ) {
-        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _parms._build_tree_one_node);
+        hcs = buildLayer(_train, _parms._nbins, _parms._nbins_cats, ktrees, leafs, hcs, _parms._build_tree_one_node,null);
         // If we did not make any new splits, then the tree is split-to-death
         if( hcs == null ) break;
       }
@@ -270,7 +270,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                   DecidedNode dn = tree.decided(nid);           // Must have a decision point
                   if (dn._split == null)     // Unable to decide?
                     dn = tree.decided(tree.node(nid).pid());    // Then take parent's decision
-                  leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
+                  leafnid = dn.getChildNodeID(chks[dn._split._col].atd(row)); // Decide down to a leafnode
                 }
                 // Setup Tree(i) - on the fly prediction of i-tree for row-th row
                 //   - for classification: cumulative number of votes for this row
