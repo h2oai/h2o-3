@@ -48,7 +48,8 @@ public final class DHistogram extends Iced {
   public double _step;     // Linear interpolation step per bin
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
   public double _w[];           // weighted count of observations per bin, shared, atomically incremented
-  private double _wY[], _wYY[]; // weighted response per bin and weighted squared response per bin, shared, atomically incremented
+  protected double[] _wY;
+  protected double[] _wYY; // weighted response per bin and weighted squared response per bin, shared, atomically incremented
   private AtomicDouble _wNA, _wYNA, _wYYNA; // same for missing observations
 
   // Atomically updated double min/max
@@ -604,6 +605,43 @@ public final class DHistogram extends Iced {
       nasplit = nLeft > nRight ? NASplitDir.Left : NASplitDir.Right;
     }
     return new DTree.Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
+  }
+
+  public void updateHisto(double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo){
+    double minmax[] = new double[]{_min2,_maxIn};
+    // Gather all the data for this set of rows, for 1 column and 1 split/NID
+    // Gather min/max, wY and sum-squares.
+    for(int r = lo; r< hi; ++r) {
+      int k = rows[r];
+      double weight = ws[k];
+      if (weight == 0) continue;
+      double col_data = cs[k];
+      if( col_data < minmax[0] ) minmax[0] = col_data;
+      if( col_data > minmax[1] ) minmax[1] = col_data;
+      double y = ys[k];
+      assert(!Double.isNaN(y));
+      double wy = weight * y;
+      double wyy = wy * y;
+      if (Double.isNaN(col_data)) {
+        //separate bucket for NA - atomically added to the shared histo
+        _wNA.addAndGet(weight);
+        _wYNA.addAndGet(wy);
+        _wYYNA.addAndGet(wyy);
+      } else {
+        // increment local pre-thread histograms
+        int b = bin(col_data);
+        _w[b] += weight;
+        _wY[b] += wy;
+        _wYY[b] += wyy;
+      }
+    }
+    for(int i = 0; i < _wY.length; ++i){
+      _wY[i] = (float)_wY[i];
+      _wYY[i] = (float)_wYY[i];
+    }
+    double d;
+    if( (d = minmax[0]) < _min2 )  _min2  = d;
+    if( (d = minmax[1]) > _maxIn)  _maxIn = d;
   }
 
   public void updateSharedHistosAndReset(ScoreBuildHistogram.LocalHisto lh, double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo) {

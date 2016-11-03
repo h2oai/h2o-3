@@ -15,6 +15,12 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     public double _col_sample_rate;
     public double _max_abs_leafnode_pred;
     public double _pred_noise_bandwidth;
+    // TODO these are only for debugging / meassuring effects of new histo task, should be removed
+    public boolean _use_new_histo_tsk = true;
+    public int _col_block_sz = 2;
+    public int _min_threads = -1;
+    public boolean _shared_histo;
+
 
     public GBMParameters() {
       super();

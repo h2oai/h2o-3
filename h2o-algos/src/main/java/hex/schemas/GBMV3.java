@@ -59,7 +59,11 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "histogram_type",
       "max_abs_leafnode_pred",
       "pred_noise_bandwidth",
-      "categorical_encoding"
+      "categorical_encoding",
+      "use_new_histo_tsk",
+      "col_block_sz",
+      "min_threads",
+      "shared_histo"
     };
 
     // Input fields
@@ -77,5 +81,15 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
 
     @API(help="Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions", level = API.Level.expert, gridable = true)
     public double pred_noise_bandwidth;
+
+    // TODO debug only, remove!
+    @API(help="Internal flag, use new version of histo tsk if set", level = API.Level.expert, gridable = false)
+    public boolean use_new_histo_tsk;
+    @API(help="Use with new histo task only! Internal flag, number of columns processed in parallel", level = API.Level.expert, gridable = false)
+    public int col_block_sz = 5;
+    @API(help="Use with new histo task only! Min threads to be run in parallel", level = API.Level.expert, gridable = false)
+    public int min_threads = -1;
+    @API(help="Use with new histo task only! Share histo (and use CAS) instead of making private copies", level = API.Level.expert, gridable = false)
+    public boolean shared_histo;
   }
 }

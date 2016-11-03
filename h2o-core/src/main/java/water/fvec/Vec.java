@@ -1490,4 +1490,9 @@ public class Vec extends Keyed<Vec> {
     public static void clear() { ESPCS.clear(); }
     @Override protected long checksum_impl() { throw H2O.fail(); }
   }
+
+  public static Key setChunkIdx(Key k, int cidx){
+    UnsafeUtils.set4(k._kb, 6, cidx); // chunk#
+    return k;
+  }
 }

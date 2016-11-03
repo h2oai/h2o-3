@@ -5,6 +5,7 @@ import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.util.ArrayUtils;
 
 /**  Score and Build Histogram
@@ -60,6 +61,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _nidIdx = nidIdx;
   }
 
+  public ScoreBuildHistogram dfork2(byte[] types, Frame fr, boolean run_local) {
+    return dfork(types,fr,run_local);
+  }
+
   /** Marker for already decided row. */
   static public final int DECIDED_ROW = -1;
   /** Marker for sampled out rows */
@@ -96,7 +101,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     }
   }
 
-  @Override final public void map( Chunk[] chks ) {
+
+  @Override
+  public void map(Chunk[] chks) {
     final Chunk wrks = chks[_workIdx];
     final Chunk nids = chks[_nidIdx];
     final Chunk weight = _weightIdx>=0 ? chks[_weightIdx] : new C0DChunk(1, chks[0].len());
@@ -144,7 +151,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // assigned DecidedNode, "scoring" the row against that Node's decision
   // criteria, and assigning the row to a new child UndecidedNode (and
   // giving it an improved prediction).
-  private void score_decide(Chunk chks[], Chunk nids, int nnids[]) {
+  protected void score_decide(Chunk chks[], Chunk nids, int nnids[]) {
+    double [] split_col = MemoryManager.malloc8d(chks[0]._len);
     for( int row=0; row<nids._len; row++ ) { // Over all rows
       int nid = (int)nids.at8(row);          // Get Node to decide from
       if( isDecidedRow(nid)) {               // already done
@@ -163,9 +171,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         nnids[row] = xnid-_leaf;
         dn = _tree.decided(nid); // Parent steers us
       }
-
+      chks[dn._split._col].getDoubles(split_col,0,split_col.length);
       assert !isDecidedRow(nid);
-      nid = dn.getChildNodeID(chks,row); // Move down the tree 1 level
+      nid = dn.getChildNodeID(split_col[row]); // Move down the tree 1 level
       if( !isDecidedRow(nid) ) {
         if( oob ) nid = nid2Oob(nid); // Re-apply OOB encoding
         nids.set(row, nid);
