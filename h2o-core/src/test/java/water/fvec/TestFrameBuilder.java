@@ -1,5 +1,6 @@
 package water.fvec;
 
+import org.junit.Ignore;
 import water.DKV;
 import water.Key;
 
@@ -33,6 +34,7 @@ import java.util.HashMap;
  * <li> Only one chunk is created when chunk layout is not provided.</li>
  * </ul>
  */
+@Ignore
 public class TestFrameBuilder {
 
   private static final long NOT_SET = -1;
