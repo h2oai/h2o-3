@@ -3625,6 +3625,28 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
 }
 
 #'
+#' iSAX
+#'
+#' Compute the iSAX index for a DataFrame which is assumed to be numeric time series data
+#'
+#' @param num_words Number of iSAX words for the timeseries. ie granularity along the time series
+#' @param max_cardinality Maximum cardinality of the iSAX word. Each word can have less than the max
+#' @param optimize_card An optimization flag that will find the max cardinality regardless of what is passed in for max_cardinality.
+#' @return An H2OFrame with the name of time series, string representation of iSAX word, followed by binary representation
+#' @references http://www.cs.ucr.edu/~eamonn/iSAX_2.0.pdf
+#' @references http://www.cs.ucr.edu/~eamonn/SAX.pdf
+#' @export
+h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
+  if(num_words <= 0){
+    stop("num_words must be greater than 0!")
+  }
+  if(max_cardinality <= 0){
+    stop("max_cardinality must be greater than 0!")
+  }
+  .newExpr("isax", x, num_words, max_cardinality, optimize_card)
+}
+
+#'
 #' String Split
 #'
 #' @param x The column whose strings must be split.

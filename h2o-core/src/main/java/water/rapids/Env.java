@@ -180,6 +180,7 @@ public class Env extends Iced {
 
     // Time Series
     init(new AstDiffLag1());
+    init(new AstIsax());
 
     // Advanced Math
     init(new AstCorrelation());
