@@ -124,33 +124,33 @@ split_fit_predict <- function(data) {
                  family            = "poisson")
 
   # 4- Score on holdout set & report
-  train_logloss_gbm  <- h2o.logloss(gbm, train = TRUE)
-  test_logloss_gbm   <- h2o.logloss(gbm, valid = TRUE)
+  train_rmse_gbm  <- h2o.rmse(gbm, train = TRUE)
+  test_rmse_gbm   <- h2o.rmse(gbm, valid = TRUE)
   hold_perf_gbm <- h2o.performance(model = gbm, newdata = hold)
-  hold_logloss_gbm   <- h2o.logloss(object = hold_perf_gbm)
-  print(paste0("GBM logloss TRAIN = ", train_logloss_gbm, ", logloss TEST = ", test_logloss_gbm, ", logloss HOLDOUT = ",
-               hold_logloss_gbm))
+  hold_rmse_gbm   <- h2o.rmse(object = hold_perf_gbm)
+  print(paste0("GBM rmse TRAIN = ", train_rmse_gbm, ", rmse TEST = ", test_rmse_gbm, ", rmse HOLDOUT = ",
+               hold_rmse_gbm))
 
-  train_logloss_drf  <- h2o.logloss(drf, train = TRUE)
-  test_logloss_drf   <- h2o.logloss(drf, valid = TRUE)
+  train_rmse_drf  <- h2o.rmse(drf, train = TRUE)
+  test_rmse_drf   <- h2o.rmse(drf, valid = TRUE)
   hold_perf_drf <- h2o.performance(model = drf, newdata = hold)
-  hold_logloss_drf   <- h2o.logloss(object = hold_perf_drf)
-  print(paste0("DRF logloss TRAIN = ", train_logloss_drf, ", logloss TEST = ", test_logloss_drf, ", logloss HOLDOUT = ",
-               hold_logloss_drf))
+  hold_rmse_drf   <- h2o.rmse(object = hold_perf_drf)
+  print(paste0("DRF rmse TRAIN = ", train_rmse_drf, ", rmse TEST = ", test_rmse_drf, ", rmse HOLDOUT = ",
+               hold_rmse_drf))
 
-  train_logloss_glm  <- h2o.logloss(glm, train = TRUE)
-  test_logloss_glm   <- h2o.logloss(glm, valid = TRUE)
+  train_rmse_glm  <- h2o.rmse(glm, train = TRUE)
+  test_rmse_glm   <- h2o.rmse(glm, valid = TRUE)
   hold_perf_glm <- h2o.performance(model = glm, newdata = hold)
-  hold_logloss_glm   <- h2o.logloss(hold_perf_glm)
-  print(paste0("GLM logloss TRAIN = ", train_logloss_glm, ", logloss TEST = ", test_logloss_glm, ", logloss HOLDOUT = ",
-               hold_logloss_glm))
+  hold_rmse_glm   <- h2o.rmse(hold_perf_glm)
+  print(paste0("GLM rmse TRAIN = ", train_rmse_glm, ", rmse TEST = ", test_rmse_glm, ", rmse HOLDOUT = ",
+               hold_rmse_glm))
 }
 
 # Split the data (into test & train), fit some models and predict on the holdout data
 start <- Sys.time()
 split_fit_predict(bpd)
 modelBuild <- Sys.time() - start
-print(paste("Took", round(modelBuild, digits = 2), units(modelBuild), "to build a gbm, a random forest, and a glm model, score and report logloss values."))
+print(paste("Took", round(modelBuild, digits = 2), units(modelBuild), "to build a gbm, a random forest, and a glm model, score and report rmse values."))
 
 # Here we see an r^2 of 0.91 for GBM, and 0.71 for GLM.  This means given just
 # the station, the month, and the day-of-week we can predict 90% of the
