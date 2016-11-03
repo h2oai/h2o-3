@@ -2142,6 +2142,7 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
 }
 
 #' @rdname h2o.cor
+#' @param ... Further arguments to be passed down from other methods.
 #' @export
 cor <- function (x, ...)
 {
@@ -3629,6 +3630,7 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
 #'
 #' Compute the iSAX index for a DataFrame which is assumed to be numeric time series data
 #'
+#' @param x an H2OFrame
 #' @param num_words Number of iSAX words for the timeseries. ie granularity along the time series
 #' @param max_cardinality Maximum cardinality of the iSAX word. Each word can have less than the max
 #' @param optimize_card An optimization flag that will find the max cardinality regardless of what is passed in for max_cardinality.
