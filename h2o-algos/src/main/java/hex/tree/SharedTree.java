@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Random;
 
 public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
-  final protected static boolean DEV_DEBUG = false;
+  final protected static boolean DEV_DEBUG = true;
   protected int _mtry;
   protected int _mtry_per_tree;
 
@@ -397,13 +397,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);                              //tree predictions
       int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
       int nidIdx  = fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
+      int gradientIdx = fr2.numCols(); fr2.add(fr._names[idx_gradient(k)],vecs[idx_gradient(k)]);
+      int hessianIdx  = fr2.numCols(); fr2.add(fr._names[idx_hessian(k)],vecs[idx_hessian(k)]);
+
       if (DEV_DEBUG) {
         System.out.println("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
       }
       // Async tree building
       // step 1: build histograms
       // step 2: split nodes
-      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, weightIdx, workIdx, nidIdx,parms));
+      H2O.submitTask(sb1ts[k] = new ScoreBuildOneTree(this,k,nbins, nbins_cats, tree, leafs, hcs, fr2, build_tree_one_node, _improvPerVar, _model._parms._distribution, weightIdx, workIdx, nidIdx, gradientIdx, hessianIdx, parms));
     }
     // Block for all K trees to complete.
     boolean did_split=false;
@@ -442,11 +445,12 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     final int _weightIdx;
     final int _workIdx;
     final int _nidIdx;
+    final int _gradientIdx;
+    final int _hessianIdx;
 
     ScoreBuildHistogram2.SCBParms _parms;
     boolean _did_split;
-
-    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family, int weightIdx, int workIdx, int nidIdx, ScoreBuildHistogram2.SCBParms parms) {
+    ScoreBuildOneTree(SharedTree st, int k, int nbins, int nbins_cats, DTree tree, int leafs[], DHistogram hcs[][][], Frame fr2, boolean build_tree_one_node, float[] improvPerVar, DistributionFamily family, int weightIdx, int workIdx, int nidIdx, int gradientIdx, int hessianIdx, ScoreBuildHistogram2.SCBParms parms) {
       _st   = st;
       _k    = k;
       _nbins= nbins;
@@ -462,6 +466,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       _workIdx = workIdx;
       _nidIdx = nidIdx;
       _parms = parms;
+      _gradientIdx = gradientIdx;
+      _hessianIdx = hessianIdx;
     }
     @Override public void compute2() {
       // Fuse 2 conceptual passes into one:
@@ -473,9 +479,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       // got assigned into.  Collect counts, mean, variance, min, max per bin,
       // per column.
       if(_parms == null)
-        new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx).dfork2(null,_fr2,_build_tree_one_node);
+        new ScoreBuildHistogram(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx, _gradientIdx, _hessianIdx).dfork2(null,_fr2,_build_tree_one_node);
       else
-        new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx, _parms).dfork2(null,_fr2,_build_tree_one_node);
+        new ScoreBuildHistogram2(this,_k, _st._ncols, _nbins, _nbins_cats, _tree, _leafOffsets[_k], _hcs[_k], _family, _weightIdx, _workIdx, _nidIdx, _gradientIdx, _hessianIdx, _parms).dfork2(null,_fr2,_build_tree_one_node);
     }
     @Override public void onCompletion(CountedCompleter caller) {
       ScoreBuildHistogram sbh = (ScoreBuildHistogram)caller;
@@ -530,6 +536,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_work(int c) { return idx_tree(c) + _nclass; }
   protected int idx_nids(int c) { return idx_work(c) + _nclass; }
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }
+  protected int idx_gradient(int c){ return idx_oobt() + 1 + c; }
+  protected int idx_hessian(int c){ return idx_gradient(0) + c + _nclass; }
 
   public Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
   protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
@@ -538,6 +546,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
   protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
+  protected Chunk chk_gradient(Chunk chks[], int c) { return chks[idx_gradient(c)]; }
+  protected Chunk chk_hessian(Chunk chks[], int c)  { return chks[idx_hessian(c)]; }
 
   protected final Vec vec_weight(Frame fr      ) { return fr.vecs()[idx_weight()]; }
   protected final Vec vec_offset(Frame fr      ) { return fr.vecs()[idx_offset()]; }
@@ -546,6 +556,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected final Vec vec_work( Frame fr, int c) { return fr.vecs()[idx_work(c)]; }
   protected final Vec vec_nids( Frame fr, int c) { return fr.vecs()[idx_nids(c)]; }
   protected final Vec vec_oobt( Frame fr       ) { return fr.vecs()[idx_oobt()]; }
+  protected final Vec vec_gradient( Frame fr, int c) { return fr.vecs()[idx_gradient(c)]; }
+  protected final Vec vec_hessian( Frame fr, int c) { return fr.vecs()[idx_hessian(c)]; }
 
   protected double[] data_row( Chunk chks[], int row, double[] data) {
     assert data.length == _ncols;

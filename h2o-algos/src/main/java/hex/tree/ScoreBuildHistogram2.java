@@ -82,8 +82,8 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   }
   SCBParms _parms;
 
-  public ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, int weightIdx, int workIdx, int nidIdx, SCBParms parms) {
-    super(cc, k, ncols, nbins, nbins_cats, tree, leaf, parms._unordered?ArrayUtils.transpose(hcs):hcs, family, weightIdx, workIdx, nidIdx);
+  public ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, int weightIdx, int workIdx, int nidIdx, int gradientIdx, int hessianIdx, SCBParms parms) {
+    super(cc, k, ncols, nbins, nbins_cats, tree, leaf, parms._unordered?ArrayUtils.transpose(hcs):hcs, family, weightIdx, workIdx, nidIdx, gradientIdx, hessianIdx);
     _parms = parms;
   }
 
