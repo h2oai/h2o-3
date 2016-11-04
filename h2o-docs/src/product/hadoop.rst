@@ -148,6 +148,9 @@ Hadoop Launch Parameters
    provide enough time for the nodes to launch. If H2O does not launch,
    try increasing this value (for example, ``-timeout 600``).
 -  ``-disown``: Exit the driver after the cluster forms.
+
+    **Note**: For Qubole users who include the ``-disown`` flag, if your cluster is dying right after launch, add ``-Dmapred.jobclient.killjob.onexit=false`` as a launch parameter.
+
 -  ``-notify <notification file name>``: Specify a file to write when
    the cluster is up. The file contains the IP and port of the embedded
    web server for one of the nodes in the cluster. All mappers must
