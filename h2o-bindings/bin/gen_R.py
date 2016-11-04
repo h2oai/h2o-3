@@ -779,7 +779,7 @@ def normalize_value(param):
 #   MAIN:
 # ----------------------------------------------------------------------------------------------------------------------
 def main():
-    bi.init("R", "../../../h2o-r/h2o-package/R/auto", clear_dir=False)
+    bi.init("R", "../../../h2o-r/h2o-package/R", clear_dir=False)
 
     for name, mb in bi.model_builders().items():
         module = name
