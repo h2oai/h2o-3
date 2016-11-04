@@ -3,8 +3,8 @@ package water.udf;
 import com.google.common.io.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Key;
 import water.TestUtil;
+import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.StringUtils;
 
@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.GregorianCalendar;
 
 import static org.junit.Assert.*;
-import static water.udf.MaterializedColumns.*;
+import static water.udf.DataColumns.*;
 
 /**
  * Test for UDF
@@ -129,7 +129,18 @@ public class UdfTest extends TestUtil {
         .newColumn(1 << 20, domain, new Function<Long, Integer>() {
            public Integer apply(Long i) { return (int)( i % 3); }
         }));
-    
+
+    ChunkFactory<TypedChunk<String>> factory = new ChunkFactory<TypedChunk<String>>() {
+      @Override
+      public byte typeCode() {
+        return Vec.T_STR;
+      }
+
+      @Override
+      public TypedChunk<String> apply(Chunk chunk) {
+        return Strings.apply(chunk);
+      }
+    };
     Column<String> y = new FunColumn<>(new Function<Integer, String>() {
       public String apply(Integer i) { return domain[i]; }
     }, x);
@@ -246,4 +257,20 @@ public class UdfTest extends TestUtil {
       System.out.println(StringUtils.join(" ", split.get(i)));
     }
   }
+
+  @Test
+  public void testOfTypedFrame2() throws Exception {
+    Column<Double> x = five_x();
+
+    Column<Double> y = new FunColumn<>(Functions.SQUARE, x);
+
+    TypedFrame2<Double, Double> f2 = new TypedFrame2<>(x, Functions.SQUARE);
+
+    
+    
+    assertEquals(0.0, y.get(0), 0.000001);
+    assertEquals(44100.0, y.get(42), 0.000001);
+    assertEquals(10000000000.0, y.get(20000), 0.000001);
+  }
+
 }
