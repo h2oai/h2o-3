@@ -38,6 +38,10 @@ from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringMode
 
 __all__ = ("H2OConnection", )
 
+if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
+    print("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.\n"
+          "You can upgrade to the newest version of the module running from the command line\n"
+          "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
 
 
 class H2OConnection(backwards_compatible()):

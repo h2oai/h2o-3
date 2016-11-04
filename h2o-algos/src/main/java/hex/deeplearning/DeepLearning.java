@@ -449,11 +449,15 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             // Don't cheat - count full amount of training samples, since that's the amount of training it took to train (without finding anything better)
             mi.set_processed_global(model.model_info().get_processed_global());
             mi.set_processed_local(model.model_info().get_processed_local());
-            model.set_model_info(mi);
+            DeepLearningParameters parms = model.model_info().get_params(); // backup the parameters for this model
+            model.set_model_info(mi); // this overwrites also the parameters from the previous best model, but we only want the state
+            model.model_info().parameters = parms; // restore the parameters
             model.update(_job);
             model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, true);
             if (best_model.loss() != model.loss()) {
-              Log.info("Best model's loss: " + best_model.loss() + " vs this model's loss (after overwriting it with the best model) : " + model.loss());
+              if (!_parms._quiet_mode) {
+                Log.info("Best model's loss: " + best_model.loss() + " vs this model's loss (after overwriting it with the best model) : " + model.loss());
+              }
               Log.warn("Even though the model was reset to the previous best model, we observe different scoring results. " +
                   "Most likely, the data set has changed during a checkpoint restart. If so, please compare the metrics to observe your data shift.");
             }

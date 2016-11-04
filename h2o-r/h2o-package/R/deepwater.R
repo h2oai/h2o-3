@@ -5,10 +5,12 @@
 #' 
 #' Build a Deep Learning model using multiple native GPU backends
 #' Builds a deep neural network on an H2OFrame containing various data sources
-#'
-#' @param x A vector containing the \code{character} names of the predictors in the model.
+#' 
+#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.
+#' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
+#'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+#'        categorical variable).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to False.
@@ -41,8 +43,8 @@
 #'        available data (e.g., replicated training data), -2: automatic. Defaults to -2.
 #' @param target_ratio_comm_to_comp Target ratio of communication overhead to computation. Only for multi-node operation and
 #'        train_samples_per_iteration = -2 (auto-tuning). Defaults to 0.05.
-#' @param seed Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded. Defaults to
-#'        -1.
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
 #' @param standardize \code{Logical}. If enabled, automatically standardize the data. If disabled, the user must provide properly
 #'        scaled input data. Defaults to True.
 #' @param learning_rate Learning rate (higher => less stable, lower => slower convergence). Defaults to 0.005.
@@ -92,64 +94,63 @@
 #'        Model and builds a model on the provided H2OFrame (non-String columns). Must be one of: "auto", "image",
 #'        "text", "dataset". Defaults to auto.
 #' @export
-h2o.deepwater <- function(x, y, 
-                          model_id, 
-                          checkpoint, 
-                          autoencoder  = FALSE, 
-                          training_frame, 
-                          validation_frame, 
-                          nfolds  = 0, 
-                          balance_classes  = FALSE, 
-                          max_after_balance_size  = 5.0, 
-                          class_sampling_factors, 
-                          keep_cross_validation_predictions  = FALSE, 
-                          keep_cross_validation_fold_assignment  = FALSE, 
-                          fold_assignment  = c("AUTO", "Random", "Modulo", "Stratified"), 
-                          fold_column, 
-                          offset_column, 
-                          weights_column, 
-                          score_each_iteration  = FALSE, 
-                          categorical_encoding  = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"), 
-                          overwrite_with_best_model  = TRUE, 
-                          epochs  = 10.0, 
-                          train_samples_per_iteration  = -2, 
-                          target_ratio_comm_to_comp  = 0.05, 
-                          seed  = -1, 
-                          standardize  = TRUE, 
-                          learning_rate  = 0.005, 
-                          learning_rate_annealing  = 1e-06, 
-                          momentum_start  = 0.9, 
-                          momentum_ramp  = 10000.0, 
-                          momentum_stable  = 0.99, 
-                          distribution  = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"), 
-                          score_interval  = 5.0, 
-                          score_training_samples  = 10000, 
-                          score_validation_samples  = 0, 
-                          score_duty_cycle  = 0.1, 
-                          stopping_rounds  = 5, 
-                          stopping_metric  = c("AUTO", "deviance", "logloss", "MSE", "AUC", "lift_top_group", "r2", "misclassification", "mean_per_class_error"), 
-                          stopping_tolerance  = 0.0, 
-                          max_runtime_secs  = 0.0, 
-                          ignore_const_cols  = TRUE, 
-                          shuffle_training_data  = TRUE, 
-                          mini_batch_size  = 32, 
-                          clip_gradient  = 10.0, 
-                          network  = c("auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn", "resnet"), 
-                          backend  = c("auto", "mxnet", "caffe", "tensorflow"), 
-                          image_shape  = c(0, 0), 
-                          channels  = 3, 
-                          sparse  = FALSE, 
-                          gpu  = TRUE, 
-                          device_id  = c(0), 
-                          network_definition_file, 
-                          network_parameters_file, 
-                          mean_image_file, 
-                          export_native_parameters_prefix, 
-                          activation  = c("Rectifier", "Tanh"), 
-                          hidden, 
-                          input_dropout_ratio  = 0.0, 
-                          hidden_dropout_ratios, 
-                          problem_type  = c("auto", "image", "text", "dataset")
+h2o.deepwater <- function(x, y, training_frame,
+                          model_id = NULL,
+                          checkpoint = NULL,
+                          autoencoder = FALSE,
+                          validation_frame = NULL,
+                          nfolds = 0,
+                          balance_classes = FALSE,
+                          max_after_balance_size = 5.0,
+                          class_sampling_factors = NULL,
+                          keep_cross_validation_predictions = FALSE,
+                          keep_cross_validation_fold_assignment = FALSE,
+                          fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                          fold_column = NULL,
+                          offset_column = NULL,
+                          weights_column = NULL,
+                          score_each_iteration = FALSE,
+                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
+                          overwrite_with_best_model = TRUE,
+                          epochs = 10.0,
+                          train_samples_per_iteration = -2,
+                          target_ratio_comm_to_comp = 0.05,
+                          seed = -1,
+                          standardize = TRUE,
+                          learning_rate = 0.005,
+                          learning_rate_annealing = 1e-06,
+                          momentum_start = 0.9,
+                          momentum_ramp = 10000.0,
+                          momentum_stable = 0.99,
+                          distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                          score_interval = 5.0,
+                          score_training_samples = 10000,
+                          score_validation_samples = 0,
+                          score_duty_cycle = 0.1,
+                          stopping_rounds = 5,
+                          stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "lift_top_group", "r2", "misclassification", "mean_per_class_error"),
+                          stopping_tolerance = 0.0,
+                          max_runtime_secs = 0.0,
+                          ignore_const_cols = TRUE,
+                          shuffle_training_data = TRUE,
+                          mini_batch_size = 32,
+                          clip_gradient = 10.0,
+                          network = c("auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn", "resnet"),
+                          backend = c("auto", "mxnet", "caffe", "tensorflow"),
+                          image_shape = c(0, 0),
+                          channels = 3,
+                          sparse = FALSE,
+                          gpu = TRUE,
+                          device_id = c(0),
+                          network_definition_file = NULL,
+                          network_parameters_file = NULL,
+                          mean_image_file = NULL,
+                          export_native_parameters_prefix = NULL,
+                          activation = c("Rectifier", "Tanh"),
+                          hidden = NULL,
+                          input_dropout_ratio = 0.0,
+                          hidden_dropout_ratios = NULL,
+                          problem_type = c("auto", "image", "text", "dataset")
                           ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -163,7 +164,6 @@ h2o.deepwater <- function(x, y,
 
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
-  if( missing(validation_frame) ) validation_frame = NULL
   # Training_frame and validation_frame may be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
@@ -299,20 +299,21 @@ h2o.deepwater <- function(x, y,
     parms$hidden_dropout_ratios <- hidden_dropout_ratios
   if (!missing(problem_type))
     parms$problem_type <- problem_type
+  # Error check and build model
   .h2o.modelJob('deepwater', parms, h2oRestApiVersion=3) 
 }
 
-        # Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
-        #' Returns True if a deep water model can be built, or False otherwise.
-        #' @param h2oRestApiVersion (Optional) Specific version of the REST API to use
-        #'
-        h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-            visibility = .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS("deepwater"))$model_builders[["deepwater"]][["visibility"]]
-            if (visibility == "Experimental") {
-                print("Cannot build a Deep Water model - no backend found.")
-                return(FALSE)
-            } else {
-                return(TRUE)
-            }
-        }
-        
+#' Ask the H2O server whether a Deep Water model can be built (depends on availability of native backends)
+#' Returns True if a deep water model can be built, or False otherwise.
+#' @param h2oRestApiVersion (Optional) Specific version of the REST API to use
+#'
+h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
+visibility = .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS("deepwater"))$model_builders[["deepwater"]][["visibility"]]
+if (visibility == "Experimental") {
+print("Cannot build a Deep Water model - no backend found.")
+return(FALSE)
+} else {
+return(TRUE)
+}
+}
+
