@@ -1,5 +1,7 @@
 package water.udf;
 
+import water.H2O;
+import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.StringUtils;
 
@@ -19,7 +21,7 @@ public class UnfoldingColumn<X, Y> implements Column<List<Y>> {
   @Override public Vec vec() { return new VirtualVec(this); }
 
   @Override public int rowLayout() { return column.rowLayout(); }
-  
+
   public UnfoldingColumn(Unfoldable<X, Y> f, Column<X> column) {
     this.f = f;
     this.column = column;
@@ -46,6 +48,11 @@ public class UnfoldingColumn<X, Y> implements Column<List<Y>> {
       }
       return result;
     }
+  }
+
+  @Override
+  public TypedChunk<List<Y>> chunkAt(int i) {
+    throw H2O.unimpl("Will have to think how to implement multi-string chunks...");
   }
 
   @Override public boolean isNA(long idx) {
