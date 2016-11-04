@@ -4,7 +4,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import static water.udf.MaterializedColumns.*;
+import static water.udf.DataColumns.*;
 
 import java.io.IOException;
 
@@ -12,14 +12,14 @@ import java.io.IOException;
  * Single column frame that knows its data type
  */
 public class TypedFrame1<X> extends Frame {
-  private final Factory<X> columnFactory;
+  private final Factory<X> factory;
   private final long len;
   private final Function<Long, X> function;
   private Column<X> column;  
 
-  public TypedFrame1(Factory<X> columnFactory, long len, Function<Long, X> function) {
+  public TypedFrame1(Factory<X> factory, long len, Function<Long, X> function) {
     super();
-    this.columnFactory = columnFactory;
+    this.factory = factory;
     this.len = len;
     this.function = function;
   }
@@ -29,6 +29,7 @@ public class TypedFrame1<X> extends Frame {
     
     public EnumFrame1(long len, Function<Long, Integer> function, String[] domain) {
       super(Enums, len, function);
+      ChunkFactory<DataChunk<Integer>> ef = Enums;
       this.domain = domain;
     }
 
@@ -39,12 +40,12 @@ public class TypedFrame1<X> extends Frame {
   }
   
   protected Vec makeVec() throws IOException {
-    column = newColumn(Vec.makeZero(len, columnFactory.typeCode));
+    column = newColumn(Vec.makeZero(len, factory.typeCode()));
     MRTask task = new MRTask() {
       @Override
       public void map(Chunk[] cs) {
         for (Chunk c : cs) {
-          TypedChunk<X> tc = columnFactory.newChunk(c);
+          DataChunk<X> tc = factory.apply(c);
           for (int r = 0; r < c._len; r++) {
             long i = r + c.start();
             tc.set(r, function.apply(i));
@@ -52,13 +53,13 @@ public class TypedFrame1<X> extends Frame {
         }
       }
     };
-    final Vec vec = column.vec();
-    final MRTask mrTask = task.doAll(vec);
+    Vec vec = column.vec();
+    MRTask mrTask = task.doAll(vec);
     return mrTask._fr.vecs()[0];
   }
 
   protected TypedVector<X> newColumn(Vec vec) throws IOException {
-    return columnFactory.newColumn(vec);
+    return factory.newColumn(vec);
   }
 
   public TypedVector<X> newColumn() throws IOException {

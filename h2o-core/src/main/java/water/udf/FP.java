@@ -7,8 +7,16 @@ import java.util.function.Consumer;
  * Elements of FP in Java
  */
 public class FP {
+  public static <X, Y> Iterable<Y> map(Iterable<X> xs, Function<X, Y> f) {
+    List<Y> ys = new LinkedList<>();
+    for (X x : xs) ys.add(f.apply(x));
+    
+    return ys;
+  }
+  
+  
   interface Option<T> extends Iterable<T> {
-    <X> X get();
+     T get();
   }
   
   public final static Option<Object> None = new Option<Object>() {
@@ -45,11 +53,20 @@ public class FP {
   public static <T> Option<T> Option(T t) {
     return t == null ? None : new Some(t);
   }
-  
+
+  @SuppressWarnings("unchecked")
   public static <T> Option<T> flatten(Option<?> optOptT) {
-    return optOptT.get();
+    return (Option<T>)optOptT.get();
   }
-  
+
+  public static <T> Option<T> headOption(Iterator<T> it) {
+    return Option(it.hasNext() ? it.next() : null);
+  }
+
+  public static <T> Option<T> headOption(Iterable<T> ts) {
+    return headOption(ts.iterator());
+  }
+
 //  public static void main(String[] args) {
 //    Option<?> oo1 = None;
 //    Option<?> oo2 = Some(None);

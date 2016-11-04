@@ -26,8 +26,33 @@ public class Fun3Column<X, Y, Z, T> implements Column<T> {
     return isNA(idx) ? null : f.apply(xs.get(idx), ys.get(idx), zs.get(idx)); 
   }
 
+  @Override
+  public TypedChunk<T> chunkAt(int i) {
+    return new FunChunk(xs.chunkAt(i), ys.chunkAt(i), zs.chunkAt(i));
+  }
+
   @Override public boolean isNA(long idx) { return xs.isNA(idx) || ys.isNA(idx); }
 
   @Override
   public String getString(long idx) { return isNA(idx) ? "(N/A)" : String.valueOf(get(idx)); }
+
+  /**
+   * Pretends to be a chunk of a column, for distributed calculations.
+   * Has type, and is not materialized
+   */
+  public class FunChunk implements TypedChunk<T> {
+    private final TypedChunk<X> cx;
+    private final TypedChunk<Y> cy;
+    private final TypedChunk<Z> cz;
+
+    public FunChunk(TypedChunk<X> cx, TypedChunk<Y> cy, TypedChunk<Z> cz) {
+      this.cx = cx;
+      this.cy = cy;
+      this.cz = cz;
+    }
+
+    @Override public T get(int i) {
+      return f.apply(cx.get(i), cy.get(i), cz.get(i));
+    }
+  }
 }
