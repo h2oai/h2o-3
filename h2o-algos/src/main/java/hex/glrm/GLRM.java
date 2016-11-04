@@ -941,7 +941,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
     // Extract Y_j the k by d_j block of Y corresponding to categorical column j
     // Note: d_j = number of levels in categorical column j
-    // This function is not used in GLRM.java but is used else where.  Please keep it.
     protected final double[][] getCatBlock(int j) {
       assert _numLevels[j] != 0 : "Number of levels in categorical column cannot be zero";
       double[][] block = new double[rank()][_numLevels[j]];
@@ -963,7 +962,6 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     }
 
     // Vector-matrix product x * Y_j where Y_j is block of Y corresponding to categorical column j
-    // again, this function is used elsewhere but not in GLRM.java.  Please do not remove.
     protected final double[] lmulCatBlock(double[] x, int j) {
       assert _numLevels[j] != 0 : "Number of levels in categorical column cannot be zero";
       assert x != null && x.length == rank() : "x must be of length " + rank();
@@ -1137,7 +1135,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       double[] xy = null;
       double[] prod = null;
       if (_yt._numLevels[0] > 0) {
-        xy = new double[_yt._numLevels[0]];
+        xy = new double[_yt._numLevels[0]]; // maximum categorical level column is always the first one
         prod = new double[_yt._numLevels[0]];
       }
 
@@ -1159,20 +1157,20 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Categorical columns
         for (int j = 0; j < _ncats; j++) {
           a[j] = cs[j].atd(row);
+          int catColJLevel = _yt._numLevels[j];
           if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
-//          for (int level = 0; level < xy.length; level++) {
-          for (int level = 0; level < _yt._numLevels[j]; level++) {
+          for (int level = 0; level < catColJLevel ; level++) {
             for (int k = 0; k < _ncolX; k++) {
               xy[level] += chk_xold(cs, k).atd(row) * _yt.getCat(j, level, k);
             }
           }
 
           // Gradient wrt x_i is matrix product \grad L_{i,j}(x_i * Y_j, A_{i,j}) * Y_j'
-          double[] weight = _lossFunc[j].mlgrad(xy, (int) a[j], prod,_yt._numLevels[j]);
+          double[] weight = _lossFunc[j].mlgrad(xy, (int) a[j], prod, catColJLevel );
           if (_yt._transposed) {
-            for (int c = 0; c < _yt._numLevels[j]; c++) {
+            for (int c = 0; c < catColJLevel ; c++) {
               int cidx = _yt.getCatCidx(j, c);
               double weights = cweight * weight[c];
               double[] yArchetypes = _yt._archetypes[cidx];
@@ -1181,7 +1179,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
             }
           } else {
-            for (int c = 0; c < _yt._numLevels[j]; c++) {
+            for (int c = 0; c < catColJLevel; c++) {
               int cidx = _yt.getCatCidx(j, c);
               double weights = cweight * weight[c];
 
@@ -1222,8 +1220,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Categorical columns
         for (int j = 0; j < _ncats; j++) {
           if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
-          double[] txy = multVecArrFast(xnew, prod, _yt, j);
-          _loss +=  _lossFunc[j].mloss(txy, (int) a[j], _yt._numLevels[j]);
+          multVecArrFast(xnew, prod, _yt, j);
+          _loss +=  _lossFunc[j].mloss(prod, (int) a[j], _yt._numLevels[j]);
         }
 
         // Numeric columns
@@ -1239,23 +1237,24 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
 
 
     /* same as ArrayUtils.multVecArr() but faster I hope. */
-    private double[] multVecArrFast(double[] xnew, double[] xy, Archetypes yt, int j) {
-      Arrays.fill(xy, 0.0);
+    private void multVecArrFast(double[] xnew, double[] xy, Archetypes yt, int j) {
+      int catColJLevel = yt._numLevels[j];
       if (yt._transposed) {
-        for (int level = 0; level < yt._numLevels[j]; level++) {
+        for (int level = 0; level < catColJLevel; level++) {
           int cidx = yt.getCatCidx(j, level);
           double[] yArchetypes = yt._archetypes[cidx];
+          xy[level] = 0.0;
           for (int k = 0; k < _ncolX; k++)
             xy[level] += xnew[k] * yArchetypes[k];
         }
       } else {
-        for (int level = 0; level < yt._numLevels[j]; level++) {
+        for (int level = 0; level < catColJLevel; level++) {
           int cidx = yt.getCatCidx(j, level);
+          xy[level] = 0.0;
           for (int k = 0; k < _ncolX; k++)
             xy[level] += xnew[k] * yt._archetypes[k][cidx];
         }
       }
-      return xy;
     }
 
     @Override public void reduce(UpdateX other) {
@@ -1440,7 +1439,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       double[] xy = null;
 
       if (_yt._numLevels[0] > 0)  // only allocate xy when there are categorical columns
-        xy = new double[_yt._numLevels[0]];    // maximum level is always the first one
+        xy = new double[_yt._numLevels[0]];    // maximum categorical level column is always the first one
 
       if (_regX)  // allocation memory only if necessary
          xrow = new double[_ncolX];
