@@ -25,6 +25,8 @@ public class Session {
   private final static int sanityChecksFrequency = 1000;
   private static int sanityChecksCounter = 0;
 
+  private String id;
+
   // --------------------------------------------------------------------------
   // Copy On Write optimization
   // --------------------------------------------------------------------------
@@ -57,7 +59,18 @@ public class Session {
    * Constructor
    */
   public Session() {
+    this(Key.make().toString());
+  }
+
+  public Session(String id) {
+    this.id = id;
     cluster_init();
+  }
+
+
+  /** Return this session's id. */
+  public String id() {
+    return id;
   }
 
   /**
