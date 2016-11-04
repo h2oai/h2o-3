@@ -156,6 +156,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   private class GBMDriver extends Driver {
     @Override protected boolean doOOBScoring() { return false; }
     @Override protected void initializeModelSpecifics() {
+      for (int i=0;i<_nclass;++i) _train.add("Gradient_"+i, _response.makeZero());
+      for (int i=0;i<_nclass;++i) _train.add("Hessian_"+i, _response.makeZero());
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols)); //per-tree
       if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
       _mtry = Math.max(1, (int)(_parms._col_sample_rate * _parms._col_sample_rate_per_tree * _ncols)); //per-split

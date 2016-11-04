@@ -44,8 +44,10 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   final int _weightIdx;
   final int _workIdx;
   final int _nidIdx;
+  final int _gradientIdx;
+  final int _hessianIdx;
 
-  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], DistributionFamily family, int weightIdx, int workIdx, int nidIdx) {
+  public ScoreBuildHistogram(H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram hcs[][], DistributionFamily family, int weightIdx, int workIdx, int nidIdx, int gradientIdx, int hessianidx) {
     super(cc);
     _k    = k;
     _ncols= ncols;
@@ -58,6 +60,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     _weightIdx = weightIdx;
     _workIdx = workIdx;
     _nidIdx = nidIdx;
+    _gradientIdx = gradientIdx;
+    _hessianIdx = hessianidx;
   }
 
   /** Marker for already decided row. */
@@ -100,6 +104,8 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     final Chunk wrks = chks[_workIdx];
     final Chunk nids = chks[_nidIdx];
     final Chunk weight = _weightIdx>=0 ? chks[_weightIdx] : new C0DChunk(1, chks[0].len());
+    final Chunk gradient = chks[_gradientIdx];
+    final Chunk hessian = chks[_hessianIdx];
 
     // Pass 1: Score a prior partially-built tree model, and make new Node
     // assignments to every row.  This involves pulling out the current
@@ -120,7 +126,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
 //    if (_subset)
 //      accum_subset(chks,wrks,weight,nnids); //for debugging - simple code
 //    else
-      accum_all   (chks,wrks,weight,nnids); //generally faster
+      accum_all   (chks,wrks,weight,nnids,gradient,hessian); //generally faster
   }
 
   @Override public void reduce( ScoreBuildHistogram sbh ) {
@@ -213,7 +219,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
    * @param weight observation weights
    * @param nnids node ids
    */
-  private void accum_all(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
+  private void accum_all(Chunk chks[], Chunk wrks, Chunk weight, int nnids[], Chunk gradient, Chunk hessian) {
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
     int nh[] = new int[_hcs.length+1];
