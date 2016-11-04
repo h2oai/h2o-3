@@ -783,8 +783,8 @@ def main():
 
     for name, mb in bi.model_builders().items():
         module = name
-        if name == "drf": module = "random_forest"
-        if name == "naivebayes": module = "naive_bayes"
+        if name == "drf": module = "randomforest"
+        if name == "naivebayes": module = "naivebayes"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.R" % module, gen_module(mb, name))
 
