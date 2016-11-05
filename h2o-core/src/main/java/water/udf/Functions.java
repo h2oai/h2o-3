@@ -2,6 +2,7 @@ package water.udf;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -71,4 +72,12 @@ public class Functions {
       public T apply(Long i) { return list.get(i.intValue()); }
     };
   }
+  
+  public static <X, Y> Iterable<Y> map(Iterable<X> xs, Function<X, Y> f) {
+    List<Y> ys = new LinkedList<>();
+    for (X x : xs) ys.add(f.apply(x));
+
+    return ys;
+  }
+
 }

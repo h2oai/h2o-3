@@ -3,11 +3,13 @@ package water.udf;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 
+import java.io.Serializable;
+
 /**
  * Generic typed data column
  */
-public interface Column<T> {
-  T get(long idx);
+public interface Column<T> extends Function<Long, T> {
+  T apply(long idx);
   TypedChunk<T> chunkAt(int i);
   
   boolean isNA(long idx);
@@ -16,4 +18,5 @@ public interface Column<T> {
   
   Vec vec();
   int rowLayout();
+  long size();
 }

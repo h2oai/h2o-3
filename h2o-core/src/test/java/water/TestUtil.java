@@ -721,15 +721,20 @@ public class TestUtil extends Iced {
   };
 
   @BeforeClass
-  public static void hi() { stall_till_cloudsize(1); }
-  @AfterClass public static void bye() { toDrop.forEach(dropit); }
+  public static void hi() {
+    stall_till_cloudsize(1);
+  }
 
-  private static Set<Vec> toDrop = new HashSet<>();
+  @Before public void enterScope() {
+    Scope.enter();
+  }
+  
+  @After public void bye() { Scope.exit(); }
 
-  protected static Vec willDrop(Vec v) { toDrop.add(v); return v; }
+  protected static Vec willDrop(Vec v) { return Scope.track(v); }
 
   protected static <T extends Vec.Holder> T willDrop(T vh) {
-    toDrop.add(vh.vec());
+    Scope.track(vh.vec());
     return vh;
   }
 }
