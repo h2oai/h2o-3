@@ -11,6 +11,7 @@ public class Node {
   private final int level;
   private String colName;
   private float splitValue = Float.NaN;
+  private boolean isBitset = false;
   private float leafValue = Float.NaN;
   private Node leftChild;
   private Node rightChild;
@@ -31,6 +32,10 @@ public class Node {
 
   void setSplitValue(float v) {
     splitValue = v;
+  }
+
+  void setBitset() {
+    isBitset = true;
   }
 
   void setLeafValue(float v) {
@@ -62,6 +67,7 @@ public class Node {
     System.out.println("            level:       " + level);
     System.out.println("            colName:     " + ((colName != null) ? colName : ""));
     System.out.println("            splitVal:    " + splitValue);
+    System.out.println("            isBitset:    " + isBitset);
     System.out.println("            leafValue:   " + leafValue);
     System.out.println("            leftChild:   " + ((leftChild != null) ? leftChild.getName() : ""));
     System.out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
@@ -71,18 +77,24 @@ public class Node {
     return "SG_" + subgraphNumber + "_Node_" + nodeNumber;
   }
 
-  private boolean getIsLeaf() {
+  private boolean isLeaf() {
     return (! Float.isNaN(leafValue));
   }
 
   private void printDot(PrintStream os) {
     os.print("\"" + getDotName() + "\"");
-    if (getIsLeaf()) {
+    if (isLeaf()) {
       os.print(" [label=\"");
       os.print(leafValue);
       os.print("\"]");
     }
+    else if (isBitset) {
+      os.print(" [shape=box,label=\"");
+      os.print(colName + " bitset");
+      os.print("\"]");
+    }
     else {
+      assert(! Float.isNaN(splitValue));
       os.print(" [shape=box,label=\"");
       os.print(colName + " < " + splitValue);
       os.print("\"]");

@@ -150,6 +150,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                     bs.fill2(tree, ab);
                 else
                     bs.fill3(tree, ab);
+                node.setBitset();
             }
         }
 
@@ -189,10 +190,10 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             if ((lmask2 & 16) != 0) {
                 float leafValue = ab2.get4f();
                 newNode.setLeafValue(leafValue);
-                return;
             }
-
-            computeTreeGraph(sg, newNode, tree, ab2, nclasses);
+            else {
+                computeTreeGraph(sg, newNode, tree, ab2, nclasses);
+            }
         }
 
         // go LEFT
@@ -206,11 +207,11 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             Node newNode = sg.makeLeftChildNode(node);
             if ((lmask & 16) != 0) {
                 float leafValue = ab2.get4f();
-                node.setLeafValue(leafValue);
-                return;
+                newNode.setLeafValue(leafValue);
             }
-
-            computeTreeGraph(sg, newNode, tree, ab2, nclasses);
+            else {
+                computeTreeGraph(sg, newNode, tree, ab2, nclasses);
+            }
         }
     }
 
