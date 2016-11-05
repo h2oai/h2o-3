@@ -18,7 +18,9 @@ public class UnfoldingColumn<X, Y> implements Column<List<Y>> {
   private final Column<X> column;
   private int requiredSize;
 
-  @Override public Vec vec() { return new VirtualVec(this); }
+  @Override public Vec vec() { return new VirtualVec<>(this); }
+  
+  @Override public long size() { return column.size(); }
 
   @Override public int rowLayout() { return column.rowLayout(); }
 
@@ -34,8 +36,8 @@ public class UnfoldingColumn<X, Y> implements Column<List<Y>> {
     this.requiredSize = requiredSize;
   }
   
-  @Override public List<Y> get(long idx) {
-    List<Y> raw = isNA(idx) ? Collections.<Y>emptyList() : f.apply(column.get(idx));
+  public List<Y> get(long idx) {
+    List<Y> raw = isNA(idx) ? Collections.<Y>emptyList() : f.apply(column.apply(idx));
     if (requiredSize == 0 || raw.size() == requiredSize) return raw;
     else {
       List<Y> result = raw.subList(0, Math.min(raw.size(), requiredSize));
@@ -50,6 +52,10 @@ public class UnfoldingColumn<X, Y> implements Column<List<Y>> {
     }
   }
 
+  @Override public List<Y> apply(long idx) { return get(idx); }
+
+  @Override public List<Y> apply(Long idx) { return get(idx); }
+
   @Override
   public TypedChunk<List<Y>> chunkAt(int i) {
     throw H2O.unimpl("Will have to think how to implement multi-string chunks...");
@@ -61,6 +67,6 @@ public class UnfoldingColumn<X, Y> implements Column<List<Y>> {
 
   @Override
   public String getString(long idx) { 
-    return StringUtils.join(", ", get(idx)); 
+    return StringUtils.join(", ", apply(idx)); 
   }
 }

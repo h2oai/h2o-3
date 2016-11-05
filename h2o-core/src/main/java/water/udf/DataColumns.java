@@ -1,5 +1,7 @@
 package water.udf;
 
+import water.DKV;
+import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
@@ -45,8 +47,16 @@ public class DataColumns {
     protected Vec vec;
     public final byte type;
     private ChunkFactory<DataChunk<T>> chunkFactory;
+    
+    public abstract T get(long idx);
+
+    @Override public T apply(Long idx) { return get(idx); }
+
+    @Override public T apply(long idx) { return get(idx); }
 
     @Override public int rowLayout() { return vec._rowLayout; }
+    
+    @Override public long size() { return vec.length(); }
 
     @Override
     public TypedChunk<T> chunkAt(int i) {
@@ -61,7 +71,7 @@ public class DataColumns {
     
     public boolean isNA(long idx) { return vec.isNA(idx); }
 
-    public String getString(long idx) { return isNA(idx) ? "(N/A)" : String.valueOf(get(idx)); }
+    public String getString(long idx) { return isNA(idx) ? "(N/A)" : String.valueOf(apply(idx)); }
 
     public Vec vec() { return vec; }
   }
@@ -86,6 +96,9 @@ public class DataColumns {
     @Override public DataChunk<Double> apply(final Chunk c) {
       return new DataChunk<Double>(c) {
         @Override public Double get(int idx) { return c.isNA(idx) ? null : c.atd(idx); }
+
+        @Override public int length() { return c.len(); }
+
         @Override public void set(int idx, Double value) {
           if (value == null) c.setNA(idx); else c.set(idx, value);
         }
@@ -97,8 +110,12 @@ public class DataColumns {
       if (vec.get_type() != Vec.T_NUM)
         throw new IllegalArgumentException("Expected type T_NUM, got " + vec.get_type_str());
       return new TypedVector<Double>(vec, typeCode, this) {
-        
-        @Override public Double get(long idx) { return vec.at(idx); }
+
+        public Double get(long idx) { return vec.at(idx); }
+
+        @Override public Double apply(Long idx) { return get(idx); }
+
+        @Override public Double apply(long idx) { return get(idx); }
 
         @Override public void set(long idx, Double value) {
           if (value == null) vec.setNA(idx); else vec.set(idx, value);
@@ -116,6 +133,9 @@ public class DataColumns {
     @Override public DataChunk<String> apply(final Chunk c) {
       return new DataChunk<String>(c) {
         @Override public String get(int idx) { return asString(c.atStr(new BufferedString(), idx)); }
+
+        @Override public int length() { return c.len(); }
+
         @Override public void set(int idx, String value) { 
           c.set(idx, value); }
       };
@@ -240,4 +260,10 @@ public class DataColumns {
   };
 
   static String asString(Object x) { return x == null ? null : x.toString(); }
+
+  public static <X> TypedVector<X> materialize(final Column<X> xs, final Factory<X> factory) throws IOException {
+    return new TypedFrame1<>(factory, xs.size(), xs).newColumn();
+  }
+
+
 }
