@@ -530,7 +530,9 @@ public class DTree extends Iced {
         _nids[way] = nhists == null ? ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID : makeUndecidedNode(nhists)._nid;
       }
     }
-    public int getChildNodeID(double d) {
+
+    public int getChildNodeID(Chunk [] chks, int row ) {
+      double d = chks[_split._col].atd(row);
       int bin;
       if (!Double.isNaN(d)) {
         if (_split._nasplit == DHistogram.NASplitDir.NAvsREST)

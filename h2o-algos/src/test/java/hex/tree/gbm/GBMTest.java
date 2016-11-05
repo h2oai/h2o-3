@@ -16,6 +16,7 @@ import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.*;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -569,7 +570,7 @@ public class GBMTest extends TestUtil {
   // PUBDEV-557: Test dependency on # nodes (for small number of bins, but fixed number of chunks)
   @Test public void testReprodubilityAirline() {
     Frame tfr=null;
-    final int N = 1;
+    final int N = 5;
     double[] mses = new double[N];
 
     Scope.enter();
@@ -619,13 +620,18 @@ public class GBMTest extends TestUtil {
       if (tfr != null) tfr.remove();
     }
     Scope.exit();
+    System.out.println("MSEs start");
+    for(double d:mses)
+      System.out.println(d);
+    System.out.println("MSEs End");
+    System.out.flush();
     for( double mse : mses )
-      assertEquals(0.21919655106803468, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21919646108299456, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks), mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   @Test public void testReprodubilityAirlineSingleNode() {
     Frame tfr=null;
-    final int N = 1;
+    final int N = 10;
     double[] mses = new double[N];
 
     Scope.enter();
@@ -664,6 +670,7 @@ public class GBMTest extends TestUtil {
         parms._balance_classes = true;
         parms._seed = 0;
         parms._build_tree_one_node = true;
+        parms._col_block_sz = i+1;
 
         // Build a first model; all remaining models should be equal
         GBMModel gbm = new GBM(parms).trainModel().get();
@@ -676,8 +683,11 @@ public class GBMTest extends TestUtil {
       if (tfr != null) tfr.remove();
     }
     Scope.exit();
+    System.out.println("MSE");
+    for(double d:mses)
+      System.out.println(d);
     for( double mse : mses )
-      assertEquals(0.21919655106803468, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
+      assertEquals(0.21919646108299456, mse, 1e-8); //check for the same result on 1 nodes and 5 nodes (will only work with enough chunks)
   }
 
   // HEXDEV-223
