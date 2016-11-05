@@ -32,7 +32,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems, viewvalues
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
-                                    can_use_pandas, quote)
+                                    can_use_pandas, quote, normalize_slice, slice_is_normalized)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, numeric, numpy_ndarray,
                                   pandas_dataframe, scipy_sparse, U)
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
@@ -1179,6 +1179,8 @@ class H2OFrame(object):
         new_types = None
         fr = None
         flatten = False
+        if isinstance(item, slice):
+            item = normalize_slice(item, self.ncols)
         if is_type(item, str, int, list, slice):
             new_ncols, new_names, new_types, item = self._compute_ncol_update(item)
             new_nrows = self.nrow
@@ -1192,8 +1194,12 @@ class H2OFrame(object):
         elif isinstance(item, tuple):
             rows, cols = item
             allrows = allcols = False
-            if isinstance(cols, slice):  allcols = all([a is None for a in [cols.start, cols.step, cols.stop]])
-            if isinstance(rows, slice):  allrows = all([a is None for a in [rows.start, rows.step, rows.stop]])
+            if isinstance(cols, slice):
+                cols = normalize_slice(cols, self.ncols)
+                allcols = cols == slice(0, self.ncols, 1)
+            if isinstance(rows, slice):
+                rows = normalize_slice(rows, self.nrows)
+                allrows = rows == slice(0, self.nrows, 1)
 
             if allrows and allcols: return self  # fr[:,:]    -> all rows and columns.. return self
             if allrows:
@@ -1201,7 +1207,7 @@ class H2OFrame(object):
                 new_nrows = self.nrow
                 fr = H2OFrame._expr(expr=ExprNode("cols_py", self, cols))  # fr[:,cols] -> really just a column slice
             if allcols:
-                new_ncols = self.ncol
+                new_ncols = self.ncols
                 new_names = self.names
                 new_types = self.types
                 new_nrows, rows = self._compute_nrow_update(rows)
@@ -1241,16 +1247,9 @@ class H2OFrame(object):
                     new_names = [self.names[i] for i in item]
                     new_types = {name: self.types[name] for name in new_names}
             elif isinstance(item, slice):
-                start = 0 if item.start is None else item.start
-                end = min(self.ncol, self.ncol if item.stop is None else item.stop)
-                if end < 0:
-                    end = self.ncol + end
-                if item.start is not None or item.stop is not None:
-                    new_ncols = end - start
-                range_list = range(start, end)
-                new_names = [self.names[i] for i in range_list]
+                assert slice_is_normalized(item)
+                new_names = self.names[item]
                 new_types = {name: self.types[name] for name in new_names}
-                item = slice(start, end)
             elif is_type(item, str, int):
                 new_ncols = 1
                 if is_type(item, str):
@@ -1261,9 +1260,9 @@ class H2OFrame(object):
                     new_types = {new_names[0]: self.types[new_names[0]]}
             else:
                 raise ValueError("Unexpected type: " + str(type(item)))
-            return [new_ncols, new_names, new_types, item]
+            return (new_ncols, new_names, new_types, item)
         except:
-            return [-1, None, None, item]
+            return (-1, None, None, item)
 
     def _compute_nrow_update(self, item):
         try:
@@ -1271,13 +1270,8 @@ class H2OFrame(object):
             if isinstance(item, list):
                 new_nrows = len(item)
             elif isinstance(item, slice):
-                start = 0 if item.start is None else item.start
-                end = self.nrow if item.stop is None else item.stop
-                if end < 0:
-                    end = self.nrow + end
-                if item.start is not None or item.stop is not None:
-                    new_nrows = end - start
-                item = slice(start, end)
+                assert slice_is_normalized(item)
+                new_nrows = (item.stop - item.start + item.step - 1) // item.step
             elif isinstance(item, H2OFrame):
                 new_nrows = -1
             else:
