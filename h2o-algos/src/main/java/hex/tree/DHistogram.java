@@ -41,6 +41,7 @@ import java.util.Random;
  *
 */
 public final class DHistogram extends Iced {
+  public static int DEBUG_WEAVER = 1;
   public final transient String _name; // Column name (for debugging)
   public final double _minSplitImprovement;
   public final byte  _isInt;    // 0: float col, 1: int col, 2: categorical & int col
@@ -50,7 +51,24 @@ public final class DHistogram extends Iced {
   public double _w[];           // weighted count of observations per bin, shared, atomically incremented
   protected double[] _wY;
   protected double[] _wYY; // weighted response per bin and weighted squared response per bin, shared, atomically incremented
-  private AtomicDouble _wNA, _wYNA, _wYYNA; // same for missing observations
+
+  private double [] _naCnts;
+  public void addNasAtomic(double y, double wy, double wyy) {
+    AtomicUtils.DoubleArray.add(_naCnts,0,y);
+    AtomicUtils.DoubleArray.add(_naCnts,1,wy);
+    AtomicUtils.DoubleArray.add(_naCnts,2,wyy);
+  }
+  public void addNasPlain(double... ds) {
+    _naCnts[0] += ds[0];
+    _naCnts[1] += ds[1];
+    _naCnts[2] += ds[2];
+  }
+
+  public double wNA()   { return _naCnts[0]; }
+  public double wYNA()  { return _naCnts[1]; }
+  public double wYYNA() { return _naCnts[2]; }
+
+
 
   // Atomically updated double min/max
   protected    double  _min2, _maxIn; // Min/Max, shared, atomically updated.  _maxIn is Inclusive.
@@ -71,6 +89,8 @@ public final class DHistogram extends Iced {
   public final long _seed;
   public transient boolean _hasQuantiles;
   public Key _globalQuantilesKey; //key under which original top-level quantiles are stored;
+
+
 
   /**
    * Split direction for missing values.
@@ -247,9 +267,7 @@ public final class DHistogram extends Iced {
     _w = MemoryManager.malloc8d(_nbin);
     _wY = MemoryManager.malloc8d(_nbin);
     _wYY = MemoryManager.malloc8d(_nbin);
-    _wNA = new AtomicDouble();
-    _wYNA = new AtomicDouble();
-    _wYYNA = new AtomicDouble();
+    _naCnts = new double[3];
   }
 
   // Add one row to a bin found via simple linear interpolation.
@@ -257,9 +275,7 @@ public final class DHistogram extends Iced {
   // Compute response mean & variance.
   void incr( double col_data, double y, double w ) {
     if (Double.isNaN(col_data)) {
-      _wNA.addAndGet(w);
-      _wYNA.addAndGet(w*y);
-      _wYYNA.addAndGet(w*y*y);
+      addNasAtomic(w,w*y,w*y*y);
       return;
     }
     assert Double.isInfinite(col_data) || (_min <= col_data && col_data < _maxEx) : "col_data "+col_data+" out of range "+this;
@@ -284,9 +300,7 @@ public final class DHistogram extends Iced {
     if( _min2 > dsh._min2  ) _min2 = dsh._min2;
     if( _maxIn < dsh._maxIn) _maxIn = dsh._maxIn;
     add0(dsh);
-    _wNA.addAndGet(dsh._wNA.get());
-    _wYNA.addAndGet(dsh._wYNA.get());
-    _wYYNA.addAndGet(dsh._wYYNA.get());
+    addNasPlain(dsh._naCnts);
   }
 
   // Inclusive min & max
@@ -420,7 +434,7 @@ public final class DHistogram extends Iced {
        wYlo[b] = m0+m1;
       wYYlo[b] = s0+s1;
     }
-    double wNA = _wNA.doubleValue();
+    double wNA = wNA();
     double tot = wlo[nbins] + wNA; //total number of (weighted) rows
     // Is any split possible with at least min_obs?
     if( tot < 2*min_rows )
@@ -428,8 +442,8 @@ public final class DHistogram extends Iced {
     // If we see zero variance, we must have a constant response in this
     // column.  Normally this situation is cut out before we even try to split,
     // but we might have NA's in THIS column...
-    double wYNA = _wYNA.doubleValue();
-    double wYYNA = _wYYNA.doubleValue();
+    double wYNA = wYNA();
+    double wYYNA = wYYNA();
     double var = (wYYlo[nbins]+wYYNA)*tot - (wYlo[nbins]+wYNA)*(wYlo[nbins]+wYNA);
     if( ((float)var) == 0f )
       return null;
@@ -607,6 +621,24 @@ public final class DHistogram extends Iced {
     return new DTree.Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
   }
 
+
+  public void updateHisto(double w, double c, double y) {
+    double wy = w * y;
+    double wyy = wy * y;
+    if (Double.isNaN(c)) {
+      //separate bucket for NA - atomically added to the shared histo
+      addNasPlain(w,wy,wyy);
+    } else {
+      // increment local pre-thread histograms
+      int b = bin(c);
+      _w[b] += w;
+      _wY[b] += wy;
+      _wYY[b] += wyy;
+      if(c < _min2 ) _min2  = c;
+      if(c > _maxIn) _maxIn = c;
+    }
+  }
+
   public void updateHisto(double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo){
     double minmax[] = new double[]{_min2,_maxIn};
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
@@ -624,9 +656,7 @@ public final class DHistogram extends Iced {
       double wyy = wy * y;
       if (Double.isNaN(col_data)) {
         //separate bucket for NA - atomically added to the shared histo
-        _wNA.addAndGet(weight);
-        _wYNA.addAndGet(wy);
-        _wYYNA.addAndGet(wyy);
+        addNasPlain(weight,wy,wyy);
       } else {
         // increment local pre-thread histograms
         int b = bin(col_data);
@@ -635,13 +665,17 @@ public final class DHistogram extends Iced {
         _wYY[b] += wyy;
       }
     }
-    for(int i = 0; i < _wY.length; ++i){
-      _wY[i] = (float)_wY[i];
-      _wYY[i] = (float)_wYY[i];
-    }
     double d;
     if( (d = minmax[0]) < _min2 )  _min2  = d;
     if( (d = minmax[1]) > _maxIn)  _maxIn = d;
+  }
+
+  public void reducePrecision(){
+    if(_w == null) return;
+    for(int i = 0; i < _wY.length; ++i) {
+      _wY[i] =  (float)_wY[i];
+      _wYY[i] = (float) _wYY[i];
+    }
   }
 
   public void updateSharedHistosAndReset(ScoreBuildHistogram.LocalHisto lh, double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo) {
@@ -661,9 +695,7 @@ public final class DHistogram extends Iced {
       double wyy = wy * y;
       if (Double.isNaN(col_data)) {
         //separate bucket for NA - atomically added to the shared histo
-        _wNA.addAndGet(weight);
-        _wYNA.addAndGet(wy);
-        _wYYNA.addAndGet(wyy);
+        addNasAtomic(weight,wy,wyy);
       } else {
         // increment local pre-thread histograms
         int b = bin(col_data);
@@ -672,11 +704,9 @@ public final class DHistogram extends Iced {
         lh.wYYAdd(b,wyy);
       }
     }
-
     // Atomically update histograms
     setMin(minmax[0]);       // Track actual lower/upper bound per-bin
     setMaxIn(minmax[1]);
-
     final int len = _w.length;
     for( int b=0; b<len; b++ ) {
       if (lh.w(b) != 0) {

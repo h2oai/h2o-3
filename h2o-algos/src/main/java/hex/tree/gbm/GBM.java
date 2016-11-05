@@ -161,7 +161,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         _scbParms.blockSz = _parms._col_block_sz;
         _scbParms.sharedHisto = _parms._shared_histo;
         _scbParms.min_threads = _parms._min_threads == -1?H2O.NUMCPUS:_parms._min_threads;
-        _scbParms._unordered = false;
+        _scbParms._unordered = _parms._unordered;
       }
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols)); //per-tree
       if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
@@ -873,7 +873,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             DecidedNode dn = tree.decided(nid);           // Must have a decision point
             if( dn._split == null )                    // Unable to decide?
               dn = tree.decided(dn.pid());  // Then take parent's decision
-            int leafnid = dn.getChildNodeID(chks[dn._split._col].atd(row)); // Decide down to a leafnode
+            int leafnid = dn.getChildNodeID(chks,row); // Decide down to a leafnode
             assert leaf <= leafnid && leafnid < tree._len :
                     "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
             assert tree.node(leafnid) instanceof LeafNode;

@@ -20,6 +20,8 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     public int _col_block_sz = 2;
     public int _min_threads = -1;
     public boolean _shared_histo;
+    public boolean _unordered;
+
 
 
     public GBMParameters() {

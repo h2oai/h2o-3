@@ -1495,4 +1495,8 @@ public class Vec extends Keyed<Vec> {
     UnsafeUtils.set4(k._kb, 6, cidx); // chunk#
     return k;
   }
+
+  public boolean isHomedLocally(int cidx){
+    return chunkKey(cidx).home();
+  }
 }

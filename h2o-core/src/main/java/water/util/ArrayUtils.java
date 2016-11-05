@@ -344,6 +344,20 @@ public class ArrayUtils {
     return res;
   }
 
+  public static <T> T[] cloneOrNull(T[] ary){return ary == null?null:ary.clone();}
+
+  public static <T> T[][] transpose(T[][] ary) {
+    if(ary == null|| ary.length == 0) return ary;
+    T [][] res  = Arrays.copyOf(ary,ary[0].length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = Arrays.copyOf(ary[0],ary.length);
+    for(int i = 0; i < res.length; i++) {
+      for(int j = 0; j < res[0].length; j++)
+        res[i][j] = ary[j][i];
+    }
+    return res;
+  }
+
   /**
    * Provide array from start to end in steps of 1
    * @param start beginning value (inclusive)

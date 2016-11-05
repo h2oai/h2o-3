@@ -37,7 +37,7 @@ public abstract class DTask<T extends DTask> extends H2OCountedCompleter<T> {
   /** Capture the first exception in _ex.  Later setException attempts are ignored. */
   public synchronized void setException(Throwable ex) {
     if(_ex == null) {
-      _ex = AutoBuffer.javaSerializeWritePojo(((ex instanceof DistributedException) ? (DistributedException) ex : new DistributedException(ex)));
+      _ex = AutoBuffer.javaSerializeWritePojo(((ex instanceof DistributedException) ? (DistributedException) ex : new DistributedException(ex,false /* don't want this setException(ex) call in the stacktrace */)));
     }
   }
   /** The _ex field as a RuntimeException or null.
