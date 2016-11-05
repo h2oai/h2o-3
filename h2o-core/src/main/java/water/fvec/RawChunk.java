@@ -1,0 +1,22 @@
+package water.fvec;
+
+import water.fvec.CX0Chunk;
+import water.fvec.Chunk;
+import water.fvec.NewChunk;
+import water.udf.TypedChunk;
+
+/**
+ * Representative of TypedChunk in the world of typeless chunks. 
+ * We don't store any data there. We just pretend to be a "regular" chunk,
+ * to satisfy the obsolete API.
+ */
+public class RawChunk extends CX0Chunk {
+  private final TypedChunk<?> base;
+
+  public RawChunk(TypedChunk<?> base) {
+    super(base.length(), new byte[6]);
+    this.base = base;
+    _cidx = base.cidx();
+    _vec = base.vec();
+  }
+}

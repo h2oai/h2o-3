@@ -7,13 +7,6 @@ import java.util.function.Consumer;
  * Elements of FP in Java
  */
 public class FP {
-  public static <X, Y> Iterable<Y> map(Iterable<X> xs, Function<X, Y> f) {
-    List<Y> ys = new LinkedList<>();
-    for (X x : xs) ys.add(f.apply(x));
-    
-    return ys;
-  }
-  
   
   interface Option<T> extends Iterable<T> {
      T get();
