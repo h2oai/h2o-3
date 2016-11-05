@@ -100,5 +100,9 @@ public class PrintMojo {
       Graph g = ((DrfMojoModel) genModel).computeGraph();
       g.print();
     }
+    else {
+      System.out.println("ERROR: Unknown MOJO type");
+      System.exit(1);
+    }
   }
 }
