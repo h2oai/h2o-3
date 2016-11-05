@@ -1,58 +1,61 @@
 package hex.genmodel.algos.tree;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 
 /**
  * Subgraph for representing a tree.
  */
-public class Subgraph {
-  private String name;
+class Subgraph {
+  private final int subgraphNumber;
+  private final String name;
   private int nextNodeNumber = 0;
+  private Node rootNode;
 
   private ArrayList<Node> nodesArray;
   private ArrayList<Edge> edgesArray;
 
-  public Subgraph(String n) {
+  Subgraph(int sn, String n) {
+    subgraphNumber = sn;
     name = n;
     nodesArray = new ArrayList<>();
     edgesArray = new ArrayList<>();
   }
 
-  public Node makeRootNode() {
-    Node n = new Node(nextNodeNumber, 0);
+  Node makeRootNode() {
+    Node n = new Node(subgraphNumber, nextNodeNumber, 0);
     nextNodeNumber++;
     nodesArray.add(n);
+    rootNode = n;
     return n;
   }
 
-  public Node makeLeftChildNode(Node parent) {
-    Node child = new Node(nextNodeNumber, parent.getLevel() + 1);
+  Node makeLeftChildNode(Node parent) {
+    Node child = new Node(subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
     nextNodeNumber++;
     nodesArray.add(child);
     makeLeftEdge(parent, child);
     return child;
   }
 
-  public Node makeRightChildNode(Node parent) {
-    Node child = new Node(nextNodeNumber, parent.getLevel() + 1);
+  Node makeRightChildNode(Node parent) {
+    Node child = new Node(subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
     nextNodeNumber++;
     nodesArray.add(child);
     makeRightEdge(parent, child);
     return child;
   }
 
-  public Edge makeLeftEdge(Node parent, Node child) {
+  private Edge makeLeftEdge(Node parent, Node child) {
     parent.setLeftChild(child);
-    child.setIsLeftChild();
     Edge e = new Edge(parent, child);
     e.setIsLeftEdge();
     edgesArray.add(e);
     return e;
   }
 
-  public Edge makeRightEdge(Node parent, Node child) {
+  private Edge makeRightEdge(Node parent, Node child) {
     parent.setRightChild(child);
-    child.setIsRightChild();
     Edge e = new Edge(parent, child);
     edgesArray.add(e);
     e.setIsRightEdge();
@@ -64,13 +67,55 @@ public class Subgraph {
     System.out.println("    ----- " + name + " -----");
 
     System.out.println("    Nodes");
-    for (int i = 0; i < nodesArray.size(); i++) {
-      nodesArray.get(i).print();
+    for (Node aNodesArray : nodesArray) {
+      aNodesArray.print();
     }
     System.out.println("");
     System.out.println("    Edges");
-    for (int i = 0; i < edgesArray.size(); i++) {
-      edgesArray.get(i).print();
+    for (Edge anEdgesArray : edgesArray) {
+      anEdgesArray.print();
     }
+  }
+
+  void printDot(PrintStream os) {
+    os.println("");
+    os.println("subgraph " + "cluster_" + subgraphNumber + " {");
+    os.println("/* Nodes */");
+
+    int maxLevel = -1;
+    for (Node n : nodesArray) {
+      if (n.getLevel() > maxLevel) {
+        maxLevel = n.getLevel();
+      }
+    }
+
+    for (int level = 0; level <= maxLevel; level++) {
+      os.println("");
+      os.println("/* Level " + level + " */");
+      os.println("{");
+      os.println("rank=same");
+      rootNode.printDotLevel(os, level);
+      os.println("}");
+    }
+
+    os.println("");
+    os.println("/* Edges */");
+    for (Node n : nodesArray) {
+      {
+        Node leftChild = n.getLeftChild();
+        if (leftChild != null) {
+          os.println("\"" + n.getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [color=red]");
+        }
+      }
+      {
+        Node rightChild = n.getRightChild();
+        if (rightChild != null) {
+          os.println("\"" + n.getDotName() + "\"" + " -> " + "\"" + rightChild.getDotName() + "\"");
+        }
+      }
+    }
+    os.println("");
+    os.println("label=\"" + name + "\"");
+    os.println("}");
   }
 }
