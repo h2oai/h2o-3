@@ -94,7 +94,7 @@ public class Node {
     os.println("");
   }
 
-  void printDotLevel(PrintStream os, int levelToPrint) {
+  void printDotNodesAtLevel(PrintStream os, int levelToPrint) {
     if (getLevel() == levelToPrint) {
       printDot(os);
       return;
@@ -103,10 +103,10 @@ public class Node {
     assert (getLevel() < levelToPrint);
 
     if (leftChild != null) {
-      leftChild.printDotLevel(os, levelToPrint);
+      leftChild.printDotNodesAtLevel(os, levelToPrint);
     }
     if (rightChild != null) {
-      rightChild.printDotLevel(os, levelToPrint);
+      rightChild.printDotNodesAtLevel(os, levelToPrint);
     }
   }
 
