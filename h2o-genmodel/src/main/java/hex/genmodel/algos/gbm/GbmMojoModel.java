@@ -58,15 +58,18 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
      *
      * @return A graph of the forest.
      */
-    public Graph computeGraph() {
+    public Graph computeGraph(int treeToPrint) {
+        int nClassesToScore;
         if (_family == bernoulli || _family == modified_huber) {
-            return computeGraph(1);
+            nClassesToScore = 1;
         }
         else if (_family == multinomial) {
-            return computeGraph(_nclasses == 2 ? 1 : _nclasses);
+            nClassesToScore = _nclasses == 2 ? 1 : _nclasses;
         }
         else {
-            return computeGraph(1);
+            nClassesToScore = 1;
         }
+
+        return computeGraph(treeToPrint, nClassesToScore);
     }
 }

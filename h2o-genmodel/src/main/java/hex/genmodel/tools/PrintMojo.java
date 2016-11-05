@@ -16,6 +16,7 @@ public class PrintMojo {
   private boolean printRaw = false;
   private boolean printDot = true;
   private boolean printPng = false;
+  private int treeToPrint = -1;
   private String outputFileName = null;
 
   public static void main(String[] args) {
@@ -40,8 +41,9 @@ public class PrintMojo {
 
   private static void usage() {
     System.out.println("");
-    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [(--dot | --png)] [-o outputFileName]");
+    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [(--dot | --png)] [-o outputFileName]");
     System.out.println("");
+    System.out.println("     --tree          Tree number to print.  [default all]");
     System.out.println("     --input | -i    Input mojo file.");
     System.out.println("     --dot           Generate dot (graphviz) output.  [default]");
     System.out.println("     --png           Generate png output (requires graphviz).");
@@ -55,6 +57,18 @@ public class PrintMojo {
       for (int i = 0; i < args.length; i++) {
         String s = args[i];
         switch (s) {
+          case "--tree":
+            i++;
+            if (i >= args.length) usage();
+            s = args[i];
+            try {
+              treeToPrint = Integer.parseInt(s);
+            }
+            catch (Exception e) {
+              System.out.println("ERROR: invalid --tree argument (" + s + ")");
+              System.exit(1);
+            }
+            break;
           case "--input":
           case "-i":
             i++;
@@ -112,7 +126,7 @@ public class PrintMojo {
     }
 
     if (genModel instanceof GbmMojoModel) {
-      Graph g = ((GbmMojoModel) genModel).computeGraph();
+      Graph g = ((GbmMojoModel) genModel).computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }
@@ -121,7 +135,7 @@ public class PrintMojo {
       }
     }
     else if (genModel instanceof DrfMojoModel) {
-      Graph g = ((DrfMojoModel) genModel).computeGraph();
+      Graph g = ((DrfMojoModel) genModel).computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }

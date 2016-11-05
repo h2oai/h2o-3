@@ -58,7 +58,7 @@ public final class DrfMojoModel extends SharedTreeMojoModel {
      *
      * @return A graph of the forest.
      */
-    public Graph computeGraph() {
-        return computeGraph(_effective_n_classes);
+    public Graph computeGraph(int treeToPrint) {
+        return computeGraph(_effective_n_classes, treeToPrint);
     }
 }
