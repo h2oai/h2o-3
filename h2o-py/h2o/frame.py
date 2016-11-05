@@ -1817,9 +1817,21 @@ class H2OFrame(object):
             na_rm = kwargs.pop("na_rm")
             assert_is_type(na_rm, bool)
             skipna = na_rm  # don't assign to skipna directly, to help with error reporting
+        # Return H2O frame or list
+        return_list = True
+        if "return_h2o_frame" in kwargs:
+            rhf = kwargs.pop("return_h2o_frame")
+            return_h2o_frame = kwargs.pop("return_h2o_frame")
+            assert_is_type(return_h2o_frame, bool)
+            return_list = not return_h2o_frame
         if kwargs:
             raise H2OValueError("Unknown parameters %r" % list(kwargs))
-        return H2OFrame._expr(ExprNode("mean", self, skipna, axis))
+
+        expn = ExprNode("mean", self, skipna, axis)
+        if return_list:
+            return expn._eager_scalar()
+        else:
+            return H2OFrame._expr(expn)
 
     def skewness(self, na_rm=False):
         """
