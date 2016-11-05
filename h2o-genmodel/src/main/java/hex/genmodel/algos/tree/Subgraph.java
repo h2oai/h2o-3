@@ -100,18 +100,7 @@ class Subgraph {
     os.println("");
     os.println("/* Edges */");
     for (Node n : nodesArray) {
-      {
-        Node leftChild = n.getLeftChild();
-        if (leftChild != null) {
-          os.println("\"" + n.getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [color=red]");
-        }
-      }
-      {
-        Node rightChild = n.getRightChild();
-        if (rightChild != null) {
-          os.println("\"" + n.getDotName() + "\"" + " -> " + "\"" + rightChild.getDotName() + "\"");
-        }
-      }
+      n.printDotEdges(os);
     }
     os.println("");
     os.println("label=\"" + name + "\"");
