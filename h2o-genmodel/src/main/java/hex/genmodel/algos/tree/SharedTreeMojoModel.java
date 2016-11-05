@@ -150,7 +150,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                     bs.fill2(tree, ab);
                 else
                     bs.fill3(tree, ab);
-                node.setBitset();
+                node.setBitset(getDomainValues(colId), bs);
             }
         }
 

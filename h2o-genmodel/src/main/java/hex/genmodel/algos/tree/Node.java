@@ -1,5 +1,7 @@
 package hex.genmodel.algos.tree;
 
+import hex.genmodel.utils.GenmodelBitSet;
+
 import java.io.PrintStream;
 
 /**
@@ -11,7 +13,8 @@ public class Node {
   private final int level;
   private String colName;
   private float splitValue = Float.NaN;
-  private boolean isBitset = false;
+  private String[] domainValues;
+  private GenmodelBitSet bs;
   private float leafValue = Float.NaN;
   private Node leftChild;
   private Node rightChild;
@@ -34,8 +37,10 @@ public class Node {
     splitValue = v;
   }
 
-  void setBitset() {
-    isBitset = true;
+  void setBitset(String[] v1, GenmodelBitSet v2) {
+    assert (v1 != null);
+    domainValues = v1;
+    bs = v2;
   }
 
   void setLeafValue(float v) {
@@ -59,7 +64,7 @@ public class Node {
     System.out.println("            level:       " + level);
     System.out.println("            colName:     " + ((colName != null) ? colName : ""));
     System.out.println("            splitVal:    " + splitValue);
-    System.out.println("            isBitset:    " + isBitset);
+    System.out.println("            isBitset:    " + isBitset());
     System.out.println("            leafValue:   " + leafValue);
     System.out.println("            leftChild:   " + ((leftChild != null) ? leftChild.getName() : ""));
     System.out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
@@ -73,6 +78,10 @@ public class Node {
     return (! Float.isNaN(leafValue));
   }
 
+  private boolean isBitset() {
+    return (domainValues != null);
+  }
+
   private void printDot(PrintStream os) {
     os.print("\"" + getDotName() + "\"");
     if (isLeaf()) {
@@ -80,7 +89,7 @@ public class Node {
       os.print(leafValue);
       os.print("\"]");
     }
-    else if (isBitset) {
+    else if (isBitset()) {
       os.print(" [shape=box,label=\"");
       os.print(colName + " bitset");
       os.print("\"]");
@@ -110,31 +119,66 @@ public class Node {
     }
   }
 
+  final int MAX_LEVELS_TO_LABEL_ON_EDGE = 10;
+
   void printDotEdges(PrintStream os) {
-    {
-      if (leftChild != null) {
-        os.print("\"" + getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [");
-        os.print("color=red");
-        if (isBitset) {
+    if (leftChild != null) {
+      os.print("\"" + getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [");
+      os.print("color=red");
+      if (isBitset()) {
+        int total = 0;
+        for (int i = 0; i < domainValues.length; i++) {
+          if (! bs.contains(i)) {
+            total++;
+          }
+        }
+        if (total <= MAX_LEVELS_TO_LABEL_ON_EDGE) {
+          os.print(",label=\"");
+          for (int i = 0; i < domainValues.length; i++) {
+            if (! bs.contains(i)) {
+              os.print(domainValues[i] + "\\n");
+            }
+          }
+          os.print("\"");
         }
         else {
-          os.print(",label=\"<\"");
+          os.print(",label=\"" + total + " levels\"");
         }
-        os.println("]");
       }
+      else {
+        os.print(",label=\"<\"");
+      }
+      os.println("]");
     }
-    {
-      if (rightChild != null) {
-        os.print("\"" + getDotName() + "\"" + " -> " + "\"" + rightChild.getDotName() + "\"" + " [");
 
-        if (isBitset) {
+    if (rightChild != null) {
+      os.print("\"" + getDotName() + "\"" + " -> " + "\"" + rightChild.getDotName() + "\"" + " [");
+
+      if (isBitset()) {
+        int total = 0;
+        for (int i = 0; i < domainValues.length; i++) {
+          if (bs.contains(i)) {
+            total++;
+          }
+        }
+        if (total <= MAX_LEVELS_TO_LABEL_ON_EDGE) {
+          os.print("label=\"");
+          for (int i = 0; i < domainValues.length; i++) {
+            if (bs.contains(i)) {
+              os.print(domainValues[i] + "\\n");
+            }
+          }
+          os.print("\"");
         }
         else {
-          os.print("label=\">=\"");
+          os.print("label=\"" + total + " levels\"");
         }
-
-        os.println("]");
       }
+      else {
+        os.print("label=\">=\"");
+      }
+
+      os.println("]");
     }
   }
 }
