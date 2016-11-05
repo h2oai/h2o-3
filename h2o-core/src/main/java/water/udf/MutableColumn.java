@@ -7,4 +7,5 @@ import water.fvec.Chunk;
  */
 public interface MutableColumn<T> extends Column<T> {
   void set(long idx, T value);
+  @Override T apply(long idx);
 }

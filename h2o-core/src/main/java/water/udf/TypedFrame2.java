@@ -34,33 +34,4 @@ public class TypedFrame2<X, Y> extends Frame {
   public FunColumn<X, Y> newColumn() throws IOException {
     return new FunColumn<>(function, columnX);
   }
-
-  protected TypedVector<Y> newColumn(Factory<Y> factory) throws IOException {
-    Vec vec;
-    return factory.newColumn(materializeVec(factory, columnX.vec().length()));
-  }
-
-  public Column<Y> materialize() throws IOException {
-    return newColumn();
-  }
-  protected Vec materializeVec(final Factory<Y> factory, long len) throws IOException {
-    Column<Y> column = factory.newColumn(Vec.makeZero(len, factory.typeCode));
-    MRTask task = new MRTask() {
-      @Override
-      public void map(Chunk[] cs) {
-        for (Chunk c : cs) {
-          TypedChunk<X> xc = columnX.chunkAt(c.cidx());
-          DataChunk<Y> yc = factory.apply(c);
-          for (int i = 0; i < c._len; i++) {
-            X x = xc.get(i);
-            yc.set(i, function.apply(x));
-          }
-        }
-      }
-    };
-    Vec vec = column.vec();
-    MRTask mrTask = task.doAll(vec);
-    return mrTask._fr.vecs()[0];
-  }
-  
 }
