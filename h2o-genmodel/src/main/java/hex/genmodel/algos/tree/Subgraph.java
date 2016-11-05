@@ -93,7 +93,6 @@ class Subgraph {
       os.println("");
       os.println("/* Level " + level + " */");
       os.println("{");
-      os.println("rank=same");
       rootNode.printDotLevel(os, level);
       os.println("}");
     }
