@@ -46,16 +46,8 @@ public class Node {
     leftChild = v;
   }
 
-  Node getLeftChild() {
-    return leftChild;
-  }
-
   void setRightChild(Node v) {
     rightChild = v;
-  }
-
-  Node getRightChild() {
-    return rightChild;
   }
 
   public String getName() {
@@ -73,7 +65,7 @@ public class Node {
     System.out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
   }
 
-  String getDotName() {
+  private String getDotName() {
     return "SG_" + subgraphNumber + "_Node_" + nodeNumber;
   }
 
@@ -115,6 +107,34 @@ public class Node {
     }
     if (rightChild != null) {
       rightChild.printDotLevel(os, levelToPrint);
+    }
+  }
+
+  void printDotEdges(PrintStream os) {
+    {
+      if (leftChild != null) {
+        os.print("\"" + getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [");
+        os.print("color=red");
+        if (isBitset) {
+        }
+        else {
+          os.print(",label=\"<\"");
+        }
+        os.println("]");
+      }
+    }
+    {
+      if (rightChild != null) {
+        os.print("\"" + getDotName() + "\"" + " -> " + "\"" + rightChild.getDotName() + "\"" + " [");
+
+        if (isBitset) {
+        }
+        else {
+          os.print("label=\">=\"");
+        }
+
+        os.println("]");
+      }
     }
   }
 }
