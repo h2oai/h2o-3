@@ -214,11 +214,23 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
     }
 
-    protected Graph computeGraph(int nClassesToScore) {
+    protected Graph computeGraph(int treeToPrint, int nClassesToScore) {
         Graph g = new Graph();
 
-        for (int i = 0; i < nClassesToScore; i++) {
-            for (int j = 0; j < _ntrees; j++) {
+        if (treeToPrint >= _ntrees) {
+            throw new IllegalArgumentException("Tree " + treeToPrint + " does not exist (max " + _ntrees + ")");
+        }
+
+        int j;
+        if (treeToPrint >= 0) {
+            j = treeToPrint;
+        }
+        else {
+            j = 0;
+        }
+
+        for (; j < _ntrees; j++) {
+            for (int i = 0; i < nClassesToScore; i++) {
                 String className = "";
                 {
                     String[] domainValues = getDomainValues(getResponseIdx());
@@ -233,6 +245,10 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 byte[] tree = _compressed_trees[itree];
                 ByteBufferWrapper ab = new ByteBufferWrapper(tree);
                 computeTreeGraph(sg, node, tree, ab, _nclasses);
+            }
+
+            if (treeToPrint >= 0) {
+                break;
             }
         }
 
