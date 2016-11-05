@@ -449,7 +449,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             // Don't cheat - count full amount of training samples, since that's the amount of training it took to train (without finding anything better)
             mi.set_processed_global(model.model_info().get_processed_global());
             mi.set_processed_local(model.model_info().get_processed_local());
-            model.set_model_info(mi);
+            DeepLearningParameters parms = model.model_info().get_params(); // backup the parameters for this model
+            model.set_model_info(mi); // this overwrites also the parameters from the previous best model, but we only want the state
+            model.model_info().parameters = parms; // restore the parameters
             model.update(_job);
             model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, true);
             if (best_model.loss() != model.loss()) {
