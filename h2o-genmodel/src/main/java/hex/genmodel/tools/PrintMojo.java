@@ -6,13 +6,14 @@ import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.Graph;
 
-import java.io.IOException;
+import java.io.*;
 
 /**
  * Print dot (graphviz) representation of one or more trees in a DRF or GBM model.
  */
 public class PrintMojo {
   private GenModel genModel;
+  private boolean printRaw = false;
   private boolean printDot = true;
   private boolean printPng = false;
   private String outputFileName = null;
@@ -53,28 +54,37 @@ public class PrintMojo {
     try {
       for (int i = 0; i < args.length; i++) {
         String s = args[i];
-        if (s.equals("--input") || s.equals("-i")) {
-          i++;
-          if (i >= args.length) usage();
-          s = args[i];
-          loadMojo(s);
-        }
-        else if (s.equals("--dot")) {
-          printDot = true;
-          printPng = false;
-        }
-        else if (s.equals("--png")) {
-          printDot = false;
-          printPng = true;
-        }
-        else if ((s.equals("-o") || s.equals("--output"))) {
-          i++;
-          if (i >= args.length) usage();
-          outputFileName = args[i];
-        }
-        else {
-          System.out.println("ERROR: Unknown command line argument: " + s);
-          usage();
+        switch (s) {
+          case "--input":
+          case "-i":
+            i++;
+            if (i >= args.length) usage();
+            s = args[i];
+            loadMojo(s);
+            break;
+          case "--raw":
+            printRaw = true;
+            break;
+          case "--dot":
+            printRaw = false;
+            printDot = true;
+            printPng = false;
+            break;
+          case "--png":
+            printRaw = false;
+            printDot = false;
+            printPng = true;
+            break;
+          case "-o":
+          case "--output":
+            i++;
+            if (i >= args.length) usage();
+            outputFileName = args[i];
+            break;
+          default:
+            System.out.println("ERROR: Unknown command line argument: " + s);
+            usage();
+            break;
         }
       }
     } catch (Exception e) {
@@ -92,16 +102,40 @@ public class PrintMojo {
 
   private void run() throws Exception {
     validateArgs();
+
+    PrintStream os;
+    if (outputFileName != null) {
+      os = new PrintStream(new FileOutputStream(new File(outputFileName)));
+    }
+    else {
+      os = System.out;
+    }
+
     if (genModel instanceof GbmMojoModel) {
       Graph g = ((GbmMojoModel) genModel).computeGraph();
-      g.print();
+      if (printRaw) {
+        g.print();
+      }
+      if (printDot) {
+        g.printDot(os);
+      }
     }
     else if (genModel instanceof DrfMojoModel) {
       Graph g = ((DrfMojoModel) genModel).computeGraph();
-      g.print();
+      if (printRaw) {
+        g.print();
+      }
+      if (printDot) {
+        g.printDot(os);
+      }
     }
     else {
       System.out.println("ERROR: Unknown MOJO type");
+      System.exit(1);
+    }
+
+    if (printPng) {
+      System.out.println("ERROR: --png not yet implemented");
       System.exit(1);
     }
   }

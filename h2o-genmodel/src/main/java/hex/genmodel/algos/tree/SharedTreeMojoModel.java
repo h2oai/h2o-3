@@ -115,7 +115,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     // Computing a Tree Graph
     //------------------------------------------------------------------------------------------------------------------
 
-    public void computeTreeGraph(Subgraph sg, Node node, byte[] tree, ByteBufferWrapper ab, int nclasses) {
+    private void computeTreeGraph(Subgraph sg, Node node, byte[] tree, ByteBufferWrapper ab, int nclasses) {
         GenmodelBitSet bs = null;
 
         int nodeType = ab.get1U();
@@ -212,11 +212,9 @@ public abstract class SharedTreeMojoModel extends MojoModel {
 
             computeTreeGraph(sg, newNode, tree, ab2, nclasses);
         }
-
-        return;
     }
 
-    public Graph computeGraph(int nClassesToScore) {
+    protected Graph computeGraph(int nClassesToScore) {
         Graph g = new Graph();
 
         for (int i = 0; i < nClassesToScore; i++) {
@@ -225,7 +223,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 {
                     String[] domainValues = getDomainValues(getResponseIdx());
                     if (domainValues != null) {
-                        className = " Class " + domainValues[i];
+                        className = ", Class " + domainValues[i];
                     }
                 }
                 int itree = i * _ntrees + j;
