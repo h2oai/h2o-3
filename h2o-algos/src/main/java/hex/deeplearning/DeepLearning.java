@@ -455,7 +455,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             model.update(_job);
             model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, true);
             if (best_model.loss() != model.loss()) {
-              Log.info("Best model's loss: " + best_model.loss() + " vs this model's loss (after overwriting it with the best model) : " + model.loss());
+              if (!_parms._quiet_mode) {
+                Log.info("Best model's loss: " + best_model.loss() + " vs this model's loss (after overwriting it with the best model) : " + model.loss());
+              }
               Log.warn("Even though the model was reset to the previous best model, we observe different scoring results. " +
                   "Most likely, the data set has changed during a checkpoint restart. If so, please compare the metrics to observe your data shift.");
             }
