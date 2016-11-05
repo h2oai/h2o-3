@@ -54,12 +54,12 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
     }
 
     /**
-     * Compute a graph of the forest.
-     *
-     * @return A graph of the forest.
+     * Calculate number of compressed trees per class
+     * @return number of compressed trees per class
      */
-    public Graph computeGraph(int treeToPrint) {
+    public int calcNClassesToScore() {
         int nClassesToScore;
+
         if (_family == bernoulli || _family == modified_huber) {
             nClassesToScore = 1;
         }
@@ -70,6 +70,15 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
             nClassesToScore = 1;
         }
 
-        return computeGraph(treeToPrint, nClassesToScore);
+        return nClassesToScore;
+    }
+
+    /**
+     * Compute a graph of the forest.
+     *
+     * @return A graph of the forest.
+     */
+    public Graph computeGraph(int treeToPrint) {
+        return computeGraph(treeToPrint, calcNClassesToScore());
     }
 }
