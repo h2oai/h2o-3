@@ -111,6 +111,135 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         return sb.substring(0, pos);
     }
 
+    //------------------------------------------------------------------------------------------------------------------
+    // Computing a Tree Graph
+    //------------------------------------------------------------------------------------------------------------------
+
+    public void computeTreeGraph(Subgraph sg, Node node, byte[] tree, ByteBufferWrapper ab, int nclasses) {
+        GenmodelBitSet bs = null;
+
+        int nodeType = ab.get1U();
+        int colId = ab.get2();
+        if (colId == 65535) {
+            float leafValue = ab.get4f();
+            node.setLeafValue(leafValue);
+            return;
+        }
+
+        String colName = getNames()[colId];
+        node.setColName(colName);
+
+        int naSplitDir = ab.get1U();
+        boolean naVsRest = naSplitDir == NsdNaVsRest;
+        boolean leftward = naSplitDir == NsdNaLeft || naSplitDir == NsdLeft;
+        int lmask = (nodeType & 51);
+        int equal = (nodeType & 12);  // Can be one of 0, 8, 12
+        assert equal != 4;  // no longer supported
+
+        float splitVal = -1;
+        if (!naVsRest) {
+            // Extract value or group to split on
+            if (equal == 0) {
+                // Standard float-compare test (either < or ==)
+                splitVal = ab.get4f();  // Get the float to compare
+                node.setSplitValue(splitVal);
+            } else {
+                // Bitset test
+                if (bs == null) bs = new GenmodelBitSet(0);
+                if (equal == 8)
+                    bs.fill2(tree, ab);
+                else
+                    bs.fill3(tree, ab);
+            }
+        }
+
+        // go RIGHT
+        {
+//        double d = row[colId];
+//        if (Double.isNaN(d)? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains((int)d))) {
+
+            ByteBufferWrapper ab2 = new ByteBufferWrapper(tree);
+            ab2.skip(ab.position());
+
+            switch (lmask) {
+                case 0:
+                    ab2.skip(ab2.get1U());
+                    break;
+                case 1:
+                    ab2.skip(ab2.get2());
+                    break;
+                case 2:
+                    ab2.skip(ab2.get3());
+                    break;
+                case 3:
+                    ab2.skip(ab2.get4());
+                    break;
+                case 16:
+                    ab2.skip(nclasses < 256 ? 1 : 2);
+                    break;  // Small leaf
+                case 48:
+                    ab2.skip(4);
+                    break;  // skip the prediction
+                default:
+                    assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
+            }
+            int lmask2 = (nodeType & 0xC0) >> 2;  // Replace leftmask with the rightmask
+
+            Node newNode = sg.makeRightChildNode(node);
+            if ((lmask2 & 16) != 0) {
+                float leafValue = ab2.get4f();
+                newNode.setLeafValue(leafValue);
+                return;
+            }
+
+            computeTreeGraph(sg, newNode, tree, ab2, nclasses);
+        }
+
+        // go LEFT
+        {
+            ByteBufferWrapper ab2 = new ByteBufferWrapper(tree);
+            ab2.skip(ab.position());
+
+            if (lmask <= 3)
+                ab2.skip(lmask + 1);
+
+            Node newNode = sg.makeLeftChildNode(node);
+            if ((lmask & 16) != 0) {
+                float leafValue = ab2.get4f();
+                node.setLeafValue(leafValue);
+                return;
+            }
+
+            computeTreeGraph(sg, newNode, tree, ab2, nclasses);
+        }
+
+        return;
+    }
+
+    public Graph computeGraph(int nClassesToScore) {
+        Graph g = new Graph();
+
+        for (int i = 0; i < nClassesToScore; i++) {
+            for (int j = 0; j < _ntrees; j++) {
+                String className = "";
+                {
+                    String[] domainValues = getDomainValues(getResponseIdx());
+                    if (domainValues != null) {
+                        className = " Class " + domainValues[i];
+                    }
+                }
+                int itree = i * _ntrees + j;
+
+                Subgraph sg = g.makeSubgraph("Tree " + j + className);
+                Node node = sg.makeRootNode();
+                byte[] tree = _compressed_trees[itree];
+                ByteBufferWrapper ab = new ByteBufferWrapper(tree);
+                computeTreeGraph(sg, node, tree, ab, _nclasses);
+            }
+        }
+
+        return g;
+    }
 
     //------------------------------------------------------------------------------------------------------------------
     // Private

@@ -1,6 +1,7 @@
 package hex.genmodel.algos.gbm;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.algos.tree.Graph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 
@@ -50,5 +51,22 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
     @Override
     public double[] score0(double[] row, double[] preds) {
         return score0(row, 0.0, preds);
+    }
+
+    /**
+     * Compute a graph of the forest.
+     *
+     * @return A graph of the forest.
+     */
+    public Graph computeGraph() {
+        if (_family == bernoulli || _family == modified_huber) {
+            return computeGraph(1);
+        }
+        else if (_family == multinomial) {
+            return computeGraph(_nclasses == 2 ? 1 : _nclasses);
+        }
+        else {
+            return computeGraph(1);
+        }
     }
 }
