@@ -3,6 +3,7 @@ package hex.genmodel.algos.tree;
 import hex.genmodel.utils.GenmodelBitSet;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 
 /**
  * Graph Node.
@@ -12,6 +13,8 @@ public class Node {
   private final int nodeNumber;
   private final int level;
   private String colName;
+  private boolean leftward;
+  private boolean naVsRest;
   private float splitValue = Float.NaN;
   private String[] domainValues;
   private GenmodelBitSet bs;
@@ -31,6 +34,14 @@ public class Node {
 
   public void setColName(String v) {
     colName = v;
+  }
+
+  void setLeftward(boolean v) {
+    leftward = v;
+  }
+
+  void setNaVsRest(boolean v) {
+    naVsRest = v;
   }
 
   void setSplitValue(float v) {
@@ -63,6 +74,8 @@ public class Node {
     System.out.println("        Node " + nodeNumber);
     System.out.println("            level:       " + level);
     System.out.println("            colName:     " + ((colName != null) ? colName : ""));
+    System.out.println("            leftward:    " + leftward);
+    System.out.println("            naVsRest:    " + naVsRest);
     System.out.println("            splitVal:    " + splitValue);
     System.out.println("            isBitset:    " + isBitset());
     System.out.println("            leafValue:   " + leafValue);
@@ -91,7 +104,7 @@ public class Node {
     }
     else if (isBitset()) {
       os.print(" [shape=box,label=\"");
-      os.print(colName + " bitset");
+      os.print(colName);
       os.print("\"]");
     }
     else {
@@ -124,7 +137,14 @@ public class Node {
   void printDotEdges(PrintStream os) {
     if (leftChild != null) {
       os.print("\"" + getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [");
-      os.print("color=red");
+
+      ArrayList<String> arr = new ArrayList<>();
+      if (leftward) {
+        arr.add("[NA]");
+      }
+      if (naVsRest) {
+        arr.add("[Not NA]");
+      }
       if (isBitset()) {
         int total = 0;
         for (int i = 0; i < domainValues.length; i++) {
@@ -133,27 +153,34 @@ public class Node {
           }
         }
         if (total <= MAX_LEVELS_TO_LABEL_ON_EDGE) {
-          os.print(",label=\"");
           for (int i = 0; i < domainValues.length; i++) {
             if (! bs.contains(i)) {
-              os.print(domainValues[i] + "\\n");
+              arr.add(domainValues[i]);
             }
           }
-          os.print("\"");
         }
         else {
-          os.print(",label=\"" + total + " levels\"");
+          arr.add(total + " levels");
         }
       }
       else {
-        os.print(",label=\"<\"");
+        arr.add("<");
       }
+      os.print("label=\"");
+      for (String s : arr) {
+        os.print(s + "\\n");
+      }
+      os.print("\"");
       os.println("]");
     }
 
     if (rightChild != null) {
       os.print("\"" + getDotName() + "\"" + " -> " + "\"" + rightChild.getDotName() + "\"" + " [");
 
+      ArrayList<String> arr = new ArrayList<>();
+      if (!leftward) {
+        arr.add("[NA]");
+      }
       if (isBitset()) {
         int total = 0;
         for (int i = 0; i < domainValues.length; i++) {
@@ -162,22 +189,24 @@ public class Node {
           }
         }
         if (total <= MAX_LEVELS_TO_LABEL_ON_EDGE) {
-          os.print("label=\"");
           for (int i = 0; i < domainValues.length; i++) {
             if (bs.contains(i)) {
-              os.print(domainValues[i] + "\\n");
+              arr.add(domainValues[i]);
             }
           }
-          os.print("\"");
         }
         else {
-          os.print("label=\"" + total + " levels\"");
+          arr.add(total + " levels");
         }
       }
       else {
-        os.print("label=\">=\"");
+        arr.add(">=");
       }
-
+      os.print("label=\"");
+      for (String s : arr) {
+        os.print(s + "\\n");
+      }
+      os.print("\"");
       os.println("]");
     }
   }
