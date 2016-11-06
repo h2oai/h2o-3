@@ -9,6 +9,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from h2o.model.model_base import ModelBase
 from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.shared_utils import _colmean
 
 
 class H2ORegressionModel(ModelBase):
@@ -42,7 +43,7 @@ def _mean_var(frame, weights=None):
     :param weights: optional weights column
     :return: The (weighted) mean and variance
     """
-    return frame.mean()[0], frame.var()
+    return _colmean(frame), frame.var()
 
 
 def h2o_mean_absolute_error(y_actual, y_predicted, weights=None):
@@ -56,7 +57,7 @@ def h2o_mean_absolute_error(y_actual, y_predicted, weights=None):
 
     """
     ModelBase._check_targets(y_actual, y_predicted)
-    return (y_predicted - y_actual).abs().mean()[0]
+    return _colmean((y_predicted - y_actual).abs())
 
 
 def h2o_mean_squared_error(y_actual, y_predicted, weights=None):
@@ -69,7 +70,7 @@ def h2o_mean_squared_error(y_actual, y_predicted, weights=None):
     :return: loss (float) (best is 0.0)
     """
     ModelBase._check_targets(y_actual, y_predicted)
-    return ((y_predicted - y_actual) ** 2).mean()[0]
+    return _colmean((y_predicted - y_actual) ** 2)
 
 
 def h2o_median_absolute_error(y_actual, y_predicted):
@@ -113,7 +114,7 @@ def h2o_r2_score(y_actual, y_predicted, weights=1.):
     """
     ModelBase._check_targets(y_actual, y_predicted)
     numerator = (weights * (y_actual - y_predicted) ** 2).sum()
-    denominator = (weights * (y_actual - y_actual.mean()[0]) ** 2).sum()
+    denominator = (weights * (y_actual - _colmean(y_actual)) ** 2).sum()
 
     if denominator == 0.0:
         return 1. if numerator == 0. else 0.  # 0/0 => 1, else 0
