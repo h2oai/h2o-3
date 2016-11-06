@@ -4,8 +4,6 @@ import com.google.common.io.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
-import water.fvec.Chunk;
-import water.fvec.Vec;
 import water.util.StringUtils;
 
 import java.io.File;
@@ -27,13 +25,13 @@ public class UdfTest extends TestUtil {
   @BeforeClass
   static public void setup() {  stall_till_cloudsize(1); }
 
-  private TypedVector<Double> sines() throws java.io.IOException {
+  private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
     }));
   }
 
-  private TypedVector<Double> five_x() throws java.io.IOException {
+  private DataColumn<Double> five_x() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return i*5.0; }
     }));
@@ -85,18 +83,29 @@ public class UdfTest extends TestUtil {
     assertEquals("<<0>>", c.apply(0));
     assertEquals(null, c.apply(42));
     assertEquals("<<2016>>", c.apply(2016));
+    Column<String> materialized = Strings.materialize(c);
+
+    for (int i = 0; i < 100000; i++) {
+      assertEquals(c.apply(i), materialized.apply(i));
+    }
   }
 
   @Test
   public void testOfEnums() throws Exception {
-    Column<Integer> c = willDrop(Enums
-        .newColumn(1 << 20, new String[] {"Red", "White", "Blue"}, new Function<Long, Integer>() {
+    Column<Integer> c = willDrop(Enums(new String[] {"Red", "White", "Blue"})
+        .newColumn(1 << 20, new Function<Long, Integer>() {
        public Integer apply(Long i) { return (int)( i % 3); }
     }));
     assertEquals(0, c.apply(0).intValue());
     assertEquals(0, c.apply(42).intValue());
     assertEquals(1, c.apply(100).intValue());
     assertEquals(2, c.apply(20000).intValue());
+
+    Column<Integer> materialized = Enums(new String[] {"Red", "White", "Blue"}).materialize(c);
+
+    for (int i = 0; i < 100000; i++) {
+      assertEquals(c.apply(i), materialized.apply(i));
+    }
   }
 
   @Test
@@ -109,6 +118,12 @@ public class UdfTest extends TestUtil {
     assertEquals(new Date(0), c.apply(0));
     Date expected = new GregorianCalendar(1970, 8, 15, 17, 0, 0).getTime();
     assertEquals(expected, c.apply(258));
+
+    Column<Date> materialized = Dates.materialize(c);
+
+    for (int i = 0; i < 100000; i++) {
+      assertEquals(c.apply(i), materialized.apply(i));
+    }
   }
 
   @Test
@@ -120,27 +135,22 @@ public class UdfTest extends TestUtil {
     }));
     assertEquals(new UUID(0, 0), c.apply(0));
     assertEquals(new UUID(258*7, 258*13), c.apply(258));
+
+    Column<UUID> materialized = UUIDs.materialize(c);
+
+    for (int i = 0; i < 100000; i++) {
+      assertEquals(c.apply(i), materialized.apply(i));
+    }
   }
 
   @Test
   public void testOfEnumFun() throws Exception {
     final String[] domain = {"Red", "White", "Blue"};
-    Column<Integer> x = willDrop(Enums
-        .newColumn(1 << 20, domain, new Function<Long, Integer>() {
+    Column<Integer> x = willDrop(Enums(domain)
+        .newColumn(1 << 20, new Function<Long, Integer>() {
            public Integer apply(Long i) { return (int)( i % 3); }
         }));
 
-    ChunkFactory<TypedChunk<String>> factory = new ChunkFactory<TypedChunk<String>>() {
-      @Override
-      public byte typeCode() {
-        return Vec.T_STR;
-      }
-
-      @Override
-      public TypedChunk<String> apply(Chunk chunk) {
-        return Strings.apply(chunk);
-      }
-    };
     Column<String> y = new FunColumn<>(new Function<Integer, String>() {
       public String apply(Integer i) { return domain[i]; }
     }, x);
@@ -190,6 +200,18 @@ public class UdfTest extends TestUtil {
     assertEquals(0.0, z2.apply(0), 0.000001);
     assertEquals(44100.840011747794, z2.apply(42), 0.000001);
     assertEquals(10000000000.3387062632, z2.apply(20000), 0.000001);
+
+    Column<Double> materialized = Doubles.materialize(z2);
+
+    for (int i = 0; i < 100000; i++) {
+      Double expected = z2.apply(i);
+      assertTrue(z2.isNA(i) == materialized.isNA(i));
+      // the following exposes a problem. nulls being returned.
+      if (expected == null) assertTrue("At " + i + ":", materialized.isNA(i));
+      Double actual = materialized.apply(i);
+      
+      if (!z2.isNA(i)) assertEquals(expected, actual, 0.0001);
+    }
   }
 
   @Test
@@ -210,6 +232,12 @@ public class UdfTest extends TestUtil {
 
     for (int i = 0; i < 100000; i++) {
       assertEquals(1.00, r.apply(i*10), 0.0001);
+    }
+
+    Column<Double> materialized = Doubles.materialize(r);
+
+    for (int i = 0; i < 100000; i++) {
+      assertEquals(r.apply(i), materialized.apply(i), 0.0001);
     }
   }
 
@@ -247,7 +275,7 @@ public class UdfTest extends TestUtil {
 //      assertEquals(0., x0.get(i), 0.0001);
 //    }
     
-    Column<Double> materialized = DataColumns.materialize(r, Doubles);
+    Column<Double> materialized = Doubles.materialize(r);
 
     for (int i = 0; i < 100000; i++) {
       assertEquals(r.apply(i), materialized.apply(i), 0.0001);

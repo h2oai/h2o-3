@@ -10,7 +10,7 @@ import java.io.IOException;
 import static water.udf.DataColumns.*;
 
 /**
- * Single column frame that knows its data type
+ * Two-column frame that knows its data types
  */
 public class TypedFrame2<X, Y> extends Frame {
   private final Function<X, Y> function;
