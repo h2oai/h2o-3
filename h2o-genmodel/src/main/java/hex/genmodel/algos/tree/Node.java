@@ -143,9 +143,7 @@ public class Node {
     }
   }
 
-  private static final int MAX_LEVELS_TO_LABEL_ON_EDGE = 10;
-
-  void printDotEdges(PrintStream os) {
+  void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge) {
     if (leftChild != null) {
       os.print("\"" + getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [");
 
@@ -163,7 +161,7 @@ public class Node {
             total++;
           }
         }
-        if (total <= MAX_LEVELS_TO_LABEL_ON_EDGE) {
+        if (total <= maxLevelsToPrintPerEdge) {
           for (int i = 0; i < domainValues.length; i++) {
             if (! bs.contains(i)) {
               arr.add(domainValues[i]);
@@ -199,7 +197,7 @@ public class Node {
             total++;
           }
         }
-        if (total <= MAX_LEVELS_TO_LABEL_ON_EDGE) {
+        if (total <= maxLevelsToPrintPerEdge) {
           for (int i = 0; i < domainValues.length; i++) {
             if (bs.contains(i)) {
               arr.add(domainValues[i]);
