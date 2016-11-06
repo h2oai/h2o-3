@@ -11,20 +11,20 @@ import java.io.IOException;
 /**
  * Single column frame that knows its data type
  */
-public class TypedFrame1<X> extends Frame {
+public class TypedFrame<X> extends Frame {
   private final Factory<X> factory;
   private final long len;
   private final Function<Long, X> function;
   private Column<X> column;  
 
-  public TypedFrame1(Factory<X> factory, long len, Function<Long, X> function) {
+  public TypedFrame(Factory<X> factory, long len, Function<Long, X> function) {
     super();
     this.factory = factory;
     this.len = len;
     this.function = function;
   }
 
-  final static class EnumFrame1 extends TypedFrame1<Integer> {
+  final static class EnumFrame1 extends TypedFrame<Integer> {
     private final String[] domain;
     
     public EnumFrame1(long len, Function<Long, Integer> function, String[] domain) {
