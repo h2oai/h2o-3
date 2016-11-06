@@ -206,7 +206,7 @@ public class Node {
     }
   }
 
-  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, Node child) {
+  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, Node child, String comparison) {
     if (isBitset()) {
       BitSet childInclusiveLevels = child.getInclusiveLevels();
       int total = childInclusiveLevels.cardinality();
@@ -220,7 +220,7 @@ public class Node {
       }
     }
     else {
-      arr.add("<");
+      arr.add(comparison);
     }
     os.print("label=\"");
     for (String s : arr) {
@@ -243,7 +243,7 @@ public class Node {
       if (naVsRest) {
         arr.add("[Not NA]");
       }
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild, "<");
     }
 
     if (rightChild != null) {
@@ -253,7 +253,7 @@ public class Node {
       if (! leftward) {
         arr.add("[NA]");
       }
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild);
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild, ">=");
     }
   }
 }
