@@ -48,7 +48,7 @@ public class OriginalCreateFrameRecipe extends Iced {
   }
 
   public Job<Frame> exec() {
-    Job<Frame> job = new Job<>(dest, Frame.class.getName(), "CreateFrame");
+    Job<Frame> job = new Job<>(dest, Frame.class.getName(), "CreateFrame:original");
     CreateFrameExecutor cfe = new CreateFrameExecutor(job);
     fillMissingParameters();
     checkParametersValidity();

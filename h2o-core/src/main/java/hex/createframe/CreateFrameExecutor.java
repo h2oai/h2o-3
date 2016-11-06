@@ -9,34 +9,73 @@ import java.util.Random;
 
 
 /**
- * This class carries out the frame creation job.
+ * <p>This class carries out the frame creation job.</p>
+ *
+ * <p>Frame creation is conceptually done in 3 stages: First, a build "recipe"
+ * is prepared. This recipe is the detailed specification of how the frame is
+ * to be constructed. Second, an MRTask is run that actually creates the frame,
+ * according to the specification in the recipe. In this step all "column
+ * makers" are executed in order they were added, for each chunk-row being
+ * created. Finally, a set of postprocessing steps are performed on the
+ * resulting frame.</p>
+ *
+ * <p>Usage example:
+ * <pre>{@code
+ *   Job<Frame> job = new Job<>(destination_key, Frame.class.getName(), "CreateFrame");
+ *   CreateFrameExecutor cfe = new CreateFrameExecutor(job);
+ *   cfe.setNumRows(10000);
+ *   cfe.setSeed(0xDECAFC0FEE);
+ *   cfe.addColumnMaker(new RealColumnCfcs("col0", -1, 1));
+ *   cfe.addColumnMaker(new IntColumnCfcs("col1", 0, 100));
+ *   cfe.addPostprocessStep(new MissingInserterCfps(0.05));
+ *   job.start(cfe, cfe.workAmount());
+ * }</pre></p>
  */
 public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExecutor> {
   private Job<Frame> job;
-  private Key<Frame> destKey;
   private ArrayList<CreateFrameColumnSpec> columnMakers;
   private ArrayList<CreateFramePostprocessStep> postprocessSteps;
-  private float workAmountPerRow;
+  private int workAmountPerRow;
+  private int workAmountPostprocess;
   private float bytesPerRow;
   private int numRows;
   private int numCols;
   private long seed;
 
+  /**
+   * Make a new CreateFrameExecutor.
+   * @param job The {@link Job} instance which is wrapping this executor. This
+   *            instance will be used to update it with the current task
+   *            progress.
+   */
   public CreateFrameExecutor(Job<Frame> job) {
     this.job = job;
-    destKey = job._result;
     columnMakers = new ArrayList<>(10);
     postprocessSteps = new ArrayList<>(2);
+    seed = -1;
   }
 
+  /**
+   * Set number of rows to be created in the resulting frame. (However a
+   * postprocess step may remove some of the rows).
+   */
   public void setNumRows(int n) {
     numRows = n;
   }
 
+  /**
+   * Set the seed for the random number generator. Two frames created from the
+   * same seed will be identical. Seed value of -1 (the default) means that a
+   * random seed will be issued.
+   */
   public void setSeed(long s) {
     seed = s;
   }
 
+  /**
+   * Add a "column maker" task, responsible for creation of a single (rarely
+   * married or widowed) column.
+   */
   public void addColumnMaker(CreateFrameColumnSpec maker) {
     maker.setIndex(numCols);
     columnMakers.add(maker);
@@ -45,21 +84,42 @@ public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExec
     numCols += maker.numColumns();
   }
 
+  /**
+   * Add a step to be performed in the end after the frame has been created.
+   * This step can then modify the frame in any way.
+   */
   public void addPostprocessStep(CreateFramePostprocessStep step) {
     postprocessSteps.add(step);
+    workAmountPostprocess += step.workAmount();
   }
 
+  /**
+   * Return total amount of work that will be performed by the executor. This
+   * is needed externally in the Job execution context to determine the
+   * progress if the task if it is long-running.
+   */
   public int workAmount() {
-    return (int)(numRows * workAmountPerRow);
+    return numRows * workAmountPerRow + workAmountPostprocess;
   }
 
+  /**
+   * Estimated size of the frame (in bytes), to be used in determining the
+   * optimal chunk size. This estimate may not be absolutely precise.
+   */
   public long estimatedByteSize() {
     return (long)(numRows * bytesPerRow);
   }
 
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Private
+  //--------------------------------------------------------------------------------------------------------------------
+
   @Override public void compute2() {
     int logRowsPerChunk = (int) Math.ceil(Math.log1p(rowsPerChunk()));
     Vec dummyVec = Vec.makeCon(0, numRows, logRowsPerChunk, false);
+    if (seed == -1)
+      seed = Double.doubleToLongBits(Math.random());
 
     // Create types, names & domains
     byte[] types = new byte[numCols];
@@ -82,7 +142,7 @@ public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExec
     // Make the frame
     Frame out = new ActualFrameCreator(columnMakers, seed, job)
         .doAll(types, dummyVec)
-        .outputFrame(destKey, names, domains);
+        .outputFrame(job._result, names, domains);
 
     // Post-process the frame
     Random rng = RandomUtils.getRNG(seed + 40245345791L);
@@ -91,6 +151,7 @@ public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExec
       long nextSeed = rng.nextLong();
       step.exec(out, rng);
       rng.setSeed(nextSeed);
+      job.update(step.workAmount());
     }
 
     // Clean up
@@ -99,6 +160,7 @@ public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExec
     tryComplete();
   }
 
+  /** Compute optimal number of rows per chunk in the resulting frame. */
   private int rowsPerChunk() {
     return FileVec.calcOptimalChunkSize(
         estimatedByteSize(),

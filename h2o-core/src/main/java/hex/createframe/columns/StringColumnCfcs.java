@@ -39,4 +39,8 @@ public class StringColumnCfcs extends CreateFrameColumnSpec {
     return len;
   }
 
+  @Override public int workAmount() {
+    return 60 + len * 50;
+  }
+
 }
