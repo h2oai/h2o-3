@@ -28,8 +28,8 @@ public class DataColumns {
     public abstract DataChunk<T> apply(final Chunk c);
     public abstract DataColumn<T> newColumn(Vec vec);
     
-    protected TypedFrame1<T> newFrame1(long len, final Function<Long, T> f) throws IOException {
-      return new TypedFrame1<>(this, len, f);
+    protected TypedFrame<T> newFrame1(long len, final Function<Long, T> f) throws IOException {
+      return new TypedFrame<>(this, len, f);
     }
     
     public DataColumn<T> newColumn(long len, final Function<Long, T> f) throws IOException {
@@ -148,7 +148,7 @@ public class DataColumns {
     }
 
     public DataColumn<Integer> newColumn(long len, final Function<Long, Integer> f) throws IOException {
-      return new TypedFrame1.EnumFrame1(len, f, domain).newColumn();
+      return new TypedFrame.EnumFrame1(len, f, domain).newColumn();
     }
 
     @Override public DataColumn<Integer> newColumn(final Vec vec) {
