@@ -14,8 +14,6 @@ import java.io.*;
 public class PrintMojo {
   private GenModel genModel;
   private boolean printRaw = false;
-  private boolean printDot = true;
-  private boolean printPng = false;
   private int treeToPrint = -1;
   private String outputFileName = null;
 
@@ -41,13 +39,18 @@ public class PrintMojo {
 
   private static void usage() {
     System.out.println("");
-    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [(--dot | --png)] [-o outputFileName]");
+    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [-o outputFileName]");
     System.out.println("");
-    System.out.println("     --tree          Tree number to print.  [default all]");
-    System.out.println("     --input | -i    Input mojo file.");
-    System.out.println("     --dot           Generate dot (graphviz) output.  [default]");
-    System.out.println("     --png           Generate png output (requires graphviz).");
-    System.out.println("     --output | -o   Output filename.  [default stdout]");
+    System.out.println("    --tree          Tree number to print.  [default all]");
+    System.out.println("    --input | -i    Input mojo file.");
+    System.out.println("    --output | -o   Output filename.       [default stdout]");
+    System.out.println("");
+    System.out.println("Example:");
+    System.out.println("");
+    System.out.println("    (brew install graphviz)");
+    System.out.println("    java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model_mojo.zip -o model.gv");
+    System.out.println("    dot -Tpng model.gv -o model.png");
+    System.out.println("    open model.png");
     System.out.println("");
     System.exit(1);
   }
@@ -78,16 +81,6 @@ public class PrintMojo {
             break;
           case "--raw":
             printRaw = true;
-            break;
-          case "--dot":
-            printRaw = false;
-            printDot = true;
-            printPng = false;
-            break;
-          case "--png":
-            printRaw = false;
-            printDot = false;
-            printPng = true;
             break;
           case "-o":
           case "--output":
@@ -130,26 +123,17 @@ public class PrintMojo {
       if (printRaw) {
         g.print();
       }
-      if (printDot) {
-        g.printDot(os);
-      }
+      g.printDot(os);
     }
     else if (genModel instanceof DrfMojoModel) {
       Graph g = ((DrfMojoModel) genModel).computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }
-      if (printDot) {
-        g.printDot(os);
-      }
+      g.printDot(os);
     }
     else {
       System.out.println("ERROR: Unknown MOJO type");
-      System.exit(1);
-    }
-
-    if (printPng) {
-      System.out.println("ERROR: --png not yet implemented");
       System.exit(1);
     }
   }
