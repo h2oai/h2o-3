@@ -13,13 +13,11 @@ class Subgraph {
   private Node rootNode;
 
   private ArrayList<Node> nodesArray;
-  private ArrayList<Edge> edgesArray;
 
   Subgraph(int sn, String n) {
     subgraphNumber = sn;
     name = n;
     nodesArray = new ArrayList<>();
-    edgesArray = new ArrayList<>();
   }
 
   Node makeRootNode() {
@@ -46,20 +44,12 @@ class Subgraph {
     return child;
   }
 
-  private Edge makeLeftEdge(Node parent, Node child) {
+  private void makeLeftEdge(Node parent, Node child) {
     parent.setLeftChild(child);
-    Edge e = new Edge(parent, child);
-    e.setIsLeftEdge();
-    edgesArray.add(e);
-    return e;
   }
 
-  private Edge makeRightEdge(Node parent, Node child) {
+  private void makeRightEdge(Node parent, Node child) {
     parent.setRightChild(child);
-    Edge e = new Edge(parent, child);
-    edgesArray.add(e);
-    e.setIsRightEdge();
-    return e;
   }
 
   public void print() {
@@ -67,14 +57,13 @@ class Subgraph {
     System.out.println("    ----- " + name + " -----");
 
     System.out.println("    Nodes");
-    for (Node aNodesArray : nodesArray) {
-      aNodesArray.print();
+    for (Node n : nodesArray) {
+      n.print();
     }
+
     System.out.println("");
     System.out.println("    Edges");
-    for (Edge anEdgesArray : edgesArray) {
-      anEdgesArray.print();
-    }
+    rootNode.printEdges();
   }
 
   void printDot(PrintStream os) {

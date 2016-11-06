@@ -83,6 +83,17 @@ public class Node {
     System.out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
   }
 
+  void printEdges() {
+    if (leftChild != null) {
+      System.out.println("        " + getName() + " ---left---> " + leftChild.getName());
+      leftChild.printEdges();
+    }
+    if (rightChild != null) {
+      System.out.println("        " + getName() + " ---right--> " + rightChild.getName());
+      rightChild.printEdges();
+    }
+  }
+
   private String getDotName() {
     return "SG_" + subgraphNumber + "_Node_" + nodeNumber;
   }
@@ -132,7 +143,7 @@ public class Node {
     }
   }
 
-  final int MAX_LEVELS_TO_LABEL_ON_EDGE = 10;
+  private static final int MAX_LEVELS_TO_LABEL_ON_EDGE = 10;
 
   void printDotEdges(PrintStream os) {
     if (leftChild != null) {
