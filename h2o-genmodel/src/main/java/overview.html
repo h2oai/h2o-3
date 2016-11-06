@@ -38,6 +38,7 @@ The following topics are covered here:
 <ul>
     <li><a href="#whatisamojo">What is a MOJO?</a></li>
     <li><a href="#quickstartmojo">MOJO Quick Start</a></li>
+    <li><a href="#viewing-a-mojo">How to view a MOJO model</a></li>
 </ul>
 
 
@@ -454,5 +455,41 @@ The following output displays:
 <p></p>
 <pre>Has penetrated the prostatic capsule (1 yes; 0 no): 0
 Class probabilities: 0.8059929056296662,0.19400709437033375</pre>
+
+
+<a name="viewing-a-mojo"></a>
+<h1><u>How to view a MOJO model</u></h1>
+A java tool for converting binary mojo files into human viewable graphs is packaged with H2O.
+This tool produces output that "dot" (which is part of Graphviz) can turn into an image.
+(See the <a href="http://www.graphviz.org">Graphviz home page</a> for more information.)
+
+<p></p>
+Here is example output for a GBM model:
+<p></p>
+<img style="max-width: 70%; height: auto;" src="doc-files/gbm_mojo_graph.png">
+
+<h3>From R:</h3>
+The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on
+the command line to make a .png file.
+<pre>
+library(h2o)
+h2o.init()
+df = h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+model = h2o.gbm(model_id = "model",
+                training_frame = df,
+                x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
+                y = "IsDepDelayed",
+                max_depth = 3,
+                ntrees = 5)
+h2o.download_mojo(model, getwd(), FALSE)
+
+# Now download the latest stable h2o release from http://www.h2o.ai/download/
+# and run the PrintMojo tool from the command line.
+#
+# (For MacOS: brew install graphviz)
+# java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv
+# dot -Tpng model.gv -o model.png
+# open model.png
+</pre>
 
 </body>
