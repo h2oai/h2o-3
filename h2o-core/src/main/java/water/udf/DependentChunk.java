@@ -3,7 +3,7 @@ package water.udf;
 import water.fvec.Chunk;
 
 /**
- * Represents a chunk that knows its type
+ * Represents a chunk that depends on another
  */
 public abstract class DependentChunk<T> implements TypedChunk<T> {
   private final TypedChunk<?> master;
