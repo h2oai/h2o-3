@@ -13,9 +13,10 @@ import java.io.*;
  */
 public class PrintMojo {
   private GenModel genModel;
-  private boolean printRaw = false;
-  private int treeToPrint = -1;
-  private String outputFileName = null;
+  private static boolean printRaw = false;
+  private static int treeToPrint = -1;
+  private static int maxLevelsToPrintPerEdge = 10;
+  private static String outputFileName = null;
 
   public static void main(String[] args) {
     // Parse command line arguments
@@ -29,7 +30,8 @@ public class PrintMojo {
       e.printStackTrace();
       System.exit(2);
     }
-    // Predictions were successfully generated.
+
+    // Success
     System.exit(0);
   }
 
@@ -38,12 +40,21 @@ public class PrintMojo {
   }
 
   private static void usage() {
+    System.out.println("Emit a human-consumable graph of a model for use with dot (graphviz).");
+    System.out.println("The currently supported model types are DRF and GBM.");
     System.out.println("");
-    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [-o outputFileName]");
+    System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [--levels n] [-o outputFileName]");
     System.out.println("");
-    System.out.println("    --tree          Tree number to print.  [default all]");
+    System.out.println("    --tree          Tree number to print.");
+    System.out.println("                    [default all]");
+    System.out.println("");
+    System.out.println("    --levels        Number of levels per edge to print.");
+    System.out.println("                    [default " + maxLevelsToPrintPerEdge + "]");
+    System.out.println("");
     System.out.println("    --input | -i    Input mojo file.");
-    System.out.println("    --output | -o   Output filename.       [default stdout]");
+    System.out.println("");
+    System.out.println("    --output | -o   Output dot filename.");
+    System.out.println("                    [default stdout]");
     System.out.println("");
     System.out.println("Example:");
     System.out.println("");
@@ -72,6 +83,20 @@ public class PrintMojo {
               System.exit(1);
             }
             break;
+
+          case "--levels":
+            i++;
+            if (i >= args.length) usage();
+            s = args[i];
+            try {
+              maxLevelsToPrintPerEdge = Integer.parseInt(s);
+            }
+            catch (Exception e) {
+              System.out.println("ERROR: invalid --levels argument (" + s + ")");
+              System.exit(1);
+            }
+            break;
+
           case "--input":
           case "-i":
             i++;
@@ -79,15 +104,18 @@ public class PrintMojo {
             s = args[i];
             loadMojo(s);
             break;
+
           case "--raw":
             printRaw = true;
             break;
+
           case "-o":
           case "--output":
             i++;
             if (i >= args.length) usage();
             outputFileName = args[i];
             break;
+
           default:
             System.out.println("ERROR: Unknown command line argument: " + s);
             usage();
@@ -123,14 +151,14 @@ public class PrintMojo {
       if (printRaw) {
         g.print();
       }
-      g.printDot(os);
+      g.printDot(os, maxLevelsToPrintPerEdge);
     }
     else if (genModel instanceof DrfMojoModel) {
       Graph g = ((DrfMojoModel) genModel).computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }
-      g.printDot(os);
+      g.printDot(os, maxLevelsToPrintPerEdge);
     }
     else {
       System.out.println("ERROR: Unknown MOJO type");

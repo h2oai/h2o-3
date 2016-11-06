@@ -66,7 +66,7 @@ class Subgraph {
     rootNode.printEdges();
   }
 
-  void printDot(PrintStream os) {
+  void printDot(PrintStream os, int maxLevelsToPrintPerEdge) {
     os.println("");
     os.println("subgraph " + "cluster_" + subgraphNumber + " {");
     os.println("/* Nodes */");
@@ -89,7 +89,7 @@ class Subgraph {
     os.println("");
     os.println("/* Edges */");
     for (Node n : nodesArray) {
-      n.printDotEdges(os);
+      n.printDotEdges(os, maxLevelsToPrintPerEdge);
     }
     os.println("");
     os.println("fontsize=40");
