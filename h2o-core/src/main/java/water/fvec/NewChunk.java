@@ -982,7 +982,14 @@ public class NewChunk extends Chunk {
     return isNA2(x)?_sparseNA:!_sparseNA &&_ms.get(x) == 0;
   }
   
+  public void checkIfCanCancelSparse() {
+    if (_sparseLen != _len && _is == null && _ds == null) {
+      assert _id != null : "Can't cancel_sparse, _id is null";
+    }  
+  }
+  
   public void cancel_sparse(){
+    checkIfCanCancelSparse();
     if(_sparseLen != _len){
       if(_is != null){
         int [] is = MemoryManager.malloc4(_len);
