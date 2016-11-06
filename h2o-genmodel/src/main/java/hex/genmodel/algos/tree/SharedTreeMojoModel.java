@@ -132,6 +132,9 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         int naSplitDir = ab.get1U();
         boolean naVsRest = naSplitDir == NsdNaVsRest;
         boolean leftward = naSplitDir == NsdNaLeft || naSplitDir == NsdLeft;
+        node.setLeftward(leftward);
+        node.setNaVsRest(naVsRest);
+
         int lmask = (nodeType & 51);
         int equal = (nodeType & 12);  // Can be one of 0, 8, 12
         assert equal != 4;  // no longer supported
@@ -154,11 +157,47 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             }
         }
 
+        // This logic:
+        //
+        //        double d = row[colId];
+        //        if (Double.isNaN(d)? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains((int)d))) {
+
+        // Really does this:
+        //
+        //        if (value is NaN) {
+        //            if (leftward) {
+        //                go left
+        //            }
+        //            else {
+        //                go right
+        //            }
+        //        }
+        //        else {
+        //            if (naVsRest) {
+        //                go left
+        //            }
+        //            else {
+        //                if (numeric) {
+        //                    if (value < split value) {
+        //                        go left
+        //                    }
+        //                    else {
+        //                        go right
+        //                    }
+        //                }
+        //                else {
+        //                    if (value not in bitset) {
+        //                        go left
+        //                    }
+        //                    else {
+        //                        go right
+        //                    }
+        //                }
+        //            }
+        //        }
+
         // go RIGHT
         {
-//        double d = row[colId];
-//        if (Double.isNaN(d)? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains((int)d))) {
-
             ByteBufferWrapper ab2 = new ByteBufferWrapper(tree);
             ab2.skip(ab.position());
 

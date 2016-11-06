@@ -103,6 +103,7 @@ class Subgraph {
       n.printDotEdges(os);
     }
     os.println("");
+    os.println("fontsize=40");
     os.println("label=\"" + name + "\"");
     os.println("}");
   }
