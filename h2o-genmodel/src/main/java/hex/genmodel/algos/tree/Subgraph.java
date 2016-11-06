@@ -21,7 +21,7 @@ class Subgraph {
   }
 
   Node makeRootNode() {
-    Node n = new Node(subgraphNumber, nextNodeNumber, 0);
+    Node n = new Node(null, subgraphNumber, nextNodeNumber, 0);
     nextNodeNumber++;
     nodesArray.add(n);
     rootNode = n;
@@ -29,7 +29,7 @@ class Subgraph {
   }
 
   Node makeLeftChildNode(Node parent) {
-    Node child = new Node(subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
+    Node child = new Node(parent, subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
     nextNodeNumber++;
     nodesArray.add(child);
     makeLeftEdge(parent, child);
@@ -37,7 +37,7 @@ class Subgraph {
   }
 
   Node makeRightChildNode(Node parent) {
-    Node child = new Node(subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
+    Node child = new Node(parent, subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
     nextNodeNumber++;
     nodesArray.add(child);
     makeRightEdge(parent, child);
