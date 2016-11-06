@@ -4,14 +4,17 @@ import hex.genmodel.utils.GenmodelBitSet;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.BitSet;
 
 /**
  * Graph Node.
  */
 public class Node {
+  private final Node parent;
   private final int subgraphNumber;
   private final int nodeNumber;
   private final int level;
+  private int colId;
   private String colName;
   private boolean leftward;
   private boolean naVsRest;
@@ -22,7 +25,12 @@ public class Node {
   private Node leftChild;
   private Node rightChild;
 
-  public Node(int sn, int n, int l) {
+  // When parent is a categorical, levels of parentColId that are reachable to this node.
+  // This in particular includes any earlier splits of the same colId.
+  private BitSet inclusiveLevels;
+
+  public Node(Node p, int sn, int n, int l) {
+    parent = p;
     subgraphNumber = sn;
     nodeNumber = n;
     level = l;
@@ -32,8 +40,13 @@ public class Node {
     return level;
   }
 
-  public void setColName(String v) {
-    colName = v;
+  void setCol(int v1, String v2) {
+    colId = v1;
+    colName = v2;
+  }
+
+  private int getColId() {
+    return colId;
   }
 
   void setLeftward(boolean v) {
@@ -58,12 +71,61 @@ public class Node {
     leafValue = v;
   }
 
+  private BitSet findInclusiveLevels(int colId) {
+    if (parent == null) {
+      return null;
+    }
+    if (parent.getColId() == colId) {
+      return inclusiveLevels;
+    }
+    return parent.findInclusiveLevels(colId);
+  }
+
+  private BitSet calculateChildInclusiveLevels(boolean nodeBitsetDoesContain) {
+    BitSet inheritedInclusiveLevels = findInclusiveLevels(colId);
+    BitSet childInclusiveLevels = new BitSet();
+    for (int i = 0; i < domainValues.length; i++) {
+      if (bs.contains(i) == nodeBitsetDoesContain) {
+        if (inheritedInclusiveLevels == null) {
+          // If there is no prior split history for this column, then treat the
+          // inherited set as complete.
+          childInclusiveLevels.set(i);
+        }
+        else if (inheritedInclusiveLevels.get(i)) {
+          // Filter out levels that were already discarded from a previous split.
+          childInclusiveLevels.set(i);
+        }
+      }
+    }
+    return childInclusiveLevels;
+  }
+
   void setLeftChild(Node v) {
     leftChild = v;
+
+    if (! isBitset()) {
+      return;
+    }
+    BitSet childInclusiveLevels = calculateChildInclusiveLevels(false);
+    v.setInclusiveLevels(childInclusiveLevels);
   }
 
   void setRightChild(Node v) {
     rightChild = v;
+
+    if (! isBitset()) {
+      return;
+    }
+    BitSet childInclusiveLevels = calculateChildInclusiveLevels(true);
+    v.setInclusiveLevels(childInclusiveLevels);
+  }
+
+  private void setInclusiveLevels(BitSet v) {
+    inclusiveLevels = v;
+  }
+
+  private BitSet getInclusiveLevels() {
+    return inclusiveLevels;
   }
 
   public String getName() {
@@ -73,6 +135,7 @@ public class Node {
   public void print() {
     System.out.println("        Node " + nodeNumber);
     System.out.println("            level:       " + level);
+    System.out.println("            colId:       " + colId);
     System.out.println("            colName:     " + ((colName != null) ? colName : ""));
     System.out.println("            leftward:    " + leftward);
     System.out.println("            naVsRest:    " + naVsRest);
@@ -143,7 +206,33 @@ public class Node {
     }
   }
 
+  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, Node child) {
+    if (isBitset()) {
+      BitSet childInclusiveLevels = child.getInclusiveLevels();
+      int total = childInclusiveLevels.cardinality();
+      if ((total > 0) && (total <= maxLevelsToPrintPerEdge)) {
+        for (int i = childInclusiveLevels.nextSetBit(0); i >= 0; i = childInclusiveLevels.nextSetBit(i+1)) {
+          arr.add(domainValues[i]);
+        }
+      }
+      else {
+        arr.add(total + " levels");
+      }
+    }
+    else {
+      arr.add("<");
+    }
+    os.print("label=\"");
+    for (String s : arr) {
+      os.print(s + "\\n");
+    }
+    os.print("\"");
+    os.println("]");
+  }
+
   void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge) {
+    assert (leftChild == null) == (rightChild == null);
+
     if (leftChild != null) {
       os.print("\"" + getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [");
 
@@ -154,69 +243,17 @@ public class Node {
       if (naVsRest) {
         arr.add("[Not NA]");
       }
-      if (isBitset()) {
-        int total = 0;
-        for (int i = 0; i < domainValues.length; i++) {
-          if (! bs.contains(i)) {
-            total++;
-          }
-        }
-        if (total <= maxLevelsToPrintPerEdge) {
-          for (int i = 0; i < domainValues.length; i++) {
-            if (! bs.contains(i)) {
-              arr.add(domainValues[i]);
-            }
-          }
-        }
-        else {
-          arr.add(total + " levels");
-        }
-      }
-      else {
-        arr.add("<");
-      }
-      os.print("label=\"");
-      for (String s : arr) {
-        os.print(s + "\\n");
-      }
-      os.print("\"");
-      os.println("]");
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild);
     }
 
     if (rightChild != null) {
       os.print("\"" + getDotName() + "\"" + " -> " + "\"" + rightChild.getDotName() + "\"" + " [");
 
       ArrayList<String> arr = new ArrayList<>();
-      if (!leftward) {
+      if (! leftward) {
         arr.add("[NA]");
       }
-      if (isBitset()) {
-        int total = 0;
-        for (int i = 0; i < domainValues.length; i++) {
-          if (bs.contains(i)) {
-            total++;
-          }
-        }
-        if (total <= maxLevelsToPrintPerEdge) {
-          for (int i = 0; i < domainValues.length; i++) {
-            if (bs.contains(i)) {
-              arr.add(domainValues[i]);
-            }
-          }
-        }
-        else {
-          arr.add(total + " levels");
-        }
-      }
-      else {
-        arr.add(">=");
-      }
-      os.print("label=\"");
-      for (String s : arr) {
-        os.print(s + "\\n");
-      }
-      os.print("\"");
-      os.println("]");
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild);
     }
   }
 }

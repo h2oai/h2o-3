@@ -127,7 +127,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
 
         String colName = getNames()[colId];
-        node.setColName(colName);
+        node.setCol(colId, colName);
 
         int naSplitDir = ab.get1U();
         boolean naVsRest = naSplitDir == NsdNaVsRest;
