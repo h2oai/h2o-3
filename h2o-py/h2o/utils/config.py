@@ -7,7 +7,7 @@ import logging
 import os
 import re
 
-__all__ = ("H2OConfigReader", )
+__all__ = ("H2OConfigReader", "get_config_value")
 
 
 class H2OConfigReader(object):
@@ -34,7 +34,8 @@ class H2OConfigReader(object):
     #-------------------------------------------------------------------------------------------------------------------
 
     _allowed_config_keys = {
-        "init.check_version", "init.proxy", "init.url", "init.cluster_id", "init.verify_ssl_certificates", "init.cookies"
+        "init.check_version", "init.proxy", "init.url", "init.cluster_id", "init.verify_ssl_certificates",
+        "init.cookies", "general.allow_breaking_changes"
     }
 
     def __init__(self):
@@ -99,3 +100,9 @@ class H2OConfigReader(object):
             yield abspath
         # Also check if .h2oconfig exists in the user's directory
         yield os.path.expanduser("~/.h2oconfig")
+
+
+
+def get_config_value(key, default=None):
+    """Return config value corresponding to the provided `key`."""
+    return H2OConfigReader.get_config().get(key, default)

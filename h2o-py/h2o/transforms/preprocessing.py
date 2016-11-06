@@ -53,7 +53,7 @@ class H2OScaler(H2OTransformer):
         if isinstance(self.parms["center"], (tuple, list)): self._means = self.parms["center"]
         if isinstance(self.parms["scale"], (tuple, list)): self._stds = self.parms["scale"]
         if self.means is None and self.parms["center"]:
-            self._means = X.mean()
+            self._means = X.mean(return_frame=True).getrow()
         else:
             self._means = False
         if self.stds is None and self.parms["scale"]:
