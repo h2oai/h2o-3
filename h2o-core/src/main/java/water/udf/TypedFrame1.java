@@ -28,18 +28,13 @@ public class TypedFrame1<X> extends Frame {
     private final String[] domain;
     
     public EnumFrame1(long len, Function<Long, Integer> function, String[] domain) {
-      super(Enums, len, function);
-      ChunkFactory<DataChunk<Integer>> ef = Enums;
+      super(Enums(domain), len, function);
       this.domain = domain;
-    }
-
-    @Override protected TypedVector<Integer> newColumn(Vec vec) throws IOException {
-      vec.setDomain(domain);
-      return Enums.newColumn(vec);
     }
   }
   
   protected Vec makeVec() throws IOException {
+    // TODO(vlad): we need to inherit the vec layout
     column = newColumn(Vec.makeZero(len, factory.typeCode()));
     MRTask task = new MRTask() {
       @Override
@@ -58,11 +53,11 @@ public class TypedFrame1<X> extends Frame {
     return mrTask._fr.vecs()[0];
   }
 
-  protected TypedVector<X> newColumn(Vec vec) throws IOException {
+  protected DataColumn<X> newColumn(Vec vec) throws IOException {
     return factory.newColumn(vec);
   }
 
-  public TypedVector<X> newColumn() throws IOException {
+  public DataColumn<X> newColumn() throws IOException {
     return newColumn(makeVec());
   }
   

@@ -1,7 +1,5 @@
 package water.udf;
 
-import water.DKV;
-import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
@@ -19,7 +17,7 @@ import java.util.UUID;
 public class DataColumns {
 
   public static abstract class Factory<T> 
-      implements ChunkFactory<DataChunk<T>>, Serializable {
+      implements ChunkFactory<T>, Serializable {
     public final byte typeCode;
     protected Factory(byte typeCode) {
       this.typeCode = typeCode;
@@ -28,55 +26,26 @@ public class DataColumns {
     public byte typeCode() { return typeCode; }
 
     public abstract DataChunk<T> apply(final Chunk c);
-    public abstract TypedVector<T> newColumn(Vec vec);
+    public abstract DataColumn<T> newColumn(Vec vec);
     
     protected TypedFrame1<T> newFrame1(long len, final Function<Long, T> f) throws IOException {
       return new TypedFrame1<>(this, len, f);
     }
     
-    public TypedVector<T> newColumn(long len, final Function<Long, T> f) throws IOException {
+    public DataColumn<T> newColumn(long len, final Function<Long, T> f) throws IOException {
       return newFrame1(len, f).newColumn();
     }
 
-    public TypedVector<T> newColumn(final List<T> xs) throws IOException {
+    public DataColumn<T> materialize(Column<T> xs) throws IOException {
+      return newColumn(xs.size(), xs);
+    }
+
+    public DataColumn<T> newColumn(final List<T> xs) throws IOException {
       return newColumn(xs.size(), Functions.onList(xs));
     }
   }
 
-  public abstract static class TypedVector<T> implements MutableColumn<T>, Vec.Holder {
-    protected Vec vec;
-    public final byte type;
-    private ChunkFactory<DataChunk<T>> chunkFactory;
-    
-    public abstract T get(long idx);
-
-    @Override public T apply(Long idx) { return get(idx); }
-
-    @Override public T apply(long idx) { return get(idx); }
-
-    @Override public int rowLayout() { return vec._rowLayout; }
-    
-    @Override public long size() { return vec.length(); }
-
-    @Override
-    public TypedChunk<T> chunkAt(int i) {
-      return chunkFactory.apply(vec.chunkForChunkIdx(i));
-    }
-
-    protected TypedVector(Vec vec, byte type, ChunkFactory<DataChunk<T>> factory) {
-      this.vec = vec;
-      this.type = type;
-      this.chunkFactory = factory;
-    }
-    
-    public boolean isNA(long idx) { return vec.isNA(idx); }
-
-    public String getString(long idx) { return isNA(idx) ? "(N/A)" : String.valueOf(apply(idx)); }
-
-    public Vec vec() { return vec; }
-  }
-
-// We may never need BufferedStrings
+  // We may never need BufferedStrings
 //  public static class OfBS extends OnVector<BufferedString> {
 //    public OfBS(Vec vec) {
 //      super(vec, Vec.T_STR);
@@ -106,10 +75,10 @@ public class DataColumns {
       };
     }
 
-    @Override public TypedVector<Double> newColumn(final Vec vec) {
+    @Override public DataColumn<Double> newColumn(final Vec vec) {
       if (vec.get_type() != Vec.T_NUM)
         throw new IllegalArgumentException("Expected type T_NUM, got " + vec.get_type_str());
-      return new TypedVector<Double>(vec, typeCode, this) {
+      return new DataColumn<Double>(vec, typeCode, this) {
 
         public Double get(long idx) { return vec.at(idx); }
 
@@ -141,10 +110,10 @@ public class DataColumns {
       };
     }
 
-    @Override public TypedVector<String> newColumn(final Vec vec) {
+    @Override public DataColumn<String> newColumn(final Vec vec) {
       if (vec.get_type() != Vec.T_STR)
         throw new IllegalArgumentException("Expected type T_STR, got " + vec.get_type_str());
-      return new TypedVector<String>(vec, typeCode, this) {
+      return new DataColumn<String>(vec, typeCode, this) {
         @Override public String get(long idx) { 
           return asString(vec.atStr(new BufferedString(), idx)); 
         }
@@ -161,8 +130,11 @@ public class DataColumns {
   //-------------------------------------------------------------
 
   static class EnumFactory extends Factory<Integer> {
-    protected EnumFactory() {
+    private final String[] domain;
+    
+    protected EnumFactory(String[] domain) {
       super(Vec.T_CAT);
+      this.domain = domain;
     }
 
     @Override public DataChunk<Integer> apply(final Chunk c) {
@@ -175,14 +147,15 @@ public class DataColumns {
       };
     }
 
-    public TypedVector<Integer> newColumn(long len, String[] domain, final Function<Long, Integer> f) throws IOException {
+    public DataColumn<Integer> newColumn(long len, final Function<Long, Integer> f) throws IOException {
       return new TypedFrame1.EnumFrame1(len, f, domain).newColumn();
     }
 
-    @Override public TypedVector<Integer> newColumn(final Vec vec) {
+    @Override public DataColumn<Integer> newColumn(final Vec vec) {
       if (vec.get_type() != Vec.T_CAT)
         throw new IllegalArgumentException("Expected type T_CAT, got " + vec.get_type_str());
-      return new TypedVector<Integer>(vec, typeCode, this) {
+      vec.setDomain(domain);
+      return new DataColumn<Integer>(vec, typeCode, this) {
         private final String[] domain = vec.domain();
         {
           assert domain != null && domain.length > 0 : "Need a domain for enums";
@@ -208,7 +181,9 @@ public class DataColumns {
     }
   }
 
-  public static final EnumFactory Enums = new EnumFactory();
+  public static EnumFactory Enums(String[] domain) {
+    return new EnumFactory(domain);
+  }
 
   //-------------------------------------------------------------
 
@@ -221,10 +196,10 @@ public class DataColumns {
       };
     }
 
-    @Override public TypedVector<UUID> newColumn(final Vec vec) {
+    @Override public DataColumn<UUID> newColumn(final Vec vec) {
       if (vec.get_type() != Vec.T_UUID)
         throw new IllegalArgumentException("Expected a type UUID, got " + vec.get_type_str());
-      return new TypedVector<UUID>(vec, typeCode, this) {
+      return new DataColumn<UUID>(vec, typeCode, this) {
         @Override public UUID get(long idx) { return isNA(idx) ? null : new UUID(vec.at16h(idx), vec.at16l(idx)); }
         @Override public String getString(long idx) { return PrettyPrint.uuid(get(idx)); }
         @Override public void set(long idx, UUID value) { vec.set(idx, value); }
@@ -245,10 +220,10 @@ public class DataColumns {
       };
     }
 
-    @Override public TypedVector<Date> newColumn(final Vec vec) {
+    @Override public DataColumn<Date> newColumn(final Vec vec) {
       if (vec.get_type() != Vec.T_TIME && vec.get_type() != Vec.T_NUM) 
         throw new IllegalArgumentException("Expected a type compatible with Dates, got " + vec.get_type_str());
-      return new TypedVector<Date>(vec, typeCode, this) {
+      return new DataColumn<Date>(vec, typeCode, this) {
         @Override public Date get(long idx) { return isNA(idx) ? null : new Date(vec.at8(idx)); }
 
         @Override public void set(long idx, Date value) {
@@ -260,10 +235,4 @@ public class DataColumns {
   };
 
   static String asString(Object x) { return x == null ? null : x.toString(); }
-
-  public static <X> TypedVector<X> materialize(final Column<X> xs, final Factory<X> factory) throws IOException {
-    return new TypedFrame1<>(factory, xs.size(), xs).newColumn();
-  }
-
-
 }
