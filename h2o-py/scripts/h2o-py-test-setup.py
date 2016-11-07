@@ -127,6 +127,7 @@ def h2o_test_setup(sys_args):
 
     print("[{0}] {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "Connect to h2o on IP: {0} PORT: {1}".format(_H2O_IP_, _H2O_PORT_)))
     h2o.init(ip=_H2O_IP_, port=_H2O_PORT_, strict_version_check=False, force_connect=_FORCE_CONNECT_)
+    h2o.utils.config.H2OConfigReader.get_config()["general.allow_breaking_changes"] = True
 
     #rest_log = os.path.join(_RESULTS_DIR_, "rest.log")
     #h2o.start_logging(rest_log)
