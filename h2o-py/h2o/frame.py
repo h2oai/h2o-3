@@ -30,12 +30,12 @@ from h2o.group_by import GroupBy
 from h2o.job import H2OJob
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems, viewvalues
+from h2o.utils.config import get_config_value
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, numeric, numpy_ndarray,
                                   pandas_dataframe, scipy_sparse, U)
-warnings.filterwarnings("ignore", category=DeprecationWarning, module="pandas", lineno=7)
 
 __all__ = ("H2OFrame", )
 
@@ -1817,9 +1817,20 @@ class H2OFrame(object):
             na_rm = kwargs.pop("na_rm")
             assert_is_type(na_rm, bool)
             skipna = na_rm  # don't assign to skipna directly, to help with error reporting
+        # Determine whether to return a frame or a list
+        return_frame = get_config_value("general.allow_breaking_changes", False)
+        if "return_frame" in kwargs:
+            return_frame = kwargs.pop("return_frame")
+            assert_is_type(return_frame, bool)
         if kwargs:
             raise H2OValueError("Unknown parameters %r" % list(kwargs))
-        return H2OFrame._expr(ExprNode("mean", self, skipna, axis))
+
+        new_frame = H2OFrame._expr(ExprNode("mean", self, skipna, axis))
+        if return_frame:
+            return new_frame
+        else:
+            return new_frame.getrow()
+
 
     def skewness(self, na_rm=False):
         """
