@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.ConfusionMatrix;
-import hex.Distribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import hex.genmodel.utils.DistributionFamily;

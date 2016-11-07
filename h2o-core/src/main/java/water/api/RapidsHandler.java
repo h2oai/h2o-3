@@ -29,7 +29,7 @@ public class RapidsHandler extends Handler {
 
     Session ses = RapidsHandler.SESSIONS.get(rapids.session_id);
     if (ses == null) {
-      ses = new Session();
+      ses = new Session(rapids.session_id);
       RapidsHandler.SESSIONS.put(rapids.session_id, ses);
     }
 

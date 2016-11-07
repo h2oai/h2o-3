@@ -29,9 +29,9 @@ public class AstRename extends AstPrimitive {
   }
 
   @Override
-  public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
-    Key oldKey = Key.make(asts[1].exec(env).getStr());
-    Key newKey = Key.make(asts[2].exec(env).getStr());
+  public ValNum apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
+    Key oldKey = Key.make(env.expand(asts[1].exec(env).getStr()));
+    Key newKey = Key.make(env.expand(asts[2].exec(env).getStr()));
     Iced o = DKV.remove(oldKey).get();
     if (o instanceof Frame)
       DKV.put(newKey, new Frame(newKey, ((Frame) o)._names, ((Frame) o).vecs()));
