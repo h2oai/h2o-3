@@ -41,14 +41,16 @@
 #'        Defaults to 0.
 #' @param ntrees Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth. Defaults to 5.
-#' @param min_rows Fewest allowed (weighted) observations in a leaf (in R called 'nodesize'). Defaults to 10.0.
+#' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 10.0.
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
 #'        Defaults to 20.
 #' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then
 #'        decrease by factor of two per level Defaults to 1024.
 #' @param nbins_cats For categorical columns (factors), build a histogram of this many bins, then split at the best point. Higher
 #'        values can lead to more overfitting. Defaults to 1024.
-#' @param r2_stopping Stop making trees when the R^2 metric equals or exceeds this Defaults to 1.79769313486e+308.
+#' @param r2_stopping r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds, stopping_metric
+#'        and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2 metric equals or
+#'        exceeds this Defaults to 1.79769313486e+308.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
@@ -80,6 +82,8 @@
 #'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
 #' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction Defaults to 1.79769313486e+308.
 #' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions Defaults to 0.0.
+#' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
+#'        "Binary", "Eigen". Defaults to AUTO.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
 #' \donttest{
@@ -142,7 +146,8 @@ h2o.gbm <- function(x, y,
                     min_split_improvement = 1e-05,
                     histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
                     max_abs_leafnode_pred = 1.79769313486e+308,
-                    pred_noise_bandwidth = 0.0
+                    pred_noise_bandwidth = 0.0,
+                    categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen")
                     ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -272,6 +277,8 @@ h2o.gbm <- function(x, y,
     parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
   if (!missing(pred_noise_bandwidth))
     parms$pred_noise_bandwidth <- pred_noise_bandwidth
+  if (!missing(categorical_encoding))
+    parms$categorical_encoding <- categorical_encoding
   # Error check and build model
   .h2o.modelJob('gbm', parms, h2oRestApiVersion=3) 
 }

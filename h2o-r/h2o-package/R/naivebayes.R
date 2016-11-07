@@ -40,10 +40,9 @@
 #' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 #'        Defaults to 0.
 #' @param laplace Laplace smoothing parameter Defaults to 0.0.
-#' @param min_sdev Min. standard deviation to use for observations with not enough data Defaults to 0.001.
-#' @param eps_sdev Cutoff below which standard deviation is replaced with min_sdev Defaults to 0.0.
-#' @param min_prob Min. probability to use for observations with not enough data Defaults to 0.001.
-#' @param eps_prob Cutoff below which probability is replaced with min_prob Defaults to 0.0.
+#' @param threshold The minimum standard deviation to use for observations without enough data. 
+#'                  Must be at least 1e-10.
+#' @param eps A threshold cutoff to deal with numeric instability, must be positive.
 #' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to True.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
 #' @details The naive Bayes classifier assumes independence between predictor variables conditional         on the
@@ -78,10 +77,8 @@ h2o.naivebayes <- function(x, y,
                            max_after_balance_size = 5.0,
                            max_hit_ratio_k = 0,
                            laplace = 0.0,
-                           min_sdev = 0.001,
-                           eps_sdev = 0.0,
-                           min_prob = 0.001,
-                           eps_prob = 0.0,
+                           threshold = 0.001,
+                           eps = 0.0,
                            compute_metrics = TRUE,
                            max_runtime_secs = 0.0
                            ) 
@@ -150,14 +147,14 @@ h2o.naivebayes <- function(x, y,
     parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(laplace))
     parms$laplace <- laplace
-  if (!missing(min_sdev))
-    parms$min_sdev <- min_sdev
-  if (!missing(eps_sdev))
-    parms$eps_sdev <- eps_sdev
-  if (!missing(min_prob))
-    parms$min_prob <- min_prob
-  if (!missing(eps_prob))
-    parms$eps_prob <- eps_prob
+ if (!missing(threshold))
+   parms$min_sdev <- threshold
+ if (!missing(eps))
+   parms$eps_sdev <- eps
+ if (!missing(threshold))
+   parms$min_prob <- threshold
+ if (!missing(eps))
+   parms$eps_prob <- eps
   if (!missing(compute_metrics))
     parms$compute_metrics <- compute_metrics
   if (!missing(max_runtime_secs))

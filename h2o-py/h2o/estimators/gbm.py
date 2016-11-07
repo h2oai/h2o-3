@@ -303,7 +303,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def min_rows(self):
-        """float: Fewest allowed (weighted) observations in a leaf (in R called 'nodesize'). (Default: 10.0)"""
+        """float: Fewest allowed (weighted) observations in a leaf. (Default: 10.0)"""
         return self._parms.get("min_rows")
 
     @min_rows.setter

@@ -6,6 +6,8 @@
 #' Singular value decomposition of an H2O data frame using the power method.
 #' 
 #' @param x A vector containing the \code{character} names of the predictors in the model.
+#' @param destination_key (Optional) The unique hex key assigned to the resulting model.
+#'                        Automatically generated if none is provided.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
@@ -34,7 +36,7 @@
 #' h2o.svd(training_frame = australia.hex, nv = 8)
 #' }
 #' @export
-h2o.svd <- function(x,
+h2o.svd <- function(x, destination_key,
                     training_frame,
                     model_id = NULL,
                     validation_frame = NULL,
@@ -72,6 +74,12 @@ h2o.svd <- function(x,
   parms$training_frame <- training_frame
   if(!missing(x))
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+  if(!missing(destination_key)) {
+    warning("'destination_key' is deprecated; please use 'model_id' instead.")
+    if(missing(model_id)) {
+      parms$model_id <- destination_key
+    }
+  }
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
@@ -99,5 +107,5 @@ h2o.svd <- function(x,
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
   # Error check and build model
-  .h2o.modelJob('svd', parms, h2oRestApiVersion=3) 
+  .h2o.modelJob('svd', parms, h2oRestApiVersion=99) 
 }

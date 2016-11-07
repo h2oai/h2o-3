@@ -18,14 +18,20 @@
 #' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
-#' @param k Number of clusters Defaults to 1.
+#' @param k The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will
+#'        find up to k centroids. Defaults to 1.
+#' @param estimate_k \code{Logical}. Whether to estimate the number of clusters (<=k) iteratively and deterministically. Defaults
+#'        to False.
 #' @param user_points User-specified points
-#' @param max_iterations Maximum training iterations Defaults to 1000.
-#' @param standardize \code{Logical}. Standardize columns Defaults to True.
+#' @param max_iterations Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration) Defaults
+#'        to 10.
+#' @param standardize \code{Logical}. Standardize columns before computing distances Defaults to True.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
 #' @param init Initialization mode Must be one of: "Random", "PlusPlus", "Furthest", "User". Defaults to Furthest.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
+#' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
+#'        "Binary", "Eigen". Defaults to AUTO.
 #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}},
 #'          \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}},
@@ -51,12 +57,14 @@ h2o.kmeans <- function(x,
                        ignore_const_cols = TRUE,
                        score_each_iteration = FALSE,
                        k = 1,
+                       estimate_k = FALSE,
                        user_points = NULL,
-                       max_iterations = 1000,
+                       max_iterations = 10,
                        standardize = TRUE,
                        seed = -1,
                        init = c("Random", "PlusPlus", "Furthest", "User"),
-                       max_runtime_secs = 0.0
+                       max_runtime_secs = 0.0,
+                       categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen")
                        ) 
 {
 
@@ -100,6 +108,8 @@ h2o.kmeans <- function(x,
     parms$score_each_iteration <- score_each_iteration
   if (!missing(k))
     parms$k <- k
+  if (!missing(estimate_k))
+    parms$estimate_k <- estimate_k
   if (!missing(user_points))
     parms$user_points <- user_points
   if (!missing(max_iterations))
@@ -112,6 +122,8 @@ h2o.kmeans <- function(x,
     parms$init <- init
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(categorical_encoding))
+    parms$categorical_encoding <- categorical_encoding
 
   # Check if init is an acceptable set of user-specified starting points
   if( is.data.frame(init) || is.matrix(init) || is.list(init) || is.H2OFrame(init) ) {

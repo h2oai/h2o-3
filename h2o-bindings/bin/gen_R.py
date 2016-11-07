@@ -38,6 +38,16 @@ def gen_module(schema, algo):
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size"]:
             continue
+        if algo == "naivebayes":
+            if param["name"] == "min_sdev":
+                yield "#' @param threshold The minimum standard deviation to use for observations without enough data. "
+                yield "#'                  Must be at least 1e-10."
+                continue
+            if param["name"] == "eps_sdev":
+                yield "#' @param eps A threshold cutoff to deal with numeric instability, must be positive."
+                continue
+            if param["name"] in ["min_prob", "eps_prob"]:
+                continue
         if param["name"] == "seed":
             yield "#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)"
             yield "#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number)."
@@ -70,10 +80,19 @@ def gen_module(schema, algo):
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size", "training_frame"]:
             continue
+        if algo == "naivebayes":
+            if param["name"] == "min_sdev":
+                list.append(indent("threshold = %s" % normalize_value(param), 17 + len(algo)))
+                continue
+            if param["name"] == "eps_sdev":
+                list.append(indent("eps = %s" % normalize_value(param), 17 + len(algo)))
+                continue
+            if param["name"] in ["min_prob", "eps_prob"]:
+                continue
         list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(algo)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(algo))
-    if algo in ["deeplearning", "drf", "gbm", "glm", "naivebayes"]:
+    if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
         yield "  #If x is missing, then assume user wants to use all columns as features."
         yield "  if(missing(x)){"
         yield "     if(is.numeric(y)){"
@@ -123,7 +142,7 @@ def gen_module(schema, algo):
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
-    elif algo in ["deeplearning", "drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
         if any(param["name"] == "autoencoder" for param in schema["parameters"]):
             yield "  args <- .verify_dataxy(training_frame, x, y, autoencoder)"
         else:
@@ -138,7 +157,13 @@ def gen_module(schema, algo):
     else:
         yield "  if(!missing(x))"
         yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
-
+    if algo == "svd":
+        yield "  if(!missing(destination_key)) {"
+        yield "    warning(\"'destination_key' is deprecated; please use 'model_id' instead.\")"
+        yield "    if(missing(model_id)) {"
+        yield "      parms$model_id <- destination_key"
+        yield "    }"
+        yield "  }"
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "training_frame", "max_confusion_matrix_size"]:
             continue
@@ -153,6 +178,14 @@ def gen_module(schema, algo):
             yield "      parms$loss <- loss"
             yield "  }"
             continue
+        if param["name"] in ["min_sdev", "min_prob"]:
+            yield " if (!missing(threshold))"
+            yield "   parms$%s <- threshold" % param["name"]
+            continue
+        if param["name"] in ["eps_sdev", "eps_prob"]:
+            yield " if (!missing(eps))"
+            yield "   parms$%s <- eps" % param["name"]
+            continue
         yield "  if (!missing(%s))" % param["name"]
         yield "    parms$%s <- %s" % (param["name"], param["name"])
     if help_extra_checks:
@@ -161,7 +194,7 @@ def gen_module(schema, algo):
             yield "%s" % line
     if algo != "glm":
         yield "  # Error check and build model"
-        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion=3) \n}" % algo
+        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion=%d) \n}" % (algo, 99 if algo == "svd" else 3)
     if help_afterword:
         lines = help_afterword.split("\n")
         for line in lines:
@@ -369,22 +402,29 @@ def help_example_for(algo):
 def get_extra_params_for(algo):
     if algo == "glrm":
         return "cols = NULL"
-    elif algo in ["deeplearning", "drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
         return "x, y"
+    elif algo == "svd":
+        return "x, destination_key"
     else:
         return "x"
 
 def help_extra_params_for(algo):
     if algo == "glrm":
         return "#' @param cols (Optional) A vector containing the data columns on which k-means operates."
-    elif algo in ["deeplearning", "drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater","drf", "gbm", "glm", "naivebayes"]:
         return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
             #'        If x is missing,then all columns except y are used.
             #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
             #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
             #'        categorical variable)."""
+    elif algo == "svd":
+        return """#' @param x A vector containing the \code{character} names of the predictors in the model.
+            #' @param destination_key (Optional) The unique hex key assigned to the resulting model.
+            #'                        Automatically generated if none is provided."""
     else:
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
+
 
 def help_extra_checks_for(algo):
     if algo == "glm":
@@ -568,7 +608,7 @@ def help_afterword_for(algo):
             #' @param beta a new set of betas (a named vector)
             #' @export
             h2o.makeGLMModel <- function(model,beta) {
-               res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+               res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\\\"",names(beta),"\\\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
                m <- h2o.getModel(model_id=res$model_id$name)
                m@model$coefficients <- m@model$coefficients_table[,2]
                names(m@model$coefficients) <- m@model$coefficients_table[,1]
@@ -782,9 +822,10 @@ def main():
     bi.init("R", "../../../h2o-r/h2o-package/R", clear_dir=False)
 
     for name, mb in bi.model_builders().items():
+        if name == "aggregator":
+            continue
         module = name
         if name == "drf": module = "randomforest"
-        if name == "naivebayes": module = "naivebayes"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.R" % module, gen_module(mb, name))
 

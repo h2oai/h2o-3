@@ -322,7 +322,7 @@ h2o.glm <- function(x, y,
 #' @param beta a new set of betas (a named vector)
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
-res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste(""",names(beta),""",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
 m <- h2o.getModel(model_id=res$model_id$name)
 m@model$coefficients <- m@model$coefficients_table[,2]
 names(m@model$coefficients) <- m@model$coefficients_table[,1]
