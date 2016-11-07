@@ -4,7 +4,10 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.StackedEnsembleModel;
+import hex.glm.GLM;
+import hex.glm.GLMModel;
 import water.DKV;
+import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -59,7 +62,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         // TODO: multinomial classification:
         Frame aModelsPredictions = aModel._output._cross_validation_holdout_predictions_frame_id.get();
         if (aModel._output.isBinomialClassifier())
-          levelOneFrame.add(aModel._key.toString(), aModel._parms.train().vec(2)); // predictions are in the third col
+          levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("YES"));
         else if (aModel._output.isClassifier())
           throw new H2OIllegalArgumentException("Don't yet know how to stack multinomial classifiers: " + aModel._key);
         else if (aModel._output.isAutoencoder())
@@ -67,12 +70,15 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         else if (!aModel._output.isSupervised())
           throw new H2OIllegalArgumentException("Don't yet know how to stack unsupervised models: " + aModel._key);
         else
-          levelOneFrame.add(aModel._key.toString(), aModel._parms.train().vec(0));
+          levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("YES"));
 
       } // for all base_models
 
       levelOneFrame.add(_model.responseColumn, _model.commonTrainingFrame.vec(_model.responseColumn));
-      levelOneFrame.delete_and_lock(_job);
+
+      // TODO: what if we're running multiple in parallel and have a name collision?
+      levelOneFrame.delete_and_lock(_job);  // delete preexisting and write lock
+      levelOneFrame.unlock(_job);
       Log.info("Finished creating \"level one\" frame for stacking: " + levelOneFrame.toString());
       return levelOneFrame;
     }
@@ -88,11 +94,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
       Frame levelOneFrame = prepareLevelOneFrame(_parms);
 
-      /* TODO: not quite. . .
       // train the metalearner model
       // TODO: allow types other than GLM
       // Default Job for just this training
-      Job job = new Job<>(_model._key, ModelBuilder.javaName("GLM"), "GLM");
+      Job job = new Job<>(_model._key, ModelBuilder.javaName("glm"), "StackingEnsemble metalearner (GLM)");
       GLM metaBuilder = ModelBuilder.make("GLM", job, Key.<Model>make("metalearner_" + _model._key));
       metaBuilder._parms._non_negative = true;
       metaBuilder._parms._train = levelOneFrame._key;
@@ -110,7 +115,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         }
         catch (InterruptedException e) {}
       }
-*/
+
       Log.info("Finished training metalearner model.");
 
     } // computeImpl
