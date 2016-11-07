@@ -16,14 +16,14 @@ import static water.udf.DataColumns.Factory;
 /**
  * Single column frame that knows its data type
  */
-public class TypednFrame<X> extends Frame {
+public class UnfoldingFrame<X> extends Frame {
   private final Factory<X> factory;
   private final long len;
   private final Unfoldable<Long, X> function;
   private final int width;
   private List<Column<X>> columns;  
 
-  public TypednFrame(Factory<X> factory, long len, Unfoldable<Long, X> function, int width) {
+  public UnfoldingFrame(Factory<X> factory, long len, Unfoldable<Long, X> function, int width) {
     super();
     this.factory = factory;
     this.len = len;
@@ -33,7 +33,7 @@ public class TypednFrame<X> extends Frame {
     assert width >= 0: "Multicolumn frame must have a nonnegative width, but found"+width;
   }
 
-  final static class EnumnFrame extends TypednFrame<Integer> {
+  final static class EnumnFrame extends UnfoldingFrame<Integer> {
     private final String[] domain;
     
     public EnumnFrame(long length, Unfoldable<Long, Integer> function, int width, String[] domain) {
@@ -50,7 +50,6 @@ public class TypednFrame<X> extends Frame {
     }
     LinkedList<Object> x;
     throw H2O.unimpl("TODO(vlad): talk with Arno, Pasha");
-//    x.iterator()
 //    MRTask task = new MRTask() {
 //      @Override
 //      public void map(Chunk[] cs) {
