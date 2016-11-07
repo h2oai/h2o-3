@@ -50,7 +50,7 @@ public class UdfTest extends TestUtil {
     assertTrue(c.isNA(19));
     assertFalse(c.isNA(20));
   }
-
+  
   @Test public void testGetString() throws Exception {
     Column<Double> c = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
        public Double apply(Long i) {
@@ -268,12 +268,11 @@ public class UdfTest extends TestUtil {
       assertEquals(xi*xi, x1.apply(i), 0.0001);
     }
 
-// empty collection currently does not work, sorry
-//    Column<Double> x0 = new FoldingColumn<>(Functions.SUM_OF_SQUARES);
-//
-//    for (int i = 0; i < 100000; i++) {
-//      assertEquals(0., x0.get(i), 0.0001);
-//    }
+    Column<Double> x0 = new FoldingColumn<>(Functions.SUM_OF_SQUARES);
+
+    for (int i = 0; i < 100000; i++) {
+      assertEquals(0., x0.apply(i), 0.0001);
+    }
     
     Column<Double> materialized = Doubles.materialize(r);
 
@@ -291,19 +290,6 @@ public class UdfTest extends TestUtil {
     for (int i = 0; i < lines.size(); i++) {
       System.out.println(StringUtils.join(" ", split.apply(i)));
     }
-  }
-
-  @Test
-  public void testOfTypedFrame2() throws Exception {
-    Column<Double> x = five_x();
-
-    Column<Double> y = new FunColumn<>(Functions.SQUARE, x);
-
-    TypedFrame2<Double, Double> f2 = new TypedFrame2<>(x, Functions.SQUARE);
-    
-    assertEquals(0.0, y.apply(0), 0.000001);
-    assertEquals(44100.0, y.apply(42), 0.000001);
-    assertEquals(10000000000.0, y.apply(20000), 0.000001);
   }
 
 }
