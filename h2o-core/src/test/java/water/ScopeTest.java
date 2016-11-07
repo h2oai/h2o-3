@@ -79,4 +79,26 @@ public class ScopeTest extends TestUtil {
     Keyed.remove(v3._key, fs);
     fs.blockForPending();
   }
+  
+  @Test
+  public void test_with_leakage_inside_try_block_new_style() throws Exception {
+    Scope.enter();
+    Vec v1 = Vec.makeCon(121.0, 21);
+    Vec v2 = Vec.makeCon(122.0, 22);
+    Vec v3 = Vec.makeCon(123.0, 23);
+    try(Scope scope = new Scope()) {
+      Scope.track(v1);
+      Scope.track(v2);
+      Scope.track(v3);
+//      Scope.exit();
+      throw new Exception("Just checking if it works");
+    } catch (Exception e) { }
+    assertTrue(countLeakedKeys() == 0);
+    Futures fs = new Futures();
+    Keyed.remove(v1._key, fs);
+    Keyed.remove(v2._key, fs);
+    Keyed.remove(v3._key, fs);
+    fs.blockForPending();
+  }
+
 }
