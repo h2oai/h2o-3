@@ -24,7 +24,7 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
   @Override public Vec vec() { return new VirtualVec<>(this); }
   
   public FoldingColumn(Foldable<X, Y> f, Column<X>... columns) {
-    super(columns[0]);
+    super(columns.length == 0 ? null : columns[0]);
     this.f = f;
     this.columns = Arrays.asList(columns);
   }
