@@ -1526,7 +1526,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           for (int col = 0; col < features.length; col++) // Build feature set
             features[col] = dvecs[col].at(row);
           genmodel.score0(features, predictions);            // POJO predictions
-          for (int col = 0; col < pvecs.length; col++) { // Compare predictions
+          for (int col = _output.isClassifier() ? 1 : 0; col < pvecs.length; col++) { // Compare predictions
             double d = pvecs[col].at(row);                  // Load internal scoring predictions
             if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
             if (!MathUtils.compare(predictions[col], d, abs_epsilon, rel_epsilon)) {
@@ -1626,7 +1626,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
           // Verify the correctness of the prediction
           num_total++;
-          for (int col = 0; col < pvecs.length; col++) {
+          for (int col = genmodel.isClassifier() ? 1 : 0; col < pvecs.length; col++) {
             if (!MathUtils.compare(actual_preds[col], expected_preds[col], abs_epsilon, rel_epsilon)) {
               num_errors++;
               if (num_errors < 20) {
