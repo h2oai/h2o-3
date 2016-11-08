@@ -14,7 +14,7 @@ class SharedTreeNode {
   private final SharedTreeNode parent;
   private final int subgraphNumber;
   private final int nodeNumber;
-  private final int level;
+  private final int depth;
   private int colId;
   private String colName;
   private boolean leftward;
@@ -26,7 +26,10 @@ class SharedTreeNode {
   private SharedTreeNode leftChild;
   private SharedTreeNode rightChild;
 
-  // When parent is a categorical, levels of parentColId that are reachable to this node.
+  // Whether NA for this colId is reachable to this node.
+  private boolean inclusiveNa;
+
+  // When a column is categorical, levels that are reachable to this node.
   // This in particular includes any earlier splits of the same colId.
   private BitSet inclusiveLevels;
 
@@ -35,17 +38,21 @@ class SharedTreeNode {
    * @param p Parent node
    * @param sn Tree number
    * @param n Node number
-   * @param l Node level within the tree
+   * @param d Node depth within the tree
    */
-  SharedTreeNode(SharedTreeNode p, int sn, int n, int l) {
+  SharedTreeNode(SharedTreeNode p, int sn, int n, int d) {
     parent = p;
     subgraphNumber = sn;
     nodeNumber = n;
-    level = l;
+    depth = d;
   }
 
-  public int getLevel() {
-    return level;
+  public int getDepth() {
+    return depth;
+  }
+
+  private int getNodeNumber() {
+    return nodeNumber;
   }
 
   void setCol(int v1, String v2) {
@@ -80,19 +87,38 @@ class SharedTreeNode {
   }
 
   /**
+   * Calculate whether the NA value for a particular colId can reach this node.
+   * @param colIdToFind Column id to find
+   * @return true if NA of colId reaches this node, false otherwise
+   */
+  private boolean findInclusiveNa(int colIdToFind) {
+    if (parent == null) {
+      return true;
+    }
+    else if (parent.getColId() == colIdToFind) {
+      return inclusiveNa;
+    }
+    return parent.findInclusiveNa(colIdToFind);
+  }
+
+  private boolean calculateChildInclusiveNa(boolean includeThisSplitEdge) {
+    return findInclusiveNa(colId) && includeThisSplitEdge;
+  }
+
+  /**
    * Find the set of levels for a particular categorical column that can reach this node.
    * A null return value implies the full set (i.e. every level).
-   * @param colId Column id
+   * @param colIdToFind Column id to find
    * @return Set of levels
    */
-  private BitSet findInclusiveLevels(int colId) {
+  private BitSet findInclusiveLevels(int colIdToFind) {
     if (parent == null) {
       return null;
     }
-    if (parent.getColId() == colId) {
+    if (parent.getColId() == colIdToFind) {
       return inclusiveLevels;
     }
-    return parent.findInclusiveLevels(colId);
+    return parent.findInclusiveLevels(colIdToFind);
   }
 
   private boolean calculateIncludeThisLevel(BitSet inheritedInclusiveLevels, int i) {
@@ -148,6 +174,9 @@ class SharedTreeNode {
   void setLeftChild(SharedTreeNode v) {
     leftChild = v;
 
+    boolean childInclusiveNa = calculateChildInclusiveNa(leftward);
+    v.setInclusiveNa(childInclusiveNa);
+
     if (! isBitset()) {
       return;
     }
@@ -158,11 +187,22 @@ class SharedTreeNode {
   void setRightChild(SharedTreeNode v) {
     rightChild = v;
 
+    boolean childInclusiveNa = calculateChildInclusiveNa(!leftward);
+    v.setInclusiveNa(childInclusiveNa);
+
     if (! isBitset()) {
       return;
     }
     BitSet childInclusiveLevels = calculateChildInclusiveLevels(false, naVsRest, true);
     v.setInclusiveLevels(childInclusiveLevels);
+  }
+
+  void setInclusiveNa(boolean v) {
+    inclusiveNa = v;
+  }
+
+  private boolean getInclusiveNa() {
+    return inclusiveNa;
   }
 
   private void setInclusiveLevels(BitSet v) {
@@ -179,7 +219,7 @@ class SharedTreeNode {
 
   public void print() {
     System.out.println("        Node " + nodeNumber);
-    System.out.println("            level:       " + level);
+    System.out.println("            depth:       " + depth);
     System.out.println("            colId:       " + colId);
     System.out.println("            colName:     " + ((colName != null) ? colName : ""));
     System.out.println("            leftward:    " + leftward);
@@ -214,45 +254,60 @@ class SharedTreeNode {
     return (domainValues != null);
   }
 
-  private void printDot(PrintStream os) {
+  private void printDotNode(PrintStream os, boolean detail) {
     os.print("\"" + getDotName() + "\"");
+    os.print(" [");
+
     if (isLeaf()) {
-      os.print(" [label=\"");
+      os.print("label=\"");
       os.print(leafValue);
-      os.print("\"]");
     }
     else if (isBitset()) {
-      os.print(" [shape=box,label=\"");
+      os.print("shape=box,label=\"");
       os.print(colName);
-      os.print("\"]");
     }
     else {
       assert(! Float.isNaN(splitValue));
-      os.print(" [shape=box,label=\"");
+      os.print("shape=box,label=\"");
       os.print(colName + " < " + splitValue);
-      os.print("\"]");
     }
+
+    if (detail) {
+      os.print("\\n\\nN" + getNodeNumber());
+      if (naVsRest) {
+        os.print("\\n" + "nasVsRest");
+      }
+      if (leftChild != null) {
+        os.print("\\n" + "L: N" + leftChild.getNodeNumber());
+      }
+      if (rightChild != null) {
+        os.print("\\n" + "R: N" + rightChild.getNodeNumber());
+      }
+    }
+
+    os.print("\"]");
     os.println("");
   }
 
   /**
-   * Recursively print nodes at a particular level in the tree.  Useful to group them so they render properly.
+   * Recursively print nodes at a particular depth level in the tree.  Useful to group them so they render properly.
    * @param os output stream
    * @param levelToPrint level number
+   * @param detail include addtional node detail information
    */
-  void printDotNodesAtLevel(PrintStream os, int levelToPrint) {
-    if (getLevel() == levelToPrint) {
-      printDot(os);
+  void printDotNodesAtLevel(PrintStream os, int levelToPrint, boolean detail) {
+    if (getDepth() == levelToPrint) {
+      printDotNode(os, detail);
       return;
     }
 
-    assert (getLevel() < levelToPrint);
+    assert (getDepth() < levelToPrint);
 
     if (leftChild != null) {
-      leftChild.printDotNodesAtLevel(os, levelToPrint);
+      leftChild.printDotNodesAtLevel(os, levelToPrint, detail);
     }
     if (rightChild != null) {
-      rightChild.printDotNodesAtLevel(os, levelToPrint);
+      rightChild.printDotNodesAtLevel(os, levelToPrint, detail);
     }
   }
 
@@ -289,7 +344,7 @@ class SharedTreeNode {
       os.print("\"" + getDotName() + "\"" + " -> " + "\"" + leftChild.getDotName() + "\"" + " [");
 
       ArrayList<String> arr = new ArrayList<>();
-      if (leftward) {
+      if (leftChild.getInclusiveNa()) {
         arr.add("[NA]");
       }
 
@@ -309,7 +364,7 @@ class SharedTreeNode {
       os.print("\"" + getDotName() + "\"" + " -> " + "\"" + rightChild.getDotName() + "\"" + " [");
 
       ArrayList<String> arr = new ArrayList<>();
-      if (! leftward) {
+      if (rightChild.getInclusiveNa()) {
         arr.add("[NA]");
       }
 
