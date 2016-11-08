@@ -696,11 +696,12 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._response_column = "C2";
       p._balance_classes = true;
       p._epochs = 1;
+      p._seed = 1234;
       p._max_after_balance_size = 2f;
       p._class_sampling_factors = new float[]{3,5};
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
-      Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
+      Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.85);
       preds = m.score(p._train.get());
       Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3,1e-5,1));
     } finally {
@@ -897,11 +898,9 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Frame preds = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      tr = parse_test_file("smalldata/prostate/prostate.csv");
 
-      p._backend = getBackend();
-      p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
       p._response_column = "CAPSULE";
-      p._ignored_columns = new String[]{"ID"};
       for (String col : new String[]{p._response_column}) {
         Vec v = tr.remove(col);
         tr.add(col, v.toCategoricalVec());
@@ -915,19 +914,26 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         }
       }
       DKV.put(tr);
+      p._train = tr._key;
+      p._ignored_columns = new String[]{"ID"};
       p._backend = getBackend();
-      p._seed = 125;
-      p._epochs = 1;
+      p._seed = 12345;
+      p._epochs = 5;
       p._categorical_encoding = categoricalEncodingScheme;
-      p._score_training_samples = 100;
-      p._score_validation_samples = 100;
-      p._shuffle_training_data = false;
       p._standardize = standardize;
-      p._hidden = new int[]{10,10};
+      p._hidden = new int[]{50,50};
       m = new DeepWater(p).trainModel().get();
 
-      preds = m.score(p._train.get());
-      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
+      preds = m.score(tr);
+      Assert.assertTrue(m.testJavaScoring(tr,preds,1e-3));
+
+      Scope.enter();
+      double auc = ModelMetricsBinomial.make(preds.vec(2), tr.vec(p._response_column)).auc();
+      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
+      if (standardize)
+        Assert.assertTrue(auc > 0.78);
+      Scope.exit();
+
     } finally {
       if (tr!=null) tr.remove();
       if (m!=null) m.remove();
