@@ -189,6 +189,6 @@ function(args) {
             write("INFO: R package sync successful",stdout())
             write("",stdout()) }}
 }
-
+# run ci 2
 packageVersionCheckUpdate(args=commandArgs(trailingOnly = TRUE))
-
+install.packages("data.table", type = "source", repos = "http://Rdatatable.github.io/data.table", method = "curl")
