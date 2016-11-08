@@ -628,6 +628,19 @@ def help_afterword_for(algo):
                res
             }
 
+            #' Compute weighted gram matrix.
+            #'
+            #' @param X an \linkS4class{H2OModel} corresponding to H2O framel.
+            #' @param weights character corresponding to name of weight vector in frame.
+            #' @param use_all_factor_levels logical flag telling h2o whether or not to skip first level of categorical variables during one-hot encoding.
+            #' @param standardize logical flag telling h2o whether or not to standardize data
+            #' @param skip_missing logical flag telling h2o whether skip rows with missing data or impute them with mean
+            #' @export
+            h2o.computeGram <- function(X,weights="", use_all_factor_levels=FALSE,standardize=TRUE,skip_missing=FALSE) {
+               res = .h2o.__remoteSend(method="GET", .h2o.__ComputeGram, X=h2o.getId(X),W=weights,use_all_factor_levels=use_all_factor_levels,standardize=standardize,skip_missing=skip_missing)
+               h2o.getFrame(res$destination_frame$name)
+            }
+
             ##' Start an H2O Generalized Linear Model Job
             ##'
             ##' Creates a background H2O GLM job.
