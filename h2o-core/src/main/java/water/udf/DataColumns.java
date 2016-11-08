@@ -3,13 +3,11 @@ package water.udf;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.util.PrettyPrint;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * An adapter to Vec, allows type-safe access to data
@@ -38,6 +36,10 @@ public class DataColumns {
 
     public DataColumn<T> materialize(Column<T> xs) throws IOException {
       return newColumn(xs.size(), xs);
+    }
+
+    public List<DataColumn<T>> materialize(UnfoldingFrame<T> fr) throws IOException {
+      return fr.materialize();
     }
 
     public DataColumn<T> newColumn(final List<T> xs) throws IOException {
@@ -115,7 +117,7 @@ public class DataColumns {
         throw new IllegalArgumentException("Expected type T_STR, got " + vec.get_type_str());
       return new DataColumn<String>(vec, typeCode, this) {
         @Override public String get(long idx) { 
-          return asString(vec.atStr(new BufferedString(), idx)); 
+          return vec.isNA(idx) ? null : asString(vec.atStr(new BufferedString(), idx)); 
         }
 
         @Override
@@ -187,25 +189,26 @@ public class DataColumns {
 
   //-------------------------------------------------------------
 
-  public static final Factory<UUID> UUIDs = new Factory<UUID>(Vec.T_UUID) {
-
-    @Override public DataChunk<UUID> apply(final Chunk c) {
-      return new DataChunk<UUID>(c) {
-        @Override public UUID get(int idx) { return isNA(idx) ? null : new UUID(c.at16h(idx), c.at16l(idx)); }
-        @Override public void set(int idx, UUID value) { c.set(idx, value); }
-      };
-    }
-
-    @Override public DataColumn<UUID> newColumn(final Vec vec) {
-      if (vec.get_type() != Vec.T_UUID)
-        throw new IllegalArgumentException("Expected a type UUID, got " + vec.get_type_str());
-      return new DataColumn<UUID>(vec, typeCode, this) {
-        @Override public UUID get(long idx) { return isNA(idx) ? null : new UUID(vec.at16h(idx), vec.at16l(idx)); }
-        @Override public String getString(long idx) { return PrettyPrint.uuid(get(idx)); }
-        @Override public void set(long idx, UUID value) { vec.set(idx, value); }
-      };
-    }
-  };
+// TODO(vlad): figure out if we should support UUIDs  
+//  public static final Factory<UUID> UUIDs = new Factory<UUID>(Vec.T_UUID) {
+//
+//    @Override public DataChunk<UUID> apply(final Chunk c) {
+//      return new DataChunk<UUID>(c) {
+//        @Override public UUID get(int idx) { return isNA(idx) ? null : new UUID(c.at16h(idx), c.at16l(idx)); }
+//        @Override public void set(int idx, UUID value) { c.set(idx, value); }
+//      };
+//    }
+//
+//    @Override public DataColumn<UUID> newColumn(final Vec vec) {
+//      if (vec.get_type() != Vec.T_UUID)
+//        throw new IllegalArgumentException("Expected a type UUID, got " + vec.get_type_str());
+//      return new DataColumn<UUID>(vec, typeCode, this) {
+//        @Override public UUID get(long idx) { return isNA(idx) ? null : new UUID(vec.at16h(idx), vec.at16l(idx)); }
+//        @Override public String getString(long idx) { return PrettyPrint.uuid(get(idx)); }
+//        @Override public void set(long idx, UUID value) { vec.set(idx, value); }
+//      };
+//    }
+//  };
 
   //-------------------------------------------------------------
 

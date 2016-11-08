@@ -35,10 +35,9 @@ public class TypedFrame<X> extends Frame {
   
   protected Vec makeVec() throws IOException {
     // TODO(vlad): we need to inherit the vec layout
-    column = newColumn(Vec.makeZero(len, factory.typeCode()));
+    final Vec vec0 = Vec.makeZero(len, factory.typeCode());
     MRTask task = new MRTask() {
-      @Override
-      public void map(Chunk[] cs) {
+      @Override public void map(Chunk[] cs) {
         for (Chunk c : cs) {
           DataChunk<X> tc = factory.apply(c);
           for (int r = 0; r < c._len; r++) {
@@ -48,8 +47,7 @@ public class TypedFrame<X> extends Frame {
         }
       }
     };
-    Vec vec = column.vec();
-    MRTask mrTask = task.doAll(vec);
+    MRTask mrTask = task.doAll(vec0);
     return mrTask._fr.vecs()[0];
   }
 
