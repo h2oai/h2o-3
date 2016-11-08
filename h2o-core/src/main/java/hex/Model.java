@@ -792,8 +792,30 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final String weights = parms._weights_column;
     final String offset = parms._offset_column;
     final String fold = parms._fold_column;
+    boolean haveCategoricalPredictors = false;
+    for (int i=0; i<test.numCols(); ++i) {
+      if (test.names()[i].equals(response)) continue;
+      if (test.names()[i].equals(weights)) continue;
+      if (test.names()[i].equals(offset)) continue;
+      if (test.names()[i].equals(fold)) continue;
+      if (test.vec(i).cardinality() > 0) {
+        haveCategoricalPredictors = true;
+        break;
+      }
+    }
+    // check if we first need to expand categoricals before calling this method again
+    if (expensive && haveCategoricalPredictors &&
+        ( parms._categorical_encoding == Parameters.CategoricalEncodingScheme.OneHotExplicit
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen
+            || parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary
+        )) {
+      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev);
+      toDelete.put(updated._key, "categorically encoded frame");
+      test.restructure(updated.names(), updated.vecs()); //updated in place
+      return adaptTestForTrain(test, origNames, origDomains, names, domains, parms, expensive, computeMetrics, interactions, tev, toDelete);
+    }
+
     final double missing = parms.missingColumnsType();
-    final Parameters.CategoricalEncodingScheme catEncoding = parms._categorical_encoding;
 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap categoricals
@@ -815,6 +837,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         throw new IllegalArgumentException("Test/Validation dataset is missing offset vector '" + offset + "'");
       if(vec == null && isWeights && computeMetrics && expensive) {
         vec = test.anyVec().makeCon(1);
+        toDelete.put(vec._key, "adapted missing vectors");
         msgs.add(H2O.technote(1, "Test/Validation dataset is missing the weights column '" + names[i] + "' (needed because a response was found and metrics are to be computed): substituting in a column of 1s"));
         //throw new IllegalArgumentException(H2O.technote(1, "Test dataset is missing weights vector '" + weights + "' (needed because a response was found and metrics are to be computed)."));
       }
@@ -826,9 +849,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           if (isFold) {
             str = "Test/Validation dataset is missing fold column '" + names[i] + "': substituting in a column of 0s";
             vec = test.anyVec().makeCon(0);
+            toDelete.put(vec._key, "adapted missing vectors");
           } else {
             str = "Test/Validation dataset is missing training column '" + names[i] + "': substituting in a column of NAs";
             vec = test.anyVec().makeCon(missing);
+            toDelete.put(vec._key, "adapted missing vectors");
             convNaN++;
           }
           vec.setDomain(domains[i]);
@@ -869,14 +894,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names,vvecs,good);
 
-    if (expensive) {
-      Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
-      if (updated!=test) {
-        assert(updated._key!=test._key);
-        if (toDelete!=null) toDelete.put(updated._key, Arrays.toString(Thread.currentThread().getStackTrace()));
-        test.restructure(updated.names(), updated.vecs());
-      }
-    }
     return msgs.toArray(new String[msgs.size()]);
   }
 
