@@ -60,8 +60,8 @@ class ModelBuildersHandler extends Handler {
       infos[i].algo = algos[i];
       infos[i].maturity = builder.builderVisibility() == ModelBuilder.BuilderVisibility.Stable? "stable" :
           builder.builderVisibility() == ModelBuilder.BuilderVisibility.Beta? "beta" : "alpha";
-      infos[i].haveMojo = builder.haveMojo();
-      infos[i].havePojo = builder.havePojo();
+      infos[i].have_mojo = builder.haveMojo();
+      infos[i].have_pojo = builder.havePojo();
     }
     res.models = infos;
     return res;

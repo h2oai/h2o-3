@@ -15,9 +15,9 @@ public class ModelInfoV4 extends OutputSchemaV4<ModelBuilder, ModelInfoV4> {
   public String maturity;
 
   @API(help="Does the model support generation of POJOs?")
-  public boolean havePojo;
+  public boolean have_pojo;
 
   @API(help="Does the model support generation of MOJOs?")
-  public boolean haveMojo;
+  public boolean have_mojo;
 
 }
