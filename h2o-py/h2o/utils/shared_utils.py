@@ -225,6 +225,12 @@ def _locate(path):
         possible_result = os.path.join(tmp_dir, path)
 
 
+def _colmean(column):
+    """Return the mean of a single-column frame."""
+    assert column.ncols == 1
+    return column.mean(return_frame=True).flatten()
+
+
 def get_human_readable_bytes(size):
     """
     Convert given number of bytes into a human readable representation, i.e. add prefix such as kb, Mb, Gb,
