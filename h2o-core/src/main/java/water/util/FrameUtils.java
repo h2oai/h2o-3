@@ -524,7 +524,6 @@ public class FrameUtils {
               catnames.add(_frame.name(i) + "." + _frame.vec(i).domain()[k]);
             ++j;
           } else {
-            catnames.add(_frame.name(i));
             outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
           }
         }
