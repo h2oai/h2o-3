@@ -118,7 +118,7 @@ Example
 	                     search_criteria = {'strategy': "Cartesian"})
 
 	# train using the grid
-	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid, seed = 1234)
+	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# sort the grid models by decreasing AUC
 	sorted_grid = grid.get_grid(sort_by='auc', decreasing=True)

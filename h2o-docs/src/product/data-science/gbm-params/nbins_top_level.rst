@@ -91,7 +91,7 @@ Example
 	# '1' indicates the eye-closed and '0' the eye-open state. All values are in chronological 
 	# order with the first measured value at the top of the data.
 	# original dataset can be found at the UCI Machine Learning Repository http://archive.ics.uci.edu/ml/datasets/EEG+Eye+State
-	eeg <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/eeg/eeg_eyestate.csv")
+	eeg = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/eeg/eeg_eyestate.csv")
 
 	# convert response column to a factor
 	eeg['eyeDetection'] = eeg['eyeDetection'].asfactor() 
@@ -138,7 +138,7 @@ Example
 	                     search_criteria = {'strategy': "Cartesian"})
 
 	# train using the grid
-	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid, seed = 1234)
+	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# sort the grid models by decreasing AUC
 	sorted_grid = grid.get_grid(sort_by='auc', decreasing=True)
