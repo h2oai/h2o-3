@@ -9,7 +9,6 @@ import java.util.ArrayList;
  */
 public class SharedTreeGraph {
   private ArrayList<SharedTreeSubgraph> subgraphArray = new ArrayList<>();
-  private int nextSubgraphNumber = 0;
 
   /**
    * Make a new forest.
@@ -24,8 +23,7 @@ public class SharedTreeGraph {
    * @return The new tree.
    */
   SharedTreeSubgraph makeSubgraph(String name) {
-    SharedTreeSubgraph sg = new SharedTreeSubgraph(nextSubgraphNumber, name);
-    nextSubgraphNumber++;
+    SharedTreeSubgraph sg = new SharedTreeSubgraph(subgraphArray.size(), name);
     subgraphArray.add(sg);
     return sg;
   }

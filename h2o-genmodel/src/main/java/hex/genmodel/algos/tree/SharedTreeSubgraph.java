@@ -10,7 +10,6 @@ import java.util.ArrayList;
 class SharedTreeSubgraph {
   private final int subgraphNumber;
   private final String name;
-  private int nextNodeNumber = 0;
   private SharedTreeNode rootNode;
 
   // Even though all the nodes are reachable from rootNode, keep a second handy list of nodes.
@@ -33,8 +32,7 @@ class SharedTreeSubgraph {
    * @return The node
    */
   SharedTreeNode makeRootNode() {
-    SharedTreeNode n = new SharedTreeNode(null, subgraphNumber, nextNodeNumber, 0);
-    nextNodeNumber++;
+    SharedTreeNode n = new SharedTreeNode(null, subgraphNumber, nodesArray.size(), 0);
     nodesArray.add(n);
     rootNode = n;
     return n;
@@ -46,8 +44,7 @@ class SharedTreeSubgraph {
    * @return The new child node
    */
   SharedTreeNode makeLeftChildNode(SharedTreeNode parent) {
-    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
-    nextNodeNumber++;
+    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nodesArray.size(), parent.getLevel() + 1);
     nodesArray.add(child);
     makeLeftEdge(parent, child);
     return child;
@@ -59,8 +56,7 @@ class SharedTreeSubgraph {
    * @return The new child node
    */
   SharedTreeNode makeRightChildNode(SharedTreeNode parent) {
-    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
-    nextNodeNumber++;
+    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nodesArray.size(), parent.getLevel() + 1);
     nodesArray.add(child);
     makeRightEdge(parent, child);
     return child;
