@@ -7,6 +7,8 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -19,11 +21,10 @@ import static water.udf.DataColumns.Factory;
 public class UnfoldingFrame<X> extends Frame {
   private final Factory<X> factory;
   private final long len;
-  private final Unfoldable<Long, X> function;
+  private final Function<Long, List<X>> function;
   private final int width;
-  private List<Column<X>> columns;  
 
-  public UnfoldingFrame(Factory<X> factory, long len, Unfoldable<Long, X> function, int width) {
+  public UnfoldingFrame(Factory<X> factory, long len, Function<Long, List<X>> function, int width) {
     super();
     this.factory = factory;
     this.len = len;
@@ -33,10 +34,10 @@ public class UnfoldingFrame<X> extends Frame {
     assert width >= 0: "Multicolumn frame must have a nonnegative width, but found"+width;
   }
 
-  final static class EnumnFrame extends UnfoldingFrame<Integer> {
+  final static class UnfoldingEnumFrame extends UnfoldingFrame<Integer> {
     private final String[] domain;
     
-    public EnumnFrame(long length, Unfoldable<Long, Integer> function, int width, String[] domain) {
+    public UnfoldingEnumFrame(long length, Unfoldable<Long, Integer> function, int width, String[] domain) {
       super(Enums(domain), length, function, width);
       this.domain = domain;
       assert domain != null : "An enum must have a domain";
@@ -44,37 +45,39 @@ public class UnfoldingFrame<X> extends Frame {
     }
   }
   
-  protected Vec makeVec() throws IOException {
+  protected List<Vec> makeVecs() throws IOException {
+    Vec[] vecs = new Vec[width];
+
     for (int j = 0; j < width; j++) {
-      columns.set(j, newColumn(Vec.makeZero(len, factory.typeCode())));
+      vecs[j] = Vec.makeZero(len, factory.typeCode());
     }
-    LinkedList<Object> x;
-    throw H2O.unimpl("TODO(vlad): talk with Arno, Pasha");
-//    MRTask task = new MRTask() {
-//      @Override
-//      public void map(Chunk[] cs) {
-//        for (Chunk c : cs) {
-//          DataChunk<X> tc = factory.apply(c);
-//          for (int r = 0; r < c._len; r++) {
-//            long i = r + c.start();
-//            List<X> values = function.apply(i);
-//            for 
-//            tc.set(r, function.apply(i));
-//          }
-//        }
-//      }
-//    };
-//    Vec vec = column.vec();
-//    MRTask mrTask = task.doAll(vec);
-//    return mrTask._fr.vecs()[0];
+
+    MRTask task = new MRTask() {
+      @Override
+      public void map(Chunk[] cs) {
+        int size = cs[0].len(); // TODO(vlad): find a solution for empty  
+        long start = cs[0].start();
+        for (int r = 0; r < size; r++) {
+          long i = r + start;
+          List<X> values = function.apply(i);
+          for (int j = 0; j < cs.length; j++) {
+            DataChunk<X> tc = factory.apply(cs[j]);
+            tc.set(r, j < values.size() ? values.get(j) : null);
+          }          
+        }
+      }
+    };
+    
+    MRTask mrTask = task.doAll(vecs);
+    return Arrays.asList(mrTask._fr.vecs());
   }
 
-  protected DataColumn<X> newColumn(Vec vec) throws IOException {
-    return factory.newColumn(vec);
-  }
+  public List<DataColumn<X>> materialize() throws IOException {
+    List<Vec> vecs = makeVecs();
+    List<DataColumn<X>> result = new ArrayList<DataColumn<X>>(width);
 
-  public DataColumn<X> newColumn() throws IOException {
-    return newColumn(makeVec());
+    for (Vec vec : vecs) result.add(factory.newColumn(vec));
+    return result;
   }
   
 }
