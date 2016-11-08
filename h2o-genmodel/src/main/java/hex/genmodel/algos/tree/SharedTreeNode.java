@@ -10,7 +10,7 @@ import java.util.BitSet;
  * Node in a tree.
  * A node (optionally) contains left and right edges to the left and right child nodes.
  */
-public class SharedTreeNode {
+class SharedTreeNode {
   private final SharedTreeNode parent;
   private final int subgraphNumber;
   private final int nodeNumber;
@@ -255,7 +255,7 @@ public class SharedTreeNode {
   }
 
   /**
-   * Recursively print all edges in the three.
+   * Recursively print all edges in the tree.
    * @param os output stream
    * @param maxLevelsToPrintPerEdge Limit the number of individual categorical level names printed per edge
    */
