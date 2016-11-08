@@ -9,6 +9,7 @@ import java.util.List;
  * Operations on functions
  */
 public class Functions {
+
   public static <X,Y,Z> Function<X, Z> compose(final Function<X,Y> f, final Function<Y, Z> g) {
     return new Function<X, Z>() {
       @Override public Z apply(X x) { return g.apply(f.apply(x)); }

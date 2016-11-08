@@ -21,6 +21,8 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
     this.xs = xs;
     this.ys = ys;
     this.zs = zs;
+    assert xs.isCompatibleWith(ys) : "Columns 1 and 2 must be compatible: " + xs + ", " + ys;
+    assert xs.isCompatibleWith(zs) : "Columns 1 and 3 must be compatible: " + xs + ", " + zs;
   }
   
   @Override public T get(long idx) { 
@@ -67,4 +69,6 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
       return f.apply(cx.get(i), cy.get(i), cz.get(i));
     }
   }
+
+  @Override public String toString() { return "Fun3Column(" + xs + "," + ys+ "," + zs + ")"; }
 }
