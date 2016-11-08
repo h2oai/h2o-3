@@ -33,6 +33,7 @@ class SharedTreeSubgraph {
    */
   SharedTreeNode makeRootNode() {
     SharedTreeNode n = new SharedTreeNode(null, subgraphNumber, nodesArray.size(), 0);
+    n.setInclusiveNa(true);
     nodesArray.add(n);
     rootNode = n;
     return n;
@@ -44,7 +45,7 @@ class SharedTreeSubgraph {
    * @return The new child node
    */
   SharedTreeNode makeLeftChildNode(SharedTreeNode parent) {
-    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nodesArray.size(), parent.getLevel() + 1);
+    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nodesArray.size(), parent.getDepth() + 1);
     nodesArray.add(child);
     makeLeftEdge(parent, child);
     return child;
@@ -56,7 +57,7 @@ class SharedTreeSubgraph {
    * @return The new child node
    */
   SharedTreeNode makeRightChildNode(SharedTreeNode parent) {
-    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nodesArray.size(), parent.getLevel() + 1);
+    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nodesArray.size(), parent.getDepth() + 1);
     nodesArray.add(child);
     makeRightEdge(parent, child);
     return child;
@@ -84,15 +85,15 @@ class SharedTreeSubgraph {
     rootNode.printEdges();
   }
 
-  void printDot(PrintStream os, int maxLevelsToPrintPerEdge) {
+  void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail) {
     os.println("");
     os.println("subgraph " + "cluster_" + subgraphNumber + " {");
     os.println("/* Nodes */");
 
     int maxLevel = -1;
     for (SharedTreeNode n : nodesArray) {
-      if (n.getLevel() > maxLevel) {
-        maxLevel = n.getLevel();
+      if (n.getDepth() > maxLevel) {
+        maxLevel = n.getDepth();
       }
     }
 
@@ -100,7 +101,7 @@ class SharedTreeSubgraph {
       os.println("");
       os.println("/* Level " + level + " */");
       os.println("{");
-      rootNode.printDotNodesAtLevel(os, level);
+      rootNode.printDotNodesAtLevel(os, level, detail);
       os.println("}");
     }
 

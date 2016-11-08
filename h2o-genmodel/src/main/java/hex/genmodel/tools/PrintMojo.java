@@ -16,6 +16,7 @@ public class PrintMojo {
   private static boolean printRaw = false;
   private static int treeToPrint = -1;
   private static int maxLevelsToPrintPerEdge = 10;
+  private static boolean detail = false;
   private static String outputFileName = null;
 
   public static void main(String[] args) {
@@ -50,6 +51,8 @@ public class PrintMojo {
     System.out.println("");
     System.out.println("    --levels        Number of levels per edge to print.");
     System.out.println("                    [default " + maxLevelsToPrintPerEdge + "]");
+    System.out.println("");
+    System.out.println("    --detail        Specify to print additional detailed information like node numbers.");
     System.out.println("");
     System.out.println("    --input | -i    Input mojo file.");
     System.out.println("");
@@ -95,6 +98,10 @@ public class PrintMojo {
               System.out.println("ERROR: invalid --levels argument (" + s + ")");
               System.exit(1);
             }
+            break;
+
+          case "--detail":
+            detail = true;
             break;
 
           case "--input":
@@ -151,14 +158,14 @@ public class PrintMojo {
       if (printRaw) {
         g.print();
       }
-      g.printDot(os, maxLevelsToPrintPerEdge);
+      g.printDot(os, maxLevelsToPrintPerEdge, detail);
     }
     else if (genModel instanceof DrfMojoModel) {
       SharedTreeGraph g = ((DrfMojoModel) genModel).computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }
-      g.printDot(os, maxLevelsToPrintPerEdge);
+      g.printDot(os, maxLevelsToPrintPerEdge, detail);
     }
     else {
       System.out.println("ERROR: Unknown MOJO type");
