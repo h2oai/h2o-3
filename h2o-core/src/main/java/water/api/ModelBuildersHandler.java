@@ -1,11 +1,16 @@
 package water.api;
 
+import hex.Model;
 import hex.ModelBuilder;
 import hex.schemas.ModelBuilderSchema;
 import water.H2O;
 import water.Iced;
 import water.api.schemas3.ModelBuildersV3;
 import water.api.schemas3.SchemaV3;
+import water.api.schemas4.ListRequestV4;
+import water.api.schemas4.ModelInfoV4;
+import water.api.schemas4.ModelsInfoV4;
+import water.util.ReflectionUtils;
 
 class ModelBuildersHandler extends Handler {
 
@@ -43,6 +48,25 @@ class ModelBuildersHandler extends Handler {
     mm.model_id = model_id;
     return mm;
   }
+
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public ModelsInfoV4 modelsInfo(int version, ListRequestV4 m) {
+    String[] algos = ModelBuilder.algos();
+    ModelInfoV4[] infos = new ModelInfoV4[algos.length];
+    ModelsInfoV4 res = new ModelsInfoV4();
+    for (int i = 0; i < algos.length; i++) {
+      ModelBuilder builder = ModelBuilder.make(algos[i], null, null);
+      infos[i] = new ModelInfoV4();
+      infos[i].algo = algos[i];
+      infos[i].maturity = builder.builderVisibility() == ModelBuilder.BuilderVisibility.Stable? "stable" :
+          builder.builderVisibility() == ModelBuilder.BuilderVisibility.Beta? "beta" : "alpha";
+      infos[i].haveMojo = builder.haveMojo();
+      infos[i].havePojo = builder.havePojo();
+    }
+    res.models = infos;
+    return res;
+  }
+
 }
 
 

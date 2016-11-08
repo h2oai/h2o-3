@@ -17,8 +17,6 @@ import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
 public class NaiveBayesModel extends Model<NaiveBayesModel,NaiveBayesModel.NaiveBayesParameters,NaiveBayesModel.NaiveBayesOutput> {
-  @Override public boolean havePojo() { return true; }
-  @Override public boolean haveMojo() { return false; }
 
   public static class NaiveBayesParameters extends Model.Parameters {
     public double _laplace = 0;         // Laplace smoothing parameter

@@ -81,8 +81,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public final boolean isSupervised() { return _output.isSupervised(); }
-  public boolean havePojo() { return false; }
-  public boolean haveMojo() { return false; }
 
   public ToEigenVec getToEigenVec() { return null; }
 
@@ -1430,6 +1428,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return testJavaScoring(data, model_predictions, rel_epsilon, abs_epsilon, 0.1);
   }
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon, double fraction) {
+    ModelBuilder mb = ModelBuilder.make(_parms.algoName().toLowerCase(), null, null);
+    boolean havePojo = mb.havePojo();
+    boolean haveMojo = mb.haveMojo();
+
     Random rnd = RandomUtils.getRNG(data.byteSize());
     assert data.numRows() == model_predictions.numRows();
     Frame fr = new Frame(data);
@@ -1461,7 +1463,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int num_total = 0;
 
       // First try internal POJO via fast double[] API
-      if (havePojo()) {
+      if (havePojo) {
         try {
           String java_text = toJava(preview, true);
           Class clz = JCodeGen.compile(modelName,java_text);
@@ -1497,8 +1499,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // EasyPredict API with POJO and/or MOJO
       for (int i = 0; i < 2; ++i) {
-        if (i == 0 && !havePojo()) continue;
-        if (i == 1 && !haveMojo()) continue;
+        if (i == 0 && !havePojo) continue;
+        if (i == 1 && !haveMojo) continue;
         if (i == 1) {  // MOJO
           final String filename = modelName + ".zip";
           StreamingSchema ss = new StreamingSchema(getMojo(), filename);

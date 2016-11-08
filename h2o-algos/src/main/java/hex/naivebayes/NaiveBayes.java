@@ -28,6 +28,9 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
   @Override protected NaiveBayesDriver trainModelImpl() { return new NaiveBayesDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Unknown }; }
 
+  @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return false; }
+
   @Override
   protected void checkMemoryFootPrint() {
     // compute memory usage for pcond matrix

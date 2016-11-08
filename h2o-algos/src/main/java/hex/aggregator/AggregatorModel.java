@@ -14,9 +14,6 @@ import java.util.Arrays;
 
 public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> implements Model.ExemplarMembers {
 
-  @Override public boolean havePojo() { return false; }
-  @Override public boolean haveMojo() { return false; }
-
   @Override
   public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;

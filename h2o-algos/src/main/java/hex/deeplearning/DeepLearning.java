@@ -43,6 +43,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     };
   }
 
+  @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return false; }
+
   @Override
   public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
