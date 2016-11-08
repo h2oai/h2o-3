@@ -2,6 +2,7 @@ package hex;
 
 import hex.genmodel.GenModel;
 import water.MRTask;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -121,6 +122,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
    * @return ModelMetrics object
    */
   static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, String[] domain) {
+    Scope.enter();
     Vec _labels = actualLabels.toCategoricalVec();
     if (_labels == null || perClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs for multinomial metrics!");
@@ -142,6 +144,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     _labels.remove();
     ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mb.makeModelMetrics(null, predsLabel, null, null);
     mm._description = "Computed on user-given predictions and labels.";
+    Scope.exit();
     return mm;
   }
 

@@ -781,6 +781,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   protected Futures remove_impl(Futures fs) {
     cleanUpCache(fs);
     removeNativeState();
+    if (actual_best_model_key!=null)
+      DKV.remove(actual_best_model_key);
     if (model_info()._dataInfo !=null)
       model_info()._dataInfo.remove(fs);
     return super.remove_impl(fs);
