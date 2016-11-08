@@ -17,8 +17,10 @@ public class DataColumns {
   public static abstract class Factory<T> 
       implements ChunkFactory<T>, Serializable {
     public final byte typeCode;
-    protected Factory(byte typeCode) {
+    public final String name;
+    protected Factory(byte typeCode, String name) {
       this.typeCode = typeCode;
+      this.name = name;
     }
     
     public byte typeCode() { return typeCode; }
@@ -45,6 +47,8 @@ public class DataColumns {
     public DataColumn<T> newColumn(final List<T> xs) throws IOException {
       return newColumn(xs.size(), Functions.onList(xs));
     }
+    
+    @Override public String toString() { return name; }
   }
 
   // We may never need BufferedStrings
@@ -62,7 +66,7 @@ public class DataColumns {
 
   //-------------------------------------------------------------
 
-  public static final Factory<Double> Doubles = new Factory<Double>(Vec.T_NUM) {
+  public static final Factory<Double> Doubles = new Factory<Double>(Vec.T_NUM, "Doubles") {
 
     @Override public DataChunk<Double> apply(final Chunk c) {
       return new DataChunk<Double>(c) {
@@ -93,13 +97,13 @@ public class DataColumns {
         }
 
         public void set(long idx, double value) { vec.set(idx, value); }
-      }; }
-
+      }; 
+    }
   };
 
   //-------------------------------------------------------------
 
-  public static final Factory<String> Strings = new Factory<String>(Vec.T_STR) {
+  public static final Factory<String> Strings = new Factory<String>(Vec.T_STR, "Strings") {
 
     @Override public DataChunk<String> apply(final Chunk c) {
       return new DataChunk<String>(c) {
@@ -135,7 +139,7 @@ public class DataColumns {
     private final String[] domain;
     
     protected EnumFactory(String[] domain) {
-      super(Vec.T_CAT);
+      super(Vec.T_CAT, "Cats");
       this.domain = domain;
     }
 
@@ -212,7 +216,7 @@ public class DataColumns {
 
   //-------------------------------------------------------------
 
-  public static final Factory<Date> Dates = new Factory<Date>(Vec.T_TIME) {
+  public static final Factory<Date> Dates = new Factory<Date>(Vec.T_TIME, "Time") {
 
     @Override public DataChunk<Date> apply(final Chunk c) {
       return new DataChunk<Date>(c) {

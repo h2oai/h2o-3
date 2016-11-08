@@ -28,6 +28,12 @@ public class UdfTest extends TestUtil {
     }));
   }
 
+  private DataColumn<Double> sinesShort() throws java.io.IOException {
+    return willDrop(Doubles.newColumn(1001590, new Function<Long, Double>() {
+      public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
+    }));
+  }
+
   private DataColumn<Double> five_x() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return i*5.0; }
@@ -213,6 +219,36 @@ public class UdfTest extends TestUtil {
   }
 
   @Test
+  public void testFun2Compatibility() throws Exception {
+    Column<Double> x = five_x();
+    Column<Double> y = sinesShort();
+    Column<Double> z = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+      public Double apply(Long i) { return Math.sin(i*0.0001); }
+    }));
+
+    try {
+      Column<Double> z1 = new Fun2Column<>(Functions.PLUS, x, y);
+      fail("Column incompatibility should be detected");
+    } catch (AssertionError ae) {
+      // as designed
+    }
+
+    try {
+      Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
+      fail("Column incompatibility should be detected");
+    } catch (AssertionError ae) {
+      // as designed
+    }
+    
+    try {
+      Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
+      fail("Column incompatibility should be detected");
+    } catch (AssertionError ae) {
+      // as designed
+    }
+  }
+
+  @Test
   public void testFun3() throws Exception {
     Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
         public Double apply(Long i) { return Math.cos(i*0.0001)*Math.cos(i*0.0000001); }
@@ -240,7 +276,7 @@ public class UdfTest extends TestUtil {
   }
 
   @Test
-  public void testFunN() throws Exception {
+  public void testFoldingColumn() throws Exception {
     Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.cos(i*0.0001)*Math.cos(i*0.0000001); }
     }));
@@ -278,17 +314,47 @@ public class UdfTest extends TestUtil {
       assertEquals(r.apply(i), materialized.apply(i), 0.0001);
     }
   }
-
   @Test
-  public void testUnfoldingColumn() throws IOException {
+  public void testFoldingColumnCompatibility() throws Exception {
+    Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+      public Double apply(Long i) { return Math.cos(i*0.0001)*Math.cos(i*0.0000001); }
+    }));
+
+    Column<Double> y = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+      public Double apply(Long i) { return Math.cos(i*0.0001)*Math.sin(i*0.0000001); }
+    }));
+
+    Column<Double> z = sinesShort();
+
+    try {
+      Column<Double> r = new FoldingColumn<>(Functions.SUM_OF_SQUARES, x, y, z);
+      fail("Should have failed on incompatibility");
+    } catch(AssertionError ae) {
+      // as expected
+    }
+  }
+
+  // test how file can be unfolded into multiple columns
+  @Test public void testUnfoldingColumn() throws IOException {
+    // here's the file
     File file = getFile("smalldata/chicago/chicagoAllWeather.csv");
+
+    // get all its lines
     final List<String> lines = Files.readLines(file, Charset.defaultCharset());
+
+    // store it in H2O, with typed column as a wrapper (core H2O storage is a type-unaware Vec class)
     Column<String> source = willDrop(Strings.newColumn(lines));
+
+    // produce another (virtual) column that stores a list of strings as a row value
     Column<List<String>> split = new UnfoldingColumn<>(Functions.splitBy(","), source, 10);
+
+    // now check that we have the right data
     for (int i = 0; i < lines.size(); i++) {
-      String actual = StringUtils.join(" ", split.apply(i));
+      // since we specified width (10), the rest of the list is filled with nulls; have to ignore them. 
+      // It's important to have the same width for the whole frame.
+      String actual = StringUtils.join(" ", Predicate.NOT_NULL.filter(split.apply(i)));
+      // so, have we lost any data?
       assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
-//      System.out.println(i + "] " + actual);
     }
   }
 

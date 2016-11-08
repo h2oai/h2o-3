@@ -5,7 +5,7 @@ import water.fvec.Vec;
 /**
  * A Column based on actual data in a Vec (hence implementing Vec.Holder)
  */
-public abstract class DataColumn<T> implements Column<T>, Vec.Holder {
+public abstract class DataColumn<T> extends ColumnBase<T> {
   protected Vec vec;
   public final byte type;
   private ChunkFactory<T> chunkFactory;
@@ -55,5 +55,9 @@ public abstract class DataColumn<T> implements Column<T>, Vec.Holder {
 
   public Vec vec() {
     return vec;
+  }
+  
+  @Override public String toString() {
+    return "DataColumn(type=" + type + ", factory=" + chunkFactory + ", vec=" + vec + ")";
   }
 }

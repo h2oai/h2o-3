@@ -8,7 +8,7 @@ import java.io.Serializable;
 /**
  * Generic typed data column
  */
-public interface Column<T> extends Function<Long, T> {
+public interface Column<T> extends Function<Long, T>, Vec.Holder {
   T apply(long idx);
   TypedChunk<T> chunkAt(int i);
   
@@ -19,4 +19,6 @@ public interface Column<T> extends Function<Long, T> {
   Vec vec();
   int rowLayout();
   long size();
+
+  boolean isCompatibleWith(Column<?> ys);
 }

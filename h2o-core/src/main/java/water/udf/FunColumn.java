@@ -56,4 +56,6 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
 
     @Override public Y get(int i) { return f.apply(cx.get(i)); }
   }
+  
+  @Override public String toString() { return "FunColumn(" + xs + ")"; }
 }
