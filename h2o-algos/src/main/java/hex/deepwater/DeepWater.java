@@ -123,7 +123,6 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
      */
     final void buildModel() {
       DeepWaterModel cp = null;
-      List<Key> removeMe = new ArrayList();
       if (_parms._checkpoint == null) {
         cp = new DeepWaterModel(_result,_parms,new DeepWaterModelOutput(DeepWater.this),train(),valid(),nclasses());
       } else {
@@ -141,6 +140,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         DeepWaterParameters.Sanity.checkIfParameterChangeAllowed(previous._parms, _parms);
 
         DataInfo dinfo = null;
+        List<Key> removeMe = new ArrayList();
         try {
           // PUBDEV-2513: Adapt _train and _valid (in-place) to match the frames that were used for the previous model
           // This can add or remove dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
@@ -195,10 +195,10 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           throw ex;
         } finally {
           if (cp != null) cp.unlock(_job);
+          for (Key k : removeMe) DKV.remove(k);
         }
       }
       trainModel(cp);
-      for (Key k : removeMe) DKV.remove(k);
     }
 
     /**

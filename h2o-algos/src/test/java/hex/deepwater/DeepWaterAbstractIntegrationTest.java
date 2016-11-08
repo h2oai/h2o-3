@@ -927,12 +927,10 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       preds = m.score(tr);
       Assert.assertTrue(m.testJavaScoring(tr,preds,1e-3));
 
-      Scope.enter();
       double auc = ModelMetricsBinomial.make(preds.vec(2), tr.vec(p._response_column)).auc();
       Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
       if (standardize)
         Assert.assertTrue(auc > 0.78);
-      Scope.exit();
 
     } finally {
       if (tr!=null) tr.remove();

@@ -2,6 +2,7 @@ package hex;
 
 import hex.genmodel.GenModel;
 import water.MRTask;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -78,7 +79,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
    * @return ModelMetrics object
    */
   static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
+    Scope.enter();
     Vec _labels = actualLabels.toCategoricalVec();
+    if (domain==null) domain = _labels.domain();
     if (_labels == null || targetClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs for binomial metrics!");
     if (!targetClassProbs.isNumeric())
@@ -97,6 +100,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     Frame preds = new Frame(targetClassProbs);
     ModelMetricsBinomial mm = (ModelMetricsBinomial)mb.makeModelMetrics(null, predsLabel, null, preds);
     mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
+    Scope.exit();
     return mm;
   }
 
