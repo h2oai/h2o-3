@@ -95,25 +95,51 @@ class SharedTreeNode {
     return parent.findInclusiveLevels(colId);
   }
 
+  private boolean calculateIncludeThisLevel(BitSet inheritedInclusiveLevels, int i) {
+    if (inheritedInclusiveLevels == null) {
+      // If there is no prior split history for this column, then treat the
+      // inherited set as complete.
+      return true;
+    }
+    else if (inheritedInclusiveLevels.get(i)) {
+      // Allow levels that flowed into this node.
+      return true;
+    }
+
+    // Filter out levels that were already discarded from a previous split.
+    return false;
+  }
+
   /**
    * Calculate the set of levels that flow through to a child.
+   * @param includeAllLevels naVsRest dictates include all (inherited) levels
+   * @param discardAllLevels naVsRest dictates discard all levels
    * @param nodeBitsetDoesContain true if the GenmodelBitset from the compressed_tree
-   * @return Calcuated set of levels
+   * @return Calculated set of levels
    */
-  private BitSet calculateChildInclusiveLevels(boolean nodeBitsetDoesContain) {
+  private BitSet calculateChildInclusiveLevels(boolean includeAllLevels,
+                                               boolean discardAllLevels,
+                                               boolean nodeBitsetDoesContain) {
     BitSet inheritedInclusiveLevels = findInclusiveLevels(colId);
     BitSet childInclusiveLevels = new BitSet();
+
     for (int i = 0; i < domainValues.length; i++) {
-      if (bs.contains(i) == nodeBitsetDoesContain) {
-        if (inheritedInclusiveLevels == null) {
-          // If there is no prior split history for this column, then treat the
-          // inherited set as complete.
-          childInclusiveLevels.set(i);
+      // Calculate whether this level should flow into this child node.
+      boolean includeThisLevel = false;
+      {
+        if (discardAllLevels) {
+          includeThisLevel = false;
         }
-        else if (inheritedInclusiveLevels.get(i)) {
-          // Filter out levels that were already discarded from a previous split.
-          childInclusiveLevels.set(i);
+        else if (includeAllLevels) {
+          includeThisLevel = calculateIncludeThisLevel(inheritedInclusiveLevels, i);
         }
+        else if (bs.contains(i) == nodeBitsetDoesContain) {
+          includeThisLevel = calculateIncludeThisLevel(inheritedInclusiveLevels, i);
+        }
+      }
+
+      if (includeThisLevel) {
+        childInclusiveLevels.set(i);
       }
     }
     return childInclusiveLevels;
@@ -125,7 +151,7 @@ class SharedTreeNode {
     if (! isBitset()) {
       return;
     }
-    BitSet childInclusiveLevels = calculateChildInclusiveLevels(false);
+    BitSet childInclusiveLevels = calculateChildInclusiveLevels(naVsRest, false, false);
     v.setInclusiveLevels(childInclusiveLevels);
   }
 
@@ -135,7 +161,7 @@ class SharedTreeNode {
     if (! isBitset()) {
       return;
     }
-    BitSet childInclusiveLevels = calculateChildInclusiveLevels(true);
+    BitSet childInclusiveLevels = calculateChildInclusiveLevels(false, naVsRest, true);
     v.setInclusiveLevels(childInclusiveLevels);
   }
 
@@ -230,7 +256,7 @@ class SharedTreeNode {
     }
   }
 
-  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, SharedTreeNode child, String comparison) {
+  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, SharedTreeNode child) {
     if (isBitset()) {
       BitSet childInclusiveLevels = child.getInclusiveLevels();
       int total = childInclusiveLevels.cardinality();
@@ -242,9 +268,6 @@ class SharedTreeNode {
       else {
         arr.add(total + " levels");
       }
-    }
-    else {
-      arr.add(comparison);
     }
     os.print("label=\"");
     for (String s : arr) {
@@ -269,10 +292,17 @@ class SharedTreeNode {
       if (leftward) {
         arr.add("[NA]");
       }
+
       if (naVsRest) {
         arr.add("[Not NA]");
       }
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild, "<");
+      else {
+        if (! isBitset()) {
+          arr.add("<");
+        }
+      }
+
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, leftChild);
     }
 
     if (rightChild != null) {
@@ -282,7 +312,14 @@ class SharedTreeNode {
       if (! leftward) {
         arr.add("[NA]");
       }
-      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild, ">=");
+
+      if (! naVsRest) {
+        if (! isBitset()) {
+          arr.add(">=");
+        }
+      }
+
+      printDotEdgesCommon(os, maxLevelsToPrintPerEdge, arr, rightChild);
     }
   }
 }
