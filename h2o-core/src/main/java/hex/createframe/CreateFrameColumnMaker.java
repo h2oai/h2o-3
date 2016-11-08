@@ -11,7 +11,7 @@ import java.util.Random;
  * constructs 0 columns (i.e. just modifies the previously constructed ones), or one that
  * creates more than 1 columns at once.
  */
-public abstract class CreateFrameColumnSpec {
+public abstract class CreateFrameColumnMaker {
   protected int index;
 
   /**

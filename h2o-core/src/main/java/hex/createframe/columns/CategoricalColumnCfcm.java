@@ -1,6 +1,6 @@
 package hex.createframe.columns;
 
-import hex.createframe.CreateFrameColumnSpec;
+import hex.createframe.CreateFrameColumnMaker;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
@@ -9,12 +9,12 @@ import java.util.Random;
 /**
  * Random categorical column.
  */
-public class CategoricalColumnCfcs extends CreateFrameColumnSpec {
+public class CategoricalColumnCfcm extends CreateFrameColumnMaker {
   private String name;
   private int numFactors;
   private String[] domain;
 
-  public CategoricalColumnCfcs(String colName, int nFactors) {
+  public CategoricalColumnCfcm(String colName, int nFactors) {
     name = colName;
     numFactors = nFactors;
     if (name.equals("response"))

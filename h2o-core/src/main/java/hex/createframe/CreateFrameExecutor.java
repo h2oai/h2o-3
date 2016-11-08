@@ -25,15 +25,15 @@ import java.util.Random;
  *   CreateFrameExecutor cfe = new CreateFrameExecutor(job);
  *   cfe.setNumRows(10000);
  *   cfe.setSeed(0xDECAFC0FEE);
- *   cfe.addColumnMaker(new RealColumnCfcs("col0", -1, 1));
- *   cfe.addColumnMaker(new IntColumnCfcs("col1", 0, 100));
+ *   cfe.addColumnMaker(new RealColumnCfcm("col0", -1, 1));
+ *   cfe.addColumnMaker(new IntegerColumnCfcm("col1", 0, 100));
  *   cfe.addPostprocessStep(new MissingInserterCfps(0.05));
  *   job.start(cfe, cfe.workAmount());
  * }</pre></p>
  */
 public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExecutor> {
   private Job<Frame> job;
-  private ArrayList<CreateFrameColumnSpec> columnMakers;
+  private ArrayList<CreateFrameColumnMaker> columnMakers;
   private ArrayList<CreateFramePostprocessStep> postprocessSteps;
   private int workAmountPerRow;
   private int workAmountPostprocess;
@@ -76,7 +76,7 @@ public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExec
    * Add a "column maker" task, responsible for creation of a single (rarely
    * married or widowed) column.
    */
-  public void addColumnMaker(CreateFrameColumnSpec maker) {
+  public void addColumnMaker(CreateFrameColumnMaker maker) {
     maker.setIndex(numCols);
     columnMakers.add(maker);
     workAmountPerRow += maker.workAmount();
@@ -126,7 +126,7 @@ public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExec
     String[] names = new String[numCols];
     String[][] domains = new String[numCols][];
     int i = 0;
-    for (CreateFrameColumnSpec maker : columnMakers) {
+    for (CreateFrameColumnMaker maker : columnMakers) {
       int it = 0, in = 0, id = 0;
       for (byte t : maker.columnTypes()) types[i + it++] = t;
       for (String n : maker.columnNames()) names[i + in++] = n;
@@ -175,10 +175,10 @@ public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExec
 
   private static class ActualFrameCreator extends MRTask<ActualFrameCreator> {
     private long seed;
-    private ArrayList<CreateFrameColumnSpec> columnMakers;
+    private ArrayList<CreateFrameColumnMaker> columnMakers;
     private Job<Frame> job;
 
-    public ActualFrameCreator(ArrayList<CreateFrameColumnSpec> columnMakers, long seed, Job<Frame> job) {
+    public ActualFrameCreator(ArrayList<CreateFrameColumnMaker> columnMakers, long seed, Job<Frame> job) {
       this.columnMakers = columnMakers;
       this.seed = seed;
       this.job = job;
@@ -190,7 +190,7 @@ public class CreateFrameExecutor extends H2O.H2OCountedCompleter<CreateFrameExec
       long chunkPosition = cs[0].start();
       Random rng = RandomUtils.getRNG(0);
       long taskIndex = 0;
-      for (CreateFrameColumnSpec colTask : columnMakers) {
+      for (CreateFrameColumnMaker colTask : columnMakers) {
         rng.setSeed(seed + chunkPosition * 138457623L + (taskIndex++) * 967058L);
         rng.setSeed(rng.nextLong());
         colTask.exec(numRowsInChunk, ncs, rng);

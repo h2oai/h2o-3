@@ -1,6 +1,6 @@
 package hex.createframe.columns;
 
-import hex.createframe.CreateFrameColumnSpec;
+import hex.createframe.CreateFrameColumnMaker;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
@@ -9,11 +9,11 @@ import java.util.Random;
 /**
  * Random binary column.
  */
-public class BinaryColumnCfcs extends CreateFrameColumnSpec {
+public class BinaryColumnCfcm extends CreateFrameColumnMaker {
   private String name;
   private double p;
 
-  public BinaryColumnCfcs(String colName, double ones_fraction) {
+  public BinaryColumnCfcm(String colName, double ones_fraction) {
     name = colName;
     p = ones_fraction;
   }

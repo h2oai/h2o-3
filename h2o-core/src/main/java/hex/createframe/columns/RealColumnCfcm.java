@@ -1,6 +1,6 @@
 package hex.createframe.columns;
 
-import hex.createframe.CreateFrameColumnSpec;
+import hex.createframe.CreateFrameColumnMaker;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
@@ -9,12 +9,12 @@ import java.util.Random;
 /**
  * Real-valued random column.
  */
-public class RealColumnCfcs extends CreateFrameColumnSpec {
+public class RealColumnCfcm extends CreateFrameColumnMaker {
   private String name;
   private double lowerBound;
   private double upperBound;
 
-  public RealColumnCfcs(String colName, double lBound, double uBound) {
+  public RealColumnCfcm(String colName, double lBound, double uBound) {
     name = colName;
     lowerBound = lBound;
     upperBound = uBound;

@@ -6,7 +6,7 @@ import java.util.Random;
 
 /**
  * <p>Base class for any "postprocessing" steps that should be undertaken after
- * the frame has been created using {@link CreateFrameColumnSpec}s.</p>
+ * the frame has been created using {@link CreateFrameColumnMaker}s.</p>
  *
  * <p>Each postprocess step takes a frame as an input, and then modifies it
  * in-place. Examples of such postprocessing tasks could be: column renaming /

@@ -1,6 +1,6 @@
 package hex.createframe.columns;
 
-import hex.createframe.CreateFrameColumnSpec;
+import hex.createframe.CreateFrameColumnMaker;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
@@ -9,12 +9,12 @@ import java.util.Random;
 /**
  * Integer-valued random column.
  */
-public class IntegerColumnCfcs extends CreateFrameColumnSpec {
+public class IntegerColumnCfcm extends CreateFrameColumnMaker {
   private String name;
   private long lowerBound;
   private long upperBound;
 
-  public IntegerColumnCfcs(String colName, int lBound, int uBound) {
+  public IntegerColumnCfcm(String colName, int lBound, int uBound) {
     name = colName;
     lowerBound = lBound;
     upperBound = uBound;

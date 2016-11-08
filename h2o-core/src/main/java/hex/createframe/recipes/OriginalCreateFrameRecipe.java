@@ -138,30 +138,30 @@ public class OriginalCreateFrameRecipe extends Iced {
     // Create response column
     if (has_response) {
       if (response_factors == 1)
-        cfe.addColumnMaker(new RealColumnCfcs("response", positive_response? 0 : -real_range, real_range));
+        cfe.addColumnMaker(new RealColumnCfcm("response", positive_response? 0 : -real_range, real_range));
       else
-        cfe.addColumnMaker(new CategoricalColumnCfcs("response", response_factors));
+        cfe.addColumnMaker(new CategoricalColumnCfcm("response", response_factors));
     }
 
     // Create "feature" columns
     if (randomize) {
       int j = 0;
       for (int i = 0; i < intcols; i++)
-        cfe.addColumnMaker(new IntegerColumnCfcs("C" + (++j), -integer_range, integer_range));
+        cfe.addColumnMaker(new IntegerColumnCfcm("C" + (++j), -integer_range, integer_range));
       for (int i = 0; i < realcols; i++)
-        cfe.addColumnMaker(new RealColumnCfcs("C" + (++j), -real_range, real_range));
+        cfe.addColumnMaker(new RealColumnCfcm("C" + (++j), -real_range, real_range));
       for (int i = 0; i < catcols; i++)
-        cfe.addColumnMaker(new CategoricalColumnCfcs("C" + (++j), factors));
+        cfe.addColumnMaker(new CategoricalColumnCfcm("C" + (++j), factors));
       for (int i = 0; i < bincols; i++)
-        cfe.addColumnMaker(new BinaryColumnCfcs("C" + (++j), binary_ones_fraction));
+        cfe.addColumnMaker(new BinaryColumnCfcm("C" + (++j), binary_ones_fraction));
       for (int i = 0; i < timecols; i++)
-        cfe.addColumnMaker(new TimeColumnCfcs("C" + (++j), 0, 50L * 365 * 24 * 3600 * 1000));  // 1970...2020
+        cfe.addColumnMaker(new TimeColumnCfcm("C" + (++j), 0, 50L * 365 * 24 * 3600 * 1000));  // 1970...2020
       for (int i = 0; i < stringcols; i++)
-        cfe.addColumnMaker(new StringColumnCfcs("C" + (++j), 8));
+        cfe.addColumnMaker(new StringColumnCfcm("C" + (++j), 8));
     } else {
       assert catcols + intcols + bincols + timecols + stringcols == 0;
       for (int i = 0; i < realcols; i++)
-        cfe.addColumnMaker(new RealColumnCfcs("C" + (i+1), value, value));
+        cfe.addColumnMaker(new RealColumnCfcm("C" + (i+1), value, value));
     }
 
     // Add post-processing steps

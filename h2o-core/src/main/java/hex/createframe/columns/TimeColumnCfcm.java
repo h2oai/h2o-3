@@ -1,6 +1,6 @@
 package hex.createframe.columns;
 
-import hex.createframe.CreateFrameColumnSpec;
+import hex.createframe.CreateFrameColumnMaker;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 
@@ -9,12 +9,12 @@ import java.util.Random;
 /**
  * Time-valued random column.
  */
-public class TimeColumnCfcs extends CreateFrameColumnSpec {
+public class TimeColumnCfcm extends CreateFrameColumnMaker {
   private String name;
   private long lowerBound;
   private long upperBound;
 
-  public TimeColumnCfcs(String colName, long lBound, long uBound) {
+  public TimeColumnCfcm(String colName, long lBound, long uBound) {
     name = colName;
     lowerBound = lBound;
     upperBound = uBound;
