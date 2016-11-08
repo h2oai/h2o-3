@@ -5,6 +5,7 @@ import deepwater.backends.BackendParams;
 import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
+import hex.FrameSplitter;
 import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
@@ -1285,5 +1286,104 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     return array;
   }
   */
+
+  @Test
+  public void testCheckpointOverwriteWithBestModel() {
+    Frame tfr = null;
+    DeepWaterModel dl = null;
+    DeepWaterModel dl2 = null;
+
+    Frame train = null, valid = null;
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+
+      FrameSplitter fs = new FrameSplitter(tfr, new double[]{0.8},new Key[]{Key.make("train"),Key.make("valid")},null);
+      fs.compute2();
+      train = fs.getResult()[0];
+      valid = fs.getResult()[1];
+
+      DeepWaterParameters parms = new DeepWaterParameters();
+      parms._train = train._key;
+      parms._valid = valid._key;
+      parms._epochs = 1;
+      parms._response_column = "C5";
+      parms._hidden = new int[]{50,50};
+      parms._seed = 0xdecaf;
+      parms._train_samples_per_iteration = 0;
+      parms._score_duty_cycle = 1;
+      parms._score_interval = 0;
+      parms._stopping_rounds = 0;
+      parms._overwrite_with_best_model = true;
+
+      dl = new DeepWater(parms).trainModel().get();
+      double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
+
+
+      DeepWaterParameters parms2 = (DeepWaterParameters)parms.clone();
+      parms2._epochs = 10;
+      parms2._checkpoint = dl._key;
+
+      dl2 = new DeepWater(parms2).trainModel().get();
+      double ll2 = ((ModelMetricsMultinomial)dl2._output._validation_metrics).logloss();
+
+      Assert.assertTrue(ll2 <= ll1);
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+      if (train != null) train.delete();
+      if (valid != null) valid.delete();
+    }
+  }
+
+  // Check that the restarted model honors the previous model as a best model so far
+  @Test
+  public void testCheckpointOverwriteWithBestModel2() {
+    Frame tfr = null;
+    DeepWaterModel dl = null;
+    DeepWaterModel dl2 = null;
+
+    Frame train = null, valid = null;
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+
+      FrameSplitter fs = new FrameSplitter(tfr, new double[]{0.8},new Key[]{Key.make("train"),Key.make("valid")},null);
+      fs.compute2();
+      train = fs.getResult()[0];
+      valid = fs.getResult()[1];
+
+      DeepWaterParameters parms = new DeepWaterParameters();
+      parms._train = train._key;
+      parms._valid = valid._key;
+      parms._epochs = 10;
+      parms._response_column = "C5";
+      parms._hidden = new int[]{50,50};
+      parms._seed = 0xdecaf;
+      parms._train_samples_per_iteration = 0;
+      parms._score_duty_cycle = 1;
+      parms._score_interval = 0;
+      parms._stopping_rounds = 0;
+      parms._overwrite_with_best_model = true;
+
+      dl = new DeepWater(parms).trainModel().get();
+      double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
+
+
+      DeepWaterParameters parms2 = (DeepWaterParameters)parms.clone();
+      parms2._epochs = 20;
+      parms2._checkpoint = dl._key;
+
+      dl2 = new DeepWater(parms2).trainModel().get();
+      double ll2 = ((ModelMetricsMultinomial)dl2._output._validation_metrics).logloss();
+
+      Assert.assertTrue(ll2 <= ll1);
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+      if (train != null) train.delete();
+      if (valid != null) valid.delete();
+    }
+  }
 }
 
