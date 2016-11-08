@@ -4,7 +4,7 @@ import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
-import hex.genmodel.algos.tree.Graph;
+import hex.genmodel.algos.tree.SharedTreeGraph;
 
 import java.io.*;
 
@@ -147,14 +147,14 @@ public class PrintMojo {
     }
 
     if (genModel instanceof GbmMojoModel) {
-      Graph g = ((GbmMojoModel) genModel).computeGraph(treeToPrint);
+      SharedTreeGraph g = ((GbmMojoModel) genModel).computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }
       g.printDot(os, maxLevelsToPrintPerEdge);
     }
     else if (genModel instanceof DrfMojoModel) {
-      Graph g = ((DrfMojoModel) genModel).computeGraph(treeToPrint);
+      SharedTreeGraph g = ((DrfMojoModel) genModel).computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }
