@@ -36,22 +36,21 @@
 #' h2o.prcomp(training_frame = australia.hex, k = 8, transform = "STANDARDIZE")
 #' }
 #' @export
-h2o.pca <- function(x,
-                    training_frame,
-                    model_id = NULL,
-                    validation_frame = NULL,
-                    ignore_const_cols = TRUE,
-                    score_each_iteration = FALSE,
-                    transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
-                    pca_method = c("GramSVD", "Power", "Randomized", "GLRM"),
-                    k = 1,
-                    max_iterations = 1000,
-                    use_all_factor_levels = FALSE,
-                    compute_metrics = TRUE,
-                    impute_missing = FALSE,
-                    seed = -1,
-                    max_runtime_secs = 0.0
-                    ) 
+h2o.prcomp <- function(training_frame, x,
+                       model_id = NULL,
+                       validation_frame = NULL,
+                       ignore_const_cols = TRUE,
+                       score_each_iteration = FALSE,
+                       transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                       pca_method = c("GramSVD", "Power", "Randomized", "GLRM"),
+                       k = 1,
+                       max_iterations = 1000,
+                       use_all_factor_levels = FALSE,
+                       compute_metrics = TRUE,
+                       impute_missing = FALSE,
+                       seed = -1,
+                       max_runtime_secs = 0.0
+                       ) 
 {
 
   # Required args: training_frame

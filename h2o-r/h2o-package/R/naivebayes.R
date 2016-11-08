@@ -60,8 +60,7 @@
 #' h2o.naiveBayes(x = 2:17, y = 1, training_frame = votes.hex, laplace = 3)
 #' }
 #' @export
-h2o.naivebayes <- function(x, y,
-                           training_frame,
+h2o.naiveBayes <- function(x, y, training_frame,
                            model_id = NULL,
                            nfolds = 0,
                            seed = -1,

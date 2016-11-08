@@ -126,8 +126,7 @@
 #' lambda_search=TRUE)
 #' }
 #' @export
-h2o.glm <- function(x, y,
-                    training_frame,
+h2o.glm <- function(x, y, training_frame,
                     model_id = NULL,
                     validation_frame = NULL,
                     nfolds = 0,

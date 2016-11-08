@@ -36,8 +36,7 @@
 #' h2o.svd(training_frame = australia.hex, nv = 8)
 #' }
 #' @export
-h2o.svd <- function(x, destination_key,
-                    training_frame,
+h2o.svd <- function(training_frame, x, destination_key,
                     model_id = NULL,
                     validation_frame = NULL,
                     ignore_const_cols = TRUE,

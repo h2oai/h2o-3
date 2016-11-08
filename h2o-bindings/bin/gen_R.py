@@ -10,7 +10,7 @@ str_type = str if PY3 else (str, unicode)
 #   Generate per-model classes
 # ----------------------------------------------------------------------------------------------------------------------
 
-def gen_module(schema, algo):
+def gen_module(schema, algo, module):
     help_preamble = help_preamble_for(algo)
     help_details = help_details_for(algo)
     help_return = help_return_for(algo)
@@ -74,24 +74,24 @@ def gen_module(schema, algo):
         for line in lines:
             yield "#' %s" % line.lstrip()
     yield "#' @export"
-    yield "h2o.%s <- function(%s," % (algo, get_extra_params_for(algo))
-    yield indent("training_frame,", 17 + len(algo))
+    yield "h2o.%s <- function(%s," % (module, get_extra_params_for(algo))
+    # yield indent("training_frame,", 17 + len(algo))
     list = []
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "max_confusion_matrix_size", "training_frame"]:
             continue
         if algo == "naivebayes":
             if param["name"] == "min_sdev":
-                list.append(indent("threshold = %s" % normalize_value(param), 17 + len(algo)))
+                list.append(indent("threshold = %s" % normalize_value(param), 17 + len(module)))
                 continue
             if param["name"] == "eps_sdev":
-                list.append(indent("eps = %s" % normalize_value(param), 17 + len(algo)))
+                list.append(indent("eps = %s" % normalize_value(param), 17 + len(module)))
                 continue
             if param["name"] in ["min_prob", "eps_prob"]:
                 continue
-        list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(algo)))
+        list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
     yield ",\n".join(list)
-    yield indent(") \n{", 17 + len(algo))
+    yield indent(") \n{", 17 + len(module))
     if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
         yield "  #If x is missing, then assume user wants to use all columns as features."
         yield "  if(missing(x)){"
@@ -401,13 +401,13 @@ def help_example_for(algo):
 
 def get_extra_params_for(algo):
     if algo == "glrm":
-        return "cols = NULL"
+        return "training_frame, cols = NULL"
     elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
-        return "x, y"
+        return "x, y, training_frame"
     elif algo == "svd":
-        return "x, destination_key"
+        return "training_frame, x, destination_key"
     else:
-        return "x"
+        return "training_frame, x"
 
 def help_extra_params_for(algo):
     if algo == "glrm":
@@ -825,9 +825,14 @@ def main():
         if name == "aggregator":
             continue
         module = name
-        if name == "drf": module = "randomforest"
+        file_name = name
+        if name == "drf":
+            module = "randomForest"
+            file_name = "randomforest"
+        if name == "naivebayes": module = "naiveBayes"
+        if name == "pca": module = "prcomp"
         bi.vprint("Generating model: " + name)
-        bi.write_to_file("%s.R" % module, gen_module(mb, name))
+        bi.write_to_file("%s.R" % file_name, gen_module(mb, name, module))
 
 if __name__ == "__main__":
     main()

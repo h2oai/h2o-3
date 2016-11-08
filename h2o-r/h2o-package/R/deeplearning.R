@@ -142,8 +142,7 @@
 #' predictions <- h2o.predict(iris.dl, iris.hex)
 #' }
 #' @export
-h2o.deeplearning <- function(x, y,
-                             training_frame,
+h2o.deeplearning <- function(x, y, training_frame,
                              model_id = NULL,
                              validation_frame = NULL,
                              nfolds = 0,

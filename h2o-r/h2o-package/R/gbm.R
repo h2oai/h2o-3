@@ -100,8 +100,7 @@
 #' ntrees = 3, max_depth = 3, min_rows = 2)
 #' }
 #' @export
-h2o.gbm <- function(x, y,
-                    training_frame,
+h2o.gbm <- function(x, y, training_frame,
                     model_id = NULL,
                     validation_frame = NULL,
                     nfolds = 0,

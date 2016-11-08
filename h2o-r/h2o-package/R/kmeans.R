@@ -45,8 +45,7 @@
 #' h2o.kmeans(training_frame = prostate.hex, k = 10, x = c("AGE", "RACE", "VOL", "GLEASON"))
 #' }
 #' @export
-h2o.kmeans <- function(x,
-                       training_frame,
+h2o.kmeans <- function(training_frame, x,
                        model_id = NULL,
                        validation_frame = NULL,
                        nfolds = 0,

@@ -94,8 +94,7 @@
 #'        Model and builds a model on the provided H2OFrame (non-String columns). Must be one of: "auto", "image",
 #'        "text", "dataset". Defaults to auto.
 #' @export
-h2o.deepwater <- function(x, y,
-                          training_frame,
+h2o.deepwater <- function(x, y, training_frame,
                           model_id = NULL,
                           checkpoint = NULL,
                           autoencoder = FALSE,

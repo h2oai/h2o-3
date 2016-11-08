@@ -57,8 +57,7 @@
 #' gamma_x = 0.5, gamma_y = 0, max_iterations = 1000)
 #' }
 #' @export
-h2o.glrm <- function(cols = NULL,
-                     training_frame,
+h2o.glrm <- function(training_frame, cols = NULL,
                      model_id = NULL,
                      validation_frame = NULL,
                      ignore_const_cols = TRUE,
