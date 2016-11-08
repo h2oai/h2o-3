@@ -9,10 +9,7 @@ import water.util.StringUtils;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
-import java.util.GregorianCalendar;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static water.udf.DataColumns.*;
@@ -126,6 +123,7 @@ public class UdfTest extends TestUtil {
     }
   }
 
+/* All UUID functionality is currently disabled
   @Test
   public void testOfUUIDs() throws Exception {
     Column<UUID> c = willDrop(UUIDs.newColumn(1 << 20, new Function<Long, UUID>() {
@@ -142,7 +140,7 @@ public class UdfTest extends TestUtil {
       assertEquals(c.apply(i), materialized.apply(i));
     }
   }
-
+*/
   @Test
   public void testOfEnumFun() throws Exception {
     final String[] domain = {"Red", "White", "Blue"};
@@ -288,8 +286,29 @@ public class UdfTest extends TestUtil {
     Column<String> source = willDrop(Strings.newColumn(lines));
     Column<List<String>> split = new UnfoldingColumn<>(Functions.splitBy(","), source, 10);
     for (int i = 0; i < lines.size(); i++) {
-      System.out.println(StringUtils.join(" ", split.apply(i)));
+      String actual = StringUtils.join(" ", split.apply(i));
+      assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
+//      System.out.println(i + "] " + actual);
     }
   }
 
+  @Test
+  public void testUnfoldingFrame() throws IOException {
+    File file = getFile("smalldata/chicago/chicagoAllWeather.csv");
+    final List<String> lines = Files.readLines(file, Charset.defaultCharset());
+    Column<String> source = willDrop(Strings.newColumn(lines));
+    Column<List<String>> split = new UnfoldingColumn<>(Functions.splitBy(","), source, 10);
+    UnfoldingFrame<String> frame = new UnfoldingFrame<>(Strings, split.size(), split, 11);
+    List<DataColumn<String>> columns = frame.materialize();
+    
+    for (int i = 0; i < lines.size(); i++) {
+      List<String> fromColumns = new ArrayList<>(10);
+      for (int j = 0; j < 10; j++) {
+        String value = columns.get(j).get(i);
+        if (value != null) fromColumns.add(value);
+      }
+      String actual = StringUtils.join(" ", fromColumns);
+      assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
+    }
+  }
 }
