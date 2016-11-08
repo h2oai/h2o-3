@@ -8,4 +8,4 @@ This Appendix provides detailed descriptions of parameters that can be specified
 .. toctree::
    :maxdepth: 2
 
-   data-science/gbm-params/gbm-params
+   data-science/algo-params/gbm-params

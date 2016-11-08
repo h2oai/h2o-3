@@ -62,8 +62,8 @@ Example
 	# print the auc for the validation data for model with a seed
 	print(paste('auc for the 1st model built with a seed:',
 	            h2o.auc(gbm_w_seed_1, valid = TRUE)))
-	print(paste('auc for the 1st model built with a seed:',
-	            h2o.auc(gbm_w_seed_1, valid = TRUE)))
+	print(paste('auc for the 2nd model built with a seed:',
+	            h2o.auc(gbm_w_seed_2, valid = TRUE)))
 
 	# run the same model but without a seed: 
 	# run this model twice to see if the results are different (they will be different)

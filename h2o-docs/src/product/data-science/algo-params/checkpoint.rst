@@ -90,7 +90,7 @@ Example
     # re-start the training process on a saved GBM model using the ‘checkpoint‘ argument:
     # the checkpoint argument requires the model id of the model on which you wish to continue building
     # get the model's id from "cars_gbm" model using `cars_gbm@model_id`
-    # the first model has 1 tree, let's continue building the GBM with an additional 9 more trees, so set ntrees = 10
+    # the first model has 1 tree, let's continue building the GBM with an additional 49 more trees, so set ntrees = 50
 
     # to see how many trees the original model built you can look at the `ntrees` attribute
     print(paste("Number of trees built for cars_gbm model:", cars_gbm@allparameters$ntrees))
@@ -139,13 +139,13 @@ Example
     # re-start the training process on a saved GBM model using the ‘checkpoint‘ argument:
     # the checkpoint argument requires the model id of the model on which you wish to continue building
     # get the model's id from "cars_gbm" model using `cars_gbm.model_id`
-    # the first model has 1 tree, let's continue building the GBM with an additional 9 more trees, so set ntrees = 10
+    # the first model has 1 tree, let's continue building the GBM with an additional 49 more trees, so set ntrees = 50
 
     # to see how many trees the original model built you can look at the `ntrees` attribute
     print("Number of trees built for cars_gbm model:", cars_gbm.ntrees)
 
     # build and train model with 49 additional trees for a total of 50 trees:
-    cars_gbm_continued = H2OGradientBoostingEstimator(checkpoint= cars_gbm.model_id, ntrees = 10, seed = 1234)
+    cars_gbm_continued = H2OGradientBoostingEstimator(checkpoint= cars_gbm.model_id, ntrees = 50, seed = 1234)
     cars_gbm_continued.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
     # print the auc for the validation data
