@@ -32,10 +32,6 @@ import static org.junit.Assert.assertTrue;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
-  {
-    ClassLoader loader = getClass().getClassLoader();
-    loader.setDefaultAssertionStatus(true);
-  }
 
   public final static boolean JACOCO_ENABLED = Boolean.parseBoolean(System.getProperty("test.jacocoEnabled", "false"));
   private static boolean _stall_called_before = false;
