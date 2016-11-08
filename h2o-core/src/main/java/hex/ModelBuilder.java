@@ -569,6 +569,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
   // no hasResponse, call isSupervised instead (response is mandatory if isSupervised is true)
 
+  public boolean havePojo() { return false; }
+  public boolean haveMojo() { return false; }
+
   protected int _nclass; // Number of classes; 1 for regression; 2+ for classification
 
   public int nclasses(){return _nclass;}

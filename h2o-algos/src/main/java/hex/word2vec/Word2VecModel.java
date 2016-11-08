@@ -31,9 +31,6 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   final public Word2VecModelInfo getModelInfo() { return _modelInfo; }
   private Key _w2vKey;
 
-  @Override public boolean havePojo() { return false; }
-  @Override public boolean haveMojo() { return false; }
-
   public Word2VecModel(Key selfKey, Word2VecParameters params, Word2VecOutput output) {
     super(selfKey, params, output);
     _modelInfo = new Word2VecModelInfo(params);

@@ -31,8 +31,6 @@ import static water.H2O.technote;
  */
 
 public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
-  @Override public boolean havePojo() { return true; }
-  @Override public boolean haveMojo() { return false; }
   @Override public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
   }

@@ -28,5 +28,14 @@ public class RegisterV4Api extends AbstractRegister {
         RapidsHandler.class, "endSession",
         "Close the Rapids session."
     );
+
+
+    //------------ Models ----------------------------------------------------------------------------------------------
+    RequestServer.registerEndpoint("modelsInfo",
+        "GET /4/modelsinfo",
+        ModelBuildersHandler.class, "modelsInfo",
+        "Return basic information about all models available to train."
+    );
+
   }
 }

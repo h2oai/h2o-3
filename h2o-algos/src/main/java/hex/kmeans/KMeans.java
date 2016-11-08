@@ -27,6 +27,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   final static private double TOLERANCE = 1e-4;
 
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Clustering }; }
+
+  @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return false; }
+
   public enum Initialization { Random, PlusPlus, Furthest, User }
   /** Start the KMeans training Job on an F/J thread. */
   @Override protected KMeansDriver trainModelImpl() { return new KMeansDriver();  }

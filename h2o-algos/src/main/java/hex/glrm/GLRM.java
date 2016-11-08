@@ -60,6 +60,9 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   @Override protected GLRMDriver trainModelImpl() { return new GLRMDriver(); }
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ModelCategory.Clustering}; }
 
+  @Override public boolean havePojo() { return false; }
+  @Override public boolean haveMojo() { return true; }
+
 
   //--------------------------------------------------------------------------------------------------------------------
   // Model initialization

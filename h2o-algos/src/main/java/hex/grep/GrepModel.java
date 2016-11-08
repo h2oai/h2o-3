@@ -8,9 +8,6 @@ import water.Key;
 
 public class GrepModel extends Model<GrepModel,GrepModel.GrepParameters,GrepModel.GrepOutput> {
 
-  @Override public boolean havePojo() { return false; }
-  @Override public boolean haveMojo() { return false; }
-
   public static class GrepParameters extends Model.Parameters {
     public String algoName() { return "Grep"; }
     public String fullName() { return "Grep"; }

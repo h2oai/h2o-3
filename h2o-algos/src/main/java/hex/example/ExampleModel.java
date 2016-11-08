@@ -8,9 +8,6 @@ import water.Key;
 
 public class ExampleModel extends Model<ExampleModel,ExampleModel.ExampleParameters,ExampleModel.ExampleOutput> {
 
-  @Override public boolean havePojo() { return false; }
-  @Override public boolean haveMojo() { return false; }
-
   public static class ExampleParameters extends Model.Parameters {
     public String algoName() { return "Example"; }
     public String fullName() { return "Example"; }

@@ -56,6 +56,9 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
     };
   }
 
+  @Override public boolean haveMojo() { return true; }
+  @Override public boolean havePojo() { return false; }
+
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
   @Override public boolean isSupervised() { return !_parms._autoencoder; }
