@@ -4,7 +4,7 @@ import water.Iced;
 import water.api.API;
 
 /**
- * List of models, returned by GET /4/metadata/models
+ * List of models, returned by GET /4/modelsinfo
  */
 public class ModelsInfoV4 extends OutputSchemaV4<Iced, ModelsInfoV4> {
 
