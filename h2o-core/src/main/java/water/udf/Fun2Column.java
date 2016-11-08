@@ -21,6 +21,7 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
     this.f = f;
     this.xs = xs;
     this.ys = ys;
+    assert xs.isCompatibleWith(ys) : "Columns must be compatible: " + xs + ", " + ys;
   }
   
   @Override public Z get(long idx) { 
@@ -64,4 +65,5 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
     @Override public Z get(int i) { return f.apply(cx.get(i), cy.get(i)); }
   }
 
+  @Override public String toString() { return "Fun2Column(" + xs + "," + ys + ")"; }
 }
