@@ -189,7 +189,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     int nrowThreads = 1;
     int ncolBlocks = ncols/colBlockSz + (ncols%colBlockSz == 0?0:1);
     while(ncolBlocks*nrowThreads < _parms.min_threads)nrowThreads++;
-    Log.info("column block sz = " + colBlockSz + ", nthreads per block = " + nrowThreads + ", shared histo = " + _parms.sharedHisto);
     final int nthreads = nrowThreads;
     ArrayList<ForkJoinTask> tsks = new ArrayList<>();
     for(int i = 0; i < ncols; i += colBlockSz){
