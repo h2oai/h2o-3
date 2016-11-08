@@ -5,59 +5,81 @@ import java.util.ArrayList;
 
 /**
  * Subgraph for representing a tree.
+ * A subgraph contains nodes.
  */
-class Subgraph {
+class SharedTreeSubgraph {
   private final int subgraphNumber;
   private final String name;
   private int nextNodeNumber = 0;
-  private Node rootNode;
+  private SharedTreeNode rootNode;
 
-  private ArrayList<Node> nodesArray;
+  // Even though all the nodes are reachable from rootNode, keep a second handy list of nodes.
+  // For some bookkeeping tasks.
+  private ArrayList<SharedTreeNode> nodesArray;
 
-  Subgraph(int sn, String n) {
+  /**
+   * Create a new tree object.
+   * @param sn Tree number
+   * @param n Tree name
+   */
+  SharedTreeSubgraph(int sn, String n) {
     subgraphNumber = sn;
     name = n;
     nodesArray = new ArrayList<>();
   }
 
-  Node makeRootNode() {
-    Node n = new Node(null, subgraphNumber, nextNodeNumber, 0);
+  /**
+   * Make the root node in the tree.
+   * @return The node
+   */
+  SharedTreeNode makeRootNode() {
+    SharedTreeNode n = new SharedTreeNode(null, subgraphNumber, nextNodeNumber, 0);
     nextNodeNumber++;
     nodesArray.add(n);
     rootNode = n;
     return n;
   }
 
-  Node makeLeftChildNode(Node parent) {
-    Node child = new Node(parent, subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
+  /**
+   * Make the left child of a node.
+   * @param parent Parent node
+   * @return The new child node
+   */
+  SharedTreeNode makeLeftChildNode(SharedTreeNode parent) {
+    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
     nextNodeNumber++;
     nodesArray.add(child);
     makeLeftEdge(parent, child);
     return child;
   }
 
-  Node makeRightChildNode(Node parent) {
-    Node child = new Node(parent, subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
+  /**
+   * Make the right child of a node.
+   * @param parent Parent node
+   * @return The new child node
+   */
+  SharedTreeNode makeRightChildNode(SharedTreeNode parent) {
+    SharedTreeNode child = new SharedTreeNode(parent, subgraphNumber, nextNodeNumber, parent.getLevel() + 1);
     nextNodeNumber++;
     nodesArray.add(child);
     makeRightEdge(parent, child);
     return child;
   }
 
-  private void makeLeftEdge(Node parent, Node child) {
+  private void makeLeftEdge(SharedTreeNode parent, SharedTreeNode child) {
     parent.setLeftChild(child);
   }
 
-  private void makeRightEdge(Node parent, Node child) {
+  private void makeRightEdge(SharedTreeNode parent, SharedTreeNode child) {
     parent.setRightChild(child);
   }
 
-  public void print() {
+  void print() {
     System.out.println("");
     System.out.println("    ----- " + name + " -----");
 
     System.out.println("    Nodes");
-    for (Node n : nodesArray) {
+    for (SharedTreeNode n : nodesArray) {
       n.print();
     }
 
@@ -72,7 +94,7 @@ class Subgraph {
     os.println("/* Nodes */");
 
     int maxLevel = -1;
-    for (Node n : nodesArray) {
+    for (SharedTreeNode n : nodesArray) {
       if (n.getLevel() > maxLevel) {
         maxLevel = n.getLevel();
       }
@@ -88,7 +110,7 @@ class Subgraph {
 
     os.println("");
     os.println("/* Edges */");
-    for (Node n : nodesArray) {
+    for (SharedTreeNode n : nodesArray) {
       n.printDotEdges(os, maxLevelsToPrintPerEdge);
     }
     os.println("");

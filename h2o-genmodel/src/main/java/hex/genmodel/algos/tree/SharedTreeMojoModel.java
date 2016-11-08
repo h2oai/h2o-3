@@ -115,7 +115,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     // Computing a Tree Graph
     //------------------------------------------------------------------------------------------------------------------
 
-    private void computeTreeGraph(Subgraph sg, Node node, byte[] tree, ByteBufferWrapper ab, int nclasses) {
+    private void computeTreeGraph(SharedTreeSubgraph sg, SharedTreeNode node, byte[] tree, ByteBufferWrapper ab, int nclasses) {
         GenmodelBitSet bs = null;
 
         int nodeType = ab.get1U();
@@ -225,7 +225,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             }
             int lmask2 = (nodeType & 0xC0) >> 2;  // Replace leftmask with the rightmask
 
-            Node newNode = sg.makeRightChildNode(node);
+            SharedTreeNode newNode = sg.makeRightChildNode(node);
             if ((lmask2 & 16) != 0) {
                 float leafValue = ab2.get4f();
                 newNode.setLeafValue(leafValue);
@@ -243,7 +243,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             if (lmask <= 3)
                 ab2.skip(lmask + 1);
 
-            Node newNode = sg.makeLeftChildNode(node);
+            SharedTreeNode newNode = sg.makeLeftChildNode(node);
             if ((lmask & 16) != 0) {
                 float leafValue = ab2.get4f();
                 newNode.setLeafValue(leafValue);
@@ -254,8 +254,8 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
     }
 
-    protected Graph computeGraph(int treeToPrint, int nClassesToScore) {
-        Graph g = new Graph();
+    protected SharedTreeGraph computeGraph(int treeToPrint, int nClassesToScore) {
+        SharedTreeGraph g = new SharedTreeGraph();
 
         if (treeToPrint >= _ntrees) {
             throw new IllegalArgumentException("Tree " + treeToPrint + " does not exist (max " + _ntrees + ")");
@@ -280,8 +280,8 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                 }
                 int itree = i * _ntrees + j;
 
-                Subgraph sg = g.makeSubgraph("Tree " + j + className);
-                Node node = sg.makeRootNode();
+                SharedTreeSubgraph sg = g.makeSubgraph("Tree " + j + className);
+                SharedTreeNode node = sg.makeRootNode();
                 byte[] tree = _compressed_trees[itree];
                 ByteBufferWrapper ab = new ByteBufferWrapper(tree);
                 computeTreeGraph(sg, node, tree, ab, _nclasses);

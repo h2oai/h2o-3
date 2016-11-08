@@ -1,7 +1,7 @@
 package hex.genmodel.algos.gbm;
 
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.tree.Graph;
+import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 
@@ -78,7 +78,7 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
      *
      * @return A graph of the forest.
      */
-    public Graph computeGraph(int treeToPrint) {
+    public SharedTreeGraph computeGraph(int treeToPrint) {
         return computeGraph(treeToPrint, calcNClassesToScore());
     }
 }

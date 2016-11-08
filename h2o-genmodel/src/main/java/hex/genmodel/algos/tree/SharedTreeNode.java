@@ -7,10 +7,11 @@ import java.util.ArrayList;
 import java.util.BitSet;
 
 /**
- * Graph Node.
+ * Node in a tree.
+ * A node (optionally) contains left and right edges to the left and right child nodes.
  */
-public class Node {
-  private final Node parent;
+public class SharedTreeNode {
+  private final SharedTreeNode parent;
   private final int subgraphNumber;
   private final int nodeNumber;
   private final int level;
@@ -22,14 +23,21 @@ public class Node {
   private String[] domainValues;
   private GenmodelBitSet bs;
   private float leafValue = Float.NaN;
-  private Node leftChild;
-  private Node rightChild;
+  private SharedTreeNode leftChild;
+  private SharedTreeNode rightChild;
 
   // When parent is a categorical, levels of parentColId that are reachable to this node.
   // This in particular includes any earlier splits of the same colId.
   private BitSet inclusiveLevels;
 
-  public Node(Node p, int sn, int n, int l) {
+  /**
+   * Create a new node.
+   * @param p Parent node
+   * @param sn Tree number
+   * @param n Node number
+   * @param l Node level within the tree
+   */
+  SharedTreeNode(SharedTreeNode p, int sn, int n, int l) {
     parent = p;
     subgraphNumber = sn;
     nodeNumber = n;
@@ -71,6 +79,12 @@ public class Node {
     leafValue = v;
   }
 
+  /**
+   * Find the set of levels for a particular categorical column that can reach this node.
+   * A null return value implies the full set (i.e. every level).
+   * @param colId Column id
+   * @return Set of levels
+   */
   private BitSet findInclusiveLevels(int colId) {
     if (parent == null) {
       return null;
@@ -81,6 +95,11 @@ public class Node {
     return parent.findInclusiveLevels(colId);
   }
 
+  /**
+   * Calculate the set of levels that flow through to a child.
+   * @param nodeBitsetDoesContain true if the GenmodelBitset from the compressed_tree
+   * @return Calcuated set of levels
+   */
   private BitSet calculateChildInclusiveLevels(boolean nodeBitsetDoesContain) {
     BitSet inheritedInclusiveLevels = findInclusiveLevels(colId);
     BitSet childInclusiveLevels = new BitSet();
@@ -100,7 +119,7 @@ public class Node {
     return childInclusiveLevels;
   }
 
-  void setLeftChild(Node v) {
+  void setLeftChild(SharedTreeNode v) {
     leftChild = v;
 
     if (! isBitset()) {
@@ -110,7 +129,7 @@ public class Node {
     v.setInclusiveLevels(childInclusiveLevels);
   }
 
-  void setRightChild(Node v) {
+  void setRightChild(SharedTreeNode v) {
     rightChild = v;
 
     if (! isBitset()) {
@@ -190,6 +209,11 @@ public class Node {
     os.println("");
   }
 
+  /**
+   * Recursively print nodes at a particular level in the tree.  Useful to group them so they render properly.
+   * @param os output stream
+   * @param levelToPrint level number
+   */
   void printDotNodesAtLevel(PrintStream os, int levelToPrint) {
     if (getLevel() == levelToPrint) {
       printDot(os);
@@ -206,7 +230,7 @@ public class Node {
     }
   }
 
-  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, Node child, String comparison) {
+  private void printDotEdgesCommon(PrintStream os, int maxLevelsToPrintPerEdge, ArrayList<String> arr, SharedTreeNode child, String comparison) {
     if (isBitset()) {
       BitSet childInclusiveLevels = child.getInclusiveLevels();
       int total = childInclusiveLevels.cardinality();
@@ -230,6 +254,11 @@ public class Node {
     os.println("]");
   }
 
+  /**
+   * Recursively print all edges in the three.
+   * @param os output stream
+   * @param maxLevelsToPrintPerEdge Limit the number of individual categorical level names printed per edge
+   */
   void printDotEdges(PrintStream os, int maxLevelsToPrintPerEdge) {
     assert (leftChild == null) == (rightChild == null);
 
