@@ -27,6 +27,13 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     super(columns.length == 0 ? null : columns[0]);
     this.f = f;
     this.columns = Arrays.asList(columns);
+    if (columns.length > 1) {
+      Column<X> c0 = columns[0];
+      for (int i = 1; i < columns.length; i++) {
+        Column<X> c = columns[i];
+        assert c0.isCompatibleWith(c) : "Columns must be compatible; " + c0 + " vs #" + i + ": " + c;
+      }
+    }
   }
 
   public FoldingColumn(Foldable<X, Y> f, Iterable<Column<X>> columns) {

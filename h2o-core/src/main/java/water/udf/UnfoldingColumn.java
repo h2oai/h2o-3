@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * This column depends a plurality of columns
  */
-public class UnfoldingColumn<X, Y> implements Column<List<Y>> {
+public class UnfoldingColumn<X, Y> extends ColumnBase<List<Y>> {
   private final Unfoldable<X, Y> f;
   private final Column<X> column;
   private int requiredSize;
@@ -47,6 +47,7 @@ public class UnfoldingColumn<X, Y> implements Column<List<Y>> {
         for (int i = result.size(); i < requiredSize; i++) {
           fullResult.add(null);
         }
+        return fullResult;
       }
       return result;
     }
