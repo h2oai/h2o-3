@@ -20,8 +20,6 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     Iterator<Column<X>> i = columns.iterator();
     return i.hasNext() ? i.next().rowLayout() : 0;
   }
-
-  @Override public Vec vec() { return new VirtualVec<>(this); }
   
   public FoldingColumn(Foldable<X, Y> f, Column<X>... columns) {
     super(columns.length == 0 ? null : columns[0]);

@@ -11,8 +11,6 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
   private final Function<X, Y> f;
   private final Column<X> xs;
 
-  @Override public Vec vec() { return new VirtualVec<>(this); }
-
   @Override public int rowLayout() { return xs.rowLayout(); }
 
   public FunColumn(Function<X, Y> f, Column<X> xs) {

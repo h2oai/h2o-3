@@ -12,9 +12,14 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
     this.master = master;
   }
 
+  private Vec myVec = null;
+
+  @Override public Vec vec() {
+    if (myVec == null) myVec = new VirtualVec<>(this);
+    return myVec;
+  }
+
   @Override public long size() { return master.size(); }
-  
-  @Override public Vec vec() { return new VirtualVec<>(this); }
 
   public abstract T get(long idx);
   
