@@ -96,7 +96,8 @@ public class TestUtil extends Iced {
             (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
         } else {
-          System.out.println(k + " -> " + value.get());
+          Iced iced = value.get();
+          System.out.println(k + " -> " + iced.getClass().getSimpleName() + ":" + iced);
           if( cnt++ < 10 )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
