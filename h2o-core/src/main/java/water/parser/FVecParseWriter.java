@@ -3,10 +3,10 @@ package water.parser;
 import water.Futures;
 import water.Iced;
 import water.fvec.AppendableVec;
-import water.fvec.C1Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.PrettyPrint;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -15,6 +15,9 @@ import java.util.UUID;
  * @author tomasnykodym
  */
 public class FVecParseWriter extends Iced implements StreamParseWriter {
+
+  private static final int MAX_ERR_CNT = 20;
+
   protected AppendableVec[] _vecs;
   protected transient NewChunk[] _nvs;
   protected transient final Categorical [] _categoricals;
@@ -27,6 +30,8 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   ParseErr [] _errs = new ParseErr[0];
   private final Vec.VectorGroup _vg;
   private long _errCnt;
+  private int _maxMissingCol = -1;
+  private transient StringBuilder _missingColVals = null;
 
   public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize, AppendableVec[] avs){
     _ctypes = ctypes;           // Required not-null
@@ -52,10 +57,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         _vecs[i].reduce(dout._vecs[i]);
     }
     _errCnt += ((FVecParseWriter) sdout)._errCnt;
-    if(_errs.length < 20 && ((FVecParseWriter) sdout)._errs.length > 0) {
+    if(_errs.length < MAX_ERR_CNT && ((FVecParseWriter) sdout)._errs.length > 0) {
       _errs = ArrayUtils.append(_errs, ((FVecParseWriter) sdout)._errs);
-      if(_errs.length > 20)
-        _errs = Arrays.copyOf(_errs,20);
+      if(_errs.length > MAX_ERR_CNT)
+        _errs = Arrays.copyOf(_errs,MAX_ERR_CNT);
     }
     return this;
   }
@@ -80,21 +85,30 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
 
   @Override public void newLine() {
     if(_col >= 0){
-      ++_nLines;
       for(int i = _col+1; i < _nCols; ++i)
         addInvalidCol(i);
+      if (_maxMissingCol != -1)
+        addMissingColumnsError();
+      ++_nLines;
     }
     _col = -1;
+    _maxMissingCol = -1;
+    _missingColVals = null;
   }
+
   @Override public void addNumCol(int colIdx, long number, int exp) {
     if( colIdx < _nCols ) {
       _nvs[_col = colIdx].addNum(number, exp);
       if(_ctypes != null && _ctypes[colIdx] == Vec.T_BAD ) _ctypes[colIdx] = Vec.T_NUM;
-    }
+    } else
+      recordMissingColumnError(colIdx, number * PrettyPrint.pow10(exp));
   }
 
   @Override public final void addInvalidCol(int colIdx) {
-    if(colIdx < _nCols) _nvs[_col = colIdx].addNA();
+    if(colIdx < _nCols)
+      _nvs[_col = colIdx].addNA();
+    else
+      recordMissingColumnError(colIdx, null);
   }
   @Override public boolean isString(int colIdx) { return (colIdx < _nCols) && (_ctypes[colIdx] == Vec.T_CAT || _ctypes[colIdx] == Vec.T_STR);}
 
@@ -134,7 +148,8 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
           throw new ParseDataset.H2OParseException("Exceeded categorical limit on column #"+(colIdx+1)+" (using 1-based indexing).  Consider reparsing this column as a string.");
         }
       }
-    }
+    } else
+      recordMissingColumnError(colIdx, str);
   }
 
   /** Adds double value to the column. */
@@ -157,17 +172,42 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   @Override public final void rollbackLine() {}
 
   @Override public void invalidLine(ParseErr err) {
-    addErr(err);
+    addError(err);
     newLine();
   }
 
   @Override
-  public void addError(ParseErr err) {
+  public final void addError(ParseErr err) {
     if(_errs == null)
       _errs = new ParseErr[]{err};
-    else  if(_errs.length < 20)
+    else if(_errs.length < MAX_ERR_CNT)
       _errs = ArrayUtils.append(_errs,err);
     _errCnt++;
+  }
+
+  private void addMissingColumnsError() {
+    assert _maxMissingCol >= _nCols;
+    String message = "Invalid line, found more columns than expected (found: " + (_maxMissingCol + 1) + ", expected: " + _nCols + ")" +
+            ((_missingColVals == null) ? "" : "; values = {" + toStringTrimmedCleaned(_missingColVals, 50) + "}");
+    addError(new ParseErr(message, _cidx, lineNum()));
+  }
+
+  private static String toStringTrimmedCleaned(StringBuilder sb, int maxLen) {
+    String msg = sb.length() <= maxLen ? sb.toString() : sb.substring(0, maxLen) + "...(truncated)";
+    return msg.replaceAll("[^\\x00-\\x7F]", ""); // Replace non-ASCII characters to avoid problems with displaying of the message in client
+  }
+
+  private void recordMissingColumnError(int colIdx, Object value) {
+    // We only want to report values if they come sequentially as they were in the file (CSV parser is sequential, binary parsers might not be)
+    // Cap the maximum number of reported values to 10
+    if ((_maxMissingCol == -1) && (colIdx == _col + 1))
+      _missingColVals = new StringBuilder().append(value);
+    else
+      if ((_missingColVals != null) && (_maxMissingCol + 1 == colIdx))
+        _missingColVals = (colIdx - _nCols < 10) ? _missingColVals.append(", ").append(value) : _missingColVals;
+      else
+        _missingColVals = null; // out-of-order detected, cancel reporting
+    _maxMissingCol = Math.max(colIdx, _maxMissingCol);
   }
 
   @Override public void setIsAllASCII(int colIdx, boolean b) {
@@ -189,9 +229,4 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   @Override
   public long lineNum() {return _nLines;}
 
-  public void addErr(ParseErr err){
-    if(_errs.length < 20)
-      _errs = ArrayUtils.append(_errs,err);
-    ++_errCnt;
-  }
 }
