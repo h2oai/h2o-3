@@ -31,9 +31,7 @@ public class ScopeTest extends TestUtil {
     Vec v1 = Vec.makeCon(111.0, 11);
     Vec v2 = Vec.makeCon(112.0, 12);
     Vec v3 = Vec.makeCon(113.0, 13);
-    Scope.track(v1);
-    Scope.track(v2);
-    Scope.track(v3);
+    Scope.track(v1, v2, v3);
     Scope.exit();
     assertEquals(0, countLeakedKeys());
   }
@@ -44,9 +42,7 @@ public class ScopeTest extends TestUtil {
     Vec v1 = Vec.makeCon(121.0, 21);
     Vec v2 = Vec.makeCon(122.0, 22);
     Vec v3 = Vec.makeCon(123.0, 23);
-    Scope.track(v1);
-    Scope.track(v2);
-    Scope.track(v3);
+    Scope.track(v1, v2, v3);
     Scope.exit(v3._key, v2._key);
     assertTrue(countLeakedKeys() > 0);
     Futures fs = new Futures();
@@ -62,10 +58,7 @@ public class ScopeTest extends TestUtil {
     Vec v2 = Vec.makeCon(122.0, 22);
     Vec v3 = Vec.makeCon(123.0, 23);
     try {
-      Scope.track(v1);
-      Scope.track(v2);
-      Scope.track(v3);
-//      Scope.exit();
+      Scope.track(v1, v2, v3);
       throw new Exception("Just checking if it works");
     } catch (Exception e) {
       // ignore it all
@@ -87,18 +80,22 @@ public class ScopeTest extends TestUtil {
     Vec v2 = Vec.makeCon(122.0, 22);
     Vec v3 = Vec.makeCon(123.0, 23);
     try(Scope scope = new Scope()) {
-      Scope.track(v1);
-      Scope.track(v2);
-      Scope.track(v3);
-//      Scope.exit();
+      Scope.track(v1, v2, v3);
       throw new Exception("Just checking if it works");
     } catch (Exception e) { }
     assertTrue(countLeakedKeys() == 0);
-    Futures fs = new Futures();
-    Keyed.remove(v1._key, fs);
-    Keyed.remove(v2._key, fs);
-    Keyed.remove(v3._key, fs);
-    fs.blockForPending();
+  }
+
+  @Test
+  public void test_with_leakage_inside_try_block_new_style_no_ex() throws Exception {
+    Scope.enter();
+    Vec v1 = Vec.makeCon(121.0, 21);
+    Vec v2 = Vec.makeCon(122.0, 22);
+    Vec v3 = Vec.makeCon(123.0, 23);
+    try(Scope scope = new Scope()) {
+      Scope.track(v1, v2, v3);
+    }
+    assertTrue(countLeakedKeys() == 0);
   }
 
 }
