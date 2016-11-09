@@ -25,23 +25,30 @@ public class DataColumns {
     
     public byte typeCode() { return typeCode; }
 
-    public abstract DataChunk<T> apply(final Chunk c);
-    public abstract DataColumn<T> newColumn(Vec vec);
-    
-    protected TypedFrame<T> newFrame1(long len, final Function<Long, T> f) throws IOException {
-      return new TypedFrame<>(this, len, f);
+    public Vec initVec(long length) {
+      return Vec.makeZero(length, typeCode());
     }
     
+    public Vec initVec(Column<?> master) {
+      Vec vec = Vec.makeZero(master.size(), typeCode());
+      vec.align(master.vec());
+      return vec;
+    }
+
+    public abstract DataChunk<T> apply(final Chunk c);
+    public abstract DataColumn<T> newColumn(Vec vec);
+
+//    public DataColumn<T> newColumn(long len, final Function<Long, T> f) throws IOException {
+//      return new TypedFrame<>(this, len, f).newColumn();
+//    }
+
     public DataColumn<T> newColumn(long len, final Function<Long, T> f) throws IOException {
-      return newFrame1(len, f).newColumn();
+      return new TypedFrame<>(this, len, f).newColumn();
     }
 
     public DataColumn<T> materialize(Column<T> xs) throws IOException {
-      return newColumn(xs.size(), xs);
-    }
-
-    public List<DataColumn<T>> materialize(UnfoldingFrame<T> fr) throws IOException {
-      return fr.materialize();
+      return TypedFrame.forColumn(this, xs).newColumn();
+//      return newColumn(xs.size(), xs);
     }
 
     public DataColumn<T> newColumn(final List<T> xs) throws IOException {
@@ -71,8 +78,6 @@ public class DataColumns {
     @Override public DataChunk<Double> apply(final Chunk c) {
       return new DataChunk<Double>(c) {
         @Override public Double get(int idx) { return c.isNA(idx) ? null : c.atd(idx); }
-
-        @Override public int length() { return c.len(); }
 
         @Override public void set(int idx, Double value) {
           if (value == null) c.setNA(idx); else c.set(idx, value);
@@ -108,8 +113,6 @@ public class DataColumns {
     @Override public DataChunk<String> apply(final Chunk c) {
       return new DataChunk<String>(c) {
         @Override public String get(int idx) { return asString(c.atStr(new BufferedString(), idx)); }
-
-        @Override public int length() { return c.len(); }
 
         @Override public void set(int idx, String value) { 
           c.set(idx, value); }
@@ -154,7 +157,7 @@ public class DataColumns {
     }
 
     public DataColumn<Integer> newColumn(long len, final Function<Long, Integer> f) throws IOException {
-      return new TypedFrame.EnumFrame1(len, f, domain).newColumn();
+      return new TypedFrame.EnumFrame(len, f, domain).newColumn();
     }
 
     @Override public DataColumn<Integer> newColumn(final Vec vec) {

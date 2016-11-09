@@ -11,6 +11,7 @@ public abstract class DependentChunk<T> implements TypedChunk<T> {
     this.master = master;
   }
 
-  @Override public int length() { return master.length(); }
+  public long start() { return master.rawChunk().start(); }
+  @Override public int len() { return master.len(); }
   @Override public int cidx() { return master.cidx(); }
 }

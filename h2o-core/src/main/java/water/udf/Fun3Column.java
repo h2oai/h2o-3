@@ -61,8 +61,6 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
 
     @Override public Vec vec() { return Fun3Column.this.vec(); }
 
-    @Override public int length() { return cx.length(); }
-
     @Override public boolean isNA(int i) { return cx.isNA(i) || cy.isNA(i) || cz.isNA(i); }
 
     @Override public T get(int i) {
