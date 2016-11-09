@@ -95,6 +95,14 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   }
 
   @Override public void map(Chunk [] chks){
+    // Even though this is an MRTask over a Frame, map(Chunk [] chks should not be called for this task.
+    // We do custom 2-stage local pass usin LocalMRtask, overriding the MRTasks standard way of going over chunks and maps.
+    // There are 2 reasons fro that:
+    //    a) we have a node local pass scoring the trees and sorting rows which needs to be completed before the second pass
+    //        (but only locally - we do not want to insert unnecessary communication overhead here!)
+    //    b) In case, we're making private DHistogram copies in phase 2, we do not want to make a new task per chunk like standard MRTask.
+    //       By reusing the same DHisto for multiple chunk we save memory and reduces.
+    //
     throw H2O.unimpl();
   }
   @Override
@@ -277,7 +285,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }
 
     public void updateHistoUnordered(DHistogram[] hcs, int len, double[] ws, double[] cs, double[] ys, int [] nids){
-//      double minmax[] = new double[]{_min2,_maxIn};
       // Gather all the data for this set of rows, for 1 column and 1 split/NID
       // Gather min/max, wY and sum-squares.
       for(int r = 0; r< len; ++r) {
@@ -289,8 +296,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         if(dh == null) continue;
         dh.updateHisto(w, cs[r], ys[r]);
       }
-      for(DHistogram dh:hcs)
-        if(dh != null)dh.reducePrecision();;
     }
 
     private void computeChunk(int id){
@@ -311,9 +316,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         if(_unordered){
           _fr2.vec(c).chunkForChunkIdx(cidx).getDoubles(cs, 0, len);
           updateHistoUnordered(_lhcs[c-_colFrom],len,ws,cs,ys,nnids);
-          for(DHistogram[] dha:_lhcs)
-            for(DHistogram dh:dha)
-              if(dh != null) dh.reducePrecision();
         } else {
           boolean extracted = false;
           for (int n = 0; n < hcslen; n++) {
