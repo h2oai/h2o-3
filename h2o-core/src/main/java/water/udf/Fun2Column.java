@@ -11,8 +11,6 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
   private final Function2<X, Y, Z> f;
   private final Column<X> xs;
   private final Column<Y> ys;
-  
-  @Override public Vec vec() { return new VirtualVec<>(this); }
 
   @Override public int rowLayout() { return xs.rowLayout(); }
 

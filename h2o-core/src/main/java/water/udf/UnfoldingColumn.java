@@ -13,24 +13,24 @@ import java.util.List;
 /**
  * This column depends a plurality of columns
  */
-public class UnfoldingColumn<X, Y> extends ColumnBase<List<Y>> {
+public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
   private final Unfoldable<X, Y> f;
   private final Column<X> column;
   private int requiredSize;
-
-  @Override public Vec vec() { return new VirtualVec<>(this); }
   
   @Override public long size() { return column.size(); }
 
   @Override public int rowLayout() { return column.rowLayout(); }
 
   public UnfoldingColumn(Unfoldable<X, Y> f, Column<X> column) {
+    super(column);
     this.f = f;
     this.column = column;
     this.requiredSize = 0;
   }
 
   public UnfoldingColumn(Unfoldable<X, Y> f, Column<X> column, int requiredSize) {
+    super(column);
     this.f = f;
     this.column = column;
     this.requiredSize = requiredSize;
