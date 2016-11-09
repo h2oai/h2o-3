@@ -129,24 +129,24 @@ public class UdfTest extends TestUtil {
     }
   }
 
-/* All UUID functionality is currently disabled
-  @Test
-  public void testOfUUIDs() throws Exception {
-    Column<UUID> c = willDrop(UUIDs.newColumn(1 << 20, new Function<Long, UUID>() {
-       public UUID apply(Long i) {
-        return new UUID(i * 7, i * 13);
-      }
-    }));
-    assertEquals(new UUID(0, 0), c.apply(0));
-    assertEquals(new UUID(258*7, 258*13), c.apply(258));
+//// All UUID functionality is currently disabled
+//  @Test
+//  public void testOfUUIDs() throws Exception {
+//    Column<UUID> c = willDrop(UUIDs.newColumn(1 << 20, new Function<Long, UUID>() {
+//       public UUID apply(Long i) {
+//        return new UUID(i * 7, i * 13);
+//      }
+//    }));
+//    assertEquals(new UUID(0, 0), c.apply(0));
+//    assertEquals(new UUID(258*7, 258*13), c.apply(258));
+//
+//    Column<UUID> materialized = UUIDs.materialize(c);
+//
+//    for (int i = 0; i < 100000; i++) {
+//      assertEquals(c.apply(i), materialized.apply(i));
+//    }
+//  }
 
-    Column<UUID> materialized = UUIDs.materialize(c);
-
-    for (int i = 0; i < 100000; i++) {
-      assertEquals(c.apply(i), materialized.apply(i));
-    }
-  }
-*/
   @Test
   public void testOfEnumFun() throws Exception {
     final String[] domain = {"Red", "White", "Blue"};
@@ -188,14 +188,14 @@ public class UdfTest extends TestUtil {
     assertFalse(y.isNA(20));
     assertEquals(0.295958969093304, y.apply(10), 0.0001);
   }
-
+/**/
   @Test
   public void testFun2() throws Exception {
     Column<Double> x = five_x();
     Column<Double> y = sines();
-    Column<Double> y2 = new FunColumn<>(Functions.SQUARE, y);
-    Column<Double> z1 = new Fun2Column<>(Functions.PLUS, x, y2);
-    Column<Double> z2 = new Fun2Column<>(Functions.X2_PLUS_Y2, x, y);
+    Column<Double> y2 = willDrop(new FunColumn<>(Functions.SQUARE, y));
+    Column<Double> z1 = willDrop(new Fun2Column<>(Functions.PLUS, x, y2));
+    Column<Double> z2 = willDrop(new Fun2Column<>(Functions.X2_PLUS_Y2, x, y));
     
     assertEquals(0.0, z1.apply(0), 0.000001);
     assertEquals(210.84001174779368, z1.apply(42), 0.000001);
@@ -205,7 +205,7 @@ public class UdfTest extends TestUtil {
     assertEquals(44100.840011747794, z2.apply(42), 0.000001);
     assertEquals(10000000000.3387062632, z2.apply(20000), 0.000001);
 
-    Column<Double> materialized = Doubles.materialize(z2);
+    Column<Double> materialized = willDrop(Doubles.materialize(z2));
 
     for (int i = 0; i < 100000; i++) {
       Double expected = z2.apply(i);
@@ -379,4 +379,5 @@ public class UdfTest extends TestUtil {
     
     assertTrue("Need to align the result", columns.get(5).isCompatibleWith(source));
   }
+  /**/
 }
