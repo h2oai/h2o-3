@@ -333,7 +333,7 @@ public final class ParseDataset {
       // compute global line numbers for warnings/errs
       HashMap<String, Integer> fileChunkOffsets = new HashMap<>();
       for (int i = 0; i < mfpt._fileChunkOffsets.length; ++i)
-        fileChunkOffsets.put(fkeys[i].toString(), mfpt._fileChunkOffsets[i]);
+        fileChunkOffsets.put(FileVec.getPathForKey(fkeys[i]), mfpt._fileChunkOffsets[i]);
       long[] espc = fr.anyVec().espc();
       for (int i = 0; i < errs.length; ++i) {
         if(fileChunkOffsets.containsKey(errs[i]._file)) {
@@ -1016,7 +1016,7 @@ public final class ParseDataset {
         _outerMFPT._dout[_outerMFPT._lo] = _dout;
         if(_dout.hasErrors()) {
           ParseWriter.ParseErr [] errs = _dout.removeErrors();
-          for(ParseWriter.ParseErr err:errs)err._file = FileVec.getPathForKey(_srckey).toString();
+          for(ParseWriter.ParseErr err:errs)err._file = FileVec.getPathForKey(_srckey);
           Arrays.sort(errs, new Comparator<ParseWriter.ParseErr>() {
             @Override
             public int compare(ParseWriter.ParseErr o1, ParseWriter.ParseErr o2) {
