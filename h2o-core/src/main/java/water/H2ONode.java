@@ -299,6 +299,46 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   private transient UDP_TCP_SendThread _sendThread = null; // set notnull if properly interned, and done before first sendMessage
   public void sendMessage( ByteBuffer bb, byte msg_priority ) { _sendThread.sendMessage(bb,msg_priority); }
 
+  /**
+   * Returns a new connection of type {@code tcpType}, the type can be either
+   *   TCPReceiverThread.TCP_SMALL, TCPReceiverThread.TCP_BIG or
+   *   TCPReceiverThread.TCP_EXTERNAL.
+   *
+   * If socket channel factory is set, the communication will considered to be secured - this depends on the
+   * configuration of the {@link SocketChannelFactory}. In case of the factory is null, the communication won't be secured.
+   * @return new socket channel
+   */
+  public static ByteChannel openChan(byte tcpType, SocketChannelFactory socketFactory, InetAddress originAddr, int originPort ) throws IOException {
+    // Must make a fresh socket
+    SocketChannel sock = SocketChannel.open();
+    sock.socket().setReuseAddress(true);
+    sock.socket().setSendBufferSize(AutoBuffer.BBP_BIG._size);
+    InetSocketAddress isa = new InetSocketAddress(originAddr, originPort);
+    boolean res = sock.connect(isa); // Can toss IOEx, esp if other node is still booting up
+    assert res : "Should be already connected, but connection is in non-blocking mode and the connection operation is in progress!";
+    sock.configureBlocking(true);
+    assert !sock.isConnectionPending() && sock.isBlocking() && sock.isConnected() && sock.isOpen();
+    sock.socket().setTcpNoDelay(true);
+    ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
+    bb.put(tcpType).putChar((char) H2O.H2O_PORT).put((byte) 0xef).flip();
+
+    ByteChannel wrappedSocket;
+    if(socketFactory != null){
+      wrappedSocket = socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
+    }else{
+      wrappedSocket = sock;
+    }
+
+    while (bb.hasRemaining()) {  // Write out magic startup sequence
+      wrappedSocket.write(bb);
+    }
+    return wrappedSocket;
+  }
+
+  public static ByteChannel openChan(byte tcpType, SocketChannelFactory socketFactory, String originAddr, int originPort) throws IOException {
+    return openChan(tcpType, socketFactory, InetAddress.getByName(originAddr), originPort);
+  }
+
   // Private thread serving (actually ships the bytes over) small msg Q.
   // Buffers the small messages together and sends the bytes over via TCP channel.
   class UDP_TCP_SendThread extends Thread {
@@ -398,23 +438,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   
     // Open channel on first write attempt
     private ByteChannel openChan() throws IOException {
-      // Must make a fresh socket
-      SocketChannel sock = SocketChannel.open();
-      sock.socket().setReuseAddress(true);
-      sock.socket().setSendBufferSize(AutoBuffer.BBP_BIG._size);
-      InetSocketAddress isa = new InetSocketAddress(_key.getAddress(), _key.getPort());
-      boolean res = sock.connect(isa); // Can toss IOEx, esp if other node is still booting up
-      assert res;
-      sock.configureBlocking(true);
-      assert !sock.isConnectionPending() && sock.isBlocking() && sock.isConnected() && sock.isOpen();
-      sock.socket().setTcpNoDelay(true);
-      ByteBuffer bb = ByteBuffer.allocate(4).order(ByteOrder.nativeOrder());
-      bb.put((byte) 1).putChar((char) H2O.H2O_PORT).put((byte) 0xef).flip();
-      ByteChannel wrappedSocket = _socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
-      while (bb.hasRemaining()) {  // Write out magic startup sequence
-        wrappedSocket.write(bb);
-      }
-      return wrappedSocket;
+      return H2ONode.openChan(TCPReceiverThread.TCP_SMALL,_socketFactory, _key.getAddress(), _key.getPort());
     }
   }
 

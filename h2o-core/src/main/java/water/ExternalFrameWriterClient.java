@@ -1,0 +1,156 @@
+package water;
+
+import java.io.IOException;
+import java.nio.channels.ByteChannel;
+import java.sql.Timestamp;
+
+import static water.ExternalFrameUtils.writeToChannel;
+
+/**
+ * This class is used to create and write data to H2O Frames from non-H2O environments, such as Spark Executors.
+ **
+ * Example usage of this class:
+ *
+ * First we need to open the connection to H2O and initialize the writer
+ * <pre>{@code
+ * // We prepare expected bytes from Java Classes. Normally we are writing data from Spark's RDDs or DataFrames
+ * // and using these we are able to create expected types, which are used to ensure optimal communication
+ *
+ * // We do not have to specify vector types since they can be deterministically inferred from the expected types
+ * // and we can avoid sending duplicate data
+ * byte[] expectedBytes = ExternalFrameUtils.prepareExpectedTypes(new Class[]{Boolean.class, Integer.class})
+ * ByteChannel channel = ExternalFrameUtils.getConnection("ip:port")
+ * ExternalFrameWriter writer = new ExternalFrameWriter(channel);
+ * writer.createChunks("frameName", expectedTypes, chunkIdx, numOfRowsToBeWritten)
+ * }
+ * </pre>
+ *
+ * Then we can write the data
+ * <pre>{@code
+ * int rowsWritten = 0;
+ * while(rowsWritten < totalNumOfRows){
+ *  writer.sendBool(true)
+ *  writer.sendInt(657)
+ * }
+ * </pre>
+ *
+ * And at the end we need to make sure to force to code wait for all data to be written
+ * <pre>{@code
+ * writer.waitUntilAllWritten()
+ * }
+ * </pre>
+ */
+public class ExternalFrameWriterClient {
+
+    private AutoBuffer ab;
+    private ByteChannel channel;
+    private byte[] expectedTypes;
+    // we discover the current column index based on number of data sent
+    private int currentColIdx = 0;
+
+    /**
+     * Initialize the External frame writer
+     *
+     * This method expects expected types in order to ensure we send the data in optimal way.
+     * @param channel communication channel to h2o node
+     */
+    public ExternalFrameWriterClient(ByteChannel channel){
+        // using default constructor, AutoBuffer is created with
+        // private property _read set to false, in order to satisfy call clearForWriting it has to be set to true
+        // which does the call of flipForReading method
+        this.ab = new AutoBuffer().flipForReading();
+        this.channel = channel;
+    }
+
+
+    /**
+     * Create chunks on the h2o backend. This method creates chunk in en empty frame.
+     * @param keystr name of the frame
+     * @param expectedTypes expected types
+     * @param chunkId chunk index
+     * @param totalNumRows total number of rows which is about to be sent
+     */
+    public void createChunks(String keystr, byte[] expectedTypes, int chunkId, int totalNumRows) throws IOException {
+        ab.clearForWriting(H2O.MAX_PRIORITY);
+        ab.put1(ExternalFrameHandler.INIT_BYTE);
+        ab.put1(ExternalFrameHandler.CREATE_FRAME);
+        ab.putStr(keystr);
+        this.expectedTypes = expectedTypes;
+        ab.putA1(expectedTypes);
+        ab.putInt(totalNumRows);
+        ab.putInt(chunkId);
+        writeToChannel(ab, channel);
+    }
+
+    public void sendBoolean(boolean data) throws IOException{
+        ExternalFrameUtils.sendBoolean(ab, channel, data);
+        increaseCurrentColIdx();
+    }
+
+    public void sendByte(byte data) throws IOException{
+        ExternalFrameUtils.sendByte(ab, channel, data);
+        increaseCurrentColIdx();
+    }
+
+    public void sendChar(char data) throws IOException{
+        ExternalFrameUtils.sendChar(ab, channel, data);
+        increaseCurrentColIdx();
+    }
+
+    public void sendShort(short data) throws IOException{
+        ExternalFrameUtils.sendShort(ab, channel, data);
+        increaseCurrentColIdx();
+    }
+
+    public void sendInt(int data) throws IOException{
+        ExternalFrameUtils.sendInt(ab, channel, data);
+        increaseCurrentColIdx();
+    }
+
+    public void sendLong(long data) throws IOException{
+        ExternalFrameUtils.sendLong(ab, channel, data);
+        increaseCurrentColIdx();
+    }
+
+    public void sendFloat(float data) throws IOException{
+        ExternalFrameUtils.sendFloat(ab, channel, data);
+        increaseCurrentColIdx();
+    }
+
+    public void sendDouble(double data) throws IOException{
+        ExternalFrameUtils.sendDouble(ab, channel, data);
+        increaseCurrentColIdx();
+    }
+
+    public void sendString(String data) throws IOException{
+        ExternalFrameUtils.sendString(ab, channel, data);
+        increaseCurrentColIdx();
+    }
+
+    public void sendTimestamp(Timestamp timestamp) throws IOException{
+        ExternalFrameUtils.sendTimestamp(ab, channel, timestamp);
+        increaseCurrentColIdx();
+    }
+
+    public void sendNA() throws IOException{
+        ExternalFrameUtils.sendNA(ab, channel, expectedTypes[currentColIdx]);
+        increaseCurrentColIdx();
+    }
+
+    /**
+     * This method ensures the application waits for all bytes to be written before continuing in the control flow.
+     *
+     * It has to be called at the end of writing.
+     */
+    public void waitUntilAllWriten() throws IOException{
+        AutoBuffer confirmAb = new AutoBuffer(channel, null);
+        // this needs to be here because confirmAb.getInt() forces this code to wait for result and
+        // all the previous work to be done on the recipient side. The assert around it is just additional, not
+        // so important check
+        assert(confirmAb.get1() == ExternalFrameHandler.CONFIRM_WRITING_DONE);
+    }
+
+    private void increaseCurrentColIdx(){
+        currentColIdx = (currentColIdx+1) % expectedTypes.length;
+    }
+}

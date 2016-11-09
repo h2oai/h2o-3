@@ -1,10 +1,14 @@
 package water.fvec;
 
 
+import water.DKV;
+import water.Key;
+
 /**
- * Simple helper class which publishes some package private methods as public
+ * Simple helper class which publishes some frame and chunk package private methods as public
  */
 public class ChunkUtils {
+
     public static NewChunk[] createNewChunks(String name, byte[] vecTypes, int chunkId){
         return Frame.createNewChunks(name, vecTypes, chunkId);
     }
@@ -20,4 +24,18 @@ public class ChunkUtils {
         }
        return chunks;
     }
+
+    public static void initFrame(String keyName, String[] names) {
+        Frame fr = new water.fvec.Frame(Key.<Frame>make(keyName));
+        fr.preparePartialFrame(names);
+        // Save it directly to DKV
+        fr.update();
+    }
+
+    public static Frame finalizeFrame(String keyName, long[] rowsPerChunk, byte[] colTypes, String[][] colDomains){
+        Frame fr = DKV.getGet(keyName);
+        fr.finalizePartialFrame(rowsPerChunk, colDomains, colTypes);
+        return fr;
+    }
+
 }

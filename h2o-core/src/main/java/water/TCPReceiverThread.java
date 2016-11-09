@@ -24,6 +24,11 @@ public class TCPReceiverThread extends Thread {
   private ServerSocketChannel SOCK;
   private SocketChannelFactory socketChannelFactory;
 
+
+  static final byte TCP_SMALL = 1;
+  static final byte TCP_BIG = 2;
+  static final byte TCP_EXTERNAL = 3;
+
   public TCPReceiverThread(
           ServerSocketChannel sock) {
     super("TCP-Accept");
@@ -84,14 +89,14 @@ public class TCPReceiverThread extends Thread {
         InetAddress inetAddress = sock.socket().getInetAddress();
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
-        case 1:
+        case TCP_SMALL:
           H2ONode h2o = H2ONode.intern(inetAddress, port);
           new UDP_TCP_ReaderThread(h2o, wrappedSocket).start();
           break;
-        case 2:
+        case TCP_BIG:
           new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress), inetAddress).start();
           break;
-        case 3:
+        case TCP_EXTERNAL:
           new ExternalFrameHandlerThread(sock, new AutoBuffer(sock, null)).start();
           break;
         default:

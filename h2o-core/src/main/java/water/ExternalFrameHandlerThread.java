@@ -3,6 +3,16 @@ package water;
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
 
+/**
+ * This class is a thread which exists per each new connection of type {@code TCPReceiverThread.TCP_EXTERNAL}
+ *
+ * It is started for the connection and waits for the {@code INIT_BYTE}. If the  {@code INIT_BYTE} has been received,
+ * the socket channel and corresponding {@link AutoBuffer} is sent to {@link ExternalFrameHandler} to handle the
+ * particular requests.
+ *
+ * The {@code INIT_BYTE} has to be sent since the connection can be reused on the caller side and we need to know
+ * that new bunch if data/requests is coming.
+ */
 class ExternalFrameHandlerThread extends Thread {
     private SocketChannel _sock;
     private AutoBuffer _ab;
@@ -19,7 +29,7 @@ class ExternalFrameHandlerThread extends Thread {
         while (true) { // Loop, reading fresh TCP requests until the sender closes
 
             try {
-                // try waiting for one second
+                // blocking call
                 if(_ab.get1() != ExternalFrameHandler.INIT_BYTE){
                     // check whether this channel contains data for next frame task
                     // otherwise close the connection here
