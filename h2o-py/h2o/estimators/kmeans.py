@@ -240,7 +240,7 @@ class H2OKMeansEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0.0)"""
+        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter

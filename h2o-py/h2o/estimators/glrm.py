@@ -223,7 +223,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def gamma_x(self):
-        """float: Regularization weight on X matrix (Default: 0.0)"""
+        """float: Regularization weight on X matrix (Default: 0)"""
         return self._parms.get("gamma_x")
 
     @gamma_x.setter
@@ -234,7 +234,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def gamma_y(self):
-        """float: Regularization weight on Y matrix (Default: 0.0)"""
+        """float: Regularization weight on Y matrix (Default: 0)"""
         return self._parms.get("gamma_y")
 
     @gamma_y.setter
@@ -267,7 +267,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def init_step_size(self):
-        """float: Initial step size (Default: 1.0)"""
+        """float: Initial step size (Default: 1)"""
         return self._parms.get("init_step_size")
 
     @init_step_size.setter
@@ -380,7 +380,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0.0)"""
+        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
