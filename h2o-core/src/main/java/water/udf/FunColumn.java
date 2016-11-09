@@ -46,7 +46,7 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
 
     @Override public Vec vec() { return FunColumn.this.vec(); }
 
-    @Override public int length() { return cx.length(); }
+    @Override public int len() { return cx.len(); }
 
     private RawChunk myChunk = new RawChunk(this);
 

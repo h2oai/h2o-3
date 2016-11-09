@@ -15,7 +15,8 @@ public abstract class DataChunk<T> implements TypedChunk<T> {
   
   @Override public boolean isNA(int i) { return c.isNA(i); }
 
-  @Override public int length() { return c.len(); }
+  @Override public long start() { return c.start(); }
+  @Override public int len() { return c.len(); }
 
   abstract void set(int idx, T value);
   

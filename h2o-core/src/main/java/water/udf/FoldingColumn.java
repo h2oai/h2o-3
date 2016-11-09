@@ -52,10 +52,8 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
   public TypedChunk<Y> chunkAt(int i) {
     List<TypedChunk<X>> chunks = new LinkedList<>();
     for (Column<X> c : columns) chunks.add(c.chunkAt(i));
-    int length = 0;
-    for (TypedChunk<X> c : chunks) length = c.length();
             
-    return new FunChunk(chunks, length);
+    return new FunChunk(chunks);
   }
 
   @Override public boolean isNA(long idx) {
@@ -71,21 +69,11 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
 
   private class FunChunk extends DependentChunk<Y> {
     private final List<TypedChunk<X>> chunks;
-    private final int length;
-
-//    public FunChunk() {
-//      chunks = null;
-//      length = 0;
-//      System.out.println("oops");
-//    }
     
-    public FunChunk(List<TypedChunk<X>> chunks, int length) {
+    public FunChunk(List<TypedChunk<X>> chunks) {
       super(chunks.get(0));
       this.chunks = chunks;
-      this.length = length;
     }
-
-    @Override public int length() { return length; }
 
     private RawChunk myChunk = new RawChunk(this);
 

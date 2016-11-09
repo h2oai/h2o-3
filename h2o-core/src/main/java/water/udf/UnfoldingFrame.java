@@ -1,6 +1,5 @@
 package water.udf;
 
-import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -9,7 +8,6 @@ import water.fvec.Vec;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 
 import static water.udf.DataColumns.Enums;
@@ -19,10 +17,10 @@ import static water.udf.DataColumns.Factory;
  * Single column frame that knows its data type
  */
 public class UnfoldingFrame<X> extends Frame {
-  private final Factory<X> factory;
-  private final long len;
-  private final Function<Long, List<X>> function;
-  private final int width;
+  protected final Factory<X> factory;
+  protected final long len;
+  protected final Function<Long, List<X>> function;
+  protected final int width;
 
   public UnfoldingFrame(Factory<X> factory, long len, Function<Long, List<X>> function, int width) {
     super();
@@ -34,22 +32,46 @@ public class UnfoldingFrame<X> extends Frame {
     assert width >= 0: "Multicolumn frame must have a nonnegative width, but found"+width;
   }
 
-  final static class UnfoldingEnumFrame extends UnfoldingFrame<Integer> {
+  public static <X> UnfoldingFrame<X> UnfoldingFrame(final Factory<X> factory, final Column<List<X>> master, int width) {
+    return new UnfoldingFrame<X>(factory, master.size(), master, width) {
+      @Override protected Vec initVec() {
+        Vec v0 = Vec.makeZero(this.len, factory.typeCode());
+        v0.align(master.vec());
+        return v0;
+      }
+    };
+  }
+
+  static class UnfoldingEnumFrame extends UnfoldingFrame<Integer> {
     private final String[] domain;
     
-    public UnfoldingEnumFrame(long length, Unfoldable<Long, Integer> function, int width, String[] domain) {
+    public UnfoldingEnumFrame(long length, Function<Long, List<Integer>> function, int width, String[] domain) {
       super(Enums(domain), length, function, width);
       this.domain = domain;
       assert domain != null : "An enum must have a domain";
       assert domain.length > 0 : "Domain cannot be empty";
     }
   }
+
+  public static <X> UnfoldingEnumFrame UnfoldingEnumFrame(final Column<List<Integer>> master, int width, String[] domain) {
+    return new UnfoldingEnumFrame(master.size(), master, width, domain) {
+      @Override protected Vec initVec() {
+        Vec v0 = Vec.makeZero(this.len, Vec.T_CAT);
+        v0.align(master.vec());
+        return v0;
+      }
+    };
+  }
+  
+  protected Vec initVec() {
+    return Vec.makeZero(len, factory.typeCode());
+  }
   
   protected List<Vec> makeVecs() throws IOException {
     Vec[] vecs = new Vec[width];
 
     for (int j = 0; j < width; j++) {
-      vecs[j] = Vec.makeZero(len, factory.typeCode());
+      vecs[j] = initVec();
     }
 
     MRTask task = new MRTask() {
