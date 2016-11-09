@@ -376,5 +376,7 @@ public class UdfTest extends TestUtil {
       String actual = StringUtils.join(" ", fromColumns);
       assertEquals(lines.get(i).replaceAll("\\,", " ").trim(), actual);
     }
+    
+    assertTrue("Need to align the result", columns.get(5).isCompatibleWith(source));
   }
 }

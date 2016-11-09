@@ -24,18 +24,25 @@ public class TypedFrame<X> extends Frame {
     this.function = function;
   }
 
-  final static class EnumFrame1 extends TypedFrame<Integer> {
+  public static <X> TypedFrame<X> forColumn(final Factory<X> factory, final Column<X> column) {
+    return new TypedFrame<X>(factory, column.size(), column) {
+      @Override protected Vec initVec() { return factory.initVec(column); }
+    };
+  }
+  
+  final static class EnumFrame extends TypedFrame<Integer> {
     private final String[] domain;
     
-    public EnumFrame1(long len, Function<Long, Integer> function, String[] domain) {
+    public EnumFrame(long len, Function<Long, Integer> function, String[] domain) {
       super(Enums(domain), len, function);
       this.domain = domain;
     }
   }
   
+  protected Vec initVec() { return factory.initVec(len); }
+  
   protected Vec makeVec() throws IOException {
-    // TODO(vlad): we need to inherit the vec layout
-    final Vec vec0 = Vec.makeZero(len, factory.typeCode());
+    final Vec vec0 = initVec();
     MRTask task = new MRTask() {
       @Override public void map(Chunk[] cs) {
         for (Chunk c : cs) {

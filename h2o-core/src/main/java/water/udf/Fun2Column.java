@@ -58,8 +58,6 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
       this.cy = cy;
     }
 
-    @Override public int length() { return cx.length(); }
-
     @Override public boolean isNA(int i) { return cx.isNA(i) || cy.isNA(i); }
 
     @Override public Z get(int i) { return f.apply(cx.get(i), cy.get(i)); }
