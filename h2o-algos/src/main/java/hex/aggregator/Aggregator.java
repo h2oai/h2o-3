@@ -35,16 +35,20 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
      * @return   Array of exemplars containing the new exemplar
      */
     public static Exemplar[] addExemplar(Exemplar[] es, Exemplar e) {
-      Exemplar[] res=es;
-      int idx=es.length-1;
-      while(idx>=0 && null==es[idx]) idx--;
-      if( idx==es.length-1 ) {
-        res = Arrays.copyOf(es,es.length<<1);
-        res[es.length]=e;
+      if (es.length == 0) {
+        return new Exemplar[]{e};
+      } else {
+        Exemplar[] res=es;
+        int idx = es.length - 1;
+        while (idx >= 0 && es[idx] == null) idx--;
+        if (idx == es.length - 1) {
+          res = Arrays.copyOf(es, es.length << 1);
+          res[es.length] = e;
+          return res;
+        }
+        res[idx + 1] = e;
         return res;
       }
-      res[idx+1]=e;
-      return res;
     }
 
     /**
@@ -54,7 +58,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
      */
     public static Exemplar[] trim(Exemplar[] es) {
       int idx=es.length-1;
-      while(null==es[idx]) idx--;
+      while(idx>=0 && null==es[idx]) idx--;
       return Arrays.copyOf(es,idx+1);
     }
 
@@ -157,11 +161,14 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
 
         _job.update(1, "Done.");
         model.update(_job);
+      } catch (Throwable t){
+        t.printStackTrace();
+        throw t;
       } finally {
         if (model != null) {
           model.unlock(_job);
           Scope.untrack(Collections.singletonList(model._exemplar_assignment_vec_key));
-          Frame outFrame = model._output._output_frame.get();
+          Frame outFrame = model._output._output_frame != null ? model._output._output_frame.get() : null;
           if (outFrame != null) Scope.untrack(outFrame.keysList());
         }
         if (di!=null) di.remove();

@@ -55,7 +55,8 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
 
   @Override
   protected Futures remove_impl(Futures fs) {
-    _exemplar_assignment_vec_key.remove();
+    if (_exemplar_assignment_vec_key!=null)
+      _exemplar_assignment_vec_key.remove();
     return super.remove_impl(fs);
   }
 
