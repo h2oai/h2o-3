@@ -41,7 +41,6 @@ import java.util.Random;
  *
 */
 public final class DHistogram extends Iced {
-  public static int DEBUG_WEAVER = 1;
   public final transient String _name; // Column name (for debugging)
   public final double _minSplitImprovement;
   public final byte  _isInt;    // 0: float col, 1: int col, 2: categorical & int col
