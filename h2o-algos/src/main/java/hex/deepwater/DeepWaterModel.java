@@ -4,6 +4,7 @@ import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.schemas.DeepWaterModelV3;
+import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.api.schemas3.ModelSchemaV3;
 import water.fvec.Chunk;
@@ -43,6 +44,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
 
   final public DeepWaterModelInfo model_info() { return model_info; }
+
+  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
 //  final public VarImp varImp() { return _output.errors.variable_importances; }
 
@@ -192,8 +195,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     super(destKey, params, output);
     if (H2O.getCloudSize() != 1)
       throw new IllegalArgumentException("Deep Water currently only supports execution of 1 node.");
-    _output._origNames = train.names();
-    _output._origDomains = train.domains();
+    _output._origNames = params._train.get().names();
+    _output._origDomains = params._train.get().domains();
 
     DeepWaterParameters parms = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     DeepWaterParameters.Sanity.modifyParms(parms, parms, nClasses); //sanitize the model_info's parameters

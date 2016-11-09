@@ -158,7 +158,7 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain = model.score(_prostateTrain);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {
-            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset vector"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset column"));
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
@@ -356,7 +356,7 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain = model.score(_prostateTrain);
             assertTrue("shoul've thrown IAE", false);
           } catch (IllegalArgumentException iae) {
-            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset vector"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing offset column"));
           }
           hex.ModelMetricsBinomialGLM mmTrain = (ModelMetricsBinomialGLM)hex.ModelMetricsBinomial.getFromDKV(model, fTrain);
           hex.AUC2 adata = mmTrain._auc;
@@ -609,7 +609,7 @@ public class GLMBasicTestBinomial extends TestUtil {
             scoreTrain.delete();
 //            assertTrue("shoul've thrown IAE", false); //TN-1 now autofills with weights 1
 //          } catch (IllegalArgumentException iae) {
-//            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing weights vector"));
+//            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing weights column"));
 //          }
           Frame f = new Frame(_prostateTrain);
           f.remove("CAPSULE");
@@ -909,7 +909,7 @@ public class GLMBasicTestBinomial extends TestUtil {
           try {
             model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
           } catch(Exception iae) {
-            assertTrue(iae.getMessage().contains("Test dataset is missing weights vector"));
+            assertTrue(iae.getMessage().contains("Test/Validation dataset is missing weights column"));
           }
           params._valid = null;
           model = new GLM(params,Key.<GLMModel>make("prostate_model")).trainModel().get();
