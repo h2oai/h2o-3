@@ -582,7 +582,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
    */
-  protected int separateFeatureVecs() {
+  public int separateFeatureVecs() {
     int res = 0;
     if(_parms._weights_column != null) {
       Vec w = _train.remove(_parms._weights_column);
@@ -913,7 +913,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
       try {
-        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete);
+        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
         _vresponse = _valid.vec(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");

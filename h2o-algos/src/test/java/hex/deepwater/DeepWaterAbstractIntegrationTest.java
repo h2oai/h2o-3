@@ -894,8 +894,12 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   private void MOJOTest(Model.Parameters.CategoricalEncodingScheme categoricalEncodingScheme, boolean enumCols, boolean standardize) {
     Frame tr = null;
+    Frame tr2 = null;
+    Frame tr3 = null;
     DeepWaterModel m = null;
     Frame preds = null;
+    Frame preds2 = null;
+    Frame preds3 = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
       tr = parse_test_file("smalldata/prostate/prostate.csv");
@@ -924,18 +928,46 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._hidden = new int[]{50,50};
       m = new DeepWater(p).trainModel().get();
 
+      // Score original training frame
       preds = m.score(tr);
       Assert.assertTrue(m.testJavaScoring(tr,preds,1e-3));
-
       double auc = ModelMetricsBinomial.make(preds.vec(2), tr.vec(p._response_column)).auc();
       Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
       if (standardize)
-        Assert.assertTrue(auc > 0.78);
+        Assert.assertTrue(auc > 0.7);
+
+      // Score all numeric frame (cols in the right order) - do the transformation to enum on the fly
+      tr2 = parse_test_file("smalldata/prostate/prostate.csv");
+      for (String col : new String[]{p._response_column}) {
+        tr2.add(col, tr2.remove(col)); //DO NOT CONVERT TO ENUM
+      }
+      if (enumCols) {
+        for (String col : new String[]{"RACE", "DPROS", "DCAPS", "GLEASON"}) {
+          tr2.add(col, tr2.remove(col)); //DO NOT CONVERT TO ENUM
+        }
+      }
+      preds2 = m.score(tr2);
+      auc = ModelMetricsBinomial.make(preds2.vec(2), tr2.vec(p._response_column)).auc();
+      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
+      if (standardize)
+        Assert.assertTrue(auc > 0.7);
+
+      // Score all numeric frame (cols in the wrong order) - do the transformation to enum on the fly
+      tr3 = parse_test_file("smalldata/prostate/prostate.csv");
+      preds3 = m.score(tr3);
+      auc = ModelMetricsBinomial.make(preds3.vec(2), tr3.vec(p._response_column)).auc();
+      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
+      if (standardize)
+        Assert.assertTrue(auc > 0.7);
 
     } finally {
       if (tr!=null) tr.remove();
+      if (tr2!=null) tr2.remove();
+      if (tr3!=null) tr3.remove();
       if (m!=null) m.remove();
       if (preds!=null) preds.remove();
+      if (preds2!=null) preds2.remove();
+      if (preds3!=null) preds3.remove();
     }
   }
 
@@ -943,6 +975,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Test public void MOJOTestNumeric() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, true);}
   @Test public void MOJOTestCatInternal() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotInternal, true, true);}
   @Test public void MOJOTestCatExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
+  @Test public void MOJOTestCatEigen() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Eigen, true, true);}
+  @Test public void MOJOTestCatBinary() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Binary, true, true);}
 
   @Test
   public void testCheckpointForwards() {
