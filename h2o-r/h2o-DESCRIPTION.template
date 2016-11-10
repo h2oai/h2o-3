@@ -21,7 +21,8 @@ Imports: graphics,
          tools,
          utils,
          RCurl,
-         jsonlite
+         jsonlite,
+         data.table (>= 1.9.7)
 Suggests: ggplot2,
           mlbench,
           Matrix
