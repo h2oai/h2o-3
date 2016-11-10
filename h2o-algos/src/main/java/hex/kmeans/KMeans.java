@@ -274,7 +274,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // Run the main KMeans Clustering loop
         // Stop after enough iterations or reassigned_count < TOLERANCE * num_rows
         double sum_squares = 0;
-        final double rel_improvement_cutoff = Math.min(0.028 + 2.4 / Math.pow(model._output.nfeatures(), 2), 0.8);
+        final double rel_improvement_cutoff = Math.min(0.02 + 10. / _train.numRows() + 2.5 / Math.pow(model._output.nfeatures(), 2), 0.8);
         if (_parms._estimate_k)
           Log.info("Cutoff for relative improvement in within_cluster_sum_of_squares: " + rel_improvement_cutoff);
         Vec[] vecs2 = Arrays.copyOf(vecs, vecs.length+1);
