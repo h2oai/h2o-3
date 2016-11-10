@@ -2,6 +2,17 @@
 
 ##H2O
 
+###Turing (3.10.0.10) - 11/7/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3484'>PUBDEV-3484</a>] -         Treat 1-element numeric list as acceptable when numeric input required
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3675'>PUBDEV-3675</a>] -         Cannot determine file type
+</li>
+</ul>
+
 ###Turing (3.10.0.9) - 10/25/2016
 
 <h4>        Bug

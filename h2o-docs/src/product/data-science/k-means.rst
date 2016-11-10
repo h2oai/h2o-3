@@ -20,6 +20,22 @@ Defining a K-Means Model
 -  **validation\_frame**: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
+-  **nfolds**: Specify the number of folds for cross-validation.
+
+-  **keep\_cross\_validation\_predictions**: Enable this option to keep the
+   cross-validation predictions.
+
+-  **keep_cross_validation_fold_assignment**: Enable this option to preserve the cross-validation fold assignment.
+
+-  **fold\_assignment**: (Applicable only if a value for **nfolds** is
+   specified and **fold\_column** is not specified) Specify the
+   cross-validation fold assignment scheme. The available options are
+   AUTO (which is Random), Random,
+   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+
+-  **fold\_column**: Specify the column that contains the
+   cross-validation fold index assignment per observation.
+
 -  **ignored\_columns**: (Optional) Specify the column or columns to be exclude from the model. In Flow, click the checkbox next to a column
    name to add it to the list of columns excluded from the model. To add
    all columns, click the **All** button. To remove a column from the
@@ -36,7 +52,10 @@ Defining a K-Means Model
    constant training columns, since no information can be gained from
    them. This option is enabled by default.
 
--  **k**\ \*: Specify the number of clusters.
+-  **score\_each\_iteration**: (Optional) Specify whether to score
+   during each iteration of the model training.
+
+-  **k**: Specify the number of clusters.
 
 -  **estimate_k**: Specify whether to estimate the number of clusters (<=k) iteratively (independent of the seed) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each **k** that, the estimate will go up to **max_iteration**. This option is disabled by default.
 
@@ -47,23 +66,6 @@ Defining a K-Means Model
 
 -  **max\_iterations**: Specify the maximum number of training
    iterations. The range is 0 to 1e6.
-
--  **init**: Specify the initialization mode. The options are Random,
-   Furthest, PlusPlus, or User. **Note**: If PlusPlus is specified, the
-   initial Y matrix is chosen by the final cluster centers from the
-   K-Means PlusPlus algorithm.
-
--  **fold\_assignment**: (Applicable only if a value for **nfolds** is
-   specified and **fold\_column** is not specified) Specify the
-   cross-validation fold assignment scheme. The available options are
-   AUTO (which is Random), Random,
-   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
-
--  **fold\_column**: Specify the column that contains the
-   cross-validation fold index assignment per observation.
-
--  **score\_each\_iteration**: (Optional) Specify whether to score
-   during each iteration of the model training.
 
 -  **standardize**: Enable this option to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to  have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is enabled by default.
 
@@ -80,13 +82,24 @@ Defining a K-Means Model
     discernible difference if standardization is enabled or not for
     K-Means, since H2O calculates unstandardized centroids.
 
--  **keep\_cross\_validation\_predictions**: Enable this option to keep the
-   cross-validation predictions.
-
 -  **seed**: Specify the random number generator (RNG) seed for
    algorithm components dependent on randomization. The seed is
    consistent for each H2O instance so that you can create models with
    the same starting conditions in alternative configurations.
+
+-  **init**: Specify the initialization mode. The options are Random,
+   Furthest, PlusPlus, or User. **Note**: If PlusPlus is specified, the
+   initial Y matrix is chosen by the final cluster centers from the
+   K-Means PlusPlus algorithm.
+
+- **max_runtime_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+- **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
+
+  - ``auto``: Allow the algorithm to decide (default)
+  - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
+  - ``binary``: No more than 32 columns per categorical feature
+  - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
 
 Interpreting a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~

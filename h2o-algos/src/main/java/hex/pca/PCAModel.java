@@ -15,8 +15,6 @@ import water.util.SBPrintStream;
 import water.util.TwoDimTable;
 
 public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCAOutput> {
-  @Override public boolean havePojo() { return true; }
-  @Override public boolean haveMojo() { return false; }
 
   public static class PCAParameters extends Model.Parameters {
     public String algoName() { return "PCA"; }

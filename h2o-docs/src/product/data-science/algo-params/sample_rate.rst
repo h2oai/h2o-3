@@ -1,32 +1,23 @@
-``col_sample_rate``
--------------------
+``sample_rate``
+---------------
 
-- Available in: GBM, DRF
+- Available in: GBM, DRF 
 - Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
 
-Specify the column sampling rate (y-axis). This acceptable value range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. (For details, refer to “`Stochastic Gradient Boosting” (Friedman, 1999) <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+This option is used to specify the row sampling rate (x-axis). The range is 0.0 to 1.0. Row and column sampling (``sample_rate`` and ``col_sample_rate``) can improve generalization and lead to lower validation and test set errors. Good general values for large datasets are around 0.7 to 0.8 (sampling 70-80 percent of the data) for both parameters, as higher values generally improve training accuracy.
 
-The following illustrates how column sampling is implemented for GBM and DRF. 
+For highly imbalanced classification datasets, stratified row sampling based on response class membership can help improve predictive accuracy. This is configured with ``sample_rate_per_class`` (array of ratios, one per response class in lexicographic order).
 
-For an example model using:
- 
-  - 100-column dataset
-  - ``col_sample_rate_per_tree=0.754``
-  - ``col_sample_rate=0.8`` (Samples 80% of columns per split)
-
-For each tree, the floor is used to determine the number of columns - in this example, (0.754 * 100)=75 out of 100 - that are randomly picked, and then the floor is used to determine the number of columns - in this case, (0.754 * 0.8 * 100)=60 - that are then randomly chosen for each split decision (out of the 75).
-
-Row and column sampling (``sample_rate`` and ``col_sample_rate``) can improve generalization and lead to lower validation and test set errors. Good general values for large datasets are around 0.7 to 0.8 (sampling 70-80 percent of the data) for both parameters. Column sampling per tree (``col_sample_rate_per_tree``) can also be used. Note that ``col_sample_rate_per_tree`` is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+**Note:** If ``sample_rate_per_class`` is specified, then ``sample_rate`` will be ignored.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `col_sample_rate_per_tree <col_sample_rate_per_tree.html>`__
-- `col_sample_rate_change_per_level <col_sample_rate_change_per_level.html>`__
-- `sample_rate <sample_rate.html>`__
+- `col_sample_rate <col_sample_rate.html>`__
+- `sample_rate_per_class <sample_rate_per_class.html>`__
 
 
 Example
@@ -58,17 +49,17 @@ Example
 	train <- airlines.splits[[1]]
 	valid <- airlines.splits[[2]]
 
-	# try using the `col_sample_rate` parameter:
+	# try using the `sample_rate` parameter:
 	airlines.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-	                        validation_frame = valid, col_sample_rate =.7 , 
+	                        validation_frame = valid, sample_rate =.7 , 
 	                        seed = 1234)
 
 	# print the value used and AUC for the validation data
 	print(h2o.auc(airlines.gbm, train = TRUE))
 
 
-	# Example of values to grid over for `col_sample_rate`
-	hyper_params <- list( col_sample_rate = c(.3, .7, .8, 1) )
+	# Example of values to grid over for `sample_rate`
+	hyper_params <- list( sample_rate = c(.7, .8, 1) )
 
 	# this example uses cartesian grid search because the search space is small
 	# and we want to see the performance of all models. For a larger search space use
@@ -83,7 +74,7 @@ Example
 	## Sort the grid models by AUC
 	sortedGrid <- h2o.getGrid("air_grid", sort_by = "auc", decreasing = TRUE)
 	sortedGrid
-
+	
 
    .. code-block:: python
 
@@ -110,9 +101,9 @@ Example
 	# split into train and validation sets 
 	train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
 
-	# try using the `col_sample_rate` parameter: 
+	# try using the `sample_rate` parameter: 
 	# initialize your estimator
-	airlines_gbm = H2OGradientBoostingEstimator(col_sample_rate = .7, seed =1234) 
+	airlines_gbm = H2OGradientBoostingEstimator(sample_rate = .7, seed =1234) 
 
 	# then train your model
 	airlines_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
@@ -121,12 +112,12 @@ Example
 	print(airlines_gbm.auc(valid=True))
 
 
-	# Example of values to grid over for `col_sample_rate`
+	# Example of values to grid over for `sample_rate`
 	# import Grid Search
 	from h2o.grid.grid_search import H2OGridSearch
 
-	# select the values for col_sample_rate to grid over
-	hyper_params = {'col_sample_rate': [.3, .7, .8, 1]}
+	# select the values for sample_rate to grid over
+	hyper_params = {'sample_rate': [.7, .8, 1]}
 
 	# this example uses cartesian grid search because the search space is small
 	# and we want to see the performance of all models. For a larger search space use
@@ -143,7 +134,7 @@ Example
 	                     search_criteria = {'strategy': "Cartesian"})
 
 	# train using the grid
-	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid, seed = 1234)
+	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# sort the grid models by decreasing AUC
 	sorted_grid = grid.get_grid(sort_by = 'auc', decreasing = True)

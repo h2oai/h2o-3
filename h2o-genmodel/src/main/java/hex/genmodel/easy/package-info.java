@@ -1,5 +1,5 @@
 /**
- * The easy prediction API for generated POJO models.
+ * The easy prediction API for generated POJO and MOJO models.
  *
  * Use as follows:
  * <ol>

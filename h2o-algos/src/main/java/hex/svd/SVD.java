@@ -42,6 +42,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.DimReduction }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
+  @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return false; }
+
   // Called from an http request
   public SVD(SVDModel.SVDParameters parms         ) { super(parms    ); init(false); }
   public SVD(SVDModel.SVDParameters parms, Job job) { super(parms,job); init(false); }

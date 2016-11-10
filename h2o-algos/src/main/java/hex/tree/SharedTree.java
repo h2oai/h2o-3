@@ -57,6 +57,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   public boolean isSupervised(){return true;}
 
+  @Override public boolean haveMojo() { return true; }
+  @Override public boolean havePojo() { return true; }
+
   public boolean scoreZeroTrees(){return true;}
 
   @Override protected boolean computePriorClassDistribution(){ return true;}

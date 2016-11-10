@@ -53,24 +53,20 @@ Example
 	predictors <- c("displacement","power","weight","acceleration","year")
 	response <- "economy_20mpg"
 
-	# split into train and validation sets
-	cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
-	train <- cars.splits[[1]]
-	valid <- cars.splits[[2]]
-
 	# try using the fold_assignment parameter:
 	# note you must set nfolds to use this parameter
 	assignment_type <- "Random"
 	# you can also try "Auto", "Modulo", and "Stratified"
 
 	# train a GBM
-	car_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-	                   validation_frame = valid, 
+	car_gbm <- h2o.gbm(x = predictors, y = response, training_frame = cars,
 	                   fold_assignment = assignment_type,
 	                   nfolds = 5, seed = 1234)
 
 	# print the auc for your validation data
-	print(h2o.auc(car_gbm, valid = TRUE))
+	print(h2o.auc(car_gbm, xval = TRUE))
+
+
 
 
    .. code-block:: python
@@ -78,11 +74,10 @@ Example
 	import h2o
 	from h2o.estimators.gbm import H2OGradientBoostingEstimator
 	h2o.init()
-	h2o.cluster().show_status()
 
-	# import the cars dataset: 
-	# this dataset is used to classify whether or not a car is economical based on 
-	# the car's displacement, power, weight, and acceleration, and the year it was made 
+	# import the cars dataset:
+	# this dataset is used to classify whether or not a car is economical based on
+	# the car's displacement, power, weight, and acceleration, and the year it was made
 	cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
 	# convert response column to a factor
@@ -92,9 +87,6 @@ Example
 	predictors = ["displacement","power","weight","acceleration","year"]
 	response = "economy_20mpg"
 
-	# split into train and validation sets
-	train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-
 	# try using the fold_assignment parameter:
 	# note you must set nfolds to use this parameter
 	assignment_type = "Random"
@@ -102,7 +94,7 @@ Example
 
 	# Initialize and train a GBM
 	cars_gbm = H2OGradientBoostingEstimator(fold_assignment = assignment_type, nfolds = 5, seed = 1234)
-	cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+	cars_gbm.train(x = predictors, y = response, training_frame = cars)
 
 	# print the auc for the validation data
-	cars_gbm.auc(valid=True)
+	cars_gbm.auc(xval=True)
