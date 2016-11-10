@@ -32,7 +32,7 @@ import static org.junit.Assert.assertTrue;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
-  {
+  { // need this because -ea IS NOT ALWAYS set in intellij
     ClassLoader loader = getClass().getClassLoader();
     loader.setDefaultAssertionStatus(true);
   }
