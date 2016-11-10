@@ -46,6 +46,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "score_training_samples",
         "score_validation_samples",
         "score_duty_cycle",
+        "classification_stop",
+        "regression_stop",
         "stopping_rounds",
         "stopping_metric",
         "stopping_tolerance",
@@ -284,6 +286,24 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true,
         help = "Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).")
     public double score_duty_cycle;
+
+    /**
+     * The stopping criteria in terms of classification error (1-accuracy) on the
+     * training data scoring dataset. When the error is at or below this threshold,
+     * training stops.
+     */
+    @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
+            help = "Stopping criterion for classification error fraction on training data (-1 to disable).")
+    public double classification_stop;
+
+    /**
+     * The stopping criteria in terms of regression error (MSE) on the training
+     * data scoring dataset. When the error is at or below this threshold, training
+     * stops.
+     */
+    @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
+            help = "Stopping criterion for regression error (MSE) on training data (-1 to disable).")
+    public double regression_stop;
 
     /**
      * Enable quiet mode for less output to standard output.

@@ -58,6 +58,8 @@
 #' @param score_training_samples Number of training set samples for scoring (0 for all). Defaults to 10000.
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all). Defaults to 0.
 #' @param score_duty_cycle Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring). Defaults to 0.1.
+#' @param classification_stop Stopping criterion for classification error fraction on training data (-1 to disable). Defaults to 0.0.
+#' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to disable). Defaults to 0.0.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
@@ -127,6 +129,8 @@ h2o.deepwater <- function(x, y, training_frame,
                           score_training_samples = 10000,
                           score_validation_samples = 0,
                           score_duty_cycle = 0.1,
+                          classification_stop = 0.0,
+                          regression_stop = 0.0,
                           stopping_rounds = 5,
                           stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "lift_top_group", "r2", "misclassification", "mean_per_class_error"),
                           stopping_tolerance = 0.0,
@@ -251,6 +255,10 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$score_validation_samples <- score_validation_samples
   if (!missing(score_duty_cycle))
     parms$score_duty_cycle <- score_duty_cycle
+  if (!missing(classification_stop))
+    parms$classification_stop <- classification_stop
+  if (!missing(regression_stop))
+    parms$regression_stop <- regression_stop
   if (!missing(stopping_rounds))
     parms$stopping_rounds <- stopping_rounds
   if (!missing(stopping_metric))
