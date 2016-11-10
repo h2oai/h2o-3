@@ -382,7 +382,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   public Vec [] makeDoubles(int n, double [] values) {
-    Key<Vec> [] keys = group().addVecs(n);
+    Key [] keys = group().addVecs(n);
     Vec [] res = new Vec[n];
     for(int i = 0; i < n; ++i)
       res[i] = new Vec(keys[i],_rowLayout);
