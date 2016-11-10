@@ -48,7 +48,7 @@ public class NewChunk extends Chunk {
       }
       if(_vals1 != null){
         byte b = (byte)x;
-        if(x == b) {
+        if(x == b && b > Byte.MIN_VALUE-1) {
           _vals1[idx] = b;
         } else {
           // need to switch to 4 byte values
@@ -165,7 +165,8 @@ public class NewChunk extends Chunk {
     }
 
     public void switchToLongs() {
-      int newlen = Math.max(_vals1 == null?0:_vals1.length,_vals4 == null?0:_vals4.length);
+      int len = Math.max(_vals1 == null?0:_vals1.length,_vals4 == null?0:_vals4.length);
+      int newlen = len;
       _vals8 = MemoryManager.malloc8(newlen);
       if(_vals1 != null)
         for(int i = 0; i < _vals1.length; ++i)
@@ -502,7 +503,7 @@ public class NewChunk extends Chunk {
         addNum(Double.NaN);
         return;
       } else {
-        if (_sparseLen == _ms.len())
+        if (!_sparseNA && _sparseLen == _ms.len())
           append2slow();
         if(!_sparseNA) {
           if(_missing == null) _missing = new BitSet();
@@ -548,7 +549,7 @@ public class NewChunk extends Chunk {
   // Fast-path append double data
   public void addNum(double d) {
     if( isUUID() || isString() ) { addNA(); return; }
-    boolean predicate = _sparseNA ? !Double.isNaN(d) : (isSparseZero() || d != 0);
+    boolean predicate = _sparseNA ? !Double.isNaN(d) : isSparseZero()?d != 0:true;
     if(predicate) {
       if(_ms != null) {
         if((long)d == d){
@@ -620,7 +621,7 @@ public class NewChunk extends Chunk {
           append_ss((BufferedString) str);
         else // this spares some callers from an unneeded conversion to BufferedString first
           append_ss((String) str);
-      } else {
+      } else if (_id == null) {
         _is[_sparseLen] = CStrChunk.NA;
         set_sparseLen(_sparseLen + 1);
       }
@@ -647,21 +648,16 @@ public class NewChunk extends Chunk {
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
-    set_impl(_sparseLen, lo, hi);
+    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
+    if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
+      append2slowUUID();
+    _ms.set(_sparseLen,lo);
+    _ds[_sparseLen] = Double.longBitsToDouble(hi);
+    if (_id != null) _id[_sparseLen] = _len;
     _sparseLen++;
     _len++;
     assert _sparseLen <= _len;
   }
-
-  @Override public boolean set_impl(int idx, long lo, long hi) {
-    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
-    if( _ms==null || _ds== null || idx >= _ms.len() )
-      append2slowUUID();
-    _ms.set(idx,lo);
-    _ds[idx] = Double.longBitsToDouble(hi);
-    return true;
-  }
-
   public void addUUID( Chunk c, long row ) {
     if (c.isNA_abs(row)) addNA();
     else addUUID(c.at16l_abs(row),c.at16h_abs(row));
@@ -982,14 +978,7 @@ public class NewChunk extends Chunk {
     return isNA2(x)?_sparseNA:!_sparseNA &&_ms.get(x) == 0;
   }
   
-  public void checkIfCanCancelSparse() {
-    if (_sparseLen != _len && _is == null && _ds == null) {
-      assert _id != null : "Can't cancel_sparse, _id is null";
-    }  
-  }
-  
   public void cancel_sparse(){
-    checkIfCanCancelSparse();
     if(_sparseLen != _len){
       if(_is != null){
         int [] is = MemoryManager.malloc4(_len);
@@ -1005,7 +994,7 @@ public class NewChunk extends Chunk {
         for (int i = 0; i < _sparseLen; ++i) {
           xs.set(_id[i], _xs.get(i));
           ms.set(_id[i], _ms.get(i));
-          missing.set(_id[i], !_sparseNA && _missing != null && _missing.get(i));
+          missing.set(_id[i], _sparseNA || _missing == null?false:_missing.get(i));
         }
         assert _sparseNA || (ms._nzs == _ms._nzs):_ms._nzs + " != " + ms._nzs;
         ms._nzs = _ms._nzs;
