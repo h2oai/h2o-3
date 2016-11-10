@@ -188,7 +188,7 @@ public class UdfTest extends TestUtil {
     assertFalse(y.isNA(20));
     assertEquals(0.295958969093304, y.apply(10), 0.0001);
   }
-/**/
+
   @Test
   public void testFun2() throws Exception {
     Column<Double> x = five_x();
@@ -379,5 +379,4 @@ public class UdfTest extends TestUtil {
     
     assertTrue("Need to align the result", columns.get(5).isCompatibleWith(source));
   }
-  /**/
 }
