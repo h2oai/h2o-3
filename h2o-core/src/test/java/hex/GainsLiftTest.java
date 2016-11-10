@@ -15,7 +15,7 @@ public class GainsLiftTest extends TestUtil {
   @Test public void constant() {
     int len = 100000;
     double[] p = new double[len];
-    long[] a = new long[len];
+    double[] a = new double[len];
     Random rng = new Random(0xDECAF);
     for (int i=0; i<len; ++i) {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
@@ -37,7 +37,7 @@ public class GainsLiftTest extends TestUtil {
   @Test public void good() {
     int len = 100000;
     double[] p = new double[len];
-    long[] a = new long[len];
+    double[] a = new double[len];
     Random rng = new Random(0xDECAF);
     for (int i=0; i<len; ++i) {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
@@ -62,7 +62,7 @@ public class GainsLiftTest extends TestUtil {
   @Test public void bad() {
     int len = 100000;
     double[] p = new double[len];
-    long[] a = new long[len];
+    double[] a = new double[len];
     Random rng = new Random(0xDECAF);
     for (int i=0; i<len; ++i) {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
@@ -87,7 +87,7 @@ public class GainsLiftTest extends TestUtil {
   @Test public void random() {
     int len = 100000;
     double[] p = new double[len];
-    long[] a = new long[len];
+    double[] a = new double[len];
     Random rng = new Random(0xDECAF);
     for (int i=0; i<len; ++i) {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
@@ -110,7 +110,7 @@ public class GainsLiftTest extends TestUtil {
   @Test public void tiesNApreds() {
     int len = 100000;
     double[] p = new double[len];
-    long[] a = new long[len];
+    double[] a = new double[len];
     Random rng = new Random(0xDECAF);
     for (int i=0; i<len; ++i) {
       a[i] = rng.nextDouble() > 0.8 ? 1 : 0;
@@ -184,7 +184,7 @@ public class GainsLiftTest extends TestUtil {
     int len = 50000;
     double thresh = 1e-7;
     double[] p = new double[2*len];
-    long[] a = new long[2*len];
+    double[] a = new double[2*len];
     Random rng = new Random(0xDECAF);
     int i;
     for (i=0; i<len; ++i) {
@@ -212,7 +212,7 @@ public class GainsLiftTest extends TestUtil {
   @Test public void rareEvents() {
     int len = 100000;
     double[] p = new double[len];
-    long[] a = new long[len];
+    double[] a = new double[len];
     Random rng = new Random(0xDECAF);
     for (int i=0; i<len; ++i) {
       a[i] = rng.nextDouble() > 0.999 ? 1 : 0;
@@ -236,7 +236,7 @@ public class GainsLiftTest extends TestUtil {
   @Test public void rareEvents20() {
     int len = 100000;
     double[] p = new double[len];
-    long[] a = new long[len];
+    double[] a = new double[len];
     Random rng = new Random(0xDECAF);
     for (int i=0; i<len; ++i) {
       a[i] = rng.nextDouble() > 0.999 ? 1 : 0;

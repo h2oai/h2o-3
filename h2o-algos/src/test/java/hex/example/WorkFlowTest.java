@@ -217,7 +217,7 @@ public class WorkFlowTest extends TestUtil {
     @Override public void map( Chunk chk[] ) {
       Chunk day = chk[0];
       Chunk sid = chk[1];
-      _num_sid = sid.vec().cardinality();
+      _num_sid = _fr.vecs().cardinality(1);
       int len = chk[0]._len;
       _bikes = new int[idx(_last_day,0)];
       for( int i=0; i<len; i++ )
@@ -230,7 +230,7 @@ public class WorkFlowTest extends TestUtil {
     Frame makeFrame(Key key) {
       final int ncols = 4;
       AppendableVec[] avecs = new AppendableVec[ncols];
-      NewChunk ncs[] = new NewChunk[ncols];
+      NewChunkAry ncs[] = new NewChunkAry[ncols];
       Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(ncols);
       for( int c = 0; c < avecs.length; c++ )
         avecs[c] = new AppendableVec(keys[c], Vec.T_NUM);
@@ -244,7 +244,7 @@ public class WorkFlowTest extends TestUtil {
           if( bikecnt == 0 ) continue;
           if( ncs[0] == null )
             for( int c=0; c<ncols; c++ )
-              ncs[c] = new NewChunk(avecs[c],chunknum);
+              ncs[c] = avecs[c].chunkForChunkIdx(chunknum);
           ncs[0].addNum(sid);
           ncs[1].addNum(bikecnt);
           long msec = day*(1000L*60*60*24); // msec since the Epoch
@@ -253,7 +253,7 @@ public class WorkFlowTest extends TestUtil {
           ncs[3].addNum(mdt.getDayOfWeek()  -1); // Convert to 0-based from 1-based
         }
         if( ncs[0] != null ) {
-          for( int c=0; c<ncols; c++ ) ncs[c].close(chunknum,fs);
+          for( int c=0; c<ncols; c++ ) ncs[c].close(fs);
           chunknum++;
           ncs[0] = null;
         }
@@ -263,10 +263,10 @@ public class WorkFlowTest extends TestUtil {
       final int rowLayout = avecs[0].compute_rowLayout();
       for( int c = 0; c < avecs.length; c++ )
         vecs[c] = avecs[c].close(rowLayout,fs);
-      vecs[0].setDomain(_fr.vec(1).domain());
-      vecs[1].setDomain(null);
-      vecs[2].setDomain(new String[]{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"});
-      vecs[3].setDomain(new String[]{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}); // Order comes from Joda
+      vecs[0].setDomain(0,_fr.vec(1).domain());
+      vecs[1].setDomain(0,null);
+      vecs[2].setDomain(0,new String[]{"Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"});
+      vecs[3].setDomain(0,new String[]{"Mon","Tue","Wed","Thu","Fri","Sat","Sun"}); // Order comes from Joda
       fs.blockForPending();
       Frame fr = new Frame(key,new String[]{"Station","bikes","Month","DayOfWeek"}, vecs);
       DKV.put(fr);

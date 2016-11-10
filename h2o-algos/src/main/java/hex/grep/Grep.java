@@ -3,9 +3,7 @@ package hex.grep;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.*;
-import water.fvec.ByteVec;
-import water.fvec.Chunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -38,10 +36,10 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
       catch( PatternSyntaxException pse ) { error("regex", pse.getMessage()); }
     }
     if( _parms._train == null ) return;
-    Vec[] vecs = _parms.train().vecs();
-    if( vecs.length != 1 )
+    VecAry vecs = _parms.train().vecs();
+    if( vecs.numCols() != 1 )
       error("_train","Frame must contain exactly 1 Vec (of raw text)");
-    if( !(vecs[0] instanceof ByteVec) )
+    if( !(vecs.vecs()[0] instanceof ByteVec) )
       error("_train","Frame must contain exactly 1 Vec (of raw text)");
   }
 
@@ -59,7 +57,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
         // ---
         // Run the main Grep Loop
-        GrepGrep gg = new GrepGrep(_pattern).doAll(train().vecs()[0]);
+        GrepGrep gg = new GrepGrep(_pattern).doAll(train().vecs());
 
         // Fill in the model
         model._output._matches = Arrays.copyOf(gg._matches,gg._cnt);
@@ -99,10 +97,10 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
     int _cnt;
 
     GrepGrep( Pattern pattern ) { _pattern = pattern; }
-    @Override public void map( Chunk chk ) {
+    @Override public void map( ChunkAry chk ) {
       _matches = new String[1]; // Result holders; will lazy expand
       _offsets = new long  [1];
-      ByteSeq bs = new ByteSeq(chk,chk.nextChunk());
+      ByteSeq bs = new ByteSeq(chk.getChunk(0),chk.nextChunk().getChunk(0));
       // We already checked that this is an instance of a ByteVec, which means
       // all the Chunks contain raw text as byte arrays.
       Matcher m = _pattern.matcher(bs);

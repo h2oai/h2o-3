@@ -11,10 +11,7 @@ import hex.svd.SVDModel.SVDParameters;
 import hex.util.LinearAlgebraUtils;
 import hex.util.LinearAlgebraUtils.*;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.*;
 
 import java.util.ArrayList;
@@ -315,7 +312,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         model.delete_and_lock(_job);
 
         // 0) Transform training data and save standardization vectors for use in scoring later
-        dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+        dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ null, /* offset */ null, /* fold */ null, /* intercept */ false);
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
@@ -572,13 +569,13 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       _sigma = sigma;
     }
 
-    @Override public void map(Chunk cs[]) {
-      assert _sigma.length == cs.length;
+    @Override public void map(ChunkAry cs) {
+      assert _sigma.length == cs._numCols;
 
-      for (int col = 0; col < cs.length; col++) {
-        for(int row = 0; row < cs[0].len(); row++) {
-          double x = cs[col].atd(row);
-          cs[col].set(row, x / _sigma[col]);
+      for (int col = 0; col < cs._numCols; col++) {
+        for(int row = 0; row < cs._len; row++) {
+          double x = cs.atd(row,col);
+          cs.set(row, col, x / _sigma[col]);
         }
       }
     }

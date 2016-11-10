@@ -770,7 +770,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
-      super(dinfo._weights, dinfo._offset, dinfo._fold);
+      super(dinfo.weightChunkId() != -1, dinfo.offsetChunkId() != -1, dinfo.foldChunkId() != -1);
       _dinfo = dinfo.clone();
       _dinfo._adaptedFrame = new Frame(dinfo._adaptedFrame.names().clone(),dinfo._adaptedFrame.vecs().clone());
       _names = column_names;

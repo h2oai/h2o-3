@@ -16,7 +16,7 @@ public class ParseTimeTest extends TestUtil {
   @Test public void testTimeParse1() {
     //File items will be converted to ms for local timezone
     Frame fr = parse_test_file("smalldata/junit/test_time.csv");
-    Frame fr2 = fr.subframe(new String[]{"click_time","query_time"});
+    Frame fr2 = new Frame(new String[]{"click_time","query_time"},fr.vecs().select(fr.find(new String[]{"click_time","query_time"})));
     DateTimeZone pst = DateTimeZone.forID("America/Los_Angeles");
     DateTimeZone localTZ = DateTimeZone.getDefault();
     double[][] exp = new double[][] {  // These ms counts all presume PST

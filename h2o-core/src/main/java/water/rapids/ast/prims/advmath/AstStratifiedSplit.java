@@ -1,10 +1,7 @@
 package water.rapids.ast.prims.advmath;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -55,13 +52,13 @@ public class AstStratifiedSplit extends AstPrimitive {
       }
 
       @Override
-      public void map(Chunk y, NewChunk ss) { // 0-> train, 1-> test
-        int start = (int) y.start();
+      public void map(ChunkAry y, NewChunkAry ss) { // 0-> train, 1-> test
+        int start = (int) y._start;
         for (int classLabel = 0; classLabel < nClass; ++classLabel) {
           for (int row = 0; row < y._len; ++row) {
             if (y.at8(row) == (classes == null ? classLabel : classes[classLabel])) {
-              if (isTest(start + row, seeds[classLabel])) ss.addNum(1, 0);
-              else ss.addNum(0, 0);
+              if (isTest(start + row, seeds[classLabel])) ss.addInteger(0,1);
+              else ss.addInteger(0,0);
             }
           }
         }

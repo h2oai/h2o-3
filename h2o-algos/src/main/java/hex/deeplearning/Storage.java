@@ -4,10 +4,8 @@ import water.DKV;
 import water.Iced;
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.FileVec;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
+
 import static water.fvec.Vec.makeCon;
 
 import java.util.Arrays;
@@ -208,17 +206,17 @@ public class Storage {
         scm = (SparseColMatrix)m;
       }
     }
-    @Override public void map(Chunk[] cs) {
+    @Override public void map(ChunkAry cs) {
       Matrix m=null;
       if (dcm != null) m = dcm;
       if (drm != null) m = drm;
       if (scm != null) m = scm;
       if (srm != null) m = srm;
-      int off = (int)cs[0].start();
-      assert(m.cols() == cs.length);
-      for (int c = 0; c < cs.length; ++c) {
-        for (int r = 0; r < cs[0]._len; ++r) {
-          cs[c].set(r, m.get(off + r, c));
+      int off = (int)cs.start();
+      assert(m.cols() == cs._numCols);
+      for (int c = 0; c < cs._numCols; ++c) {
+        for (int r = 0; r < cs._len; ++r) {
+          cs.set(r,c, m.get(off + r, c));
         }
       }
     }
@@ -233,8 +231,8 @@ public class Storage {
   static Frame toFrame(Vector v, Key key) {
     final int log_rows_per_chunk = Math.max(1, FileVec.DFLT_LOG2_CHUNK_SIZE - (int) Math.floor(Math.log(1) / Math.log(2.)));
     Vec vv = makeCon(0, v.size(), log_rows_per_chunk, false /* no rebalancing! */);
-    Frame f = new Frame(key, new Vec[]{vv}, true);
-    try( Vec.Writer vw = f.vecs()[0].open() ) {
+    Frame f = new Frame(key, new VecAry(vv), true);
+    try( Vec.Writer vw = f.vecs().open() ) {
       for (int r = 0; r < v.size(); ++r)
         vw.set(r, v.get(r));
     }
@@ -254,7 +252,7 @@ public class Storage {
     for (int i = 0; i < m.cols(); ++i) {
       v[i] = makeCon(0, m.rows(), log_rows_per_chunk);
     }
-    Frame f = new FrameFiller(m).doAll(new Frame(key, v, true))._fr;
+    Frame f = new FrameFiller(m).doAll(new Frame(key, new VecAry(v), true))._fr;
     DKV.put(key, f);
     return f;
   }

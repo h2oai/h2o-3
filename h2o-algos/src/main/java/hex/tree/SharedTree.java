@@ -13,9 +13,7 @@ import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.*;
 
 import java.io.FileNotFoundException;
@@ -379,20 +377,19 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     //           O( #active_splits * #bins * #ncols )
     // but is NOT over all the data.
     ScoreBuildOneTree sb1ts[] = new ScoreBuildOneTree[_nclass];
-    Vec vecs[] = fr.vecs();
+    VecAry vecs = fr.vecs();
     for( int k=0; k<_nclass; k++ ) {
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;
       // Build a frame with just a single tree (& work & nid) columns, so the
       // nested MRTask ScoreBuildHistogram in ScoreBuildOneTree does not try
       // to close other tree's Vecs when run in parallel.
-      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), Arrays.copyOf(vecs,_ncols+1)); //predictors and actual response
-
+      Frame fr2 = new Frame(Arrays.copyOf(fr._names,_ncols+1), vecs.select(ArrayUtils.seq(0,_ncols+1))); //predictors and actual response
       // Add temporary workspace vectors (optional weights are taken over from fr)
       int weightIdx = fr2.find(_parms._weights_column);
-      fr2.add(fr._names[idx_tree(k)],vecs[idx_tree(k)]);                              //tree predictions
-      int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
-      int nidIdx  = fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
+      fr2.add(fr._names[idx_tree(k)],vecs.select(idx_tree(k)));                              //tree predictions
+      int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs.select(idx_work(k))); //target value to fit (copy of actual response for DRF, residual for GBM)
+      int nidIdx  = fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs.select(idx_nids(k))); //node indices for tree construction
       if (DEV_DEBUG) {
         System.out.println("Building a layer for class " + k + ":\n" + fr2.toString());
       }
@@ -411,11 +408,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       if (DEV_DEBUG) {
         System.out.println("Done with this layer for class " + k + ":\n" + new Frame(
                 new String[]{"TREE", "WORK", "NIDS"},
-                new Vec[]{
-                        vecs[idx_tree(k)],
-                        vecs[idx_work(k)],
-                        vecs[idx_nids(k)]
-                }
+                vecs.select(idx_tree(k),idx_work(k),idx_nids(k))
         ).toString());
       }
     }
@@ -510,24 +503,28 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   protected int idx_oobt()      { return idx_nids(0) + _nclass; }
 
   public Chunk chk_weight( Chunk chks[]      ) { return chks[idx_weight()]; }
+  public Chunk chk_weight( ChunkAry chks      ) { return chks.getChunk(idx_weight()); }
   protected Chunk chk_offset( Chunk chks[]      ) { return chks[idx_offset()]; }
+  protected Chunk chk_offset( ChunkAry chks      ) { return chks.getChunk(idx_offset()); }
   public Chunk chk_resp(Chunk chks[]) { return chks[idx_resp()]; }
+  public Chunk chk_resp(ChunkAry chks) { return chks.getChunk(idx_resp()); }
   public Chunk chk_tree(Chunk chks[], int c) { return chks[idx_tree(c)]; }
+  public Chunk chk_tree(ChunkAry chks, int c) { return chks.getChunk(idx_tree(c)); }
   protected Chunk chk_work( Chunk chks[], int c ) { return chks[idx_work(c)]; }
+  protected Chunk chk_work( ChunkAry chks, int c ) { return chks.getChunk(idx_work(c)); }
   protected Chunk chk_nids( Chunk chks[], int c ) { return chks[idx_nids(c)]; }
   protected Chunk chk_oobt(Chunk chks[])          { return chks[idx_oobt()]; }
 
-  protected final Vec vec_weight(Frame fr      ) { return fr.vecs()[idx_weight()]; }
-  protected final Vec vec_offset(Frame fr      ) { return fr.vecs()[idx_offset()]; }
-  protected final Vec vec_resp( Frame fr       ) { return fr.vecs()[idx_resp() ]; }
-  protected final Vec vec_tree( Frame fr, int c) { return fr.vecs()[idx_tree(c)]; }
-  protected final Vec vec_work( Frame fr, int c) { return fr.vecs()[idx_work(c)]; }
-  protected final Vec vec_nids( Frame fr, int c) { return fr.vecs()[idx_nids(c)]; }
-  protected final Vec vec_oobt( Frame fr       ) { return fr.vecs()[idx_oobt()]; }
 
-  protected double[] data_row( Chunk chks[], int row, double[] data) {
+  protected final Vec vec_resp( Frame fr       ) { return fr.vecs(idx_resp()); }
+  protected final Vec vec_tree( Frame fr, int c) { return fr.vecs(idx_tree(c)); }
+  protected final Vec vec_work( Frame fr, int c) { return fr.vecs(idx_work(c)); }
+  protected final Vec vec_nids( Frame fr, int c) { return fr.vecs(idx_nids(c)); }
+
+
+  protected double[] data_row( ChunkAry chks, int row, double[] data) {
     assert data.length == _ncols;
-    for(int f=0; f<_ncols; f++) data[f] = chks[f].atd(row);
+    for(int f=0; f<_ncols; f++) data[f] = chks.atd(row,f);
     return data;
   }
 

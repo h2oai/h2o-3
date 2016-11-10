@@ -12,7 +12,7 @@ public class C0LChunkTest extends TestUtil {
   public void test_inflate_impl() {
     final int K = 1<<18;
     for (long l : new long[]{Long.MIN_VALUE+1, Long.MAX_VALUE, 23420384l, 0l, -23423423400023l /*, 8234234028823049934L this would overflow the double mantissa */}) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(Vec.T_NUM);
       for (int i=0;i<K;++i) nc.addNum(l,0);
       Assert.assertEquals(K, nc._len);
       if (l != 0l) Assert.assertEquals(l == 0l ? 0 : K, nc._sparseLen); //special case for sparse length
@@ -36,7 +36,7 @@ public class C0LChunkTest extends TestUtil {
         else Assert.assertTrue(cc.atd(i)==densevals[i]);
       }
 
-      nc = new NewChunk(null, 0);
+      nc = new NewChunk(Vec.T_NUM);
       cc.inflate_impl(nc);
       nc.values(0, nc._len);
       Assert.assertEquals(K, nc._len);

@@ -1,10 +1,7 @@
 package water.rapids.ast.prims.timeseries;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -43,9 +40,9 @@ public class AstDiffLag1 extends AstPrimitive {
 
     return new ValFrame(new MRTask() {
       @Override
-      public void map(Chunk c, NewChunk nc) {
-        if (c.cidx() == 0) nc.addNA();
-        else nc.addNum(c.atd(0) - lastElemPerChk[c.cidx() - 1]);
+      public void map(ChunkAry c, NewChunkAry nc) {
+        if (c._cidx == 0) nc.addNA(0);
+        else nc.addNum(c.atd(0) - lastElemPerChk[c._cidx - 1]);
         for (int row = 1; row < c._len; ++row)
           nc.addNum(c.atd(row) - c.atd(row - 1));
       }
@@ -66,8 +63,8 @@ public class AstDiffLag1 extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk c) {
-      _res[c.cidx()] = c.atd(c._len - 1);
+    public void map(ChunkAry c) {
+      _res[c._cidx] = c.atd(c._len - 1);
     }
 
     @Override

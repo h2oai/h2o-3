@@ -175,11 +175,6 @@ public abstract class Chunk extends Iced<Chunk> {
 
   public void setBytes(byte[] mem) { _mem = mem; }
 
-  /** Used by a ParseExceptionTest to break the Chunk invariants and trigger an
-   *  NPE.  Not intended for public use. */
-  public final void crushBytes() { _mem=null; }
-
-
 
   Chunk compress(){return this;}
 
@@ -308,7 +303,10 @@ public abstract class Chunk extends Iced<Chunk> {
   /** Chunk-specific bulk inflater back to NewChunk.  Used when writing into a
    *  chunk and written value is out-of-range for an update-in-place operation.
    *  Bulk copy from the compressed form into the nc._ls8 array.   */
-  public final NewChunk inflate_impl(NewChunk nc){return add2Chunk(nc,0,_len);}
+  public final NewChunk inflate_impl(NewChunk nc){
+    nc._len = nc._sparseLen = 0;
+    return add2Chunk(nc,0,_len);
+  }
 
   /** @return String version of a Chunk, currently just the class name */
   @Override public String toString() { return getClass().getSimpleName(); }
@@ -355,20 +353,32 @@ public abstract class Chunk extends Iced<Chunk> {
   /** Fixed-width format printing support.  Filled in by the subclasses. */
   public byte precision() { return -1; } // Digits after the decimal, or -1 for "all"
 
-
-  void add2Chunk(ChunkAry nchks, int dstCol, int[] rows){
-    add2Chunk(nchks.getChunkInflated(dstCol));
+  NewChunk add2Chunk(NewChunk nc, int from, int to){
+    DVal dv = new DVal();
+    for(int i = from; i < to; ++i)
+      nc.addInflated(getInflated(i,dv));
+    return nc;
   }
-  abstract NewChunk add2Chunk(NewChunk nc, int from, int to);
-  abstract NewChunk add2Chunk(NewChunk nc, int... rows);
+  NewChunk add2Chunk(NewChunk nc, int... rows){
+    DVal dv = new DVal();
+    for(int i:rows)
+      nc.addInflated(getInflated(i,dv));
+    return nc;
+  }
 
+  protected boolean set_impl(int row, double d) {
+    if( Double.isNaN(d) ) return setNA_impl(row);
+    long l = (long)d;
+    return l == d && set_impl(row, l);
+  }
 
-  protected boolean set_impl(int row, double val) {return false;}
   protected boolean set_impl(int row, long val) {return false;}
   protected boolean set_impl(int row, float val) {return set_impl(row,(double)val);}
   protected boolean set_impl(int row, String val) {return false;}
+  protected boolean set_impl(int row, BufferedString val) {return set_impl(row,val.toString());}
   protected boolean setNA_impl(int row) {return false;}
   protected boolean set_impl(int row, long uuid_lo, long uuid_hi) {return false;}
+
 
   public abstract DVal getInflated(int i, DVal v);
   public boolean setInflated(int i, DVal v){ return false;}

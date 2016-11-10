@@ -10,6 +10,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 
+import java.util.ArrayList;
+
 import static water.fvec.FrameTestUtil.assertValues;
 import static water.fvec.FrameTestUtil.createFrame;
 import static water.util.FrameUtils.generateNumKeys;
@@ -70,7 +72,11 @@ public class FrameSplitterTest extends TestUtil {
 
   /** Test scenario for splitting 1-vec frame of strings. */
   static void testScenario(String fname, long[] chunkLayout, String[][] data) {
-    Frame f = createFrame(fname, chunkLayout, data);
+    ArrayList<String> data2 = new ArrayList();
+    for(String [] sary:data)
+      for(String s:sary)
+        data2.add(s);
+    Frame f = createFrame(fname, chunkLayout, data2.toArray(new String[0]));
     double[] ratios  = ard(0.5f);
     Frame[] splits  = null;
     long len = ArrayUtils.sum(chunkLayout);

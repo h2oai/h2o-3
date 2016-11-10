@@ -38,8 +38,8 @@ public class AstAsDate extends AstPrimitive {
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    Vec vec = fr.vecs()[0];
-    if (fr.vecs().length != 1 || !(vec.isCategorical() || vec.isString()))
+    Vec vec = fr.vecs();
+    if (fr.vecs()._numCols != 1 || !(vec.isCategorical() || vec.isString()))
       throw new IllegalArgumentException("as.Date requires a single column of factors or strings");
 
     final String format = asts[2].exec(env).getStr();

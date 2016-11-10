@@ -6,10 +6,7 @@ import org.junit.Test;
 import water.Key;
 import water.MRTask;
 import water.TestUtil;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.InteractionWrappedVec;
-import water.fvec.Vec;
+import water.fvec.*;
 
 
 // test cases:
@@ -37,9 +34,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               new String[]{fr.name(8),fr.name(16),fr.name(2)}  // interactions
       );
       dinfo.dropInteractions();
@@ -69,9 +66,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               null
       );
 
@@ -89,9 +86,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               new String[]{fr.name(8),fr.name(16),fr.name(2)}   // interactions
       );
       System.out.println(dinfo__withInteractions.fullN());
@@ -123,9 +120,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               null
       );
 
@@ -141,9 +138,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               new String[]{fr.name(8),fr.name(16),fr.name(2)}  // interactions
       );
       System.out.println(dinfo__withInteractions.fullN());
@@ -174,9 +171,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               new String[]{fr.name(0),fr.name(1)}          // interactions
       );
       checker(di,false);
@@ -205,9 +202,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               new String[]{fr.name(0),fr.name(1)}          // interactions
       );
       checker(di,true);
@@ -236,9 +233,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               new String[]{fr.name(0),fr.name(1),fr.name(2),fr.name(3)}          // interactions
       );
       checker(di,true);
@@ -266,9 +263,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               new String[]{fr.name(8),fr.name(16),fr.name(2)}          // interactions
       );
       checker(di,true);
@@ -296,9 +293,9 @@ public class DataInfoTest extends TestUtil {
               true,        // skip missing
               false,       // impute missing
               false,       // missing bucket
-              false,       // weight
-              false,       // offset
-              false,       // fold
+              null,       // weight
+              null,       // offset
+              null,       // fold
               new String[]{fr.name(8),fr.name(16),fr.name(2)}           // interactions
       );
       checker(di,true);
@@ -377,10 +374,10 @@ public class DataInfoTest extends TestUtil {
 
   private static void checker(final DataInfo di, final boolean standardize) {
     new MRTask() {
-      @Override public void map(Chunk[] cs) {
+      @Override public void map(ChunkAry cs) {
         DataInfo.Row[] sparseRows = di.extractSparseRows(cs);
         DataInfo.Row r = di.newDenseRow();
-        for(int i=0;i<cs[0]._len;++i) {
+        for(int i=0;i<cs._len;++i) {
           di.extractDenseRow(cs, i, r);
           for (int j = 0; j < di.fullN(); ++j) {
             double sparseDoubleScaled = sparseRows[i].get(j);  // extracting sparse rows does not do the full scaling!!

@@ -10,10 +10,7 @@ import static hex.tree.DTreeScorer.scoreTree;
 import hex.tree.SharedTree;
 import water.Iced;
 import water.MRTask;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.ModelUtils;
 import static water.util.RandomUtils.getRNG;
@@ -54,16 +51,17 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
 
   public static class ShuffleTask extends MRTask<ShuffleTask> {
 
-    @Override public void map(Chunk ic, Chunk oc) {
-      if (ic._len==0) return;
+    @Override public void map(ChunkAry chks) {
+      int ic = 0, oc = 1;
+      if (chks._len==0) return;
       // Each vector is shuffled in the same way
-      Random rng = getRNG(seed(ic.cidx()));
-      oc.set(0,ic.atd(0));
-      for (int row=1; row<ic._len; row++) {
+      Random rng = getRNG(seed(chks.cidx()));
+      chks.set(0,oc,chks.atd(0,ic));
+      for (int row=1; row<chks._len; row++) {
         int j = rng.nextInt(row+1); // inclusive upper bound <0,row>
         // Arghhh: expand the vector into double
-        if (j!=row) oc.set(row, oc.atd(j));
-        oc.set(j, ic.atd(row));
+        if (j!=row) chks.set(row,oc, chks.atd(j,oc));
+        chks.set(j,oc, chks.atd(row,ic));
       }
     }
 
@@ -76,11 +74,11 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     }
   }
 
-  @Override public void map(Chunk[] chks) {
+  @Override public void map(ChunkAry chks) {
     double[] data = new double[_ncols];
     double[] preds = new double[_nclasses+1];
     Chunk cresp = _st.chk_resp(chks);
-    Chunk weights = _st.hasWeightCol() ? _st.chk_weight(chks) : new C0DChunk(1, chks[0]._len);
+    Chunk weights = _st.hasWeightCol() ? _st.chk_weight(chks) : new C0DChunk(1, chks._len);
     int   nrows = cresp._len;
     int   [] oob = new int[2+Math.round((1f-_rate)*nrows*1.2f+0.5f)]; // preallocate
     int   [] soob = null;
@@ -89,11 +87,11 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
     _nrows      = new double[_ntrees];
     _votes      = _classification ? new double[_ntrees] : null;
     _sse        = _classification ? null : new float[_ntrees];
-    long seedForOob = ShuffleTask.seed(cresp.cidx()); // seed for shuffling oob samples
+    long seedForOob = ShuffleTask.seed(chks.cidx()); // seed for shuffling oob samples
     // Start iteration
     for( int tidx=0; tidx<_ntrees; tidx++) { // tree
       // OOB RNG for this tree
-      Random rng = rngForTree(_trees[tidx], cresp.cidx());
+      Random rng = rngForTree(_trees[tidx], chks.cidx());
       // Collect oob rows and permutate them
       oob = ModelUtils.sampleOOBRows(nrows, _rate, rng, oob); // reuse use the same array for sampling
       int oobcnt = oob[0]; // Get number of sample rows
@@ -108,9 +106,9 @@ public class TreeMeasuresCollector extends MRTask<TreeMeasuresCollector> {
         if (w==0) continue;
         // Do scoring:
         // - prepare a row data
-        for (int i=0;i<_ncols;i++) data[i] = chks[i].atd(row); // 1+i - one free is expected by prediction
+        for (int i=0;i<_ncols;i++) data[i] = chks.atd(row,i); // 1+i - one free is expected by prediction
         // - permute variable
-        if (_var>=0) data[_var] = chks[_var].atd(soob[j-1]);
+        if (_var>=0) data[_var] = chks.atd(soob[j-1],_var);
         else assert soob==null;
         // - score data
         Arrays.fill(preds, 0);

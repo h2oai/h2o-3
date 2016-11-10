@@ -31,6 +31,10 @@ public class ChunkAry<C extends Chunk> extends Iced {
     _ids = ids;
   }
 
+  public ChunkAry nextChunk(){
+    return _cidx +1 == _vec.nChunks()?null:_vec.chunkForChunkIdx(_cidx+1);
+  }
+
   public int byteSize(){
     int s = 0;
     for(Chunk c:_cs)
@@ -43,13 +47,13 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public double max(int c){return _cs[c].max();}
   public double max(){return max(0);}
 
-  public long start(){return _vec.chunk2StartElem(_cidx);}
+  public long start(){return _start;}
 
   public void close(){close(new Futures()).blockForPending();}
   public Futures close(Futures fs){
     if(_changedCols == null || _changedCols.size() == 0)
       return fs;
-    for(int i = 0; i < _cs.length; ++i)
+    for(int i:_changedCols.toArray())
       _cs[i] = (C)_cs[i].compress();
     return _vec.closeChunk(this,fs);
   }
@@ -58,6 +62,9 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   private boolean isSparse(){return _ids != null;}
   public Chunk getChunk(int c){return _cs[c];}
+  public void setChunk(int c, double [] ds){
+    _cs[c] = (C)new NewChunk(ds).compress();
+  }
   public NewChunk getChunkInflated(int c){
     if(!(_cs[c] instanceof NewChunk))
       _cs[c] = (C)_cs[c].inflate_impl(new NewChunk(_vec.get_type(c)));
@@ -263,9 +270,6 @@ public class ChunkAry<C extends Chunk> extends Iced {
     return _cs[j].nextNZ(i);
   }
 
-  public void add2Chunk(int srcCol, NewChunkAry nchks, int dstCol, int... rows) {
-    _cs[srcCol].add2Chunk(nchks,dstCol,rows);
-  }
   public void add2Chunk(int srcCol, NewChunk nc, int from, int to) {
     _cs[srcCol].add2Chunk(nc,from,to);
   }
@@ -286,4 +290,12 @@ public class ChunkAry<C extends Chunk> extends Iced {
     }
   }
 
+  public void add2Chunk(int c, NewChunkAry nchks, int c1, int[] ids) {
+    getChunk(c).add2Chunk(nchks.getChunkInflated(c1),ids);
+  }
+  public int cidx() {return _cidx;}
+
+  public double[] getDoubles(int c, double[] vals, int from, int to) {
+    return _cs[c].getDoubles(vals,from,to);
+  }
 }

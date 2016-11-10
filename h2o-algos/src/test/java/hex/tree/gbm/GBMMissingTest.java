@@ -73,8 +73,8 @@ public class GBMMissingTest extends TestUtil {
         // Convert response to categorical
         int ri = train.numCols()-1;
         int ci = test.find(p._response_column);
-        Scope.track(train.replace(ri, train.vecs()[ri].toCategoricalVec()));
-        Scope.track(test .replace(ci, test.vecs()[ci].toCategoricalVec()));
+        Scope.track(train.replace(ri, train.vecs(ri).toCategoricalVec()));
+        Scope.track(test .replace(ci, test.vecs(ci).toCategoricalVec()));
         DKV.put(train);
         DKV.put(test);
 

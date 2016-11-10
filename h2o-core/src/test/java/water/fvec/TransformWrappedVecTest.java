@@ -11,9 +11,9 @@ public class TransformWrappedVecTest extends TestUtil {
   @BeforeClass static public void setup() {  stall_till_cloudsize(1); }
 
   @Test public void testInversion() {
-    Vec v=null;
+    VecAry v=null;
     try {
-      v = Vec.makeZero(1<<20);
+      v = new VecAry(Vec.makeZero(1<<20));
       AstRoot ast = Rapids.parse("{ x . (- 1 x) }");
       Vec iv = new TransformWrappedVec(v, ast);
       new MRTask() {

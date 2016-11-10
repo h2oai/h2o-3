@@ -281,10 +281,10 @@ public class ChunkSpeedTest extends TestUtil {
 
   class FillTask extends MRTask<FillTask> {
     @Override
-    public void map(Chunk[] cs) {
-      for (int col=0; col<cs.length; ++col) {
-        for (int row=0; row<cs[0]._len; ++row) {
-          cs[col].set(row, raw[col][row]);
+    public void map(ChunkAry cs) {
+      for (int col=0; col<cs._numCols; ++col) {
+        for (int row=0; row<cs._len; ++row) {
+          cs.set(row,col, raw[col][row]);
         }
       }
     }

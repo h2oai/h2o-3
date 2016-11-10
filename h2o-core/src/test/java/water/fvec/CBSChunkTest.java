@@ -26,17 +26,19 @@ public class CBSChunkTest extends TestUtil {
   void testImpl(long[] ls, int[] xs, int expBpv, int expGap, int expClen, int expNA) {
     AppendableVec av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
     // Create a new chunk
-    NewChunk nc = new NewChunk(av,0, ls, xs, null, null);
+    NewChunkAry nca = av.chunkForChunkIdx(0);
+
     for(int i = 0; i < ls.length; ++i)
       if(ls[i] == Long.MIN_VALUE)
-        nc.setNA_impl(i);
-    nc.type();                  // Compute rollups, including NA
+        nca.addNA(0);
+      else
+        nca.addNum(0,ls[i],xs[i]);
+    NewChunk nc = nca.getChunkInflated(0);
+    Chunk cc = nc.compress();
     assertEquals(expNA, nc.naCnt());
     // Compress chunk
-    Chunk cc = nc.compress();
     assert cc instanceof CBSChunk;
     Futures fs = new Futures();
-    cc._vec = av.layout_and_close(fs);
     fs.blockForPending();
     Assert.assertTrue("Found chunk class " + cc.getClass() + " but expected " + CBSChunk.class, CBSChunk.class.isInstance(cc));
     assertEquals(nc._len, cc._len);
@@ -47,11 +49,6 @@ public class CBSChunkTest extends TestUtil {
     for( int i=0; i<ls.length; i++ )
       if(ls[i]!=Long.MIN_VALUE)assertEquals(ls[i], cc.at8(i));
       else assertTrue(cc.isNA(i));
-
-    // materialize the vector (prerequisite to free the memory)
-    Vec vv = av.layout_and_close(fs);
-    fs.blockForPending();
-    vv.remove();
   }
 
   // Test one bit per value compression which is used
@@ -93,7 +90,7 @@ public class CBSChunkTest extends TestUtil {
   }
   @Test public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(Vec.T_NUM);
 
       int[] vals = new int[]{0, 1, 0, 1, 0, 0, 1};
       if (l==1) nc.addNA();
@@ -104,11 +101,11 @@ public class CBSChunkTest extends TestUtil {
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof CBSChunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8_abs(l + i));
-      Assert.assertTrue(cc.isNA(vals.length + l));
-      Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
-      nc = new NewChunk(null, 0);
+      Assert.assertTrue(cc.isNA(vals.length + l));
+
+
+      nc = new NewChunk(Vec.T_NUM);
       cc.inflate_impl(nc);
       nc.values(0, nc._len);
       Assert.assertEquals(vals.length+l+1, nc._sparseLen);
@@ -120,12 +117,11 @@ public class CBSChunkTest extends TestUtil {
 
       if (l==1) {
         Assert.assertTrue(nc.isNA(0));
-        Assert.assertTrue(nc.isNA_abs(0));
       }
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8_abs(l + i));
+
       Assert.assertTrue(nc.isNA(vals.length + l));
-      Assert.assertTrue(nc.isNA_abs(vals.length + l));
+
       double[] densevals = new double[cc.len()];
       cc.getDoubles(densevals,0,cc.len());
       for (int i = 0; i < densevals.length; ++i) {
@@ -137,9 +133,9 @@ public class CBSChunkTest extends TestUtil {
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof CBSChunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8_abs(l + i));
+
       Assert.assertTrue(cc2.isNA(vals.length + l));
-      Assert.assertTrue(cc2.isNA_abs(vals.length + l));
+
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
@@ -148,31 +144,30 @@ public class CBSChunkTest extends TestUtil {
   @Test public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
     water.Key key = Vec.newKey();
-    Vec vec = new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15})).makeZero();
+    Vec vec = new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15}),1).makeZero();
     int[] vals = new int[]{0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1};
     Vec.Writer w = vec.open();
     for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);
     w.close();
 
-    Chunk cc = vec.chunkForChunkIdx(0);
-    assert cc instanceof CBSChunk;
+    ChunkAry cc = vec.chunkForChunkIdx(0);
+    assert cc.getChunk(0) instanceof CBSChunk;
     Futures fs = new Futures();
     fs.blockForPending();
 
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(i));
-    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8_abs(i));
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    for (int na : NAs) cc.setNA_abs(na);
+    for (int na : NAs) cc.setNA(na,0);
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
-    NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+
+
+    NewChunk nc = new NewChunk(Vec.T_NUM);
+    cc.getChunk(0).inflate_impl(nc);
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
@@ -182,19 +177,19 @@ public class CBSChunkTest extends TestUtil {
     Assert.assertTrue(!it.hasNext());
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
+
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
+
 
     Chunk cc2 = nc.compress();
     Assert.assertEquals(vals.length, cc._len);
     Assert.assertTrue(cc2 instanceof CBSChunk);
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
-    Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+
+
+    Assert.assertTrue(Arrays.equals(cc.getChunk(0)._mem, cc2._mem));
     vec.remove();
   }
 

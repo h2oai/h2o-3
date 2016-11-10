@@ -61,7 +61,7 @@ public class AstSubstring extends AstPrimitive {
   private Vec substringCategoricalCol(Vec vec, int startIndex, int endIndex) {
     if (startIndex >= endIndex) {
       Vec v = Vec.makeZero(vec.length());
-      v.setDomain(new String[]{""});
+      v.setDomain(0,new String[]{""});
       return v;
     }
     String[] dom = vec.domain().clone();
@@ -85,7 +85,7 @@ public class AstSubstring extends AstPrimitive {
     if (substringToOldDomainIndices.size() < dom.length)
       return VecUtils.DomainDedupe.domainDeduper(vec, substringToOldDomainIndices);
 
-    return vec.makeCopy(dom);
+    return vec.makeCopy(new String[][]{dom});
   }
 
   private Vec substringStringCol(Vec vec, final int startIndex, final int endIndex) {

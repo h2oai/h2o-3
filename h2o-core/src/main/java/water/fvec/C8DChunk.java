@@ -9,6 +9,11 @@ import water.util.UnsafeUtils;
  */
 public class C8DChunk extends Chunk {
   C8DChunk( byte[] bs ) { _mem=bs; _len = _mem.length>>3; }
+  C8DChunk( double[] ds ) {
+    _mem=MemoryManager.malloc1(ds.length <<3); _len = _mem.length>>3;
+    for(int i = 0; i < ds.length; ++i)
+      UnsafeUtils.set8d(_mem,i<<3,ds[i]);
+  }
 
   @Override public final long at8(int i ) {
     double res = UnsafeUtils.get8d(_mem, i << 3);
@@ -38,12 +43,21 @@ public class C8DChunk extends Chunk {
 
 
   @Override protected boolean setNA_impl(int idx) { UnsafeUtils.set8d(_mem,(idx<<3),Double.NaN); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    //nothing to inflate - just copy
-    nc.alloc_doubles(_len);
-    for( int i=0; i< _len; i++ )
-      nc.doubles()[i] = UnsafeUtils.get8d(_mem,(i<<3));
-    nc.set_sparseLen(nc._len = _len);
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.D;
+    v._d = UnsafeUtils.get8d(_mem,(i<<3));
+    return v;
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) nc.addNum(UnsafeUtils.get8d(_mem,(i<<3)));
+    return nc;
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    for( int i:rows) nc.addNum(UnsafeUtils.get8d(_mem,(i<<3)));
     return nc;
   }
   // 3.3333333e33

@@ -1,9 +1,7 @@
 package water.fvec;
 
+
 import water.Iced;
-import water.Key;
-import water.Keyed;
-import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
@@ -12,6 +10,7 @@ import java.util.Arrays;
  */
 public class DBlock extends Iced<DBlock> {
   int _numCols;
+  int _numRows;
   Chunk [] _cs; // chunks containing the data
   int [] _ids;  // ids of non-zero chunks, null if not sparse
   public DBlock(Chunk... c){this(c,null);}
@@ -48,4 +47,13 @@ public class DBlock extends Iced<DBlock> {
     }
     _cs[i] = chunk;
   }
+
+  public int numCols() {return _numCols;}
+
+  public Chunk getChunk(int c) {
+    if(_ids != null && (c = Arrays.binarySearch(_ids,c)) < 0)
+      return new C0DChunk(0,_numRows);
+    return _cs[c];
+  }
+
 }

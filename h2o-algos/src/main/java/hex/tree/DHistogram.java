@@ -5,6 +5,7 @@ import sun.misc.Unsafe;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.nbhm.UtilUnsafe;
 import water.util.*;
 
@@ -297,15 +298,15 @@ public final class DHistogram extends Iced {
 
   // The initial histogram bins are setup from the Vec rollups.
   public static DHistogram[] initialHist(Frame fr, int ncols, int nbins, DHistogram hs[], long seed, SharedTreeModel.SharedTreeParameters parms, Key[] globalQuantilesKey) {
-    Vec vecs[] = fr.vecs();
+    VecAry vecs = fr.vecs();
     for( int c=0; c<ncols; c++ ) {
-      Vec v = vecs[c];
-      final double minIn = Math.max(v.min(),-Double.MAX_VALUE); // inclusive vector min
-      final double maxIn = Math.min(v.max(), Double.MAX_VALUE); // inclusive vector max
-      final double maxEx = find_maxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
-      final long vlen = v.length();
-      hs[c] = v.naCnt()==vlen || v.min()==v.max() ?
-          null : make(fr._names[c],nbins, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, seed, parms, globalQuantilesKey[c]);
+
+      final double minIn = Math.max(vecs.min(c),-Double.MAX_VALUE); // inclusive vector min
+      final double maxIn = Math.min(vecs.max(c), Double.MAX_VALUE); // inclusive vector max
+      final double maxEx = find_maxEx(maxIn,vecs.isInt(c)?1:0);     // smallest exclusive max
+      final long vlen = vecs.length();
+      hs[c] = vecs.naCnt(c)==vlen || vecs.min(c)==vecs.max(c) ?
+          null : make(fr._names[c],nbins, (byte)(vecs.isCategorical(c) ? 2 : (vecs.isInt()?1:0)), minIn, maxEx, seed, parms, globalQuantilesKey[c]);
       assert (hs[c] == null || vlen > 0);
     }
     return hs;

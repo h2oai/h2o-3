@@ -11,40 +11,46 @@ import java.util.Arrays;
 public class C0LChunk extends Chunk {
   protected static final int _OFF=8+4;
   private long _con;
-  public C0LChunk(long con, int len) { _mem=new byte[_OFF]; _start = -1; set_len(len);
+  public C0LChunk(long con, int len) { _mem=new byte[_OFF]; _len = len;
     _con = con;
     UnsafeUtils.set8(_mem, 0, con);
     UnsafeUtils.set4(_mem,8,len);
   }
   @Override public boolean hasFloat() { return false; }
   @Override public boolean hasNA() { return false; }
-  @Override protected final long at8(int i ) { return _con; }
-  @Override protected final double atd(int i ) {return _con; }
-  @Override protected final boolean isNA_impl( int i ) { return false; }
-  @Override boolean set_impl(int idx, long l) { return l==_con; }
-  @Override boolean set_impl(int i, double d) { return d==_con; }
-  @Override boolean set_impl(int i, float f ) { return f==_con; }
-  @Override boolean setNA_impl(int i) { return false; }
-  @Override boolean set_impl (int idx, String str) { return false; }
+  @Override public final long at8(int i ) { return _con; }
+  @Override public final double atd(int i ) {return _con; }
+  @Override public final boolean isNA( int i ) { return false; }
+  @Override protected boolean set_impl(int idx, long l) { return l==_con; }
+  @Override protected boolean set_impl(int i, double d) { return d==_con; }
+  @Override protected boolean set_impl(int i, float f ) { return f==_con; }
+  @Override protected boolean setNA_impl(int i) { return false; }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._missing = false;
+    v._t = DVal.type.N;
+    v._m = _con;
+    v._e = 0;
+    return v;
+  }
+
+  @Override protected boolean set_impl (int idx, String str) { return false; }
   @Override double min() { return _con; }
   @Override double max() { return _con; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    if(_con == 0) {
-      nc.set_len(nc.set_sparseLen(0)); //so that addZeros(_len) can add _len
-      nc.set_sparse(0, NewChunk.Compress.ZERO);//so that sparse() is true in addZeros()
-      nc.addZeros(_len);
-    } else {
-      nc.alloc_mantissa(_len);
-      nc.alloc_exponent(_len);
-      for(int i = 0; i < _len; ++i)
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {return add2Chunk(nc,to-from);}
+  @Override public NewChunk add2Chunk(NewChunk nc, int[] rows) { return add2Chunk(nc,rows.length);}
+  private NewChunk add2Chunk(NewChunk nc, int len){
+    if(_con == 0) nc.addZeros(len);
+    else for(int i = 0; i < _len; ++i)
         nc.addNum(_con,0);
-    }
     return nc;
   }
+
   @Override public final void initFromBytes () {
-    _start = -1;  _cidx = -1;
     _con = UnsafeUtils.get8(_mem,0);
-    set_len(UnsafeUtils.get4(_mem,8));
+    _len = (UnsafeUtils.get4(_mem,8));
   }
   @Override public boolean isSparseZero(){return _con == 0;}
   @Override public int sparseLenZero(){return _con == 0?0: _len;}

@@ -69,7 +69,7 @@ public class L_BFGS_Test  extends TestUtil {
       source.add("CAPSULE", source.remove("CAPSULE"));
       source.remove("ID").remove();
       Frame valid = new Frame(source._names.clone(),source.vecs().clone());
-      dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+      dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ null, /* offset */ null, /* fold */ null);
       DKV.put(dinfo._key,dinfo);
       glmp._obj_reg = 1/380.0;
       GLMGradientSolver solver = new GLMGradientSolver(null,glmp, dinfo, 1e-5, null);
@@ -108,7 +108,7 @@ public class L_BFGS_Test  extends TestUtil {
       glmp._lambda = new double[]{1e-5};
       glmp._alpha = new double[]{0};
       glmp._obj_reg = 0.01;
-      dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+      dinfo = new DataInfo(source, valid, 1, false, DataInfo.TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, /* weights */ null, /* offset */ null, /* fold */ null);
       DKV.put(dinfo._key,dinfo);
       GradientSolver solver = new GLMGradientSolver(null,glmp, dinfo, 1e-5, null);
       L_BFGS lbfgs = new L_BFGS().setMaxIter(20);

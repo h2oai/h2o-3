@@ -11,7 +11,7 @@ public class CXIChunkTest extends TestUtil {
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(Vec.T_NUM);
 
       int[] vals = new int[]{0, 0, 0, Integer.MAX_VALUE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -33,12 +33,12 @@ public class CXIChunkTest extends TestUtil {
       Assert.assertTrue(cc instanceof CXIChunk);
       if (l==1) {
         Assert.assertTrue(cc.isNA(0));
-        Assert.assertTrue(cc.isNA_abs(0));
+
       }
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(i + l));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8_abs(i + l));
+
       Assert.assertTrue(cc.isNA(vals.length + l));
-      Assert.assertTrue(cc.isNA_abs(vals.length + l));
+
       Assert.assertEquals(cc.at8(pos1),123);
       Assert.assertEquals(cc.at8(maxLen-1),456);
 
@@ -56,7 +56,7 @@ public class CXIChunkTest extends TestUtil {
         else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
       }
 
-      nc = new NewChunk(null, 0);
+      nc = new NewChunk(Vec.T_NUM);
       cc.inflate_impl(nc);
       Assert.assertEquals(maxLen, nc._len);
       Assert.assertEquals(2+2+1+l, nc._sparseLen);
@@ -68,24 +68,23 @@ public class CXIChunkTest extends TestUtil {
       Assert.assertTrue(!it.hasNext());
       if (l==1) {
         Assert.assertTrue(nc.isNA(0));
-        Assert.assertTrue(nc.isNA_abs(0));
       }
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8_abs(l + i));
+
       Assert.assertTrue(nc.isNA(vals.length + l));
-      Assert.assertTrue(nc.isNA_abs(vals.length + l));
+
 
       Chunk cc2 = nc.compress();
       Assert.assertEquals(maxLen, cc._len);
       Assert.assertTrue(cc2 instanceof CXIChunk);
       if (l==1) {
         Assert.assertTrue(cc2.isNA(0));
-        Assert.assertTrue(cc2.isNA_abs(0));
+
       }
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(i + l));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8_abs(i + l));
+
       Assert.assertTrue(cc2.isNA(vals.length + l));
-      Assert.assertTrue(cc2.isNA_abs(vals.length + l));
+
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }

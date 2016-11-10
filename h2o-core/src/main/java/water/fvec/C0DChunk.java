@@ -28,22 +28,23 @@ public class C0DChunk extends Chunk {
   @Override protected boolean set_impl(int i, double d) { return d==_con; }
   @Override protected boolean set_impl(int i, float f ) { return f==_con; }
   @Override protected boolean setNA_impl(int i) { return Double.isNaN(_con); }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.D;
+    v._d = _con;
+    return v;
+  }
+
   @Override double min() { return _con; }
   @Override double max() { return _con; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    if(Double.isNaN(_con)) {
-      nc.set_sparseLen(nc._len = 0);//so that addNAs(_len) can add _len
-      nc.set_sparse(0, NewChunk.Compress.NA); //so that sparseNA() is true in addNAs()
-      nc.addNAs(_len);
-    } else if (_con == 0) {
-      nc._len = (nc.set_sparseLen(0)); //so that addZeros(_len) can add _len
-      nc.set_sparse(0, NewChunk.Compress.ZERO);//so that sparseZero() is true in addZeros()
-      nc.addZeros(_len);
-    } else {
-      nc.alloc_doubles(_len);
-      Arrays.fill(nc.doubles(), _con);
-      nc._len = (nc.set_sparseLen(_len));
-    }
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {return add2Chunk(nc,to-from);}
+  @Override public NewChunk add2Chunk(NewChunk nc, int[] rows) { return add2Chunk(nc,rows.length);}
+  private NewChunk add2Chunk(NewChunk nc, int len){
+    if(_con == 0) nc.addZeros(len);
+    else if(Double.isNaN(_con)) nc.addNAs(len);
+    else for(int i = 0; i < _len; ++i)
+      nc.addNum(_con);
     return nc;
   }
   // 3.3333333e33

@@ -7,6 +7,7 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.vals.ValFrame;
@@ -292,11 +293,11 @@ public class RapidsTest extends TestUtil {
       f = res.getFrame();
       System.out.println(f);
       Vec names = f.vec(0);
-      Assert.assertEquals(names.factor(names.at8(0)),"Cliff");
+      Assert.assertEquals(names.factor(0,names.at4(0,0)),"Cliff");
       Vec ages  = f.vec(1);
-      Assert.assertEquals(ages .factor(ages .at8(0)),">dirt");
+      Assert.assertEquals(ages .factor(0,ages .at4(0,0)),">dirt");
       Vec skilz = f.vec(2);
-      Assert.assertEquals(skilz.factor(skilz.at8(0)),"hacker");
+      Assert.assertEquals(skilz.factor(0,skilz.at4(0,0)),"hacker");
     } finally {
       if( f != null ) f.delete();
       if( r != null ) r.delete();
@@ -361,11 +362,10 @@ public class RapidsTest extends TestUtil {
       Value val = Value.STORE_get(k);
       if( val != null && val.isFrame() ) {
         Frame fr = val.get();
-        Vec vecs[] = fr.vecs();
-        for( int i=0; i<vecs.length; i++ ) {
-          Vec v = vecs[i];
+        VecAry vecs = fr.vecs();
+        for(Vec v:vecs.vecs()) {
           if( DKV.get(v._key) == null ) {
-            System.err.println("Frame "+fr._key+" in the DKV, is missing Vec "+v._key+", name="+fr._names[i]);
+            System.err.println("Frame "+fr._key+" in the DKV, is missing Vec "+v._key);
             return false;
           }
         }

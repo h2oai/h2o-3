@@ -71,19 +71,44 @@ public class CXDChunk extends CXIChunk {
     return getId(off) == i && Double.isNaN(getFValue(off));
   }
 
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc._len = _len;
-    nc.set_sparseLen(_sparseLen);
-    nc.alloc_doubles(_sparseLen);
-    nc.alloc_indices(_sparseLen);
-    int off = _OFF;
-    for( int i = 0; i < _sparseLen; ++i, off += ridsz() + valsz()) {
-      nc.indices()[i] = getId(off);
-      nc.doubles()[i] = getFValue(off);
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    int prev = from -1;
+    int id;
+    for(int off = getOff(from); (id = getId(off)) < to; off += _ridsz + _valsz) {
+      if(id >= to) {
+        if(isSparseNA())
+          nc.addNAs(to-prev-1);
+        else
+          nc.addZeros(to-prev-1);
+        break;
+      }
+      if(isSparseNA())
+        nc.addNAs(id-prev-1);
+      else
+        nc.addZeros(id-prev-1);
+      nc.addNum(getFValue(off));
     }
     return nc;
   }
 
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    int from = rows[0];
+    int to = rows[rows.length-1];
+    int prevK = -1;
+    int id;
+    int k = 0;
+    for(int off = getOff(from); (id = getId(off)) < to; off += _ridsz + _valsz) {
+      while(k < rows.length && rows[k]< id)k++;
+      if(isSparseNA())
+        nc.addNAs(k-prevK-1);
+      else
+        nc.addZeros(k-prevK-1);
+      if(id == rows[k])
+        nc.addNum(getFValue(off));
+      prevK = k;
+    }
+    return nc;
+  }
   public Iterator<Value> values(){
     return new SparseIterator(new Value(){
       @Override public final long asLong(){

@@ -44,7 +44,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._loss = DeepLearningParameters.Loss.CrossEntropy;
           p._train = frame._key;
           p._response_column = frame.names()[resp];
-          Scope.track(frame.replace(resp, frame.vecs()[resp].toCategoricalVec())); // Convert response to categorical
+          Scope.track(frame.replace(resp, frame.vecs(resp).toCategoricalVec())); // Convert response to categorical
           DKV.put(frame);
           p._rho = 0.99;
           p._epsilon = 5e-3;

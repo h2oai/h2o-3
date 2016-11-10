@@ -6,6 +6,8 @@ import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNums;
+import water.util.ArrayUtils;
+
 import java.util.ArrayList;
 
 /**
@@ -65,31 +67,31 @@ public class AstColumnsByType extends AstPrimitive {
             default:
                 throw new IllegalArgumentException("unknown data type to filter by: " + type);
         }
-        Vec vecs[] = fr.vecs();
-        ArrayList<Double> idxs = new ArrayList<>();
-        for (double i = 0; i < fr.numCols(); i++)
-            if (dtype.equals(DType.Numeric) && vecs[(int) i].isNumeric()){
+        VecAry vecs = fr.vecs();
+        ArrayUtils.IntAry idxs = new ArrayUtils.IntAry();
+        for (int i = 0; i < fr.numCols(); i++)
+            if (dtype.equals(DType.Numeric) && vecs.isNumeric(i)){
                     idxs.add(i);
             }
-            else if (dtype.equals(DType.Categorical) && vecs[(int) i].isCategorical()){
+            else if (dtype.equals(DType.Categorical) && vecs.isCategorical(i)){
                 idxs.add(i);
             }
-            else if (dtype.equals(DType.String) && vecs[(int) i].isString()){
+            else if (dtype.equals(DType.String) && vecs.isString(i)){
                 idxs.add(i);
             }
-            else if (dtype.equals(DType.Time) && vecs[(int) i].isTime()){
+            else if (dtype.equals(DType.Time) && vecs.isTime(i)){
                 idxs.add(i);
             }
-            else if (dtype.equals(DType.UUID) && vecs[(int) i].isUUID()){
+            else if (dtype.equals(DType.UUID) && vecs.isUUID(i)){
                 idxs.add(i);
-            } else if (dtype.equals(DType.Bad) && vecs[(int) i].isBad()){
+            } else if (dtype.equals(DType.Bad) && vecs.isBad(i)){
                 idxs.add(i);
             }
 
         double[] include_cols = new double[idxs.size()];
         int i = 0;
-        for (double d : idxs)
-            include_cols[i++] = (int) d;
+        for (int d : idxs.toArray())
+            include_cols[i++] = d;
         return new ValNums(include_cols);
     }
 }

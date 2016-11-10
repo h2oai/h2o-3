@@ -16,13 +16,17 @@ public class C1NChunk extends Chunk {
   @Override protected boolean set_impl(int i, double d) { return false; }
   @Override protected boolean set_impl(int i, float f ) { return false; }
   @Override protected boolean setNA_impl(int idx) { return false; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_exponent(_len);
-    nc.alloc_mantissa(_len);
-    for( int i=0; i< _len; i++ )
-      nc.addNum(0xFF&_mem[i+_OFF],0);
-    return nc;
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.N;
+    v._m = 0xFF&_mem[i];
+    v._e = 0;
+    v._missing = false;
+    return v;
   }
+
+
   // Custom serializers: the _mem field contains ALL the fields already.
   // Init _start to -1, so we know we have not filled in other fields.
   // Leave _vec & _chk2 null, leave _len unknown.

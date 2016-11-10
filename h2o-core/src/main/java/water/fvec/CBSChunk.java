@@ -61,13 +61,31 @@ public class CBSChunk extends Chunk {
   @Override protected boolean set_impl(int idx, double d) { return false; }
   @Override protected boolean set_impl(int idx, float f ) { return false; }
   @Override protected boolean setNA_impl(int idx) {  return false; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(nc._len = 0);
-    for (int i=0; i< _len; i++) {
-      int res = atb(i);
-      if (res == _NA) nc.addNA();
-      else            nc.addNum(res,0);
-    }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.N;
+    if((v._missing = isNA(i)))
+      return v;
+    v._m = at8(i);
+    v._e = 0;
+    return v;
+
+  }
+
+  private final void addVal(int i, NewChunk nc){
+    int res = atb(i);
+    if (res == _NA) nc.addNA();
+    else            nc.addNum(res,0);
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) addVal(i,nc);
+    return nc;
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    for( int i:rows) addVal(i,nc);
     return nc;
   }
 

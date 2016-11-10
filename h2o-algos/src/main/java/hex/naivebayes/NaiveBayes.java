@@ -176,7 +176,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       try {
         init(true);   // Initialize parameters
         if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(NaiveBayes.this);
-        dinfo = new DataInfo(_train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, _weights!=null, false, _fold!=null);
+        dinfo = new DataInfo(_train, _valid, 1, false, DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, true, false, false, _parms._weights_column, null, _parms._fold_column);
 
         // The model to be built
         model = new NaiveBayesModel(dest(), _parms, new NaiveBayesOutput(NaiveBayes.this));
@@ -270,8 +270,8 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
       Chunk res = chks[_dinfo.responseChunkId(0)]; //response
       OUTER:
       for(int row = 0; row < chks[0]._len; row++) {
-        if (_dinfo._weights && chks[_dinfo.weightChunkId()].atd(row)==0) continue OUTER;
-        if (_dinfo._weights && chks[_dinfo.weightChunkId()].atd(row)!=1) throw new IllegalArgumentException("Weights must be either 0 or 1 for Naive Bayes.");
+        if (_dinfo.weightChunkId() != -1 && chks[_dinfo.weightChunkId()].atd(row)==0) continue OUTER;
+        if (_dinfo.weightChunkId() != -1 && chks[_dinfo.weightChunkId()].atd(row)!=1) throw new IllegalArgumentException("Weights must be either 0 or 1 for Naive Bayes.");
         // Skip row if any entries in it are NA
         for( Chunk chk : chks ) {
           if(Double.isNaN(chk.atd(row))) continue OUTER;

@@ -12,7 +12,7 @@ public class C4ChunkTest extends TestUtil {
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(Vec.T_NUM);
 
       int[] vals = new int[]{-2147483647, 0, 2147483647};
       if (l==1) nc.addNA();
@@ -23,9 +23,9 @@ public class C4ChunkTest extends TestUtil {
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof C4Chunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8_abs(l + i));
+
       Assert.assertTrue(cc.isNA(vals.length + l));
-      Assert.assertTrue(cc.isNA_abs(vals.length + l));
+
       double[] densevals = new double[cc.len()];
       cc.getDoubles(densevals,0,cc.len());
       for (int i = 0; i < densevals.length; ++i) {
@@ -33,7 +33,7 @@ public class C4ChunkTest extends TestUtil {
         else Assert.assertTrue(cc.at8(i)==(int)densevals[i]);
       }
 
-      nc = new NewChunk(null, 0);
+      nc = new NewChunk(Vec.T_NUM);
       cc.inflate_impl(nc);
       nc.values(0, nc._len);
       if (l==1) Assert.assertTrue(cc.isNA(0));
@@ -43,16 +43,16 @@ public class C4ChunkTest extends TestUtil {
       for (int i = 0; i < vals.length+1+l; ++i) Assert.assertTrue(it.next().rowId0() == i);
       Assert.assertTrue(!it.hasNext());
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8_abs(l + i));
+
       Assert.assertTrue(cc.isNA(vals.length + l));
 
       Chunk cc2 = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof C4Chunk);
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8_abs(l + i));
+
       Assert.assertTrue(cc2.isNA(vals.length + l));
-      Assert.assertTrue(cc2.isNA_abs(vals.length + l));
+
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
@@ -61,31 +61,31 @@ public class C4ChunkTest extends TestUtil {
   @Test public void test_setNA() {
     // Create a vec with one chunk with 15 elements, and set its numbers
     water.Key key = Vec.newKey();
-    Vec vec = new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15})).makeZero();
+    Vec vec = new Vec(key, Vec.ESPC.rowLayout(key,new long[]{0,15}),1).makeZero();
     int[] vals = new int[]{0, 3, 0, 6, 0, 0, 0, Integer.MIN_VALUE+1, 0, 12, Integer.MAX_VALUE, 32767, 0, 0, 19};
     Vec.Writer w = vec.open();
     for (int i =0; i<vals.length; ++i) w.set(i, vals[i]);
     w.close();
 
-    Chunk cc = vec.chunkForChunkIdx(0);
-    assert cc instanceof C4Chunk;
+    ChunkAry cc = vec.chunkForChunkIdx(0);
+    assert cc.getChunk(0) instanceof C4Chunk;
     Futures fs = new Futures();
     fs.blockForPending();
 
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(i));
-    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8_abs(i));
+
 
     int[] NAs = new int[]{1, 5, 2};
     int[] notNAs = new int[]{0, 3, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14};
-    for (int na : NAs) cc.setNA_abs(na);
+    for (int na : NAs) cc.getChunk(0).setNA_impl(na);
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
-    NewChunk nc = new NewChunk(null, 0);
-    cc.inflate_impl(nc);
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+
+
+    NewChunk nc = new NewChunk(Vec.T_NUM);
+    cc.getChunk(0).inflate_impl(nc);
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length, nc._sparseLen);
     Assert.assertEquals(vals.length, nc._len);
@@ -95,19 +95,19 @@ public class C4ChunkTest extends TestUtil {
     Assert.assertTrue(!it.hasNext());
 
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
+
     for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
+
 
     Chunk cc2 = nc.compress();
     Assert.assertEquals(vals.length, cc._len);
     Assert.assertTrue(cc2 instanceof C4Chunk);
     for (int na : NAs) Assert.assertTrue(cc.isNA(na));
-    for (int na : NAs) Assert.assertTrue(cc.isNA_abs(na));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
-    for (int notna : notNAs) Assert.assertTrue(!cc.isNA_abs(notna));
 
-    Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
+    for (int notna : notNAs) Assert.assertTrue(!cc.isNA(notna));
+
+
+    Assert.assertTrue(Arrays.equals(cc.getChunk(0)._mem, cc2._mem));
     vec.remove();
   }
 }

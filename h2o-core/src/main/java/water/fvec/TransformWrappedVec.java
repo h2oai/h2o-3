@@ -102,13 +102,15 @@ public class TransformWrappedVec extends WrappedVec {
     @Override public boolean set_impl(int idx, double d) { return false; }
     @Override public boolean set_impl(int idx, float f)  { return false; }
     @Override public boolean setNA_impl(int idx)         { return false; }
-    @Override public NewChunk inflate_impl(NewChunk nc) {
-      nc.set_sparseLen(nc._len = 0);
-      for( int i=0; i< _len; i++ )
-        if( isNA(i) ) nc.addNA();
-        else          nc.addNum(atd(i));
-      return nc;
+
+    @Override
+    public DVal getInflated(int i, DVal v) {
+      v._t = DVal.type.D;
+      v._d = atd(i);
+      return v;
     }
+
+
     @Override protected final void initFromBytes () { throw water.H2O.fail(); }
   }
 }

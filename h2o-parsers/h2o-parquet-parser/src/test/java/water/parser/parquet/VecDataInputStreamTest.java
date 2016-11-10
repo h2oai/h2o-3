@@ -113,12 +113,12 @@ public class VecDataInputStreamTest extends TestUtil {
   }
 
   private static Vec makeRandomByteVec(Vec blueprint) {
-    final Vec v0 = new Vec(blueprint.group().addVec(), blueprint._rowLayout, null, Vec.T_NUM);
+    final Vec v0 = new Vec(blueprint.group().addVec(), blueprint._rowLayout, 1);
     final int nchunks = v0.nChunks();
     new MRTask() {
       @Override protected void setupLocal() {
         for( int i=0; i<nchunks; i++ ) {
-          Key k = v0.chunkKey(i);
+          Key k = v0.newChunkKey(i);
           if (k.home()) {
             int len = (int) (v0.espc()[i + 1] - v0.espc()[i]);
             byte[] bytes = new byte[len];

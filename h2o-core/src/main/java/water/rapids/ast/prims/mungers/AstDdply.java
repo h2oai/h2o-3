@@ -137,12 +137,12 @@ public class AstDdply extends AstPrimitive {
     }
 
     @Override
-    public void map(Chunk[] cs, NewChunk[] ncs) {
+    public void map(ChunkAry cs, NewChunkAry ncs) {
       AstGroup.G gWork = new AstGroup.G(_gbCols.length, null); // Working Group
-      for (int row = 0; row < cs[0]._len; row++) {
+      for (int row = 0; row < cs._len; row++) {
         gWork.fill(row, cs, _gbCols); // Fill the worker Group for the hashtable lookup
         int gnum = (int) _gss.getk(gWork)._dss[0][0]; // Existing group number
-        ncs[gnum].addNum(row);  // gather row-numbers per-chunk per-group
+        ncs.addInteger(gnum,row);  // gather row-numbers per-chunk per-group
       }
     }
 
@@ -197,7 +197,7 @@ public class AstDdply extends AstPrimitive {
         public void setupLocal() {
           VecAry data_vecs = _data.vecs();
           for (int i = 0; i < gvec.nChunks(); i++)
-            if (data_vecs.isHome(i)) {
+            if (data_vecs.isHomedLocally(i)) {
               ChunkAry rowchk = gvec.chunkForChunkIdx(i);
               for (int col = 0; col < data_vecs._numCols; col++)
                 DKV.put(Vec.chunkKey(groupVecs[col]._key, i), new SubsetChunk(data_vecs.chunkForChunkIdx(i).getChunk(col), rowchk.getChunk(0), groupVecs[col]), _fs);

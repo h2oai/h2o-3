@@ -1,7 +1,10 @@
 package water.fvec;
 
 import water.*;
+import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
+
+import java.util.Arrays;
 
 /**
  * The scale/bias function, where data is in SIGNED bytes before scaling.
@@ -38,18 +41,19 @@ public class C1SChunk extends Chunk {
   @Override protected boolean set_impl(int i, double d) { return false; }
   @Override protected boolean set_impl(int i, float f ) { return false; }
   @Override protected boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)C1Chunk._NA; return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    double dx = Math.log10(_scale);
-    assert water.util.PrettyPrint.fitsIntoInt(dx);
-    nc.set_sparseLen(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = 0xFF&_mem[i+_OFF];
-      if( res == C1Chunk._NA ) nc.addNA();
-      else nc.addNum((res+_bias),(int)dx);
-    }
-    return nc;
+
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.N;
+    v._m = 0xFF&_mem[i+_OFF];
+    v._e = Arrays.binarySearch(PrettyPrint.powers10,_scale);
+    assert v._e >= 0;
+    v._e -= 10;
+    v._missing = v._m == C1Chunk._NA;
+    return v;
   }
+
   //public int pformat_len0() { return hasFloat() ? pformat_len0(_scale,3) : super.pformat_len0(); }
   //public String  pformat0() { return hasFloat() ? "% 8.2e" : super.pformat0(); }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }

@@ -1,7 +1,10 @@
 package water.fvec;
 
 import water.*;
+import water.util.PrettyPrint;
 import water.util.UnsafeUtils;
+
+import java.util.Arrays;
 
 /**
  * The scale/bias function, where data is in SIGNED bytes before scaling.
@@ -39,18 +42,43 @@ public class C4SChunk extends Chunk {
   @Override protected boolean set_impl(int i, double d) { return false; }
   @Override protected boolean set_impl(int i, float f ) { return false; }
   @Override protected boolean setNA_impl(int idx) { UnsafeUtils.set4(_mem,(idx<<2)+_OFF,(int)_NA); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    double dx = Math.log10(_scale);
-    assert water.util.PrettyPrint.fitsIntoInt(dx);
-    nc.set_sparseLen(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
-      if( res == _NA ) nc.addNA();
-      else nc.addNum(res+_bias,(int)dx);
-    }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.N;
+    v._m = UnsafeUtils.get4(_mem,(i<<2)+_OFF);;
+    v._e = dx();
+    v._missing = v._m == _NA;
+    return v;
+  }
+
+
+  private int dx() {
+    int dx = Arrays.binarySearch(PrettyPrint.powers10, _scale);
+    assert dx >= 0;
+    return dx - 10;
+  }
+
+  private final void addVal(int i, NewChunk nc, int dx){
+    int res = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+    if( res == _NA ) nc.addNA();
+    else nc.addNum(res+_bias,(int)dx);
+  }
+
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    int dx = dx();
+    for( int i=from; i<to; i++ ) addVal(i,nc,dx);
     return nc;
   }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    int dx = dx();
+    for( int i:rows) addVal(i,nc,dx);
+    return nc;
+  }
+
+
 //  public int pformat_len0() { return pformat_len0(_scale,5); }
 //  public String pformat0() { return "% 10.4e"; }
   @Override public byte precision() { return (byte)Math.max(-Math.log10(_scale),0); }

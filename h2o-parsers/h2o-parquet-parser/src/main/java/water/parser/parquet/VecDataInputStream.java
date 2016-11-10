@@ -3,6 +3,7 @@ package water.parser.parquet;
 import org.apache.hadoop.fs.PositionedReadable;
 import org.apache.hadoop.fs.Seekable;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Vec;
 
 import java.io.EOFException;
@@ -36,8 +37,8 @@ public class VecDataInputStream extends InputStream implements Seekable, Positio
   }
 
   private void fetchData(long position) {
-    Chunk chk = _v.chunkForRow(position);
-    _buffer = chk.asBytes();
+    ChunkAry chk = _v.chunkForRow(position);
+    _buffer = chk.getChunk(0).asBytes();
     _offset = chk.start();
     _pos = (int) (position - _offset);
     assert _buffer.length > 0;
@@ -97,8 +98,8 @@ public class VecDataInputStream extends InputStream implements Seekable, Positio
         buff = _buffer;
         pos = (int) (currentPosition - _offset);
       } else {
-        Chunk chunk = _v.chunkForRow(currentPosition);
-        buff = chunk.asBytes();
+        ChunkAry chunk = _v.chunkForRow(currentPosition);
+        buff = chunk.getChunk(0).asBytes();
         pos = (int) (currentPosition - chunk.start());
       }
       int avail = Math.min(buff.length - pos, length - loaded);

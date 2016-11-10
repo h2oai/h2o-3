@@ -71,7 +71,7 @@ public class AstReplaceFirst extends AstPrimitive {
           ? doms[i].toLowerCase(Locale.ENGLISH).replaceFirst(pattern, replacement)
           : doms[i].replaceFirst(pattern, replacement);
 
-    return vec.makeCopy(doms);
+    return vec.makeCopy(new String[][]{doms});
   }
 
   private Vec replaceFirstStringCol(Vec vec, String pat, String rep, boolean ic) {

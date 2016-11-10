@@ -10,7 +10,7 @@ public class CX0ChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   @Test
   public void test_inflate_impl() {
-    NewChunk nc = new NewChunk(null, 0);
+    NewChunk nc = new NewChunk(Vec.T_NUM);
 
     int[] vals = new int[]{0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
             0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -24,7 +24,7 @@ public class CX0ChunkTest extends TestUtil {
     Assert.assertTrue(cc instanceof CX0Chunk);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.at8(i));
 
-    nc = new NewChunk(null, 0);
+    nc = new NewChunk(Vec.T_NUM);
     cc.inflate_impl(nc);
     nc.values(0, nc._len);
     Assert.assertEquals(vals.length , nc._len);
@@ -34,7 +34,7 @@ public class CX0ChunkTest extends TestUtil {
     Assert.assertTrue(it.next().rowId0() == 101);
     Assert.assertTrue(!it.hasNext());
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8(i));
-    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.at8_abs(i));
+
 
     double[] sparsevals = new double[cc.sparseLenZero()];
     int[] sparseids = new int[cc.sparseLenZero()];
@@ -53,7 +53,7 @@ public class CX0ChunkTest extends TestUtil {
     Assert.assertEquals(vals.length , cc._len);
     Assert.assertTrue(cc2 instanceof CX0Chunk);
     for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8(i));
-    for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.at8_abs(i));
+
 
     Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
   }

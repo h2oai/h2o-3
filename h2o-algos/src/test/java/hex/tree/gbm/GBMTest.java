@@ -9,10 +9,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.ParseDataset;
 import water.util.*;
 
@@ -60,7 +57,7 @@ public class GBMTest extends TestUtil {
       // Done building model; produce a score column with predictions
       fr2 = gbm.score(fr);
       //job.response() can be used in place of fr.vecs()[1] but it has been rebalanced
-      double sq_err = new MathUtils.SquareError().doAll(fr.vecs()[1],fr2.vecs()[0])._sum;
+      double sq_err = new MathUtils.SquareError().doAll(new VecAry(fr.vecs(1),fr2.vecs(0)))._sum;
       double mse = sq_err/fr2.numRows();
       assertEquals(79152.12337641386,mse,0.1);
       assertEquals(79152.12337641386,gbm._output._scored_train[1]._mse,0.1);
@@ -151,7 +148,7 @@ public class GBMTest extends TestUtil {
               int prep(Frame fr) {
                 fr.remove("ID").remove(); // Remove not-predictive ID
                 int ci = fr.find("RACE"); // Change RACE to categorical
-                Scope.track(fr.replace(ci,fr.vecs()[ci].toCategoricalVec()));
+                Scope.track(fr.replace(ci,fr.vecs(ci).toCategoricalVec()));
                 return fr.find("CAPSULE"); // Prostate: predict on CAPSULE
               }
             }, false, DistributionFamily.bernoulli);
@@ -167,8 +164,8 @@ public class GBMTest extends TestUtil {
       fr = parse_test_file(fname);
       int idx = prep.prep(fr); // hack frame per-test
       if (family == DistributionFamily.bernoulli || family == DistributionFamily.multinomial || family == DistributionFamily.modified_huber) {
-        if (!fr.vecs()[idx].isCategorical()) {
-          Scope.track(fr.replace(idx, fr.vecs()[idx].toCategoricalVec()));
+        if (!fr.vecs(idx).isCategorical()) {
+          Scope.track(fr.replace(idx, fr.vecs(idx).toCategoricalVec()));
         }
       }
       DKV.put(fr);             // Update frame after hacking it
@@ -221,7 +218,7 @@ public class GBMTest extends TestUtil {
       Frame  train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");    // Convert response to categorical
-      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));
+      Scope.track(train.replace(ci, train.vecs(ci).toCategoricalVec()));
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -257,7 +254,7 @@ public class GBMTest extends TestUtil {
       Frame train = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       train.remove("Site").remove();     // Remove unique ID
       int ci = train.find("Angaus");
-      Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      Scope.track(train.replace(ci, train.vecs(ci).toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(train);                    // Update frame after hacking it
       parms._train = train._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -301,7 +298,7 @@ public class GBMTest extends TestUtil {
       Frame res = gbm.score(v);
 
       int[] ps = new int[(int)v.numRows()];
-      Vec.Reader vr = res.vecs()[0].new Reader();
+      Vec.Reader vr = res.vecs().new Reader();
       for( int i=0; i<ps.length; i++ ) ps[i] = (int)vr.at8(i);
       // Expected predictions are X,X,Y,Y,X,Y,Z,X,Y
       // Never predicts W, the extra class in the test set.
@@ -335,7 +332,7 @@ public class GBMTest extends TestUtil {
       fr = parse_test_file("smalldata/gbm_test/ecology_model.csv");
       fr.remove("Site").remove();        // Remove unique ID
       int ci = fr.find("Angaus");
-      Scope.track(fr.replace(ci, fr.vecs()[ci].toCategoricalVec()));   // Convert response 'Angaus' to categorical
+      Scope.track(fr.replace(ci, fr.vecs(ci).toCategoricalVec()));   // Convert response 'Angaus' to categorical
       DKV.put(fr);                       // Update after hacking
       parms._train = fr._key;
       parms._response_column = "Angaus"; // Train on the outcome
@@ -427,7 +424,7 @@ public class GBMTest extends TestUtil {
       // Load data, hack frames
       Frame inF1 = parse_test_file("bigdata/laptop/usecases/cup98LRN_z.csv");
       Frame inF2 = parse_test_file("bigdata/laptop/usecases/cup98VAL_z.csv");
-      tfr = inF1.subframe(cols); // Just the columns to train on
+      tfr = inF1.subframe(inF1.find(cols)); // Just the columns to train on
       vfr = inF2.subframe(cols);
       inF1.remove(cols).remove(); // Toss all the rest away
       inF2.remove(cols).remove();
@@ -489,11 +486,11 @@ public class GBMTest extends TestUtil {
     try {
       // Load data, hack frames
       tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
-      Scope.track(tfr.replace(784, tfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
+      Scope.track(tfr.replace(784, tfr.vecs(784).toCategoricalVec()));   // Convert response 'C785' to categorical
       DKV.put(tfr);
 
       vfr = parse_test_file("bigdata/laptop/mnist/test.csv.gz");
-      Scope.track(vfr.replace(784, vfr.vecs()[784].toCategoricalVec()));   // Convert response 'C785' to categorical
+      Scope.track(vfr.replace(784, vfr.vecs(784).toCategoricalVec()));   // Convert response 'C785' to categorical
       DKV.put(vfr);
 
       // Same parms for all
@@ -508,7 +505,7 @@ public class GBMTest extends TestUtil {
       GBMModel gbm = new GBM(parms).trainModel().get();
 
       Frame pred = gbm.score(vfr);
-      double sq_err = new MathUtils.SquareError().doAll(vfr.lastVec(),pred.vecs()[0])._sum;
+      double sq_err = new MathUtils.SquareError().doAll(vfr.lastVec(),pred.vecs(0))._sum;
       double mse = sq_err/pred.numRows();
       assertEquals(3.0199, mse, 1e-15); //same results
       gbm.delete();
@@ -689,7 +686,7 @@ public class GBMTest extends TestUtil {
     Scope.enter();
     try {
       tfr = parse_test_file("smalldata/gbm_test/alphabet_cattest.csv");
-      Scope.track(tfr.replace(1, tfr.vecs()[1].toCategoricalVec()));
+      Scope.track(tfr.replace(1, tfr.vecs(1).toCategoricalVec()));
       DKV.put(tfr);
       for (int i=0; i<N; ++i) {
         GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
@@ -728,8 +725,8 @@ public class GBMTest extends TestUtil {
       tfr = parse_test_file("./bigdata/covktr.csv");
       vfr = parse_test_file("./bigdata/covkts.csv");
       int idx = tfr.find("V55");
-      Scope.track(tfr.replace(idx, tfr.vecs()[idx].toCategoricalVec()));
-      Scope.track(vfr.replace(idx, vfr.vecs()[idx].toCategoricalVec()));
+      Scope.track(tfr.replace(idx, tfr.vecs(idx).toCategoricalVec()));
+      Scope.track(vfr.replace(idx, vfr.vecs(idx).toCategoricalVec()));
       DKV.put(tfr);
       DKV.put(vfr);
 
@@ -767,8 +764,8 @@ public class GBMTest extends TestUtil {
       v_pred.remove();
 
       // Compute the perfect AUC
-      double t_auc3 = AUC2.perfectAUC(t_pred.vecs()[2], tfr.vec("V55"));
-      double v_auc3 = AUC2.perfectAUC(v_pred.vecs()[2], vfr.vec("V55"));
+      double t_auc3 = AUC2.perfectAUC(t_pred.vecs(2), tfr.vec("V55"));
+      double v_auc3 = AUC2.perfectAUC(v_pred.vecs(2), vfr.vec("V55"));
       System.out.println("train_AUC3= "+t_auc3+" , validation_AUC3= "+v_auc3);
       Assert.assertEquals(t_auc3, t_auc , 1e-6);
       Assert.assertEquals(t_auc3, t_auc2, 1e-6);
@@ -1309,8 +1306,8 @@ public class GBMTest extends TestUtil {
       tfr.remove("name").remove(); // Remove unique id
       new MRTask() {
         @Override
-        public void map(Chunk c) {
-          for (int i=0;i<c.len();++i) {
+        public void map(ChunkAry c) {
+          for (int i=0;i<c._len;++i) {
             if (c.at8(i) == 3) c.set(i, 0);
             if (c.at8(i) == 4) c.set(i, 1);
             if (c.at8(i) == 5) c.set(i, 2);
@@ -1816,7 +1813,7 @@ public class GBMTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(resp, tfr.vecs(resp).toCategoricalVec()));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1867,7 +1864,7 @@ public class GBMTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(resp, tfr.vecs(resp).toCategoricalVec()));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1916,7 +1913,7 @@ public class GBMTest extends TestUtil {
       Scope.enter();
       tfr = parse_test_file("smalldata/covtype/covtype.20k.data");
       int resp = 54;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(resp, tfr.vecs(resp).toCategoricalVec()));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job

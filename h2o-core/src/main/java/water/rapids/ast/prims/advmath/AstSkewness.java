@@ -2,6 +2,7 @@ package water.rapids.ast.prims.advmath;
 
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -28,9 +29,9 @@ public class AstSkewness extends AstPrimitive {
         Frame fr = stk.track(asts[1].exec(env)).getFrame();
         boolean narm = asts[2].exec(env).getNum() == 1;
         double[] ds = new double[fr.numCols()];
-        Vec[] vecs = fr.vecs();
+        VecAry vecs = fr.vecs();
         for (int i = 0; i < fr.numCols(); i++)
-            ds[i] = (!vecs[i].isNumeric() || vecs[i].length() == 0 || (!narm && vecs[i].naCnt() > 0)) ? Double.NaN : skewness(vecs[i]);
+            ds[i] = (!vecs.isNumeric(i) || vecs.length() == 0 || (!narm && vecs.naCnt(i) > 0)) ? Double.NaN : skewness(vecs.select(i));
         return new ValNums(ds);
     }
 

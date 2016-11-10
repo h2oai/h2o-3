@@ -69,8 +69,7 @@ public class ParseExceptionTest extends TestUtil {
     Break(Key key ) { _key = key; }
     @Override public void setupLocal() {
       Vec vec = DKV.get(_key).get();
-      Chunk chk = vec.chunkForChunkIdx(0); // Load the chunk (which otherwise loads only lazily)
-      chk.crushBytes(); // Illegal setup: Chunk _mem should never be null; will trigger NPE
+      DKV.remove(vec.newChunkKey(0));
       tryComplete();
     }
   }

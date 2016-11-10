@@ -1613,6 +1613,14 @@ public class ArrayUtils {
     return res;
   }
 
+  public static String[] insert(String[] names, int i, String x) {
+    String [] res = new String[names.length+1];
+    System.arraycopy(names,0,res,0,i);
+    res[i] = x;
+    System.arraycopy(names,i,res,i+1,names.length-i);
+    return res;
+  }
+
   public static final class IntAry {
     int [] _ary = new int[4];
     int _sz;

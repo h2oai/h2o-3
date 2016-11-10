@@ -721,7 +721,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
       }
       VecAry vecs = _fr.vecs();
       for(int i = 0; i < vecs._numCols; ++i){
-        if(vecs.isHome(i)){
+        if(vecs.isHomedLocally(i)){
           ChunkAry c = vecs.chunkForChunkIdx(i);
           for (int row=0; row<_rows.length; row++) {
             _chk[i][row] = c.atd(offset[row],cidx[row]);

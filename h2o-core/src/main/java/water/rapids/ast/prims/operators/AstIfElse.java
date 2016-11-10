@@ -2,10 +2,7 @@ package water.rapids.ast.prims.operators;
 
 import water.H2O;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.rapids.*;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -162,14 +159,14 @@ public class AstIfElse extends AstPrimitive {
             newDomain[l] = res.vec(i).domain()[(int) dom[l]];
           new MRTask() {
             @Override
-            public void map(Chunk c) {
+            public void map(ChunkAry c) {
               for (int i = 0; i < c._len; ++i) {
                 if (!c.isNA(i))
                   c.set(i, ArrayUtils.find(dom, c.at8(i)));
               }
             }
           }.doAll(res.vec(i));
-          res.vec(i).setDomain(newDomain); // needs a DKVput?
+          res.vec(i).setDomain(0,newDomain); // needs a DKVput?
         }
       }
     }

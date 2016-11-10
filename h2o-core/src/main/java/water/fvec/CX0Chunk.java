@@ -35,18 +35,6 @@ public final class CX0Chunk extends CXIChunk {
     return sparseLenZero();
   }
 
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_mantissa(_sparseLen);
-    nc.alloc_exponent(_sparseLen);
-    nc.alloc_indices(_sparseLen);
-    for(int i = 0; i < _sparseLen; ++i)
-      nc.addNum(1,0);
-    nonzeros(nc.indices());
-    nc._len = _len;
-    assert nc._sparseLen == _sparseLen;
-    return nc;
-  }
-
   public Iterator<Value> values(){
     return new SparseIterator(new Value(){
       @Override public final long asLong(){return 1;}

@@ -3,10 +3,7 @@ package water.util;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
@@ -35,9 +32,9 @@ public class VecUtils {
    *  @return the resulting categorical Vec
    */
   public static Vec toCategoricalVec(Vec src) {
-    switch (src.get_type()) {
+    switch (src.get_type(0)) {
       case Vec.T_CAT:
-        return src.makeCopy(src.domain());
+        return src.makeCopy(new String[][]{src.domain(0)});
       case Vec.T_NUM:
         return numericToCategorical(src);
       case Vec.T_STR: // PUBDEV-2204
@@ -140,7 +137,7 @@ public class VecUtils {
    *  @return the resulting numeric {@link Vec}
    */
   public static Vec toNumericVec(Vec src) {
-    switch (src.get_type()) {
+    switch (src.get_type(0)) {
       case Vec.T_CAT:
         return categoricalToInt(src);
       case Vec.T_STR:
@@ -148,7 +145,7 @@ public class VecUtils {
       case Vec.T_NUM:
       case Vec.T_TIME:
       case Vec.T_UUID:
-        return src.makeCopy(null, Vec.T_NUM);
+        return src.makeCopy(null, new byte[]{Vec.T_NUM});
       default:
         throw new H2OIllegalArgumentException("Unrecognized column type " + src.get_type_str()
             + " given to toNumericVec()");
@@ -228,7 +225,7 @@ public class VecUtils {
     }
     if( useDomain ) {
       new MRTask() {
-        @Override public void map(Chunk c) {
+        @Override public void map(ChunkAry c) {
           for (int i=0;i<c._len;++i)
             if( !c.isNA(i) )
               c.set(i, Integer.parseInt(src.domain()[(int)c.at8(i)]));
@@ -255,7 +252,7 @@ public class VecUtils {
    *  @return the resulting string {@link Vec}
    */
   public static Vec toStringVec(Vec src) {
-    switch (src.get_type()) {
+    switch (src.get_type(0)) {
       case Vec.T_STR:
         return src.makeCopy();
       case Vec.T_CAT:
@@ -375,7 +372,7 @@ public class VecUtils {
     if( !src.isCategorical() ) throw new H2OIllegalArgumentException("categoricalToNumeric() conversion only works on categorical columns");
     // check if the 1st lvl of the domain can be parsed as int
     return new MRTask() {
-        @Override public void map(Chunk c) {
+        @Override public void map(ChunkAry c) {
           for (int i=0;i<c._len;++i)
             if( !c.isNA(i) )
               c.set(i, Integer.parseInt(src.domain()[(int)c.at8(i)]));

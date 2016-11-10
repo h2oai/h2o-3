@@ -8,7 +8,7 @@ import java.util.Iterator;
 
 // Sparse chunk.
 public class CXIChunk extends Chunk {
-  private transient int _valsz; // byte size of stored value
+  protected transient int _valsz; // byte size of stored value
   protected final int valsz() { return _valsz; }
   private transient int _valsz_log; //
   protected transient int _ridsz; // byte size of stored (chunk-relative) row nums
@@ -55,21 +55,51 @@ public class CXIChunk extends Chunk {
     return vals;
   }
 
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_nums(_sparseLen);
-    nc.alloc_indices(_sparseLen);
-    int off = _OFF;
-    for( int i = 0; i < _sparseLen; ++i, off += _ridsz + _valsz) {
-      int id = getId(off);
-      nc.addZeros(id-nc._len);
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    int prev = from -1;
+    int id;
+    for(int off = getOff(from); (id = getId(off)) < to; off += _ridsz + _valsz) {
+      if(id >= to) {
+        if(isSparseNA())
+          nc.addNAs(to-prev-1);
+        else
+          nc.addZeros(to-prev-1);
+        break;
+      }
+      if(isSparseNA())
+        nc.addNAs(id-prev-1);
+      else
+        nc.addZeros(id-prev-1);
       long v = getIValue(off);
-      if(v == NAS[_valsz_log])
+      if(!isSparseNA() && v == NAS[_valsz_log])
         nc.addNA();
       else
         nc.addNum(v,0);
     }
-    nc._len = (_len);
-    assert nc._sparseLen == _sparseLen;
+    return nc;
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    int from = rows[0];
+    int to = rows[rows.length-1];
+    int prevK = -1;
+    int id;
+    int k = 0;
+    for(int off = getOff(from); (id = getId(off)) < to; off += _ridsz + _valsz) {
+      while(k < rows.length && rows[k]< id)k++;
+      if(isSparseNA())
+        nc.addNAs(k-prevK-1);
+      else
+        nc.addZeros(k-prevK-1);
+      if(id == rows[k]){
+        long v = getIValue(off);
+        if(!isSparseNA() && v == NAS[_valsz_log])
+          nc.addNA();
+        else
+          nc.addNum(v,0);
+      }
+      prevK = k;
+    }
     return nc;
   }
 
@@ -145,13 +175,21 @@ public class CXIChunk extends Chunk {
 
   @Override public boolean isSparseZero() {return true;}
   @Override public int sparseLenZero(){ return _sparseLen; }
-  @Override public int nextNZ(int rid){
+
+  protected final int nextNonSparseId(int rid){
     final int off = rid == -1?_OFF:findOffset(rid);
     int x = getId(off);
     if(x > rid)return x;
     if(off < _mem.length - _ridsz - _valsz)
       return getId(off + _ridsz + _valsz);
     return _len;
+  }
+
+  @Override public int nextNZ(int rid){
+    return isSparseZero()?nextNonSparseId(rid):rid+1;
+  }
+  @Override public int nextNNA(int rid){
+    return isSparseNA()?nextNonSparseId(rid):rid+1;
   }
   /** Fills in a provided (recycled/reused) temp array of the NZ indices, and
    *  returns the count of them.  Array must be large enough. */
@@ -167,6 +205,15 @@ public class CXIChunk extends Chunk {
   @Override protected boolean set_impl(int idx, float f ) { return false; }
   @Override protected boolean setNA_impl(int idx)         { return false; }
 
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.N;
+    if(v._missing = isNA(i)) return v;
+    v._m = at8(i);
+    v._e = 0;
+    return v;
+  }
+
   @Override public long at8(int idx) {
     int off = findOffset(idx);
     if(getId(off) != idx)return 0;
@@ -177,9 +224,9 @@ public class CXIChunk extends Chunk {
   }
   @Override public double atd(int idx) {
     int off = findOffset(idx);
-    if(getId(off) != idx)return 0;
+    if(getId(off) != idx) return isSparseNA()?Double.NaN:0;
     long v =  getIValue(off);
-    return (v == NAS[_valsz_log])?Double.NaN:v;
+    return (!isSparseNA() && v == NAS[_valsz_log])?Double.NaN:v;
   }
 
   @Override public boolean isNA( int i ) {
@@ -196,7 +243,7 @@ public class CXIChunk extends Chunk {
       :UnsafeUtils.get4(_mem,off);
   }
   // get offset of nth (chunk-relative) stored element
-  private int getOff(int n){return _OFF + (_ridsz + _valsz)*n;}
+  protected int getOff(int n){return _OFF + (_ridsz + _valsz)*n;}
   // extract integer value from an (byte)offset
   protected double getFValue(int off){return getIValue(off);}
   protected final long getIValue(int off){

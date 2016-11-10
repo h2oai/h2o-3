@@ -14,7 +14,7 @@ public class CStrChunkTest extends TestUtil {
   @Test
   public void test_inflate_impl() {
     for (int l=0; l<2; ++l) {
-      NewChunk nc = new NewChunk(null, 0);
+      NewChunk nc = new NewChunk(Vec.T_STR);
 
       BufferedString[] vals = new BufferedString[1000001];
       for (int i = 0; i < vals.length; i++) {
@@ -28,42 +28,30 @@ public class CStrChunkTest extends TestUtil {
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc.isNA(0));
-      if (l==1) Assert.assertTrue(cc.isNA_abs(0));
       BufferedString tmpStr = new BufferedString();
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.atStr(tmpStr, l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc.atStr_abs(tmpStr, l + i));
       Assert.assertTrue(cc.isNA(vals.length + l));
-      Assert.assertTrue(cc.isNA_abs(vals.length + l));
 
       Chunk cc2 = IcedUtils.deepCopy(cc);
       Assert.assertEquals(vals.length + 1 + l, cc2._len);
       Assert.assertTrue(cc2 instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc2.isNA(0));
-      if (l==1) Assert.assertTrue(cc2.isNA_abs(0));
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr(tmpStr, l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr_abs(tmpStr, l + i));
       Assert.assertTrue(cc2.isNA(vals.length + l));
-      Assert.assertTrue(cc2.isNA_abs(vals.length + l));
 
-      nc = cc.inflate_impl(new NewChunk(null, 0));
+      nc = cc.inflate_impl(new NewChunk(Vec.T_STR));
       Assert.assertEquals(vals.length + 1 + l, nc._len);
 
       if (l==1) Assert.assertTrue(nc.isNA(0));
-      if (l==1) Assert.assertTrue(nc.isNA_abs(0));
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atStr(tmpStr, l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], nc.atStr_abs(tmpStr, l + i));
       Assert.assertTrue(nc.isNA(vals.length + l));
-      Assert.assertTrue(nc.isNA_abs(vals.length + l));
 
       cc2 = nc.compress();
       Assert.assertEquals(vals.length + 1 + l, cc._len);
       Assert.assertTrue(cc2 instanceof CStrChunk);
       if (l==1) Assert.assertTrue(cc2.isNA(0));
-      if (l==1) Assert.assertTrue(cc2.isNA_abs(0));
       for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr(tmpStr, l + i));
-      for (int i = 0; i < vals.length; ++i) Assert.assertEquals(vals[i], cc2.atStr_abs(tmpStr, l + i));
       Assert.assertTrue(cc2.isNA(vals.length + l));
-      Assert.assertTrue(cc2.isNA_abs(vals.length + l));
 
       Assert.assertTrue(Arrays.equals(cc._mem, cc2._mem));
     }
@@ -78,7 +66,7 @@ public class CStrChunkTest extends TestUtil {
 
       //Create a label vector
       byte[] typeArr = {Vec.T_STR};
-      Vec labels = frame.lastVec().makeCons(1, 0, null, typeArr)[0];
+      Vec labels = frame.lastVec().makeCons(1, 0, null, typeArr);
       Vec.Writer writer = labels.open();
       int rowCnt = (int)frame.lastVec().length();
       for (int r = 0; r < rowCnt; r++) // adding labels in reverse order

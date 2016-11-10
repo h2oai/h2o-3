@@ -2,12 +2,14 @@ package water.rapids.ast.prims.mungers;
 
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValRow;
 import water.rapids.ast.AstPrimitive;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
@@ -42,8 +44,7 @@ public class AstColSlice extends AstPrimitive {
     Frame src = v.getFrame();
     int[] cols = col_select(src.names(), asts[2]);
     Frame dst = new Frame();
-    Vec[] vecs = src.vecs();
-    for (int col : cols) dst.add(src._names[col], vecs[col]);
+    dst.add(ArrayUtils.select(src._names,cols), src.vecs(cols));
     return new ValFrame(dst);
   }
 

@@ -17,9 +17,9 @@ class MySample extends MRTask<MySample> {
     MySample(int K) {
         this.K = K;
     }
-    @Override public void map( Chunk chk ) {
-        Random randomGenerator = water.util.RandomUtils.getRNG(chk.cidx());
-        for (int i=0; i<chk.len(); i++) {
+    @Override public void map( ChunkAry chk ) {
+        Random randomGenerator = water.util.RandomUtils.getRNG(chk._cidx);
+        for (int i=0; i<chk._len; i++) {
             chk.set(i, randomGenerator.nextInt(K));
         }
     }
@@ -35,8 +35,8 @@ class MyCountRange extends MRTask<MyCountRange> {
         _max = max; _min = min; _counts = new long[nChunks][]; _nChunks = nChunks;
     }
     // setupLocal(); // to do.  No because the memory gets copied across. Constructor doesn't need to run on other nodes.
-    @Override public void map( Chunk chk ) {
-        long tmp[] = _counts[chk.cidx()] = new long[(int)(_max-_min+1)];
+    @Override public void map( ChunkAry chk ) {
+        long tmp[] = _counts[chk._cidx] = new long[(int)(_max-_min+1)];
         //long tmp[] = new long[(int)(_max-_min+1)];   // does non-sharing help?   If so, assign afterwards after the loop?
         int rows = chk._len;
         //double dummyCounter=1;
@@ -105,13 +105,13 @@ class WriteOrder extends MRTask<WriteOrder> {
     final long _min;
     final long _max;
     WriteOrder(long[][] counts, int[][] order, long min, long max) { _counts = counts; _order = order; _min = min; _max = max; }
-    @Override public void map( Chunk chk ) {
+    @Override public void map( ChunkAry chk ) {
         long nanos[] = new long[5];
-        Vec vec = chk.vec();
+        Vec vec = chk._vec;
         int range = (int)(_max-_min+1);
         long[] espc = vec.espc();
 
-        long myCounts[] = _counts[chk.cidx()];
+        long myCounts[] = _counts[chk._cidx];
 
         // Test thread local counts. Keep in cache and never push to RAM (don't need to be shared)
         // long myCounts[] = new long[(int)(_max-_min+1)];
@@ -156,7 +156,7 @@ public class GroupingBench extends TestUtil {
         System.out.println("\nFirst 30 of vec ...");
         System.out.println("There are "+vec.nChunks()+" chunks");
         for (int i=0; i<vec.nChunks(); i++) {
-            System.out.println("Chunk"+i+"is on"+vec.chunkKey(i).home_node());
+            System.out.println("Chunk"+i+"is on"+vec.newChunkKey(i).home_node());
         }
 
         CreateFrame cf = new CreateFrame();
@@ -290,17 +290,16 @@ public class GroupingBench extends TestUtil {
     Vec.VectorGroup g = new Vec.VectorGroup();
     AppendableVec col0 = new AppendableVec(g.addVec(), Vec.T_NUM);
     AppendableVec col1 = new AppendableVec(g.addVec(), Vec.T_NUM);
-    NewChunk ncs0[] = new NewChunk[nChunks];
-    NewChunk ncs1[] = new NewChunk[nChunks];
+    NewChunkAry ncs0[] = new NewChunkAry[nChunks];
+    NewChunkAry ncs1[] = new NewChunkAry[nChunks];
     for( int i=0; i<nChunks; i++ ) {
-      ncs0[i] = new NewChunk(col0,i);
-      ncs1[i] = new NewChunk(col1,i);
+      ncs0[i] = col0.chunkForChunkIdx(i);
+      ncs1[i] = col1.chunkForChunkIdx(i);
     }
 
     RandomUtils.PCGRNG R = new RandomUtils.PCGRNG(card,0);
     for( long i=0; i<len; i++ )
-      ncs0[R.nextInt(nChunks)].addNum( R.nextInt((int)card), 0 );
-
+      ncs0[R.nextInt(nChunks)].addInteger( R.nextInt((int)card));
     // Compute data layout
     int espc[] = new int[nChunks+1];
     for( int i=0; i<nChunks; i++ )
@@ -309,12 +308,12 @@ public class GroupingBench extends TestUtil {
     // Compute row numbers into col 2
     for( int i=0; i<nChunks; i++ )
       for( int j=0; j<ncs0[i].len(); j++ )
-        ncs1[i].addNum(espc[i]+j,0);
+        ncs1[i].addInteger(espc[i]+j);
 
     Futures fs = new Futures();
     for( int i=0; i<nChunks; i++ ) {
-      ncs0[i].close(i,fs);
-      ncs1[i].close(i,fs);
+      ncs0[i].close(fs);
+      ncs1[i].close(fs);
     }
 
     Vec vec0 = col0.layout_and_close(fs);

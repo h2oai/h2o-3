@@ -161,8 +161,8 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
           name = source_frame._names[idx1] + "_" + source_frame._names[idx2];
         }
 //      Log.info("Combining columns " + idx1 + " and " + idx2);
-        final Vec A = i > 1 ? _out.vecs()[idx1] : source_frame.vecs()[idx1];
-        final Vec B = source_frame.vecs()[idx2];
+        final Vec A = i > 1 ? _out.vecs(idx1) : source_frame.vecs(idx1);
+        final Vec B = source_frame.vecs(idx2);
 
         // Pass 1: compute unique domains of all interaction features
         createInteractionDomain pass1 = new createInteractionDomain(idx1 == idx2, _ci._interactOnNA).doAll(A, B);
@@ -192,7 +192,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
 
         // remove temporary vec
         if (i > 1) {
-          final int idx = _out.vecs().length - 2; //second-last vec
+          final int idx = _out.vecs()._numCols - 2; //second-last vec
 //        Log.info("Removing column " + _out._names[idx]);
           _out.remove(idx).remove();
         }
@@ -316,20 +316,20 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
     }
 
     @Override
-    public void map(Chunk A, Chunk B, Chunk C) {
+    public void map(ChunkAry cs) {
+      int A = 0, B = 1, C = 2;
       // find unique interaction domain
-      for (int r = 0; r < A._len; r++) {
-        final int a = A.isNA(r) ? _missing : (int)A.at8(r);
+      for (int r = 0; r < cs._len; r++) {
+        final int a = cs.isNA(r,A) ? _missing : cs.at4(r,A);
         long ab;
         if (!_same) {
-          final int b = B.isNA(r) ? _missing : (int) B.at8(r);
+          final int b = cs.isNA(r,B) ? _missing : cs.at4(r,B);
           ab = ((long) a << 32) | (b & 0xFFFFFFFFL); // key: combine both ints into a long
         } else {
           ab = (long)a;
         }
-
-        if (_same && A.isNA(r)) {
-          C.setNA(r);
+        if (_same && cs.isNA(r,A)) {
+          cs.setNA(r,C);
         } else {
           // find _domain index for given factor level ab
           int level = -1;
@@ -347,7 +347,7 @@ public class CreateInteractions extends H2O.H2OCountedCompleter {
             level = _fr.lastVec().domain().length-1;
             assert _fr.lastVec().domain()[level].equals(_other);
           }
-          C.set(r, level);
+          cs.set(r,C, level);
         }
       }
     }

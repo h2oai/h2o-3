@@ -66,9 +66,14 @@ public class SubsetVec extends WrappedVec {
     @Override protected boolean set_impl(int idx, double d) { return false; }
     @Override protected boolean set_impl(int idx, float f)  { return false; }
     @Override protected boolean setNA_impl(int idx)         { return false; }
-    @Override public boolean hasFloat() { return false; }
+
     @Override
-    public NewChunk inflate_impl(NewChunk nc)     { throw H2O.fail(); }
+    public DVal getInflated(int i, DVal v) {
+      throw H2O.unimpl();
+    }
+
+    @Override public boolean hasFloat() { return false; }
+
     public static AutoBuffer write_impl(SubsetChunk sc, AutoBuffer bb) { throw H2O.fail(); }
     @Override protected final void initFromBytes () { throw H2O.fail(); }
   }

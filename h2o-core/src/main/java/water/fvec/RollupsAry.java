@@ -11,6 +11,8 @@ import java.util.Arrays;
  * Created by tomas on 10/11/16.
  */
 public class RollupsAry extends Iced {
+  public int removedCnt() {return _removed.cardinality();}
+
   private enum State {ready, computing, mutating};
 
   private final RollupStats [] _rs;

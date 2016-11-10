@@ -2,6 +2,7 @@ package water.rapids;
 
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 
 class RadixCount extends MRTask<RadixCount> {
   static class Long2DArray extends Iced {
@@ -37,12 +38,12 @@ class RadixCount extends MRTask<RadixCount> {
     _counts = new Long2DArray(_fr.anyVec().nChunks());
   }
 
-  @Override public void map( Chunk chk ) {
-    long tmp[] = _counts._val[chk.cidx()] = new long[256];
+  @Override public void map( ChunkAry chk ) {
+    long tmp[] = _counts._val[chk._cidx] = new long[256];
     // TODO: assert chk instanceof integer or enum; -- but how since many
     // integers (C1,C2 etc)?  Alternatively: chk.getClass().equals(C8Chunk.class)
-    if (!(_isLeft && chk.vec().isCategorical())) {
-      if (chk.vec().naCnt() == 0) {
+    if (!(_isLeft && chk._vec.isCategorical())) {
+      if (chk._vec.naCnt() == 0) {
         // There are no NA in this join column; hence branch-free loop. Most
         // common case as should never really have NA in join columns.
         for (int r=0; r<chk._len; r++) {
@@ -67,7 +68,7 @@ class RadixCount extends MRTask<RadixCount> {
       // map left categorical to right levels using _id_maps
       assert _id_maps[0].length > 0;
       assert _base==0;
-      if (chk.vec().naCnt() == 0) {
+      if (chk._vec.naCnt() == 0) {
         for (int r=0; r<chk._len; r++) {
           tmp[(_id_maps[0][(int)chk.at8(r)]+1) >> _shift]++;
         }

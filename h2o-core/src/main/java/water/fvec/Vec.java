@@ -472,7 +472,7 @@ public class Vec extends Keyed<Vec> {
     new MRTask() {              // Body of all zero chunks
       @Override protected void setupLocal() {
         for( int i=0; i<nchunks; i++ ) {
-          if(v0.isLocal(i)) {
+          if(v0.isHomedLocally(i)) {
             Key k = v0.newChunkKey(i);
             Chunk[] cs = new Chunk[d.length];
             for(int j = 0; j < cs.length; ++j)
@@ -500,7 +500,7 @@ public class Vec extends Keyed<Vec> {
     new MRTask() {
       @Override protected void setupLocal() {
       for(int i = 0; i < nchunks; ++i) {
-        if(res.isLocal(i)){
+        if(res.isHomedLocally(i)){
           Key k = res.newChunkKey(i);
           Chunk [] cs = new Chunk[res.numCols()];
           for(int j = 0; j < cs.length; ++j)
@@ -692,6 +692,7 @@ public class Vec extends Keyed<Vec> {
   private static class RemoveColsFromRollupsTsk extends TAtomic<RollupsAry>{
     final int _ncols;
     final int [] _ids;
+    boolean _removed;
 
     public RemoveColsFromRollupsTsk(int ncols, int [] ids){
       _ncols = ncols;
@@ -702,12 +703,16 @@ public class Vec extends Keyed<Vec> {
       if(old == null) old = new RollupsAry(_ncols);
       for(int c:_ids)
         old.markRemoved(c);
+      _removed = (old.removedCnt() == _ncols);
       return old;
     }
   }
 
   public void removeCols(final int... ids){
-    new RemoveColsFromRollupsTsk(numCols(),ids).invoke(rollupStatsKey());
+    RemoveColsFromRollupsTsk t = new RemoveColsFromRollupsTsk(numCols(),ids);
+    t.invoke(rollupStatsKey());
+    if(t._removed) remove();
+    else
     new MRTask(){
       @Override public void setupLocal(){
         for(int i = 0; i < nChunks(); ++i){
@@ -862,9 +867,8 @@ public class Vec extends Keyed<Vec> {
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index */
   protected Key chunkKey(int cidx ) { return chunkKey(keyTemplate(),cidx); }
-  public boolean isHome(int cidx ) { return chunkKey(keyTemplate(),cidx).home(); }
-  public int homeNodeIdx(int cidx ) { return chunkKey(keyTemplate(),cidx).home_node().index(); }
-  public boolean isLocal(int cidx){return chunkKey(cidx).home();}
+  public int homeNodeIdx(int cidx ) { return chunkKey(keyTemplate(),cidx).D(0); }
+  public boolean isHomedLocally(int cidx){return H2O.CLOUD._memary[homeNodeIdx(cidx)] == H2O.SELF;}
 
   public Key newChunkKey(int cidx ) {
     return chunkKey(Key.make(_key._kb.clone()),cidx);
@@ -877,6 +881,7 @@ public class Vec extends Keyed<Vec> {
     byte [] bits = veckey._kb;
     bits[0] = Key.CHK;
     UnsafeUtils.set4(bits, 6, cidx); // chunk#
+    veckey.flushCache();
     return veckey;
   }
 

@@ -76,7 +76,7 @@ public class AstRectangleAssignTest extends TestUtil {
   private static String[] catVec2array(Vec v) {
     double[] raw = vec2array(v);
     String[] cats = new String[raw.length];
-    for (int i = 0; i < cats.length; i++) cats[i] = v.factor((long) raw[i]);
+    for (int i = 0; i < cats.length; i++) cats[i] = v.factor(0,(int)raw[i]);
     return cats;
   }
 

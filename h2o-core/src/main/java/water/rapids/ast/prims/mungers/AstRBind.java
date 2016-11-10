@@ -121,20 +121,22 @@ public class AstRBind extends AstPrimitive {
         domains[k][e.getValue()] = e.getKey();
     }
 
+    // TODO
+    throw H2O.unimpl();
     // Now make Keys for the new Vecs
-    Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
-    Vec[] vecs = new Vec[fr.numCols()];
-    int rowLayout = Vec.ESPC.rowLayout(keys[0], espc);
-    for (int i = 0; i < vecs.length; i++)
-      vecs[i] = new Vec(keys[i], rowLayout, domains[i], types[i]);
+//    Key<Vec>[] keys = fr.anyVec().group().addVecs(fr.numCols());
+//    Vec[] vecs = new Vec[fr.numCols()];
+//    int rowLayout = Vec.ESPC.rowLayout(keys[0], espc);
+//    for (int i = 0; i < vecs.length; i++)
+//      vecs[i] = new Vec(keys[i], rowLayout, new String[][]{domains[i]}, types[i]);
 
 
     // Do the row-binds column-by-column.
     // Switch to F/J thread for continuations
-    AstRBind.ParallelRbinds t;
-    H2O.submitTask(t = new AstRBind.ParallelRbinds(frs, espc, vecs, cmaps)).join();
-    for (Frame tfr : tmp_frs) if (tfr != null) tfr.delete();
-    return new ValFrame(new Frame(fr.names(), t._vecs));
+//    AstRBind.ParallelRbinds t;
+//    H2O.submitTask(t = new AstRBind.ParallelRbinds(frs, espc, vecs, cmaps)).join();
+//    for (Frame tfr : tmp_frs) if (tfr != null) tfr.delete();
+//    return new ValFrame(new Frame(fr.names(), t._vecs));
   }
 
 
@@ -170,7 +172,7 @@ public class AstRBind extends AstPrimitive {
       Vec[] vecs = new Vec[_frs.length]; // Source Vecs
       for (int i = 1; i < _frs.length; i++)
         vecs[i] = _frs[i].vec(colnum);
-      new AstRBind.RbindTask(new AstRBind.ParallelRbinds.Callback(), vecs, _vecs[colnum], _espc, _cmaps[colnum]).fork();
+//      new AstRBind.RbindTask(new AstRBind.ParallelRbinds.Callback(), vecs, _vecs[colnum], _espc, _cmaps[colnum]).fork();
     }
 
     private class Callback extends H2O.H2OCallback {
@@ -188,65 +190,65 @@ public class AstRBind extends AstPrimitive {
   }
 
   // RBind a single column across all vals
-  private static class RbindTask extends H2O.H2OCountedCompleter<AstRBind.RbindTask> {
-    final Vec[] _vecs;          // Input vecs to be row-bound
-    final Vec _v;               // Result vec
-    final long[] _espc;         // Result layout
-    int[][] _cmaps;             // categorical mapping array
+//  private static class RbindTask extends H2O.H2OCountedCompleter<AstRBind.RbindTask> {
+//    final Vec[] _vecs;          // Input vecs to be row-bound
+//    final Vec _v;               // Result vec
+//    final long[] _espc;         // Result layout
+//    int[][] _cmaps;             // categorical mapping array
+//
+//    RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc, int[][] cmaps) {
+//      super(cc);
+//      _vecs = vecs;
+//      _v = v;
+//      _espc = espc;
+//      _cmaps = cmaps;
+//    }
+//
+//    @Override
+//    public void compute2() {
+//      addToPendingCount(_vecs.length - 1 - 1);
+//      int offset = 0;
+//      for (int i = 1; i < _vecs.length; i++) {
+//        new AstRBind.RbindMRTask(this, _cmaps[i], _v, offset).dfork(_vecs[i]);
+//        offset += _vecs[i].nChunks();
+//      }
+//    }
+//
+//    @Override
+//    public void onCompletion(CountedCompleter cc) {
+//      DKV.put(_v);
+//    }
+//  }
 
-    RbindTask(H2O.H2OCountedCompleter cc, Vec[] vecs, Vec v, long[] espc, int[][] cmaps) {
-      super(cc);
-      _vecs = vecs;
-      _v = v;
-      _espc = espc;
-      _cmaps = cmaps;
-    }
-
-    @Override
-    public void compute2() {
-      addToPendingCount(_vecs.length - 1 - 1);
-      int offset = 0;
-      for (int i = 1; i < _vecs.length; i++) {
-        new AstRBind.RbindMRTask(this, _cmaps[i], _v, offset).dfork(_vecs[i]);
-        offset += _vecs[i].nChunks();
-      }
-    }
-
-    @Override
-    public void onCompletion(CountedCompleter cc) {
-      DKV.put(_v);
-    }
-  }
-
-  private static class RbindMRTask extends MRTask<AstRBind.RbindMRTask> {
-    private final int[] _cmap;
-    private final int _chunkOffset;
-    private final Vec _v;
-
-    RbindMRTask(H2O.H2OCountedCompleter hc, int[] cmap, Vec v, int offset) {
-      super(hc);
-      _cmap = cmap;
-      _v = v;
-      _chunkOffset = offset;
-    }
-
-    @Override
-    public void map(Chunk cs) {
-      int idx = _chunkOffset + cs.cidx();
-      Key ckey = Vec.chunkKey(_v._key, idx);
-      if (_cmap != null) {
-        assert !cs.hasFloat() : "Input chunk (" + cs.getClass() + ") has float, but is expected to be categorical";
-        NewChunk nc = new NewChunk(_v, idx);
-        // loop over rows and update ints for new domain mapping according to vecs[c].domain()
-        for (int r = 0; r < cs._len; ++r) {
-          if (cs.isNA(r)) nc.addNA();
-          else nc.addNum(_cmap[(int) cs.at8(r)], 0);
-        }
-        nc.close(_fs);
-      } else {
-        DKV.put(ckey, cs.deepCopy(), _fs, true);
-      }
-    }
-  }
+//  private static class RbindMRTask extends MRTask<AstRBind.RbindMRTask> {
+//    private final int[] _cmap;
+//    private final int _chunkOffset;
+//    private final Vec _v;
+//
+//    RbindMRTask(H2O.H2OCountedCompleter hc, int[] cmap, Vec v, int offset) {
+//      super(hc);
+//      _cmap = cmap;
+//      _v = v;
+//      _chunkOffset = offset;
+//    }
+//
+//    @Override
+//    public void map(Chunk cs) {
+//      int idx = _chunkOffset + cs.cidx();
+//      Key ckey = Vec.chunkKey(_v._key, idx);
+//      if (_cmap != null) {
+//        assert !cs.hasFloat() : "Input chunk (" + cs.getClass() + ") has float, but is expected to be categorical";
+//        NewChunk nc = new NewChunk(_v, idx);
+//        // loop over rows and update ints for new domain mapping according to vecs[c].domain()
+//        for (int r = 0; r < cs._len; ++r) {
+//          if (cs.isNA(r)) nc.addNA();
+//          else nc.addNum(_cmap[(int) cs.at8(r)], 0);
+//        }
+//        nc.close(_fs);
+//      } else {
+//        DKV.put(ckey, cs.deepCopy(), _fs, true);
+//      }
+//    }
+//  }
 
 }

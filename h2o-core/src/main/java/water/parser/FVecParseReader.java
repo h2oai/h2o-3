@@ -40,4 +40,6 @@ public class FVecParseReader implements ParseReader {
    * @return underlying Chunk
    */
   public Chunk getChunk() { return _chk.getChunk(0); }
+  public Vec getVec() { return _vec; }
+  public long start() { return _chk._start; }
 }

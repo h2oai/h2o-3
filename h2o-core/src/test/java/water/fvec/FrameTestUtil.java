@@ -8,11 +8,20 @@ import water.Key;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
 
+import java.util.ArrayList;
+
 /**
  * Methods to access frame internals.
  */
 @Ignore("Support for tests, but no actual tests here")
 public class FrameTestUtil extends Frame {
+  public static Frame createFrame(String fname, long[] chunkLayout, String[][] data) {
+    ArrayList<String> data2 = new ArrayList<>();
+    for(String [] sary:data)
+      for(String s:sary)
+        data2.add(s);
+    return createFrame(fname,chunkLayout,data2.toArray(new String[0]));
+  }
   public static Frame createFrame(String fname, long[] chunkLayout, String[] data) {
     AppendableVec av = new AppendableVec(new Vec.VectorGroup().addVec(), Vec.T_STR);
     int r = 0;

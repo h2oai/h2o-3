@@ -4,6 +4,7 @@ import hex.*;
 import hex.svd.SVDModel.SVDParameters;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
@@ -211,7 +212,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     assert anyVec != null;
     for (int i = 0; i < ncols; i++) {
       Vec v = anyVec.makeZero();
-      v.setDomain(adaptedDomme[i]);
+      v.setDomain(0,adaptedDomme[i]);
       fullFrm.add(prefix + _output._names[i], v);
     }
     GLRMScore gs = new GLRMScore(ncols, _parms._k, save_imputed, reverse_transform).doAll(fullFrm);
@@ -270,7 +271,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
 
     // Convert projection of archetypes into a frame with correct domains
     Frame f = ArrayUtils.frame((destination_key == null ? Key.<Frame>make() : destination_key), adaptedFr.names(), proj);
-    for(int i = 0; i < ncols; i++) f.vec(i).setDomain(adaptedDomme[i]);
+    for(int i = 0; i < ncols; i++) f.vecs().setDomain(i,adaptedDomme[i]);
     return f;
   }
 
@@ -291,21 +292,21 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       _reverse_transform = reverse_transform;
     }
 
-    @Override public void map(Chunk[] chks) {
+    @Override public void map(ChunkAry chks) {
       float[] atmp = new float[_ncolA];
       double[] xtmp = new double[_ncolX];
       double[] preds = new double[_ncolA];
       _mb = GLRMModel.this.makeMetricBuilder(null);
 
       if (_save_imputed) {
-        for (int row = 0; row < chks[0]._len; row++) {
+        for (int row = 0; row < chks._len; row++) {
           double[] p = impute_data(chks, row, xtmp, preds);
           compute_metrics(chks, row, atmp, p);
           for (int c = 0; c < preds.length; c++)
-            chks[_ncolA + _ncolX + c].set(row, p[c]);
+            chks.set(row, _ncolA + _ncolX + c, p[c]);
         }
       } else {
-        for (int row = 0; row < chks[0]._len; row++) {
+        for (int row = 0; row < chks._len; row++) {
           double[] p = impute_data(chks, row, xtmp, preds);
           compute_metrics(chks, row, atmp, p);
         }
@@ -320,16 +321,16 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
       if (_mb != null) _mb.postGlobal();
     }
 
-    private float[] compute_metrics(Chunk[] chks, int row_in_chunk, float[] tmp, double[] preds) {
+    private float[] compute_metrics(ChunkAry chks, int row_in_chunk, float[] tmp, double[] preds) {
       for (int i = 0; i < tmp.length; i++)
-        tmp[i] = (float)chks[i].atd(row_in_chunk);
+        tmp[i] = (float)chks.atd(row_in_chunk,i);
       _mb.perRow(preds, tmp, GLRMModel.this);
       return tmp;
     }
 
-    private double[] impute_data(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+    private double[] impute_data(ChunkAry chks, int row_in_chunk, double[] tmp, double[] preds) {
       for (int i = 0; i < tmp.length; i++ )
-        tmp[i] = chks[_ncolA+i].atd(row_in_chunk);
+        tmp[i] = chks.atd(row_in_chunk,_ncolA+i);
       impute_data(tmp, preds);
       return preds;
     }

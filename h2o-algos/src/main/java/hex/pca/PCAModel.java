@@ -9,6 +9,7 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.util.JCodeGen;
 import water.util.SBPrintStream;
@@ -98,14 +99,14 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
       adaptFrm.add("PC"+String.valueOf(i+1),adaptFrm.anyVec().makeZero());
 
     new MRTask() {
-      @Override public void map( Chunk chks[] ) {
+      @Override public void map( ChunkAry chks) {
         if (isCancelled() || j != null && j.stop_requested()) return;
         double tmp [] = new double[_output._names.length];
         double preds[] = new double[_parms._k];
-        for( int row = 0; row < chks[0]._len; row++) {
-          double p[] = score0(chks, row, tmp, preds);
+        for( int row = 0; row < chks._len; row++) {
+          double p[] = score0(chks.getChunks(), row, tmp, preds);
           for( int c=0; c<preds.length; c++ )
-            chks[_output._names.length+c].set(row, p[c]);
+            chks.set(row, _output._names.length+c, p[c]);
         }
         if (j != null) j.update(1);
       }

@@ -201,8 +201,8 @@ public abstract class GLMTask  {
      _nums = dinfo._nums;
      _numOff = dinfo._cats;
      _responseId = haveResponse ? dinfo.responseChunkId(0) : -1;
-     _weightId = dinfo._weights?dinfo.weightChunkId():-1;
-     _offsetId = dinfo._offset?dinfo.offsetChunkId():-1;
+     _weightId = dinfo.weightChunkId();
+     _offsetId = dinfo.offsetChunkId();
      _nClasses = nclasses;
      _computeWeightedMeanSigmaResponse = computeWeightedMeanSigmaResponse;
      _skipNAs = skipNAs;
@@ -210,23 +210,23 @@ public abstract class GLMTask  {
 
    @Override public void setupLocal(){}
 
-   @Override public void map(Chunk [] chunks) {
+   @Override public void map(ChunkAry chunks) {
      _yMu = new double[_nClasses];
-     double [] ws = MemoryManager.malloc8d(chunks[0].len());
+     double [] ws = MemoryManager.malloc8d(chunks._len);
      if(_weightId != -1)
-       chunks[_weightId].getDoubles(ws,0,ws.length);
+       chunks.getChunk(_weightId).getDoubles(ws,0,ws.length);
      else
       Arrays.fill(ws,1);
      boolean changedWeights = false;
      if(_skipNAs) { // first find the rows to skip, need to go over all chunks including categoricals
-       double [] vals = MemoryManager.malloc8d(chunks[0]._len);
+       double [] vals = MemoryManager.malloc8d(chunks._len);
        int [] ids = MemoryManager.malloc4(vals.length);
-       for (int i = 0; i < chunks.length; ++i) {
+       for (int i = 0; i < chunks._numCols; ++i) {
          int n = vals.length;
-         if(chunks[i].isSparseZero())
-           n = chunks[i].asSparseDoubles(vals,ids);
+         if(chunks.isSparseZero(i))
+           n = chunks.getChunk(i).asSparseDoubles(vals,ids);
          else
-          chunks[i].getDoubles(vals,0,n);
+          chunks.getChunk(i).getDoubles(vals,0,n);
          for (int r = 0; r < n; ++r) {
            if (ws[r] != 0 && Double.isNaN(vals[r])) {
              ws[r] = 0;
@@ -235,9 +235,9 @@ public abstract class GLMTask  {
          }
        }
        if(changedWeights && _weightId != -1)
-         chunks[_weightId].set(ws);
+         chunks.setChunk(_weightId,ws);
      }
-     Chunk response = _responseId < 0 ? null : chunks[_responseId];
+     Chunk response = _responseId < 0 ? null : chunks.getChunk(_responseId);
      double [] numsResponse = null;
      _basicStats = new BasicStats(_nums);
      if(_computeWeightedMeanSigmaResponse) {
@@ -246,7 +246,7 @@ public abstract class GLMTask  {
      }
      // compute basic stats for numeric predictors
      for(int i = 0; i < _nums; ++i) {
-       Chunk c = chunks[i + _numOff];
+       Chunk c = chunks.getChunk(i + _numOff);
        double w;
        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
          if ((w = ws[r]) == 0) continue;
@@ -271,7 +271,7 @@ public abstract class GLMTask  {
        if(_computeWeightedMeanSigmaResponse) {
          //FIXME: Add support for subtracting offset from response
          for(int i = 0; i < _nClasses; ++i)
-           numsResponse[i] = chunks[chunks.length-_nClasses+i].atd(r);
+           numsResponse[i] = chunks.atd(r,chunks._numCols-_nClasses+i);
          _basicStatsResponse.add(numsResponse,w);
        }
        double d = response.atd(r);
@@ -288,9 +288,9 @@ public abstract class GLMTask  {
      }
      if(_basicStatsResponse != null)_basicStatsResponse.setNobs(nobs,wsum);
      for(int i = 0; i < _nums; ++i) {
-       if(chunks[i+_numOff].isSparseZero())
+       if(chunks.isSparseZero(i+_numOff))
          _basicStats.fillSparseZeros(i);
-       else if(chunks[i+_numOff].isSparseNA())
+       else if(chunks.isSparseNA(i+_numOff))
          _basicStats.fillSparseNAs(i);
      }
    }
@@ -565,11 +565,11 @@ public abstract class GLMTask  {
     public void map(Chunk [] chks) {
       _gradient = MemoryManager.malloc8d(_beta.length);
       Chunk response = chks[chks.length-1];
-      Chunk weights = _dinfo._weights?chks[_dinfo.weightChunkId()]:new C0DChunk(1,response._len);
+      Chunk weights = _dinfo.weightChunkId()!=-1?chks[_dinfo.weightChunkId()]:new C0DChunk(1,response._len);
       double [] ws = weights.getDoubles(MemoryManager.malloc8d(weights._len),0,weights._len);
       double [] ys = response.getDoubles(MemoryManager.malloc8d(weights._len),0,response._len);
       double [] etas = MemoryManager.malloc8d(response._len);
-      if(_dinfo._offset)
+      if(_dinfo.offsetChunkId()!=-1)
         chks[_dinfo.offsetChunkId()].getDoubles(etas,0,etas.length);
       double sparseOffset = 0;
       int numStart = _dinfo.numStart();
@@ -730,7 +730,7 @@ public abstract class GLMTask  {
       _job = job;
       _sparse = FrameUtils.sparseRatio(dinfo._adaptedFrame) < .125;
       _dinfo = dinfo;
-      if(_dinfo._offset) throw H2O.unimpl();
+      if(_dinfo.offsetChunkId() != -1) throw H2O.unimpl();
     }
 
     private final void computeCategoricalEtas(Chunk [] chks, double [][] etas, double [] vals, int [] ids) {
@@ -855,9 +855,9 @@ public abstract class GLMTask  {
         System.arraycopy(offsets, 0, etas[i], 0, K);
       Chunk response = chks[_dinfo.responseChunkId(0)];
       double [] ws = MemoryManager.malloc8d(M);
-      if(_dinfo._weights) ws = chks[_dinfo.weightChunkId()].getDoubles(ws,0,M);
+      if(_dinfo.weightChunkId() != -1) ws = chks[_dinfo.weightChunkId()].getDoubles(ws,0,M);
       else Arrays.fill(ws,1);
-      chks = Arrays.copyOf(chks,chks.length-1-(_dinfo._weights?1:0));
+      chks = Arrays.copyOf(chks,chks.length-1-(_dinfo.weightChunkId() != -1?1:0));
       double [] vals = MemoryManager.malloc8d(M);
       int [] ids = MemoryManager.malloc4(M);
       computeCategoricalEtas(chks,etas,vals,ids);
@@ -1215,12 +1215,15 @@ public abstract class GLMTask  {
       }
     }
 
-    private transient Chunk _sumExpChunk;
-    private transient Chunk _maxRowChunk;
+    private transient ChunkAry _chunks; // sumExp, maxRow
+    int _sumExp;
+    int _maxRow;
 
-    @Override public void map(Chunk [] chks) {
-      _sumExpChunk = chks[chks.length-2];
-      _maxRowChunk = chks[chks.length-1];
+
+    @Override public void map(ChunkAry chks) {
+      _chunks = chks;
+      _sumExp = chks._numCols-2;
+      _maxRow = chks._numCols-1;
       super.map(chks);
     }
 
@@ -1236,8 +1239,8 @@ public abstract class GLMTask  {
       for(int i = 0; i < _beta.length; ++i)
 //        if(i != _c)
           sumExp += Math.exp(_etas[i]-maxrow);
-      _maxRowChunk.set(r.cid,_etas[_c]);
-      _sumExpChunk.set(r.cid,Math.exp(_etas[_c]-maxrow)/sumExp);
+      _chunks.set(r.cid,_maxRow,_etas[_c]);
+      _chunks.set(r.cid,_sumExp,Math.exp(_etas[_c]-maxrow)/sumExp);
     }
   }
 
@@ -1493,35 +1496,35 @@ public abstract class GLMTask  {
     }
 
     @Override
-    public void map(Chunk [] chunks) {
+    public void map(ChunkAry chunks) {
       int cnt = 0;
-      Chunk wChunk = chunks[cnt++];
-      Chunk zChunk = chunks[cnt++];
-      Chunk ztildaChunk = chunks[cnt++];
+      int wChunk = cnt++;
+      int zChunk = cnt++;
+      int ztildaChunk = cnt++;
       Chunk xpChunk=null, xChunk=null;
 
       _temp = new double[_betaold.length];
       if (_interceptnew) {
-        xChunk = new C0DChunk(1,chunks[0]._len);
-        xpChunk = chunks[cnt++];
+        xChunk = new C0DChunk(1,chunks._len);
+        xpChunk = chunks.getChunk(cnt++);
       } else {
         if (_interceptold) {
-          xChunk = chunks[cnt++];
-          xpChunk = new C0DChunk(1,chunks[0]._len);
+          xChunk = chunks.getChunk(cnt++);
+          xpChunk = new C0DChunk(1,chunks._len);
         }
         else {
-          xChunk = chunks[cnt++];
-          xpChunk = chunks[cnt++];
+          xChunk = chunks.getChunk(cnt++);
+          xpChunk = chunks.getChunk(cnt++);
         }
       }
 
       // For each observation, add corresponding term to temp - or if categorical variable only add the term corresponding to its active level and the active level
       // of the most recently updated variable before it (if also cat). If for an obs the active level corresponds to an inactive column, we just dont want to include
       // it - same if inactive level in most recently updated var. so set these to zero ( Wont be updating a betaj which is inactive) .
-      for (int i = 0; i < chunks[0]._len; ++i) { // going over all the rows in the chunk
+      for (int i = 0; i < chunks._len; ++i) { // going over all the rows in the chunk
         double betanew = 0; // most recently updated prev variable
         double betaold = 0; // old value of current variable being updated
-        double w = wChunk.atd(i);
+        double w = chunks.atd(i,wChunk);
         if(w == 0) continue;
         ++_nobs;
         int observation_level = 0, observation_level_p = 0;
@@ -1580,12 +1583,12 @@ public abstract class GLMTask  {
          betanew = _betanew[observation_level_p];
 
         if (_interceptnew) {
-            ztildaChunk.set(i, ztildaChunk.atd(i) - betaold + valp * betanew); //
-            _temp[0] += w * (zChunk.atd(i) - ztildaChunk.atd(i));
+            chunks.set(i,ztildaChunk, chunks.atd(i,ztildaChunk) - betaold + valp * betanew); //
+            _temp[0] += w * (chunks.atd(i,zChunk) - chunks.atd(i,ztildaChunk));
           } else {
-            ztildaChunk.set(i, ztildaChunk.atd(i) - val * betaold + valp * betanew);
+            chunks.set(i,ztildaChunk, chunks.atd(i,ztildaChunk) - val * betaold + valp * betanew);
             if(observation_level >=0 ) // if the active level for that observation is an "inactive column" don't want to add contribution to temp for that observation
-            _temp[observation_level] += w * val * (zChunk.atd(i) - ztildaChunk.atd(i));
+            _temp[observation_level] += w * val * (chunks.atd(i,zChunk) - chunks.atd(i,ztildaChunk));
          }
 
        }
@@ -1613,16 +1616,16 @@ public abstract class GLMTask  {
     }
 
     @Override
-    public void map(Chunk [] chunks) {
+    public void map(ChunkAry chunks) {
       int cnt = 0;
-      Chunk wChunk = chunks[cnt++];
-      Chunk zChunk = chunks[cnt++];
-      Chunk filterChunk = chunks[cnt++];
+      int wChunk = cnt++;
+      int zChunk = cnt++;
+      int filterChunk = cnt++;
       Row r = _dinfo.newDenseRow();
-      for(int i = 0; i < chunks[0]._len; ++i) {
-        if(filterChunk.atd(i)==1) continue;
+      for(int i = 0; i < chunks._len; ++i) {
+        if(chunks.atd(i,filterChunk)==1) continue;
         _dinfo.extractDenseRow(chunks,i,r);
-        _temp = wChunk.at8(i)* (zChunk.atd(i)- r.innerProduct(_betaold) );
+        _temp = chunks.at8(i,wChunk)* (chunks.atd(i,zChunk)- r.innerProduct(_betaold) );
       }
 
     }
@@ -1651,20 +1654,20 @@ public abstract class GLMTask  {
     }
 
     @Override
-    public void map(Chunk [] chunks) {
-      Chunk wChunk = chunks[chunks.length-3];
-      Chunk zChunk = chunks[chunks.length-2];
-      Chunk zTilda = chunks[chunks.length-1];
-      chunks = Arrays.copyOf(chunks,chunks.length-3);
+    public void map(ChunkAry chunks) {
+      int wChunk = chunks._numCols-3;
+      int zChunk = chunks._numCols-2;
+      int zTilda = chunks._numCols-1;
+
       denums = new double[_dinfo.fullN()+1]; // full N is expanded variables with categories
 
       Row r = _dinfo.newDenseRow();
-      for(int i = 0; i < chunks[0]._len; ++i) {
+      for(int i = 0; i < chunks._len; ++i) {
         _dinfo.extractDenseRow(chunks,i,r);
         if (r.isBad() || r.weight == 0) {
-          wChunk.set(i,0);
-          zChunk.set(i,0);
-          zTilda.set(i,0);
+          chunks.set(i,wChunk,0);
+          chunks.set(i,zChunk,0);
+          chunks.set(i,zTilda,0);
           continue;
         }
         final double y = r.response(0);
@@ -1686,10 +1689,10 @@ public abstract class GLMTask  {
           w = r.weight / (var * d * d);
         }
         _likelihood += _params.likelihood(y,mu);
-        zTilda.set(i,eta-_betaw[_betaw.length-1]);
+        chunks.set(i,zTilda,eta-_betaw[_betaw.length-1]);
         assert w >= 0 || Double.isNaN(w) : "invalid weight " + w; // allow NaNs - can occur if line-search is needed!
-        wChunk.set(i,w);
-        zChunk.set(i,z);
+        chunks.set(i,wChunk,w);
+        chunks.set(i,zChunk,z);
 
         wsum+=w;
         wsumu+=r.weight; // just add the user observation weight for the scaling.

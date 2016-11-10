@@ -114,7 +114,7 @@ public class NaiveBayesTest extends TestUtil {
     try {
       Scope.enter();
       train = parse_test_file(Key.make("covtype.hex"), "smalldata/covtype/covtype.20k.data");
-      Scope.track(train.replace(54, train.vecs()[54].toCategoricalVec()));   // Change response to categorical
+      Scope.track(train.replace(54, train.vecs(54).toCategoricalVec()));   // Change response to categorical
       DKV.put(train);
 
       NaiveBayesParameters parms = new NaiveBayesParameters();

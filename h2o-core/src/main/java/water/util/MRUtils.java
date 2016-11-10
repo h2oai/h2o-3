@@ -3,10 +3,7 @@ package water.util;
 import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 
 import java.util.Arrays;
@@ -34,15 +31,16 @@ public class MRUtils {
 
     Frame r = new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
+      public void map(ChunkAry cs, NewChunkAry ncs) {
         final Random rng = getRNG(0);
         int count = 0;
-        for (int r = 0; r < cs[0]._len; r++) {
-          rng.setSeed(seed+r+cs[0].start());
-          if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
+        DVal dv = new DVal();
+        for (int r = 0; r < cs._len; r++) {
+          rng.setSeed(seed+r+cs._start);
+          if (rng.nextFloat() < fraction || (count == 0 && r == cs._len-1) ) {
             count++;
-            for (int i = 0; i < ncs.length; i++) {
-              ncs[i].addNum(cs[i].atd(r));
+            for (int i = 0; i < ncs._numCols; i++) {
+              ncs.addInflated(i,cs.getInflated(r,i,dv));
             }
           }
         }
@@ -187,7 +185,7 @@ public class MRUtils {
     Log.info("Doing stratified sampling for data set containing " + fr.numRows() + " rows from " + dist.length + " classes. Oversampling: " + (allowOversampling ? "on" : "off"));
     if (verbose)
       for (int i=0; i<dist.length;++i)
-        Log.info("Class " + label.factor(i) + ": count: " + dist[i] + " prior: " + (float)dist[i]/fr.numRows());
+        Log.info("Class " + label.factor(0,i) + ": count: " + dist[i] + " prior: " + (float)dist[i]/fr.numRows());
 
     // create sampling_ratios for class balance with max. maxrows rows (fill
     // existing array if not null).  Make a defensive copy.
@@ -261,12 +259,13 @@ public class MRUtils {
     //FIXME - this is doing uniform sampling, even if the weights are given
     Frame r = new MRTask() {
       @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
+      public void map(ChunkAry cs, NewChunkAry ncs) {
         final Random rng = getRNG(seed);
-        for (int r = 0; r < cs[0]._len; r++) {
-          if (cs[labelidx].isNA(r)) continue; //skip missing labels
-          rng.setSeed(cs[0].start()+r+seed);
-          final int label = (int)cs[labelidx].at8(r);
+        DVal dv = new DVal();
+        for (int r = 0; r < cs._len; r++) {
+          if (cs.isNA(r,labelidx)) continue; //skip missing labels
+          rng.setSeed(cs._start+r+seed);
+          final int label = (int)cs.at8(r,labelidx);
           assert(sampling_ratios.length > label && label >= 0);
           int sampling_reps;
           if (poisson) {
@@ -276,19 +275,20 @@ public class MRUtils {
             final float remainder = sampling_ratios[label] - (int)sampling_ratios[label];
             sampling_reps = (int)sampling_ratios[label] + (rng.nextFloat() < remainder ? 1 : 0);
           }
-          for (int i = 0; i < ncs.length; i++) {
+          for (int i = 0; i < ncs._numCols; i++) {
             for (int j = 0; j < sampling_reps; ++j) {
-              ncs[i].addNum(cs[i].atd(r));
+              ncs.addInflated(i,cs.getInflated(r,i,dv));
             }
           }
         }
       }
     }.doAll(fr.types(), fr).outputFrame(fr.names(), fr.domains());
 
+    VecAry vecs = r.vecs();
     // Confirm the validity of the distribution
-    Vec lab = r.vecs()[labelidx];
-    Vec wei = weightsidx != -1 ? r.vecs()[weightsidx] : null;
-    double[] dist = wei != null ? new ClassDist(lab).doAll(lab, wei).dist() : new ClassDist(lab).doAll(lab).dist();
+//    Vec lab = r.vecs()[labelidx];
+//    Vec wei = weightsidx != -1 ? r.vecs()[weightsidx] : null;
+    double[] dist = weightsidx != -1 ? new ClassDist(vecs.domain(labelidx).length).doAll(vecs.select(labelidx,weightsidx)).dist() : new ClassDist(vecs.domain(labelidx).length).doAll(vecs.select(labelidx)).dist();
 
     // if there are no training labels in the test set, then there is no point in sampling the test set
     if (dist == null) return fr;
@@ -297,7 +297,7 @@ public class MRUtils {
       double sumdist = ArrayUtils.sum(dist);
       Log.info("After stratified sampling: " + sumdist + " rows.");
       for (int i=0; i<dist.length;++i) {
-        Log.info("Class " + r.vecs()[labelidx].factor(i) + ": count: " + dist[i]
+        Log.info("Class " + vecs.factor(labelidx,i) + ": count: " + dist[i]
                 + " sampling ratio: " + sampling_ratios[i] + " actual relative frequency: " + (float)dist[i] / sumdist * dist.length);
       }
     }

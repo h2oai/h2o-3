@@ -13,31 +13,31 @@ import water.TestUtil;
  */
 public class SparseTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
-  private Chunk makeChunk(double [] vals, Futures fs) {
+  private ChunkAry makeChunk(double [] vals, Futures fs) {
     int nzs = 0;
     int [] nonzeros = new int[vals.length];
     int j = 0;
     for(double d:vals)if(d != 0)nonzeros[nzs++] = j++;
     Key key = Vec.newKey();
     AppendableVec av = new AppendableVec(key, Vec.T_NUM);
-    NewChunk nv = new NewChunk(av,0);
+    NewChunkAry nva = av.chunkForChunkIdx(0);
     for(double d:vals){
-      if(Double.isNaN(d))nv.addNA();
-      else if((long)d == d) nv.addNum((long)d,0);
-      else nv.addNum(d);
+      if(Double.isNaN(d))nva.addNA(0);
+      else if((long)d == d) nva.addNum((long)d,0);
+      else nva.addNum(d);
     }
-    nv.close(0,fs);
-    Vec vec = av.layout_and_close(fs);
-    return vec.chunkForChunkIdx(0);
+    Vec v = av.layout_and_close(nva.close(new Futures()));
+    fs.blockForPending();
+    return v.chunkForChunkIdx(0);
   }
 
-  private Chunk setAndClose(double val, int id, Chunk c, Futures fs){return setAndClose(new double[]{val},new int[]{id},c,fs);}
-  private Chunk setAndClose(double [] vals, int [] ids, Chunk c, Futures fs) {
+  private ChunkAry setAndClose(double val, int id, ChunkAry c, Futures fs){return setAndClose(new double[]{val},new int[]{id},c,fs);}
+  private ChunkAry setAndClose(double [] vals, int [] ids, ChunkAry c, Futures fs) {
     final int cidx = c.cidx();
     final Vec vec = c._vec;
     for(int i = 0; i < vals.length; ++i)
       c.set(ids[i], vals[i]);
-    c.close(cidx,fs);
+    c.close(fs);
     return vec.chunkForChunkIdx(cidx);
   }
 
@@ -50,7 +50,7 @@ public class SparseTest extends TestUtil {
     vals[nzs[0]] = vs[0];
     vals[nzs[1]] = vs[1];
     vals[nzs[2]] = vs[2];
-    Chunk c0 = makeChunk(vals,fs);
+    ChunkAry c0 = makeChunk(vals,fs);
     assertTrue(class0.isAssignableFrom(c0.getClass()));
     try{
       assertTrue(class0.isAssignableFrom(c0.getClass()));
@@ -67,7 +67,7 @@ public class SparseTest extends TestUtil {
         assertTrue(Double.isNaN(vals[nz]) || vals[nz] == c0.atd(j));
         j = c0.nextNZ(j);
       }
-      Iterator<CXIChunk.Value> it = ((CXIChunk)c0).values();
+      Iterator<CXIChunk.Value> it = ((CXIChunk)c0.getChunk(0)).values();
       // test iterator
       for(int nz:nzs){
         CXIChunk.Value v = it.next();
@@ -75,13 +75,13 @@ public class SparseTest extends TestUtil {
         assertEquals(Double.isNaN(vals[nz]), v.isNA());
         assertTrue(Double.isNaN(vals[nz]) || vals[nz] == v.asDouble());
       }
-      Chunk c1 = setAndClose(vals[length-1] = v1,length-1,c0,fs);
+      ChunkAry c1 = setAndClose(vals[length-1] = v1,length-1,c0,fs);
       assertTrue(class1.isAssignableFrom(c1.getClass()));
       // test sparse set
       assertEquals(4,c1.sparseLenZero());
       assertEquals(Double.isNaN(v1),c1.isNA(length - 1));
       assertTrue(Double.isNaN(v1) || v1 == c1.atd(length - 1));
-      Chunk c2 = setAndClose(vals[0] = v2,0,c1,fs);
+      ChunkAry c2 = setAndClose(vals[0] = v2,0,c1,fs);
       assertTrue(class2.isAssignableFrom(c2.getClass()));
       assertTrue(c2.nextNZ(-1) == 0);
       assertEquals(vals.length,c2.sparseLenZero());

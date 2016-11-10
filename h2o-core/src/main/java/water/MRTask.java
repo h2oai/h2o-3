@@ -3,7 +3,6 @@ package water;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
-import water.util.ArrayUtils;
 import water.util.DistributedException;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
@@ -597,7 +596,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       }
     } else if( _hi > _lo ) {    // Frame, Single chunk?
       Vec v0 = _fr.anyVec();
-      if( _run_local || v0.isLocal(_lo) ) { // And chunk is homed here?
+      if( _run_local || v0.isHomedLocally(_lo) ) { // And chunk is homed here?
         assert(_run_local || !H2O.ARGS.client) : "Client node should not process any keys in MRTask!";
         ChunkAry cs = v0.chunkForChunkIdx(_lo);
         if(_profile!=null)

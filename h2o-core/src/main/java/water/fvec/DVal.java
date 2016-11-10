@@ -6,6 +6,8 @@ import water.parser.BufferedString;
  * Created by tomas on 10/22/16.
  */
 public class DVal {
+  public boolean _missing;
+
   public enum type {N, D, S, U}
 
   type _t;

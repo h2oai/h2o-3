@@ -22,7 +22,12 @@ public class SubsetChunk extends Chunk {
   @Override protected boolean set_impl(int idx, double d) { return false; }
   @Override protected boolean set_impl(int idx, float f)  { return false; }
   @Override protected boolean setNA_impl(int idx)         { return false; }
-  @Override public NewChunk inflate_impl(NewChunk  nc ) { throw water.H2O.fail(); }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    return _data.getInflated(_rows.at4(i),v);
+  }
+
   public static AutoBuffer write_impl(SubsetChunk sc, AutoBuffer bb) { throw water.H2O.fail(); }
   @Override protected final void initFromBytes () { throw water.H2O.fail(); }
 }

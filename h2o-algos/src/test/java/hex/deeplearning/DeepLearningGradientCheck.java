@@ -12,6 +12,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
@@ -43,9 +44,9 @@ public class DeepLearningGradientCheck extends TestUtil {
       DKV.put(tfr);
       tfr.add("Binary", tfr.anyVec().makeZero());
       new MRTask() {
-        public void map(Chunk[] c) {
-          for (int i=0;i<c[0]._len;++i)
-            if (c[0].at8(i)==1) c[1].set(i,1);
+        public void map(ChunkAry c) {
+          for (int i=0;i<c._len;++i)
+            if (c.at8(i)==1) c.set(i,1,1);
         }
       }.doAll(tfr.vecs(new String[]{"Class","Binary"}));
       Vec cv = tfr.vec("Binary").toCategoricalVec();

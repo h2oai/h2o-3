@@ -62,7 +62,7 @@ public class MakeGLMModelHandler extends Handler {
   }
 
   public static Frame oneHot(Frame fr, String[] interactions, boolean useAll, boolean standardize, final boolean interactionsOnly, final boolean skipMissing) {
-    final DataInfo dinfo = new DataInfo(fr,null,1,useAll,standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,skipMissing,false,false,false,false,false,interactions);
+    final DataInfo dinfo = new DataInfo(fr,null,1,useAll,standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,skipMissing,false,false,null,null,null);
     Frame res;
     if( interactionsOnly ) {
       if( null==dinfo._interactionVecs ) throw new IllegalArgumentException("no interactions");
@@ -90,16 +90,16 @@ public class MakeGLMModelHandler extends Handler {
         }
       }
       res = new MRTask() {
-        @Override public void map(Chunk[] cs, NewChunk ncs[]) {
+        @Override public void map(ChunkAry cs, NewChunkAry ncs) {
           DataInfo.Row r = dinfo.newDenseRow();
-          for(int i=0;i<cs[0]._len;++i) {
+          for(int i=0;i<cs._len;++i) {
             r=dinfo.extractDenseRow(cs,i,r);
             if( skipMissing && r.isBad() ) continue;
             int newChkIdx=0;
             for(int idx=0;idx<colIds.length;++idx) {
               int startOffset = colIds[idx];
               for(int start=startOffset;start<(startOffset+offsetIds[idx]);++start )
-                ncs[newChkIdx++].addNum(r.get(start));
+                ncs.addNum(newChkIdx++,r.get(start));
             }
           }
         }
@@ -109,13 +109,13 @@ public class MakeGLMModelHandler extends Handler {
       Arrays.fill(types, Vec.T_NUM);
       res = new MRTask() {
         @Override
-        public void map(Chunk[] cs, NewChunk ncs[]) {
+        public void map(ChunkAry cs, NewChunkAry ncs) {
           DataInfo.Row r = dinfo.newDenseRow();
-          for (int i = 0; i < cs[0]._len; ++i) {
+          for (int i = 0; i < cs._len; ++i) {
             r = dinfo.extractDenseRow(cs, i, r);
             if( skipMissing && r.isBad() ) continue;
-            for (int n = 0; n < ncs.length; ++n)
-              ncs[n].addNum(r.get(n));
+            for (int n = 0; n < ncs._numCols; ++n)
+              ncs.addNum(r.get(n));
           }
         }
       }.doAll(types, dinfo._adaptedFrame.vecs()).outputFrame(Key.make("OneHot"+Key.make().toString()), dinfo.coefNames(), null);

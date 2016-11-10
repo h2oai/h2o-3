@@ -50,22 +50,6 @@ public class CNAXIChunk extends CXIChunk {
     return getId(off) != i;
   }
 
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.setSparseNA();
-    nc.alloc_mantissa(_sparseLen);
-    nc.alloc_exponent(_sparseLen);
-    nc.alloc_indices(_sparseLen);
-    int off = _OFF;
-    for( int i = 0; i < _sparseLen; ++i, off += ridsz() + valsz()) {
-      long v = getIValue(off);
-      int id = getId(off);
-      nc.addNAs(id-nc._len);
-      nc.addNum(v,0);
-    }
-    nc._len = _len;
-    return nc;
-  }
-
   public Iterator<Value> values(){
     return new SparseIterator(new Value(){
       @Override public final long asLong() {return getIValue(_off);}

@@ -90,7 +90,7 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // function - it does not DO any replication, nor does it dictate any policy
   // on how fast replication occurs. Returns -1 if the desired replica
   // is nonsense, e.g. asking for replica #3 in a 2-Node system.
-  int D( int repl ) {
+  public int D( int repl ) {
     int hsz = H2O.CLOUD.size();
 
     if (0 == hsz) return -1;    // Clients starting up find no cloud, be unable to home keys
@@ -490,4 +490,6 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     ab.putJSONStr("type", ReflectionUtils.findActualClassParameter(k.getClass(), 0).getSimpleName());
     return ab;
   }
+
+  public void flushCache() {_cache = 0;}
 }

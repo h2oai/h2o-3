@@ -73,7 +73,7 @@ public class FVecTest extends TestUtil {
       fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
       double[] mins =new double[fr.numCols()];
       for (int i=0; i < mins.length; i++)
-        mins[i] = fr.vecs()[i].min();
+        mins[i] = fr.vecs().min(i);
       // Scribble into a freshly parsed frame
       new SetDoubleInt(mins).doAll(fr);
     } finally {
@@ -84,20 +84,19 @@ public class FVecTest extends TestUtil {
   static class SetDoubleInt extends MRTask {
     final double _mins[];
     public SetDoubleInt(double [] mins) {_mins = mins;}
-    @Override public void map( Chunk chks[] ) {
-      Chunk c=null;
+    @Override public void map( ChunkAry chks ) {
+      int c = -1;
       int i;
-      for(i=0; i < chks.length; i++) {
-        if( chks[i].getClass()==water.fvec.C2Chunk.class )
-        { c=chks[i]; break; }
+      for(i=0; i < chks._numCols; i++) {
+        if( chks.getChunk(i).getClass()==water.fvec.C2Chunk.class )
+        { c=i; break; }
       }
-      Assert.assertNotNull("Expect to find a C2Chunk", c);
-      assertTrue(c._vec.writable());
+      Assert.assertTrue("Expect to find a C2Chunk", c != -1);
 
-      double d=_mins[i];
-      for(i=0; i< c._len; i++ ) {
-        double e = c.atd(i);
-        c.set(i, d);
+      double d=_mins[c];
+      for(i=0; i< chks._len; i++ ) {
+        double e = chks.atd(i,c);
+        chks.set(i,c, d);
         d=e;
       }
     }
@@ -120,7 +119,7 @@ public class FVecTest extends TestUtil {
   private static class TestNewVec extends MRTask<TestNewVec> {
     @Override public void map( Chunk in, NewChunk out ) {
       for( int i=0; i< in._len; i++ )
-        out.addNum( in.at8_abs(i)+(in.at8_abs(i) >= ' ' ? 1 : 0),0);
+        out.addNum( in.at8(i)+(in.at8(i) >= ' ' ? 1 : 0),0);
     }
   }
 
@@ -139,15 +138,14 @@ public class FVecTest extends TestUtil {
       assertEquals(3993,sums[2],EPSILON);
 
       // Create a temp column of zeros
-      Vec v0 = fr.vecs()[0];
-      Vec v1 = fr.vecs()[1];
-      vz = v0.makeZero();
+      VecAry vecs = fr.vecs();
+      vz = vecs.makeZero();
       // Add column 0 & 1 into the temp column
-      new PairSum().doAll(vz,v0,v1);
+      new PairSum().doAll(new VecAry(vecs,vz));
       // Add the temp to frame
       // Now total the temp col
       fr.delete();              // Remove all other columns
-      fr = new Frame(Key.<Frame>make(), new String[]{"tmp"}, new Vec[]{vz}); // Add just this one
+      fr = new Frame(Key.<Frame>make(), new String[]{"tmp"}, vz); // Add just this one
       sums = new Sum().doAll(fr)._sums;
       assertEquals(3949+3986,sums[0],EPSILON);
 
@@ -172,9 +170,10 @@ public class FVecTest extends TestUtil {
 
   // Simple vector sum C=A+B
   private static class PairSum extends MRTask<Sum> {
-    @Override public void map( Chunk out, Chunk in1, Chunk in2 ) {
-      for( int i=0; i< out._len; i++ )
-        out.set(i, in1.at8(i) + in2.at8(i));
+    @Override public void map( ChunkAry chks) {
+      int out = 0, in1 = 1, in2 = 2;
+      for( int i=0; i< chks._len; i++ )
+        chks.set(i,out, chks.at8(i,in1) + chks.at8(i,in2));
     }
   }
 
@@ -204,7 +203,7 @@ public class FVecTest extends TestUtil {
       v2.startRollupStats(fs);
       v2.startRollupStats(fs,true);
       assertEquals(0, v2.min(), 0);
-      long [] bins = v2.bins();
+      long [] bins = v2.bins(0);
       assertEquals(10,bins.length);
       // TODO: should test percentiles?
       for(long l:bins) assertEquals(1,l);
@@ -236,7 +235,7 @@ public class FVecTest extends TestUtil {
     try {
       double[] d = new double[]{0.812834256224, 1.56386606237, 3.12702210880, 3.68417563302, 5.51277746586};
       vec = Vec.makeVec(d,Vec.newKey());
-      double pct[] = vec.pctiles();
+      double pct[] = vec.pctiles(0);
       double eps = (vec.max()-vec.min())/1e-3;
       Assert.assertEquals(pct[0],d[0],eps); // 0.01
       Assert.assertEquals(pct[1],d[0],eps); // 0.1
@@ -251,7 +250,7 @@ public class FVecTest extends TestUtil {
 
       d = new double[]{490,492,494,496,498};
       vec = Vec.makeVec(d,Vec.newKey());
-      pct = vec.pctiles();
+      pct = vec.pctiles(0);
       eps = (vec.max()-vec.min())/1e-3;
       System.out.println(java.util.Arrays.toString(pct));
       Assert.assertEquals(pct[0],d[0],eps); // 0.01

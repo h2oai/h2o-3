@@ -13,6 +13,7 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.JCodeGen;
@@ -81,14 +82,14 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
       for(int c = 0; c < len; c++)
         adaptFrm.add(prefix + Double.toString(c+1), adaptFrm.anyVec().makeZero());
       new MRTask() {
-        @Override public void map( Chunk chks[] ) {
+        @Override public void map( ChunkAry chks ) {
           if (isCancelled() || j != null && j.stop_requested()) return;
           double tmp [] = new double[_output._names.length];
           double preds[] = new double[len];
-          for(int row = 0; row < chks[0]._len; row++) {
+          for(int row = 0; row < chks._len; row++) {
             double p[] = score_indicator(chks, row, tmp, preds);
             for(int c = 0; c < preds.length; c++)
-              chks[_output._names.length + c].set(row, p[c]);
+              chks.set(row, _output._names.length + c, p[c]);
           }
           if (j != null) j.update(1);
         }
@@ -105,11 +106,11 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     }
   }
 
-  public double[] score_indicator(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds) {
+  public double[] score_indicator(ChunkAry chks, int row_in_chunk, double[] tmp, double[] preds) {
     assert _parms._pred_indicator;
     assert tmp.length == _output._names.length && preds.length == _output._centers_raw.length;
     for(int i = 0; i < tmp.length; i++)
-      tmp[i] = chks[i].atd(row_in_chunk);
+      tmp[i] = chks.atd(row_in_chunk,i);
 
     double[] clus = new double[1];
     score0(tmp, clus);   // this saves cluster number into clus[0]
@@ -120,11 +121,11 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     return preds;
   }
 
-  public double[] score_ratio(Chunk[] chks, int row_in_chunk, double[] tmp) {
+  public double[] score_ratio(ChunkAry chks, int row_in_chunk, double[] tmp) {
     assert _parms._pred_indicator;
     assert tmp.length == _output._names.length;
     for(int i = 0; i < tmp.length; i++)
-      tmp[i] = chks[i].atd(row_in_chunk);
+      tmp[i] = chks.atd(row_in_chunk,i);
 
     double[][] centers = _parms._standardize ? _output._centers_std_raw : _output._centers_raw;
     double[] preds = hex.genmodel.GenModel.KMeans_simplex(centers,tmp,_output._domains,_output._normSub,_output._normMul);

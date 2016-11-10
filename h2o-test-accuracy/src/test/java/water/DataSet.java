@@ -36,7 +36,7 @@ public class DataSet {
 			String responseColumnName = frame._names[responseColumn];
 			AccuracyTestingSuite.summaryLog.println("Converting response column (idx/name): " + responseColumn + "/" +
 				responseColumnName + " to categorical for dataset: " + this.id);
-			Scope.track(frame.replace(responseColumn, frame.vecs()[responseColumn].toCategoricalVec()));
+			Scope.track(frame.replace(responseColumn, frame.vecs(responseColumn).toCategoricalVec()));
 			DKV.put(frame);
 		}
 	}

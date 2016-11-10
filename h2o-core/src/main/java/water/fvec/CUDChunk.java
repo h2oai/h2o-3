@@ -77,13 +77,14 @@ public class CUDChunk extends Chunk {
   @Override protected boolean setNA_impl(int idx) {
     return set_impl(idx, Double.NaN);
   }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.alloc_doubles(_len);
-    for( int i=0; i< _len; i++ )
-      nc.doubles()[i] = atd(i);
-    nc.set_sparseLen(nc._len = (_len));
-    return nc;
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.D;
+    v._d = atd(i);
+    return v;
   }
+
   @Override protected final void initFromBytes () {
     _len = UnsafeUtils.get4(_mem, 0);
     numUniques = UnsafeUtils.get4(_mem, 4);

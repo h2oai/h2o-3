@@ -4,9 +4,7 @@ import hex.*;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
@@ -134,9 +132,10 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         DKV.put(di);
         final double radius = _parms._radius_scale * .1/Math.pow(Math.log(orig.numRows()), 1.0 / orig.numCols()); // mostly always going to be ~ (_radius_scale * 0.09)
 
+        VecAry vecs = orig.vecs();
         // Add workspace vector for exemplar assignment
-        Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
-        Vec assignment = vecs[vecs.length-1] = orig.anyVec().makeZero();
+        Vec assignment = vecs.makeZero();
+        vecs.append(assignment);
 
         _job.update(1, "Aggregating.");
         AggregateTask aggTask = new AggregateTask(di._key, radius, _job._key).doAll(vecs);
@@ -162,7 +161,9 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           model.unlock(_job);
           Scope.untrack(Collections.singletonList(model._exemplar_assignment_vec_key));
           Frame outFrame = model._output._output_frame.get();
-          if (outFrame != null) Scope.untrack(outFrame.keysList());
+          if (outFrame != null)
+            for(Vec v:outFrame.vecs().vecs())
+              Scope.untrack(v._key);
         }
         if (di!=null) di.remove();
       }
@@ -240,26 +241,28 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     }
 
     @Override
-    public void map(Chunk[] chks) {
+    public void map(ChunkAry chks) {
       _mapping = new GIDMapping();
       Exemplar[] es = new Exemplar[4];
+      int assignmentChk = chks._numCols-1;
+      Chunk [] dataChks = new Chunk[assignmentChk];
 
-      Chunk[] dataChks = Arrays.copyOf(chks, chks.length-1);
-      Chunk assignmentChk = chks[chks.length-1];
-
+      for(int i = 0; i < assignmentChk; ++i)
+        dataChks[i] = chks.getChunk(i);
+      ChunkAry dataChksAry = new ChunkAry(chks._vec,chks.cidx(),dataChks);
       // loop over rows
       DataInfo di = ((DataInfo)_dataInfoKey.get());
       assert(di!=null);
       DataInfo.Row row = di.newDenseRow(); //shared _dataInfo - faster, no writes
       final int nCols = row.nNums;
-      for (int r=0; r<chks[0]._len; ++r) {
-        long rowIndex = chks[0].start()+r;
-        row = di.extractDenseRow(dataChks, r, row);
+      for (int r=0; r<chks._len; ++r) {
+        long rowIndex = chks.start()+r;
+        row = di.extractDenseRow(dataChksAry, r, row);
         double[] data = Arrays.copyOf(row.numVals, nCols);
         if (r==0) {
           Exemplar ex = new Exemplar(data, rowIndex);
           es = Exemplar.addExemplar(es,ex);
-          assignmentChk.set(r, ex.gid);
+          chks.set(r,assignmentChk, ex.gid);
         } else {
           /* find closest exemplar to this case */
           double distanceToNearestExemplar = Double.MAX_VALUE;
@@ -282,21 +285,21 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
           /* found a close exemplar, so add to list */
           if (distanceToNearestExemplar < _delta) {
             es[closestExemplarIndex]._cnt++;
-            assignmentChk.set(r, gid);
+            chks.set(r, assignmentChk, gid);
           } else {
             /* otherwise, assign a new exemplar */
             Exemplar ex = new Exemplar(data, rowIndex);
             es = Exemplar.addExemplar(es,ex);
-            assignmentChk.set(r, rowIndex); //assign to self
+            chks.set(r, assignmentChk, rowIndex); //assign to self
           }
         }
       }
       // populate output primitive arrays
       _exemplars = Exemplar.trim(es);
-      assert(_exemplars.length <= chks[0].len());
+      assert(_exemplars.length <= chks._len);
       long sum=0;
       for (Exemplar e: _exemplars) sum+=e._cnt;
-      assert(sum <= chks[0].len());
+      assert(sum <= chks._len);
       ((Job)_jobKey.get()).update(1, "Aggregating.");
     }
 
@@ -353,7 +356,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
     final long[][] _map;
     public RenumberTask(AggregateTask.GIDMapping mapping) { _map = mapping.unsortedList(); }
     @Override
-    public void map(Chunk c) {
+    public void map(ChunkAry c) {
       for (int i=0;i<c._len;++i) {
         long old = c.at8(i);
         //int pos=Arrays.binarySearch(_map[0], old);

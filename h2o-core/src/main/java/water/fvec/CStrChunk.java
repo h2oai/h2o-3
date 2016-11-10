@@ -32,6 +32,15 @@ public class CStrChunk extends Chunk {
   }
 
   @Override protected  boolean setNA_impl(int idx) { return false; }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.S;
+    if(v._missing = isNA(i)) return v;
+    v._str = atStr(v._str,i);
+    return v;
+  }
+
   @Override protected  boolean set_impl(int idx, float f) { if (Float.isNaN(f)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override protected  boolean set_impl(int idx, double d) { if (Double.isNaN(d)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override protected  boolean set_impl(int idx, long l) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
@@ -58,7 +67,7 @@ public class CStrChunk extends Chunk {
     _isAllASCII = b != 0;
     _len = ((_valstart-_OFF)>>2);
   }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
+  private NewChunk inflate2(NewChunk nc){
     nc.set_sparseLen(nc._len = (_len));
     nc._isAllASCII = _isAllASCII;
     int [] ids = nc.alloc_str_indices(_len);
@@ -68,6 +77,11 @@ public class CStrChunk extends Chunk {
     nc._ss = MemoryManager.malloc1(nc._sslen);
     System.arraycopy(_mem,_valstart,nc._ss,0,nc._sslen);
     return nc;
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to){
+    if(from == 0 && to == _len) return inflate2(nc);
+    return super.add2Chunk(nc,from,to);
   }
 
   /**

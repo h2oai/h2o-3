@@ -5,7 +5,9 @@ import hex.ModelMetrics;
 import water.Job;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.NewChunk;
+import water.fvec.NewChunkAry;
 import water.util.FrameUtils;
 
 import java.util.Arrays;
@@ -48,7 +50,7 @@ public class GLMScore extends MRTask<GLMScore> {
       for (int c = 0; c < ncols; c++)  // Output predictions; sized for train only (excludes extra test classes)
         preds[c].addNum(ps[c]);
   }
-  public void map(Chunk[] chks, NewChunk[] preds) {
+  public void map(ChunkAry chks, NewChunkAry preds) {
     if (isCancelled() || _j != null && _j.stop_requested()) return;
     double[] ps;
     if (_computeMetrics) {
@@ -62,12 +64,12 @@ public class GLMScore extends MRTask<GLMScore> {
     // compute
     if (_sparse) {
       for (DataInfo.Row r : _dinfo.extractSparseRows(chks))
-        processRow(r,res,ps,preds,ncols);
+        processRow(r,res,ps, (NewChunk[]) preds.getChunks(),ncols);
     } else {
       DataInfo.Row r = _dinfo.newDenseRow();
-      for (int rid = 0; rid < chks[0]._len; ++rid) {
+      for (int rid = 0; rid < chks._len; ++rid) {
         _dinfo.extractDenseRow(chks, rid, r);
-        processRow(r,res,ps,preds,ncols);
+        processRow(r,res,ps,(NewChunk[]) preds.getChunks(),ncols);
       }
     }
     if (_j != null) _j.update(1);

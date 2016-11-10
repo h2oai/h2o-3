@@ -19,22 +19,38 @@ public class C4Chunk extends Chunk {
     return res == _NA?Double.NaN:res;
   }
   @Override public final boolean isNA( int i ) { return UnsafeUtils.get4(_mem,i<<2) == _NA; }
+
   @Override protected boolean set_impl(int idx, long l) {
-    if( !(Integer.MIN_VALUE < l && l <= Integer.MAX_VALUE) ) return false;
+    if(l == _NA || l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) return false;
     UnsafeUtils.set4(_mem,idx<<2,(int)l);
     return true;
   }
-  @Override protected boolean set_impl(int i, double d) { return false; }
+
   @Override protected boolean set_impl(int i, float f ) { return false; }
   @Override protected boolean setNA_impl(int idx) { UnsafeUtils.set4(_mem,(idx<<2),(int)_NA); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = UnsafeUtils.get4(_mem,(i<<2));
-      if( res == _NA ) nc.addNA();
-      else             nc.addNum(res,0);
-    }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.N;
+    v._m = UnsafeUtils.get4(_mem,i<<2);
+    v._e = 0;
+    v._missing = v._m == _NA;
+    return v;
+  }
+
+  private final void addVal(int i, NewChunk nc){
+    int res = UnsafeUtils.get4(_mem,(i<<2));
+    if( res == _NA ) nc.addNA();
+    else             nc.addNum(res,0);
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) addVal(i,nc);
+    return nc;
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    for( int i:rows) addVal(i,nc);
     return nc;
   }
   @Override public final void initFromBytes () {

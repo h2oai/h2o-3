@@ -64,4 +64,12 @@ public class NewChunkAry extends ChunkAry<NewChunk> {
         throw H2O.unimpl();
     }
   }
+
+  public void addInflated(int c, DVal inflated) {
+    _cs[c].addInflated(inflated);
+  }
+
+  public int len() {
+    return _cs[0]._len;
+  }
 }

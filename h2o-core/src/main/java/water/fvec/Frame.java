@@ -284,6 +284,21 @@ public class Frame extends Lockable<Frame> {
     return res;
   }
 
+  public void insertVec(int i, String row, VecAry x) {
+    _names = ArrayUtils.insert(_names,i,row);
+    _vecs.insertVec(i,x);
+  }
+
+  public String[] domain(int c) {return _vecs.domain(c);}
+
+
+  public Frame subframe(String[] names) {
+    return subframe(find(names));
+  }
+  public Frame subframe(int[] ids) {
+    return new Frame(ArrayUtils.select(_names,ids),_vecs.select(ids));
+  }
+
   /** Pair of (column name, Frame key). */
   public static class VecSpecifier extends Iced {
     public Key<Frame> _frame;

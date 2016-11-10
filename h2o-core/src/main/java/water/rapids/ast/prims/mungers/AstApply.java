@@ -53,11 +53,11 @@ public class AstApply extends AstPrimitive {
     // Break each column into it's own Frame, then execute the function passing
     // the 1 argument.  All columns are independent, and this loop should be
     // parallized over each column.
-    Vec vecs[] = fr.vecs();
-    Val vals[] = new Val[vecs.length];
+    VecAry vecs = fr.vecs();
+    Val vals[] = new Val[vecs._numCols];
     AstRoot[] asts = new AstRoot[]{fun, null};
-    for (int i = 0; i < vecs.length; i++) {
-      asts[1] = new AstFrame(new Frame(new String[]{fr._names[i]}, new Vec[]{vecs[i]}));
+    for (int i = 0; i < vecs._numCols; i++) {
+      asts[1] = new AstFrame(new Frame(new String[]{fr._names[i]}, vecs.select(i)));
       try (Env.StackHelp stk_inner = env.stk()) {
         vals[i] = fun.apply(env, stk_inner, asts);
       }
@@ -68,15 +68,15 @@ public class AstApply extends AstPrimitive {
     // 1 row column per applied function result (per column), and as many rows
     // as there are columns in the returned Frames.
     Val v0 = vals[0];
-    Vec ovecs[] = new Vec[vecs.length];
+    Vec ovecs[] = new Vec[vecs._numCols];
     switch (v0.type()) {
       case Val.NUM:
-        for (int i = 0; i < vecs.length; i++)
+        for (int i = 0; i < vecs._numCols; i++)
           ovecs[i] = Vec.makeCon(vals[i].getNum(), 1L); // Since the zero column is a number, all must be numbers
         break;
       case Val.FRM:
         long nrows = v0.getFrame().numRows();
-        for (int i = 0; i < vecs.length; i++) {
+        for (int i = 0; i < vecs._numCols; i++) {
           Frame res = vals[i].getFrame(); // Since the zero column is a frame, all must be frames
           if (res.numCols() != 1)
             throw new IllegalArgumentException("apply result Frames must have one column, found " + res.numCols() + " cols");
@@ -86,7 +86,7 @@ public class AstApply extends AstPrimitive {
         }
         break;
       case Val.NUMS:
-        for (int i = 0; i < vecs.length; i++)
+        for (int i = 0; i < vecs._numCols; i++)
           ovecs[i] = Vec.makeCon(vals[i].getNums()[0], 1L);
         break;
       case Val.STRS:

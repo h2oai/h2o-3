@@ -25,8 +25,8 @@ public class OOMTest extends TestUtil {
     Value val1s[] = new Value[nchks];
     Value val2s[] = new Value[nchks];
     for( int i=0; i<nchks; i++ ) {
-      val1s[i] = vrnd1.chunkIdx(i);
-      val2s[i] = vrnd2.chunkIdx(i);
+      val1s[i] = DKV.get(vrnd1.newChunkKey(i));
+      val2s[i] = DKV.get(vrnd2.newChunkKey(i));
     }
 
     // Flag val1s as "last touched a long time ago"
@@ -73,8 +73,8 @@ public class OOMTest extends TestUtil {
     Assert.assertTrue("Frames loaded from disk are equal", id);
     // All Chunks are recorded as being back-in-memory
     for( int i=0; i<nchks; i++ ) {
-      Value v1 = vrnd1.chunkIdx(i);
-      Value v2 = vrnd2.chunkIdx(i);
+      Value v1 = DKV.get(vrnd1.newChunkKey(i));
+      Value v2 = DKV.get(vrnd2.newChunkKey(i));
       Assert.assertTrue(v1.isPersisted());
       Assert.assertTrue(v2.isPersisted());
       Assert.assertTrue(v1.rawMem() != null || !v1._key.home());

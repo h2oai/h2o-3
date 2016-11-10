@@ -11,10 +11,7 @@ import water.DKV;
 import water.Job;
 import water.Key;
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 public class LinearAlgebraUtils {
@@ -114,25 +111,27 @@ public class LinearAlgebraUtils {
       _yt = yt;
     }
 
-    @Override public void map(Chunk[] cs) {
-      assert cs.length == _ncolX + _yt.length;
+    @Override public void map(ChunkAry cs) {
+      assert cs._numCols == _ncolX + _yt.length;
       // Copy over only X frame chunks
       Chunk[] xchk = new Chunk[_ncolX];
       DataInfo.Row xrow = _xinfo.newDenseRow();
-      System.arraycopy(cs,0,xchk,0,_ncolX);
+      for(int i = 0; i < _ncolX; ++i)
+        xchk[i] = cs.getChunk(i);
+      ChunkAry ary = new ChunkAry(cs._vec,cs._cidx,xchk);
       double sum;
-      for(int row = 0; row < cs[0]._len; row++) {
+      for(int row = 0; row < cs._len; row++) {
         // Extract row of X
-        _xinfo.extractDenseRow(xchk, row, xrow);
+        _xinfo.extractDenseRow(ary, row, xrow);
         if (xrow.isBad()) continue;
         int bidx = _ncolX;
         for (double[] ps : _yt ) {
           // Inner product of X row with Y column (Y' row)
           sum = xrow.innerProduct(ps);
-          cs[bidx].set(row, sum);   // Save inner product to B
+          cs.set(row,bidx, sum);   // Save inner product to B
           bidx++;
         }
-        assert bidx == cs.length;
+        assert bidx == cs._numCols;
       }
     }
   }
@@ -269,17 +268,19 @@ public class LinearAlgebraUtils {
       _sse = 0;
     }
 
-    @Override public void map(Chunk cs[]) {
-      assert 2 * _ncols == cs.length;
+    @Override public void map(ChunkAry cs) {
+      assert 2 * _ncols == cs._numCols;
 
       // Copy over only A frame chunks
       Chunk[] achks = new Chunk[_ncols];
-      System.arraycopy(cs,0,achks,0,_ncols);
-
-      for(int row = 0; row < cs[0]._len; row++) {
+      for(int i = 0; i < _ncols; ++i)
+        achks[i] = cs.getChunk(i);
+      DataInfo.Row arow = _ainfo.newDenseRow();
+      ChunkAry ary = new ChunkAry(cs._vec,cs._cidx,achks);
+      for(int row = 0; row < cs._len; row++) {
         // 1) Extract single expanded row of A
-        DataInfo.Row arow = _ainfo.newDenseRow();
-        _ainfo.extractDenseRow(achks, row, arow);
+
+        _ainfo.extractDenseRow(ary, row, arow);
         if (arow.isBad()) continue;
         double[] aexp = arow.expandCats();
 
@@ -289,10 +290,10 @@ public class LinearAlgebraUtils {
         // 3) Save row of solved values into Q
         int i = 0;
         for(int d = _ncols; d < 2 * _ncols; d++) {
-          double qold = cs[d].atd(row);
+          double qold = cs.atd(row,d);
           double diff = qrow[i] - qold;
           _sse += diff * diff;    // Calculate SSE between Q_new and Q_old
-          cs[d].set(row, qrow[i++]);
+          cs.set(row,d, qrow[i++]);
         }
         assert i == qrow.length;
       }
@@ -316,17 +317,18 @@ public class LinearAlgebraUtils {
       _L = L;
     }
 
-    @Override public void map(Chunk cs[]) {
-      assert _ncols == cs.length;
+    @Override public void map(ChunkAry cs) {
+      assert _ncols == cs._numCols;
 
       // Copy over only A frame chunks
       Chunk[] achks = new Chunk[_ncols];
-      System.arraycopy(cs,0,achks,0,_ncols);
-
-      for(int row = 0; row < cs[0]._len; row++) {
+      for(int i = 0; i < _ncols; ++i)
+        achks[i] = cs.getChunk(i);
+      DataInfo.Row arow = _ainfo.newDenseRow();
+      ChunkAry ary = new ChunkAry(cs._vec,cs._cidx,achks);
+      for(int row = 0; row < cs._len; row++) {
         // 1) Extract single expanded row of A
-        DataInfo.Row arow = _ainfo.newDenseRow();
-        _ainfo.extractDenseRow(achks, row, arow);
+        _ainfo.extractDenseRow(ary, row, arow);
         if (arow.isBad()) continue;
         double[] aexp = arow.expandCats();
 
@@ -336,7 +338,7 @@ public class LinearAlgebraUtils {
 
         // 3) Overwrite row of A with row of solved values Q
         for(int d = 0; d < _ncols; d++)
-          cs[d].set(row, qrow[d]);
+          cs.set(row, d, qrow[d]);
       }
     }
   }
@@ -389,7 +391,7 @@ public class LinearAlgebraUtils {
     Frame train = new Frame(Key.<Frame>make(), new String[]{"enum"}, new Vec[]{src});
     DataInfo dinfo = new DataInfo(train, null, 0, true /*_use_all_factor_levels*/, DataInfo.TransformType.NONE,
             DataInfo.TransformType.NONE, /* skipMissing */ false, /* imputeMissing */ true,
-            /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
+            /* missingBucket */ false, /* weights */ null, /* offset */ null, /* fold */ null, /* intercept */ false);
     DKV.put(dinfo);
     Gram.GramTask gtsk = new Gram.GramTask(null, dinfo).doAll(dinfo._adaptedFrame);
     // round the numbers to float precision to be more reproducible

@@ -25,16 +25,31 @@ public class C4FChunk extends Chunk {
     return true;
   }
 
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      float res = UnsafeUtils.get4f(_mem,(i<<2));
-      if( Float.isNaN(res) ) nc.addNum(Double.NaN);
-      else nc.addNum(res);
-    }
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.D;
+    float res = UnsafeUtils.get4f(_mem,(i<<2));
+    if( Float.isNaN(res) ) v._d = Double.NaN;
+    else v._d = res;
+    return v;
+  }
+
+  private final void addVal(int i, NewChunk nc){
+    float res = UnsafeUtils.get4f(_mem,(i<<2));
+    if( Float.isNaN(res) ) nc.addNum(Double.NaN);
+    else nc.addNum(res);
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) addVal(i,nc);
     return nc;
   }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    for( int i:rows) addVal(i,nc);
+    return nc;
+  }
+
   // 3.3333333e33
 //  public int pformat_len0() { return 14; }
 //  public String pformat0() { return "% 13.7e"; }

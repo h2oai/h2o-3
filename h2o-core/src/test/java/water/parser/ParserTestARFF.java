@@ -32,7 +32,7 @@ public class ParserTestARFF extends TestUtil {
       Assert.assertEquals(len, fr.numRows());
       Assert.assertEquals(exp.length, fr.numCols());
       for (int j = 0; j < fr.numCols(); ++j) {
-        Vec vec = fr.vecs()[j];
+        Vec vec = fr.vecs().select(j);
         if (exp[j] == Vec.T_TIME) { //Time
           Assert.assertTrue(vec.isTime());
 //          Assert.assertFalse(vec.isInt()); //FIXME time is encoded as integer, but should isInt() be true?

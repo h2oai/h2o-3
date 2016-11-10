@@ -42,10 +42,11 @@ public class ParquetParser extends Parser {
       throw new IllegalStateException("We only accept parser readers backed by a Vec (no streaming support!).");
     }
     Chunk chunk = ((FVecParseReader) din).getChunk();
-    Vec vec = chunk.vec();
+    Vec vec = ((FVecParseReader) din).getVec();
+    long start = ((FVecParseReader) din).start();
     // extract metadata, we want to read only the row groups that have centers in this chunk
     ParquetMetadataConverter.MetadataFilter chunkFilter = ParquetMetadataConverter.range(
-            chunk.start(), chunk.start() + chunk.len());
+            start, start + chunk.len());
     ParquetMetadata metadata = VecParquetReader.readFooter(_metadata, chunkFilter);
     if (metadata.getBlocks().isEmpty()) {
       Log.trace("Chunk #", cidx, " doesn't contain any Parquet block center.");

@@ -3,6 +3,7 @@ package hex.tree;
 import jsr166y.RecursiveAction;
 import water.*;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.util.*;
 
@@ -531,8 +532,8 @@ public class DTree extends Iced {
       }
     }
 
-    public int getChildNodeID(Chunk chks[], int row ) {
-      double d = chks[_split._col].atd(row);
+    public int getChildNodeID(ChunkAry chks, int row ) {
+      double d = chks.atd(row,_split._col);
       int bin;
       if (!Double.isNaN(d)) {
         if (_split._nasplit == DHistogram.NASplitDir.NAvsREST)

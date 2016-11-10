@@ -77,7 +77,7 @@ public class PrettyPrint {
     return bytes(bytes)+"/S";
   }
 
-  static double [] powers10 = new double[]{
+  public static double [] powers10 = new double[]{
     0.0000000001,
     0.000000001,
     0.00000001,

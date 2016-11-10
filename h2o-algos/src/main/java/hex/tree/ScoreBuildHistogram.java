@@ -5,6 +5,7 @@ import water.H2O.H2OCountedCompleter;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.util.ArrayUtils;
 
 /**  Score and Build Histogram
@@ -96,23 +97,22 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     }
   }
 
-  @Override final public void map( Chunk[] chks ) {
-    final Chunk wrks = chks[_workIdx];
-    final Chunk nids = chks[_nidIdx];
-    final Chunk weight = _weightIdx>=0 ? chks[_weightIdx] : new C0DChunk(1, chks[0].len());
+  @Override final public void map( ChunkAry chks ) {
+
+    final Chunk weight = _weightIdx>=0 ? chks.getChunk(_weightIdx) : new C0DChunk(1, chks._len);
 
     // Pass 1: Score a prior partially-built tree model, and make new Node
     // assignments to every row.  This involves pulling out the current
     // assigned DecidedNode, "scoring" the row against that Node's decision
     // criteria, and assigning the row to a new child UndecidedNode (and
     // giving it an improved prediction).
-    int nnids[] = new int[nids._len];
+    int nnids[] = new int[chks._len];
     if( _leaf > 0)            // Prior pass exists?
-      score_decide(chks,nids,nnids);
+      score_decide(chks,_nidIdx,nnids);
     else                      // Just flag all the NA rows
-      for( int row=0; row<nids._len; row++ ) {
+      for( int row=0; row<chks._len; row++ ) {
         if( weight.atd(row) == 0) continue;
-        if( isDecidedRow((int)nids.atd(row)) )
+        if( isDecidedRow((int)chks.atd(row,_nidIdx)) )
           nnids[row] = DECIDED_ROW;
       }
 
@@ -120,7 +120,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
 //    if (_subset)
 //      accum_subset(chks,wrks,weight,nnids); //for debugging - simple code
 //    else
-      accum_all   (chks,wrks,weight,nnids); //generally faster
+      accum_all(chks,_workIdx,weight,nnids); //generally faster
   }
 
   @Override public void reduce( ScoreBuildHistogram sbh ) {
@@ -144,9 +144,9 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // assigned DecidedNode, "scoring" the row against that Node's decision
   // criteria, and assigning the row to a new child UndecidedNode (and
   // giving it an improved prediction).
-  private void score_decide(Chunk chks[], Chunk nids, int nnids[]) {
-    for( int row=0; row<nids._len; row++ ) { // Over all rows
-      int nid = (int)nids.at8(row);          // Get Node to decide from
+  private void score_decide(ChunkAry chks, int nids, int nnids[]) {
+    for( int row=0; row<chks._len; row++ ) { // Over all rows
+      int nid = chks.at4(row,nids);          // Get Node to decide from
       if( isDecidedRow(nid)) {               // already done
         nnids[row] = nid-_leaf;              // will be negative, flagging a completed row
         continue;
@@ -159,7 +159,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
         if( DTree.isRootNode(dn) ) { nnids[row] = nid-_leaf; continue; }
         nid = dn._pid;             // Use the parent split decision then
         int xnid = oob ? nid2Oob(nid) : nid;
-        nids.set(row, xnid);
+        chks.set(row, nids, xnid);
         nnids[row] = xnid-_leaf;
         dn = _tree.decided(nid); // Parent steers us
       }
@@ -168,7 +168,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
       nid = dn.getChildNodeID(chks,row); // Move down the tree 1 level
       if( !isDecidedRow(nid) ) {
         if( oob ) nid = nid2Oob(nid); // Re-apply OOB encoding
-        nids.set(row, nid);
+        chks.set(row, nids, nid);
       }
       nnids[row] = nid-_leaf;
     }
@@ -213,7 +213,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
    * @param weight observation weights
    * @param nnids node ids
    */
-  private void accum_all(Chunk chks[], Chunk wrks, Chunk weight, int nnids[]) {
+  private void accum_all(ChunkAry chks, int wrks, Chunk weight, int nnids[]) {
     // Sort the rows by NID, so we visit all the same NIDs in a row
     // Find the count of unique NIDs in this chunk
     int nh[] = new int[_hcs.length+1];
@@ -236,18 +236,18 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
     final int cols = _ncols;
     final int hcslen = hcs.length;
     // these arrays will be re-used for all cols and nodes
-    double[] ws = new double[chks[0]._len];
-    double[] cs = new double[chks[0]._len];
-    double[] ys = new double[chks[0]._len];
+    double[] ws = new double[chks._len];
+    double[] cs = new double[chks._len];
+    double[] ys = new double[chks._len];
     weight.getDoubles(ws,0,ws.length);
-    wrks.getDoubles(ys,0,ys.length);
+    chks.getDoubles(wrks,ys,0,ys.length);
     for (int c = 0; c < cols; c++) {
       boolean extracted = false;
       for (int n = 0; n < hcslen; n++) {
         int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
         if (sCols == null || ArrayUtils.find(sCols,c) >= 0) {
           if (!extracted) {
-            chks[c].getDoubles(cs, 0, cs.length);
+            chks.getDoubles(c, cs, 0, cs.length);
             extracted = true;
           }
           DHistogram h = hcs[n][c];

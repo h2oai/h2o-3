@@ -179,7 +179,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         final double init = _initialPrediction;
         new MRTask() {
           @Override
-          public void map(Chunk tree) {
+          public void map(ChunkAry tree) {
             for (int i = 0; i < tree._len; i++) tree.set(i, init);
           }
         }.doAll(vec_tree(_train, 0), _parms._build_tree_one_node); // Only setting tree-column 0
@@ -290,38 +290,38 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     // Compute Residuals
     // Do this for all rows, whether OOB or not
     class ComputePredAndRes extends MRTask<ComputePredAndRes> {
-      @Override public void map( Chunk chks[] ) {
+      @Override public void map( ChunkAry chks ) {
         Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk preds = chk_tree(chks, 0); // Prior tree sums
-        Chunk wk = chk_work(chks, 0); // Place to store residuals
-        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
+        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks._len);
+        int preds = idx_tree(0); // Prior tree sums
+        int wk = idx_work(0); // Place to store residuals
+        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks._len);
         double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
         Distribution dist = new Distribution(_parms);
-        for( int row = 0; row < wk._len; row++) {
+        for( int row = 0; row < chks._len; row++) {
           double weight = weights.atd(row);
           if (weight == 0) continue;
           if (ys.isNA(row)) continue;
-          double f = preds.atd(row) + offset.atd(row);
+          double f = chks.atd(row,preds) + offset.atd(row);
           double y = ys.atd(row);
 //          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
           if( _parms._distribution == DistributionFamily.multinomial ) {
-            double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
+            double sum = score1(chks.getChunks(), weight,0.0 /*offset not used for multiclass*/,fs,row);
             if( Double.isInfinite(sum) ) { // Overflow (happens for constant responses)
               for (int k = 0; k < _nclass; k++) {
-                wk = chk_work(chks, k);
-                wk.set(row, ((int)y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f));
+                wk = idx_work(k);
+                chks.set(row, wk, ((int)y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f));
               }
             } else {
               for( int k=0; k<_nclass; k++ ) { // Save as a probability distribution
                 if( _model._output._distribution[k] != 0 ) {
-                  wk = chk_work(chks, k);
-                  wk.set(row, ((int)y == k ? 1f : 0f) - (float)(fs[k + 1] / sum));
+                  wk = idx_work(k);
+                  chks.set(row, wk, ((int)y == k ? 1f : 0f) - (float)(fs[k + 1] / sum));
                 }
               }
             }
           } else {
-            wk.set(row, (float) dist.negHalfGradient(y, f));
+            chks.set(row, wk, (float) dist.negHalfGradient(y, f));
           }
         }
       }
@@ -609,19 +609,20 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private class StoreResiduals extends MRTask<StoreResiduals> {
       Distribution _dist;
       StoreResiduals(Distribution dist) { _dist = dist; }
-      @Override public void map( Chunk chks[] ) {
+      @Override public void map( ChunkAry chks ) {
         Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
+        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks._len);
         Chunk preds = chk_tree(chks, 0); // Prior tree sums
-        Chunk wk = chk_work(chks, 0); // Place to store residuals
-        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        for( int row = 0; row < wk._len; row++) {
+        int wk = idx_work(0);
+
+        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks._len);
+        for( int row = 0; row < chks._len; row++) {
           double weight = weights.atd(row);
           if (weight == 0) continue;
           if (ys.isNA(row)) continue;
           double f = preds.atd(row) + offset.atd(row);
           double y = ys.atd(row);
-          wk.set(row, (float) _dist.negHalfGradient(y, f));
+          chks.set(row,wk, (float) _dist.negHalfGradient(y, f));
         }
       }
     }
@@ -630,7 +631,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
       assert(_nclass==1);
       Vec diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
-      Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
+      Vec weights = hasWeightCol() ? _train.vecs(idx_weight()) : null;
       Vec strata = vec_nids(_train,0);
 
       // compute quantile for all leaf nodes
@@ -658,13 +659,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         _terminalMedians = terminalMedians;
       }
       @Override
-      public void map(Chunk[] chks) {
-        final Chunk strata = chks[0];
-        final Chunk diff = chks[1];
+      public void map(ChunkAry chks) {
+        final int strata = 0, diff = 1;
         final int strataMin = (int)_strata.min();
-        for (int i=0; i<chks[0].len(); ++i) {
-          int nid = (int)strata.atd(i);
-          diff.set(i, diff.atd(i) - _terminalMedians[nid-strataMin]);
+        for (int i=0; i<chks._len; ++i) {
+          int nid = (int)chks.atd(i,strata);
+          chks.set(i, diff, chks.atd(i,diff) - _terminalMedians[nid-strataMin]);
         }
       }
     }
@@ -721,7 +721,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // get diff y-(f+o) and weights and strata (node idx)
       Vec diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
-      Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
+      Vec weights = hasWeightCol() ? _train.vecs(idx_weight()) : null;
       Vec strata = vec_nids(_train,0);
 
       // compute median diff for each leaf node
@@ -822,7 +822,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         _trees=trees;
         _dist = distribution;
       }
-      @Override public void map( Chunk[] chks ) {
+      @Override public void map( ChunkAry chks ) {
         _denom = new double[_nclass][];
         _num = new double[_nclass][];
         final Chunk resp = chk_resp(chks); // Response for this frame
@@ -837,18 +837,19 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           // A leaf-biased array of all active Tree leaves.
           final double denom[] = _denom[k] = new double[tree._len-leaf];
           final double num[] = _num[k] = new double[tree._len-leaf];
-          final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
+          int nids = idx_nids(k);
+//          final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
           final Chunk ress = chk_work(chks, k); // Residuals for this tree/class
-          final Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
+          final Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks._len); // Residuals for this tree/class
           final Chunk preds = chk_tree(chks,k);
-          final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
+          final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks._len);
 
           // If we have all constant responses, then we do not split even the
           // root and the residuals should be zero.
           if( tree.root() instanceof LeafNode )
             continue;
           Distribution dist = new Distribution(_parms);
-          for( int row=0; row<nids._len; row++ ) { // For all rows
+          for( int row=0; row<chks._len; row++ ) { // For all rows
             double w = weights.atd(row);
             if (w==0) continue;
 
@@ -856,7 +857,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             if (Double.isNaN(y)) continue;
 
             // Compute numerator and denominator of terminal node estimate (gamma)
-            int nid = (int)nids.at8(row);          // Get Node to decide from
+            int nid = chks.at4(row,nids);          // Get Node to decide from
             final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
             if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
             if (nid < 0) continue;
@@ -873,7 +874,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             // the prediction presented by the tree.  For GBM, we compute the
             // sum-of-residuals (and sum/abs/mult residuals) for all rows in the
             // leaf, and get our prediction from that.
-            nids.set(row, leafnid);
+            chks.set(row, nids, leafnid);
             assert !ress.isNA(row);
 
             // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
@@ -900,19 +901,20 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private class AddTreeContributions extends MRTask<AddTreeContributions> {
       DTree[] _ktrees;
       AddTreeContributions(DTree[] ktrees) { _ktrees = ktrees; }
-      @Override public void map( Chunk chks[] ) {
+      @Override public void map( ChunkAry chks ) {
         // For all tree/klasses
         for( int k=0; k<_nclass; k++ ) {
           final DTree tree = _ktrees[k];
           if( tree == null ) continue;
-          final Chunk nids = chk_nids(chks,k);
-          final Chunk ct   = chk_tree(chks, k);
+          int nids = idx_nids(k);
+          int ct = idx_tree(k);
+
           final Chunk y   = chk_resp(chks);
-          final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
+          final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks._len);
           long baseseed = (0xDECAF + _parms._seed) * (0xFAAAAAAB + k * _parms._ntrees + _model._output._ntrees);
-          for( int row=0; row<nids._len; row++ ) {
-            int nid = (int)nids.at8(row);
-            nids.set(row, ScoreBuildHistogram.FRESH);
+          for( int row=0; row<chks._len; row++ ) {
+            int nid = chks.at4(row,nids);
+            chks.set(row, nids, ScoreBuildHistogram.FRESH);
             if( nid < 0 ) continue;
             if (y.isNA(row)) continue;
             if (weights.atd(row)==0) continue;
@@ -923,7 +925,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             }
             // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
             // <tree_klazz> fields from tree prediction
-            ct.set(row, (float)(ct.atd(row) + factor * ((LeafNode)tree.node(nid))._pred ));
+            chks.set(row, ct, (float)(chks.atd(row,ct) + factor * ((LeafNode)tree.node(nid))._pred ));
           }
         }
       }

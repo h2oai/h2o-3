@@ -7,12 +7,7 @@ import water.MRTask;
 import water.Futures;
 import water.DKV;
 import water.AutoBuffer;
-import water.fvec.Vec;
-import water.fvec.AppendableVec;
-import water.fvec.Chunk;
-import water.fvec.NewChunk;
-import water.fvec.CStrChunk;
-import water.fvec.Frame;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 
@@ -170,18 +165,18 @@ public class WordCountTask extends MRTask<WordCountTask> {
     //allocate
     AppendableVec wordAV = new AppendableVec((keys[0]), Vec.T_STR);
     AppendableVec  cntAV = new AppendableVec((keys[1]), Vec.T_NUM);
-    NewChunk wordNC = new NewChunk(wordAV, 0);
-    NewChunk cntNC = new NewChunk(cntAV, 0);
+    NewChunkAry wordNC = wordAV.chunkForChunkIdx(0);
+    NewChunkAry cntNC = cntAV.chunkForChunkIdx(0);
 
     //fill in values
     for (BufferedStringCount str : _vocabArray) {
-      wordNC.addStr(str);
-      cntNC.addNum(str._cnt, 0);
+      wordNC.addStr(0,str);
+      cntNC.addInteger(str._cnt);
     }
 
     //finalize vectors
-    wordNC.close(0, fs);
-    cntNC.close(0, fs);
+    wordNC.close(fs);
+    cntNC.close(fs);
     vecs[0] = wordAV.layout_and_close(fs);
     vecs[1] = cntAV.layout_and_close(fs);
     fs.blockForPending();

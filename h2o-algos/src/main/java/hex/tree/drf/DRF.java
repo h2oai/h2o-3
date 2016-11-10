@@ -11,6 +11,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import java.util.Random;
 
@@ -116,16 +117,16 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
        *   - regression:     copy response into work column (there is only 1 work column)
        */
       new MRTask() {
-        @Override public void map(Chunk chks[]) {
+        @Override public void map(ChunkAry chks) {
           Chunk cy = chk_resp(chks);
           for (int i = 0; i < cy._len; i++) {
             if (cy.isNA(i)) continue;
             if (isClassifier()) {
               int cls = (int) cy.at8(i);
-              chk_work(chks, cls).set(i, 1L);
+              chks.set(i,idx_work(cls),1);
             } else {
               float pred = (float) cy.atd(i);
-              chk_work(chks, 0).set(i, pred);
+              chks.set(i,idx_work(0),pred);
             }
           }
         }
@@ -239,27 +240,28 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
       /* @OUT */ float sse;      // Sum of squares for this tree only
       CollectPreds(DTree trees[], int leafs[], double threshold) { _trees=trees; _threshold = threshold; }
       final boolean importance = true;
-      @Override public void map( Chunk[] chks ) {
+      @Override public void map( ChunkAry chks ) {
         final Chunk    y       = importance ? chk_resp(chks) : null; // Response
         final double[] rpred   = importance ? new double[1+_nclass] : null; // Row prediction
         final double[] rowdata = importance ? new double[_ncols] : null; // Pre-allocated row data
-        final Chunk   oobt  = chk_oobt(chks); // Out-of-bag rows counter over all trees
-        final Chunk   weights  = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len); // Out-of-bag rows counter over all trees
+
+        final Chunk   weights  = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks._len); // Out-of-bag rows counter over all trees
         // Iterate over all rows
-        for( int row=0; row<oobt._len; row++ ) {
+        for( int row=0; row<chks._len; row++ ) {
           double weight = weights.atd(row);
-          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int)chk_nids(chks,0).at8(row));
+          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow((int)chks.at8(row,idx_nids(0)));
           // For all tree (i.e., k-classes)
           for( int k=0; k<_nclass; k++ ) {
-            final Chunk nids = chk_nids(chks, k); // Node-ids  for this tree/class
+            int nids = idx_nids(k);
+
             if (weight!=0) {
               final DTree tree = _trees[k];
               if (tree == null) continue; // Empty class is ignored
-              int nid = (int) nids.at8(row);         // Get Node to decide from
+              int nid = (int) chks.at8(row,nids);         // Get Node to decide from
               // Update only out-of-bag rows
               // This is out-of-bag row - but we would like to track on-the-fly prediction for the row
               if (wasOOBRow) {
-                final Chunk ct = chk_tree(chks, k); // k-tree working column holding votes for given row
+                int ct = idx_tree(k);
                 nid = ScoreBuildHistogram.oob2Nid(nid);
                 if (tree.node(nid) instanceof UndecidedNode) // If we bottomed out the tree
                   nid = tree.node(nid).pid();                 // Then take parent's decision
@@ -277,14 +279,14 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
                 //   - for regression: cumulative sum of prediction of each tree - has to be normalized by number of trees
                 double prediction = ((LeafNode) tree.node(leafnid)).pred(); // Prediction for this k-class and this row
                 if (importance) rpred[1 + k] = (float) prediction; // for both regression and classification
-                ct.set(row, (float) (ct.atd(row) + prediction));
+                chks.set(row, ct, (float) (chks.atd(row,ct) + prediction));
               }
             }
             // reset help column for this row and this k-class
-            nids.set(row, 0);
+            chks.set(row,nids, 0);
           } /* end of k-trees iteration */
           // For this tree this row is out-of-bag - i.e., a tree voted for this row
-          if (wasOOBRow) oobt.set(row, oobt.atd(row) + weight); // track number of trees
+          if (wasOOBRow) chks.set(row, idx_oobt(),chks.atd(row,idx_oobt()) + weight); // track number of trees
           if (importance && weight!=0) {
             if (wasOOBRow && !y.isNA(row)) {
               if (isClassifier()) {

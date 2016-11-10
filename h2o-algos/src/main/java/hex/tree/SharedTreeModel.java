@@ -246,8 +246,8 @@ public abstract class SharedTreeModel<
     }.doAll(outputcols, Vec.T_STR, adaptFrm).outputFrame(destination_key, names, null);
 
     Vec vv;
-    Vec[] nvecs = new Vec[res.vecs().length];
-    for(int c=0;c<res.vecs().length;++c) {
+    Vec[] nvecs = new Vec[res.vecs().numCols()];
+    for(int c=0;c<res.vecs().numCols();++c) {
       vv = res.vec(c);
       try {
         nvecs[c] = vv.toCategoricalVec();

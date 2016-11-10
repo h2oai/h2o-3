@@ -8,6 +8,7 @@ import water.Key;
 import water.MRTask;
 import water.TestUtil;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -140,9 +141,9 @@ public class DataInfoTestAdapt extends TestUtil {
             skipMissing, // skip missing
             false,       // impute missing
             false,       // missing bucket
-            false,       // weight
-            false,       // offset
-            false,       // fold
+            null,       // weight
+            null,       // offset
+            null,       // fold
             interactions // interactions
     );
   }
@@ -172,16 +173,16 @@ public class DataInfoTestAdapt extends TestUtil {
       System.arraycopy(di._adaptedFrame.vecs(),0,vecs,0,di._adaptedFrame.numCols());
       System.arraycopy(gold.vecs(), 0, vecs, di._adaptedFrame.numCols(), gold.numCols());
       new MRTask() {
-        @Override public void map(Chunk[] cs) {
+        @Override public void map(ChunkAry cs) {
           int off = di._adaptedFrame.numCols();
           DataInfo.Row r = di.newDenseRow();
 //          DataInfo.Row rows[] = di.extractSparseRows(cs);
-          for (int i = 0; i < cs[0]._len; ++i) {
+          for (int i = 0; i < cs._len; ++i) {
 //            DataInfo.Row r = rows[i];
             di.extractDenseRow(cs, i, r);
             if( skipMissing && r.isBad() ) continue;
             for (int j = 0; j < di.fullN(); ++j) {
-              double goldValue = cs[off+j].atd(i);
+              double goldValue = cs.atd(i,off+j);
               double thisValue = r.get(j); // - (di._normSub[j - di.numStart()] * di._normMul[j-di.numStart()]);
               double diff = Math.abs(goldValue - thisValue);
               if (diff > 1e-12) {

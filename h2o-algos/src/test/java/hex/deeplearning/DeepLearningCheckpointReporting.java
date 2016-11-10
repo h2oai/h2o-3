@@ -44,7 +44,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
 
       // Convert response 'C785' to categorical (digits 1 to 10)
       int ci = frame.find("CAPSULE");
-      Scope.track(frame.replace(ci, frame.vecs()[ci].toCategoricalVec()));
+      Scope.track(frame.replace(ci, frame.vecs(ci).toCategoricalVec()));
       DKV.put(frame);
 
       long start = System.currentTimeMillis();

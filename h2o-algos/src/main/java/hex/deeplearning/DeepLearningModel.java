@@ -10,10 +10,7 @@ import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.*;
 
 import java.lang.reflect.Field;
@@ -769,7 +766,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
     Frame res = new Frame(destination_key, names, mse.vecs());
     DKV.put(res);
-    addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs()[0].mean() /*mean MSE*/));
+    addModelMetrics(new ModelMetricsAutoEncoder(this, frame, res.numRows(), res.vecs().mean() /*mean MSE*/));
     return res;
   }
 
@@ -799,29 +796,30 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     //create new features, will be dense
     final int features = model_info().get_params()._hidden[layer];
     Vec v = adaptFrm.anyVec();
-    Vec[] vecs = v!=null ? v.makeZeros(features) : null;
+    Vec vecs = v!=null ? v.makeZeros(features) : null;
     if (vecs == null) throw new IllegalArgumentException("Cannot create deep features from a frame with no columns.");
 
     Scope.enter();
     adaptTestForTrain(adaptFrm, true, false);
-    for (int j=0; j<features; ++j) {
-      adaptFrm.add("DF.L"+(layer+1)+".C" + (j+1), vecs[j]);
-    }
+    String [] names = new String[features];
+    for (int j=0; j<features; ++j)
+      names[j] = "DF.L"+(layer+1)+".C" + (j+1);
+    adaptFrm.add(names, vecs);
     final int mb=0;
     final int n=1;
     new MRTask() {
-      @Override public void map( Chunk chks[] ) {
+      @Override public void map( ChunkAry chks ) {
         if (isCancelled() || job !=null && job.stop_requested()) return;
         double tmp [] = new double[len];
         final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
-        for( int row=0; row<chks[0]._len; row++ ) {
+        for( int row=0; row<chks._len; row++ ) {
           for( int i=0; i<len; i++ )
-            tmp[i] = chks[i].atd(row);
+            tmp[i] = chks.atd(row,i);
           ((Neurons.Input)neurons[0]).setInput(-1, tmp, mb); //FIXME: No weights yet
           DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n);
           double[] out = neurons[layer+1]._a[mb].raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
-            chks[_output._names.length+c].set(row,out[c]);
+            chks.set(row,_output._names.length+c,out[c]);
         }
         if (job != null) job.update(1);
       }

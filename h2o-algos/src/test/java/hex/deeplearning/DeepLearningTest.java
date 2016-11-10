@@ -11,10 +11,7 @@ import org.junit.Test;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.parser.ParseDataset;
 import water.util.*;
 
@@ -417,7 +414,7 @@ public class DeepLearningTest extends TestUtil {
     String rname = fr._names[idx];
     drf._response_column = fr.names()[idx];
 
-    Vec resp = fr.vecs()[idx];
+    Vec resp = fr.vecs(idx);
     Vec ret = null;
     if (classification) {
       ret = fr.remove(idx);
@@ -519,7 +516,7 @@ public class DeepLearningTest extends TestUtil {
       for (int i = 0; i < N; ++i) {
         frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
         Vec resp = frTrain.lastVec().toCategoricalVec();
-        frTrain.remove(frTrain.vecs().length - 1).remove();
+        frTrain.remove(frTrain.vecs()._numCols - 1).remove();
         frTrain.add("Response", resp);
         DKV.put(frTrain);
         dl._train = frTrain._key;
@@ -579,11 +576,11 @@ public class DeepLearningTest extends TestUtil {
     if (covtype) {
       frTrain = parse_test_file("./smalldata/covtype/covtype.20k.data");
       Vec resp = frTrain.lastVec().toCategoricalVec();
-      frTrain.remove(frTrain.vecs().length - 1).remove();
+      frTrain.remove(frTrain.vecs()._numCols - 1).remove();
       frTrain.add("Response", resp);
     } else {
       frTrain = parse_test_file("./bigdata/server/HIGGS.csv");
-      Vec resp = frTrain.vecs()[0].toCategoricalVec();
+      Vec resp = frTrain.vecs(0).toCategoricalVec();
       frTrain.remove(0).remove();
       frTrain.prepend("Response", resp);
     }
@@ -798,15 +795,15 @@ public class DeepLearningTest extends TestUtil {
 
   static class PrintEntries extends MRTask<PrintEntries> {
     @Override
-    public void map(Chunk[] cs) {
+    public void map(ChunkAry cs) {
       StringBuilder sb = new StringBuilder();
-      for (int r=0; r<cs[0].len(); ++r) {
-        sb.append("Row " + (cs[0].start() + r) + ": ");
-        for (int i=0; i<cs.length; ++i) {
+      for (int r=0; r<cs._len; ++r) {
+        sb.append("Row " + (cs.start() + r) + ": ");
+        for (int i=0; i<cs._len; ++i) {
           if (i==0) //response
-            sb.append("response: " + _fr.vec(i).domain()[(int)cs[i].at8(r)] + " ");
-          if (cs[i].atd(r) != 0) {
-            sb.append(i + ":" + cs[i].atd(r) + " ");
+            sb.append("response: " + _fr.vec(i).domain()[(int)cs.at8(r,i)] + " ");
+          if (cs.atd(r,i) != 0) {
+            sb.append(i + ":" + cs.atd(r,i) + " ");
           }
         }
         sb.append("\n");
@@ -2138,7 +2135,7 @@ public class DeepLearningTest extends TestUtil {
         NFSFileVec trainfv = NFSFileVec.make(file);
         train = ParseDataset.parse(Key.make(), trainfv._key);
         int ci = train.find("C785");
-        Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));
+        Scope.track(train.replace(ci, train.vecs(ci).toCategoricalVec()));
         DKV.put(train);
 
         DeepLearningParameters p = new DeepLearningParameters();

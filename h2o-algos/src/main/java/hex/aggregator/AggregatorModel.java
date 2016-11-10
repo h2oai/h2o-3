@@ -4,10 +4,7 @@ import hex.*;
 import hex.pca.PCAModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 
 import java.util.Arrays;
 
@@ -77,17 +74,14 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     // preserve the original row order
     Vec booleanCol = new MRTask() {
       @Override
-      public void map(Chunk c, Chunk c2) {
+      public void map(ChunkAry chks) {
         for (int i=0;i<keep.length;++i) {
-          if (keep[i] < c.start()) continue;
-          if (keep[i] >= c.start()+c._len) continue;
-          c2.set((int)(keep[i]-c.start()), 1);
+          if (keep[i] < chks.start()) continue;
+          if (keep[i] >= chks.start()+chks._len) continue;
+          chks.set((int)(keep[i]-chks.start()),1, 1);
         }
       }
     }.doAll(new Frame(new Vec[]{exAssignment, exAssignment.makeZero()}))._fr.vec(1);
-
-    Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
-    vecs[vecs.length-1] = booleanCol;
 
     Frame ff = new Frame(orig.names(), orig.vecs());
     ff.add("predicate", booleanCol);
@@ -116,9 +110,6 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     }.doAll(Vec.T_NUM, new Frame(new Vec[]{_exemplar_assignment_vec_key.get()})).outputFrame().anyVec();
 
     Frame orig = _parms.train();
-    Vec[] vecs = Arrays.copyOf(orig.vecs(), orig.vecs().length+1);
-    vecs[vecs.length-1] = booleanCol;
-
     Frame ff = new Frame(orig.names(), orig.vecs());
     ff.add("predicate", booleanCol);
     Frame res = new Frame.DeepSelect().doAll(orig.types(),ff).outputFrame(destination_key, orig.names(), orig.domains());

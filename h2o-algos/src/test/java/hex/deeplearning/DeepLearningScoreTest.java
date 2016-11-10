@@ -56,8 +56,8 @@ public class DeepLearningScoreTest extends TestUtil {
   private void assertZeroLengthChunk(String msg, Vec v) {
     boolean hasZeroLenChunk = false;
     for (int i = 0; i < v.nChunks(); i++) {
-      hasZeroLenChunk |= (v.chunkForChunkIdx(i).len() == 0);
-      System.out.println(v.chunkForChunkIdx(i).len());
+      hasZeroLenChunk |= (v.chunkForChunkIdx(i)._len == 0);
+      System.out.println(v.chunkForChunkIdx(i)._len);
     }
     Assert.assertTrue(msg, hasZeroLenChunk);
   }

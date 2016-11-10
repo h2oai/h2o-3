@@ -32,8 +32,8 @@ public class ParserTest extends TestUtil {
     ByteVec bv = new ByteVec(k,Vec.ESPC.rowLayout(k,espc));
     DKV.put(k,bv,fs);
     for( int i = 0; i < data.length; ++i ) {
-      Key ck = bv.chunkKey(i);
-      DKV.put(ck, new Value(ck,new C1NChunk(data[i].getBytes())),fs);
+      Key ck = bv.newChunkKey(i);
+      DKV.put(ck, new Value(ck,new DBlock(new C1NChunk(data[i].getBytes()))),fs);
     }
     fs.blockForPending();
     return k;
@@ -56,12 +56,12 @@ public class ParserTest extends TestUtil {
   static void testParsed(Frame fr, double[][] expected, int len) {
     Assert.assertEquals(len,fr.numRows());
     Assert.assertEquals(expected[0].length,fr.numCols());
+    VecAry vecs = fr.vecs();
     for( int j = 0; j < fr.numCols(); ++j ) {
-      Vec vec = fr.vecs()[j];
       for( int i = 0; i < expected.length; ++i ) {
-        double pval = vec.at(i);
+        double pval = vecs.at(i,j);
         if( Double.isNaN(expected[i][j]) )
-          Assert.assertTrue(i+" -- "+j, vec.isNA(i));
+          Assert.assertTrue(i+" -- "+j, vecs.isNA(i,j));
         else
           Assert.assertTrue(expected[i][j]+" -- "+pval,compareDoubles(expected[i][j],pval,0.0000001));
       }
@@ -235,7 +235,7 @@ public class ParserTest extends TestUtil {
       Key r = Key.make();
       ParseDataset.parse(r, key);
       Frame fr = DKV.get(r).get();
-      String[] cd = fr.vecs()[2].domain();
+      String[] cd = fr.vecs().domain(2);
       Assert.assertEquals(" four",cd[0]);
       Assert.assertEquals("one",cd[1]);
       Assert.assertEquals("three",cd[2]);
@@ -250,7 +250,7 @@ public class ParserTest extends TestUtil {
     Key r1 = Key.make();
     ParseDataset.parse(r1, k1);
     Frame fr1 = DKV.get(r1).get();
-    Assert.assertTrue(fr1.vecs()[0].isNumeric());
+    Assert.assertTrue(fr1.vecs().isNumeric(0));
     Assert.assertTrue(fr1.numCols()  == 1);
     Assert.assertTrue(fr1.numRows()  == 1);
     fr1.delete();
@@ -260,7 +260,7 @@ public class ParserTest extends TestUtil {
     Key r2 = Key.make();
     ParseDataset.parse(r2, k2);
     Frame fr2 = DKV.get(r2).get();
-    Assert.assertTrue(fr2.vecs()[0].isTime());
+    Assert.assertTrue(fr2.vecs().isTime(0));
     Assert.assertTrue(fr2.numCols()  == 1);
     Assert.assertTrue(fr2.numRows()  == 1);
     fr2.delete();
@@ -272,7 +272,7 @@ public class ParserTest extends TestUtil {
     Frame fr3 = DKV.get(r3).get();
     Assert.assertTrue(fr3.numCols()  == 1);
     Assert.assertTrue(fr3.numRows()  == 1);
-    Assert.assertTrue(fr3.vecs()[0].isUUID());
+    Assert.assertTrue(fr3.vecs().isUUID(0));
     fr3.delete();
 
     String[] categoricalDataset = new String[]{"Foo-bar"};
@@ -282,8 +282,8 @@ public class ParserTest extends TestUtil {
     Frame fr4 = DKV.get(r4).get();
     Assert.assertTrue(fr4.numCols()  == 1);
     Assert.assertTrue(fr4.numRows()  == 1);
-    Assert.assertTrue(fr4.vecs()[0].isCategorical());
-    String[] dom = fr4.vecs()[0].domain();
+    Assert.assertTrue(fr4.vecs().isCategorical(0));
+    String[] dom = fr4.vecs().domain(0);
     Assert.assertTrue(dom.length == 1);
     Assert.assertEquals("Foo-bar", dom[0]);
     fr4.delete();
@@ -342,11 +342,11 @@ public class ParserTest extends TestUtil {
       Key r = Key.make();
       ParseDataset.parse(r, key);
       Frame fr = DKV.get(r).get();
-      String[] cd = fr.vecs()[2].domain();
+      String[] cd = fr.vecs().domain(2);
       Assert.assertEquals("one",cd[0]);
       Assert.assertEquals("three",cd[1]);
       Assert.assertEquals("two",cd[2]);
-      cd = fr.vecs()[0].domain();
+      cd = fr.vecs().domain(0);
       Assert.assertEquals("bar",cd[0]);
       Assert.assertEquals("foo",cd[1]);
       Assert.assertEquals("foobar",cd[2]);
@@ -389,7 +389,7 @@ public class ParserTest extends TestUtil {
     Key r = Key.make();
     ParseDataset.parse(r, key);
     Frame fr = DKV.get(r).get();
-    String[] cd = fr.vecs()[3].domain();
+    String[] cd = fr.vecs().domain(3);
     Assert.assertEquals("bar",cd[0]);
     Assert.assertEquals("foo",cd[1]);
     testParsed(r, expDouble);
@@ -455,33 +455,32 @@ public class ParserTest extends TestUtil {
       Assert.assertEquals(7,fr.numCols());
 
       //check column types
-      Vec[] vecs = fr.vecs();
-      Assert.assertTrue(vecs[0].isString());
-      Assert.assertTrue(vecs[1].isString());
-      Assert.assertTrue(vecs[2].isString());
-      Assert.assertTrue(vecs[3].isString());
-      Assert.assertTrue(vecs[4].isString());
-      Assert.assertTrue(vecs[5].isString());
-      Assert.assertTrue(vecs[6].isString());
+      VecAry vecs = fr.vecs();
+      Assert.assertTrue(vecs.isString(0));
+      Assert.assertTrue(vecs.isString(1));
+      Assert.assertTrue(vecs.isString(2));
+      Assert.assertTrue(vecs.isString(3));
+      Assert.assertTrue(vecs.isString(4));
+      Assert.assertTrue(vecs.isString(5));
+      Assert.assertTrue(vecs.isString(6));
 
       //checks column counts - expects MAX_CATEGORICAL_COUNT == 65000
       //Categorical registration is racy so actual categorical limit can exceed MAX by a few values
-      Assert.assertTrue(65003 <= vecs[0].nzCnt()); //ColV2 A lacks starting values
-      Assert.assertTrue(65002 <= vecs[1].nzCnt()); //ColV2 B has random missing values & dble quotes
-      Assert.assertTrue(65005 <= vecs[2].nzCnt()); //ColV2 C has all values & single quotes
-      Assert.assertTrue(65002 <= vecs[3].nzCnt()); //ColV2 D missing vals just prior to Categorical limit
-      Assert.assertTrue(65003 <= vecs[4].nzCnt()); //ColV2 E missing vals just after Categorical limit hit
+      Assert.assertTrue(65003 <= vecs.nzCnt(0)); //ColV2 A lacks starting values
+      Assert.assertTrue(65002 <= vecs.nzCnt(1)); //ColV2 B has random missing values & dble quotes
+      Assert.assertTrue(65005 <= vecs.nzCnt(2)); //ColV2 C has all values & single quotes
+      Assert.assertTrue(65002 <= vecs.nzCnt(3)); //ColV2 D missing vals just prior to Categorical limit
+      Assert.assertTrue(65003 <= vecs.nzCnt(4)); //ColV2 E missing vals just after Categorical limit hit
       //Assert.assertTrue(65000 <= vecs[5].domain().length); //ColV2 F cardinality just at Categorical limit
-      Assert.assertTrue(65003 <= vecs[6].nzCnt()); //ColV2 G missing final values
+      Assert.assertTrue(65003 <= vecs.nzCnt(6)); //ColV2 G missing final values
 
       //spot check value parsing
       BufferedString str = new BufferedString();
-      Assert.assertEquals("A2", vecs[0].atStr(str, 2).toString());
-      Assert.assertEquals("B7", vecs[1].atStr(str, 7).toString());
-      Assert.assertEquals("'C65001'", vecs[2].atStr(str, 65001).toString());
-      Assert.assertEquals("E65004", vecs[4].atStr(str, 65004).toString());
-      Assert.assertNull(vecs[6].atStr(str, 65004));
-
+      Assert.assertEquals("A2", vecs.atStr(str, 2,0).toString());
+      Assert.assertEquals("B7", vecs.atStr(str, 7,1).toString());
+      Assert.assertEquals("'C65001'", vecs.atStr(str, 65001,2).toString());
+      Assert.assertEquals("E65004", vecs.atStr(str, 65004,4).toString());
+      Assert.assertNull(vecs.atStr(str, 65004, 6));
       fr.delete();
     } finally {
       if( fr != null ) fr.delete();
@@ -862,20 +861,18 @@ public class ParserTest extends TestUtil {
       Assert.assertEquals("Frame rows", 5, f.numRows());
       Assert.assertEquals("Frame columns", 3, f.numCols());
 
-      Vec v0 = f.vec(0);
-      Assert.assertEquals("1. Column type", Vec.T_NUM, v0.get_type());
+      VecAry vecs = f.vecs();
+      Assert.assertEquals("1. Column type", Vec.T_NUM, vecs.get_type(0));
+      Assert.assertEquals("2. Column type", Vec.T_NUM, vecs.get_type(1));
 
-      Vec v1 = f.vec(1);
-      Assert.assertEquals("2. Column type", Vec.T_NUM, v1.get_type());
 
-      Vec v2 = f.vec(2);
-      Assert.assertEquals("3. Column type", Vec.T_CAT, v2.get_type());
-      Assert.assertArrayEquals("3. Column domain", ar("A", "B"), v2.domain());
-      int domainLen = v2.domain().length;
+      Assert.assertEquals("3. Column type", Vec.T_CAT, vecs.get_type(2));
+      Assert.assertArrayEquals("3. Column domain", ar("A", "B"), vecs.domain(2));
+      int domainLen = vecs.domain(2).length;
       // Verify values in columns
       for (int i = 0; i < f.numRows(); i++) {
-        if (v2.isNA(i)) continue;
-        long value = v2.at8(i);
+        if (vecs.isNA(i,2)) continue;
+        long value = vecs.at8(i,2);
         Assert.assertTrue("Vector value should reference a string inside domain", value >= 0 && value < domainLen);
       }
     } finally {
@@ -938,11 +935,11 @@ public class ParserTest extends TestUtil {
     final List<Integer> _nchks;
 
     MockStreamParseWriter(int chunkSize) {
-      super(null, 0, null, null, chunkSize, new AppendableVec[0]);
+      super(null, 0, null, null, chunkSize, null);
       _nchks = new LinkedList<>();
     }
     MockStreamParseWriter(MockStreamParseWriter prev) {
-      super(null, prev._cidx + 1, null, null, prev._chunkSize, new AppendableVec[0]);
+      super(null, prev._cidx + 1, null, null, prev._chunkSize, null);
       _nchks = prev._nchks;
     }
     @Override public FVecParseWriter nextChunk() {

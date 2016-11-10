@@ -26,18 +26,35 @@ public class C16Chunk extends Chunk {
   @Override protected boolean set_impl(int i, double d) { return false; }
   @Override protected boolean set_impl(int i, float f ) { return false; }
   @Override protected boolean setNA_impl(int idx) { UnsafeUtils.set8(_mem, (idx << 4), _LO_NA); UnsafeUtils.set8(_mem,(idx<<4),_HI_NA); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc._len = (nc.set_sparseLen(0));
-    for( int i=0; i< _len; i++ ) {
-      long lo = UnsafeUtils.get8(_mem,(i<<4)  );
-      long hi = UnsafeUtils.get8(_mem,(i << 4) + 8);
-      if(lo == _LO_NA && hi == _HI_NA)
-        nc.addNA();
-      else
-        nc.addUUID(lo, hi);
-    }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.U;
+    v._m = at16l(i);
+    v._d = Double.longBitsToDouble(at16h(i));
+    v._missing = isNA(i);
+    return v;
+  }
+
+  private final void addVal(int i, NewChunk nc){
+    long lo = UnsafeUtils.get8(_mem,(i<<4)  );
+    long hi = UnsafeUtils.get8(_mem,(i << 4) + 8);
+    if(lo == _LO_NA && hi == _HI_NA)
+      nc.addNA();
+    else
+      nc.addUUID(lo, hi);
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) addVal(i,nc);
     return nc;
   }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    for( int i:rows) addVal(i,nc);
+    return nc;
+  }
+
   @Override protected final void initFromBytes () {
     _len = (_mem.length>>4);
     assert _mem.length == _len <<4;

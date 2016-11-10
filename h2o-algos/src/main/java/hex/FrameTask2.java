@@ -6,6 +6,7 @@ import water.Job;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 import water.util.FrameUtils;
 
 /**
@@ -51,7 +52,7 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
   public boolean handlesSparseData(){return false;}
   protected abstract void processRow(Row r);
 
-  @Override public void map(Chunk[] chks) {
+  @Override public void map(ChunkAry chks) {
     if(_job != null && _job.stop_requested()) throw new Job.JobCancelledException();
     chunkInit();
     // compute
@@ -62,7 +63,7 @@ public abstract class FrameTask2<T extends FrameTask2<T>> extends MRTask<T> {
       }
     } else {
       Row row = _dinfo.newDenseRow();
-      for(int r = 0 ; r < chks[0]._len; ++r) {
+      for(int r = 0 ; r < chks._len; ++r) {
         _dinfo.extractDenseRow(chks, r, row);
         if(!row.isBad() && row.weight != 0)
           processRow(row);

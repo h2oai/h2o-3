@@ -576,6 +576,16 @@ public class NewChunk extends Chunk {
     assert _sparseLen <= _len;
   }
 
+  public void addUUID( long lo, double hi ) {
+    if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
+      append2slowUUID();
+    _ms.set(_sparseLen,lo);
+    _ds[_sparseLen] = hi;
+    _sparseLen++;
+    _len++;
+    assert _sparseLen <= _len;
+  }
+
 
   public final boolean isUUID(){return _ms != null && _ds != null; }
   public final boolean isString(){return _is != null; }
@@ -598,7 +608,8 @@ public class NewChunk extends Chunk {
       }
     else _len += n;
   }
-  
+
+
   // Append all of 'nc' onto the current NewChunk.  Kill nc.
   public void add( NewChunk nc ) {
     assert _sparseLen <= _len;
@@ -1372,13 +1383,18 @@ public class NewChunk extends Chunk {
   // in-range and refer to the inflated values of the original Chunk.
   @Override protected boolean set_impl(int i, long l) {
     if( _ds   != null ) return set_impl(i,(double)l);
+    return set_impl(i,l,0);
+  }
+
+  protected boolean set_impl(int i, long l, int e) {
+    if( _ds   != null ) return set_impl(i,l*PrettyPrint.pow10(e));
     if(_sparseLen != _len){ // sparse?
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);
       if(idx >= 0)i = idx;
       else cancel_sparse(); // for now don't bother setting the sparse value
     }
     _ms.set(i,l);
-    _xs.set(i,0);
+    _xs.set(i,e);
     if(_missing != null)_missing.clear(i);
     _naCnt = -1;
     return true;
@@ -1394,7 +1410,7 @@ public class NewChunk extends Chunk {
       } else {
         if (_is[i] == -1) return true; //nothing to do: already NA
         assert(Double.isNaN(d)) : "can only set strings to <NA>, nothing else";
-        set_impl(i, null); //null encodes a missing string: <NA>
+        set_impl(i, (String)null); //null encodes a missing string: <NA>
         return true;
       }
     }
@@ -1450,7 +1466,61 @@ public class NewChunk extends Chunk {
     }
     return setNA_impl2(i);
   }
-  
+
+  public void addInflated(DVal dv){
+    if(dv._missing) addNA();
+    else  switch(dv._t){
+      case N: addNum(dv._m,dv._e); break;
+      case D: addNum(dv._d);       break;
+      case S: addStr(dv._str);     break;
+      case U: addUUID(dv._m,dv._d);break;
+      default: throw H2O.unimpl();
+    }
+  }
+
+  @Override
+  public boolean setInflated(int i, DVal dv){
+    if(dv._missing)  return setNA_impl(i);
+    switch(dv._t){
+      case N: return set_impl(i,dv._m,dv._e);
+      case D: return set_impl(i,dv._d);
+      case S: return set_impl(i,dv._str);
+      case U: return set_impl(i,dv._m,Double.doubleToRawLongBits(dv._d));
+      default: throw H2O.unimpl();
+    }
+  }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    if(isUUID()){
+      v._t = DVal.type.U;
+      v._m = _ms.get(i);
+      v._d = _ds[i];
+    } else if(isString()){
+      v._t = DVal.type.S;
+      v._str = atStr(v._str,i);
+    } else if(_ds != null){
+      v._t = DVal.type.D;
+      v._d = atd(i);
+    } else {
+      v._t = DVal.type.N;
+      int id = i;
+      if(_id != null) id = Arrays.binarySearch(_id,i);
+      if(id < 0) {
+        if(isSparseZero()){
+          v._m = 0;
+          v._e = 0;
+        } else {
+          v._missing = true;
+        }
+      } else {
+        v._m = _ms.get(id);
+        v._e = _xs.get(id);
+      }
+    }
+    return v;
+  }
+
   protected final long at8_impl2(int i) {
     if(isNA2(i))throw new RuntimeException("Attempting to access NA as integer value.");
     if( _ms == null ) return (long)_ds[i];
@@ -1513,13 +1583,7 @@ public class NewChunk extends Chunk {
   }
   @Override protected final void initFromBytes () {throw H2O.fail();}
 
-  @Override
-  void add2Chunk(ChunkAry nchks, int dstCol, int[] rows) {
-    throw new UnsupportedOperationException("should not be called on a new chunk");
-  }
-
   public static AutoBuffer write_impl(NewChunk nc,AutoBuffer bb) { throw H2O.fail(); }
-  @Override public NewChunk inflate_impl(NewChunk nc) { throw H2O.fail(); }
   @Override public String toString() { return "NewChunk._sparseLen="+ _sparseLen; }
 
 }

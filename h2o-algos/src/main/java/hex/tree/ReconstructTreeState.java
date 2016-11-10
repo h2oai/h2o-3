@@ -6,6 +6,7 @@ import java.util.Random;
 import water.*;
 import water.fvec.C0DChunk;
 import water.fvec.Chunk;
+import water.fvec.ChunkAry;
 
 /**
  * Computing oob scores over all trees and rows
@@ -25,17 +26,17 @@ import water.fvec.Chunk;
     _OOBEnabled = oob;
   }
 
-  @Override public void map(Chunk[] chks) {
+  @Override public void map(ChunkAry chks) {
     double[] data = new double[_ncols];
     double [] preds = new double[_nclass+1];
     int ntrees = _trees.length;
-    Chunk weight = _st.hasWeightCol() ? _st.chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-    Chunk oobt = _st.chk_oobt(chks);
+    Chunk weight = _st.hasWeightCol() ? _st.chk_weight(chks) : new C0DChunk(1, chks._len);
+    int oobt = _st.idx_oobt();
     Chunk resp = _st.chk_resp(chks);
     for( int tidx=0; tidx<ntrees; tidx++) { // tree
       // OOB RNG for this tree
-      Random rng = rngForTree(_trees[tidx], oobt.cidx());
-      for (int row = 0; row< oobt._len; row++) {
+      Random rng = rngForTree(_trees[tidx], chks.cidx());
+      for (int row = 0; row< chks._len; row++) {
         double w = weight.atd(row);
         if (w==0) continue;
         double y = resp.atd(row);
@@ -44,7 +45,7 @@ import water.fvec.Chunk;
         boolean rowIsOOB = _OOBEnabled && rng.nextFloat() >= _rate;
         if( !_OOBEnabled || rowIsOOB) {
           // Make a prediction
-          for (int i=0;i<_ncols;i++) data[i] = chks[i].atd(row);
+          for (int i=0;i<_ncols;i++) data[i] = chks.atd(row,i);
           Arrays.fill(preds, 0);
           score0(data, preds, _trees[tidx]);
           if (_nclass==1) preds[1]=preds[0]; // Only for regression, keep consistency
@@ -52,17 +53,17 @@ import water.fvec.Chunk;
           for (int c=0;c<_nclass;c++) { // over all class
             double prediction = preds[1+c];
             if (preds[1+c] != 0) {
-              Chunk ctree = _st.chk_tree(chks, c);
-              double wcount = oobt.atd(row);
+              int ctree = _st.idx_tree(c);
+              double wcount = chks.atd(row,oobt);
               if (_OOBEnabled && _nclass >= 2)
-                ctree.set(row, (float) (ctree.atd(row)*wcount + prediction)/(wcount+w)); //store avg prediction
+                chks.set(row, ctree, (float) (chks.atd(row,ctree)*wcount + prediction)/(wcount+w)); //store avg prediction
               else
-                ctree.set(row, (float) (ctree.atd(row) + prediction));
+                chks.set(row, ctree, (float) (chks.atd(row, ctree) + prediction));
             }
           }
           // Mark oob row and store number of trees voting for this row
           if (rowIsOOB)
-            oobt.set(row, oobt.atd(row)+w);
+            chks.set(row, oobt, chks.atd(row,oobt)+w);
         }
       }
     }

@@ -1,5 +1,7 @@
 package water.fvec;
 
+import water.util.UnsafeUtils;
+
 /**
  * The empty-compression function, if all elements fit directly on UNSIGNED bytes.
  * Cannot store 0xFF, the value is a marker for N/A.
@@ -8,6 +10,8 @@ public final class C1Chunk extends Chunk {
   static protected final int _OFF = 0;
   static protected final long _NA = 0xFF;
   C1Chunk(byte[] bs) { _mem=bs; _len = _mem.length; }
+
+
   @Override public final long at8(int i ) {
     long res = 0xFF&_mem[i+_OFF];
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -26,22 +30,33 @@ public final class C1Chunk extends Chunk {
   @Override protected boolean set_impl(int i, double d) { return false; }
   @Override protected boolean set_impl(int i, float f ) { return false; }
   @Override protected boolean setNA_impl(int idx) { _mem[idx+_OFF] = (byte)_NA; return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = 0xFF&_mem[i+_OFF];
-      if( res == _NA ) nc.addNA();
-      else             nc.addNum(res,0);
-    }
-    return nc;
-  }
-  @Override public void initFromBytes(){_len = _mem.length;}
 
   @Override
-  void add2Chunk(ChunkAry nchks, int dstCol, int[] rows) {
-    for(int r:rows)
-      nchks.addInteger(dstCol,0xFF&_mem[r]);
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.N;
+    v._m = 0xFF&_mem[i+_OFF];
+    v._e = 0;
+    v._missing = (v._m == _NA);
+    return v;
   }
+
+  private final void addVal(int i, NewChunk nc){
+    int res = 0xFF&_mem[i+_OFF];
+    if( res == _NA ) nc.addNA();
+    else             nc.addNum(res,0);
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) addVal(i,nc);
+    return nc;
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    for( int i:rows) addVal(i,nc);
+    return nc;
+  }
+
+  @Override public void initFromBytes(){_len = _mem.length;}
 
   @Override
   public boolean hasFloat() {return false;}

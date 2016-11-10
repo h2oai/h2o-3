@@ -60,10 +60,10 @@ public class AstUnique extends AstPrimitive {
     IcedHashMap<AstGroup.G, String> _uniq;
 
     @Override
-    public void map(Chunk[] c) {
+    public void map(ChunkAry c) {
       _uniq = new IcedHashMap<>();
       AstGroup.G g = new AstGroup.G(1, null);
-      for (int i = 0; i < c[0]._len; ++i) {
+      for (int i = 0; i < c._len; ++i) {
         g.fill(i, c, new int[]{0});
         String s_old = _uniq.putIfAbsent(g, "");
         if (s_old == null) g = new AstGroup.G(1, null);

@@ -54,7 +54,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
           p._valid = test._key;
           p._response_column = train.names()[train.names().length-1];
           int ci = train.names().length-1;
-          Scope.track(train.replace(ci, train.vecs()[ci].toCategoricalVec()));
+          Scope.track(train.replace(ci, train.vecs(ci).toCategoricalVec()));
           DKV.put(train);
           p._ignored_columns = new String[]{"EvapMM", "RISK_MM"}; //for weather data
           p._activation = DeepLearningParameters.Activation.RectifierWithDropout;
@@ -113,8 +113,8 @@ public class DeepLearningReproducibilityTest extends TestUtil {
             assertTrue(cs == checksums[0]);
           for (Frame f : preds) {
 //            assertTrue(TestUtil.isBitIdentical(f, preds[0])); // PUBDEV-892: This should have passed all the time
-            for (int i=0; i<f.vecs().length; ++i) {
-              TestUtil.assertVecEquals(f.vecs()[i], preds[0].vecs()[i], 1e-5); //PUBDEV-892: This tolerance should be 1e-15
+            for (int i=0; i<f.vecs()._numCols; ++i) {
+              TestUtil.assertVecEquals(f.vecs(i), preds[0].vecs(i), 1e-5); //PUBDEV-892: This tolerance should be 1e-15
             }
           }
           repro_error = repeatErrs.get(0);

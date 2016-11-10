@@ -15,23 +15,23 @@ public class VecStatsTest extends TestUtil {
     try {
       Futures fs = new Futures();
       Random random = new Random();
-      Vec[] vecs = new Vec[1];
+
       AppendableVec vec = new AppendableVec(Vec.newKey(), Vec.T_NUM);
+      NewChunkAry nc = vec.chunkForChunkIdx(0);
       for( int i = 0; i < 2; i++ ) {
-        NewChunk chunk = new NewChunk(vec, i);
         for( int r = 0; r < 1000; r++ )
-          chunk.addNum(random.nextInt(1000));
-        chunk.close(i, fs);
+          nc.addInteger(i,random.nextInt(1000));
       }
-      vecs[0] = vec.layout_and_close(fs);
+      nc.close(fs);
+      Vec vec2 = vec.layout_and_close(fs);
       fs.blockForPending();
-      frame = new Frame(Key.<Frame>make(), null, vecs);
+      frame = new Frame(Key.<Frame>make(), null, vec2);
 
       // Make sure we test the multi-chunk case
-      vecs = frame.vecs();
-      assert vecs[0].nChunks() > 1;
+      VecAry vecs = frame.vecs();
+      assert vecs.nChunks() > 1;
       long rows = frame.numRows();
-      Vec v = vecs[0];
+      Vec v = vecs.select(0);
       double min = Double.POSITIVE_INFINITY, max = Double.NEGATIVE_INFINITY, mean = 0, sigma = 0;
       for( int r = 0; r < rows; r++ ) {
         double d = v.at(r);
@@ -59,13 +59,13 @@ public class VecStatsTest extends TestUtil {
   @Test public void testPCTiles() {
     // Simplified version of tests in runit_quantile_1_golden.R. There we test probs=seq(0,1,by=0.01)
     Vec vec = vec(5 , 8 ,  9 , 12 , 13 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 33 , 34 , 43,  45,  48, 161);
-    double[] pctiles = vec.pctiles();
+    double[] pctiles = vec.pctiles(0);
     //System.out.println(java.util.Arrays.toString(pctiles));
     Assert.assertEquals(13.75,pctiles[4],1e-5);
     vec.remove();
 
     vec = vec(5 , 8 ,  9 , 9 , 9 , 16 , 18 , 23 , 27 , 28 , 30 , 31 , 31 , 34 , 43,  43,  43, 161);
-    pctiles = vec.pctiles();
+    pctiles = vec.pctiles(0);
     //System.out.println(java.util.Arrays.toString(pctiles));
     Assert.assertEquals(10.75,pctiles[4],1e-5);
     vec.remove();

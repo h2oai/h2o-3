@@ -7,11 +7,7 @@ import water.H2O;
 import water.Futures;
 import water.DKV;
 import water.Iced;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.AppendableVec;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
@@ -58,20 +54,20 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   public float[] transform(String target) {
     NonBlockingHashMap<BufferedString, Integer> vocabHM = buildVocabHashMap();
-    Vec[] vs = ((Frame) _w2vKey.get()).vecs();
+    VecAry vs = ((Frame) _w2vKey.get()).vecs();
     BufferedString tmp = new BufferedString(target);
     return transform(tmp, vocabHM, vs);
   }
 
-  private float[] transform(BufferedString tmp, NonBlockingHashMap<BufferedString, Integer> vocabHM, Vec[] vs) {
-    final int vecSize = vs.length-1;
+  private float[] transform(BufferedString tmp, NonBlockingHashMap<BufferedString, Integer> vocabHM, VecAry vs) {
+    final int vecSize = vs._numCols-1;
     float[] vec = new float[vecSize];
     if (!vocabHM.containsKey(tmp)) {
       Log.warn("Target word " + tmp + " isn't in vocabulary.");
       return null;
     }
     int row = vocabHM.get(tmp);
-    for(int i=0; i < vecSize; i++) vec[i] = (float) vs[i+1].at(row);
+    for(int i=0; i < vecSize; i++) vec[i] = (float) vs.at(row,i+1);
     return vec;
   }
 
@@ -86,7 +82,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   public HashMap<String, Float> findSynonyms(String target, int cnt) {
     if (cnt > 0) {
       NonBlockingHashMap<BufferedString, Integer> vocabHM = buildVocabHashMap();
-      Vec[] vs = ((Frame) _w2vKey.get()).vecs();
+      VecAry vs = ((Frame) _w2vKey.get()).vecs();
       BufferedString tmp = new BufferedString(target);
       float[] tarVec = transform(tmp, vocabHM, vs);
       return findSynonyms(tarVec, cnt, vs);
@@ -107,26 +103,26 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   public void findSynonyms(float[] tarVec, int cnt) {
     if (cnt > 0) {
-      Vec[] vs = ((Frame) _w2vKey.get()).vecs();
+      VecAry vs = ((Frame) _w2vKey.get()).vecs();
       findSynonyms(tarVec, cnt, vs);
     } else Log.err("Synonym count must be greater than 0.");
   }
 
-  private HashMap<String, Float> findSynonyms(float[] tarVec, int cnt, Vec[] vs) {
-    final int vecSize= vs.length - 1, vocabSize = (int) vs[0].length();
+  private HashMap<String, Float> findSynonyms(float[] tarVec, int cnt, VecAry vs) {
+    final int vecSize= vs._numCols - 1, vocabSize = (int) vs.length();
     int[] matches = new int[cnt];
     float [] scores = new float[cnt];
     float[] curVec = new float[vecSize];
 
     HashMap<String, Float> res = new HashMap<>();
 
-    if (tarVec.length != vs.length-1) {
+    if (tarVec.length != vs._numCols-1) {
       Log.warn("Target vector length differs from the vocab's vector length.");
       return null;
     }
 
     for (int i=0; i < vocabSize; i++) {
-      for(int j=0; j < vecSize; j++) curVec[j] = (float) vs[j+1].at(i);
+      for(int j=0; j < vecSize; j++) curVec[j] = (float) vs.at(i,j+1);
       float score = cosineSimilarity(tarVec, curVec);
 
       for (int j = 0; j < cnt; j++) {
@@ -142,7 +138,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       }
     }
     for (int i=0; i < cnt; i++)
-      res.put(vs[0].atStr(new BufferedString(), matches[i]).toString(), scores[i]);
+      res.put(vs.atStr(new BufferedString(), matches[i]).toString(), scores[i]);
 
     return res;
   }
@@ -182,11 +178,11 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     Key keys[] = Vec.VectorGroup.VG_LEN1.addVecs(vecs.length);
 
     //allocate
-    NewChunk cs[] = new NewChunk[vecs.length];
+    NewChunkAry cs[] = new NewChunkAry[vecs.length];
     AppendableVec avs[] = new AppendableVec[vecs.length];
     for (int i = 0; i < vecs.length; i++) {
       avs[i] = new AppendableVec(keys[i], Vec.T_NUM);
-      cs[i] = new NewChunk(avs[i], 0);
+      cs[i] = avs[i].chunkForChunkIdx(0);
     }
     //fill in vector values
     for( int i = 0; i < _modelInfo._vocabSize; i++ ) {
@@ -199,7 +195,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     final int rowLayout = avs[0].compute_rowLayout();
     for (int i = 0; i < vecs.length; i++) {
       colNames[i] = new String("V"+i);
-      cs[i].close(0, fs);
+      cs[i].close(fs);
       vecs[i] = avs[i].close(rowLayout,fs);
     }
 
@@ -208,7 +204,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     //FIXME this ties the word count frame to this one which means
     //FIXME one can't be deleted without destroying the other
     fr.add("Word", (_parms._vocabKey.get()).vec(0));
-    fr.add(colNames, vecs);
+    fr.add(colNames, new VecAry(vecs));
     DKV.put(_w2vKey, fr);
   }
 

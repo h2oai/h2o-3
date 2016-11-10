@@ -15,6 +15,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
+import water.fvec.VecAry;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Triple;
@@ -284,11 +285,11 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 String[] names = fr.names().clone();
-                Vec[] en = fr.remove(new int[]{1,4,5,8});
-                fr.add(names[1], VecUtils.toCategoricalVec(en[0])); //CAPSULE
-                fr.add(names[4], VecUtils.toCategoricalVec(en[1])); //DPROS
-                fr.add(names[5], VecUtils.toCategoricalVec(en[2])); //DCAPS
-                fr.add(names[8], VecUtils.toCategoricalVec(en[3])); //GLEASON
+                VecAry en = fr.remove(new int[]{1,4,5,8});
+                fr.add(names[1], VecUtils.toCategoricalVec(en.select(0))); //CAPSULE
+                fr.add(names[4], VecUtils.toCategoricalVec(en.select(1))); //DPROS
+                fr.add(names[5], VecUtils.toCategoricalVec(en.select(2))); //DCAPS
+                fr.add(names[8], VecUtils.toCategoricalVec(en.select(3))); //GLEASON
                 for (Vec v : en) v.remove();
                 fr.remove(0).remove(); //drop ID
                 return 4; //CAPSULE
@@ -371,7 +372,7 @@ public class DRFTest extends TestUtil {
     String rname = fr._names[idx];
     drf._response_column = fr.names()[idx];
 
-    Vec resp = fr.vecs()[idx];
+    Vec resp = fr.vecs(idx);
     Vec ret = null;
     if (classification) {
       ret = fr.remove(idx);
@@ -605,7 +606,7 @@ public class DRFTest extends TestUtil {
       rb.join();
       tfr.delete();
       tfr = DKV.get(dest).get();
-      Scope.track(tfr.replace(54, tfr.vecs()[54].toCategoricalVec()));
+      Scope.track(tfr.replace(54, tfr.vecs(54).toCategoricalVec()));
       DKV.put(tfr);
 
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
@@ -1461,7 +1462,7 @@ public class DRFTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(resp, tfr.vecs(resp).toCategoricalVec()));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1511,7 +1512,7 @@ public class DRFTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(resp, tfr.vecs(resp).toCategoricalVec()));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job
@@ -1564,7 +1565,7 @@ public class DRFTest extends TestUtil {
       int resp = 54;
 //      tfr = parse_test_file("bigdata/laptop/mnist/train.csv.gz");
 //      int resp = 784;
-      Scope.track(tfr.replace(resp, tfr.vecs()[resp].toCategoricalVec()));
+      Scope.track(tfr.replace(resp, tfr.vecs(resp).toCategoricalVec()));
       DKV.put(tfr);
       SplitFrame sf = new SplitFrame(tfr, new double[]{0.5, 0.5}, new Key[]{Key.make("train.hex"), Key.make("valid.hex")});
       // Invoke the job

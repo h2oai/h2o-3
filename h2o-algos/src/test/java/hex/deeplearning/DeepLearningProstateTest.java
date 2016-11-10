@@ -400,7 +400,7 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                                   // check that the labels made with the default threshold are consistent with the CM that's reported by the AUC object
                                                   labels = valid.vec(respname);
-                                                  predlabels = pred.vecs()[0];
+                                                  predlabels = pred.vecs(0);
                                                   ConfusionMatrix cm = buildCM(labels, predlabels);
                                                   Log.info("CM from pre-made labels:");
                                                   Log.info(cm.toASCII());
@@ -414,7 +414,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                                   // manually make labels with AUC-given default threshold
                                                   String ast = "pred (> ( pred [2])" + threshold +")";
                                                   Frame tmp = Rapids.exec(ast).getFrame();
-                                                  pred2labels = tmp.vecs()[0];
+                                                  pred2labels = tmp.vecs(0);
                                                   cm = buildCM(labels, pred2labels);
                                                   Log.info("CM from self-made labels:");
                                                   Log.info(cm.toASCII());

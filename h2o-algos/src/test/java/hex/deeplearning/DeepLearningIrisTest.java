@@ -104,7 +104,7 @@ public class DeepLearningIrisTest extends TestUtil {
                               for (int c = 0; c < frame.numCols(); c++) {
                                 names[c] = "ColumnName" + c;
                                 for (int r = 0; r < frame.numRows(); r++)
-                                  rows[r][c] = frame.vecs()[c].at(r);
+                                  rows[r][c] = frame.vecs().at(r,c);
                               }
 
                               for (int i = rows.length - 1; i >= 0; i--) {
@@ -277,7 +277,7 @@ public class DeepLearningIrisTest extends TestUtil {
                                 preds[0] = GenModel.getPrediction(preds, null, xValues, 0.5);
 
                                 // compare predicted label
-                                Assert.assertTrue(preds[0] == (int) fpreds.vecs()[0].at(i));
+                                Assert.assertTrue(preds[0] == (int) fpreds.vecs().at(i));
 //                                // compare predicted probabilities
 //                                for (int j=0; j<ref_preds.length; ++j) {
 //                                  compareVal((float)(ref_preds[j]), fpreds.vecs()[1+j].at(i), abseps, releps);

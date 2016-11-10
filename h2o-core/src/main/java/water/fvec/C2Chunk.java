@@ -25,21 +25,30 @@ public class C2Chunk extends Chunk {
     UnsafeUtils.set2(_mem,(idx<<1)+_OFF,(short)l);
     return true;
   }
-  @Override protected boolean set_impl(int idx, double d) {
-    if( Double.isNaN(d) ) return setNA_impl(idx);
-    long l = (long)d;
-    return l == d && set_impl(idx, l);
-  }
   @Override protected boolean set_impl(int i, float f ) { return set_impl(i,(double)f); }
   @Override protected boolean setNA_impl(int idx) { UnsafeUtils.set2(_mem,(idx<<1)+_OFF,(short)_NA); return true; }
-  @Override public NewChunk inflate_impl(NewChunk nc) {
-    nc.set_sparseLen(0);
-    final int len = _len;
-    for( int i=0; i<len; i++ ) {
-      int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
-      if( res == _NA ) nc.addNA();
-      else             nc.addNum(res,0);
-    }
+
+  @Override
+  public DVal getInflated(int i, DVal v) {
+    v._t = DVal.type.N;
+    v._m = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
+    v._e = 0;
+    v._missing = v._m == _NA;
+    return v;
+  }
+
+  private final void addVal(int i, NewChunk nc){
+    int res = UnsafeUtils.get2(_mem,(i<<1)+_OFF);
+    if( res == _NA ) nc.addNA();
+    else             nc.addNum(res,0);
+  }
+  @Override public NewChunk add2Chunk(NewChunk nc, int from, int to) {
+    for( int i=from; i<to; i++ ) addVal(i,nc);
+    return nc;
+  }
+
+  @Override public NewChunk add2Chunk(NewChunk nc, int [] rows) {
+    for( int i:rows) addVal(i,nc);
     return nc;
   }
   @Override public final void initFromBytes () {_len = _mem.length>>1;}

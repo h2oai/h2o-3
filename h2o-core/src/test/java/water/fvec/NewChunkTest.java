@@ -18,26 +18,24 @@ public class NewChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
   final int K = 1 + (int)(new Random().nextFloat() * (FileVec.DFLT_CHUNK_SIZE >> 4));
   private AppendableVec av;
-  NewChunk nc;
-  Chunk cc;
+  NewChunkAry nc;
+  ChunkAry cc;
   Vec vec;
 
   private void pre() {
     av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-    nc = new NewChunk(av, 0);
+    nc = av.chunkForChunkIdx(0);
   }
   private void post() {
-    cc = nc.compress();
-    av._tmp_espc[0] = K; //HACK
-    cc._start = 0; //HACK
-    cc._cidx = 0; // HACK as well
     Futures fs = new Futures();
-    vec = cc._vec = av.layout_and_close(fs);
+    nc.close(fs);
+    vec = av.layout_and_close(fs);
     fs.blockForPending();
-    assert(DKV.get(vec._key)!=null); //only the vec header is in DKV, the chunk is not
+    assertTrue(DKV.get(vec._key)!=null); // the vec header is in DKV, chunk as well
+    assertTrue(DKV.get(vec.chunkKey(0))!=null);
   }
   private void post_write() {
-    cc.close(0, new Futures()).blockForPending();
+    cc.close(new Futures()).blockForPending();
   }
   void remove() {if(vec != null)vec.remove();}
 
@@ -54,7 +52,7 @@ public class NewChunkTest extends TestUtil {
   }
 
   @Test public void testSparseNAs() {
-    NewChunk nc = new NewChunk(null, 0, true);
+    NewChunk nc = new NewChunk(Vec.T_NUM);
     nc.addNAs(128);
     assertTrue(nc.isSparseNA());
     for (int i = 0; i < 512; i++)
@@ -71,8 +69,8 @@ public class NewChunkTest extends TestUtil {
   }
 
   private static class NewChunkTestCpy extends NewChunk {
-    NewChunkTestCpy(Vec vec, int cidx) {super(vec, cidx);}
-    public NewChunkTestCpy() { super(null,0); }
+    NewChunkTestCpy(byte t) {super(t);}
+    public NewChunkTestCpy() { super(Vec.T_NUM); }
     int mantissaSize() {return _ms._vals1 != null?1:_ms._vals4 != null?4:8;}
     int exponentSize() {return _xs._vals1 != null?1:_xs._vals4 != null?4:0;}
     int missingSize()  {return _missing == null?0:_missing.size();}
@@ -84,7 +82,7 @@ public class NewChunkTest extends TestUtil {
     // single bytes
     Chunk c;
 
-    NewChunkTestCpy nc = new NewChunkTestCpy(v,4);
+    NewChunkTestCpy nc = new NewChunkTestCpy();
     for( long val : values )
       nc.addNum(val, 0);
     assertEquals(mantissaSize,nc.mantissaSize());
@@ -103,7 +101,7 @@ public class NewChunkTest extends TestUtil {
     }
 
     // test with exponent
-    nc = new NewChunkTestCpy(v,4);
+    nc = new NewChunkTestCpy();
     for( long val : values )
       nc.addNum(val, -1);
     for(int i = 0; i < values.length; i += 5)
@@ -117,7 +115,7 @@ public class NewChunkTest extends TestUtil {
         assertEquals(values[i]*0.1, c.atd(i),1e-10);
     }
     // test switch to doubles
-    nc = new NewChunkTestCpy(v,4);
+    nc = new NewChunkTestCpy();
     for( long val : values )
       nc.addNum(val, 0);
     for(int i = 0; i < values.length; i += 5)
@@ -132,7 +130,7 @@ public class NewChunkTest extends TestUtil {
     }
     assertEquals(Math.PI,c.atd(values.length),0);
     // test switch to sparse zero
-    nc = new NewChunkTestCpy(v,4);
+    nc = new NewChunkTestCpy();
     for( long val : values )
       nc.addNum(val, 0);
     nc.addNA();
@@ -153,7 +151,7 @@ public class NewChunkTest extends TestUtil {
       else
         assertEquals(0,c.atd(i),0);
     // test switch to sparse NAs
-    nc = new NewChunkTestCpy(v,4);
+    nc = new NewChunkTestCpy();
     for( long val : values )
       nc.addNum(val, 0);
     nc.addNA();
@@ -191,7 +189,7 @@ public class NewChunkTest extends TestUtil {
 
 
   @Test public void testSparseDoubles2(){
-    NewChunk nc = new NewChunk(null, 0, false);
+    NewChunk nc = new NewChunk(Vec.T_NUM);
     int N = 1000;
     nc.addZeros(N);
     nc.addNum(Math.PI);
@@ -206,7 +204,7 @@ public class NewChunkTest extends TestUtil {
     assertEquals(i,c.nextNZ(c.nextNZ(-1)));
     assertEquals(         Math.E,c.atd(i  ),1e-16);
 
-    nc = new NewChunk(null, 0, false);
+    nc = new NewChunk(Vec.T_NUM);
     nc.addNum(Math.PI);
     nc.addNum(Double.MAX_VALUE);
     nc.addNum(Double.MIN_VALUE);
@@ -222,7 +220,7 @@ public class NewChunkTest extends TestUtil {
     assertEquals(c.atd(8), Math.E,1e-16);
 
     // test flip from dense -> sparse0 -> desne
-    nc = new NewChunk(null, 0, false);
+    nc = new NewChunk(Vec.T_NUM);
     double [] rvals = new double[2*1024];
     nc.addNum(rvals[0] = Math.PI);
     nc.addNum(rvals[1] = Double.MAX_VALUE);
@@ -243,7 +241,7 @@ public class NewChunkTest extends TestUtil {
       assertEquals(rvals[j],c.atd(j),0);
 
     // test flip from dense -> sparseNA -> desne
-    nc = new NewChunk(null, 0, false);
+    nc = new NewChunk(Vec.T_NUM);
     rvals = new double[2*1024];
     Arrays.fill(rvals,Double.NaN);
     nc.addNum(rvals[0] = Math.PI);
@@ -275,16 +273,16 @@ public class NewChunkTest extends TestUtil {
       assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(4.32433, cc.atd(k), Math.ulp(4.32433));
-      Assert.assertTrue(cc instanceof C0DChunk);
+      Assert.assertTrue(cc.getChunk(0) instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_NA() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNA();
+      for (int k = 0; k < K; ++k) nc.addNA(0);
       assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertTrue(cc.isNA(k));
-      Assert.assertTrue(cc instanceof C0DChunk);
+      Assert.assertTrue(cc.getChunk(0) instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_PosInf() {
@@ -293,7 +291,7 @@ public class NewChunkTest extends TestUtil {
       assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(Double.POSITIVE_INFINITY, cc.atd(k),0.0001);
-      Assert.assertTrue(cc instanceof C0DChunk);
+      Assert.assertTrue(cc.getChunk(0) instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_NegInf() {
@@ -302,7 +300,7 @@ public class NewChunkTest extends TestUtil {
       assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(Double.NEGATIVE_INFINITY, cc.atd(k),0.0001);
-      Assert.assertTrue(cc instanceof C0DChunk);
+      Assert.assertTrue(cc.getChunk(0) instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_NaN() {
@@ -312,12 +310,12 @@ public class NewChunkTest extends TestUtil {
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(Double.NaN, cc.atd(k), 0.0001);
       for (int k = 0; k < K; ++k) Assert.assertTrue(cc.isNA(k));
-      Assert.assertTrue(cc instanceof C0DChunk);
+      Assert.assertTrue(cc.getChunk(0) instanceof C0DChunk);
     } finally { remove(); }
   }
   @Test public void testC0DChunk_inflateFromNA() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNA();
+      for (int k = 0; k < K; ++k) nc.addNA(0);
       assertEquals(K, nc._len);
       post();
       cc.set(K - 1, 342.34); //should inflate
@@ -325,7 +323,6 @@ public class NewChunkTest extends TestUtil {
       assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertTrue(cc.isNA(k));
       Assert.assertEquals(342.34, cc.atd(K - 1),Math.ulp(342.34));
-      Assert.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC0DChunk_inflateToNA() {
@@ -333,13 +330,12 @@ public class NewChunkTest extends TestUtil {
       for (int k = 0; k < K; ++k) nc.addNum(3.1415);
       assertEquals(K, nc._len);
       post();
-      Assert.assertTrue(cc instanceof C0DChunk);
-      cc.setNA(K - 1); //should inflate
+      Assert.assertTrue(cc.getChunk(0) instanceof C0DChunk);
+      cc.setNA(K - 1,0); //should inflate
       post_write();
       assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertEquals(3.1415, cc.atd(k), Math.ulp(3.1415));
       Assert.assertTrue(cc.isNA(K - 1));
-      Assert.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC0DChunk_inflateToLarger() {
@@ -352,7 +348,6 @@ public class NewChunkTest extends TestUtil {
       assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertEquals(3.1415, cc.atd(k),Math.ulp(3.1415));
       Assert.assertEquals(9.9999, cc.atd(K - 1), Math.ulp(9.9999));
-      Assert.assertTrue(! (cc.chk2() instanceof C0DChunk)); //no longer constant
     } finally { remove(); }
   }
 
@@ -361,26 +356,26 @@ public class NewChunkTest extends TestUtil {
    */
   @Test public void testC0LChunk_zero() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNum(0,0); //handled as sparse
+      for (int k = 0; k < K; ++k) nc.addInteger(0,0); //handled as sparse
       assertEquals(K, nc._len);
       post();
       assertEquals(K, cc._len);
       for (int k = 0; k < K; ++k) Assert.assertEquals(0, cc.at8(k));
-      Assert.assertTrue(cc instanceof C0LChunk);
+      Assert.assertTrue(cc.getChunk(0) instanceof C0LChunk);
     } finally { remove(); }
   }
   @Test public void testC0LChunk_regular() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNum(4,0);
+      for (int k = 0; k < K; ++k) nc.addInteger(0,4);
       assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertEquals(4, cc.at8(k));
-      Assert.assertTrue(cc instanceof C0LChunk);
+      Assert.assertTrue(cc.getChunk(0) instanceof C0LChunk);
     } finally { remove(); }
   }
   @Test public void testC0LChunk_inflateFromNA() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNA();
+      for (int k = 0; k < K; ++k) nc.addNA(0);
       assertEquals(K, nc._len);
       post();
       cc.set(K - 1, 342L); //should inflate
@@ -388,25 +383,24 @@ public class NewChunkTest extends TestUtil {
       assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertTrue(cc.isNA(k));
       Assert.assertEquals(342L, cc.at8(K - 1));
-      Assert.assertTrue(! (cc instanceof C0LChunk)); //no longer constant
+      Assert.assertTrue(! (cc.getChunk(0) instanceof C0LChunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC0LChunk_inflateToNA() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNum(4,0);
+      for (int k = 0; k < K; ++k) nc.addInteger(0,4);
       post();
       assertEquals(K, nc._len);
-      cc.setNA(K - 1); //should inflate
+      cc.setNA(K - 1,0); //should inflate
       post_write();
       assertEquals(cc._len, K);
       for (int k = 0; k < K-1; ++k) Assert.assertEquals(4, cc.at8(k));
       Assert.assertTrue(cc.isNA(K - 1));
-      Assert.assertTrue(!(cc.chk2() instanceof C0LChunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC0LChunk_inflateRegular() {
     try { pre();
-      for (int k = 0; k < K; ++k) nc.addNum(12345,0);
+      for (int k = 0; k < K; ++k) nc.addInteger(0,12345);
       assertEquals(K, nc._len);
       post();
       cc.set(K - 1, 0.1); //should inflate
@@ -414,7 +408,6 @@ public class NewChunkTest extends TestUtil {
       assertEquals(K, nc._len);
       for (int k = 0; k < K-1; ++k) Assert.assertEquals(12345, cc.at8(k));
       Assert.assertEquals(0.1, cc.atd(K - 1), Math.ulp(0.1));
-      Assert.assertTrue(!(cc.chk2() instanceof C0LChunk)); //no longer constant
     } finally { remove(); }
   }
 
@@ -423,57 +416,54 @@ public class NewChunkTest extends TestUtil {
    */
   @Test public void testC1Chunk_regular() {
     try { pre();
-      nc.addNA();
+      nc.addNA(0);
       for (int k = 1; k < K; ++k) nc.addNum(k%254);
       assertEquals(K, nc._len);
       post();
-      Assert.assertTrue(cc.isNA_abs(0));
+      Assert.assertTrue(cc.isNA(0));
       for (int k = 1; k < K; ++k) Assert.assertEquals(k%254, cc.at8(k));
-      Assert.assertTrue(cc instanceof C1Chunk);
     } finally { remove(); }
   }
   @Test public void testC1Chunk_inflateToLarger() {
     try { pre();
-      nc.addNA();
+      nc.addNA(0);
       for (int k = 1; k < K; ++k) nc.addNum(k%254);
       post();
       assertEquals(K, nc._len);
       cc.set(K - 1, 256); //should inflate (bigger than max. capacity of 255)
       post_write();
       assertEquals(K, nc._len);
-      Assert.assertTrue(cc.isNA_abs(0));
+      Assert.assertTrue(cc.isNA(0));
       for (int k = 1; k < K-1; ++k) Assert.assertEquals(k%254, cc.at8(k));
       Assert.assertEquals(256, cc.at8(K - 1));
-      Assert.assertTrue(!(cc.chk2() instanceof C1Chunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testC1Chunk_inflateInternalNA() {
     try { pre();
-      nc.addNA();
+      nc.addNA(0);
       for (int k = 1; k < K; ++k) nc.addNum(k%254);
       post();
       assertEquals(K, nc._len);
       cc.set(K - 1, 255); //255 is internal NA, so it should inflate, since we're not trying to write a NA
       post_write();
       assertEquals(K, nc._len);
-      Assert.assertTrue(cc.isNA_abs(0));
+      Assert.assertTrue(cc.isNA(0));
       for (int k = 1; k < K-1; ++k) Assert.assertEquals(k%254, cc.at8(k));
       Assert.assertEquals(255, cc.at8(K - 1));
-      Assert.assertTrue(!(cc.chk2() instanceof C1Chunk)); //no longer constant
     } finally { remove(); }
   }
   @Test public void testCXIChunk_setPostSparse() {
     try { pre();
       double extra = 3.5;
-      nc.addZeros(K - 5);
+      nc.addZeros(0,K - 5);
       nc.addNum(extra);
       nc.addNum(0);
-      nc.addNA();
-      nc.addZeros(2);
+      nc.addNA(0);
+      nc.addZeros(0,2);
       assertTrue(nc.isSparseZero());
-      assertEquals(nc._sparseLen, 2);
+      assertEquals(nc.getChunk(0).sparseLenZero(), 2);
       assertEquals(nc.sparseLenZero(), 2);
-      assertEquals(nc.sparseLenNA(), K);
+      assertEquals(nc.getChunk(0).sparseLenNA(), K);
 
       for (int i = 0; i < K-5; i++) assertEquals(0, nc.atd(0), Math.ulp(0));
       assertEquals(extra, nc.atd(K-5), Math.ulp(extra));
@@ -486,12 +476,10 @@ public class NewChunkTest extends TestUtil {
       post_write();
       assertEquals(K, nc._len);
       assertEquals(0,cc.atd(K-5),Math.ulp(0));
-      assertTrue(cc.chk2() instanceof CXIChunk);
       
       for (int i = 0; i < K-3; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
       assertEquals(Double.NaN, cc.atd(K-3), Math.ulp(Double.NaN));
       for (int i = K-2; i < K; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
-      assertEquals(1,cc.chk2().sparseLenZero());
       
     } finally { remove();}
   }
@@ -500,14 +488,14 @@ public class NewChunkTest extends TestUtil {
     try {
       pre();
       double extra = 3.5;
-      nc.addNAs(K - 5);
+      nc.addNAs(0,K - 5);
       nc.addNum(extra);
-      nc.addNAs(2);
-      nc.addZeros(2);
+      nc.addNAs(0,2);
+      nc.addZeros(0,2);
       assertTrue(nc.isSparseNA());
-      assertEquals(nc._sparseLen, 3);
+      assertEquals(nc.getChunk(0).sparseLenNA(), 3);
       assertEquals(nc.sparseLenZero(), K);
-      assertEquals(nc.sparseLenNA(), 3);
+      assertEquals(nc.getChunk(0).sparseLenNA(), 3);
 
       for (int i = 0; i < K - 5; i++) assertEquals(Double.NaN, nc.atd(i), Math.ulp(0));
       assertEquals(extra, nc.atd(K - 5), Math.ulp(extra));
@@ -519,25 +507,23 @@ public class NewChunkTest extends TestUtil {
       post_write();
       assertEquals(K, nc._len);
       assertEquals(0, cc.atd(K - 3), Math.ulp(0));
-      assertTrue(cc.chk2() instanceof CNAXDChunk);
 
       for (int i = 0; i < K - 5; i++) assertEquals(Double.NaN, cc.atd(i), Math.ulp(0));
       assertEquals(extra, cc.atd(K - 5), Math.ulp(extra));
       assertEquals(Double.NaN, cc.atd(K-4), Math.ulp(0));
       for (int i = K - 3; i < K; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
-      assertEquals(4,cc.chk2().sparseLenNA());
     } finally {remove();}
   }
   
   @Test public void testSparseCat() {
     try {
       av = new AppendableVec(Vec.newKey(), Vec.T_CAT);
-      nc = new NewChunk(av, 0);
-      for (int k = 0; k < K; ++k) nc.addCategorical(0);
+      nc = av.chunkForChunkIdx(0);
+      for (int k = 0; k < K; ++k) nc.addInteger(0);
       assertEquals(K, nc._len);
       post();
       for (int k = 0; k < K; ++k) Assert.assertTrue(!cc.isNA(k) && cc.at8(k)==0);
-      Assert.assertTrue(cc instanceof C0LChunk);
+      Assert.assertTrue(cc.getChunk(0) instanceof C0LChunk);
     } finally { remove(); }
   }
 
@@ -548,10 +534,10 @@ private static double []  test_seq = new double[]{
 @Test public void testSparseWithMissing(){
   // DOUBLES
   av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-  nc = new NewChunk(av, 0);
+  nc = av.chunkForChunkIdx(0);
   for(double d:test_seq)
     nc.addNum(d);
-  Chunk c = nc.compress();
+  Chunk c = nc.getChunk(0).compress();
   for(int i =0 ; i < test_seq.length; ++i) {
     if(Double.isNaN(test_seq[i]))
       Assert.assertTrue(c.isNA(i));
@@ -560,11 +546,11 @@ private static double []  test_seq = new double[]{
   }
   // INTS
   av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-  nc = new NewChunk(av, 0);
+  nc = av.chunkForChunkIdx(0);
   for(double d:test_seq)
-    if(Double.isNaN(d)) nc.addNA();
-    else nc.addNum((int)d,0);
-  c = nc.compress();
+    if(Double.isNaN(d)) nc.addNA(0);
+    else nc.addInteger((int)d);
+  c = nc.getChunk(0).compress();
   for(int i =0 ; i < test_seq.length; ++i) {
     if(Double.isNaN(test_seq[i]))
       Assert.assertTrue(c.isNA(i));

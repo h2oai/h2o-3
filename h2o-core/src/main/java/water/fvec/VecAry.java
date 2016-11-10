@@ -32,6 +32,7 @@ public class VecAry extends Vec implements Iterable<Vec> {
   }
 
 
+
   private Vec[] fetchVecs(){
     Vec [] vecs = _vecs;
     if(_vecs == null) {
@@ -199,41 +200,111 @@ public class VecAry extends Vec implements Iterable<Vec> {
     return res;
   }
 
+  /** Remove associated Keys when this guy removes.  For Vecs, remove all
+   *  associated Chunks.
+   *  @return Passed in Futures for flow-coding  */
+  @Override public Futures remove_impl( Futures fs ) {
+    if(_colFilter == null){
+      for(Vec v:vecs()) v.remove(fs);
+      return fs;
+    }
+    Arrays.sort(_vecIds);
+    int off = 0, j = 0;
+    for(int i = 0; i < _vecs.length; ++i){
+      final int ncols = _vecs[i].numCols();
+      int jStart = j;
+      while(j < _colFilter.length && _colFilter[j] < off+ncols)j++;
+      if(j - jStart == ncols) _vecs[i].remove(fs);
+      else _vecs[i].removeCols(Arrays.copyOfRange(_colFilter,jStart,j));
+    }
+    return fs;
+  }
+
   @Override
   public void removeCols(final int... ids){
     remove(ids).remove();
   }
 
-  public VecAry append(Vec v){
-    if(_rowLayout == -1) return replaceWith(new VecAry(v));
-    if(v instanceof VecAry) return append((VecAry)v);
-    if(!checkCompatible(v)) throw new IllegalArgumentException("Can not append incompatible vecs");
-    if(_colFilter != null)
-      _colFilter = ArrayUtils.join(_colFilter,ArrayUtils.seq(_numCols,_numCols+v.numCols()));
-    _vecIds = ArrayUtils.append(_vecIds,v.vecId());
-    _numCols += v.numCols();
-    return this;
+  private transient int _x;
+
+  private int [] vecOffsets(){
+    int [] res = new int[_vecIds.length+1];
+    Vec[] vecs = fetchVecs();
+    for(int i = 1; i < res.length; ++i)
+      res[i] =  vecs[i-1].numCols();
+    return res;
   }
 
 
-  public VecAry append(VecAry apndee){
+
+  public VecAry append(Vec v){
+    VecAry apndee = (v instanceof VecAry)?(VecAry)v:new VecAry(v);
     if(_rowLayout == -1) return replaceWith(new VecAry(apndee));
     if(!checkCompatible(apndee)) throw new IllegalArgumentException("Can not append incompatible vecs");
-    // need to unify the column numbering
-    int [] vecIds = ArrayUtils.join(_vecIds,apndee._vecIds);
-    if(_colFilter == null && apndee._colFilter != null)
-      _colFilter = ArrayUtils.seq(0,numCols());
-    int [] colFilter = apndee._colFilter;
-    if(_colFilter != null && colFilter == null)
-      colFilter = ArrayUtils.seq(0,apndee.numCols());
-    if(colFilter != null) {
-      for(int i = 0; i < colFilter.length; ++i)
-        colFilter[i] += numCols();
-      _colFilter = ArrayUtils.join(_colFilter,colFilter);
+
+    if(apndee.numCols() == 1 && apndee._vecIds[0] == _vecIds[_vecIds.length-1])
+      _x = _vecIds[_vecIds.length-1];
+    // easy common cases first
+    if(apndee.numCols() == 1 && apndee._vecIds[0] == _vecIds[_x]){
+      if(_colFilter == null) _colFilter = ArrayUtils.seq(0,_numCols);
+      int off = 0;
+      if(_vecIds.length > 1){
+        Vec [] vecs = fetchVecs();
+        for(int i = 0; i < vecs.length-1; ++i)
+          off += vecs[i].numCols();
+      }
+      _colFilter = ArrayUtils.append(_colFilter,(apndee._colFilter == null?0:apndee._colFilter[0])+off);
+      _numCols++;
+      return this;
     }
-    _vecIds = vecIds;
-    reloadVecs();
-    updateNumCols();
+    if(ArrayUtils.maxValue(_vecIds) < ArrayUtils.minValue(apndee._vecIds) || ArrayUtils.minValue(_vecIds) > ArrayUtils.maxValue(apndee._vecIds)){
+      _vecIds = ArrayUtils.join(_vecIds,apndee._vecIds);
+      if(_colFilter != null && apndee._colFilter == null)
+        _colFilter = ArrayUtils.join(_colFilter,ArrayUtils.seq(_numCols,_numCols+ apndee.numCols()));
+      else if(apndee._colFilter != null) {
+        _colFilter = ArrayUtils.join(_colFilter == null?ArrayUtils.seq(0, _numCols):_colFilter, apndee._colFilter);
+        for(int i = _numCols; i < _colFilter.length; ++i)
+          _colFilter[i] += _numCols;
+      }
+      reloadVecs();
+      _numCols += apndee.numCols();
+      return this;
+    }
+    // general append, we have overlapping vecs, colfilter, need to map apndee to this, then join the arrays
+    int vid;
+    int [] thisVecOffsets = vecOffsets();
+    int [] apndeeVecOffsets = apndee.vecOffsets();
+    int k = thisVecOffsets[thisVecOffsets.length-1]; // extra vecs
+    ArrayUtils.IntAry newVecIds = new ArrayUtils.IntAry();
+    outer:
+    for(int i = 0; i < apndeeVecOffsets.length-1; ++i) {
+      vid = apndee._vecIds[i];
+      if (_vecIds[_x] == vid || _vecIds[++_x] == vid){ // cover common case
+        apndeeVecOffsets[i] -= thisVecOffsets[_x];
+        continue;
+      } else for (int j = 0; j < _vecIds.length; ++i) {
+        if (_vecIds[j] == vid) {
+          apndeeVecOffsets[i] -= thisVecOffsets[_x];
+          continue outer;
+        }
+      }
+      apndeeVecOffsets[i] -= k;
+      k += apndee.vecs()[i].numCols();
+      newVecIds.add(vid);
+    }
+    assert _colFilter != null || apndee._colFilter != null:"duplicated vecs?";
+    if(_colFilter == null)
+      _colFilter = ArrayUtils.seq(0,_numCols);
+    if(apndee._colFilter == null)
+      apndee._colFilter = ArrayUtils.seq(0,apndee._numCols);
+    _colFilter = ArrayUtils.join(_colFilter,apndee._colFilter);
+    for(int i = _numCols; i < _colFilter.length; ++i)
+      _colFilter[i] -= apndeeVecOffsets[i-_numCols];
+    if(newVecIds.size() > 0){
+      _vecIds = ArrayUtils.join(_vecIds,newVecIds.toArray());
+      reloadVecs();
+    }
+    _numCols += apndee._numCols;
     return this;
   }
 
@@ -300,5 +371,9 @@ public class VecAry extends Vec implements Iterable<Vec> {
       }
       @Override public void remove(){throw new UnsupportedOperationException();}
     };
+  }
+
+  public void insertVec(int i, VecAry x) {
+    throw H2O.unimpl();
   }
 }

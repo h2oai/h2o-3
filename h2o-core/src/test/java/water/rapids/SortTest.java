@@ -58,7 +58,7 @@ public class SortTest extends TestUtil {
       fr = buildFrame(1000,10);
       String[] domain = new String[1000];
       for( int i=0; i<1000; i++ ) domain[i] = "D"+i;
-      fr.vec(0).setDomain(domain);
+      fr.vecs().setDomain(0,domain);
       res = fr.sort(new int[]{0,1});
       new CheckSort().doAll(res);
     } finally {
@@ -71,23 +71,24 @@ public class SortTest extends TestUtil {
   // Assert that result is indeed sorted - on all 3 columns, as this is a
   // stable sort.
   private class CheckSort extends MRTask<CheckSort> {
-    @Override public void map( Chunk cs[] ) {
-      long x0 = cs[0].at8(0);
-      long x1 = cs[1].at8(0);
-      long x2 = cs[2].at8(0);
-      for( int i=1; i<cs[0]._len; i++ ) {
-        long y0 = cs[0].at8(i);
-        long y1 = cs[1].at8(i);
-        long y2 = cs[2].at8(i);
+    @Override public void map( ChunkAry cs ) {
+      long x0 = cs.at8(0,0);
+      long x1 = cs.at8(0,1);
+      long x2 = cs.at8(0,2);
+      for( int i=1; i<cs._len; i++ ) {
+        long y0 = cs.at8(i,0);
+        long y1 = cs.at8(i,1);
+        long y2 = cs.at8(i,2);
         assertTrue(x0<y0 || (x0==y0 && (x1<y1 || (x1==y1 && x2<y2))));
         x0=y0; x1=y1; x2=y2;
       }
       // Last row of chunk is sorted relative to 1st row of next chunk
-      long row = cs[0].start()+cs[0]._len;
-      if( row < cs[0].vec().length() ) {
-        long y0 = cs[0].vec().at8(row);
-        long y1 = cs[1].vec().at8(row);
-        long y2 = cs[2].vec().at8(row);
+      long row = cs._start+cs._len;
+      Vec v = cs._vec;
+      if( row < cs._vec.length() ) {
+        long y0 = v.at8(row,0);
+        long y1 = v.at8(row,1);
+        long y2 = v.at8(row,2);
         assertTrue(x0<y0 || (x0==y0 && (x1<y1 || (x1==y1 && x2<y2))));
       }
     }
@@ -116,51 +117,38 @@ public class SortTest extends TestUtil {
     long[] pairs = pairs_hash.keySetLong();
 
     Key[] keys = new Vec.VectorGroup().addVecs(3);
-    AppendableVec col0 = new AppendableVec(keys[0], Vec.T_NUM);
-    AppendableVec col1 = new AppendableVec(keys[1], Vec.T_NUM);
-    AppendableVec col2 = new AppendableVec(keys[2], Vec.T_NUM);
+    AppendableVec col0 = new AppendableVec(keys[0], new byte[]{Vec.T_NUM,Vec.T_NUM,Vec.T_NUM});
+    NewChunkAry [] ncs = new NewChunkAry[nChunks];
 
-    NewChunk ncs0[] = new NewChunk[nChunks];
-    NewChunk ncs1[] = new NewChunk[nChunks];
-    NewChunk ncs2[] = new NewChunk[nChunks];
-
-    for( int i=0; i<nChunks; i++ ) {
-      ncs0[i] = new NewChunk(col0,i);
-      ncs1[i] = new NewChunk(col1,i);
-      ncs2[i] = new NewChunk(col2,i);
-    }
+    for( int i=0; i<nChunks; i++ )
+      ncs[i] = col0.chunkForChunkIdx(i);
 
     // inject random pairs into cols 0 and 1
     int len = pairs.length*scale2;
     for( int i=0; i<len; i++ ) {
       long pair = pairs[R.nextInt(pairs.length)];
       int nchk = R.nextInt(nChunks);
-      ncs0[nchk].addNum( (int)(pair>>32),0);
-      ncs1[nchk].addNum( (int)(pair    ),0);
+      ncs[nchk].addInteger(0, (int)(pair>>32));
+      ncs[nchk].addInteger(1, (int)(pair    ));
     }
 
     // Compute data layout
     int espc[] = new int[nChunks+1];
     for( int i=0; i<nChunks; i++ )
-      espc[i+1] = espc[i] + ncs0[i].len();
+      espc[i+1] = espc[i] + ncs[i].len();
 
     // Compute row numbers into col 2
     for( int i=0; i<nChunks; i++ )
-      for( int j=0; j<ncs0[i].len(); j++ )
-        ncs2[i].addNum(espc[i]+j,0);
+      for( int j=0; j<ncs[i].len(); j++ )
+        ncs[i].addNum(2,espc[i]+j,0);
 
     Futures fs = new Futures();
-    for( int i=0; i<nChunks; i++ ) {
-      ncs0[i].close(i,fs);
-      ncs1[i].close(i,fs);
-      ncs2[i].close(i,fs);
-    }
+    for( int i=0; i<nChunks; i++ )
+      ncs[i].close(fs);
 
     Vec vec0 = col0.layout_and_close(fs);
-    Vec vec1 = col1.layout_and_close(fs);
-    Vec vec2 = col2.layout_and_close(fs);
     fs.blockForPending();
-    Frame fr = new Frame(Key.<Frame>make("hex"), null, new Vec[]{vec0,vec1,vec2});
+    Frame fr = new Frame(Key.<Frame>make("hex"), null, vec0);
     DKV.put(fr);
     return fr;
   }

@@ -66,6 +66,10 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public int catNAFill(int cid) {return _catNAFill[cid];}
 
+  public boolean hasWeights() {return _weightsId != -1;}
+
+  public boolean hasOffset() {return _offsetId != -1;}
+
   public enum TransformType {
     NONE, STANDARDIZE, NORMALIZE, DEMEAN, DESCALE;
 
@@ -430,11 +434,11 @@ public class DataInfo extends Keyed<DataInfo> {
     _catNAFill = catModes;
   }
 
-  public static int imputeCat(Vec v) {
-    if(v.isCategorical()) return v.mode();
-    return (int)Math.round(v.mean());
+  public static int imputeCat(Vec v) {return imputeCat(v,0);}
+  public static int imputeCat(Vec v, int i) {
+    if(v.isCategorical(i)) return v.mode(i);
+    return (int)Math.round(v.mean(i));
   }
-
 
   /**
    * Filter the _adaptedFrame so that it contains only the Vecs referenced by the cols
@@ -916,26 +920,25 @@ public class DataInfo extends Keyed<DataInfo> {
     return val < 0?-1:val+_numOffsets[cid];
   }
 
-
-  public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
+  public final Row extractDenseRow(ChunkAry chunks, int rid, Row row) {
     row.predictors_bad = false;
     row.response_bad = false;
-    row.rid = rid + chunks[0].start();
+    row.rid = rid + chunks.start();
     row.cid = rid;
     if(_weightsId != -1)
-      row.weight = chunks[_weightsId].atd(rid);
+      row.weight = chunks.atd(rid,_weightsId);
     if(row.weight == 0) return row;
     if (_skipMissing) {
       int N = _cats + _nums;
       for (int i = 0; i < N; ++i)
-        if (chunks[i].isNA(rid)) {
+        if (chunks.isNA(rid,i)) {
           row.predictors_bad = true;
           return row;
         }
     }
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
-      int cid = getCategoricalId(i,chunks[i].isNA(rid)? _catNAFill[i]:(int)chunks[i].at8(rid));
+      int cid = getCategoricalId(i,chunks.isNA(rid,i)? _catNAFill[i]:(int)chunks.at8(rid,i));
       if(cid >= 0)
         row.binIds[nbins++] = cid;
     }
@@ -949,7 +952,7 @@ public class DataInfo extends Keyed<DataInfo> {
         for(int offset=0;offset<iwv.expandedLength();++offset) {
           if( i < _intLvls.length && _intLvls[i]!=null && Arrays.binarySearch(_intLvls[i],offset) < 0 ) continue; // skip the filtered out interactions
           double d=0;
-          if( offset==interactionOffset ) d=chunks[_cats + i].atd(rid);
+          if( offset==interactionOffset ) d=chunks.atd(rid,_cats + i);
           if( Double.isNaN(d) )
             d = _numMeans[numValsIdx];
           if( _normMul != null && _normSub != null )
@@ -957,7 +960,7 @@ public class DataInfo extends Keyed<DataInfo> {
           row.numVals[numValsIdx++]=d;
         }
       } else {
-        double d = chunks[_cats + i].atd(rid); // can be NA if skipMissing() == false
+        double d = chunks.atd(rid,_cats + i); // can be NA if skipMissing() == false
         if (Double.isNaN(d))
           d = _numMeans[numValsIdx];
         if (_normMul != null && _normSub != null)
@@ -966,7 +969,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     for (int i = 0; i < _responses; ++i) {
-      row.response[i] = chunks[responseChunkId(i)].atd(rid);
+      row.response[i] = chunks.atd(rid,responseChunkId(i));
       if(Double.isNaN(row.response[i])) {
         row.response_bad = true;
         break;
@@ -975,15 +978,16 @@ public class DataInfo extends Keyed<DataInfo> {
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
     }
     if(_offsetId != -1)
-      row.offset = chunks[_offsetId].atd(rid);
+      row.offset = chunks.atd(rid,_offsetId);
     return row;
   }
-  public int getInteractionOffset(Chunk[] chunks, int cid, int rid) {
-    boolean useAllFactors = ((InteractionWrappedVec)chunks[cid].vec())._useAllFactorLevels;
-    InteractionWrappedVec.InteractionWrappedChunk c = (InteractionWrappedVec.InteractionWrappedChunk)chunks[cid];
-    if(      c._c1IsCat ) return (int)c._c[0].at8(rid)-(useAllFactors?0:1);
-    else if( c._c2IsCat ) return (int)c._c[1].at8(rid)-(useAllFactors?0:1);
-    return 0;
+  public int getInteractionOffset(ChunkAry chunks, int cid, int rid) {
+    throw H2O.unimpl();
+//    boolean useAllFactors = ((InteractionWrappedVec)chunks[cid].vec())._useAllFactorLevels;
+//    InteractionWrappedVec.InteractionWrappedChunk c = (InteractionWrappedVec.InteractionWrappedChunk)chunks[cid];
+//    if(      c._c1IsCat ) return (int)c._c[0].at8(rid)-(useAllFactors?0:1);
+//    else if( c._c2IsCat ) return (int)c._c[1].at8(rid)-(useAllFactors?0:1);
+//    return 0;
   }
   public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
   public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}
@@ -997,12 +1001,12 @@ public class DataInfo extends Keyed<DataInfo> {
     private final Row _denseRow;
     private final Row [] _sparseRows;
     public final boolean _sparse;
-    private final Chunk [] _chks;
+    private final ChunkAry _chks;
 
-    private Rows(Chunk [] chks, boolean sparse) {
-      _nrows = chks[0]._len;
+    private Rows(ChunkAry chks, boolean sparse) {
+      _nrows = chks._len;
       _sparse = sparse;
-      long start = chks[0].start();
+      long start = chks.start();
       if(sparse) {
         _denseRow = null;
         _chks = null;
@@ -1016,14 +1020,14 @@ public class DataInfo extends Keyed<DataInfo> {
     public Row row(int i) {return _sparse?_sparseRows[i]:extractDenseRow(_chks,i,_denseRow);}
   }
 
-  public Rows rows(Chunk [] chks) {
+  public Rows rows(ChunkAry chks) {
     int cnt = 0;
-    for(Chunk c:chks)
-      if(c.isSparseZero())
+    for(int c = 0; c < chks._numCols; ++c)
+      if(chks.isSparseZero(c))
         ++cnt;
-    return rows(chks,cnt > (chks.length >> 1));
+    return rows(chks,cnt > (chks._numCols >> 1));
   }
-  public Rows rows(Chunk [] chks, boolean sparse) {return new Rows(chks,sparse);}
+  public Rows rows(ChunkAry chks, boolean sparse) {return new Rows(chks,sparse);}
 
   /**
    * Extract (sparse) rows from given chunks.
@@ -1032,35 +1036,35 @@ public class DataInfo extends Keyed<DataInfo> {
    * @param chunks - chunk of dataset
    * @return array of sparse rows
    */
-  public final Row[] extractSparseRows(Chunk [] chunks) {
-    Row[] rows = new Row[chunks[0]._len];
-    long startOff = chunks[0].start();
+  public final Row[] extractSparseRows(ChunkAry chunks) {
+    Row[] rows = new Row[chunks._len];
+    long startOff = chunks.start();
     for (int i = 0; i < rows.length; ++i) {
       rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, i, startOff);  // if sparse, _nums is the correct number of nonzero values! i.e., do not use numNums()
-      rows[i].rid = chunks[0].start() + i;
+      rows[i].rid = chunks.start() + i;
       if(_offsetId != -1)  {
-        rows[i].offset = chunks[_offsetId].atd(i);
+        rows[i].offset = chunks.atd(i,_offsetId);
         if(Double.isNaN(rows[i].offset)) {
           rows[i].predictors_bad = true;
           continue;
         }
       }
       if(_weightsId != -1) {
-        rows[i].weight = chunks[_weightsId].atd(i);
+        rows[i].weight = chunks.atd(i,_weightsId);
         if(Double.isNaN(rows[i].weight))
           rows[i].predictors_bad = true;
       }
     }
     // categoricals
     for (int i = 0; i < _cats; ++i) {
-      for (int r = 0; r < chunks[0]._len; ++r) {
+      for (int r = 0; r < chunks._len; ++r) {
         Row row = rows[r];
-        boolean isMissing = chunks[i].isNA(r);
+        boolean isMissing = chunks.isNA(r,i);
         if(_skipMissing && isMissing){
           row.predictors_bad = true;
           continue;
         }         
-        int cid = getCategoricalId(i,isMissing? _catNAFill[i]:(int)chunks[i].at8(r));
+        int cid = getCategoricalId(i,isMissing? _catNAFill[i]:chunks.at4(r,i));
         if(cid >=0)
           row.binIds[row.nBins++] = cid;
       }
@@ -1068,37 +1072,38 @@ public class DataInfo extends Keyed<DataInfo> {
     // generic numbers + interactions
     int interactionOffset=0;
     for (int cid = 0; cid < _nums; ++cid) {
-      Chunk c = chunks[_cats + cid];
+      int c = _cats + cid;
       int oldRow = -1;
-      if (c instanceof InteractionWrappedVec.InteractionWrappedChunk) {  // for each row, only 1 value in an interaction is 'hot' all other values are off (i.e., are 0)
-        InteractionWrappedVec iwv = (InteractionWrappedVec)c.vec();
-        for(int r=0;r<c._len;++r) {  // the vec is "vertically" dense and "horizontally" sparse (i.e., every row has one, and only one, value)
-          Row row = rows[r];
-          if( c.isNA(r) && _skipMissing)
-            row.predictors_bad = true;
-          if(row.predictors_bad) continue;
-          int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
-          if( cidVirtualOffset>=0 ) {
-            if( cid < _intLvls.length && _intLvls[cid]!=null && Arrays.binarySearch(_intLvls[cid],cidVirtualOffset) < 0 ) continue; // skip the filtered out interactions
-            if( c.atd(r)==0 ) continue;
-            double d = c.atd(r);
-            if( Double.isNaN(d) )
-              d = _numMeans[interactionOffset+cidVirtualOffset];  // FIXME: if this produces a "true" NA then should sub with mean? with?
-            if (_normMul != null)
-              d *= _normMul[interactionOffset+cidVirtualOffset];
-            row.addNum(numStart()+interactionOffset+cidVirtualOffset, d);
-          }
-        }
-        interactionOffset+=nextNumericIdx(cid);
-      } else {
-        for (int r = c.nextNZ(-1); r < c._len; r = c.nextNZ(r)) {
-          if (c.atd(r) == 0) continue;
+//      if (c instanceof InteractionWrappedVec.InteractionWrappedChunk) {  // for each row, only 1 value in an interaction is 'hot' all other values are off (i.e., are 0)
+//        throw H2O.unimpl();
+//        InteractionWrappedVec iwv = (InteractionWrappedVec)c.vec();
+//        for(int r=0;r<c._len;++r) {  // the vec is "vertically" dense and "horizontally" sparse (i.e., every row has one, and only one, value)
+//          Row row = rows[r];
+//          if( c.isNA(r) && _skipMissing)
+//            row.predictors_bad = true;
+//          if(row.predictors_bad) continue;
+//          int cidVirtualOffset = getInteractionOffset(chunks,_cats+cid,r);  // the "virtual" offset into the hot-expanded interaction
+//          if( cidVirtualOffset>=0 ) {
+//            if( cid < _intLvls.length && _intLvls[cid]!=null && Arrays.binarySearch(_intLvls[cid],cidVirtualOffset) < 0 ) continue; // skip the filtered out interactions
+//            if( c.atd(r)==0 ) continue;
+//            double d = c.atd(r);
+//            if( Double.isNaN(d) )
+//              d = _numMeans[interactionOffset+cidVirtualOffset];  // FIXME: if this produces a "true" NA then should sub with mean? with?
+//            if (_normMul != null)
+//              d *= _normMul[interactionOffset+cidVirtualOffset];
+//            row.addNum(numStart()+interactionOffset+cidVirtualOffset, d);
+//          }
+//        }
+//        interactionOffset+=nextNumericIdx(cid);
+//      } else {
+        for (int r = chunks.nextNZ(-1,c); r < chunks._len; r = chunks.nextNZ(r,c)) {
+          if (chunks.atd(r,c) == 0) continue;
           assert r > oldRow;
           oldRow = r;Row row = rows[r];
-          if (c.isNA(r) && _skipMissing)
+          if (chunks.isNA(r,c) && _skipMissing)
             row.predictors_bad = true;
           if (row.predictors_bad) continue;
-          double d = c.atd(r);
+          double d = chunks.atd(r,c);
           if (Double.isNaN(d))
             d = _numMeans[cid];
           if (_normMul != null)
@@ -1107,14 +1112,13 @@ public class DataInfo extends Keyed<DataInfo> {
         }
         interactionOffset++;
       }
-    }
+//    }
     // response(s)
     for (int i = 1; i <= _responses; ++i) {
       int rid = responseChunkId(i-1);
-      Chunk rChunk = chunks[rid];
-      for (int r = 0; r < chunks[0]._len; ++r) {
+      for (int r = 0; r < chunks._len; ++r) {
         Row row = rows[r];
-        row.response[i-1] = rChunk.atd(r);
+        row.response[i-1] = chunks.atd(r,rid);
         if(Double.isNaN(row.response[i-1])) {
           row.response_bad = true;
           break;

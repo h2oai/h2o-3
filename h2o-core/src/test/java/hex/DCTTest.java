@@ -41,8 +41,8 @@ public class DCTTest extends TestUtil {
       frameRec = MathUtils.DCT.transform1D(frameDCT, height, true);
       Log.info("Computed inverse 1D DCT of " + cf.rows + " rows of size " + cf.cols + " in" + PrettyPrint.msecs(System.currentTimeMillis() - now, true));
 
-      for (int i=0; i<frame.vecs().length; ++i)
-        TestUtil.assertVecEquals(frame.vecs()[i], frameRec.vecs()[i], 1e-5);
+      for (int i=0; i<frame.vecs()._numCols; ++i)
+        TestUtil.assertVecEquals(frame.vecs(i), frameRec.vecs(i), 1e-5);
       Log.info("Identity test passed: DCT^-1(DCT(frame)) == frame");
     } finally {
       if (frame!=null) frame.delete();
@@ -78,8 +78,8 @@ public class DCTTest extends TestUtil {
       frameRec = MathUtils.DCT.transform2D(frameDCT, height, width, true);
       Log.info("Computed inverse 2D DCT of " + cf.rows + " rows of size " + cf.cols + " in" + PrettyPrint.msecs(System.currentTimeMillis() - now, true));
 
-      for (int i=0; i<frame.vecs().length; ++i)
-        TestUtil.assertVecEquals(frame.vecs()[i], frameRec.vecs()[i], 1e-5);
+      for (int i=0; i<frame.vecs()._numCols; ++i)
+        TestUtil.assertVecEquals(frame.vecs(i), frameRec.vecs(i), 1e-5);
       Log.info("Identity test passed: DCT^-1(DCT(frame)) == frame");
     } finally {
       if (frame!=null) frame.delete();
@@ -115,8 +115,8 @@ public class DCTTest extends TestUtil {
       frameRec = MathUtils.DCT.transform3D(frameDCT, height, width, depth, true);
       Log.info("Computed inverse 3D DCT of " + cf.rows + " rows of size " + cf.cols + " in" + PrettyPrint.msecs(System.currentTimeMillis() - now, true));
 
-      for (int i=0; i<frame.vecs().length; ++i)
-        TestUtil.assertVecEquals(frame.vecs()[i], frameRec.vecs()[i], 1e-5);
+      for (int i=0; i<frame.vecs()._numCols; ++i)
+        TestUtil.assertVecEquals(frame.vecs(i), frameRec.vecs(i), 1e-5);
       Log.info("Identity test passed: DCT^-1(DCT(frame)) == frame");
     } finally {
       if (frame!=null) frame.delete();

@@ -34,7 +34,7 @@ public class AstFlatten extends AstPrimitive {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1 || fr.numRows() != 1) return new ValFrame(fr); // did not flatten
     Vec vec = fr.anyVec();
-    switch (vec.get_type()) {
+    switch (vec.get_type(0)) {
       case Vec.T_BAD:
       case Vec.T_NUM:
         return new ValNum(vec.at(0));
@@ -43,7 +43,7 @@ public class AstFlatten extends AstPrimitive {
       case Vec.T_STR:
         return new ValStr(vec.atStr(new BufferedString(), 0).toString());
       case Vec.T_CAT: // check for missing values
-        return vec.isNA(0)?new ValStr("NA") : new ValStr(vec.factor(vec.at8(0)));
+        return vec.isNA(0)?new ValStr("NA") : new ValStr(vec.factor(0,vec.at4(0,0)));
       default:
         throw H2O.unimpl("The type of vector: " + vec.get_type_str() + " is not supported by " + str());
     }
