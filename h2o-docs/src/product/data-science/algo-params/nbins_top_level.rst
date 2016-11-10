@@ -1,5 +1,5 @@
-``nbins``
----------
+``nbins_top_level``
+-------------------
 
 - Available in: GBM, DRF
 - Hyperparameter: yes
@@ -7,18 +7,15 @@
 Description
 ~~~~~~~~~~~
 
-The ``nbins`` option specifies the number of bins to be included in the histogram and then split at the best point. These split points are evaluated at the boundaries of each of these bins. 
+For numerical columns (real/int), the ``nbins_top_level`` option is the number of bins to use at the top of each tree. It then divides by 2 at each ensuing level to find a new number. This option defaults to 1024 and is used with `nbins <nbins.html>`_, which controls when the algorithm stops dividing by 2.
 
-Bins are linear sized from the observed min-to-max for the subset being split again (with an enforced large-nbins for shallow tree depths).  As the tree gets deeper, each subset (enforced by the tree decisions) covers a smaller range, and the bins are uniformly spread over this smaller range. Bin range decisions are thus made at each node level, not at the feature level.
-
-This value defaults to 20 bins. If you have few observations in a node (but greater than 10), and ``nbins`` is set to 20 (the default), empty bins will be created if there aren't enough observations to go in each bin. As ``nbins`` goes up, the algorithm will more closely approximate evaluating each individual observation as a split point. To make a model more general, decrease ``nbins_top_level`` and ``nbins_cats``. To make a model more specific, increase ``nbins`` and/or ``nbins_top_level`` and ``nbins_cats``. Keep in mind that increasing ``nbins_cats`` can have a dramatic effect on the amount of overfitting.
-
+To make a model more general, decrease ``nbins_top_level`` and ``nbins_cats``. To make a model more specific, increase ``nbins`` and/or ``nbins_top_level`` and ``nbins_cats``. Keep in mind that increasing ``nbins_cats`` can lead to in `overfitting <https://en.m.wikipedia.org/wiki/Overfitting>`__ on the training set.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
+- `nbins <nbins.html>`__
 - `nbins_cats <nbins_cats.html>`__
-- `nbins_top_level <nbins_top_level.html>`__
 
 
 Example
@@ -27,7 +24,7 @@ Example
 .. example-code::
    .. code-block:: r
 
-   	library(h2o)
+	library(h2o)
 	h2o.init()
 	# import the EEG dataset: 
 	# All data is from one continuous EEG measurement with the Emotiv EEG Neuroheadset. 
@@ -50,20 +47,20 @@ Example
 	train <- eeg.splits[[1]]
 	valid <- eeg.splits[[2]]
 
-	# try a range of nbins: 
-	bin_num = c(8, 16, 32, 64, 128, 256, 512)
-	label = c("8", "16", "32", "64", "128", "256", "512")
+	# try a range of nbins_top_level: 
+	bin_num = c(32, 64, 128, 256, 512, 1024, 2048, 4096)
+	label = c("32", "64", "128", "256", "512", "1024", "2048", "4096")
 	lapply(seq_along(1:length(bin_num)),function(num) {
 	  eeg.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
-	                          nbins = bin_num[num], nfolds = 5, seed = 1234)
+	                          nbins_top_level = bin_num[num], nfolds = 5, seed = 1234)
 	  # print the value used and AUC score for train and valid
 	  print(paste(label[num], 'training score',  h2o.auc(eeg.gbm, train = TRUE)))
 	  print(paste(label[num], 'validation score',  h2o.auc(eeg.gbm, valid = TRUE)))
 	})
 
 
-	# Example of values to grid over for `nbins`
-	hyper_params <- list( nbins = c(8, 16, 32, 64, 128, 256, 512) )
+	# Example of values to grid over for `nbins_top_level`
+	hyper_params <- list( nbins_top_level = c(32, 64, 128, 256, 512, 1024, 2048, 4096) )
 
 	# this example uses cartesian grid search because the search space is small
 	# and we want to see the performance of all models. For a larger search space use
@@ -82,7 +79,7 @@ Example
 
    .. code-block:: python
 
-   	import h2o
+	import h2o
 	from h2o.estimators.gbm import H2OGradientBoostingEstimator
 	h2o.init()
 	h2o.cluster().show_status()
@@ -106,24 +103,26 @@ Example
 	# split into train and validation sets
 	train, valid = eeg.split_frame(ratios = [.8], seed = 1234)
 
-	# try a range of values for `nbins`
-	bin_num = [16, 32, 64, 128, 256, 512]
-	label = ["16", "32", "64", "128", "256", "512"]
+	# try a range of values for `nbins_top_level`
+	# we start at 32 because the default for nbins is 20, and nbins_top_level
+	# must be greater than nbins
+	bin_num = [32, 64, 128, 256, 512, 1024, 2048, 4096]
+	label = ["32", "64", "128", "256", "512", "1024", "2048", "4096"]
 	for key, num in enumerate(bin_num):
 	    # initialize the GBM estimator and set a seed for reproducibility
-	    eeg_gbm = H2OGradientBoostingEstimator(nbins = num, seed = 1234)
+	    eeg_gbm = H2OGradientBoostingEstimator(nbins_top_level = num, seed = 1234)
 	    eeg_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 	    # print the value used and AUC score for train and validation sets
 	    print(label[key], 'training score', eeg_gbm.auc(train = True))
 	    print(label[key], 'validation score', eeg_gbm.auc(valid = True))
 
 
-	# Example of values to grid over for `nbins`
+	# Example of values to grid over for `nbins_top_level`
 	# import Grid Search
 	from h2o.grid.grid_search import H2OGridSearch
 
-	# select the values for `nbins` to grid over
-	hyper_params = {'nbins': [32, 64, 128, 256, 512]}
+	# select the values for `nbins_top_level` to grid over
+	hyper_params = {'nbins_top_level': [32, 64, 128, 256, 512, 1024, 2048, 4096]}
 
 	# this example uses cartesian grid search because the search space is small
 	# and we want to see the performance of all models. For a larger search space use
@@ -139,7 +138,7 @@ Example
 	                     search_criteria = {'strategy': "Cartesian"})
 
 	# train using the grid
-	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid, seed = 1234)
+	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# sort the grid models by decreasing AUC
 	sorted_grid = grid.get_grid(sort_by='auc', decreasing=True)
