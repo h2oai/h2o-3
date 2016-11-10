@@ -639,7 +639,6 @@ public final class DHistogram extends Iced {
   }
 
   public void updateHisto(double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo){
-    double minmax[] = new double[]{_min2,_maxIn};
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
     for(int r = lo; r< hi; ++r) {
@@ -647,8 +646,8 @@ public final class DHistogram extends Iced {
       double weight = ws[k];
       if (weight == 0) continue;
       double col_data = cs[k];
-      if( col_data < minmax[0] ) minmax[0] = col_data;
-      if( col_data > minmax[1] ) minmax[1] = col_data;
+      if( col_data < _min2 ) _min2 = col_data;
+      if( col_data > _maxIn ) _maxIn = col_data;
       double y = ys[k];
       assert(!Double.isNaN(y));
       double wy = weight * y;
@@ -664,9 +663,6 @@ public final class DHistogram extends Iced {
         _wYY[b] += wyy;
       }
     }
-    double d;
-    if( (d = minmax[0]) < _min2 )  _min2  = d;
-    if( (d = minmax[1]) > _maxIn)  _maxIn = d;
   }
 
   public void reducePrecision(){
