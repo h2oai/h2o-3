@@ -95,13 +95,15 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   }
 
   @Override public void map(Chunk [] chks){
-    // Even though this is an MRTask over a Frame, map(Chunk [] chks should not be called for this task.
-    // We do custom 2-stage local pass usin LocalMRtask, overriding the MRTasks standard way of going over chunks and maps.
-    // There are 2 reasons fro that:
-    //    a) we have a node local pass scoring the trees and sorting rows which needs to be completed before the second pass
-    //        (but only locally - we do not want to insert unnecessary communication overhead here!)
-    //    b) In case, we're making private DHistogram copies in phase 2, we do not want to make a new task per chunk like standard MRTask.
-    //       By reusing the same DHisto for multiple chunk we save memory and reduces.
+    // Even though this is an MRTask over a Frame, map(Chunk [] chks) should not be called for this task.
+    //  Instead, we do a custom 2-stage local pass (launched from setupLocal) using LocalMR.
+    //
+    // There are 2 reasons for that:
+    //    a) We have 2 local passes. 1st pass scores the trees and sorts rows, 2nd pass starts after the 1st pass is done and computes the histogram.
+    //       Conceptually two tasks but since we do not need global result we want to do the two passes inside of 1 task - no need to insert extra communication overhead here.
+    //    b) To reduce the memory overhead in pass 2(in case we're making private DHistogram copies).
+    //       There is a private copy made for each task. MRTask forks one task per one line of chunks and we do not want to make too many copies.
+    //       By reusing the same DHisto for multiple chunks we save memory and calls to reduce.
     //
     throw H2O.unimpl();
   }
@@ -221,7 +223,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           if( hs1[j] == null ) hs1[j] = hs2[j];
           else if( hs2[j] != null ) {
             hs1[j].add(hs2[j]);
-//            hs1[j].reducePrecision();
           }
     }
   }
