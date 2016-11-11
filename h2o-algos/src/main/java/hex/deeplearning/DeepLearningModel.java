@@ -223,8 +223,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     DKV.put(dinfo);
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
-    _output._origNames = parms._train.get().names();
-    _output._origDomains = parms._train.get().domains();
     Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
