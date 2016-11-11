@@ -187,9 +187,8 @@ public final class DHistogram extends Iced {
       _step = 1.0f;                           // Fixed stepsize
     } else {
       _step = xbins / (maxEx - min);              // Step size for linear interpolation, using mul instead of div
-      if(_step < 0 || Double.isInfinite(_step) || Double.isNaN(_step))
+      if(_step <= 0 || Double.isInfinite(_step) || Double.isNaN(_step))
         throw new StepOutOfRangeException(_step, xbins, maxEx, min);
-      assert _step > 0 && !Double.isInfinite(_step) : "Histogram step size for column '" + name + "' is invalid: " + _step + ", maxEx =  " + maxEx + ", min = " + min + ", xbnins = " + xbins;
     }
     _nbin = (char) xbins;
     assert(_nbin>0);
