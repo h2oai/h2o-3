@@ -291,7 +291,7 @@ class H2OConnection(backwards_compatible()):
         if self._session_id:
             try:
                 # If the server gone bad, we don't want to wait forever...
-                self._timeout = 1
+                if self._timeout is None: self._timeout = 1
                 self.request("DELETE /4/sessions/%s" % self._session_id)
                 self._print("H2O session %s closed." % self._session_id)
             except Exception:
