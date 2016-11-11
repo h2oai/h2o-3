@@ -402,7 +402,8 @@ class H2OCloudNode(object):
         Look at the stdout log and figure out which port the JVM chose.
 
         If successful, port number is stored in self.port; otherwise the
-        program is terminated. This call is blocking.
+        program is terminated. This call is blocking, and will wait for
+        up to 30s for the server to start up.
         """
         regex = re.compile(r"Open H2O Flow in your web browser: https?://([^:]+):(\d+)")
         retries_left = 30
@@ -412,15 +413,17 @@ class H2OCloudNode(object):
                     mm = re.search(regex, line)
                     if mm is not None:
                         self.port = mm.group(2)
-                        print("H2O cloud %d node %d listening on port %s with output file %s" %
+                        print("H2O cloud %d node %d listening on port %s\n    with output file %s" %
                               (self.cloud_num, self.node_num, self.port, self.output_file_name))
-            if not self.terminated:
-                retries_left -= 1
-                time.sleep(1)
+                        return
+            if self.terminated: break
+            retries_left -= 1
+            time.sleep(1)
 
-        if not retries_left:
-            print("\nERROR: Too many retries starting cloud.\n")
-            sys.exit(1)
+        if self.terminated: return
+        print("\nERROR: Too many retries starting cloud %d.\nCheck the output log %s.\n" %
+              (self.cloud_num, self.output_file_name))
+        sys.exit(1)
 
 
     def scrape_cloudsize_from_stdout(self, nodes_per_cloud):
