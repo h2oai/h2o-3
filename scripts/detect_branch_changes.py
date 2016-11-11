@@ -34,9 +34,10 @@ def mark_flag_true(flag):
     environment[flag] = True
 
 def error(msg):
-    print('echo ""; ')
-    print('echo "%s"; ' % msg)
-    print('echo ""; ')
+    print('echo ""')
+    print('echo "WARNING: %s"' % msg)
+    print('echo "         All tests will be scheduled to run."')
+    print('echo ""')
     mark_all_flags_true()
 
 def get_list_of_modified_files(source_branch, target_branch):
@@ -71,4 +72,4 @@ def run():
 if __name__ == "__main__":
     run()
     for key, value in environment.items():
-        print("export H2O_RUN_%s_TESTS=\"%s\"; " % (key.upper(), str(value).lower()))
+        print("export H2O_RUN_%s_TESTS=\"%s\"" % (key.upper(), str(value).lower()))
