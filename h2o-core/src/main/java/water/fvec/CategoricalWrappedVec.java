@@ -136,15 +136,16 @@ public class CategoricalWrappedVec extends WrappedVec {
     setDomain(Arrays.copyOf(ss, actualLen));
   }
 
-  @Override
-  public Vec doCopy() {
-    return new CategoricalWrappedVec(group().addVec(),_rowLayout, domain(), _masterVecKey);
-  }
-
   public static class CategoricalWrappedChunk extends Chunk {
     public final transient Chunk _c;             // Test-set map
     final transient int[] _map;
     final transient int   _p;
+
+    @Override public Chunk deepCopy() {
+      NewChunk nc = new NewChunk(this);
+      for (int i=0;i<_len;++i) nc.addNum(at8(i),0);
+      return nc.compress();
+    }
 
     CategoricalWrappedChunk(Chunk c, CategoricalWrappedVec vec) {
       _c  = c; set_len(_c._len);

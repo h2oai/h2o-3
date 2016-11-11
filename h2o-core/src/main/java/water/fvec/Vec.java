@@ -443,7 +443,7 @@ public class Vec extends Keyed<Vec> {
     return v;
   }
 
-  public Vec doCopy() {
+  protected Vec doCopy() {
     final Vec v = new Vec(group().addVec(),_rowLayout);
     new MRTask(){
       @Override public void map(Chunk c){

@@ -24,7 +24,6 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 import static water.util.FrameUtils.categoricalEncoder;
-import static water.util.FrameUtils.cleanUp;
 
 /**
  * A Model models reality (hopefully).
@@ -819,7 +818,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             _output._origDomains,
             _output._names,
             _output._domains,
-            _parms, expensive, computeMetrics, _output.interactions(), getToEigenVec(), false);
+            _parms, expensive, computeMetrics, _output.interactions(), getToEigenVec());
   }
 
   /**
@@ -832,14 +831,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param expensive Whether to actually do the hard work
    * @param computeMetrics Whether metrics can be (and should be) computed
    * @param interactions Column names to create pairwise interactions with
-   * @param catEncoded Whether the categorical columns of the test frame were already transformed via categorical_encoding
    */
   public static String[] adaptTestForTrain(Frame test, String[] origNames, String[][] origDomains, String[] names, String[][] domains,
-                                           Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions, ToEigenVec tev,
-                                           boolean catEncoded) throws IllegalArgumentException {
+                                           Parameters parms, boolean expensive, boolean computeMetrics, String[] interactions, ToEigenVec tev) throws IllegalArgumentException {
     String[] msg = new String[0];
     if (test == null) return msg;
-    if (catEncoded && origNames==null) return msg;
 
     // test frame matches the training frame (after categorical encoding, if applicable)
     String[][] tdomains = test.domains();
@@ -857,6 +853,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Eigen ||
         parms._categorical_encoding == Parameters.CategoricalEncodingScheme.Binary;
 
+    if (origNames == null) origNames = names;
+    if (origDomains == null) origDomains = domains;
     if (expensive && checkCategoricals && origNames != null) {
       // find columns that need to be encoded
       List<Vec> lv = new ArrayList<>();
@@ -881,6 +879,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Scope.track(updated);
       test.add(updated);
     }
+    if (expensive && checkCategoricals && origNames == null) { return msg; }
 
     // create the interactions now and bolt them on to the front of the test Frame
     if( null!=interactions ) {
@@ -949,10 +948,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       vvecs[i] = vec;
     }
-    if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
-      test.restructure(names,vvecs,good);
     if( good == convNaN )
       throw new IllegalArgumentException("Test/Validation dataset has no columns in common with the training set");
+    if (expensive)
+      test.restructure(names,vvecs,names.length);
 
     return msgs.toArray(new String[msgs.size()]);
   }
@@ -1027,8 +1026,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Vec actual = fr.vec(_output.responseName());
       if( actual != null ) {  // Predict does not have an actual, scoring does
         String sdomain[] = actual.domain(); // Scored/test domain; can be null
-        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
+        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
+          Vec copy = new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key).makeCopy();
+          output.replace(0, copy);
+        }
       }
     }
     cleanup_adapt(adaptFr, fr);
