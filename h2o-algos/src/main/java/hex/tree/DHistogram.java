@@ -150,6 +150,12 @@ public final class DHistogram extends Iced {
       old = _maxIn;
   }
 
+  static class StepOutOfRangeException extends RuntimeException {
+
+    public StepOutOfRangeException(double step, int xbins, double maxEx, double min) {
+      super("step=" + step + ", xbins = " + xbins + ", maxEx = " + maxEx + ", min = " + min);
+    }
+  }
   public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx,
                     double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey) {
     assert nbins > 1;
@@ -181,7 +187,9 @@ public final class DHistogram extends Iced {
       _step = 1.0f;                           // Fixed stepsize
     } else {
       _step = xbins / (maxEx - min);              // Step size for linear interpolation, using mul instead of div
-      assert _step > 0 && !Double.isInfinite(_step) : "Histogram step size for column '" + name + "' is invalid: " + _step + ".";
+      if(_step < 0 || Double.isInfinite(_step) || Double.isNaN(_step))
+        throw new StepOutOfRangeException(_step, xbins, maxEx, min);
+      assert _step > 0 && !Double.isInfinite(_step) : "Histogram step size for column '" + name + "' is invalid: " + _step + ", maxEx =  " + maxEx + ", min = " + min + ", xbnins = " + xbins;
     }
     _nbin = (char) xbins;
     assert(_nbin>0);
@@ -323,12 +331,18 @@ public final class DHistogram extends Iced {
       final double maxIn = Math.min(v.max(), Double.MAX_VALUE); // inclusive vector max
       final double maxEx = find_maxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
       final long vlen = v.length();
-      hs[c] = v.naCnt()==vlen || v.min()==v.max() ?
-          null : make(fr._names[c],nbins, (byte)(v.isCategorical() ? 2 : (v.isInt()?1:0)), minIn, maxEx, seed, parms, globalQuantilesKey[c]);
+      try {
+        hs[c] = v.naCnt() == vlen || v.min() == v.max() ?
+            null : make(fr._names[c], nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), minIn, maxEx, seed, parms, globalQuantilesKey[c]);
+      } catch(StepOutOfRangeException e) {
+        hs[c] = null;
+        Log.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
+      }
       assert (hs[c] == null || vlen > 0);
     }
     return hs;
   }
+
 
 
   public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey) {
