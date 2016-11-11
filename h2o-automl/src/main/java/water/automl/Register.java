@@ -5,6 +5,7 @@ import water.api.RequestServer;
 import water.automl.api.AutoMLBuilderHandler;
 import water.automl.api.AutoMLHandler;
 import water.automl.api.AutoMLJSONSchemaHandler;
+import water.util.Log;
 
 public class Register extends AbstractRegister{
   @Override public void register(String relativeResourcePath) throws ClassNotFoundException {
@@ -21,6 +22,7 @@ public class Register extends AbstractRegister{
     RequestServer.registerEndpoint("automl_schema",
             "GET /3/AutoMLJSONSchemaHandler", AutoMLJSONSchemaHandler.class, "getJSONSchema",
             "Get the json schema for the AutoML input fields.");
+    Log.info("H2O AutoML extensions enabled.");
 
   }
 }
