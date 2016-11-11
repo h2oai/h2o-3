@@ -413,6 +413,7 @@ public abstract class SharedTreeModel<
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
 
+  @Override
   protected void scoreSetupLocal() {
     Key[][] keys = _output._treeKeys;
     if (_output._compressedTrees == null || _output._compressedTrees.length < keys.length) {
