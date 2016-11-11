@@ -4,26 +4,30 @@ import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
-
-import hex.*;
+import hex.DataInfo;
+import hex.ModelBuilder;
+import hex.ModelCategory;
 import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
 import hex.gram.Gram;
-import hex.gram.Gram.*;
+import hex.gram.Gram.Cholesky;
+import hex.gram.Gram.GramTask;
 import hex.kmeans.KMeans;
 import hex.kmeans.KMeansModel;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import hex.svd.SVDModel.SVDParameters;
-
 import hex.util.LinearAlgebraUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import water.*;
 import water.api.ModelCacheManager;
-import water.fvec.*;
+import water.fvec.C0DChunk;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.*;
 
 import java.util.ArrayList;
@@ -63,7 +67,16 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   @Override public boolean havePojo() { return false; }
   @Override public boolean haveMojo() { return true; }
 
-
+  @Override protected void checkMemoryFootPrint() {
+    long mem_usage = 8 /*doubles*/ * (_parms._k * _train.numCols() + _parms._k );  // loose estimation of memory usage
+    long max_mem = H2O.SELF._heartbeat.get_free_mem();
+    if (mem_usage > max_mem) {
+      String msg = "Archtypes in matrix Y cannot fit in the driver node's memory ("
+              + PrettyPrint.bytes(mem_usage) + " > " + PrettyPrint.bytes(max_mem)
+              + ") - try reducing k, the number of columns and/or the number of categorical factors.";
+      error("_train", msg);
+    }
+  }
   //--------------------------------------------------------------------------------------------------------------------
   // Model initialization
   //--------------------------------------------------------------------------------------------------------------------
@@ -176,6 +189,8 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       if (_train.vec(i).isString() || _train.vec(i).isUUID())
         throw H2O.unimpl("GLRM cannot handle String or UUID data");
     }
+
+    if (expensive && error_count() == 0) checkMemoryFootPrint();  // check to make sure we can fit.
   }
 
   /** Validate all Loss-related parameters, and fill in the `_lossFunc` array. */
