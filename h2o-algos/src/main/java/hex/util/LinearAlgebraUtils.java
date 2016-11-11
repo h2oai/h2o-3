@@ -382,9 +382,7 @@ public class LinearAlgebraUtils {
       for (int j = 0; j < ny; j++) {
         double yyij = i==j ? diagYY[i] : 0;
         uu[i][j] = (yyij - diagYY[i] * diagYY[j] / nTot) / (nVars * Math.sqrt(diagYY[i] * diagYY[j]));
-        if (Double.isNaN(uu[i][j])) {
-          uu[i][j] = 0;
-        }
+        if (Double.isNaN(uu[i][j])) throw new IllegalArgumentException("Cannot compute eigendecomposition of matrix with NaNs.");
       }
     }
     EigenvalueDecomposition eigen = new EigenvalueDecomposition(new Matrix(uu));
