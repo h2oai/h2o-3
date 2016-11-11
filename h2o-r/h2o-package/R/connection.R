@@ -569,7 +569,14 @@ h2o.clusterStatus <- function() {
 # It will download a jar file if it needs to.
 .h2o.downloadJar <- function(overwrite = FALSE) {
   if(!is.logical(overwrite) || length(overwrite) != 1L || is.na(overwrite)) stop("`overwrite` must be TRUE or FALSE")
-
+  
+  # PUBDEV-3534 hook to use arbitrary h2o.jar
+  own_jar = Sys.getenv("H2O_JAR_PATH")
+  if (nzchar(own_jar)) {
+    if (!file.exists(own_jar)) stop(sprintf("Environment variable H2O_JAR_PATH is set to '%s' but file does not exists, unset environment variable or provide valid path to h2o.jar file.", own_jar))
+    return(own_jar)
+  }
+  
   if (is.null(.h2o.pkg.path)) {
     pkg_path = dirname(system.file(".", package = "h2o"))
   } else {
