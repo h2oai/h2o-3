@@ -9,6 +9,7 @@ import hex.util.LinearAlgebraUtils;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import sun.nio.cs.ext.EUC_CN;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OIllegalArgumentException;
@@ -273,19 +274,27 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         //   nclass Vecs of working/temp data
         //   nclass Vecs of NIDs, allowing 1 tree per class
 
-        // Current forest values: results of summing the prior M trees
-        for( int i=0; i<_nclass; i++ )
-          _train.add("Tree_"+domain[i], _response.makeZero());
 
-        // Initial work columns.  Set-before-use in the algos.
-        for( int i=0; i<_nclass; i++ )
-          _train.add("Work_"+domain[i], _response.makeZero());
+        String [] twNames = new String[_nclass*2];
+
+        for(int i = 0; i < _nclass; ++i){
+          twNames[i] = "Tree_" + domain[i];
+          twNames[_nclass+i] = "Work_" + domain[i];
+        }
+        Vec [] twVecs = _response.makeVolatileFloats(_nclass*2);
+        _train.add(twNames,twVecs);
+
 
         // One Tree per class, each tree needs a NIDs.  For empty classes use a -1
         // NID signifying an empty regression tree.
-        for( int i=0; i<_nclass; i++ )
-          _train.add("NIDs_"+domain[i], _response.makeCon(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
-
+        String [] names = new String[_nclass];
+        final int [] cons = new int[_nclass];
+        for( int i=0; i<_nclass; i++ ) {
+          names[i] = "NIDs_" + domain[i];
+          cons[i] = (_model._output._distribution[i]==0?-1:0);
+        }
+        Vec [] vs = _response.makeVolatileInts(cons);
+        _train.add(names, vs);
         // Append number of trees participating in on-the-fly scoring
         _train.add("OUT_BAG_TREES", _response.makeZero());
 
@@ -371,6 +380,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       doScoringAndSaveModel(true, oob, _parms._build_tree_one_node);
     }
   }
+
 
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees

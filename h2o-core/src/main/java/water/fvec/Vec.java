@@ -509,6 +509,7 @@ public class Vec extends Keyed<Vec> {
    *  @return A new vector with the same size and data layout as the current one,
    *  and initialized to the given constant value.  */
   public Vec makeCon(final double d) { return makeCon(d, group(), _rowLayout, T_NUM); }
+
   public Vec makeCon(final double d, byte type) { return makeCon(d, group(), _rowLayout, type); }
 
   private static Vec makeCon( final double d, VectorGroup group, int rowLayout, byte type ) {
@@ -528,6 +529,35 @@ public class Vec extends Keyed<Vec> {
   }
 
   public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
+
+  public Vec [] makeVolatileFloats(int n){
+    Vec [] vecs = makeZeros(n);
+    new MRTask(){
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for(int i = 0; i < cs.length; ++i) {
+          cs[i].setVolatile(MemoryManager.malloc4f(len));
+        }
+      }
+    }.doAll(vecs);
+    return vecs;
+  }
+
+  public Vec [] makeVolatileInts(final int [] cons){
+    Vec [] vecs = makeZeros(cons.length);
+    new MRTask(){
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for(int i = 0; i < cs.length; ++i) {
+          int [] vals = MemoryManager.malloc4(len);
+          Arrays.fill(vals,cons[i]);
+          cs[i].setVolatile(vals);
+        }
+      }
+    }.doAll(vecs);
+    return vecs;
+  }
+
   public Vec [] makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n, 0, domain, types);}
 
   // Make a bunch of compatible zero Vectors

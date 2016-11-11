@@ -21,8 +21,12 @@ public class C0LChunk extends Chunk {
   @Override protected final long at8_impl( int i ) { return _con; }
   @Override protected final double atd_impl( int i ) {return _con; }
   @Override protected final boolean isNA_impl( int i ) { return false; }
-  @Override boolean set_impl(int idx, long l) { return l==_con; }
-  @Override boolean set_impl(int i, double d) { return d==_con; }
+  @Override boolean set_impl(int idx, long l) {
+    return l==_con;
+  }
+  @Override boolean set_impl(int i, double d) {
+    return d==_con;
+  }
   @Override boolean set_impl(int i, float f ) { return f==_con; }
   @Override boolean setNA_impl(int i) { return false; }
   @Override boolean set_impl (int idx, String str) { return false; }
@@ -74,6 +78,13 @@ public class C0LChunk extends Chunk {
   public double [] getDoubles(double [] vals, int from, int to, double NA){
     for(int i = from; i < to; ++i)
       vals[i-from] = _con;
+    return vals;
+  }
+
+  @Override
+  public int [] getIntegers(int [] vals, int from, int to, int NA){
+    if((int)_con != _con) throw new IllegalArgumentException("Can not convert " + _con + " to int.");
+    Arrays.fill(vals,(int)_con);
     return vals;
   }
   /**

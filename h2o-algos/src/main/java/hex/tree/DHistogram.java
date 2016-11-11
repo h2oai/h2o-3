@@ -3,6 +3,8 @@ package hex.tree;
 import com.google.common.util.concurrent.AtomicDouble;
 import sun.misc.Unsafe;
 import water.*;
+import water.fvec.C4FVolatileChunk;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.UtilUnsafe;
@@ -651,7 +653,11 @@ public final class DHistogram extends Iced {
     }
   }
 
-  public void updateHisto(double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo){
+  public void updateHisto(double[] ws, double[] cs, Chunk yChunk, int [] rows, int hi, int lo){
+    float [] ys = null;
+    if(yChunk instanceof C4FVolatileChunk){ // GBM uses generated C4FVolatileChunk as response, DRF uses whatever was in the dataset
+      ys = ((C4FVolatileChunk)yChunk)._fs;
+    }
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
     for(int r = lo; r< hi; ++r) {
@@ -661,7 +667,7 @@ public final class DHistogram extends Iced {
       double col_data = cs[k];
       if( col_data < _min2 ) _min2 = col_data;
       if( col_data > _maxIn ) _maxIn = col_data;
-      double y = ys[k];
+      double y = ys == null?yChunk.atd(k):ys[k];
       assert(!Double.isNaN(y));
       double wy = weight * y;
       double wyy = wy * y;

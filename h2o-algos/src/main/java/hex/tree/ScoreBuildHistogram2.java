@@ -4,16 +4,13 @@ import hex.genmodel.utils.DistributionFamily;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import water.*;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import water.fvec.Vec;
 import water.util.Log;
 import water.util.VecUtils;
 
@@ -75,10 +72,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   Frame _fr2;
 
   public static class SCBParms extends Iced{
-    public int blockSz;
-    public boolean sharedHisto;
-    public int min_threads;
-    public boolean _unordered;
+    public int blockSz = 2;
+    public boolean sharedHisto = false;
+    public int min_threads = -1;
+    public boolean _unordered = false;
   }
   SCBParms _parms;
 
@@ -107,38 +104,48 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     //
     throw H2O.unimpl();
   }
+
+
   @Override
   public void setupLocal() {
+    addToPendingCount(1);
     // Init all the internal tree fields after shipping over the wire
     _tree.init_tree();
     _cids = VecUtils.getLocalChunkIds(_fr2.anyVec());
     _nhs = new int[_cids.length][];
     _rss = new int[_cids.length][];
+    long [] espc = _fr2.anyVec().espc();
+    int largestChunkSz = 0;
+    for(int i = 1; i < espc.length; ++i){
+      int sz = (int)(espc[i] - espc[i-1]);
+      if(sz > largestChunkSz) largestChunkSz = sz;
+    }
+    final int fLargestChunkSz = largestChunkSz;
     if(_parms._unordered)
       _nnids = new int[_cids.length][];
     final AtomicInteger cidx = new AtomicInteger(0);
     // First do the phase 1 on all local data
-    H2O.submitTask(new LocalMR(new MrFun(){
+    new LocalMR(new MrFun(){
       // more or less copied from ScoreBuildHistogram
       private void map(int id, Chunk [] chks) {
-        final Chunk nids = chks[_nidIdx];
-        final Chunk weight = _weightIdx>=0 ? chks[_weightIdx] : new C0DChunk(1, chks[0].len());
+        final C4VolatileChunk nids = (C4VolatileChunk) chks[_nidIdx];
         // Pass 1: Score a prior partially-built tree model, and make new Node
         // assignments to every row.  This involves pulling out the current
         // assigned DecidedNode, "scoring" the row against that Node's decision
         // criteria, and assigning the row to a new child UndecidedNode (and
         // giving it an improved prediction).
-        int nnids[] = new int[nids._len];
-        if(_parms._unordered)
-          _nnids[id] = nnids;
+        int [] nnids;
         if( _leaf > 0)            // Prior pass exists?
-          score_decide(chks,nids,nnids);
-        else                      // Just flag all the NA rows
-          for( int row=0; row<nids._len; row++ ) {
-            if( weight.atd(row) == 0) continue;
-            if( isDecidedRow((int)nids.atd(row)) )
+          nnids = score_decide(chks,nids._is);
+        else {                     // Just flag all the NA rows
+          nnids = new int[nids._len];
+          for (int row = 0; row < nids._len; row++) {
+            if (isDecidedRow(nids._is[row]))
               nnids[row] = DECIDED_ROW;
           }
+        }
+        if(_parms._unordered)
+          _nnids[id] = nnids;
         if(!_parms._unordered) {
           // Pass 2: accumulate all rows, cols into histograms
           // Sort the rows by NID, so we visit all the same NIDs in a row
@@ -158,6 +165,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         // rows[] has Chunk-local ROW-numbers now, in-order, grouped by NID.
         // nh[] lists the start of each new NID, and is indexed by NID+1.
       }
+
       @Override
       protected void map(int id) {
         Chunk[] chks = new Chunk[_fr2.numCols()];
@@ -169,49 +177,54 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           map(id,chks);
         }
       }
-    })).join();
-    // Now launch the phase 2 in parallel for each column block.
-    if(_parms.sharedHisto){
-      for (int l = _leaf; l < _tree._len; l++) {
-        DTree.UndecidedNode udn = _tree.undecided(l);
-        DHistogram hs[] = _hcs[l - _leaf];
-        int sCols[] = udn._scoreCols;
-        if (sCols != null) { // Sub-selecting just some columns?
-          for (int col : sCols) // For tracked cols
-            hs[col].init();
-        } else {                 // Else all columns
-          for (int j = 0; j < hs.length; j++) // For all columns
-            if (hs[j] != null)        // Tracking this column?
-              hs[j].init();
+    },new H2O.H2OCountedCompleter(this){
+      public void onCompletion(CountedCompleter cc){
+        // Now launch the phase 2 in parallel for each column block.
+        if(_parms.sharedHisto){
+          for (int l = _leaf; l < _tree._len; l++) {
+            DTree.UndecidedNode udn = _tree.undecided(l);
+            DHistogram hs[] = _hcs[l - _leaf];
+            int sCols[] = udn._scoreCols;
+            if (sCols != null) { // Sub-selecting just some columns?
+              for (int col : sCols) // For tracked cols
+                hs[col].init();
+            } else {                 // Else all columns
+              for (int j = 0; j < hs.length; j++) // For all columns
+                if (hs[j] != null)        // Tracking this column?
+                  hs[j].init();
+            }
+          }
+        }
+        int ncols = _ncols;
+        int colBlockSz= Math.min(ncols,_parms.blockSz);
+        while(0 < ncols - colBlockSz && ncols % colBlockSz != 0 && ncols % colBlockSz < (colBlockSz >> 1))
+          colBlockSz++;
+        int nrowThreads = 1;
+        int ncolBlocks = ncols/colBlockSz + (ncols%colBlockSz == 0?0:1);
+        while(ncolBlocks*nrowThreads < _parms.min_threads)nrowThreads++;
+        final int nthreads = nrowThreads;
+//        ArrayList<ForkJoinTask> tsks = new ArrayList<>();
+        for(int i = 0; i < ncols; i += colBlockSz){
+          ScoreBuildHistogram2.this.addToPendingCount(1);
+          final int colFrom= i;
+          final int colTo = Math.min(ncols,colFrom+colBlockSz);
+          DHistogram[][] hcs = _parms._unordered?Arrays.copyOfRange(_hcs,colFrom,colTo):_hcs.clone();
+          for(int j = 0; j < hcs.length; ++j)
+            hcs[j] = _parms._unordered?hcs[j].clone():Arrays.copyOfRange(hcs[j],colFrom,colTo);
+          if(i + colBlockSz < ncols)
+            H2O.submitTask(new LocalMR<ComputeHistoThread>(new ComputeHistoThread(hcs,colFrom,colTo,fLargestChunkSz,_parms.sharedHisto,_parms._unordered, new AtomicInteger()), nthreads, ScoreBuildHistogram2.this,priority()));
+          else // last one is forked to reuse current thread
+            new LocalMR<ComputeHistoThread>(new ComputeHistoThread(hcs,colFrom,colTo,fLargestChunkSz,_parms.sharedHisto,_parms._unordered, new AtomicInteger()), nthreads, ScoreBuildHistogram2.this,priority()).fork();
         }
       }
-    }
-    long [] espc = _fr2.anyVec().espc();
-    int largestChunkSz = 0;
-    for(int i = 1; i < espc.length; ++i){
-      int sz = (int)(espc[i] - espc[i-1]);
-      if(sz > largestChunkSz) largestChunkSz = sz;
-    }
-    int ncols = _ncols;
-    int colBlockSz= Math.min(ncols,_parms.blockSz);
-    while(0 < ncols - colBlockSz && ncols % colBlockSz != 0 && ncols % colBlockSz < (colBlockSz >> 1))
-      colBlockSz++;
-    int nrowThreads = 1;
-    int ncolBlocks = ncols/colBlockSz + (ncols%colBlockSz == 0?0:1);
-    while(ncolBlocks*nrowThreads < _parms.min_threads)nrowThreads++;
-    final int nthreads = nrowThreads;
-    ArrayList<ForkJoinTask> tsks = new ArrayList<>();
-    for(int i = 0; i < ncols; i += colBlockSz){
-      final int colFrom= i;
-      final int colTo = Math.min(ncols,colFrom+colBlockSz);
-      DHistogram[][] hcs = _parms._unordered?Arrays.copyOfRange(_hcs,colFrom,colTo):_hcs.clone();
-      for(int j = 0; j < hcs.length; ++j)
-        hcs[j] = _parms._unordered?hcs[j].clone():Arrays.copyOfRange(hcs[j],colFrom,colTo);
-      tsks.add(new LocalMR<ComputeHistoThread>(new ComputeHistoThread(hcs,colFrom,colTo,largestChunkSz,_parms.sharedHisto,_parms._unordered, new AtomicInteger()), nthreads, priority()));
-    }
-    ForkJoinTask.invokeAll(tsks);
+    }).fork();
   }
 
+  private static class Phase2 extends H2O.H2OCountedCompleter {
+    public void onCompletion(CountedCompleter cc){
+
+    }
+  }
   // Reduce for both local and remote
   private static void mergeHistos(DHistogram [][] hcs, DHistogram [][] hcs2){
     // Distributed histograms need a little work
@@ -236,7 +249,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     double [] cs = null;
     double [] ws = null;
-    double [] ys = null;
+//    double [] ys = null;
     AtomicInteger _cidx;
 
     ComputeHistoThread(DHistogram [][] hcs, int colFrom, int colTo, int maxChunkSz, boolean sharedHisto, boolean unordered, AtomicInteger cidx){
@@ -259,8 +272,9 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     @Override
     protected void map(int id){
       cs = MemoryManager.malloc8d(_maxChunkSz);
-      ys = MemoryManager.malloc8d(_maxChunkSz);
+//      ys = MemoryManager.malloc8d(_maxChunkSz);
       ws = MemoryManager.malloc8d(_maxChunkSz);
+      Arrays.fill(ws,1);
       // start computing
       if(_unordered) {
         for(DHistogram [] dhary:_lhcs)
@@ -304,35 +318,23 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       int cidx = _cids[id];
       int [] nh = _nhs[id];
       int [] rs = _rss[id];
-      int [] nnids = _unordered?_nnids[id]:null;
-      Chunk resChk = _fr2.vec(_workIdx).chunkForChunkIdx(cidx);
-      int len = resChk._len;
-      resChk.getDoubles(ys, 0, len);
+      Chunk resChunk = _fr2.vec(_workIdx).chunkForChunkIdx(cidx);
+      int len = resChunk._len;
       if(_weightIdx != -1)
         _fr2.vec(_weightIdx).chunkForChunkIdx(cidx).getDoubles(ws, 0, len);
-      else
-        Arrays.fill(ws,1);
       final int hcslen = _lhcs.length;
       for (int c = _colFrom; c < _colTo; c++) {
-        if(_unordered){
-          _fr2.vec(c).chunkForChunkIdx(cidx).getDoubles(cs, 0, len);
-          updateHistoUnordered(_lhcs[c-_colFrom],len,ws,cs,ys,nnids);
-        } else {
-          boolean extracted = false;
-          for (int n = 0; n < hcslen; n++) {
-            int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
-            if (sCols == null || ArrayUtils.find(sCols, c) >= 0) {
-              if (!extracted) {
-                _fr2.vec(c).chunkForChunkIdx(cidx).getDoubles(cs, 0, len);
-                extracted = true;
-              }
-              DHistogram h = _lhcs[n][c - _colFrom];
-              if (h == null) continue; // Ignore untracked columns in this split
-              if (_shareHisto) {
-                lh.resizeIfNeeded(h._w.length);
-                h.updateSharedHistosAndReset(lh, ws, cs, ys, rs, nh[n], n == 0 ? 0 : nh[n - 1]);
-              } else h.updateHisto(ws, cs, ys, rs, nh[n], n == 0 ? 0 : nh[n - 1]);
+        boolean extracted = false;
+        for (int n = 0; n < hcslen; n++) {
+          int sCols[] = _tree.undecided(n + _leaf)._scoreCols; // Columns to score (null, or a list of selected cols)
+          if (sCols == null || ArrayUtils.find(sCols, c) >= 0) {
+            if (!extracted) {
+              _fr2.vec(c).chunkForChunkIdx(cidx).getDoubles(cs, 0, len);
+              extracted = true;
             }
+            DHistogram h = _lhcs[n][c - _colFrom];
+            if (h == null) continue; // Ignore untracked columns in this split
+            h.updateHisto(ws, cs, resChunk, rs, nh[n], n == 0 ? 0 : nh[n - 1]);
           }
         }
       }
@@ -353,5 +355,46 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         if(dh == null) continue;
         dh.reducePrecision();
       }
+  }
+
+  // Pass 1: Score a prior partially-built tree model, and make new Node
+  // assignments to every row.  This involves pulling out the current
+  // assigned DecidedNode, "scoring" the row against that Node's decision
+  // criteria, and assigning the row to a new child UndecidedNode (and
+  // giving it an improved prediction).
+  // Pass 1: Score a prior partially-built tree model, and make new Node
+  // assignments to every row.  This involves pulling out the current
+  // assigned DecidedNode, "scoring" the row against that Node's decision
+  // criteria, and assigning the row to a new child UndecidedNode (and
+  // giving it an improved prediction).
+  protected int[] score_decide(Chunk chks[], int nnids[]) {
+    int [] res = nnids.clone();
+    for( int row=0; row<nnids.length; row++ ) { // Over all rows
+      int nid = nnids[row];          // Get Node to decide from
+      if( isDecidedRow(nid)) {               // already done
+        res[row] -= _leaf;
+        continue;
+      }
+      // Score row against current decisions & assign new split
+      boolean oob = isOOBRow(nid);
+      if( oob ) nid = oob2Nid(nid); // sampled away - we track the position in the tree
+      DTree.DecidedNode dn = _tree.decided(nid);
+      if( dn == null || dn._split == null ) { // Might have a leftover non-split
+        if( DTree.isRootNode(dn) ) { res[row] = nid - _leaf; continue; }
+        nid = dn._pid;             // Use the parent split decision then
+        int xnid = oob ? nid2Oob(nid) : nid;
+        nnids[row] = xnid;
+        res[row] = xnid - _leaf;
+        dn = _tree.decided(nid); // Parent steers us
+      }
+      assert !isDecidedRow(nid);
+      nid = dn.getChildNodeID(chks,row); // Move down the tree 1 level
+      if( !isDecidedRow(nid) ) {
+        if( oob ) nid = nid2Oob(nid); // Re-apply OOB encoding
+        nnids[row] = nid;
+      }
+      res[row] = nid-_leaf;
+    }
+    return res;
   }
 }

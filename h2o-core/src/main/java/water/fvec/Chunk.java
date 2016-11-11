@@ -2,6 +2,7 @@ package water.fvec;
 
 import water.*;
 import water.parser.BufferedString;
+import water.util.UnsafeUtils;
 
 import java.util.UUID;
 
@@ -603,6 +604,23 @@ public abstract class Chunk extends Iced<Chunk> {
   public int cidx() {
     assert _cidx != -1 : "Chunk idx was not properly loaded!";
     return _cidx;
+  }
+
+  public final Chunk setVolatile(double [] ds) {
+    Chunk res;
+    DKV.put(_vec.chunkKey(_cidx),res = new C8DVolatileChunk(ds));
+    return res;
+  }
+
+  public final Chunk setVolatile(float [] fs) {
+    Chunk res;
+    DKV.put(_vec.chunkKey(_cidx),res = new C4FVolatileChunk(fs));
+    return res;
+  }
+  public final Chunk setVolatile(int[] vals) {
+      Chunk res;
+      DKV.put(_vec.chunkKey(_cidx),res = new C4VolatileChunk(vals));
+      return res;
   }
 
   static class WrongType extends IllegalArgumentException {

@@ -112,4 +112,14 @@ public class C0DChunk extends Chunk {
     return vals;
   }
 
+  @Override
+  public int [] getIntegers(int [] vals, int from, int to, int NA){
+    if(Double.isNaN(_con)){
+      Arrays.fill(vals,NA);
+      return vals;
+    }
+    if((int)_con != _con) throw new IllegalArgumentException("Can not convert " + _con + " to int.");
+    Arrays.fill(vals,(int)_con);
+    return vals;
+  }
 }

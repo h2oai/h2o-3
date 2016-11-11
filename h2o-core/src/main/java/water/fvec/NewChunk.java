@@ -111,6 +111,11 @@ public class NewChunk extends Chunk {
     int _nzs;
 
     public Mantissas(int cap) {_vals1 = MemoryManager.malloc1(cap);}
+    public Mantissas(int [] vals) {
+      _vals4 = vals;
+      for(int i = 0; i < vals.length; ++i)
+        if(_vals4[i] != 0)_nzs++;
+    }
 
     public void set(int idx, long l) {
       long old;
@@ -283,11 +288,14 @@ public class NewChunk extends Chunk {
 
   }
 
+
   public NewChunk(double [] ds) {
     _cidx = -1;
     _vec = null;
     setDoubles(ds);
   }
+
+
   public NewChunk( Vec vec, int cidx, long[] mantissa, int[] exponent, int[] indices, double[] doubles) {
     _vec = vec; _cidx = cidx;
     _ms = new Mantissas(mantissa.length);

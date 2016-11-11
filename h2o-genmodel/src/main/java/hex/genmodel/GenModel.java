@@ -451,6 +451,18 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return dsum;                // Return rolling sum; predictions are log-scaled
   }
 
+  public static double log_rescale(float[] preds) {
+    // Find a max
+    double maxval=Double.NEGATIVE_INFINITY;
+    for( int k=1; k<preds.length; k++) maxval = Math.max(maxval,preds[k]);
+    assert !Double.isInfinite(maxval) : "Something is wrong with GBM trees since returned prediction is " + Arrays.toString(preds);
+    // exponentiate the scaled predictions; keep a rolling sum
+    double dsum=0;
+    for( int k=1; k<preds.length; k++ )
+      dsum += (preds[k]=(float)Math.exp(preds[k]-maxval));
+    return dsum;                // Return rolling sum; predictions are log-scaled
+  }
+
   // Build a class distribution from a log scale; find the top prediction
   public static void GBM_rescale(double[] preds) {
     double sum = log_rescale(preds);

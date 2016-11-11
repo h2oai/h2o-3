@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.*;
+import water.util.UnsafeUtils;
 
 /**
  * The empty-compression function, if all elements fit directly on UNSIGNED bytes.
@@ -65,5 +66,6 @@ public class C1NChunk extends Chunk {
       vals[i - from] = 0xFF & _mem[i];
     return vals;
   }
+
 
 }

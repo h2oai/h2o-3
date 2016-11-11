@@ -208,6 +208,7 @@ public class FVecTest extends TestUtil {
       assertEquals(10,bins.length);
       // TODO: should test percentiles?
       for(long l:bins) assertEquals(1,l);
+      fs.blockForPending();
       Vec.Writer w = v2.open();
       try {
         v2.min();
