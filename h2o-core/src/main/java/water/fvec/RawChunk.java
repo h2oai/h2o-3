@@ -11,11 +11,9 @@ import water.udf.TypedChunk;
  * to satisfy the obsolete API.
  */
 public class RawChunk extends CX0Chunk {
-  private final TypedChunk<?> base;
 
   public RawChunk(TypedChunk<?> base) {
     super(base.len(), new byte[6]);
-    this.base = base;
     _cidx = base.cidx();
     _vec = base.vec();
     this._start = base.start();
