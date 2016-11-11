@@ -191,7 +191,7 @@ public class GLRMModel extends Model<GLRMModel, GLRMModel.GLRMParameters, GLRMMo
     return super.readAll_impl(ab, fs);
   }
 
-  @Override public ModelMojoWriter getMojo() {
+  @Override public GlrmMojoWriter getMojo() {
     return new GlrmMojoWriter(this);
   }
 

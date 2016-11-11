@@ -55,10 +55,19 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   // Inheritance interface: ModelMojoWriter subclasses are expected to override these methods to provide custom behavior
   //--------------------------------------------------------------------------------------------------------------------
 
+  public ModelMojoWriter() {}
+
   public ModelMojoWriter(M model) {
     this.model = model;
     this.lkv = new LinkedHashMap<>(20);  // Linked so as to preserve the order of entries in the output
   }
+
+  /**
+   * Version of the mojo file produced. Follows the <code>major.minor</code>
+   * format, where <code>minor</code> is a 2-digit number. For example "1.00",
+   * "2.05", "2.13". See README in mojoland repository for more details.
+   */
+  public abstract String mojoVersion();
 
   /** Override in subclasses to write the actual model data. */
   protected abstract void writeModelData() throws IOException;
@@ -153,7 +162,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
         n_categoricals++;
 
     writekv("h2o_version", H2O.ABV.projectVersion());
-    writekv("mojo_version", "1.0");
+    writekv("mojo_version", mojoVersion());
     writekv("license", "Apache License Version 2.0");
     writekv("algorithm", model._parms.fullName());
     writekv("category", model._output.getModelCategory());

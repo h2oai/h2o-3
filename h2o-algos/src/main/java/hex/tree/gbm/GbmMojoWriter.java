@@ -7,10 +7,17 @@ import java.io.IOException;
 /**
  * MOJO support for GBM model.
  */
-public class GbmModelMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
+public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMParameters, GBMModel.GBMOutput> {
 
-  public GbmModelMojoWriter(GBMModel model) {
+  @SuppressWarnings("unused")  // Called through reflection in ModelBuildersHandler
+  public GbmMojoWriter() {}
+
+  public GbmMojoWriter(GBMModel model) {
     super(model);
+  }
+
+  @Override public String mojoVersion() {
+    return "1.00";
   }
 
   @Override

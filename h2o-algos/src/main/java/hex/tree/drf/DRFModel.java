@@ -1,6 +1,5 @@
 package hex.tree.drf;
 
-import hex.ModelMojoWriter;
 import hex.tree.SharedTreeModel;
 import water.Key;
 import water.util.MathUtils;
@@ -76,8 +75,8 @@ public class DRFModel extends SharedTreeModel<DRFModel, DRFModel.DRFParameters, 
   }
 
   @Override
-  public ModelMojoWriter getMojo() {
-    return new DrfModelMojoWriter(this);
+  public DrfMojoWriter getMojo() {
+    return new DrfMojoWriter(this);
   }
 
 }

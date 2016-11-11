@@ -11,9 +11,12 @@ import static water.H2O.technote;
 /**
  * Mojo definition for DeepWater model.
  */
-class DeepwaterMojoWriter extends ModelMojoWriter<DeepWaterModel, DeepWaterParameters, DeepWaterModelOutput> {
+public class DeepwaterMojoWriter extends ModelMojoWriter<DeepWaterModel, DeepWaterParameters, DeepWaterModelOutput> {
 
-  DeepwaterMojoWriter(DeepWaterModel model) {
+  @SuppressWarnings("unused")  // Called through reflection in ModelBuildersHandler
+  public DeepwaterMojoWriter() {}
+
+  public DeepwaterMojoWriter(DeepWaterModel model) {
     super(model);
     _parms = model.get_params();
     _model_info = model.model_info();
@@ -21,6 +24,10 @@ class DeepwaterMojoWriter extends ModelMojoWriter<DeepWaterModel, DeepWaterParam
     if (_model_info._unstable) {
       throw new UnsupportedOperationException(technote(4, "Refusing to create a MOJO for an unstable model."));
     }
+  }
+
+  @Override public String mojoVersion() {
+    return "1.00";
   }
 
   private DeepWaterParameters _parms;
