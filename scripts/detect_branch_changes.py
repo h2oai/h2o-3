@@ -14,6 +14,7 @@ group of tests should be run.
 
 We may extend the set of these flags in the future.
 """
+from __future__ import print_function
 import os
 import subprocess
 
@@ -80,5 +81,5 @@ if __name__ == "__main__":
         else:
             if os.path.exists(target_file):
                 os.remove(target_file)
-        print("H2O_RUN_%s_TESTS = %s" % (key.upper()), str(value).lower())
+        print("H2O_RUN_%s_TESTS = %s" % (key.upper(), str(value).lower()))
     print()
