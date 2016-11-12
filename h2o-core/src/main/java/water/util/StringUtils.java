@@ -104,7 +104,7 @@ public class StringUtils {
 
   public static String PADDING_SYMBOL = "</s>";
 
-  public static ArrayList<int[]> texts2array(List<String> texts) {
+  public static ArrayList<int[]> texts2array(ArrayList<String> texts) {
     int maxlen = 0;
     int index = 0;
     Map<String, Integer> dict = new HashMap<>();

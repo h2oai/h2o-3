@@ -66,8 +66,17 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
     return column.isNA(idx);
   }
 
+  public static String join(String delimiter, Iterable<?> xs) {
+    StringBuilder sb = new StringBuilder();
+    for (Object x : xs) {
+      if (sb.length() > 0) sb.append(delimiter);
+      sb.append(x);
+    }
+    return sb.toString();
+  }
+
   @Override
   public String getString(long idx) { 
-    return StringUtils.join(", ", apply(idx)); 
+    return join(", ", apply(idx)); 
   }
 }
