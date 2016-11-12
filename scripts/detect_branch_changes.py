@@ -24,11 +24,13 @@ environment = {"py": False, "r": False, "java": False, "js": False}
 
 
 def mark_all_flags_true():
-    for k in environment.keys():
+    for k in environment:
         environment[k] = True
+
 
 def mark_flag_true(flag):
     environment[flag] = True
+
 
 def error(msg):
     print()
@@ -36,6 +38,7 @@ def error(msg):
     print("         All tests will be scheduled to run.")
     print()
     mark_all_flags_true()
+
 
 def get_list_of_modified_files(source_branch, target_branch):
     out1 = subprocess.check_output(["git", "merge-base", source_branch, target_branch]).decode().rstrip()
@@ -67,16 +70,14 @@ def run():
             break
 
 
-if __name__ == "__main__":
-    target_folder = os.path.join(os.path.dirname(__file__), target_folder)
-    if not os.path.exists(target_folder):
-        os.makedirs(target_folder)
-
-    run()
+def create_files(folder):
+    abs_folder = os.path.join(os.path.dirname(__file__), folder)
+    if not os.path.exists(abs_folder):
+        os.makedirs(abs_folder)
 
     print()
     for key, value in environment.items():
-        target_file = os.path.join(target_folder, "H2O_RUN_%s_TESTS" % key.upper())
+        target_file = os.path.join(abs_folder, "H2O_RUN_%s_TESTS" % key.upper())
         if value:
             with open(target_file, "w"): pass
         else:
@@ -84,3 +85,8 @@ if __name__ == "__main__":
                 os.remove(target_file)
         print("H2O_RUN_%s_TESTS = %s" % (key.upper(), str(value).lower()))
     print()
+
+
+if __name__ == "__main__":
+    run()
+    create_files(target_folder)
