@@ -453,48 +453,23 @@ public class RequestServer extends HttpServlet {
     }
   }
 
-
-  /**
-   * Do not log frequently and/or commonly fetched resources by suffix.
-   * Subclasses may extend the set of ignored resources by overriding this
-   * method.
-   * @param url compare string suffix
-   * @return true if the request should not be logged
-   */
-  protected static boolean ignoreResourceBySuffix(String url) {
-    return (url.endsWith(".css") ||
-      url.endsWith(".js")        ||
-      url.endsWith(".png")       ||
-      url.endsWith(".ico"));
-  }
-
-  /**
-   * Do not log frequently and/or commonly used REST endpoints. This prevents
-   * logs (and analytics) from being cluttered with progress updates, typeahead
-   * requests, and the like. Subclasses may extend the set of ignored URIs by
-   * overriding this method.
-   * @param path The simple uri path of the endpoint.
-   * @param isGET Indicates the method type of the HTTP request
-   * @return true if the request should not be logged
-   */
-  protected static boolean ignoreURI(String path, boolean isGET) {
-    return (path.equals("Cloud") ||
-      path.equals("Jobs") && isGET ||
-      path.equals("Log") ||
-      path.equals("Progress") ||
-      path.equals("Typeahead") ||
-      path.equals("WaterMeterCpuTicks"));
-  }
-
   /**
    * Log the request (unless it's an overly common one).
    */
   private static void maybeLogRequest(RequestUri uri, Properties header, Properties parms) {
     String url = uri.getUrl();
-    if( ignoreResourceBySuffix(url) ) return;
+    if (url.endsWith(".css") ||
+        url.endsWith(".js") ||
+        url.endsWith(".png") ||
+        url.endsWith(".ico")) return;
 
     String[] path = uri.getPath();
-    if( ignoreURI(path[2], uri.isGetMethod()) ) return;
+    if (path[2].equals("Cloud") ||
+        path[2].equals("Jobs") && uri.isGetMethod() ||
+        path[2].equals("Log") ||
+        path[2].equals("Progress") ||
+        path[2].equals("Typeahead") ||
+        path[2].equals("WaterMeterCpuTicks")) return;
 
     Log.info(uri + ", parms: " + parms);
     GAUtils.logRequest(url, header);
