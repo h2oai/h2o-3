@@ -203,6 +203,14 @@ class H2OLocalServer(object):
     @staticmethod
     def _jar_paths():
         """Produce potential paths for an h2o.jar executable."""
+        
+        # PUBDEV-3534 hook to use arbitrary h2o.jar
+        own_jar = os.getenv("H2O_JAR_PATH", "")
+        if own_jar != "":
+            if not os.path.isfile(own_jar):
+                raise H2OStartupError("Environment variable H2O_JAR_PATH is set to '%d' but file does not exists, unset environment variable or provide valid path to h2o.jar file." % own_jar)
+            yield own_jar
+        
         # Check if running from an h2o-3 src folder (or any subfolder), in which case use the freshly-built h2o.jar
         cwd_chunks = os.path.abspath(".").split(os.path.sep)
         for i in range(len(cwd_chunks), 0, -1):
