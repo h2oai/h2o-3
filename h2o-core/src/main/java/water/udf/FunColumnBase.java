@@ -29,9 +29,4 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
 
   @Override
   public String getString(long idx) { return isNA(idx) ? "(N/A)" : String.valueOf(apply(idx)); }
-
-  @Override 
-  public boolean isCompatibleWith(Column<?> ys) {
-    return vec().isCompatibleWith(ys.vec());
-  }
 }
