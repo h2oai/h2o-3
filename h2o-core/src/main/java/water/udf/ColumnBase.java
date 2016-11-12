@@ -1,5 +1,6 @@
 package water.udf;
 
+import water.fvec.Frame;
 import water.fvec.Vec;
 
 /**
@@ -18,6 +19,6 @@ public abstract class ColumnBase<T> implements Column<T> {
 
   @Override 
   public boolean isCompatibleWith(Column<?> ys) {
-    return vec().isCompatibleWith(ys.vec());
+    return new Frame(vec()).isCompatible(new Frame(ys.vec()));
   }
 }
