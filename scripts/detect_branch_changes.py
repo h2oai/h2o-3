@@ -38,8 +38,9 @@ def error(msg):
     mark_all_flags_true()
 
 def get_list_of_modified_files(source_branch, target_branch):
-    out = subprocess.check_output(["get", "diff", "--name-only", source_branch, target_branch])
-    return out.split("\n")
+    out1 = subprocess.check_output(["git", "merge-base", source_branch, target_branch]).decode().rstrip()
+    out2 = subprocess.check_output(["git", "diff", "--name-only", source_branch, out1]).decode().rstrip()
+    return out2.split("\n")
 
 
 def run():
