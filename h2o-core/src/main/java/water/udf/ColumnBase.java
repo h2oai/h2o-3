@@ -19,6 +19,10 @@ public abstract class ColumnBase<T> implements Column<T> {
 
   @Override 
   public boolean isCompatibleWith(Column<?> ys) {
-    return new Frame(vec()).isCompatible(new Frame(ys.vec()));
+    boolean itis = new Frame(vec()).isCompatible(new Frame(ys.vec()));
+    if (!itis) {
+      new Frame(vec()).isCompatible(new Frame(ys.vec()));
+    }
+    return itis;
   }
 }
