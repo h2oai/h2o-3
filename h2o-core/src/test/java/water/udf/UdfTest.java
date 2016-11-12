@@ -45,7 +45,8 @@ public class UdfTest extends TestUtil {
     Column<Double> c = sines();
 
     assertFalse(c.apply(10).isNaN());
-    assertTrue(c.apply(11).isNaN());
+    Double x11 = c.apply(11);
+    assertTrue(x11.isNaN());
     assertTrue(c.apply(19).isNaN());
     assertFalse(c.apply(20).isNaN());
     assertFalse(c.isNA(10));
