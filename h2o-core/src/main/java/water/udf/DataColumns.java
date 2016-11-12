@@ -38,17 +38,12 @@ public class DataColumns {
     public abstract DataChunk<T> apply(final Chunk c);
     public abstract DataColumn<T> newColumn(Vec vec);
 
-//    public DataColumn<T> newColumn(long len, final Function<Long, T> f) throws IOException {
-//      return new TypedFrame<>(this, len, f).newColumn();
-//    }
-
     public DataColumn<T> newColumn(long len, final Function<Long, T> f) throws IOException {
       return new TypedFrame<>(this, len, f).newColumn();
     }
 
     public DataColumn<T> materialize(Column<T> xs) throws IOException {
       return TypedFrame.forColumn(this, xs).newColumn();
-//      return newColumn(xs.size(), xs);
     }
 
     public DataColumn<T> newColumn(final List<T> xs) throws IOException {
