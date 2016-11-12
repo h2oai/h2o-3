@@ -58,9 +58,9 @@ def run():
         return error("%r when trying to retrieve the list of changed files" % e)
 
     for fname in files_changed:
-        if fname.startswith("h2o-py/"):
+        if fname.startswith("h2o-py/") or fname == "h2o-bindings/bin/gen_python.py":
             mark_flag_true("py")
-        elif fname.startswith("h2o-r/"):
+        elif fname.startswith("h2o-r/") or fname == "h2o-bindings/bin/gen_R.py":
             mark_flag_true("r")
         else:
             mark_all_flags_true()
