@@ -13,6 +13,8 @@ Presence / absence of each of these files indicates whether the corresponding
 group of tests should be run.
 
 We may extend the set of these flags in the future.
+
+
 """
 from __future__ import print_function
 import os
@@ -65,6 +67,8 @@ def run():
             mark_flag_true("py")
         elif fname.startswith("h2o-r/") or fname == "h2o-bindings/bin/gen_R.py":
             mark_flag_true("r")
+        elif fname.endswith(".md"):
+            pass  # Changes in .md files don't require any jobs to be run
         else:
             mark_all_flags_true()
             break
