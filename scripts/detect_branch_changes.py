@@ -4,27 +4,23 @@ This is a Jenkins script that is supposed to be run after the
 GithubPullRequestBuilder plugin. It will determine what files has changed in
 the PR being tested, and set up several environmental variables accordingly.
 
-In particular, the following variables will be emitted:
+In particular, the following files may be created in the `target_folder`:
     H2O_RUN_PY_TESTS
     H2O_RUN_R_TESTS
     H2O_RUN_JAVA_TESTS
     H2O_RUN_JS_TESTS
-Each of these will have a string value of either "true" or "false". These
-variables determine which test suites should be then started by the Jenkins:
-if the PR affects only Python files, then only the `H2O_RUN_PY_TESTS` flag
-will be set, etc.
+Presence / absence of each of these files indicates whether the corresponding
+group of tests should be run.
 
-We may extend the set of environment variables in the future.
-
-Since Python is unable to set environment variables on its own, it rather
-prints to stdout commands like `EXPORT H2O_RUN_PY_TESTS="true"`. Thus, the
-caller script should take the output of this python script and execute it
-using the `source` command.
+We may extend the set of these flags in the future.
 """
 import os
 import subprocess
 
+target_folder = "../h2o-py/build/tmp"
 environment = {"py": False, "r": False, "java": False, "js": False}
+
+
 
 def mark_all_flags_true():
     for k in environment.keys():
@@ -34,10 +30,10 @@ def mark_flag_true(flag):
     environment[flag] = True
 
 def error(msg):
-    print('echo ""')
-    print('echo "WARNING: %s"' % msg)
-    print('echo "         All tests will be scheduled to run."')
-    print('echo ""')
+    print()
+    print("WARNING: %s" % msg)
+    print("         All tests will be scheduled to run.")
+    print()
     mark_all_flags_true()
 
 def get_list_of_modified_files(source_branch, target_branch):
@@ -70,6 +66,19 @@ def run():
 
 
 if __name__ == "__main__":
+    target_folder = os.path.join(os.path.dirname(__file__), target_folder)
+    if not os.path.exists(target_folder):
+        os.makedirs(target_folder)
+
     run()
+
+    print()
     for key, value in environment.items():
-        print("export H2O_RUN_%s_TESTS=\"%s\"" % (key.upper(), str(value).lower()))
+        target_file = os.path.join(target_folder, "H2O_RUN_%s_TESTS" % key.upper())
+        if value:
+            with open(target_file, "w"): pass
+        else:
+            if os.path.exists(target_file):
+                os.remove(target_file)
+        print("H2O_RUN_%s_TESTS = %s" % (key.upper()), str(value).lower())
+    print()
