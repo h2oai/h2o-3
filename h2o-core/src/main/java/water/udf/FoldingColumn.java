@@ -59,12 +59,6 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     return false;
   }
 
-  @Override
-  public String getString(long idx) { 
-    Y y = get(idx);
-    return y == null ? "(N/A)" : String.valueOf(y); 
-  }
-
   private class FunChunk extends DependentChunk<Y> {
     private final List<TypedChunk<X>> chunks;
     

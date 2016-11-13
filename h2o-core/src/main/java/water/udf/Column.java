@@ -14,8 +14,6 @@ public interface Column<T> extends Function<Long, T>, Vec.Holder {
   
   boolean isNA(long idx);
   
-  String getString(long idx);
-  
   Vec vec();
   int rowLayout();
   long size();

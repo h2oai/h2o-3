@@ -1,63 +1,38 @@
 package water.udf
 
-import language.postfixOps
 import java.io.File
 import java.util.{Date, GregorianCalendar}
 import java.{lang, util}
 
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import water.udf.DataColumns._
+import water.udf.MoreColumns._
 import water.{TestBase, TestUtil}
 
 import scala.io.Source
+import scala.language.postfixOps
+
+import collection.JavaConverters._
 
 /**
   * Scala version of UdfTest
   */
 class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
+  val A_LOT: Int = 1 << 20
+
   override def beforeAll: Unit = TestUtil.stall_till_cloudsize(1)
 
-  private val DoubleNan: Double = Double.NaN
+  val sinOpt =
+    (i: Long) => Some(i).filter(k => k <= 10 || k >= 20).map(i => math.sin(i.toDouble))
 
-  implicit def ff1[X, Y](f: X => Y): water.udf.Function[X, Y] =
-    new water.udf.Function[X, Y] {
-      def apply(x: X): Y = f(x)
-    }
+  private def sines: DataColumn[lang.Double] = willDrop(Doubles.newColumnOpt(1L << 20, sinOpt))
 
-  implicit def ff1L[Y](f: Long => Y): water.udf.Function[lang.Long, Y] =
-    new water.udf.Function[lang.Long, Y] {
-      def apply(x: lang.Long): Y = f(x)
-    }
+  private def sinesShort: DataColumn[lang.Double] = willDrop(Doubles.newColumnOpt(1001590, sinOpt))
 
-  implicit def ff1LS(f: Long => String): water.udf.Function[lang.Long, lang.String] =
-    new water.udf.Function[lang.Long, lang.String] {
-      def apply(x: lang.Long): lang.String = f(x)
-    }
+  private def five_x: DataColumn[lang.Double] = willDrop(Doubles.newColumn(A_LOT, (i: Long) => i * 5.0))
 
-  implicit def ff1LI(f: Long => Integer): water.udf.Function[lang.Long, lang.Integer] =
-    new water.udf.Function[lang.Long, lang.Integer] {
-      def apply(x: lang.Long): lang.Integer = f(x)
-    }
-
-  implicit def ff1LD(f: Long => Double): water.udf.Function[lang.Long, lang.Double] =
-    new water.udf.Function[lang.Long, lang.Double] {
-      def apply(x: lang.Long): lang.Double = f(x)
-    }
-
-  implicit def ff1LDO(f: Long => Option[Double]): water.udf.Function[lang.Long, lang.Double] =
-    new water.udf.Function[lang.Long, lang.Double] {
-      def apply(x: lang.Long): lang.Double = f(x).getOrElse(DoubleNan).asInstanceOf[Double]
-    }
-
-  val sinOpt: water.udf.Function[lang.Long, lang.Double] =
-    ff1LDO((i: Long) => Some(i).filter(k => k <= 10 || k >= 20).map(i => math.sin(i.toDouble)))
-
-  private def sines: DataColumn[lang.Double] = willDrop(Doubles.newColumn(1L << 20, sinOpt))
-
-  private def sinesShort: DataColumn[lang.Double] = willDrop(Doubles.newColumn(1001590, sinOpt))
-
-  private def five_x: DataColumn[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD(
-    (i: Long) => i * 5.0)))
+  val coscos = (i: Long) => math.cos(i * 0.0001) * Math.cos(i * 0.0000001)
+  val cossin = (i: Long) => math.cos(i * 0.0001) * Math.sin(i * 0.0000001)
+  val sinth  = (i: Long) => Math.sin(i * 0.0001)
 
   test("IsNA") {
     val c: Column[lang.Double] = sines
@@ -71,17 +46,6 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
     assert(!c.isNA(20))
   }
 
-  test("GetString") {
-    val c: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => {
-      if (i > 10 && i < 20) DoubleNan else i * 10.0
-    })))
-
-    assert("100.0" == c.getString(10))
-    assert("(N/A)" == c.getString(12))
-    assert("(N/A)" == c.getString(18))
-    assert("123450.0" == c.getString(12345))
-  }
-
   test("Doubles") {
     val c: Column[lang.Double] = five_x
     assert(0.0 == c(0), 0.000001)
@@ -90,8 +54,8 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
   }
 
   test("Strings") {
-    val c: Column[lang.String] = willDrop(Strings.newColumn(1 << 20,
-      ff1LS((i: Long) => if (i == 42) null else "<<" + i + ">>")))
+    val c: Column[lang.String] = willDrop(Strings.newColumn(A_LOT,
+      (i: Long) => if (i == 42) null else "<<" + i + ">>"))
 
     assert("<<0>>" == c(0))
     assert(null == c(42))
@@ -101,7 +65,7 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
   }
 
   test("Enums") {
-    val c: Column[lang.Integer] = willDrop(Enums(Array[String]("Red", "White", "Blue")).newColumn(1 << 20, ff1LI((i: Long) => (i % 3).toInt)))
+    val c: Column[lang.Integer] = willDrop(Enums(Array[String]("Red", "White", "Blue")).newColumn(A_LOT, (i: Long) => (i % 3).toInt))
 
     assert(0 == c(0))
     assert(0 == c(42))
@@ -109,14 +73,14 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
     assert(2 == c(20000))
     val materialized: Column[lang.Integer] = Enums(Array[String]("Red", "White", "Blue")).materialize(c)
     for {i <- 0 until 100000} {
-      assert(c(i) == (i % 3).toInt)
+      assert(c(i) == (i % 3))
       assert(c(i) == materialized(i))
     }
   }
 
   test("Dates") {
-    val longToDate: (Long) => Date = (i: Long) => new Date(i * 3600000L * 24)
-    val c: Column[Date] = willDrop(Dates.newColumn(1 << 20, longToDate))
+    val longToDate = (i: Long) => new Date(i * 3600000L * 24)
+    val c: Column[Date] = willDrop(Dates.newColumn(A_LOT, longToDate))
     assert(new Date(0) == c(0))
     val expected: Date = new GregorianCalendar(1970, 8, 15, 17, 0, 0).getTime
     assert(expected == c(258))
@@ -126,9 +90,8 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
 
   test("EnumFun") {
     val domain: Array[String] = Array("Red", "White", "Blue")
-    val x: Column[lang.Integer] = willDrop(Enums(domain).newColumn(1 << 20,
-      ff1LI((i: Long) => (i % 3).toInt
-      )))
+    val x: Column[lang.Integer] = willDrop(Enums(domain).newColumn(A_LOT,
+      (i: Long) => (i % 3).toInt))
 
     val y: Column[lang.String] = new FunColumn[lang.Integer, String](new Function[Integer, String]() {
       def apply(i: Integer): String = domain(i)
@@ -186,7 +149,7 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
   test("Fun2Compatibility") {
     val x: Column[lang.Double] = five_x
     val y: Column[lang.Double] = sinesShort
-    val z: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => math.sin(i * 0.0001))))
+    val z: Column[lang.Double] = willDrop(Doubles.newColumn(A_LOT, (i: Long) => math.sin(i * 0.0001)))
 
     try {
       val z1: Column[lang.Double] = new Fun2Column[lang.Double, lang.Double, lang.Double](Functions.PLUS, x, y)
@@ -211,25 +174,29 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
     }
   }
 
+  def xsOnSphere: DataColumn[lang.Double] = willDrop(Doubles.newColumn(A_LOT, coscos))
+  def ysOnSphere: DataColumn[lang.Double] = willDrop(Doubles.newColumn(A_LOT, cossin))
+  def zsOnSphere: DataColumn[lang.Double] = willDrop(Doubles.newColumn(A_LOT, sinth))
+
   test("Fun3") {
-    val x: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => math.cos(i * 0.0001) * Math.cos(i * 0.0000001))))
-    val y: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => Math.cos(i * 0.0001) * Math.sin(i * 0.0000001))))
-    val z: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => Math.sin(i * 0.0001))))
+    val x: Column[lang.Double] = xsOnSphere
+    val y: Column[lang.Double] = ysOnSphere
+    val z: Column[lang.Double] = zsOnSphere
     val r: Column[lang.Double] = new Fun3Column[lang.Double, lang.Double, lang.Double, lang.Double](Functions.X2_PLUS_Y2_PLUS_Z2, x, y, z)
 
-    for {i <- 0 until 100000} assert(math.abs(r(i * 10) - 1.) < 0.0001)
+    for {i <- 0 until 100000} assert(math.abs(r(i * 10) - 1.0) < 0.0001)
 
     val materialized: Column[lang.Double] = Doubles.materialize(r)
     for {i <- 0 until 100000} assert(r(i) == materialized(i), 0.0001)
   }
 
   test("FoldingColumn") {
-    val x: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => math.cos(i * 0.0001) * Math.cos(i * 0.0000001))))
-    val y: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => Math.cos(i * 0.0001) * Math.sin(i * 0.0000001))))
-    val z: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => Math.sin(i * 0.0001))))
+    val x: Column[lang.Double] = xsOnSphere
+    val y: Column[lang.Double] = ysOnSphere
+    val z: Column[lang.Double] = zsOnSphere
     val r: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](Functions.SUM_OF_SQUARES, x, y, z)
 
-    for {i <- 0 until 100000} assert(math.abs(r(i * 10) - 1.) < 0.0001)
+    for {i <- 0 until 100000} assert(math.abs(r(i * 10) - 1.0) < 0.0001)
 
     val x1: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](Functions.SUM_OF_SQUARES, x)
 
@@ -239,7 +206,7 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
     }
 
     val x0: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](Functions.SUM_OF_SQUARES)
-    for {i <- 0 until 100000} assert(x0(i) == 0., 0.0001)
+    for {i <- 0 until 100000} assert(x0(i) == 0.0, 0.0001)
 
     val materialized: Column[lang.Double] = Doubles.materialize(r)
 
@@ -248,32 +215,57 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
 
 
   test("FoldingColumnCompatibility") {
-    val x: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => math.cos(i * 0.0001) * Math.cos(i * 0.0000001))))
-    val y: Column[lang.Double] = willDrop(Doubles.newColumn(1 << 20, ff1LD((i: Long) => Math.cos(i * 0.0001) * Math.sin(i * 0.0000001))))
+    val x: Column[lang.Double] = xsOnSphere
+    val y: Column[lang.Double] = ysOnSphere
     val z: Column[lang.Double] = sinesShort
     try {
       val r: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](Functions.SUM_OF_SQUARES, x, y, z)
       fail("Should have failed on incompatibility")
     }
     catch {
-      case ae: AssertionError => {
-      }
+      case ae: AssertionError => 
     }
   }
+  
+  test("FoldingColumn, Scala") {
+    val x: Column[lang.Double] = xsOnSphere
+    val y: Column[lang.Double] = ysOnSphere
+    val z: Column[lang.Double] = zsOnSphere
+    val r: Column[lang.Double] = foldingColumn[lang.Double]((xs:Iterable[lang.Double]) => xs.map(x => x*x).sum, x, y, z)
 
-  import collection.JavaConverters._
+    for {i <- 0 until 100000} assert(math.abs(r(i * 10) - 1.0) < 0.0001)
+
+  }
 
   test("UnfoldingColumn") {
     val file: File = TestUtil.getFile("smalldata/chicago/chicagoAllWeather.csv")
-    val jul: java.util.List[String] = new util.ArrayList[String]
-    for {line <- Source.fromFile(file).getLines()} jul.add(line)
-    val source: Column[lang.String] = willDrop(Strings.newColumn(jul))
-    val split: Column[java.util.List[String]] = new UnfoldingColumn[lang.String, String](Functions.splitBy(","), source, 10)
+    val ss = Source.fromFile(file).getLines().toList
+    
+    val source: Column[lang.String] = willDrop(Strings.newColumn(ss))
+    
+    val split: Column[java.util.List[String]] = new UnfoldingColumn[String, String](Functions.splitBy(","), source, 10)
 
-    assert(jul.size() == split.size())
+    assert(ss.size == split.size())
 
-    for {i <- 0 until jul.size()} {
-      val src = jul.get(i)
+    for {i <- ss.indices} {
+      val src = ss(i)
+      val actual: String = split(i).asScala.filter(null !=).mkString(" ")
+      assert(src.replaceAll(",", " ").trim == actual)
+    }
+  }
+
+  test("UnfoldingColumn, Scala") {
+    val file: File = TestUtil.getFile("smalldata/chicago/chicagoAllWeather.csv")
+    val ss = Source.fromFile(file).getLines().toList
+
+    val source: Column[lang.String] = willDrop(Strings.newColumn(ss))
+
+    val split: Column[java.util.List[String]] = unfoldingColumn[String, String]((s:String) => s.split(","), source, 10)
+
+    assert(ss.size == split.size())
+
+    for {i <- ss.indices} {
+      val src = ss(i)
       val actual: String = split(i).asScala.filter(null !=).mkString(" ")
       assert(src.replaceAll(",", " ").trim == actual)
     }
@@ -281,18 +273,23 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
 
   test("UnfoldingFrame") {
     val file: File = TestUtil.getFile("smalldata/chicago/chicagoAllWeather.csv")
-    val jul: java.util.List[String] = new util.ArrayList[String]
-    for {line <- Source.fromFile(file).getLines()} jul.add(line)
-    val source: Column[lang.String] = willDrop(Strings.newColumn(jul))
+    val ss:List[String] = Source.fromFile(file).getLines().toList
+
+    val source: Column[String] = willDrop(Strings.newColumn(ss))
+
     val split: Column[java.util.List[String]] = new UnfoldingColumn[lang.String, String](Functions.splitBy(","), source, 10)
+
+    assert(ss.size == split.size())
+    
     val frame: UnfoldingFrame[String] = new UnfoldingFrame[String](Strings, split.size, split, 11)
+    
     val columns: util.List[DataColumn[lang.String]] = frame.materialize
 
     {
-      for {i <- 0 until jul.size} {
+      for {i <- ss.indices} {
         val fromColumns = (0 until 10) map (columns.get(_).get(i))
         val actual = fromColumns filter (null !=) mkString " "
-        assert(jul.get(i).replaceAll(",", " ").trim == actual)
+        assert(ss(i).replaceAll(",", " ").trim == actual)
       }
     }
     assert(columns.get(5).isCompatibleWith(source), "Need until align the result")
