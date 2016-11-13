@@ -54,19 +54,6 @@ public class UdfTest extends TestUtil {
     assertTrue(c.isNA(19));
     assertFalse(c.isNA(20));
   }
-  
-  @Test public void testGetString() throws Exception {
-    Column<Double> c = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
-       public Double apply(Long i) {
-        return (i > 10 && i < 20) ? null : i*10.0;
-      }
-    }));
-
-    assertEquals("100.0", c.getString(10));
-    assertEquals("(N/A)", c.getString(12));
-    assertEquals("(N/A)", c.getString(18));
-    assertEquals("123450.0", c.getString(12345));
-  }
 
   @Test
   public void testOfDoubles() throws Exception {
