@@ -114,7 +114,7 @@ public class AstIsax extends AstPrimitive {
             return new ValFrame(fr3);
         }
         for(int i = 0; i < numWords; ++i){
-            maxCards[i] = numWords;
+            maxCards[i] = maxCardinality;
         }
         Frame fr3 = new AstIsax.IsaxStringTask(maxCards).doAll(1, Vec.T_STR, fr2)
                 .outputFrame(null, new String[]{"iSax_index"}, null);
