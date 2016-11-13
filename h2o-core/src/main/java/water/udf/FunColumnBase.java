@@ -26,7 +26,4 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
   @Override public T apply(long idx) { return get(idx); }
 
   @Override public T apply(Long idx) { return get(idx); }
-
-  @Override
-  public String getString(long idx) { return isNA(idx) ? "(N/A)" : String.valueOf(apply(idx)); }
 }

@@ -68,7 +68,11 @@ public class DataColumns {
 
   //-------------------------------------------------------------
 
-  public static final Factory<Double> Doubles = new Factory<Double>(Vec.T_NUM, "Doubles") {
+  static class DoubleFactory extends Factory<Double> {
+    
+    DoubleFactory() {
+      super(Vec.T_NUM, "Doubles");
+    }
 
     @Override public DataChunk<Double> apply(final Chunk c) {
       return new DataChunk<Double>(c) {
@@ -99,12 +103,17 @@ public class DataColumns {
         public void set(long idx, double value) { vec.set(idx, value); }
       }; 
     }
-  };
+  }
 
+  public static final DoubleFactory Doubles = new DoubleFactory();
   //-------------------------------------------------------------
 
-  public static final Factory<String> Strings = new Factory<String>(Vec.T_STR, "Strings") {
+  static class StringFactory extends Factory<String> {
 
+    StringFactory() {
+      super(Vec.T_STR, "Strings");
+    }
+    
     @Override public DataChunk<String> apply(final Chunk c) {
       return new DataChunk<String>(c) {
         @Override public String get(int idx) { return asString(c.atStr(new BufferedString(), idx)); }
@@ -129,7 +138,9 @@ public class DataColumns {
       };
     }
 
-  };
+  }
+  
+  public static final Factory<String> Strings = new StringFactory();
 
   //-------------------------------------------------------------
 
@@ -169,13 +180,6 @@ public class DataColumns {
         public Integer get(long idx) { return isNA(idx) ? null : (int) vec.at8(idx); }
 
         @Override
-        public String getString(long idx) {
-          Integer i = get(idx);
-          boolean noname = (i == null || domain == null || i < 0 || i >= domain.length);
-          return noname ? "" + i : domain[i];
-        }
-
-        @Override
         public void set(long idx, Integer value) {
           if (value == null) vec.setNA(idx); else vec.set(idx, value);
         }
@@ -206,7 +210,6 @@ public class DataColumns {
 //        throw new IllegalArgumentException("Expected a type UUID, got " + vec.get_type_str());
 //      return new DataColumn<UUID>(vec, typeCode, this) {
 //        @Override public UUID get(long idx) { return isNA(idx) ? null : new UUID(vec.at16h(idx), vec.at16l(idx)); }
-//        @Override public String getString(long idx) { return PrettyPrint.uuid(get(idx)); }
 //        @Override public void set(long idx, UUID value) { vec.set(idx, value); }
 //      };
 //    }
@@ -214,8 +217,11 @@ public class DataColumns {
 
   //-------------------------------------------------------------
 
-  public static final Factory<Date> Dates = new Factory<Date>(Vec.T_TIME, "Time") {
-
+  static class DateFactory extends Factory<Date> {
+     DateFactory() {
+       super(Vec.T_TIME, "Time");
+     }
+    
     @Override public DataChunk<Date> apply(final Chunk c) {
       return new DataChunk<Date>(c) {
         @Override public Date get(int idx) { return isNA(idx) ? null : new Date(c.at8(idx)); }
@@ -236,8 +242,9 @@ public class DataColumns {
         }
       };
     }
+  }
 
-  };
+  public static final Factory<Date> Dates = new DateFactory();
 
   static String asString(Object x) { return x == null ? null : x.toString(); }
 }

@@ -36,9 +36,6 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
 
   @Override public boolean isNA(long idx) { return xs.isNA(idx) || ys.isNA(idx); }
 
-  @Override
-  public String getString(long idx) { return isNA(idx) ? "(N/A)" : String.valueOf(get(idx)); }
-
   /**
    * Pretends to be a chunk of a column, for distributed calculations.
    * Has type, and is not materialized

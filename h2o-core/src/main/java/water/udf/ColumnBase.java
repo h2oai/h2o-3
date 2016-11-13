@@ -14,9 +14,6 @@ public abstract class ColumnBase<T> implements Column<T> {
 
   @Override public T apply(Long idx) { return get(idx); }
 
-  @Override
-  public String getString(long idx) { return isNA(idx) ? "(N/A)" : String.valueOf(apply(idx)); }
-
   @Override 
   public boolean isCompatibleWith(Column<?> ys) {
     boolean itis = new Frame(vec()).isCompatible(new Frame(ys.vec()));
