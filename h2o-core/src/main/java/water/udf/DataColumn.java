@@ -49,10 +49,6 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
     return vec.isNA(idx);
   }
 
-  public String getString(long idx) {
-    return isNA(idx) ? "(N/A)" : String.valueOf(apply(idx));
-  }
-
   public Vec vec() {
     return vec;
   }

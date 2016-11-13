@@ -74,9 +74,4 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
     }
     return sb.toString();
   }
-
-  @Override
-  public String getString(long idx) { 
-    return join(", ", apply(idx)); 
-  }
 }
