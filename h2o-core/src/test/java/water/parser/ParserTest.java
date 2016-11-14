@@ -11,6 +11,7 @@ import water.api.schemas3.ParseSetupV3;
 import water.fvec.*;
 import water.util.Log;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -880,6 +881,31 @@ public class ParserTest extends TestUtil {
       }
     } finally {
       f.delete();
+    }
+  }
+
+  @Test
+  public void testParserRespectsSpecifiedColNum() {
+    Vec fv = NFSFileVec.make(find_test_file("smalldata/jira/runit_pubdev_3590_unexpected_column.csv"));
+    Key fkey = Key.make("data4cols");
+    try {
+      Key[] keys = new Key[]{fv._key};
+      ParseSetup guessedSetup = ParseSetup.guessSetup(keys, false, 1);
+      Assert.assertEquals(guessedSetup._number_columns, 2);
+      Assert.assertEquals(0, guessedSetup._errs.length);
+      guessedSetup._column_names = new String[] {"c1", "c2", "c3", "c4"};
+      guessedSetup._column_types = new byte[] {Vec.T_NUM, Vec.T_STR, Vec.T_NUM, Vec.T_STR};
+      guessedSetup._number_columns = 4;
+      Frame f = ParseDataset.parse(fkey, keys, true, guessedSetup);
+      Assert.assertEquals(4, f.numCols());
+      // last two columns have values only on line 4, rest of the values are NAs
+      Assert.assertEquals(5, f.vec(2).at8(3));
+      Assert.assertEquals(5, f.vec(2).naCnt());
+      Assert.assertEquals("e", String.valueOf(f.vec(3).atStr(new BufferedString(), 3)));
+      Assert.assertEquals(5, f.vec(3).naCnt());
+    } finally {
+      fkey.remove();
+      fv.remove();
     }
   }
 

@@ -600,7 +600,7 @@ MAIN_LOOP:
 
   // Guess number of columns
   public static int guessNcols( String[] columnNames, String[][] data ) {
-    if( columnNames != null ) return data[0].length;
+    if( columnNames != null ) return columnNames.length;
     int longest = 0;            // Longest line
     for( String[] s : data ) if( s.length > longest ) longest = s.length;
     if( longest == data[0].length ) 
