@@ -231,7 +231,7 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
     val x: Column[lang.Double] = xsOnSphere
     val y: Column[lang.Double] = ysOnSphere
     val z: Column[lang.Double] = zsOnSphere
-    val r: Column[lang.Double] = foldingColumn[lang.Double]((xs:Iterable[lang.Double]) => xs.map(x => x*x).sum, x, y, z)
+    val r: Column[lang.Double] = foldingColumn[lang.Double](_.map(x => x*x).sum, x, y, z)
 
     for {i <- 0 until 100000} assert(math.abs(r(i * 10) - 1.0) < 0.0001)
 
@@ -260,7 +260,7 @@ class ScalaUdfTest extends TestBase with BeforeAndAfter with BeforeAndAfterAll {
 
     val source: Column[lang.String] = willDrop(Strings.newColumn(ss))
 
-    val split: Column[java.util.List[String]] = unfoldingColumn[String, String]((s:String) => s.split(","), source, 10)
+    val split: Column[java.util.List[String]] = unfoldingColumn[String, String](_.split(","), source, 10)
 
     assert(ss.size == split.size())
 
