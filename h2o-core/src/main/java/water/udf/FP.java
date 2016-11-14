@@ -1,7 +1,6 @@
 package water.udf;
 
 import java.util.*;
-import java.util.function.Consumer;
 
 /**
  * Elements of FP in Java
