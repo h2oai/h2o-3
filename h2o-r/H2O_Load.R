@@ -2,7 +2,9 @@
 SPENCER.ROOT.PATH <- "/Users/spencer/0xdata/"
 LUDI.ROOT.PATH <- "/Users/ludirehak/"
 ARNO.ROOT.PATH <- "/home/arno/"
-ROOT.PATH <- ARNO.ROOT.PATH
+AMY.ROOT.PATH <- "/Users/amy/"
+USER.PATHS <- c(SPENCER.ROOT.PATH, LUDI.ROOT.PATH, ARNO.ROOT.PATH, AMY.ROOT.PATH) 
+ROOT.PATH <- USER.PATHS [ sapply(USER.PATHS, dir.exists)]
 DEV.PATH  <- "h2o-3/h2o-r/h2o-package/R/"
 FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 
