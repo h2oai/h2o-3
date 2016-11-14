@@ -260,6 +260,9 @@ final public class H2O {
     /** -disable_web; disable web API port (used by Sparkling Water) */
     public boolean disable_web = false;
 
+    /** -context_path=jatty_context_path; the context path for jetty */
+    public String context_path = "";
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -456,6 +459,10 @@ final public class H2O {
       }
       else if (s.matches("disable_web")) {
         ARGS.disable_web = true;
+      }
+      else if (s.matches("context_path")) {
+        i = s.incrementAndCheck(i, args);
+        ARGS.context_path = args[i];
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);

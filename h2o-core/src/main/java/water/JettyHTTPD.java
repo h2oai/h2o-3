@@ -305,7 +305,13 @@ public class JettyHTTPD {
     ServletContextHandler context = new ServletContextHandler(
         ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS
     );
-    context.setContextPath("/");
+
+    if(null != H2O.ARGS.context_path && !H2O.ARGS.context_path.isEmpty()) {
+      context.setContextPath(H2O.ARGS.context_path);
+    } else {
+      context.setContextPath("/");
+    }
+
     context.addServlet(NpsBinServlet.class,   "/3/NodePersistentStorage.bin/*");
     context.addServlet(PostFileServlet.class, "/3/PostFile.bin");
     context.addServlet(PostFileServlet.class, "/3/PostFile");
