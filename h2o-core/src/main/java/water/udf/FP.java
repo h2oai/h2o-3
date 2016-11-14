@@ -14,7 +14,7 @@ public class FP {
   public final static Option<Object> None = new Option<Object>() {
     @Override
     public Iterator<Object> iterator() {
-      return Collections.emptyIterator();
+      return Collections.EMPTY_SET.iterator();
     }
     
     @SuppressWarnings("unchecked")
