@@ -1,15 +1,23 @@
-``ntrees``
-----------
+``pred_noise_bandwidth``
+------------------------
 
-- Available in: GBM, DRF
+- Available in: GBM
 - Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
 
-For tree-based algorithms, this option specifies the number of trees to build in the model. In tree-based models, each node in the tree corresponds to a feature field from a dataset. Except for the top node, each node has an incoming branch. Similarly, except for the bottom node (or leaf node), each node has a number of outgoing branches. A branch represents a possible value for the input field from the originating dataset. A leaf represents the value of the objective field, given all the values for each input field in the chain of branches that go from the root (top) to that leaf.
+Use this option to specify the bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree-node predictions. If this parameter is specified with a value greater than 0, then every leaf node prediction is randomly scaled by a number drawn from a normal distribution centered around 1 with a bandwidth given by this parameter. 
 
-This option defaults to 50 trees. 
+Refer to the following `wikipedia page <https://en.wikipedia.org/wiki/Noise_(signal_processing)>`_ for more information about signal processing noise. 
+
+This value must be >= to 0 and defaults to 0 (disabled).
+
+Related Parameters
+~~~~~~~~~~~~~~~~~~
+
+- none
+
 
 Example
 ~~~~~~~
@@ -19,7 +27,7 @@ Example
 
 	library(h2o)
 	h2o.init()
-	# import the titanic dataset: 
+	# import the titanic dataset:
 	# This dataset is used to classify whether a passenger will survive '1' or not '0'
 	# original dataset can be found at https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Titanic.html
 	titanic <-  h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
@@ -37,47 +45,42 @@ Example
 	train <- titanic.splits[[1]]
 	valid <- titanic.splits[[2]]
 
-	# try a range of ntrees: 
-	bin_num = c(20, 50, 80, 110, 140, 170, 200)
-	label = c("20", "50", "80", "110", "140", "170", "200")
-	lapply(seq_along(1:length(bin_num)),function(num) {
-	  titanic.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
-	                          ntrees = bin_num[num], nfolds = 5, seed = 1234)
-	  # print the value used and AUC score for train and valid
-	  print(paste(label[num], 'training score',  h2o.auc(titanic.gbm, train = TRUE)))
-	  print(paste(label[num], 'validation score',  h2o.auc(titanic.gbm, valid = TRUE)))
-	})
+	# try using the pred_noise_bandwidth parameter:
+	titanic_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
+	                   validation_frame = valid,
+	                   pred_noise_bandwidth = 0.1, seed = 1234)
 
+	# print the auc for your model
+	print(h2o.auc(titanic_gbm, valid = TRUE))
 
-	# Example of values to grid over for `ntrees`
-	hyper_params <- list( ntrees = c(20, 50, 80, 110, 140, 170, 200) )
+	# Example of values to grid over for `pred_noise_bandwidth`
+	# Note: this parameter is meant for much bigger datasets than the one in this example
+	hyper_params <- list( pred_noise_bandwidth = c(0, 0.1, 0.3) )
 
 	# this example uses cartesian grid search because the search space is small
 	# and we want to see the performance of all models. For a larger search space use
 	# random grid search instead: list(strategy = "RandomDiscrete")
 	grid <- h2o.grid(x = predictors, y = response, training_frame = train, validation_frame = valid,
 	                 algorithm = "gbm", grid_id = "titanic_grid", hyper_params = hyper_params,
-	                 search_criteria = list(strategy = "Cartesian"), seed = 1234)  
+	                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
 
 	## Sort the grid models by AUC
-	sortedGrid <- h2o.getGrid("titanic_grid", sort_by = "auc", decreasing = TRUE)    
+	sortedGrid <- h2o.getGrid("titanic_grid", sort_by = "auc", decreasing = TRUE)
 	sortedGrid
-
 
    .. code-block:: python
 
 	import h2o
 	from h2o.estimators.gbm import H2OGradientBoostingEstimator
 	h2o.init()
-	h2o.cluster().show_status()
 
-	# import the titanic dataset: 
+	# import the titanic dataset:
 	# This dataset is used to classify whether a passenger will survive '1' or not '0'
 	# original dataset can be found at https://stat.ethz.ch/R-manual/R-devel/library/datasets/html/Titanic.html
 	titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
 
 	# convert response column to a factor
-	titanic['survived'] = titanic['survived'].asfactor() 
+	titanic['survived'] = titanic['survived'].asfactor()
 
 	# set the predictor names and the response column name
 	# predictors include all columns except 'name' and the response column ("survived")
@@ -88,33 +91,33 @@ Example
 	# split into train and validation sets
 	train, valid = titanic.split_frame(ratios = [.8], seed = 1234)
 
-	# try a range of values for `ntrees`
-	tree_num = [20, 50, 80, 110, 140, 170, 200]
-	label = ["20", "50", "80", "110", "140", "170", "200"]
-	for key, num in enumerate(tree_num):
-	    # initialize the GBM estimator and set a seed for reproducibility
-	    titanic_gbm = H2OGradientBoostingEstimator(ntrees = num, seed = 1234)
-	    titanic_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
-	    # print the value and AUC score for train and validation sets
-	    print(label[key], 'training score', titanic_gbm.auc(train = True))
-	    print(label[key], 'validation score', titanic_gbm.auc(valid = True))
+	# try using the `pred_noise_bandwidth` parameter:
+	# initiliaze the estimator
+	titanic_gbm = H2OGradientBoostingEstimator(pred_noise_bandwidth = 0.1, seed = 1234)
+
+	# train the model
+	titanic_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+
+	# print the auc for the validation data
+	print(titanic_gbm.auc(valid = True))
 
 
-	# Example of values to grid over for `ntrees`
+	# Example of values to grid over for `pred_noise_bandwidth`
 	# import Grid Search
 	from h2o.grid.grid_search import H2OGridSearch
 
-	# select the values for `ntrees` to grid over
-	hyper_params = {'ntrees': [20, 50, 80, 110, 140, 170, 200]}
+	# select the values for `pred_noise_bandwidth` to grid over
+	# Note: this parameter is meant for much bigger datasets than the one in this example
+	hyper_params = {'pred_noise_bandwidth': [0.0, 0.1, 0.3]}
 
 	# this example uses cartesian grid search because the search space is small
 	# and we want to see the performance of all models. For a larger search space use
 	# random grid search instead: {'strategy': "RandomDiscrete"}
 	# initialize the GBM estimator
-	tree_gbm_2 = H2OGradientBoostingEstimator(seed = 1234)
+	titanic_gbm_2 = H2OGradientBoostingEstimator(seed = 1234)
 
 	# build grid search with previously made GBM and hyper parameters
-	grid = H2OGridSearch(model = tree_gbm_2, hyper_params = hyper_params,  
+	grid = H2OGridSearch(model = titanic_gbm_2, hyper_params = hyper_params,
 	                     search_criteria = {'strategy': "Cartesian"})
 
 	# train using the grid
