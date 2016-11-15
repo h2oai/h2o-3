@@ -6,6 +6,7 @@ import water.api.StreamWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -164,7 +165,9 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     writekv("h2o_version", H2O.ABV.projectVersion());
     writekv("mojo_version", mojoVersion());
     writekv("license", "Apache License Version 2.0");
+    writekv("algo", model._parms.algoName().toLowerCase());
     writekv("algorithm", model._parms.fullName());
+    writekv("endianness", ByteOrder.nativeOrder());
     writekv("category", model._output.getModelCategory());
     writekv("uuid", model.checksum());
     writekv("supervised", model._output.isSupervised());
