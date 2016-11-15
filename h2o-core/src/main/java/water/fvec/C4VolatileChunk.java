@@ -8,8 +8,14 @@ import water.util.UnsafeUtils;
  */
 public class C4VolatileChunk extends Chunk {
   static protected final long _NA = Integer.MIN_VALUE;
-  transient public final int [] _is;
+  transient private final int [] _is;
+
   C4VolatileChunk(int[] is ) { _is = is; _mem = new byte[0]; _start = -1; _len = is.length; }
+
+  public int[] getValuesForWriting(){
+    _vec.preWriting();
+    return _is;
+  }
   @Override protected final long at8_impl( int i ) {
     long res = _is[i];
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -82,4 +88,5 @@ public class C4VolatileChunk extends Chunk {
     }
     throw H2O.unimpl();
   }
+
 }
