@@ -175,6 +175,7 @@ public class Vec extends Keyed<Vec> {
   // bytesize) bounces through the DKV to fetch the latest copy of the Rollups
   // - lest a Vec.set changes the rollups and we return a stale copy.
   transient private Key _rollupStatsKey;
+  private boolean _volatile;
 
   /** Returns the categorical toString mapping array, or null if not an categorical column.
    *  Not a defensive clone (to expensive to clone; coding error to change the
@@ -529,21 +530,43 @@ public class Vec extends Keyed<Vec> {
 
   public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
 
-//  public Vec [] makeVolatileFloats(int n){
-//    Vec [] vecs = makeZeros(n);
-//    new MRTask(){
-//      @Override public void map(Chunk [] cs){
-//        int len = cs[0].len();
-//        for(int i = 0; i < cs.length; ++i) {
-//          cs[i].setVolatile(MemoryManager.malloc4f(len));
-//        }
-//      }
-//    }.doAll(vecs);
-//    return vecs;
-//  }
+  public Vec [] makeVolatileFloats(int n){
+    Vec [] vecs = makeZeros(n);
+    new MRTask(){
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for(int i = 0; i < cs.length; ++i) {
+          cs[i].setVolatile(MemoryManager.malloc4f(len));
+        }
+      }
+    }.doAll(vecs);
+    return vecs;
+  }
+
+  public Vec [] makeVolatileDoubles(int n){
+    Vec [] vecs = makeZeros(n);
+    for(Vec v:vecs) {
+      v._volatile = true;
+      DKV.put(v);
+    }
+    new MRTask(){
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for(int i = 0; i < cs.length; ++i) {
+          cs[i].setVolatile(MemoryManager.malloc8d(len));
+        }
+      }
+    }.doAll(vecs);
+
+    return vecs;
+  }
 
   public Vec [] makeVolatileInts(final int [] cons){
     Vec [] vecs = makeZeros(cons.length);
+    for(Vec v:vecs) {
+      v._volatile = true;
+      DKV.put(v);
+    }
     new MRTask(){
       @Override public void map(Chunk [] cs){
         int len = cs[0].len();
@@ -554,6 +577,7 @@ public class Vec extends Keyed<Vec> {
         }
       }
     }.doAll(vecs);
+
     return vecs;
   }
 
@@ -767,6 +791,8 @@ public class Vec extends Keyed<Vec> {
    *  establishing dataset identity.
    *  @return Checksum of the Vec's content  */
   @Override protected long checksum_impl() { return rollupStats()._checksum;}
+
+  public boolean isVolatile() {return _volatile;}
 
 
   private static class SetMutating extends TAtomic<RollupStats> {
