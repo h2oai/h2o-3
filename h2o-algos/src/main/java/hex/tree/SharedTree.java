@@ -283,9 +283,14 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
         // One Tree per class, each tree needs a NIDs.  For empty classes use a -1
         // NID signifying an empty regression tree.
-        for( int i=0; i<_nclass; i++ )
-          _train.add("NIDs_"+domain[i], _response.makeCon(_model._output._distribution==null ? 0 : (_model._output._distribution[i]==0?-1:0)));
-
+        String [] names = new String[_nclass];
+        final int [] cons = new int[_nclass];
+        for( int i=0; i<_nclass; i++ ) {
+          names[i] = "NIDs_" + domain[i];
+          cons[i] = (_model._output._distribution[i]==0?-1:0);
+        }
+        Vec [] vs = _response.makeVolatileInts(cons);
+        _train.add(names, vs);
         // Append number of trees participating in on-the-fly scoring
         _train.add("OUT_BAG_TREES", _response.makeZero());
 
