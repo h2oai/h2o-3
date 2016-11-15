@@ -83,18 +83,12 @@ class ModelBuildersHandler extends Handler {
       try {
         ModelMojoWriter mmw = (ModelMojoWriter) retClass.newInstance();
         return mmw.mojoVersion();
-      } catch (InstantiationException e) {
-        throw getMissingCtorException(retClass, e);
-      } catch (IllegalAccessException e) {
-        throw getMissingCtorException(retClass, e);
+      } catch (InstantiationException | IllegalAccessException e) {
+        throw new RuntimeException("MojoWriter class " + retClass + " must define a no-arg constructor.\n" + e);
       }
     } catch (NoSuchMethodException e) {
       throw new RuntimeException("Model class " + modelClass + " is expected to have method getMojo();");
     }
-  }
-
-  private RuntimeException getMissingCtorException(Class<?> retClass, Exception e) {
-    return new RuntimeException("MojoWriter class " + retClass + " must define a no-arg constructor.\n" + e);
   }
 }
 
