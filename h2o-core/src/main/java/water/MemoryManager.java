@@ -62,7 +62,6 @@ abstract public class MemoryManager {
   // A monotonically increasing total count memory allocated via MemoryManager.
   // Useful in tracking total memory consumed by algorithms - just ask for the
   // before & after amounts and diff them.
-  static final AtomicLong MEM_ALLOC = new AtomicLong();
 
   static void setMemGood() {
     if( CAN_ALLOC ) return;
@@ -221,7 +220,6 @@ abstract public class MemoryManager {
           try { _lock.wait(300*1000); } catch (InterruptedException ex) { }
         }
       }
-      MEM_ALLOC.addAndGet(bytes);
       try {
         switch( type ) {
         case  1: return new byte   [elems];
