@@ -226,9 +226,9 @@ subprojects {
     }
 
     if (project in ubenchProjects) {
-        //if (project.hasProperty("doUBench") && project.doUBench == "true") {
+        if (project.hasProperty("doUBench") && project.doUBench == "true") {
             apply from: "$rootDir/gradle/ubench.gradle"
-        //}
+        }
     }
 }
 

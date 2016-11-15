@@ -6,6 +6,7 @@ import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
@@ -26,15 +27,17 @@ import water.fvec.NewChunk;
  */
 @State(Scope.Thread)
 //@Fork(value = 1, jvmArgsAppend = "-XX:+PrintCompilation")
-@Fork(value = 1)
+@Fork(value = 1, jvmArgsAppend = "-Xmx12g")
 @Warmup(iterations = 5)
 @Measurement(iterations = 10)
 @BenchmarkMode(Mode.AverageTime)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 public class ChunkBench {
 
-  private int cols = 1000;
-  private int rows = 100000;
+  @Param({"1000", "10000"})
+  private int cols;
+  @Param({"1000", "100000"})
+  private int rows;
   private Chunk[] chunks;
   private double[][] raw;
 

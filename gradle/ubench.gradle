@@ -38,6 +38,7 @@ task uploadResultsToS3(type: water.build.tasks.S3UploadTask) {
     bucket = "ai.h2o.ubench"
     objectName = "${project.name}/$jmhResultFileName"
     file = jmh.resultsFile
+    enabled = project.hasProperty("doUploadUBenchResults") && project.doUploadUBenchResults == "true"
 }
 
 task ubench
