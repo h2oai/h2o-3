@@ -313,25 +313,25 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       cs = MemoryManager.malloc8d(_maxChunkSz);
       ws = MemoryManager.malloc8d(_maxChunkSz);
       // start computing
-      if(_unordered) {
-        for(DHistogram [] dhary:_lhcs)
-          for(DHistogram dh:dhary)
-            if(dh != null) dh.init();
-      } else if(!_shareHisto) {
-        for (int l = _leaf; l < _tree._len; l++) {
-          DTree.UndecidedNode udn = _tree.undecided(l);
-          DHistogram hs[] = _lhcs[l - _leaf];
-          int sCols[] = udn._scoreCols;
-          if (sCols != null) { // Sub-selecting just some columns?
-            for (int col : sCols) // For tracked cols
-              if (_colFrom <= col && col < _colTo) hs[col - _colFrom].init();
-          } else {                 // Else all columns
-            for (int j = 0; j < hs.length; j++) // For all columns
-              if (hs[j] != null)        // Tracking this column?
-                hs[j].init();
-          }
-        }
-      }
+//      if(_unordered) {
+//        for(DHistogram [] dhary:_lhcs)
+//          for(DHistogram dh:dhary)
+//            if(dh != null) dh.init();
+//      } else if(!_shareHisto) {
+//        for (int l = _leaf; l < _tree._len; l++) {
+//          DTree.UndecidedNode udn = _tree.undecided(l);
+//          DHistogram hs[] = _lhcs[l - _leaf];
+//          int sCols[] = udn._scoreCols;
+//          if (sCols != null) { // Sub-selecting just some columns?
+//            for (int col : sCols) // For tracked cols
+//              if (_colFrom <= col && col < _colTo) hs[col - _colFrom].init();
+//          } else {                 // Else all columns
+//            for (int j = 0; j < hs.length; j++) // For all columns
+//              if (hs[j] != null)        // Tracking this column?
+//                hs[j].init();
+//          }
+//        }
+//      }
       for(int i = _cidx.getAndIncrement(); i < _cids.length; i = _cidx.getAndIncrement())
         computeChunk(i);
     }
@@ -382,10 +382,8 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
               }
               DHistogram h = _lhcs[n][c - _colFrom];
               if (h == null) continue; // Ignore untracked columns in this split
-              if (_shareHisto) {
-                lh.resizeIfNeeded(h._nbin);
-                h.updateSharedHistosAndReset(lh, ws, cs, ys, rs, nh[n], n == 0 ? 0 : nh[n - 1]);
-              } else h.updateHisto(ws, cs, ys, rs, nh[n], n == 0 ? 0 : nh[n - 1]);
+              if(h._vals == null)h.init();
+              h.updateHisto(ws, cs, ys, rs, nh[n], n == 0 ? 0 : nh[n - 1]);
             }
           }
         }
