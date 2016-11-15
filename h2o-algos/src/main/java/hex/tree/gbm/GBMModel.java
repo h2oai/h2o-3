@@ -14,6 +14,7 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
     public double _col_sample_rate;
     public double _max_abs_leafnode_pred;
     public double _pred_noise_bandwidth;
+
     // The following are internal  params for performance tuning of histogram building with defaults based on benchmark data.
     public boolean _use_new_histo_tsk = true; // use the ScoreBuildHistogram2 instead of the originial one.
     public int _col_block_sz = 2; // columns block processed in one task. can be between 1 - Integer.Max (meaning no column-wise paralellization)

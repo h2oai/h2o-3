@@ -506,13 +506,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // sanity check
       for (int k = 0; k < _nclass; k++) {
-        if (ktrees[k]!=null){
-          Vec v = vec_nids(_train,k);
-          if(v.isVolatile()){
-            System.out.println("haha");
-          }
-          assert(vec_nids(_train,k).mean()==0);
-        }
+        if (ktrees[k]!=null) assert(vec_nids(_train,k).mean()==0);
       }
 
       // Grow the model by K-trees
