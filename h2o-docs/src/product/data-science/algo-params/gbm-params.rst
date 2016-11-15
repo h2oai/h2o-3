@@ -5,6 +5,7 @@ GBM Parameters
    :maxdepth: 2
 
    balance_classes
+   binomial_double_trees
    build_tree_one_node
    checkpoint
    class_sampling_factors
@@ -24,6 +25,7 @@ GBM Parameters
    max_hit_ratio_k
    min_rows
    min_split_improvement
+   mtries
    nbins
    nbins_cats
    nbins_top_level
