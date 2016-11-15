@@ -232,7 +232,8 @@ public final class DHistogram extends Iced {
   public double bins(int b) { return w(b); }
 
   // Big allocation of arrays
-  public void init() {
+  public void init() { init(null);}
+  public void init(double [] vals) {
     assert _vals == null;
     if (_histoType==SharedTreeModel.SharedTreeParameters.HistogramType.Random) {
       // every node makes the same split points
@@ -272,7 +273,7 @@ public final class DHistogram extends Iced {
     else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
     //otherwise AUTO/UniformAdaptive
     assert(_nbin>0);
-    _vals = MemoryManager.malloc8d(3*_nbin+3);
+    _vals = vals == null?MemoryManager.malloc8d(3*_nbin+3):vals;
   }
 
   // Add one row to a bin found via simple linear interpolation.
@@ -299,11 +300,11 @@ public final class DHistogram extends Iced {
   public void add( DHistogram dsh ) {
     assert _isInt == dsh._isInt && _nbin == dsh._nbin && _step == dsh._step &&
       _min == dsh._min && _maxEx == dsh._maxEx;
-    assert (_vals == null && dsh._vals == null) || (_vals != null && dsh._vals != null);
-    if( _vals == null ) return;
-    ArrayUtils.add(_vals,dsh._vals);
-    if( _min2 > dsh._min2  ) _min2 = dsh._min2;
-    if( _maxIn < dsh._maxIn) _maxIn = dsh._maxIn;
+    if( dsh._vals == null ) return;
+    if(_vals == null) init(dsh._vals);
+    else ArrayUtils.add(_vals, dsh._vals);
+    if (_min2 > dsh._min2) _min2 = dsh._min2;
+    if (_maxIn < dsh._maxIn) _maxIn = dsh._maxIn;
   }
 
   // Inclusive min & max
