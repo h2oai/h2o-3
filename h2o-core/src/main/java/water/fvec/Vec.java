@@ -528,6 +528,35 @@ public class Vec extends Keyed<Vec> {
   }
 
   public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
+
+//  public Vec [] makeVolatileFloats(int n){
+//    Vec [] vecs = makeZeros(n);
+//    new MRTask(){
+//      @Override public void map(Chunk [] cs){
+//        int len = cs[0].len();
+//        for(int i = 0; i < cs.length; ++i) {
+//          cs[i].setVolatile(MemoryManager.malloc4f(len));
+//        }
+//      }
+//    }.doAll(vecs);
+//    return vecs;
+//  }
+
+  public Vec [] makeVolatileInts(final int [] cons){
+    Vec [] vecs = makeZeros(cons.length);
+    new MRTask(){
+      @Override public void map(Chunk [] cs){
+        int len = cs[0].len();
+        for(int i = 0; i < cs.length; ++i) {
+          int [] vals = MemoryManager.malloc4(len);
+          Arrays.fill(vals,cons[i]);
+          cs[i].setVolatile(vals);
+        }
+      }
+    }.doAll(vecs);
+    return vecs;
+  }
+
   public Vec [] makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n, 0, domain, types);}
 
   // Make a bunch of compatible zero Vectors
