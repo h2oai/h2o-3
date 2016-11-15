@@ -4,16 +4,13 @@ import hex.genmodel.utils.DistributionFamily;
 import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinTask;
 import water.*;
-import water.fvec.C0DChunk;
-import water.fvec.Chunk;
-import water.fvec.Frame;
+import water.fvec.*;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import water.fvec.Vec;
 import water.util.Log;
 import water.util.VecUtils;
 
@@ -107,6 +104,49 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     //
     throw H2O.unimpl();
   }
+
+
+  // Pass 1: Score a prior partially-built tree model, and make new Node
+  // assignments to every row.  This involves pulling out the current
+  // assigned DecidedNode, "scoring" the row against that Node's decision
+  // criteria, and assigning the row to a new child UndecidedNode (and
+  // giving it an improved prediction).
+  // Pass 1: Score a prior partially-built tree model, and make new Node
+  // assignments to every row.  This involves pulling out the current
+  // assigned DecidedNode, "scoring" the row against that Node's decision
+  // criteria, and assigning the row to a new child UndecidedNode (and
+  // giving it an improved prediction).
+  protected int[] score_decide(Chunk chks[], int nnids[]) {
+    int [] res = nnids.clone();
+    for( int row=0; row<nnids.length; row++ ) { // Over all rows
+      int nid = nnids[row];          // Get Node to decide from
+      if( isDecidedRow(nid)) {               // already done
+        res[row] -= _leaf;
+        continue;
+      }
+      // Score row against current decisions & assign new split
+      boolean oob = isOOBRow(nid);
+      if( oob ) nid = oob2Nid(nid); // sampled away - we track the position in the tree
+      DTree.DecidedNode dn = _tree.decided(nid);
+      if( dn == null || dn._split == null ) { // Might have a leftover non-split
+        if( DTree.isRootNode(dn) ) { res[row] = nid - _leaf; continue; }
+        nid = dn._pid;             // Use the parent split decision then
+        int xnid = oob ? nid2Oob(nid) : nid;
+        nnids[row] = xnid;
+        res[row] = xnid - _leaf;
+        dn = _tree.decided(nid); // Parent steers us
+      }
+      assert !isDecidedRow(nid);
+      nid = dn.getChildNodeID(chks,row); // Move down the tree 1 level
+      if( !isDecidedRow(nid) ) {
+        if( oob ) nid = nid2Oob(nid); // Re-apply OOB encoding
+        nnids[row] = nid;
+      }
+      res[row] = nid-_leaf;
+    }
+    return res;
+  }
+
   @Override
   public void setupLocal() {
     addToPendingCount(1);
@@ -129,24 +169,22 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     new LocalMR(new MrFun(){
       // more or less copied from ScoreBuildHistogram
       private void map(int id, Chunk [] chks) {
-        final Chunk nids = chks[_nidIdx];
-        final Chunk weight = _weightIdx>=0 ? chks[_weightIdx] : new C0DChunk(1, chks[0].len());
+        final C4VolatileChunk nids = (C4VolatileChunk) chks[_nidIdx];
         // Pass 1: Score a prior partially-built tree model, and make new Node
         // assignments to every row.  This involves pulling out the current
         // assigned DecidedNode, "scoring" the row against that Node's decision
         // criteria, and assigning the row to a new child UndecidedNode (and
         // giving it an improved prediction).
-        int nnids[] = new int[nids._len];
-        if(_parms._unordered)
-          _nnids[id] = nnids;
+        int [] nnids;
         if( _leaf > 0)            // Prior pass exists?
-          score_decide(chks,nids,nnids);
-        else                      // Just flag all the NA rows
-          for( int row=0; row<nids._len; row++ ) {
-            if( weight.atd(row) == 0) continue;
-            if( isDecidedRow((int)nids.atd(row)) )
+          nnids = score_decide(chks,nids._is);
+        else {                     // Just flag all the NA rows
+          nnids = new int[nids._len];
+          for (int row = 0; row < nids._len; row++) {
+            if (isDecidedRow(nids._is[row]))
               nnids[row] = DECIDED_ROW;
           }
+        }
         if(!_parms._unordered) {
           // Pass 2: accumulate all rows, cols into histograms
           // Sort the rows by NID, so we visit all the same NIDs in a row
