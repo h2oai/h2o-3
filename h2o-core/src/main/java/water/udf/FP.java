@@ -3,7 +3,10 @@ package water.udf;
 import java.util.*;
 
 /**
- * Elements of FP in Java
+ * Elements of Functional Programming (known as FP) in Java
+ * 
+ * @see <a href="https://en.wikipedia.org/wiki/Functional_programming">Wikipedia</a>
+ * for details
  */
 public class FP {
   
