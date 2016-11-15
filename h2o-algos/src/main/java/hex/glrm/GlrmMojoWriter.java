@@ -12,8 +12,15 @@ import java.nio.ByteBuffer;
  */
 public class GlrmMojoWriter extends ModelMojoWriter<GLRMModel, GLRMModel.GLRMParameters, GLRMModel.GLRMOutput> {
 
+  @SuppressWarnings("unused")  // Called through reflection in ModelBuildersHandler
+  public GlrmMojoWriter() {}
+
   public GlrmMojoWriter(GLRMModel model) {
     super(model);
+  }
+
+  @Override public String mojoVersion() {
+    return "1.00";
   }
 
   @Override

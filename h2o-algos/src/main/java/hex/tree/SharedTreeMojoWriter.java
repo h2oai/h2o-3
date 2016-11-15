@@ -11,9 +11,13 @@ import java.io.IOException;
 /**
  * Shared Mojo definition file for DRF and GBM models.
  */
-public class SharedTreeMojoWriter<M extends SharedTreeModel<M, P, O>,
-                                  P extends SharedTreeModel.SharedTreeParameters,
-                                  O extends SharedTreeModel.SharedTreeOutput> extends ModelMojoWriter<M, P, O> {
+public abstract class SharedTreeMojoWriter<
+      M extends SharedTreeModel<M, P, O>,
+      P extends SharedTreeModel.SharedTreeParameters,
+      O extends SharedTreeModel.SharedTreeOutput
+    > extends ModelMojoWriter<M, P, O> {
+
+  public SharedTreeMojoWriter() {}
 
   public SharedTreeMojoWriter(M model) {
     super(model);

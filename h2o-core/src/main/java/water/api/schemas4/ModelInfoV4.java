@@ -20,4 +20,6 @@ public class ModelInfoV4 extends OutputSchemaV4<ModelBuilder, ModelInfoV4> {
   @API(help="Does the model support generation of MOJOs?")
   public boolean have_mojo;
 
+  @API(help="Mojo version number for this algorithm.")
+  public String mojo_version;
 }

@@ -1,7 +1,6 @@
 package hex.tree.gbm;
 
 import hex.Distribution;
-import hex.ModelMojoWriter;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
@@ -100,8 +99,8 @@ public class GBMModel extends SharedTreeModel<GBMModel, GBMModel.GBMParameters, 
 
 
   @Override
-  public ModelMojoWriter getMojo() {
-    return new GbmModelMojoWriter(this);
+  public GbmMojoWriter getMojo() {
+    return new GbmMojoWriter(this);
   }
 
 }
