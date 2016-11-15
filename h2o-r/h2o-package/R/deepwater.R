@@ -59,7 +59,7 @@
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
-#'        "AUTO", "deviance", "logloss", "MSE", "AUC", "lift_top_group", "r2", "misclassification",
+#'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
 #'        "mean_per_class_error". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.0.
@@ -127,7 +127,7 @@ h2o.deepwater <- function(x, y,
                           score_validation_samples  = 0, 
                           score_duty_cycle  = 0.1, 
                           stopping_rounds  = 5, 
-                          stopping_metric  = c("AUTO", "deviance", "logloss", "MSE", "AUC", "lift_top_group", "r2", "misclassification", "mean_per_class_error"), 
+                          stopping_metric  = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"), 
                           stopping_tolerance  = 0.0, 
                           max_runtime_secs  = 0.0, 
                           ignore_const_cols  = TRUE, 
