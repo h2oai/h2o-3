@@ -177,11 +177,12 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         // giving it an improved prediction).
         int [] nnids;
         if( _leaf > 0)            // Prior pass exists?
-          nnids = score_decide(chks,nids._is);
+          nnids = score_decide(chks,nids.getValuesForWriting());
         else {                     // Just flag all the NA rows
           nnids = new int[nids._len];
+          int [] is = nids.getValuesForWriting();
           for (int row = 0; row < nids._len; row++) {
-            if (isDecidedRow(nids._is[row]))
+            if (isDecidedRow(is[row]))
               nnids[row] = DECIDED_ROW;
           }
         }
@@ -287,7 +288,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     double [] cs = null;
     double [] ws = null;
-    double [] ys = null;
+    double [] _ys = null;
     AtomicInteger _cidx;
 
     ComputeHistoThread(DHistogram [][] hcs, int colFrom, int colTo, int maxChunkSz, boolean sharedHisto, boolean unordered, AtomicInteger cidx){
@@ -310,7 +311,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     @Override
     protected void map(int id){
       cs = MemoryManager.malloc8d(_maxChunkSz);
-      ys = MemoryManager.malloc8d(_maxChunkSz);
       ws = MemoryManager.malloc8d(_maxChunkSz);
       // start computing
       if(_unordered) {
@@ -358,7 +358,10 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       int [] nnids = _unordered?_nnids[id]:null;
       Chunk resChk = _fr2.vec(_workIdx).chunkForChunkIdx(cidx);
       int len = resChk._len;
-      resChk.getDoubles(ys, 0, len);
+      double [] ys;
+      if(resChk instanceof C8DVolatileChunk){
+        ys = ((C8DVolatileChunk)resChk).getValuesForWriting();
+      } else ys = resChk.getDoubles(_ys == null?MemoryManager.malloc8d(cs.length):_ys, 0, len);
       if(_weightIdx != -1)
         _fr2.vec(_weightIdx).chunkForChunkIdx(cidx).getDoubles(ws, 0, len);
       else
@@ -404,5 +407,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         if(dh == null) continue;
         dh.reducePrecision();
       }
+    // hack for now
+
   }
 }

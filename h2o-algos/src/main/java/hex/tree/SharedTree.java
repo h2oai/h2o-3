@@ -273,13 +273,16 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
         //   nclass Vecs of working/temp data
         //   nclass Vecs of NIDs, allowing 1 tree per class
 
-        // Current forest values: results of summing the prior M trees
-        for( int i=0; i<_nclass; i++ )
-          _train.add("Tree_"+domain[i], _response.makeZero());
 
-        // Initial work columns.  Set-before-use in the algos.
-        for( int i=0; i<_nclass; i++ )
-          _train.add("Work_"+domain[i], _response.makeZero());
+        String [] twNames = new String[_nclass*2];
+
+        for(int i = 0; i < _nclass; ++i){
+          twNames[i] = "Tree_" + domain[i];
+          twNames[_nclass+i] = "Work_" + domain[i];
+        }
+        Vec [] twVecs = _response.makeVolatileDoubles(_nclass*2);
+        _train.add(twNames,twVecs);
+
 
         // One Tree per class, each tree needs a NIDs.  For empty classes use a -1
         // NID signifying an empty regression tree.
