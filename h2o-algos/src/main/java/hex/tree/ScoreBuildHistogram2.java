@@ -302,7 +302,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     public ComputeHistoThread makeCopy() {
       for(DHistogram[] dr:_lhcs)
         for(DHistogram d:dr)
-          assert _shareHisto ||  d == null || d._w == null;
+          assert _shareHisto ||  d == null || d._vals == null;
       ComputeHistoThread res = new ComputeHistoThread(_shareHisto? _lhcs :ArrayUtils.deepClone(_lhcs),_colFrom,_colTo,_maxChunkSz,_shareHisto,_unordered,_cidx);
       return res;
     }
@@ -383,7 +383,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
               DHistogram h = _lhcs[n][c - _colFrom];
               if (h == null) continue; // Ignore untracked columns in this split
               if (_shareHisto) {
-                lh.resizeIfNeeded(h._w.length);
+                lh.resizeIfNeeded(h._nbin);
                 h.updateSharedHistosAndReset(lh, ws, cs, ys, rs, nh[n], n == 0 ? 0 : nh[n - 1]);
               } else h.updateHisto(ws, cs, ys, rs, nh[n], n == 0 ? 0 : nh[n - 1]);
             }

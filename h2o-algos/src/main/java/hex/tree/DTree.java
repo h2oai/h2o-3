@@ -233,7 +233,7 @@ public class DTree extends Iced {
         // unrelated column will not change the j'th columns min/max.
         // Tighten min/max based on actual observed data for tracked columns
         double min, maxEx;
-        if( h._w == null ) { // Not tracked this last pass?
+        if( h._vals == null ) { // Not tracked this last pass?
           min = h._min;         // Then no improvement over last go
           maxEx = h._maxEx;
         } else {                // Else pick up tighter observed bounds
@@ -256,7 +256,7 @@ public class DTree extends Iced {
           switch( _equal ) {
           case 0:  // Ranged split; know something about the left & right sides
             if (_nasplit != DHistogram.NASplitDir.NAvsREST) {
-              if (h._w[_bin] == 0)
+              if (h._vals[3*_bin] == 0)
                 throw H2O.unimpl(); // Here I should walk up & down same as split() above.
             }
             assert _bs==null : "splat not defined for BitSet splits";
@@ -402,7 +402,7 @@ public class DTree extends Iced {
       for( int i=0; i<nbins; i++ ) {
         for( DHistogram h : _hs ) {
           if( h == null ) continue;
-          if( i < h.nbins() && h._w != null ) {
+          if( i < h.nbins() && h._vals != null ) {
             p(sb, h.bins(i),cntW).append('/');
             p(sb, h.binAt(i),mmmW).append('/');
             p(sb, h.binAt(i+1),mmmW).append('/');
