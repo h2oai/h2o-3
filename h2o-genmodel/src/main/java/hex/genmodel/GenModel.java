@@ -157,6 +157,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
            (mc == ModelCategory.AutoEncoder)? nfeatures() : getPredsSize();
   }
 
+  /*
   @Override
   public float[] predict(double[] data, float[] preds) {
     return predict(data, preds, 0);
@@ -166,6 +167,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public float[] predict(double[] data, float[] preds, int maxIters) {
     throw new UnsupportedOperationException("Unsupported operation - use score0 method!");
   }
+  */
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -176,6 +178,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  the data array in the order needed by the model. Missing columns use NaN.
    *  </p>
    */
+  /*
   public double[] map(Map<String, Double> row, double data[]) {
     for (int i = 0; i < nfeatures(); i++) {
       Double d = row.get(_names[i]);
@@ -183,6 +186,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     }
     return data;
   }
+  */
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a
    *  re-used temp array, in the order the model expects.  The predictions are
@@ -195,6 +199,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     throw new UnsupportedOperationException("`offset` column is not supported");
   }
 
+  /*
   // Does the mapping lookup for every row, no allocation.
   // data and preds arrays are pre-allocated and can be re-used for every row.
   public double[] score0(Map<String, Double> row, double[] data, double[] preds) {
@@ -214,6 +219,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   public double[] score0(Map<String, Double> row) {
     return score0(row, new double[nfeatures()], new double[nclasses()+1]);
   }
+  */
 
   /**
    * Correct a given list of class probabilities produced as a prediction by a model back to prior class distribution
@@ -247,7 +253,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    *  @param threshold threshold for binary classifier
    * @return the best prediction (index of class, zero-based)
    */
-  public static int getPrediction(double[] preds, double[] priorClassDist, double data[], double threshold) {
+  public static int getPrediction(double[] preds, double[] priorClassDist, double[] data, double threshold) {
     if (preds.length == 3) {
       return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
     }
