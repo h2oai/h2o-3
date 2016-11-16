@@ -259,7 +259,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
      *
      * @return A graph of the forest.
      */
-    public SharedTreeGraph computeGraph(int treeToPrint) {
+    public SharedTreeGraph _computeGraph(int treeToPrint) {
         SharedTreeGraph g = new SharedTreeGraph();
 
         if (treeToPrint >= _ntrees) {
