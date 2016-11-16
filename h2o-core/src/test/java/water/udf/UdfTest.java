@@ -18,9 +18,9 @@ import static water.udf.DataColumns.*;
  * Test for UDF
  */
 public class UdfTest extends TestUtil {
-
+  
   @BeforeClass
-  static public void setup() {  stall_till_cloudsize(1); }
+  static public void setup() {  stall_till_cloudsize(5); }
 
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
