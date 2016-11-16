@@ -44,9 +44,9 @@ When setting parameters that continue to build on a previous model, such as ``nt
     - network_definition_file
     - nfolds
     - problem_type
-    - response_column
     - standardize
     - use_all_factor_levels
+    - y (response column)
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

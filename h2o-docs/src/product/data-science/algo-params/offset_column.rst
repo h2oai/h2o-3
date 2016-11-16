@@ -19,9 +19,9 @@ An offset is a per-row “bias value” that is used during model training. For 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `response_column <response_column.html>`__
+- `distribution <distribution.html>`__
 - `weights_column <weights_column.html>`__
-
+- `y <y.html>`__
 
 Example
 ~~~~~~~
