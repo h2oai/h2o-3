@@ -16,9 +16,27 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
-    protected int _ntrees;
-    public int _ntrees_per_class;
+
+    /**
+     * {@code _ntree_groups} is the number of trees requested by the user. For
+     * binomial case or regression this is also the total number of trees
+     * trained; however in multinomial case each requested "tree" is actually
+     * represented as a group of trees, with {@code _ntrees_per_group} trees
+     * in each group. Each of these individual trees assesses the likelihood
+     * that a given observation belongs to class A, B, C, etc. of a
+     * multiclass response.
+     */
+    protected int _ntree_groups;
+    protected int _ntrees_per_group;
+    /**
+     * Array of binary tree data, each tree being a {@code byte[]} array. The
+     * trees are logically grouped into a rectangular grid of dimensions
+     * {@link #_ntree_groups} x {@link #_ntrees_per_group}, however physically
+     * they are stored as 1-dimensional list, and an {@code [i, j]} logical
+     * tree is mapped to the index {@link #treeIndex(int, int)}.
+     */
     protected byte[][] _compressed_trees;
+
 
     /**
      * Highly efficient (critical path) tree scoring
@@ -116,8 +134,6 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     //------------------------------------------------------------------------------------------------------------------
 
     private void computeTreeGraph(SharedTreeSubgraph sg, SharedTreeNode node, byte[] tree, ByteBufferWrapper ab, int nclasses) {
-        GenmodelBitSet bs = null;
-
         int nodeType = ab.get1U();
         int colId = ab.get2();
         if (colId == 65535) {
@@ -139,16 +155,15 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         int equal = (nodeType & 12);  // Can be one of 0, 8, 12
         assert equal != 4;  // no longer supported
 
-        float splitVal = -1;
         if (!naVsRest) {
             // Extract value or group to split on
             if (equal == 0) {
                 // Standard float-compare test (either < or ==)
-                splitVal = ab.get4f();  // Get the float to compare
+                float splitVal = ab.get4f();  // Get the float to compare
                 node.setSplitValue(splitVal);
             } else {
                 // Bitset test
-                if (bs == null) bs = new GenmodelBitSet(0);
+                GenmodelBitSet bs = new GenmodelBitSet(0);
                 if (equal == 8)
                     bs.fill2(tree, ab);
                 else
@@ -262,8 +277,8 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     public SharedTreeGraph _computeGraph(int treeToPrint) {
         SharedTreeGraph g = new SharedTreeGraph();
 
-        if (treeToPrint >= _ntrees) {
-            throw new IllegalArgumentException("Tree " + treeToPrint + " does not exist (max " + _ntrees + ")");
+        if (treeToPrint >= _ntree_groups) {
+            throw new IllegalArgumentException("Tree " + treeToPrint + " does not exist (max " + _ntree_groups + ")");
         }
 
         int j;
@@ -274,8 +289,8 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             j = 0;
         }
 
-        for (; j < _ntrees; j++) {
-            for (int i = 0; i < _ntrees_per_class; i++) {
+        for (; j < _ntree_groups; j++) {
+            for (int i = 0; i < _ntrees_per_group; i++) {
                 String className = "";
                 {
                     String[] domainValues = getDomainValues(getResponseIdx());
@@ -283,7 +298,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
                         className = ", Class " + domainValues[i];
                     }
                 }
-                int itree = i * _ntrees + j;
+                int itree = treeIndex(j, i);
 
                 SharedTreeSubgraph sg = g.makeSubgraph("Tree " + j + className);
                 SharedTreeNode node = sg.makeRootNode();
@@ -311,15 +326,19 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     /**
      * Score all trees and fill in the `preds` array.
      */
-    protected void scoreAllTrees(double[] row, double[] preds, int nClassesToScore) {
+    protected void scoreAllTrees(double[] row, double[] preds) {
         java.util.Arrays.fill(preds, 0);
-        for (int i = 0; i < nClassesToScore; i++) {
+        for (int i = 0; i < _ntrees_per_group; i++) {
             int k = _nclasses == 1? 0 : i + 1;
-            for (int j = 0; j < _ntrees; j++) {
-                int itree = i * _ntrees + j;
+            for (int j = 0; j < _ntree_groups; j++) {
+                int itree = treeIndex(j, i);
                 preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses);
             }
         }
+    }
+
+    protected int treeIndex(int groupIndex, int classIndex) {
+        return classIndex * _ntree_groups + groupIndex;
     }
 
 }

@@ -23,20 +23,18 @@ public final class GbmMojoModel extends SharedTreeMojoModel {
      */
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {
+        super.scoreAllTrees(row, preds);
         if (_family == bernoulli || _family == modified_huber) {
-            super.scoreAllTrees(row, preds, 1);
             double f = preds[1] + _init_f + offset;
             preds[2] = _family.linkInv(f);
             preds[1] = 1.0 - preds[2];
         } else if (_family == multinomial) {
-            super.scoreAllTrees(row, preds, _nclasses == 2? 1 : _nclasses);
             if (_nclasses == 2) { // 1-tree optimization for binomial
                 preds[1] += _init_f + offset; //offset is not yet allowed, but added here to be future-proof
                 preds[2] = -preds[1];
             }
             GenModel.GBM_rescale(preds);
         } else { // Regression
-            super.scoreAllTrees(row, preds, 1);
             double f = preds[0] + _init_f + offset;
             preds[0] = _family.linkInv(f);
             return preds;
