@@ -1,10 +1,11 @@
-GBM Parameters
---------------
+Parameters
+----------
 
 .. toctree::
    :maxdepth: 2
 
    balance_classes
+   binomial_double_trees
    build_tree_one_node
    categorical_encoding
    checkpoint
@@ -30,6 +31,7 @@ GBM Parameters
    max_runtime_secs
    min_rows
    min_split_improvement
+   mtries
    model_id
    nbins
    nbins_cats
