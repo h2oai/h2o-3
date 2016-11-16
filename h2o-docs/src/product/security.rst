@@ -506,15 +506,7 @@ Example **ldap.conf**:
         bindPassword="0xdata"
         authenticationMethod="simple"
         forceBindingLogin="true"
-        userBaseDn="ou=users,dc=0xdata,dc=loc"
-        userRdnAttribute="uid"
-        userIdAttribute="uid"
-        userPasswordAttribute="userPassword"
-        userObjectClass="inetOrgPerson"
-        roleBaseDn="ou=groups,dc=0xdata,dc=loc"
-        roleNameAttribute="cn"
-        roleMemberAttribute="uniqueMember"
-        roleObjectClass="groupOfUniqueNames";
+        userBaseDn="ou=users,dc=0xdata,dc=loc";
     };
 
 See the `Jetty 8 LdapLoginModule
