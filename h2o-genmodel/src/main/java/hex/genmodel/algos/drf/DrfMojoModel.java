@@ -1,7 +1,6 @@
 package hex.genmodel.algos.drf;
 
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 
 
@@ -53,12 +52,4 @@ public final class DrfMojoModel extends SharedTreeMojoModel {
         return score0(row, 0.0, preds);
     }
 
-    /**
-     * Compute a graph of the forest.
-     *
-     * @return A graph of the forest.
-     */
-    public SharedTreeGraph computeGraph(int treeToPrint) {
-        return computeGraph(treeToPrint, _effective_n_classes);
-    }
 }

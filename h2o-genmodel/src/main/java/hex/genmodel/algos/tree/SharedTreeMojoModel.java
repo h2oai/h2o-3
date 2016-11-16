@@ -17,7 +17,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
     protected int _ntrees;
-    protected int _ntrees_per_class;
+    public int _ntrees_per_class;
     protected byte[][] _compressed_trees;
 
     /**
@@ -254,7 +254,12 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
     }
 
-    protected SharedTreeGraph computeGraph(int treeToPrint, int nClassesToScore) {
+    /**
+     * Compute a graph of the forest.
+     *
+     * @return A graph of the forest.
+     */
+    public SharedTreeGraph computeGraph(int treeToPrint) {
         SharedTreeGraph g = new SharedTreeGraph();
 
         if (treeToPrint >= _ntrees) {
@@ -270,7 +275,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
         }
 
         for (; j < _ntrees; j++) {
-            for (int i = 0; i < nClassesToScore; i++) {
+            for (int i = 0; i < _ntrees_per_class; i++) {
                 String className = "";
                 {
                     String[] domainValues = getDomainValues(getResponseIdx());
