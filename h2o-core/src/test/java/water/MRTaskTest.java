@@ -11,7 +11,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class MRTaskTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+  @BeforeClass static public void setup() { stall_till_cloudsize(5); }
 
   // test we reduce asap and do not produce more than tree_depth + P unreduced results
   @Test public void test_reductions(){
