@@ -76,6 +76,9 @@ class ConfusionMatrix(object):
         return [[int(self.table.cell_values[0][1]), int(self.table.cell_values[0][2])],
                 [int(self.table.cell_values[1][1]), int(self.table.cell_values[1][2])]]
 
+    def to_df(self):
+        return self.table.as_data_frame()
+
     @staticmethod
     def read_cms(cms=None, domains=None):
         assert_is_type(cms, [list])
