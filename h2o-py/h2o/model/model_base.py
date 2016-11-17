@@ -319,7 +319,7 @@ class ModelBase(backwards_compatible()):
         """Print a detailed summary of the model."""
         model = self._model_json["output"]
         if model["model_summary"]:
-            model["model_summary"].show()  # H2OTwoDimTable object
+            return model["model_summary"]
 
 
     def show(self):
