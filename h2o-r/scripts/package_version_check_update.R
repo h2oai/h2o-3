@@ -1,8 +1,9 @@
 options(echo=FALSE)
-#'
-#' Check that the required packages and R are installed and it's the correct version
-#'
 
+#' @title R version Check
+#' @description Check that running R release is at least in a version provided to arguments.
+#' @param major character, expected major version R release, default \code{"3"}.
+#' @param minor character, expected minor version R release, default \code{"2.1"}.
 r_check <- function(major="3", minor="2.1") {
   r_version <- as.package_version(R.version)
   req_version <- as.package_version(paste(major, minor, sep="."))
@@ -11,6 +12,8 @@ r_check <- function(major="3", minor="2.1") {
   TRUE
 }
 
+#' @title Packages Check and Update
+#' @description Confirm that packages are present in library, by default also must match to packages versions available in \code{repos}. If needed it will install (upgrade and downgrade) packages which are not matching.
 #' @param pkgs character vector of packages to check from \code{lib.loc} library vs. \code{repos}.
 #' @param lib.loc library location.
 #' @param check_only logical default TRUE.
@@ -19,6 +22,15 @@ r_check <- function(major="3", minor="2.1") {
 #' @param repos character R repositories where \code{pkgs} can be found, by default \emph{h2o-3 cran-dev} package repository.
 #' @param method character default \code{"curl"} passed to \link{install.packages}.
 #' @param quiet logical default FALSE passed to \link{install.packages}.
+#' @details When package update is to be done on clean R environment/library, or in case when we want to re-install every package, we can simply call \code{install.packages(pkgs, repos="http://s3.amazonaws.com/h2o-r/cran-dev")}.
+#' @section Adding dependencies
+#' When adding new R dependencies for \emph{h2o-3} project build just edit \code{h2o-3-DESCRIPTION.template} file and put them there, use \code{Additional_repositories} field for packages that are not present in our \code{repos}.
+#' @section Force update
+#' If some dependencies should be always re-installed, then provide them to \code{force_install} argument.
+#' This will ensure that latest version was installed, even if it has version numbers are already installed in \code{lib.loc}.
+#' @section Updating packages in \code{repos}
+#' When there is a need to update packages in \emph{upstream} \code{repos} it should be done by making new CRAN snapshop of all packages and replacing whole repository content.
+#' This is not technically required, but should be practiced to avoid issues between \emph{h2o-3} dependencies.
 pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", .libPaths()[1L])),
                               check_only=TRUE, strict_version_check=TRUE, force_install=NULL,
                               repos="http://s3.amazonaws.com/h2o-r/cran-dev",
@@ -57,7 +69,7 @@ pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", 
     install.packages(force_install, lib=lib.loc, repos=repos, method=method, quiet=quiet)
   }
   
-  # for strict_version_check=TRUE it will skip Version
+  # for strict_version_check=FALSE it will skip Version
   missing_installed_packages_version <- function(pkgs, ap, ip, strict_version_check) {
     ap <- ap[ap[,"Package"] %in% pkgs,]
     ip <- ip[ip[,"Package"] %in% pkgs,]
@@ -109,8 +121,16 @@ r_check()
 # check expected packages (/versions)
 check_only <- if (length(args <- commandArgs(trailingOnly=TRUE))) !args[[1]]=="update" else TRUE
 dcf.file <- "h2o-3-DESCRIPTION.template"
+if (!file.exists(dcf.file)) dcf.file <- "h2o-3-DESCRIPTION"
+if (!file.exists(dcf.file)) stop(sprintf("Cannot find h2o-3 R dependencies file, tried h2o-3-DESCRIPTION.template and h2o-3-DESCRIPTION, current wd: %s", getwd()))
+
 repos <- c(dcf.repos(dcf.file), "http://s3.amazonaws.com/h2o-r/cran-dev")
 pkgs <- dcf.packages(dcf.file)
+
+# assuming we want to have version match for recursive deps, exclude base R pkgs - AFTER cleanup in h2o-3-DESCRIPTION.template
+#pkgs <- package_dependencies(pkgs, db=available.packages(contrib.url(repos)), recursive=TRUE)
+pkgs <- setdiff(pkgs, c("R", rownames(installed.packages(lib.loc, priority="base"))))
+
 ## try on windows/macosx
 # options(install.packages.check.source="no")
 pkgs_check_update(pkgs, check_only=check_only, repos=repos) # force_install="data.table" # allows to be fully up to date
