@@ -1075,7 +1075,7 @@ final public class H2O {
       super((ARGS.nthreads <= 0) ? NUMCPUS : ARGS.nthreads,
             new FJWThrFact(cap),
             null,
-            p<MIN_HI_PRIORITY);
+            p>=MIN_HI_PRIORITY);
       _priority = p;
     }
     private H2OCountedCompleter poll2() { return (H2OCountedCompleter)pollSubmission(); }
