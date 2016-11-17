@@ -318,8 +318,9 @@ class ModelBase(backwards_compatible()):
     def summary(self):
         """Print a detailed summary of the model."""
         model = self._model_json["output"]
-        if model["model_summary"]:
+        if "model_summary" in model and model["model_summary"] is not None:
             return model["model_summary"]
+        print("No model summary for this model")
 
 
     def show(self):
