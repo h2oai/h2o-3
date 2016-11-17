@@ -54,7 +54,7 @@ public class CreateFrame extends Iced {
     if (categorical_fraction < 0 || categorical_fraction > 1) throw new IllegalArgumentException("Categorical fraction must be between 0 and 1.");
     if (categorical_fraction > 0 && factors <= 1) throw new IllegalArgumentException("Factors must be larger than 2 for categorical data.");
     if (response_factors < 1) throw new IllegalArgumentException("Response factors must be either 1 (real-valued response), or >=2 (factor levels).");
-    if (response_factors > 1024) throw new IllegalArgumentException("Response factors must be <= 1024.");
+    if (response_factors > (1<<20)) throw new IllegalArgumentException("Response factors must be <= " + (1<<20) + ".");
     if (factors > 1000000) throw new IllegalArgumentException("Number of factors must be <= 1,000,000).");
     if (cols <= 0 || rows <= 0) throw new IllegalArgumentException("Must have number of rows > 0 and columns > 0.");
 

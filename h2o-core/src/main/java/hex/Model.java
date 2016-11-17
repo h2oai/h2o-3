@@ -100,7 +100,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    */
   public abstract static class Parameters extends Iced<Parameters> {
     /** Maximal number of supported levels in response. */
-    public static final int MAX_SUPPORTED_LEVELS = 1000;
+    public static final int MAX_SUPPORTED_LEVELS = 1<<20;
 
     /** The short name, used in making Keys.  e.g. "GBM" */
     abstract public String algoName();
