@@ -20,7 +20,9 @@ ext {
 jmh {
     //
     // Include only selected tests for benchmarking
-    //include = 'water.DummyBench'
+    if (project.hasProperty('ubenchIncludeOnly')) {
+        include = project.ubenchIncludeOnly
+    }
     jmhVersion = '1.15'
     resultsFile = project.file("${project.buildDir}/reports/jmh/$jmhResultFileName")
     duplicateClassesStrategy = 'warn'
