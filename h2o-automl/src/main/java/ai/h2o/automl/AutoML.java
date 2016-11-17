@@ -43,6 +43,35 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
 
   private AutoMLBuildSpec buildSpec;     // all parameters for doing this AutoML build
   private Frame origTrainingFrame;       // untouched original training frame
+
+  public AutoMLBuildSpec getBuildSpec() {
+    return buildSpec;
+  }
+
+  public Frame getTrainingFrame() {
+    return trainingFrame;
+  }
+
+  public Frame getValidationFrame() {
+    return validationFrame;
+  }
+
+  public Vec getResponseVec() {
+    return responseVec;
+  }
+
+  public FrameMetadata getFrameMetadata() {
+    return frameMetadata;
+  }
+
+  public long getTimeRemaining() {
+    return timeRemaining;
+  }
+
+  public long getTotalTime() {
+    return totalTime;
+  }
+
   private Frame trainingFrame;           // munged training frame: can add and remove Vecs, but not mutate Vec data in place
   private Frame validationFrame;         // optional validation frame
   private Vec responseVec;
@@ -211,6 +240,11 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     frameMetadata = new FrameMetadata(trainingFrame,
             trainingFrame.find(buildSpec.input_spec.response_column),
             trainingFrame.toString()).computeFrameMetaPass1();
+
+    // TODO: update work
+    HashMap<String, Object> frameMeta = FrameMetadata.makeEmptyFrameMeta();
+    frameMetadata.fillSimpleMeta(frameMeta);
+
     isClassification = frameMetadata.isClassification();
 
     // step 2: build a fast RF
