@@ -502,6 +502,7 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     H2O.submitTask(this);
   }
 
+  protected boolean modifiesVolatileVecs(){return true;}
   /*
    * Set top-level fields and fire off remote work (if there is any to do) to 2 selected
    * child JVM/nodes. Setup for local work: fire off any global work to cloud neighbors; do all
@@ -512,6 +513,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       (_profile = new MRProfile(this))._localstart = System.currentTimeMillis();
     // Make a blockable Futures for both internal and user work to block on.
     _fs = new Futures();
+    if(modifiesVolatileVecs() && _fr != null){
+      for(Vec v:_fr.vecs())
+        if(v.isVolatile())v.preWriting();
+    }
     _topLocal = true;
     // Check for global vs local work
     int selfidx = selfidx();
