@@ -43,9 +43,9 @@ def error(msg):
 
 
 def get_list_of_modified_files(source_branch, target_branch):
-    print("> git merge-base %s %s" % (source_branch, target_branch))
+    print("> git merge-base origin/%s origin/%s" % (source_branch, target_branch))
     out1 = subprocess.check_output(["git", "merge-base", source_branch, target_branch]).decode().rstrip()
-    print("> git diff --name-only %s %s" % (source_branch, out1))
+    print("> git diff --name-only origin/%s %s" % (source_branch, out1))
     out2 = subprocess.check_output(["git", "diff", "--name-only", source_branch, out1]).decode().rstrip()
     return out2.split("\n")
 
