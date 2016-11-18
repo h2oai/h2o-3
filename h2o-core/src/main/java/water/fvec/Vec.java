@@ -543,6 +543,14 @@ public class Vec extends Keyed<Vec> {
     return vecs;
   }
 
+  /**
+   * Make a temporary work vec of double [] .
+   * Volatile vecs can only be used locally (chunks do not serialize) and are assumed to change frequently(MRTask call preWiting() by default).
+   * Chunks stores as C8DVolatileChunk - expose data directly as double [].
+   *
+   * @param n number of columns
+   * @return
+   */
   public Vec [] makeVolatileDoubles(int n){
     Vec [] vecs = makeZeros(n);
     for(Vec v:vecs) {
@@ -561,6 +569,14 @@ public class Vec extends Keyed<Vec> {
     return vecs;
   }
 
+  /**
+   * Make a temporary work vec of int [] .
+   * Volatile vecs can only be used locally (chunks do not serialize) and are assumed to change frequently(MRTask call preWiting() by default).
+   * Chunks stores as C4VolatileChunk - expose data directly as int [].
+   *
+   * @param cons integer array with constant used to fill each column.
+   * @return
+   */
   public Vec [] makeVolatileInts(final int [] cons){
     Vec [] vecs = makeZeros(cons.length);
     for(Vec v:vecs) {
@@ -871,6 +887,7 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
+  public transient int [] _cids; // local chunk ids
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index */
   public Key chunkKey(int cidx ) { return chunkKey(_key,cidx); }
