@@ -5,7 +5,7 @@ sys.path.insert(1,"../../")
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
-
+import pandas as pd
 
 def model_summary():
 
@@ -40,6 +40,10 @@ def model_summary():
 
     #Convert to dataframe and take out metrics of interest from the summary
     summary_df = summary.as_data_frame()
+    #Assert summary is datafarme after converting to dataframe
+    assert isinstance(summary_df,pd.DataFrame), "Incorrect type for model summary after transform to dataframe." \
+                                        "Expect `DataFrame` but got {0}".format(type(summary_df))
+    #Print to stdout for debugging
     for i in summary_df.columns.values:
         print(summary_df[i])
 
