@@ -1453,10 +1453,38 @@ response (or vice versa).
    :alt: Standardized Coefficient Magnitudes
 
 
-To learn how to make predictions, continue to the next section.
-
 --------------
 
+Partial Dependence Plots
+------------------------
+
+For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). 
+
+**Notes**: 
+ - PDPs are not currently supported for categorical features.
+ - The outputted PDPs include the top 10 most important features in a model. 
+
+Viewing Partial Dependence Plots
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. To view a PDP for a model, click the Score dropdown at the top of the Flow UI, then select Partial Dependence Plots. 
+
+ .. figure:: images/score_pdp_menu.png
+    :alt: Score > Partial Dependence Plot...
+
+2. Specify the Model and Frame that you want to use to retrieve the plots, and specify the number of bins (levels that PDP will compute). Note that more levels will result in slower speeds. Click **Compute** when you are done.
+
+ **Note**: Be sure to specify the dataframe that was used to build the selected model.
+
+ .. figure:: images/compute_pdp.png
+    :alt: Compute Partial Dependence
+
+3. After the job is finished, click **View** to see the plots.
+
+ .. figure:: images/pdp_summary.png
+    :alt: Partial Dependence Summary
+
+--------------
 
 Predictions
 -----------
