@@ -27,6 +27,7 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
   
   public FoldingColumn(Foldable<X, Y> f, Column<X>... columns) {
     super(columns.length == 0 ? null : columns[0]);
+    assert columns.length > 0 : "Require at least one column for folding";
     this.f = f;
     this.columns = columns;
     if (columns.length > 1) {
