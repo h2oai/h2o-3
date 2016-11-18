@@ -27,7 +27,6 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static com.google.common.collect.Range.greaterThan;
 import static hex.genmodel.algos.deepwater.DeepwaterMojoModel.createDeepWaterBackend;
 
 public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
@@ -47,7 +46,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Assert.assertTrue(backend != null);
   }
 
-  @Ignore
   @Test
   public void memoryLeakTest() {
     DeepWaterModel m = null;
@@ -84,9 +82,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._learning_rate = 1e-3;
       p._epochs = 3;
       p._train_samples_per_iteration = samples;
-      p._image_shape = new int[]{28,28};
-      p._network = DeepWaterParameters.Network.lenet;
-      p._problem_type = DeepWaterParameters.ProblemType.image;
       m = new DeepWater(p).trainModel().get();
       Assert.assertEquals(expected,m.iterations);
     } finally {
@@ -146,21 +141,18 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._epochs = epochs;
       p._channels = channels;
       p._problem_type = DeepWaterParameters.ProblemType.image;
-      p._image_shape = new int[]{28,28};
-      p._network = DeepWaterParameters.Network.lenet;
 
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
-      double accuracy = m._output._training_metrics.cm().accuracy();
-      Assert.assertTrue(accuracy + " < 0.9", accuracy > 0.3);
+      Assert.assertTrue(m._output._training_metrics.cm().accuracy()>0.9);
     } finally {
       if (m!=null) m.delete();
       if (tr!=null) tr.remove();
     }
   }
 
-  @Ignore @Test public void convergenceInceptionColor() { checkConvergence(3, DeepWaterParameters.Network.inception_bn, 30); }
-  @Ignore @Test public void convergenceInceptionGrayScale() { checkConvergence(1, DeepWaterParameters.Network.inception_bn, 30); }
+  @Test public void convergenceInceptionColor() { checkConvergence(3, DeepWaterParameters.Network.inception_bn, 30); }
+  @Test public void convergenceInceptionGrayScale() { checkConvergence(1, DeepWaterParameters.Network.inception_bn, 30); }
 
   @Ignore //too slow
   @Test public void convergenceGoogleNetColor() { checkConvergence(3, DeepWaterParameters.Network.googlenet, 150); }
@@ -232,9 +224,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         p._epochs = 1; //for some reason, can't use 0 epochs
         p._channels = 1;
         p._train_samples_per_iteration = 0;
-        p._image_shape = new int[]{28,28};
-        p._network = DeepWaterParameters.Network.lenet;
-        p._problem_type = DeepWaterParameters.ProblemType.image;
         m = new DeepWater(p).trainModel().get();
         Log.info(m);
         values[i] = ((ModelMetricsMultinomial)m._output._training_metrics).logloss();
@@ -255,11 +244,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore @Test public void settingModelInfoAlexnet() { settingModelInfo(DeepWaterParameters.Network.alexnet); }
-  @Ignore @Test public void settingModelInfoLenet() { settingModelInfo(DeepWaterParameters.Network.lenet); }
-  @Ignore @Test public void settingModelInfoVGG() { settingModelInfo(DeepWaterParameters.Network.vgg); }
-  @Ignore @Test public void settingModelInfoInception() { settingModelInfo(DeepWaterParameters.Network.inception_bn); }
-  @Ignore @Test public void settingModelInfoResnet() { settingModelInfo(DeepWaterParameters.Network.resnet); }
+  @Test public void settingModelInfoAlexnet() { settingModelInfo(DeepWaterParameters.Network.alexnet); }
+  @Test public void settingModelInfoLenet() { settingModelInfo(DeepWaterParameters.Network.lenet); }
+  @Test public void settingModelInfoVGG() { settingModelInfo(DeepWaterParameters.Network.vgg); }
+  @Test public void settingModelInfoInception() { settingModelInfo(DeepWaterParameters.Network.inception_bn); }
+  @Test public void settingModelInfoResnet() { settingModelInfo(DeepWaterParameters.Network.resnet); }
 
   void settingModelInfo(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
@@ -351,12 +340,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       deepWaterLoadSaveTest(network);
     }
   }
-
-  @Ignore @Test public void deepWaterLoadSaveTestAlexnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.alexnet); }
+  @Test public void deepWaterLoadSaveTestAlexnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.alexnet); }
   @Test public void deepWaterLoadSaveTestLenet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.lenet); }
-  @Ignore @Test public void deepWaterLoadSaveTestVGG() { deepWaterLoadSaveTest(DeepWaterParameters.Network.vgg); }
-  @Ignore @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(DeepWaterParameters.Network.inception_bn); }
-  @Ignore @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.resnet); }
+  @Test public void deepWaterLoadSaveTestVGG() { deepWaterLoadSaveTest(DeepWaterParameters.Network.vgg); }
+  @Test public void deepWaterLoadSaveTestInception() { deepWaterLoadSaveTest(DeepWaterParameters.Network.inception_bn); }
+  @Test public void deepWaterLoadSaveTestResnet() { deepWaterLoadSaveTest(DeepWaterParameters.Network.resnet); }
 
   void deepWaterLoadSaveTest(DeepWaterParameters.Network network) {
     DeepWaterModel m = null;
@@ -372,9 +360,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._seed = 1234;
       p._score_training_samples = 0;
       p._train_samples_per_iteration = p._mini_batch_size;
-      p._problem_type = DeepWaterParameters.ProblemType.image;
-      p._image_shape = new int[]{28,28};
-      p._network = DeepWaterParameters.Network.lenet;
       p._problem_type = DeepWaterParameters.ProblemType.image;
       m = new DeepWater(p).trainModel().get();
       Log.info(m);
@@ -415,9 +400,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._network = DeepWaterParameters.Network.lenet;
       p._nfolds = 3;
       p._epochs = 2;
-      p._image_shape = new int[]{28,28};
-      p._problem_type = DeepWaterParameters.ProblemType.image;
-
       m = new DeepWater(p).trainModel().get();
       preds = m.score(p._train.get());
       Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
@@ -470,11 +452,11 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore @Test public void restoreStateAlexnet() { restoreState(DeepWaterParameters.Network.alexnet); }
+  @Test public void restoreStateAlexnet() { restoreState(DeepWaterParameters.Network.alexnet); }
   @Test public void restoreStateLenet() { restoreState(DeepWaterParameters.Network.lenet); }
-  @Ignore @Test public void restoreStateVGG() { restoreState(DeepWaterParameters.Network.vgg); }
-  @Ignore @Test public void restoreStateInception() { restoreState(DeepWaterParameters.Network.inception_bn); }
-  @Ignore @Test public void restoreStateResnet() { restoreState(DeepWaterParameters.Network.resnet); }
+  @Test public void restoreStateVGG() { restoreState(DeepWaterParameters.Network.vgg); }
+  @Test public void restoreStateInception() { restoreState(DeepWaterParameters.Network.inception_bn); }
+  @Test public void restoreStateResnet() { restoreState(DeepWaterParameters.Network.resnet); }
 
   public void restoreState(DeepWaterParameters.Network network) {
     DeepWaterModel m1 = null;
@@ -644,7 +626,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 //    fs.blockForPending();
 //  }
 
-  @Ignore
   @Test
   public void prostateClassification() {
     Frame tr = null;
@@ -672,7 +653,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void prostateRegression() {
     Frame tr = null;
@@ -704,7 +684,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void imageURLs() {
     Frame tr = null;
@@ -732,7 +711,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void categorical() {
     Frame tr = null;
@@ -797,7 +775,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void MNISTSparse() {
     Frame tr = null;
@@ -836,7 +813,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void MNISTHinton() {
     Frame tr = null;
@@ -880,7 +856,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void Airlines() {
     Frame tr = null;
@@ -916,95 +891,93 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       if (splits!=null) for(Frame s: splits) s.remove();
     }
   }
-//
-//  private void MOJOTest(Model.Parameters.CategoricalEncodingScheme categoricalEncodingScheme, boolean enumCols, boolean standardize) {
-//    Frame tr = null;
-//    Frame tr2 = null;
-//    Frame tr3 = null;
-//    DeepWaterModel m = null;
-//    Frame preds = null;
-//    Frame preds2 = null;
-//    Frame preds3 = null;
-//    try {
-//      DeepWaterParameters p = new DeepWaterParameters();
-//      tr = parse_test_file("smalldata/prostate/prostate.csv");
-//
-//      p._response_column = "CAPSULE";
-//      for (String col : new String[]{p._response_column}) {
-//        Vec v = tr.remove(col);
-//        tr.add(col, v.toCategoricalVec());
-//        v.remove();
-//      }
-//      if (enumCols) {
-//        for (String col : new String[]{"RACE", "DPROS", "DCAPS", "GLEASON"}) {
-//          Vec v = tr.remove(col);
-//          tr.add(col, v.toCategoricalVec());
-//          v.remove();
-//        }
-//      }
-//      DKV.put(tr);
-//      p._train = tr._key;
-//      p._ignored_columns = new String[]{"ID"};
-//      p._backend = getBackend();
-//      p._seed = 12345;
-//      p._epochs = 5;
-//      p._categorical_encoding = categoricalEncodingScheme;
-//      p._standardize = standardize;
-//      p._hidden = new int[]{50,50};
-//      m = new DeepWater(p).trainModel().get();
-//
-//      // Score original training frame
-//      preds = m.score(tr);
-//      Assert.assertTrue(m.testJavaScoring(tr,preds,1e-3));
-//      double auc = ModelMetricsBinomial.make(preds.vec(2), tr.vec(p._response_column)).auc();
-//      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
-//      if (standardize)
-//        Assert.assertTrue(auc > 0.7);
-//
-//      // Score all numeric frame (cols in the right order) - do the transformation to enum on the fly
-//      tr2 = parse_test_file("smalldata/prostate/prostate.csv");
-//      for (String col : new String[]{p._response_column}) {
-//        tr2.add(col, tr2.remove(col)); //DO NOT CONVERT TO ENUM
-//      }
-//      if (enumCols) {
-//        for (String col : new String[]{"RACE", "DPROS", "DCAPS", "GLEASON"}) {
-//          tr2.add(col, tr2.remove(col)); //DO NOT CONVERT TO ENUM
-//        }
-//      }
-//      preds2 = m.score(tr2);
-//      auc = ModelMetricsBinomial.make(preds2.vec(2), tr2.vec(p._response_column)).auc();
-//      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
-//      if (standardize)
-//        Assert.assertTrue(auc > 0.7);
-//
-//      // Score all numeric frame (cols in the wrong order) - do the transformation to enum on the fly
-//      tr3 = parse_test_file("smalldata/prostate/prostate.csv");
-//      preds3 = m.score(tr3);
-//      auc = ModelMetricsBinomial.make(preds3.vec(2), tr3.vec(p._response_column)).auc();
-//      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
-//      if (standardize)
-//        Assert.assertTrue(auc > 0.7);
-//
-//    } finally {
-//      if (tr!=null) tr.remove();
-//      if (tr2!=null) tr2.remove();
-//      if (tr3!=null) tr3.remove();
-//      if (m!=null) m.remove();
-//      if (preds!=null) preds.remove();
-//      if (preds2!=null) preds2.remove();
-//      if (preds3!=null) preds3.remove();
-//    }
-//  }
-//
-//  @Test public void MOJOTestNumericNonStandardized() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, false);}
-//  @Test public void MOJOTestNumeric() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, true);}
-//  @Test public void MOJOTestCatInternal() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotInternal, true, true);}
-//  @Test public void MOJOTestCatExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
-//  @Test public void MOJOTestCatEigen() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Eigen, true, true);}
-//  @Test public void MOJOTestCatBinary() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Binary, true, true);}
 
+  private void MOJOTest(Model.Parameters.CategoricalEncodingScheme categoricalEncodingScheme, boolean enumCols, boolean standardize) {
+    Frame tr = null;
+    Frame tr2 = null;
+    Frame tr3 = null;
+    DeepWaterModel m = null;
+    Frame preds = null;
+    Frame preds2 = null;
+    Frame preds3 = null;
+    try {
+      DeepWaterParameters p = new DeepWaterParameters();
+      tr = parse_test_file("smalldata/prostate/prostate.csv");
 
-  @Ignore
+      p._response_column = "CAPSULE";
+      for (String col : new String[]{p._response_column}) {
+        Vec v = tr.remove(col);
+        tr.add(col, v.toCategoricalVec());
+        v.remove();
+      }
+      if (enumCols) {
+        for (String col : new String[]{"RACE", "DPROS", "DCAPS", "GLEASON"}) {
+          Vec v = tr.remove(col);
+          tr.add(col, v.toCategoricalVec());
+          v.remove();
+        }
+      }
+      DKV.put(tr);
+      p._train = tr._key;
+      p._ignored_columns = new String[]{"ID"};
+      p._backend = getBackend();
+      p._seed = 12345;
+      p._epochs = 5;
+      p._categorical_encoding = categoricalEncodingScheme;
+      p._standardize = standardize;
+      p._hidden = new int[]{50,50};
+      m = new DeepWater(p).trainModel().get();
+
+      // Score original training frame
+      preds = m.score(tr);
+      Assert.assertTrue(m.testJavaScoring(tr,preds,1e-3));
+      double auc = ModelMetricsBinomial.make(preds.vec(2), tr.vec(p._response_column)).auc();
+      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
+      if (standardize)
+        Assert.assertTrue(auc > 0.7);
+
+      // Score all numeric frame (cols in the right order) - do the transformation to enum on the fly
+      tr2 = parse_test_file("smalldata/prostate/prostate.csv");
+      for (String col : new String[]{p._response_column}) {
+        tr2.add(col, tr2.remove(col)); //DO NOT CONVERT TO ENUM
+      }
+      if (enumCols) {
+        for (String col : new String[]{"RACE", "DPROS", "DCAPS", "GLEASON"}) {
+          tr2.add(col, tr2.remove(col)); //DO NOT CONVERT TO ENUM
+        }
+      }
+      preds2 = m.score(tr2);
+      auc = ModelMetricsBinomial.make(preds2.vec(2), tr2.vec(p._response_column)).auc();
+      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
+      if (standardize)
+        Assert.assertTrue(auc > 0.7);
+
+      // Score all numeric frame (cols in the wrong order) - do the transformation to enum on the fly
+      tr3 = parse_test_file("smalldata/prostate/prostate.csv");
+      preds3 = m.score(tr3);
+      auc = ModelMetricsBinomial.make(preds3.vec(2), tr3.vec(p._response_column)).auc();
+      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
+      if (standardize)
+        Assert.assertTrue(auc > 0.7);
+
+    } finally {
+      if (tr!=null) tr.remove();
+      if (tr2!=null) tr2.remove();
+      if (tr3!=null) tr3.remove();
+      if (m!=null) m.remove();
+      if (preds!=null) preds.remove();
+      if (preds2!=null) preds2.remove();
+      if (preds3!=null) preds3.remove();
+    }
+  }
+
+  @Test public void MOJOTestNumericNonStandardized() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, false);}
+  @Test public void MOJOTestNumeric() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, true);}
+  @Test public void MOJOTestCatInternal() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotInternal, true, true);}
+  @Test public void MOJOTestCatExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
+  @Test public void MOJOTestCatEigen() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Eigen, true, true);}
+  @Test public void MOJOTestCatBinary() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Binary, true, true);}
+
   @Test
   public void testCheckpointForwards() {
     Frame tfr = null;
@@ -1022,8 +995,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._seed = 0xdecaf;
       p._stopping_rounds = 0;
 
-      p._network = DeepWaterParameters.Network.lenet;
-
       dl = new DeepWater(p).trainModel().get();
 
       DeepWaterParameters parms2 = (DeepWaterParameters) p.clone();
@@ -1038,7 +1009,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-  @Ignore
   @Test
   public void testCheckpointBackwards() {
     Frame tfr = null;
@@ -1073,10 +1043,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-
-  @Ignore
-  @Test
-  public void checkpointReporting() {
+  @Test public void checkpointReporting() {
     Scope.enter();
     Frame frame = null;
     try {
@@ -1097,7 +1064,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._score_interval = 0;
       p._overwrite_with_best_model = false;
       p._seed = 1234;
-      p._network = DeepWaterParameters.Network.lenet;
 
       // Convert response 'C785' to categorical (digits 1 to 10)
       int ci = frame.find("CAPSULE");
@@ -1187,8 +1153,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
   }
 
-
-  @Ignore
   @Test
   public void testNumericalExplosion() {
     for (boolean ae : new boolean[]{
@@ -1284,8 +1248,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Assert.assertEquals(38, coded.get(0).length);
   }
 
-  // FIXME: this test contains local paths
-  @Ignore
   @Test
   public void tweetsToArrayTest() throws IOException {
     ArrayList<String> texts = new ArrayList<>();
@@ -1324,7 +1286,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   }
 
 
-  // FIXME: dead code?
   /*
   public ArrayList<int[]> texts2arrayOnehot(ArrayList<String> texts) {
     int maxlen = 0;
@@ -1364,7 +1325,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   }
   */
 
-  @Ignore
   @Test
   public void testCheckpointOverwriteWithBestModel() {
     Frame tfr = null;
@@ -1413,7 +1373,6 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       if (valid != null) valid.delete();
     }
   }
-
 
   // Check that the restarted model honors the previous model as a best model so far
   @Test
