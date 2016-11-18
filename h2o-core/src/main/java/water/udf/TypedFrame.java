@@ -4,6 +4,8 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.udf.specialized.Enums;
+
 import static water.udf.DataColumns.*;
 
 import java.io.IOException;
@@ -12,29 +14,38 @@ import java.io.IOException;
  * Single column frame that knows its data type
  */
 public class TypedFrame<X> extends Frame {
-  private final Factory<X> factory;
+  private final ColumnFactory<X> factory;
   private final long len;
   private final Function<Long, X> function;
-  private Column<X> column;  
+  private Column<X> column;
 
-  public TypedFrame(Factory<X> factory, long len, Function<Long, X> function) {
+  /**
+   * deserialization :(
+   */
+  public TypedFrame() {
+    factory = null;
+    len = -1;
+    function = null;
+  }
+  
+  public TypedFrame(BaseFactory<X> factory, long len, Function<Long, X> function) {
     super();
     this.factory = factory;
     this.len = len;
     this.function = function;
   }
 
-  public static <X> TypedFrame<X> forColumn(final Factory<X> factory, final Column<X> column) {
+  public static <X> TypedFrame<X> forColumn(final BaseFactory<X> factory, final Column<X> column) {
     return new TypedFrame<X>(factory, column.size(), column) {
       @Override protected Vec initVec() { return factory.initVec(column); }
     };
   }
   
-  final static class EnumFrame extends TypedFrame<Integer> {
+  public final static class EnumFrame extends TypedFrame<Integer> {
     private final String[] domain;
     
     public EnumFrame(long len, Function<Long, Integer> function, String[] domain) {
-      super(Enums(domain), len, function);
+      super(Enums.enums(domain), len, function);
       this.domain = domain;
     }
   }
