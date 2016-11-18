@@ -10,19 +10,26 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import static water.udf.DataColumns.Enums;
-import static water.udf.DataColumns.Factory;
+import static water.udf.specialized.Enums.enums;
 
 /**
  * Single column frame that knows its data type
  */
 public class UnfoldingFrame<X> extends Frame {
-  protected final Factory<X> factory;
+  protected final ColumnFactory<X> factory;
   protected final long len;
   protected final Function<Long, List<X>> function;
   protected final int width;
 
-  public UnfoldingFrame(Factory<X> factory, long len, Function<Long, List<X>> function, int width) {
+  /** for deserialization (sigh) */
+  public UnfoldingFrame() {
+    factory = null;
+    len = -1;
+    function = null;
+    width = -1;
+  }
+  
+  public UnfoldingFrame(ColumnFactory<X> factory, long len, Function<Long, List<X>> function, int width) {
     super();
     this.factory = factory;
     this.len = len;
@@ -32,7 +39,7 @@ public class UnfoldingFrame<X> extends Frame {
     assert width >= 0: "Multicolumn frame must have a nonnegative width, but found"+width;
   }
 
-  public static <X> UnfoldingFrame<X> UnfoldingFrame(final Factory<X> factory, final Column<List<X>> master, int width) {
+  public static <X> UnfoldingFrame<X> unfoldingFrame(final ColumnFactory<X> factory, final Column<List<X>> master, int width) {
     return new UnfoldingFrame<X>(factory, master.size(), master, width) {
       @Override protected Vec initVec() {
         Vec v0 = Vec.makeZero(this.len, factory.typeCode());
@@ -45,8 +52,11 @@ public class UnfoldingFrame<X> extends Frame {
   static class UnfoldingEnumFrame extends UnfoldingFrame<Integer> {
     private final String[] domain;
     
+    /** for deserialization */
+    public UnfoldingEnumFrame() {domain = null; }
+    
     public UnfoldingEnumFrame(long length, Function<Long, List<Integer>> function, int width, String[] domain) {
-      super(Enums(domain), length, function, width);
+      super(enums(domain), length, function, width);
       this.domain = domain;
       assert domain != null : "An enum must have a domain";
       assert domain.length > 0 : "Domain cannot be empty";
@@ -96,7 +106,7 @@ public class UnfoldingFrame<X> extends Frame {
 
   public List<DataColumn<X>> materialize() throws IOException {
     List<Vec> vecs = makeVecs();
-    List<DataColumn<X>> result = new ArrayList<DataColumn<X>>(width);
+    List<DataColumn<X>> result = new ArrayList<>(width);
 
     for (Vec vec : vecs) result.add(factory.newColumn(vec));
     return result;

@@ -22,6 +22,14 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
 
   @Override public int rowLayout() { return column.rowLayout(); }
 
+  /**
+   * deserialization :(
+   */
+  public UnfoldingColumn() {
+    f = null;
+    column = null;
+  }
+  
   public UnfoldingColumn(Unfoldable<X, Y> f, Column<X> column) {
     super(column);
     this.f = f;
@@ -73,5 +81,25 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
       sb.append(x);
     }
     return sb.toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o instanceof UnfoldingColumn) {
+      UnfoldingColumn<?, ?> that = (UnfoldingColumn<?, ?>) o;
+
+      return (requiredSize == that.requiredSize) &&
+// comparing functions is a challenge          f.equals(that.f) &&
+          column.equals(that.column);
+    } else return false;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = 0; //f.hashCode();
+    result = 31 * result + column.hashCode();
+    result = 31 * result + requiredSize;
+    return result;
   }
 }

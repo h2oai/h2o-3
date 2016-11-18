@@ -2,6 +2,8 @@ package water.udf
 
 import java.lang
 import java.util.Date
+import water.udf.specialized.{Strings, Enums, Dates, Doubles}
+
 import collection.JavaConverters._
 
 import water.udf.DataColumns._
@@ -11,7 +13,7 @@ import water.udf.DataColumns._
   */
 object MoreColumns extends DataColumns {
 
-  trait ScalaFactory[JavaType,ScalaType] { self: Factory[JavaType] =>
+  trait ScalaFactory[JavaType,ScalaType] { self: BaseFactory[JavaType] =>
 
     import collection.JavaConverters._
 
@@ -66,25 +68,25 @@ object MoreColumns extends DataColumns {
     }
   }
   
-  val Doubles = new DoubleFactory with ScalaFactory[java.lang.Double, Double] {
+  val Doubles = new Doubles with ScalaFactory[java.lang.Double, Double] {
     def newColumn(size: Long, f: Long => Double) = super.newColumn(size, ff1LD(f))
     def newColumnOpt(size: Long, f: Long => Option[Double]) = super.newColumn(size, ff1LDO(f))
     override def conv(x: Double): lang.Double = x
   }
 
-  val Dates = new DateFactory with ScalaFactory[Date, Date] {
+  val Dates = new Dates with ScalaFactory[Date, Date] {
     def newColumn(size: Long, f: Long => Date) = super.newColumn(size, ff1L(f))
     def newColumnOpt(size: Long, f: Long => Option[Date]) = super.newColumn(size, ff1LO(f))
     override def conv(x: Date): Date = x
   }
 
-  val Strings = new StringFactory with ScalaFactory[String, String] {
+  val Strings = new Strings with ScalaFactory[String, String] {
     def newColumn(size: Long, f: Long => String) = super.newColumn(size, ff1LS(f))
     def newColumnOpt(size: Long, f: Long => Option[String]) = super.newColumn(size, ff1LO(f))
     override def conv(x: String): String = x
   }
 
-  def Enums(domain: Iterable[String]) = new EnumFactory(domain.toArray) with ScalaFactory[java.lang.Integer, Integer] {
+  def Enums(domain: Iterable[String]) = new Enums(domain.toArray) with ScalaFactory[java.lang.Integer, Integer] {
     def newColumn(size: Long, f: Long => Integer) = super.newColumn(size, ff1LI(f))
     def newColumnOpt(size: Long, f: Long => Option[Integer]) = super.newColumn(size, ff1LO(f))
     override def conv(x: Integer): java.lang.Integer = x

@@ -9,6 +9,11 @@ import water.fvec.Vec;
 public abstract class DataChunk<T> implements TypedChunk<T> {
   protected Chunk c;
 
+  /**
+   * Deserializaiton only
+   */
+  public DataChunk() {}
+  
   public DataChunk(Chunk c) { this.c = c; }
 
   @Override public Chunk rawChunk() { return c; }
@@ -18,7 +23,7 @@ public abstract class DataChunk<T> implements TypedChunk<T> {
   @Override public long start() { return c.start(); }
   @Override public int len() { return c.len(); }
 
-  abstract void set(int idx, T value);
+  public abstract void set(int idx, T value);
   
   @Override public int cidx() { return c.cidx(); }
   
