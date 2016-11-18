@@ -182,12 +182,15 @@ public class ArrayUtils {
 
   public static <T extends Iced> T[][] deepClone(T [][] ary){
     T [][] res = ary.clone();
-    for(int i = 0 ; i < res.length; ++i) {
-      res[i] = ary[i].clone();
-      for(int j = 0; j < res[i].length; ++j)
-        if(res[i][j] != null)
-          res[i][j] = (T)res[i][j].clone();
-    }
+    for(int i = 0 ; i < res.length; ++i)
+      res[i] = deepClone(res[i]);
+    return res;
+  }
+  public static <T extends Iced> T[] deepClone(T [] ary){
+    T [] res = ary.clone();
+    for(int j = 0; j < res.length; ++j)
+      if(res[j] != null)
+        res[j] = (T)res[j].clone();
     return res;
   }
 
