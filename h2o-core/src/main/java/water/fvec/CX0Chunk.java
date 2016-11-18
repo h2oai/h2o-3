@@ -7,7 +7,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 /** specialized subtype of SPARSE chunk for boolean (bitvector); no NAs.  contains just a list of rows that are non-zero. */
-public class CX0Chunk extends CXIChunk {
+public final class CX0Chunk extends CXIChunk {
   // Sparse constructor
   protected CX0Chunk(int len, byte [] buf){super(len,0,buf);}
 
