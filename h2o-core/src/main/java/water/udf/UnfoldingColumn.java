@@ -90,16 +90,14 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
       UnfoldingColumn<?, ?> that = (UnfoldingColumn<?, ?>) o;
 
       return (requiredSize == that.requiredSize) &&
-// comparing functions is a challenge          f.equals(that.f) &&
+          equal(f, that.f) &&
           column.equals(that.column);
     } else return false;
   }
 
   @Override
   public int hashCode() {
-    int result = 0; //f.hashCode();
-    result = 31 * result + column.hashCode();
-    result = 31 * result + requiredSize;
-    return result;
+    int result = 61 * column.hashCode() + hashCode(f);
+    return 19 * result + requiredSize;
   }
 }

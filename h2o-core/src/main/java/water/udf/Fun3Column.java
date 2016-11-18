@@ -14,6 +14,12 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
   private final Column<Z> zs;
 
   @Override public int rowLayout() { return xs.rowLayout(); }
+  /**
+   * deserialization :(
+   */
+  public Fun3Column() {
+    f = null; xs = null; ys = null; zs = null;
+  }
 
   public Fun3Column(Function3<X, Y, Z, T> f, Column<X> xs, Column<Y> ys, Column<Z> zs) {
     super(xs);
@@ -65,5 +71,21 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
     }
   }
 
-  @Override public String toString() { return "Fun3Column(" + xs + "," + ys+ "," + zs + ")"; }
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o instanceof Fun3Column) {
+      Fun3Column other = (Fun3Column) o;
+      return equal(f, other.f) && xs.equals(other.xs);
+    }
+    return false;
+
+  }
+
+  @Override
+  public int hashCode() {
+    return 61 * xs.hashCode() + hashCode(f);
+  }
+
+  @Override public String toString() { return "Fun3Column(" + f.getClass().getSimpleName() + "," + xs + "," + ys+ "," + zs + ")"; }
 }

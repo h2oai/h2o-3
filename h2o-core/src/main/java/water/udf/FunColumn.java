@@ -13,6 +13,13 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
 
   @Override public int rowLayout() { return xs.rowLayout(); }
 
+  /**
+   * deserialization :(
+   */
+  public FunColumn() {
+    f = null; xs = null;
+  }
+
   public FunColumn(Function<X, Y> f, Column<X> xs) {
     super(xs);
     this.f = f;
@@ -51,6 +58,22 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
 
     @Override public Y get(int i) { return f.apply(cx.get(i)); }
   }
-  
-  @Override public String toString() { return "FunColumn(" + xs + ")"; }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o instanceof FunColumn) {
+      FunColumn other = (FunColumn) o;
+      return equal(f, other.f) && xs.equals(other.xs);
+    }
+    return false;
+
+  }
+
+  @Override
+  public int hashCode() {
+    return 61 * xs.hashCode() + hashCode(f);
+  }
+
+  @Override public String toString() { return "FunColumn(" + f.getClass().getSimpleName() + "," + xs + ")"; }
 }

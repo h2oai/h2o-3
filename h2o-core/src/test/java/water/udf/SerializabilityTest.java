@@ -1,6 +1,7 @@
 package water.udf;
 
 import org.apache.commons.lang.SerializationUtils;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.udf.specialized.Enums;
@@ -18,6 +19,8 @@ import static water.udf.specialized.Strings.*;
  * Test for UDF
  */
 public class SerializabilityTest extends TestUtil {
+  @BeforeClass
+  static public void setup() {  stall_till_cloudsize(1); }
 
   @SuppressWarnings("unchecked")
   private <T> void checkSerialization(Column<T> c) {
@@ -30,10 +33,14 @@ public class SerializabilityTest extends TestUtil {
   
   @Test
   public void testDoubleColumnSerializable() throws Exception {
-    Column<Double> c = willDrop(Doubles.newColumn(5, new Function<Long, Double>() {
+    Column<Double> c = someDoubles();
+    checkSerialization(c);
+  }
+
+  private DataColumn<Double> someDoubles() throws java.io.IOException {
+    return willDrop(Doubles.newColumn(5, new Function<Long, Double>() {
       public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
     }));
-    checkSerialization(c);
   }
 
   @Test
@@ -66,6 +73,44 @@ public class SerializabilityTest extends TestUtil {
         return (int)(i % 3);
       }
     }));
+    checkSerialization(c);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void tesFunColumnSerializable() throws Exception {
+    Column<Double> source = someDoubles();
+    Column<Double> c = willDrop(new FunColumn<>(Functions.SQUARE, source));
+
+    checkSerialization(c);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void tesFun2ColumnSerializable() throws Exception {
+    Column<Double> x = someDoubles();
+    Column<Double> c = willDrop(new Fun2Column<>(Functions.PLUS, x, x));
+
+    checkSerialization(c);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void tesFun3ColumnSerializable() throws Exception {
+    Column<Double> x = someDoubles();
+    Column<Double> y = someDoubles();
+    Column<Double> c = willDrop(new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, y, x));
+
+    checkSerialization(c);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void tesFoldingSerializable() throws Exception {
+    Column<Double> x = someDoubles();
+    Column<Double> y = someDoubles();
+    Column<Double> c = willDrop(new FoldingColumn<>(Functions.SUM_OF_SQUARES, x, y, x));
+
     checkSerialization(c);
   }
 
