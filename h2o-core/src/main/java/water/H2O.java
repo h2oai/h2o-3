@@ -1075,7 +1075,7 @@ final public class H2O {
       super((ARGS.nthreads <= 0) ? NUMCPUS : ARGS.nthreads,
             new FJWThrFact(cap),
             null,
-            p<MIN_HI_PRIORITY);
+            p>=MIN_HI_PRIORITY /* lowe priority FJQs should use the default FJ settings to use LIFO order of thread private queues. */);
       _priority = p;
     }
     private H2OCountedCompleter poll2() { return (H2OCountedCompleter)pollSubmission(); }
