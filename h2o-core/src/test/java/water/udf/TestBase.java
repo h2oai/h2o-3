@@ -2,15 +2,12 @@ package water.udf;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import water.Futures;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 
 import java.io.File;
-import java.util.function.Consumer;
 
 /**
  * All test functionality specific for udf (not actually), 
