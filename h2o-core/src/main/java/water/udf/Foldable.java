@@ -12,7 +12,7 @@ package water.udf;
  * 
  * @see <a href="https://en.wikipedia.org/wiki/Fold_(higher-order_function)">wikipedia</a> for details.
  */
-public interface Foldable<X, Y> extends java.io.Serializable {
+public interface Foldable<X, Y> extends JustCode {
   Y initial();
   Y apply(Y y, X x);
 }
