@@ -19,11 +19,10 @@ import static water.udf.specialized.Strings.*;
 /**
  * Test for UDF
  */
-public class UdfTest extends TestUtil {
+public class UdfTest extends TestBase {
   
-  @BeforeClass
-  static public void setup() {  stall_till_cloudsize(2); }
-
+  int cloudSize() { return 5; }
+  
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
@@ -292,10 +291,11 @@ public class UdfTest extends TestUtil {
       assertEquals(xi*xi, x1.apply(i), 0.0001);
     }
 
-    Column<Double> x0 = new FoldingColumn<>(Functions.SUM_OF_SQUARES);
-
-    for (int i = 0; i < 100000; i++) {
-      assertEquals(0., x0.apply(i), 0.0001);
+    try {
+      Column<Double> x0 = new FoldingColumn<>(Functions.SUM_OF_SQUARES);
+      fail("This should have failed - no empty foldings");
+    } catch (AssertionError ae) {
+      // good, good!
     }
     
     Column<Double> materialized = Doubles.materialize(r);
