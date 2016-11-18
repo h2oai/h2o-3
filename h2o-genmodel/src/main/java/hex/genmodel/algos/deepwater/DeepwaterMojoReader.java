@@ -57,10 +57,24 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
       e.printStackTrace();
     }
     _model._model = _model._backend.buildNet(_model._imageDataSet, _model._opts, _model._backendParams, _model._nclasses, file.toString());
-    String mean_image_file = readkv("mean_image_file");
-    if (mean_image_file != null)
-      _model._imageDataSet.setMeanData(_model._backend.loadMeanImage(_model._model, mean_image_file));
-    _model._meanImageData = _model._imageDataSet.getMeanData();
+    // 1) read the raw bytes of the mean image file from the MOJO
+    byte[] meanBlob = readblob("mean_image_file");
+    if (meanBlob!=null) {
+      // 2) write the mean image file
+      File meanFile = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + ".mean");
+      try {
+        FileOutputStream os = new FileOutputStream(meanFile.toString());
+        os.write(meanBlob);
+        os.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      // 3) tell the backend to use that mean image file (just in case it needs it)
+      _model._imageDataSet.setMeanData(_model._backend.loadMeanImage(_model._model, meanFile.toString()));
+
+      // 4) keep a float[] version of the mean array to be used during image processing
+      _model._meanImageData = _model._imageDataSet.getMeanData();
+    }
 
     file = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
     try {
