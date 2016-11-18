@@ -2,7 +2,8 @@
 #'
 #' Attempts to start and/or connect to and H2O instance.
 #'
-#' By default, this method first checks if an H2O instance is connectible. If it cannot connect and \code{start = TRUE} with \code{ip = "localhost"}, it will attempt to start and instance of H2O at localhost:54321. Otherwise it stops with an error.
+#' By default, this method first checks if an H2O instance is connectible. If it cannot connect and \code{start = TRUE} with \code{ip = "localhost"}, it will attempt to start and instance of H2O at localhost:54321.
+#' If an open ip & port of your choice are passed in, then this method will attempt to start an H2O instance at that specified ip & port.
 #'
 #' When initializing H2O locally, this method searches for h2o.jar in the R library resources (\code{system.file("java", "h2o.jar", package = "h2o")}), and if the file does not exist, it will automatically attempt to download the correct version from Amazon S3. The user must have Internet access for this process to be successful.
 #'
@@ -129,7 +130,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
         nthreads <- 2
       }
       stdout <- .h2o.getTmpFile("stdout")
-      .h2o.startJar(nthreads = nthreads, max_memory = max_mem_size, min_memory = min_mem_size,
+      .h2o.startJar(ip = ip, port = port,nthreads = nthreads, max_memory = max_mem_size, min_memory = min_mem_size,
                     enable_assertions = enable_assertions, forceDL = forceDL, license = license, ice_root = ice_root, stdout=stdout)
 
       count <- 0L
@@ -404,7 +405,7 @@ h2o.clusterStatus <- function() {
 
 .Last <- function() { if ( .isConnected() ) try(.h2o.__remoteSend("InitID", method = "DELETE"), TRUE)}
 
-.h2o.startJar <- function(nthreads = -1, max_memory = NULL, min_memory = NULL, enable_assertions = TRUE, forceDL = FALSE, license = NULL, ice_root, stdout) {
+.h2o.startJar <- function(ip = "localhost", port = 54321,nthreads = -1, max_memory = NULL, min_memory = NULL, enable_assertions = TRUE, forceDL = FALSE, license = NULL, ice_root, stdout) {
   command <- .h2o.checkJava()
 
   if (! is.null(license)) {
@@ -472,12 +473,6 @@ h2o.clusterStatus <- function() {
   if(enable_assertions) args <- c(args, "-ea")
   args <- c(args, "-jar", jar_file)
   args <- c(args, "-name", name)
-  doc_ip <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_IP")
-  doc_port <- Sys.getenv("H2O_R_CMD_CHECK_DOC_EXAMPLES_PORT")
-  if (nchar(doc_ip)) { ip <- doc_ip
-  } else { ip <- "127.0.0.1" }
-  if (nchar(doc_port)) { port <- doc_port
-  } else { port <- "54321" }
   args <- c(args, "-ip", ip)
   args <- c(args, "-port", port)
   args <- c(args, "-ice_root", slashes_fixed_ice_root)
