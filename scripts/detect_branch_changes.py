@@ -42,11 +42,11 @@ def error(msg):
     mark_all_flags_true()
 
 
-def get_list_of_modified_files(source_branch, target_branch):
-    print("> git merge-base origin/%s origin/%s" % (source_branch, target_branch))
-    out1 = subprocess.check_output(["git", "merge-base", source_branch, target_branch]).decode().rstrip()
-    print("> git diff --name-only origin/%s %s" % (source_branch, out1))
-    out2 = subprocess.check_output(["git", "diff", "--name-only", source_branch, out1]).decode().rstrip()
+def get_list_of_modified_files(remote, source_branch, target_branch):
+    print("> git merge-base %s/%s %s/%s" % (remote, source_branch, remote, target_branch))
+    out1 = subprocess.check_output(["git", "merge-base", "%s/%s" % (remote, source_branch), "%s/%s" % (remote, target_branch)]).decode().rstrip()
+    print("> git diff --name-only %s/%s %s" % (remote, source_branch, out1))
+    out2 = subprocess.check_output(["git", "diff", "--name-only", "%s/%s" % (remote, source_branch), out1]).decode().rstrip()
     return out2.split("\n")
 
 
@@ -59,8 +59,9 @@ def run():
     if not target_branch:
         return error("Environment variable ghprbTargetBranch not set")
 
+    remote = "origin"
     try:
-        files_changed = get_list_of_modified_files(source_branch, target_branch)
+        files_changed = get_list_of_modified_files(remote, source_branch, target_branch)
     except Exception as e:
         return error("%r when trying to retrieve the list of changed files" % e)
 
