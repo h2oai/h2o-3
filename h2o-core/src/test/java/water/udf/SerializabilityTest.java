@@ -18,9 +18,9 @@ import static water.udf.specialized.Strings.*;
 /**
  * Test for UDF
  */
-public class SerializabilityTest extends TestUtil {
-  @BeforeClass
-  static public void setup() {  stall_till_cloudsize(1); }
+public class SerializabilityTest extends TestBase {
+  
+  public int cloudSize() { return 1; }
 
   @SuppressWarnings("unchecked")
   private <T> void checkSerialization(Column<T> c) {

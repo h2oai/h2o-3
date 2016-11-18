@@ -17,11 +17,8 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
     this.master = master;
   }
 
-  transient private Vec myVec = null;
-
   @Override public Vec vec() {
-    if (myVec == null) myVec = new VirtualVec<>(this);
-    return myVec;
+    return master.vec();
   }
 
   @Override public long size() { return master.size(); }
