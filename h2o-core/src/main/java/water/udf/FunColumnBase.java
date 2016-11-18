@@ -7,6 +7,11 @@ import water.fvec.Vec;
  */
 public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T> {
   Column<?> master;
+
+  /**
+   * deserialization :(
+   */
+  public FunColumnBase() {}
   
   FunColumnBase(Column<?> master) {
     this.master = master;

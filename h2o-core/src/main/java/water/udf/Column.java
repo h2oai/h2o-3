@@ -1,5 +1,6 @@
 package water.udf;
 
+import water.Iced;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 

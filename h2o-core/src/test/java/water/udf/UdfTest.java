@@ -4,6 +4,7 @@ import com.google.common.io.Files;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
+import water.udf.specialized.Enums;
 import water.util.StringUtils;
 
 import java.io.File;
@@ -12,15 +13,16 @@ import java.nio.charset.Charset;
 import java.util.*;
 
 import static org.junit.Assert.*;
-import static water.udf.DataColumns.*;
-
+import static water.udf.specialized.Dates.*;
+import static water.udf.specialized.Doubles.*;
+import static water.udf.specialized.Strings.*;
 /**
  * Test for UDF
  */
 public class UdfTest extends TestUtil {
   
   @BeforeClass
-  static public void setup() {  stall_till_cloudsize(5); }
+  static public void setup() {  stall_till_cloudsize(2); }
 
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
@@ -83,7 +85,7 @@ public class UdfTest extends TestUtil {
 
   @Test
   public void testOfEnums() throws Exception {
-    Column<Integer> c = willDrop(Enums(new String[] {"Red", "White", "Blue"})
+    Column<Integer> c = willDrop(Enums.enums(new String[] {"Red", "White", "Blue"})
         .newColumn(1 << 20, new Function<Long, Integer>() {
        public Integer apply(Long i) { return (int)( i % 3); }
     }));
@@ -92,7 +94,7 @@ public class UdfTest extends TestUtil {
     assertEquals(1, c.apply(100).intValue());
     assertEquals(2, c.apply(20000).intValue());
 
-    Column<Integer> materialized = Enums(new String[] {"Red", "White", "Blue"}).materialize(c);
+    Column<Integer> materialized = Enums.enums(new String[] {"Red", "White", "Blue"}).materialize(c);
 
     for (int i = 0; i < 100000; i++) {
       assertEquals(c.apply(i), materialized.apply(i));
@@ -138,7 +140,7 @@ public class UdfTest extends TestUtil {
   @Test
   public void testOfEnumFun() throws Exception {
     final String[] domain = {"Red", "White", "Blue"};
-    Column<Integer> x = willDrop(Enums(domain)
+    Column<Integer> x = willDrop(Enums.enums(domain)
         .newColumn(1 << 20, new Function<Long, Integer>() {
            public Integer apply(Long i) { return (int)( i % 3); }
         }));

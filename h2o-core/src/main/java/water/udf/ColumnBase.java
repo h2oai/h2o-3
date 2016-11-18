@@ -1,12 +1,13 @@
 package water.udf;
 
+import water.Iced;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
 /**
  * Basic common behavior for Functional Columns
  */
-public abstract class ColumnBase<T> implements Column<T> {
+public abstract class ColumnBase<T> extends Iced<ColumnBase<T>> implements Column<T> {
 
   public abstract T get(long idx);
   
