@@ -80,6 +80,6 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
 
   @Override
   public int hashCode() {
-    return 31 * vecKey.hashCode() + type;
+    return 61 * vecKey.hashCode() + type;
   }
 }

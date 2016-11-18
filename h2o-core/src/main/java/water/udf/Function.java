@@ -11,6 +11,6 @@ package water.udf;
  * @see <a href="https://en.wikipedia.org/wiki/Function_(mathematics)">wikipedia</a> for details.
  * 
  */
-public interface Function<X, Y> extends java.io.Serializable {
+public interface Function<X, Y> extends JustCode {
   Y apply(X x);
 }

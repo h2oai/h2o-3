@@ -17,7 +17,7 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
     this.master = master;
   }
 
-  private Vec myVec = null;
+  transient private Vec myVec = null;
 
   @Override public Vec vec() {
     if (myVec == null) myVec = new VirtualVec<>(this);
@@ -31,4 +31,12 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
   @Override public T apply(long idx) { return get(idx); }
 
   @Override public T apply(Long idx) { return get(idx); }
+  
+  public int hashCode(JustCode x) {
+    return x == null ? 0 : x.getClass().hashCode();
+  }
+
+  public boolean equal(JustCode x, JustCode y) {
+    return x == null ? y == null : x.getClass() == y.getClass();
+  }
 }

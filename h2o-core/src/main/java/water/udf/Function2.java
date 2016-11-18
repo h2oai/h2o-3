@@ -9,6 +9,6 @@ package water.udf;
  * A two-argument function, in abstract settings, is something that takes values of given type (X and Y) and returns a value of a given type (Z). 
  * @see <a href="https://en.wikipedia.org/wiki/Function_(mathematics)">wikipedia</a> for details.
  */
-public interface Function2<X, Y, Z> extends java.io.Serializable {
+public interface Function2<X, Y, Z> extends JustCode {
   Z apply(X x, Y y);
 }
