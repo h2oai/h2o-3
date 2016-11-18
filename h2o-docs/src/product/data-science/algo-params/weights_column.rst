@@ -25,7 +25,7 @@ Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `offset_column <offset_column.html>`__
-- `response_column <response_column.html>`__
+- `y <y.html>`__
 
 
 Example
