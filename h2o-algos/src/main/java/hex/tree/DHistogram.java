@@ -202,7 +202,7 @@ public final class DHistogram extends Iced {
 
   // Interpolate d to find bin#
   public int bin( double col_data ) {
-    assert( !Double.isNaN(col_data) ); //NAs go to a separate bucket
+    if(Double.isNaN(col_data)) return _nbin; // NA bucket
     if (Double.isInfinite(col_data)) // Put infinity to most left/right bin
       if (col_data<0) return 0;
       else return _nbin-1;
@@ -298,11 +298,13 @@ public final class DHistogram extends Iced {
   // Merge two equal histograms together.  Done in a F/J reduce, so no
   // synchronization needed.
   public void add( DHistogram dsh ) {
-    assert _isInt == dsh._isInt && _nbin == dsh._nbin && _step == dsh._step &&
-      _min == dsh._min && _maxEx == dsh._maxEx;
+    assert (_vals == null || dsh._vals == null) || (_isInt == dsh._isInt && _nbin == dsh._nbin && _step == dsh._step &&
+      _min == dsh._min && _maxEx == dsh._maxEx);
     if( dsh._vals == null ) return;
-    if(_vals == null) init(dsh._vals);
-    else ArrayUtils.add(_vals, dsh._vals);
+    if(_vals == null)
+      init(dsh._vals);
+    else
+      ArrayUtils.add(_vals,dsh._vals);
     if (_min2 > dsh._min2) _min2 = dsh._min2;
     if (_maxIn < dsh._maxIn) _maxIn = dsh._maxIn;
   }
@@ -391,6 +393,7 @@ public final class DHistogram extends Iced {
 
 
   public DTree.Split findBestSplitPoint(int col, double min_rows) {
+    if(_vals == null) return null; // TODO: there are empty leafs?
     final int nbins = nbins();
     assert nbins > 1;
 
@@ -625,24 +628,15 @@ public final class DHistogram extends Iced {
     return new DTree.Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
   }
 
-
-  public void updateHisto(double w, double c, double y) {
-    double wy = w * y;
-    double wyy = wy * y;
-    if (Double.isNaN(c)) {
-      //separate bucket for NA - atomically added to the shared histo
-      addNasPlain(w,wy,wyy);
-    } else {
-      // increment local pre-thread histograms
-      int b = bin(c);
-      _vals[3*b] += w;
-      _vals[3*b+1] += wy;
-      _vals[3*b+2] += wyy;
-      if(c < _min2 ) _min2  = c;
-      if(c > _maxIn) _maxIn = c;
-    }
-  }
-
+  /**
+   * Update counts in appropriate bins. Not thread safe, assumed to have private copy.
+   * @param ws observation weights
+   * @param cs column data
+   * @param ys response
+   * @param rows rows sorted by leaf assignemnt
+   * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
+   * @param lo  lower bound on index into rows array to be processed by this call (exclusive)
+   */
   public void updateHisto(double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
@@ -651,28 +645,26 @@ public final class DHistogram extends Iced {
       double weight = ws[k];
       if (weight == 0) continue;
       double col_data = cs[k];
-      if( col_data < _min2 ) _min2 = col_data;
-      if( col_data > _maxIn ) _maxIn = col_data;
+      if (col_data < _min2) _min2 = col_data;
+      if (col_data > _maxIn) _maxIn = col_data;
       double y = ys[k];
-      assert(!Double.isNaN(y));
+      assert (!Double.isNaN(y));
       double wy = weight * y;
       double wyy = wy * y;
-      if (Double.isNaN(col_data)) {
-        //separate bucket for NA - atomically added to the shared histo
-        addNasPlain(weight,wy,wyy);
-      } else {
-        // increment local pre-thread histograms
-        int b = bin(col_data);
-        _vals[3*b] += weight;
-        _vals[3*b+1] += wy;
-        _vals[3*b+2] += wyy;
-      }
+      int b = bin(col_data);
+      _vals[3*b + 0] += weight;
+      _vals[3*b + 1] += wy;
+      _vals[3*b + 2] += wyy;
     }
   }
 
+  /**
+   * Cast bin values *except for sums of weights and Na-bucket counters to floats to drop least significant bits.
+   * Improves reproducibility (drop bits most affected by floating point error).
+   */
   public void reducePrecision(){
     if(_vals == null) return;
-    for(int i = 0; i < _vals.length-3 /* do not reduce precision of NAs */; i+=3) {
+    for(int i = 0; i < _vals.length -3 /* do not reduce precision of NAs */; i+=3) {
       _vals[i+1] = (float)_vals[i+1];
       _vals[i+2] = (float)_vals[i+2];
     }

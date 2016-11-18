@@ -5,6 +5,9 @@ import water.util.UnsafeUtils;
 
 /**
  * The empty-compression function, where data is in 'int's.
+ * Can only be used locally (intentionally does not serialize).
+ * Intended for temporary data which gets modified frequently.
+ * Exposes data directly as int[]
  */
 public class C4VolatileChunk extends Chunk {
   static protected final long _NA = Integer.MIN_VALUE;
@@ -12,10 +15,8 @@ public class C4VolatileChunk extends Chunk {
 
   C4VolatileChunk(int[] is ) { _is = is; _mem = new byte[0]; _start = -1; _len = is.length; }
 
-  public int[] getValuesForWriting(){
-    _vec.preWriting();
-    return _is;
-  }
+  public int[] getValues(){return _is;}
+
   @Override protected final long at8_impl( int i ) {
     long res = _is[i];
     if( res == _NA ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -31,10 +32,8 @@ public class C4VolatileChunk extends Chunk {
     _is[idx] = (int)l;
     return true;
   }
-  @Override boolean set_impl(int i, double d) {
-    return false; }
-  @Override boolean set_impl(int i, float f ) {
-    return false; }
+  @Override boolean set_impl(int i, double d) {return false; }
+  @Override boolean set_impl(int i, float f ) {return false; }
   @Override boolean setNA_impl(int idx) { _is[idx] = (int)_NA; return true; }
   @Override public NewChunk inflate_impl(NewChunk nc) {
     nc.set_sparseLen(0);
@@ -47,7 +46,7 @@ public class C4VolatileChunk extends Chunk {
     }
     return nc;
   }
-  @Override public final void initFromBytes () {throw H2O.unimpl();}
+  @Override public final void initFromBytes () {throw H2O.unimpl("Volatile chunks should not be (de)serialized");}
   @Override public boolean hasFloat() {return false;}
 
 
@@ -82,11 +81,12 @@ public class C4VolatileChunk extends Chunk {
 
   @Override
   public int [] getIntegers(int [] vals, int from, int to, int NA){
-    if(NA == _NA) {
-      System.arraycopy(_is,from,vals,0,to-from);
-      return vals;
+    System.arraycopy(_is,from,vals,0,to-from);
+    if(NA != _NA) {
+      for(int i = 0; i < (to - from); ++i)
+        if(vals[i] == _NA) vals[i] = NA;
     }
-    throw H2O.unimpl();
+    return vals;
   }
 
 }
