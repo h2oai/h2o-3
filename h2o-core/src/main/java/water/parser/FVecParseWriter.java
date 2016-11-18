@@ -17,6 +17,7 @@ import java.util.UUID;
 public class FVecParseWriter extends Iced implements StreamParseWriter {
 
   private static final int MAX_ERR_CNT = 20;
+  private static final int MAX_MISSING_VAL_CNT = 10;
 
   protected AppendableVec[] _vecs;
   protected transient NewChunk[] _nvs;
@@ -31,6 +32,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   private final Vec.VectorGroup _vg;
   private long _errCnt;
   private int _maxMissingCol = -1;
+  private int _missingValCnt = 0;
   private transient StringBuilder _missingColVals = null;
 
   public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize, AppendableVec[] avs){
@@ -87,13 +89,14 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     if(_col >= 0){
       for(int i = _col+1; i < _nCols; ++i)
         addInvalidCol(i);
-      if (_maxMissingCol != -1)
+      if ((_maxMissingCol != -1) && (canAddError()))
         addMissingColumnsError();
       ++_nLines;
     }
     _col = -1;
     _maxMissingCol = -1;
     _missingColVals = null;
+    _missingValCnt = canAddError() ? 0 : MAX_MISSING_VAL_CNT;
   }
 
   @Override public void addNumCol(int colIdx, long number, int exp) {
@@ -101,14 +104,14 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
       _nvs[_col = colIdx].addNum(number, exp);
       if(_ctypes != null && _ctypes[colIdx] == Vec.T_BAD ) _ctypes[colIdx] = Vec.T_NUM;
     } else
-      recordMissingColumnError(colIdx, number * PrettyPrint.pow10(exp));
+      if (missingCol(colIdx)) recordMissingColumnValue(colIdx, number * PrettyPrint.pow10(exp));
   }
 
   @Override public final void addInvalidCol(int colIdx) {
     if(colIdx < _nCols)
       _nvs[_col = colIdx].addNA();
     else
-      recordMissingColumnError(colIdx, null);
+      if (missingCol(colIdx)) recordMissingColumnValue(colIdx, null);
   }
   @Override public boolean isString(int colIdx) { return (colIdx < _nCols) && (_ctypes[colIdx] == Vec.T_CAT || _ctypes[colIdx] == Vec.T_STR);}
 
@@ -149,7 +152,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
         }
       }
     } else
-      recordMissingColumnError(colIdx, str);
+      if (missingCol(colIdx)) recordMissingColumnValue(colIdx, str);
   }
 
   /** Adds double value to the column. */
@@ -157,15 +160,18 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     if (Double.isNaN(value)) {
       addInvalidCol(colIdx);
     } else {
-      double d= value;
-      int exp = 0;
-      long number = (long)d;
-      while (number != d) {
-        d *= 10;
-        --exp;
-        number = (long)d;
-      }
-      addNumCol(colIdx, number, exp);
+      if (colIdx < _nvs.length) {
+        double d= value;
+        int exp = 0;
+        long number = (long)d;
+        while (number != d) {
+          d *= 10;
+          --exp;
+          number = (long)d;
+        }
+        addNumCol(colIdx, number, exp);
+      } else
+        if (missingCol(colIdx)) recordMissingColumnValue(colIdx, value);
     }
   }
   @Override public void setColumnNames(String [] names){}
@@ -180,9 +186,13 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   public final void addError(ParseErr err) {
     if(_errs == null)
       _errs = new ParseErr[]{err};
-    else if(_errs.length < MAX_ERR_CNT)
+    else if(canAddError())
       _errs = ArrayUtils.append(_errs,err);
     _errCnt++;
+  }
+
+  private boolean canAddError() {
+    return _errs == null || _errs.length < MAX_ERR_CNT;
   }
 
   private void addMissingColumnsError() {
@@ -197,17 +207,20 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     return msg.replaceAll("[^\\x00-\\x7F]", ""); // Replace non-ASCII characters to avoid problems with displaying of the message in client
   }
 
-  private void recordMissingColumnError(int colIdx, Object value) {
-    // We only want to report values if they come sequentially as they were in the file (CSV parser is sequential, binary parsers might not be)
-    // Cap the maximum number of reported values to 10
-    if ((_maxMissingCol == -1) && (colIdx == _col + 1))
-      _missingColVals = new StringBuilder().append(value);
-    else
-      if ((_missingColVals != null) && (_maxMissingCol + 1 == colIdx))
-        _missingColVals = (colIdx - _nCols < 10) ? _missingColVals.append(", ").append(value) : _missingColVals;
-      else
-        _missingColVals = null; // out-of-order detected, cancel reporting
+  private boolean missingCol(int colIdx) {
     _maxMissingCol = Math.max(colIdx, _maxMissingCol);
+    return _missingValCnt < MAX_MISSING_VAL_CNT;
+  }
+
+  private void recordMissingColumnValue(int colIdx, Object value) {
+    assert _missingValCnt < MAX_MISSING_VAL_CNT;
+    if (colIdx - _nCols != _missingValCnt) {
+      _missingColVals = null; // out-of-order detected, cancel reporting
+      _missingValCnt = MAX_MISSING_VAL_CNT;
+    } else {
+      _missingColVals = (_missingColVals == null) ? new StringBuilder().append(value) : _missingColVals.append(", ").append(value);
+      _missingValCnt++;
+    }
   }
 
   @Override public void setIsAllASCII(int colIdx, boolean b) {

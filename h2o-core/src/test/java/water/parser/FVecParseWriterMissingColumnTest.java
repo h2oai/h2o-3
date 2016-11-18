@@ -65,6 +65,23 @@ public class FVecParseWriterMissingColumnTest {
     checkError(38, "100.0, 101.0, 102.0, 103.0, 104.0, 105.0, 106.0, 1...(truncated)");
   }
 
+  @Test
+  public void testDoNothingIfErrsFull() {
+    final int maxErrs = 20;
+    _w._errs = new ParseWriter.ParseErr[maxErrs]; // deplete the available slots for errors
+
+    _w.addStrCol(20, new BufferedString("test"));
+    _w.addNumCol(19, Double.NaN);
+    _w.addNumCol(18, 133.12);
+    _w.addInvalidCol(21);
+    _w.addNumCol(22, 2, 3);
+
+    _w._errs = null; // make all errors slots available again just before we call newLine()
+    _w.newLine();
+
+    checkError(23, null); // missing column values were not recorded at all
+  }
+
   private void checkError(int cols, String vals) {
     assertNotNull(_w._errs);
     assertEquals(1, _w._errs.length);
