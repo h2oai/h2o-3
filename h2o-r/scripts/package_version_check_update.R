@@ -42,10 +42,12 @@ pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", 
   if (!dir.exists(lib.loc) && !dir.create(lib.loc, recursive=TRUE))
     stop(sprintf("Library location 'lib.loc' does not exists '%s' and directory could not be created.", lib.loc))
   
+  cat <- function(..., file=stdout()) base::cat(..., file=file)
+  
   if (check_only)
-    cat("\nINFO: R package/version check only. Please run `./gradlew syncRPackages` if you want to update instead\n")
+    cat(sprintf("\nINFO: R package%s check only. Please run `./gradlew syncRPackages` if you want to update instead\n", if (strict_version_check) "/versions" else ""))
   else
-    cat("\nINFO: R package/version s3 sync procedure\n")
+    cat(sprintf("\nINFO: R package%s s3 sync procedure\n", if (strict_version_check) "/versions" else ""))
   
   ap <- available.packages(contrib.url(repos))
   # missing available packages
@@ -97,7 +99,7 @@ pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", 
     
     install.packages(inst_pkgs, lib=lib.loc, repos=repos, method=method, quiet=quiet)
     
-    cat("INFO: R package sync complete. Conducting follow-on R package/version checks...\n")
+    cat(sprintf("INFO: R package sync complete. Conducting follow-on R package%s checks...\n", if (strict_version_check) "/version" else ""))
     
     ip <- installed.packages(lib.loc)
     mipv <- missing_installed_packages_version(pkgs, ap, ip, strict_version_check)
@@ -127,9 +129,10 @@ if (!file.exists(dcf.file)) stop(sprintf("Cannot find h2o-3 R dependencies file,
 repos <- c(dcf.repos(dcf.file), "http://s3.amazonaws.com/h2o-r/cran-dev")
 pkgs <- dcf.packages(dcf.file)
 
-# assuming we want to have version match for recursive deps, exclude base R pkgs - AFTER cleanup in h2o-3-DESCRIPTION.template
+# assuming we want to have version match for recursive deps - AFTER cleanup deps in h2o-3-DESCRIPTION.template - for now static full? list
 #pkgs <- package_dependencies(pkgs, db=available.packages(contrib.url(repos)), recursive=TRUE)
-pkgs <- setdiff(pkgs, c("R", rownames(installed.packages(lib.loc, priority="base"))))
+base.pkgs <- c("R", rownames(installed.packages(priority="base")))
+pkgs <- setdiff(pkgs, base.pkgs)
 
 ## try on windows/macosx
 # options(install.packages.check.source="no")
