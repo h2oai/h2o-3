@@ -1981,16 +1981,16 @@ summary.H2OFrame <- h2o.summary
 #-----------------------------------------------------------------------------------------------------------------------
 
 #'
-#' Mean of a column
-#'
-#' Obtain the mean of a column of a parsed H2O data object.
+#' Compute the frame's mean by-column (or by-row).
 #'
 #' @name h2o.mean
 #' @param x An H2OFrame object.
-#' @param ... Further arguments to be passed from or to other methods.
-#' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
+#' @param na.rm \code{logical}. indicating whether missing values should be removed.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @param return_frame A boolean that indicates whether to return an H2O frame or a list. Default is FALSE.
 #' @seealso \code{\link[base]{mean}} for the base R implementation.
-#' @return Returns a list containing the mean for each column (NaN for non-numeric columns).
+#' @return Returns a list containing the mean for each column (NaN for non-numeric columns) if return_frame is set to FALSE.
+#'         If return_frame is set to TRUE, then it will return an H2O frame with means per column or row (depends on axis argument).
 #' @examples
 #' \donttest{
 #' h2o.init()
@@ -1999,7 +1999,13 @@ summary.H2OFrame <- h2o.summary
 #' mean(prostate.hex$AGE)
 #' }
 #' @export
-h2o.mean <- function(x, ..., na.rm=TRUE) .eval.scalar(.newExpr("getrow", .newExpr("mean",x,na.rm)))
+h2o.mean <- function(x, na.rm = FALSE, axis = 0, return_frame = FALSE) {
+  if(return_frame){
+    .newExpr("mean", chk.H2OFrame(x), na.rm, axis)
+  }else{
+    .eval.scalar(.newExpr("getrow", .newExpr("mean",x,na.rm)))
+  }
+}
 
 #' @rdname h2o.mean
 #' @export
