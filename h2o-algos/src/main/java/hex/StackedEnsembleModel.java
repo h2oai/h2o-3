@@ -1,6 +1,8 @@
 package hex;
 
+import hex.ensemble.StackedEnsemble;
 import water.DKV;
+import water.H2O;
 import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
@@ -20,11 +22,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   public Frame commonTrainingFrame = null;
   public String responseColumn = null;
   public int nfolds = -1;
+  // TODO: add a separate holdout dataset for the ensemble
+  // TODO: add a separate overall cross-validation for the ensemble, including _fold_column and FoldAssignmentScheme / _fold_assignment
 
-  public StackedEnsembleModel(Key selfKey, StackedEnsembleParameters parms) {
-    super(selfKey, parms, new StackedEnsembleOutput());
+  public StackedEnsembleModel(Key selfKey, StackedEnsembleParameters parms, StackedEnsembleOutput output) {
+    super(selfKey, parms, output);
   }
-  
+
   public static class StackedEnsembleParameters extends Model.Parameters {
     public String algoName() { return "StackedEnsemble"; }
     public String fullName() { return "Stacked Ensemble"; }
@@ -43,20 +47,72 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   public static class StackedEnsembleOutput extends Model.Output {
     public StackedEnsembleOutput() { super(); }
+    public StackedEnsembleOutput(StackedEnsemble b) { super(b); }
+
     public StackedEnsembleOutput(Job job) { _job = job; }
+    // The metalearner model (e.g., a GLM that has a coefficient for each of the base_learners).
+    public Model _meta_model;
   }
 
   /**
    * @see Model#score0(double[], double[])
    */
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
-    throw new UnsupportedOperationException();
+    // TODO: don't score models that have 0 coefficients / aren't used by the metalearner
+
+    // For each base learner, compute and save the predictions.
+    // For binary classification this array is [_base_models.length][3].
+    double[/*baseIdx*/][/*nclasses+1*/] basePreds = new double[this._parms._base_models.length][preds.length];
+
+    // TODO: optimize these DKV lookups:
+    int baseIdx = 0;
+    for (Key<Model> baseKey : this._parms._base_models) {
+      Model base = baseKey.get();  // TODO: cacheme!
+      base.score0(data, basePreds[baseIdx]);
+      baseIdx++;
+    }
+
+    // TODO: multiclass
+    // TODO: regression
+    // TODO: include_training_features
+    double[] basePredsRotated = new double[this._parms._base_models.length];
+    for (baseIdx = 0; baseIdx < this._parms._base_models.length; baseIdx++) {
+      basePredsRotated[baseIdx] = basePreds[baseIdx][2];
+    }
+
+    double[] stackedPreds = new double[preds.length];
+    return _output._meta_model.score0(basePredsRotated, stackedPreds);
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    throw new UnsupportedOperationException();
+    switch (_output.getModelCategory()) {
+      case Binomial:
+        return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+      // case Multinomial: return new ModelMetricsMultinomial.MetricBuilderMultinomial(_output.nclasses(),domain);
+      case Regression:
+        return new ModelMetricsRegression.MetricBuilderRegression();
+      default:
+        throw H2O.unimpl();
+    }
   }
 
+  public void doScoreMetrics() {
+    // TODO: this seems out of place, since we've already called adapt when building the model. . .
+    Frame adaptFr;
+    ModelMetrics.MetricBuilder mb;
+
+    adaptFr = new Frame(this._parms.train());
+    this.adaptTestForTrain(adaptFr, true, !isSupervised());
+    mb = this.scoreMetrics(adaptFr);
+    this._output._training_metrics  = mb.makeModelMetrics(this, adaptFr, adaptFr, null);
+
+    if (null != this._parms.valid()) {
+      adaptFr = new Frame(this._parms.valid());
+      this.adaptTestForTrain(adaptFr, true, !isSupervised());
+      mb = this.scoreMetrics(adaptFr);
+      this._output._validation_metrics  = mb.makeModelMetrics(this, adaptFr, adaptFr, null);
+    }
+  }
 
   public void checkAndInheritModelProperties() {
     if (null == _parms._base_models || 0 == _parms._base_models.length)
@@ -68,7 +124,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     for (Key<Model> k : _parms._base_models) {
       aModel = DKV.getGet(k);
       if (null == aModel) {
-        Log.info("Failed to find base model; skipping: " + k);
+        Log.warn("Failed to find base model; skipping: " + k);
         continue;
       }
 
@@ -93,9 +149,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         if (nfolds != aModel._parms._nfolds)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
 
+        // TODO: loosen this iff _parms._valid or if we add a separate holdout dataset for the ensemble
         if (aModel._parms._nfolds < 2)
           throw new H2OIllegalArgumentException("Base model does not use cross-validation: " + aModel._parms._nfolds);
 
+        // TODO: loosen this iff it's consistent, like if we have a _fold_column
         if (aModel._parms._fold_assignment != Modulo)
           throw new H2OIllegalArgumentException("Base model does not use Modulo for cross-validation: " + aModel._parms._nfolds);
 
@@ -104,11 +162,15 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         if (_parms._distribution != aModel._parms._distribution)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different distributions.");
+
+        // TODO: If we're set to DistributionFamily.AUTO then GLM might auto-conform the response column
+        // giving us inconsistencies.
       } else {
         _output._isSupervised = aModel.isSupervised();
         this.modelCategory = aModel._output.getModelCategory();
         _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
         commonTrainingFrame = aModel._parms.train();
+        // TODO: set _parms._train to aModel._parms.train()
         responseColumn = aModel._parms._response_column;
         nfolds = aModel._parms._nfolds;
         _parms._distribution = aModel._parms._distribution;
