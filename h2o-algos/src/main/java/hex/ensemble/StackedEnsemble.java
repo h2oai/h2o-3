@@ -23,7 +23,6 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   protected StackedEnsembleModel _model;
 
 
-
   public StackedEnsemble(boolean startup_once) { super(new StackedEnsembleModel.StackedEnsembleParameters(),startup_once); }
 
   /*
@@ -47,11 +46,12 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   private class StackedEnsembleDriver extends Driver {
 
     private Frame prepareLevelOneFrame(StackedEnsembleModel.StackedEnsembleParameters parms) {
+      // TODO: allow the user to name the level one frame
       Frame levelOneFrame = new Frame(Key.<Frame>make("levelone_" + _model._key.toString()));
       for (Key<Model> k : _parms._base_models) {
         Model aModel = DKV.getGet(k);
         if (null == aModel) {
-          Log.info("Failed to find base model; skipping: " + k);
+          Log.warn("Failed to find base model; skipping: " + k);
           continue;
         }
 
@@ -69,7 +69,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
         else if (!aModel._output.isSupervised())
           throw new H2OIllegalArgumentException("Don't yet know how to stack unsupervised models: " + aModel._key);
-        else
+        else  // TODO: fix the vec name:
           levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("YES"));
 
       } // for all base_models
@@ -86,8 +86,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       init(true);
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(StackedEnsemble.this);
-
-      _model = new StackedEnsembleModel(dest(), _parms);
+      _model = new StackedEnsembleModel(dest(), _parms, new StackedEnsembleModel.StackedEnsembleOutput(StackedEnsemble.this));
       _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
       _model.checkAndInheritModelProperties();
@@ -97,11 +96,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       // train the metalearner model
       // TODO: allow types other than GLM
       // Default Job for just this training
-      Job job = new Job<>(_model._key, ModelBuilder.javaName("glm"), "StackingEnsemble metalearner (GLM)");
-      GLM metaBuilder = ModelBuilder.make("GLM", job, Key.<Model>make("metalearner_" + _model._key));
+      Key<Model> metalearnerKey = Key.<Model>make("metalearner_" + _model._key);
+      Job job = new Job<>(metalearnerKey, ModelBuilder.javaName("glm"), "StackingEnsemble metalearner (GLM)");
+      GLM metaBuilder = ModelBuilder.make("GLM", job, metalearnerKey);
       metaBuilder._parms._non_negative = true;
       metaBuilder._parms._train = levelOneFrame._key;
       metaBuilder._parms._response_column = _model.responseColumn;
+      // TODO: multinomial
+      // TODO: support other families for regression
       metaBuilder._parms._family = _model.modelCategory == ModelCategory.Regression ? GLMModel.GLMParameters.Family.gaussian : GLMModel.GLMParameters.Family.binomial;
 
       metaBuilder.init(false);
@@ -118,8 +120,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
       Log.info("Finished training metalearner model.");
 
+      _model._output._meta_model = metaBuilder.get();
+      _model.doScoreMetrics();
     } // computeImpl
   }
-
-
 }
