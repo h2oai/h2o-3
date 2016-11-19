@@ -122,14 +122,18 @@ r_check()
 
 # check expected packages (/versions)
 check_only <- if (length(args <- commandArgs(trailingOnly=TRUE))) !args[[1]]=="update" else TRUE
-dcf.file <- "h2o-3-DESCRIPTION"
-if (!file.exists(dcf.file)) dcf.file <- "h2o-3-DESCRIPTION.template"
-if (!file.exists(dcf.file)) dcf.file <- "../../h2o-3-DESCRIPTION"
-if (!file.exists(dcf.file)) dcf.file <- "../../h2o-3-DESCRIPTION.template"
-if (!file.exists(dcf.file)) {
-  print("ls ../../.")
-  print(list.files("../../."))
-  stop(sprintf("Cannot find h2o-3 R dependencies file, tried h2o-3-DESCRIPTION.template and h2o-3-DESCRIPTION, also in '../../.', current wd '%s'.", getwd()))
+# finding h2o-3-DESCRIPTION.template
+dcf.file <- NULL
+for (i in 0:7) {
+  path <- file.path(do.call("file.path", as.list(c(".",rep("..", i)))), c("h2o-3-DESCRIPTION.template","h2o-3-DESCRIPTION"))
+  fe <- file.exists(path)
+  if (any(fe)) {
+    dcf.file <- path[fe][1L] # take first if two present
+    break
+  }
+}
+if (is.null(dcf.file) || !file.exists(dcf.file)) {
+  stop(sprintf("Cannot find h2o-3 R dependencies file, tried h2o-3-DESCRIPTION.template and h2o-3-DESCRIPTION, also in parent directories up to %s levels, current wd '%s'.", i, getwd()))
 }
 
 repos <- c(dcf.repos(dcf.file), "http://s3.amazonaws.com/h2o-r/cran-dev")
@@ -144,4 +148,4 @@ pkgs <- setdiff(pkgs, base.pkgs)
 # options(install.packages.check.source="no")
 pkgs_check_update(pkgs, check_only=check_only, repos=repos) # force_install="data.table" # allows to be fully up to date
 
-q("no", status=0)
+if (!interactive()) q("no", status=0)
