@@ -9,6 +9,7 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.parser.ParserTest;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
@@ -20,6 +21,7 @@ import java.io.File;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
+import static water.parser.DefaultParserProviders.CSV_INFO;
 import static water.rapids.Rapids.IllegalASTException;
 
 
@@ -629,6 +631,53 @@ public class RapidsTest extends TestUtil {
     }
   }
 
+  @Test public void testNaOmit() {  // code from Nidhi
+    Frame fr = null;
+    String x = null;
+    try {
+      String [] data = new String[]{
+              "'C1Chunk',C1SChunk, 'C2Chunk', 'C2SChunk',  'C4Chunk',  'C4FChunk',  'C8Chunk',  'C8DChunk',   " +
+                      "'Categorical'\n"  +
+                      "0,       0.0,          0,           0,           0,          0 ,          0,   8.878979," +
+                      "           A \n" ,
+              "1,       0.1,          1,         0.1,           1,          1 ,          1,   1.985934,           B " +
+                      "\n" ,
+              "2,       0.2,          2,         0.2,           2,          2 ,          2,   3.398018,           C " +
+                      "\n" ,
+              "3,       0.3,          3,         0.3,           3,          3 ,          3,   9.329589,           D " +
+                      "\n" ,
+              "4,       0.4,          4,           4,           4,          4 , 2147483649,   0.290184,           A " +
+                      "\n" ,
+              "0,       0.5,          0,           0,     -100000,    1.234e2 ,-2147483650,   1e-30,              B " +
+                      "\n" ,
+              "254,    0.25,       2550,      6553.4,      100000,    2.345e-2,          0,    1e30,              C " +
+                      "\n" ,
+              " ,          ,           ,            ,            ,            ,           ,        ,                " +
+                      "\n" ,
+              "?,        NA,          ?,           ?,           ?,           ?,          ?,       ?,                " +
+                      "\n" ,
+      };
+
+      Key rkey = ParserTest.makeByteVec(data);
+      ParseSetup ps = new ParseSetup(CSV_INFO, (byte)',', false, ParseSetup.HAS_HEADER, 9,
+              new String[]{"'C1Chunk'","C1SChunk", "'C2Chunk'", "'C2SChunk'", "'C4Chunk'", "'C4FChunk'", "'C8Chunk'",
+                      "'C8DChunk'", "'Categorical'"},
+              ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric", "Numeric",
+                      "Numeric", "Numeric", "Numeric", "Enum"}), null, null, null);
+      fr = ParseDataset.parse(Key.make("na_test.hex"), new Key[]{rkey}, true, ps);
+
+      x = String.format("(na.omit %s)", fr._key);
+      Val res = Rapids.exec(x); // make call to remove rows with NAs
+      Frame f = res.getFrame();
+      long row_num = fr.numRows()  -  f.numRows();   // 2 rows are deleted due to NA omit
+      f.remove();
+      Assert.assertTrue("Original row number "+fr.numRows()+", row number after calling na omit " + f.numRows() +
+              "and they should differ by 2.",
+              row_num==2);
+    } finally {
+      if (fr!=null) fr.delete();
+    }
+  }
 
   private static void astNumList_ok(String expr) {
     assertTrue(Rapids.parse(expr) instanceof AstNumList);
