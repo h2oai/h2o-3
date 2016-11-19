@@ -28,6 +28,7 @@ Suggests: ggplot2,
 Collate:
          'astfun.R'
          'classes.R'
+         'config.R'
          'connection.R'
          'constants.R'
          'datasets.R'

@@ -27,6 +27,11 @@
 #' @param password (Optional) Password to login with.
 #' @param cluster_id (Optional) Cluster to login to. Used for Steam connections.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
+#' @param h2o_config (Optional) A \code{logical} value indicating wheter to use a config file or not. The file name should be ".h2oconfig".
+#'        The search for the file will begin in the current folder, in all parent folders, and finally in
+#'        the user's home directory. The first such file found will be used for configuration purposes. The format for such
+#'        file is a simple "key = value" store, with possible section names in square brackets. Single-line comments starting
+#'        with '#' are also allowed.
 #' @return this method will load it and return a \code{H2OConnection} object containing the IP address and port number of the H2O server.
 #' @note Users may wish to manually upgrade their package (rather than waiting until being prompted), which requires
 #' that they fully uninstall and reinstall the H2O package, and the H2O client package. You must unload packages running
@@ -55,7 +60,39 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
                      enable_assertions = TRUE, license = NULL, nthreads = -2,
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
-                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_, cluster_id = NA_integer_, cookies = NA_character_) {
+                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_, cluster_id = NA_integer_, cookies = NA_character_,h2o_config=FALSE) {
+
+  # Check for .h2oconfig file
+  # Find .h2oconfig file starting from currenting directory and going
+  # up all parent directories until it reaches the root directory.
+  if(h2o_config){
+    config_path <- .h2o.candidate.config.files()
+    if(is.null(config_path)){
+      stop("h2o_config is set to TRUE, but no .h2oconfig file is found in current directory/all parent directories")
+    }else{
+
+      #Read in config
+      h2oconfig = .parse.h2oconfig(config_path)
+
+      #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
+      if("init.check_version" %in% colnames(h2oconfig)){
+        strict_version_check = as.logical(trimws(as.character(h2oconfig$init.check_version)))
+      }
+      if("init.proxy" %in% colnames(h2oconfig)){
+        proxy = as.character(h2oconfig$init.proxy)
+      }
+      if("init.cluster_id" %in% colnames(h2oconfig)){
+        cluster_id = h2oconfig$init.cluster_id
+      }
+      if("init.verify_ssl_certificates" %in% colnames(h2oconfig)){
+        insecure = as.logical(trimws(as.character(h2oconfig$init.verify_ssl_certificates)))
+      }
+      if("init.cookies" %in% colnames(h2oconfig)){
+        cookies = h2oconfig$init.cookies
+      }
+    }
+  }
+
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
