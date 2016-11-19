@@ -56,6 +56,35 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
                      https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_, cluster_id = NA_integer_, cookies = NA_character_) {
+
+    # Check for .h2oconfig file
+    # Find .h2oconfig file starting from currenting directory and going
+    # up all parent directories until it reaches the root directory.
+    config_path <- .h2o.candidate.config.files()
+
+    #Read in config if available
+    if(!(is.null(config_path))){
+
+      h2oconfig = .parse.h2oconfig(config_path)
+
+      #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
+      if(strict_version_check != TRUE && "init.check_version" %in% colnames(h2oconfig)){
+        strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
+      }
+      if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
+        proxy = trimws(as.character(h2oconfig$init.proxy))
+      }
+      if(is.na(cluster_id) && "init.cluster_id" %in% colnames(h2oconfig)){
+        cluster_id = as.numeric(as.character(h2oconfig$init.cluster_id))
+      }
+      if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
+        insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
+      }
+      if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
+        cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
+    }
+  }
+
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
