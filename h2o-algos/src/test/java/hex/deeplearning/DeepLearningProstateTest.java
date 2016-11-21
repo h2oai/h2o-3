@@ -73,7 +73,7 @@ public class DeepLearningProstateTest extends TestUtil {
                 DeepLearningParameters.Loss.Automatic,
                 DeepLearningParameters.Loss.CrossEntropy,
                 DeepLearningParameters.Loss.Huber,
-                DeepLearningParameters.Loss.ModifiedHuber,
+//                DeepLearningParameters.Loss.ModifiedHuber,
                 DeepLearningParameters.Loss.Absolute,
                 DeepLearningParameters.Loss.Quadratic
             }) {
@@ -83,7 +83,7 @@ public class DeepLearningProstateTest extends TestUtil {
                   DistributionFamily.AUTO,
                   DistributionFamily.laplace,
                   DistributionFamily.huber,
-                  DistributionFamily.modified_huber,
+//                  DistributionFamily.modified_huber,
                   DistributionFamily.bernoulli,
                   DistributionFamily.gaussian,
                   DistributionFamily.poisson,

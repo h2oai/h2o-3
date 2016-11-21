@@ -809,6 +809,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
     }
+    if (_parms._distribution == DistributionFamily.modified_huber) {
+      error("_distribution", "Modified Huber distribution is not supported yet.");
+    }
     if (_parms._distribution != DistributionFamily.tweedie) {
       hide("_tweedie_power", "Only for Tweedie Distribution.");
     }
