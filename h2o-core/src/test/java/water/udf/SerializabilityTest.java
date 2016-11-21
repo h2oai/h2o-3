@@ -20,7 +20,7 @@ import static water.udf.specialized.Strings.*;
  */
 public class SerializabilityTest extends TestBase {
   
-  public int cloudSize() { return 1; }
+  public int requiredCloudSize() { return 1; }
 
   @SuppressWarnings("unchecked")
   private <T> void checkSerialization(Column<T> c) {

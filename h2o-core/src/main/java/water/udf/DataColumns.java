@@ -45,8 +45,12 @@ public class DataColumns {
       return TypedFrame.forColumn(this, xs).newColumn();
     }
 
-    public DataColumn<T> newColumn(final List<T> xs) throws IOException {
+    public DataColumn<T> newColumn(List<T> xs) throws IOException {
       return newColumn(xs.size(), Functions.onList(xs));
+    }
+
+    public DataColumn<T> constColumn(final T x, long length) throws IOException {
+      return newColumn(length, Functions.constant(x));
     }
     
     @Override public String toString() { return name; }

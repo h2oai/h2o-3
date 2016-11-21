@@ -2,6 +2,7 @@ package water.udf;
 
 import org.junit.After;
 import org.junit.Before;
+import water.H2OStarter;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.NFSFileVec;
@@ -19,17 +20,19 @@ public abstract class TestBase extends TestUtil {
     ClassLoader loader = getClass().getClassLoader();
     loader.setDefaultAssertionStatus(true);
   }
-
-  abstract int cloudSize();
+  
+  abstract int requiredCloudSize();
   
   @Before
   public void hi() {
-    stall_till_cloudsize(cloudSize());
+    stall_till_cloudsize(requiredCloudSize());
     Scope.enter();
   }
 
   @After
-  public void bye() { Scope.exit(); }
+  public void bye() { 
+    Scope.exit(); 
+  }
 
   protected static Vec willDrop(Vec v) { return Scope.track(v); }
 

@@ -81,4 +81,9 @@ public class Functions {
     return ys;
   }
 
+  public static <T> Function<Long,T> constant(final T x) {
+    return new Function<Long, T>() {
+      public T apply(Long i) { return x; }
+    };
+  }
 }
