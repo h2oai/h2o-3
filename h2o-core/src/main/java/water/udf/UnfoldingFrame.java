@@ -13,7 +13,7 @@ import java.util.List;
 import static water.udf.specialized.Enums.enums;
 
 /**
- * Single column frame that knows its data type
+ * Single-column frame that knows its data type and can unfold
  */
 public class UnfoldingFrame<X> extends Frame {
   protected final ColumnFactory<X> factory;
