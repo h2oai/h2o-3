@@ -27,7 +27,7 @@ test.mean <- function(){
   #Check axis arguments set to 1 (row mean) and compare to R
   mean_frame_axis = h2o.mean(fr,na.rm=TRUE,axis=1,return_frame=TRUE)
   fr_df = as.data.frame(fr)
-  mean_list_axis = base::rowMeans(fr_df,na.rm=TRUE)
+  mean_list_axis = rowMeans(fr_df,na.rm=TRUE)
 
   #Convert previous H2O Frame to data frames for comparison
   mean_frame_axis_df = as.data.frame(mean_frame_axis)
@@ -40,7 +40,7 @@ test.mean <- function(){
   #Check axis arguments set to 0 (col mean) and compare to R
   mean_frame_axis = h2o.mean(fr,na.rm=TRUE,axis=0,return_frame=TRUE)
   fr_df = as.data.frame(fr)
-  mean_list_axis = base::colMeans(fr_df,na.rm=TRUE)
+  mean_list_axis = colMeans(fr_df,na.rm=TRUE)
 
   #Convert previous H2O Frame to data frames for comparison
   mean_frame_axis_df = as.data.frame(t(mean_frame_axis))
@@ -61,7 +61,7 @@ test.mean <- function(){
   #Check axis arguments set to 1 (row mean) and compare to R
   mean_frame_axis = h2o.mean(fr,na.rm=FALSE,axis=1,return_frame=TRUE)
   fr_df = as.data.frame(fr)
-  mean_list_axis = base::rowMeans(fr_df,na.rm=FALSE)
+  mean_list_axis = rowMeans(fr_df,na.rm=FALSE)
 
   #Convert previous H2O Frame to data frames for comparison
   mean_frame_axis_df = as.data.frame(mean_frame_axis)
@@ -74,7 +74,7 @@ test.mean <- function(){
   #Check axis arguments set to 0 (col mean) and compare to R
   mean_frame_axis = h2o.mean(fr,na.rm=FALSE,axis=0,return_frame=TRUE)
   fr_df = as.data.frame(fr)
-  mean_list_axis = base::colMeans(fr_df,na.rm=FALSE)
+  mean_list_axis = colMeans(fr_df,na.rm=FALSE)
 
   #Convert previous H2O Frame to data frames for comparison
   mean_frame_axis_df = as.data.frame(t(mean_frame_axis))
