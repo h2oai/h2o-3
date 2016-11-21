@@ -85,6 +85,14 @@ test.mean <- function(){
   rownames(mean_list_axis_df) = c()
   expect_equal(mean_frame_axis_df,mean_list_axis_df)
 
+  ################################################################
+  #Check if axis is ignored when return_frame=FALSE
+  mean_list = h2o.mean(fr,na.rm=FALSE)
+  mean_list_ignore_row = h2o.mean(fr,na.rm=FALSE,axis=1)
+  mean_list_ignore_col = h2o.mean(fr,na.rm=FALSE,axis=0)
+  expect_equal(mean_list,mean_list_ignore_row)
+  expect_equal(mean_list,mean_list_ignore_col)
+  expect_equal(mean_list_ignore_col,mean_list_ignore_row)
 }
 
 doTest("Test out the h2o.mean() functionality", test.mean)
