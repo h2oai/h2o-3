@@ -21,7 +21,7 @@ import static water.udf.specialized.Strings.*;
  */
 public class UdfTest extends TestBase {
   
-  int cloudSize() { return 5; }
+  int requiredCloudSize() { return 5; }
   
   private DataColumn<Double> sines() throws java.io.IOException {
     return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
@@ -229,6 +229,36 @@ public class UdfTest extends TestBase {
       // as designed
     }
     
+    try {
+      Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
+      fail("Column incompatibility should be detected");
+    } catch (AssertionError ae) {
+      // as designed
+    }
+  }
+
+  @Test
+  public void testFun2CompatibilityWithConst() throws Exception {
+    Column<Double> x = five_x();
+    Column<Double> y = Doubles.constColumn(42.0, 1 << 20);
+    Column<Double> z = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+      public Double apply(Long i) { return Math.sin(i*0.0001); }
+    }));
+
+    try {
+      Column<Double> z1 = new Fun2Column<>(Functions.PLUS, x, y);
+      fail("Column incompatibility should be detected");
+    } catch (AssertionError ae) {
+      // as designed
+    }
+
+    try {
+      Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
+      fail("Column incompatibility should be detected");
+    } catch (AssertionError ae) {
+      // as designed
+    }
+
     try {
       Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
       fail("Column incompatibility should be detected");
