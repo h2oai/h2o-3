@@ -1990,7 +1990,8 @@ summary.H2OFrame <- h2o.summary
 #'                             NOTE: This is only applied when return_frame is set to TRUE. Otherwise, this parameter
 #'                             is ignored.
 #' @param return_frame \code{logical}. Indicate whether to return an H2O frame or a list. Default is FALSE (returns a list).
-#' @seealso \code{\link[base]{mean}} for the base R implementation.
+#' @param ... Further arguments to be passed from or to other methods.
+#' @seealso \code{\link[base]{mean}} , \code{\link[base]{rowMeans}}, or \code{\link[base]{colMeans}} for the base R implementation
 #' @return Returns a list containing the mean for each column (NaN for non-numeric columns) if return_frame is set to FALSE.
 #'         If return_frame is set to TRUE, then it will return an H2O frame with means per column or row (depends on axis argument).
 #' @examples
@@ -2000,7 +2001,8 @@ summary.H2OFrame <- h2o.summary
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' # Default behavior. Will return list of means per column.
 #' h2o.mean(prostate.hex$AGE)
-#' # return_frame set to TRUE. This will return an H2O Frame with mean per row or column (depends on axis argument)
+#' # return_frame set to TRUE. This will return an H2O Frame
+#' # with mean per row or column (depends on axis argument)
 #' h2o.mean(prostate.hex,na.rm=TRUE,axis=1,return_frame=TRUE)
 #' }
 #' @export
