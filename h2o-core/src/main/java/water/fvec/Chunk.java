@@ -117,7 +117,6 @@ public abstract class Chunk extends Iced<Chunk> {
 
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
-   * @param vals holds extracted values, length must be >= this.sparseLen()
    * @param vals holds extracted chunk-relative row ids, length must be >= this.sparseLen()
    * @return number of extracted (non-zero) elements, equal to sparseLen()
    */
@@ -660,7 +659,7 @@ public abstract class Chunk extends Iced<Chunk> {
   }
 
   //NA sparse methods:
-
+  
   /** Sparse Chunks have a significant number of NAs, and support for
    *  skipping over large runs of NAs in a row.
    *  @return true if this Chunk is sparseNA.  */
