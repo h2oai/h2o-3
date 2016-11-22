@@ -16,7 +16,6 @@ import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.*;
 
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.TreeMap;
@@ -122,10 +121,10 @@ public class GBMTest extends TestUtil {
             },
             false, DistributionFamily.bernoulli);
 
-    basicGBM("./smalldata/gbm_test/alphabet_cattest.csv",
-            new PrepData() { int prep(Frame fr) { return fr.find("y"); }
-            },
-            false, DistributionFamily.modified_huber);
+//    basicGBM("./smalldata/gbm_test/alphabet_cattest.csv",
+//            new PrepData() { int prep(Frame fr) { return fr.find("y"); }
+//            },
+//            false, DistributionFamily.modified_huber);
 
     basicGBM("./smalldata/airlines/allyears2k_headers.zip",
             new PrepData() { int prep(Frame fr) {
@@ -2370,7 +2369,7 @@ public class GBMTest extends TestUtil {
     Scope.exit();
   }
 
-  @Test
+  @Ignore
   public void testModifiedHuber() {
     Frame tfr = null, vfr = null;
     GBMModel gbm = null;
@@ -2422,7 +2421,8 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void testModifiedHuberStability() {
+  @Ignore
+  public void testModifiedHuberStability() {
     String xy = "A,Y\nB,N\nA,N\nB,N\nA,Y\nA,Y";
     Key tr = Key.make("train");
     Frame df = ParseDataset.parse(tr, makeByteVec(Key.make("xy"), xy));
