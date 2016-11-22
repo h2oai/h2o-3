@@ -41,8 +41,8 @@ public class UnfoldingFrame<X> extends Frame {
 
   public static <X> UnfoldingFrame<X> unfoldingFrame(final ColumnFactory<X> factory, final Column<List<X>> master, int width) {
     return new UnfoldingFrame<X>(factory, master.size(), master, width) {
-      @Override protected Vec initVec() {
-        Vec v0 = Vec.makeZero(this.len, factory.typeCode());
+      @Override protected Vec buildZeroVec() {
+        Vec v0 = DataColumns.buildZeroVec(this.len, factory.typeCode());
         v0.align(master.vec());
         return v0;
       }
@@ -65,23 +65,23 @@ public class UnfoldingFrame<X> extends Frame {
 
   public static <X> UnfoldingEnumFrame UnfoldingEnumFrame(final Column<List<Integer>> master, int width, String[] domain) {
     return new UnfoldingEnumFrame(master.size(), master, width, domain) {
-      @Override protected Vec initVec() {
-        Vec v0 = Vec.makeZero(this.len, Vec.T_CAT);
+      @Override protected Vec buildZeroVec() {
+        Vec v0 = DataColumns.buildZeroVec(this.len, Vec.T_CAT);
         v0.align(master.vec());
         return v0;
       }
     };
   }
   
-  protected Vec initVec() {
-    return Vec.makeZero(len, factory.typeCode());
+  protected Vec buildZeroVec() {
+    return DataColumns.buildZeroVec(len, factory.typeCode());
   }
   
   protected List<Vec> makeVecs() throws IOException {
     Vec[] vecs = new Vec[width];
 
     for (int j = 0; j < width; j++) {
-      vecs[j] = initVec();
+      vecs[j] = buildZeroVec();
     }
 
     MRTask task = new MRTask() {

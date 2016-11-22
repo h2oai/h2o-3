@@ -15,7 +15,7 @@ import java.io.IOException;
  */
 public class TypedFrame<X> extends Frame {
   private final ColumnFactory<X> factory;
-  private final long len;
+  private final long length;
   private final Function<Long, X> function;
   private Column<X> column;
 
@@ -24,36 +24,36 @@ public class TypedFrame<X> extends Frame {
    */
   public TypedFrame() {
     factory = null;
-    len = -1;
+    length = -1;
     function = null;
   }
   
-  public TypedFrame(BaseFactory<X> factory, long len, Function<Long, X> function) {
+  public TypedFrame(BaseFactory<X> factory, long length, Function<Long, X> function) {
     super();
     this.factory = factory;
-    this.len = len;
+    this.length = length;
     this.function = function;
   }
 
   public static <X> TypedFrame<X> forColumn(final BaseFactory<X> factory, final Column<X> column) {
     return new TypedFrame<X>(factory, column.size(), column) {
-      @Override protected Vec initVec() { return factory.initVec(column); }
+      @Override protected Vec buildZeroVec() { return factory.buildZeroVec(column); }
     };
   }
   
   public final static class EnumFrame extends TypedFrame<Integer> {
     private final String[] domain;
     
-    public EnumFrame(long len, Function<Long, Integer> function, String[] domain) {
-      super(Enums.enums(domain), len, function);
+    public EnumFrame(long length, Function<Long, Integer> function, String[] domain) {
+      super(Enums.enums(domain), length, function);
       this.domain = domain;
     }
   }
   
-  protected Vec initVec() { return factory.initVec(len); }
+  protected Vec buildZeroVec() { return factory.buildZeroVec(length); }
   
   protected Vec makeVec() throws IOException {
-    final Vec vec0 = initVec();
+    final Vec vec0 = buildZeroVec();
     MRTask task = new MRTask() {
       @Override public void map(Chunk[] cs) {
         for (Chunk c : cs) {
