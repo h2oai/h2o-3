@@ -1,9 +1,7 @@
 package water.udf;
 
 import org.apache.commons.lang.SerializationUtils;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import water.TestUtil;
 import water.udf.specialized.Enums;
 
 import java.util.Arrays;
@@ -18,7 +16,7 @@ import static water.udf.specialized.Strings.*;
 /**
  * Test for UDF
  */
-public class SerializabilityTest extends TestBase {
+public class SerializabilityTest extends UdfBase {
   
   public int requiredCloudSize() { return 1; }
 
