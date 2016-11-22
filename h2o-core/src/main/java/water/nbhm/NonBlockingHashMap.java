@@ -110,7 +110,9 @@ public class NonBlockingHashMap<TypeK, TypeV>
   }
 
   // --- hash ----------------------------------------------------------------
-  // Helper function to spread lousy hashCodes
+  // Helper function to spread lousy hashCodes Throws NPE for null Key, on
+  // purpose - as the first place to conveniently toss the required NPE for a
+  // null Key.
   private static final int hash(final Object key) {
     int h = key.hashCode();     // The real hashCode call
     h ^= (h>>>20) ^ (h>>>12);
