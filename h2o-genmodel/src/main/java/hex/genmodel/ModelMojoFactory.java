@@ -3,6 +3,7 @@ package hex.genmodel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoReader;
 import hex.genmodel.algos.drf.DrfMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
+import hex.genmodel.algos.glm.GlmMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 
 import java.io.IOException;
@@ -31,6 +32,9 @@ public class ModelMojoFactory {
       case "Generalized Low Rank Model":
         return new GlrmMojoReader();
 
+      case "Generalized Linear Modeling":
+      case "Generalized Linear Model":
+        return new GlmMojoReader();
 
       default:
         throw new IllegalStateException("Unsupported MOJO algorithm: " + algo);
