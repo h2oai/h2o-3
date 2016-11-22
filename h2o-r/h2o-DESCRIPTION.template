@@ -24,7 +24,8 @@ Imports: graphics,
          jsonlite
 Suggests: ggplot2,
           mlbench,
-          Matrix
+          Matrix,
+          data.table (>= 1.9.7)
 Collate:
          'astfun.R'
          'classes.R'
