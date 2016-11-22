@@ -1,9 +1,7 @@
 package water.udf;
 
 import com.google.common.io.Files;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import water.TestUtil;
 import water.udf.specialized.Enums;
 import water.util.StringUtils;
 
@@ -19,7 +17,7 @@ import static water.udf.specialized.Strings.*;
 /**
  * Test for UDF
  */
-public class UdfTest extends TestBase {
+public class UdfTest extends UdfBase {
   
   int requiredCloudSize() { return 5; }
   
