@@ -11,5 +11,5 @@ class Test0 extends FunSuite {
     getClass.getClassLoader.setDefaultAssertionStatus(true)
   }
   
-  def willDrop[T](t:T) = water.udf.TestBase.willDrop[T](t)
+  def willDrop[T](t:T) = water.udf.UdfBase.willDrop[T](t)
 }
