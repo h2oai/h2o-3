@@ -1,5 +1,6 @@
 package hex.createframe;
 
+import water.Iced;
 import water.fvec.Frame;
 
 import java.util.Random;
@@ -12,7 +13,7 @@ import java.util.Random;
  * in-place. Examples of such postprocessing tasks could be: column renaming /
  * reordering; removal of some temporary columns; etc.</p>
  */
-public abstract class CreateFramePostprocessStep {
+public abstract class CreateFramePostprocessStep extends Iced<CreateFramePostprocessStep> {
 
   /**
    * This method performs the actual work of the postprocessing task.

@@ -16,7 +16,7 @@ import java.util.Random;
 /**
  * This recipe tries to match the behavior of the original hex.CreateFrame class.
  */
-public class OriginalCreateFrameRecipe extends Iced {
+public class OriginalCreateFrameRecipe extends Iced<OriginalCreateFrameRecipe> {
   private Key<Frame> dest;
 
   private int rows = 10000;

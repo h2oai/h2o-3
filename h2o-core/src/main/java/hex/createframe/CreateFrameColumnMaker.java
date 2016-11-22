@@ -1,5 +1,6 @@
 package hex.createframe;
 
+import water.Iced;
 import water.fvec.NewChunk;
 
 import java.util.Random;
@@ -11,7 +12,7 @@ import java.util.Random;
  * constructs 0 columns (i.e. just modifies the previously constructed ones), or one that
  * creates more than 1 columns at once.
  */
-public abstract class CreateFrameColumnMaker {
+public abstract class CreateFrameColumnMaker extends Iced<CreateFrameColumnMaker> {
   protected int index;
 
   /**
