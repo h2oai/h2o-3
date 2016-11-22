@@ -155,8 +155,6 @@ import java.util.UUID;
  * @author Cliff Click
  */
 public class Vec extends Keyed<Vec> {
-  public interface Holder { Vec vec(); }
-  
   // Vec internal type: one of T_BAD, T_UUID, T_STR, T_NUM, T_CAT, T_TIME
   byte _type;                   // Vec Type
 
@@ -313,11 +311,7 @@ public class Vec extends Keyed<Vec> {
   }
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
-  public static Vec makeZero( long len ) { return makeZero(len, T_NUM); }
-
-  public static Vec makeZero(long len, byte typeCode) {
-    return makeCon(0.0, len, true, typeCode);
-  }
+  public static Vec makeZero( long len ) { return makeCon(0d,len); }
 
   /** Make a new constant vector with the given row count, and redistribute the data
    * evenly around the cluster.

@@ -58,8 +58,8 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
     return new EnumChunk(c);
   }
 
-  public DataColumn<Integer> newColumn(long len, final Function<Long, Integer> f) throws IOException {
-    return new TypedFrame.EnumFrame(len, f, domain).newColumn();
+  public DataColumn<Integer> newColumn(long length, final Function<Long, Integer> f) throws IOException {
+    return new TypedFrame.EnumFrame(length, f, domain).newColumn();
   }
 
   static class Column extends DataColumn<Integer> {

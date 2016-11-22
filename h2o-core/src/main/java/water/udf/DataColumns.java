@@ -13,6 +13,10 @@ public class DataColumns {
 
   protected DataColumns(){}
 
+  public static Vec buildZeroVec(long length, byte typeCode) {
+    return Vec.makeCon(0.0, length, true, typeCode);
+  }
+
   public static abstract class BaseFactory<T> 
       implements ColumnFactory<T> {
     public final byte typeCode;
@@ -24,12 +28,12 @@ public class DataColumns {
     
     public byte typeCode() { return typeCode; }
 
-    public Vec initVec(long length) {
-      return Vec.makeZero(length, typeCode());
+    public Vec buildZeroVec(long length) {
+      return DataColumns.buildZeroVec(length, typeCode);
     }
     
-    public Vec initVec(Column<?> master) {
-      Vec vec = Vec.makeZero(master.size(), typeCode());
+    public Vec buildZeroVec(Column<?> master) {
+      Vec vec = buildZeroVec(master.size());
       vec.align(master.vec());
       return vec;
     }
@@ -37,8 +41,8 @@ public class DataColumns {
     public abstract DataChunk<T> apply(final Chunk c);
     public abstract DataColumn<T> newColumn(Vec vec);
 
-    public DataColumn<T> newColumn(long len, final Function<Long, T> f) throws IOException {
-      return new TypedFrame<>(this, len, f).newColumn();
+    public DataColumn<T> newColumn(long length, final Function<Long, T> f) throws IOException {
+      return new TypedFrame<>(this, length, f).newColumn();
     }
 
     public DataColumn<T> materialize(Column<T> xs) throws IOException {

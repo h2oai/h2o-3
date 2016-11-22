@@ -9,6 +9,7 @@ import water.fvec.NFSFileVec;
 import water.fvec.Vec;
 
 import java.io.File;
+import java.lang.reflect.Method;
 
 /**
  * All test functionality specific for udf (not actually), 
@@ -36,8 +37,13 @@ public abstract class TestBase extends TestUtil {
 
   protected static Vec willDrop(Vec v) { return Scope.track(v); }
 
-  public static <T extends Vec.Holder> T willDrop(T vh) {
-    Scope.track(vh.vec());
+  public static <T> T willDrop(T vh) {
+    try { // using reflection so that Paula Bean's code is intact
+      Method vec = vh.getClass().getMethod("vec");
+      Scope.track((Vec)vec.invoke(vh));
+    } catch (Exception e) {
+      // just ignore
+    }
     return vh;
   }
 

@@ -110,7 +110,7 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 }}</pre>
  */
 
-public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
+public abstract class Chunk extends Iced<Chunk> {
 
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
