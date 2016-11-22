@@ -58,7 +58,12 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
     }
     _model._model = _model._backend.buildNet(_model._imageDataSet, _model._opts, _model._backendParams, _model._nclasses, file.toString());
     // 1) read the raw bytes of the mean image file from the MOJO
-    byte[] meanBlob = readblob("mean_image_file");
+    byte[] meanBlob = null;
+    try {
+      meanBlob = readblob("mean_image_file");
+    } catch (IOException e) {
+      // e.printStackTrace();
+    }
     if (meanBlob!=null) {
       // 2) write the mean image file
       File meanFile = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + ".mean");
