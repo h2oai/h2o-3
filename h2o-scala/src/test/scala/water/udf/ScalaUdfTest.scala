@@ -19,7 +19,7 @@ import scala.language.postfixOps
 class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   val A_LOT: Int = 1 << 20
 
-  import TestBase._
+  import UdfBase._
   
   override def beforeAll: Unit = stall_till_cloudsize(1)
 
@@ -246,7 +246,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   }
 
   test("UnfoldingColumn") {
-    val file: File = TestBase.getFile("smalldata/chicago/chicagoAllWeather.csv")
+    val file: File = UdfBase.getFile("smalldata/chicago/chicagoAllWeather.csv")
     val ss = Source.fromFile(file).getLines().toList
     
     val source: Column[lang.String] = willDrop(Strings.newColumn(ss))
