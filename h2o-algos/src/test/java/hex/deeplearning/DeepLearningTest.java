@@ -1442,7 +1442,8 @@ public class DeepLearningTest extends TestUtil {
       if (dl2 != null) dl2.delete();
     }
   }
-  @Test
+
+  @Ignore
   public void testConvergenceAUC_ModifiedHuber() {
     Frame tfr = null;
     DeepLearningModel dl = null;

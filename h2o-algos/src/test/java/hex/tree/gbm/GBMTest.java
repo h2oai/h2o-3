@@ -2665,6 +2665,7 @@ public class GBMTest extends TestUtil {
   @Test
   public void testDeviances() {
     for (DistributionFamily dist : DistributionFamily.values()) {
+      if (dist == modified_huber) continue;
       Frame tfr = null;
       Frame res = null;
       Frame preds = null;
