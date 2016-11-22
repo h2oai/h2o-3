@@ -483,6 +483,12 @@ class ModelBase(backwards_compatible()):
         tbl = tbl.cell_values
         return {a[0]: a[2] for a in tbl}
 
+    def coef_std(self):
+        """Return the standardized coefficients."""
+        tbl = self._model_json["output"]["coefficients_table"]
+        if tbl is None: return None
+        tbl = tbl.cell_values
+        return {a[0]: a[5] for a in tbl}
 
     def r2(self, train=False, valid=False, xval=False):
         """
