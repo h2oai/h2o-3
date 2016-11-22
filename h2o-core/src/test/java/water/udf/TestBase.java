@@ -36,7 +36,7 @@ public abstract class TestBase extends TestUtil {
 
   protected static Vec willDrop(Vec v) { return Scope.track(v); }
 
-  protected static <T extends Vec.Holder> T willDrop(T vh) {
+  public static <T extends Vec.Holder> T willDrop(T vh) {
     Scope.track(vh.vec());
     return vh;
   }
