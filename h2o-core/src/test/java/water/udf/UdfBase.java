@@ -3,6 +3,7 @@ package water.udf;
 import org.junit.After;
 import org.junit.Before;
 import water.H2OStarter;
+import water.Iced;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.NFSFileVec;
@@ -10,17 +11,20 @@ import water.fvec.Vec;
 
 import java.io.File;
 import java.lang.reflect.Method;
+import static water.TestUtil.*;
 
 /**
  * All test functionality specific for udf (not actually), 
  * not kosher enough to be allowed for the general public
  */
-public abstract class TestBase extends TestUtil {
+public abstract class UdfBase extends TestUtil {
+//  private TestUtil tu;
 
-  { // need this because -ea IS NOT ALWAYS set in intellij
-    ClassLoader loader = getClass().getClassLoader();
-    loader.setDefaultAssertionStatus(true);
-  }
+//  public TestBase() {
+//    ClassLoader loader = getClass().getClassLoader();
+//    loader.setDefaultAssertionStatus(true);
+//    tu = new TestUtil();
+//  }
   
   abstract int requiredCloudSize();
   
