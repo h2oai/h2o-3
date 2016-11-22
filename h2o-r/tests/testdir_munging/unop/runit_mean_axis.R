@@ -10,7 +10,7 @@ test.mean <- function(){
   fr <- h2o.createFrame(rows = 100, cols = 10, categorical_fraction = 0,
                     factors = 0, integer_fraction = 1.0, integer_range = 100,
                     binary_fraction = 0, time_fraction = 0, string_fraction = 0,
-                    has_response = FALSE)
+                    has_response = FALSE,seed = 123456789)
 
   ################################################################
   #Testing h2o.mean and have a frame returned
@@ -33,9 +33,10 @@ test.mean <- function(){
   mean_frame_axis_df <- as.data.frame(mean_frame_axis)
   mean_list_axis_df <- as.data.frame(mean_list_axis)
   colnames(mean_list_axis_df) <- c("mean")
-
+  cat("Check axis arguments set to 1 (row mean) and compare to R\n")
+  print(mean_frame_axis_df)
+  print(mean_list_axis_df)
   expect_equal(mean_frame_axis_df,mean_list_axis_df,tol=1e-6)
-
   ################################################################
   #Check axis arguments set to 0 (col mean) and compare to R
   mean_frame_axis <- h2o.mean(fr,na.rm=TRUE,axis=0,return_frame=TRUE)
@@ -49,14 +50,15 @@ test.mean <- function(){
   colnames(mean_frame_axis_df) <- c("mean")
   rownames(mean_frame_axis_df) <- c()
   rownames(mean_list_axis_df) <- c()
+  cat("Check axis arguments set to 0 (col mean) and compare to R\n")
+  print(mean_frame_axis_df)
+  print(mean_list_axis_df)
   expect_equal(mean_frame_axis_df,mean_list_axis_df,tol=1e-6)
-
   ######################################################################################################################
 
   #Check previous with na.rm=FALSE and add a couple NA's to columns
   fr[1,1] <- NA
   fr[2,2] <- NA
-  print(fr)
   ################################################################
   #Check axis arguments set to 1 (row mean) and compare to R
   mean_frame_axis <- h2o.mean(fr,na.rm=FALSE,axis=1,return_frame=TRUE)
@@ -67,9 +69,10 @@ test.mean <- function(){
   mean_frame_axis_df <- as.data.frame(mean_frame_axis)
   mean_list_axis_df <- as.data.frame(mean_list_axis)
   colnames(mean_list_axis_df) <- c("mean")
-
+  cat("Check axis arguments set to 1 (row mean) & na.rm = FALSE and compare to R\n")
+  print(mean_frame_axis_df)
+  print(mean_list_axis_df)
   expect_equal(mean_frame_axis_df,mean_list_axis_df,tol=1e-6)
-
   ################################################################
   #Check axis arguments set to 0 (col mean) and compare to R
   mean_frame_axis <- h2o.mean(fr,na.rm=FALSE,axis=0,return_frame=TRUE)
@@ -83,6 +86,9 @@ test.mean <- function(){
   colnames(mean_frame_axis_df) <- c("mean")
   rownames(mean_frame_axis_df) <- c()
   rownames(mean_list_axis_df) <- c()
+  cat("Check axis arguments set to 0 (col mean) & na.rm = FALSE and compare to R\n")
+  print(mean_frame_axis_df)
+  print(mean_list_axis_df)
   expect_equal(mean_frame_axis_df,mean_list_axis_df)
 
   ################################################################
@@ -90,6 +96,9 @@ test.mean <- function(){
   mean_list <- h2o.mean(fr,na.rm=FALSE)
   mean_list_ignore_row <- h2o.mean(fr,na.rm=FALSE,axis=1)
   mean_list_ignore_col <- h2o.mean(fr,na.rm=FALSE,axis=0)
+  cat("Check if axis is ignored when return_frame=FALSE\n")
+  print(mean_list_ignore_row)
+  print(mean_list_ignore_col)
   expect_equal(mean_list,mean_list_ignore_row)
   expect_equal(mean_list,mean_list_ignore_col)
   expect_equal(mean_list_ignore_col,mean_list_ignore_row)
