@@ -1174,6 +1174,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
           DKV.put(tfr);
         }
         DeepWaterParameters parms = new DeepWaterParameters();
+        parms._backend = getBackend();
         parms._train = tfr._key;
         parms._epochs = 100;
         parms._response_column = "Class";
@@ -1341,6 +1342,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       valid = fs.getResult()[1];
 
       DeepWaterParameters parms = new DeepWaterParameters();
+      parms._backend = getBackend();
       parms._train = train._key;
       parms._valid = valid._key;
       parms._epochs = 1;
@@ -1391,6 +1393,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       valid = fs.getResult()[1];
 
       DeepWaterParameters parms = new DeepWaterParameters();
+      parms._backend = getBackend();
       parms._train = train._key;
       parms._valid = valid._key;
       parms._epochs = 10;
