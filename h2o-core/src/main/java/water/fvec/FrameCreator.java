@@ -8,6 +8,7 @@ import water.util.FrameUtils;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.UUID;
 
 import static water.fvec.Vec.makeCon;
 import water.util.RandomUtils;
