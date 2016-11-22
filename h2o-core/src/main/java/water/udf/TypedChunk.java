@@ -9,7 +9,7 @@ import water.fvec.Vec;
 public interface TypedChunk<T> {
   T get(int i);
   boolean isNA(int i);
-  int len();
+  int length();
   long start();
   Chunk rawChunk();
 

@@ -368,7 +368,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Pair of (column name, Frame key). */
-  public static class VecSpecifier extends Iced implements Vec.Holder {
+  public static class VecSpecifier extends Iced {
     public Key<Frame> _frame;
     public String _column_name;
 
