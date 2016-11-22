@@ -31,7 +31,7 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_confusion_matrix_size Maximum size (# classes) for confusion matrices to be printed in the Logs. Defaults to 20.
+#' @param max_confusion_matrix_size [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs. Defaults to 20.
 #' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
 #'        Defaults to 0.
 #' @param checkpoint Model checkpoint to resume training with.

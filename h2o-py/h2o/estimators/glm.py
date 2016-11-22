@@ -588,7 +588,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def max_confusion_matrix_size(self):
-        """int: Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)"""
+        """int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)"""
         return self._parms.get("max_confusion_matrix_size")
 
     @max_confusion_matrix_size.setter

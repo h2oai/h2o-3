@@ -127,7 +127,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      *  avoid printing extremely large confusion matrices.
      *  */
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = false,
-        help = "Maximum size (# classes) for confusion matrices to be printed in the Logs.")
+        help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs.")
     public int max_confusion_matrix_size;
 
     @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,

@@ -979,8 +979,6 @@ Refer to {\textbf{\nameref{sssec:AdaptiveLearning}}} for more details.
 
 \item \texttt{quiet\_mode}: Logical. Enables quiet mode for less output to standard output. The default is false.
 
-\item \texttt{max\_confusion\_matrix\_size}: For classification models, specifies the maximum size (in terms of classes) for displaying the confusion matrix. This option helps avoid printing extremely large confusion matrices. The default is 20.
-
 \item \texttt{max\_hit\_ratio\_k}: For multi-class only. Specifies the maximum number (top $K$) of predictions to use for hit ratio computation. To disable, specify \texttt{0}. The default is 10.
 
 \item \texttt{balance\_classes}: Logical. For imbalanced data, the training data class counts can be artificially balanced by over-sampling the minority classes and under-sampling the majority classes so that each class  contains the same number of observations.  This can result in improved predictive accuracy.  Over-sampling  uses replacement, rather than simulating new observations. The \texttt{max\_after\_balance\_size} parameter specifies the total number of observations after balancing. The default is false.
