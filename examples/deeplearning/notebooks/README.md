@@ -35,9 +35,9 @@ jupyter notebook .
 - [Cat/Dog/Mouse image classification with Lenet convolutional neural network (GPU)](./deeplearning_cat_dog_mouse_lenet.ipynb)
 - [Cat/Dog/Mouse image classification with Inception Resnet V2 convolutional neural network (GPU)](./deeplearning_cat_dog_mouse_inception_resnetv2.ipynb)
 - [Credit card risk prediction with an ensemble of Deep Learning, GBM and DRF](./deeplearning_credit_card_default_risk_prediction.ipynb)
-- [Iris flower classification with Hyper-parameter optimization using H2O](./deeplearning_grid_iris.ipynb)
+- [Iris flower classification with hyper-parameter optimization (GPU)](./deeplearning_grid_iris.ipynb)
 - [Szilard's MNIST Deep Learning benchmark (GPU)](./deeplearning_benchmark_mnist.ipynb)
 
 ### R Jupyter notebooks
 - [Cat/Dog/Mouse image classification with Lenet convolutional neural network (GPU)](./deeplearning_cat_dog_mouse_lenet_R.ipynb)
-- [Iris flower classification hyper-parameter optimization with H2O Deep Water (GPU)](./deeplearning_grid_iris_R.ipynb)
+- [Iris flower classification with hyper-parameter optimization (GPU)](./deeplearning_grid_iris_R.ipynb)
