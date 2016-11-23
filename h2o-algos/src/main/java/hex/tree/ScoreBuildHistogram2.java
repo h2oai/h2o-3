@@ -59,19 +59,18 @@ import water.util.VecUtils;
  *    exp(nthreads) = max(1,H2O.NUMCPUS - num_cols/COL_BLOCK_SZ)
  *
  */
-public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
-  transient int []   _cids;
-  transient Chunk[][] _chks;
-  transient double [][] _ys;
-  transient double [][] _ws;
-  transient int [][] _nhs;
-  transient int [][] _rss;
-  Frame _fr2;
-  final int _numLeafs;
-  final IcedBitSet _activeCols;
+class ScoreBuildHistogram2 extends ScoreBuildHistogram {
+  private transient int []   _cids;
+  private transient Chunk[][] _chks;
+  private transient double [][] _ys;
+  private transient double [][] _ws;
+  private transient int [][] _nhs;
+  private transient int [][] _rss;
+  private Frame _fr2;
+  private final int _numLeafs;
+  private final IcedBitSet _activeCols;
 
-  private static int MIN_COL_BLOCK_SZ = 2;
-  public ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, int weightIdx, int workIdx, int nidIdxs) {
+  ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, int weightIdx, int workIdx, int nidIdxs) {
     super(cc, k, ncols, nbins, nbins_cats, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
     _numLeafs = _hcs.length;
 
@@ -123,7 +122,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   // assigned DecidedNode, "scoring" the row against that Node's decision
   // criteria, and assigning the row to a new child UndecidedNode (and
   // giving it an improved prediction).
-  protected int[] score_decide(Chunk chks[], int nnids[]) {
+  private int[] score_decide(Chunk chks[], int nnids[]) {
     int [] res = nnids.clone();
     for( int row=0; row<nnids.length; row++ ) { // Over all rows
       int nid = nnids[row];          // Get Node to decide from
@@ -269,20 +268,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }).fork();
   }
 
-  // Reduce for both local and remote
-  private static void mergeHistos(DHistogram [][] hcs, DHistogram [][] hcs2){
-    // Distributed histograms need a little work
-    for( int i=0; i< hcs.length; i++ ) {
-      DHistogram hs1[] = hcs[i], hs2[] = hcs2[i];
-      if( hs1 == null ) hcs[i] = hs2;
-      else if( hs2 != null )
-        for( int j=0; j<hs1.length; j++ )
-          if( hs1[j] == null ) hs1[j] = hs2[j];
-          else if( hs2[j] != null ) {
-            hs1[j].add(hs2[j]);
-          }
-    }
-  }
   private static void mergeHistos(DHistogram [] hcs, DHistogram [] hcs2){
     // Distributed histograms need a little work
     for( int i=0; i< hcs.length; i++ ) {
@@ -310,8 +295,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     @Override
     public ComputeHistoThread makeCopy() {
-      ComputeHistoThread res = new ComputeHistoThread(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_cidx);
-      return res;
+      return new ComputeHistoThread(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_cidx);
     }
 
     @Override
