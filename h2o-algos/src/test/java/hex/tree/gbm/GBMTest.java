@@ -563,11 +563,7 @@ public class GBMTest extends TestUtil {
       if (tfr != null) tfr.remove();
     }
     Scope.exit();
-
-    for( double mse : mses )
-      System.out.println(mse);
-    for( double mse : mses )
-      assertEquals(mse, mses[0], 1e-15);
+    for( double mse : mses ) assertEquals(mse, mses[0], 1e-15);
   }
 
   // PUBDEV-557: Test dependency on # nodes (for small number of bins, but fixed number of chunks)
