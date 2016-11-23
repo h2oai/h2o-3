@@ -122,6 +122,9 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
       _model._output._meta_model = metaBuilder.get();
       _model.doScoreMetrics();
+      // _model._output._model_summary = createModelSummaryTable(model._output);
+      _model.update(_job);
+
     } // computeImpl
   }
 }
