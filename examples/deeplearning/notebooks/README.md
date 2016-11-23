@@ -34,7 +34,6 @@ jupyter notebook .
 - [CIFAR10 image classification with VGG convolutional neural network (GPU)](./deeplearning_cifar10_vgg.ipynb)
 - [Cat/Dog/Mouse image classification with Lenet convolutional neural network (GPU)](./deeplearning_cat_dog_mouse_lenet.ipynb)
 - [Cat/Dog/Mouse image classification with Lenet convolutional neural network - TensorFlow (GPU)](./deeplearning_tensorflow_cat_dog_mouse_lenet.ipynb)
-
 - [Cat/Dog/Mouse image classification with Inception Resnet V2 convolutional neural network (GPU)](./deeplearning_cat_dog_mouse_inception_resnetv2.ipynb)
 - [Credit card risk prediction with an ensemble of Deep Learning, GBM and DRF](./deeplearning_credit_card_default_risk_prediction.ipynb)
 - [Iris flower classification with hyper-parameter optimization (GPU)](./deeplearning_grid_iris.ipynb)
