@@ -418,6 +418,16 @@ public abstract class SharedTreeModel<
     Key[][] keys = _output._treeKeys;
     if (_output._compressedTrees == null || _output._compressedTrees.length < keys.length) {
       _output._compressedTrees = new CompressedTree[keys.length][];
+      // async prefetch to initiate all remote fetches
+      for (int t = 0; t < keys.length; ++t) {
+        _output._compressedTrees[t] = new CompressedTree[keys[t].length];
+        for (int c = 0; c < keys[t].length; ++c) {
+          if (keys[t][c] != null) {
+            DKV.prefetch(keys[t][c]);
+          }
+        }
+      }
+      // actually assign the keys (block on each get request)
       for (int t = 0; t < keys.length; ++t) {
         _output._compressedTrees[t] = new CompressedTree[keys[t].length];
         for (int c = 0; c < keys[t].length; ++c) {
@@ -426,6 +436,13 @@ public abstract class SharedTreeModel<
           }
         }
       }
+    }
+  }
+
+  @Override
+  protected void scorePostGlobal() {
+    for (int t = 0; t < _output._compressedTrees.length; ++t) {
+      _output._compressedTrees[t] = null;
     }
   }
 }
