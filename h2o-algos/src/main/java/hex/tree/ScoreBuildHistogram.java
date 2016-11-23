@@ -152,7 +152,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
   // assigned DecidedNode, "scoring" the row against that Node's decision
   // criteria, and assigning the row to a new child UndecidedNode (and
   // giving it an improved prediction).
-  protected final void score_decide(Chunk chks[], Chunk nids, int nnids[]) {
+  protected void score_decide(Chunk chks[], Chunk nids, int nnids[]) {
     for( int row=0; row<nids._len; row++ ) { // Over all rows
       int nid = (int)nids.at8(row);          // Get Node to decide from
       if( isDecidedRow(nid)) {               // already done
@@ -259,7 +259,7 @@ public class ScoreBuildHistogram extends MRTask<ScoreBuildHistogram> {
           }
           DHistogram h = hcs[n][c];
           if( h==null ) continue; // Ignore untracked columns in this split
-          lh.resizeIfNeeded(h._w.length);
+          lh.resizeIfNeeded(h._nbin);
           h.updateSharedHistosAndReset(lh, ws, cs, ys, rows, nh[n], n == 0 ? 0 : nh[n - 1]);
         }
       }

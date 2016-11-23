@@ -66,7 +66,7 @@ public class IcedBitSet extends Iced {
     int bytes = numBytes();
     if( _byteoff != 0 ) throw H2O.fail(); // TODO
     for(int i = 0; i < bytes; i++)
-      nbits += Integer.bitCount(_val[i]);
+      nbits += Integer.bitCount(0xFF&_val[i]);
     return nbits;
   }
 
