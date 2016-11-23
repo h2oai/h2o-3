@@ -1694,7 +1694,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     public int _mini_batch_size = 1;
 
     public enum MissingValuesHandling {
-      Skip, MeanImputation
+      MeanImputation, Skip
     }
 
     public enum ClassSamplingMethod {

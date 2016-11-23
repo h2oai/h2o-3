@@ -37,7 +37,8 @@
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
 #'        columns. Coordinate descent is experimental (beta). Must be one of: "AUTO", "IRLSM", "L_BFGS",
 #'        "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT". Defaults to AUTO.
-#' @param alpha distribution of regularization between L1 and L2.
+#' @param alpha distribution of regularization between L1 and L2. Default value of alpha is 0 when SOLVER = 'L-BFGS', 0.5
+#'        otherwise
 #' @param lambda regularization strength
 #' @param lambda_search \code{Logical}. use lambda search starting at lambda max, given lambda is then interpreted as lambda min
 #'        Defaults to False.
@@ -47,7 +48,7 @@
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 #'        Defaults to -1.
 #' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to True.
-#' @param missing_values_handling Handling of missing values. Either Skip or MeanImputation. Must be one of: "Skip", "MeanImputation". Defaults
+#' @param missing_values_handling Handling of missing values. Either MeanImputation or Skip. Must be one of: "MeanImputation", "Skip". Defaults
 #'        to MeanImputation.
 #' @param compute_p_values \code{Logical}. request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to False.
@@ -149,7 +150,7 @@ h2o.glm <- function(x, y, training_frame,
                     early_stopping = TRUE,
                     nlambdas = -1,
                     standardize = TRUE,
-                    missing_values_handling = c("Skip", "MeanImputation"),
+                    missing_values_handling = c("MeanImputation", "Skip"),
                     compute_p_values = FALSE,
                     remove_collinear_columns = FALSE,
                     intercept = TRUE,

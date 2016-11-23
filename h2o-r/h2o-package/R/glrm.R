@@ -29,7 +29,7 @@
 #' @param gamma_x Regularization weight on X matrix Defaults to 0.0.
 #' @param gamma_y Regularization weight on Y matrix Defaults to 0.0.
 #' @param max_iterations Maximum number of iterations Defaults to 1000.
-#' @param max_updates Maximum number of updates Defaults to 2000.
+#' @param max_updates Maximum number of updates, defaults to 2*max_iterations Defaults to 2000.
 #' @param init_step_size Initial step size Defaults to 1.0.
 #' @param min_step_size Minimum step size Defaults to 0.0001.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)

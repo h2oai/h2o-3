@@ -90,7 +90,7 @@ public class DeepWaterParameters extends Model.Parameters {
   public boolean _use_all_factor_levels = true;
 
   public enum MissingValuesHandling {
-    Skip, MeanImputation
+    MeanImputation, Skip
   }
 
   public MissingValuesHandling _missing_values_handling = MissingValuesHandling.MeanImputation;

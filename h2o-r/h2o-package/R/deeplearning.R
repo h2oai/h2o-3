@@ -111,7 +111,7 @@
 #' @param single_node_mode \code{Logical}. Run on a single node for fine-tuning of model parameters. Defaults to False.
 #' @param shuffle_training_data \code{Logical}. Enable shuffling of training data (recommended if training data is replicated and
 #'        train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes). Defaults to False.
-#' @param missing_values_handling Handling of missing values. Either Skip or MeanImputation. Must be one of: "Skip", "MeanImputation". Defaults
+#' @param missing_values_handling Handling of missing values. Either MeanImputation or Skip. Must be one of: "MeanImputation", "Skip". Defaults
 #'        to MeanImputation.
 #' @param quiet_mode \code{Logical}. Enable quiet mode for less output to standard output. Defaults to False.
 #' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to False.
@@ -211,7 +211,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              replicate_training_data = TRUE,
                              single_node_mode = FALSE,
                              shuffle_training_data = FALSE,
-                             missing_values_handling = c("Skip", "MeanImputation"),
+                             missing_values_handling = c("MeanImputation", "Skip"),
                              quiet_mode = FALSE,
                              autoencoder = FALSE,
                              sparse = FALSE,

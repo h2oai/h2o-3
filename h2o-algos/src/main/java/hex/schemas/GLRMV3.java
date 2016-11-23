@@ -84,7 +84,7 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM, GLRMV3, GLRMV3.GLRMParamete
     @API(help = "Maximum number of iterations", gridable = true)
     public int max_iterations;
 
-    @API(help = "Maximum number of updates", gridable = true)
+    @API(help = "Maximum number of updates, defaults to 2*max_iterations", gridable = true)
     public int max_updates;
 
     @API(help = "Initial step size", gridable = true)
