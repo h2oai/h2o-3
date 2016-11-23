@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.H2O;
+import water.MemoryManager;
 import water.util.UnsafeUtils;
 
 /**
@@ -10,9 +11,8 @@ import water.util.UnsafeUtils;
  * Exposes data directly as double[]
  */
 public final class C8DVolatileChunk extends Chunk {
-  private transient final double [] _ds;
+  private transient double [] _ds;
   C8DVolatileChunk(double[] ds ) { _mem=new byte[0]; _start = -1; _len = ds.length; _ds = ds; }
-
 
   public double [] getValues(){return _ds;}
   @Override protected final long   at8_impl( int i ) {
@@ -35,6 +35,7 @@ public final class C8DVolatileChunk extends Chunk {
     _ds[i] = f;
     return true;
   }
+  public boolean isVolatile() {return true;}
   @Override boolean setNA_impl(int idx) { UnsafeUtils.set8d(_mem,(idx<<3),Double.NaN); return true; }
   @Override public NewChunk inflate_impl(NewChunk nc) {
     //nothing to inflate - just copy
@@ -44,10 +45,8 @@ public final class C8DVolatileChunk extends Chunk {
     nc.set_sparseLen(nc.set_len(_len));
     return nc;
   }
-  // 3.3333333e33
-//  public int pformat_len0() { return 22; }
-//  public String pformat0() { return "% 21.15e"; }
-  @Override public final void initFromBytes () {throw H2O.unimpl("should not be used for a volatile chunk");}
+  @Override public final void initFromBytes () {throw H2O.unimpl("Volatile chunks should not be (de)serialized");}
+
 
   @Override
   public double [] getDoubles(double [] vals, int from, int to){

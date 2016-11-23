@@ -613,20 +613,25 @@ public abstract class Chunk extends Iced<Chunk> {
 //
   public final Chunk setVolatile(float [] fs) {
     Chunk res;
-    DKV.put(_vec.chunkKey(_cidx),res = new C4FVolatileChunk(fs));
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C4FVolatileChunk(fs),fs.length*4,Value.ICE);
+    DKV.put(v._key,v);
     return res;
   }
   public final Chunk setVolatile(double [] ds) {
     Chunk res;
-    DKV.put(_vec.chunkKey(_cidx),res = new C8DVolatileChunk(ds));
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C8DVolatileChunk(ds),ds.length*8,Value.ICE);
+    DKV.put(v._key,v);
     return res;
   }
 
   public final Chunk setVolatile(int[] vals) {
-      Chunk res;
-      DKV.put(_vec.chunkKey(_cidx),res = new C4VolatileChunk(vals));
-      return res;
+    Chunk res;
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C4VolatileChunk(vals),vals.length*4,Value.ICE);
+    DKV.put(v._key,v);
+    return res;
   }
+
+  public boolean isVolatile() {return false;}
 
   static class WrongType extends IllegalArgumentException {
     private final Class<?> expected;
