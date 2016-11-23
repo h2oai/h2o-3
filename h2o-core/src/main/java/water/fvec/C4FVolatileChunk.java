@@ -10,6 +10,8 @@ public class C4FVolatileChunk extends Chunk {
   public transient final float [] _fs;
   C4FVolatileChunk(float[] ds ) { _mem=new byte[0]; _start = -1; _len = ds.length; _fs = ds; }
 
+  public boolean isVolatile() {return true;}
+
   @Override protected final long   at8_impl( int i ) {
     double res = atd_impl(i);
     if( Double.isNaN(res) ) throw new IllegalArgumentException("at8_abs but value is missing");
@@ -52,9 +54,7 @@ public class C4FVolatileChunk extends Chunk {
   // 3.3333333e33
 //  public int pformat_len0() { return 22; }
 //  public String pformat0() { return "% 21.15e"; }
-  @Override public final void initFromBytes () {
-    throw H2O.unimpl();
-  }
+  @Override public final void initFromBytes () {throw H2O.unimpl("Volatile chunks should not be (de)serialized");}
 
   @Override
   public double [] getDoubles(double [] vals, int from, int to){

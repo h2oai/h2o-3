@@ -15,6 +15,7 @@ public class C4VolatileChunk extends Chunk {
 
   C4VolatileChunk(int[] is ) { _is = is; _mem = new byte[0]; _start = -1; _len = is.length; }
 
+  public boolean isVolatile() {return true;}
   public int[] getValues(){return _is;}
 
   @Override protected final long at8_impl( int i ) {

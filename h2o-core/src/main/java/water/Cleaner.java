@@ -124,10 +124,8 @@ class Cleaner extends Thread {
         byte[] m = val.rawMem();
         Object p = val.rawPOJO();
         if( m == null && p == null ) continue; // Nothing to throw out
-
         if( val.isLockable() ) continue; // we do not want to throw out Lockables.
-        boolean isChunk = p instanceof Chunk;
-
+        boolean isChunk = p instanceof Chunk && !((Chunk)p).isVolatile();
         // Ignore things younger than the required age.  In particular, do
         // not spill-to-disk all dirty things we find.
         long touched = val._lastAccessedTime;
