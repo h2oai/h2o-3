@@ -13,6 +13,9 @@ public class BinaryColumnCfcm extends CreateFrameColumnMaker {
   private String name;
   private double p;
 
+  public BinaryColumnCfcm() {
+  }
+
   public BinaryColumnCfcm(String colName, double ones_fraction) {
     name = colName;
     p = ones_fraction;

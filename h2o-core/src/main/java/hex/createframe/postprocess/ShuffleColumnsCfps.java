@@ -16,6 +16,7 @@ public class ShuffleColumnsCfps extends CreateFramePostprocessStep {
   private boolean reassignNames;
   private boolean responseFirst;
 
+  public ShuffleColumnsCfps() {}
 
   /**
    * @param reassignNames If true, the columns will be renamed within each group starting with a common alpha-prefix.

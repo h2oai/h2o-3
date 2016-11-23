@@ -14,6 +14,7 @@ public class TimeColumnCfcm extends CreateFrameColumnMaker {
   private long lowerBound;
   private long upperBound;
 
+  public TimeColumnCfcm() {}
   public TimeColumnCfcm(String colName, long lBound, long uBound) {
     name = colName;
     lowerBound = lBound;
