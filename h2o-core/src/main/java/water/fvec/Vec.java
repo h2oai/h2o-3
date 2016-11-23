@@ -317,7 +317,7 @@ public class Vec extends Keyed<Vec> {
    * evenly around the cluster.
    * @param x The value with which to fill the Vec.
    * @param len Number of rows.
-   * @return New cosntant vector with the given len.
+   * @return New constant vector with the given len.
    */
   public static Vec makeCon(double x, long len) {
     return makeCon(x,len,true);
@@ -329,6 +329,14 @@ public class Vec extends Keyed<Vec> {
     return makeCon(x,len,redistribute, T_NUM);
   }
 
+  /**
+   * Make a new consant vector of a given length and type
+   * @param x the value
+   * @param len vector length
+   * @param redistribute whether to redistribute
+   * @param typeCode a byte specifying data type
+   * @return the resulting constant Vec
+   */
   public static Vec makeCon(double x, long len, boolean redistribute, byte typeCode) {
     int log_rows_per_chunk = FileVec.DFLT_LOG2_CHUNK_SIZE;
     return makeCon(x,len,log_rows_per_chunk,redistribute, typeCode);
