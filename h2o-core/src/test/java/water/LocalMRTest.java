@@ -22,10 +22,13 @@ public class LocalMRTest extends TestUtil {
     public int [] _val;
     public MrFunTest1(int exId){_exId = exId;}
     public void map(int id){
-      _val = new int[]{id};
+      if(_val == null)_val = new int[]{id};
+      else _val = ArrayUtils.append(_val,id);
+
     }
     public void reduce(MrFunTest1 other){
-      _val = ArrayUtils.sortedMerge(_val,other._val);
+      if(_val == null) _val = other._val;
+      else _val = ArrayUtils.sortedMerge(_val,other._val);
     }
   }
 
