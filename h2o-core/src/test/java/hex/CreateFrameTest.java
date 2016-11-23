@@ -119,6 +119,26 @@ public class CreateFrameTest extends TestUtil {
   }
 
   @Test public void trainTest() {
+    Frame frame1 = null;
+    Frame frame2 = null;
+    try {
+      frame1 = createFrameFactory().execImpl().get();
+      frame2 = createFrameFactory().execImpl().get();
+      frame1.toString();
+      frame2.toString();
+
+      for (int i = 0; i < frame1.numCols(); ++i) {
+        Assert.assertTrue(frame1.vec(i).get_type() == frame2.vec(i).get_type());
+      }
+      // This fails...
+      // Assert.assertTrue(isBitIdentical(frame1, frame2));
+    } finally {
+      if (frame1 != null) frame1.delete();
+      if (frame2 != null) frame2.delete();
+    }
+  }
+  //
+  private CreateFrame createFrameFactory() {
     CreateFrame cf = new CreateFrame();
     cf.rows = 5;
     cf.cols = 100;
@@ -134,18 +154,6 @@ public class CreateFrameTest extends TestUtil {
     cf.has_response = true;
     cf.seed = 123456789;
     cf.seed_for_column_types = 1234;
-    Frame frame1 = cf.execImpl().get();
-    Frame frame2 = cf.execImpl().get();
-    frame1.toString();
-    frame2.toString();
-    for (int i=0;i<frame1.numCols();++i) {
-      Assert.assertTrue(frame1.vec(i).get_type()==frame2.vec(i).get_type());
-    }
-    // This fails...
-    // Assert.assertTrue(isBitIdentical(frame1, frame2));
-
-    frame1.delete();
-    frame2.delete();
+    return cf;
   }
-
 }

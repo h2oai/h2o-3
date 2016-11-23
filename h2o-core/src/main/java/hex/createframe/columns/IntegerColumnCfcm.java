@@ -14,6 +14,8 @@ public class IntegerColumnCfcm extends CreateFrameColumnMaker {
   private long lowerBound;
   private long upperBound;
 
+  public IntegerColumnCfcm() {}
+
   public IntegerColumnCfcm(String colName, int lBound, int uBound) {
     name = colName;
     lowerBound = lBound;

@@ -14,6 +14,8 @@ public class RealColumnCfcm extends CreateFrameColumnMaker {
   private double lowerBound;
   private double upperBound;
 
+  public RealColumnCfcm() {}
+
   public RealColumnCfcm(String colName, double lBound, double uBound) {
     name = colName;
     lowerBound = lBound;

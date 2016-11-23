@@ -14,6 +14,9 @@ public class CategoricalColumnCfcm extends CreateFrameColumnMaker {
   private int numFactors;
   private String[] domain;
 
+  public CategoricalColumnCfcm() {
+  }
+
   public CategoricalColumnCfcm(String colName, int nFactors) {
     name = colName;
     numFactors = nFactors;

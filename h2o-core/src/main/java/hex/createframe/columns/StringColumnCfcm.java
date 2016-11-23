@@ -13,6 +13,8 @@ public class StringColumnCfcm extends CreateFrameColumnMaker {
   private String name;
   private int len;
 
+  public StringColumnCfcm() {}
+
   public StringColumnCfcm(String colName, int length) {
     name = colName;
     len = length;

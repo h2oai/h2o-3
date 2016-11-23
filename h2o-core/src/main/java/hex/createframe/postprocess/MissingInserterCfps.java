@@ -16,6 +16,8 @@ public class MissingInserterCfps extends CreateFramePostprocessStep {
   private double p;
 
 
+  public MissingInserterCfps() {}
+
   /**
    * @param p Fraction of values to be converted into NAs.
    */
