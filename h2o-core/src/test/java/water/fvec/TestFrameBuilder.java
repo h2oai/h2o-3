@@ -3,6 +3,9 @@ package water.fvec;
 import org.junit.Ignore;
 import water.DKV;
 import water.Key;
+import water.Scope;
+import water.rapids.Env;
+import water.rapids.Session;
 
 import java.util.HashMap;
 
@@ -33,6 +36,8 @@ import java.util.HashMap;
  *   but no data. {@code Frame fr = new TestFrameBuilder().withVecTypes(Vec.T_NUM).build()}.</li>
  * <li> Only one chunk is created when chunk layout is not provided.</li>
  * </ul>
+ *
+ * The frame created will be automatically tracked in the currently active {@link Scope}.
  */
 @Ignore
 public class TestFrameBuilder {
@@ -54,9 +59,15 @@ public class TestFrameBuilder {
    * Sets the name for the frame. Default name is created if this method is not called.
    */
   public TestFrameBuilder withName(String frameName) {
+    throwIf(frameName.startsWith("$"), "Frame name " + frameName + " may only be used with a Session object.");
     this.frameName = frameName;
     return this;
   }
+
+  public TestFrameBuilder withName(String frameName, Session session) {
+    return withName(new Env(session).expand(frameName));
+  }
+
 
   /**
    * Sets the names for the columns. Default names are created if this method is not called.
@@ -116,6 +127,12 @@ public class TestFrameBuilder {
     return this;
   }
 
+  public TestFrameBuilder withChunkLayout(long... chunkLayout) {
+    this.chunkLayout = chunkLayout;
+    return this;
+  }
+
+
   public Frame build() {
     prepareAndCheck();
 
@@ -137,8 +154,14 @@ public class TestFrameBuilder {
     f = DKV.get(key).get();
     // Finalize frame
     f.finalizePartialFrame(chunkLayout, domains, vecTypes);
+    Scope.track(f);
     return f;
   }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Private
+  //--------------------------------------------------------------------------------------------------------------------
 
   private void prepareAndCheck(){
     // this check has to be run as the first one
@@ -220,12 +243,6 @@ public class TestFrameBuilder {
     }
     Frame.closeNewChunks(nchunks);
   }
-
-  public TestFrameBuilder withChunkLayout(long... chunkLayout) {
-    this.chunkLayout = chunkLayout;
-    return this;
-  }
-
 
   // this check has to be called as the first one
   private void checkVecTypes() {

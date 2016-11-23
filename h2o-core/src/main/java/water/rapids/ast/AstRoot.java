@@ -10,7 +10,7 @@ import water.rapids.vals.*;
 /**
  * Base class for all nodes in Rapids language Abstract Syntax Tree.
  */
-public abstract class AstRoot extends Iced<AstRoot> {
+public abstract class AstRoot<T extends AstRoot<T>> extends Iced<T> {
 
   /**
    * <p>"Execute" this AST expression, and return the result. For different ASTs

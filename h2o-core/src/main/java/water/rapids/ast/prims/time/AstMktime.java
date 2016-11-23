@@ -18,6 +18,7 @@ import water.rapids.ast.params.AstId;
 /**
  * Convert year, month, day, hour, minute, sec, msec to Unix epoch time
  */
+@Deprecated  // Use {@link AstMoment} instead
 public class AstMktime extends AstPrimitive {
   @Override
   public String[] args() {

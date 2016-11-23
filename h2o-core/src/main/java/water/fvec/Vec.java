@@ -446,6 +446,20 @@ public class Vec extends Keyed<Vec> {
     return v0;
   }
 
+  public static Vec makeTimeVec(double[] vals, Key<Vec> vecKey){
+    if (vecKey == null) vecKey = Vec.VectorGroup.VG_LEN1.addVec();
+    int layout = ESPC.rowLayout(vecKey, new long[]{0, vals.length});
+    Vec v = new Vec(vecKey, layout, null, Vec.T_TIME);
+    NewChunk nc = new NewChunk(v, 0);
+    Futures fs = new Futures();
+    for (double d: vals)
+      nc.addNum(d);
+    nc.close(fs);
+    DKV.put(v._key, v, fs);
+    fs.blockForPending();
+    return v;
+  }
+
   public static Vec makeVec(double [] vals, Key<Vec> vecKey){
     Vec v = new Vec(vecKey,ESPC.rowLayout(vecKey,new long[]{0,vals.length}));
     NewChunk nc = new NewChunk(v,0);
