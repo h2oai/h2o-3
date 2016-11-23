@@ -289,9 +289,21 @@ class H2OFrame(object):
             self._ex._cache._id = newid
             h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, newid))
 
-    def type(self, name):
+    def type(self, col):
         """The type for a named column."""
-        return self.types[name]
+        assert_is_type(col, int, str)
+        if not self._ex._cache.types_valid() or not self._ex._cache.names_valid():
+            self._ex._cache.flush()
+            self._frame(True)
+        types = self._ex._cache.types
+        if is_type(col, str):
+            if col in types:
+                return types[col]
+        else:
+            names = self._ex._cache.names
+            if -len(names) <= col < len(names):
+                return types[names[col]]
+        raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
 
 
@@ -736,38 +748,45 @@ class H2OFrame(object):
         return self._unop("trigamma")
 
     @staticmethod
-    def mktime(year=1970, month=0, day=0, hour=0, minute=0, second=0, msec=0):
-        """All units are zero-based (including months and days).
-        Missing year is 1970.
+    def mktime(year=1970, month=1, day=1, hour=0, minute=0, second=0, msec=0):
+        """
+        Create a time column from individual components.
 
-        Parameters
-        ----------
-          year : int, H2OFrame
-            the year
-
-          month: int, H2OFrame
-            the month
-
-          day : int, H2OFrame
-            the day
-
-          hour : int, H2OFrame
-            the hour
-
-          minute : int, H2OFrame
-            the minute
-
-          second : int, H2OFrame
-            the second
-
-          msec : int, H2OFrame
-            the milisecond
+        Each parameter should be either an integer, or a single-column H2OFrame
+        containing the corresponding time parts for each row.
 
         Returns
         -------
           H2OFrame of one column containing the date in millis since the epoch.
         """
-        return H2OFrame._expr(ExprNode("mktime", year, month, day, hour, minute, second, msec))
+        assert_is_type(year, int, H2OFrame)
+        assert_is_type(month, int, H2OFrame)
+        assert_is_type(day, int, H2OFrame)
+        assert_is_type(hour, int, H2OFrame)
+        assert_is_type(minute, int, H2OFrame)
+        assert_is_type(second, int, H2OFrame)
+        assert_is_type(msec, int, H2OFrame)
+        local_vars = locals()
+        res_nrows = None
+        for n in ["year", "month", "day", "hour", "minute", "second", "msec"]:
+            x = local_vars[n]
+            if isinstance(x, H2OFrame):
+                if x.ncols != 1:
+                    raise H2OValueError("Argument `%s` is a frame with more than 1 column" % n)
+                if x.type(0) not in {"int", "real"}:
+                    raise H2OValueError("Column `%s` is not numeric (type = %s)" % (n, x.type(0)))
+                if res_nrows is None:
+                    res_nrows = x.nrows
+                if x.nrows == 0 or x.nrows != res_nrows:
+                    raise H2OValueError("Incompatible column `%s` having %d rows" % (n, x.nrows))
+        if res_nrows is None:
+            res_nrows = 1
+        res = H2OFrame._expr(ExprNode("moment", year, month, day, hour, minute, second, msec))
+        res._ex._cache._names = ["name"]
+        res._ex._cache._types = {"name": "time"}
+        res._ex._cache._nrows = res_nrows
+        res._ex._cache._ncols = 1
+        return res
 
 
     def unique(self):

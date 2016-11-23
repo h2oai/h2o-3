@@ -343,7 +343,7 @@ class H2OCache(object):
                 domain = v['domain']  # Map to cat strings as needed
                 x = ["" if math.isnan(idx) else domain[int(idx)] for idx in x]
             elif t == "time":
-                x = ["" if math.isnan(z) else time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(z / 1000)) for z in x]
+                x = ["" if math.isnan(z) else time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(z / 1000)) for z in x]
             if rollups:  # Rollups, if requested
                 mins = v['mins'][0] if v['mins'] else None
                 maxs = v['maxs'][0] if v['maxs'] else None
