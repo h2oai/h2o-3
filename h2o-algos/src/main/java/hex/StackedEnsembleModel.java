@@ -1,6 +1,7 @@
 package hex;
 
 import hex.ensemble.StackedEnsemble;
+import hex.genmodel.utils.DistributionFamily;
 import water.DKV;
 import water.H2O;
 import water.Job;
@@ -80,8 +81,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       basePredsRotated[baseIdx] = basePreds[baseIdx][2];
     }
 
-    double[] stackedPreds = new double[preds.length];
-    return _output._meta_model.score0(basePredsRotated, stackedPreds);
+    return _output._meta_model.score0(basePredsRotated, preds);
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -96,11 +96,29 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
   }
 
-  public void doScoreMetrics() {
-    // TODO: this seems out of place, since we've already called adapt when building the model. . .
-    Frame adaptFr;
-    ModelMetrics.MetricBuilder mb;
+  public ModelMetrics doScoreMetricsOneFrame(Frame frame) {
+    // For GainsLift and Huber, we need the full predictions to compute the model metrics
+    boolean needPreds = _output.nclasses() == 2 /* gains/lift table requires predictions */ || _parms._distribution== DistributionFamily.huber;
 
+    if (needPreds) {
+      Frame preds = null;
+      preds = score(frame);
+      preds.remove();
+      return ModelMetrics.getFromDKV(this, frame);
+    } else {
+      // no need to allocate predictions
+      ModelMetrics.MetricBuilder mb = scoreMetrics(frame);
+      return mb.makeModelMetrics(this, frame, frame, null);
+    }
+  }
+
+  public void doScoreMetrics() {
+
+    this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train());
+    if (null != this._parms.valid()) {
+      this._output._validation_metrics = doScoreMetricsOneFrame(this._parms.valid());
+    }
+/*
     adaptFr = new Frame(this._parms.train());
     this.adaptTestForTrain(adaptFr, true, !isSupervised());
     mb = this.scoreMetrics(adaptFr);
@@ -112,6 +130,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       mb = this.scoreMetrics(adaptFr);
       this._output._validation_metrics  = mb.makeModelMetrics(this, adaptFr, adaptFr, null);
     }
+    */
   }
 
   public void checkAndInheritModelProperties() {

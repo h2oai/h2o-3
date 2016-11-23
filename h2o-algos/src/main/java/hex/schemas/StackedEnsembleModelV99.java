@@ -15,5 +15,11 @@ public class StackedEnsembleModelV99 extends ModelSchemaV3<StackedEnsembleModel,
   public StackedEnsembleV99.StackedEnsembleParametersV99 createParametersSchema() { return new StackedEnsembleV99.StackedEnsembleParametersV99(); }
   public StackedEnsembleModelOutputV99 createOutputSchema() { return new StackedEnsembleModelOutputV99(); }
 
+  @Override public StackedEnsembleModel createImpl() {
+    StackedEnsembleV99.StackedEnsembleParametersV99 p = this.parameters;
+    StackedEnsembleModel.StackedEnsembleParameters parms = p.createImpl();
+    return new StackedEnsembleModel(model_id.key(), parms, new StackedEnsembleModel.StackedEnsembleOutput());
+  }
+
 }
 
