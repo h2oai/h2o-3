@@ -53,8 +53,8 @@ import java.util.*;
  * from Iced, not from Schema.
  * <p>
  * Schema names (getSimpleName()) must be unique within an application. During Schema discovery and registration
- * there are checks to ensure this. Also there should be at most one Schema class per implementation class per
- * version (with the exception of schemas that are backed by Iced).
+ * there are checks to ensure this. Each schema is associated with exactly one implementation object, however some
+ * Iced objects are mapped into multiple schemas.
  * <p>
  * For V3 Schemas each field had a "direction" (input / output / both), which allowed us to use the same schema as
  * both input and output for an endpoint. This is no longer possible in V4: two separate schema classes for input /
@@ -76,46 +76,23 @@ import java.util.*;
  * Most Java developers need not be concerned with the details that follow, because the
  * framework will make these calls as necessary.
  * <p>
- * Some use cases:
+ * To create a schema object and fill it from an existing impl object:
+ * <pre>{@code    S schema = new SomeSchemaClass().fillFromImpl(impl);}</pre>
  * <p>
- * To find and create an instance of the appropriate schema for an Iced object, with the
- * given version or the highest previous version:<pre>
- * Schema s = Schema.schema(6, impl);
- * </pre>
- * <p>
- * To create a schema object and fill it from an existing impl object (the common case):<pre>
- * S schema = MySchemaClass(version).fillFromImpl(impl);</pre>
- * or more generally:
- * <pre>
- * S schema = Schema(version, impl).fillFromImpl(impl);</pre>
- * To create an impl object and fill it from an existing schema object (the common case):
- * <pre>
- * I impl = schema.createImpl(); // create an empty impl object and any empty children
- * schema.fillImpl(impl);        // fill the empty impl object and any children from the Schema and its children</pre>
- * or
- * <pre>
- * I impl = schema.createAndFillImpl();  // helper which does schema.fillImpl(schema.createImpl())</pre>
+ * To create an impl object and fill it from an existing schema object:
+ * <pre>{@code    I impl = schema.createAndFillImpl();}</pre>
  * <p>
  * Schemas that are used for HTTP requests are filled with the default values of their impl
  * class, and then any present HTTP parameters override those default values.
- * <p>
  * To create a schema object filled from the default values of its impl class and then
  * overridden by HTTP request params:
- * <pre>
- * S schema = MySchemaClass(version);
- * I defaults = schema.createImpl();
- * schema.fillFromImpl(defaults);
- * schema.fillFromParms(parms);
- * </pre>
- * or more tersely:
- * <pre>
- * S schema = MySchemaClass(version).fillFromImpl(schema.createImpl()).fillFromParms(parms);
- * </pre>
+ * <pre>{@code    S schema = new SomeSchemaClass().fillFromImpl().fillFromParms(parms);}</pre>
+ *
  * @param <I> "implementation" (Iced) class for this schema
  * @param <S> reference to self: this should always be the same class as being declared. For example:
  *            <pre>public class TimelineV3 extends Schema&lt;Timeline, TimelineV3&gt;</pre>
  */
-abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
+public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced {
   // These fields are declared transient so that they do not get included when a schema is serialized into JSON.
   private transient Class<I> _impl_class;
   private transient int _schema_version;
@@ -135,7 +112,6 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
 
   /**
    * Create a new Schema instance from an existing impl object.
-   * @param impl
    */
   public Schema(I impl) {
     this();
@@ -206,11 +182,21 @@ abstract public class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   }
 
   /** Convenience helper which creates and fills an impl object from this schema. */
-  final public I createAndFillImpl() {
+  public final I createAndFillImpl() {
     return this.fillImpl(this.createImpl());
   }
 
-  /** Fill this Schema from the given implementation object. If a schema doesn't need to adapt any fields if does not need to override this method. */
+  /**
+   * Fill this schema from the default impl, and then return self.
+   */
+  public final S fillFromImpl() {
+    return fillFromImpl(createImpl(), null);
+  }
+
+  /**
+   * Fill this Schema from the given implementation object. If a schema doesn't need to adapt any fields if does not
+   * need to override this method.
+   */
   public S fillFromImpl(I impl) {
     return fillFromImpl(impl, null);
   }
