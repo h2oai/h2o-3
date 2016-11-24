@@ -17,7 +17,7 @@ import static water.udf.specialized.Strings.*;
 /**
  * Test for UDF
  */
-public class UdfTest extends UdfBase {
+public class UdfTest extends UdfTestBase {
   
   int requiredCloudSize() { return 5; }
   

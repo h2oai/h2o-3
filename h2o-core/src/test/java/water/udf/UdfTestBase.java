@@ -1,7 +1,9 @@
 package water.udf;
 
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Test;
 import water.H2OStarter;
 import water.Iced;
 import water.Scope;
@@ -17,16 +19,14 @@ import static water.TestUtil.*;
  * All test functionality specific for udf (not actually), 
  * not kosher enough to be allowed for the general public
  */
-public abstract class UdfBase extends TestUtil {
-//  private TestUtil tu;
+public class UdfTestBase extends TestUtil {
 
-//  public TestBase() {
-//    ClassLoader loader = getClass().getClassLoader();
-//    loader.setDefaultAssertionStatus(true);
-//    tu = new TestUtil();
-//  }
+  {
+    ClassLoader loader = getClass().getClassLoader();
+    loader.setDefaultAssertionStatus(true);
+  }
   
-  abstract int requiredCloudSize();
+  int requiredCloudSize() { return 1; }
   
   @Before
   public void hi() {
@@ -61,6 +61,17 @@ public abstract class UdfBase extends TestUtil {
     File f = find_test_file_static(fname);
     checkFile(fname, f);
     return f;
+  }
+
+  // the following code exists or else gradlew will complain; also, it checks assertions
+  @Test
+  public void testAssertionsEnabled() throws Exception {
+    try {
+      assert false : "Should throw";
+      Assert.fail("Expected an assertion error");
+    } catch(AssertionError ae) {
+      // as designed
+    }
   }
 
 }
