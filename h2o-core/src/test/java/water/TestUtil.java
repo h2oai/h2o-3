@@ -76,30 +76,52 @@ public class TestUtil extends Iced {
     _initial_keycnt = H2O.store_size();
   }
 
-  @AfterClass
-  public static void checkLeakedKeys() {
-    int leaked_keys = H2O.store_size() - _initial_keycnt;
+  private static boolean okToLeak(Key k, Value value) {
+    // Ok to leak VectorGroups and the Jobs list
+    return (value == null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
+    // Also leave around all attempted Jobs for the Jobs list
+           (value.isJob() && value.<Job>get().isStopped()));
+  }
+
+  public static int countLeakedKeys() {
+    return countLeakedKeys(new LinkedList<String>());
+  }
+  
+  private static int countLeakedKeys(List<String> report) {
     int cnt=0;
-    if( leaked_keys > 0 ) {
-      for( Key k : H2O.localKeySet() ) {
+    if (H2O.store_size() > _initial_keycnt) {
+      for (Key k : H2O.localKeySet()) {
         Value value = Value.STORE_get(k);
-        // Ok to leak VectorGroups and the Jobs list
-        if( value==null || value.isVecGroup() || value.isESPCGroup() || k == Job.LIST ||
-            // Also leave around all attempted Jobs for the Jobs list
-            (value.isJob() && value.<Job>get().isStopped()) ) {
-          leaked_keys--;
-        } else {
-          System.out.println(k + " -> " + value.get());
-          if( cnt++ < 10 )
-            System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
+        if (!okToLeak(k, value)) {
+          cnt++;
+          String msg = k + " -> ";
+          try {
+            msg = msg + value.get();
+          } catch (Exception x) {
+            msg += value;
+          }
+          if (cnt < 10) report.add(msg);
         }
       }
-      if( 10 < leaked_keys ) System.err.println("... and "+(leaked_keys-10)+" more leaked keys");
     }
-    assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
-    // Bulk brainless key removal.  Completely wipes all Keys without regard.
+    return cnt;    
+  }
+  
+  @AfterClass
+  public static void checkLeakedKeys() {
+    List<String> leakedKeys = new LinkedList<>();
+    int cnt = countLeakedKeys(leakedKeys);
+    if(cnt > 10) System.err.println(leakedKeys + "... and "+(cnt-10)+" more leaked keys");
+    assertTrue("Keys leaked: " + cnt + ", " + StringUtils.join(",", leakedKeys), cnt == 0);
+    removeKeysRegardless();
+
+  }
+
+  // Bulk brainless key removal.  Completely wipes all Keys without regard.
+  // not to be used in any tests.
+  private static void removeKeysRegardless() {
     new MRTask(){
-      @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
+      @Override public void setupLocal() {  H2O.raw_clear();  Vec.ESPC.clear(); }
     }.doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
@@ -301,7 +323,7 @@ public class TestUtil extends Iced {
    *
    * @param fname name of folder
    * @param na_string string for NA in a column
-   * @return
+   * @return frame with parsed data
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);
@@ -391,7 +413,7 @@ public class TestUtil extends Iced {
       }
       irows[i] = domainMap.get(s);
     }
-    return vec(domainList.toArray(new String[]{}), irows);
+    return vec(domainList.toArray(new String[domainList.size()]), irows);
   }
 
   /** A numeric Vec from an array of doubles */
