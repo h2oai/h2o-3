@@ -62,7 +62,7 @@ public class NewChunkTest extends TestUtil {
     Chunk c = nc.compress();
     assertEquals(128 + 512, c.len());
     for (int i = 0; i < 128; ++i)
-      assertTrue(c.isNA(i));
+      assertTrue("Expected a NA at " + i, c.isNA(i));
     for (int i = 0; i < 512; i++) {
       assertEquals(i, c.at16l(128 + i));
       assertEquals(i/2+i/3, c.at16h(128 + i));
@@ -77,7 +77,7 @@ public class NewChunkTest extends TestUtil {
     int missingSize()  {return _missing == null?0:_missing.size();}
   }
 
-  
+
   private void testIntegerChunk(long [] values, int mantissaSize) {
     Vec v = Vec.makeCon(0,0);
     // single bytes
@@ -479,22 +479,22 @@ public class NewChunkTest extends TestUtil {
       assertEquals(0, nc.atd(K-4), Math.ulp(0));
       assertEquals(Double.NaN, nc.atd(K-3), Math.ulp(Double.NaN));
       for (int i = K-2; i < K; i++) assertEquals(0, nc.atd(i), Math.ulp(0));
-      
+
       post();
       cc.set(K-5, 0);
       post_write();
       assertEquals(K, nc._len);
       assertEquals(0,cc.atd(K-5),Math.ulp(0));
       assertTrue(cc.chk2() instanceof CXIChunk);
-      
+
       for (int i = 0; i < K-3; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
       assertEquals(Double.NaN, cc.atd(K-3), Math.ulp(Double.NaN));
       for (int i = K-2; i < K; i++) assertEquals(0, cc.atd(i), Math.ulp(0));
       assertEquals(1,cc.chk2().sparseLenZero());
-      
+
     } finally { remove();}
   }
-  
+
   @Test public void testCNAXDChunk_setPostSparse() {
     try {
       pre();
@@ -527,7 +527,7 @@ public class NewChunkTest extends TestUtil {
       assertEquals(4,cc.chk2().sparseLenNA());
     } finally {remove();}
   }
-  
+
   @Test public void testSparseCat() {
     try {
       av = new AppendableVec(Vec.newKey(), Vec.T_CAT);
@@ -555,7 +555,7 @@ public class NewChunkTest extends TestUtil {
 
 
   private static double []  test_seq = new double[]{
-    2,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,3,0,0,0,Double.NaN,Double.NaN,Double.NaN,Double.NaN,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,3,0,0,1,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,0,3,32,0,0,0,17,6,2,0,0,0,0,0,0,0,0,67,0,0,0,0,0,0,0
+      2,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,3,0,0,0,Double.NaN,Double.NaN,Double.NaN,Double.NaN,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,3,0,0,1,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,0,3,32,0,0,0,17,6,2,0,0,0,0,0,0,0,0,67,0,0,0,0,0,0,0
   };
 
   @Test
@@ -587,7 +587,23 @@ public class NewChunkTest extends TestUtil {
     }
   }
 
-  @Test public void testAddIllegalUUID() {
+  @Test
+  public void testSetUUID() {
+    nc = new NewChunk(av, 0);
+    nc.addUUID(123L, 456L);
+    nc.addNA();
+    assertFalse(nc.isNA(0));
+    assertTrue(nc.isNA(1));
+    nc.set_impl(0, 42L, Long.MIN_VALUE);
+    nc.set_impl(1, 43L, Long.MAX_VALUE);
+    assertEquals(42L, nc.at16l_impl(0));
+    assertEquals(Long.MIN_VALUE, nc.at16h_impl(0));
+    assertEquals(43L, nc.at16l_impl(1));
+    assertEquals(Long.MAX_VALUE, nc.at16h_impl(1));
+  }
+
+  @Test
+  public void testAddIllegalUUID() {
     nc = new NewChunk(av, 0);
     nc.addUUID(123L, 456L);
     nc.addNA();
@@ -600,32 +616,23 @@ public class NewChunkTest extends TestUtil {
     } catch(IllegalArgumentException iae) {
       // as expected
     }
-/* TODO(Vlad): fix after UUID checks get through
+
     nc.addNum(Double.NEGATIVE_INFINITY);
     nc.addNum(Double.POSITIVE_INFINITY);
-    try {
-      nc.addNum(Double.NaN);
-      fail("Expected a failure on adding an illegal value");
-    } catch(IllegalArgumentException iae) {
-      // as expected
-    }
-    */
+    nc.addNum(Double.NaN);
+    nc.isNA(5);
   }
 
-  @Ignore("Vlad: will fix it after UUID")
-  @Test public void testAddIllegalNum() {
+  @Test public void testAddIllegalDouble() {
     nc = new NewChunk(av, 0);
-
     nc.addNum(Math.PI);
     nc.addNum(Double.NEGATIVE_INFINITY);
     nc.addNum(Double.POSITIVE_INFINITY);
-    try {
-      nc.addNum(Double.NaN);
-      assertTrue(nc.isNA(3));
-      fail("Expected a failure on adding an illegal value");
-    } catch(IllegalArgumentException iae) {
-      // as expected
-    }
+    nc.addNum(Double.NaN);
+    assertFalse(nc.isNA(0));
+    assertFalse(nc.isNA(1));
+    assertFalse(nc.isNA(2));
+    assertTrue(nc.isNA(3));
   }
 
 }

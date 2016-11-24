@@ -648,16 +648,21 @@ public class NewChunk extends Chunk {
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
-    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
-    if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
-      append2slowUUID();
-    _ms.set(_sparseLen,lo);
-    _ds[_sparseLen] = Double.longBitsToDouble(hi);
-    if (_id != null) _id[_sparseLen] = _len;
+    set_impl(_sparseLen, lo, hi);
     _sparseLen++;
     _len++;
     assert _sparseLen <= _len;
   }
+
+  @Override public boolean set_impl(int idx, long lo, long hi) {
+    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
+    if( _ms==null || _ds== null || idx >= _ms.len() )
+      append2slowUUID();
+    _ms.set(idx,lo);
+    _ds[idx] = Double.longBitsToDouble(hi);
+    return true;
+  }
+
   public void addUUID( Chunk c, long row ) {
     if (c.isNA_abs(row)) addNA();
     else addUUID(c.at16l_abs(row),c.at16h_abs(row));
@@ -676,7 +681,7 @@ public class NewChunk extends Chunk {
     if(!sparseZero()) for(int i = 0; i < n; ++i)addNum(0,0);
     else set_len(_len + n);
   }
-  
+
   public void addNAs(int n) {
     if(!sparseNA())
       for (int i = 0; i <n; ++i) {
@@ -688,7 +693,7 @@ public class NewChunk extends Chunk {
       }
     else set_len(_len + n);
   }
-  
+
   // Append all of 'nc' onto the current NewChunk.  Kill nc.
   public void add( NewChunk nc ) {
     assert _cidx >= 0;
@@ -772,7 +777,7 @@ public class NewChunk extends Chunk {
           assert _sparseLen <= _len;
           return;
         }
-      } 
+      }
       else {
         // verify we're still sufficiently sparse
         if((_sparseRatio*(_sparseLen) >> 2) > _len)  cancel_sparse();
@@ -856,7 +861,7 @@ public class NewChunk extends Chunk {
           set_sparse(nonnas,Compress.NA);
           assert _id.length == _ms.len():"id.len = " + _id.length + ", ms.len = " + _ms.len();
           assert _sparseLen <= _len;
-          return;        
+          return;
         } else if((nzs+1)*_sparseRatio < _len) { // note order important here
           set_sparse(nzs,Compress.ZERO);
           assert _sparseLen <= _len;
@@ -900,7 +905,7 @@ public class NewChunk extends Chunk {
     _missing = null;
     _ds = ds;
   }
-  
+
   public enum Compress {ZERO, NA}
 
   //Sparsify. Compressible element can be 0 or NA. Store noncompressible elements in _ds OR _ls and _xs OR _is and 
@@ -973,11 +978,11 @@ public class NewChunk extends Chunk {
   private boolean is_compressible(double d) {
     return _sparseNA ? Double.isNaN(d) : d == 0;
   }
-  
+
   private boolean is_compressible(int x) {
     return isNA2(x)?_sparseNA:!_sparseNA &&_ms.get(x) == 0;
   }
-  
+
   public void cancel_sparse(){
     if(_sparseLen != _len){
       if(_is != null){
@@ -994,7 +999,7 @@ public class NewChunk extends Chunk {
         for (int i = 0; i < _sparseLen; ++i) {
           xs.set(_id[i], _xs.get(i));
           ms.set(_id[i], _ms.get(i));
-          missing.set(_id[i], _sparseNA || _missing == null?false:_missing.get(i));
+          missing.set(_id[i], _sparseNA || (_missing != null && _missing.get(i)));
         }
         assert _sparseNA || (ms._nzs == _ms._nzs):_ms._nzs + " != " + ms._nzs;
         ms._nzs = _ms._nzs;
@@ -1092,7 +1097,7 @@ public class NewChunk extends Chunk {
       na_sparse = true;
     } else if (_sparseLen != _len)
       cancel_sparse();
-    
+
     // If the data is UUIDs there's not much compression going on
     if( _ds != null && _ms != null )
       return chunkUUID();
@@ -1537,7 +1542,7 @@ public class NewChunk extends Chunk {
       if(idx >= 0)i = idx;
       else cancel_sparse(); // for now don't bother setting the sparse value
     }
-    _is[i] = _sslen;
+    if (_is != null) _is[i] = _sslen;
     append_ss(str);
     return true;
   }
@@ -1566,13 +1571,13 @@ public class NewChunk extends Chunk {
     }
     return setNA_impl2(i);
   }
-  
+
   protected final long at8_impl2(int i) {
     if(isNA2(i))throw new RuntimeException("Attempting to access NA as integer value.");
     if( _ms == null ) return (long)_ds[i];
     return _ms.get(i)*PrettyPrint.pow10i(_xs.get(i));
   }
-  
+
   @Override public long at8_impl( int i ) {
     if( _len != _sparseLen) {
       int idx = Arrays.binarySearch(_id,0, _sparseLen,i);

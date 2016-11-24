@@ -1,10 +1,7 @@
 package water;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -22,6 +19,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -30,6 +32,11 @@ import static org.junit.Assert.assertTrue;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
+  {
+    ClassLoader loader = getClass().getClassLoader();
+    loader.setDefaultAssertionStatus(true);
+  }
+
   public final static boolean JACOCO_ENABLED = Boolean.parseBoolean(System.getProperty("test.jacocoEnabled", "false"));
   private static boolean _stall_called_before = false;
   private static String[] ignoreTestsNames;
@@ -122,7 +129,7 @@ public class TestUtil extends Iced {
     @Override public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
       if ((ignoreTestsNames != null && Arrays.asList(ignoreTestsNames).contains(testName)) ||
-              (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
+          (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
         // Ignored tests trump do-only tests
         Log.info("#### TEST " + testName + " IGNORED");
         return new Statement() {
@@ -256,7 +263,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -317,7 +324,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -467,7 +474,7 @@ public class TestUtil extends Iced {
     return r;
   }
 
-// Java7+  @SafeVarargs
+  // Java7+  @SafeVarargs
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
@@ -702,4 +709,13 @@ public class TestUtil extends Iced {
     }
   }
 
+  @BeforeClass
+  public static void hi() {
+    stall_till_cloudsize(1);
+    Scope.enter();
+  }
+
+  @AfterClass public static void bye() { Scope.exit(); }
+
+  protected static Vec willDrop(Vec v) { return Scope.track(v); }
 }
