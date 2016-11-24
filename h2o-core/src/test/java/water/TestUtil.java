@@ -1,10 +1,7 @@
 package water;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Ignore;
-import org.junit.Rule;
+import org.junit.*;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -22,6 +19,11 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -30,6 +32,11 @@ import static org.junit.Assert.assertTrue;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
+  { // need this because -ea IS NOT ALWAYS set in intellij
+    ClassLoader loader = getClass().getClassLoader();
+    loader.setDefaultAssertionStatus(true);
+  }
+
   public final static boolean JACOCO_ENABLED = Boolean.parseBoolean(System.getProperty("test.jacocoEnabled", "false"));
   private static boolean _stall_called_before = false;
   private static String[] ignoreTestsNames;
@@ -89,7 +96,8 @@ public class TestUtil extends Iced {
             (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
         } else {
-          System.out.println(k + " -> " + value.get());
+          Iced iced = value.get();
+          System.out.println(k + " -> " + iced.getClass().getSimpleName() + ":" + iced);
           if( cnt++ < 10 )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
@@ -234,10 +242,19 @@ public class TestUtil extends Iced {
    *  @return      Frame or NPE */
   public static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
   public static Frame parse_test_file( Key outputKey, String fname) {
+    Vec data = loadFile(fname);
+    return ParseDataset.parse(outputKey, data._key);
+  }
+
+  public static Vec loadFile(String fname) {
+    File f = getFile(fname);
+    return NFSFileVec.make(f);
+  }
+
+  public static File getFile(String fname) {
     File f = find_test_file_static(fname);
     checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
-    return ParseDataset.parse(outputKey, nfs._key);
+    return f;
   }
 
   protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
@@ -248,11 +265,9 @@ public class TestUtil extends Iced {
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
-    File f = find_test_file_static(fname);
-    checkFile(fname, f);
-    NFSFileVec nfs = NFSFileVec.make(f);
+    Vec data = loadFile(fname);
 
-    Key[] res = {nfs._key};
+    Key[] res = {data._key};
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
@@ -301,7 +316,7 @@ public class TestUtil extends Iced {
    *
    * @param fname name of folder
    * @param na_string string for NA in a column
-   * @return
+   * @return resulting frame
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);
@@ -702,4 +717,25 @@ public class TestUtil extends Iced {
     }
   }
 
+  static Consumer<Vec> dropit = new Consumer<Vec>() {
+    @Override public void accept(Vec v) { v.remove(new Futures()).blockForPending(); }
+  };
+
+  @BeforeClass
+  public static void hi() {
+    stall_till_cloudsize(1);
+  }
+
+  @Before public void enterScope() {
+    Scope.enter();
+  }
+  
+  @After public void bye() { Scope.exit(); }
+
+  protected static Vec willDrop(Vec v) { return Scope.track(v); }
+
+  protected static <T extends Vec.Holder> T willDrop(T vh) {
+    Scope.track(vh.vec());
+    return vh;
+  }
 }
