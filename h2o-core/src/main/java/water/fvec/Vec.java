@@ -175,7 +175,6 @@ public class Vec extends Keyed<Vec> {
   // bytesize) bounces through the DKV to fetch the latest copy of the Rollups
   // - lest a Vec.set changes the rollups and we return a stale copy.
   transient private Key _rollupStatsKey;
-  private boolean _volatile;
 
   /** Returns the categorical toString mapping array, or null if not an categorical column.
    *  Not a defensive clone (to expensive to clone; coding error to change the
@@ -742,8 +741,6 @@ public class Vec extends Keyed<Vec> {
    *  establishing dataset identity.
    *  @return Checksum of the Vec's content  */
   @Override protected long checksum_impl() { return rollupStats()._checksum;}
-
-  public boolean isVolatile() {return _volatile;}
 
 
   private static class SetMutating extends TAtomic<RollupStats> {
