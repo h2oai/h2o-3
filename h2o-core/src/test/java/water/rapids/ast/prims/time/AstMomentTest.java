@@ -137,6 +137,25 @@ public class AstMomentTest extends TestUtil {
       assertTrue(Double.isNaN(fr.vec(0).at(0)));
       assertTrue(Double.isNaN(fr.vec(0).at(1)));
       assertTrue(Double.isNaN(fr.vec(0).at(2)));
+
+      new TestFrameBuilder()
+          .withName("$day", s)
+          .withColNames("day")
+          .withVecTypes(Vec.T_NUM)
+          .withDataForCol(0, ard(28, 29, 30))
+          .build();
+
+      result = Rapids.exec("(moment 2001 2 $day 0 0 0 0)", s);
+      assertTrue(result.isFrame());
+      fr = result.getFrame();
+      Scope.track(fr);
+      assertEquals(1, fr.numCols());
+      assertEquals(3, fr.numRows());
+      assertEquals(Vec.T_TIME, fr.vec(0).get_type());
+      assertTrue(!Double.isNaN(fr.vec(0).at(0)));
+      assertTrue(Double.isNaN(fr.vec(0).at(1)));
+      assertTrue(Double.isNaN(fr.vec(0).at(2)));
+
     } finally {
       Scope.exit();
     }
