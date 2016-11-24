@@ -13,6 +13,7 @@ import water.rapids.Val;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 /**
  */
@@ -20,6 +21,11 @@ public class AstMomentTest extends TestUtil {
 
   @BeforeClass public static void setup() {
     stall_till_cloudsize(1);
+  }
+
+  @Test public void generalTest() {
+    AstMoment am = new AstMoment();
+    assertEquals(am.nargs() - 1, am.args().length);
   }
 
   @Test public void time0Test() {
@@ -63,7 +69,6 @@ public class AstMomentTest extends TestUtil {
       new TestFrameBuilder()
           .withName("$fr", session)
           .withColNames("day", "hour", "min")
-          .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
           .withDataForCol(0, ard(1, 1.1, 1.2, 2, 3))
           .withDataForCol(1, ard(0, Double.NaN, 11, 13, 15))
           .withDataForCol(2, ar(0, 0, 30, 0, 0))
@@ -123,7 +128,6 @@ public class AstMomentTest extends TestUtil {
       new TestFrameBuilder()
           .withName("$year", s)
           .withColNames("year")
-          .withVecTypes(Vec.T_NUM)
           .withDataForCol(0, ard(2000, 2004, 2008))
           .build();
 
@@ -141,7 +145,6 @@ public class AstMomentTest extends TestUtil {
       new TestFrameBuilder()
           .withName("$day", s)
           .withColNames("day")
-          .withVecTypes(Vec.T_NUM)
           .withDataForCol(0, ard(28, 29, 30))
           .build();
 
@@ -161,4 +164,97 @@ public class AstMomentTest extends TestUtil {
     }
   }
 
+  @Test public void testBadArguments() {
+    Scope.enter();
+    try {
+      Session s = new Session();
+      try {
+        Rapids.exec("(moment 2000 1 1 0 0 0)", s);
+        fail("Expected error: Wrong number of arguments");
+      } catch (IllegalArgumentException ignored) {}
+      try {
+        Rapids.exec("(moment 2000 1 1 [0] 0 0 0)", s);
+        fail("Expected error: A NumList is not allowed");
+      } catch (IllegalArgumentException ignored) {}
+      try {
+        Rapids.exec("(moment '2000' 1 1 0 0 0 0)", s);
+        fail("Expected error: A string is not allowed");
+      } catch (IllegalArgumentException ignored) {}
+
+      new TestFrameBuilder()
+          .withName("$test", s)
+          .withColNames("day", "month")
+          .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+          .withDataForCol(0, ard(5, 10, 15))
+          .withDataForCol(1, ar("April", "May", "June"))
+          .build();
+      try {
+        Rapids.exec("(moment 2010 1 $test 0 0 0 0)", s);
+        fail("Expected error: frame with >1 columns passed");
+      } catch (IllegalArgumentException ignored) {}
+      try {
+        Rapids.exec("(moment 2010 (cols $test 'month') 1 0 0 0 0)", s);
+        fail("Expected error: non-numeric column used");
+      } catch (IllegalArgumentException ignored) {}
+
+      new TestFrameBuilder()
+          .withName("$frame0", s)
+          .withColNames("a")
+          .build();
+      try {
+        Rapids.exec("(moment 2010 1 $frame0 0 0 0 0)", s);
+        fail("Expected error: 0-rows frame used");
+      } catch (IllegalArgumentException ignored) {}
+
+      new TestFrameBuilder()
+          .withName("$test2", s)
+          .withColNames("month")
+          .withDataForCol(0, ard(1, 2))
+          .build();
+      try {
+        Rapids.exec("(moment 2010 (cols $test2 'month') (cols $test 'day') 0 0 0 0)", s);
+        fail("Expected error: Incompatible vecs: 2 rows and 3 rows");
+      } catch (IllegalArgumentException ignored) {}
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test public void testOneRowFrame() {
+    Scope.enter();
+    try {
+      Session s = new Session();
+      new TestFrameBuilder()
+          .withName("$frame1", s)
+          .withColNames("day", "hour")
+          .withDataForCol(0, ar(1))
+          .withDataForCol(1, ard(Double.NaN))
+          .build();
+      new TestFrameBuilder()
+          .withName("$month", s)
+          .withColNames("month")
+          .withDataForCol(0, ar(2, 3))
+          .build();
+      Val result = Rapids.exec("(moment 2010 $month (cols $frame1 'day') 0 0 0 0)", s);
+      assertTrue(result.isFrame());
+      Frame fr = result.getFrame();
+      Scope.track(fr);
+      assertEquals(1, fr.numCols());
+      assertEquals(2, fr.numRows());
+      assertEquals(Vec.T_TIME, fr.vec(0).get_type());
+
+      result = Rapids.exec("(moment 2010 $month 1 (cols $frame1 'hour') 0 0 0)", s);
+      assertTrue(result.isFrame());
+      fr = result.getFrame();
+      Scope.track(fr);
+      assertEquals(1, fr.numCols());
+      assertEquals(2, fr.numRows());
+      assertEquals(Vec.T_TIME, fr.vec(0).get_type());
+      assertTrue(Double.isNaN(fr.vec(0).at(0)));
+      assertTrue(Double.isNaN(fr.vec(0).at(1)));
+    } finally {
+      Scope.exit();
+    }
+  }
 }

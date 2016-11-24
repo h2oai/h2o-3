@@ -30,7 +30,7 @@ import java.util.HashMap;
  * <ul>
  * <li> Frame name is created it not provided.</li>
  * <li> Column names are created automatically if not provided.</li>
- * <li> Vector types are initialized to empty array when not provided. For example, creating empty frame (
+ * <li> Vector types are initialized to all T_NUMs when not provided. For example, creating empty frame (
  *   no data, co columns) can be created as {@code Frame fr = new TestFrameBuilder().build()}.</li>
  * <li> Column data are initialized to empty array when not provided. The following example creates frames with 2 columns,
  *   but no data. {@code Frame fr = new TestFrameBuilder().withVecTypes(Vec.T_NUM).build()}.</li>
@@ -192,9 +192,9 @@ public class TestFrameBuilder {
   private HashMap<String, Integer> getMapping(String[] array){
    HashMap<String, Integer> mapping = new HashMap<>();
     int level = 0;
-    for(int i = 0; i < array.length; i++){
-      if(!mapping.containsKey(array[i])){
-        mapping.put(array[i], level);
+    for (String item : array) {
+      if (!mapping.containsKey(item)) {
+        mapping.put(item, level);
         level++;
       }
     }
@@ -247,7 +247,13 @@ public class TestFrameBuilder {
   // this check has to be called as the first one
   private void checkVecTypes() {
     if(vecTypes==null){
-      vecTypes = new byte[0];
+      if (colNames == null) {
+        vecTypes = new byte[0];
+      } else {
+        vecTypes = new byte[colNames.length];
+        for (int i = 0; i < colNames.length; i++)
+          vecTypes[i] = Vec.T_NUM;
+      }
     }
     numCols = vecTypes.length;
 
@@ -314,7 +320,7 @@ public class TestFrameBuilder {
           if (numRows == NOT_SET) {
             numRows = numericData.get(colIdx).length;
           } else {
-            throwIf(numRows != numericData.get(colIdx).length, "Columns has different number of elements");
+            throwIf(numRows != numericData.get(colIdx).length, "Columns have different number of elements");
           }
           break;
         case Vec.T_CAT: // fall-through to T_CAT
