@@ -1,7 +1,7 @@
 package hex.tree;
 
 import water.MRTask;
-import water.fvec.C4VolatileChunk;
+import water.MemoryManager;
 import water.fvec.Chunk;
 import water.util.RandomUtils;
 
@@ -21,9 +21,8 @@ public class Sample extends MRTask<Sample> {
 
   @Override
   public void map(Chunk nids, Chunk ys) {
-    C4VolatileChunk nids2 = (C4VolatileChunk) nids;
     Random rand = RandomUtils.getRNG(_tree._seed);
-    int [] is = nids2.getValues();
+    int [] is = nids.getIntegers(MemoryManager.malloc4(nids._len),0,nids._len,Integer.MAX_VALUE);
     for (int row = 0; row < nids._len; row++) {
       boolean skip = ys.isNA(row);
       if (!skip) {
@@ -33,5 +32,6 @@ public class Sample extends MRTask<Sample> {
       }
       if (skip) is[row] = ScoreBuildHistogram.OUT_OF_BAG;     // Flag row as being ignored by sampling
     }
+    nids.set(is);
   }
 }

@@ -280,7 +280,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           twNames[i] = "Tree_" + domain[i];
           twNames[_nclass+i] = "Work_" + domain[i];
         }
-        Vec [] twVecs = _response.makeVolatileDoubles(_nclass*2);
+        Vec [] twVecs = _response.makeZeros(_nclass*2);
         _train.add(twNames,twVecs);
 
 
@@ -292,7 +292,9 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
           names[i] = "NIDs_" + domain[i];
           cons[i] = (_model._output._distribution[i]==0?-1:0);
         }
-        Vec [] vs = _response.makeVolatileInts(cons);
+        Vec [] vs = new Vec[cons.length];
+        for(int i = 0; i < cons.length; ++i)
+          vs[i] = _response.makeCon(cons[i]);
         _train.add(names, vs);
         // Append number of trees participating in on-the-fly scoring
         _train.add("OUT_BAG_TREES", _response.makeZero());

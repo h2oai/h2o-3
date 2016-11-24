@@ -112,6 +112,8 @@ public class NewChunk extends Chunk {
 
     public Mantissas(int cap) {_vals1 = MemoryManager.malloc1(cap);}
 
+    public Mantissas(int[] vals) {_vals4 = vals;}
+
     public void set(int idx, long l) {
       long old;
       if(_vals1 != null) { // check if we fit withing single byte
@@ -315,6 +317,15 @@ public class NewChunk extends Chunk {
     _start = c._start;
     _ds = vals;
     _sparseLen = _len = _ds.length;
+  }
+
+  // Constructor used when inflating a Chunk.
+  public NewChunk( Chunk c, int [] vals) {
+    _vec = c._vec; _cidx = c.cidx();
+    _start = c._start;
+    _ms = new Mantissas(vals);
+    _xs = new Exponents(vals.length);
+    _sparseLen = _len = vals.length;
   }
 
   // Pre-sized newchunks.
