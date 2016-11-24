@@ -11,7 +11,8 @@ import water.util.UnsafeUtils;
  */
 public final class C8DVolatileChunk extends Chunk {
   private transient double [] _ds;
-  C8DVolatileChunk(double[] ds ) { _mem=new byte[0]; _start = -1; _len = ds.length; _ds = ds; }
+  C8DVolatileChunk(double[] ds ) {_start = -1; _len = ds.length; _ds = ds; }
+
 
 
   public double [] getValues(){return _ds;}
@@ -25,7 +26,10 @@ public final class C8DVolatileChunk extends Chunk {
   }
   @Override protected final boolean isNA_impl( int i ) { return Double.isNaN(_ds[i]); }
   @Override boolean set_impl(int idx, long l) {
-    return false;
+    double d = l;
+    if(d != l) return false;
+    _ds[idx] = d;
+    return true;
   }
   @Override boolean set_impl(int i, double d) {
     _ds[i] = d;
@@ -60,9 +64,11 @@ public final class C8DVolatileChunk extends Chunk {
     return res;
   }
 
-  public Futures close(int cidx, Futures fs ) { // always assume got modified
-    Value v = new Value(_vec.chunkKey(_cidx), this,this._len*8,Value.ICE);
-    DKV.put(v._key,v,fs); // Write updated chunk back into K/V
+  @Override
+  public Futures close( int cidx, Futures fs ) {
+    if(chk2() != null) return chk2().close(cidx,fs);
+    Value v = new Value(_vec.chunkKey(cidx),this,_len*8,Value.ICE);
+    DKV.put(v._key,v,fs);
     return fs;
   }
 

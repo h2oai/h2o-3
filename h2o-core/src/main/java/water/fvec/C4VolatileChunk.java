@@ -55,6 +55,15 @@ public class C4VolatileChunk extends Chunk {
     _mem = null;
   }
 
+  @Override
+  public Futures close( int cidx, Futures fs ) {
+    if(chk2() != null) return chk2().close(cidx,fs);
+    Value v = new Value(_vec.chunkKey(cidx),this,_len*4,Value.ICE);
+    DKV.put(v._key,v,fs);
+    return fs;
+  }
+
+
   @Override public byte [] asBytes() {
     byte [] res = MemoryManager.malloc1(_len*4);
     for(int i = 0; i < _len; ++i)
@@ -64,11 +73,11 @@ public class C4VolatileChunk extends Chunk {
 
   @Override public boolean hasFloat() {return false;}
 
-  public Futures close(int cidx, Futures fs ) { // always assume got modified
-    Value v = new Value(_vec.chunkKey(_cidx), this,this._len*4,Value.ICE);
-    DKV.put(v._key,v,fs); // Write updated chunk back into K/V
-    return fs;
-  }
+//  public Futures close(int cidx, Futures fs ) { // always assume got modified
+//    Value v = new Value(_vec.chunkKey(_cidx), this,this._len*4,Value.ICE);
+//    DKV.put(v._key,v,fs); // Write updated chunk back into K/V
+//    return fs;
+//  }
 
   /**
    * Dense bulk interface, fetch values from the given range

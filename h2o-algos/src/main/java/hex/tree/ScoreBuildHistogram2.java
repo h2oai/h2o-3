@@ -226,7 +226,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
             chks[i] = vecs[i].chunkForChunkIdx(cidx);
           map(id,chks);
           Chunk resChk = chks[_workIdx];
-          resChk.close(cidx,_fs);
+//          resChk.close(cidx,_fs);
           int len = resChk.len();
           if(resChk instanceof C8DVolatileChunk){
             _ys[id] = ((C8DVolatileChunk)resChk).getValues();
