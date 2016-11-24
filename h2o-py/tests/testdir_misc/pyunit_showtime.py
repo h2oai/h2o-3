@@ -6,6 +6,7 @@ from tests import pyunit_utils
 
 def test_show_time():
 
+    h2o.cluster().timezone = "UTC"
     df = h2o.H2OFrame.from_python(
         {"A": [1, 2, 3],
          "B": ["a", "a", "b"],
