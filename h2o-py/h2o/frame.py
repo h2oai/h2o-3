@@ -10,6 +10,7 @@ TODO: Automatically convert column names into Frame properties!
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import csv
+import datetime
 import functools
 import imp
 import os
@@ -748,7 +749,7 @@ class H2OFrame(object):
         return self._unop("trigamma")
 
     @staticmethod
-    def mktime(year=1970, month=1, day=1, hour=0, minute=0, second=0, msec=0):
+    def mktime(year=None, month=None, day=None, hour=None, minute=None, second=None, msec=None, date=None, time=None):
         """
         Create a time column from individual components.
 
@@ -759,13 +760,45 @@ class H2OFrame(object):
         -------
           H2OFrame of one column containing the date in millis since the epoch.
         """
-        assert_is_type(year, int, H2OFrame)
-        assert_is_type(month, int, H2OFrame)
-        assert_is_type(day, int, H2OFrame)
-        assert_is_type(hour, int, H2OFrame)
-        assert_is_type(minute, int, H2OFrame)
-        assert_is_type(second, int, H2OFrame)
-        assert_is_type(msec, int, H2OFrame)
+        assert_is_type(date, None, datetime.date)
+        assert_is_type(time, None, datetime.time)
+        assert_is_type(year, None, int, H2OFrame)
+        assert_is_type(month, None, int, H2OFrame)
+        assert_is_type(day, None, int, H2OFrame)
+        assert_is_type(hour, None, int, H2OFrame)
+        assert_is_type(minute, None, int, H2OFrame)
+        assert_is_type(second, None, int, H2OFrame)
+        assert_is_type(msec, None, int, H2OFrame)
+        if time is not None:
+            if hour is not None or minute is not None or second is not None or msec is not None:
+                raise H2OValueError("Arguments hour, minute, second, msec cannot be used together with `time`.")
+            hour = time.hour
+            minute = time.minute
+            second = time.second
+            msec = time.microsecond // 1000
+        if date is not None:
+            if year is not None or month is not None or day is not None:
+                raise H2OValueError("Arguments year, month and day cannot be used together with `date`.")
+            year = date.year
+            month = date.month
+            day = date.day
+            if isinstance(date, datetime.datetime):
+                if time is not None:
+                    raise H2OValueError("Argument `time` cannot be used together with `date` of datetime type.")
+                if hour is not None or minute is not None or second is not None or msec is not None:
+                    raise H2OValueError("Arguments hour, minute, second, msec cannot be used together with `date` "
+                                        "of datetime type.")
+                hour = date.hour
+                minute = date.minute
+                second = date.second
+                msec = date.microsecond // 1000
+        if year is None or month is None or day is None:
+            raise H2OValueError("Either arguments `year`, `month` and `day` or the `date` are required.")
+        if hour is None: hour = 0
+        if minute is None: minute = 0
+        if second is None: second = 0
+        if msec is None: msec = 0
+
         local_vars = locals()
         res_nrows = None
         for n in ["year", "month", "day", "hour", "minute", "second", "msec"]:
@@ -2778,8 +2811,8 @@ class H2OFrame(object):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def _binop(lhs, op, rhs):
-    assert_is_type(lhs, str, numeric, H2OFrame)
-    assert_is_type(rhs, str, numeric, H2OFrame)
+    assert_is_type(lhs, str, numeric, datetime.date, H2OFrame)
+    assert_is_type(rhs, str, numeric, datetime.date, H2OFrame)
     if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame):
         lrows, lcols = lhs.shape
         rrows, rcols = rhs.shape
@@ -2794,5 +2827,10 @@ def _binop(lhs, op, rhs):
         if not compatible:
             raise H2OValueError("Attempting to operate on incompatible frames: (%d x %d) and (%d x %d)"
                                 % (lrows, lcols, rrows, rcols))
+    if isinstance(lhs, datetime.date):
+        lhs = H2OFrame.mktime(date=lhs)
+    if isinstance(rhs, datetime.date):
+        rhs = H2OFrame.mktime(date=rhs)
+
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
     return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)
