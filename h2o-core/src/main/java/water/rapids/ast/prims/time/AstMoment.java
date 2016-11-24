@@ -151,8 +151,12 @@ public class AstMoment extends AstBuiltin<AstMoment> {
             }
             tp[cm[j]] = (int) d;
           }
-          dt.setDateTime(tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6]);
-          nc.addNum(dt.getMillis());
+          try {
+            dt.setDateTime(tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6]);
+            nc.addNum(dt.getMillis());
+          } catch (IllegalFieldValueException e) {
+            nc.addNum(Double.NaN);
+          }
         }
       }
     }
