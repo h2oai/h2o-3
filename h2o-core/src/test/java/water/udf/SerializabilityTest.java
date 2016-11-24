@@ -16,7 +16,7 @@ import static water.udf.specialized.Strings.*;
 /**
  * Test for UDF
  */
-public class SerializabilityTest extends UdfBase {
+public class SerializabilityTest extends UdfTestBase {
   
   public int requiredCloudSize() { return 1; }
 
