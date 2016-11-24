@@ -39,7 +39,7 @@ public class AstMoment extends AstBuiltin<AstMoment> {
 
 
   @Override
-  public ValFrame apply(Val[] args) {
+  protected ValFrame exec(Val[] args) {
 
     // Parse the input arguments, verifying their validity.
     boolean naResult = false;
