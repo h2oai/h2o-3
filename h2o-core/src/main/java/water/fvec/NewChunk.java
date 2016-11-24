@@ -648,16 +648,21 @@ public class NewChunk extends Chunk {
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
-    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
-    if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
-      append2slowUUID();
-    _ms.set(_sparseLen,lo);
-    _ds[_sparseLen] = Double.longBitsToDouble(hi);
-    if (_id != null) _id[_sparseLen] = _len;
+    set_impl(_sparseLen, lo, hi);
     _sparseLen++;
     _len++;
     assert _sparseLen <= _len;
   }
+
+  @Override public boolean set_impl(int idx, long lo, long hi) {
+    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
+    if( _ms==null || _ds== null || idx >= _ms.len() )
+      append2slowUUID();
+    _ms.set(idx,lo);
+    _ds[idx] = Double.longBitsToDouble(hi);
+    return true;
+  }
+
   public void addUUID( Chunk c, long row ) {
     if (c.isNA_abs(row)) addNA();
     else addUUID(c.at16l_abs(row),c.at16h_abs(row));
@@ -994,7 +999,7 @@ public class NewChunk extends Chunk {
         for (int i = 0; i < _sparseLen; ++i) {
           xs.set(_id[i], _xs.get(i));
           ms.set(_id[i], _ms.get(i));
-          missing.set(_id[i], _sparseNA || _missing == null?false:_missing.get(i));
+          missing.set(_id[i], _sparseNA || (_missing != null && _missing.get(i)));
         }
         assert _sparseNA || (ms._nzs == _ms._nzs):_ms._nzs + " != " + ms._nzs;
         ms._nzs = _ms._nzs;
@@ -1537,7 +1542,7 @@ public class NewChunk extends Chunk {
       if(idx >= 0)i = idx;
       else cancel_sparse(); // for now don't bother setting the sparse value
     }
-    _is[i] = _sslen;
+    if (_is != null) _is[i] = _sslen;
     append_ss(str);
     return true;
   }

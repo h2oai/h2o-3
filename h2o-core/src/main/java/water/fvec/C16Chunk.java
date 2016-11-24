@@ -45,8 +45,7 @@ public class C16Chunk extends Chunk {
     for( int i=0; i< _len; i++ ) {
       long lo = loAt(i);
       long hi = hiAt(i);
-      if(lo == _LO_NA && hi == _HI_NA)
-        nc.addNA();
+      if(isNA(lo, hi)) nc.addNA();
       else
         nc.addUUID(lo, hi);
     }
