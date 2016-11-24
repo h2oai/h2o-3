@@ -1,7 +1,6 @@
 package water.fvec;
 
-import water.H2O;
-import water.MemoryManager;
+import water.*;
 import water.util.UnsafeUtils;
 
 /**
@@ -13,6 +12,7 @@ import water.util.UnsafeUtils;
 public final class C8DVolatileChunk extends Chunk {
   private transient double [] _ds;
   C8DVolatileChunk(double[] ds ) { _mem=new byte[0]; _start = -1; _len = ds.length; _ds = ds; }
+
 
   public double [] getValues(){return _ds;}
   @Override protected final long   at8_impl( int i ) {
@@ -45,8 +45,26 @@ public final class C8DVolatileChunk extends Chunk {
     nc.set_sparseLen(nc.set_len(_len));
     return nc;
   }
-  @Override public final void initFromBytes () {throw H2O.unimpl("Volatile chunks should not be (de)serialized");}
+  @Override public final void initFromBytes () {
+    _len = _mem.length >> 3;
+    _ds = MemoryManager.malloc8d(_len);
+    for(int i = 0; i < _ds.length; ++i)
+      _ds[i] = UnsafeUtils.get8d(_mem,8*i);
+    _mem = null;
+  }
 
+  @Override public byte [] asBytes() {
+    byte [] res = MemoryManager.malloc1(_len*8);
+    for(int i = 0; i < _len; ++i)
+      UnsafeUtils.set8d(res,8*i,_ds[i]);
+    return res;
+  }
+
+  public Futures close(int cidx, Futures fs ) { // always assume got modified
+    Value v = new Value(_vec.chunkKey(_cidx), this,this._len*8,Value.ICE);
+    DKV.put(v._key,v,fs); // Write updated chunk back into K/V
+    return fs;
+  }
 
   @Override
   public double [] getDoubles(double [] vals, int from, int to){
