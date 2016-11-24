@@ -52,7 +52,7 @@ public class MRTaskTest extends TestUtil {
       System.out.println("max cnt = " + max_cnt);
       int cnt = cntr.get();
       assertEquals("Number of reductions should be (numtasks - 1). We add 1 per map, subtract one per reduce, there should be 1 left, got " + cnt,1,cnt);
-      assertTrue("too many unreduced results, should be <= " + max_unreduced_elems + " but was " + max_cnt, max_cnt < max_unreduced_elems);
+      assertTrue("too many unreduced results, should be <= " + max_unreduced_elems + " but was " + max_cnt, max_cnt <= max_unreduced_elems);
     }
   }
   // Test speed of calling 1M map calls
