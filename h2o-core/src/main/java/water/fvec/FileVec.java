@@ -11,8 +11,9 @@ public abstract class FileVec extends ByteVec {
 
   // Returns String with path for given key.
   public static String getPathForKey(Key k) {
-    final int off = k._kb[0]==Key.CHK   || k._kb[0]==Key.VEC ? Vec.KEY_PREFIX_LEN : 0;
-    String p = new String(k._kb,off,k._kb.length-off);
+    byte[] kb = k.bytes();
+    final int off = k.isChunkKey() || k.isVec() ? Vec.KEY_PREFIX_LEN : 0;
+    String p = new String(kb,off,kb.length-off);
 
     if(p.startsWith("nfs:/"))
       p = p.substring("nfs:/".length());
@@ -115,7 +116,9 @@ public abstract class FileVec extends ByteVec {
    *  @return The file offset corresponding to this Chunk index */
   public static long chunkOffset ( Key ckey ) { return (long)chunkIdx(ckey)*((FileVec)Vec.getVecKey(ckey).get())._chunkSize; }
   // Reverse: convert a chunk-key into a cidx
-  static int chunkIdx(Key ckey) { assert ckey._kb[0]==Key.CHK; return UnsafeUtils.get4(ckey._kb, 1 + 1 + 4); }
+  static int chunkIdx(Key ckey) {
+    assert ckey.isChunkKey();
+    return UnsafeUtils.get4(ckey.bytes(), 1 + 1 + 4); }
 
   // Convert a chunk# into a chunk - does lazy-chunk creation. As chunks are
   // asked-for the first time, we make the Key and an empty backing DVec.

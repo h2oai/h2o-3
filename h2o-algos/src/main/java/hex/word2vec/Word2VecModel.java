@@ -29,12 +29,12 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   private volatile Word2VecModelInfo _modelInfo;
   void setModelInfo(Word2VecModelInfo mi) { _modelInfo = mi; }
   final public Word2VecModelInfo getModelInfo() { return _modelInfo; }
-  private Key _w2vKey;
+  private Key<Frame> _w2vKey;
 
-  public Word2VecModel(Key selfKey, Word2VecParameters params, Word2VecOutput output) {
+  public Word2VecModel(Key<Word2VecModel> selfKey, Word2VecParameters params, Word2VecOutput output) {
     super(selfKey, params, output);
     _modelInfo = new Word2VecModelInfo(params);
-    assert(Arrays.equals(_key._kb, selfKey._kb));
+    assert _key.equals(selfKey);
   }
 
   @Override
@@ -49,6 +49,16 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     throw H2O.unimpl();
   }
 
+  private Frame frame() {
+    Frame f = _w2vKey.get();
+    if (f == null) throw new UnsupportedOperationException("Frame at " + _w2vKey + " missing.");
+    return f;
+  }
+
+  private Vec[] getVecs() {
+    return frame().vecs();
+  }
+
   /**
    * Takes an input string can return the word vector for that word.
    *
@@ -58,7 +68,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   public float[] transform(String target) {
     NonBlockingHashMap<BufferedString, Integer> vocabHM = buildVocabHashMap();
-    Vec[] vs = ((Frame) _w2vKey.get()).vecs();
+    Vec[] vs = getVecs();
     BufferedString tmp = new BufferedString(target);
     return transform(tmp, vocabHM, vs);
   }
@@ -86,7 +96,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   public HashMap<String, Float> findSynonyms(String target, int cnt) {
     if (cnt > 0) {
       NonBlockingHashMap<BufferedString, Integer> vocabHM = buildVocabHashMap();
-      Vec[] vs = ((Frame) _w2vKey.get()).vecs();
+      Vec[] vs = getVecs();
       BufferedString tmp = new BufferedString(target);
       float[] tarVec = transform(tmp, vocabHM, vs);
       return findSynonyms(tarVec, cnt, vs);
@@ -107,7 +117,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   public void findSynonyms(float[] tarVec, int cnt) {
     if (cnt > 0) {
-      Vec[] vs = ((Frame) _w2vKey.get()).vecs();
+      Vec[] vs = getVecs();
       findSynonyms(tarVec, cnt, vs);
     } else Log.err("Synonym count must be greater than 0.");
   }
@@ -167,8 +177,8 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    */
   private  NonBlockingHashMap<BufferedString, Integer>  buildVocabHashMap() {
     NonBlockingHashMap<BufferedString, Integer> vocabHM;
-    Vec word = ((Frame) _w2vKey.get()).vec(0);
-    final int vocabSize = (int) ((Frame) _w2vKey.get()).numRows();
+    Vec word = frame().vec(0);
+    final int vocabSize = (int) frame().numRows();
     vocabHM = new NonBlockingHashMap<>(vocabSize);
     for(int i=0; i < vocabSize; i++) vocabHM.put(word.atStr(new BufferedString(),i),i);
     return vocabHM;
@@ -198,13 +208,13 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     //finalize vectors
     final int rowLayout = avs[0].compute_rowLayout();
     for (int i = 0; i < vecs.length; i++) {
-      colNames[i] = new String("V"+i);
+      colNames[i] = "V"+i;
       cs[i].close(0, fs);
       vecs[i] = avs[i].close(rowLayout,fs);
     }
 
     fs.blockForPending();
-    Frame fr = new Frame(_w2vKey = Key.make("w2v"));
+    Frame fr = new Frame(_w2vKey = Key.<Frame>make("w2v"));
     //FIXME this ties the word count frame to this one which means
     //FIXME one can't be deleted without destroying the other
     fr.add("Word", (_parms._vocabKey.get()).vec(0));

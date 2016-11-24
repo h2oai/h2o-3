@@ -44,7 +44,8 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
   // The Key!!!
   // Limited to 512 random bytes - to fit better in UDP packets.
   static final int KEY_LENGTH = 512;
-  public final byte[] _kb;      // Key bytes, wire-line protocol
+  private final byte[] _kb;      // Key bytes, wire-line protocol
+  public byte[] bytes() { return _kb.clone(); }
   transient final int _hash;    // Hash on key alone (and not value)
 
   // The user keys must be ASCII, so the values 0..31 are reserved for system
@@ -67,11 +68,11 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
   /** True is this is a {@link Vec} Key.
    *  @return True is this is a {@link Vec} Key */
-  public final boolean isVec() { return _kb != null && _kb.length > 0 && _kb[0] == VEC; }
+  public final boolean isVec() { return _kb.length > 0 && _kb[0] == VEC; }
 
   /** True is this is a {@link Chunk} Key.
    *  @return True is this is a {@link Chunk} Key */
-  public final boolean isChunkKey() { return _kb != null && _kb.length > 0 && _kb[0] == CHK; }
+  public final boolean isChunkKey() { return _kb.length > 0 && _kb[0] == CHK; }
 
   /** Returns the {@link Vec} Key from a {@link Chunk} Key.
    *  @return Returns the {@link Vec} Key from a {@link Chunk} Key. */
@@ -176,11 +177,10 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
 
   private static long build_cache( int cidx, int home, int replica, int desired ) {
     return // Build the new cache word
-        ((long)(cidx &0xFF)<< 0) |
+        ((long)(cidx &0xFF)) |
         ((long)(home &0xFFFF)<< 8) |
         ((long)(replica&0xFF)<<24) |
-        ((long)(desired&0xFF)<<32) |
-        ((long)(0 )<<40);
+        ((long)(desired&0xFF)<<32);
   }
 
   int home ( H2O cloud ) { return home (cloud_info(cloud)); }

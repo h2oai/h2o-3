@@ -205,7 +205,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     _output._variable_importances = calcVarImp(last_scored().variable_importances);
     _output._names = dataInfo._adaptedFrame.names();
     _output._domains = dataInfo._adaptedFrame.domains();
-    assert(Arrays.equals(_key._kb, destKey._kb));
+    assert _key.equals(destKey);
   }
 
   /**
