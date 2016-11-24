@@ -605,18 +605,6 @@ public abstract class Chunk extends Iced<Chunk> {
     return _cidx;
   }
 
-//  public final Chunk setVolatile(double [] ds) {
-//    Chunk res;
-//    DKV.put(_vec.chunkKey(_cidx),res = new C8DVolatileChunk(ds));
-//    return res;
-//  }
-//
-  public final Chunk setVolatile(float [] fs) {
-    Chunk res;
-    Value v = new Value(_vec.chunkKey(_cidx), res = new C4FVolatileChunk(fs),fs.length*4,Value.ICE);
-    DKV.put(v._key,v);
-    return res;
-  }
   public final Chunk setVolatile(double [] ds) {
     Chunk res;
     Value v = new Value(_vec.chunkKey(_cidx), res = new C8DVolatileChunk(ds),ds.length*8,Value.ICE);
@@ -750,7 +738,7 @@ public abstract class Chunk extends Iced<Chunk> {
   public final  AutoBuffer write_impl(AutoBuffer bb) {return bb.putA1(_mem);}
 
   @Override
-  public final byte [] asBytes(){return _mem;}
+  public byte [] asBytes(){return _mem;}
 
   @Override
   public final Chunk reloadFromBytes(byte [] ary){

@@ -1,6 +1,6 @@
 package water.fvec;
 
-import water.H2O;
+import water.*;
 import water.util.UnsafeUtils;
 
 /**
@@ -11,7 +11,7 @@ import water.util.UnsafeUtils;
  */
 public class C4VolatileChunk extends Chunk {
   static protected final long _NA = Integer.MIN_VALUE;
-  transient private final int [] _is;
+  transient private int [] _is;
 
   C4VolatileChunk(int[] is ) { _is = is; _mem = new byte[0]; _start = -1; _len = is.length; }
 
@@ -47,9 +47,28 @@ public class C4VolatileChunk extends Chunk {
     }
     return nc;
   }
-  @Override public final void initFromBytes () {throw H2O.unimpl("Volatile chunks should not be (de)serialized");}
+  @Override public final void initFromBytes () {
+    _len = _mem.length >> 2;
+    _is = MemoryManager.malloc4(_len);
+    for(int i = 0; i < _is.length; ++i)
+      _is[i] = UnsafeUtils.get4(_mem,4*i);
+    _mem = null;
+  }
+
+  @Override public byte [] asBytes() {
+    byte [] res = MemoryManager.malloc1(_len*4);
+    for(int i = 0; i < _len; ++i)
+      UnsafeUtils.set4(res,4*i,_is[i]);
+    return res;
+  }
+
   @Override public boolean hasFloat() {return false;}
 
+  public Futures close(int cidx, Futures fs ) { // always assume got modified
+    Value v = new Value(_vec.chunkKey(_cidx), this,this._len*4,Value.ICE);
+    DKV.put(v._key,v,fs); // Write updated chunk back into K/V
+    return fs;
+  }
 
   /**
    * Dense bulk interface, fetch values from the given range
