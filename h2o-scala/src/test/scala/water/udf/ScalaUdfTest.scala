@@ -4,8 +4,9 @@ import java.io.File
 import java.util.{Date, GregorianCalendar}
 import java.{lang, util}
 
+import org.junit.{Assert, Test, BeforeClass}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import water.Test0
+import water.{TestUtil, Test0}
 import water.TestUtil._
 import water.udf.MoreColumns._
 
@@ -302,4 +303,12 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     }
     assert(columns.get(5).isCompatibleWith(source), "Need until align the result")
   }
+
+  @Test def testSomethingElse(): Unit = {
+    Assert.assertTrue(true)
+  }
+}
+
+object ScalaUdfTest extends TestUtil {
+  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(1)
 }

@@ -1,5 +1,6 @@
 package water
 
+import org.junit.{Assert, Test}
 import org.scalatest.FunSuite
 
 /**
@@ -16,4 +17,11 @@ class Test0 extends FunSuite {
   test("just making sure that this code is accepted by gradle") {
     assert(true)
   }
+
+  @Test def testSomething(): Unit = {
+    Assert.assertTrue(true)
+  }
+}
+
+object Test0 extends TestUtil {
 }
