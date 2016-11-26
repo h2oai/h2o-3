@@ -14,7 +14,8 @@ h2o.ensemble(x, y, training_frame,
               "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"), 
   metalearner = "h2o.glm.wrapper", 
   cvControl = list(V = 5, shuffle = TRUE), 
-  seed = 1, parallel = "seq", 
+  seed = 1, 
+  parallel = "seq", 
   keep_levelone_data = TRUE)
 }
 \arguments{
@@ -130,13 +131,13 @@ Erin LeDell \email{erin@h2o.ai}
 # An example of binary classification on a local machine using h2o.ensemble
 
 library(h2oEnsemble)
-localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
+h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
 
 
 # Import a sample binary outcome train/test set into R
-train <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_10k.csv")
-test <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv")
-y <- "C1"
+train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_5k.csv")
+test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+y <- "response"
 x <- setdiff(names(train), y)
 family <- "binomial"
 
@@ -148,7 +149,7 @@ test[,y] <- as.factor(test[,y])
 # Specify the base learner library & the metalearner
 learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
                "h2o.gbm.wrapper", "h2o.deeplearning.wrapper")
-metalearner <- "h2o.deeplearning.wrapper"
+metalearner <- "h2o.glm.wrapper"
 
 
 # Train the ensemble using 5-fold CV to generate level-one data
@@ -166,36 +167,37 @@ perf <- h2o.ensemble_performance(fit, newdata = test)
 
 # The "perf" object has a print method, so we can print default metric by typing: perf
 perf  # prints the following
+
 # Base learner performance, sorted by specified metric:
-#                   learner       AUC
-# 1          h2o.glm.wrapper 0.6871334
-# 4 h2o.deeplearning.wrapper 0.7261466
-# 2 h2o.randomForest.wrapper 0.7655972
-# 3          h2o.gbm.wrapper 0.7817096
+#                    learner       AUC
+# 1          h2o.glm.wrapper 0.6824304
+# 4 h2o.deeplearning.wrapper 0.7006335
+# 2 h2o.randomForest.wrapper 0.7570211
+# 3          h2o.gbm.wrapper 0.7780807
 # 
 # 
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
 # 
-# Ensemble performance (AUC): 0.784785565758091
+# Ensemble performance (AUC): 0.781580655670451
 
 # To print the results for a particular metric, like MSE, do the following:
 print(perf, metric = "MSE")
 
 # Base learner performance, sorted by specified metric:
 #                    learner       MSE
-# 1          h2o.glm.wrapper 0.2216862
-# 4 h2o.deeplearning.wrapper 0.2182509
-# 2 h2o.randomForest.wrapper 0.1981485
-# 3          h2o.gbm.wrapper 0.1900497
+# 4 h2o.deeplearning.wrapper 0.2305775
+# 1          h2o.glm.wrapper 0.2225176
+# 2 h2o.randomForest.wrapper 0.2014339
+# 3          h2o.gbm.wrapper 0.1916273
 # 
 # 
 # H2O Ensemble Performance on <newdata>:
 # ----------------
 # Family: binomial
 # 
-# Ensemble performance (MSE): 0.189215219642971
+# Ensemble performance (MSE): 0.1898735479034431
 
 # By calculating the base learner test set metrics, we can compare the performance
 # of the ensemble to the top base learner - GBM is the top base learner, both by AUC and MSE.
@@ -223,9 +225,11 @@ data.frame(learner, auc)
 
 
 
-# If desired, you can generate predictions on the test set
-# This is useful if you need to calculate custom performance metrics in R (not provided by H2O)
+# If desired, you can generate predictions on the test set (as an H2OFrame)
 pp <- predict(fit, test)
+
+# This is useful if you need to calculate custom performance metrics in R (not provided by H2O)
+# To do so, you can pull the predictions and labels into local R memory
 predictions <- as.data.frame(pp$pred)[,3]  #third column, p1 is P(Y==1)
 labels <- as.data.frame(test[,y])[,1]
 
