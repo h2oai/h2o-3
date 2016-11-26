@@ -13,6 +13,7 @@ h2oEnsemble 0.1.8.9001 (devel)
 -----------------
 * Updated defaults for GLM wrapper `tweedie_variance_power` and `tweedie_link_power` to match `h2o.glm` defaults.
 * Added `./man/h2o.stack.Rd` file to the GitHub repo (it was accidentally missing).
+* Fixed bug in `print.h2o.ensemble_performance` function: https://0xdata.atlassian.net/browse/PUBDEV-3731
 
 
 h2oEnsemble 0.1.8 (2016-03-29)
