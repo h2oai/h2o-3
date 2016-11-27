@@ -41,7 +41,7 @@ class H2OConfigReader(object):
     def __init__(self):
         """Initialize the singleton instance of H2OConfigReader."""
         assert not hasattr(H2OConfigReader, "_instance"), "H2OConfigReader is intended to be used as a singleton"
-        self._logger = logging.getLogger("h2opy")
+        self._logger = logging.getLogger("h2o")
         self._config = {}
         self._config_loaded = False
 
@@ -60,7 +60,7 @@ class H2OConfigReader(object):
             if os.path.isfile(f):
                 self._logger.info("Reading config file %s" % f)
                 section_rx = re.compile(r"^\[(\w+)\]$")
-                keyvalue_rx = re.compile(r"^(\w+:)?([\w\.]+)\s*=\s*(.*)$")
+                keyvalue_rx = re.compile(r"^(\w+:)?([\w.]+)\s*=\s*(.*)$")
                 with io.open(f, "rt", encoding="utf-8") as config_file:
                     section_name = None
                     for lineno, line in enumerate(config_file):
@@ -83,11 +83,12 @@ class H2OConfigReader(object):
                             else:
                                 self._logger.error("Key %s is not a valid config key" % key)
                             continue
-                        self._logger.error("Syntax error in config file line %d" % lineno)
+                        self._logger.error("Syntax error in config file line %d: %s" % (lineno, line))
                 self._config = dict(conf)
                 return
 
-    def _candidate_log_files(self):
+    @staticmethod
+    def _candidate_log_files():
         """Return possible locations for the .h2oconfig file, one at a time."""
         # Search for .h2oconfig in the current directory and all parent directories
         relpath = ".h2oconfig"
