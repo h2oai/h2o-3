@@ -7,6 +7,7 @@
 # Input is the path to an .h2oconfig file
 # Returns the .h2oconfig file as a data frame with respective key-value pairs as headers
 .parse.h2oconfig <- function(h2oconfig_filename){
+    cat(paste0("Reading in config file: ",h2oconfig_filename))
     connection <- file(h2oconfig_filename)
     Lines  <- readLines(connection)
     close(connection)
@@ -40,13 +41,16 @@
 #file is a simple "key = value" store, with possible section names in square brackets. Single-line comments starting
 #with '#' are also allowed.
 .h2o.candidate.config.files <- function(){
+    path_to_config = getwd()
     current_directory = getwd()
     while(identical(Sys.glob(".h2oconfig"),character(0))){
         if(getwd() == "/"){
-            return(NULL)
+            setwd(current_directory)
+            return()
         }
         setwd("..")
-        current_directory = getwd()
+        path_to_config = getwd()
     }
-    return(paste0(current_directory,"/.h2oconfig"))
+    setwd(current_directory)
+    return(paste0(path_to_config,"/.h2oconfig"))
 }
