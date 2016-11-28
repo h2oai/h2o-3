@@ -750,12 +750,6 @@ class H2OFrame(object):
 
 
     @staticmethod
-    def mktime(year=1970, month=0, day=0, hour=0, minute=0, second=0, msec=0):
-        """Deprecated, use `.moment()` instead."""
-        return H2OFrame._expr(ExprNode("mktime", year, month, day, hour, minute, second, msec))
-
-
-    @staticmethod
     def moment(year=None, month=None, day=None, hour=None, minute=None, second=None, msec=None, date=None, time=None):
         """
         Create a time column from individual components.
@@ -2764,6 +2758,17 @@ class H2OFrame(object):
     # Here we have all methods that are provided as alternative names to some other names defined above. This also
     # includes methods that we rename as part of the deprecation process (but keeping the old name for the sake of
     # backward compatibility). We gather them all down here to have a slightly cleaner code.
+
+    @staticmethod
+    def mktime(year=1970, month=0, day=0, hour=0, minute=0, second=0, msec=0):
+        """
+        Deprecated, use `.moment()` instead.
+
+        This function was left for backward-compatibility purposes only. It is
+        not very stable, and counterintuitively uses 0-based months and days,
+        so "January 4th, 2001" should be entered as `mktime(2001, 0, 3)`.
+        """
+        return H2OFrame._expr(ExprNode("mktime", year, month, day, hour, minute, second, msec))
 
     @property
     def columns(self):
