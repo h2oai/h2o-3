@@ -1604,7 +1604,7 @@ public class ArrayUtils {
   /**
    * Convert an ArrayList of Integers to a primitive int[] array.
    */
-  public static int[] unbox(ArrayList<Integer> arr) {
+  public static int[] toPrimitive(ArrayList<Integer> arr) {
     int[] res = new int[arr.size()];
     for (int i = 0; i < res.length; i++)
       res[i] = arr.get(i);
