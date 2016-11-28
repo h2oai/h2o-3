@@ -2,7 +2,6 @@ package water.rapids.ast.params;
 
 import water.H2O;
 import water.rapids.Env;
-import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.AstParameter;
 import water.util.ArrayUtils;
@@ -136,9 +135,14 @@ public class AstNumList extends AstParameter {
     int nrows = (int) cnt(), r = 0;
     // Fill in values
     double[] vals = new double[nrows];
-    for (int i = 0; i < _bases.length; i++)
-      for (double d = _bases[i]; d < _bases[i] + _cnts[i] * _strides[i]; d += _strides[i])
-        vals[r++] = d;
+    for (int i = 0; i < _bases.length; i++) {
+      if (Double.isNaN(_bases[i])) {
+        vals[r++] = Double.NaN;
+      } else {
+        for (double d = _bases[i]; d < _bases[i] + _cnts[i] * _strides[i]; d += _strides[i])
+          vals[r++] = d;
+      }
+    }
     return vals;
   }
 

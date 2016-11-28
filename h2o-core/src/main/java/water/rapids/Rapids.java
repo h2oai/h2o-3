@@ -217,6 +217,7 @@ public class Rapids {
     ArrayList<String> strs = new ArrayList<>(10);
     while (isQuote(skipWS())) {
       strs.add(string());
+      if (skipWS() == ',') eatChar(',');
     }
     return new AstStrList(strs);
   }
@@ -247,7 +248,7 @@ public class Rapids {
         eatChar(':');
         skipWS();
         stride = number();
-        if (stride < 0)
+        if (stride < 0 || Double.isNaN(stride))
           throw new IllegalASTException("Stride must be positive, got " + stride);
       }
       if (count == 1 && stride != 1)

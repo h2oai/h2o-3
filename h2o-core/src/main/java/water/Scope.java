@@ -71,12 +71,19 @@ public class Scope {
     return vec;
   }
 
-  static public Frame track( Frame fr ) {
-    Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
-    assert scope != null;
-    for( Vec vec: fr.vecs() ) track_impl(scope, vec._key);
-    track_impl(scope, fr._key);
-    return fr;
+  /**
+   * Track one or more {@link Frame}s, and return the first one. The tracked
+   * frames will be removed from DKV when {@link Scope#exit(Key[])} is called.
+   */
+  public static Frame track(Frame... frames) {
+    for (Frame fr : frames) {
+      Scope scope = _scope.get();
+      assert scope != null;
+      track_impl(scope, fr._key);
+      for (Vec vec : fr.vecs())
+        track_impl(scope, vec._key);
+    }
+    return frames[0];
   }
 
   static private void track_impl(Scope scope, Key key) {
