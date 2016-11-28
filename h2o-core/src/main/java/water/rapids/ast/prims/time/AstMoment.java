@@ -95,10 +95,18 @@ public class AstMoment extends AstBuiltin<AstMoment> {
       return make1x1Frame(val);
     }
 
+    // If the result is all-NAs, make a constant NA vec
+    if (naResult) {
+      long n = timevecs.get(0).length();
+      Vec v = Vec.makeCon(Double.NaN, n, Vec.T_TIME);
+      Frame fr = new Frame(Key.<Frame>make(), new String[]{"time"}, new Vec[]{v});
+      return new ValFrame(fr);
+    }
+
     // Some arguments are vecs -- create a frame of the same size
     Vec[] vecs = timevecs.toArray(new Vec[timevecs.size()]);
     int[] cm = ArrayUtils.toPrimitive(chunksmap);
-    Frame fr = new SetTimeTask(timeparts, cm, naResult)
+    Frame fr = new SetTimeTask(timeparts, cm)
         .doAll(Vec.T_TIME, vecs)
         .outputFrame(Key.<Frame>make(), new String[]{"time"}, null);
 
@@ -115,7 +123,6 @@ public class AstMoment extends AstBuiltin<AstMoment> {
   private static class SetTimeTask extends MRTask<SetTimeTask> {
     private int[] tp;
     private int[] cm;
-    private boolean na;
 
     /**
      * @param timeparts is the array of [year, month, day, hrs, mins, secs, ms]
@@ -125,10 +132,9 @@ public class AstMoment extends AstBuiltin<AstMoment> {
      *                  then the first chunk describes the "month" part of the
      *                  date, and the second chunk the "day" part.
      */
-    public SetTimeTask(int[] timeparts, int[] chunksmap, boolean naResult) {
+    public SetTimeTask(int[] timeparts, int[] chunksmap) {
       tp = timeparts;
       cm = chunksmap;
-      na = naResult;
     }
 
     @Override public void map(Chunk[] chks, NewChunk nc) {
@@ -136,27 +142,22 @@ public class AstMoment extends AstBuiltin<AstMoment> {
       assert chks.length == nVecs;
       Chronology chronology = ISOChronology.getInstanceUTC();
       int nChunkRows = chks[0]._len;
-      if (na) {
-        for (int i = 0; i < nChunkRows; i++) {
-          nc.addNum(Double.NaN);
-        }
-      } else {
-        BYROW:
-        for (int i = 0; i < nChunkRows; i++) {
-          for (int j = 0; j < nVecs; j++) {
-            double d = chks[j].atd(i);
-            if (Double.isNaN(d)) {
-              nc.addNum(Double.NaN);
-              continue BYROW;
-            }
-            tp[cm[j]] = (int) d;
-          }
-          try {
-            double millis = chronology.getDateTimeMillis(tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6]);
-            nc.addNum(millis);
-          } catch (IllegalFieldValueException e) {
+
+      BYROW:
+      for (int i = 0; i < nChunkRows; i++) {
+        for (int j = 0; j < nVecs; j++) {
+          double d = chks[j].atd(i);
+          if (Double.isNaN(d)) {
             nc.addNum(Double.NaN);
+            continue BYROW;
           }
+          tp[cm[j]] = (int) d;
+        }
+        try {
+          double millis = chronology.getDateTimeMillis(tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6]);
+          nc.addNum(millis);
+        } catch (IllegalFieldValueException e) {
+          nc.addNum(Double.NaN);
         }
       }
     }
