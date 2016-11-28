@@ -51,7 +51,7 @@ public class OriginalCreateFrameRecipeTest extends TestUtil {
 
   /**
    * Creates frame with binary columns, and test that the <code>binary_ones_fraction</code> setting is respected.
-   * This test is non-deterministic and mail fail with probability 0.1%.
+   * This test is non-deterministic and may fail with probability 0.1%.
    */
   @Test public void binaryFrameTest() {
     CreateFrameOriginalIV4 s = new CreateFrameOriginalIV4().fillFromImpl();
