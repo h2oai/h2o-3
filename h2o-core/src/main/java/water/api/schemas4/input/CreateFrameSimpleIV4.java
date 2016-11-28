@@ -70,7 +70,7 @@ public class CreateFrameSimpleIV4 extends InputSchemaV4<SimpleCreateFrameRecipe,
   public double missing_fraction;
 
   @API(help = "Type of the response column to add.", values = {"none", "real", "int", "bool", "enum", "time"})
-  public SimpleCreateFrameRecipe.ResponseType responseType;
+  public SimpleCreateFrameRecipe.ResponseType response_type;
 
   @API(help = "Lower bound for the response variable (real/int/time types).")
   public double response_lb;

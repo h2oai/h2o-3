@@ -32,7 +32,7 @@ public class SimpleCreateFrameRecipe extends CreateFrameRecipe<SimpleCreateFrame
   public long time_ub = 50L * 365 * 24 * 3600 * 1000;  // ~ 2020-01-01
   public int str_length = 8;
   public double missing_fraction = 0;
-  public ResponseType responseType = ResponseType.NONE;
+  public ResponseType response_type = ResponseType.NONE;
   public double response_lb = 0;
   public double response_ub = 10;
   public double response_p = 0.6;
@@ -79,7 +79,7 @@ public class SimpleCreateFrameRecipe extends CreateFrameRecipe<SimpleCreateFrame
     cfe.setSeed(seed);
     cfe.setNumRows(nrows);
 
-    switch (responseType) {
+    switch (response_type) {
       case REAL:
         cfe.addColumnMaker(new RealColumnCfcm("response", response_lb, response_ub));
         break;
