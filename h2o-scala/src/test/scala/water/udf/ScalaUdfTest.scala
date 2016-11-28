@@ -22,7 +22,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
 
   import UdfTestBase._
   
-  override def beforeAll: Unit = stall_till_cloudsize(1)
+  override def beforeAll: Unit = stall_till_cloudsize(3)
 
   val sinOpt =
     (i: Long) => Some(i).filter(k => k <= 10 || k >= 20).map(i => math.sin(i.toDouble))
@@ -235,13 +235,13 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     val y: Column[lang.Double] = ysOnSphere
     val z: Column[lang.Double] = zsOnSphere
     val r: Column[lang.Double] = foldingColumn[lang.Double](
-      vs => (0.0/:vs)((sum, v) => sum + v*v), 
+      Magma[lang.Double](0.0, (sum:lang.Double) => (v:lang.Double) => sum+v*v), 
       x, y, z)
 
     for {i <- 0 until 100000} {
       val idx = i*10
       val act = r(i * 10)
-      assert(math.abs(act - 1.0) < 0.0001, s"failed at $idx: $act")
+      assert(math.abs(act - 1.0) < 0.001, s"failed at $idx: $act")
     }
 
   }
@@ -310,5 +310,5 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
 }
 
 object ScalaUdfTest extends TestUtil {
-  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(1)
+  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(3)
 }
