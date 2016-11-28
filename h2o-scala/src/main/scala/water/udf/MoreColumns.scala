@@ -68,11 +68,20 @@ object MoreColumns extends DataColumns {
       def apply(x: lang.Long): lang.Integer = f(x)
     }
 
-  private[MoreColumns] implicit def ff1[X](f: Iterable[X] => X): Foldable[X, X] = {
+  /**
+    * Magma with neutral element
+    * @see https://en.wikipedia.org/wiki/Magma_(algebra)
+    * @param zero neutral element
+    * @param op binary op (does not have to be associative)
+    * @tparam X type of values
+    */
+  case class Magma[X](zero: X, op: X => X => X)
+  
+  private[MoreColumns] implicit def ff1[X](magma:Magma[X]): Foldable[X, X] = {
     new Foldable[X, X] {
-      override def initial(): X = f(Nil)
+      override def initial(): X = magma.zero
 
-      override def apply(y: X, x: X): X = f(y::x::Nil)
+      override def apply(y: X, x: X): X = magma.op(y)(x)
     }
   }
   
@@ -97,8 +106,10 @@ object MoreColumns extends DataColumns {
 
 
   def Enums(domain: Iterable[String]) = new ScalaEnums(domain)
+
+  def foldingColumn[X](init: X, op: X => X => X, components: Column[X]*): Column[X] = foldingColumn(Magma(init, op), components:_*)
   
-  def foldingColumn[X](f: Iterable[X] => X, components: Column[X]*): Column[X] = 
+  def foldingColumn[X](f: Magma[X], components: Column[X]*): Column[X] = 
     new FoldingColumn[X, X] (ff1(f), components:_*)
 
   class ScalaUnfoldable[X, Y]() extends Unfoldable[X, Y] {
