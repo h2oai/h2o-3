@@ -69,7 +69,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
 
       #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
       if(strict_version_check != TRUE && "init.check_version" %in% colnames(h2oconfig)){
-        strict_version_check = as.logical(trimws(as.character(h2oconfig$init.check_version)))
+        strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
       }
       if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
         proxy = as.character(h2oconfig$init.proxy)
@@ -78,7 +78,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
         cluster_id = h2oconfig$init.cluster_id
       }
       if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
-        insecure = as.logical(trimws(as.character(h2oconfig$init.verify_ssl_certificates)))
+        insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
       }
       if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
         cookies = h2oconfig$init.cookies
