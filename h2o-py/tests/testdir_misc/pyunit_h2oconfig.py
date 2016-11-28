@@ -9,16 +9,14 @@ import h2o.utils.config
 from tests import pyunit_utils
 
 
-def test_h2oconfig():
+def test_h2oconfig(results_dir):
     """
     Test for parser of the .h2oconfig files.
 
     This test will create various config files in the tests/results/configtest
     folder and then parse them with the `H2OConfigReader` class.
     """
-    thisfile_dir = os.path.dirname(os.path.abspath(__file__))
-    assert thisfile_dir.endswith("testdir_misc"), "Unexpected 'this' dir: %s" % thisfile_dir
-    target_dir = os.path.abspath(os.path.join(thisfile_dir, "..", "results", "configtest"))
+    target_dir = os.path.abspath(os.path.join(results_dir, "configtest"))
     if not os.path.exists(target_dir):
         os.makedirs(target_dir)
     os.chdir(target_dir)
@@ -99,6 +97,10 @@ class LogErrorCounter(logging.Handler):
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_h2oconfig)
+    thisfile_dir = os.path.dirname(os.path.abspath(__file__))
+    assert thisfile_dir.endswith("testdir_misc"), "Unexpected 'this' dir: %s" % thisfile_dir
+    results = os.path.join(thisfile_dir, "..", "results")
+    pyunit_utils.standalone_test(lambda: test_h2oconfig(results))
 else:
-    test_h2oconfig()
+    assert hasattr(pyunit_utils, "__results_dir__"), "This test was expected to run through h2o-py-test-setup..."
+    test_h2oconfig(getattr(pyunit_utils, "__results_dir__"))
