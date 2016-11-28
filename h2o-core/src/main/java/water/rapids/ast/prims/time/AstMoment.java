@@ -1,8 +1,8 @@
 package water.rapids.ast.prims.time;
 
-import org.joda.time.DateTimeZone;
+import org.joda.time.Chronology;
 import org.joda.time.IllegalFieldValueException;
-import org.joda.time.MutableDateTime;
+import org.joda.time.chrono.ISOChronology;
 import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
@@ -88,8 +88,8 @@ public class AstMoment extends AstBuiltin<AstMoment> {
       double val = Double.NaN;
       if (!naResult) {
         try {
-          val = new MutableDateTime(timeparts[0], timeparts[1], timeparts[2], timeparts[3], timeparts[4],
-                                    timeparts[5], timeparts[6], DateTimeZone.UTC).getMillis();
+          val = ISOChronology.getInstanceUTC().getDateTimeMillis(timeparts[0], timeparts[1], timeparts[2],
+              timeparts[3], timeparts[4], timeparts[5], timeparts[6]);
         } catch (IllegalFieldValueException ignored) {}
       }
       return make1x1Frame(val);
@@ -134,7 +134,7 @@ public class AstMoment extends AstBuiltin<AstMoment> {
     @Override public void map(Chunk[] chks, NewChunk nc) {
       int nVecs = cm.length;
       assert chks.length == nVecs;
-      MutableDateTime dt = new MutableDateTime(0, DateTimeZone.UTC);
+      Chronology chronology = ISOChronology.getInstanceUTC();
       int nChunkRows = chks[0]._len;
       if (na) {
         for (int i = 0; i < nChunkRows; i++) {
@@ -152,8 +152,8 @@ public class AstMoment extends AstBuiltin<AstMoment> {
             tp[cm[j]] = (int) d;
           }
           try {
-            dt.setDateTime(tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6]);
-            nc.addNum(dt.getMillis());
+            double millis = chronology.getDateTimeMillis(tp[0], tp[1], tp[2], tp[3], tp[4], tp[5], tp[6]);
+            nc.addNum(millis);
           } catch (IllegalFieldValueException e) {
             nc.addNum(Double.NaN);
           }
