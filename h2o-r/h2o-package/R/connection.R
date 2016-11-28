@@ -81,7 +81,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
         insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
       }
       if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
-        cookies = h2oconfig$init.cookies
+        cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
     }
   }
 

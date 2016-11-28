@@ -13,7 +13,7 @@
     close(connection)
 
     Lines <- chartr("[]", "==", Lines)  # change section headers
-
+    Lines <- subset(Lines,!grepl("#",Lines))
     connection <- textConnection(Lines)
     d <- read.table(connection, as.is = TRUE, sep = "=", fill = TRUE)
     close(connection)
@@ -28,7 +28,7 @@
     eval(parse(text=ToParse))
     col_name_sections = names(ini_list)
 
-    ini_to_df = data.frame(t(sapply(ini_list, `[`)))
+    ini_to_df = data.frame(sapply(ini_list, `[`))
 
     return(ini_to_df)
 }
