@@ -2835,9 +2835,9 @@ def _binop(lhs, op, rhs):
             raise H2OValueError("Attempting to operate on incompatible frames: (%d x %d) and (%d x %d)"
                                 % (lrows, lcols, rrows, rcols))
     if isinstance(lhs, datetime.date):
-        lhs = H2OFrame.mktime(date=lhs)
+        lhs = H2OFrame.moment(date=lhs)
     if isinstance(rhs, datetime.date):
-        rhs = H2OFrame.mktime(date=rhs)
+        rhs = H2OFrame.moment(date=rhs)
 
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
     return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)
