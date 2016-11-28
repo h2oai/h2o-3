@@ -66,10 +66,21 @@ public class CreateFrameSimpleIV4 extends InputSchemaV4<SimpleCreateFrameRecipe,
   @API(help = "Length of generated strings in string columns.")
   public int str_length;
 
-  @API(help = "Fraction of missing values")
+  @API(help = "Fraction of missing values.")
   public double missing_fraction;
 
   @API(help = "Type of the response column to add.", values = {"none", "real", "int", "bool", "enum", "time"})
   public SimpleCreateFrameRecipe.ResponseType responseType;
 
+  @API(help = "Lower bound for the response variable (real/int/time types).")
+  public double response_lb;
+
+  @API(help = "Upper bound for the response variable (real/int/time types).")
+  public double response_ub;
+
+  @API(help = "Frequency of 1s for the bool (binary) response column.")
+  public double response_p;
+
+  @API(help = "Number of categorical levels for the enum response column.")
+  public int response_nlevels;
 }

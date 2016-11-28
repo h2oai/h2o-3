@@ -33,6 +33,10 @@ public class SimpleCreateFrameRecipe extends CreateFrameRecipe<SimpleCreateFrame
   public int str_length = 8;
   public double missing_fraction = 0;
   public ResponseType responseType = ResponseType.NONE;
+  public double response_lb = 0;
+  public double response_ub = 10;
+  public double response_p = 0.6;
+  public int response_nlevels = 25;
 
   public enum ResponseType {
     NONE, REAL, INT, ENUM, BOOL, TIME
@@ -53,10 +57,21 @@ public class SimpleCreateFrameRecipe extends CreateFrameRecipe<SimpleCreateFrame
     check(!Double.isInfinite(real_ub), "Real range's upper bound cannot be infinite");
     check(real_lb <= real_ub, "Invalid real range interval: lower bound exceeds the upper bound");
     check(int_lb <= int_ub, "Invalid integer range interval: lower bound exceeds the upper bound");
+    check(!Double.isNaN(bool_p), "Boolean frequency parameter cannot be NaN");
     check(bool_p >= 0 && bool_p <= 1, "Boolean frequency parameter must be in the range 0..1");
     check(time_lb <= time_ub, "Invalid time range interval: lower bound exceeds the upper bound");
     check(enum_nlevels > 0, "Number of levels for enum (categorical) columns must be positive");
     check(str_length > 0, "Length of string values should be positive");
+    check(!Double.isNaN(missing_fraction), "Missing fraction cannot be NaN");
+    check(missing_fraction >= 0 && missing_fraction <= 1, "Missing fraction must be in the range 0..1");
+    check(!Double.isNaN(response_lb), "Response column's lower bound cannot be NaN");
+    check(!Double.isNaN(response_ub), "Response column's upper bound cannot be NaN");
+    check(!Double.isInfinite(response_lb), "Response column's lower bound cannot be infinite");
+    check(!Double.isInfinite(response_ub), "Response column's upper bound cannot be infinite");
+    check(response_lb <= response_ub, "Invalid interval for response column: lower bound exceeds the upper bound");
+    check(!Double.isNaN(response_p), "Response binary frequency parameter (response_p) cannot be NaN");
+    check(response_p >= 0 && response_p <= 1, "Response binary frequency (response_p) should be in the range 0..1");
+    check(response_nlevels >= 2, "Number of categorical levels for the response column must be 2 or more");
   }
 
 
@@ -66,19 +81,19 @@ public class SimpleCreateFrameRecipe extends CreateFrameRecipe<SimpleCreateFrame
 
     switch (responseType) {
       case REAL:
-        cfe.addColumnMaker(new RealColumnCfcm("response", real_lb, real_ub));
+        cfe.addColumnMaker(new RealColumnCfcm("response", response_lb, response_ub));
         break;
       case INT:
-        cfe.addColumnMaker(new IntegerColumnCfcm("response", int_lb, int_ub));
+        cfe.addColumnMaker(new IntegerColumnCfcm("response", (int)response_lb, (int)response_ub));
         break;
       case ENUM:
-        cfe.addColumnMaker(new CategoricalColumnCfcm("response", enum_nlevels));
+        cfe.addColumnMaker(new CategoricalColumnCfcm("response", response_nlevels));
         break;
       case BOOL:
-        cfe.addColumnMaker(new BinaryColumnCfcm("response", bool_p));
+        cfe.addColumnMaker(new BinaryColumnCfcm("response", response_p));
         break;
       case TIME:
-        cfe.addColumnMaker(new TimeColumnCfcm("response", time_lb, time_ub));
+        cfe.addColumnMaker(new TimeColumnCfcm("response", (long)response_lb, (long)response_ub));
         break;
     }
 
