@@ -1770,7 +1770,7 @@ h2o.quantile <- function(x,
   tr <- as.matrix(t(res))
   rownames(tr) <- colnames(res)
   if (!is.numeric(tr[1,]))
-    browser()
+    warning("This going to fail as result from quantile call are not numeric, which is expected here.\nStructure of object returned:\n", paste(capture.output(str(tr)), collapse="\n"))
   colnames(tr) <- paste0(100*tr[1,],"%")
   tr[-1,]
 }
@@ -2839,7 +2839,7 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
   types <- sapply(x, function(x) class(x)[1L]) # ensure vector returned
   class.map <- h2o.class.map()
   types[types %in% names(class.map)] <- class.map[types[types %in% names(class.map)]]
-  if (getOption("h2o.fwrite", FALSE) && use.package("data.table")) {
+  if (getOption("h2o.fwrite", TRUE) && use.package("data.table")) {
     data.table::fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)
   } else {
     write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
@@ -2950,7 +2950,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   # Convert all date columns to POSIXct
   dates <- attr(x, "types") %in% "time"
   
-  if (getOption("h2o.fread", FALSE) && use.package("data.table")) {
+  if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
     df <- data.table::fread(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
     if (sum(dates))
       for (i in which(dates)) data.table::setattr(df[[i]], "class", "POSIXct")
