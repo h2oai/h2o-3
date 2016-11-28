@@ -23,7 +23,7 @@ def pubdev_1953():
     # wthr2.set_name(wthr2.index("Precipitation One Hour (mm)"), "Rain (mm)")
     # wthr2.set_name(wthr2.index("Weather Code 1/ Description"), "WC1")
     # wthr3 = wthr2[ wthr2["Hour Local"]==12 ]
-    # wthr3["msec"] = h2o.H2OFrame.mktime(year=wthr3["Year Local"], month=wthr3["Month Local"], day=wthr3["Day Local"], hour=wthr3["Hour Local"])
+    # wthr3["msec"] = h2o.H2OFrame.moment(year=wthr3["Year Local"], month=wthr3["Month Local"], day=wthr3["Day Local"], hour=wthr3["Hour Local"])
     # secsPerDay=1000*60*60*24
     # wthr3["Days"] = (wthr3["msec"]/secsPerDay).floor()
     # wthr4 = wthr3.drop("Year Local").drop("Month Local").drop("Day Local").drop("Hour Local").drop("msec")

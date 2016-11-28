@@ -748,8 +748,15 @@ class H2OFrame(object):
     def trigamma(self):
         return self._unop("trigamma")
 
+
     @staticmethod
-    def mktime(year=None, month=None, day=None, hour=None, minute=None, second=None, msec=None, date=None, time=None):
+    def mktime(year=1970, month=0, day=0, hour=0, minute=0, second=0, msec=0):
+        """Deprecated, use `.moment()` instead."""
+        return H2OFrame._expr(ExprNode("mktime", year, month, day, hour, minute, second, msec))
+
+
+    @staticmethod
+    def moment(year=None, month=None, day=None, hour=None, minute=None, second=None, msec=None, date=None, time=None):
         """
         Create a time column from individual components.
 
