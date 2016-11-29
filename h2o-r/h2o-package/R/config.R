@@ -13,7 +13,7 @@
     close(connection)
 
     Lines <- chartr("[]", "==", Lines)  # change section headers
-    Lines <- subset(Lines,!grepl("#",Lines))
+    Lines <- subset(Lines,!grepl("^#",Lines))
     connection <- textConnection(Lines)
     d <- read.table(connection, as.is = TRUE, sep = "=", fill = TRUE)
     close(connection)
