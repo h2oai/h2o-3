@@ -272,7 +272,7 @@ function initializeCloud() {
 
     shutdownRequested = false;
 
-    xmlhttp = new XMLHttpRequest();
+    var xmlhttp = new XMLHttpRequest();
     xmlhttp.onreadystatechange = function() {
         if (shutdownRequested) {
             return
