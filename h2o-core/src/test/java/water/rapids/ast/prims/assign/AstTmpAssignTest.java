@@ -4,6 +4,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.rapids.Env;
@@ -45,6 +46,36 @@ public class AstTmpAssignTest extends TestUtil {
       assertEquals(DKV.get(expid2), null);
     } finally {
       if (f != null) f.delete();
+    }
+  }
+
+  @Test public void assignSameId() {
+    Scope.enter();
+    try {
+      Session session = new Session();
+      String newid = new Env(session).expand("$frame1");
+      Frame f = ArrayUtils.frame(Key.<Frame>make(), ar("a", "b"), ard(1, -1), ard(2, 0), ard(3, 1));
+      Frame v = Rapids.exec("(tmp= $frame1 (, " + f._key + ")->$frame1)", session).getFrame();
+      Frame w = DKV.get(newid).get();
+      Scope.track(f, v);
+      assertEquals(newid, v._key.toString());
+      assertArrayEquals(f.names(), v.names());
+      assertNotEquals(f._key, v._key);
+      assertEquals(w, v);
+
+      newid = new Env(session).expand("$f");
+      v = Rapids.exec("(, (, $frame1)->$f)->$f", session).getFrame();
+      Scope.track(v);
+      assertEquals(newid, v._key.toString());
+
+      newid = new Env(session).expand("$g");
+      v = Rapids.exec("(colnames= (, $f)->$g [0 1] ['egg', 'ham'])->$g", session).getFrame();
+      Scope.track(v);
+      assertEquals(newid, v._key.toString());
+      assertArrayEquals(new String[]{"egg", "ham"}, v.names());
+
+    } finally {
+      Scope.exit();
     }
   }
 }
