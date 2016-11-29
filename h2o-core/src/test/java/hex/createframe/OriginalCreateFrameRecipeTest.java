@@ -51,7 +51,7 @@ public class OriginalCreateFrameRecipeTest extends TestUtil {
 
   /**
    * Creates frame with binary columns, and test that the <code>binary_ones_fraction</code> setting is respected.
-   * This test is non-deterministic and may fail with probability 0.1%.
+   * This test is non-deterministic and may fail with probability 0.3%.
    */
   @Test public void binaryFrameTest() {
     CreateFrameOriginalIV4 s = new CreateFrameOriginalIV4().fillFromImpl();
@@ -78,7 +78,7 @@ public class OriginalCreateFrameRecipeTest extends TestUtil {
     double N = s.rows * s.cols;
     double p = s.binary_ones_fraction;
     double ttest = Math.abs(totalCount - N * p) / Math.sqrt(N * p * (1 - p));
-    assertTrue("Count of 1s is more than 3 sigmas away from the expected value", ttest < 3);
+    assertTrue("Count of 1s is more than 3 sigmas away from the expected value: t = " + ttest, ttest < 3);
     frame.delete();
   }
 
