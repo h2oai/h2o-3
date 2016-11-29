@@ -35,7 +35,7 @@ public abstract class AstUniOp extends AstPrimitive {
         //a log transformation would now be changed to `log(income)`.
         String[] newNames = new String[fr.numCols()];
         for(int i = 0; i < newNames.length; i++){
-          newNames[i] = asts[0].str() + "(" + fr.name(i) + ")";
+          newNames[i] = str() + "(" + fr.name(i) + ")";
         }
         return new ValFrame(new MRTask() {
           @Override

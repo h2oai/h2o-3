@@ -16,9 +16,7 @@ def pyunit_colname_uniop():
     assert set(frame.names) == {"A", "B", "C"}, "Expected original colnames to remain the same after uniop operation"
     #Check new colnames for modified frame are of the convention `op(colname)`
     assert ["asin(%s)" % (name) for name in frame.names] == frame_asin.names,"Expected equal col names after uniop operation"
-    #Check types are maintained before refresh
-    assert frame_asin.types == {"asin(A)": "real", "asin(B)": "real", "asin(C)": "int"}, "Expect equal col types after" \
-                                                                                         "uniop operation"
+
     #Check again after a refresh to the frame
     frame_asin.refresh()
     #Check new colnames for modified frame are of the convention `op(colname)`
