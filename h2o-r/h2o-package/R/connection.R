@@ -72,10 +72,10 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
         strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
       }
       if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
-        proxy = as.character(h2oconfig$init.proxy)
+        proxy = trimws(as.character(h2oconfig$init.proxy))
       }
       if(is.na(cluster_id) && "init.cluster_id" %in% colnames(h2oconfig)){
-        cluster_id = h2oconfig$init.cluster_id
+        cluster_id = as.numeric(as.character(h2oconfig$init.cluster_id))
       }
       if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
         insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
