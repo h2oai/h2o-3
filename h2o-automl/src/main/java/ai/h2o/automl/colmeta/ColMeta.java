@@ -54,6 +54,9 @@ public class ColMeta extends Iced {
   public double[] _weightMult;  // weight multipliers for each class to even out distributions
 
   public String _ignoredReason; // was this ignored by user, or by automl
+  public boolean _isNumeric;    // is this a numeric column
+  public boolean _isCategorical; // is this a categorical column
+
   public boolean _isClass;      // is a classification problem, only valid to ask when _response is true
   public boolean isClassification() {
     if( _response ) return _isClass;
@@ -84,6 +87,7 @@ public class ColMeta extends Iced {
   public double _fourthMoment;  // used for skew/kurtosis; NaN if not numeric
   public double _kurtosis;      // the sharpness of the peak of a frequency-distribution curve
   public double _skew;          // measure of the assymetry of a distribution; < 0 means shifted to the right; > 0 means shifted to the left
+  public int _cardinality;                // length of domain
 
   // VIF
   public double _vif;           // vifs computed by FrameMeta
@@ -131,6 +135,16 @@ public class ColMeta extends Iced {
     _sigma = v.sigma();
     _variance = _sigma * _sigma;
     _vif = -1;
+    if(v.isNumeric() && !ignored && !response){
+      _isNumeric =true;
+    }else{
+      _isNumeric =false;
+    }
+    if(v.isCategorical() && !ignored && !response){
+      _isCategorical =true;
+    }else{
+      _isCategorical =false;
+    }
 
     Class c=null;
     try {
