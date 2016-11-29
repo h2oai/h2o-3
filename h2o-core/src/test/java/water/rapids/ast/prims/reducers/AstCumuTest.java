@@ -7,8 +7,6 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
-import water.fvec.Vec;
-import water.rapids.Env;
 import water.rapids.Rapids;
 import water.rapids.Session;
 import water.rapids.Val;
@@ -27,16 +25,14 @@ public class AstCumuTest extends TestUtil {
     Scope.enter();
     try {
       Session sess = new Session();
-      Frame fr = new TestFrameBuilder()
-          .withName(new Env(sess).expand("$fr"))
+      new TestFrameBuilder()
+          .withName("$fr", sess)
           .withColNames("c1", "c2", "c3", "c4")
-          .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
           .withDataForCol(0, ard(1, 1))
           .withDataForCol(1, ard(2, 2))
           .withDataForCol(2, ard(3, 3))
           .withDataForCol(3, ard(4, 4))
           .build();
-      Scope.track(fr);
 
       Val val = Rapids.exec("(cumsum $fr 1)", sess);
       Assert.assertTrue(val instanceof ValFrame);
