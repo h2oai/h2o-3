@@ -23,7 +23,7 @@ esac
 
 # Run cleanup on interrupt or exit
 function cleanup () {
-  kill -9 ${PID_1} ${PID_2} ${PID_3} ${PID_4} 1> /dev/null 2>&1
+  kill -15 ${PID_1} ${PID_2} ${PID_3} ${PID_4} 1> /dev/null 2>&1
   wait 1> /dev/null 2>&1
   RC=`cat $OUTDIR/status.0`
   if [ $RC -ne 0 ]; then
