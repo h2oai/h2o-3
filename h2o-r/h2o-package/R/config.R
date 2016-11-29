@@ -17,6 +17,9 @@
     Lines <- subset(Lines,!grepl("^py:",ignore.case=TRUE,Lines)) #Exclude any Python specific parameters if present (Not case sensitive)
     Lines <- gsub(".*^r:","",ignore.case=TRUE,Lines) #Get R specific parameters if present (Not case sensitive)
     connection <- textConnection(Lines)
+    if(length(Lines) == 0){
+        return()
+    }
     d <- read.table(connection, as.is = TRUE, sep = "=", fill = TRUE)
     close(connection)
 
