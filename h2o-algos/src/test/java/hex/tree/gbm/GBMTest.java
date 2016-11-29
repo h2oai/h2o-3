@@ -673,8 +673,7 @@ public class GBMTest extends TestUtil {
         parms._balance_classes = true;
         parms._seed = 0;
         parms._build_tree_one_node = true;
-        parms._col_block_sz = i+1;
-
+        
         // Build a first model; all remaining models should be equal
         GBMModel gbm = new GBM(parms).trainModel().get();
         assertEquals(gbm._output._ntrees, parms._ntrees);

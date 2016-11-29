@@ -635,7 +635,7 @@ public final class DHistogram extends Iced {
    * @param ys response
    * @param rows rows sorted by leaf assignemnt
    * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
-   * @param lo  lower bound on index into rows array to be processed by this call (exclusive)
+   * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
    */
   public void updateHisto(double[] ws, double[] cs, double[] ys, int [] rows, int hi, int lo){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID

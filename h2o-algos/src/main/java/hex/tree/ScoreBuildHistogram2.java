@@ -52,11 +52,12 @@ import water.util.VecUtils;
  *
  * Sharing the histograms proved to be a performance problem on larger multi-cpu machines with many running threads, CAS was the bottleneck.
  *
- * To remove the CAS while minimizing the memory overhead (private copies of histograms), phase 2 is paralellized both over columns and rows.
- * Each column (block of columns) is processed in LocalMrTask.
- * Expected number of tasks running in parallel (and hence private Historgam copies made) is given by
+ * To remove the CAS while minimizing the memory overhead (private copies of histograms), phase 2 is paralellized both over columns (primary) and rows (secondary).
+ * Parallelization over different columns precedes paralellization within each column to reduce number of extra histogram copies made.
  *
- *    exp(nthreads) = max(1,H2O.NUMCPUS - num_cols/COL_BLOCK_SZ)
+ * Expected number of per-column tasks running in parallel (and hence histogram copies) is given by
+ *
+ *    exp(nthreads-pre-column) = max(1,H2O.NUMCPUS - num_cols)
  *
  */
 public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
@@ -70,7 +71,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
   final int _numLeafs;
   final IcedBitSet _activeCols;
 
-  private static int MIN_COL_BLOCK_SZ = 2;
   public ScoreBuildHistogram2(H2O.H2OCountedCompleter cc, int k, int ncols, int nbins, int nbins_cats, DTree tree, int leaf, DHistogram[][] hcs, DistributionFamily family, int weightIdx, int workIdx, int nidIdxs) {
     super(cc, k, ncols, nbins, nbins_cats, tree, leaf, hcs, family, weightIdx, workIdx, nidIdxs);
     _numLeafs = _hcs.length;
@@ -270,20 +270,6 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     }).fork();
   }
 
-  // Reduce for both local and remote
-  private static void mergeHistos(DHistogram [][] hcs, DHistogram [][] hcs2){
-    // Distributed histograms need a little work
-    for( int i=0; i< hcs.length; i++ ) {
-      DHistogram hs1[] = hcs[i], hs2[] = hcs2[i];
-      if( hs1 == null ) hcs[i] = hs2;
-      else if( hs2 != null )
-        for( int j=0; j<hs1.length; j++ )
-          if( hs1[j] == null ) hs1[j] = hs2[j];
-          else if( hs2[j] != null ) {
-            hs1[j].add(hs2[j]);
-          }
-    }
-  }
   private static void mergeHistos(DHistogram [] hcs, DHistogram [] hcs2){
     // Distributed histograms need a little work
     for( int i=0; i< hcs.length; i++ ) {
