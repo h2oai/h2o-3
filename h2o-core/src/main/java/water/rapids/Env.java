@@ -172,6 +172,7 @@ public class Env extends Iced {
     init(new AstMillis());
     init(new AstMinute());
     init(new AstMktime());
+    init(new AstMoment());
     init(new AstMonth());
     init(new AstSecond());
     init(new AstSetTimeZone());

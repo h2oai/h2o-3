@@ -10,6 +10,7 @@ TODO: Automatically convert column names into Frame properties!
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import csv
+import datetime
 import functools
 import imp
 import os
@@ -289,9 +290,21 @@ class H2OFrame(object):
             self._ex._cache._id = newid
             h2o.rapids("(rename \"{}\" \"{}\")".format(oldname, newid))
 
-    def type(self, name):
+    def type(self, col):
         """The type for a named column."""
-        return self.types[name]
+        assert_is_type(col, int, str)
+        if not self._ex._cache.types_valid() or not self._ex._cache.names_valid():
+            self._ex._cache.flush()
+            self._frame(True)
+        types = self._ex._cache.types
+        if is_type(col, str):
+            if col in types:
+                return types[col]
+        else:
+            names = self._ex._cache.names
+            if -len(names) <= col < len(names):
+                return types[names[col]]
+        raise H2OValueError("Column '%r' does not exist in the frame" % col)
 
 
 
@@ -735,39 +748,79 @@ class H2OFrame(object):
     def trigamma(self):
         return self._unop("trigamma")
 
+
     @staticmethod
-    def mktime(year=1970, month=0, day=0, hour=0, minute=0, second=0, msec=0):
-        """All units are zero-based (including months and days).
-        Missing year is 1970.
+    def moment(year=None, month=None, day=None, hour=None, minute=None, second=None, msec=None, date=None, time=None):
+        """
+        Create a time column from individual components.
 
-        Parameters
-        ----------
-          year : int, H2OFrame
-            the year
-
-          month: int, H2OFrame
-            the month
-
-          day : int, H2OFrame
-            the day
-
-          hour : int, H2OFrame
-            the hour
-
-          minute : int, H2OFrame
-            the minute
-
-          second : int, H2OFrame
-            the second
-
-          msec : int, H2OFrame
-            the milisecond
+        Each parameter should be either an integer, or a single-column H2OFrame
+        containing the corresponding time parts for each row.
 
         Returns
         -------
           H2OFrame of one column containing the date in millis since the epoch.
         """
-        return H2OFrame._expr(ExprNode("mktime", year, month, day, hour, minute, second, msec))
+        assert_is_type(date, None, datetime.date)
+        assert_is_type(time, None, datetime.time)
+        assert_is_type(year, None, int, H2OFrame)
+        assert_is_type(month, None, int, H2OFrame)
+        assert_is_type(day, None, int, H2OFrame)
+        assert_is_type(hour, None, int, H2OFrame)
+        assert_is_type(minute, None, int, H2OFrame)
+        assert_is_type(second, None, int, H2OFrame)
+        assert_is_type(msec, None, int, H2OFrame)
+        if time is not None:
+            if hour is not None or minute is not None or second is not None or msec is not None:
+                raise H2OValueError("Arguments hour, minute, second, msec cannot be used together with `time`.")
+            hour = time.hour
+            minute = time.minute
+            second = time.second
+            msec = time.microsecond // 1000
+        if date is not None:
+            if year is not None or month is not None or day is not None:
+                raise H2OValueError("Arguments year, month and day cannot be used together with `date`.")
+            year = date.year
+            month = date.month
+            day = date.day
+            if isinstance(date, datetime.datetime):
+                if time is not None:
+                    raise H2OValueError("Argument `time` cannot be used together with `date` of datetime type.")
+                if hour is not None or minute is not None or second is not None or msec is not None:
+                    raise H2OValueError("Arguments hour, minute, second, msec cannot be used together with `date` "
+                                        "of datetime type.")
+                hour = date.hour
+                minute = date.minute
+                second = date.second
+                msec = date.microsecond // 1000
+        if year is None or month is None or day is None:
+            raise H2OValueError("Either arguments `year`, `month` and `day` or the `date` are required.")
+        if hour is None: hour = 0
+        if minute is None: minute = 0
+        if second is None: second = 0
+        if msec is None: msec = 0
+
+        local_vars = locals()
+        res_nrows = None
+        for n in ["year", "month", "day", "hour", "minute", "second", "msec"]:
+            x = local_vars[n]
+            if isinstance(x, H2OFrame):
+                if x.ncols != 1:
+                    raise H2OValueError("Argument `%s` is a frame with more than 1 column" % n)
+                if x.type(0) not in {"int", "real"}:
+                    raise H2OValueError("Column `%s` is not numeric (type = %s)" % (n, x.type(0)))
+                if res_nrows is None:
+                    res_nrows = x.nrows
+                if x.nrows == 0 or x.nrows != res_nrows:
+                    raise H2OValueError("Incompatible column `%s` having %d rows" % (n, x.nrows))
+        if res_nrows is None:
+            res_nrows = 1
+        res = H2OFrame._expr(ExprNode("moment", year, month, day, hour, minute, second, msec))
+        res._ex._cache._names = ["name"]
+        res._ex._cache._types = {"name": "time"}
+        res._ex._cache._nrows = res_nrows
+        res._ex._cache._ncols = 1
+        return res
 
 
     def unique(self):
@@ -2706,6 +2759,17 @@ class H2OFrame(object):
     # includes methods that we rename as part of the deprecation process (but keeping the old name for the sake of
     # backward compatibility). We gather them all down here to have a slightly cleaner code.
 
+    @staticmethod
+    def mktime(year=1970, month=0, day=0, hour=0, minute=0, second=0, msec=0):
+        """
+        Deprecated, use `.moment()` instead.
+
+        This function was left for backward-compatibility purposes only. It is
+        not very stable, and counterintuitively uses 0-based months and days,
+        so "January 4th, 2001" should be entered as `mktime(2001, 0, 3)`.
+        """
+        return H2OFrame._expr(ExprNode("mktime", year, month, day, hour, minute, second, msec))
+
     @property
     def columns(self):
         """Same as ``self.names``."""
@@ -2759,8 +2823,8 @@ class H2OFrame(object):
 #-----------------------------------------------------------------------------------------------------------------------
 
 def _binop(lhs, op, rhs):
-    assert_is_type(lhs, str, numeric, H2OFrame)
-    assert_is_type(rhs, str, numeric, H2OFrame)
+    assert_is_type(lhs, str, numeric, datetime.date, H2OFrame)
+    assert_is_type(rhs, str, numeric, datetime.date, H2OFrame)
     if isinstance(lhs, H2OFrame) and isinstance(rhs, H2OFrame):
         lrows, lcols = lhs.shape
         rrows, rcols = rhs.shape
@@ -2775,5 +2839,10 @@ def _binop(lhs, op, rhs):
         if not compatible:
             raise H2OValueError("Attempting to operate on incompatible frames: (%d x %d) and (%d x %d)"
                                 % (lrows, lcols, rrows, rcols))
+    if isinstance(lhs, datetime.date):
+        lhs = H2OFrame.moment(date=lhs)
+    if isinstance(rhs, datetime.date):
+        rhs = H2OFrame.moment(date=rhs)
+
     cache = lhs._ex._cache if isinstance(lhs, H2OFrame) else rhs._ex._cache
     return H2OFrame._expr(expr=ExprNode(op, lhs, rhs), cache=cache)

@@ -3,6 +3,9 @@ package water.fvec;
 import org.junit.Ignore;
 import water.DKV;
 import water.Key;
+import water.Scope;
+import water.rapids.Env;
+import water.rapids.Session;
 
 import java.util.HashMap;
 
@@ -27,12 +30,14 @@ import java.util.HashMap;
  * <ul>
  * <li> Frame name is created it not provided.</li>
  * <li> Column names are created automatically if not provided.</li>
- * <li> Vector types are initialized to empty array when not provided. For example, creating empty frame (
+ * <li> Vector types are initialized to all T_NUMs when not provided. For example, creating empty frame (
  *   no data, co columns) can be created as {@code Frame fr = new TestFrameBuilder().build()}.</li>
  * <li> Column data are initialized to empty array when not provided. The following example creates frames with 2 columns,
  *   but no data. {@code Frame fr = new TestFrameBuilder().withVecTypes(Vec.T_NUM).build()}.</li>
  * <li> Only one chunk is created when chunk layout is not provided.</li>
  * </ul>
+ *
+ * The frame created will be automatically tracked in the currently active {@link Scope}.
  */
 @Ignore
 public class TestFrameBuilder {
@@ -54,9 +59,15 @@ public class TestFrameBuilder {
    * Sets the name for the frame. Default name is created if this method is not called.
    */
   public TestFrameBuilder withName(String frameName) {
+    throwIf(frameName.startsWith("$"), "Frame name " + frameName + " may only be used with a Session object.");
     this.frameName = frameName;
     return this;
   }
+
+  public TestFrameBuilder withName(String frameName, Session session) {
+    return withName(new Env(session).expand(frameName));
+  }
+
 
   /**
    * Sets the names for the columns. Default names are created if this method is not called.
@@ -116,6 +127,12 @@ public class TestFrameBuilder {
     return this;
   }
 
+  public TestFrameBuilder withChunkLayout(long... chunkLayout) {
+    this.chunkLayout = chunkLayout;
+    return this;
+  }
+
+
   public Frame build() {
     prepareAndCheck();
 
@@ -137,8 +154,14 @@ public class TestFrameBuilder {
     f = DKV.get(key).get();
     // Finalize frame
     f.finalizePartialFrame(chunkLayout, domains, vecTypes);
+    Scope.track(f);
     return f;
   }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Private
+  //--------------------------------------------------------------------------------------------------------------------
 
   private void prepareAndCheck(){
     // this check has to be run as the first one
@@ -169,9 +192,9 @@ public class TestFrameBuilder {
   private HashMap<String, Integer> getMapping(String[] array){
    HashMap<String, Integer> mapping = new HashMap<>();
     int level = 0;
-    for(int i = 0; i < array.length; i++){
-      if(!mapping.containsKey(array[i])){
-        mapping.put(array[i], level);
+    for (String item : array) {
+      if (!mapping.containsKey(item)) {
+        mapping.put(item, level);
         level++;
       }
     }
@@ -221,16 +244,16 @@ public class TestFrameBuilder {
     Frame.closeNewChunks(nchunks);
   }
 
-  public TestFrameBuilder withChunkLayout(long... chunkLayout) {
-    this.chunkLayout = chunkLayout;
-    return this;
-  }
-
-
   // this check has to be called as the first one
   private void checkVecTypes() {
     if(vecTypes==null){
-      vecTypes = new byte[0];
+      if (colNames == null) {
+        vecTypes = new byte[0];
+      } else {
+        vecTypes = new byte[colNames.length];
+        for (int i = 0; i < colNames.length; i++)
+          vecTypes[i] = Vec.T_NUM;
+      }
     }
     numCols = vecTypes.length;
 
@@ -297,7 +320,7 @@ public class TestFrameBuilder {
           if (numRows == NOT_SET) {
             numRows = numericData.get(colIdx).length;
           } else {
-            throwIf(numRows != numericData.get(colIdx).length, "Columns has different number of elements");
+            throwIf(numRows != numericData.get(colIdx).length, "Columns have different number of elements");
           }
           break;
         case Vec.T_CAT: // fall-through to T_CAT

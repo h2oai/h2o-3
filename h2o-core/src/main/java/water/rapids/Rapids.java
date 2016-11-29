@@ -89,7 +89,7 @@ public class Rapids {
       // named temp, the ref cnts are accounted for by being in the temp table.
       if (val.isFrame()) {
         Frame frame = val.getFrame();
-        assert frame._key != null; // No nameless Frame returns, as these are hard to cleanup
+        assert frame._key != null : "Returned frame has no key";
         session.addRefCnt(frame, -1);
       }
       return val;
