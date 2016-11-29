@@ -16,21 +16,20 @@ import static org.junit.Assert.assertTrue;
 public class LocalMRTest extends TestUtil {
 
   @BeforeClass
-  static public void setup() { stall_till_cloudsize(1); }
+  static public void setup() { stall_till_cloudsize(3); }
   private static class MrFunTest1 extends MrFun<MrFunTest1>{
     int _exId;
     public int [] _val;
     public MrFunTest1(int exId){_exId = exId;}
     public void map(int id){
-      _val = new int[]{id};
+      if(_val == null)_val = new int[]{id};
+      else _val = ArrayUtils.append(_val,id);
     }
     public void reduce(MrFunTest1 other){
-      _val = ArrayUtils.sortedMerge(_val,other._val);
+      if(_val == null) _val = other._val;
+      else if(other._val != null) _val = ArrayUtils.sortedMerge(_val,other._val);
     }
   }
-
-
-
 
   private void testCnt(int cnt){
     MrFunTest1 f = new MrFunTest1(-1);

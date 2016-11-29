@@ -254,6 +254,10 @@ final class RollupStats extends Iced {
   private static class Roll extends MRTask<Roll> {
     final Key _rskey;
     RollupStats _rs;
+
+    @Override
+    protected boolean modifiesVolatileVecs(){return false;}
+
     Roll( H2OCountedCompleter cmp, Key rskey ) { super(cmp); _rskey=rskey; }
     @Override public void map( Chunk c ) { _rs = new RollupStats(0).map(c); }
     @Override public void reduce( Roll roll ) { _rs.reduce(roll._rs); }
