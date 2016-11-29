@@ -13,7 +13,7 @@ public class AAA_PreCloudLock extends TestUtil {
   static final int CLOUD_SIZE = 5;
   static final int PARTIAL_CLOUD_SIZE = 2;
 
-  @BeforeClass() public static void setup() { stall_till_cloudsize(CLOUD_SIZE); }
+  @BeforeClass() public static void setup() { stall_till_cloudsize(CLOUD_SIZE, DEFAULT_TIME_FOR_CLOUDING * 3); }
 
   private static void stall() {
     stall_till_cloudsize(PARTIAL_CLOUD_SIZE);
