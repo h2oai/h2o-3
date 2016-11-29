@@ -525,6 +525,7 @@ class H2OFrame(object):
         ret = H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
         if ret._ex._cache._names is not None:
             ret._ex._cache._names = ["%s(%s)" % (op, name) for name in ret._ex._cache._names]
+            ret._ex._cache._types = {key: None for key in ret._ex._cache._names}
         return ret
 
 

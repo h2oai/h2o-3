@@ -33,7 +33,7 @@ public abstract class AstUniOp extends AstPrimitive {
         Frame fr = val.getFrame();
         //Get length of columns in fr and append `op(colName)`. For example, a column named "income" that had
         //a log transformation would now be changed to `log(income)`.
-        String[] newNames = new String[fr.names().length];
+        String[] newNames = new String[fr.numCols()];
         for(int i = 0; i < newNames.length; i++){
           newNames[i] = asts[0].str() + "(" + fr.name(i) + ")";
         }
