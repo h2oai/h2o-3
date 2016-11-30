@@ -11,20 +11,22 @@ import java.util.BitSet;
  * A node (optionally) contains left and right edges to the left and right child nodes.
  */
 class SharedTreeNode {
-  private final SharedTreeNode parent;
-  private final int subgraphNumber;
-  private final int nodeNumber;
-  private final int depth;
-  private int colId;
-  private String colName;
-  private boolean leftward;
-  private boolean naVsRest;
-  private float splitValue = Float.NaN;
-  private String[] domainValues;
-  private GenmodelBitSet bs;
-  private float leafValue = Float.NaN;
-  private SharedTreeNode leftChild;
-  private SharedTreeNode rightChild;
+  final SharedTreeNode parent;
+  final int subgraphNumber;
+  int nodeNumber;
+  float weight;
+  final int depth;
+  int colId;
+  String colName;
+  boolean leftward;
+  boolean naVsRest;
+  float splitValue = Float.NaN;
+  String[] domainValues;
+  GenmodelBitSet bs;
+  float predValue = Float.NaN;
+  float squaredError = Float.NaN;
+  SharedTreeNode leftChild;
+  SharedTreeNode rightChild;
 
   // Whether NA for this colId is reachable to this node.
   private boolean inclusiveNa;
@@ -37,13 +39,11 @@ class SharedTreeNode {
    * Create a new node.
    * @param p Parent node
    * @param sn Tree number
-   * @param n Node number
    * @param d Node depth within the tree
    */
-  SharedTreeNode(SharedTreeNode p, int sn, int n, int d) {
+  SharedTreeNode(SharedTreeNode p, int sn, int d) {
     parent = p;
     subgraphNumber = sn;
-    nodeNumber = n;
     depth = d;
   }
 
@@ -51,8 +51,20 @@ class SharedTreeNode {
     return depth;
   }
 
-  private int getNodeNumber() {
+  public int getNodeNumber() {
     return nodeNumber;
+  }
+
+  float getWeight() {
+    return weight;
+  }
+
+  void setNodeNumber(int id) {
+    nodeNumber = id;
+  }
+
+  void setWeight(float w) {
+    weight = w;
   }
 
   void setCol(int v1, String v2) {
@@ -82,8 +94,12 @@ class SharedTreeNode {
     bs = v2;
   }
 
-  void setLeafValue(float v) {
-    leafValue = v;
+  void setPredValue(float v) {
+    predValue = v;
+  }
+
+  void setSquaredError(float v) {
+    squaredError = v;
   }
 
   /**
@@ -159,7 +175,7 @@ class SharedTreeNode {
         else if (includeAllLevels) {
           includeThisLevel = calculateIncludeThisLevel(inheritedInclusiveLevels, i);
         }
-        else if (bs.contains(i) == nodeBitsetDoesContain) {
+        else if (bs.isInRange(i) && bs.contains(i) == nodeBitsetDoesContain) {
           includeThisLevel = calculateIncludeThisLevel(inheritedInclusiveLevels, i);
         }
       }
@@ -219,6 +235,7 @@ class SharedTreeNode {
 
   public void print() {
     System.out.println("        Node " + nodeNumber);
+    System.out.println("            weight:      " + weight);
     System.out.println("            depth:       " + depth);
     System.out.println("            colId:       " + colId);
     System.out.println("            colName:     " + ((colName != null) ? colName : ""));
@@ -226,7 +243,8 @@ class SharedTreeNode {
     System.out.println("            naVsRest:    " + naVsRest);
     System.out.println("            splitVal:    " + splitValue);
     System.out.println("            isBitset:    " + isBitset());
-    System.out.println("            leafValue:   " + leafValue);
+    System.out.println("            predValue:   " + predValue);
+    System.out.println("            squaredErr:  " + squaredError);
     System.out.println("            leftChild:   " + ((leftChild != null) ? leftChild.getName() : ""));
     System.out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
   }
@@ -246,10 +264,6 @@ class SharedTreeNode {
     return "SG_" + subgraphNumber + "_Node_" + nodeNumber;
   }
 
-  private boolean isLeaf() {
-    return (! Float.isNaN(leafValue));
-  }
-
   private boolean isBitset() {
     return (domainValues != null);
   }
@@ -258,9 +272,9 @@ class SharedTreeNode {
     os.print("\"" + getDotName() + "\"");
     os.print(" [");
 
-    if (isLeaf()) {
+    if (leftChild==null && rightChild==null) {
       os.print("label=\"");
-      os.print(leafValue);
+      os.print(predValue);
     }
     else if (isBitset()) {
       os.print("shape=box,label=\"");
@@ -273,7 +287,16 @@ class SharedTreeNode {
     }
 
     if (detail) {
-      os.print("\\n\\nN" + getNodeNumber());
+      os.print("\\n\\nN" + getNodeNumber() + "\\n");
+      if (leftChild != null || rightChild != null) {
+        if (!Float.isNaN(predValue)) {
+          os.print("\\nPred: " + predValue);
+        }
+      }
+      if (!Float.isNaN(squaredError)) {
+        os.print("\\nSE: " + squaredError);
+      }
+      os.print("\\nW: " + getWeight());
       if (naVsRest) {
         os.print("\\n" + "nasVsRest");
       }
