@@ -57,7 +57,7 @@ public class GridSearchHandler<G extends Grid<MP>,
     // Ok, i'm replacing one hack with another hack here, because SchemaServer.schema*() calls are getting eliminated.
     // There probably shouldn't be any reference to algoVersion here at all... TODO: unhack all of this
     int algoVersion = 3;
-    if (algoName.equals("SVD") || algoName.equals("Aggregator")) algoVersion = 99;
+    if (algoName.equals("SVD") || algoName.equals("Aggregator") || algoName.equals("StackedEnsemble")) algoVersion = 99;
 
     // TODO: this is a horrible hack which is going to cause maintenance problems:
     String paramSchemaName = schemaDir+algoName+"V"+algoVersion+"$"+ModelBuilder.paramName(algoURLName)+"V"+algoVersion;

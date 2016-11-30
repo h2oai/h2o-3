@@ -64,9 +64,19 @@ gbm.random.grid.test <- function() {
                          seed=1234,
                          training_frame = air.hex,
                          hyper_params = hyper_params,
-                         search_criteria = search_criteria)
+                         search_criteria = search_criteria,
+                         nfolds = 5, fold_assignment = 'Modulo',
+                         keep_cross_validation_predictions = TRUE)
     print(air.grid)
     expect_that(length(air.grid@model_ids) == 5, is_true())
+
+    stacker.grid <- h2o.grid("stackedensemble", y = "IsDepDelayed", x = myX,
+                             training_frame = air.hex,
+                             model_id = "my_ensemble",
+                             selection_strategy = "choose_all",
+                             base_models = air.grid@model_ids)
+    # predictions = stacker.predict(air_hex)  # training data
+    # print("preditions for ensemble are in: " + predictions.frame_id)
 }
 
 doTest("GBM Grid Test: Airlines Smalldata", gbm.random.grid.test)
