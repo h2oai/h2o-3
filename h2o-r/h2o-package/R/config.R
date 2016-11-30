@@ -26,6 +26,9 @@
     d <- read.table(connection, as.is = TRUE, sep = "=", fill = TRUE)
     close(connection)
 
+    if(grepl("^=",Lines) && !grepl("^#",Lines) && any(Lines=="")){
+        return()
+    }
     #If no section headers, then we parse the list itself and no reason to go any further
     if(!(grepl("^=",Lines)) && !grepl("^#",Lines)){
         ini_to_df <- data.frame(t(d$V2))
@@ -38,6 +41,7 @@
     ini_to_df = ini_to_df[,names]
     ini_to_df = data.frame(ini_to_df)
     colnames(ini_to_df) <- names
+    ini_to_df <- data.frame(lapply(ini_to_df, trimws))
     return(ini_to_df)
     }
 
@@ -59,6 +63,7 @@
     }
     ini_to_df = ini_to_df[,names]
     colnames(ini_to_df) <- names
+    ini_to_df <- data.frame(lapply(ini_to_df, trimws))
     return(ini_to_df)
 }
 
