@@ -24,6 +24,9 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
       throw new RuntimeException(e);
     }
     _model._backend = DeepwaterMojoModel.createDeepWaterBackend((String) readkv("backend")); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+    if (_model._backend == null) {
+      throw new IllegalArgumentException("Couldn't instantiate the Deep Water backend.");
+    }
     _model._problem_type = readkv("problem_type");
     _model._mini_batch_size = readkv("mini_batch_size");
     _model._height = readkv("height");
