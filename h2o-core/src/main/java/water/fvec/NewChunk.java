@@ -361,7 +361,6 @@ public class NewChunk extends Chunk {
     } else if(_ds != null) {
       c.addNum(_ds[i]);
     } else if (_ss != null) {
-      ..._is is broken here... for FrameSplitterTest...
       int sidx = _is[i];
       int nextNotNAIdx = i + 1;
       // Find next not-NA value (_is[idx] != -1)
