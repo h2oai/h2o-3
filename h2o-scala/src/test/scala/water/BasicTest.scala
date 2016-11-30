@@ -6,8 +6,8 @@ import water.fvec.H2OFrame
 class BasicTest extends TestUtil {
 
   @Test def testDataFrameLoadAPI(): Unit = {
-    val filename1 = "../smalldata/iris/iris_wheader.csv"
-    val filename2 = "../smalldata/iris/iris.csv"
+    val filename1 = "smalldata/iris/iris_wheader.csv"
+    val filename2 = "smalldata/iris/iris.csv"
     val file1 = find_test_file(filename1)
     val file2 = find_test_file(filename2)
     val uri1 = file1.toURI
