@@ -57,7 +57,7 @@ public class DeepwaterMojoWriter extends ModelMojoWriter<DeepWaterModel, DeepWat
     writeblob("model_params", _model_info._modelparams);
     if (_parms._problem_type == DeepWaterParameters.ProblemType.image) {
       String meanImage = _parms._mean_image_file;
-      if (meanImage != null) {
+      if (meanImage != null && !meanImage.isEmpty() ) {
         byte[] data = new byte[(int)new File(meanImage).length()];
         FileInputStream is = new FileInputStream(meanImage);
         is.read(data);

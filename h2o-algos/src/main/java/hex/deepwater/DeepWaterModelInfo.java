@@ -224,7 +224,7 @@ final public class DeepWaterModelInfo extends Iced {
         }
       }
 
-      if (parameters._mean_image_file != null && !parameters._mean_image_file.equals(""))
+      if (parameters._mean_image_file != null && !parameters._mean_image_file.isEmpty())
         imageDataSet.setMeanData(_backend.loadMeanImage(_model, parameters._mean_image_file));
       _meanData = imageDataSet.getMeanData();
 
