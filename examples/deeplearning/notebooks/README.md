@@ -3,7 +3,7 @@
 ## DeepWater
 
 These notebooks assume that you have the DeepWater version of H2O.
-If your don't have it, you can follow the instructions [deepwater](https://github.com/h2oai/deepwater).
+If your don't have it, you can follow the instructions of our [deepwater](https://github.com/h2oai/deepwater) repository.
 
 Note: There are many more example scripts in:
  - [h2o-py/tests](https://github.com/h2oai/h2o-3/tree/master/h2o-py/tests)
