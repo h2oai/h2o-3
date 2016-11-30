@@ -36,7 +36,7 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL,
                             lambda_min_ratio = NULL, 
                             nfolds = 0, 
                             fold_column = NULL,
-                            fold_assignment = c("AUTO", "Random", "Modulo"),
+                            fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                             keep_cross_validation_predictions = TRUE, 
                             beta_constraints = NULL,
                             offset_column = NULL, 
@@ -111,7 +111,7 @@ h2o.gbm.wrapper <- function(x, y, training_frame, model_id = NULL, # TO DO: add 
                             build_tree_one_node = FALSE,
                             nfolds = 0, 
                             fold_column = NULL,
-                            fold_assignment = c("AUTO", "Random", "Modulo"),
+                            fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                             keep_cross_validation_predictions = TRUE,
                             score_each_iteration = FALSE, 
                             score_tree_interval = 0,
@@ -187,7 +187,7 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      weights_column = NULL, 
                                      nfolds = 0, 
                                      fold_column = NULL,
-                                     fold_assignment = c("AUTO", "Random", "Modulo"), 
+                                     fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"), 
                                      keep_cross_validation_predictions = TRUE, 
                                      score_each_iteration = FALSE, 
                                      score_tree_interval = 0,
@@ -303,7 +303,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      weights_column = NULL, 
                                      nfolds = 0, 
                                      fold_column = NULL, 
-                                     fold_assignment  = c("AUTO", "Random", "Modulo"),
+                                     fold_assignment  = c("AUTO", "Random", "Modulo", "Stratified"),
                                      keep_cross_validation_predictions = TRUE,
                                      missing_values_handling = c("MeanImputation", "Skip"), ...) {
   
@@ -383,3 +383,41 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                    missing_values_handling = match.arg(missing_values_handling)) 
 }
 
+
+# Note: Naive Bayes is classification only; not available for regression
+h2o.naiveBayes.wrapper <- function(x, y, training_frame, model_id = NULL,
+                                   validation_frame = NULL,
+                                   ignore_const_cols = TRUE,
+                                   family = c("binomial", "multinomial"),
+                                   laplace = 0,
+                                   threshold = 0.001,
+                                   eps = 0, 
+                                   nfolds = 0,
+                                   fold_column = NULL,
+                                   fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                   seed, 
+                                   keep_cross_validation_predictions = TRUE, 
+                                   keep_cross_validation_fold_assignment = FALSE, 
+                                   compute_metrics = TRUE, 
+                                   max_runtime_secs = 0, ...) {
+  
+  # Currently ignoring the `family` arg, will get class from resposne column in H2OFrame
+  if (family == "gaussian") {
+    # TO DO: Add a check in the h2o.stack and h2o.ensemble code so that this will fail early
+    stop("Naive Bayes cannot be used as a base learner for regression problems.\nThe response variable must be categorical and family must be binomial.")
+  }
+  h2o.naiveBayes(x = x, y = y, training_frame = training_frame, model_id = model_id,
+                 validation_frame = validation_frame,
+                 ignore_const_cols = ignore_const_cols,
+                 laplace = laplace,
+                 threshold = threshold,
+                 eps = eps,
+                 nfolds = nfolds,
+                 fold_column = fold_column,
+                 fold_assignment = match.arg(fold_assignment),
+                 seed = seed,
+                 keep_cross_validation_predictions = keep_cross_validation_predictions,
+                 keep_cross_validation_fold_assignment = keep_cross_validation_fold_assignment,
+                 compute_metrics = compute_metrics,
+                 max_runtime_secs = max_runtime_secs)
+}

@@ -32,8 +32,7 @@ test_that( "h2o.ensemble wrappers support passing in a subset of the predictor c
   learner <- c("h2o.glm.wrapper", "h2o.randomForest.wrapper", 
                "gbm0", "gbm1", "gbm2", "gbm3", "gbm4")
   metalearner <- "h2o.glm.wrapper"
-  family <- "binomial"
-  
+
   
   # Train an ensemble model with default args
   fit <- h2o.ensemble(x = x, y = y, training_frame = train,
