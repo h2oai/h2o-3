@@ -43,7 +43,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public SelectionStrategy _selection_strategy;
 
     /** Which models can we choose from? */
-    public Key<Model> _base_models[];
+    public Key<Model> _base_models[] = new Key[0];
   }
 
   public static class StackedEnsembleOutput extends Model.Output {
