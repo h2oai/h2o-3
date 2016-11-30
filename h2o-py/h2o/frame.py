@@ -522,7 +522,11 @@ class H2OFrame(object):
 
 
     def _unop(self, op):
-        return H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
+        ret = H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
+        if ret._ex._cache._names is not None:
+            ret._ex._cache._names = ["%s(%s)" % (op, name) for name in ret._ex._cache._names]
+            ret._ex._cache._types = None
+        return ret
 
 
     # Binary operations

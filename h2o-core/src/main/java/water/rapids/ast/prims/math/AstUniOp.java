@@ -31,6 +31,12 @@ public abstract class AstUniOp extends AstPrimitive {
         return new ValNum(op(val.getNum()));
       case Val.FRM:
         Frame fr = val.getFrame();
+        //Get length of columns in fr and append `op(colName)`. For example, a column named "income" that had
+        //a log transformation would now be changed to `log(income)`.
+        String[] newNames = new String[fr.numCols()];
+        for(int i = 0; i < newNames.length; i++){
+          newNames[i] = str() + "(" + fr.name(i) + ")";
+        }
         return new ValFrame(new MRTask() {
           @Override
           public void map(Chunk cs[], NewChunk ncs[]) {
@@ -41,7 +47,7 @@ public abstract class AstUniOp extends AstPrimitive {
                 nc.addNum(op(c.atd(i)));
             }
           }
-        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame());
+        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(newNames, fr.domains()));
       case Val.ROW:
         double[] ds = new double[val.getRow().length];
         for (int i = 0; i < ds.length; ++i)
