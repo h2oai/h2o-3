@@ -544,9 +544,13 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     }
 
     // Recover singular values and eigenvectors of XY
-    public void recoverSVD(GLRMModel model, DataInfo xinfo) {
+    // However, they are only saved if the user has specified _parms._recover_svd to be true.
+    // Otherwise, we are doing recoverSVD to just recover enough information to calculate information
+    // for variance metrics specified in PUBDEV-3501.
+    public void recoverSVD(GLRMModel model, DataInfo xinfo, DataInfo dinfo) {
       // NOTE: Gram computes X'X/n where n = nrow(A) = number of rows in training set
       GramTask xgram = new GramTask(_job._key, xinfo).doAll(xinfo._adaptedFrame);
+      GramTask dgram = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
       Cholesky xxchol = regularizedCholesky(xgram._gram);
 
       // R from QR decomposition of X = QR is upper triangular factor of Cholesky of X'X
@@ -559,26 +563,57 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
       Matrix yt_r = yt_qr.getR();   // S from QR decomposition of Y' = ZS
       Matrix rrmul = x_r.times(yt_r.transpose());
       SingularValueDecomposition rrsvd = new SingularValueDecomposition(rrmul);   // RS' = U \Sigma V'
+      double[] sval = rrsvd.getSingularValues();  // get singular values as double array
+      long nobs = _train.numRows();
+      double dfcorr = nobs/(nobs-1.0);  // find number of observations
+      double oneOverNobsm1 = 1.0/Math.sqrt(nobs-1);
 
-      // Eigenvectors are V'Z' = (ZV)'
-      Matrix eigvec = yt_qr.getQ().times(rrsvd.getV());
-      model._output._eigenvectors_raw = eigvec.getArray();
+      model._output._std_deviation = new double[_parms._k];
+      for (int index=0; index<_parms._k; index++)  // calculate std_deviation
+        model._output._std_deviation[index] = oneOverNobsm1*sval[index];
 
-      // Singular values ordered in weakly descending order by algorithm
-      model._output._singular_vals = rrsvd.getSingularValues();
+      model._output._total_variance = dfcorr*dgram._gram.diagSum();
 
-      // Make TwoDimTable objects for prettier output
+      double[] vars = new double[model._output._std_deviation.length];
+      for (int i = 0; i < vars.length; i++)
+        vars[i] = model._output._std_deviation[i]*model._output._std_deviation[i];
+
+      double[] prop_var = new double[vars.length];
+      double[] cum_var = new double[vars.length];
+      for (int i = 0; i < vars.length; i++) {
+        prop_var[i] = vars[i]/model._output._total_variance;
+        cum_var[i] = i == 0 ? prop_var[0] : cum_var[i-1] + prop_var[i];
+      }
+
       String[] colTypes = new String[_parms._k];
       String[] colFormats = new String[_parms._k];
       String[] colHeaders = new String[_parms._k];
+      String[]  pcHeaders = new String[_parms._k];  // header for variance metrics, set to equal PCA
       Arrays.fill(colTypes, "double");
       Arrays.fill(colFormats, "%5f");
+      for (int i = 0; i < colHeaders.length; i++) {
+        colHeaders[i] = "Vec" + String.valueOf(i + 1);
+        pcHeaders[i] = "pc" + String.valueOf(i + 1);
+      }
 
-      assert model._output._names_expanded.length == model._output._eigenvectors_raw.length;
-      for (int i = 0; i < colHeaders.length; i++) colHeaders[i] = "Vec" + String.valueOf(i + 1);
-      model._output._eigenvectors = new TwoDimTable("Eigenvectors", null, model._output._names_expanded,
-              colHeaders, colTypes, colFormats, "", new String[model._output._eigenvectors_raw.length][],
-              model._output._eigenvectors_raw);
+      model._output._importance = new TwoDimTable("Importance of components", null,
+              new String[]{"Standard deviation", "Proportion of Variance", "Cumulative Proportion"},
+              pcHeaders, colTypes, colFormats, "", new String[3][], new double[][]{model._output._std_deviation,
+              prop_var, cum_var});
+
+      if (_parms._recover_svd) {  // only save the eigenvectors, singular values if _recover_svd=true
+        // Eigenvectors are V'Z' = (ZV)'
+        Matrix eigvec = yt_qr.getQ().times(rrsvd.getV());
+        // Make TwoDimTable objects for prettier output
+        model._output._eigenvectors_raw = eigvec.getArray();
+
+        // Singular values ordered in weakly descending order by algorithm
+        model._output._singular_vals = rrsvd.getSingularValues();
+        assert model._output._names_expanded.length == model._output._eigenvectors_raw.length;
+        model._output._eigenvectors = new TwoDimTable("Eigenvectors", null, model._output._names_expanded,
+                colHeaders, colTypes, colFormats, "", new String[model._output._eigenvectors_raw.length][],
+                model._output._eigenvectors_raw);
+      }
     }
 
     private transient Frame _rebalancedTrain;
@@ -586,7 +621,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
     @Override
     public void computeImpl() {
       GLRMModel model = null;
-      DataInfo dinfo = null, xinfo = null, tinfo = null;
+      DataInfo dinfo = null, xinfo = null, tinfo = null, tempinfo = null;
       Frame fr = null;
       boolean overwriteX = false;
 
@@ -603,6 +638,10 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         tinfo = new DataInfo(_train, _valid, 0, true, _parms._transform, DataInfo.TransformType.NONE,
                              false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
         DKV.put(tinfo._key, tinfo);
+
+        tempinfo = new DataInfo(_train, null, 0, true, _parms._transform, DataInfo.TransformType.NONE,
+                false, false, false, /* weights */ false, /* offset */ false, /* fold */ false);
+ //       DKV.put(tempinfo._key, tempinfo);
 
         // Save training frame adaptation information for use in scoring later
         model._output._normSub = tinfo._normSub == null ? new double[tinfo._nums] : tinfo._normSub;
@@ -770,7 +809,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         model._output._history_step_size.add(step);
         // Transpose Y' to get original Y
         model._output._archetypes = yt.buildTable(model._output._names_expanded, false);
-        if (_parms._recover_svd) recoverSVD(model, xinfo);
+        recoverSVD(model, xinfo, tempinfo);     // getting variance information here
 
         // Impute and compute error metrics on training/validation frame
         model._output._training_metrics = model.scoreMetricsOnly(_parms.train());
@@ -787,6 +826,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         if (tinfo != null) tinfo.remove();
         if (dinfo != null) dinfo.remove();
         if (xinfo != null) xinfo.remove();
+        if (tempinfo != null) xinfo.remove();
 
         // if (x != null && !_parms._keep_loading) x.delete();
         // Clean up unused copy of X matrix
