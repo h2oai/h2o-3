@@ -545,7 +545,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Builder-specific decision node
   protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] ) {
-    return new DTree.DecidedNode(udn, hs, _parms._seed);
+    return new DTree.DecidedNode(udn, hs);
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the

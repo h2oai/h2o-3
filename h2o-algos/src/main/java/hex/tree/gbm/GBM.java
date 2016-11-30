@@ -867,8 +867,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
             final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
             if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
             if (nid < 0) continue;
-            if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
-              nid = tree.node(nid).pid();                  // Then take parent's decision
+//            if( tree.node(nid) instanceof UndecidedNode ) // If we bottomed out the tree
+//              nid = tree.node(nid).pid();                  // Then take parent's decision
             DecidedNode dn = tree.decided(nid);           // Must have a decision point
             if( dn._split == null )                    // Unable to decide?
               dn = tree.decided(dn.pid());  // Then take parent's decision

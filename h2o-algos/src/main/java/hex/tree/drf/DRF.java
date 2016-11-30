@@ -219,7 +219,7 @@ public class DRF extends SharedTree<hex.tree.drf.DRFModel, hex.tree.drf.DRFModel
               if( cnid == -1 || // Bottomed out (predictors or responses known constant)
                       tree.node(cnid) instanceof UndecidedNode || // Or chopped off for depth
                       (tree.node(cnid) instanceof DecidedNode &&  // Or not possible to split
-                              ((DecidedNode)tree.node(cnid))._split==null) ) {
+                              ((DecidedNode)tree.node(cnid))._split ==null) ) {
                 LeafNode ln = new LeafNode(tree,nid);
                 ln._pred = (float)dn.pred(i);  // Set prediction into the leaf
                 dn._nids[i] = ln.nid(); // Mark a leaf here
