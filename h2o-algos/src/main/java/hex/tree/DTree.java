@@ -130,7 +130,7 @@ public class DTree extends Iced {
     final public int _col, _bin;// Column to split, bin where being split
     final DHistogram.NASplitDir _nasplit;
     final IcedBitSet _bs;       // For binary y and categorical x (with >= 4 levels), split into 2 non-contiguous groups
-    final byte _equal;          // Split is 0: <, 1: == with single split point, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
+    final byte _equal;          // Split is 0: <, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
     final double _se;           // Squared error without a split
     final double _se0, _se1;    // Squared error of each subsplit
     final double _n0,  _n1;     // (Weighted) Rows in each final split
@@ -143,7 +143,6 @@ public class DTree extends Iced {
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
       assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
-      assert equal != 1;
       assert(_col>=0);
       assert(_bin>=0);
 //      Log.info(this);
@@ -164,7 +163,6 @@ public class DTree extends Iced {
       assert _bs==null : "Dividing point is a bitset, not a bin#, so dont call splat() as result is meaningless";
       if (_nasplit == DHistogram.NASplitDir.NAvsREST) return -1;
       assert _equal != 1;
-      if( _equal == 1 ) { assert h.bins(_bin)!=0; return (float)h.binAt(_bin); }
       assert _equal==0; // not here for bitset splits, just range splits
       // Find highest non-empty bin below the split
       int x=_bin-1;
@@ -243,11 +241,8 @@ public class DTree extends Iced {
           maxEx = h.find_maxEx(); // Exclusive max
         }
         if (_nasplit== DHistogram.NASplitDir.NAvsREST) {
-          if (way==0) {
-            // leave the min/max alone, and make another histogram (but this time, there won't be any NAs)
-          } else if (way==1) {
-            continue; //no histogram needed - we just split NAs away
-          }
+          if (way==1) continue; //no histogram needed - we just split NAs away
+          // otherwise leave the min/max alone, and make another histogram (but this time, there won't be any NAs)
         }
 
         // Tighter bounds on the column getting split: exactly each new
@@ -293,16 +288,7 @@ public class DTree extends Iced {
     }
 
     @Override public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("Splitting: ");
-      sb.append("col=").append(_col);
-      sb.append(", splitpoint=").append(_bin);
-      sb.append(", nadir=").append(_nasplit.toString());
-      sb.append(", se0=").append(_se0);
-      sb.append(", se1=").append(_se1);
-      sb.append(", n0=" ).append(_n0 );
-      sb.append(", n1=" ).append(_n1 );
-      return sb.toString();
+      return "Splitting: col=" + _col + ", splitpoint=" + _bin + ", nadir=" + _nasplit.toString() + ", se0=" + _se0 + ", se1=" + _se1 + ", n0=" + _n0 + ", n1=" + _n1;
     }
   }
 
@@ -420,9 +406,6 @@ public class DTree extends Iced {
     static private StringBuilder p(StringBuilder sb, String s, int w) {
       return sb.append(Log.fixedLength(s,w));
     }
-    static private StringBuilder p(StringBuilder sb, long l, int w) {
-      return p(sb,Long.toString(l),w);
-    }
     static private StringBuilder p(StringBuilder sb, double d, int w) {
       String s = Double.isNaN(d) ? "NaN" :
         ((d==Float.MAX_VALUE || d==-Float.MAX_VALUE || d==Double.MAX_VALUE || d==-Double.MAX_VALUE) ? " -" :
@@ -466,9 +449,9 @@ public class DTree extends Iced {
     }
 
     // Pick the best column from the given histograms
-    public Split bestCol( UndecidedNode u, DHistogram hs[], long seed ) {
+    public Split bestCol(UndecidedNode u, DHistogram hs[]) {
       DTree.Split best = null;
-      if( hs == null ) return best;
+      if( hs == null ) return null;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
       List<FindSplits> findSplits = new ArrayList<>();
       //total work is to find the best split across sum_over_cols_to_split(nbins)
@@ -509,10 +492,10 @@ public class DTree extends Iced {
       }
     }
 
-    public DecidedNode( UndecidedNode n, DHistogram hs[], long seed ) {
+    public DecidedNode(UndecidedNode n, DHistogram hs[]) {
       super(n._tree,n._pid,n._nid); // Replace Undecided with this DecidedNode
       _nids = new int[2];           // Split into 2 subsets
-      _split = bestCol(n,hs,seed);  // Best split-point for this tree
+      _split = bestCol(n,hs);  // Best split-point for this tree
       if( _split == null) {
         // Happens because the predictor columns cannot split the responses -
         // which might be because all predictor columns are now constant, or
@@ -649,7 +632,7 @@ public class DTree extends Iced {
       Node left = _tree.node(_nids[0]);
       int lsz = left.size();
       res += lsz;
-      if( left instanceof LeafNode ) _nodeType |= (byte)(48 << 0*2);
+      if( left instanceof LeafNode ) _nodeType |= (byte)48;
       else {
         int slen = lsz < 256 ? 0 : (lsz < 65535 ? 1 : (lsz<(1<<24) ? 2 : 3));
         _nodeType |= slen; // Set the size-skip bits
@@ -657,7 +640,7 @@ public class DTree extends Iced {
       }
 
       Node right = _tree.node(_nids[1]);
-      if( right instanceof LeafNode ) _nodeType |= (byte)(48 << 1*2);
+      if( right instanceof LeafNode ) _nodeType |= (byte)(48 << 2);
       res += right.size();
       assert (_nodeType&0x33) != 51;
       assert res != 0;
