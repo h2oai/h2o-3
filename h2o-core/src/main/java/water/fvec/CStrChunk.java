@@ -15,6 +15,8 @@ public class CStrChunk extends Chunk {
 
   public CStrChunk() {}
   public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] id, int[] is, boolean isAllASCII) {
+    for( int i = 1; i < sparseLen; ++i )
+      assert is[i-1] < is[i] || is[i]==-1;
     _start = -1;
     _valstart = idx(idxLen);
     _isAllASCII = isAllASCII;

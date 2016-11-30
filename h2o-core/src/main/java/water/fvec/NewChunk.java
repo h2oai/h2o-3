@@ -361,11 +361,13 @@ public class NewChunk extends Chunk {
     } else if(_ds != null) {
       c.addNum(_ds[i]);
     } else if (_ss != null) {
+      ..._is is broken here... for FrameSplitterTest...
       int sidx = _is[i];
       int nextNotNAIdx = i + 1;
       // Find next not-NA value (_is[idx] != -1)
       while (nextNotNAIdx < _is.length && _is[nextNotNAIdx] == -1) nextNotNAIdx++;
-      int slen = nextNotNAIdx < _is.length ? _is[nextNotNAIdx] - sidx : _sslen - sidx;
+      int send = nextNotNAIdx < _is.length ? _is[nextNotNAIdx]: _sslen;
+      int slen = send - sidx -1 /*account for trailing zero byte*/;
       // null-BufferedString represents NA value
       BufferedString bStr = sidx == -1 ? null : _bfstr.set(_ss, sidx, slen);
       c.addStr(bStr);
@@ -615,6 +617,7 @@ public class NewChunk extends Chunk {
       }
       if (str != null) {
         if(_id != null)_id[_sparseLen] = _len;
+        assert _sparseLen==0 || _is[_sparseLen-1] < _sslen; // monotonic increase in _is
         _is[_sparseLen] = _sslen;
         _sparseLen++;
         if (str instanceof BufferedString)
@@ -920,7 +923,7 @@ public class NewChunk extends Chunk {
     if (_is != null) {
       assert num_noncompressibles <= _is.length;
       _id = MemoryManager.malloc4(_is.length);
-      for (int i = 0; i < _sparseLen; i++) {
+      for (int i = 0; i < _len; i++) {
         if (_is[i] == -1) cs++; //same condition for NA and 0
         else {
           _is[i - cs] = _is[i];
@@ -1537,6 +1540,7 @@ public class NewChunk extends Chunk {
       if(idx >= 0)i = idx;
       else cancel_sparse(); // for now don't bother setting the sparse value
     }
+    assert i==0 || _is[i-1] < _sslen;
     _is[i] = _sslen;
     append_ss(str);
     return true;
