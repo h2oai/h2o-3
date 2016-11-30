@@ -24,8 +24,8 @@ public class CStrChunk extends Chunk {
     UnsafeUtils.set1(_mem, 4, (byte) (isAllASCII ? 1 : 0)); // isAllASCII flag
     Arrays.fill(_mem,_OFF,_valstart,(byte)-1); // Indicate All Is NA's
     for( int i = 0; i < sparseLen; ++i ) // Copy the sparse indices
-      UnsafeUtils.set4(_mem, idx(id[i]), is[i]);
-    UnsafeUtils.copyMemory(ss,0,_mem,_valstart,ss.length);
+      UnsafeUtils.set4(_mem, idx(id==null ? i : id[i]), is[i]);
+    UnsafeUtils.copyMemory(ss,0,_mem,_valstart,sslen);
   }
 
   private int idx(int i) { return _OFF+i<<2; }
