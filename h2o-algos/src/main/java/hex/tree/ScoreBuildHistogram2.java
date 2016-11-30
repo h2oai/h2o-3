@@ -213,8 +213,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
         for (int row = 0; row < nnids.length; row++)
           if (nnids[row] >= 0)
             rows[nh[nnids[row]]++] = row;
-        // rows[] has Chunk-local ROW-numbers now, in-order, grouped by NID.
-        // nh[] lists the start of each new NID, and is indexed by NID+1.
+
       }
       @Override
       protected void map(int id) {
@@ -225,8 +224,8 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
           for (int i = 0; i < chks.length; ++i)
             chks[i] = vecs[i].chunkForChunkIdx(cidx);
           map(id,chks);
+          chks[_nidIdx].close(cidx,_fs);
           Chunk resChk = chks[_workIdx];
-          resChk.close(cidx,_fs);
           int len = resChk.len();
           if(resChk instanceof C8DVolatileChunk){
             _ys[id] = ((C8DVolatileChunk)resChk).getValues();
