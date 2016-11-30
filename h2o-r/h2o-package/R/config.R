@@ -15,7 +15,7 @@
     Lines  <- readLines(connection)
 
     #Check for correct section headers. In this case it is [init]. Can update in time.
-    if(grepl("\\[|\\]",Lines) && !("[init]" %in% Lines)){
+    if(grepl("\\[|\\]",Lines) && all(!("[init]" %in% Lines))){
         return()
     }
     close(connection)
