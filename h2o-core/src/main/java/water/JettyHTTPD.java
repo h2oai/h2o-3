@@ -305,7 +305,13 @@ public class JettyHTTPD {
     ServletContextHandler context = new ServletContextHandler(
         ServletContextHandler.SECURITY | ServletContextHandler.SESSIONS
     );
-    context.setContextPath("/");
+
+    if(null != H2O.ARGS.context_path && !H2O.ARGS.context_path.isEmpty()) {
+      context.setContextPath(H2O.ARGS.context_path);
+    } else {
+      context.setContextPath("/");
+    }
+
     context.addServlet(NpsBinServlet.class,   "/3/NodePersistentStorage.bin/*");
     context.addServlet(PostFileServlet.class, "/3/PostFile.bin");
     context.addServlet(PostFileServlet.class, "/3/PostFile");
@@ -469,6 +475,14 @@ public class JettyHTTPD {
     response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
     response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
     response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
+    response.setHeader("X-h2o-context-path", sanatizeContextPath(H2O.ARGS.context_path));
+  }
+
+  private static String sanatizeContextPath(String context_path) {
+    if(null == context_path || context_path.isEmpty()) {
+      return "/";
+    }
+    return context_path + "/";
   }
 
 

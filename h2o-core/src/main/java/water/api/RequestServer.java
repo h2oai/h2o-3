@@ -666,7 +666,7 @@ public class RequestServer extends HttpServlet {
 
   private static NanoResponse redirectToFlow() {
     NanoResponse res = new NanoResponse(HTTP_REDIRECT, MIME_PLAINTEXT, "");
-    res.addHeader("Location", "/flow/index.html");
+    res.addHeader("Location", H2O.ARGS.context_path + "/flow/index.html");
     return res;
   }
 
