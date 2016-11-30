@@ -42,7 +42,7 @@ public class ChunkSplitter {
       assert dst._len == oc._len : "NewChunk.dst.len = " + dst._len + ", oc._len = " + oc._len;
       dst.close(dst.cidx(), fs);
     } catch(RuntimeException t){
-      Log.err("gor exception in chunkSplitter, ic = " + ic + ", oc = " + oc + " startRow = " + startRow + " nrows = " + nrows);
+      Log.err("got exception in chunkSplitter, ic = " + ic + ", oc = " + oc + " startRow = " + startRow + " nrows = " + nrows);
       throw t;
     }
   }
