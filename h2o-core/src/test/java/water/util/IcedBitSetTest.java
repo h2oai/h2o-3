@@ -2,6 +2,7 @@ package water.util;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.TestUtil;
 
@@ -95,7 +96,7 @@ public class IcedBitSetTest extends TestUtil {
     check(bs, 0, idx);
   }
 
-  @Test (expected = IndexOutOfBoundsException.class) public void outOfBounds() {
+  @Test (expected = AssertionError.class) public void outOfBounds() {
     int len = 32 + (int) (10000 * new Random().nextDouble());
     IcedBitSet bs = new IcedBitSet(len);
     bs.set(len);
@@ -122,6 +123,7 @@ public class IcedBitSetTest extends TestUtil {
     check(bs, 0, new Integer[]{});
   }
 
+  @Ignore
   @Test public void bitOff() {
     int len = 113 + (int) (10000 * new Random().nextDouble());
     int bitoff = (int) (100 * new Random().nextDouble());

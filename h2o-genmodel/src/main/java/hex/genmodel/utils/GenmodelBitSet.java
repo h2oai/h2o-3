@@ -38,11 +38,15 @@ public class GenmodelBitSet {
         _byteoff = byteoff;
     }
 
+    public boolean isInRange(int b) {
+        b -= _bitoff;
+        return b >= 0 && b < _nbits;
+    }
+
     public boolean contains(int idx) {
-        if (idx < 0) throw new IndexOutOfBoundsException("idx < 0: " + idx);
         idx -= _bitoff;
-        return (idx >= 0) && (idx < _nbits) &&
-               (_val[_byteoff + (idx >> 3)] & ((byte)1 << (idx & 7))) != 0;
+        assert (idx >= 0 && idx < _nbits): "Must have "+_bitoff+" <= idx <= " + (_bitoff+_nbits-1) + ": " + idx;
+        return (_val[_byteoff + (idx >> 3)] & ((byte)1 << (idx & 7))) != 0;
     }
 
     public void fill2(byte[] bits, ByteBufferWrapper ab) {

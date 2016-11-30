@@ -5,14 +5,11 @@ import jsr166y.CountedCompleter;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
-
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import water.util.IcedBitSet;
 import water.util.VecUtils;
+
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Created by tomas on 10/28/16.
@@ -135,7 +132,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       boolean oob = isOOBRow(nid);
       if( oob ) nid = oob2Nid(nid); // sampled away - we track the position in the tree
       DTree.DecidedNode dn = _tree.decided(nid);
-      if( dn == null || dn._split == null ) { // Might have a leftover non-split
+      if( dn._split == null ) { // Might have a leftover non-split
         if( DTree.isRootNode(dn) ) { res[row] = nid - _leaf; continue; }
         nid = dn._pid;             // Use the parent split decision then
         int xnid = oob ? nid2Oob(nid) : nid;
@@ -159,13 +156,15 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
     addToPendingCount(1);
     // Init all the internal tree fields after shipping over the wire
     _tree.init_tree();
-    _cids = VecUtils.getLocalChunkIds(_fr2.anyVec());
+    Vec v = _fr2.anyVec();
+    assert(v!=null);
+    _cids = VecUtils.getLocalChunkIds(v);
     _chks = new Chunk[_cids.length][_fr2.numCols()];
     _ys = new double[_cids.length][];
     _ws = new double[_cids.length][];
     _nhs = new int[_cids.length][];
     _rss = new int[_cids.length][];
-    long [] espc = _fr2.anyVec().espc();
+    long [] espc = v.espc();
     int largestChunkSz = 0;
     for(int i = 1; i < espc.length; ++i){
       int sz = (int)(espc[i] - espc[i-1]);
@@ -296,8 +295,7 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
 
     @Override
     public ComputeHistoThread makeCopy() {
-      ComputeHistoThread res = new ComputeHistoThread(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_cidx);
-      return res;
+      return new ComputeHistoThread(ArrayUtils.deepClone(_lh),_col,_maxChunkSz,_cidx);
     }
 
     @Override

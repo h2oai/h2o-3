@@ -1,12 +1,12 @@
 package hex.tree;
 
 import hex.*;
+import static hex.genmodel.GenModel.createAuxKey;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -14,7 +14,6 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.*;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,6 +139,7 @@ public abstract class SharedTreeModel<
 
     /** Trees get big, so store each one separately in the DKV. */
     public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeysAux;
 
     public ScoreKeeper[/*ntrees+1*/] _scored_train;
     public ScoreKeeper[/*ntrees+1*/] _scored_valid;
@@ -164,6 +164,7 @@ public abstract class SharedTreeModel<
       super(b);
       _ntrees = 0;              // No trees yet
       _treeKeys = new Key[_ntrees][]; // No tree keys yet
+      _treeKeysAux = new Key[_ntrees][]; // No tree keys yet
       _treeStats = new TreeStats();
       _scored_train = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
       _scored_valid = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
@@ -177,12 +178,18 @@ public abstract class SharedTreeModel<
       assert nclasses()==trees.length;
       // Compress trees and record tree-keys
       _treeKeys = Arrays.copyOf(_treeKeys ,_ntrees+1);
+      _treeKeysAux = Arrays.copyOf(_treeKeysAux ,_ntrees+1);
       Key[] keys = _treeKeys[_ntrees] = new Key[trees.length];
+      Key[] keysAux = _treeKeysAux[_ntrees] = new Key[trees.length];
       Futures fs = new Futures();
       for( int i=0; i<nclasses(); i++ ) if( trees[i] != null ) {
         CompressedTree ct = trees[i].compress(_ntrees,i);
         DKV.put(keys[i]=ct._key,ct,fs);
         _treeStats.updateBy(trees[i]); // Update tree shape stats
+
+        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1);
+        keysAux[i] = ctAux._key = Key.make(createAuxKey(ct._key.toString()));
+        DKV.put(ctAux);
       }
       _ntrees++;
       // 1-based for errors; _scored_train[0] is for zero trees, not 1 tree
@@ -308,11 +315,27 @@ public abstract class SharedTreeModel<
         DKV.put(treeKeys[i][j] = newCt._key,newCt);
       }
     }
+    // Clone Aux info
+    Key[][] treeKeysAux = newModel._output._treeKeysAux;
+    if (treeKeysAux!=null) {
+      for (int i = 0; i < treeKeysAux.length; i++) {
+        for (int j = 0; j < treeKeysAux[i].length; j++) {
+          if (treeKeysAux[i][j] == null) continue;
+          CompressedTree ct = DKV.get(treeKeysAux[i][j]).get();
+          CompressedTree newCt = IcedUtils.deepCopy(ct);
+          newCt._key = Key.make(createAuxKey(treeKeys[i][j].toString()));
+          DKV.put(treeKeysAux[i][j] = newCt._key,newCt);
+        }
+      }
+    }
     return newModel;
   }
 
   @Override protected Futures remove_impl( Futures fs ) {
     for (Key[] ks : _output._treeKeys)
+      for (Key k : ks)
+        if( k != null ) k.remove(fs);
+    for (Key[] ks : _output._treeKeysAux)
       for (Key k : ks)
         if( k != null ) k.remove(fs);
     return super.remove_impl(fs);
@@ -323,11 +346,17 @@ public abstract class SharedTreeModel<
     for (Key<CompressedTree>[] ks : _output._treeKeys)
       for (Key<CompressedTree> k : ks)
         ab.putKey(k);
+    for (Key<CompressedTree>[] ks : _output._treeKeysAux)
+      for (Key<CompressedTree> k : ks)
+        ab.putKey(k);
     return super.writeAll_impl(ab);
   }
 
   @Override protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     for (Key<CompressedTree>[] ks : _output._treeKeys)
+      for (Key<CompressedTree> k : ks)
+        ab.getKey(k,fs);
+    for (Key<CompressedTree>[] ks : _output._treeKeysAux)
       for (Key<CompressedTree> k : ks)
         ab.getKey(k,fs);
     return super.readAll_impl(ab,fs);

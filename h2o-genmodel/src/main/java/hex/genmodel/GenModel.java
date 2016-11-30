@@ -1,6 +1,7 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
+import hex.genmodel.utils.GenmodelBitSet;
 import water.genmodel.IGeneratedModel;
 
 import java.awt.*;
@@ -157,6 +158,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
            (mc == ModelCategory.AutoEncoder)? nfeatures() : getPredsSize();
   }
 
+  public static String createAuxKey(String k) {
+    return k + ".aux";
+  }
+
   /*
   @Override
   public float[] predict(double[] data, float[] preds) {
@@ -305,13 +310,21 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   // Utility to do bitset lookup from a POJO
-  public static boolean bitSetContains(byte[] bits, int bitoff, double dnum ) {
-    if (Double.isNaN(dnum)) return true; // we want NAs to go right (fail every test), so !bitSetContains must return false
-    int num = (int)dnum;
-    assert num >= 0 : "bitSet can only contain integer factor levels >= 0, but got " + num;
-    num -= bitoff;
-    return (num >= 0) && (num < (bits.length<<3)) &&
-      (bits[num >> 3] & ((byte)1 << (num & 7))) != 0;
+  public static boolean bitSetContains(byte[] bits, int bitoff, double dnum) {
+    assert(!Double.isNaN(dnum));
+    int idx = (int)dnum;
+    int len = bits.length << 3;
+    idx -= bitoff;
+    assert (idx >= 0 && idx < len): "Must have "+bitoff+" <= idx <= " + (bitoff+len-1) + ": " + idx;
+    return (bits[idx >> 3] & ((byte)1 << (idx & 7))) != 0;
+  }
+
+  public static boolean bitSetIsInRange(byte[] bits, int bitoff, double dnum) {
+    assert(!Double.isNaN(dnum));
+    int idx = (int)dnum;
+    int len = bits.length << 3;
+    idx -= bitoff;
+    return (idx >= 0 && idx < len);
   }
 
   // --------------------------------------------------------------------------

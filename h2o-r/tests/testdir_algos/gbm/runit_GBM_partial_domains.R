@@ -41,7 +41,7 @@ test.partialDomains <- function() {
 
     ## compare models on the full frame
     cat("Comparison 2")
-    df = h2o.importFile("/Users/arno/h2o-3/smalldata/airlines/allyears2k_headers.zip")
+    df = h2o.importFile(locate("smalldata/airlines/allyears2k_headers.zip"))
     for (s in c("SAN", "LAX", "OAK", "SFO", "ABQ", "IAH", "BOS", "LIH")) {
       leaf_assign1 <- h2o.predict_leaf_node_assignment(model1,df[df$Origin==s,])
       pred1 <- h2o.predict(model1,df[df$Origin==s,])

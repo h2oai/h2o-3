@@ -22,6 +22,10 @@ public final class ByteBufferWrapper {
         return _bb.position();
     }
 
+    public boolean hasRemaining() {
+      return _bb.hasRemaining();
+    }
+
     /** Skip over some bytes in the byte buffer.  Caller is responsible for not
      *  reading off end of the bytebuffer; generally this is easy for
      *  array-backed autobuffers and difficult for i/o-backed bytebuffers. */
@@ -45,6 +49,9 @@ public final class ByteBufferWrapper {
         return _bb.getInt();
     }
     public float get4f() {
-        return _bb.getFloat();
+      return _bb.getFloat();
+    }
+    public double get8d() {
+      return _bb.getDouble();
     }
 }
