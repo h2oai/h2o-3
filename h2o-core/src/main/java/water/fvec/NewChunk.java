@@ -616,7 +616,6 @@ public class NewChunk extends Chunk {
       }
       if (str != null) {
         if(_id != null)_id[_sparseLen] = _len;
-        assert _sparseLen==0 || _is[_sparseLen-1] < _sslen; // monotonic increase in _is
         _is[_sparseLen] = _sslen;
         _sparseLen++;
         if (str instanceof BufferedString)
@@ -1539,7 +1538,6 @@ public class NewChunk extends Chunk {
       if(idx >= 0)i = idx;
       else cancel_sparse(); // for now don't bother setting the sparse value
     }
-    assert i==0 || _is[i-1] < _sslen;
     _is[i] = _sslen;
     append_ss(str);
     return true;
