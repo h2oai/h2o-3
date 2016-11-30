@@ -10,6 +10,9 @@
     "init.verify_ssl_certificates","init.cookies")
     connection <- file(h2oconfig_filename)
     Lines  <- readLines(connection)
+    if(grepl("\\[|\\]",Lines) && !("[init]" %in% Lines)){
+        return()
+    }
     close(connection)
 
     Lines <- chartr("[]", "==", Lines)  # change section headers
@@ -17,24 +20,25 @@
     Lines <- subset(Lines,!grepl("^py:",ignore.case=TRUE,Lines)) #Exclude any Python specific parameters if present (Not case sensitive)
     Lines <- gsub(".*^r:","",ignore.case=TRUE,Lines) #Get R specific parameters if present (Not case sensitive)
     connection <- textConnection(Lines)
-    if(length(Lines) == 0){
+    if(length(Lines) == 0 || all(Lines == "")){
         return()
     }
     d <- read.table(connection, as.is = TRUE, sep = "=", fill = TRUE)
     close(connection)
 
     #If no section headers, then we parse the list itself and no reason to go any further
-    if(!all(grepl("\\[|\\]",Lines)) && !grepl("^#",Lines)){
+    if(!(grepl("^=",Lines)) && !grepl("^#",Lines)){
         ini_to_df <- data.frame(t(d$V2))
         colnames(ini_to_df) <- d$V1
         colnames(ini_to_df) <- trimws(colnames(ini_to_df))
         names <- colnames(ini_to_df)[which(colnames(ini_to_df) %in% allowed_config_keys)]
-        if(length(names) == 0){
-            return()
-        }
-        ini_to_df = ini_to_df[,names]
-        colnames(ini_to_df) <- names
-        return(ini_to_df)
+    if(length(names) == 0){
+        return()
+    }
+    ini_to_df = ini_to_df[,names]
+    ini_to_df = data.frame(ini_to_df)
+    colnames(ini_to_df) <- names
+    return(ini_to_df)
     }
 
     L <- d$V1 == ""                    # location of section breaks
@@ -47,7 +51,7 @@
     eval(parse(text=ToParse))
     col_name_sections <- names(ini_list)
 
-    ini_to_df <- data.frame(sapply(ini_list, `[`))
+    ini_to_df <- as.data.frame.list(ini_list)
     colnames(ini_to_df) <- trimws(colnames(ini_to_df))
     names <- colnames(ini_to_df)[which(colnames(ini_to_df) %in% allowed_config_keys)]
     if(length(names) == 0){
@@ -71,7 +75,7 @@
     while(identical(Sys.glob(".h2oconfig"),character(0))){
         if(getwd() == "/"){
             setwd(current_directory)
-        return()
+            return()
         }
         setwd("..")
         path_to_config = getwd()
