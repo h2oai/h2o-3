@@ -30,7 +30,7 @@ public class CStrChunk extends Chunk {
     UnsafeUtils.copyMemory(ss,0,_mem,_valstart,sslen);
   }
 
-  private int idx(int i) { return _OFF+i<<2; }
+  private int idx(int i) { return _OFF+(i<<2); }
   @Override public boolean setNA_impl(int idx) { return false; }
   @Override public boolean set_impl(int idx, float f) { if (Float.isNaN(f)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public boolean set_impl(int idx, double d) { if (Double.isNaN(d)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
