@@ -2337,7 +2337,7 @@ class H2OFrame(object):
           mids, and density; otherwise produce the plot.
         """
         frame = H2OFrame._expr(expr=ExprNode("hist", self, breaks))._frame()
-        total = frame["counts"].sum(True)
+        total = frame["counts"].sum(True,return_frame=False)
         densities = [[(frame[i, "counts"] / total) * (1 / (frame[i, "breaks"] - frame[i - 1, "breaks"]))] for i in
                      range(1, frame["counts"].nrow)]
         densities.insert(0, [0])
