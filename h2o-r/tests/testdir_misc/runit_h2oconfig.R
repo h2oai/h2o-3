@@ -116,6 +116,18 @@ test.config <- function() {
     config = .parse.h2oconfig(h2oconfig_filename)
     expect_equal(config,data.frame(general.allow_breaking_changes = as.factor("True"),init.cluster_id = as.factor("3")))
 
+    #Creat tmp config
+    fileConn<-file(paste0(dir,"/.h2oconfig"))
+    writeLines(c("[GEnEraL]
+    allow_breaking_changes = True
+    [INiT]
+    cluster_id = 3"),fileConn)
+
+    #Parse config and check if correct
+    h2oconfig_filename <- paste0(dir,"/.h2oconfig")
+    config = .parse.h2oconfig(h2oconfig_filename)
+    expect_equal(config,data.frame(general.allow_breaking_changes = as.factor("True"),init.cluster_id = as.factor("3")))
+
     #Delete tmp directory
     unlink(dir,recursive=TRUE)
 }

@@ -14,8 +14,17 @@
     connection <- file(h2oconfig_filename)
     Lines  <- readLines(connection)
     Lines <- trimws(Lines)
-    #Check for correct section headers. In this case it is [init]. Can update in time.
-    if(grepl("\\[|\\]",Lines) && all(!("[init]" %in% Lines))){
+
+    #Make all section headers lowercase to avoid case sensitive exceptions
+    for(i in 1:length(Lines)){
+      if(grepl("\\[|\\]",Lines[i])){
+        Lines[i] = tolower(Lines[i])
+      }
+    }
+
+    #Check for correct section headers. In this case it is [init] & [general] (case insensitive).
+    #Can update vector of acceptable headers in time.
+    if(grepl("\\[|\\]",Lines) && all(!(c("[init]","[general]") %in% Lines))){
       return()
     }
     close(connection)
@@ -27,15 +36,17 @@
     Lines <- gsub(".*^r:","",ignore.case=TRUE,Lines) #Get R specific parameters if present (Not case sensitive)
     connection <- textConnection(Lines)
 
-    #If any empty sections after initial parse return NULL
+    #If all empty sections after initial parse return NULL
     if(length(Lines) == 0 || all(Lines == "")){
       return()
     }
 
     #Get connection to previous parse and make initial data frame
     d <- read.table(connection, as.is = TRUE, sep = "=", fill = TRUE)
+
     #Trim whitespace from potential columns
     d$V1 = trimws(d$V1)
+
     #Only get last occurence of duplicates
     if(any(duplicated(d$V1[d$V1 != ""]))){
       d = d[!rev(duplicated(rev(d$V1))),]
@@ -46,6 +57,7 @@
     if(grepl("^=",Lines) && !grepl("^#",Lines) && any(Lines=="")){
       return()
     }
+
     #If no section headers, then we parse the list itself and return the final parsed data frame
     if(!(grepl("^=",Lines)) && !grepl("^#",Lines)){
       ini_to_df <- data.frame(t(d$V2))
