@@ -266,8 +266,10 @@ function Perfbar(nodeIdx, nodeName, nodePort, numCores) {
 }
 
 function initializeCloud() {
-    if(window.location.pathname.split("/")[1]) {
-        context_path = "/" + window.location.pathname.split("/")[1];
+    var path = window.location.pathname
+    var path_segment = path.substr(0, path.lastIndexOf("/perfbar.html"))
+    if (path_segment != "") {
+        context_path = path_segment
     }
 
     shutdownRequested = false;
