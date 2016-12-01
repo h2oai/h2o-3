@@ -1,6 +1,7 @@
 package water.udf;
 
 import water.fvec.Chunk;
+import water.udf.fp.Function;
 
 /**
  * This factory creates a TypedChunk; there's a variety of data sources,

@@ -1,4 +1,4 @@
-package water.udf;
+package water.udf.fp;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -12,7 +12,7 @@ public abstract class Predicate<X> implements Function<X, Boolean> {
     @Override public Boolean apply(Object x) { return x != null; }
   };
 
-  <Y extends X> List<Y> filter(List<Y> xs) {
+  public <Y extends X> List<Y> filter(List<Y> xs) {
     List<Y> result = new LinkedList<>();
     for (Y x : xs) if (apply(x)) result.add(x);
     

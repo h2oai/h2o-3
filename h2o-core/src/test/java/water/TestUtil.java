@@ -1,7 +1,10 @@
 package water;
 
 import org.apache.commons.io.FileUtils;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -19,11 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.function.Consumer;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -32,11 +30,6 @@ import static org.junit.Assert.assertTrue;
 
 @Ignore("Support for tests, but no actual tests here")
 public class TestUtil extends Iced {
-  { // need this because -ea IS NOT ALWAYS set in intellij
-    ClassLoader loader = getClass().getClassLoader();
-    loader.setDefaultAssertionStatus(true);
-  }
-
   public final static boolean JACOCO_ENABLED = Boolean.parseBoolean(System.getProperty("test.jacocoEnabled", "false"));
   private static boolean _stall_called_before = false;
   private static String[] ignoreTestsNames;
@@ -70,8 +63,8 @@ public class TestUtil extends Iced {
   // Stall test until we see at least X members of the Cloud
   protected static int getDefaultTimeForClouding() {
     return JACOCO_ENABLED
-           ? DEFAULT_TIME_FOR_CLOUDING * 10
-           : DEFAULT_TIME_FOR_CLOUDING;
+        ? DEFAULT_TIME_FOR_CLOUDING * 10
+        : DEFAULT_TIME_FOR_CLOUDING;
   }
 
   public static void stall_till_cloudsize(int x) {
@@ -110,8 +103,7 @@ public class TestUtil extends Iced {
             (value.isJob() && value.<Job>get().isStopped()) ) {
           leaked_keys--;
         } else {
-          Iced iced = value.get();
-          System.out.println(k + " -> " + iced.getClass().getSimpleName() + ":" + iced);
+          System.out.println(k + " -> " + value.get());
           if( cnt++ < 10 )
             System.err.println("Leaked key: " + k + " = " + TypeMap.className(value.type()));
         }
@@ -145,7 +137,7 @@ public class TestUtil extends Iced {
     @Override public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
       if ((ignoreTestsNames != null && Arrays.asList(ignoreTestsNames).contains(testName)) ||
-              (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
+          (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
         // Ignored tests trump do-only tests
         Log.info("#### TEST " + testName + " IGNORED");
         return new Statement() {
@@ -239,12 +231,12 @@ public class TestUtil extends Iced {
     assertTrue("File should exist: " + name, file.exists());
   }
 
-  protected static void checkFile(String name, File file) {
+  public static void checkFile(String name, File file) {
     checkFileEntry(name, file);
     assertTrue("Expected a readable file: " + name, file.canRead());
   }
 
-  private static File[] checkFolder(String name, File folder) {
+  static File[] checkFolder(String name, File folder) {
     checkFileEntry(name, folder);
     assertTrue("Expected a folder: " + name, folder.isDirectory());
     File[] files = folder.listFiles();
@@ -257,19 +249,10 @@ public class TestUtil extends Iced {
    *  @return      Frame or NPE */
   public static Frame parse_test_file( String fname ) { return parse_test_file(Key.make(),fname); }
   public static Frame parse_test_file( Key outputKey, String fname) {
-    Vec data = loadFile(fname);
-    return ParseDataset.parse(outputKey, data._key);
-  }
-
-  public static Vec loadFile(String fname) {
-    File f = getFile(fname);
-    return NFSFileVec.make(f);
-  }
-
-  public static File getFile(String fname) {
     File f = find_test_file_static(fname);
     checkFile(fname, f);
-    return f;
+    NFSFileVec nfs = NFSFileVec.make(f);
+    return ParseDataset.parse(outputKey, nfs._key);
   }
 
   protected Frame parse_test_file( Key outputKey, String fname , boolean guessSetup) {
@@ -280,13 +263,15 @@ public class TestUtil extends Iced {
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types ) {
-    Vec data = loadFile(fname);
+    File f = find_test_file_static(fname);
+    checkFile(fname, f);
+    NFSFileVec nfs = NFSFileVec.make(f);
 
-    Key[] res = {data._key};
+    Key[] res = {nfs._key};
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -331,7 +316,7 @@ public class TestUtil extends Iced {
    *
    * @param fname name of folder
    * @param na_string string for NA in a column
-   * @return resulting frame
+   * @return
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);
@@ -347,7 +332,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -497,7 +482,7 @@ public class TestUtil extends Iced {
     return r;
   }
 
-// Java7+  @SafeVarargs
+  // Java7+  @SafeVarargs
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
@@ -732,20 +717,4 @@ public class TestUtil extends Iced {
     }
   }
 
-  static Consumer<Vec> dropit = new Consumer<Vec>() {
-    @Override public void accept(Vec v) { v.remove(new Futures()).blockForPending(); }
-  };
-
-  @BeforeClass
-  public static void hi() { stall_till_cloudsize(1); }
-  @AfterClass public static void bye() { toDrop.forEach(dropit); }
-
-  private static Set<Vec> toDrop = new HashSet<>();
-
-  protected static Vec willDrop(Vec v) { toDrop.add(v); return v; }
-
-  protected static <T extends Vec.Holder> T willDrop(T vh) {
-    toDrop.add(vh.vec());
-    return vh;
-  }
 }

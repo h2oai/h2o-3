@@ -4,6 +4,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.udf.fp.Function;
 
 import java.io.IOException;
 import java.util.ArrayList;

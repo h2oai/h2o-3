@@ -1,4 +1,4 @@
-package water.udf;
+package water.udf.fp;
 
 import java.util.List;
 

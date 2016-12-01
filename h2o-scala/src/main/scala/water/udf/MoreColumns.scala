@@ -4,6 +4,7 @@ import java.lang
 import java.util.Date
 
 import water.udf.DataColumns._
+import water.udf.fp.{Unfoldable, Foldable, Functions, Function}
 import water.udf.specialized.{Dates, Doubles, Enums, Strings}
 
 import scala.collection.JavaConverters._
@@ -28,13 +29,13 @@ class ScalaDoubles extends Doubles with ScalaFactory[java.lang.Double, Double] {
   def newColumnOpt(size: Long, f: Long => Option[Double]) = super.newColumn(size, ff1LDO(f))
   override def conv(x: Double): lang.Double = x
 
-  private implicit def ff1LD(f: Long => Double): water.udf.Function[lang.Long, lang.Double] =
-    new water.udf.Function[lang.Long, lang.Double] {
+  private implicit def ff1LD(f: Long => Double): Function[lang.Long, lang.Double] =
+    new Function[lang.Long, lang.Double] {
       def apply(x: lang.Long): lang.Double = f(x)
     }
 
-  private implicit def ff1LDO(f: Long => Option[Double]): water.udf.Function[lang.Long, lang.Double] =
-    new water.udf.Function[lang.Long, lang.Double] {
+  private implicit def ff1LDO(f: Long => Option[Double]): Function[lang.Long, lang.Double] =
+    new Function[lang.Long, lang.Double] {
       def apply(x: lang.Long): lang.Double = f(x).getOrElse(DoubleNan).asInstanceOf[Double]
     }
 
@@ -48,28 +49,29 @@ object MoreColumns extends DataColumns {
   
   val Doubles = new ScalaDoubles
   
-  private[MoreColumns] implicit def ff1L[Y](f: Long => Y): water.udf.Function[lang.Long, Y] =
-    new water.udf.Function[lang.Long, Y] {
+  private[MoreColumns] implicit def ff1L[Y](f: Long => Y): Function[lang.Long, Y] =
+    new Function[lang.Long, Y] {
       def apply(x: lang.Long): Y = f(x)
     }
 
-  private[MoreColumns] implicit def ff1LO[Y](f: Long => Option[Y]): water.udf.Function[lang.Long, Y] =
-    new water.udf.Function[lang.Long, Y] {
+  private[MoreColumns] implicit def ff1LO[Y](f: Long => Option[Y]): Function[lang.Long, Y] =
+    new Function[lang.Long, Y] {
       def apply(x: lang.Long): Y = f(x) getOrElse null.asInstanceOf[Y]
     }
 
-  private[MoreColumns] implicit def ff1LS(f: Long => String): water.udf.Function[lang.Long, lang.String] =
-    new water.udf.Function[lang.Long, lang.String] {
+  private[MoreColumns] implicit def ff1LS(f: Long => String): Function[lang.Long, lang.String] =
+    new Function[lang.Long, lang.String] {
       def apply(x: lang.Long): lang.String = f(x)
     }
 
-  private[MoreColumns] implicit def ff1LI(f: Long => Integer): water.udf.Function[lang.Long, lang.Integer] =
-    new water.udf.Function[lang.Long, lang.Integer] {
+  private[MoreColumns] implicit def ff1LI(f: Long => Integer): Function[lang.Long, lang.Integer] =
+    new Function[lang.Long, lang.Integer] {
       def apply(x: lang.Long): lang.Integer = f(x)
     }
 
   /**
     * Magma with neutral element
+    *
     * @see https://en.wikipedia.org/wiki/Magma_(algebra)
     * @param zero neutral element
     * @param op binary op (does not have to be associative)

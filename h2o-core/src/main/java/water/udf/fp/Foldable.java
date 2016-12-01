@@ -1,4 +1,4 @@
-package water.udf;
+package water.udf.fp;
 
 /**
  * Represents a folding operation applicable to streams or collection

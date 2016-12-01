@@ -1,10 +1,7 @@
 package water.udf;
 
-import water.Iced;
-import water.fvec.Chunk;
 import water.fvec.Vec;
-
-import java.io.Serializable;
+import water.udf.fp.Function;
 
 /**
  * Generic typed data column

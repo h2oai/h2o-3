@@ -1,12 +1,9 @@
 package water.udf;
 
 import water.H2O;
-import water.fvec.Chunk;
-import water.fvec.Vec;
-import water.util.StringUtils;
+import water.udf.fp.Unfoldable;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 

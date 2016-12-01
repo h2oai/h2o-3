@@ -6,6 +6,7 @@ import java.{lang, util}
 
 import org.junit.{Assert, Test, BeforeClass}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import water.udf.fp.{Functions, Function}
 import water.{TestUtil, Test0}
 import water.TestUtil._
 import water.udf.MoreColumns._

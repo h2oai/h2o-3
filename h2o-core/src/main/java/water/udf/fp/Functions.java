@@ -1,6 +1,5 @@
-package water.udf;
+package water.udf.fp;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
