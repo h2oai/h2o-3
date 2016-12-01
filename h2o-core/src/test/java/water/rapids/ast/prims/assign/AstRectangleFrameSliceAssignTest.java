@@ -16,7 +16,7 @@ import java.util.Arrays;
 import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
-public class AstRectangleAssignTest extends TestUtil {
+public class AstRectangleFrameSliceAssignTest extends TestUtil {
 
   @BeforeClass
   static public void setup() { stall_till_cloudsize(1); }
