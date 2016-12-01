@@ -470,18 +470,21 @@ class ModelBase(backwards_compatible()):
         print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
 
     def coef(self):
-        """Return the coefficients for this model."""
+        """Return the coefficients which can be applied to the non-standardized data.
+         (Note: standardize = True by default, if set to False then coef() returns
+         the coefficients which are fit directly)."""
         tbl = self._model_json["output"]["coefficients_table"]
-        if tbl is None: return None
-        tbl = tbl.cell_values
-        return {a[0]: a[1] for a in tbl}
+        if tbl is None:
+            return None
+        return {name: coef for name, coef in zip(tbl['names'], tbl['coefficients'])}
 
     def coef_norm(self):
-        """Return the normalized coefficients."""
+        """Return coefficients fitted on the standardized data (requires standardize = True,
+         which is on by default). These coefficients can be used to evaluate variable importance."""
         tbl = self._model_json["output"]["coefficients_table"]
-        if tbl is None: return None
-        tbl = tbl.cell_values
-        return {a[0]: a[2] for a in tbl}
+        if tbl is None:
+            return None
+        return {name: coef for name, coef in zip(tbl['names'], tbl['standardized_coefficients'])}
 
 
     def r2(self, train=False, valid=False, xval=False):
