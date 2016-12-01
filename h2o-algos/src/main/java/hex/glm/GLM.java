@@ -148,6 +148,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         }
       }
+      for (int i = 0; i < cvModelBuilders.length; ++i) {
+        GLM g = (GLM) cvModelBuilders[i];
+        if(g._toRemove != null)
+          for(Key k:g._toRemove)
+            Keyed.remove(k);
+      }
       _parms._lambda = Arrays.copyOf(_parms._lambda,lmin_max);
       _xval_test_deviances = Arrays.copyOf(_xval_test_deviances, lmin_max);
       _xval_test_sd = Arrays.copyOf(_xval_test_sd, lmin_max);
@@ -380,6 +386,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     if (expensive) {
       if (error_count() > 0) return;
+      if(_parms._lambda_search && _parms._is_cv_model)
+        Scope.untrack(removeLater(_train.vec(_parms._weights_column)._key));
       if (_parms._alpha == null)
         _parms._alpha = new double[]{_parms._solver == Solver.L_BFGS ? 0 : .5};
       if (_parms._lambda_search  &&_parms._nlambdas == -1)
@@ -508,6 +516,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   }
 
   protected static final long WORK_TOTAL = 1000000;
+
+  transient Key [] _toRemove;
+
+  private Key[] removeLater(Key ...k){
+    _toRemove = _toRemove == null?k:ArrayUtils.append(_toRemove,k);
+    return k;
+  }
 
   @Override protected GLMDriver trainModelImpl() { return _driver = new GLMDriver(); }
 
@@ -1035,7 +1050,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         int N = _dinfo.fullN()+1;
         for(int i = 1; i < _nclass; ++i)
           sumExp += Math.exp(nb[i*N + P] - maxRow);
-        _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow}));
+        Vec [] vecs = _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow});
+        if(_parms._lambda_search && _parms._is_cv_model) {
+          Scope.untrack(vecs[0]._key, vecs[1]._key);
+          removeLater(vecs[0]._key,vecs[1]._key);
+        }
+        _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, vecs);
       }
       double oldDevTrain = _nullDevTrain;
       double oldDevTest = _nullDevTest;
