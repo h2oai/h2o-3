@@ -386,8 +386,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     if (expensive) {
       if (error_count() > 0) return;
-      if(_parms._lambda_search && _parms._is_cv_model)
-        Scope.untrack(removeLater(_train.vec(_parms._weights_column)._key));
       if (_parms._alpha == null)
         _parms._alpha = new double[]{_parms._solver == Solver.L_BFGS ? 0 : .5};
       if (_parms._lambda_search  &&_parms._nlambdas == -1)
@@ -540,6 +538,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void doCleanup() {
       try {
+        if(_parms._lambda_search && _parms._is_cv_model)
+          Scope.untrack(removeLater(_dinfo.getWeightsVec()._key));
         if(!_cv && _model!=null)
           _model.unlock(_job);
       } catch(Throwable t){
