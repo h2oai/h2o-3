@@ -99,7 +99,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int _cats;  // "raw" number of categorical columns as they exist in the frame
   public int [] _catOffsets;   // offset column indices for the 1-hot expanded values (includes enum-enum interaction)
   public boolean [] _catMissing;  // bucket for missing levels
-  private int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
+  public int [] _catNAFill;    // majority class of each categorical col (or last bucket if _catMissing[i] is true)
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value
