@@ -13,10 +13,10 @@
     #Read in config line by line
     connection <- file(h2oconfig_filename)
     Lines  <- readLines(connection)
-
+    Lines <- trimws(Lines)
     #Check for correct section headers. In this case it is [init]. Can update in time.
     if(grepl("\\[|\\]",Lines) && all(!("[init]" %in% Lines))){
-        return()
+      return()
     }
     close(connection)
 
@@ -29,7 +29,7 @@
 
     #If any empty sections after initial parse return NULL
     if(length(Lines) == 0 || all(Lines == "")){
-        return()
+      return()
     }
 
     #Get connection to previous parse and make initial data frame
@@ -37,48 +37,50 @@
     #Trim whitespace from potential columns
     d$V1 = trimws(d$V1)
     #Only get last occurence of duplicates
-    d = d[!rev(duplicated(rev(d$V1))),]
+    if(any(duplicated(d$V1[d$V1 != ""]))){
+      d = d[!rev(duplicated(rev(d$V1))),]
+    }
     close(connection)
 
     #If no headers are present & no leading #(indicate comments) & no empty strings return NULL
     if(grepl("^=",Lines) && !grepl("^#",Lines) && any(Lines=="")){
-        return()
+      return()
     }
     #If no section headers, then we parse the list itself and return the final parsed data frame
     if(!(grepl("^=",Lines)) && !grepl("^#",Lines)){
-        ini_to_df <- data.frame(t(d$V2))
-        colnames(ini_to_df) <- d$V1
-        colnames(ini_to_df) <- trimws(colnames(ini_to_df))
+      ini_to_df <- data.frame(t(d$V2))
+      colnames(ini_to_df) <- d$V1
+      colnames(ini_to_df) <- trimws(colnames(ini_to_df))
 
-        #Check if allowed keys are present. If none are present, return NULL
-        names <- colnames(ini_to_df)[which(colnames(ini_to_df) %in% allowed_config_keys)]
-        if(length(names) == 0){
-            return()
-        }
-        ini_to_df = ini_to_df[,names]
-        ini_to_df = data.frame(ini_to_df)
-        colnames(ini_to_df) <- names
-        ini_to_df <- data.frame(lapply(ini_to_df, trimws))
-        return(ini_to_df)
+      #Check if allowed keys are present. If none are present, return NULL
+      names <- colnames(ini_to_df)[which(colnames(ini_to_df) %in% allowed_config_keys)]
+      if(length(names) == 0){
+       return()
+      }
+      ini_to_df = ini_to_df[,names]
+      ini_to_df = data.frame(ini_to_df)
+      colnames(ini_to_df) <- names
+      ini_to_df <- data.frame(lapply(ini_to_df, trimws))
+      return(ini_to_df)
     }
 
     L <- d$V1 == ""                    # location of section breaks
     d <- subset(transform(d, V3 = V2[which(L)[cumsum(L)]])[1:3], V1 != "")
 
-    ToParse  <- paste("ini_list$", d$V3, "$",  d$V1, " <- '",
+    ToParse  <- paste("ini_list$",  d$V1, " <- '",
     d$V2, "'", sep="")
 
     ini_list <- list()
     eval(parse(text=ToParse))
-    col_name_sections <- names(ini_list)
 
     ini_to_df <- as.data.frame.list(ini_list)
     colnames(ini_to_df) <- trimws(colnames(ini_to_df))
+    colnames(ini_to_df) <- paste0(d$V3,".",colnames(ini_to_df))
     names <- colnames(ini_to_df)[which(colnames(ini_to_df) %in% allowed_config_keys)]
     if(length(names) == 0){
         return()
     }
-    ini_to_df = ini_to_df[,names]
+    ini_to_df = subset(ini_to_df,select = names)
     colnames(ini_to_df) <- names
     ini_to_df <- data.frame(lapply(ini_to_df, trimws))
     return(ini_to_df)
@@ -96,11 +98,11 @@
     current_directory = getwd()
     while(identical(Sys.glob(".h2oconfig"),character(0))){
         if(getwd() == "/"){
-            setwd(current_directory)
-            return()
-        }
-        setwd("..")
-        path_to_config = getwd()
+          setwd(current_directory)
+          return()
+      }
+      setwd("..")
+      path_to_config = getwd()
     }
     setwd(current_directory)
     return(paste0(path_to_config,"/.h2oconfig"))

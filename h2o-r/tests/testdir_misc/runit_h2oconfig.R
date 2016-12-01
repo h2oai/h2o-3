@@ -92,6 +92,18 @@ test.config <- function() {
     config = .parse.h2oconfig(h2oconfig_filename)
     expect_equal(config,data.frame(init.check_version = as.factor("Ambivolent")))
 
+    #Creat tmp config
+    fileConn<-file(paste0(dir,"/.h2oconfig"))
+    writeLines(c("[something]
+    check_version = True
+    [init]
+    cluster_id = 3"),fileConn)
+
+    #Parse config and check if correct
+    h2oconfig_filename <- paste0(dir,"/.h2oconfig")
+    config = .parse.h2oconfig(h2oconfig_filename)
+    expect_equal(config,data.frame(init.cluster_id = as.factor("3")))
+
     #Delete tmp directory
     unlink(dir,recursive=TRUE)
 }
