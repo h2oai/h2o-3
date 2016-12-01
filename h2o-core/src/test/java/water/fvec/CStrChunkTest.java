@@ -2,7 +2,6 @@ package water.fvec;
 
 import org.junit.*;
 
-import water.AutoBuffer;
 import water.IcedUtils;
 import water.TestUtil;
 import water.parser.BufferedString;
@@ -71,7 +70,6 @@ public class CStrChunkTest extends TestUtil {
 
   @Test
   public void test_writer(){
-    stall_till_cloudsize(1);
     Frame frame = null;
     try {
       frame = parse_test_file("smalldata/junit/iris.csv");
@@ -91,6 +89,21 @@ public class CStrChunkTest extends TestUtil {
     } finally {
       if (frame != null) frame.delete();
     }
+  }
+
+  @Test
+  public void test_sparse() {
+    NewChunk nc = new NewChunk(null, 0);
+    for( int i=0; i<100; i++ )
+      nc.addNA();
+    nc.addStr(new BufferedString("foo"));
+    nc.addNA();
+    nc.addStr(new BufferedString("bar"));
+    Chunk c = nc.compress();
+    Assert.assertTrue("first 100 entries are NA",c.isNA(0) && c.isNA(99));
+    Assert.assertTrue("Sparse string has values",c.atStr(new BufferedString(),100).equals("foo"));
+    Assert.assertTrue("NA",c.isNA(101));
+    Assert.assertTrue("Sparse string has values",c.atStr(new BufferedString(),102).equals("bar"));
   }
 }
 

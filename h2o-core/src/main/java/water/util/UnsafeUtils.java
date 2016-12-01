@@ -19,4 +19,7 @@ public class UnsafeUtils {
   public static int set4f(byte[] buf, int off, float f ) {_unsafe.putFloat (buf, _Bbase+off, f); return 4;}
   public static int set8 (byte[] buf, int off, long x  ) {_unsafe.putLong  (buf, _Bbase+off, x); return 8;}
   public static int set8d(byte[] buf, int off, double x) {_unsafe.putDouble(buf, _Bbase+off, x); return 8;}
+
+  public static void copyMemory( byte[] srcBase, long srcOff, byte[] dstBase, long dstOff, long len )
+  { _unsafe.copyMemory(srcBase,_Bbase+srcOff,dstBase,_Bbase+dstOff,len); }
 }
