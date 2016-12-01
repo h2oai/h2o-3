@@ -108,7 +108,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _xval_test_deviances = new double[_parms._lambda.length];
       _xval_test_sd = new double [_parms._lambda.length];
       double bestTestDev = Double.POSITIVE_INFINITY;
-      int lmin_max = _parms._lambda.length;
+      int lmin_max = 0;
+      for (int i = 0; i < cvModelBuilders.length; ++i) {
+        GLM g = (GLM) cvModelBuilders[i];
+        lmin_max = Math.max(lmin_max,g._model._output._best_lambda_idx);
+      }
       int lidx = 0;
       int bestId = 0;
       int cnt = 0;
@@ -1051,7 +1055,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         oldDevTest = testDev;
         devHistoryTrain[i % devHistoryTrain.length] = (oldDevTrain - trainDev)/oldDevTrain;
         oldDevTrain = trainDev;
-        if(_parms._lambda[i] < _lmax) {
+        if(_parms._lambda[i] < _lmax && Double.isNaN(_lambdaCVEstimate) /** if we have cv lambda estimate we should use it, can not stop before reaching it */) {
           if (_parms._early_stopping && _state._iter >= devHistoryTrain.length) {
             double s = ArrayUtils.maxValue(devHistoryTrain);
             if (s < 1e-4) {
