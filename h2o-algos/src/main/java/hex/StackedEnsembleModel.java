@@ -2,6 +2,7 @@ package hex;
 
 import hex.ensemble.StackedEnsemble;
 import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLMModel;
 import water.DKV;
 import water.H2O;
 import water.Job;
@@ -9,7 +10,9 @@ import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
+import water.util.ReflectionUtils;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.Modulo;
@@ -77,8 +80,14 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // TODO: regression
     // TODO: include_training_features
     double[] basePredsRotated = new double[this._parms._base_models.length];
+    ModelCategory modelCategory = this._output.getModelCategory();
     for (baseIdx = 0; baseIdx < this._parms._base_models.length; baseIdx++) {
-      basePredsRotated[baseIdx] = basePreds[baseIdx][2];
+      if (modelCategory == ModelCategory.Binomial)
+        basePredsRotated[baseIdx] = basePreds[baseIdx][2];
+      else if (modelCategory == ModelCategory.Regression)
+        basePredsRotated[baseIdx] = basePreds[baseIdx][0];
+      else
+        throw new H2OIllegalArgumentException("Don't know how to handle predictions frame for model category: " + modelCategory);
     }
 
     return _output._meta_model.score0(basePredsRotated, preds);
@@ -133,6 +142,34 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     */
   }
 
+  private DistributionFamily distributionFamily(Model aModel) {
+    try {
+      Field familyField = ReflectionUtils.findNamedField(aModel._parms, "_family");
+      Field distributionField = (familyField != null ? null : ReflectionUtils.findNamedField(aModel, "_dist"));
+      if (null != familyField) {
+        // GLM only, for now
+        GLMModel.GLMParameters.Family thisFamily = (GLMModel.GLMParameters.Family) familyField.get(aModel._parms);
+        if (thisFamily == GLMModel.GLMParameters.Family.binomial) {
+          return DistributionFamily.bernoulli;
+        }
+
+        try {
+          return Enum.valueOf(DistributionFamily.class, thisFamily.toString());
+        }
+        catch (IllegalArgumentException e) {
+          throw new H2OIllegalArgumentException("Don't know how to find the right DistributionFamily for Family: " + thisFamily);
+        }
+      } else if (null != distributionField) {
+        return ((Distribution)distributionField.get(aModel)).distribution;
+      } else {
+        throw new H2OIllegalArgumentException("Don't know how to stack models that have neither a distribution hyperparameter nor a family hyperparameter.");
+      }
+    }
+    catch (Exception e) {
+      throw new H2OIllegalArgumentException(e.toString(), e.toString());
+    }
+  }
+
   public void checkAndInheritModelProperties() {
     if (null == _parms._base_models || 0 == _parms._base_models.length)
       throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; found 0.");
@@ -162,6 +199,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         if (! commonTrainingFrame._key.equals(aTrainingFrame._key))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different training frames.  Found: " + commonTrainingFrame._key + " and: " + aTrainingFrame._key + ".");
 
+        // TODO: compare ignored_columns
+
         if (! responseColumn.equals(aModel._parms._response_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns.  Found: " + responseColumn + " and: " + aModel._parms._response_column + ".");
 
@@ -179,17 +218,24 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         if (! aModel._parms._keep_cross_validation_predictions)
           throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
 
-        if (_parms._distribution != aModel._parms._distribution)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different distributions.");
+        // In GLM, we get _family instead of _distribution.
+        // Further, we have Family.binomial instead of DistributionFamily.bernoulli.
+        DistributionFamily thisDistribution = distributionFamily(aModel);
+        if (_parms._distribution != thisDistribution)
+          throw new H2OIllegalArgumentException("Base models are inconsistent; they use different distributions: " + _parms._distribution + " and: " + thisDistribution);
 
         // TODO: If we're set to DistributionFamily.AUTO then GLM might auto-conform the response column
         // giving us inconsistencies.
       } else {
         _output._isSupervised = aModel.isSupervised();
         this.modelCategory = aModel._output.getModelCategory();
+        this._dist = new Distribution(distributionFamily(aModel));
         _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
         commonTrainingFrame = aModel._parms.train();
         // TODO: set _parms._train to aModel._parms.train()
+
+        // TODO: grab ignored_columns
+
         responseColumn = aModel._parms._response_column;
         nfolds = aModel._parms._nfolds;
         _parms._distribution = aModel._parms._distribution;
