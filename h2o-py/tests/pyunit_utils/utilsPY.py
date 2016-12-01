@@ -1397,6 +1397,37 @@ def equal_two_arrays(array1, array2, eps, tolerance):
         print("The two arrays are of different size!")
         sys.exit(1)
 
+def equal_2D_tables(table1, table2, tolerance=1e-6):
+    """
+    This function will compare the values of two python tuples.  First, if the values are below
+    eps which denotes the significance level that we care, no comparison is performed.  Next,
+    False is returned if the different between any elements of the two array exceeds some tolerance.
+
+    :param array1: numpy array containing some values of interest
+    :param array2: numpy array containing some values of interest that we would like to compare it with array1
+    :param eps: significance level that we care about in order to perform the comparison
+    :param tolerance: threshold for which we allow the two array elements to be different by
+
+    :return: True if elements in array1 and array2 are close and False otherwise
+    """
+
+    size1 = len(table1)
+    if size1 == len(table2):    # arrays must be the same size
+        # compare two arrays
+        for ind in range(size1):
+            if len(table1[ind]) == len(table2[ind]):
+                for ind2 in range(len(table1[ind])):
+                    if type(table1[ind][ind2]) == float:
+                        if abs(table1[ind][ind2]-table2[ind][ind2]) > tolerance:
+                            return False
+            else:
+                print("The two arrays are of different size!")
+                sys.exit(1)
+        return True
+
+    else:
+        print("The two arrays are of different size!")
+        sys.exit(1)
 
 def compare_two_arrays(array1, array2, eps, tolerance, comparison_string, array1_string, array2_string, error_string,
                        success_string, template_is_better, just_print=False):
