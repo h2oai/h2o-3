@@ -56,8 +56,9 @@ public class XMLTestReporter extends RunListener {
   Element testSuiteElement;
   long testSuiteStartTime;
 
-  Element testCaseElement;
-  long testCaseStartTime;
+  Element testCaseElement = document.createElement("testcase");
+
+  long testCaseStartTime = System.currentTimeMillis();
 
   String currentTestSuiteName;
 

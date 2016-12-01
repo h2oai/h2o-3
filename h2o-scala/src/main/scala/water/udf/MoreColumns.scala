@@ -1,10 +1,12 @@
 package water.udf
 
-import java.lang
 import java.util.Date
+import java.{lang, util}
 
 import water.udf.DataColumns._
-import water.udf.fp.{Unfoldable, Foldable, Functions, Function}
+import water.udf.{fp => F}
+import water.udf.fp.Functions
+import water.udf.fp.{Function => UFunction}
 import water.udf.specialized.{Dates, Doubles, Enums, Strings}
 
 import scala.collection.JavaConverters._
@@ -15,11 +17,13 @@ trait ScalaFactory[JavaType,ScalaType] extends Serializable { self: BaseFactory[
 
   def conv(x:ScalaType): JavaType
 
-  def newColumn[U](xs: Iterable[ScalaType]): DataColumn[JavaType] = {
-    self.newColumn(xs.size, Functions.onList(xs.toList.map(conv).asJava))
+  def newColumn1[U](xs: Iterable[ScalaType]): DataColumn[JavaType] = {
+    val jl: util.List[JavaType] = xs.toList.map(conv).asJava
+    val listFunction: fp.Function[lang.Long, JavaType] = Functions.onList(jl)
+    self.newColumn(xs.size, listFunction)
   }
 
-  def newColumn[U](xs: Iterator[ScalaType]): DataColumn[JavaType] = {
+  def newColumn2[U](xs: Iterator[ScalaType]): DataColumn[JavaType] = {
     self.newColumn(xs.size, Functions.onList(xs.toList.map(conv).asJava))
   }
 }
@@ -29,14 +33,14 @@ class ScalaDoubles extends Doubles with ScalaFactory[java.lang.Double, Double] {
   def newColumnOpt(size: Long, f: Long => Option[Double]) = super.newColumn(size, ff1LDO(f))
   override def conv(x: Double): lang.Double = x
 
-  private implicit def ff1LD(f: Long => Double): Function[lang.Long, lang.Double] =
-    new Function[lang.Long, lang.Double] {
+  private implicit def ff1LD(f: Long => Double): UFunction[lang.Long, lang.Double] =
+    new UFunction[lang.Long, lang.Double] {
       def apply(x: lang.Long): lang.Double = f(x)
     }
 
-  private implicit def ff1LDO(f: Long => Option[Double]): Function[lang.Long, lang.Double] =
-    new Function[lang.Long, lang.Double] {
-      def apply(x: lang.Long): lang.Double = f(x).getOrElse(DoubleNan).asInstanceOf[Double]
+  private implicit def ff1LDO(f: Long => Option[Double]): UFunction[lang.Long, lang.Double] =
+    new UFunction[lang.Long, lang.Double] {
+      def apply(x: lang.Long): lang.Double = f(x).getOrElse(DoubleNan).asInstanceOf[lang.Double]
     }
 
   val DoubleNan: Double = Double.NaN
@@ -49,23 +53,23 @@ object MoreColumns extends DataColumns {
   
   val Doubles = new ScalaDoubles
   
-  private[MoreColumns] implicit def ff1L[Y](f: Long => Y): Function[lang.Long, Y] =
-    new Function[lang.Long, Y] {
+  private[MoreColumns] implicit def ff1L[Y](f: Long => Y): UFunction[lang.Long, Y] =
+    new UFunction[lang.Long, Y] {
       def apply(x: lang.Long): Y = f(x)
     }
 
-  private[MoreColumns] implicit def ff1LO[Y](f: Long => Option[Y]): Function[lang.Long, Y] =
-    new Function[lang.Long, Y] {
+  private[MoreColumns] implicit def ff1LO[Y](f: Long => Option[Y]): UFunction[lang.Long, Y] =
+    new UFunction[lang.Long, Y] {
       def apply(x: lang.Long): Y = f(x) getOrElse null.asInstanceOf[Y]
     }
 
-  private[MoreColumns] implicit def ff1LS(f: Long => String): Function[lang.Long, lang.String] =
-    new Function[lang.Long, lang.String] {
+  private[MoreColumns] implicit def ff1LS(f: Long => String): UFunction[lang.Long, lang.String] =
+    new UFunction[lang.Long, lang.String] {
       def apply(x: lang.Long): lang.String = f(x)
     }
 
-  private[MoreColumns] implicit def ff1LI(f: Long => Integer): Function[lang.Long, lang.Integer] =
-    new Function[lang.Long, lang.Integer] {
+  private[MoreColumns] implicit def ff1LI(f: Long => Integer): UFunction[lang.Long, lang.Integer] =
+    new UFunction[lang.Long, lang.Integer] {
       def apply(x: lang.Long): lang.Integer = f(x)
     }
 
@@ -74,13 +78,13 @@ object MoreColumns extends DataColumns {
     *
     * @see https://en.wikipedia.org/wiki/Magma_(algebra)
     * @param zero neutral element
-    * @param op binary op (does not have to be associative)
-    * @tparam X type of values
+    * @param op binary op (does not 
+    * @tparam X a type of data
     */
   case class Magma[X](zero: X, op: X => X => X)
   
-  private[MoreColumns] implicit def ff1[X](magma:Magma[X]): Foldable[X, X] = {
-    new Foldable[X, X] {
+  private[MoreColumns] implicit def ff1[X](magma:Magma[X]): F.Foldable[X, X] = {
+    new F.Foldable[X, X] {
       override def initial(): X = magma.zero
 
       override def apply(y: X, x: X): X = magma.op(y)(x)
@@ -114,7 +118,7 @@ object MoreColumns extends DataColumns {
   def foldingColumn[X](f: Magma[X], components: Column[X]*): Column[X] = 
     new FoldingColumn[X, X] (ff1(f), components:_*)
 
-  class ScalaUnfoldable[X, Y]() extends Unfoldable[X, Y] {
+  class ScalaUnfoldable[X, Y]() extends F.Unfoldable[X, Y] {
     private var f: X => Iterable[Y] = null // java serialization problem
     
     def this(f0: X => Iterable[Y]) {
@@ -128,7 +132,7 @@ object MoreColumns extends DataColumns {
     }
   }
   
-  private[MoreColumns] def fu1[X, Y](f: X => Iterable[Y]): Unfoldable[X, Y] = new ScalaUnfoldable[X, Y](f)
+  private[MoreColumns] def fu1[X, Y](f: X => Iterable[Y]): F.Unfoldable[X, Y] = new ScalaUnfoldable[X, Y](f)
   
 
   def unfoldingColumn[X, Y](f: X => Iterable[Y], source: Column[X], width: Int) = {
