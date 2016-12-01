@@ -1071,7 +1071,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     void doIt( Frame f, String msg, boolean expensive ) {
       List<Integer> rmcolsList = new ArrayList<>();
       for( int i = 0; i < f.vecs().length - _specialVecs; i++ )
-        if( filter(f.vecs()[i]) ) rmcolsList.add(i);
+        if( filter(f.vecs()[i]) ) {
+          rmcolsList.add(i);
+          //System.out.println("Dropping " + _origNames[i]);
+        }
       if( !rmcolsList.isEmpty() ) {
         _removedCols = new HashSet<>(rmcolsList.size());
         int[] rmcols = new int[rmcolsList.size()];
