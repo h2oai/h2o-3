@@ -4,9 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 # This test is written to add variance metrics for GLRM suggested by Erin in PUBDEV-3501.
 test.glrm.pubdev_3501.variance.metrics <- function() {
   ausPath <- system.file("extdata", "australia.csv", package="h2o")
-  australia.hex <- h2o.uploadFile(path = ausPath)
-
-  browser()
+  australia.hex = h2o.importFile(path = ausPath, destination_frame="australia.hex")
   
   pca_model = h2o.prcomp(training_frame = australia.hex, k = 3, transform = "STANDARDIZE")
   print(pca_model)
