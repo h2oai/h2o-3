@@ -69,8 +69,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
         else if (!aModel._output.isSupervised())
           throw new H2OIllegalArgumentException("Don't yet know how to stack unsupervised models: " + aModel._key);
-        else  // TODO: fix the vec name:
-          levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("YES"));
+        else
+          levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("predict"));
 
       } // for all base_models
 
