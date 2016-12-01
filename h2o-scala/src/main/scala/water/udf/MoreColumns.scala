@@ -17,13 +17,13 @@ trait ScalaFactory[JavaType,ScalaType] extends Serializable { self: BaseFactory[
 
   def conv(x:ScalaType): JavaType
 
-  def newColumn1[U](xs: Iterable[ScalaType]): DataColumn[JavaType] = {
+  def newColumn[U](xs: Iterable[ScalaType]): DataColumn[JavaType] = {
     val jl: util.List[JavaType] = xs.toList.map(conv).asJava
     val listFunction: fp.Function[lang.Long, JavaType] = Functions.onList(jl)
     self.newColumn(xs.size, listFunction)
   }
 
-  def newColumn2[U](xs: Iterator[ScalaType]): DataColumn[JavaType] = {
+  def newColumn[U](xs: Iterator[ScalaType]): DataColumn[JavaType] = {
     self.newColumn(xs.size, Functions.onList(xs.toList.map(conv).asJava))
   }
 }

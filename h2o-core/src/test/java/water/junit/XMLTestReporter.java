@@ -56,9 +56,9 @@ public class XMLTestReporter extends RunListener {
   Element testSuiteElement;
   long testSuiteStartTime;
 
-  Element testCaseElement = document.createElement("testcase");
+  Element testCaseElement;
 
-  long testCaseStartTime = System.currentTimeMillis();
+  long testCaseStartTime;
 
   String currentTestSuiteName;
 
@@ -79,7 +79,8 @@ public class XMLTestReporter extends RunListener {
 
     docBuilderFactory = DocumentBuilderFactory.newInstance();
     docBuilder = docBuilderFactory.newDocumentBuilder();
-
+    document = docBuilder.newDocument();;
+    testCaseElement = document.createElement("testcase");
     transFactory = TransformerFactory.newInstance();
     trans = transFactory.newTransformer();
     trans.setOutputProperty(OutputKeys.INDENT, "yes");
