@@ -1460,9 +1460,7 @@ Partial Dependence Plots
 
 For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). 
 
-**Notes**: 
- - PDPs are not currently supported for categorical features.
- - The outputted PDPs include the top 10 most important features in a model. 
+**Note**: The outputted PDPs include the top 10 most important features in a model. 
 
 Viewing Partial Dependence Plots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
