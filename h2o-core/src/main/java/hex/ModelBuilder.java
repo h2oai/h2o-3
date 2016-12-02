@@ -407,16 +407,28 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
     H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
     int nRunning=0;
+    RuntimeException rt = null;
     for( int i=0; i<N; ++i ) {
       if( _job.stop_requested() ) break; // Stop launching but still must block for all async jobs
       Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
       cvModelBuilders[i]._start_time = System.currentTimeMillis();
       submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
-      if(++nRunning == nModelsInParallel()) //piece-wise advance in training the CV models
-        while (nRunning>0) submodel_tasks[i+1-nRunning--].join();
+      if(++nRunning == nModelsInParallel()) { //piece-wise advance in training the CV models
+        while (nRunning > 0) try {
+          submodel_tasks[i + 1 - nRunning--].join();
+        } catch (RuntimeException t) {
+          if (rt == null) rt = t;
+        }
+        if(rt != null) throw rt;
+      }
     }
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
-      submodel_tasks[i].join();
+      try {
+        submodel_tasks[i].join();
+      } catch(RuntimeException t){
+        if(rt == null) rt = t;
+      }
+    if(rt != null) throw rt;
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
 
