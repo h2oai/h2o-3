@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import water.util.IcedBitSet;
+import water.util.Log;
 import water.util.VecUtils;
 
 /**
@@ -347,6 +348,11 @@ public class ScoreBuildHistogram2 extends ScoreBuildHistogram {
       for(DHistogram dh:ary) {
         if(dh == null) continue;
         dh.reducePrecision();
+        double w=0;
+        for (int i=0;i<dh._nbin;++i) {
+          w+=dh.w(i);
+        }
+        Log.info("count: " + w);
       }
   }
 }
