@@ -64,6 +64,10 @@
 <h4>        Improvement
 </h4>
 <ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-645'>HEXDEV-645</a>] -         aggregator should calculate domain for enum columns in aggregated output frames &amp; member frames based on current output or member frame
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-658'>HEXDEV-658</a>] -         Naive Bayes (and maybe GLM): Drop limit on classes that can be predicted (currently 1000)
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3625'>PUBDEV-3625</a>] -         Speed up GBM and DRF
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3756'>PUBDEV-3756</a>] -         Support `-context_path` to change servlet path for REST API
