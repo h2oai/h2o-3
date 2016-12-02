@@ -2563,8 +2563,8 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
     assert rows1 == rows2 and cols1 == cols2, "failed dim check! frame 1 rows:{0} frame 2 rows:{1} frame 1 cols:{2} " \
                                               "frame2 cols:{3}".format(rows1, rows2, cols1, cols2)
 
-    na_frame1 = frame1.isna().sum()
-    na_frame2 = frame2.isna().sum()
+    na_frame1 = frame1.isna().sum().sum(axis=1)[:,0]
+    na_frame2 = frame2.isna().sum().sum(axis=1)[:,0]
 
     if compare_NA:      # check number of missing values
         assert na_frame1 == na_frame2, "failed numbers of NA check!  Frame 1 NA number: {0}, frame 2 " \

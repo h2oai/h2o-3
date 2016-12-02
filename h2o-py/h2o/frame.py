@@ -1886,9 +1886,39 @@ class H2OFrame(object):
         """The maximum value of all frame entries."""
         return ExprNode("max", self)._eager_scalar()
 
-    def sum(self, na_rm=False):
-        """The sum of all frame entries."""
-        return ExprNode("sumNA" if na_rm else "sum", self)._eager_scalar()
+    def sum(self, skipna=True, axis=0, **kwargs):
+        """
+        Compute the frame's sum by-column (or by-row).
+
+        @param skipna: if True (default), then NAs are ignored during the computation. Otherwise presence
+            of NAs renders the entire result NA.
+        @param axis: direction of sum computation. If 0 (default), then sum is computed columnwise, and the result
+            is a frame with 1 row and number of columns as in the original frame. If 1, then sum is computed rowwise
+            and the result is a frame with 1 column (called "sum"), and number of rows equal to the number of rows
+            in the original frame.
+
+        @returns H2OFrame: the results frame.
+        """
+        assert_is_type(skipna, bool)
+        assert_is_type(axis, 0, 1)
+        # Deprecated since 2016-10-14,
+        if "na_rm" in kwargs:
+            warnings.warn("Parameter na_rm is deprecated; use skipna instead", category=DeprecationWarning)
+            na_rm = kwargs.pop("na_rm")
+            assert_is_type(na_rm, bool)
+            skipna = na_rm  # don't assign to skipna directly, to help with error reporting
+        # Determine whether to return a frame or a list
+        return_frame = get_config_value("general.allow_breaking_changes", False)
+        if "return_frame" in kwargs:
+            return_frame = kwargs.pop("return_frame")
+            assert_is_type(return_frame, bool)
+        if kwargs:
+            raise H2OValueError("Unknown parameters %r" % list(kwargs))
+
+        if return_frame:
+            return H2OFrame._expr(ExprNode("sumaxis", self, skipna, axis))
+        else:
+            return ExprNode("sumNA" if skipna else "sum", self)._eager_scalar()
 
     def mean(self, skipna=True, axis=0, **kwargs):
         """
@@ -2307,7 +2337,7 @@ class H2OFrame(object):
           mids, and density; otherwise produce the plot.
         """
         frame = H2OFrame._expr(expr=ExprNode("hist", self, breaks))._frame()
-        total = frame["counts"].sum(True)
+        total = frame["counts"].sum(True,return_frame=False)
         densities = [[(frame[i, "counts"] / total) * (1 / (frame[i, "breaks"] - frame[i - 1, "breaks"]))] for i in
                      range(1, frame["counts"].nrow)]
         densities.insert(0, [0])

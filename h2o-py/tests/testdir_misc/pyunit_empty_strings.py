@@ -14,18 +14,18 @@ def empty_strings():
     ,'f':["",""]
      }
   )
-  assert d.isna().sum() == 0
-  assert (d == '').sum() == d.nrow * d.ncol
+  assert d.isna().sum().sum(axis=1)[:,0] == 0
+  assert (d == '').sum().sum(axis=1)[:,0] == d.nrow * d.ncol
 
   #single list
   d = h2o.H2OFrame([""]*4)
-  assert d.isna().sum() == 0
-  assert (d == '').sum() == d.nrow * d.ncol
+  assert d.isna().sum().sum(axis=1)[:,0] == 0
+  assert (d == '').sum().sum(axis=1)[:,0] == d.nrow * d.ncol
 
   #list of lists
   d = h2o.H2OFrame([[""]*4]*3)
-  assert d.isna().sum() == 0
-  assert (d == '').sum() == d.nrow * d.ncol
+  assert d.isna().sum().sum(axis=1)[:,0] == 0
+  assert (d == '').sum().sum(axis=1)[:,0] == d.nrow * d.ncol
 
 
 if __name__ == "__main__":

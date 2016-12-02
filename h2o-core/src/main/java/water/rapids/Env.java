@@ -160,6 +160,7 @@ public class Env extends Iced {
     init(new AstProdNa());
     init(new AstSdev());
     init(new AstSum());
+    init(new AstSumAxis());
     init(new AstSumNa());
 
     // Time
