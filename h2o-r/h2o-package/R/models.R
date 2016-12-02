@@ -998,7 +998,7 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 h2o.coef <- function(object) {
   if( is(object, "H2OModel") ) {
     coefs <- object@model$coefficients_table
-    if( is.null(coefs) ) stop("Can only extract coefficeints from GLMs")
+    if( is.null(coefs) ) stop("Can only extract coefficients from GLMs")
     return( coefs$coefficients )
   } else stop("Can only extract coefficients from GLMs")
 }
@@ -1011,8 +1011,21 @@ h2o.coef <- function(object) {
 h2o.coef_norm <- function(object) {
   if( is(object, "H2OModel") ) {
     coefs <- object@model$coefficients_table
-    if( is.null(coefs) ) stop("Can only extract coefficeints from GLMs")
+    if( is.null(coefs) ) stop("Can only extract coefficients from GLMs")
     return( coefs[,3] )  # the normalized coefs are 3rd column, (labels is 1st col)
+  } else stop("Can only extract coefficients from GLMs")
+}
+
+#'
+#' Retrieve the standardized coefficients
+#'
+#' @param object an \linkS4class{H2OModel} object.
+#' @export
+h2o.coef_std <- function(object) {
+  if( is(object, "H2OModel") ) {
+    coefs <- object@model$coefficients_table
+    if( is.null(coefs) ) stop("Can only extract coefficients from GLMs")
+    return( coefs[,6] )  # the normalized coefs are 3rd column, (labels is 1st col)
   } else stop("Can only extract coefficients from GLMs")
 }
 
