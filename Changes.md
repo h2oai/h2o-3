@@ -7,13 +7,13 @@
 <h4>        Bug
 </h4>
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2801'>PUBDEV-2801</a>] -         Starting h4O server from R ignores IP and port parameters
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2801'>PUBDEV-2801</a>] -         Starting h2o server from R ignores IP and port parameters
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3484'>PUBDEV-3484</a>] -         Treat 1-element numeric list as acceptable when numeric input required
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3509'>PUBDEV-3509</a>] -         h4o&#39;s cor() breaks R&#39;s native cor()
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3509'>PUBDEV-3509</a>] -         h2o&#39;s cor() breaks R&#39;s native cor()
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3592'>PUBDEV-3592</a>] -         h4o.get_grid isn&#39;t working
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3592'>PUBDEV-3592</a>] -         h2o.get_grid isn&#39;t working
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3607'>PUBDEV-3607</a>] -         `cor` function should properly pass arguments
 </li>
@@ -21,7 +21,7 @@
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3631'>PUBDEV-3631</a>] -         overwrite_with_best_model fails when using checkpoint
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3633'>PUBDEV-3633</a>] -         plot.h4OModel in R no longer supports metrics with uppercase names (e.g. AUC)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3633'>PUBDEV-3633</a>] -         plot.h2oModel in R no longer supports metrics with uppercase names (e.g. AUC)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3642'>PUBDEV-3642</a>] -         Fix citibike R demo
 </li>
@@ -31,7 +31,7 @@
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3735'>PUBDEV-3735</a>] -         Python&#39;s coef() and coef_norm() should use column name not index
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3757'>PUBDEV-3757</a>] -         Perfbar does not work for hierarchical path passed via -h4o_context
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3757'>PUBDEV-3757</a>] -         Perfbar does not work for hierarchical path passed via -h2o_context
 </li>
 </ul>
 
@@ -44,7 +44,7 @@
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3700'>PUBDEV-3700</a>] -         Add RMSE, MAE, RMSLE, and lift_top_group as stopping metrics
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3719'>PUBDEV-3719</a>] -         Update h4o.mean in R to match Python API
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3719'>PUBDEV-3719</a>] -         Update h2o.mean in R to match Python API
 </li>
 </ul>
 
