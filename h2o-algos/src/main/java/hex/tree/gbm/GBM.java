@@ -451,7 +451,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
-          System.out.println("Updated predictions in WORK col for class " + k + ":\n" + new Frame(new String[]{"WORK"},new Vec[]{vec_work(_train, k)}).toString());
+          System.out.println("Updated predictions in WORK col for class " + k + ":\n" + new Frame(new String[]{"WORK"},new Vec[]{vec_work(_train, k)}).toTwoDimTable());
         }
       }
 
@@ -462,7 +462,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       growTrees(ktrees, leaves, _rand);
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
-          System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},new Vec[]{vec_nids(_train, k)}).toString());
+          System.out.println("Grew trees. Updated NIDs for class " + k + ":\n" + new Frame(new String[]{"NIDS"},new Vec[]{vec_nids(_train, k)}).toTwoDimTable());
         }
       }
 
@@ -511,6 +511,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       return converged;
     }
 
+    /**
+     * Grow k regression trees (k=1 for regression and binomial, k=N for classification with N classes)
+     * @param ktrees k trees to grow (must be properly initialized)
+     * @param leaves workspace to store the leaf node starting index (k-dimensional - one per tree)
+     * @param rand PRNG for reproducibility
+     */
     private void growTrees(DTree[] ktrees, int[] leaves, Random rand) {
       // Initial set of histograms.  All trees; one leaf per tree (the root
       // leaf); all columns
@@ -541,7 +547,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if (ss[k] != null) {
             ss[k].getResult();
             if (DEV_DEBUG && ktrees[k]!=null) {
-              System.out.println("Sampled OOB rows. NIDS:\n" + new Frame(vec_nids(_train, k)).toString());
+              System.out.println("Sampled OOB rows. NIDS:\n" + new Frame(vec_nids(_train, k)).toTwoDimTable());
             }
           }
         }
