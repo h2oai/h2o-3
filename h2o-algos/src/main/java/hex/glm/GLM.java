@@ -155,7 +155,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             Keyed.remove(k);
       }
       _parms._lambda = Arrays.copyOf(_parms._lambda,lmin_max);
-      _xval_test_deviances = Arrays.copyOf(_xval_test_deviances, lmin_max);
+      _xval_test_deviances = Arrays.copyOf(_xval_test_deviances, lmin_max+1);
       _xval_test_sd = Arrays.copyOf(_xval_test_sd, lmin_max);
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
