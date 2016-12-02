@@ -6,7 +6,6 @@ import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -14,7 +13,6 @@ import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.*;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -140,6 +138,7 @@ public abstract class SharedTreeModel<
 
     /** Trees get big, so store each one separately in the DKV. */
     public Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _treeKeys;
+    transient public CompressedTree[/*_ntrees*/][/*_nclass*/] _compressedTrees;
 
     public ScoreKeeper[/*ntrees+1*/] _scored_train;
     public ScoreKeeper[/*ntrees+1*/] _scored_valid;
@@ -282,7 +281,7 @@ public abstract class SharedTreeModel<
     Key[] keys = _output._treeKeys[treeIdx];
     for( int c=0; c<keys.length; c++ ) {
       if (keys[c] != null) {
-        double pred = DKV.get(keys[c]).<CompressedTree>get().score(data);
+        double pred = _output._compressedTrees[treeIdx][c].score(data);
         assert (!Double.isInfinite(pred));
         preds[keys.length == 1 ? 0 : c + 1] += pred;
       }
@@ -412,4 +411,36 @@ public abstract class SharedTreeModel<
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
 
+  @Override
+  protected void scoreSetupLocal() {
+    Key[][] keys = _output._treeKeys;
+    if (_output._compressedTrees == null || _output._compressedTrees.length < keys.length) {
+      _output._compressedTrees = new CompressedTree[keys.length][];
+      // async prefetch to initiate all remote fetches
+      for (int t = 0; t < keys.length; ++t) {
+        _output._compressedTrees[t] = new CompressedTree[keys[t].length];
+        for (int c = 0; c < keys[t].length; ++c) {
+          if (keys[t][c] != null) {
+            DKV.prefetch(keys[t][c]);
+          }
+        }
+      }
+      // actually assign the keys (block on each get request)
+      for (int t = 0; t < keys.length; ++t) {
+        _output._compressedTrees[t] = new CompressedTree[keys[t].length];
+        for (int c = 0; c < keys[t].length; ++c) {
+          if (keys[t][c] != null) {
+            _output._compressedTrees[t][c] = DKV.getGet(keys[t][c]);
+          }
+        }
+      }
+    }
+  }
+
+  @Override
+  protected void scorePostGlobal() {
+    for (int t = 0; t < _output._compressedTrees.length; ++t) {
+      _output._compressedTrees[t] = null;
+    }
+  }
 }

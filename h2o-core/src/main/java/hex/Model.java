@@ -1107,6 +1107,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return bs._mb;
   }
 
+  protected void scoreSetupLocal() {}
+  protected void scorePostGlobal() {}
+
   protected class BigScore extends MRTask<BigScore> {
     final protected String[] _domain; // Prediction domain; union of test and train classes
     final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
@@ -1124,6 +1127,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         throw new IllegalArgumentException("Missing weights when computing validation metrics.");
       _hasWeights = testHasWeights;
     }
+
+    @Override protected void setupLocal() { scoreSetupLocal(); }
 
     @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
       if (isCancelled() || _j != null && _j.stop_requested()) return;
@@ -1170,7 +1175,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if ( _j != null) _j.update(1);
     }
     @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
-    @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
+    @Override protected void postGlobal() {
+      if(_mb != null)_mb.postGlobal();
+      scorePostGlobal();
+    }
   }
 
 
