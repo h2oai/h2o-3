@@ -6,7 +6,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import water.*;
 import water.fvec.*;
-import water.parser.BufferedString;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
@@ -14,6 +13,7 @@ import water.rapids.vals.ValFrame;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
+import static water.rapids.ast.prims.assign.AstRecAssignTestUtils.*;
 
 @RunWith(Parameterized.class)
 public class AstRectangleFrameSliceAssignTest extends TestUtil {
@@ -99,51 +99,6 @@ public class AstRectangleFrameSliceAssignTest extends TestUtil {
         output.delete();
       }
     }
-  }
-
-  private static Vec seqStrVec(int... runs) {
-    Key k = Vec.VectorGroup.VG_LEN1.addVec();
-    Futures fs = new Futures();
-    AppendableVec avec = new AppendableVec(k, Vec.T_STR);
-    NewChunk chunk = new NewChunk(avec, 0);
-    int seq = 0;
-    for (int r : runs) {
-      if (seq > 0) chunk.addStr(null);
-      for (int i = 0; i < r; i++) chunk.addStr(String.valueOf(seq++));
-    }
-    chunk.close(0, fs);
-    Vec vec = avec.layout_and_close(fs);
-    fs.blockForPending();
-    return vec;
-  }
-
-  private static double[] vec2array(Vec v) {
-    Vec.Reader ovr = v.new Reader();
-    assert ovr.length() < Integer.MAX_VALUE;
-    final int len = (int) ovr.length();
-    double[] array = new double[len];
-    for (int i = 0; i < len; i++) array[i] = ovr.at(i);
-    return array;
-  }
-
-  private static String[] catVec2array(Vec v) {
-    double[] raw = vec2array(v);
-    String[] cats = new String[raw.length];
-    for (int i = 0; i < cats.length; i++) cats[i] = v.factor((long) raw[i]);
-    return cats;
-  }
-
-  private static String[] strVec2array(Vec v) {
-    Vec.Reader ovr = v.new Reader();
-    assert ovr.length() < Integer.MAX_VALUE;
-    final int len = (int) ovr.length();
-    BufferedString bs = new BufferedString();
-    String[] array = new String[len];
-    for (int i = 0; i < len; i++) {
-      BufferedString s = ovr.atStr(bs, i);
-      if (s != null) array[i] = s.toString();
-    }
-    return array;
   }
 
 }

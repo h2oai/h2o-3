@@ -818,6 +818,12 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
      * @param idx Chunk-local index
      */
     public abstract void setValue(Chunk chk, int idx);
+    /**
+     * Sets a value (possibly a constant) to a given index of a Vec.
+     * @param vec Vec
+     * @param idx absolute index
+     */
+    public abstract void setValue(Vec vec, long idx);
   }
 
   /**
@@ -828,6 +834,9 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
    * @return instance of ValueSetter
    */
   public static ValueSetter createValueSetter(Vec v, Object value) {
+    if (value == null) {
+      return new NAValueSetter();
+    }
     switch (v.get_type()) {
       case Vec.T_CAT:
         return new CatValueSetter(v.domain(), value);
@@ -841,6 +850,14 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
       default:
         throw new IllegalArgumentException("Cannot create ValueSetter for a Vec of type = " + v.get_type_str());
     }
+  }
+
+  private static class NAValueSetter extends ValueSetter {
+    public NAValueSetter() {} // for Externalizable
+    @Override
+    public void setValue(Chunk chk, int idx) { chk.setNA(idx); }
+    @Override
+    public void setValue(Vec vec, long idx) { vec.setNA(idx); }
   }
 
   private static class CatValueSetter extends ValueSetter {
@@ -865,6 +882,9 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
 
     @Override
     public void setValue(Chunk chk, int idx) { chk.set(idx, _val); }
+
+    @Override
+    public void setValue(Vec vec, long idx) { vec.set(idx, (double) _val); }
   }
 
   private static class NumValueSetter extends ValueSetter {
@@ -881,6 +901,9 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
 
     @Override
     public void setValue(Chunk chk, int idx) { chk.set(idx, _val); }
+
+    @Override
+    public void setValue(Vec vec, long idx) { vec.set(idx, _val); }
   }
 
   private static class StrValueSetter extends ValueSetter {
@@ -897,6 +920,9 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
 
     @Override
     public void setValue(Chunk chk, int idx) { chk.set(idx, _val); }
+
+    @Override
+    public void setValue(Vec vec, long idx) { vec.set(idx, _val); }
   }
 
   private static class UUIDValueSetter extends ValueSetter {
@@ -915,6 +941,9 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
 
     @Override
     public void setValue(Chunk chk, int idx) { chk.set(idx, _val); }
+
+    @Override
+    public void setValue(Vec vec, long idx) { vec.set(idx, _val); }
   }
 
 }
