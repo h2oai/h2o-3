@@ -109,7 +109,7 @@
     path_to_config = getwd()
     current_directory = getwd()
     while(identical(Sys.glob(".h2oconfig"),character(0))){
-        if(getwd() == "/"){
+        if(getwd() == "/" || getwd() == "C:\\" || getwd() == "D:\\"){ #Search up to root directory in Unix/Windows OS
           setwd(current_directory)
           return()
       }
