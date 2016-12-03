@@ -77,16 +77,22 @@ public abstract class DKV {
   static public Value put( Key key, Value val, Futures fs, boolean dontCache ) {
     assert key != null;
     assert val==null || val._key == key:"non-matching keys " + key + " != " + val._key;
+    int n = 0;
     while( true ) {
+      if (key == null) throw new NullPointerException("wtf, key is null! - " + n);
+      n++;
       Value old = Value.STORE_get(key); // Raw-get: do not lazy-manifest if overwriting
       Value res = DputIfMatch(key,val,old,fs,dontCache);
       if( res == old ) return old; // PUT is globally visible now?
+      if (val._key == null) throw new NullPointerException("Cliff is an idiot");
       if( val != null && val._key != key ) key = val._key;
     }
   }
 
   /** Remove any mapping for <em>key</em>.  Blocking.  */
-  static public Value remove( Key key ) { return put(key,null); }
+  static public Value remove( Key key ) { 
+    return key == null ? null : put(key,null); 
+  }
   /** Remove any mapping for <em>key</em>.  */
   static public Value remove( Key key, Futures fs ) { return put(key,null,fs); }
 

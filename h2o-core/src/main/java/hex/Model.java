@@ -1,5 +1,6 @@
 package hex;
 
+import com.google.common.collect.Lists;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -849,7 +850,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           vec = test.anyVec().makeCon(isFold ? 0 : missing);
           toDelete.put(vec._key, "adapted missing vectors");
           if (!isFold) convNaN++;
-          msgs.add(str);
+          if (computeMetrics) msgs.add(str);
         }
       }
       if( vec != null ) {          // I have a column with a matching name
@@ -932,6 +933,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, null, null, true);
   }
 
+  public Frame scoreSample(Frame fr) throws IllegalArgumentException {
+    // Build up the names & domains.
+    String[] names = makeScoringNames();
+    String[][] domains = new String[names.length][];
+    domains[0] = names.length == 1 ? null : _output._domains[_output._domains.length-1];
+    System.out.println("\n======names=" + Lists.newArrayList(names) + "\n======domains=" + domains);
+    // Score the dataset, building the class distribution & predictions
+    BigScore bs = new BigScore(this, domains[0],names.length,fr.means(),_output.hasWeights() && fr.find(_output.weightsName()) >= 0,false, true /*make preds*/, null).doAll(names.length, Vec.T_NUM, fr);
+    return bs.outputFrame(Key.<Frame>make(), names, domains);
+  }
+
+
   /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
    *  Vec is the predicted class, the remaining Vecs are the probability
    *  distributions.  For Regression (single-class) models, the 1st and only
@@ -955,43 +968,29 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
+    computeMetrics = computeMetrics && (!isSupervised() || adaptFr.dataPresent(_output.responseName()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
-    if (msg.length > 0) {
-      for (String s : msg)
-        Log.warn(s);
-    }
+
+    for (String s : msg) Log.warn(s);
+
     Frame output = predictScoreImpl(fr, adaptFr, destination_key, j, computeMetrics); // Predict & Score
-    // Log modest confusion matrices
-    Vec predicted = output.vecs()[0]; // Modeled/predicted response
-    String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
 
     // Output is in the model's domain, but needs to be mapped to the scored
     // dataset's domain.
-    if(_output.isClassifier() && computeMetrics) {
-      /*
-      if (false) {
-        assert(mdomain != null); // label must be categorical
-        ModelMetrics mm = ModelMetrics.getFromDKV(this,fr);
-        ConfusionMatrix cm = mm.cm();
-        if (cm != null && cm._domain != null) //don't print table for regression
-          if( cm._cm.length < _parms._max_confusion_matrix_size ) {  // Print size limitation
-            Log.info(cm.table().toString(1));
-          }
-        if (mm.hr() != null) {
-          Log.info(getHitRatioTable(mm.hr()));
-        }
-      }
-      */
-      Vec actual = fr.vec(_output.responseName());
-      if( actual != null ) {  // Predict does not have an actual, scoring does
-        String sdomain[] = actual.domain(); // Scored/test domain; can be null
-        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
-      }
-    }
+    if(_output.isClassifier() && computeMetrics) mapOutputDomain(fr, output);
     cleanup_adapt(adaptFr, fr);
     return output;
+  }
+
+  private void mapOutputDomain(Frame fr, Frame output) {
+    Vec predicted = output.vecs()[0]; // Modeled/predicted response
+    String mdomain[] = predicted.domain(); // Domain of predictions (union of test and train)
+    Vec actual = fr.vec(_output.responseName());
+    if( actual != null ) {  // Predict does not have an actual, scoring does
+      String sdomain[] = actual.domain(); // Scored/test domain; can be null
+      if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
+        output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
+    }
   }
 
   /**
@@ -1054,6 +1053,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     DKV.remove(adaptFr._key); //delete the frame header
   }
 
+  static protected void drop( Frame fr ) {
+    for(Key key : fr.keys()) key.remove();
+    DKV.remove(fr._key); //delete the frame header
+  }
+
   protected String [] makeScoringNames(){
     final int nc = _output.nclasses();
     final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
@@ -1087,7 +1091,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[][] domains = new String[names.length][];
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+    BigScore bs = new BigScore(this, domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     return bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
@@ -1103,74 +1107,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Build up the names & domains.
     String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
+    BigScore bs = new BigScore(this, domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
     return bs._mb;
-  }
-
-  protected class BigScore extends MRTask<BigScore> {
-    final protected String[] _domain; // Prediction domain; union of test and train classes
-    final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
-    public ModelMetrics.MetricBuilder _mb;
-    final double[] _mean;  // Column means of test frame
-    final public boolean _computeMetrics;  // Column means of test frame
-    final public boolean _hasWeights;
-    final public boolean _makePreds;
-    final public Job _j;
-
-    public BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
-      _j = j;
-      _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
-      if(_output._hasWeights && _computeMetrics && !testHasWeights)
-        throw new IllegalArgumentException("Missing weights when computing validation metrics.");
-      _hasWeights = testHasWeights;
-    }
-
-    @Override public void map( Chunk chks[], NewChunk cpreds[] ) {
-      if (isCancelled() || _j != null && _j.stop_requested()) return;
-      Chunk weightsChunk = _hasWeights && _computeMetrics ? chks[_output.weightsIdx()] : null;
-      Chunk offsetChunk = _output.hasOffset() ? chks[_output.offsetIdx()] : null;
-      Chunk responseChunk = null;
-      double [] tmp = new double[_output.nfeatures()];
-      float [] actual = null;
-      _mb = Model.this.makeMetricBuilder(_domain);
-      if (_computeMetrics) {
-        if (isSupervised()) {
-          actual = new float[1];
-          responseChunk = chks[_output.responseIdx()];
-        } else
-          actual = new float[chks.length];
-      }
-      double[] preds = _mb._work;  // Sized for the union of test and train classes
-      int len = chks[0]._len;
-      for (int row = 0; row < len; row++) {
-        double weight = weightsChunk!=null?weightsChunk.atd(row):1;
-        if (weight == 0) {
-          if (_makePreds) {
-            for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-              cpreds[c].addNum(0);
-          }
-          continue;
-        }
-        double offset = offsetChunk!=null?offsetChunk.atd(row):0;
-        double [] p = score0(chks, weight, offset, row, tmp, preds);
-        if (_computeMetrics) {
-          if(isSupervised()) {
-            actual[0] = (float)responseChunk.atd(row);
-          } else {
-            for(int i = 0; i < actual.length; ++i)
-              actual[i] = (float)chks[i].atd(row);
-          }
-          _mb.perRow(preds, actual, weight, offset, Model.this);
-        }
-        if (_makePreds) {
-          for (int c = 0; c < _npredcols; c++)  // Output predictions; sized for train only (excludes extra test classes)
-            cpreds[c].addNum(p[c]);
-        }
-      }
-      if ( _j != null) _j.update(1);
-    }
-    @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
-    @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
   }
 
 

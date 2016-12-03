@@ -16,6 +16,14 @@ import java.util.*;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
+  public H2O.H2OCountedCompleter fjtask = new H2O.H2OCountedCompleter() {
+    @Override
+    public void compute2() {
+      computeCrossValidation();
+      tryComplete();
+    }
+  };
+
   public ToEigenVec getToEigenVec() { return null; }
 
   transient private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
@@ -193,17 +201,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
-    if( !nFoldCV() )
+    if( !nFoldCV() ) {
       return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
+    }
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
-    return _job.start(new H2O.H2OCountedCompleter() {
-                        @Override
-                        public void compute2() {
-                          computeCrossValidation();
-                          tryComplete();
-                        }
-                      },
+    return _job.start(fjtask,
             (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);
   }
 

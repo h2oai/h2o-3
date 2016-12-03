@@ -307,6 +307,11 @@ public class Frame extends Lockable<Frame> {
    *  @return a Vec by name, or null if missing */
   public Vec vec(String name) { int idx = find(name); return idx==-1 ? null : vecs()[idx]; }
 
+  public boolean dataPresent(String name) {
+    Vec vec = vec(name);
+    return vec != null && !vec.isBad();
+  }
+  
   /**   Finds the column index with a matching name, or -1 if missing
    *  @return the column index with a matching name, or -1 if missing */
   public int find( String name ) {

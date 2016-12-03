@@ -716,7 +716,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
       }
     }
     DeepWaterBigScore(String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
-      super(domain, ncols, mean, testHasWeights, computeMetrics, makePreds, j);
+      super(DeepWaterModel.this, domain, ncols, mean, testHasWeights, computeMetrics, makePreds, j);
     }
   }
 

@@ -59,7 +59,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     return 1;
   }
 
-  @Override protected DeepLearningDriver trainModelImpl() { return new DeepLearningDriver(); }
+  @Override public DeepLearningDriver trainModelImpl() { return new DeepLearningDriver(); }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -168,7 +168,12 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   protected Frame rebalance(final Frame original_fr, boolean local, final String name) {
     if (original_fr == null) return null;
     if (_parms._force_load_balance || _parms._reproducible) { //this is called before the parameters are sanitized, so force_load_balance might be user-disabled -> so must check reproducible flag as well
-      int original_chunks = original_fr.anyVec().nChunks();
+      int original_chunks = -1;
+      try {
+        original_chunks = original_fr.anyVec().nChunks();
+      } catch (NullPointerException npe) {
+        npe.printStackTrace();
+      }
       _job.update(0,"Load balancing " + name.substring(name.length() - 5) + " data...");
       int chunks = desiredChunks(original_fr, local);
       if (!_parms._reproducible)  {

@@ -332,14 +332,18 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
 
   /** Blocks until the Job completes  */
   public T get() {
+    waitTillFinish();
+    // Maybe null return, if the started fjtask does not actually produce a result at this Key
+    return _result==null ? null : _result.get(); 
+  }
+
+  public void waitTillFinish() {
     Barrier2 bar = _barrier;
     if( bar != null )           // Barrier may be null if task already completed
       bar.join(); // Block on the *barrier* task, which blocks until the fjtask on*Completion code runs completely
     assert isStopped();
     if (_ex!=null)
-      throw new RuntimeException((Throwable)AutoBuffer.javaSerializeReadPojo(_ex));
-    // Maybe null return, if the started fjtask does not actually produce a result at this Key
-    return _result==null ? null : _result.get(); 
+      throw new RuntimeException((Throwable) AutoBuffer.javaSerializeReadPojo(_ex));
   }
 
   // --------------

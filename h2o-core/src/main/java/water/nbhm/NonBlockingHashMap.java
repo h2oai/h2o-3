@@ -509,6 +509,7 @@ public class NonBlockingHashMap<TypeK, TypeV>
   // Never returns a Prime nor a Tombstone.
   @Override
   public TypeV get( Object key ) {
+    if (key == null) throw new NullPointerException("Hey, the key is null!!!!");
     final Object V = get_impl(this,_kvs,key);
     assert !(V instanceof Prime); // Never return a Prime
     assert V != TOMBSTONE;

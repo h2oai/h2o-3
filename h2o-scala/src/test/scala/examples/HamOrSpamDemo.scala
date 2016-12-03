@@ -17,6 +17,7 @@
 
 package examples
 
+import examples.Frequencies.Data
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters
 import hex.deeplearning.{DeepLearning, DeepLearningModel}
 import water.fvec.{AppendableVec, Frame, NewChunk, Vec}
@@ -32,11 +33,15 @@ import scala.language.postfixOps
   * Training dataset is available in the file smalldata/smsData.txt.
   */
 object HamOrSpamDemo extends TestUtil {
-
+  ClassLoader.getSystemClassLoader.setDefaultAssertionStatus(true)
+  
   val numFeatures = 1024
-  val minDocFreq:Int = 4
 
-  val DATAFILE = "smalldata/smsData.txt"
+  val minDocFreq: Int = 4
+
+  val freqModel = new Frequencies(numFeatures, minDocFreq)
+
+  val DATAFILE = "smsData.txt"
   val TEST_MSGS = Seq(
     "Michal, beer tonight in MV?",
     "penis enlargement, our exclusive offer of penis enlargement, enlarge one, enlarge one free",
@@ -47,22 +52,11 @@ object HamOrSpamDemo extends TestUtil {
     TestUtil.stall_till_cloudsize(1)
 
     try {
-      val (hs: List[String], msgs: List[String]) = parseSamples(DATAFILE)
-      val spamModel = new SpamModel(msgs)
-      val codes: List[Int] = hs map (CatDomain indexOf _)
-      val categorizedSMSs = codes zip spamModel.weights map CatSMS.tupled
+      val (hs: List[String], msgs: List[String]) = readSamples
+      val spamModel = new SpamModel(hs, msgs)
 
-      val cutoff = (categorizedSMSs.length * 0.8).toInt
-      // Split table
-      val (before, after) = categorizedSMSs.splitAt(cutoff)
-      val train = buildTable("train", before)
-      val valid = buildTable("valid", after)
-
-      val dlModel = buildDLModel(train, valid)
-
-      val isSpam = spamModel.isSpam(dlModel)
       TEST_MSGS.foreach(msg => {
-        val whatitis = if (isSpam(msg)) "SPAM" else "HAM"
+        val whatitis = ("HAM"::"SPAM"::Nil)(spamModel.spamness(msg))
         println(s"$msg is $whatitis")
       })
     } finally {
@@ -71,47 +65,66 @@ object HamOrSpamDemo extends TestUtil {
     }
   }
 
-  def parseSamples(path: String): (List[String], List[String]) = {
-    val lines = readFile(path)
+  def readSamples: (List[String], List[String]) = {
+    val lines = readSamples("smalldata/" + DATAFILE)
     val size = lines.size
     val hs = lines map (_ (0))
     val msgs = lines map (_ (1))
     (hs, msgs)
   }
 
-  def buildTable(id: String, rows: List[CatSMS]): Frame = {
-    val fr = catVecs(rows)
+  def buildTable(id: String, trainingRows: List[CatSMS]): Frame = {
+    val fr = new Frame(trainingRows.head.names, catVecs(trainingRows))
     new water.fvec.H2OFrame(fr)
   }
 
-  def readFile(dataFile: String): List[Array[String]] = {
+  def readSamples(dataFile: String): List[Array[String]] = {
     val lines: Iterator[String] = Source.fromFile(dataFile, "ISO-8859-1").getLines()
     val pairs: Iterator[Array[String]] = lines.map(_.split("\t", 2))
     val goodOnes: Iterator[Array[String]] = pairs.filter(!_ (0).isEmpty)
     goodOnes.toList
   }
 
-  val freq = new FrequencyModel(numFeatures, minDocFreq)
+  val IgnoreWords = Set("the", "not", "for")
+  val IgnoreChars = "[,:;/<>\".()?\\-\\\'!01 ]"
 
-  case class SpamModel(msgs: List[String]) {
+  def tokenize(s: String) = {
+    var smsText = s.toLowerCase.replaceAll(IgnoreChars, " ").replaceAll("  +", " ").trim
+    val words = smsText split " " filter (w => !IgnoreWords(w) && w.length > 2)
 
-    lazy val tf: List[FrequencyModel.Data] = msgs map freq.weigh
+    words.toSeq
+  }
+
+  case class SpamModel(hs: List[String], msgs: List[String]) {
+
+    lazy val tf: List[Data] = msgs map freqModel.weigh
 
     // Build term frequency-inverse document frequency
-    lazy val idf:freq.IDF = (new freq.IDF() /: tf)(_ + _)
+    lazy val idf: freqModel.IDF = (new freqModel.IDF() /: tf) (_ + _)
 
-    lazy val weights: List[FrequencyModel.Data] = tf map idf.normalize
+    lazy val weights: List[Array[Double]] = tf map idf.normalize
+
+    lazy val trainingRows = hs zip weights map TrainingRow.tupled
+    
+    lazy val categorizedSMSs = trainingRows map (new CatSMS(_))
+    
+    lazy val cutoff = (categorizedSMSs.length * 0.8).toInt
+    // Split table
+    lazy val (before, after) = categorizedSMSs.splitAt(cutoff)
+    lazy val train = buildTable("train", before)
+    lazy val valid = buildTable("valid", after)
+
+    lazy val dlModel = buildDLModel(train, valid)
 
     /** Spam detector */
-    def isSpam(dlModel: DeepLearningModel) = (msg: String) => {
-      val weights = freq.weigh(msg)
+    def spamness(msg: String) = {
+      val weights = freqModel.weigh(msg)
       val normalizedWeights = idf.normalize(weights)
       val sampleFrame = VectorOfDoubles(normalizedWeights).frame
-      val prediction = dlModel.score(sampleFrame)
+      val prediction = dlModel.scoreSample(sampleFrame)
       val estimates = prediction.vecs() map (_.at(0)) toList
-      val estimate: Double = estimates(1)
-      println(s"$msg -> $estimate // $estimates")
-      estimate < .5
+      val estimate = estimates(0).toInt
+      estimate
     }
 
   }
@@ -127,11 +140,19 @@ object HamOrSpamDemo extends TestUtil {
     dlParams._epochs = epochs
     dlParams._l1 = l1
     dlParams._hidden = hidden
-    //    dlParams._ignore_const_cols = false // TODO(vlad): figure out how important is it
+    dlParams._ignore_const_cols = false // TODO(vlad): figure out how important is it
 
-    // Create a job
-    val dl = new DeepLearning(dlParams, water.Key.make("dlModel.hex"))
-    dl.trainModel.get
+    val jobKey: Key[DeepLearningModel] = water.Key.make("dlModel.hex")
+    val dl = new DeepLearning(dlParams, jobKey)
+//    val tmi = dl.trainModelImpl()
+    val tm = dl.trainModel()
+    tm.waitTillFinish()
+    tm._result.get()
+
+  }
+
+  def arrayFrom(map: Map[Int, Double], size: Int): Array[Double] = {
+    0 until size map (i => map.getOrElse(i, 0.0)) toArray
   }
 
   /** A numeric Vec from an array of doubles */
@@ -165,53 +186,44 @@ object HamOrSpamDemo extends TestUtil {
     vec(domain, indexes)
   }
 
-  val CatDomain = "ham"::"spam"::Nil toArray
+  val CatDomain = "ham" :: "spam" :: Nil toArray
 
-  case class CatSMS(target: Int, fv: FrequencyModel.Data) {
-    def names: Array[String] = namesOfData(fv, "target")
+  case class CatSMS(sms: TrainingRow) {
+    def target: Int = CatDomain indexOf sms.target
+
+    def name(i: Int) = "fv" + i
+
+    def names: Array[String] = ("target" :: (sms.fv.indices map name).toList) toArray
+
+    def xx = "1"
   }
 
-  def catVecs(rows:Iterable[CatSMS]): Frame = {
-    //    val allKeys = (Set.empty[Int] /: rows) {case (s, row) => s ++ row.fv.keySet)}
+  def catVecs(rows: Iterable[CatSMS]): Array[Vec] = {
     val row0 = rows.head
     val targetVec = vec(CatDomain, rows map (_.target))
-    val data = rows map (_.fv)
-    val nels = data filter (_.nonEmpty)
-    val vertical = transposeData(data)
+    val vecs = row0.sms.fv.indices.map(
+      i => dvec(rows map (_.sms.fv(i))))
 
-    val verticalVecs = vertical mapValues dvec
-
-    val matrix = verticalVecs + ("target" -> targetVec)
-
-    buildFrame(matrix)
+    (targetVec :: vecs.toList) toArray
   }
 
-  def namesOfData(data: FrequencyModel.Data, prefixes: String*): Array[String] = {
-    prefixes.toList ++ data.keys toArray
+  /** Training message representation. */
+  case class TrainingRow(target: String, fv: Data) {
+    def name(i: Int) = "fv" + i
+
+    def names: Array[String] = ("target" :: (fv.indices map name).toList) toArray
   }
 
-  def transposeData(datas: Iterable[FrequencyModel.Data]): Map[String, Iterable[Double]] = {
-    val keys: Set[String] = (Set.empty[String]/: datas)(_ ++ _.keySet)
+  case class VectorOfDoubles(fv: Data) {
+    def name(i: Int) = "fv" + i
 
-    val init: Map[String, List[Double]] = keys map (k => k -> Nil) toMap
+    def names: Array[String] = fv.indices map name toArray
 
-    (init /: datas) {
-      case (map, row) => map.map {
-        case (k, v) => k -> (row.getOrElse(k, 0.0) :: v)
-      }
-    }
+    def vecs: Array[Vec] = fv map (x => dvec(x :: Nil))
+
+    def frame: Frame = new Frame(names, vecs)
   }
 
-  case class VectorOfDoubles(fv: FrequencyModel.Data) {
-    lazy val matrix = transposeData(fv::Nil)
-    lazy val vecMatrix = matrix.mapValues(dvec)
-    lazy val frame = buildFrame(vecMatrix)
-  }
-
-  def buildFrame(map: Map[String, Vec]) = {
-    val kvs = map.toList
-    new Frame(kvs.map(_._1).toArray, kvs.map(_._2).toArray)
-  }
 }
 
 
