@@ -1255,7 +1255,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     ArrayList<String> labels = new ArrayList<>();
 
     {
-      FileInputStream is = new FileInputStream("/home/arno/tweets.txt");
+      FileInputStream is = new FileInputStream("/home/magnus/tweets.txt");
       BufferedReader br = new BufferedReader(new InputStreamReader(is));
       String line;
       while ((line = br.readLine()) != null) {
@@ -1265,7 +1265,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
 
     {
-      FileInputStream is = new FileInputStream("/home/arno/labels.txt");
+      FileInputStream is = new FileInputStream("/home/magnus/labels.txt");
       BufferedReader br = new BufferedReader(new InputStreamReader(is));
       String line;
       while ((line = br.readLine()) != null) {

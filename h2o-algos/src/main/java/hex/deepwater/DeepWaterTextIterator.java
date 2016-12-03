@@ -26,20 +26,20 @@ class DeepWaterTextIterator extends DeepWaterIterator {
   private static ConcurrentHashMap<String,Integer> dict;
   static private ConcurrentHashMap getDict() {
     if (dict == null) {
-      try {
+//      try {
         dict = new ConcurrentHashMap<>();
         int count = 0;
         dict.put(PADDING_SYMBOL, count++);
-        // if available, pre-fill the dict
-        FileInputStream is = new FileInputStream("/home/arno/top100kwords.txt");
-        BufferedReader br = new BufferedReader(new InputStreamReader(is));
-        String line;
-        while ((line = br.readLine()) != null)
-          dict.put(line, count++);
-        is.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+//        // if available, pre-fill the dict
+//        FileInputStream is = new FileInputStream("/home/arno/top100kwords.txt");
+//        BufferedReader br = new BufferedReader(new InputStreamReader(is));
+//        String line;
+//        while ((line = br.readLine()) != null)
+//          dict.put(line, count++);
+//        is.close();
+//      } catch (IOException e) {
+//        e.printStackTrace();
+//      }
     }
     return dict;
   }
@@ -96,12 +96,12 @@ class DeepWaterTextIterator extends DeepWaterIterator {
         int[] data = StringUtils.tokensToArray(StringUtils.tokenize(_text), _wordsPerLine, DeepWaterTextIterator.getDict());
 //        System.err.println(Arrays.toString(data));
         for (int i = 0; i< _wordsPerLine; ++i) {
-          _destData[i] = (float)data[i];
+          _destData[start + i] = (float)data[i];
         }
         if (_cache) {
           byte[] mem = new byte[_wordsPerLine *4];
           for (int i = 0; i< _wordsPerLine; ++i)
-            UnsafeUtils.set4f(mem,i<<2, _destData[i]);
+            UnsafeUtils.set4f(mem,i<<2, _destData[start + i]);
           DKV.put(txtKey, new C4FChunk(mem));
         }
       }
