@@ -114,9 +114,10 @@ public final class ComputationState {
           off += activeData.fullN()+1;
         }
       } else  for(int i = 0; i < _activeData.fullN(); ++i)
-        _ginfo._gradient[i] += ldiff*_beta[i];
+        _ginfo._gradient[i] -= ldiff*_beta[i];
     }
-    _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
+    _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal - ldiff * l2pen, _ginfo._gradient);
+
   }
 
   public double l1pen() {return _alpha*_lambda;}
