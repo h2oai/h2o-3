@@ -13,6 +13,7 @@ def stackedensemble_gaussian():
   australia_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/extdata/australia.csv"), destination_frame="australia.hex")
 #  australia_hex = h2o.import_file(path="smalldata/extdata/australia.csv", destination_frame="australia.hex")
   myX = ["premax", "salmax","minairtemp", "maxairtemp", "maxsst", "maxsoilmoist", "Max_czcs"]
+#  myXSmaller = ["premax", "salmax","minairtemp", "maxairtemp", "maxsst", "maxsoilmoist"]
   # dependent <- "runoffnew"
 
   my_gbm = H2OGradientBoostingEstimator(ntrees = 10, max_depth = 3, min_rows = 2, learn_rate = 0.2, nfolds = 5, fold_assignment='Modulo', keep_cross_validation_predictions = True, distribution = "gaussian")
@@ -23,6 +24,7 @@ def stackedensemble_gaussian():
  
   my_glm = H2OGeneralizedLinearEstimator(family = "gaussian", nfolds = 5, fold_assignment='Modulo', keep_cross_validation_predictions = True)
   my_glm.train(y = "runoffnew", x = myX, training_frame = australia_hex)
+#  my_glm.train(y = "runoffnew", x = myXSmaller, training_frame = australia_hex)  # test parameter error-checking
   print("GLM performance: ")
   my_glm.model_performance(australia_hex).show()
 

@@ -9,6 +9,7 @@ import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.nbhm.NonBlockingHashSet;
 import water.util.Log;
 import water.util.ReflectionUtils;
 
@@ -25,6 +26,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   public ModelCategory modelCategory;
   public Frame commonTrainingFrame = null;
   public String responseColumn = null;
+  private NonBlockingHashSet<String> names = null;  // keep columns as a set for easier comparison
   public int nfolds = -1;
   // TODO: add a separate holdout dataset for the ensemble
   // TODO: add a separate overall cross-validation for the ensemble, including _fold_column and FoldAssignmentScheme / _fold_assignment
@@ -192,17 +194,20 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         if (modelCategory != aModel._output.getModelCategory())
           throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different categories of models: " + Arrays.toString(_parms._base_models));
 
-        if (_output._domains.length != aModel._output._domains.length)
-          throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different numbers of domains (categorical levels): " + Arrays.toString(_parms._base_models));
-
         Frame aTrainingFrame = aModel._parms.train();
         if (! commonTrainingFrame._key.equals(aTrainingFrame._key))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different training frames.  Found: " + commonTrainingFrame._key + " and: " + aTrainingFrame._key + ".");
 
-        // TODO: compare ignored_columns
+        NonBlockingHashSet<String> aNames = new NonBlockingHashSet<>();
+        aNames.addAll(Arrays.asList(aModel._output._names));
+        if (! aNames.equals(this.names))
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different column lists.  Found: " + this.names + " and: " + aNames + ".");
 
         if (! responseColumn.equals(aModel._parms._response_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns.  Found: " + responseColumn + " and: " + aModel._parms._response_column + ".");
+
+        if (_output._domains.length != aModel._output._domains.length)
+          throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different numbers of domains (categorical levels): " + Arrays.toString(_parms._base_models));
 
         if (nfolds != aModel._parms._nfolds)
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
@@ -234,7 +239,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         commonTrainingFrame = aModel._parms.train();
         // TODO: set _parms._train to aModel._parms.train()
 
-        // TODO: grab ignored_columns
+        _output._names = aModel._output._names;
+        this.names = new NonBlockingHashSet<>();
+        this.names.addAll(Arrays.asList(aModel._output._names));
 
         responseColumn = aModel._parms._response_column;
         nfolds = aModel._parms._nfolds;
