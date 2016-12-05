@@ -124,6 +124,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public boolean _auto_rebalance = true;
+
+    public void recomputeChecksum() {_checksum = checksum_impl();}
+
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }
@@ -266,10 +269,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // FIXME: this is really horrible hack, Model.Parameters has method checksum_impl,
     // but not checksum, the API is totally random :(
-    public long checksum() {
-      return checksum_impl();
-    }
-
+    public long checksum() {return _checksum;}
+    private long _checksum;
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.
      * Sort the fields first, since reflection gives us the fields in random order and we don't want the checksum to be affected by the field order.
@@ -279,7 +280,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * The method is motivated by standard hash implementation `hash = hash * P + value` but we use high prime numbers in random order.
      * @return checksum
      */
-    protected long checksum_impl() {
+    private long checksum_impl() {
       long xs = 0x600DL;
       int count = 0;
       Field[] fields = Weaver.getWovenFields(this.getClass());
@@ -1237,7 +1238,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   @Override protected long checksum_impl() {
-    return _parms.checksum_impl() * _output.checksum_impl();
+    return _parms.checksum() * _output.checksum_impl();
   }
 
   /**

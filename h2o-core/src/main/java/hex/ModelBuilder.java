@@ -165,6 +165,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     public void compute2() {
       try {
         Scope.enter();
+        _parms.recomputeChecksum(); // make sure we compute the checksum while the frame is available
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
       } finally {
@@ -388,6 +389,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._valid = cvValid._key;
       cv_mb._parms._fold_assignment = Model.Parameters.FoldAssignmentScheme.AUTO;
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
+      cv_mb._parms.recomputeChecksum();
       cv_mb.init(false);        // Arg check submodels
       // Error-check all the cross-validation Builders before launching any
       if( cv_mb.error_count() > 0 ) // Gather all submodel error messages
