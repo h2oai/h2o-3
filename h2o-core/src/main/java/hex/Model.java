@@ -1,6 +1,5 @@
 package hex;
 
-import com.google.common.collect.Lists;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -933,15 +932,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, null, null, true);
   }
 
-  public Frame scoreSample(Frame fr) throws IllegalArgumentException {
-    // Build up the names & domains.
-    String[] names = makeScoringNames();
-    String[][] domains = new String[names.length][];
-    domains[0] = names.length == 1 ? null : _output._domains[_output._domains.length-1];
-    System.out.println("\n======names=" + Lists.newArrayList(names) + "\n======domains=" + domains);
-    // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(this, domains[0],names.length,fr.means(),_output.hasWeights() && fr.find(_output.weightsName()) >= 0,false, true /*make preds*/, null).doAll(names.length, Vec.T_NUM, fr);
-    return bs.outputFrame(Key.<Frame>make(), names, domains);
+  public double scoreSample(double[] sample) throws IllegalArgumentException {
+    int nouts = numOutputColumns();
+//    double[] scored = score01(sample, , 0, 1);
+
+    double[] score = score0(sample, new double[nouts], 1, 0);
+    System.out.println("Raw score=" + Arrays.toString(score));
+    correctProbabilities(sample, score);
+    System.out.println("Corrected score=" + Arrays.toString(score));
+
+
+    return score[0];
   }
 
 
@@ -1057,10 +1058,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     for(Key key : fr.keys()) key.remove();
     DKV.remove(fr._key); //delete the frame header
   }
+  
+  protected int numOutputColumns() {
+    final int nc = _output.nclasses();
+    return nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
+  }
 
   protected String [] makeScoringNames(){
-    final int nc = _output.nclasses();
-    final int ncols = nc==1?1:nc+1; // Regression has 1 predict col; classification also has class distribution
+    int ncols = numOutputColumns();
     String [] names = new String[ncols];
     names[0] = "predict";
     for(int i = 1; i < names.length; ++i) {
@@ -1124,18 +1129,27 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     assert(_output.nfeatures() == tmp.length);
     for( int i=0; i< tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    double [] scored = score0(tmp, preds, weight, offset);
+    return score01(tmp, preds, offset, weight);
+  }
+
+  public double[] score01(double[] sample, double[] predictions, double offset, double weight) {
+
+    double[] score = score0(sample, predictions, weight, offset);
     if(isSupervised()) {
-      // Correct probabilities obtained from training on oversampled data back to original distribution
-      // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
-      if( _output.isClassifier()) {
-        if (_parms._balance_classes)
-          GenModel.correctProbabilities(scored, _output._priorClassDist, _output._modelClassDist);
-        //assign label at the very end (after potentially correcting probabilities)
-        scored[0] = hex.genmodel.GenModel.getPrediction(scored, _output._priorClassDist, tmp, defaultThreshold());
-      }
+      correctProbabilities(sample, score);
     }
-    return scored;
+    return score;
+  }
+
+  private void correctProbabilities(double[] sample, double[] score) {
+    // Correct probabilities obtained from training on oversampled data back to original distribution
+    // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
+    if( _output.isClassifier()) {
+      if (_parms._balance_classes)
+        GenModel.correctProbabilities(score, _output._priorClassDist, _output._modelClassDist);
+      //assign label at the very end (after potentially correcting probabilities)
+      score[0] = GenModel.getPrediction(score, _output._priorClassDist, sample, defaultThreshold());
+    }
   }
 
   /** Subclasses implement the scoring logic.  The data is pre-loaded into a

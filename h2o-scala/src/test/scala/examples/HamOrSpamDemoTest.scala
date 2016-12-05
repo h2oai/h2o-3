@@ -21,7 +21,7 @@ import examples.Frequencies.Data
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters
 import hex.deeplearning.{DeepLearning, DeepLearningModel}
 import water.fvec.{AppendableVec, Frame, NewChunk, Vec}
-import water.{Futures, Key, TestUtil}
+import water.{H2O, Futures, Key, TestUtil}
 
 import scala.io.Source
 import scala.language.postfixOps
@@ -32,7 +32,7 @@ import scala.language.postfixOps
   * It predicts spam text messages.
   * Training dataset is available in the file smalldata/smsData.txt.
   */
-object HamOrSpamDemo extends TestUtil {
+object HamOrSpamDemoTest extends TestUtil {
   ClassLoader.getSystemClassLoader.setDefaultAssertionStatus(true)
   
   val numFeatures = 1024
@@ -62,6 +62,7 @@ object HamOrSpamDemo extends TestUtil {
     } finally {
       // Shutdown H2O
       //      h2oContext.stop(stopSparkContext = true)
+      H2O.exit(0);
     }
   }
 
@@ -73,7 +74,7 @@ object HamOrSpamDemo extends TestUtil {
     (hs, msgs)
   }
 
-  def buildTable(id: String, trainingRows: List[CatSMS]): Frame = {
+  def buildTable(id: String, trainingRows: List[CategorizedTexts]): Frame = {
     val fr = new Frame(trainingRows.head.names, catVecs(trainingRows))
     new water.fvec.H2OFrame(fr)
   }
@@ -103,30 +104,24 @@ object HamOrSpamDemo extends TestUtil {
     lazy val idf: freqModel.IDF = (new freqModel.IDF() /: tf) (_ + _)
 
     lazy val weights: List[Array[Double]] = tf map idf.normalize
-
-    lazy val trainingRows = hs zip weights map TrainingRow.tupled
     
-    lazy val categorizedSMSs = trainingRows map (new CatSMS(_))
+    lazy val categorizedTexts = hs zip weights map CategorizedTexts.tupled
     
-    lazy val cutoff = (categorizedSMSs.length * 0.8).toInt
+    lazy val cutoff = (categorizedTexts.length * 0.8).toInt
     // Split table
-    lazy val (before, after) = categorizedSMSs.splitAt(cutoff)
+    lazy val (before, after) = categorizedTexts.splitAt(cutoff)
     lazy val train = buildTable("train", before)
     lazy val valid = buildTable("valid", after)
 
     lazy val dlModel = buildDLModel(train, valid)
-
+    
     /** Spam detector */
     def spamness(msg: String) = {
       val weights = freqModel.weigh(msg)
       val normalizedWeights = idf.normalize(weights)
-      val sampleFrame = VectorOfDoubles(normalizedWeights).frame
-      val prediction = dlModel.scoreSample(sampleFrame)
-      val estimates = prediction.vecs() map (_.at(0)) toList
-      val estimate = estimates(0).toInt
-      estimate
+      val estimate: Double = dlModel.scoreSample(normalizedWeights)
+      estimate.toInt
     }
-
   }
 
   /** Builds DeepLearning model. */
@@ -188,30 +183,24 @@ object HamOrSpamDemo extends TestUtil {
 
   val CatDomain = "ham" :: "spam" :: Nil toArray
 
-  case class CatSMS(sms: TrainingRow) {
-    def target: Int = CatDomain indexOf sms.target
+  case class CategorizedTexts(targetText: String, data: Array[Double]) {
+
+    def target = CatDomain indexOf targetText
 
     def name(i: Int) = "fv" + i
 
-    def names: Array[String] = ("target" :: (sms.fv.indices map name).toList) toArray
+    lazy val names: Array[String] = ("target" :: (data.indices map name).toList) toArray
 
     def xx = "1"
   }
 
-  def catVecs(rows: Iterable[CatSMS]): Array[Vec] = {
+  def catVecs(rows: Iterable[CategorizedTexts]): Array[Vec] = {
     val row0 = rows.head
     val targetVec = vec(CatDomain, rows map (_.target))
-    val vecs = row0.sms.fv.indices.map(
-      i => dvec(rows map (_.sms.fv(i))))
+    val vecs = row0.data.indices.map(
+      i => dvec(rows map (_.data(i))))
 
     (targetVec :: vecs.toList) toArray
-  }
-
-  /** Training message representation. */
-  case class TrainingRow(target: String, fv: Data) {
-    def name(i: Int) = "fv" + i
-
-    def names: Array[String] = ("target" :: (fv.indices map name).toList) toArray
   }
 
   case class VectorOfDoubles(fv: Data) {
