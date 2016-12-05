@@ -60,7 +60,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     # Check for .h2oconfig file
     # Find .h2oconfig file starting from currenting directory and going
     # up all parent directories until it reaches the root directory.
-    config_path <- .h2o.candidate.config.files()
+    config_path <- .find.files()
 
     #Read in config if available
     if(!(is.null(config_path))){

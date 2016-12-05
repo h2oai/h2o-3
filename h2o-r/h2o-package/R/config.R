@@ -102,20 +102,28 @@
 #Helper function responsible for reading h2o config files.
 
 #This function will look for file(s) named ".h2oconfig" in the current folder, in all parent folders, and finally in
-#the user's home directory. The first such file found will be used for configuration purposes. The format for such
+#the user's root directory. The first such file found will be used for configuration purposes. The format for such
 #file is a simple "key = value" store, with possible section names in square brackets. Single-line comments starting
 #with '#' are also allowed.
-.h2o.candidate.config.files <- function(){
-    path_to_config = getwd()
-    current_directory = getwd()
-    while(identical(Sys.glob(".h2oconfig"),character(0))){
-        if(getwd() == "/" || getwd() == "C:/" || getwd() == "D:/"){ #Search up to root directory in Unix/Windows OS
-          setwd(current_directory)
-          return()
-        }
-      setwd("..")
-      path_to_config = getwd()
+.find.files <- function(file = ".h2oconfig") {
+  windows <- .Platform$OS.type == "windows" #Are we dealing with a Windows OS?
+  if(windows){
+    win.driver <- strsplit(normalizePath(getwd()), ":", fixed=TRUE)[[1]][1] #Get driver if Windows OS
+  }
+  ans.file <- NULL
+  i <- 0
+  while(identical(Sys.glob(file),character(0))) {
+    path <- file.path(do.call("file.path", as.list(c(".",rep("..", i)))), file)
+    i <- i + 1
+    if (any(fe <- file.exists(path))) {
+     ans.file <- path[fe][1L] # take first if few present
+     break
     }
-    setwd(current_directory)
-    return(paste0(path_to_config,"/.h2oconfig"))
+    if (!(windows) && identical(normalizePath(file.path(getwd(), dirname(path))), "/")){
+      break # root directory
+    } else if(windows && identical(normalizePath(file.path(getwd(), dirname(path))), paste0(win.driver,":\\"))){
+      break # Windows root directory
+    }
+ }
+ return(ans.file)
 }
