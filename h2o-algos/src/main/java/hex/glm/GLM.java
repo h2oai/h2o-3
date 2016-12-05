@@ -693,9 +693,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
     private void fitLBFGS() {
       double [] beta = _state.beta();
-      double lambda = _state.lambda();
       final double l1pen = _state.l1pen();
-      final double l2pen = _state.l2pen();
       GLMGradientSolver gslvr = _state.gslvr();
       GLMWeightsFun glmw = new GLMWeightsFun(_parms);
       if (_parms._family == Family.multinomial) {
@@ -704,7 +702,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         for (int i = 0; i < _nclass; ++i)
           beta[i * P + P - 1] = glmw.link(_state._ymu[i]);
       }
-
       if (beta == null) {
         beta = MemoryManager.malloc8d(_state.activeData().fullN() + 1);
         if (_parms._intercept)
@@ -1175,7 +1172,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     Solver s = Solver.IRLSM;
     if(_state.activeData().fullN() >= 5000) // cutoff has to be somewhere
       s = Solver.L_BFGS;
-    else if(_parms._lambda_search && _parms._alpha[0] > 0) { // lambda search prefers coordinate descent
+    else if(_parms._lambda_search) { // lambda search prefers coordinate descent
       // l1 lambda search is better with coordinate descent!
       s = Solver.COORDINATE_DESCENT;
     } else if(_state.activeBC().hasBounds()) {
