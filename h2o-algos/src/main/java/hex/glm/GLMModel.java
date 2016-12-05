@@ -980,7 +980,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public double [] scoreRow(Row r, double o, double [] preds) {
     if(_parms._family == Family.multinomial) {
       double[] eta = _eta.get();
-      if(eta == null || eta.length < _output.nclasses()) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
+      if(eta == null || eta.length != _output.nclasses()) _eta.set(eta = MemoryManager.malloc8d(_output.nclasses()));
       final double[][] bm = _output._global_beta_multinomial;
       double sumExp = 0;
       double maxRow = 0;
