@@ -87,7 +87,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   @Override protected boolean chunkInit(){
     if (_localmodel.get_processed_local() >= _useFraction * _fr.numRows())
       return false;
-    _neurons = makeNeuronsForTraining(_localmodel);
+    _neurons = Neurons.makeNeuronsForTraining(_localmodel);
     _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());
     return true;
   }
@@ -232,69 +232,6 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     if (_sharedmodel == null)
       _sharedmodel = _localmodel;
     _localmodel = null;
-  }
-
-  public static Neurons[] makeNeuronsForTraining(final DeepLearningModelInfo minfo) {
-    return makeNeurons(minfo, true);
-  }
-  public static Neurons[] makeNeuronsForTesting(final DeepLearningModelInfo minfo) {
-    return makeNeurons(minfo, false);
-  }
-
-  // Helper
-  private static Neurons[] makeNeurons(final DeepLearningModelInfo minfo, boolean training) {
-    DataInfo dinfo = minfo.data_info();
-    final DeepLearningParameters params = minfo.get_params();
-    final int[] h = params._hidden;
-    Neurons[] neurons = new Neurons[h.length + 2]; // input + hidden + output
-    // input
-    neurons[0] = new Neurons.Input(params, minfo.units[0], dinfo);
-    // hidden
-    for( int i = 0; i < h.length + (params._autoencoder ? 1 : 0); i++ ) {
-      int n = params._autoencoder && i == h.length ? minfo.units[0] : h[i];
-      switch( params._activation ) {
-        case Tanh:
-          neurons[i+1] = new Neurons.Tanh(n);
-          break;
-        case TanhWithDropout:
-          neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.Tanh(n) : new Neurons.TanhDropout(n);
-          break;
-        case Rectifier:
-          neurons[i+1] = new Neurons.Rectifier(n);
-          break;
-        case RectifierWithDropout:
-          neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.Rectifier(n) : new Neurons.RectifierDropout(n);
-          break;
-        case Maxout:
-          neurons[i+1] = new Neurons.Maxout(params,(short)2,n);
-          break;
-        case MaxoutWithDropout:
-          neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.Maxout(params,(short)2,n) : new Neurons.MaxoutDropout(params,(short)2,n);
-          break;
-        case ExpRectifier:
-          neurons[i+1] = new Neurons.ExpRectifier(n);
-          break;
-        case ExpRectifierWithDropout:
-          neurons[i+1] = params._autoencoder && i == h.length ? new Neurons.ExpRectifier(n) : new Neurons.ExpRectifierDropout(n);
-          break;
-      }
-    }
-    if(!params._autoencoder) {
-      if (minfo._classification && minfo.get_params()._distribution != DistributionFamily.modified_huber)
-        neurons[neurons.length - 1] = new Neurons.Softmax(minfo.units[minfo.units.length - 1]);
-      else
-        neurons[neurons.length - 1] = new Neurons.Linear();
-    }
-
-    //copy parameters from NN, and set previous/input layer links
-    for( int i = 0; i < neurons.length; i++ ) {
-      neurons[i].init(neurons, i, params, minfo, training);
-      neurons[i]._input = neurons[0];
-    }
-
-//    // debugging
-//    for (Neurons n : neurons) Log.info(n.toString());
-    return neurons;
   }
 
   /**

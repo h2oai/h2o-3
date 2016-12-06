@@ -283,7 +283,7 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
    */
   TwoDimTable createSummaryTable() {
     computeStats();
-    Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(this);
+    Neurons[] neurons = Neurons.makeNeuronsForTesting(this);
     long byte_size = new AutoBuffer().put(this).buf().length;
     TwoDimTable table = new TwoDimTable(
             "Status of Neuron Layers",

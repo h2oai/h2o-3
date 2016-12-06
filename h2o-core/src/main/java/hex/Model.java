@@ -936,7 +936,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     int nouts = numOutputColumns();
 //    double[] scored = score01(sample, , 0, 1);
 
-    double[] score = score0(sample, new double[nouts], 1, 0);
+    double[] score = score0(sample, new double[nouts]);
     System.out.println("Raw score=" + Arrays.toString(score));
     correctProbabilities(sample, score);
     System.out.println("Corrected score=" + Arrays.toString(score));

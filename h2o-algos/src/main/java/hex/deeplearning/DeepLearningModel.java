@@ -30,7 +30,7 @@ import static water.H2O.technote;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
+public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
   @Override public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
   }
@@ -575,7 +575,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         @Override public void map( Chunk chks[], NewChunk recon[] ) {
           double tmp [] = new double[_output._names.length];
           double preds[] = new double [len];
-          final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
+          final Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info);
           for( int row=0; row<chks[0]._len; row++ ) {
             double p[] = score_autoencoder(chks, row, tmp, preds, neurons, true /*reconstruction*/, false /*reconstruction_error_per_feature*/);
             for( int c=0; c<len; c++ )
@@ -603,7 +603,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    */
   public double meanLoss(DataInfo.Row[] myRows) {
     double loss = 0;
-    Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(model_info());
+    Neurons[] neurons = Neurons.makeNeuronsForTraining(model_info());
     //for absolute error, gradient -1/1 matches the derivative of abs(x) without correction term
     long seed = -1; //ignored
 
@@ -698,7 +698,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
-    Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
+    Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data, mb);
     DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, new double[]{offset}, n);
     double[] out = neurons[neurons.length - 1]._a[mb].raw();
@@ -748,7 +748,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       @Override public void map( Chunk chks[], NewChunk[] mse ) {
         double tmp [] = new double[len];
         double out[] = new double[outputcols];
-        final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
+        final Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
@@ -817,7 +817,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       @Override public void map( Chunk chks[] ) {
         if (isCancelled() || job !=null && job.stop_requested()) return;
         double tmp [] = new double[len];
-        final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info);
+        final Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
@@ -966,7 +966,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     sb = super.toJavaInit(sb, fileCtx);
     final String mname = JCodeGen.toJavaId(_key.toString());
 
-    final Neurons[] neurons = DeepLearningTask.makeNeuronsForTesting(model_info());
+    final Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info());
     final DeepLearningParameters p = model_info.get_params();
 
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();

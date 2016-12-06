@@ -184,7 +184,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             mymodel = new DeepLearning(p).trainModel().get();
                             p._epochs = epoch;
 
-                            Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(mymodel.model_info());
+                            Neurons[] neurons = Neurons.makeNeuronsForTraining(mymodel.model_info());
 
                             // use the same random weights for the reference implementation
                             Neurons l = neurons[1];
@@ -224,7 +224,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             /**
                              * Compare weights and biases in hidden layer
                              */
-                            neurons = DeepLearningTask.makeNeuronsForTesting(mymodel.model_info()); //link the weights to the neurons, for easy access
+                            neurons = Neurons.makeNeuronsForTesting(mymodel.model_info()); //link the weights to the neurons, for easy access
                             l = neurons[1];
                             for (int o = 0; o < l._a[0].size(); o++) {
                               for (int i = 0; i < l._previous._a[0].size(); i++) {

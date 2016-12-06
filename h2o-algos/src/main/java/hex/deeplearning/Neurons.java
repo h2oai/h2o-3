@@ -3,6 +3,7 @@ package hex.deeplearning;
 import hex.DataInfo;
 import hex.Distribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.genmodel.utils.DistributionFamily;
 import water.H2O;
 import water.MemoryManager;
 import water.util.ArrayUtils;
@@ -1011,5 +1012,68 @@ public abstract class Neurons {
 
   static void gemv_naive(final Storage.DenseVector res, final Storage.DenseRowMatrix a, final Storage.DenseVector x, final Storage.DenseVector y, byte[] row_bits) {
     gemv_naive(res.raw(), a.raw(), x.raw(), y.raw(), row_bits);
+  }
+  // Helper
+  public static Neurons[] makeNeurons(final DeepLearningModelInfo minfo, boolean training) {
+    DataInfo dinfo = minfo.data_info();
+    final DeepLearningParameters params = minfo.get_params();
+    final int[] h = params._hidden;
+    Neurons[] neurons = new Neurons[h.length + 2]; // input + hidden + output
+    // input
+    neurons[0] = new Neurons.Input(params, minfo.units[0], dinfo);
+    // hidden
+    for( int i = 0; i < h.length + (params._autoencoder ? 1 : 0); i++ ) {
+      final boolean isExtra = i == h.length;
+      int n = isExtra ? minfo.units[0] : h[i];
+      switch( params._activation ) {
+        case Tanh:
+          neurons[i+1] = new Tanh(n);
+          break;
+        case TanhWithDropout:
+          neurons[i+1] = isExtra ? new Tanh(n) : new Neurons.TanhDropout(n);
+          break;
+        case Rectifier:
+          neurons[i+1] = new Neurons.Rectifier(n);
+          break;
+        case RectifierWithDropout:
+          neurons[i+1] = isExtra ? new Rectifier(n) : new Neurons.RectifierDropout(n);
+          break;
+        case Maxout:
+          neurons[i+1] = new Neurons.Maxout(params,(short)2,n);
+          break;
+        case MaxoutWithDropout:
+          neurons[i+1] = isExtra ? new Maxout(params,(short)2,n) : new Neurons.MaxoutDropout(params,(short)2,n);
+          break;
+        case ExpRectifier:
+          neurons[i+1] = new Neurons.ExpRectifier(n);
+          break;
+        case ExpRectifierWithDropout:
+          neurons[i+1] = isExtra ? new ExpRectifier(n) : new ExpRectifierDropout(n);
+          break;
+      }
+    }
+    if(!params._autoencoder) {
+      if (minfo._classification && minfo.get_params()._distribution != DistributionFamily.modified_huber)
+        neurons[neurons.length - 1] = new Softmax(minfo.units[minfo.units.length - 1]);
+      else
+        neurons[neurons.length - 1] = new Linear();
+    }
+
+    //copy parameters from NN, and set previous/input layer links
+    for( int i = 0; i < neurons.length; i++ ) {
+      neurons[i].init(neurons, i, params, minfo, training);
+      neurons[i]._input = neurons[0];
+    }
+
+//    // debugging
+//    for (Neurons n : neurons) Log.info(n.toString());
+    return neurons;
+  }
+
+  public static Neurons[] makeNeuronsForTraining(final DeepLearningModelInfo minfo) {
+    return Neurons.makeNeurons(minfo, true);
+  }
+  public static Neurons[] makeNeuronsForTesting(final DeepLearningModelInfo minfo) {
+    return Neurons.makeNeurons(minfo, false);
   }
 }

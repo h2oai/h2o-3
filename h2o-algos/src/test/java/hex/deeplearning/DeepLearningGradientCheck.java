@@ -179,7 +179,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                           // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
-                          Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
+                          Neurons[] neurons = Neurons.makeNeuronsForTraining(dl.model_info());
                           double[] responses = new double[miniBatchSize];
                           double[] offsets = new double[miniBatchSize];
                           int n = 0;
@@ -271,7 +271,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                           // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
-                          Neurons[] neurons = DeepLearningTask.makeNeuronsForTraining(dl.model_info());
+                          Neurons[] neurons = Neurons.makeNeuronsForTraining(dl.model_info());
                           double [] responses = new double[miniBatchSize];
                           double [] offsets = new double[miniBatchSize];
                           int n=0;
