@@ -23,7 +23,8 @@ def stackedensemble_gaussian():
 
  
   my_glm = H2OGeneralizedLinearEstimator(family = "gaussian", nfolds = 5, fold_assignment='Modulo', keep_cross_validation_predictions = True)
-  my_glm.train(y = "runoffnew", x = myX, training_frame = australia_hex)
+  my_glm.train(y = "runoffnew", training_frame = australia_hex)
+#  my_glm.train(y = "runoffnew", x = myX, training_frame = australia_hex)
 #  my_glm.train(y = "runoffnew", x = myXSmaller, training_frame = australia_hex)  # test parameter error-checking
   print("GLM performance: ")
   my_glm.model_performance(australia_hex).show()
@@ -31,6 +32,7 @@ def stackedensemble_gaussian():
 
   stacker = H2OStackedensembleEstimator(selection_strategy="choose_all", base_models=[my_gbm.model_id, my_glm.model_id])
   stacker.train(model_id="my_ensemble", x=myX, y="runoffnew", training_frame=australia_hex)
+#  stacker.train(model_id="my_ensemble", y="runoffnew", training_frame=australia_hex, ignored_columns=["premax"])  # test ignore_columns parameter checking
   predictions = stacker.predict(australia_hex)  # training data
   print("preditions for ensemble are in: " + predictions.frame_id)
 

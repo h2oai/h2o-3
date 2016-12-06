@@ -176,6 +176,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     if (null == _parms._base_models || 0 == _parms._base_models.length)
       throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; found 0.");
 
+    if (null != _parms._ignored_columns)
+      throw new H2OIllegalArgumentException("A StackedEnsemble takes its ignored_columns list from the base models.  Do not specify ignored_columns for the ensemble model.");
+
     Model aModel = null;
     boolean beenHere = false;
 
@@ -237,6 +240,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         this._dist = new Distribution(distributionFamily(aModel));
         _output._domains = Arrays.copyOf(aModel._output._domains, aModel._output._domains.length);
         commonTrainingFrame = aModel._parms.train();
+
+        if (! commonTrainingFrame._key.equals(_parms._train))
+          throw  new H2OIllegalArgumentException("StackedModel training_frame must match the training_frame of each base model.  Found: " + commonTrainingFrame._key + " and: " + _parms._train);
+
         // TODO: set _parms._train to aModel._parms.train()
 
         _output._names = aModel._output._names;
@@ -244,6 +251,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         this.names.addAll(Arrays.asList(aModel._output._names));
 
         responseColumn = aModel._parms._response_column;
+
+        if (! responseColumn.equals(_parms._response_column))
+          throw  new H2OIllegalArgumentException("StackedModel response_column must match the response_column of each base model.  Found: " + responseColumn + " and: " + _parms._response_column);
+
         nfolds = aModel._parms._nfolds;
         _parms._distribution = aModel._parms._distribution;
         beenHere = true;
