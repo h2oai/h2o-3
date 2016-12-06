@@ -179,7 +179,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                           // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
-                          Neurons[] neurons = Neurons.makeNeuronsForTraining(dl.model_info());
+                          Neurons[] neurons = Neurons.forTraining(dl.model_info());
                           double[] responses = new double[miniBatchSize];
                           double[] offsets = new double[miniBatchSize];
                           int n = 0;
@@ -190,7 +190,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                             offsets[n] = myRow.offset;
                             n++;
                           }
-                          DeepLearningTask.fpropMiniBatch(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, responses, offsets, n);
+                          Neurons.fpropMiniBatch(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, responses, offsets, n);
 
                           // check that we didn't change the model's weights/biases
                           long after = dl.model_info().checksum_impl();
@@ -271,7 +271,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                           dl.set_model_info(IcedUtils.deepCopy(modelInfo));
 
                           // do one forward propagation pass (and fill the mini-batch gradients -> set training=true)
-                          Neurons[] neurons = Neurons.makeNeuronsForTraining(dl.model_info());
+                          Neurons[] neurons = Neurons.forTraining(dl.model_info());
                           double [] responses = new double[miniBatchSize];
                           double [] offsets = new double[miniBatchSize];
                           int n=0;
@@ -282,7 +282,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                             offsets[n] = myRow.offset;
                             n++;
                           }
-                          DeepLearningTask.fpropMiniBatch(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, responses, offsets, n);
+                          Neurons.fpropMiniBatch(-1 /*seed doesn't matter*/, neurons, dl.model_info(), null, true /*training*/, responses, offsets, n);
 
                           // check that we didn't change the model's weights/biases
                           long after = dl.model_info().checksum_impl();

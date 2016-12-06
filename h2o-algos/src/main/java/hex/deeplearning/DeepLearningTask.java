@@ -1,6 +1,5 @@
 package hex.deeplearning;
 
-import hex.genmodel.utils.DistributionFamily;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.DataInfo;
 import hex.FrameTask;
@@ -41,6 +40,9 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    */
   public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, int iteration){
     this(jobKey,inputModel,fraction,iteration,null);
+//    {
+//      throw new UnsupportedOperationException("I don't want tasks");
+//    }
   }
   public DeepLearningTask(Key jobKey, DeepLearningModelInfo inputModel, float fraction, int iteration, H2O.H2OCountedCompleter cmp){
     super(jobKey, inputModel.data_info(),inputModel.get_params()._seed + inputModel.get_processed_global(), iteration, inputModel.get_params()._sparse,cmp);
@@ -51,6 +53,9 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 //      DKV.put(_sharedmodel.elasticAverageModelInfoKey(), _sharedmodel);
     _useFraction=fraction;
     _shuffle = model_info().get_params()._shuffle_training_data;
+//    {
+//      throw new UnsupportedOperationException("I don't want tasks");
+//    }
   }
 
   /**
@@ -87,7 +92,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   @Override protected boolean chunkInit(){
     if (_localmodel.get_processed_local() >= _useFraction * _fr.numRows())
       return false;
-    _neurons = Neurons.makeNeuronsForTraining(_localmodel);
+    _neurons = Neurons.forTraining(_localmodel);
     _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());
     return true;
   }
@@ -122,7 +127,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     } else {
       seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
     }
-    fpropMiniBatch(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, responses, offsets, n);
+    Neurons.fpropMiniBatch(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, responses, offsets, n);
     bpropMiniBatch(_neurons, n);
   }
 
@@ -234,47 +239,4 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     _localmodel = null;
   }
 
-  /**
-   * Forward propagation
-   * assumption: layer 0 has _a filled with (horizontalized categoricals) double values
-   * @param seed
-   * @param neurons
-   * @param minfo
-   * @param consensus_minfo
-   * @param training
-   * @param n Number of actually trained samples in this mini-batch
-   */
-  public static void fpropMiniBatch(long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
-                                    DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double[] offset, int n) {
-    // Forward propagation
-    for (int i=1; i<neurons.length; ++i)
-      neurons[i].fprop(seed, training, n);
-
-    // Add offset (in link space) if applicable
-    for (int mb=0;mb<n;++mb) {
-      if (offset!=null && offset[mb] > 0) {
-        assert (!minfo._classification); // Regression
-        double[] m = minfo.data_info()._normRespMul;
-        double[] s = minfo.data_info()._normRespSub;
-        double mul = m == null ? 1 : m[0];
-        double sub = s == null ? 0 : s[0];
-        neurons[neurons.length - 1]._a[mb].add(0, ((offset[mb] - sub) * mul));
-      }
-
-      if (training) {
-        // Compute the gradient at the output layer
-        // auto-encoder: pass a dummy "response" (ignored)
-        // otherwise: class label or regression target
-        neurons[neurons.length - 1].setOutputLayerGradient(responses[mb], mb, n);
-
-        // Elastic Averaging - set up helpers needed during back-propagation
-        if (consensus_minfo != null) {
-          for (int i = 1; i < neurons.length; i++) {
-            neurons[i]._wEA = consensus_minfo.get_weights(i - 1);
-            neurons[i]._bEA = consensus_minfo.get_biases(i - 1);
-          }
-        }
-      }
-    }
-  }
 }

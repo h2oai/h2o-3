@@ -217,17 +217,20 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       //check that _parms isn't changed during DL model training
       long cs2 = _parms.checksum();
       assert(cs == cs2);
+//      throw new UnsupportedOperationException("Just checking that we get here"); // !!!!!!! DON'T COMMIT!!!!!
+
     }
+
+    public DeepLearningModel modelWeBuild = null;
 
     /**
      * Train a Deep Learning model, assumes that all members are populated
      * If checkpoint == null, then start training a new model, otherwise continue from a checkpoint
      */
     public final void buildModel() {
-      DeepLearningModel cp = null;
       List<Key> removeMe = new ArrayList();
       if (_parms._checkpoint == null) {
-        cp = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
+        modelWeBuild = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
         if (_parms._pretrained_autoencoder != null) {
           final DeepLearningModel pretrained = DKV.getGet(_parms._pretrained_autoencoder);
           if (pretrained == null)
@@ -235,9 +238,9 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           if (_parms._autoencoder || !pretrained._parms._autoencoder)
             throw new H2OIllegalArgumentException("The pretrained model must be unsupervised (an autoencoder), and the model to be trained must be supervised.");
           Log.info("Loading model parameters of input and hidden layers from the pretrained autoencoder model.");
-          cp.model_info().initializeFromPretrainedModel(pretrained.model_info());
+          modelWeBuild.model_info().initializeFromPretrainedModel(pretrained.model_info());
         } else {
-          cp.model_info().initializeMembers(_parms._initial_weights, _parms._initial_biases);
+          modelWeBuild.model_info().initializeMembers(_parms._initial_weights, _parms._initial_biases);
         }
       } else {
         final DeepLearningModel previous = DKV.getGet(_parms._checkpoint);
@@ -262,13 +265,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           dinfo = makeDataInfo(_train, _valid, _parms, nclasses());
           DKV.put(dinfo); // For FrameTask that needs DataInfo in the DKV as a standalone thing - the DeepLearningModel has its own copy inside itself
           removeMe.add(dinfo._key);
-          cp = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
-          cp.write_lock(_job);
+          modelWeBuild = new DeepLearningModel(dest(), _parms, previous, false, dinfo);
+          modelWeBuild.write_lock(_job);
 
-          if (!Arrays.equals(cp._output._names, previous._output._names)) {
+          if (!Arrays.equals(modelWeBuild._output._names, previous._output._names)) {
             throw new H2OIllegalArgumentException("The columns of the training data must be the same as for the checkpointed model. Check ignored columns (or disable ignore_const_cols).");
           }
-          if (!Arrays.deepEquals(cp._output._domains, previous._output._domains)) {
+          if (!Arrays.deepEquals(modelWeBuild._output._domains, previous._output._domains)) {
             throw new H2OIllegalArgumentException("Categorical factor levels of the training data must be the same as for the checkpointed model.");
           }
           if (dinfo.fullN() != previous.model_info().data_info().fullN()) {
@@ -279,7 +282,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           }
 
           // these are the mutable parameters that are to be used by the model (stored in model_info.parameters)
-          final DeepLearningParameters actualParms = cp.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
+          final DeepLearningParameters actualParms = modelWeBuild.model_info().get_params(); //actually used parameters for model building (defaults filled in, etc.)
           assert (actualParms != previous.model_info().get_params());
           assert (actualParms != _parms);
           assert (actualParms != previous._parms);
@@ -290,38 +293,38 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           DeepLearningParameters.Sanity.updateParametersDuringCheckpointRestart(_parms, previous._parms, false /*doIt*/, false /*quiet*/);
 
           //actually change the parameters in the "insider" version of parameters
-          DeepLearningParameters.Sanity.updateParametersDuringCheckpointRestart(_parms /*user-given*/, cp.model_info().get_params() /*model_info.parameters that will be used*/, true /*doIt*/, true /*quiet*/);
+          DeepLearningParameters.Sanity.updateParametersDuringCheckpointRestart(_parms /*user-given*/, modelWeBuild.model_info().get_params() /*model_info.parameters that will be used*/, true /*doIt*/, true /*quiet*/);
 
           // update/sanitize parameters (in place) to set defaults etc.
-          DeepLearningParameters.Sanity.modifyParms(_parms, cp.model_info().get_params(), nclasses());
+          DeepLearningParameters.Sanity.modifyParms(_parms, modelWeBuild.model_info().get_params(), nclasses());
 
           Log.info("Continuing training after " + String.format("%.3f", previous.epoch_counter) + " epochs from the checkpointed model.");
-          cp.update(_job);
+          modelWeBuild.update(_job);
         } catch (H2OIllegalArgumentException ex){
-          if (cp != null) {
-            cp.unlock(_job);
-            cp.delete();
-            cp = null;
+          if (modelWeBuild != null) {
+            modelWeBuild.unlock(_job);
+            modelWeBuild.delete();
+            modelWeBuild = null;
           }
           throw ex;
         } finally {
-          if (cp != null) cp.unlock(_job);
+          if (modelWeBuild != null) modelWeBuild.unlock(_job);
         }
       }
-      trainModel(cp);
+      trainModel(modelWeBuild);
       for (Key k : removeMe) DKV.remove(k);
 
       // clean up, but don't delete weights and biases if user asked for export
       List<Key> keep = new ArrayList<>();
       try {
-        if ( _parms._export_weights_and_biases && cp._output.weights != null && cp._output.biases != null) {
-          for (Key k : Arrays.asList(cp._output.weights)) {
+        if ( _parms._export_weights_and_biases && modelWeBuild._output.weights != null && modelWeBuild._output.biases != null) {
+          for (Key k : Arrays.asList(modelWeBuild._output.weights)) {
             keep.add(k);
             for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
               keep.add(vk._key);
             }
           }
-          for (Key k : Arrays.asList(cp._output.biases)) {
+          for (Key k : Arrays.asList(modelWeBuild._output.biases)) {
             keep.add(k);
             for (Vec vk : ((Frame) DKV.getGet(k)).vecs()) {
               keep.add(vk._key);

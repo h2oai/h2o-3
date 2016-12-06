@@ -140,14 +140,11 @@ object HamOrSpamDemoTest extends TestUtil {
     val jobKey: Key[DeepLearningModel] = water.Key.make("dlModel.hex")
     val dl = new DeepLearning(dlParams, jobKey)
 //    val tmi = dl.trainModelImpl()
+//    tmi.computeImpl()
     val tm = dl.trainModel()
     tm.waitTillFinish()
     tm._result.get()
-
-  }
-
-  def arrayFrom(map: Map[Int, Double], size: Int): Array[Double] = {
-    0 until size map (i => map.getOrElse(i, 0.0)) toArray
+//    tm.modelWeBuild
   }
 
   /** A numeric Vec from an array of doubles */
@@ -174,11 +171,6 @@ object HamOrSpamDemoTest extends TestUtil {
     val chunk: NewChunk = new NewChunk(avec, 0)
     for (r <- rows) chunk.addNum(r)
     commit(avec, chunk)
-  }
-
-  def cvec(domain: Array[String], rows: Iterable[String]): Vec = {
-    val indexes: Iterable[Int] = rows map (domain.indexOf(_))
-    vec(domain, indexes)
   }
 
   val CatDomain = "ham" :: "spam" :: Nil toArray

@@ -932,19 +932,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, null, null, true);
   }
 
-  public double scoreSample(double[] sample) throws IllegalArgumentException {
-    int nouts = numOutputColumns();
-//    double[] scored = score01(sample, , 0, 1);
-
-    double[] score = score0(sample, new double[nouts]);
-    System.out.println("Raw score=" + Arrays.toString(score));
-    correctProbabilities(sample, score);
-    System.out.println("Corrected score=" + Arrays.toString(score));
-
-
-    return score[0];
-  }
-
 
   /** Bulk score the frame {@code fr}, producing a Frame result; the 1st
    *  Vec is the predicted class, the remaining Vecs are the probability
@@ -1141,7 +1128,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score;
   }
 
-  private void correctProbabilities(double[] sample, double[] score) {
+  public void correctProbabilities(double[] sample, double[] score) {
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
     if( _output.isClassifier()) {

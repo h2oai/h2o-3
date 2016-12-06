@@ -30,7 +30,8 @@ import static water.H2O.technote;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
+public class DeepLearningModel extends 
+    SimpleDLM<DeepLearningModel, DeepLearningModel.DeepLearningParameters, DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
   @Override public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
   }
@@ -79,14 +80,12 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
   final public DeepLearningModelInfo model_info() { return model_info; }
   final public VarImp varImp() { return _output.errors.variable_importances; }
 
-  private volatile DeepLearningModelInfo model_info;
-
   // timing
   public long total_checkpointed_run_time_ms; //time spent in previous models
   public long total_training_time_ms; //total time spent running (training+scoring, including all previous models)
   public long total_scoring_time_ms; //total time spent scoring (including all previous models)
   public long total_setup_time_ms; //total time spent setting up (including all previous models)
-  private long time_of_start_ms; //start time for this model (this cp restart)
+  private long time_of_start_ms; //start time for this model (this modelWeBuild restart)
 
   // auto-tuning
   public long actual_train_samples_per_iteration;
@@ -575,7 +574,7 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
         @Override public void map( Chunk chks[], NewChunk recon[] ) {
           double tmp [] = new double[_output._names.length];
           double preds[] = new double [len];
-          final Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info);
+          final Neurons[] neurons = Neurons.forTesting(model_info);
           for( int row=0; row<chks[0]._len; row++ ) {
             double p[] = score_autoencoder(chks, row, tmp, preds, neurons, true /*reconstruction*/, false /*reconstruction_error_per_feature*/);
             for( int c=0; c<len; c++ )
@@ -591,11 +590,6 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
     }
   }
 
-  @Override
-  protected double[] score0(double[] data, double[] preds) {
-    return score0(data, preds, 1, 0);
-  }
-
   /**
    * Compute the loss function
    * @param myRows Mini-Batch Array of denseRow's containing numerical/categorical predictor and response data (standardized)
@@ -603,7 +597,7 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
    */
   public double meanLoss(DataInfo.Row[] myRows) {
     double loss = 0;
-    Neurons[] neurons = Neurons.makeNeuronsForTraining(model_info());
+    Neurons[] neurons = Neurons.forTraining(model_info());
     //for absolute error, gradient -1/1 matches the derivative of abs(x) without correction term
     long seed = -1; //ignored
 
@@ -626,7 +620,7 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
       }
     }
 
-    DeepLearningTask.fpropMiniBatch(seed, neurons, model_info(), null, false, responses, offsets, myRows.length);
+    Neurons.fpropMiniBatch(seed, neurons, model_info(), null, false, responses, offsets, myRows.length);
 
     for (int mb=0; mb<myRows.length; ++mb) {
       DataInfo.Row myRow = myRows[mb];
@@ -683,52 +677,6 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
     return n>0?loss/n:loss;
   }
 
-  /**
-   * Predict from raw double values representing the data
-   * @param data raw array containing categorical values (horizontalized to 1,0,0,1,0,0 etc.) and numerical values (0.35,1.24,5.3234,etc), both can contain NaNs
-   * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
-   * @return preds, can contain NaNs
-   */
-  @Override
-  public double[] score0(double[] data, double[] preds, double weight, double offset) {
-    int mb=0;
-    int n=1;
-
-    if (model_info().isUnstable()) {
-      Log.err(unstable_msg);
-      throw new UnsupportedOperationException(unstable_msg);
-    }
-    Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info);
-    ((Neurons.Input)neurons[0]).setInput(-1, data, mb);
-    DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, new double[]{offset}, n);
-    double[] out = neurons[neurons.length - 1]._a[mb].raw();
-
-    if (get_params()._distribution == DistributionFamily.modified_huber) {
-      preds[0] = -1;
-      preds[2] = _dist.linkInv(out[0]);
-      preds[1] = 1-preds[2];
-      return preds;
-    } else if (_output.isClassifier()) {
-      assert (preds.length == out.length + 1);
-      for (int i = 0; i < preds.length - 1; ++i) {
-        preds[i + 1] = out[i];
-        if (Double.isNaN(preds[i + 1])) throw new RuntimeException("Predicted class probability NaN!");
-      }
-      // label assignment happens later - explicitly mark it as invalid here
-      preds[0] = -1;
-    } else {
-      if (model_info().data_info()._normRespMul != null) //either both are null or none
-        preds[0] = (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
-      else
-        preds[0] = out[0];
-      // transform prediction to response space
-      preds[0] = _dist.linkInv(preds[0]);
-      if (Double.isNaN(preds[0]))
-        throw new RuntimeException("Predicted regression target NaN!");
-    }
-    return preds;
-  }
-
 
   /**
    * Score auto-encoded reconstruction (on-the-fly, without allocating the reconstruction as done in Frame score(Frame fr))
@@ -748,7 +696,7 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
       @Override public void map( Chunk chks[], NewChunk[] mse ) {
         double tmp [] = new double[len];
         double out[] = new double[outputcols];
-        final Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info);
+        final Neurons[] neurons = Neurons.forTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
@@ -817,12 +765,12 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
       @Override public void map( Chunk chks[] ) {
         if (isCancelled() || job !=null && job.stop_requested()) return;
         double tmp [] = new double[len];
-        final Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info);
+        final Neurons[] neurons = Neurons.forTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
           ((Neurons.Input)neurons[0]).setInput(-1, tmp, mb); //FIXME: No weights yet
-          DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n);
+          Neurons.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n);
           double[] out = neurons[layer+1]._a[mb].raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
             chks[_output._names.length+c].set(row,out[c]);
@@ -864,7 +812,7 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
       throw new UnsupportedOperationException(unstable_msg);
     }
     ((Neurons.Input)neurons[0]).setInput(-1, data, mb);
-    DeepLearningTask.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n); // reconstructs data in expanded space
+    Neurons.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n); // reconstructs data in expanded space
     double[] in  = neurons[0]._a[mb].raw(); //input (expanded)
     double[] out = neurons[neurons.length - 1]._a[mb].raw(); //output (expanded)
     assert(in.length == out.length);
@@ -966,7 +914,7 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
     sb = super.toJavaInit(sb, fileCtx);
     final String mname = JCodeGen.toJavaId(_key.toString());
 
-    final Neurons[] neurons = Neurons.makeNeuronsForTesting(model_info());
+    final Neurons[] neurons = Neurons.forTesting(model_info());
     final DeepLearningParameters p = model_info.get_params();
 
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();
@@ -1289,13 +1237,6 @@ public class DeepLearningModel extends SimpleDLM implements Model.DeepFeatures {
       bodySb.ip("preds[0] = preds[1];").nl();
     }
   }
-
-  private final String unstable_msg = technote(4,
-      "\n\nTrying to predict with an unstable model." +
-          "\nJob was aborted due to observed numerical instability (exponential growth)."
-          + "\nEither the weights or the bias values are unreasonably large or lead to large activation values."
-          + "\nTry a different initial distribution, a bounded activation function (Tanh), adding regularization"
-          + "\n(via max_w2, l1, l2, dropout) or learning rate (either enable adaptive_rate or use a smaller learning rate or faster annealing).");
 
   @Override protected long checksum_impl() {
     return super.checksum_impl() * model_info.checksum_impl();
