@@ -7,7 +7,7 @@ import itertools
 from h2o.grid.grid_search import H2OGridSearch
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-from h2o.estimators.stackedensemble import H2OStackedensembleEstimator
+from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
 
 def stackedensemble_gaussian():
   australia_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/extdata/australia.csv"), destination_frame="australia.hex")
@@ -30,7 +30,7 @@ def stackedensemble_gaussian():
   my_glm.model_performance(australia_hex).show()
 
 
-  stacker = H2OStackedensembleEstimator(selection_strategy="choose_all", base_models=[my_gbm.model_id, my_glm.model_id])
+  stacker = H2OStackedEnsembleEstimator(selection_strategy="choose_all", base_models=[my_gbm.model_id, my_glm.model_id])
   stacker.train(model_id="my_ensemble", x=myX, y="runoffnew", training_frame=australia_hex)
 #  stacker.train(model_id="my_ensemble", y="runoffnew", training_frame=australia_hex, ignored_columns=["premax"])  # test ignore_columns parameter checking
   predictions = stacker.predict(australia_hex)  # training data
