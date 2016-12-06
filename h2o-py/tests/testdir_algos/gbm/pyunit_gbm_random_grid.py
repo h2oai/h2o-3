@@ -37,7 +37,7 @@ def airline_gbm_random_grid():
   print(air_grid.get_grid("logloss"))
 
   stacker = H2OStackedensembleEstimator(selection_strategy="choose_all", base_models=air_grid.model_ids)
-  stacker.train(model_id="my_ensemble", x=myX, y="IsDepDelayed", training_frame=air_hex)
+  stacker.train(model_id="my_ensemble", y="IsDepDelayed", training_frame=air_hex)
   predictions = stacker.predict(air_hex)  # training data
   print("preditions for ensemble are in: " + predictions.frame_id)
 
