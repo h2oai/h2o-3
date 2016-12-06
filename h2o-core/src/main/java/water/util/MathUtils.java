@@ -684,6 +684,7 @@ public class MathUtils {
    * @return logloss
    */
   public static double logloss(double err) {
+    assert(err >= 0 && err <= 1) : "Logloss is only defined for values in 0...1, but got " + err;
     return Math.min(MAXLL, -Math.log(1.0-err));
   }
   final static double MAXLL = -Math.log(1e-15); //34.53878
