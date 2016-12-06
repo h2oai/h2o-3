@@ -7,17 +7,17 @@ Currently supported versions:
 
 -  CDH 5.2
 -  CDH 5.3
--  CDH 5.4.2
--  CDH 5.5.3
--  CDH 5.6.0
--  CDH 5.7.0
--  CDH 5.8.0
+-  CDH 5.4
+-  CDH 5.5
+-  CDH 5.6
+-  CDH 5.7
+-  CDH 5.8
 -  HDP 2.1
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
--  MapR 3.1.1
--  MapR 4.0.1
+-  MapR 3.1
+-  MapR 4.0
 -  MapR 5.0
 -  MapR 5.1
 
@@ -74,7 +74,7 @@ Walkthrough
 The following steps show you how to download or build H2O with Hadoop
 and the parameters involved in launching H2O from the command line.
 
-1. Download the latest H2O release for your version of Hadoop. Refer to the H2O on Hadoop `Download <http://www.h2o.ai/download/h2o/hadoop>`__ page.
+1. Download the latest H2O release for your version of Hadoop. Refer to the `H2O on Hadoop <http://www.h2o.ai/download>`__ tab of the download page for either the latest stable release or the nightly bleeding edge release.
 
 2. Prepare the job input on the Hadoop Node by unzipping the build file
    and changing to the directory with the Hadoop and H2O's driver jar
@@ -190,7 +190,7 @@ enable access, follow the instructions below.
 
 Edit Hadoop's ``core-site.xml``, then set the ``HADOOP_CONF_DIR``
 environment property to the directory containing the ``core-site.xml``
-file. For an example ``core-site.xml`` file, file, refer to :ref:`Core-site.xml`. Typically, the configuration directory for
+file. For an example ``core-site.xml`` file, refer to :ref:`Core-site.xml`. Typically, the configuration directory for
 most Hadoop distributions is ``/etc/hadoop/conf``.
 
 You can also pass the S3 credentials when launching H2O with the Hadoop
