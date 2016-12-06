@@ -162,7 +162,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           throw new H2OIllegalArgumentException("Don't know how to find the right DistributionFamily for Family: " + thisFamily);
         }
       } else if (null != distributionField) {
-        return ((Distribution)distributionField.get(aModel)).distribution;
+        Distribution distribution = ((Distribution)distributionField.get(aModel));
+        if (null != distribution)
+          return distribution.distribution;
+        else
+          return aModel._parms._distribution; // TODO: could be AUTO. . .
       } else {
         throw new H2OIllegalArgumentException("Don't know how to stack models that have neither a distribution hyperparameter nor a family hyperparameter.");
       }

@@ -11,6 +11,7 @@ from tests import pyunit_utils
 import itertools
 from h2o.grid.grid_search import H2OGridSearch
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+from h2o.estimators.stackedensemble import H2OStackedensembleEstimator
 
 def airline_gbm_random_grid():
   air_hex = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/allyears2k_headers.zip"), destination_frame="air.hex")
@@ -45,7 +46,7 @@ def airline_gbm_random_grid():
   print(air_grid.get_grid("logloss"))
 
   stacker = H2OStackedensembleEstimator(selection_strategy="choose_all", base_models=air_grid.model_ids)
-  stacker.train(model_id="my_ensemble", x=myX, y="IsDepDelayed", training_frame=air_hex)
+  stacker.train(model_id="my_ensemble", y="IsDepDelayed", training_frame=air_hex)
   predictions = stacker.predict(air_hex)  # training data
   print("preditions for ensemble are in: " + predictions.frame_id)
 
