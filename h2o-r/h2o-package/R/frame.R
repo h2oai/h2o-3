@@ -2829,6 +2829,7 @@ as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
 
 #' @rdname as.h2o
 #' @method as.h2o data.frame
+#' @importFrom data.table fwrite
 #' @export
 as.h2o.data.frame <- function(x, destination_frame="", ...) {
   if( destination_frame=="" )
@@ -2843,7 +2844,7 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
   types <- sapply(x, function(x) class(x)[1L]) # ensure vector returned
   class.map <- h2o.class.map()
   types[types %in% names(class.map)] <- class.map[types[types %in% names(class.map)]]
-  write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
+  fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)
   h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
                         col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
   file.remove(tmpf)
@@ -2903,6 +2904,7 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
 #' as.data.frame(prostate.hex)
 #' }
+# @importFrom data.table fread
 #' @export
 as.data.frame.H2OFrame <- function(x, ...) {
   # Force loading of the types
@@ -2946,6 +2948,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   colClasses <- gsub("time", NA, colClasses) # change to Date after ingestion
   # Substitute NAs for blank cells rather than skipping
   df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
+  # df <- fread(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
   close(tcon)
   # Convert all date columns to POSIXct
   dates <- attr(x, "types") %in% "time"
