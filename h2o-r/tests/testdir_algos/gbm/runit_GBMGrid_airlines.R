@@ -61,12 +61,13 @@ gbm.grid.test <- function() {
     #                         model_id = "my_ensemble",
     #                         selection_strategy = "choose_all",
     #                         base_models = air.grid@model_ids)
-    stacker <- h2o.stackedensemble(x = myX, y = "IsDepDelayed", training_frame = air.hex,
+    stacker <- h2o.stackedEnsemble(x = myX, y = "IsDepDelayed", training_frame = air.hex,
                                    model_id = "my_ensemble", selection_strategy = "choose_all",
                                    base_models = air.grid@model_ids)
 
-    predictions = stacker.predict(air_hex)  # training data
-    print("preditions for ensemble are in: " + predictions.frame_id)
+    predictions = h2o.predict(stacker, air.hex) # training data
+    print("preditions for ensemble are in: ")
+    print(h2o.getId(predictions))
 }
 
 doTest("GBM Grid Test: Airlines Smalldata", gbm.grid.test)
