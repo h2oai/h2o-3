@@ -397,8 +397,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _t0 = System.currentTimeMillis();
       if (_parms._lambda_search || !_parms._intercept || _parms._lambda == null || _parms._lambda[0] > 0)
         _parms._use_all_factor_levels = true;
-      if (_parms._max_active_predictors == -1)
-        _parms._max_active_predictors = _parms._solver == Solver.IRLSM ? 7000 : 100000000;
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, _parms._missing_values_handling == MissingValuesHandling.Skip, _parms._missing_values_handling == MissingValuesHandling.MeanImputation, false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms._interactions);
@@ -1039,7 +1037,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       } else
         _workPerIteration = 1 + (WORK_TOTAL/_parms._max_iterations);
 
-      if(_parms._family == Family.multinomial && _parms._solver != Solver.L_BFGS && (_parms._solver != Solver.AUTO || defaultSolver() != Solver.L_BFGS) ) {
+      if(_parms._family == Family.multinomial && _parms._solver != Solver.L_BFGS ) {
         double [] nb = getNullBeta();
         double maxRow = ArrayUtils.maxValue(nb);
         double sumExp = 0;
@@ -1170,7 +1168,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 
   private Solver defaultSolver() {
     Solver s = Solver.IRLSM;
-    if(_state.activeData().fullN() >= 5000) // cutoff has to be somewhere
+    int max_active = 0;
+    if(_parms._family == Family.multinomial )
+      for(int c = 0; c < _nclass; ++c)
+        max_active = Math.max(_state.activeDataMultinomial(c).fullN(),max_active);
+    else max_active = _state.activeData().fullN();
+    if(max_active >= 5000) // cutoff has to be somewhere
       s = Solver.L_BFGS;
     else if(_parms._lambda_search) { // lambda search prefers coordinate descent
       // l1 lambda search is better with coordinate descent!
@@ -1181,6 +1184,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       s = Solver.L_BFGS; // multinomial does better with lbfgs
     else
       Log.info(LogMsg("picked solver " + s));
+    if(s != Solver.L_BFGS && _parms._max_active_predictors == -1)
+      _parms._max_active_predictors = 5000;
     _parms._solver = s;
     return s;
   }
