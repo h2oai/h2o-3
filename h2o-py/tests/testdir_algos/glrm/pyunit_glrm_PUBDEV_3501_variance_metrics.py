@@ -23,9 +23,9 @@ def glrm_arrests():
   glrm_h2o.show()
 
   # compare table values and make sure they are the same between PCA and GLRM
-  if not(pyunit_utils.equal_2D_tables(pca_h2o._model_json["output"]["importance"]._cell_values,
-                               glrm_h2o._model_json["output"]["importance"]._cell_values, tolerance=1e-4)):
-    assert False, "PCA and GLRM variance metrics do not agree.  Fix it please."
+  assert pyunit_utils.equal_2D_tables(pca_h2o._model_json["output"]["importance"]._cell_values,
+                                      glrm_h2o._model_json["output"]["importance"]._cell_values, tolerance=1e-4), \
+    "PCA and GLRM variance metrics do not agree.  Fix it please."
 
   sys.stdout.flush()
 
