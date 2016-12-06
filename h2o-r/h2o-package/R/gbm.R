@@ -163,12 +163,13 @@ h2o.gbm <- function(x, y, training_frame,
 
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
-  # Training_frame and validation_frame may be a key or an H2OFrame object
+  # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
            error = function(err) {
              stop("argument 'training_frame' must be a valid H2OFrame or key")
            })
+  # Validation_frame must be a key or an H2OFrame object
   if (!is.null(validation_frame)) {
      if (!is.H2OFrame(validation_frame))
          tryCatch(validation_frame <- h2o.getFrame(validation_frame),
@@ -183,9 +184,9 @@ h2o.gbm <- function(x, y, training_frame,
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  parms$ignored_columns <- args$x_ignore 
- 
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))

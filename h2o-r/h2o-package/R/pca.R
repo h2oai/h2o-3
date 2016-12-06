@@ -55,12 +55,13 @@ h2o.prcomp <- function(training_frame, x,
 
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
-  # Training_frame and validation_frame may be a key or an H2OFrame object
+  # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
            error = function(err) {
              stop("argument 'training_frame' must be a valid H2OFrame or key")
            })
+  # Validation_frame must be a key or an H2OFrame object
   if (!is.null(validation_frame)) {
      if (!is.H2OFrame(validation_frame))
          tryCatch(validation_frame <- h2o.getFrame(validation_frame),

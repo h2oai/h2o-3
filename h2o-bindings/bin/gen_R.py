@@ -92,7 +92,7 @@ def gen_module(schema, algo, module):
         list.append(indent("%s = %s" % (param["name"], normalize_value(param)), 17 + len(module)))
     yield ",\n".join(list)
     yield indent(") \n{", 17 + len(module))
-    if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
+    if algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         yield "  #If x is missing, then assume user wants to use all columns as features."
         yield "  if(missing(x)){"
         yield "     if(is.numeric(y)){"
@@ -123,26 +123,28 @@ def gen_module(schema, algo, module):
     yield "  # Required args: training_frame"
     yield "  if( missing(training_frame) ) stop(\"argument \'training_frame\' is missing, with no default\")"
     # yield "  if( missing(validation_frame) ) validation_frame = NULL"
-    yield "  # Training_frame and validation_frame may be a key or an H2OFrame object"
+    yield "  # Training_frame must be a key or an H2OFrame object"
     yield "  if (!is.H2OFrame(training_frame))"
     yield "     tryCatch(training_frame <- h2o.getFrame(training_frame),"
     yield "           error = function(err) {"
     yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
     yield "           })"
-    yield "  if (!is.null(validation_frame)) {"
-    yield "     if (!is.H2OFrame(validation_frame))"
-    yield "         tryCatch(validation_frame <- h2o.getFrame(validation_frame),"
-    yield "             error = function(err) {"
-    yield "                 stop(\"argument \'validation_frame\' must be a valid H2OFrame or key\")"
-    yield "             })"
-    yield "  }"
+    if algo != "stackedensemble":
+        yield "  # Validation_frame must be a key or an H2OFrame object"
+        yield "  if (!is.null(validation_frame)) {"
+        yield "     if (!is.H2OFrame(validation_frame))"
+        yield "         tryCatch(validation_frame <- h2o.getFrame(validation_frame),"
+        yield "             error = function(err) {"
+        yield "                 stop(\"argument \'validation_frame\' must be a valid H2OFrame or key\")"
+        yield "             })"
+        yield "  }"
     yield "  # Parameter list to send to model builder"
     yield "  parms <- list()"
     yield "  parms$training_frame <- training_frame"
     if algo == "glrm":
         yield " if(!missing(cols))"
         yield " parms$ignored_columns <- .verify_datacols(training_frame, cols)$cols_ignore"
-    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes"]:
+    elif algo in ["deeplearning", "deepwater", "drf", "gbm", "glm", "naivebayes", "stackedensemble"]:
         if any(param["name"] == "autoencoder" for param in schema["parameters"]):
             yield "  args <- .verify_dataxy(training_frame, x, y, autoencoder)"
         else:
@@ -151,9 +153,10 @@ def gen_module(schema, algo, module):
             yield "  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]"
         if any(param["name"] == "weights_column" for param in schema["parameters"]):
             yield "  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]"
-        yield "  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]"
-        yield "  parms$response_column <- args$y"
-        yield "  parms$ignored_columns <- args$x_ignore \n "
+        if algo != "stackedensemble":
+            yield "  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]"
+            yield "  parms$ignored_columns <- args$x_ignore"
+        yield "  parms$response_column <- args$y\n"
     else:
         yield "  if(!missing(x))"
         yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
@@ -164,6 +167,9 @@ def gen_module(schema, algo, module):
         yield "      parms$model_id <- destination_key"
         yield "    }"
         yield "  }"
+    if algo == "stackedensemble":
+        yield "  if (!missing(model_id))"
+        yield "    parms$model_id <- model_id"
     for param in schema["parameters"]:
         if param["name"] in ["ignored_columns", "response_column", "training_frame", "max_confusion_matrix_size"]:
             continue
@@ -194,7 +200,7 @@ def gen_module(schema, algo, module):
             yield "%s" % line
     if algo != "glm":
         yield "  # Error check and build model"
-        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion=%d) \n}" % (algo, 99 if algo == "svd" else 3)
+        yield "  .h2o.modelJob('%s', parms, h2oRestApiVersion=%d) \n}" % (algo, 99 if algo in ["svd", "stackedensemble"] else 3)
     if help_afterword:
         lines = help_afterword.split("\n")
         for line in lines:
@@ -205,6 +211,11 @@ def help_preamble_for(algo):
         return """
             Build a Deep Neural Network model using CPUs
             Builds a feed-forward multilayer artificial neural network on an H2OFrame
+        """
+    if algo == "stackedensemble":
+        return """
+            This function  creates a “Super Learner” (stacked ensemble) using the H2O base
+            learning algorithms specified by the user.
         """
     if algo == "deepwater":
         return """
@@ -406,6 +417,8 @@ def get_extra_params_for(algo):
         return "x, y, training_frame"
     elif algo == "svd":
         return "training_frame, x, destination_key"
+    elif algo == "stackedensemble":
+        return "x, y, training_frame, model_id"
     else:
         return "training_frame, x"
 
@@ -422,6 +435,14 @@ def help_extra_params_for(algo):
         return """#' @param x A vector containing the \code{character} names of the predictors in the model.
             #' @param destination_key (Optional) The unique hex key assigned to the resulting model.
             #'                        Automatically generated if none is provided."""
+    elif algo == "stackedensemble":
+        return """#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
+            #'        If x is missing,then all columns except y are used.
+            #' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
+            #'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+            #'        categorical variable).
+            #' @param model_id Destination id for this model; auto-generated if not specified.
+            #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters)."""
     else:
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
 
@@ -809,6 +830,7 @@ def algo_to_modelname(algo):
     if algo == "naivebayes": return "Naive Bayes Model in H2O"
     if algo == "pca": return "Principal Components Analysis"
     if algo == "svd": return "Singular Value Decomposition"
+    if algo == "stackedensemble": return "H2O Stacked Ensemble"
     return algo
 
 def indent(string, n):
@@ -835,7 +857,7 @@ def main():
     bi.init("R", "../../../h2o-r/h2o-package/R", clear_dir=False)
 
     for name, mb in bi.model_builders().items():
-        if name == "aggregator":
+        if name in ["aggregator"]:
             continue
         module = name
         file_name = name
@@ -843,6 +865,7 @@ def main():
             module = "randomForest"
             file_name = "randomforest"
         if name == "naivebayes": module = "naiveBayes"
+        if name == "stackedensemble": module = "stackedEnsemble"
         if name == "pca": module = "prcomp"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.R" % file_name, gen_module(mb, name, module))
