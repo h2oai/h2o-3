@@ -35,7 +35,7 @@ test.pubdev_2844 <- function() {
   )
   expect_true(is.data.frame(df2))
   if (use.package("data.table")) {
-    expect_true(length(co), label="as.data.frame.H2OFrame should produce verbose messages when data.table::fread verbose=TRUE is used")
+    expect_true(as.logical(length(co)), label="as.data.frame.H2OFrame should produce verbose messages when data.table::fread verbose=TRUE is used")
   } else {
     expect_true(!length(co), label="as.data.frame.H2OFrame should not produce verbose messages when data.table::fread is not used")
   }
@@ -53,6 +53,32 @@ test.pubdev_2844 <- function() {
   expect_equal(df1, df2, label="data.frame passed to h2o and back are equal")
   expect_equal(df1, df3, label="data.frame passed to h2o and back are equal also when data.table force disabled")
   
+  # test "h2o.verbose" option to measure timing and also confirm fwrite/fread
+  op <- options(
+    "h2o.verbose"=TRUE,
+    "h2o.use.data.table"=TRUE,
+    "datatable.verbose"=FALSE
+  )
+  co <- capture.output(
+    hf3 <- as.h2o(df1, destination_frame = "pubdev2844.3")
+  )
+  expect_true(is.h2o(hf3))
+  if (use.package("data.table")) {
+    expect_true(length(co) && sum(grepl("fwrite", co)), label="as.h2o should produce 'fwrite' in timing message when h2o.verbose=TRUE and data.table used.")
+  } else {
+    expect_true(length(co) && sum(grepl("write.csv", co)), label="as.h2o should produce 'write.csv' in timing message when h2o.verbose=TRUE and data.table not used.")
+  }
+  # other way around
+  co <- capture.output(
+    df4 <- as.data.frame(hf3)
+  )
+  expect_true(is.data.frame(df4))
+  if (use.package("data.table")) {
+    expect_true(length(co) && sum(grepl("fread", co)), label="as.data.frame.H2OFrame should produce 'fread' in timing message when h2o.verbose=TRUE and data.table used.")
+  } else {
+    expect_true(length(co) && sum(grepl("read.csv", co)), label="as.data.frame.H2OFrame should produce 'read.csv' in timing message when h2o.verbose=TRUE and data.table not used.")
+  }
+  options(op)
 }
 
 doTest("PUBDEV-2844", test.pubdev_2844)

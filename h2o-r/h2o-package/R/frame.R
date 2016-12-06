@@ -2873,13 +2873,20 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
   types <- sapply(x, function(x) class(x)[1L]) # ensure vector returned
   class.map <- h2o.class.map()
   types[types %in% names(class.map)] <- class.map[types[types %in% names(class.map)]]
+  verbose <- getOption("h2o.verbose", FALSE)
+  if (verbose) pt <- proc.time()[[3]]
   if (getOption("h2o.fwrite", TRUE) && use.package("data.table")) {
     data.table::fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)
+    fun <- "fwrite"
   } else {
     write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
+    fun <- "write.csv"
   }
+  if (verbose) cat(sprintf("writing csv to disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
+  if (verbose) pt <- proc.time()[[3]]
   h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
                         col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
+  if (verbose) cat(sprintf("uploading csv to h2o using 'h2o.uploadFile' took %.2fs\n", proc.time()[[3]]-pt))
   file.remove(tmpf)
   h2f
 }
@@ -2951,8 +2958,11 @@ as.data.frame.H2OFrame <- function(x, ...) {
   urlSuffix <- paste0('DownloadDataset',
                       '?frame_id=', URLencode( h2o.getId(x)),
                       '&hex_string=', as.numeric(use_hex_string))
-
+  
+  verbose <- getOption("h2o.verbose", FALSE)
+  if (verbose) pt <- proc.time()[[3]]
   ttt <- .h2o.doSafeGET(urlSuffix = urlSuffix)
+  if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
   n <- nchar(ttt)
 
   # Delete last 1 or 2 characters if it's a newline.
@@ -2985,17 +2995,21 @@ as.data.frame.H2OFrame <- function(x, ...) {
   # Convert all date columns to POSIXct
   dates <- attr(x, "types") %in% "time"
   
+  if (verbose) pt <- proc.time()[[3]]
   if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
     df <- data.table::fread(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
     if (sum(dates))
       for (i in which(dates)) data.table::setattr(df[[i]], "class", "POSIXct")
+    fun <- "fread"
   } else {
     # Substitute NAs for blank cells rather than skipping
     df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
     close(tcon)
     if (sum(dates))
       for (i in which(dates)) class(df[[i]]) = "POSIXct"
+    fun <- "read.csv"
   }
+  if (verbose) cat(sprintf("reading csv from disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
   
   df
 }
