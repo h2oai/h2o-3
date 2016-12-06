@@ -3,7 +3,8 @@
 #'
 # -------------------------- H2O Stacked Ensemble -------------------------- #
 #' 
-#' Stacked Ensemble
+#' This function  creates a “Super Learner” (stacked ensemble) using the H2O base
+#' learning algorithms specified by the user.
 #' 
 #' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing,then all columns except y are used.
@@ -13,13 +14,12 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param selection_strategy Strategy for choosing which models to stack. Must be one of: "choose_all".
-#' @param base_models List of models which we can stack together.  Which ones are chosen depends on the selection_strategy.
+#' @param base_models List of models which we can stack together.  Which ones are chosen depends on the selection_strategy. Defaults
+#'        to [].
 #' @export
-h2o.stackedensemble <- function(x, y,
-                                training_frame,
-                                model_id,
+h2o.stackedEnsemble <- function(x, y, training_frame, model_id,
                                 selection_strategy = c("choose_all"),
-                                base_models = NULL
+                                base_models = c()
                                 ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
