@@ -12,7 +12,7 @@ from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
-class H2OStackedensembleEstimator(H2OEstimator):
+class H2OStackedEnsembleEstimator(H2OEstimator):
     """
     Stacked Ensemble
 
@@ -21,7 +21,7 @@ class H2OStackedensembleEstimator(H2OEstimator):
     algo = "stackedensemble"
 
     def __init__(self, **kwargs):
-        super(H2OStackedensembleEstimator, self).__init__()
+        super(H2OStackedEnsembleEstimator, self).__init__()
         self._parms = {}
         names_list = {"selection_strategy", "base_models"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
@@ -51,6 +51,7 @@ class H2OStackedensembleEstimator(H2OEstimator):
     def base_models(self):
         """
         List[str]: List of models which we can stack together.  Which ones are chosen depends on the selection_strategy.
+        (Default: [])
         """
         return self._parms.get("base_models")
 
