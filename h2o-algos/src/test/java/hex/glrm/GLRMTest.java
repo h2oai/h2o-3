@@ -6,6 +6,8 @@ import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
+import hex.pca.PCA;
+import hex.pca.PCAModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -509,6 +511,80 @@ public class GLRMTest extends TestUtil {
       init.delete();
       if (train != null) train.delete();
       Scope.exit();
+    }
+  }
+
+  // PUBDEV-3501: Variance metrics for GLRM.  I compared the variance metrics calculated by PCA
+  // and by GLRM to make sure they agree.
+  @Test public void testArrestsVarianceMetrics() throws InterruptedException, ExecutionException {
+    // Results with de-meaned training frame
+    double[] stddev = new double[] {83.732400, 14.212402, 6.489426, 2.482790};
+    double[][] eigvec = ard(ard(0.04170432, -0.04482166, 0.07989066, -0.99492173),
+            ard(0.99522128, -0.05876003, -0.06756974, 0.03893830),
+            ard(0.04633575, 0.97685748, -0.20054629, -0.05816914),
+            ard(0.07515550, 0.20071807, 0.97408059, 0.07232502));
+
+    // Results with standardized training frame
+    double[] stddev_std = new double[] {1.5748783, 0.9948694, 0.5971291, 0.4164494};
+    double[][] eigvec_std = ard(ard(-0.5358995, 0.4181809, -0.3412327, 0.64922780),
+            ard(-0.5831836, 0.1879856, -0.2681484, -0.74340748),
+            ard(-0.2781909, -0.8728062, -0.3780158, 0.13387773),
+            ard(-0.5434321, -0.1673186, 0.8177779, 0.08902432));
+
+    Frame train = null;
+    PCAModel model = null;
+    GLRMModel gmodel = null;
+
+    try {
+      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
+      for (DataInfo.TransformType std : new DataInfo.TransformType[] {
+              DataInfo.TransformType.DEMEAN,
+              DataInfo.TransformType.STANDARDIZE }) {
+        try {
+          PCAModel.PCAParameters parms = new PCAModel.PCAParameters();  // build PCA
+          parms._train = train._key;
+          parms._k = 4;
+          parms._transform = std;
+          parms._max_iterations = 1000;
+          parms._pca_method = PCAModel.PCAParameters.Method.Power;
+          model = new PCA(parms).trainModel().get();
+
+          GLRMParameters gparms = new GLRMParameters();  // build GLRM
+          gparms._train = train._key;
+          gparms._k = 4;
+          gparms._transform = std;
+          gparms._loss = GlrmLoss.Quadratic;
+          gparms._init = GlrmInitialization.SVD;
+          gparms._max_iterations = 2000;
+          gparms._gamma_x = 0;
+          gparms._gamma_y = 0;
+          gparms._recover_svd = true;
+
+          gmodel = new GLRM(gparms).trainModel().get();
+          assert gmodel != null;
+
+          IcedWrapper[][] pcaInfo = model._output._importance.getCellValues();
+          IcedWrapper[][] glrmInfo = gmodel._output._importance.getCellValues();
+
+          if (std == DataInfo.TransformType.DEMEAN) { // check to make sure PCA generated correct results first
+            TestUtil.checkStddev(stddev, model._output._std_deviation, TOLERANCE);
+            TestUtil.checkEigvec(eigvec, model._output._eigenvectors, TOLERANCE);
+          } else if (std == DataInfo.TransformType.STANDARDIZE) {
+            TestUtil.checkStddev(stddev_std, model._output._std_deviation, TOLERANCE);
+            TestUtil.checkEigvec(eigvec_std, model._output._eigenvectors, TOLERANCE);
+          }
+
+          // compare PCA and GLRM variance metrics here after we know PCA has worked correctly
+          TestUtil.checkIcedArrays(model._output._importance.getCellValues(),
+                  gmodel._output._importance.getCellValues(), TOLERANCE);
+
+        } finally {
+          if( model != null ) model.delete();
+          if (gmodel != null) gmodel.delete();
+        }
+      }
+    } finally {
+      if(train != null) train.delete();
     }
   }
 }
