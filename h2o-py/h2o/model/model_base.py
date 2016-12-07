@@ -845,7 +845,7 @@ class ModelBase(backwards_compatible()):
         :param H2OFrame data: An H2OFrame object used for scoring and constructing the plot.
         :param cols: Feature(s) for which partial dependence will be calculated.
         :param destination_key: An key reference to the created partial dependence tables in H2O.
-        :param nbins: Number of bins used.
+        :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count.
         :param plot: A boolean specifying whether to plot partial dependence table.
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
         :param server: ?
@@ -875,7 +875,6 @@ class ModelBase(backwards_compatible()):
         json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)
 
         # Extract partial dependence data from json response
-        # pps = json
         pps = json['partial_dependence_data']
 
         ## Plot partial dependence plots using matplotlib

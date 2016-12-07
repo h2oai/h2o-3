@@ -11,8 +11,8 @@ FULL.PATH <- paste(ROOT.PATH, DEV.PATH, sep="")
 src <-
 function() {
   warning("MAY NOT WORK ON YOUR SYSTEM -- **TRY TO CHANGE `ROOT.PATH`!**")
-  to_src <- c("astfun.R", "classes.R", "connection.R", "constants.R", "logging.R", "communication.R",
-              "import.R", "frame.R", "kvstore.R", "grid.R",
+  to_src <- c("astfun.R", "classes.R", "config.R", "connection.R", "constants.R", "logging.R", "communication.R",
+              "import.R", "frame.R", "kvstore.R", "grid.R", 
               "parse.R", "export.R", "models.R", "edicts.R", "glm.R", "glrm.R", "pca.R", "kmeans.R",
               "gbm.R", "deeplearning.R", "deepwater.R", "naivebayes.R", "randomforest.R", "svd.R", "locate.R")
   require(jsonlite); require(RCurl)
