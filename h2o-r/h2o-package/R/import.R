@@ -152,13 +152,20 @@ h2o.uploadFile <- function(path, destination_frame = "",
   path <- normalizePath(path, winslash = "/")
   srcKey <- .key.make( path )
   urlSuffix <- sprintf("PostFile?destination_frame=%s",  curlEscape(srcKey))
+  verbose <- getOption("h2o.verbose", FALSE)
+  if (verbose) pt <- proc.time()[[3]]
   fileUploadInfo <- fileUpload(path)
   .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
-
+  if (verbose) cat(sprintf("uploading file using 'fileUpload' and '.h2o.doSafePOST' took %.2fs\n", proc.time()[[3]]-pt))
+  if (verbose) pt <- proc.time()[[3]]
   rawData <- .newH2OFrame(op="PostFile",id=srcKey,-1,-1)
+  if (verbose) cat(sprintf("loading data using '.newH2OFrame' took %.2fs\n", proc.time()[[3]]-pt))
   destination_frame <- if( destination_frame == "" ) .key.make(strsplit(basename(path), "\\.")[[1]][1]) else destination_frame
   if (parse) {
-    h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type)
+    if (verbose) pt <- proc.time()[[3]]
+    ans <- h2o.parseRaw(data=rawData, destination_frame=destination_frame, header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings, blocking=!progressBar, parse_type = parse_type)
+    if (verbose) cat(sprintf("parsing data using 'h2o.parseRaw' took %.2fs\n", proc.time()[[3]]-pt))
+    ans
   } else {
     rawData
   }

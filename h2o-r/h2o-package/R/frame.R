@@ -2883,10 +2883,10 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
     fun <- "write.csv"
   }
   if (verbose) cat(sprintf("writing csv to disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
-  if (verbose) pt <- proc.time()[[3]]
+  #if (verbose) pt <- proc.time()[[3]] # timings inside
   h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
                         col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
-  if (verbose) cat(sprintf("uploading csv to h2o using 'h2o.uploadFile' took %.2fs\n", proc.time()[[3]]-pt))
+  #if (verbose) cat(sprintf("uploading csv to h2o using 'h2o.uploadFile' took %.2fs\n", proc.time()[[3]]-pt))
   file.remove(tmpf)
   h2f
 }
