@@ -318,7 +318,7 @@ public class Vec extends Keyed<Vec> {
    * evenly around the cluster.
    * @param x The value with which to fill the Vec.
    * @param len Number of rows.
-   * @return New cosntant vector with the given len.
+   * @return New constant vector with the given len.
    */
   public static Vec makeCon(double x, long len) {
     return makeCon(x,len,true);
@@ -1106,7 +1106,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   /** Set the element as missing the slow way.  */
-  final void setNA( long i ) {
+  public final void setNA( long i ) {
     Chunk ck = chunkForRow(i);
     ck.setNA_abs(i);
     postWrite(ck.close(ck.cidx(), new Futures())).blockForPending();
