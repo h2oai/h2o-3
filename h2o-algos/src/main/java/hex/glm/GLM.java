@@ -610,7 +610,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       do {
         beta = beta.clone();
         for (int c = 0; c < _nclass; ++c) {
-          if (_state.activeDataMultinomial(c).fullN() == 0) continue;
+          boolean onlyIcpt = _state.activeDataMultinomial(c).fullN() == 0;
           _state.setActiveClass(c);
           LineSearchSolver ls = (_state.l1pen() == 0)
             ? new MoreThuente(_state.gslvrMultinomial(c), _state.betaMultinomial(c,beta), _state.ginfoMultinomial(c))
@@ -623,7 +623,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           long t3 = System.currentTimeMillis();
           double[] betaCnd = solveGram(s,t);
           long t4 = System.currentTimeMillis();
-          if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
+          if (!onlyIcpt && !ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
             Log.info(LogMsg("Ls failed " + ls));
             continue;
           }

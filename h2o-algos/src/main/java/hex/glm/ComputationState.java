@@ -449,8 +449,14 @@ public final class ComputationState {
     if(_lambda == 0) return 0;
     double l1norm = 0, l2norm = 0;
     if(_parms._family == Family.multinomial) {
+      int len = beta.length/_nclasses;
+      assert len*_nclasses == beta.length;
       for(int c = 0; c < _nclasses; ++c) {
-
+        for(int i = c*len; i < (c+1)*len-1; ++i) {
+          double d = beta[i];
+          l1norm += d >= 0?d:-d;
+          l2norm += d*d;
+        }
       }
     } else
       for(int i = 0; i < beta.length-1; ++i) {
