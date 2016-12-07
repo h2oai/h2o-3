@@ -1204,4 +1204,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return makeScoringTask(adaptFrm,false,null).doAll(adaptFrm)._mb;
   }
 
+  @Override
+  public GLMMojoWriter getMojo() {
+    return new GLMMojoWriter(this);
+  }
+
 }
