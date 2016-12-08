@@ -1219,6 +1219,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         for (int j = 0; j < _ncats; j++) {
           a[j] = cs[j].atd(row);
           int catColJLevel = _yt._numLevels[j];
+          Arrays.fill(xy, 0, catColJLevel, 0);  // reset xy before accumulate sum
           if (Double.isNaN(a[j])) continue;   // Skip missing observations in row
 
           // Calculate x_i * Y_j where Y_j is sub-matrix corresponding to categorical col j
@@ -1514,6 +1515,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         // Categorical columns
         for (int j = 0; j < _ncats; j++) {
           int catColJLevel = _yt._numLevels[j];
+          Arrays.fill(xy, 0, catColJLevel, 0);  // reset before next accumulation sum
           double a = cs[j].atd(row);
           if (Double.isNaN(a)) continue;
 
