@@ -52,15 +52,7 @@ final class ExternalFrameHandler {
      *  the connection has been reused for sending more data or not
      * */
     static final byte INIT_BYTE = 42;
-
-    /**
-     * Bytes used for signaling that either reading from h2o frame or writing to h2o frame has finished.
-     * It is important for these 2 bytes to be different, otherwise we could confirm writing by reading byte, which
-     * would lead to unwanted states.
-     */
-    static final byte CONFIRM_READING_DONE = 1;
-    static final byte CONFIRM_WRITING_DONE = 2;
-
+    
     /**
      * Main task codes
      */

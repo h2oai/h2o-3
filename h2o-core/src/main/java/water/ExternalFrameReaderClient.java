@@ -70,6 +70,7 @@ final public class ExternalFrameReaderClient {
     private ByteChannel channel;
     private int numRows;
     private byte[] expectedTypes = null;
+    long threadId;
 
     /**
      *
@@ -85,6 +86,7 @@ final public class ExternalFrameReaderClient {
         this.chunkIdx = chunkIdx;
         this.expectedTypes = expectedTypes;
         this.selectedColumnIndices = selectedColumnIndices;
+        threadId = Thread.currentThread().getId();
         this.ab = initAndGetAb();
     }
 
@@ -159,14 +161,14 @@ final public class ExternalFrameReaderClient {
      */
     public void waitUntilAllReceived(){
         // blocking call
-        byte controlByte = ab.get1();
-        assert(controlByte == ExternalFrameHandler.CONFIRM_READING_DONE);
+        assert( ab.get8() == threadId);
     }
 
     private AutoBuffer initAndGetAb() throws IOException{
         AutoBuffer sentAb = new AutoBuffer();
         sentAb.put1(ExternalFrameHandler.INIT_BYTE);
         sentAb.put1(ExternalFrameHandler.DOWNLOAD_FRAME);
+        sentAb.put8(threadId);
         sentAb.putStr(frameKey);
         sentAb.putInt(chunkIdx);
         sentAb.putA1(expectedTypes);

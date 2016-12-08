@@ -23,6 +23,7 @@ final class ExternalFrameReaderBackend {
      */
     static void handleReadingFromChunk(SocketChannel channel, AutoBuffer initAb) throws IOException {
         // receive required information
+        long threadId = initAb.get8();
         String frameKey = initAb.getStr();
         int chunkIdx = initAb.getInt();
         byte[] expectedTypes = initAb.getA1();
@@ -89,7 +90,7 @@ final class ExternalFrameReaderBackend {
                 }
             }
         }
-        ab.put1(ExternalFrameHandler.CONFIRM_READING_DONE);
+        ab.put8(threadId);
         writeToChannel(ab, channel);
     }
 }
