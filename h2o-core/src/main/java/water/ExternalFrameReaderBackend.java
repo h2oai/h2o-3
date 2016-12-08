@@ -45,7 +45,7 @@ final class ExternalFrameReaderBackend {
                     ExternalFrameUtils.sendNA(ab, channel, expectedTypes[i]);
                 } else {
                     final Chunk chnk = chunks[selectedColumnIndices[i]];
-                    switch (expectedTypes[selectedColumnIndices[i]]) {
+                    switch (expectedTypes[i]) {
                         case EXPECTED_BOOL:
                             ExternalFrameUtils.sendBoolean(ab, channel, (byte)chnk.at8(rowIdx));
                             break;
