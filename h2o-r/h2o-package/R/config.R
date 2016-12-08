@@ -107,7 +107,7 @@
 #with '#' are also allowed.
 #Input is a list of file names or a single file name.
 #Returns path to first file found in files. Otherwise it returns NULL
-.find.files <- function(files = ".h2oconfig") {
+.find.config <- function(files = ".h2oconfig") {
   windows <- .Platform$OS.type == "windows" #Are we dealing with a Windows OS?
 
   #Function to check if in root directory
