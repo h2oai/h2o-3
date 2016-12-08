@@ -40,6 +40,7 @@ test.rdoc_settimezone.golden <- function() {
   expect_that(act, equals(diff[,1]))
 
   #test 2 - make sure returned years/months have the same timezone as interpretation
+  h2o.rm(hdf)
   h2o.setTimezone("Etc/UTC")
   rdf <- data.frame(dates = c("2014-01-07", "2014-01-30", "2014-01-31", "2014-02-01", "2014-02-02", "2014-10-31", "2014-11-01"), stringsAsFactors = FALSE)
   hdf <- as.h2o(rdf, "hdf")
