@@ -158,7 +158,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   private void addCommonModelInfo() throws IOException {
     int n_categoricals = 0;
-    for (String[] domain : model._output._domains)
+    for (String[] domain : model.scoringDomains())
       if (domain != null)
         n_categoricals++;
 
@@ -221,9 +221,10 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     writeln("\n[domains]");
     String format = "%d: %d d%03d.txt";
     int domIndex = 0;
-    for (int colIndex = 0; colIndex < model._output._names.length; colIndex++) {
-      if (model._output._domains[colIndex] != null)
-        writeln(String.format(format, colIndex, model._output._domains[colIndex].length, domIndex++));
+    String[][] domains = model.scoringDomains();
+    for (int colIndex = 0; colIndex < domains.length; colIndex++) {
+      if (domains[colIndex] != null)
+        writeln(String.format(format, colIndex, domains[colIndex].length, domIndex++));
     }
     finishWritingTextFile();
   }
@@ -231,7 +232,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   /** Create files containing domain definitions for each categorical column. */
   private void writeDomains() throws IOException {
     int domIndex = 0;
-    for (String[] domain : model._output._domains) {
+    for (String[] domain : model.scoringDomains()) {
       if (domain == null) continue;
       startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
       for (String category : domain) {

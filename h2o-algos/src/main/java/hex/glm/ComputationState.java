@@ -65,14 +65,14 @@ public final class ComputationState {
     _lambdaMax = lmax;
   }
   public void setLambda(double lambda) {
-    adjustToNewLambda(_lambda, 0);
+    adjustToNewLambda(0, _lambda);
     // strong rules are to be applied on the gradient with no l2 penalty
     // NOTE: we start with lambdaOld being 0, not lambda_max
     // non-recursive strong rules should use lambdaMax instead of _lambda
     // However, it seems tobe working nicely to use 0 instead and be more aggressive on the predictor pruning
     // (shoudl be safe as we check the KKTs anyways)
     applyStrongRules(lambda, _lambda);
-    adjustToNewLambda(0, lambda);
+    adjustToNewLambda(lambda, 0);
     _lambda = lambda;
     _gslvr = new GLMGradientSolver(_job,_parms,_activeData,l2pen(),_activeBC);
   }
@@ -114,9 +114,9 @@ public final class ComputationState {
           off += activeData.fullN()+1;
         }
       } else  for(int i = 0; i < _activeData.fullN(); ++i)
-        _ginfo._gradient[i] -= ldiff*_beta[i];
+        _ginfo._gradient[i] += ldiff*_beta[i];
     }
-    _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal - ldiff * l2pen, _ginfo._gradient);
+    _ginfo = new GLMGradientInfo(_ginfo._likelihood, _ginfo._objVal + ldiff * l2pen, _ginfo._gradient);
 
   }
 
@@ -449,8 +449,14 @@ public final class ComputationState {
     if(_lambda == 0) return 0;
     double l1norm = 0, l2norm = 0;
     if(_parms._family == Family.multinomial) {
+      int len = beta.length/_nclasses;
+      assert len*_nclasses == beta.length;
       for(int c = 0; c < _nclasses; ++c) {
-
+        for(int i = c*len; i < (c+1)*len-1; ++i) {
+          double d = beta[i];
+          l1norm += d >= 0?d:-d;
+          l2norm += d*d;
+        }
       }
     } else
       for(int i = 0; i < beta.length-1; ++i) {
@@ -498,7 +504,6 @@ public final class ComputationState {
     else System.arraycopy(beta,0,_beta,0,beta.length);
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
-
     return (_relImprovement = (objOld - objective())/objOld);
   }
 

@@ -742,9 +742,9 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
-        if self.algo not in {"drf", "gbm", "deepwater", "glrm"}:
+        if self.algo not in {"drf", "gbm", "deepwater", "glrm", "glm"}:
             raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, "
-                                "Gradient Boosting Machine, Deep Water and GLRM models only.")
+                                "Gradient Boosting Machine, Deep Water, GLM and GLRM models only.")
         if get_genmodel_jar:
             h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
         return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
@@ -845,7 +845,7 @@ class ModelBase(backwards_compatible()):
         :param H2OFrame data: An H2OFrame object used for scoring and constructing the plot.
         :param cols: Feature(s) for which partial dependence will be calculated.
         :param destination_key: An key reference to the created partial dependence tables in H2O.
-        :param nbins: Number of bins used.
+        :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count.
         :param plot: A boolean specifying whether to plot partial dependence table.
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
         :param server: ?
@@ -875,7 +875,6 @@ class ModelBase(backwards_compatible()):
         json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)
 
         # Extract partial dependence data from json response
-        # pps = json
         pps = json['partial_dependence_data']
 
         ## Plot partial dependence plots using matplotlib
