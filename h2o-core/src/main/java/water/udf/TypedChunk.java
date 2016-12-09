@@ -6,7 +6,7 @@ import water.fvec.Vec;
 /**
  * Represents a chunk that knows its type
  */
-public interface TypedChunk<T> {
+public interface TypedChunk<T> extends Vec.Holder {
   T get(int i);
   boolean isNA(int i);
   int length();
@@ -14,6 +14,4 @@ public interface TypedChunk<T> {
   Chunk rawChunk();
 
   int cidx();
-
-  Vec vec();
 }
