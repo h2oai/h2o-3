@@ -9,7 +9,8 @@ whitelist = list(
                                   "Package has FOSS license, installs .class/.jar but has no 'java' directory",
                                   "Insufficient package version", # when we check older version of package than current available on CRAN
                                   "Days since last update"), # when we submit to CRAN recently
-  "package dependencies" = "No repository set, so cyclic dependency check skipped",
+  "package dependencies" = c("No repository set, so cyclic dependency check skipped",
+                             "Package suggested but not available for checking"),
   "installed package size" = c("installed size is .*Mb", # h2o.jar is installed
                                "sub-directories of 1Mb or more",
                                "java .*Mb"),
@@ -30,9 +31,13 @@ check_note <- function(details, whitelist, verbose=TRUE) {
     if (!length(check_whitelist))
       return(check_lines)
     # check if whitelisted
-    wl <- sapply(check_whitelist, grepl, check_lines)
-    if (is.matrix(wl))
-      wl <- apply(wl, 1, any)
+    wl <- sapply(
+      check_lines,
+      function(line) any(sapply(
+        check_whitelist,
+        function (pattern) grepl(pattern, line)
+        ))
+    )
     check_lines[!wl]
   }
   new_note <- sapply(names(lines), filter_check, lines, whitelist, simplify=FALSE)
