@@ -144,7 +144,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         }
         // early stopping - no reason to move further if we're overfitting
         if(testDevAvg > bestTestDev && ++cnt == 3) {
-          lmin_max = lidx+1;
+          lmin_max = lidx;
           break;
         }
       }
@@ -154,9 +154,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           for(Key k:g._toRemove)
             Keyed.remove(k);
       }
-      _parms._lambda = Arrays.copyOf(_parms._lambda,lmin_max);
+      _parms._lambda = Arrays.copyOf(_parms._lambda,lmin_max+1);
       _xval_test_deviances = Arrays.copyOf(_xval_test_deviances, lmin_max+1);
-      _xval_test_sd = Arrays.copyOf(_xval_test_sd, lmin_max);
+      _xval_test_sd = Arrays.copyOf(_xval_test_sd, lmin_max+1);
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
         g._model._output.setSubmodelIdx(bestId);
