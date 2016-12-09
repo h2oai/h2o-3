@@ -54,6 +54,11 @@ public abstract class CreateFrameRecipe<T extends CreateFrameRecipe<T>> extends 
   }
 
 
+  /**
+   * Resolve parameter values that cannot be initialized to static defaults.
+   * If you're overriding this method, please make sure to invoke the super
+   * implementation as well.
+   */
   protected void fillMissingParameters() {
     if (dest == null) {
       dest = Key.make();
@@ -64,6 +69,12 @@ public abstract class CreateFrameRecipe<T extends CreateFrameRecipe<T>> extends 
     }
   }
 
+  /**
+   * Final step of parameter testing, after the {@link CreateFrameExecutor}
+   * has been set up, but just before the actual frame creation commences.
+   * This method shall only be used to perform checks that cannot be done
+   * without the {@link CreateFrameExecutor} instance.
+   */
   protected void checkParametersValidity2(CreateFrameExecutor cfe) {
     long byteEstimate = cfe.estimatedByteSize();
     long clusterFreeMem = H2O.CLOUD.free_mem();

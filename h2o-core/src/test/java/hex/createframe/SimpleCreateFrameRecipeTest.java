@@ -11,9 +11,7 @@ import water.fvec.Vec;
 import water.util.Log;
 
 import static hex.createframe.recipes.SimpleCreateFrameRecipe.ResponseType;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /**
  * Test for the {@link SimpleCreateFrameRecipe} class.
@@ -22,6 +20,25 @@ public class SimpleCreateFrameRecipeTest extends TestUtil {
 
   @BeforeClass() public static void setup() {
     stall_till_cloudsize(1);
+  }
+
+
+  /** Test that the frame with all default arguments can be constructed. */
+  @Test
+  public void emptyTest() {
+    Scope.enter();
+    try {
+      CreateFrameSimpleIV4 s = new CreateFrameSimpleIV4().fillFromImpl();
+      SimpleCreateFrameRecipe cf = s.createAndFillImpl();
+      Frame frame = cf.exec().get();
+      Scope.track(frame);
+      Log.info(frame);
+      assertNotNull(frame);
+      assertEquals(0, frame.numCols());
+      assertEquals(0, frame.numRows());
+    } finally {
+      Scope.exit();
+    }
   }
 
   /**

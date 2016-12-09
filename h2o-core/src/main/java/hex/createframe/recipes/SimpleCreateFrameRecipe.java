@@ -12,7 +12,7 @@ import hex.createframe.postprocess.ShuffleColumnsCfps;
  * requires to specify the number of columns of each type explicitly (not
  * as fractions). It also uses different naming scheme, so that columns of
  * different types have names according to that type: integer columns are
- * {@code I1, I2, ...}, binary are {@code B1, ...}, and so on.
+ * {@code I1, I2, ...}, binary are {@code B1, B2, ...}, and so on.
  */
 public class SimpleCreateFrameRecipe extends CreateFrameRecipe<SimpleCreateFrameRecipe> {
   public int nrows = 100;
@@ -28,8 +28,8 @@ public class SimpleCreateFrameRecipe extends CreateFrameRecipe<SimpleCreateFrame
   public int int_ub = 100;
   public int enum_nlevels = 10;
   public double bool_p = 0.3;
-  public long time_lb = 30L * 365 * 24 * 3600 * 1000;  // ~ 2000-01-01
-  public long time_ub = 50L * 365 * 24 * 3600 * 1000;  // ~ 2020-01-01
+  public long time_lb = 365L * 24 * 3600 * 1000 * (2000 - 1970);  // ~ 2000-01-01
+  public long time_ub = 365L * 24 * 3600 * 1000 * (2020 - 1970);  // ~ 2020-01-01
   public int str_length = 8;
   public double missing_fraction = 0;
   public ResponseType response_type = ResponseType.NONE;
