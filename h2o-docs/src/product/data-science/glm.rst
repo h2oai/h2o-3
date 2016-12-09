@@ -89,6 +89,7 @@ Defining a GLM Model
    -  If the family is **poisson**, the data must be numeric and non-negative (**Int**).
    -  If the family is **gamma**, the data must be numeric and continuous and positive (**Real** or **Int**).
    -  If the family is **tweedie**, the data must be numeric and continuous (**Real**) and non-negative.
+   -  If the family is **quasi_binomial**, the data must be numeric.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
    specified for **Family**) Specify the Tweedie variance power.
@@ -128,7 +129,7 @@ Defining a GLM Model
 
 -  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 
--  `link <algo-params/link.html>`__: Specify a link function (Identity, Family\_Default, Logit,
+-  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit,
    Log, Inverse, or Tweedie).
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
@@ -136,6 +137,8 @@ Defining a GLM Model
    -  If the family is **Poisson**, then **Log** and **Identity** are supported.
    -  If the family is **Gamma**, then **Inverse**, **Log**, and **Identity** are supported.
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
+   -  If the family is **Multinomial**, then only **Multinomial** is supported.
+   -  If the family is **Quasi-Binomial**, then only **Logit** is supported.
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. 
    
