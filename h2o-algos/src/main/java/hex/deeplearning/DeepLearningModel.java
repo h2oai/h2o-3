@@ -563,7 +563,7 @@ public class DeepLearningModel extends
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();
-      assert(model_info().data_info()._responses == 0);
+      assert(model_info().data_info()._numResponses == 0);
       String[] coefnames = model_info().data_info().coefNames();
       assert(len == coefnames.length);
       String[] names = new String[len];
@@ -900,7 +900,7 @@ public class DeepLearningModel extends
     StringBuilder sb = new StringBuilder();
     final int len = model_info().data_info().fullN();
     String prefix = "reconstr_";
-    assert (model_info().data_info()._responses == 0);
+    assert (model_info().data_info()._numResponses == 0);
     String[] coefnames = model_info().data_info().coefNames();
     assert (len == coefnames.length);
     for (int c = 0; c < len; c++) {

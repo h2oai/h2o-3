@@ -34,7 +34,7 @@ public class GLMScore extends MRTask<GLMScore> {
   }
 
   private void processRow(DataInfo.Row r, float [] res, double [] ps, NewChunk [] preds, int ncols) {
-    if(_dinfo._responses != 0)res[0] = (float) r.response[0];
+    if(_dinfo._numResponses != 0)res[0] = (float) r.response[0];
     if (r.predictors_bad) {
       Arrays.fill(ps,Double.NaN);
     } else if(r.weight == 0) {

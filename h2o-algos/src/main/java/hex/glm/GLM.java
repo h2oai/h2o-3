@@ -588,7 +588,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     private void fitIRLSM_multinomial(Solver s){
-      assert _dinfo._responses == 3:"IRLSM for multinomial needs extra information encoded in additional reponses, expected 3 response vecs, got " + _dinfo._responses;
+      assert _dinfo._numResponses == 3:"IRLSM for multinomial needs extra information encoded in additional reponses, expected 3 response vecs, got " + _dinfo._numResponses;
       double [] beta = _state.betaMultinomial();
       do {
         beta = beta.clone();

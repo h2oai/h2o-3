@@ -20,8 +20,8 @@ import java.util.Arrays;
 public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
-  public int _responses;   // number of responses
-  public int _outpus; // number of outputs
+  public int _numResponses;   // number of responses
+  public int _numOutputs; // number of outputs
 
   public Vec setWeights(String name, Vec vec) {
     if(_weights)
@@ -55,7 +55,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public void addResponse(String [] names, Vec[] vecs) {
     _adaptedFrame.add(names,vecs);
-    _responses += vecs.length;
+    _numResponses += vecs.length;
   }
 
   public int[] catNAFill() {return _catNAFill;}
@@ -120,7 +120,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public int offsetChunkId(){return _cats + _nums + (_weights ?1:0);}
   public int weightChunkId(){return _cats + _nums;}
   public int outputChunkId() { return outputChunkId(0);}
-  public int outputChunkId(int n) { return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + _responses;}
+  public int outputChunkId(int n) { return n + _cats + _nums + (_weights?1:0) + (_offset?1:0) + (_fold?1:0) + _numResponses;}
   public void addOutput(String name, Vec v) {_adaptedFrame.add(name,v);}
   public Vec getOutputVec(int i) {return _adaptedFrame.vec(outputChunkId(i));}
   public void setResponse(String name, Vec v){ setResponse(name,v,0);}
@@ -181,7 +181,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _imputeMissing = imputeMissing;
     _predictor_transform = predictor_transform;
     _response_transform = response_transform;
-    _responses = nResponses;
+    _numResponses = nResponses;
     _useAllFactorLevels = useAllFactorLevels;
     _interactionColumns=interactions;
     int[] interactionIDs=null;
@@ -209,7 +209,7 @@ public class DataInfo extends Keyed<DataInfo> {
     final Vec[] tvecs = train.vecs();
 
     // Count categorical-vs-numerical
-    final int n = tvecs.length-_responses - (offset?1:0) - (weight?1:0) - (fold?1:0);
+    final int n = tvecs.length- _numResponses - (offset?1:0) - (weight?1:0) - (fold?1:0);
     int [] nums = MemoryManager.malloc4(n);
     int [] cats = MemoryManager.malloc4(n);
     int nnums = 0, ncats = 0;
@@ -307,7 +307,7 @@ public class DataInfo extends Keyed<DataInfo> {
 //    _adaptedFrame = train;
 
     setPredictorTransform(predictor_transform);
-    if(_responses > 0)
+    if(_numResponses > 0)
       setResponseTransform(response_transform);
     _intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][];
   }
@@ -346,9 +346,9 @@ public class DataInfo extends Keyed<DataInfo> {
     res._fold = _fold && adaptFrame.find(_adaptedFrame.name(foldChunkId())) != -1;
     int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
     if(resId == -1 || adaptFrame.vec(resId).isBad())
-      res._responses = 0;
+      res._numResponses = 0;
     else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
-      res._responses = 1;
+      res._numResponses = 1;
     res._valid = true;
     res._interactions=_interactions;
     res._interactionColumns=_interactionColumns;
@@ -429,7 +429,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _catOffsets[_catOffsets.length-1] = s;
     _catLvls = catLevels;
     _intLvls = intLvls;
-    _responses = dinfo._responses;
+    _numResponses = dinfo._numResponses;
     _cats = catLevels.length;
     _useAllFactorLevels = true;//dinfo._useAllFactorLevels;
     _normMul = normMul;
@@ -554,7 +554,7 @@ public class DataInfo extends Keyed<DataInfo> {
         normMul[k-id] = _normMul[cols[k]-off];
     }
     DataInfo dinfo = new DataInfo(this,f,normMul,normSub,catLvls,intLvls,catModes,cols);
-    dinfo._nums=f.numCols()-dinfo._cats - dinfo._responses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
+    dinfo._nums=f.numCols()-dinfo._cats - dinfo._numResponses - (dinfo._offset?1:0) - (dinfo._weights?1:0) - (dinfo._fold?1:0);
     dinfo._numMeans=new double[nnums];
     for(int k=id; k < (id+nnums);++k )
       dinfo._numMeans[k-id] = _numMeans[cols[k]-off];
@@ -649,9 +649,10 @@ public class DataInfo extends Keyed<DataInfo> {
       _normRespMul = null;
       _normRespSub = null;
     } else {
-      _normRespMul = MemoryManager.malloc8d(_responses);
-      _normRespSub = MemoryManager.malloc8d(_responses);
-      setTransform(t,_normRespMul,_normRespSub,_adaptedFrame.numCols()-_responses,_responses);
+      System.out.println("&*&*&*&* Hey hey, set normresmul");
+      _normRespMul = MemoryManager.malloc8d(_numResponses);
+      _normRespSub = MemoryManager.malloc8d(_numResponses);
+      setTransform(t,_normRespMul,_normRespSub,_adaptedFrame.numCols()- _numResponses, _numResponses);
     }
   }
 
@@ -814,6 +815,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
 
     public Row(boolean sparse, double[] numVals, int[] binIds, double[] response, int i, long start) {
+      assert(response[0] == (int)response[0]) : "Expected int response, have " + response[0];
       int nNums = numVals == null ? 0:numVals.length;
       this.numVals = numVals;
       if(sparse)
@@ -874,7 +876,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
 
     public double[] expandCats() {
-      if(isSparse() || _responses > 0) throw H2O.unimpl();
+      if(isSparse() || _numResponses > 0) throw H2O.unimpl();
 
       int N = fullN();
       int numStart = numStart();
@@ -896,7 +898,11 @@ public class DataInfo extends Keyed<DataInfo> {
     public String toString() {
       return this.rid + Arrays.toString(Arrays.copyOf(binIds,nBins)) + ", " + Arrays.toString(numVals);
     }
-    public void setResponse(int i, double z) {response[i] = z;}
+    public void setResponse(int i, double z) {
+
+      response[i] = z;
+      assert(response[i] == (int)response[i]) : "Expected int response, have " + response[i];
+    }
   }
 
 
@@ -993,19 +999,29 @@ public class DataInfo extends Keyed<DataInfo> {
         row.numVals[numValsIdx++] = d;
       }
     }
-    for (int i = 0; i < _responses; ++i) {
+    for (int i = 0; i < _numResponses; ++i) {
       row.response[i] = chunks[responseChunkId(i)].atd(rid);
+      assert(row.response(i) == (int)row.response(i)) : "Expected int response, have " + row.response(i) + ", rcid=" + responseChunkId(i) + ", rid=" + rid;
       if(Double.isNaN(row.response[i])) {
         row.response_bad = true;
         break;
       }
-      if (_normRespMul != null)
+      double prev = row.response[i];
+      if (_normRespMul != null) {
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
+        System.out.println("have @" + i + "/" + _numResponses + ": " + row.response(i) + " from " + prev + ", rcid=" + responseChunkId(i) + ", rid=" + rid + " ... " + Thread.currentThread().getId() + " nrs=" + _normRespSub[i] + " nrm=" +  _normRespSub[i]);
+      } 
+//      if (responseChunkId(i)==1023 && rid == 0) {
+      try{Thread.sleep(200);}catch(Exception e){}
+  //    }
+      assert(row.response(i) == (int)row.response(i)) : "Expected int response, have " + row.response(i) + " from " + prev + ", rcid=" + responseChunkId(i) + ", rid=" + rid;
     }
     if(_offset)
       row.offset = chunks[offsetChunkId()].atd(rid);
     return row;
   }
+  
+  
   public int getInteractionOffset(Chunk[] chunks, int cid, int rid) {
     boolean useAllFactors = ((InteractionWrappedVec)chunks[cid].vec())._useAllFactorLevels;
     InteractionWrappedVec.InteractionWrappedChunk c = (InteractionWrappedVec.InteractionWrappedChunk)chunks[cid];
@@ -1015,7 +1031,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
   public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
   public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}
-  public Row newDenseRow(){return new Row(false,numNums(),_cats,_responses,0,0);}  // TODO: _nums => numNums since currently extracting out interactions into dense
+  public Row newDenseRow(){return new Row(false,numNums(),_cats, _numResponses,0,0);}  // TODO: _nums => numNums since currently extracting out interactions into dense
   public Row newDenseRow(double[] numVals, long start) {
     return new Row(false, numVals, null, null, 0, start);
   }
@@ -1064,7 +1080,7 @@ public class DataInfo extends Keyed<DataInfo> {
     Row[] rows = new Row[chunks[0]._len];
     long startOff = chunks[0].start();
     for (int i = 0; i < rows.length; ++i) {
-      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _responses, i, startOff);  // if sparse, _nums is the correct number of nonzero values! i.e., do not use numNums()
+      rows[i] = new Row(true, Math.min(_nums, 16), _cats, _numResponses, i, startOff);  // if sparse, _nums is the correct number of nonzero values! i.e., do not use numNums()
       rows[i].rid = chunks[0].start() + i;
       if(_offset)  {
         rows[i].offset = chunks[offsetChunkId()].atd(i);
@@ -1137,7 +1153,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     // response(s)
-    for (int i = 1; i <= _responses; ++i) {
+    for (int i = 1; i <= _numResponses; ++i) {
       int rid = responseChunkId(i-1);
       Chunk rChunk = chunks[rid];
       for (int r = 0; r < chunks[0]._len; ++r) {
