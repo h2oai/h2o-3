@@ -9,13 +9,17 @@ Missing Values (Categorical/Factors)
 
  A note on ``nbins_cats``: This parameter specifies the number of bins to use for non-Na categoricals, it does not bin missing values. Regardless of the number of bins a user chooses for ``nbins_cats``, an additional bin will be created specifically for the missing values. 
 
+- **How does the algorithm handle missing values during testing?** 
+
+ During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function).
+
 - **What loss function was used?**
 
  During scoring, missing values follow the optimal path that was determined for them during training (minimized loss function). Note that test-NAs follow the majority direction - the direction through which the most observations flow - if there were no NAs in training.
 
 - **What happens if the response has missing values?**
 
- No errors will occur, but at the same time, nothing will be learned from rows containing missing the response.
+ No errors will occur, but at the same time, nothing will be learned from rows containing missing values in the response column.
 
 - **What happens when you try to predict on a categorical level not seen during training?**
 
