@@ -170,6 +170,8 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, String[] interactions) {
     super(Key.<DataInfo>make());
+    System.out.println("&*&*&*&* 1 response TransformType " + response_transform);
+
     _valid = valid != null;
     assert predictor_transform != null;
     assert  response_transform != null;
@@ -347,8 +349,9 @@ public class DataInfo extends Keyed<DataInfo> {
     int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
     if(resId == -1 || adaptFrame.vec(resId).isBad())
       res._numResponses = 0;
-    else // NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
+    else {// NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
       res._numResponses = 1;
+    }
     res._valid = true;
     res._interactions=_interactions;
     res._interactionColumns=_interactionColumns;
@@ -644,6 +647,7 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public void setResponseTransform(TransformType t){
+    System.out.println("&*&*&*&* Setting TransformType " + t);
     _response_transform = t;
     if(t == TransformType.NONE) {
       _normRespMul = null;
@@ -1010,10 +1014,7 @@ public class DataInfo extends Keyed<DataInfo> {
       if (_normRespMul != null) {
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
         System.out.println("have @" + i + "/" + _numResponses + ": " + row.response(i) + " from " + prev + ", rcid=" + responseChunkId(i) + ", rid=" + rid + " ... " + Thread.currentThread().getId() + " nrs=" + _normRespSub[i] + " nrm=" +  _normRespSub[i]);
-      } 
-//      if (responseChunkId(i)==1023 && rid == 0) {
-      try{Thread.sleep(200);}catch(Exception e){}
-  //    }
+      }
       assert(row.response(i) == (int)row.response(i)) : "Expected int response, have " + row.response(i) + " from " + prev + ", rcid=" + responseChunkId(i) + ", rid=" + rid;
     }
     if(_offset)

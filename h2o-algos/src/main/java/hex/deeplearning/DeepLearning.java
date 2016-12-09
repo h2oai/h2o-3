@@ -85,13 +85,20 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms, int nClasses) {
     double x = 0.782347234;
     boolean identityLink = new Distribution(parms).link(x) == x;
+    
+    final DataInfo.TransformType response_transform = !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE;
+    
+    final DataInfo.TransformType predictor_transform = parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE;
+    
+    System.out.println("******** TRANSFORM TYPES= response: " + response_transform + ", predictor: " + predictor_transform);
+    
     DataInfo dinfo = new DataInfo(
             train,
             valid,
             parms._autoencoder ? 0 : 1, //nResponses
             parms._autoencoder || parms._use_all_factor_levels, //use all FactorLevels for auto-encoder
-            parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE, //transform predictors
-            !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, //transform response for regression with identity link
+        predictor_transform, //transform predictors
+        response_transform, //transform response for regression with identity link
             parms._missing_values_handling == DeepLearningParameters.MissingValuesHandling.Skip, //whether to skip missing
             false, // do not replace NAs in numeric cols with mean
             true,  // always add a bucket for missing values
