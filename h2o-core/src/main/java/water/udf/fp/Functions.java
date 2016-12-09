@@ -15,6 +15,12 @@ public class Functions {
     };
   }
   
+  public static <X> Function<X, X> identity() {
+    return new Function<X, X>() {
+      @Override public X apply(X x) { return x; }
+    };
+  }
+  
   public static final Function<Double, Double> SQUARE = new Function<Double, Double>() {
     @Override public Double apply(Double x) { return x*x; }
   };

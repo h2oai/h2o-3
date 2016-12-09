@@ -11,24 +11,44 @@ import java.util.*;
 public class FP {
   
   interface Option<T> extends Iterable<T> {
-     T get();
+    boolean isEmpty();
+    boolean nonEmpty();
+    <U> Option<U> flatMap(Function<T, Option<U>> f);
   }
   
-  public final static Option<Object> None = new Option<Object>() {
-    @Override
-    public Iterator<Object> iterator() {
-      return Collections.EMPTY_SET.iterator();
+  public final static Option<?> None = new Option<Object>() {
+    
+    @Override public boolean isEmpty() { return true; }
+
+    @Override public boolean nonEmpty() { return false; }
+
+    @SuppressWarnings("unchecked")
+    @Override public <U> Option<U> flatMap(Function<Object, Option<U>> f) {
+      return (Option<U>) None;
+    }
+
+    @Override public Iterator<Object> iterator() {
+      return Collections.emptyList().iterator();
     }
     
-    @SuppressWarnings("unchecked")
-    public Option<Object> get() { return this; }
-    
     @Override public String toString() { return "None"; }
+
+    @Override public int hashCode() { return -1; }
   };
   
   public final static class Some<T> implements Option<T> {
     private List<T> contents;
+    
     public Some(T t) { contents = Collections.singletonList(t); }
+
+    @Override public boolean isEmpty() { return false; }
+
+    @Override public boolean nonEmpty() { return true; }
+
+    @Override
+    public <U> Option<U> flatMap(Function<T, Option<U>> f) {
+      return f.apply(get());
+    }
 
     @Override public Iterator<T> iterator() {
       return contents.iterator();
@@ -38,6 +58,13 @@ public class FP {
     public T get() { return contents.get(0); }
 
     @Override public String toString() { return "Some(" + get() + ")"; }
+
+    @Override public boolean equals(Object o) {
+      return this == o || 
+             (o instanceof Some && Objects.equals(get(), (((Some<?>) o).get())));
+    }
+
+    @Override public int hashCode() { return Objects.hashCode(get()); }
   }
 
   public static <T> Option<T> Some(T t) {
@@ -50,8 +77,8 @@ public class FP {
   }
 
   @SuppressWarnings("unchecked")
-  public static <T> Option<T> flatten(Option<?> optOptT) {
-    return (Option<T>)optOptT.get();
+  public static <T> Option<T> flatten(Option<Option<T>> optOptT) {
+    return optOptT.isEmpty() ? (Option<T>)None : ((Some<Option<T>>)optOptT).get();
   }
 
   public static <T> Option<T> headOption(Iterator<T> it) {
@@ -61,16 +88,4 @@ public class FP {
   public static <T> Option<T> headOption(Iterable<T> ts) {
     return headOption(ts.iterator());
   }
-
-//  public static void main(String[] args) {
-//    Option<?> oo1 = None;
-//    Option<?> oo2 = Some(None);
-//    Option<?> oo3 = Some(oo2);
-//    System.out.println(flatten(oo1));
-//    System.out.println(flatten(oo2));
-//    System.out.println(flatten(oo3));
-//    System.out.println(flatten(Some(Some(123))));
-//    System.out.println(flatten(Option(Option(123))));
-//    System.out.println(flatten(Option(Option(null))));
-//  }
 }
