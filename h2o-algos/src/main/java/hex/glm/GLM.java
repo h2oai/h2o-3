@@ -333,7 +333,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           _nullBeta[_dinfo.fullN() + i * N] = Math.log(_state._ymu[i]);
       } else {
         _nullBeta = MemoryManager.malloc8d(_dinfo.fullN() + 1);
-        if (_parms._intercept)
+        if (_parms._intercept && !(_parms._family == Family.quasi_binomial))
           _nullBeta[_dinfo.fullN()] = new GLMModel.GLMWeightsFun(_parms).link(_state._ymu[0]);
         else
           _nullBeta[_dinfo.fullN()] = 0;
@@ -376,6 +376,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         case tweedie:
           if (_nclass != 1) error("_family", H2O.technote(2, "Tweedie requires the response to be numeric."));
+          break;
+        case quasi_binomial:
+          if (_nclass != 1) error("_family", H2O.technote(2, "Quasi_binomial requires the response to be numeric."));
           break;
         case gaussian:
 //          if (_nclass != 1) error("_family", H2O.technote(2, "Gaussian requires the response to be numeric."));
@@ -1648,6 +1651,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           gt = new GLMGaussianGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.poisson && _parms._link == Link.log)
           gt = new GLMPoissonGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
+        else if(_parms._family == Family.quasi_binomial)
+          gt = new GLMQuasiBinomialGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else
           gt = new GLMGenericGradientTask(_job == null?null:_job._key, _dinfo, _parms, _l2pen, beta).doAll(_dinfo._adaptedFrame);
         double [] gradient = gt._gradient;

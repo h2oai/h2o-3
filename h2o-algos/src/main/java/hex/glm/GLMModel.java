@@ -312,6 +312,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           return 1;
         case binomial:
         case multinomial:
+        case quasi_binomial:
           return mu * (1 - mu);
         case poisson:
           return mu;
@@ -346,6 +347,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       switch(_family){
         case gaussian:
           return (yr - ym) * (yr - ym);
+        case quasi_binomial:
         case binomial:
           return 2 * ((y_log_y(yr, ym)) + y_log_y(1 - yr, 1 - ym));
         case poisson:
@@ -444,7 +446,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     // supported families
     public enum Family {
-      gaussian(Link.identity), binomial(Link.logit), poisson(Link.log),
+      gaussian(Link.identity), binomial(Link.logit), quasi_binomial(Link.logit),poisson(Link.log),
       gamma(Link.inverse), multinomial(Link.multinomial), tweedie(Link.tweedie);
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}
@@ -550,6 +552,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       switch(_family) {
         case gaussian:
           return 1;
+        case quasi_binomial:
         case binomial:
           double res = mu * (1 - mu);
           return res < 1e-6?1e-6:res;
@@ -569,6 +572,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       switch(_family){
         case gaussian:
           return (yr - ym) * (yr - ym);
+        case quasi_binomial:
+          if(yr == ym) return 0;
+          if(ym > 1) return -2 * (yr*Math.log(ym));
+          double res = -2 * (yr*Math.log(ym) + (1-yr)*Math.log(1-ym));
+          return res;
         case binomial:
           return 2 * ((MathUtils.y_log_y(yr, ym)) + MathUtils.y_log_y(1 - yr, 1 - ym));
         case poisson:
@@ -598,14 +606,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         case gaussian:
           return .5 * (yr - ym) * (yr - ym);
         case binomial:
+        case quasi_binomial:
           if (yr == ym) return 0;
           return .5 * deviance(yr, ym);
-//          double res = Math.log(1 + Math.exp((1 - 2*yr) * eta));
-//          assert Math.abs(res - .5 * deviance(yr,eta,ym)) < 1e-8:res + " != " + .5*deviance(yr,eta,ym) +" yr = "  + yr + ", ym = " + ym + ", eta = " + eta;
-//          return res;
-//          double res = -yr * eta - Math.log(1 - ym);
-//          return res;
-
         case poisson:
           if (yr == 0) return 2 * ym;
           return 2 * ((yr * Math.log(yr / ym)) - (yr - ym));
