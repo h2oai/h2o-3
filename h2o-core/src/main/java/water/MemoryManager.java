@@ -62,7 +62,6 @@ abstract public class MemoryManager {
   // A monotonically increasing total count memory allocated via MemoryManager.
   // Useful in tracking total memory consumed by algorithms - just ask for the
   // before & after amounts and diff them.
-  static final AtomicLong MEM_ALLOC = new AtomicLong();
 
   static void setMemGood() {
     if( CAN_ALLOC ) return;
@@ -221,7 +220,6 @@ abstract public class MemoryManager {
           try { _lock.wait(300*1000); } catch (InterruptedException ex) { }
         }
       }
-      MEM_ALLOC.addAndGet(bytes);
       try {
         switch( type ) {
         case  1: return new byte   [elems];
@@ -257,7 +255,12 @@ abstract public class MemoryManager {
   public static int    [] malloc4 (int size) { return (int    [])malloc(size,size*4L, 4,null,0); }
   public static long   [] malloc8 (int size) { return (long   [])malloc(size,size*8L, 8,null,0); }
   public static float  [] malloc4f(int size) { return (float  [])malloc(size,size*4L, 5,null,0); }
-  public static double [] malloc8d(int size) { return (double [])malloc(size,size*8L, 9,null,0); }
+  public static double [] malloc8d(int size) {
+    if(size < 32) try { // fast path for small arrays (e.g. histograms in gbm)
+      return new double [size];
+    } catch (OutOfMemoryError oom){/* fall through */}
+    return (double [])malloc(size,size*8L, 9,null,0);
+  }
   public static double [][] malloc8d(int m, int n) {
     double [][] res = new double[m][];
     for(int i = 0; i < m; ++i)

@@ -89,7 +89,7 @@ public class Rapids {
       // named temp, the ref cnts are accounted for by being in the temp table.
       if (val.isFrame()) {
         Frame frame = val.getFrame();
-        assert frame._key != null; // No nameless Frame returns, as these are hard to cleanup
+        assert frame._key != null : "Returned frame has no key";
         session.addRefCnt(frame, -1);
       }
       return val;
@@ -217,6 +217,7 @@ public class Rapids {
     ArrayList<String> strs = new ArrayList<>(10);
     while (isQuote(skipWS())) {
       strs.add(string());
+      if (skipWS() == ',') eatChar(',');
     }
     return new AstStrList(strs);
   }
@@ -247,7 +248,7 @@ public class Rapids {
         eatChar(':');
         skipWS();
         stride = number();
-        if (stride < 0)
+        if (stride < 0 || Double.isNaN(stride))
           throw new IllegalASTException("Stride must be positive, got " + stride);
       }
       if (count == 1 && stride != 1)

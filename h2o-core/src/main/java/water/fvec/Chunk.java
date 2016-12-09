@@ -595,6 +595,7 @@ public abstract class Chunk extends Iced<Chunk> {
     if( this  instanceof NewChunk ) _chk2 = this;
     if( _chk2 == null ) return fs;          // No change?
     if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
+
     DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
     return fs;
   }
@@ -604,6 +605,22 @@ public abstract class Chunk extends Iced<Chunk> {
     assert _cidx != -1 : "Chunk idx was not properly loaded!";
     return _cidx;
   }
+
+  public final Chunk setVolatile(double [] ds) {
+    Chunk res;
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C8DVolatileChunk(ds),ds.length*8,Value.ICE);
+    DKV.put(v._key,v);
+    return res;
+  }
+
+  public final Chunk setVolatile(int[] vals) {
+    Chunk res;
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C4VolatileChunk(vals),vals.length*4,Value.ICE);
+    DKV.put(v._key,v);
+    return res;
+  }
+
+  public boolean isVolatile() {return false;}
 
   static class WrongType extends IllegalArgumentException {
     private final Class<?> expected;
@@ -632,7 +649,7 @@ public abstract class Chunk extends Iced<Chunk> {
   abstract boolean set_impl  (int idx, double d );
   abstract boolean set_impl  (int idx, float f );
   abstract boolean setNA_impl(int idx);
-  boolean set_impl (int idx, String str) { throw H2O.unimpl(); }
+  boolean set_impl (int idx, String str) { return false; }
   boolean set_impl(int i, long lo, long hi) { return false; }
   //Zero sparse methods:
 
@@ -722,7 +739,7 @@ public abstract class Chunk extends Iced<Chunk> {
   public final  AutoBuffer write_impl(AutoBuffer bb) {return bb.putA1(_mem);}
 
   @Override
-  public final byte [] asBytes(){return _mem;}
+  public byte [] asBytes(){return _mem;}
 
   @Override
   public final Chunk reloadFromBytes(byte [] ary){

@@ -6,6 +6,7 @@ import water.api.StreamWriter;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
@@ -55,10 +56,19 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   // Inheritance interface: ModelMojoWriter subclasses are expected to override these methods to provide custom behavior
   //--------------------------------------------------------------------------------------------------------------------
 
+  public ModelMojoWriter() {}
+
   public ModelMojoWriter(M model) {
     this.model = model;
     this.lkv = new LinkedHashMap<>(20);  // Linked so as to preserve the order of entries in the output
   }
+
+  /**
+   * Version of the mojo file produced. Follows the <code>major.minor</code>
+   * format, where <code>minor</code> is a 2-digit number. For example "1.00",
+   * "2.05", "2.13". See README in mojoland repository for more details.
+   */
+  public abstract String mojoVersion();
 
   /** Override in subclasses to write the actual model data. */
   protected abstract void writeModelData() throws IOException;
@@ -148,14 +158,16 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
 
   private void addCommonModelInfo() throws IOException {
     int n_categoricals = 0;
-    for (String[] domain : model._output._domains)
+    for (String[] domain : model.scoringDomains())
       if (domain != null)
         n_categoricals++;
 
     writekv("h2o_version", H2O.ABV.projectVersion());
-    writekv("mojo_version", "1.0");
+    writekv("mojo_version", mojoVersion());
     writekv("license", "Apache License Version 2.0");
+    writekv("algo", model._parms.algoName().toLowerCase());
     writekv("algorithm", model._parms.fullName());
+    writekv("endianness", ByteOrder.nativeOrder());
     writekv("category", model._output.getModelCategory());
     writekv("uuid", model.checksum());
     writekv("supervised", model._output.isSupervised());
@@ -209,9 +221,10 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
     writeln("\n[domains]");
     String format = "%d: %d d%03d.txt";
     int domIndex = 0;
-    for (int colIndex = 0; colIndex < model._output._names.length; colIndex++) {
-      if (model._output._domains[colIndex] != null)
-        writeln(String.format(format, colIndex, model._output._domains[colIndex].length, domIndex++));
+    String[][] domains = model.scoringDomains();
+    for (int colIndex = 0; colIndex < domains.length; colIndex++) {
+      if (domains[colIndex] != null)
+        writeln(String.format(format, colIndex, domains[colIndex].length, domIndex++));
     }
     finishWritingTextFile();
   }
@@ -219,7 +232,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
   /** Create files containing domain definitions for each categorical column. */
   private void writeDomains() throws IOException {
     int domIndex = 0;
-    for (String[] domain : model._output._domains) {
+    for (String[] domain : model.scoringDomains()) {
       if (domain == null) continue;
       startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
       for (String category : domain) {

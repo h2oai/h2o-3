@@ -318,8 +318,9 @@ class ModelBase(backwards_compatible()):
     def summary(self):
         """Print a detailed summary of the model."""
         model = self._model_json["output"]
-        if model["model_summary"]:
-            model["model_summary"].show()  # H2OTwoDimTable object
+        if "model_summary" in model and model["model_summary"] is not None:
+            return model["model_summary"]
+        print("No model summary for this model")
 
 
     def show(self):
@@ -469,18 +470,21 @@ class ModelBase(backwards_compatible()):
         print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
 
     def coef(self):
-        """Return the coefficients for this model."""
+        """Return the coefficients which can be applied to the non-standardized data.
+         (Note: standardize = True by default, if set to False then coef() returns
+         the coefficients which are fit directly)."""
         tbl = self._model_json["output"]["coefficients_table"]
-        if tbl is None: return None
-        tbl = tbl.cell_values
-        return {a[0]: a[1] for a in tbl}
+        if tbl is None:
+            return None
+        return {name: coef for name, coef in zip(tbl['names'], tbl['coefficients'])}
 
     def coef_norm(self):
-        """Return the normalized coefficients."""
+        """Return coefficients fitted on the standardized data (requires standardize = True,
+         which is on by default). These coefficients can be used to evaluate variable importance."""
         tbl = self._model_json["output"]["coefficients_table"]
-        if tbl is None: return None
-        tbl = tbl.cell_values
-        return {a[0]: a[2] for a in tbl}
+        if tbl is None:
+            return None
+        return {name: coef for name, coef in zip(tbl['names'], tbl['standardized_coefficients'])}
 
 
     def r2(self, train=False, valid=False, xval=False):
@@ -738,9 +742,9 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
-        if self.algo not in {"drf", "gbm", "deepwater", "glrm"}:
+        if self.algo not in {"drf", "gbm", "deepwater", "glrm", "glm"}:
             raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, "
-                                "Gradient Boosting Machine, Deep Water and GLRM models only.")
+                                "Gradient Boosting Machine, Deep Water, GLM and GLRM models only.")
         if get_genmodel_jar:
             h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
         return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
@@ -833,6 +837,77 @@ class ModelBase(backwards_compatible()):
             raise H2OValueError("Plotting not implemented for this type of model")
         if not server: plt.show()
 
+    def partial_plot(self, data, cols, destination_key=None, nbins=20, plot=True, figsize=(7,10), server=False):
+        """
+        Create partial dependence plot which gives a graphical depiction of the marginal effect of a variable on the
+        response. The effect of a variable is measured in change in the mean response.
+
+        :param H2OFrame data: An H2OFrame object used for scoring and constructing the plot.
+        :param cols: Feature(s) for which partial dependence will be calculated.
+        :param destination_key: An key reference to the created partial dependence tables in H2O.
+        :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count.
+        :param plot: A boolean specifying whether to plot partial dependence table.
+        :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
+        :param server: ?
+        :return: Plot and list of calculated mean response tables for each feature requested.
+        """
+
+        if not isinstance(data, h2o.H2OFrame): raise ValueError("data must be an instance of H2OFrame")
+        assert_is_type(cols, [str])
+        assert_is_type(destination_key, None, str)
+        assert_is_type(nbins, int)
+        assert_is_type(plot, bool)
+        assert_is_type(figsize, (int,int))
+
+        ## Check cols specified exist in frame data
+        for xi in cols:
+            if not xi in data.names:
+                raise H2OValueError("Column %s does not exist in the training frame" % xi)
+
+        kwargs = {}
+        kwargs['cols'] = cols
+        kwargs['model_id'] = self.model_id
+        kwargs['frame_id'] = data.frame_id
+        kwargs['nbins'] = nbins
+        kwargs['destination_key'] = destination_key
+
+        json = H2OJob(h2o.api("POST /3/PartialDependence/", data=kwargs),  job_type="PartialDependencePlot").poll()
+        json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)
+
+        # Extract partial dependence data from json response
+        pps = json['partial_dependence_data']
+
+        ## Plot partial dependence plots using matplotlib
+        if plot:
+            plt = _get_matplotlib_pyplot(server)
+            if not plt: return
+
+            fig, axs = plt.subplots(len(cols), squeeze=False, figsize=figsize)
+            for i, pp in enumerate(pps):
+                ## Check weather column was categorical or numeric
+                col=cols[i]
+                cat=data[col].isfactor()[0]
+                if cat:
+                    labels = pp[0]
+                    x = range(len(labels))
+                    y = pp[1]
+                    axs[i,0].plot(x, y, 'o')
+                    axs[i,0].set_xticks(x)
+                    axs[i,0].set_xticklabels(labels)
+                    axs[i,0].margins(0.2)
+                else:
+                    axs[i,0].plot(pp[0], pp[1])
+                    axs[i,0].set_xlim(min(pp[0]), max(pp[0]))
+
+                axs[i,0].set_title('Partial Dependence Plot For {}'.format(col))
+                axs[i,0].set_xlabel(pp.col_header[0])
+                axs[i,0].set_ylabel(pp.col_header[1])
+                axs[i,0].xaxis.grid()
+                axs[i,0].yaxis.grid()
+            if len(col) >1:
+                fig.tight_layout(pad = 0.4,w_pad=0.5, h_pad=1.0)
+
+        return pps
 
     def varimp_plot(self, num_of_features=None, server=False):
         """

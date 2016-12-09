@@ -14,7 +14,7 @@ While the ``training_frame`` is used to build the model, the ``validation_frame`
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `model_id <model_id>`_
+- `model_id <model_id.html>`_
 - `training_frame <training_frame.html>`__
 
 Example

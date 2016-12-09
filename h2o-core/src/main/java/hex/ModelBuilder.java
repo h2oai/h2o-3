@@ -407,16 +407,28 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void cv_buildModels(int N, ModelBuilder<M, P, O>[] cvModelBuilders ) {
     H2O.H2OCountedCompleter submodel_tasks[] = new H2O.H2OCountedCompleter[N];
     int nRunning=0;
+    RuntimeException rt = null;
     for( int i=0; i<N; ++i ) {
       if( _job.stop_requested() ) break; // Stop launching but still must block for all async jobs
       Log.info("Building cross-validation model " + (i + 1) + " / " + N + ".");
       cvModelBuilders[i]._start_time = System.currentTimeMillis();
       submodel_tasks[i] = H2O.submitTask(cvModelBuilders[i].trainModelImpl());
-      if(++nRunning == nModelsInParallel()) //piece-wise advance in training the CV models
-        while (nRunning>0) submodel_tasks[i+1-nRunning--].join();
+      if(++nRunning == nModelsInParallel()) { //piece-wise advance in training the CV models
+        while (nRunning > 0) try {
+          submodel_tasks[i + 1 - nRunning--].join();
+        } catch (RuntimeException t) {
+          if (rt == null) rt = t;
+        }
+        if(rt != null) throw rt;
+      }
     }
     for( int i=0; i<N; ++i ) //all sub-models must be completed before the main model can be built
-      submodel_tasks[i].join();
+      try {
+        submodel_tasks[i].join();
+      } catch(RuntimeException t){
+        if(rt == null) rt = t;
+      }
+    if(rt != null) throw rt;
     cv_computeAndSetOptimalParameters(cvModelBuilders);
   }
 
@@ -582,7 +594,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
    */
-  protected int separateFeatureVecs() {
+  public int separateFeatureVecs() {
     int res = 0;
     if(_parms._weights_column != null) {
       Vec w = _train.remove(_parms._weights_column);
@@ -809,6 +821,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
     }
+    if (_parms._distribution == DistributionFamily.modified_huber) {
+      error("_distribution", "Modified Huber distribution is not supported yet.");
+    }
     if (_parms._distribution != DistributionFamily.tweedie) {
       hide("_tweedie_power", "Only for Tweedie Distribution.");
     }
@@ -913,7 +928,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (va.numRows()==0) error("_validation_frame", "Validation frame must have > 0 rows.");
       _valid = new Frame(null /* not putting this into KV */, va._names.clone(), va.vecs().clone());
       try {
-        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete);
+        String[] msgs = Model.adaptTestForTrain(_valid, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
         _vresponse = _valid.vec(_parms._response_column);
         if (_vresponse == null && _parms._response_column != null)
           error("_validation_frame", "Validation frame must have a response column '" + _parms._response_column + "'.");

@@ -7,13 +7,14 @@
 Description
 ~~~~~~~~~~~
 
-The ``score_tree_interval`` option specifies to score the model after this many trees. This option is useful when used with early stopping and attempting to make early stopping reproducible. It can be disabled by setting this value to 0
+The ``score_tree_interval`` option specifies to score the model after this many trees. This option is useful when used with early stopping and attempting to make early stopping reproducible. It can be disabled by setting this value to 0.
 
-When specifying early stopping parameters, the ``stopping_rounds`` option applies to the number of scoring intervals or iterations (with ``score_each_iteration``) H2O has performed, so regular scoring intervals or iterations of small size help control early stopping the most (though there is a speed tradeoff to scoring more often). The default is to use H2O’s assessment of a reasonable ratio of training time to scoring time, which often results in inconsistent scoring gaps. 
+When specifying early stopping parameters, the ``stopping_rounds`` option applies to the number of scoring intervals or iterations (with ``score_each_iteration``) H2O has performed, so regular scoring intervals of small size help control early stopping the most (though there is a speed tradeoff to scoring more often). The default is to use H2O’s assessment of a reasonable ratio of training time to scoring time, which often results in inconsistent scoring gaps. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
+- `score_each_iteration <score_each_iteration.html>`__
 - `stopping_metric <stopping_metric.html>`__
 - `stopping_rounds <stopping_rounds.html>`__
 - `stopping_tolerance <stopping_tolerance.html>`__

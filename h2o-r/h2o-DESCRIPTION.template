@@ -24,10 +24,12 @@ Imports: graphics,
          jsonlite
 Suggests: ggplot2,
           mlbench,
-          Matrix
+          Matrix,
+          data.table (>= 1.9.8)
 Collate:
          'astfun.R'
          'classes.R'
+         'config.R'
          'connection.R'
          'constants.R'
          'datasets.R'

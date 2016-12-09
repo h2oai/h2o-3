@@ -35,7 +35,10 @@ public class TestUtil extends Iced {
   private static String[] ignoreTestsNames;
   private static String[] doonlyTestsNames;
   protected static int _initial_keycnt = 0;
+  /** Minimal cloud size to start test. */
   protected static int MINCLOUDSIZE = Integer.parseInt(System.getProperty("cloudSize", "1"));
+  /** Default time in ms to wait for clouding */
+  protected static int DEFAULT_TIME_FOR_CLOUDING = 30000 /* ms */;
 
   public TestUtil() { this(1); }
   public TestUtil(int minCloudSize) {
@@ -58,21 +61,32 @@ public class TestUtil extends Iced {
 
   // ==== Test Setup & Teardown Utilities ====
   // Stall test until we see at least X members of the Cloud
-  public static void stall_till_cloudsize(int x) {
-    stall_till_cloudsize(new String[] {}, x);
+  protected static int getDefaultTimeForClouding() {
+    return JACOCO_ENABLED
+           ? DEFAULT_TIME_FOR_CLOUDING * 10
+           : DEFAULT_TIME_FOR_CLOUDING;
   }
+
+  public static void stall_till_cloudsize(int x) {
+    stall_till_cloudsize(x, getDefaultTimeForClouding());
+  }
+
+  public static void stall_till_cloudsize(int x, int timeout) {
+    stall_till_cloudsize(new String[] {}, x, timeout);
+  }
+
   public static void stall_till_cloudsize(String[] args, int x) {
+    stall_till_cloudsize(args, x, getDefaultTimeForClouding());
+  }
+
+  public static void stall_till_cloudsize(String[] args, int x, int timeout) {
     x = Math.max(MINCLOUDSIZE, x);
     if( !_stall_called_before ) {
       H2O.main(args);
       H2O.registerRestApis(System.getProperty("user.dir"));
       _stall_called_before = true;
     }
-    if (JACOCO_ENABLED) {
-      H2O.waitForCloudSize(x, 300000);
-    } else {
-      H2O.waitForCloudSize(x, 30000);
-    }
+    H2O.waitForCloudSize(x, timeout);
     _initial_keycnt = H2O.store_size();
   }
 
@@ -98,12 +112,13 @@ public class TestUtil extends Iced {
     }
     assertTrue("Keys leaked: " + leaked_keys + ", cnt = " + cnt, leaked_keys <= 0 || cnt == 0);
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
-    new MRTask(){
-      @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
-    }.doAllNodes();
+    new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
   }
 
+  private static class DKVCleaner extends MRTask<DKVCleaner> {
+    @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
+  }
 
   /** Execute this rule before each test to print test name and test class */
   @Rule transient public TestRule logRule = new TestRule() {
@@ -520,6 +535,12 @@ public class TestUtil extends Iced {
   public static void checkStddev(double[] expected, double[] actual, double threshold) {
     for(int i = 0; i < actual.length; i++)
       Assert.assertEquals(expected[i], actual[i], threshold);
+  }
+
+  public static void checkIcedArrays(IcedWrapper[][] expected, IcedWrapper[][] actual, double threshold) {
+    for(int i = 0; i < actual.length; i++)
+      for (int j = 0; j < actual[0].length; j++)
+      Assert.assertEquals(expected[i][j].d, actual[i][j].d, threshold);
   }
 
   public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {

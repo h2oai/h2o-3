@@ -220,11 +220,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, parms, output);
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
-    _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
-    _output._domains= train.domains();
+    DKV.put(dinfo);
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
-    DKV.put(dinfo);
+    _output._origNames = parms._train.get().names();
+    _output._origDomains = parms._train.get().domains();
     Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
@@ -1728,6 +1728,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      */
     void validate(DeepLearning dl, boolean expensive) {
       boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == CrossEntropy || _loss == ModifiedHuber;
+      if (_loss == ModifiedHuber) dl.error("_loss", "ModifiedHuber loss function is not supported yet.");
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
       for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
       if (_mini_batch_size < 1)

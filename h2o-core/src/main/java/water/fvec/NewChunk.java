@@ -365,7 +365,8 @@ public class NewChunk extends Chunk {
       int nextNotNAIdx = i + 1;
       // Find next not-NA value (_is[idx] != -1)
       while (nextNotNAIdx < _is.length && _is[nextNotNAIdx] == -1) nextNotNAIdx++;
-      int slen = nextNotNAIdx < _is.length ? _is[nextNotNAIdx] - sidx : _sslen - sidx;
+      int send = nextNotNAIdx < _is.length ? _is[nextNotNAIdx]: _sslen;
+      int slen = send - sidx -1 /*account for trailing zero byte*/;
       // null-BufferedString represents NA value
       BufferedString bStr = sidx == -1 ? null : _bfstr.set(_ss, sidx, slen);
       c.addStr(bStr);
@@ -920,7 +921,7 @@ public class NewChunk extends Chunk {
     if (_is != null) {
       assert num_noncompressibles <= _is.length;
       _id = MemoryManager.malloc4(_is.length);
-      for (int i = 0; i < _sparseLen; i++) {
+      for (int i = 0; i < _len; i++) {
         if (_is[i] == -1) cs++; //same condition for NA and 0
         else {
           _is[i - cs] = _is[i];
@@ -1061,7 +1062,7 @@ public class NewChunk extends Chunk {
     if( mode==Vec.T_BAD ) // ALL NAs, nothing to do
       return new C0DChunk(Double.NaN, _len);
     if( mode==Vec.T_STR )
-      return new CStrChunk(_sslen, _ss, _sparseLen, _len, _is, _isAllASCII);
+      return new CStrChunk(_sslen, _ss, _sparseLen, _len, _id, _is, _isAllASCII);
     boolean rerun=false;
     if(mode == Vec.T_CAT) {
       for(int i = 0; i< _sparseLen; i++ )

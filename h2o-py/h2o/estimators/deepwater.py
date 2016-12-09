@@ -123,7 +123,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def max_after_balance_size(self):
         """
         float: Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes. (Default: 5.0)
+        balance_classes. (Default: 5)
         """
         return self._parms.get("max_after_balance_size")
 
@@ -285,7 +285,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def epochs(self):
-        """float: How many times the dataset should be iterated (streamed), can be fractional. (Default: 10.0)"""
+        """float: How many times the dataset should be iterated (streamed), can be fractional. (Default: 10)"""
         return self._parms.get("epochs")
 
     @epochs.setter
@@ -385,7 +385,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def momentum_ramp(self):
-        """float: Number of training samples for which momentum increases. (Default: 10000.0)"""
+        """float: Number of training samples for which momentum increases. (Default: 10000)"""
         return self._parms.get("momentum_ramp")
 
     @momentum_ramp.setter
@@ -421,7 +421,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def score_interval(self):
-        """float: Shortest time interval (in seconds) between model scoring. (Default: 5.0)"""
+        """float: Shortest time interval (in seconds) between model scoring. (Default: 5)"""
         return self._parms.get("score_interval")
 
     @score_interval.setter
@@ -468,7 +468,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @property
     def classification_stop(self):
         """
-        float: Stopping criterion for classification error fraction on training data (-1 to disable). (Default: 0.0)
+        float: Stopping criterion for classification error fraction on training data (-1 to disable). (Default: 0)
         """
         return self._parms.get("classification_stop")
 
@@ -480,9 +480,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def regression_stop(self):
-        """
-        float: Stopping criterion for regression error (MSE) on training data (-1 to disable). (Default: 0.0)
-        """
+        """float: Stopping criterion for regression error (MSE) on training data (-1 to disable). (Default: 0)"""
         return self._parms.get("regression_stop")
 
     @regression_stop.setter
@@ -508,7 +506,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Enum["auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification",
+        Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification",
         "mean_per_class_error"]: Metric to use for early stopping (AUTO: logloss for classification, deviance for
         regression) (Default: "auto")
         """
@@ -516,7 +514,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification", "mean_per_class_error"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error"))
         self._parms["stopping_metric"] = stopping_metric
 
 
@@ -524,7 +522,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def stopping_tolerance(self):
         """
         float: Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
-        much) (Default: 0.0)
+        much) (Default: 0)
         """
         return self._parms.get("stopping_tolerance")
 
@@ -536,7 +534,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0.0)"""
+        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
@@ -582,7 +580,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def clip_gradient(self):
-        """float: Clip gradients once their absolute value is larger than this value. (Default: 10.0)"""
+        """float: Clip gradients once their absolute value is larger than this value. (Default: 10)"""
         return self._parms.get("clip_gradient")
 
     @clip_gradient.setter
@@ -745,7 +743,7 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def input_dropout_ratio(self):
-        """float: Input layer dropout ratio (can improve generalization, try 0.1 or 0.2). (Default: 0.0)"""
+        """float: Input layer dropout ratio (can improve generalization, try 0.1 or 0.2). (Default: 0)"""
         return self._parms.get("input_dropout_ratio")
 
     @input_dropout_ratio.setter

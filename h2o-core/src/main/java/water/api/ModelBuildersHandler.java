@@ -2,6 +2,7 @@ package water.api;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelMojoWriter;
 import hex.schemas.ModelBuilderSchema;
 import water.H2O;
 import water.Iced;
@@ -11,6 +12,8 @@ import water.api.schemas4.ListRequestV4;
 import water.api.schemas4.ModelInfoV4;
 import water.api.schemas4.ModelsInfoV4;
 import water.util.ReflectionUtils;
+
+import java.lang.reflect.Method;
 
 class ModelBuildersHandler extends Handler {
 
@@ -62,11 +65,37 @@ class ModelBuildersHandler extends Handler {
           builder.builderVisibility() == ModelBuilder.BuilderVisibility.Beta? "beta" : "alpha";
       infos[i].have_mojo = builder.haveMojo();
       infos[i].have_pojo = builder.havePojo();
+      infos[i].mojo_version = infos[i].have_mojo? detectMojoVersion(builder) : null;
     }
     res.models = infos;
     return res;
   }
 
+
+  private String detectMojoVersion(ModelBuilder builder) {
+    Class<? extends Model> modelClass = ReflectionUtils.findActualClassParameter(builder.getClass(), 0);
+    try {
+      Method getMojoMethod = modelClass.getDeclaredMethod("getMojo");
+      Class<?> retClass = getMojoMethod.getReturnType();
+      if (retClass == ModelMojoWriter.class || !ModelMojoWriter.class.isAssignableFrom(retClass))
+        throw new RuntimeException("Method getMojo() in " + modelClass + " must return the concrete implementation " +
+            "of the ModelMojoWriter class. The return type is declared as " + retClass);
+      try {
+        ModelMojoWriter mmw = (ModelMojoWriter) retClass.newInstance();
+        return mmw.mojoVersion();
+      } catch (InstantiationException e) {
+        throw getMissingCtorException(retClass, e);
+      } catch (IllegalAccessException e) {
+        throw getMissingCtorException(retClass, e);
+      }
+    } catch (NoSuchMethodException e) {
+      throw new RuntimeException("Model class " + modelClass + " is expected to have method getMojo();");
+    }
+  }
+
+  private RuntimeException getMissingCtorException(Class<?> retClass, Exception e) {
+    return new RuntimeException("MojoWriter class " + retClass + " must define a no-arg constructor.\n" + e);
+  }
 }
 
 

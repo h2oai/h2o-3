@@ -1,7 +1,6 @@
 package hex.genmodel.algos.drf;
 
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 
 
@@ -9,8 +8,7 @@ import hex.genmodel.algos.tree.SharedTreeMojoModel;
  * "Distributed Random Forest" MojoModel
  */
 public final class DrfMojoModel extends SharedTreeMojoModel {
-    public int _effective_n_classes;
-    public boolean _binomial_double_trees;
+    protected boolean _binomial_double_trees;
 
 
     public DrfMojoModel(String[] columns, String[][] domains) {
@@ -22,17 +20,17 @@ public final class DrfMojoModel extends SharedTreeMojoModel {
      */
     @Override
     public final double[] score0(double[] row, double offset, double[] preds) {
-        super.scoreAllTrees(row, preds, _effective_n_classes);
+        super.scoreAllTrees(row, preds);
 
         // Correct the predictions -- see `DRFModel.toJavaUnifyPreds`
         if (_nclasses == 1) {
             // Regression
-            preds[0] /= _ntrees;
+            preds[0] /= _ntree_groups;
         } else {
             // Classification
             if (_nclasses == 2 && !_binomial_double_trees) {
                 // Binomial model
-                preds[1] /= _ntrees;
+                preds[1] /= _ntree_groups;
                 preds[2] = 1.0 - preds[1];
             } else {
                 // Multinomial
@@ -53,12 +51,4 @@ public final class DrfMojoModel extends SharedTreeMojoModel {
         return score0(row, 0.0, preds);
     }
 
-    /**
-     * Compute a graph of the forest.
-     *
-     * @return A graph of the forest.
-     */
-    public SharedTreeGraph computeGraph(int treeToPrint) {
-        return computeGraph(treeToPrint, _effective_n_classes);
-    }
 }

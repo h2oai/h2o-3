@@ -70,7 +70,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     public long seed;
 
     // Input fields
-    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","multinomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
+    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasi_binomial","multinomial", "poisson", "gamma", "tweedie"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
@@ -189,7 +189,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     /** For classification models, the maximum size (in terms of classes) of
      *  the confusion matrix for it to be printed. This option is meant to
      *  avoid printing extremely large confusion matrices.  */
-    @API(help = "Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT)
+    @API(help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs", level = API.Level.secondary, direction = API.Direction.INOUT)
     public int max_confusion_matrix_size;
 
     /**

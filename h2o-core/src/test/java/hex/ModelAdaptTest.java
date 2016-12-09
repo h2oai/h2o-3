@@ -8,8 +8,7 @@ import water.util.ArrayUtils;
 
 public class ModelAdaptTest extends TestUtil {
 
-  @BeforeClass public static void stall() { stall_till_cloudsize(5); }
-
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   // Private junk model class to test Adaption logic
   private static class AModel extends Model {
@@ -38,8 +37,8 @@ public class ModelAdaptTest extends TestUtil {
     Frame adapt = new Frame(tst);
     String[] warns = am.adaptTestForTrain(adapt,true, true);
     Assert.assertTrue(ArrayUtils.find(warns,"Test/Validation dataset column 'Feature_1' has levels not trained on: [D]")!= -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing training column 'Const': substituting in a column of NAs") != -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing training column 'Useless': substituting in a column of NAs") != -1);
+    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Const': substituting in a column of NaN") != -1);
+    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Useless': substituting in a column of NaN") != -1);
     Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Response' has levels not trained on: [W]") != -1);
     // Feature_1: merged test & train domains
     Assert.assertArrayEquals(adapt.vec("Feature_1").domain(),new String[]{"A","B","C","D"});

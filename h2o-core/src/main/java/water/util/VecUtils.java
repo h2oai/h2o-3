@@ -573,4 +573,16 @@ public class VecUtils {
       return dom;
     }
   }
+  public static int [] getLocalChunkIds(Vec v){
+    if(v._cids != null) return v._cids;
+    int [] res = new int[Math.max(v.nChunks()/H2O.CLOUD.size(),1)];
+    int j = 0;
+    for(int i = 0; i < v.nChunks(); ++i){
+      if(v.isHomedLocally(i)) {
+        if(res.length == j) res = Arrays.copyOf(res,2*res.length);
+        res[j++] = i;
+      }
+    }
+    return (v._cids = j == res.length?res:Arrays.copyOf(res,j));
+  }
 }

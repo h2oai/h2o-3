@@ -1442,7 +1442,8 @@ public class DeepLearningTest extends TestUtil {
       if (dl2 != null) dl2.delete();
     }
   }
-  @Test
+
+  @Ignore
   public void testConvergenceAUC_ModifiedHuber() {
     Frame tfr = null;
     DeepLearningModel dl = null;
@@ -2377,7 +2378,7 @@ public class DeepLearningTest extends TestUtil {
           Assert.assertTrue("A categorical column should be transformed into one numeric one (col "+i+")",
                   transformedFrame.vec(i).isNumeric());
           Assert.assertEquals("Transformed categorical column should carry the name of the original column",
-                  transformedFrame.name(i), mainFrame.name(i));
+                  transformedFrame.name(i), mainFrame.name(i) + ".Eigen");
         Assert.assertEquals("Transformed categorical column should have the correct mean value",
                 expectedMean[i-numNoncatColumns], transformedFrame.vec(i).mean(), 5e-4);
       }

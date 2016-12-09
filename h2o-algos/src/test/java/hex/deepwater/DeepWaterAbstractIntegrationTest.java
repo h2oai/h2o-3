@@ -5,6 +5,7 @@ import deepwater.backends.BackendParams;
 import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
+import hex.FrameSplitter;
 import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsMultinomial;
@@ -695,11 +696,12 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._response_column = "C2";
       p._balance_classes = true;
       p._epochs = 1;
+      p._seed = 1234;
       p._max_after_balance_size = 2f;
       p._class_sampling_factors = new float[]{3,5};
       DeepWater j = new DeepWater(p);
       m = j.trainModel().get();
-      Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.90);
+      Assert.assertTrue((m._output._training_metrics).auc_obj()._auc > 0.85);
       preds = m.score(p._train.get());
       Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3,1e-5,1));
     } finally {
@@ -892,15 +894,17 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
 
   private void MOJOTest(Model.Parameters.CategoricalEncodingScheme categoricalEncodingScheme, boolean enumCols, boolean standardize) {
     Frame tr = null;
+    Frame tr2 = null;
+    Frame tr3 = null;
     DeepWaterModel m = null;
     Frame preds = null;
+    Frame preds2 = null;
+    Frame preds3 = null;
     try {
       DeepWaterParameters p = new DeepWaterParameters();
+      tr = parse_test_file("smalldata/prostate/prostate.csv");
 
-      p._backend = getBackend();
-      p._train = (tr = parse_test_file("smalldata/prostate/prostate.csv"))._key;
       p._response_column = "CAPSULE";
-      p._ignored_columns = new String[]{"ID"};
       for (String col : new String[]{p._response_column}) {
         Vec v = tr.remove(col);
         tr.add(col, v.toCategoricalVec());
@@ -914,23 +918,56 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
         }
       }
       DKV.put(tr);
+      p._train = tr._key;
+      p._ignored_columns = new String[]{"ID"};
       p._backend = getBackend();
-      p._seed = 125;
-      p._epochs = 1;
+      p._seed = 12345;
+      p._epochs = 5;
       p._categorical_encoding = categoricalEncodingScheme;
-      p._score_training_samples = 100;
-      p._score_validation_samples = 100;
-      p._shuffle_training_data = false;
       p._standardize = standardize;
-      p._hidden = new int[]{10,10};
+      p._hidden = new int[]{50,50};
       m = new DeepWater(p).trainModel().get();
 
-      preds = m.score(p._train.get());
-      Assert.assertTrue(m.testJavaScoring(p._train.get(),preds,1e-3));
+      // Score original training frame
+      preds = m.score(tr);
+      Assert.assertTrue(m.testJavaScoring(tr,preds,1e-3));
+      double auc = ModelMetricsBinomial.make(preds.vec(2), tr.vec(p._response_column)).auc();
+      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
+      if (standardize)
+        Assert.assertTrue(auc > 0.7);
+
+      // Score all numeric frame (cols in the right order) - do the transformation to enum on the fly
+      tr2 = parse_test_file("smalldata/prostate/prostate.csv");
+      for (String col : new String[]{p._response_column}) {
+        tr2.add(col, tr2.remove(col)); //DO NOT CONVERT TO ENUM
+      }
+      if (enumCols) {
+        for (String col : new String[]{"RACE", "DPROS", "DCAPS", "GLEASON"}) {
+          tr2.add(col, tr2.remove(col)); //DO NOT CONVERT TO ENUM
+        }
+      }
+      preds2 = m.score(tr2);
+      auc = ModelMetricsBinomial.make(preds2.vec(2), tr2.vec(p._response_column)).auc();
+      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
+      if (standardize)
+        Assert.assertTrue(auc > 0.7);
+
+      // Score all numeric frame (cols in the wrong order) - do the transformation to enum on the fly
+      tr3 = parse_test_file("smalldata/prostate/prostate.csv");
+      preds3 = m.score(tr3);
+      auc = ModelMetricsBinomial.make(preds3.vec(2), tr3.vec(p._response_column)).auc();
+      Assert.assertTrue(Math.abs(auc - ((ModelMetricsBinomial)m._output._training_metrics).auc()) < 1e-3);
+      if (standardize)
+        Assert.assertTrue(auc > 0.7);
+
     } finally {
       if (tr!=null) tr.remove();
+      if (tr2!=null) tr2.remove();
+      if (tr3!=null) tr3.remove();
       if (m!=null) m.remove();
       if (preds!=null) preds.remove();
+      if (preds2!=null) preds2.remove();
+      if (preds3!=null) preds3.remove();
     }
   }
 
@@ -938,6 +975,8 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
   @Test public void MOJOTestNumeric() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.AUTO, false, true);}
   @Test public void MOJOTestCatInternal() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotInternal, true, true);}
   @Test public void MOJOTestCatExplicit() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, true, true);}
+  @Test public void MOJOTestCatEigen() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Eigen, true, true);}
+  @Test public void MOJOTestCatBinary() { MOJOTest(Model.Parameters.CategoricalEncodingScheme.Binary, true, true);}
 
   @Test
   public void testCheckpointForwards() {
@@ -1135,6 +1174,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
           DKV.put(tfr);
         }
         DeepWaterParameters parms = new DeepWaterParameters();
+        parms._backend = getBackend();
         parms._train = tfr._key;
         parms._epochs = 100;
         parms._response_column = "Class";
@@ -1215,7 +1255,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     ArrayList<String> labels = new ArrayList<>();
 
     {
-      FileInputStream is = new FileInputStream("/home/arno/tweets.txt");
+      FileInputStream is = new FileInputStream("/home/magnus/tweets.txt");
       BufferedReader br = new BufferedReader(new InputStreamReader(is));
       String line;
       while ((line = br.readLine()) != null) {
@@ -1225,7 +1265,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     }
 
     {
-      FileInputStream is = new FileInputStream("/home/arno/labels.txt");
+      FileInputStream is = new FileInputStream("/home/magnus/labels.txt");
       BufferedReader br = new BufferedReader(new InputStreamReader(is));
       String line;
       while ((line = br.readLine()) != null) {
@@ -1285,5 +1325,106 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     return array;
   }
   */
+
+  @Test
+  public void testCheckpointOverwriteWithBestModel() {
+    Frame tfr = null;
+    DeepWaterModel dl = null;
+    DeepWaterModel dl2 = null;
+
+    Frame train = null, valid = null;
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+
+      FrameSplitter fs = new FrameSplitter(tfr, new double[]{0.8},new Key[]{Key.make("train"),Key.make("valid")},null);
+      fs.compute2();
+      train = fs.getResult()[0];
+      valid = fs.getResult()[1];
+
+      DeepWaterParameters parms = new DeepWaterParameters();
+      parms._backend = getBackend();
+      parms._train = train._key;
+      parms._valid = valid._key;
+      parms._epochs = 1;
+      parms._response_column = "C5";
+      parms._hidden = new int[]{50,50};
+      parms._seed = 0xdecaf;
+      parms._train_samples_per_iteration = 0;
+      parms._score_duty_cycle = 1;
+      parms._score_interval = 0;
+      parms._stopping_rounds = 0;
+      parms._overwrite_with_best_model = true;
+
+      dl = new DeepWater(parms).trainModel().get();
+      double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
+
+
+      DeepWaterParameters parms2 = (DeepWaterParameters)parms.clone();
+      parms2._epochs = 10;
+      parms2._checkpoint = dl._key;
+
+      dl2 = new DeepWater(parms2).trainModel().get();
+      double ll2 = ((ModelMetricsMultinomial)dl2._output._validation_metrics).logloss();
+
+      Assert.assertTrue(ll2 <= ll1);
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+      if (train != null) train.delete();
+      if (valid != null) valid.delete();
+    }
+  }
+
+  // Check that the restarted model honors the previous model as a best model so far
+  @Test
+  public void testCheckpointOverwriteWithBestModel2() {
+    Frame tfr = null;
+    DeepWaterModel dl = null;
+    DeepWaterModel dl2 = null;
+
+    Frame train = null, valid = null;
+    try {
+      tfr = parse_test_file("./smalldata/iris/iris.csv");
+
+      FrameSplitter fs = new FrameSplitter(tfr, new double[]{0.8},new Key[]{Key.make("train"),Key.make("valid")},null);
+      fs.compute2();
+      train = fs.getResult()[0];
+      valid = fs.getResult()[1];
+
+      DeepWaterParameters parms = new DeepWaterParameters();
+      parms._backend = getBackend();
+      parms._train = train._key;
+      parms._valid = valid._key;
+      parms._epochs = 10;
+      parms._response_column = "C5";
+      parms._hidden = new int[]{50,50};
+      parms._seed = 0xdecaf;
+      parms._train_samples_per_iteration = 0;
+      parms._score_duty_cycle = 1;
+      parms._score_interval = 0;
+      parms._stopping_rounds = 0;
+      parms._overwrite_with_best_model = true;
+
+      dl = new DeepWater(parms).trainModel().get();
+      double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
+
+
+      DeepWaterParameters parms2 = (DeepWaterParameters)parms.clone();
+      parms2._epochs = 20;
+      parms2._checkpoint = dl._key;
+
+      dl2 = new DeepWater(parms2).trainModel().get();
+      double ll2 = ((ModelMetricsMultinomial)dl2._output._validation_metrics).logloss();
+
+      Assert.assertTrue(ll2 <= ll1);
+    } finally {
+      if (tfr != null) tfr.delete();
+      if (dl != null) dl.delete();
+      if (dl2 != null) dl2.delete();
+      if (train != null) train.delete();
+      if (valid != null) valid.delete();
+    }
+  }
 }
 

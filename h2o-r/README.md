@@ -21,7 +21,7 @@ The output of the build is a CRAN-like layout in the R directory.
 
 ## Installing
 
-###  Installation from the command line
+###  Installation from the command line after build
 
 0. Navigate to the top-level `h2o-3` directory: `cd ~/h2o-3`. 
 0. Install the H2O package for R: `R CMD INSTALL h2o-r/R/src/contrib/h2o_****.tar.gz`
@@ -31,39 +31,33 @@ The output of the build is a CRAN-like layout in the R directory.
 ###  Installation from within R
 
 0. Detach any currently loaded H2O package for R.  
-`if ("package:h2o" %in% search()) detach("package:h2o", unload=TRUE)`  
+
+  ```
+  if ("package:h2o" %in% search()) detach("package:h2o", unload=TRUE)
+  ```
 
 0. Remove any previously installed H2O package for R.  
-`if ("h2o" %in% rownames(installed.packages())) remove.packages("h2o")`
 
-	```
-	Removing package from ‘/Users/H2O_User/.Rlibrary’
-	(as ‘lib’ is unspecified)
-	```
+  ```
+  if ("h2o" %in% rownames(installed.packages())) remove.packages("h2o")
+  ```
 
-0. Install the dependencies for H2O.
-   
-   **Note**: This list may change as new capabilities are added to H2O. The commands are reproduced below, but we strongly recommend visiting the H2O download page at [h2o.ai/download](http://h2o.ai/download) for the most up-to-date list of dependencies. 
-   
-	```
-	pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
-	new.pkgs <- setdiff(pkgs, rownames(installed.packages()))
-	if (length(new.pkgs)) install.packages(new.pkgs)
-	```
+0. Install H2O R package along with its dependencies.
+  
+  Install latest CRAN version:
 
-0. Install the H2O R package from your build directory.  
-`install.packages("h2o", type="source", repos="https://h2o-release.s3.amazonaws.com/h2o/rel-turchin/9/R")`
+  ```
+  install.packages("h2o")
+  ```
 
+  Install latest H2O repo version, 1-2 releases ahead:
+
+  ```
+  repos <- c("https://h2o-release.s3.amazonaws.com/h2o/rel-turing/9/R", getOption("repos"))
+  install.packages("h2o", type="source", repos=repos)
+  ```
+  
    **Note**: Do not copy and paste the command above. You may need to replace `rel-turchin/9` with the current H2O build number. Refer to the H2O download page at [h2o.ai/download](http://h2o.ai/download) for latest build number. 
-
-	```
-	Installing package into ‘/Users/H2O_User/.Rlibrary’
-	(as ‘lib’ is unspecified)
-	source repository is unavailable to check versions
-	
-	The downloaded binary packages are in
-	/var/folders/tt/g5d7cr8d3fg84jmb5jr9dlrc0000gn/T//RtmpU2C3LG/downloaded_packages
-	```
 
 ## Running
 

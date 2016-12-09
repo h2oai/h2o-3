@@ -59,7 +59,6 @@ Modeling In H2O
 
 :mod:`H2OGridSearch`
 -----------------------------
-.. automodule:: h2o.grid.grid_search
+.. autoclass:: h2o.grid.grid_search.H2OGridSearch
   :members:
-  :undoc-members:
   :show-inheritance:

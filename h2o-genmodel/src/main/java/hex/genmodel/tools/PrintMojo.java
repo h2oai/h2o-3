@@ -154,14 +154,14 @@ public class PrintMojo {
     }
 
     if (genModel instanceof GbmMojoModel) {
-      SharedTreeGraph g = ((GbmMojoModel) genModel).computeGraph(treeToPrint);
+      SharedTreeGraph g = ((GbmMojoModel) genModel)._computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }
       g.printDot(os, maxLevelsToPrintPerEdge, detail);
     }
     else if (genModel instanceof DrfMojoModel) {
-      SharedTreeGraph g = ((DrfMojoModel) genModel).computeGraph(treeToPrint);
+      SharedTreeGraph g = ((DrfMojoModel) genModel)._computeGraph(treeToPrint);
       if (printRaw) {
         g.print();
       }

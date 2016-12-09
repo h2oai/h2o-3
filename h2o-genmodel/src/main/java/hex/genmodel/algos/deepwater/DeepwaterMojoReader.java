@@ -24,6 +24,9 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
       throw new RuntimeException(e);
     }
     _model._backend = DeepwaterMojoModel.createDeepWaterBackend((String) readkv("backend")); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
+    if (_model._backend == null) {
+      throw new IllegalArgumentException("Couldn't instantiate the Deep Water backend.");
+    }
     _model._problem_type = readkv("problem_type");
     _model._mini_batch_size = readkv("mini_batch_size");
     _model._height = readkv("height");
@@ -57,10 +60,29 @@ public class DeepwaterMojoReader extends ModelMojoReader<DeepwaterMojoModel> {
       e.printStackTrace();
     }
     _model._model = _model._backend.buildNet(_model._imageDataSet, _model._opts, _model._backendParams, _model._nclasses, file.toString());
-    String mean_image_file = readkv("mean_image_file");
-    if (mean_image_file != null)
-      _model._imageDataSet.setMeanData(_model._backend.loadMeanImage(_model._model, mean_image_file));
-    _model._meanImageData = _model._imageDataSet.getMeanData();
+    // 1) read the raw bytes of the mean image file from the MOJO
+    byte[] meanBlob = null;
+    try {
+      meanBlob = readblob("mean_image_file");
+    } catch (IOException e) {
+      // e.printStackTrace();
+    }
+    if (meanBlob!=null) {
+      // 2) write the mean image file
+      File meanFile = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + ".mean");
+      try {
+        FileOutputStream os = new FileOutputStream(meanFile.toString());
+        os.write(meanBlob);
+        os.close();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+      // 3) tell the backend to use that mean image file (just in case it needs it)
+      _model._imageDataSet.setMeanData(_model._backend.loadMeanImage(_model._model, meanFile.toString()));
+
+      // 4) keep a float[] version of the mean array to be used during image processing
+      _model._meanImageData = _model._imageDataSet.getMeanData();
+    }
 
     file = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString());
     try {

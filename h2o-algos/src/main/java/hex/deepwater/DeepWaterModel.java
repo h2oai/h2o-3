@@ -4,6 +4,7 @@ import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.schemas.DeepWaterModelV3;
+import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.api.schemas3.ModelSchemaV3;
 import water.fvec.Chunk;
@@ -33,7 +34,7 @@ import static water.H2O.technote;
  */
 public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,DeepWaterModelOutput> {
 
-  @Override public ModelMojoWriter getMojo() { return new DeepwaterMojoWriter(this); }
+  @Override public DeepwaterMojoWriter getMojo() { return new DeepwaterMojoWriter(this); }
 
   // Default publicly visible Schema is V2
   public ModelSchemaV3 schema() { return new DeepWaterModelV3(); }
@@ -43,6 +44,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   }
 
   final public DeepWaterModelInfo model_info() { return model_info; }
+
+  @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
 //  final public VarImp varImp() { return _output.errors.variable_importances; }
 
@@ -135,6 +138,12 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     _dist = new Distribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
+    if (actual_best_model_key.get() == null) {
+      DeepWaterModel best = IcedUtils.deepCopy(cp);
+      //best.model_info.data_info = model_info.data_info; // Note: we currently DO NOT use the checkpoint's data info - as data may change during checkpoint restarts
+      actual_best_model_key = Key.<DeepWaterModel>make(H2O.SELF);
+      DKV.put(actual_best_model_key, best);
+    }
     time_of_start_ms = cp.time_of_start_ms;
     total_training_time_ms = cp.total_training_time_ms;
     total_checkpointed_run_time_ms = cp.total_training_time_ms;
@@ -186,8 +195,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
     super(destKey, params, output);
     if (H2O.getCloudSize() != 1)
       throw new IllegalArgumentException("Deep Water currently only supports execution of 1 node.");
-    _output._origNames = train.names();
-    _output._origDomains = train.domains();
+    _output._origNames = params._train.get().names();
+    _output._origDomains = params._train.get().domains();
 
     DeepWaterParameters parms = (DeepWaterParameters) params.clone(); //make a copy, don't change model's parameters
     DeepWaterParameters.Sanity.modifyParms(parms, parms, nClasses); //sanitize the model_info's parameters
@@ -635,7 +644,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
           iter = new DeepWaterDatasetIterator(score_data, null /*no labels*/, di, batch_size, model_info().get_params()._cache_data);
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
-          iter = new DeepWaterTextIterator(score_data, null /*no labels*/, batch_size, 100 /*FIXME*/, model_info().get_params()._cache_data);
+          iter = new DeepWaterTextIterator(score_data, null /*no labels*/, batch_size, 56 /*FIXME*/, model_info().get_params()._cache_data);
         } else {
           throw H2O.unimpl();
         }
@@ -775,6 +784,8 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
   protected Futures remove_impl(Futures fs) {
     cleanUpCache(fs);
     removeNativeState();
+    if (actual_best_model_key!=null)
+      DKV.remove(actual_best_model_key);
     if (model_info()._dataInfo !=null)
       model_info()._dataInfo.remove(fs);
     return super.remove_impl(fs);

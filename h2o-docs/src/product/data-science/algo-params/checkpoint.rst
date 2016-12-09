@@ -11,7 +11,7 @@ In real-world scenarios, data can change. For example, you may have a model curr
 
 The ``checkpoint`` option allows you to specify a model key associated with a previously trained model. This will build a new model as a continuation of a previously generated model. If this is not specified, then the algorithm will start training a new model instead of continuing building a previous model. 
 
-When setting parameters that continue to build on a previous model, such as ``ntrees`` or ``epoch``, the new parameter value must be greater than the original value. For example, if the first model builds 1 tree, the continuation model (using checkpointing) must build ``ntrees`` equal to 2 (meaining build one additional tree) or greater.
+When setting parameters that continue to build on a previous model, such as ``ntrees`` or ``epoch``, the new parameter value must be greater than the original value. For example, if the first model builds 1 tree, the continuation model (using checkpointing) must build ``ntrees`` equal to 2 (meaning build one additional tree) or greater.
 
 **Note**: The following options cannot be modified when rebuilding a model using ``checkpoint``:
 
@@ -44,9 +44,9 @@ When setting parameters that continue to build on a previous model, such as ``nt
     - network_definition_file
     - nfolds
     - problem_type
-    - response_column
     - standardize
     - use_all_factor_levels
+    - y (response column)
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

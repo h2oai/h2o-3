@@ -61,12 +61,14 @@ public class RapidsTest extends TestUtil {
   }
 
   @Test public void testParseNumList() {
-    astNumList_ok("[]");
-    astNumList_ok("[1 2 3]");
-    astNumList_ok("[000.1 -3 17.003 2e+01 +11.1 1234567890]");
-    astNumList_ok("[NaN nan]");
-    astNumList_ok("[1 2:3 5:10:2]");
-    astNumList_ok("[-0.5:10:0.1]");
+    astNumList_ok("[]", new double[0]);
+    astNumList_ok("[1 2 3]", ard(1, 2, 3));
+    astNumList_ok("[1, 2, 3]", ard(1, 2, 3));
+    astNumList_ok("[1     , 2\t, 3,4]", ard(1, 2, 3, 4));
+    astNumList_ok("[000.1 -3 17.003 2e+01 +11.1 1234567890]", ard(0.1, -3, 17.003, 20, 11.1, 1234567890));
+    astNumList_ok("[NaN nan]", ard(Double.NaN, Double.NaN));
+    astNumList_ok("[1 2:3 5:10:2]", ard(1, 2, 3, 4, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23));
+    astNumList_ok("[-0.5:10:0.1]", ard(-0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4));
     parse_err("[21 11");
     parse_err("[1 0.00.0]");
     parse_err("[0 1 true false]");
@@ -74,6 +76,7 @@ public class RapidsTest extends TestUtil {
     parse_err("[0 1 'hello']");
     parse_err("[1:0]");
     parse_err("[0:nan:2]");
+    parse_err("[0:2:nan]");
     parse_err("[1:0:5]");
     parse_err("[1:-20]");
     parse_err("[1:20:-5]");
@@ -587,51 +590,11 @@ public class RapidsTest extends TestUtil {
     }
   }
 
- @Test public void testCumu() {
-    Frame fr = null,fr2=null;
-    String x = null;
-    try {
-      fr = ArrayUtils.frame("c1",vec(ari(1,1)));
-      fr.    add("c2"  ,vec(ari(2,2)));
-      fr.    add("c3"  ,vec(ari(3,3)));
-      fr.    add("c4"  ,vec(ari(4,4)));
-      fr = new Frame(fr);
-      DKV.put(fr);
-      x = String.format("(cumsum %s 1)", fr._key);
-      Val val = Rapids.exec(x);
-      Assert.assertTrue(val instanceof ValFrame);
-      fr2 = val.getFrame();
-      Assert.assertEquals(fr2.vec(0).at8(0L), 1);
-      Assert.assertEquals(fr2.vec(1).at8(0L), 3);
-      Assert.assertEquals(fr2.vec(2).at8(0L), 6);
-      Assert.assertEquals(fr2.vec(3).at8(0L), 10);
-      fr2.remove();
-      x = String.format("(cumsum %s 0)", fr._key);
-      val = Rapids.exec(x);
-      Assert.assertTrue(val instanceof ValFrame);
-      fr2 = val.getFrame();
-      Assert.assertEquals(fr2.vec(0).at8(1L), 2);
-      Assert.assertEquals(fr2.vec(1).at8(1L), 4);
-      Assert.assertEquals(fr2.vec(2).at8(1L), 6);
-      Assert.assertEquals(fr2.vec(3).at8(1L), 8);
-      fr2.remove();
-      x = String.format("(cummax %s 1)", fr._key);
-      val = Rapids.exec(x);
-      Assert.assertTrue(val instanceof ValFrame);
-      fr2 = val.getFrame();
-      Assert.assertEquals(fr2.vec(0).at8(0L), 1);
-      Assert.assertEquals(fr2.vec(1).at8(0L), 2);
-      Assert.assertEquals(fr2.vec(2).at8(0L), 3);
-      Assert.assertEquals(fr2.vec(3).at8(0L), 4);
-      fr2.remove();
-    } finally {
-      if (fr!=null) fr.delete();
-    }
-  }
-
-
-  private static void astNumList_ok(String expr) {
-    assertTrue(Rapids.parse(expr) instanceof AstNumList);
+  private static void astNumList_ok(String expr, double[] expected) {
+    AstRoot res = Rapids.parse(expr);
+    assertTrue(res instanceof AstNumList);
+    if (expected != null)
+      assertArrayEquals(expected, ((AstNumList)res).expand(), 1e-10);
   }
 
   private static void astStr_ok(String expr, String expected) {
@@ -643,7 +606,7 @@ public class RapidsTest extends TestUtil {
   private static void parse_err(String expr) {
     try {
       Rapids.parse(expr);
-      fail();
+      fail("Expression " + expr + " expected to fail, however it did not.");
     } catch (IllegalASTException ignored) {}
   }
 }

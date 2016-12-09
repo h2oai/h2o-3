@@ -30,7 +30,8 @@
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-#'        one of: "gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie". Defaults to gaussian.
+#'        one of: "gaussian", "binomial", "quasi_binomial", "multinomial", "poisson", "gamma", "tweedie". Defaults to
+#'        gaussian.
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.0.
 #' @param tweedie_link_power Tweedie link power Defaults to 1.0.
 #' @param solver AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
@@ -140,7 +141,7 @@ h2o.glm <- function(x, y, training_frame,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie"),
+                    family = c("gaussian", "binomial", "quasi_binomial", "multinomial", "poisson", "gamma", "tweedie"),
                     tweedie_variance_power = 0.0,
                     tweedie_link_power = 1.0,
                     solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT"),

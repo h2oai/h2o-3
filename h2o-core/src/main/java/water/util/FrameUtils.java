@@ -524,7 +524,6 @@ public class FrameUtils {
               catnames.add(_frame.name(i) + "." + _frame.vec(i).domain()[k]);
             ++j;
           } else {
-            catnames.add(_frame.name(i));
             outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
           }
         }
@@ -700,7 +699,7 @@ public class FrameUtils {
         for (int i = 0; i < frameVecs.length; ++i) {
           if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
           if (frameVecs[i].isCategorical())
-            outputFrame.add(_frame.name(i), _tev.toEigenVec(frameVecs[i]));
+            outputFrame.add(_frame.name(i) + ".Eigen", _tev.toEigenVec(frameVecs[i]));
           else
             outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
         }

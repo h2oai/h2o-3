@@ -185,7 +185,7 @@ final public class DeepWaterModelInfo extends Iced {
           _channels = 0;
       }
     } else if (parameters._problem_type == DeepWaterParameters.ProblemType.text) {
-      _width =100; //FIXME
+      _width =56; //FIXME
     } else {
       Log.warn("unknown problem_type:", parameters._problem_type);
       throw H2O.unimpl();
@@ -224,7 +224,7 @@ final public class DeepWaterModelInfo extends Iced {
         }
       }
 
-      if (parameters._mean_image_file != null && !parameters._mean_image_file.equals(""))
+      if (parameters._mean_image_file != null && !parameters._mean_image_file.isEmpty())
         imageDataSet.setMeanData(_backend.loadMeanImage(_model, parameters._mean_image_file));
       _meanData = imageDataSet.getMeanData();
 

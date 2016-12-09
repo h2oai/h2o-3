@@ -100,11 +100,11 @@ Example
 	    print(label[key], 'validation score', titanic_gbm.auc(valid = True))
 
 
-	# Example of values to grid over for `nbins`
+	# Example of values to grid over for `ntrees`
 	# import Grid Search
 	from h2o.grid.grid_search import H2OGridSearch
 
-	# select the values for `nbins` to grid over
+	# select the values for `ntrees` to grid over
 	hyper_params = {'ntrees': [20, 50, 80, 110, 140, 170, 200]}
 
 	# this example uses cartesian grid search because the search space is small

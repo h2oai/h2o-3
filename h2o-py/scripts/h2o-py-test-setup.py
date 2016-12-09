@@ -10,7 +10,7 @@ _IS_PYDEMO_                   = False
 _IS_PYUNIT_                   = False
 _IS_PYBOOKLET_                = False
 _RESULTS_DIR_                 = False
-_TEST_NAME_                   = None
+_TEST_NAME_                   = ""
 _FORCE_CONNECT_               = False
 
 def parse_args(args):
@@ -126,7 +126,7 @@ def h2o_test_setup(sys_args):
                                 "{0}".format(_TEST_NAME_))
 
     print("[{0}] {1}\n".format(strftime("%Y-%m-%d %H:%M:%S", gmtime()), "Connect to h2o on IP: {0} PORT: {1}".format(_H2O_IP_, _H2O_PORT_)))
-    h2o.init(ip=_H2O_IP_, port=_H2O_PORT_, strict_version_check=False, force_connect=_FORCE_CONNECT_)
+    h2o.connect(ip=_H2O_IP_, port=_H2O_PORT_, verbose=False)
     h2o.utils.config.H2OConfigReader.get_config()["general.allow_breaking_changes"] = True
 
     #rest_log = os.path.join(_RESULTS_DIR_, "rest.log")

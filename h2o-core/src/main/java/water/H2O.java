@@ -260,6 +260,9 @@ final public class H2O {
     /** -disable_web; disable web API port (used by Sparkling Water) */
     public boolean disable_web = false;
 
+    /** -context_path=jetty_context_path; the context path for jetty */
+    public String context_path = "";
+
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
@@ -456,6 +459,14 @@ final public class H2O {
       }
       else if (s.matches("disable_web")) {
         ARGS.disable_web = true;
+      }
+      else if (s.matches("context_path")) {
+        i = s.incrementAndCheck(i, args);
+        String value = args[i];
+        ARGS.context_path = value.startsWith("/")
+                            ? value.trim().length() == 1
+                              ? "" : value
+                            : "/" + value;
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
@@ -1075,7 +1086,7 @@ final public class H2O {
       super((ARGS.nthreads <= 0) ? NUMCPUS : ARGS.nthreads,
             new FJWThrFact(cap),
             null,
-            p<MIN_HI_PRIORITY);
+            p>=MIN_HI_PRIORITY /* low priority FJQs should use the default FJ settings to use LIFO order of thread private queues. */);
       _priority = p;
     }
     private H2OCountedCompleter poll2() { return (H2OCountedCompleter)pollSubmission(); }
@@ -1271,8 +1282,8 @@ final public class H2O {
 
   public static String getURL(String schema) {
     return String.format(H2O.SELF_ADDRESS instanceof Inet6Address
-                         ? "%s://[%s]:%d" : "%s://%s:%d",
-                         schema, H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
+                         ? "%s://[%s]:%d%s" : "%s://%s:%d%s",
+                         schema, H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT, H2O.ARGS.context_path);
   }
 
   // The multicast discovery port

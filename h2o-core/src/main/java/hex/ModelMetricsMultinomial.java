@@ -2,6 +2,7 @@ package hex;
 
 import hex.genmodel.GenModel;
 import water.MRTask;
+import water.Scope;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -23,7 +24,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     _cm = cm;
     _hit_ratios = hr;
     _logloss = logloss;
-    _mean_per_class_error = cm==null?Double.NaN:cm.mean_per_class_error();
+    _mean_per_class_error = cm==null || cm.tooLarge() ? Double.NaN : cm.mean_per_class_error();
   }
 
   @Override
@@ -121,6 +122,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
    * @return ModelMetrics object
    */
   static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, String[] domain) {
+    Scope.enter();
     Vec _labels = actualLabels.toCategoricalVec();
     if (_labels == null || perClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs for multinomial metrics!");
@@ -142,6 +144,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     _labels.remove();
     ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mb.makeModelMetrics(null, predsLabel, null, null);
     mm._description = "Computed on user-given predictions and labels.";
+    Scope.exit();
     return mm;
   }
 
@@ -172,7 +175,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
 
     public MetricBuilderMultinomial( int nclasses, String[] domain ) {
       super(nclasses,domain);
-      _cm = new double[domain.length][domain.length];
+      _cm = domain.length > ConfusionMatrix.MAX_CM_CLASSES ? null : new double[domain.length][domain.length];
       _K = Math.min(10,_nclasses);
       _hits = new double[_K];
     }
@@ -182,6 +185,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     // distribution;
     @Override public double[] perRow(double ds[], float[] yact, Model m) { return perRow(ds, yact, 1, 0, m); }
     @Override public double[] perRow(double ds[], float[] yact, double w, double o, Model m) {
+      if (_cm == null) return ds;
       if( Float .isNaN(yact[0]) ) return ds; // No errors if   actual   is missing
       if(ArrayUtils.hasNaNs(ds)) return ds;
       if(w == 0 || Double.isNaN(w)) return ds;
@@ -209,6 +213,7 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     }
 
     @Override public void reduce( T mb ) {
+      if (_cm == null) return;
       super.reduce(mb);
       assert mb._K == _K;
       ArrayUtils.add(_cm, mb._cm);

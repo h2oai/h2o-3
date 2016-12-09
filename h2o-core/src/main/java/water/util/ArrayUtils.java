@@ -1,9 +1,6 @@
 package water.util;
 
-import water.DKV;
-import water.Futures;
-import water.Key;
-import water.MemoryManager;
+import water.*;
 import water.fvec.*;
 
 import java.text.DecimalFormat;
@@ -183,6 +180,20 @@ public class ArrayUtils {
     return res;
   }
 
+  public static <T extends Iced> T[][] deepClone(T [][] ary){
+    T [][] res = ary.clone();
+    for(int i = 0 ; i < res.length; ++i)
+      res[i] = deepClone(res[i]);
+    return res;
+  }
+  public static <T extends Iced> T[] deepClone(T [] ary){
+    T [] res = ary.clone();
+    for(int j = 0; j < res.length; ++j)
+      if(res[j] != null)
+        res[j] = (T)res[j].clone();
+    return res;
+  }
+
   public static double[] add(double[] a, double[] b) {
     if( a==null ) return b;
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
@@ -214,6 +225,7 @@ public class ArrayUtils {
     return a;
   }
   public static double[][] add(double[][] a, double[][] b) {
+    if (a == null) return b;
     for(int i = 0; i < a.length; i++ ) a[i] = add(a[i], b[i]);
     return a;
   }
@@ -329,6 +341,20 @@ public class ArrayUtils {
   public static double[][] transpose(double[][] ary) {
     if(ary == null) return null;
     double[][] res = new double[ary[0].length][ary.length];
+    for(int i = 0; i < res.length; i++) {
+      for(int j = 0; j < res[0].length; j++)
+        res[i][j] = ary[j][i];
+    }
+    return res;
+  }
+
+  public static <T> T[] cloneOrNull(T[] ary){return ary == null?null:ary.clone();}
+
+  public static <T> T[][] transpose(T[][] ary) {
+    if(ary == null|| ary.length == 0) return ary;
+    T [][] res  = Arrays.copyOf(ary,ary[0].length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = Arrays.copyOf(ary[0],ary.length);
     for(int i = 0; i < res.length; i++) {
       for(int j = 0; j < res[0].length; j++)
         res[i][j] = ary[j][i];
@@ -1575,6 +1601,16 @@ public class ArrayUtils {
     Character[] res = new Character[arr.length];
     for (int i = 0; i < arr.length; i++)
       res[i] = arr[i];
+    return res;
+  }
+
+  /**
+   * Convert an ArrayList of Integers to a primitive int[] array.
+   */
+  public static int[] toPrimitive(ArrayList<Integer> arr) {
+    int[] res = new int[arr.size()];
+    for (int i = 0; i < res.length; i++)
+      res[i] = arr.get(i);
     return res;
   }
 
