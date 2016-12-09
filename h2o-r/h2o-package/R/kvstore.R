@@ -244,35 +244,36 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE) {
     stop(paste0("'path',",path,", to save pojo cannot be found."))
   }
 
+  #Get model id
   model_id <- model@model_id
-  java <- .h2o.__remoteSend(method = "GET", paste0(.h2o.__MODELS, ".java/", model_id), raw=TRUE)
+
+  #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with POJO URL
+  java <- .h2o.doSafeGET(urlSuffix = paste0(.h2o.__MODELS, ".java/", model_id))
 
   # HACK: munge model._id so that it conforms to Java class name. For example, change K-means to K_means.
   # TODO: clients should extract Java class name from header.
   pojoname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
-  
+
+  #Path to save POJO, if `path` is provided
   file.path <- paste0(path, "/", pojoname, ".java")
+
   if( is.null(path) ){
-    cat(java)
+    cat(java) #Pretty print POJO
   } else {
-    write(java, file=file.path)
-      # getjar is now deprecated and the new arg name is get_jar
-      if (!is.null(getjar)) {
+    write(java, file=file.path) #Write POJO to specified path
+    # getjar is now deprecated and the new arg name is get_jar
+    if (!is.null(getjar)) {
         warning("The `getjar` argument is DEPRECATED; use `get_jar` instead as `getjar` will eventually be removed")
         get_jar = getjar
         getjar = NULL
-      }
+    }
     if (get_jar) {
-      .__curlError = FALSE
-      .__curlErrorMessage = ""
-      url = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")
-      tmp = tryCatch(getBinaryURL(url = url,
-                          useragent = R.version.string),
-                   error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-      if (! .__curlError) {
-        jar.path <- paste0(path, "/h2o-genmodel.jar")
-        writeBin(tmp, jar.path, useBytes = TRUE)
-      }
+      urlSuffix = "h2o-genmodel.jar"
+      #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
+      tmp <- .h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE)
+      #Build genmodel.jar file path and download genmodel.jar
+      jar.path <- paste0(path, "/h2o-genmodel.jar")
+      writeBin(tmp, jar.path, useBytes = TRUE)
     }
     return(paste0(pojoname,".java"))
   }
@@ -312,27 +313,26 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE) {
     stop(paste0("'path',",path,", to save MOJO file cannot be found."))
   }
 
+  #Get model id
   model_id <- model@model_id
-  .__curlError = FALSE
-  .__curlErrorMessage = ""
 
-  url = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = paste0(.h2o.__MODELS,"/",model_id,"/mojo"))
-  tmp = tryCatch(getBinaryURL(url = url,
-                      useragent = R.version.string),
-               error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-  if (! .__curlError) {
-     mojo.path <- paste0(path,"/",model_id,".zip")
-     writeBin(tmp, mojo.path, useBytes = TRUE)
-  }
+  #Build URL for MOJO
+  urlSuffix <- paste0(.h2o.__MODELS,"/",URLencode(model_id),"/mojo")
+
+  #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with MOJO URL
+  tmp <- .h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE)
+
+  #Build MOJO file path and download MOJO file
+  mojo.path <- paste0(path,"/",model_id,".zip")
+  writeBin(tmp, mojo.path, useBytes = TRUE)
+
   if (get_genmodel_jar) {
-    url = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")
-    tmp = tryCatch(getBinaryURL(url = url,
-                        useragent = R.version.string),
-                 error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
-    if (! .__curlError) {
-      jar.path <- paste0(path, "/h2o-genmodel.jar")
-      writeBin(tmp, jar.path, useBytes = TRUE)
-    }
+    urlSuffix = "h2o-genmodel.jar"
+    #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
+    tmp <- .h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE)
+    #Build genmodel.jar file path and download genmodel.jar
+    jar.path <- paste0(path, "/h2o-genmodel.jar")
+    writeBin(tmp, jar.path, useBytes = TRUE)
   }
   return(paste0(model_id,".zip"))
 }
