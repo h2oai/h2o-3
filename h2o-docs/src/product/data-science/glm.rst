@@ -130,7 +130,7 @@ Defining a GLM Model
 -  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 
 -  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit,
-   Log, Inverse, or Tweedie).
+   Log, Inverse, Multinomial, or Tweedie).
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
