@@ -58,8 +58,8 @@ test.GLM.quasi_binomial <- function() {
   hf = as.h2o(cbind(Y.tilde,X))
   x = 2:7
   y = 1
-  m_h2o = h2o.glm(training_frame = hf,x=x,y=y,family='quasi_binomial',standardize=F,lambda=0)
-  m_h2o2 = h2o.glm(training_frame = hf,x=x,y=y,family='quasi_binomial',standardize=F,lambda=0,solver='L_BFGS')
+  m_h2o = h2o.glm(training_frame = hf,x=x,y=y,family='quasibinomial',standardize=F,lambda=0)
+  m_h2o2 = h2o.glm(training_frame = hf,x=x,y=y,family='quasibinomial',standardize=F,lambda=0,solver='L_BFGS')
   beta_h2o_1 = m_h2o@model$coefficients
   beta_h2o_2 = m_h2o2@model$coefficients
   betas = cbind(beta,beta_h2o_1,beta_h2o_2)

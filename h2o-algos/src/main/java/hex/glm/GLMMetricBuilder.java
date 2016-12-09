@@ -169,7 +169,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
       case gamma:
         _aic = Double.NaN;
         break;
-      case quasi_binomial:
+      case quasibinomial:
       case tweedie:
       case multinomial:
         _aic = Double.NaN;
