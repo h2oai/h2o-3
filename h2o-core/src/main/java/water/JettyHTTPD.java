@@ -477,6 +477,8 @@ public class JettyHTTPD {
     response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
     response.setHeader("X-h2o-context-path", sanatizeContextPath(H2O.ARGS.context_path));
     response.setHeader("Access-Control-Allow-Origin", "*");
+    response.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, PUT");
+    response.setHeader("Access-Control-Allow-Headers", "X-Requested-With, Content-Type, X-Codingpedia");
   }
 
   private static String sanatizeContextPath(String context_path) {
