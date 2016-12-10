@@ -236,7 +236,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def tweedie_variance_power(self):
-        """float: Tweedie variance power (Default: 0.0)"""
+        """float: Tweedie variance power (Default: 0)"""
         return self._parms.get("tweedie_variance_power")
 
     @tweedie_variance_power.setter
@@ -247,7 +247,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def tweedie_link_power(self):
-        """float: Tweedie link power (Default: 1.0)"""
+        """float: Tweedie link power (Default: 1)"""
         return self._parms.get("tweedie_link_power")
 
     @tweedie_link_power.setter
@@ -423,7 +423,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         float: Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True
         the value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to
         zero, the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
-        objective_epsilon is set to .0001. (Default: -1.0)
+        objective_epsilon is set to .0001. (Default: -1)
         """
         return self._parms.get("objective_epsilon")
 
@@ -453,7 +453,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         float: Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver.
         Default indicates: If lambda_search is set to False and lambda is equal to zero, the default value of
         gradient_epsilon is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the
-        conditional values above are 1E-8 and 1E-6 respectively. (Default: -1.0)
+        conditional values above are 1E-8 and 1E-6 respectively. (Default: -1)
         """
         return self._parms.get("gradient_epsilon")
 
@@ -480,7 +480,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def prior(self):
         """
         float: prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the
-        mean of response does not reflect reality. (Default: -1.0)
+        mean of response does not reflect reality. (Default: -1)
         """
         return self._parms.get("prior")
 
@@ -495,7 +495,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         """
         float: Min lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
         observations is greater than the number of variables then lambda_min_ratio is set to 0.0001; if the number of
-        observations is less than the number of variables then lambda_min_ratio is set to 0.01. (Default: -1.0)
+        observations is less than the number of variables then lambda_min_ratio is set to 0.01. (Default: -1)
         """
         return self._parms.get("lambda_min_ratio")
 
@@ -576,7 +576,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def max_after_balance_size(self):
         """
         float: Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes. (Default: 5.0)
+        balance_classes. (Default: 5)
         """
         return self._parms.get("max_after_balance_size")
 
@@ -613,7 +613,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0.0)"""
+        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter

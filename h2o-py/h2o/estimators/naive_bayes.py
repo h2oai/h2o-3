@@ -216,7 +216,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def max_after_balance_size(self):
         """
         float: Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-        balance_classes. (Default: 5.0)
+        balance_classes. (Default: 5)
         """
         return self._parms.get("max_after_balance_size")
 
@@ -253,7 +253,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def laplace(self):
-        """float: Laplace smoothing parameter (Default: 0.0)"""
+        """float: Laplace smoothing parameter (Default: 0)"""
         return self._parms.get("laplace")
 
     @laplace.setter
@@ -275,7 +275,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def eps_sdev(self):
-        """float: Cutoff below which standard deviation is replaced with min_sdev (Default: 0.0)"""
+        """float: Cutoff below which standard deviation is replaced with min_sdev (Default: 0)"""
         return self._parms.get("eps_sdev")
 
     @eps_sdev.setter
@@ -297,7 +297,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def eps_prob(self):
-        """float: Cutoff below which probability is replaced with min_prob (Default: 0.0)"""
+        """float: Cutoff below which probability is replaced with min_prob (Default: 0)"""
         return self._parms.get("eps_prob")
 
     @eps_prob.setter
@@ -319,7 +319,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
     @property
     def max_runtime_secs(self):
-        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0.0)"""
+        """float: Maximum allowed runtime in seconds for model training. Use 0 to disable. (Default: 0)"""
         return self._parms.get("max_runtime_secs")
 
     @max_runtime_secs.setter
