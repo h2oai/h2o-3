@@ -4,14 +4,17 @@ import water.parser.BufferedString;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * String manipulation utilities.
  */
 public class StringUtils {
+
+  private static Map<Character, Integer> hexCode = CollectionUtils.createMap(
+      toCharacterArray("0123456789abcdefABCDEF"),
+      new Integer[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 10, 11, 12, 13, 14, 15}
+  );
 
   /**
    * Print exception stack trace into a string.
@@ -140,11 +143,49 @@ public class StringUtils {
    * @return a single string containing all elements in `arr` joined together
    */
   public static String join(String delimiter, String[] arr) {
+    return join(delimiter, Arrays.asList(arr));
+  }
+
+  /**
+   * Join the array with the given delimiter, and return it as a string.
+   *
+   * @param delimiter string to be used as a separator between array elements
+   * @param strings the strings to join
+   * @return a single string containing all elements in `strings` joined together
+   */
+  public static String join(String delimiter, Iterable<String> strings) {
     StringBuilder sb = new StringBuilder();
-    for (String item : arr) {
+    for (String item : strings) {
       if (sb.length() > 0) sb.append(delimiter);
       sb.append(item);
     }
     return sb.toString();
+  }
+
+  /**
+   * Convert a string into the set of its characters.
+   *
+   * @param src Source string
+   * @return Set of characters within the source string
+   */
+  public static HashSet<Character> toCharacterSet(String src) {
+    int n = src.length();
+    HashSet<Character> res = new HashSet<>(n);
+    for (int i = 0; i < n; i++)
+      res.add(src.charAt(i));
+    return res;
+  }
+
+  public static Character[] toCharacterArray(String src) {
+    return ArrayUtils.box(src.toCharArray());
+  }
+
+  public static int unhex(String str) {
+    int res = 0;
+    for (char c : str.toCharArray()) {
+      if (!hexCode.containsKey(c)) throw new NumberFormatException("Not a hexademical character " + c);
+      res = (res << 4) + hexCode.get(c);
+    }
+    return res;
   }
 }

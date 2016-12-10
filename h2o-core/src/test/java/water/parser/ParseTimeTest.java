@@ -304,4 +304,10 @@ public class ParseTimeTest extends TestUtil {
       Assert.assertEquals(exp[i],vec.at8(i));
     fr.delete();
   }
+
+  @Test public void testParseInvalidPubDev3675() {
+    long millis = ParseTime.attemptTimeParse(new BufferedString("XXXX0101"));
+    Assert.assertEquals("Expected Long.MIN_VALUE as a marker of invalid date", Long.MIN_VALUE, millis);
+  }
+
 }

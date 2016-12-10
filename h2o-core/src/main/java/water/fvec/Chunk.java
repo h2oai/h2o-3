@@ -595,6 +595,7 @@ public abstract class Chunk extends Iced<Chunk> {
     if( this  instanceof NewChunk ) _chk2 = this;
     if( _chk2 == null ) return fs;          // No change?
     if( _chk2 instanceof NewChunk ) _chk2 = ((NewChunk)_chk2).new_close();
+
     DKV.put(_vec.chunkKey(cidx),_chk2,fs,true); // Write updated chunk back into K/V
     return fs;
   }
@@ -604,6 +605,22 @@ public abstract class Chunk extends Iced<Chunk> {
     assert _cidx != -1 : "Chunk idx was not properly loaded!";
     return _cidx;
   }
+
+  public final Chunk setVolatile(double [] ds) {
+    Chunk res;
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C8DVolatileChunk(ds),ds.length*8,Value.ICE);
+    DKV.put(v._key,v);
+    return res;
+  }
+
+  public final Chunk setVolatile(int[] vals) {
+    Chunk res;
+    Value v = new Value(_vec.chunkKey(_cidx), res = new C4VolatileChunk(vals),vals.length*4,Value.ICE);
+    DKV.put(v._key,v);
+    return res;
+  }
+
+  public boolean isVolatile() {return false;}
 
   static class WrongType extends IllegalArgumentException {
     private final Class<?> expected;
@@ -632,7 +649,7 @@ public abstract class Chunk extends Iced<Chunk> {
   abstract boolean set_impl  (int idx, double d );
   abstract boolean set_impl  (int idx, float f );
   abstract boolean setNA_impl(int idx);
-  boolean set_impl (int idx, String str) { throw H2O.unimpl(); }
+  boolean set_impl (int idx, String str) { return false; }
   boolean set_impl(int i, long lo, long hi) { return false; }
   //Zero sparse methods:
 
@@ -722,7 +739,7 @@ public abstract class Chunk extends Iced<Chunk> {
   public final  AutoBuffer write_impl(AutoBuffer bb) {return bb.putA1(_mem);}
 
   @Override
-  public final byte [] asBytes(){return _mem;}
+  public byte [] asBytes(){return _mem;}
 
   @Override
   public final Chunk reloadFromBytes(byte [] ary){
@@ -793,4 +810,113 @@ public abstract class Chunk extends Iced<Chunk> {
       sb.append("at8_abs[" + (k+_start) + "] = " + atd(k) + ", _chk2 = " + (_chk2 != null?_chk2.atd(k):"") + "\n");
     throw new RuntimeException(sb.toString());
   }
+
+  /**
+   * Generic abstraction over Chunk setter methods.
+   */
+  public static abstract class ValueSetter extends Iced<ValueSetter> {
+    /**
+     * Sets a value (possibly a constant) to a position of the Chunk.
+     * @param idx Chunk-local index
+     */
+    public abstract void setValue(Chunk chk, int idx);
+  }
+
+  /**
+   * Create an instance of ValueSetter for a given scalar value.
+   * It creates setter of the appropriate type based on the type of the underlying Vec.
+   * @param v Vec
+   * @param value scalar value
+   * @return instance of ValueSetter
+   */
+  public static ValueSetter createValueSetter(Vec v, Object value) {
+    switch (v.get_type()) {
+      case Vec.T_CAT:
+        return new CatValueSetter(v.domain(), value);
+      case Vec.T_NUM:
+      case Vec.T_TIME:
+        return new NumValueSetter(value);
+      case Vec.T_STR:
+        return new StrValueSetter(value);
+      case Vec.T_UUID:
+        return new UUIDValueSetter(value);
+      default:
+        throw new IllegalArgumentException("Cannot create ValueSetter for a Vec of type = " + v.get_type_str());
+    }
+  }
+
+  private static class CatValueSetter extends ValueSetter {
+    private int _val;
+
+    public CatValueSetter() {} // for Externalizable
+
+    private CatValueSetter(String[] domain, Object val) {
+      if (! (val instanceof String)) {
+        throw new IllegalArgumentException("Value needs to be categorical, value = " + val);
+      }
+      int factorIdx = -1;
+      for (int i = 0; i < domain.length; i++)
+        if (val.equals(domain[i])) {
+          factorIdx = i;
+          break;
+        }
+      if (factorIdx == -1)
+        throw new IllegalArgumentException("Value is not in the domain of the Vec, value = " + val);
+      _val = factorIdx;
+    }
+
+    @Override
+    public void setValue(Chunk chk, int idx) { chk.set(idx, _val); }
+  }
+
+  private static class NumValueSetter extends ValueSetter {
+    private double _val;
+
+    public NumValueSetter() {} // for Externalizable
+
+    private NumValueSetter(Object val) {
+      if (! (val instanceof Number)) {
+        throw new IllegalArgumentException("Value needs to be numeric, value = " + val);
+      }
+      _val = ((Number) val).doubleValue();
+    }
+
+    @Override
+    public void setValue(Chunk chk, int idx) { chk.set(idx, _val); }
+  }
+
+  private static class StrValueSetter extends ValueSetter {
+    private String _val;
+
+    public StrValueSetter() {} // for Externalizable
+
+    private StrValueSetter(Object val) {
+      if (! (val instanceof String)) {
+        throw new IllegalArgumentException("Value needs to be string, value = " + val);
+      }
+      _val = (String) val;
+    }
+
+    @Override
+    public void setValue(Chunk chk, int idx) { chk.set(idx, _val); }
+  }
+
+  private static class UUIDValueSetter extends ValueSetter {
+    private UUID _val;
+
+    public UUIDValueSetter() {} // for Externalizable
+
+    private UUIDValueSetter(Object val) {
+      if (val instanceof String) {
+        val = UUID.fromString((String) val);
+      } else if (! (val instanceof UUID)) {
+        throw new IllegalArgumentException("Value needs to be an UUID, value = " + val);
+      }
+      _val = (UUID) val;
+    }
+
+    @Override
+    public void setValue(Chunk chk, int idx) { chk.set(idx, _val); }
+  }
+
 }

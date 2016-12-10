@@ -77,6 +77,7 @@ public abstract class ParseTime {
     final boolean dash = buf[i] == '-';
     if( dash ) i++;
     MM = digit(MM,buf[i++]);
+    // note: at this point we need guard every increment of "i" to avoid reaching outside of the buffer
     MM = i<end && buf[i]!='-' ? digit(MM,buf[i++]) : MM;
     if( MM < 1 || MM > 12 ) return Long.MIN_VALUE;
     if( (end-i)>=2 ) {
@@ -93,7 +94,7 @@ public abstract class ParseTime {
       if( i==end )
         return new DateTime(yyyy,MM,dd,0,0,0, getTimezone()).getMillis();
     } else {                    // yyyyMMdd-HH:mm:ss.SSS; dash AND time is now required
-      if( buf[i++] != '-' ) return Long.MIN_VALUE;
+      if( i==end || buf[i++] != '-' ) return Long.MIN_VALUE;
     }
 
     //Parse time

@@ -23,12 +23,11 @@ test <- function() {
 
   ## Change CAPSULE to Enum
   prostate_hex[, "CAPSULE"] = as.factor(prostate_hex[, "CAPSULE"])
-  
   ## Run Random Forest in H2O
   seed = .Random.seed[1]
   Log.info(paste0("Random seed used = ", seed))
   prostate_drf = h2o.randomForest(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 50, seed = seed)
-
+  
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
   h2o_race_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
   h2o_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = F)
@@ -36,8 +35,6 @@ test <- function() {
   ## Calculate the partial dependence manually using breaks from results of h2o.partialPlot
   ## Define function
   partialDependence <- function(object, pred.data, xname, h2o.pp) {
-    n.pt <- min(h2o.unique(pred.data[, xname]), 50)
-    xv <- pred.data[, xname]
     x.pt <- h2o.pp[,1]
     y.pt <- numeric(length(x.pt))
     
@@ -69,6 +66,13 @@ test <- function() {
   h2o_race_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex, xname = "RACE", h2o.pp = h2o_race_pp)
   checkEqualsNumeric(h2o_age_pp_2[,"mean_response"], h2o_age_pp[,"mean_response"])
   checkEqualsNumeric(h2o_race_pp_2[,"mean_response"], h2o_race_pp[,"mean_response"])
+  
+  ## Check column name and column type matches using test dataset iris
+  iris_hex = as.h2o(iris[1:100,])
+  iris_gbm = h2o.gbm(x = 1:4, y = 5, training_frame = iris_hex)
+  iris_pps = h2o.partialPlot(object = iris_gbm, data = iris_hex)
+  iris_pps2 = lapply( iris_pps, function(x) partialDependence(object = iris_gbm, pred.data = iris_hex, xname = names(x)[1], h2o.pp = x))
+  checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$mean_response, iris_pps[[i]]$mean_response)))))
   
   ## Check failure cases
   ## 1) Selection of incorrect columns 

@@ -133,7 +133,7 @@ final public class H2O {
             "\n" +
             "    -nthreads <#threads>\n" +
             "          Maximum number of threads in the low priority batch-work queue.\n" +
-            "          (The default is 99.)\n" +
+            "          (The default is " + (char)Runtime.getRuntime().availableProcessors() + ".)\n" +
             "\n" +
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
@@ -249,7 +249,7 @@ final public class H2O {
     public boolean cleaner = false;
 
     /** -nthreads=nthreads; Max number of F/J threads in the low-priority batch queue */
-    public char nthreads= (char)Runtime.getRuntime().availableProcessors();
+    public short nthreads= (short)Runtime.getRuntime().availableProcessors();
 
     /** -log_dir=/path/to/dir; directory to save logs in */
     public String log_dir;
@@ -259,6 +259,9 @@ final public class H2O {
 
     /** -disable_web; disable web API port (used by Sparkling Water) */
     public boolean disable_web = false;
+
+    /** -context_path=jetty_context_path; the context path for jetty */
+    public String context_path = "";
 
     //-----------------------------------------------------------------------------------
     // HDFS & AWS
@@ -457,11 +460,22 @@ final public class H2O {
       else if (s.matches("disable_web")) {
         ARGS.disable_web = true;
       }
+      else if (s.matches("context_path")) {
+        i = s.incrementAndCheck(i, args);
+        String value = args[i];
+        ARGS.context_path = value.startsWith("/")
+                            ? value.trim().length() == 1
+                              ? "" : value
+                            : "/" + value;
+      }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);
         int nthreads = s.parseInt(args[i]);
-        if (nthreads >= 1) //otherwise keep default (all cores)
-          ARGS.nthreads = (char) nthreads;
+        if (nthreads >= 1) { //otherwise keep default (all cores)
+          if (nthreads > Short.MAX_VALUE)
+            throw H2O.unimpl("Can't handle more than " + Short.MAX_VALUE + " threads.");
+          ARGS.nthreads = (short) nthreads;
+        }
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
@@ -1072,7 +1086,7 @@ final public class H2O {
       super((ARGS.nthreads <= 0) ? NUMCPUS : ARGS.nthreads,
             new FJWThrFact(cap),
             null,
-            p<MIN_HI_PRIORITY);
+            p>=MIN_HI_PRIORITY /* low priority FJQs should use the default FJ settings to use LIFO order of thread private queues. */);
       _priority = p;
     }
     private H2OCountedCompleter poll2() { return (H2OCountedCompleter)pollSubmission(); }
@@ -1268,8 +1282,8 @@ final public class H2O {
 
   public static String getURL(String schema) {
     return String.format(H2O.SELF_ADDRESS instanceof Inet6Address
-                         ? "%s://[%s]:%d" : "%s://%s:%d",
-                         schema, H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
+                         ? "%s://[%s]:%d%s" : "%s://%s:%d%s",
+                         schema, H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT, H2O.ARGS.context_path);
   }
 
   // The multicast discovery port

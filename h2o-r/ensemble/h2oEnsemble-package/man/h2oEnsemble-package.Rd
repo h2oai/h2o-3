@@ -35,10 +35,9 @@ van der Laan, M. J., Polley, E. C. and Hubbard, A. E. (2007) Super Learner, Stat
 \cr
 Breiman, L. (1996) Stacked Regressions, Machine Learning, 24:49-64.\cr
 \url{http://dx.doi.org/10.1007/BF00117832}\cr
-\url{http://statistics.berkeley.edu/sites/default/files/tech-reports/367.pdf}
+\url{http://statistics.berkeley.edu/sites/default/files/tech-reports/367.pdf}\cr
+\cr
+\href{https://cran.r-project.org/package=SuperLearner}{SuperLearner R package}
 }
 
 \keyword{ models }
-\seealso{
-\code{\link[SuperLearner:SuperLearner]{SuperLearner}}, \code{\link[subsemble:subsemble]{subsemble}}
-}

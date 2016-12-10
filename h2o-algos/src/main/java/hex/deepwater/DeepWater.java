@@ -15,7 +15,9 @@ import water.util.Log;
 import water.util.MRUtils;
 import water.util.PrettyPrint;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static hex.deepwater.DeepWaterModel.makeDataInfo;
 import static water.util.MRUtils.sampleFrame;
@@ -55,6 +57,9 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 //            ModelCategory.AutoEncoder
     };
   }
+
+  @Override public boolean haveMojo() { return true; }
+  @Override public boolean havePojo() { return false; }
 
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
@@ -135,6 +140,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         DeepWaterParameters.Sanity.checkIfParameterChangeAllowed(previous._parms, _parms);
 
         DataInfo dinfo = null;
+        List<Key> removeMe = new ArrayList();
         try {
           // PUBDEV-2513: Adapt _train and _valid (in-place) to match the frames that were used for the previous model
           // This can add or remove dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
@@ -143,6 +149,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           if (previous.model_info()._dataInfo!=null) {
             dinfo = makeDataInfo(_train, _valid, _parms);
             DKV.put(dinfo);
+            removeMe.add(dinfo._key);
           }
           cp = new DeepWaterModel(dest(), _parms, previous, dinfo);
           cp.write_lock(_job);
@@ -188,6 +195,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
           throw ex;
         } finally {
           if (cp != null) cp.unlock(_job);
+          for (Key k : removeMe) DKV.remove(k);
         }
       }
       trainModel(cp);
@@ -348,8 +356,10 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
         if (!stop_requested() && _parms._overwrite_with_best_model && model.actual_best_model_key != null && _parms._nfolds == 0) {
           DeepWaterModel best_model = DKV.getGet(model.actual_best_model_key);
           if (best_model != null && best_model.loss() < model.loss() && Arrays.equals(best_model.model_info()._network, model.model_info()._network)) {
-            if (!_parms._quiet_mode)
+            if (!_parms._quiet_mode) {
               Log.info("Setting the model to be the best model so far (based on scoring history).");
+              Log.info("Best model's loss: " + best_model.loss() + " vs this model's loss (before overwriting it with the best model): " + model.loss());
+            }
             model.model_info().nativeToJava();
             model.removeNativeState(); //remove native state
             DeepWaterModelInfo mi = IcedUtils.deepCopy(best_model.model_info());
@@ -362,7 +372,11 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
             if (!_parms._quiet_mode) {
               Log.info("  Note: best model was at " + (float) best_model.epoch_counter + " (out of " + (float) model.epoch_counter + ") epochs.");
             }
-            assert(Math.abs(best_model.loss() - model.loss())<=1e-5*Math.abs(model.loss()+best_model.loss()));
+            if (Math.abs(best_model.loss() - model.loss())>=1e-5*Math.abs(model.loss()+best_model.loss())) {
+              Log.info("Best model's loss: " + best_model.loss() + " vs this model's loss (after overwriting it with the best model) : " + model.loss());
+              Log.warn("Even though the model was reset to the previous best model, we observe different scoring results. " +
+                  "Most likely, the data set has changed during a checkpoint restart. If so, please compare the metrics to observe your data shift.");
+            }
           }
         }
       }

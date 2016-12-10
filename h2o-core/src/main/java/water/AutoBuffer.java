@@ -129,8 +129,13 @@ public final class AutoBuffer {
     _persist = 0;               // No persistance
   }
 
+
   /** Incoming TCP request.  Make a read-mode AutoBuffer from the open Channel,
-   *  figure the originating H2ONode from the first few bytes read. */
+   *  figure the originating H2ONode from the first few bytes read.
+   *
+   *  remoteAddress set to null means that the communication is originating from non-h2o node, non-null value
+   *  represents the case where the communication is coming from h2o node.
+   *  */
   AutoBuffer( ByteChannel sock, InetAddress remoteAddress  ) throws IOException {
     _chan = sock;
     raisePriority();            // Make TCP priority high
@@ -139,7 +144,17 @@ public final class AutoBuffer {
     _read = true;               // Reading by default
     _firstPage = true;
     // Read Inet from socket, port from the stream, figure out H2ONode
-    _h2o = H2ONode.intern(remoteAddress, getPort());
+    if(remoteAddress!=null) {
+      _h2o = H2ONode.intern(remoteAddress, getPort());
+    }else{
+      // In case the communication originates from non-h2o node, we set _h2o node to null.
+      // It is done for 2 reasons:
+      //  - H2ONode.intern creates a new thread and if there's a lot of connections
+      //    from non-h2o environment, it could end up with too many open files exception.
+      //  - H2OIntern also reads port (getPort()) and additional information which we do not send
+      //    in communication originating from non-h2o nodes
+      _h2o = null;
+    }
     _firstPage = true;          // Yes, must reset this.
     _time_start_ms = System.currentTimeMillis();
     _persist = Value.TCP;
@@ -707,6 +722,8 @@ public final class AutoBuffer {
   @SuppressWarnings("unused")  public byte   get1 () { return getSp(1).get      (); }
   @SuppressWarnings("unused")  public int    get1U() { return get1() & 0xFF;        }
   @SuppressWarnings("unused")  public char   get2 () { return getSp(2).getChar  (); }
+  @SuppressWarnings("unused")  public short   get2s () { return getSp(2).getShort  (); }
+
   @SuppressWarnings("unused")  public int    get3 () { getSp(3); return get1U() | get1U() << 8 | get1U() << 16; }
   @SuppressWarnings("unused")  public int    get4 () { return getSp(4).getInt   (); }
   @SuppressWarnings("unused")  public float  get4f() { return getSp(4).getFloat (); }
@@ -723,6 +740,8 @@ public final class AutoBuffer {
                                                             putSp(1).put((byte)b); return this; }
   @SuppressWarnings("unused")  public AutoBuffer put2 (  char c) { putSp(2).putChar  (c); return this; }
   @SuppressWarnings("unused")  public AutoBuffer put2 ( short s) { putSp(2).putShort (s); return this; }
+  @SuppressWarnings("unused")  public AutoBuffer put2s ( short s) { return put2(s); }
+
   @SuppressWarnings("unused")  public AutoBuffer put3( int x ) {   assert (-1<<24) <= x && x < (1<<24);
                                                             return put1((x)&0xFF).put1((x >> 8)&0xFF).put1(x >> 16); }
   @SuppressWarnings("unused")  public AutoBuffer put4 (   int i) { putSp(4).putInt   (i); return this; }

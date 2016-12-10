@@ -23,53 +23,56 @@ from h2o.utils.typechecks import assert_is_type, is_type
 
 
 class H2OGridSearch(backwards_compatible()):
+    """
+    Grid Search of a Hyper-Parameter Space for a Model
+
+    Parameters
+    ----------
+    model : H2OEstimator, type
+      The type of model to be explored initialized with optional parameters that will be
+      unchanged across explored models.
+    hyper_params: dict
+      A dictionary of string parameters (keys) and a list of values to be explored by grid
+      search (values).
+    grid_id : str, optional
+      The unique id assigned to the resulting grid object. If none is given, an id will
+      automatically be generated.
+    search_criteria: dict, optional
+      A dictionary of directives which control the search of the hyperparameter space.
+      The default strategy 'Cartesian' covers the entire space of hyperparameter combinations.
+      Specify the 'RandomDiscrete' strategy to get random search of all the combinations
+      of your hyperparameters.  RandomDiscrete should usually be combined with at least one early
+      stopping criterion, max_models and/or max_runtime_secs, e.g.
+
+      search_criteria = {strategy: 'RandomDiscrete', max_models: 42, max_runtime_secs: 28800, seed = 1234}
+
+      search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'AUTO', stopping_tolerance: 0.001,stopping_rounds: 10, seed = 1234, seed = 1234}
+
+      search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'misclassification',  stopping_tolerance: 0.00001, stopping_rounds: 5, seed = 1234}.
+
+    Returns
+    -------
+    A new H2OGridSearch instance.
+
+    Examples
+    --------
+      >>> from h2o.grid.grid_search import H2OGridSearch
+      >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+      >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+      >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+      >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
+      >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
+      >>> gs.show()
+    """
+
+
     def __init__(self, model, hyper_params, grid_id=None, search_criteria=None):
-        """
-        Grid Search of a Hyper-Parameter Space for a Model
-
-        Parameters
-        ----------
-        model : H2OEstimator, type
-          The type of model to be explored initialized with optional parameters that will be
-          unchanged across explored models.
-        hyper_params: dict
-          A dictionary of string parameters (keys) and a list of values to be explored by grid
-          search (values).
-        grid_id : str, optional
-          The unique id assigned to the resulting grid object. If none is given, an id will
-          automatically be generated.
-        search_criteria: dict, optional
-          A dictionary of directives which control the search of the hyperparameter space.
-          The default strategy 'Cartesian' covers the entire space of hyperparameter combinations.
-          Specify the 'RandomDiscrete' strategy to get random search of all the combinations
-          of your hyperparameters.  RandomDiscrete should usually be combined with at least one early
-          stopping criterion, max_models and/or max_runtime_secs, e.g.
-          search_criteria = {strategy: 'RandomDiscrete', max_models: 42, max_runtime_secs: 28800} or
-          search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'AUTO', stopping_tolerance: 0.001,
-                             stopping_rounds: 10} or
-          search_criteria = {strategy: 'RandomDiscrete', stopping_metric: 'misclassification',
-                             stopping_tolerance: 0.00001, stopping_rounds: 5}.
-
-        Returns
-        -------
-          A new H2OGridSearch instance.
-
-        Examples
-        --------
-          >>> from h2o.grid.grid_search import H2OGridSearch
-          >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-          >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
-          >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
-          >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
-          >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
-          >>> gs.show()
-        """
         super(H2OGridSearch, self).__init__()
-        assert_is_type(model, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
+        assert_is_type(model, None, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
         assert_is_type(hyper_params, dict)
         assert_is_type(grid_id, None, str)
         assert_is_type(search_criteria, None, dict)
-        if not is_type(model, H2OEstimator): model = model()
+        if not (model is None or is_type(model, H2OEstimator)): model = model()
         self._id = grid_id
         self.model = model
         self.hyper_params = dict(hyper_params)

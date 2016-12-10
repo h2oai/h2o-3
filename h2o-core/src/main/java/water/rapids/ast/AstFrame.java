@@ -39,8 +39,4 @@ public class AstFrame extends AstRoot {
     return env.returning(_fr);
   }
 
-  @Override
-  public int nargs() {
-    return 1;
-  }
 }

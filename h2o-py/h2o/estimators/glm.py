@@ -223,14 +223,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def family(self):
         """
-        Enum["gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie"]: Family. Use binomial for
-        classification with logistic regression, others are for regression problems. (Default: "gaussian")
+        Enum["gaussian", "binomial", "quasibinomial", "multinomial", "poisson", "gamma", "tweedie"]: Family. Use
+        binomial for classification with logistic regression, others are for regression problems. (Default: "gaussian")
         """
         return self._parms.get("family")
 
     @family.setter
     def family(self, family):
-        assert_is_type(family, None, Enum("gaussian", "binomial", "multinomial", "poisson", "gamma", "tweedie"))
+        assert_is_type(family, None, Enum("gaussian", "binomial", "quasibinomial", "multinomial", "poisson", "gamma", "tweedie"))
         self._parms["family"] = family
 
 
@@ -588,7 +588,9 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def max_confusion_matrix_size(self):
-        """int: Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)"""
+        """
+        int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)
+        """
         return self._parms.get("max_confusion_matrix_size")
 
     @max_confusion_matrix_size.setter

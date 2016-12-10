@@ -256,7 +256,9 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def max_confusion_matrix_size(self):
-        """int: Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)"""
+        """
+        int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs (Default: 20)
+        """
         return self._parms.get("max_confusion_matrix_size")
 
     @max_confusion_matrix_size.setter
@@ -303,7 +305,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def min_rows(self):
-        """float: Fewest allowed (weighted) observations in a leaf (in R called 'nodesize'). (Default: 10)"""
+        """float: Fewest allowed (weighted) observations in a leaf. (Default: 10)"""
         return self._parms.get("min_rows")
 
     @min_rows.setter
@@ -386,7 +388,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Enum["auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification",
+        Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification",
         "mean_per_class_error"]: Metric to use for early stopping (AUTO: logloss for classification, deviance for
         regression) (Default: "auto")
         """
@@ -394,7 +396,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification", "mean_per_class_error"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error"))
         self._parms["stopping_metric"] = stopping_metric
 
 

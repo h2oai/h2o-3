@@ -22,7 +22,9 @@ public abstract class ModelMojoReader<M extends MojoModel> {
 
   public static MojoModel readFrom(MojoReaderBackend reader) throws IOException {
     Map<String, Object> info = parseModelInfo(reader);
-    String algo = (String) info.get("algorithm");
+    if (! info.containsKey("algorithm"))
+      throw new IllegalStateException("Unable to find information about the model's algorithm.");
+    String algo = String.valueOf(info.get("algorithm"));
     ModelMojoReader mmr = ModelMojoFactory.getMojoReader(algo);
     mmr._lkv = info;
     mmr._reader = reader;
@@ -47,14 +49,31 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   /**
    * Retrieve value from the model's kv store which was previously put there using `writekv(key, value)`. We will
    * attempt to cast to your expected type, but this is obviously unsafe. Note that the value is deserialized from
-   * the underlying string representation using {@link ParseUtils#tryParse(String)}, which occasionally may get the
-   * answer wrong.
+   * the underlying string representation using {@link ParseUtils#tryParse(String, Object)}, which occasionally may get
+   * the answer wrong.
    * If the `key` is missing in the local kv store, null will be returned. However when assigning to a primitive type
    * this would result in an NPE, so beware.
    */
   @SuppressWarnings("unchecked")
   protected <T> T readkv(String key) {
-    return (T) _lkv.get(key);
+    return (T) readkv(key, null);
+  }
+
+  /**
+   * Retrieves the value associated with a given key. If value is not set of the key, a given default value is returned
+   * instead. Uses same parsing logic as {@link ModelMojoReader#readkv(String)}. If default value is not null it's type
+   * is used to assist the parser to determine the return type.
+   * @param key name of the key
+   * @param defVal default value
+   * @param <T> return type
+   * @return parsed value
+   */
+  @SuppressWarnings("unchecked")
+  protected <T> T readkv(String key, T defVal) {
+    Object val = _lkv.get(key);
+    if (! (val instanceof RawValue))
+      return val != null ? (T) val : defVal;
+    return ((RawValue) val).parse(defVal);
   }
 
   /**
@@ -119,9 +138,9 @@ public abstract class ModelMojoReader<M extends MojoModel> {
         section = 1;
       else if (line.equals("[columns]")) {
         section = 2;  // Enter the [columns] section
-        Integer n_columns = (Integer) info.get("n_columns");
-        if (n_columns == null)
+        if (! info.containsKey("n_columns"))
           throw new IOException("`n_columns` variable is missing in the model info.");
+        int n_columns = Integer.parseInt(((RawValue) info.get("n_columns"))._val);
         columns = new String[n_columns];
         info.put("[columns]", columns);
       } else if (line.equals("[domains]")) {
@@ -130,7 +149,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       } else if (section == 1) {
         // [info] section: just parse key-value pairs and store them into the `info` map.
         String[] res = line.split("\\s*=\\s*", 2);
-        info.put(res[0], res[0].equals("uuid")? res[1] : ParseUtils.tryParse(res[1]));
+        info.put(res[0], res[0].equals("uuid")? res[1] : new RawValue(res[1]));
       } else if (section == 2) {
         // [columns] section
         if (ic >= columns.length)
@@ -171,6 +190,15 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       domains[col_index] = domain;
     }
     return domains;
+  }
+
+  private static class RawValue {
+    private final String _val;
+    RawValue(String val) { _val = val; }
+    @SuppressWarnings("unchecked")
+    <T> T parse(T defVal) { return (T) ParseUtils.tryParse(_val, defVal); }
+    @Override
+    public String toString() { return _val; }
   }
 
 }

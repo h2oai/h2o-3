@@ -15,7 +15,7 @@ from h2o.backend import H2OConnection
 from h2o.backend import H2OLocalServer
 from h2o.exceptions import H2OConnectionError, H2OValueError
 from h2o.utils.config import H2OConfigReader
-from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_tmp_key, quoted, urlopen
+from h2o.utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
@@ -270,7 +270,7 @@ def _import(path):
     return j["destination_frames"]
 
 
-def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, col_types=None,
+def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Upload a dataset from the provided local path to the H2O cluster.
@@ -310,18 +310,19 @@ def upload_file(path, destination_frame="", header=0, sep=None, col_names=None, 
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
     assert_is_type(path, str)
-    assert_is_type(destination_frame, str)
+    assert_is_type(destination_frame, str, None)
     assert_is_type(header, -1, 0, 1)
     assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    check_frame_id(destination_frame)
     if path.startswith("~"):
         path = os.path.expanduser(path)
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
-def import_file(path=None, destination_frame="", parse=True, header=0, sep=None, col_names=None, col_types=None,
+def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Import a dataset that is already on the cluster.
@@ -360,13 +361,14 @@ def import_file(path=None, destination_frame="", parse=True, header=0, sep=None,
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
     assert_is_type(path, str, [str])
-    assert_is_type(destination_frame, str)
+    assert_is_type(destination_frame, str, None)
     assert_is_type(parse, bool)
     assert_is_type(header, -1, 0, 1)
     assert_is_type(sep, None, I(str, lambda s: len(s) == 1))
     assert_is_type(col_names, [str], None)
     assert_is_type(col_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    check_frame_id(destination_frame)
     patharr = path if isinstance(path, list) else [path]
     if any(os.path.split(p)[0] == "~" for p in patharr):
         raise H2OValueError("Paths relative to a current user (~) are not valid in the server environment. "
@@ -409,13 +411,13 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
         >>> password = "abc123"
         >>> my_citibike_data = h2o.import_sql_table(conn_url, table, username, password)
     """
-    assert_is_type(connection, str)
+    assert_is_type(connection_url, str)
     assert_is_type(table, str)
     assert_is_type(username, str)
     assert_is_type(password, str)
     assert_is_type(columns, [str], None)
     assert_is_type(optimize, bool)
-    p = {"connection": connection, "table": table, "username": username, "password": password, "optimize": optimize}
+    p = {"connection": connection_url, "table": table, "username": username, "password": password, "optimize": optimize}
     if columns:
         p["columns"] = ", ".join(columns)
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
@@ -463,7 +465,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     return get_frame(j.dest_key)
 
 
-def parse_setup(raw_frames, destination_frame="", header=0, separator=None, column_names=None,
+def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, column_names=None,
                 column_types=None, na_strings=None):
     """
     Retrieve H2O's best guess as to what the structure of the data file is.
@@ -508,6 +510,7 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
     assert_is_type(column_names, [str], None)
     assert_is_type(column_types, [coltype], {str: coltype}, None)
     assert_is_type(na_strings, [natype], {str: natype}, None)
+    check_frame_id(destination_frame)
 
     # The H2O backend only accepts things that are quoted
     if is_type(raw_frames, str): raw_frames = [raw_frames]
@@ -523,7 +526,8 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
             warnings.warn(w)
     # TODO: really should be url encoding...
     # TODO: clean up all this
-    if destination_frame: j["destination_frame"] = destination_frame.replace("%", ".").replace("&", ".")
+    if destination_frame:
+        j["destination_frame"] = destination_frame
     if column_names is not None:
         if not isinstance(column_names, list): raise ValueError("col_names should be a list")
         if len(column_names) != len(j["column_types"]): raise ValueError(
@@ -566,9 +570,9 @@ def parse_setup(raw_frames, destination_frame="", header=0, separator=None, colu
                 idx = j["column_names"].index(name)
                 if is_type(na, str): na = [na]
                 for n in na: j["na_strings"][idx].append(quoted(n))
-        elif is_list_of_lists(na_strings):
-            if len(na_strings) != len(j["column_types"]): raise ValueError(
-                "length of na_strings should be equal to the number of columns")
+        elif is_type(na_strings, [[str]]):
+            if len(na_strings) != len(j["column_types"]):
+                raise ValueError("length of na_strings should be equal to the number of columns")
             j["na_strings"] = [[quoted(na) for na in col] if col is not None else [] for col in na_strings]
         elif isinstance(na_strings, list):
             j["na_strings"] = [[quoted(na) for na in na_strings]] * len(j["column_types"])
@@ -596,7 +600,9 @@ def parse_raw(setup, id=None, first_line_is_header=0):
     assert_is_type(setup, dict)
     assert_is_type(id, str, None)
     assert_is_type(first_line_is_header, -1, 0, 1)
-    if id: setup["destination_frame"] = quoted(id).replace("%", ".").replace("&", ".")
+    check_frame_id(id)
+    if id:
+        setup["destination_frame"] = id
     if first_line_is_header != (-1, 0, 1):
         if first_line_is_header not in (-1, 0, 1): raise ValueError("first_line_is_header should be -1, 0, or 1")
         setup["check_header"] = first_line_is_header
@@ -610,6 +616,7 @@ def assign(data, xid):
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
     assert_satisfies(xid, xid != data.frame_id)
+    check_frame_id(xid)
     data._ex = ExprNode("assign", xid, data)._eval_driver(False)
     data._ex._cache._id = xid
     data._ex._children = None
@@ -620,6 +627,7 @@ def deep_copy(data, xid):
     assert_is_type(data, H2OFrame)
     assert_is_type(xid, str)
     assert_satisfies(xid, xid != data.frame_id)
+    check_frame_id(xid)
     duplicate = data.apply(lambda x: x)
     duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver(False)
     duplicate._ex._cache._id = xid
@@ -997,6 +1005,7 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     assert_is_type(positive_response, bool)
     assert_is_type(seed, int, None)
     assert_is_type(seed_for_column_types, int, None)
+    check_frame_id(frame_id)
     if (categorical_fraction or integer_fraction) and not randomize:
         raise H2OValueError("`randomize` should be True when either categorical or integer columns are used.")
 
@@ -1096,7 +1105,7 @@ def interaction(data, factors, pairwise, max_factors, min_occurrence, destinatio
     return get_frame(parms["dest"])
 
 
-def as_list(data, use_pandas=True):
+def as_list(data, use_pandas=True, header=True):
     """
     Convert an H2O data object into a python-specific object.
 
@@ -1108,13 +1117,14 @@ def as_list(data, use_pandas=True):
 
     :param data: an H2O data object.
     :param use_pandas: If True, try to use pandas for reading in the data.
+    :param header: If True, return column names as first element in list
 
     :returns: List of list (Rows x Columns).
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(use_pandas, bool)
-    return H2OFrame.as_data_frame(data, use_pandas=use_pandas)
-
+    assert_is_type(header, bool)
+    return H2OFrame.as_data_frame(data, use_pandas=use_pandas, header=header)
 
 
 def demo(funcname, interactive=True, echo=True, test=False):

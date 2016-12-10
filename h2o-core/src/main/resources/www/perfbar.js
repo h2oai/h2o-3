@@ -16,6 +16,7 @@ var timeoutDelayMillis = 200;
 var cloud_size = -1;
 var acknowledged_cloud_size = 0;
 var shutdownRequested = false;
+var context_path = "";
 
 function saturate0(value) {
 if (value < 0) {
@@ -265,6 +266,12 @@ function Perfbar(nodeIdx, nodeName, nodePort, numCores) {
 }
 
 function initializeCloud() {
+    var path = window.location.pathname
+    var path_segment = path.substr(0, path.lastIndexOf("/perfbar.html"))
+    if (path_segment != "") {
+        context_path = path_segment
+    }
+
     shutdownRequested = false;
 
     var xmlhttp = new XMLHttpRequest();
@@ -274,7 +281,6 @@ function initializeCloud() {
         }
 
         if (xmlhttp.readyState==4 && xmlhttp.status==200) {
-            console.log(xmlhttp.responseText);
             var obj = JSON.parse(xmlhttp.responseText);
             cloud_size = obj.cloud_size;
             console.log("cloud size is " + cloud_size);
@@ -293,7 +299,7 @@ function initializeCloud() {
             timeouts = new Array(cloud_size);
         }
     };
-    xmlhttp.open("GET","/3/Cloud",true);
+    xmlhttp.open("GET",context_path+"/3/Cloud",true);
     xmlhttp.send();
 }
 
@@ -357,7 +363,7 @@ function initializeNode(nodeIdx, nodeName, nodePort) {
             }
         }
     };
-    xmlhttp.open("GET","/3/WaterMeterCpuTicks/" + nodeIdx, true);
+    xmlhttp.open("GET",context_path+"/3/WaterMeterCpuTicks/" + nodeIdx, true);
     xmlhttp.send();
 }
 
@@ -386,7 +392,7 @@ function repaintAndArmTimeout(nodeIdx) {
             }, timeoutDelayMillis, nodeIdx);
         }
     };
-    xmlhttp.open("GET", "/3/WaterMeterCpuTicks/" + nodeIdx, true);
+    xmlhttp.open("GET", context_path+"/3/WaterMeterCpuTicks/" + nodeIdx, true);
     xmlhttp.send();
 }
 

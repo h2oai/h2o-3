@@ -24,6 +24,14 @@ html {
     padding: 0 !important;
 }
 
+.hangingindent {
+    padding-left: 10px;
+    text-indent: -10px;
+    line-height: 1.3em;
+    margin-top: 2px;
+    margin-bottom: 4px;
+}
+
 body {
 	font-family: 'Heebo', sans-serif;
 	font-weight: 300;
@@ -216,6 +224,42 @@ section {
     max-width: 300px;
     min-width: 300px;
     margin: 001.136363636%;
+    flex: 1;
+}
+
+.col-3h2o {
+    width: 022.72727273vw;
+    max-width: 300px;
+    min-width: 260px;
+    margin-right: 10px;
+    margin-left: 10px;
+    flex: 1;
+}
+
+.col-3steam {
+    width: 022.72727273vw;
+    max-width: 300px;
+    min-width: 180px;
+    margin-right: 10px;
+    margin-left: 10px;
+    flex: 1;
+}
+
+.col-3dw {
+    width: 022.72727273vw;
+    max-width: 300px;
+    min-width: 235px;
+    margin-right: 10px;
+    margin-left: 10px;
+    flex: 1;
+}
+
+.col-3qanda {
+    width: 022.72727273vw;
+    max-width: 300px;
+    min-width: 240px;
+    margin-right: 10px;
+    margin-left: 10px;
     flex: 1;
 }
 
@@ -1308,6 +1352,38 @@ header ul ul li {
     flex: 1;
 }
 
+.col-3h2o {
+    width: 081.06060606vw;
+    max-width: 1070px;
+    min-width: 300px;
+    margin: 001.136363636%;
+    flex: 1;
+}
+
+.col-3steam {
+    width: 081.06060606vw;
+    max-width: 1070px;
+    min-width: 300px;
+    margin: 001.136363636%;
+    flex: 1;
+}
+
+.col-3dw {
+    width: 081.06060606vw;
+    max-width: 1070px;
+    min-width: 300px;
+    margin: 001.136363636%;
+    flex: 1;
+}
+
+.col-3qanda {
+    width: 081.06060606vw;
+    max-width: 1070px;
+    min-width: 300px;
+    margin: 001.136363636%;
+    flex: 1;
+}
+
 .col-4 {
     width: 081.06060606vw;
     max-width: 1070px;
@@ -1323,8 +1399,9 @@ header ul ul li {
 }
 
 .col-6 {
-   width: 081.06060606vw;
+    width: 081.06060606vw;
     max-width: 1070px;
+    min-width: 300px;
     margin: 001.136363636%;
     flex: 1;
 }

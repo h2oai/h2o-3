@@ -31,8 +31,6 @@ import static water.H2O.technote;
  */
 
 public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
-  @Override public boolean havePojo() { return true; }
-  @Override public boolean haveMojo() { return false; }
   @Override public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
   }
@@ -75,7 +73,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
 
   void set_model_info(DeepLearningModelInfo mi) {
     assert(mi != null);
-    assert mi.data_info()._key.equals(model_info.data_info._key);
     model_info = mi;
   }
 
@@ -181,6 +178,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     _dist = new Distribution(get_params());
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
+    if (actual_best_model_key.get() == null) {
+      DeepLearningModel best = IcedUtils.deepCopy(cp);
+      //best.model_info.data_info = model_info.data_info; // Note: we currently DO NOT use the checkpoint's data info - as data may change during checkpoint restarts
+      actual_best_model_key = Key.<DeepLearningModel>make(H2O.SELF);
+      DKV.put(actual_best_model_key, best);
+    }
     time_of_start_ms = cp.time_of_start_ms;
     total_training_time_ms = cp.total_training_time_ms;
     total_checkpointed_run_time_ms = cp.total_training_time_ms;
@@ -217,11 +220,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, parms, output);
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
-    _output._names  = train._names   ; // Since changed by DataInfo, need to be reflected in the Model output as well
-    _output._domains= train.domains();
+    DKV.put(dinfo);
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
-    DKV.put(dinfo);
+    _output._origNames = parms._train.get().names();
+    _output._origDomains = parms._train.get().domains();
     Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
@@ -929,6 +932,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
         if (DKV.getGet(k) != null) ((Frame) DKV.getGet(k)).delete();
       }
     }
+    if (actual_best_model_key!=null) DKV.remove(actual_best_model_key);
     DKV.remove(model_info().data_info()._key);
     deleteElasticAverageModels();
     super.delete();
@@ -1520,7 +1524,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      * any one neuron. This tuning parameter is especially useful for unbound
      * activation functions such as Rectifier.
      */
-    public float _max_w2 = Float.POSITIVE_INFINITY;
+    public float _max_w2 = Float.MAX_VALUE;
 
   /*Initialization*/
     /**
@@ -1724,6 +1728,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
      */
     void validate(DeepLearning dl, boolean expensive) {
       boolean classification = expensive || dl.nclasses() != 0 ? dl.isClassifier() : _loss == CrossEntropy || _loss == ModifiedHuber;
+      if (_loss == ModifiedHuber) dl.error("_loss", "ModifiedHuber loss function is not supported yet.");
       if (_hidden == null || _hidden.length == 0) dl.error("_hidden", "There must be at least one hidden layer.");
       for (int h : _hidden) if (h <= 0) dl.error("_hidden", "Hidden layer size must be positive.");
       if (_mini_batch_size < 1)

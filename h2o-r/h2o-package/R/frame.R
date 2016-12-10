@@ -877,14 +877,13 @@ h2o.dct <- function(data, destination_frame, dimensions, inverse=FALSE) {
 #' Convert the entries of an H2OFrame object from milliseconds to years, indexed
 #' starting from 1900.
 #'
-# is this still true?
 #' This method calls the function of the MutableDateTime class in Java.
 #' @param x An H2OFrame object.
-#' @return An H2OFrame object containig the entries of \code{x} converted to years
-#'         starting from 1900, e.g. 69 corresponds to the year 1969.
+#' @return An H2OFrame object containing the entries of \code{x} converted to years
 #' @seealso \code{\link{h2o.month}}
 #' @export
-h2o.year <- function(x) .newExpr("-",.newExpr("year", chk.H2OFrame(x)),1900)
+h2o.year <- function(x) .newExpr("year", chk.H2OFrame(x))
+
 
 #' Convert Milliseconds to Months in H2O Datasets
 #'
@@ -1183,11 +1182,13 @@ NULL
   if( !missing(col) ) {     # Have a column selector?
     if( is.logical(col) ) { # Columns by boolean choice
       col <- which(col)     # Pick out all the TRUE columns by index
-    } else if( base::is.character(col) ) {   # Columns by name
-      idx <- match(col,colnames(data)) # Match on name
-      if( any(is.na(idx)) ) stop(paste0("No column '",col,"' found in ",paste(colnames(data),collapse=",")))
-      col <- idx
-    }
+    } else if (base::is.character(col)) {
+       idx <- match(col, colnames(data))
+       if (any(is.na(idx)))
+          stop(paste0("No column(s) '", paste(col[is.na(idx)], collapse=","), "' found in ",
+            paste(colnames(data), collapse = ",")))
+            col <- idx
+     }
     idx <- .row.col.selector(col,envir=parent.frame()) # Generic R expression
     data <- .newExpr("cols",data,idx) # Column selector
   }
@@ -1768,6 +1769,16 @@ h2o.quantile <- function(x,
   res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method), weights_column)
   tr <- as.matrix(t(res))
   rownames(tr) <- colnames(res)
+  # detecting potential issues
+  non2dim <- length(dim(tr)) < 2L
+  nonnum <- !is.numeric(tr[1,])
+  if (non2dim || nonnum) {
+    warn <- paste("If you are able to provide reproducible example of error please submit as bug report.\nStructure of object returned:\n", paste(capture.output(str(tr)), collapse="\n"), sep="")
+    if (non2dim)
+      warning("Object returned from quantile method have less than 2 dimensions and will probably fail on further calls.\n", warn)
+    else if (nonnum)
+      warning("Object returned from quantile method is not numeric and will probably fail on further calls.\n", warn)
+  }
   colnames(tr) <- paste0(100*tr[1,],"%")
   tr[-1,]
 }
@@ -1980,25 +1991,38 @@ summary.H2OFrame <- h2o.summary
 #-----------------------------------------------------------------------------------------------------------------------
 
 #'
-#' Mean of a column
-#'
-#' Obtain the mean of a column of a parsed H2O data object.
+#' Compute the frame's mean by-column (or by-row).
 #'
 #' @name h2o.mean
 #' @param x An H2OFrame object.
+#' @param na.rm \code{logical}. Indicate whether missing values should be removed.
+#' @param axis \code{integer}. Indicate whether to calculate the mean down a column (0) or across a row (1).
+#'                             NOTE: This is only applied when return_frame is set to TRUE. Otherwise, this parameter
+#'                             is ignored.
+#' @param return_frame \code{logical}. Indicate whether to return an H2O frame or a list. Default is FALSE (returns a list).
 #' @param ... Further arguments to be passed from or to other methods.
-#' @param na.rm A logical value indicating whether \code{NA} or missing values should be stripped before the computation.
-#' @seealso \code{\link[base]{mean}} for the base R implementation.
-#' @return Returns a list containing the mean for each column (NaN for non-numeric columns).
+#' @seealso \code{\link[base]{mean}} , \code{\link[base]{rowMeans}}, or \code{\link[base]{colMeans}} for the base R implementation
+#' @return Returns a list containing the mean for each column (NaN for non-numeric columns) if return_frame is set to FALSE.
+#'         If return_frame is set to TRUE, then it will return an H2O frame with means per column or row (depends on axis argument).
 #' @examples
 #' \donttest{
 #' h2o.init()
 #' prosPath <- system.file("extdata", "prostate.csv", package="h2o")
 #' prostate.hex <- h2o.uploadFile(path = prosPath)
-#' mean(prostate.hex$AGE)
+#' # Default behavior. Will return list of means per column.
+#' h2o.mean(prostate.hex$AGE)
+#' # return_frame set to TRUE. This will return an H2O Frame
+#' # with mean per row or column (depends on axis argument)
+#' h2o.mean(prostate.hex,na.rm=TRUE,axis=1,return_frame=TRUE)
 #' }
 #' @export
-h2o.mean <- function(x, ..., na.rm=TRUE) .eval.scalar(.newExpr("getrow", .newExpr("mean",x,na.rm)))
+h2o.mean <- function(x, na.rm = FALSE, axis = 0, return_frame = FALSE, ...) {
+  if(return_frame){
+    .newExpr("mean", chk.H2OFrame(x), na.rm, axis)
+  }else{
+    .eval.scalar(.newExpr("getrow", .newExpr("mean",x,na.rm)))
+  }
+}
 
 #' @rdname h2o.mean
 #' @export
@@ -2143,10 +2167,13 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
 }
 
 #' @rdname h2o.cor
+#' @param ... Further arguments to be passed down from other methods.
 #' @export
-cor <- function(x, y = NULL,na.rm = FALSE, use)  {
-  if( is.H2OFrame(x) ) h2o.cor(x,y)
-  else stats::cor(x,y)
+cor <- function (x, ...)
+{
+    if (is.H2OFrame(x))
+        h2o.cor(x, ...)
+    else stats::cor(x, ...)
 }
 
 #'
@@ -2259,8 +2286,7 @@ scale.H2OFrame <- h2o.scale
 #' @seealso \code{\link[base]{log10}} for the base R implementation.
 #' @export
 h2o.log10 <- function(x) {
-  if(is.H2OFrame(x)) log10(x)
-  else log10(x)
+  log10(x)
 }
 
 #'
@@ -2271,8 +2297,7 @@ h2o.log10 <- function(x) {
 #' @seealso \code{\link[base]{log2}} for the base R implementation.
 #' @export
 h2o.log2 <- function(x) {
-  if(is.H2OFrame(x)) log2(x)
-  else log2(x)
+  log2(x)
 }
 
 #'
@@ -2283,8 +2308,7 @@ h2o.log2 <- function(x) {
 #' @seealso \code{\link[base]{log1p}} for the base R implementation.
 #' @export
 h2o.log1p <- function(x) {
-  if(is.H2OFrame(x)) log1p(x)
-  else log1p(x)
+  log1p(x)
 }
 
 #'
@@ -2296,8 +2320,7 @@ h2o.log1p <- function(x) {
 #' @seealso \code{\link[base]{trunc}} for the base R implementation.
 #' @export
 h2o.trunc <- function(x) {
-  if(is.H2OFrame(x)) trunc(x)
-  else trunc(x)
+  trunc(x)
 }
 
 #'
@@ -2308,8 +2331,7 @@ h2o.trunc <- function(x) {
 #' @seealso \code{\link[base]{dim}} for the base R implementation.
 #' @export
 h2o.dim <- function(x) {
-  if(is.H2OFrame(x)) dim(x)
-  else dim(x)
+  dim(x)
 }
 
 #'
@@ -2320,8 +2342,7 @@ h2o.dim <- function(x) {
 #' @seealso \code{\link[base]{dimnames}} for the base R implementation.
 #' @export
 h2o.dimnames <- function(x) {
-  if(is.H2OFrame(x)) dimnames(x)
-  else dimnames(x)
+  dimnames(x)
 }
 
 #'
@@ -2332,8 +2353,7 @@ h2o.dimnames <- function(x) {
 #' @seealso \code{\link[base]{names}} for the base R implementation.
 #' @export
 h2o.names <- function(x) {
-  if(is.H2OFrame(x)) names(x)
-  else names(x)
+  names(x)
 }
 
 #'
@@ -2344,8 +2364,7 @@ h2o.names <- function(x) {
 #' @seealso \code{\link[base]{colnames}} for the base R implementation.
 #' @export
 h2o.colnames <- function(x) {
-  if(is.H2OFrame(x)) colnames(x)
-  else colnames(x)
+  colnames(x)
 }
 
 #'
@@ -2356,8 +2375,7 @@ h2o.colnames <- function(x) {
 #' @seealso \code{\link[base]{is.factor}} for the base R implementation.
 #' @export
 h2o.isfactor <- function(x) {
-  if(is.H2OFrame(x)) is.factor(x)
-  else is.factor(x)
+  is.factor(x)
 }
 
 #'
@@ -2368,8 +2386,7 @@ h2o.isfactor <- function(x) {
 #' @seealso \code{\link[base]{is.numeric}} for the base R implementation.
 #' @export
 h2o.isnumeric <- function(x) {
-  if(is.H2OFrame(x)) is.numeric(x)
-  else is.numeric(x)
+  is.numeric(x)
 }
 
 #'
@@ -2380,8 +2397,7 @@ h2o.isnumeric <- function(x) {
 #' @seealso \code{\link[base]{is.character}} for the base R implementation.
 #' @export
 h2o.ischaracter <- function(x) {
-  if(is.H2OFrame(x)) is.character(x)
-  else is.character(x)
+  is.character(x)
 }
 
 #'
@@ -2392,8 +2408,7 @@ h2o.ischaracter <- function(x) {
 #' @seealso \code{\link[base]{as.factor}} for the base R implementation.
 #' @export
 h2o.asfactor <- function(x) {
-  if(is.H2OFrame(x)) as.factor(x)
-  else as.factor(x)
+  as.factor(x)
 }
 
 #'
@@ -2404,8 +2419,7 @@ h2o.asfactor <- function(x) {
 #' @seealso \code{\link[base]{as.numeric}} for the base R implementation.
 #' @export
 h2o.asnumeric <- function(x) {
-  if(is.H2OFrame(x)) as.numeric(x)
-  else as.numeric(x)
+  as.numeric(x)
 }
 
 #'
@@ -2416,8 +2430,7 @@ h2o.asnumeric <- function(x) {
 #' @seealso \code{\link[base]{as.character}} for the base R implementation.
 #' @export
 h2o.ascharacter <- function(x) {
-  if(is.H2OFrame(x)) as.character(x)
-  else as.character(x)
+  as.character(x)
 }
 
 #' Print An H2OFrame
@@ -2428,8 +2441,7 @@ h2o.ascharacter <- function(x) {
 #' @param ... Further arguments to be passed from or to other methods.
 #' @export
 h2o.print <- function(x,n=6L) {
-  if(is.H2OFrame(x)) print(x,n)
-  else print(x,n)
+  print(x,n = n)
 }
 
 #' Display the structure of an H2OFrame object
@@ -2439,8 +2451,7 @@ h2o.print <- function(x,n=6L) {
 #' @param cols Print the per-column str for the H2OFrame
 #' @export
 h2o.str <- function(object, ..., cols=FALSE) {
-  if(is.H2OFrame(object)) str(object, ..., cols)
-  else str(object, ..., cols)
+  str(object, ..., cols = cols)
 }
 
 #'
@@ -2451,8 +2462,7 @@ h2o.str <- function(object, ..., cols=FALSE) {
 #' @seealso \code{\link[base]{cos}} for the base R implementation.
 #' @export
 h2o.cos <- function(x) {
-  if( is.H2OFrame(x) ) cos(x)
-  else cos(x)
+  cos(x)
 }
 
 #'
@@ -2463,8 +2473,7 @@ h2o.cos <- function(x) {
 #' @seealso \code{\link[base]{sin}} for the base R implementation.
 #' @export
 h2o.sin <- function(x) {
-  if( is.H2OFrame(x) ) sin(x)
-  else sin(x)
+  sin(x)
 }
 
 #'
@@ -2475,8 +2484,7 @@ h2o.sin <- function(x) {
 #' @seealso \code{\link[base]{acos}} for the base R implementation.
 #' @export
 h2o.acos <- function(x) {
-  if( is.H2OFrame(x) ) acos(x)
-  else acos(x)
+  acos(x)
 }
 
 #'
@@ -2487,8 +2495,7 @@ h2o.acos <- function(x) {
 #' @seealso \code{\link[base]{cosh}} for the base R implementation.
 #' @export
 h2o.cosh <- function(x) {
-  if( is.H2OFrame(x) ) cosh(x)
-  else cosh(x)
+  cosh(x)
 }
 
 #'
@@ -2499,8 +2506,7 @@ h2o.cosh <- function(x) {
 #' @seealso \code{\link[base]{tan}} for the base R implementation.
 #' @export
 h2o.tan <- function(x) {
-  if( is.H2OFrame(x) ) tan(x)
-  else tan(x)
+  tan(x)
 }
 
 #'
@@ -2511,8 +2517,7 @@ h2o.tan <- function(x) {
 #' @seealso \code{\link[base]{tanh}} for the base R implementation.
 #' @export
 h2o.tanh <- function(x) {
-  if( is.H2OFrame(x) ) tanh(x)
-  else tanh(x)
+  tanh(x)
 }
 
 #'
@@ -2523,8 +2528,7 @@ h2o.tanh <- function(x) {
 #' @seealso \code{\link[base]{exp}} for the base R implementation.
 #' @export
 h2o.exp <- function(x) {
-  if( is.H2OFrame(x) ) exp(x)
-  else exp(x)
+  exp(x)
 }
 
 #'
@@ -2535,8 +2539,8 @@ h2o.exp <- function(x) {
 #' @seealso \code{\link[base]{log}} for the base R implementation.
 #' @export
 h2o.log <- function(x) {
-  if( is.H2OFrame(x) ) log(x)
-  else log(x)
+  log(x)
+
 }
 
 #'
@@ -2547,8 +2551,7 @@ h2o.log <- function(x) {
 #' @seealso \code{\link[base]{sqrt}} for the base R implementation.
 #' @export
 h2o.sqrt <- function(x) {
-  if( is.H2OFrame(x) ) sqrt(x)
-  else sqrt(x)
+  sqrt(x)
 }
 
 #'
@@ -2559,8 +2562,7 @@ h2o.sqrt <- function(x) {
 #' @seealso \code{\link[base]{abs}} for the base R implementation.
 #' @export
 h2o.abs <- function(x) {
-  if( is.H2OFrame(x) ) abs(x)
-  else abs(x)
+  abs(x)
 }
 
 #'
@@ -2573,8 +2575,7 @@ h2o.abs <- function(x) {
 #' @seealso \code{\link[base]{ceiling}} for the base R implementation.
 #' @export
 h2o.ceiling <- function(x) {
-  if( is.H2OFrame(x) ) ceiling(x)
-  else ceiling(x)
+  ceiling(x)
 }
 
 #'
@@ -2587,21 +2588,25 @@ h2o.ceiling <- function(x) {
 #' @seealso \code{\link[base]{floor}} for the base R implementation.
 #' @export
 h2o.floor <- function(x) {
-  if( is.H2OFrame(x) ) floor(x)
-  else floor(x)
+  floor(x)
 }
 
 #'
-#' Return the sum of all the values present in its arguments.
+#' Compute the frame's sum by-column (or by-row).
 #'
 #' @name h2o.sum
 #' @param x An H2OFrame object.
 #' @param na.rm \code{logical}. indicating whether missing values should be removed.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @param return_frame A boolean that indicates whether to return an H2O frame or a list. Default is FALSE.
 #' @seealso \code{\link[base]{sum}} for the base R implementation.
 #' @export
-h2o.sum <- function(x,na.rm = FALSE) {
-  if( is.H2OFrame(x) ) sum(x,na.rm)
-  else sum(x,na.rm)
+h2o.sum <- function(x, na.rm = FALSE, axis = 0, return_frame = FALSE) {
+   if(return_frame){
+      .newExpr("sumaxis", chk.H2OFrame(x), na.rm, axis)
+  }else{
+    sum(x,na.rm = na.rm)
+  }
 }
 
 #'
@@ -2612,8 +2617,55 @@ h2o.sum <- function(x,na.rm = FALSE) {
 #' @seealso \code{\link[base]{prod}} for the base R implementation.
 #' @export
 h2o.prod <- function(x) {
-  if( is.H2OFrame(x) ) prod(x)
-  else prod(x)
+  prod(x)
+}
+
+#'
+#' Return the cumulative sum over a column or across a row
+#'
+#' @name h2o.cumsum
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cumsum}} for the base R implementation.
+#' @export
+h2o.cumsum <- function(x, axis = 0){
+  .newExpr("cumsum", chk.H2OFrame(x), axis)
+}
+
+#'
+#' Return the cumulative product over a column or across a row
+#'
+#' @name h2o.cumprod
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cumprod}} for the base R implementation.
+#' @export
+h2o.cumprod <- function(x, axis = 0){
+  .newExpr("cumprod", chk.H2OFrame(x), axis)
+}
+
+#'
+#' Return the cumulative min over a column or across a row
+#'
+#' @name h2o.cummin
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cummin}} for the base R implementation.
+#' @export
+h2o.cummin <- function(x, axis = 0){
+  .newExpr("cummin", chk.H2OFrame(x), axis)
+}
+
+#'
+#' Return the cumulative max over a column or across a row
+#'
+#' @name h2o.cummax
+#' @param x An H2OFrame object.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @seealso \code{\link[base]{cummax}} for the base R implementation.
+#' @export
+h2o.cummax <- function(x, axis = 0){
+  .newExpr("cummax", chk.H2OFrame(x), axis)
 }
 
 #'
@@ -2624,8 +2676,7 @@ h2o.prod <- function(x) {
 #' @seealso \code{\link[base]{all}} for the base R implementation.
 #' @export
 h2o.all <- function(x) {
-  if( is.H2OFrame(x) ) all(x)
-  else all(x)
+  all(x)
 }
 
 #'
@@ -2636,8 +2687,7 @@ h2o.all <- function(x) {
 #' @seealso \code{\link[base]{all}} for the base R implementation.
 #' @export
 h2o.any <- function(x) {
-  if( is.H2OFrame(x) ) all(x)
-  else all(x)
+  any(x)
 }
 
 #'
@@ -2649,8 +2699,7 @@ h2o.any <- function(x) {
 #' @seealso \code{\link[base]{min}} for the base R implementation.
 #' @export
 h2o.min <- function(x,na.rm = FALSE) {
-  if( is.H2OFrame(x) ) min(x,na.rm)
-  else min(x,na.rm)
+  min(x,na.rm = na.rm)
 }
 
 #'
@@ -2662,8 +2711,7 @@ h2o.min <- function(x,na.rm = FALSE) {
 #' @seealso \code{\link[base]{max}} for the base R implementation.
 #' @export
 h2o.max <- function(x,na.rm = FALSE) {
-  if( is.H2OFrame(x) ) max(x,na.rm)
-  else max(x,na.rm)
+  max(x,na.rm = na.rm)
 }
 
 #'
@@ -2674,8 +2722,7 @@ h2o.max <- function(x,na.rm = FALSE) {
 #' @seealso \code{\link[base]{nrow}} for the base R implementation.
 #' @export
 h2o.nrow <- function(x) {
-  if( is.H2OFrame(x) ) nrow(x)
-  else nrow(x)
+ nrow(x)
 }
 
 #'
@@ -2686,8 +2733,7 @@ h2o.nrow <- function(x) {
 #' @seealso \code{\link[base]{ncol}} for the base R implementation.
 #' @export
 h2o.ncol <- function(x) {
-  if( is.H2OFrame(x) ) ncol(x)
-  else ncol(x)
+ ncol(x)
 }
 
 #'
@@ -2700,8 +2746,7 @@ h2o.ncol <- function(x) {
 #' @seealso \code{\link[base]{range}} for the base R implementation.
 #' @export
 h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
-  if( is.H2OFrame(x) ) range(x,na.rm,finite)
-  else range(x,na.rm,finite)
+  range(x,na.rm = na.rm,finite)
 }
 
 #-----------------------------------------------------------------------------------------------------------------------
@@ -2709,39 +2754,199 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 #-----------------------------------------------------------------------------------------------------------------------
 
 #'
-#' R data.frame -> H2OFrame
+#' Is H2O Frame object
 #'
-#' Import a local R data frame to the H2O cloud.
+#' Test if object is H2O Frame.
 #'
-#' @param x An \code{R} data frame.
-#' @param destination_frame A string with the desired name for the H2OFrame.
+#' @param x An \code{R} object.
 #' @export
-as.h2o <- function(x, destination_frame= "") {
+is.h2o <- function(x) inherits(x, "H2OFrame")
+
+h2o.class.map <- function() {
+  c("integer64"="numeric",
+    "integer"="numeric",
+    "double"="numeric",
+    "complex"="numeric",
+    "logical"="enum",
+    "factor"="enum",
+    "character"="string",
+    "Date"="Time")
+}
+
+destination_frame.guess <- function(x) {
+  valid.key = isTRUE(try(.key.validate(x), silent=TRUE)) # simplify after .key.validate improvement
+  if (valid.key) x else ""
+}
+
+#' @title Use optional package
+#' @description
+#' Testing availability of optional package, its version, and extra global default.
+#' This function is used internally. It is exported and documented because user can
+#' control behavior of the function by global option.
+#' @param package character scalar name of a package that we Suggests or Enhances on.
+#' @param version character scalar required version of a package.
+#' @param use logical scalar, extra escape option, to be used as global option.
+#' @details
+#' We use this function to control csv read/write with optional \link[data.table]{data.table} package.
+#' Currently data.table is disabled by default, to enable it set \code{options("h2o.use.data.table"=TRUE)}.
+#' It is possible to control just \code{\link[data.table]{fread}} or \code{\link[data.table]{fwrite}} with \code{options("h2o.fread"=FALSE, "h2o.fwrite"=FALSE)}.
+#' \code{h2o.fread} and \code{h2o.fwrite} options are not handled in this function but next to \emph{fread} and \emph{fwrite} calls.
+#' @export
+#' @seealso \code{\link{as.h2o.data.frame}}, \code{\link{as.data.frame.H2OFrame}}
+#' @examples
+#' op <- options("h2o.use.data.table" = TRUE)
+#' if (use.package("data.table")) {
+#'   cat("optional package data.table 1.9.8+ is available\n")
+#' } else {
+#'   cat("optional package data.table 1.9.8+ is not available\n")
+#' }
+#' options(op)
+use.package <- function(package, 
+                        version="1.9.8"[package=="data.table"], 
+                        use=getOption("h2o.use.data.table", FALSE)[package=="data.table"]) {
+  ## methods that depends on use.package default arguments (to have control in single place):
+  # as.h2o.data.frame
+  # as.data.frame.H2OFrame
+  stopifnot(is.character(package), length(package)==1L,
+            is.character(version), length(version)==1L,
+            is.logical(use), length(use)==1L)
+  use && requireNamespace(package, quietly=TRUE) && (packageVersion(package) >= as.package_version(version))
+}
+
+#'
+#' Create H2OFrame
+#'
+#' Import R object to the H2O cloud.
+#'
+#' @param x An \code{R} object.
+#' @param destination_frame A string with the desired name for the H2OFrame.
+#' @param \dots arguments passed to method arguments.
+#' @export
+#' @examples 
+#' \donttest{
+#' h2o.init()
+#' hi <- as.h2o(iris)
+#' he <- as.h2o(euro)
+#' hl <- as.h2o(letters)
+#' hm <- as.h2o(state.x77)
+#' hh <- as.h2o(hi)
+#' stopifnot(is.h2o(hi), dim(hi)==dim(iris),
+#'           is.h2o(he), dim(he)==c(length(euro),1L),
+#'           is.h2o(hl), dim(hl)==c(length(letters),1L),
+#'           is.h2o(hm), dim(hm)==dim(state.x77),
+#'           is.h2o(hh), dim(hh)==dim(hi))
+#' if (requireNamespace("Matrix", quietly=TRUE)) {
+#'   data <- rep(0, 100)
+#'   data[(1:10)^2] <- 1:10 * pi
+#'   m <- matrix(data, ncol = 20, byrow = TRUE)
+#'   m <- Matrix::Matrix(m, sparse = TRUE)
+#'   hs <- as.h2o(m)
+#'   stopifnot(is.h2o(hs), dim(hs)==dim(m))
+#' }
+#' }
+as.h2o <- function(x, destination_frame="", ...) {
   .key.validate(destination_frame)
+  UseMethod("as.h2o")
+}
 
-  dest_name <- if( destination_frame=="") deparse(substitute(x)) else destination_frame
-  if( nzchar(dest_name) && regexpr("^[a-zA-Z_][a-zA-Z0-9_.]*$", dest_name)[1L] == -1L )
-    dest_name <- destination_frame
+#' @rdname as.h2o
+#' @method as.h2o default
+#' @export
+as.h2o.default <- function(x, destination_frame="", ...) {
+  if( destination_frame=="" ) destination_frame <- deparse(substitute(x)) # guessing is done in as.h2o.data.frame
+  x <- if( length(x)==1L )
+    data.frame(C1=x)
+  else
+    as.data.frame(x, ...)
+  as.h2o.data.frame(x, destination_frame=destination_frame)
+}
 
+#' @rdname as.h2o
+#' @method as.h2o H2OFrame
+#' @export
+as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
+  if( destination_frame=="" ) {
+    subx <- destination_frame.guess(deparse(substitute(x)))
+    destination_frame <- .key.make(if(nzchar(subx)) subx else "copy")
+  }
+  h2o.assign(x, key=destination_frame)
+}
+
+#' @rdname as.h2o
+#' @method as.h2o data.frame
+#' @details 
+#' Method \code{as.h2o.data.frame} will use \code{\link[data.table]{fwrite}} if data.table package is installed in required version.
+#' @seealso \code{\link{use.package}}
+#' @references \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}
+#' @export
+as.h2o.data.frame <- function(x, destination_frame="", ...) {
+  if( destination_frame=="" )
+    destination_frame <- deparse(substitute(x))
+  
+  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+  .key.validate(destination_frame) # h2o.uploadFile already handle ""
+  
   # TODO: Be careful, there might be a limit on how long a vector you can define in console
-  if(!is.data.frame(x))
-    if( length(x)==1L ) x <- data.frame(C1=x)
-    else                x <- as.data.frame(x)
-  types <- sapply(x, class)
-  types <- gsub("integer64", "numeric", types)
-  types <- gsub("integer", "numeric", types)
-  types <- gsub("double", "numeric", types)
-  types <- gsub("complex", "numeric", types)
-  types <- gsub("logical", "enum", types)
-  types <- gsub("factor", "enum", types)
-  types <- gsub("character", "string", types)
-  types <- gsub("Date", "Time", types)
   tmpf <- tempfile(fileext = ".csv")
-  write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
-  h2f <- h2o.uploadFile(tmpf, destination_frame = dest_name, header = TRUE, col.types=types,
+  # remap R data types to java data types
+  types <- sapply(x, function(x) class(x)[1L]) # ensure vector returned
+  class.map <- h2o.class.map()
+  types[types %in% names(class.map)] <- class.map[types[types %in% names(class.map)]]
+  verbose <- getOption("h2o.verbose", FALSE)
+  if (verbose) pt <- proc.time()[[3]]
+  if (getOption("h2o.fwrite", TRUE) && use.package("data.table")) {
+    data.table::fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)
+    fun <- "fwrite"
+  } else {
+    write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
+    fun <- "write.csv"
+  }
+  if (verbose) cat(sprintf("writing csv to disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
+  #if (verbose) pt <- proc.time()[[3]] # timings inside
+  h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
                         col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
+  #if (verbose) cat(sprintf("uploading csv to h2o using 'h2o.uploadFile' took %.2fs\n", proc.time()[[3]]-pt))
   file.remove(tmpf)
   h2f
+}
+
+#' @rdname as.h2o
+#' @method as.h2o Matrix
+#' @export
+as.h2o.Matrix <- function(x, destination_frame="", ...) {
+  
+  if( destination_frame=="")
+    destination_frame <- deparse(substitute(x))
+  
+  sparse <- .h2o.is.sparse.matrix(x)
+  if(!sparse)
+    return(as.h2o.default(x, destination_frame=destination_frame, ...))
+  
+  destination_frame <- destination_frame.guess(destination_frame) # filter out invalid i.e. "abc::fun()"
+  .key.validate(destination_frame)
+  if ( destination_frame=="" ) # .h2o.readSVMLight wont handle ""
+    destination_frame <- .key.make("Matrix") # only used if `x` variable name not valid key
+  
+  tmpf <- tempfile(fileext = ".svm")
+  .h2o.write.matrix.svmlight(x, file = tmpf)
+  h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
+  file.remove(tmpf)
+  h2f
+}
+
+.h2o.is.sparse.matrix <- function(x) (attr(class(x), "package") == "Matrix") && inherits(x, "Matrix")
+
+.h2o.write.matrix.svmlight <- function(matrix, file) {
+  on.exit(sink())
+  sink(file)
+  apply(matrix, 1, function(r) {
+    val.indices <- which(r != 0)
+    val.indices <- val.indices[val.indices > 1]
+    target <- r[1]
+    features <- paste(val.indices - 1, r[val.indices], collapse = " ", sep = ":")
+    line <- sprintf("%s %s\n", target, features)
+    cat(line)
+  })
 }
 
 #'
@@ -2751,6 +2956,9 @@ as.h2o <- function(x, destination_frame= "") {
 #'
 #' @param x An H2OFrame object.
 #' @param ... Further arguments to be passed down from other methods.
+#' @details
+#' Method \code{as.data.frame.H2OFrame} will use \code{\link[data.table]{fread}} if data.table package is installed in required version.
+#' @seealso \code{\link{use.package}}
 #' @examples
 #' \donttest{
 #' h2o.init()
@@ -2769,8 +2977,11 @@ as.data.frame.H2OFrame <- function(x, ...) {
   urlSuffix <- paste0('DownloadDataset',
                       '?frame_id=', URLencode( h2o.getId(x)),
                       '&hex_string=', as.numeric(use_hex_string))
-
+  
+  verbose <- getOption("h2o.verbose", FALSE)
+  if (verbose) pt <- proc.time()[[3]]
   ttt <- .h2o.doSafeGET(urlSuffix = urlSuffix)
+  if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
   n <- nchar(ttt)
 
   # Delete last 1 or 2 characters if it's a newline.
@@ -2799,13 +3010,26 @@ as.data.frame.H2OFrame <- function(x, ...) {
   colClasses <- gsub("uuid", "character", colClasses)
   colClasses <- gsub("string", "character", colClasses)
   colClasses <- gsub("time", NA, colClasses) # change to Date after ingestion
-  # Substitute NAs for blank cells rather than skipping
-  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
-  close(tcon)
+  
   # Convert all date columns to POSIXct
   dates <- attr(x, "types") %in% "time"
-  if (length(dates) > 0) # why do some frames come in with no attributes but many columns?
-    for (i in 1:length(dates)) { if (dates[[i]]) class(df[[i]]) = "POSIXct" }
+  
+  if (verbose) pt <- proc.time()[[3]]
+  if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
+    df <- data.table::fread(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
+    if (sum(dates))
+      for (i in which(dates)) data.table::setattr(df[[i]], "class", "POSIXct")
+    fun <- "fread"
+  } else {
+    # Substitute NAs for blank cells rather than skipping
+    df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
+    close(tcon)
+    if (sum(dates))
+      for (i in which(dates)) class(df[[i]]) = "POSIXct"
+    fun <- "read.csv"
+  }
+  if (verbose) cat(sprintf("reading csv from disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
+  
   df
 }
 
@@ -2814,7 +3038,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
 #' @param x An H2OFrame object
 #' @param ... Further arguments to be passed down from other methods.
 #' @export
-as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
+as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame.H2OFrame(x, ...))
 
 #' Convert an H2OFrame to a vector
 #'
@@ -3499,6 +3723,29 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
     plot(histo)
     invisible(histo)
   } else histo
+}
+
+#'
+#' iSAX
+#'
+#' Compute the iSAX index for a DataFrame which is assumed to be numeric time series data
+#'
+#' @param x an H2OFrame
+#' @param num_words Number of iSAX words for the timeseries. ie granularity along the time series
+#' @param max_cardinality Maximum cardinality of the iSAX word. Each word can have less than the max
+#' @param optimize_card An optimization flag that will find the max cardinality regardless of what is passed in for max_cardinality.
+#' @return An H2OFrame with the name of time series, string representation of iSAX word, followed by binary representation
+#' @references http://www.cs.ucr.edu/~eamonn/iSAX_2.0.pdf
+#' @references http://www.cs.ucr.edu/~eamonn/SAX.pdf
+#' @export
+h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
+  if(num_words <= 0){
+    stop("num_words must be greater than 0!")
+  }
+  if(max_cardinality <= 0){
+    stop("max_cardinality must be greater than 0!")
+  }
+  .newExpr("isax", x, num_words, max_cardinality, optimize_card)
 }
 
 #'

@@ -1,9 +1,5 @@
 package water.util;
 
-import java.io.*;
-import java.net.URI;
-import java.util.*;
-
 import hex.Model;
 import hex.ToEigenVec;
 import jsr166y.CountedCompleter;
@@ -11,6 +7,16 @@ import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 
 public class FrameUtils {
 
@@ -518,7 +524,6 @@ public class FrameUtils {
               catnames.add(_frame.name(i) + "." + _frame.vec(i).domain()[k]);
             ++j;
           } else {
-            catnames.add(_frame.name(i));
             outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
           }
         }
@@ -694,7 +699,7 @@ public class FrameUtils {
         for (int i = 0; i < frameVecs.length; ++i) {
           if (_skipCols!=null && ArrayUtils.find(_skipCols, _frame._names[i])>=0) continue;
           if (frameVecs[i].isCategorical())
-            outputFrame.add(_frame.name(i), _tev.toEigenVec(frameVecs[i]));
+            outputFrame.add(_frame.name(i) + ".Eigen", _tev.toEigenVec(frameVecs[i]));
           else
             outputFrame.add(_frame.name(i), frameVecs[i].makeCopy());
         }
@@ -724,6 +729,35 @@ public class FrameUtils {
     }
     fs.blockForPending();
     toDelete.clear();
+  }
+
+
+  /**
+   * reduce the domains of all categorical columns to the actually observed subset
+   * @param frameToModifyInPlace
+   */
+  static public void shrinkDomainsToObservedSubset(Frame frameToModifyInPlace) {
+    for (Vec v : frameToModifyInPlace.vecs()) {
+      if (v.isCategorical()) {
+        long[] uniques = (v.min() >= 0 && v.max() < Integer.MAX_VALUE - 4) ? new VecUtils.CollectDomainFast((int)v.max()).doAll(v).domain() : new VecUtils.CollectDomain().doAll(v).domain();
+        String[] newDomain = new String[uniques.length];
+        final int[] fromTo = new int[(int)ArrayUtils.maxValue(uniques)+1];
+        for (int i=0;i<newDomain.length;++i) {
+          newDomain[i] = v.domain()[(int) uniques[i]];
+          fromTo[(int)uniques[i]] = i; //helper for value mapping
+        }
+        new MRTask() {
+          @Override
+          public void map(Chunk c) {
+            for (int i=0;i<c._len;++i) {
+              if (c.isNA(i)) continue;
+              else c.set(i, fromTo[(int)c.at8(i)]);
+            }
+          }
+        }.doAll(v);
+        v.setDomain(newDomain);
+      }
+    }
   }
 
 }

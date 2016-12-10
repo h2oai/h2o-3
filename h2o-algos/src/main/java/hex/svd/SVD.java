@@ -42,6 +42,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.DimReduction }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Experimental; }
 
+  @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return false; }
+
   // Called from an http request
   public SVD(SVDModel.SVDParameters parms         ) { super(parms    ); init(false); }
   public SVD(SVDModel.SVDParameters parms, Job job) { super(parms,job); init(false); }
@@ -381,6 +384,8 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         } else if(_parms._svd_method == SVDParameters.Method.Power) {
           // Calculate and save Gram matrix of training data
           // NOTE: Gram computes A'A/n where n = nrow(A) = number of rows in training set (excluding rows with NAs)
+          // NOTE: the Gram also will apply the specified Transforms on the data before performing the operation.
+          // NOTE:  valid transforms are NONE, DEMEAN, STANDARDIZE...
           _job.update(1, "Begin distributed calculation of Gram matrix");
           GramTask gtsk = new GramTask(_job._key, dinfo).doAll(dinfo._adaptedFrame);
           Gram gram = gtsk._gram;   // TODO: This ends up with all NaNs if training data has too many missing values

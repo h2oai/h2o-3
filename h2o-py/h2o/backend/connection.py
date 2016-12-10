@@ -38,6 +38,10 @@ from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringMode
 
 __all__ = ("H2OConnection", )
 
+if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
+    print("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.\n"
+          "You can upgrade to the newest version of the module running from the command line\n"
+          "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
 
 
 class H2OConnection(backwards_compatible()):
@@ -286,9 +290,11 @@ class H2OConnection(backwards_compatible()):
         """
         if self._session_id:
             try:
+                # If the server gone bad, we don't want to wait forever...
+                if self._timeout is None: self._timeout = 1
                 self.request("DELETE /4/sessions/%s" % self._session_id)
                 self._print("H2O session %s closed." % self._session_id)
-            except:
+            except Exception:
                 pass
             self._session_id = None
         self._stage = -1
@@ -380,7 +386,7 @@ class H2OConnection(backwards_compatible()):
         self._verify_ssl_cert = None
         self._auth = None           # Authentication token
         self._proxies = None        # `proxies` dictionary in the format required by the requests module
-        self._cluster_id= None
+        self._cluster_id = None
         self._cookies = None
         self._cluster = None        # H2OCluster object
         self._verbose = None        # Print detailed information about connection status
@@ -460,15 +466,6 @@ class H2OConnection(backwards_compatible()):
                 value = value["name"]
             else:
                 value = str(value)
-            # Some hackery here... It appears that requests library cannot stomach "upgraded" strings if they contain
-            # certain characters such as '/'. Therefore we explicitly cast them to their native representation.
-            # Reproduction steps:
-            #   >>> import requests
-            #   >>> from future.types import newstr as str
-            #   >>> requests.get("http://www.google.com/search", params={"q": str("/foo/bar")})
-            # (throws a "KeyError 47" exception).
-            # if PY2 and hasattr(value, "__native__"): value = value.__native__()
-            # if PY2 and hasattr(key, "__native__"): key = key.__native__()
             res[key] = value
         return res
 

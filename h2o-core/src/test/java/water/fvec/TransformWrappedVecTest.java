@@ -4,6 +4,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.MRTask;
 import water.TestUtil;
+import water.rapids.ast.AstFunction;
 import water.rapids.ast.AstRoot;
 import water.rapids.Rapids;
 
@@ -14,7 +15,7 @@ public class TransformWrappedVecTest extends TestUtil {
     Vec v=null;
     try {
       v = Vec.makeZero(1<<20);
-      AstRoot ast = Rapids.parse("{ x . (- 1 x) }");
+      AstFunction ast = (AstFunction) Rapids.parse("{ x . (- 1 x) }");
       Vec iv = new TransformWrappedVec(v, ast);
       new MRTask() {
         @Override public void map(Chunk c) {

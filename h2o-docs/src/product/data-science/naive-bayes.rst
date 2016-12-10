@@ -26,6 +26,21 @@ Defining a Naïve Bayes Model
    independent variable. The data must be categorical and must contain
    at least two unique categorical levels.
 
+-  **nfolds**: Specify the number of folds for cross-validation.
+
+-  **seed**: Specify the random number generator (RNG) seed for
+   algorithm components dependent on randomization. The seed is
+   consistent for each H2O instance so that you can create models with
+   the same starting conditions in alternative configurations.
+
+-  **fold_assignment**: (Applicable only if a value for **nfolds** is specified and **fold\_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+
+-  **fold_column**: Specify the column that contains the cross-validation fold index assignment per observation.
+
+-  **keep_cross_validation_predictions**: Enable this option to keep the cross-validation predictions.
+
+-  **keep_cross_validation_fold_assignment**: Enable this option to preserve the cross-validation fold assignment. 
+
 -  **ignored\_columns**: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
    name to add it to the list of columns excluded from the model. To add
    all columns, click the **All** button. To remove a column from the
@@ -41,6 +56,20 @@ Defining a Naïve Bayes Model
 -  **ignore\_const\_cols**: Specify whether to ignore constant
    training columns, since no information can be gained from them. This
    option is enabled by default.
+
+-  **score\_each\_iteration**: (Optional) Specify whether to score
+   during each iteration of the model training.
+
+-  **balance_classes**: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max_after_balance_size** parameter.
+
+-  **class_sampling_factors**: Specify the per-class (in lexicographical order) over/under-sampling ratios. By default, these
+   ratios are automatically computed during training to obtain the class balance.
+
+-  **max_after_balance_size**: Specify the maximum relative size of the training data after balancing class counts (**balance_classes** must be enabled). The value can be less than 1.0.
+
+-  **max\_hit\_ratio\_k**: Specify the maximum number (top K) of
+   predictions to use for hit ratio computation. Applicable to
+   multi-class only. To disable, enter 0.
 
 -  **laplace**: Specify the Laplace smoothing parameter. The value must
    be an integer >= 0.
@@ -58,24 +87,7 @@ Defining a Naïve Bayes Model
 -  **eps\_prob**: Specify the threshold for standard deviation. If this
    threshold is not met, the **min\_sdev** value is used.
 
--  **compute\_metrics**: Enable this option to compute metrics on training data. The Naïve Bayes classifier assumes independence between
-   predictor variables conditional on the response, and a Gaussian
-   distribution of numeric predictors with mean and standard deviation
-   computed from the training dataset. When building a Naïve Bayes
-   classifier, every row in the training dataset that contains at least
-   one NA will be skipped completely. If the test dataset has missing
-   values, then those predictors are omitted in the probability
-   calculation during prediction.
-
--  **score\_each\_iteration**: (Optional) Specify whether to score
-   during each iteration of the model training.
-
--  **max\_confusion\_matrix\_size**: Specify the maximum size (in number
-   of classes) for confusion matrices to be printed in the Logs.
-
--  **max\_hit\_ratio\_k**: Specify the maximum number (top K) of
-   predictions to use for hit ratio computation. Applicable to
-   multi-class only. To disable, enter 0.
+-  **compute\_metrics**: Enable this option to compute metrics on training data. The Naïve Bayes classifier assumes independence between predictor variables conditional on the response, and a Gaussian distribution of numeric predictors with mean and standard deviation computed from the training dataset. When building a Naïve Bayes classifier, every row in the training dataset that contains at least one NA will be skipped completely. If the test dataset has missing values, then those predictors are omitted in the probability calculation during prediction.
 
 -  **max\_runtime\_secs**: Maximum allowed runtime in seconds for model
    training. Use 0 to disable.

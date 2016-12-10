@@ -3,11 +3,14 @@ package hex.deepwater;
 import hex.genmodel.GenModel;
 import water.*;
 import water.util.Log;
+import water.util.SBPrintStream;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -103,6 +106,9 @@ class DeepWaterImageIterator extends DeepWaterIterator {
         }
       } catch (IOException e) {
         Log.warn(e.getMessage());
+      } catch (NullPointerException e) {
+        e.printStackTrace();
+        // ignored: ImageIO's ICC_Profile can fail with NPEs - unclear why
       }
       tryComplete();
     }

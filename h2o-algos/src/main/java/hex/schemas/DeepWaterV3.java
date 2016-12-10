@@ -13,6 +13,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
     static public String[] fields = new String[] {
         "model_id",
         "checkpoint",
+        "autoencoder",
         "training_frame",
         "validation_frame",
         "nfolds",
@@ -24,6 +25,8 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "fold_assignment",
         "fold_column",
         "response_column",
+        "offset_column",
+        "weights_column",
         "ignored_columns",
         "score_each_iteration",
         "categorical_encoding",
@@ -57,6 +60,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         "backend",
         "image_shape",
         "channels",
+        "sparse",
         "gpu",
         "device_id",
         "network_definition_file",
@@ -123,8 +127,12 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      *  avoid printing extremely large confusion matrices.
      *  */
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = false,
-        help = "Maximum size (# classes) for confusion matrices to be printed in the Logs.")
+        help = "[Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs.")
     public int max_confusion_matrix_size;
+
+    @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
+        help = "Sparse data handling (more efficient for data with lots of 0 values).")
+    public boolean sparse;
 
     /**
      * The maximum number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)

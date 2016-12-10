@@ -128,7 +128,7 @@ final public class DeepWaterModelInfo extends Iced {
   }
 
   private ImageDataSet getImageDataSet() {
-    return new ImageDataSet(_width, _height, _channels);
+    return new ImageDataSet(_width, _height, _channels, _classes);
   }
 
   /**
@@ -185,7 +185,7 @@ final public class DeepWaterModelInfo extends Iced {
           _channels = 0;
       }
     } else if (parameters._problem_type == DeepWaterParameters.ProblemType.text) {
-      _width =100; //FIXME
+      _width =56; //FIXME
     } else {
       Log.warn("unknown problem_type:", parameters._problem_type);
       throw H2O.unimpl();
@@ -216,7 +216,7 @@ final public class DeepWaterModelInfo extends Iced {
       if (networkDef != null && !networkDef.isEmpty()) {
         File f = new File(networkDef);
         if(!f.exists() || f.isDirectory()) {
-          Log.err("Network definition file " + f + " not found.");
+          throw new RuntimeException("Network definition file " + f + " not found.");
         } else {
           Log.info("Loading the network from: " + f.getAbsolutePath());
           Log.info("Setting the optimizer and initializing the first and last layer.");
@@ -224,7 +224,7 @@ final public class DeepWaterModelInfo extends Iced {
         }
       }
 
-      if (parameters._mean_image_file != null && !parameters._mean_image_file.equals(""))
+      if (parameters._mean_image_file != null && !parameters._mean_image_file.isEmpty())
         imageDataSet.setMeanData(_backend.loadMeanImage(_model, parameters._mean_image_file));
       _meanData = imageDataSet.getMeanData();
 
@@ -232,7 +232,7 @@ final public class DeepWaterModelInfo extends Iced {
       if (networkParms != null && !networkParms.isEmpty()) {
         File f = new File(networkParms);
         if(!f.exists() || f.isDirectory()) {
-          Log.err("Parameter file " + f + " not found.");
+          throw new RuntimeException("Network parameter file " + f + " not found.");
         } else {
           Log.info("Loading the parameters (weights/biases) from: " + f.getAbsolutePath());
           assert (_model != null);
@@ -243,8 +243,7 @@ final public class DeepWaterModelInfo extends Iced {
       }
       nativeToJava(); //store initial state as early as it's created
     } catch(Throwable t) {
-      Log.err("Unable to initialize the native Deep Learning backend: " + t.getMessage());
-      throw t;
+      throw new RuntimeException("Unable to initialize the native Deep Learning backend: " + t.getMessage());
     }
   }
 

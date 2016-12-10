@@ -15,17 +15,38 @@ import os
 import re
 import sys
 
+from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
-# private static methods
 _id_ctr = 0
+
+# The set of characters allowed in frame IDs. Since frame ids are used within REST API urls, they may
+# only contain characters allowed within the "segment" part of the URL (see RFC 3986). Additionally, we
+# forbid all characters that are declared as "illegal" in Key.java.
+_id_allowed_characters = set("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~")
 
 
 def _py_tmp_key(append):
     global _id_ctr
     _id_ctr += 1
     return "py_" + str(_id_ctr) + append
+
+
+def check_frame_id(frame_id):
+    """Check that the provided frame id is valid in Rapids language."""
+    if frame_id is None:
+        return
+    if frame_id.strip() == "":
+        raise H2OValueError("Frame id cannot be an empty string: %r" % frame_id)
+    for i, ch in enumerate(frame_id):
+        # '$' character has special meaning at the beginning of the string; and prohibited anywhere else
+        if ch == "$" and i == 0: continue
+        if ch not in _id_allowed_characters:
+            raise H2OValueError("Character '%s' is illegal in frame id: %s" % (ch, frame_id))
+    if re.match(r"-?[0-9]", frame_id):
+        raise H2OValueError("Frame id cannot start with a number: %s" % frame_id)
+
 
 
 def temp_ctr():
@@ -204,6 +225,12 @@ def _locate(path):
         possible_result = os.path.join(tmp_dir, path)
 
 
+def _colmean(column):
+    """Return the mean of a single-column frame."""
+    assert column.ncols == 1
+    return column.mean(return_frame=True).flatten()
+
+
 def get_human_readable_bytes(size):
     """
     Convert given number of bytes into a human readable representation, i.e. add prefix such as kb, Mb, Gb,
@@ -290,6 +317,25 @@ def print2(msg, flush=False, end="\n"):
     """
     print(msg, end=end)
     if flush: sys.stdout.flush()
+
+
+def normalize_slice(s, total):
+    """
+    Return a "canonical" version of slice ``s``.
+
+    :param slice s: the original slice expression
+    :param total int: total number of elements in the collection sliced by ``s``
+    :return slice: a slice equivalent to ``s`` but not containing any negative indices or Nones.
+    """
+    newstart = 0 if s.start is None else max(0, s.start + total) if s.start < 0 else min(s.start, total)
+    newstop = total if s.stop is None else max(0, s.stop + total) if s.stop < 0 else min(s.stop, total)
+    newstep = 1 if s.step is None else s.step
+    return slice(newstart, newstop, newstep)
+
+
+def slice_is_normalized(s):
+    """Return True if slice ``s`` in "normalized" form."""
+    return (s.start is not None and s.stop is not None and s.step is not None and s.start <= s.stop)
 
 
 gen_header = _gen_header

@@ -5,10 +5,10 @@ import water.H2O;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.rapids.*;
+import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNum;
@@ -41,11 +41,12 @@ public class AstRectangleAssign extends AstPrimitive {
   }
 
   @Override
-  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public ValFrame apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
     Frame dst = stk.track(asts[1].exec(env)).getFrame();
     Val vsrc = stk.track(asts[2].exec(env));
+    AstParameter col_list = (AstParameter) asts[3];
     // Column selection
-    AstNumList cols_numlist = new AstNumList(asts[3].columns(dst.names()));
+    AstNumList cols_numlist = new AstNumList(col_list.columns(dst.names()));
     // Special for AstAssign: "empty" really means "all"
     if (cols_numlist.isEmpty()) cols_numlist = new AstNumList(0, dst.numCols());
     // Allow R-like number list expansion: negative column numbers mean exclusion
@@ -83,7 +84,8 @@ public class AstRectangleAssign extends AstPrimitive {
           assign_frame_scalar(dst, cols, rows, vsrc.getNum(), env._ses);
           break;
         case Val.STR:
-          throw H2O.unimpl();
+          assign_frame_scalar(dst, cols, rows, vsrc.getStr(), env._ses);
+          break;
         case Val.FRM:
           throw H2O.unimpl();
         default:
@@ -282,23 +284,83 @@ public class AstRectangleAssign extends AstPrimitive {
     }
   }
 
+  private boolean isScalarCompatible(Object scalar, Vec v) {
+    if (scalar == null)
+      return true;
+    else if (scalar instanceof Number)
+      return v.get_type() == Vec.T_NUM || v.get_type() == Vec.T_TIME;
+    else if (scalar instanceof String) {
+      if (v.get_type() == Vec.T_CAT) {
+        for (String f: v.domain()) if (f.equals(scalar)) return true;
+        return false;
+      } else
+        return v.get_type() == Vec.T_STR || (v.get_type() == Vec.T_UUID);
+    } else
+      return false;
+  }
+
   // Boolean assignment with a scalar
-  private void assign_frame_scalar(Frame dst, final int[] cols, Frame rows, final double src, Session ses) {
-    // TODO: COW without materializing vec and depending on assign_frame_frame
-    Frame src2 = new MRTask() {
-      @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk bool = cs[cs.length - 1];
-        for (int i = 0; i < cs[0]._len; ++i) {
-          int nc = 0;
-          if (bool.at8(i) == 1)
-            for (int ignored : cols) ncs[nc++].addNum(src);
-          else
-            for (int c : cols) ncs[nc++].addNum(cs[c].atd(i));
-        }
+  private void assign_frame_scalar(Frame dst, int[] cols, Frame rows, Object src, Session ses) {
+    // Bulk assign a numeric constant over a frame. Directly set columns without checking target type
+    // assuming the user just wants to overwrite everything: Copy-On-Write optimization happens here on the apply() exit.
+    // Note: this skips "scalar to Vec" compatibility check because the whole Vec is overwritten
+    Vec bool = rows.vec(0);
+    if (bool.isConst() && ((int) bool.min() == 1) && (src instanceof Number)) {
+      Vec anyVec = dst.anyVec();
+      assert anyVec != null;
+      Vec vsrc = anyVec.makeCon((double) src);
+      for (int col : cols)
+        dst.replace(col, vsrc);
+      if (dst._key != null) DKV.put(dst);
+      return;
+    }
+
+    // Make sure the scalar value is compatible with the target vector
+    for (int col: cols) {
+      if (! isScalarCompatible(src, dst.vec(col))) {
+        throw new IllegalArgumentException("Cannot assign value " + src + " into a vector of type " + dst.vec(col).get_type_str() + ".");
       }
-    }.doAll(cols.length, Vec.T_NUM, new Frame(dst).add(rows)).outputFrame();
-    assign_frame_frame(dst, cols, new AstNumList(0, dst.numRows()), src2, ses);
+    }
+
+    Vec[] vecs = ses.copyOnWrite(dst, cols);
+    Vec[] vecs2 = new Vec[cols.length]; // Just the selected columns get updated
+    for (int i = 0; i < cols.length; i++)
+      vecs2[i] = vecs[cols[i]];
+
+    ConditionalAssignTask.doAssign(vecs2, src, rows.vec(0));
+  }
+
+  private static class ConditionalAssignTask extends MRTask<ConditionalAssignTask> {
+
+    final Chunk.ValueSetter[] _setters;
+
+    ConditionalAssignTask(Vec[] vecs, Object value) {
+      _setters = new Chunk.ValueSetter[vecs.length];
+      for (int i = 0; i < _setters.length; i++) _setters[i] = Chunk.createValueSetter(vecs[i], value);
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      Chunk bool = cs[cs.length - 1];
+      for (int row = 0; row < cs[0]._len; row++) {
+        if (bool.at8(row) == 1)
+          for (int col = 0; col < cs.length - 1; col++) _setters[col].setValue(cs[col], row);
+      }
+    }
+
+    /**
+     * Sets a given value to all cells where given predicateVec is true.
+     * @param dst target Vecs
+     * @param src source Value
+     * @param predicateVec predicate Vec
+     */
+    static void doAssign(Vec[] dst, Object src, Vec predicateVec) {
+      Vec[] vecs = new Vec[dst.length + 1];
+      System.arraycopy(dst, 0, vecs, 0, dst.length);
+      vecs[vecs.length - 1] = predicateVec;
+      new ConditionalAssignTask(dst, src).doAll(vecs);
+    }
+
   }
 
   private static abstract class RowSliceTask extends MRTask<RowSliceTask> {

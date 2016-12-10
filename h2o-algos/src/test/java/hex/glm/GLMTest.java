@@ -1635,6 +1635,28 @@ public class GLMTest  extends TestUtil {
     }
   }
 
+  @Test public void testXval(){
+    GLMModel model = null;
+    Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    try{
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID"};
+      params._train = fr._key;
+      params._lambda_search = true;
+      params._nfolds = 3;
+      params._standardize = false;
+      GLM glm = new GLM(params);
+      model = glm.trainModel().get();
+    } finally {
+      fr.delete();
+      if(model != null) {
+        for(Key k:model._output._cross_validation_models)
+          Keyed.remove(k);
+        model.delete();
+      }
+    }
+  }
   /**
    * Test strong rules on arcene datasets (10k predictors, 100 rows).
    * Should be able to obtain good model (~100 predictors, ~1 explained deviance) with up to 250 active predictors.
@@ -1760,6 +1782,7 @@ public class GLMTest  extends TestUtil {
   @Test
   public void testDeviances() {
     for (Family fam : Family.values()) {
+      if(fam == Family.quasibinomial) continue;
       Frame tfr = null;
       Frame res = null;
       Frame preds = null;

@@ -10,7 +10,8 @@ This function creates a "Super Learner" (stacking) ensemble using the H2O base l
 h2o.ensemble(x, y, training_frame,  
   model_id = NULL, validation_frame = NULL,
   family = c("AUTO", "binomial", "gaussian"),
-  learner = c("h2o.glm.wrapper", "h2o.randomForest.wrapper", "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"), 
+  learner = c("h2o.glm.wrapper", "h2o.randomForest.wrapper",
+              "h2o.gbm.wrapper", "h2o.deeplearning.wrapper"), 
   metalearner = "h2o.glm.wrapper", 
   cvControl = list(V = 5, shuffle = TRUE), 
   seed = 1, parallel = "seq", 
@@ -121,15 +122,15 @@ Erin LeDell \email{erin@h2o.ai}
 
 
 \seealso{
-\code{\link[h2oEnsemble:h2o.ensemble_performance]{h2o.ensemble_performance}}, \code{\link[SuperLearner:SuperLearner]{SuperLearner}}, \code{\link[subsemble:subsemble]{subsemble}}
+\code{\link[h2oEnsemble:h2o.ensemble_performance]{h2o.ensemble_performance}}
 }
 \examples{
 \dontrun{
     
 # An example of binary classification on a local machine using h2o.ensemble
 
-library(h2oEnsemble)  # Requires version >=0.1.7 of h2oEnsemble
-localH2O <-  h2o.init(nthreads = -1)  # Start an H2O cluster with nthreads = num cores on your machine
+library(h2oEnsemble)
+localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
 
 
 # Import a sample binary outcome train/test set into R
@@ -163,8 +164,8 @@ fit <- h2o.ensemble(x = x, y = y,
 # Compute test set performance:
 perf <- h2o.ensemble_performance(fit, newdata = test)
 
-# The "perf" object has a print method, so we can print results (for the default metric) by simply typing: perf
-perf  #prints the following
+# The "perf" object has a print method, so we can print default metric by typing: perf
+perf  # prints the following
 # Base learner performance, sorted by specified metric:
 #                   learner       AUC
 # 1          h2o.glm.wrapper 0.6871334

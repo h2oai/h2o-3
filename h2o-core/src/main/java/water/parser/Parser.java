@@ -182,7 +182,10 @@ public abstract class Parser extends Iced {
     // only check header for 2nd file onward since guess setup is already done on first file.
     if ((fileIndex > 0) && (!checkFileNHeader(is, dout, din, cidx)))
       return new StreamInfo(zidx, nextChunk);  // header is bad, quit now
-    while (is.available() > 0) {
+    int streamAvailable = is.available();
+    while (streamAvailable > 0) {
+      parseChunk(cidx++, din, nextChunk);
+      streamAvailable = is.available(); // Can (also!) rollover to the next input chunk
       int xidx = bvs.read(null, 0, 0); // Back-channel read of chunk index
       if (xidx > zidx) {  // Advanced chunk index of underlying ByteVec stream?
         zidx = xidx;       // Record advancing of chunk
@@ -193,7 +196,6 @@ public abstract class Parser extends Iced {
         }
         nextChunk = nextChunk.nextChunk();
       }
-      parseChunk(cidx++, din, nextChunk);
     }
     parseChunk(cidx, din, nextChunk);
     return new StreamInfo(zidx, nextChunk);

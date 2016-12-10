@@ -116,6 +116,7 @@ public class RequestServer extends HttpServlet {
       MIME_JS = "application/javascript",
       MIME_JPEG = "image/jpeg",
       MIME_PNG = "image/png",
+      MIME_SVG = "image/svg+xml",
       MIME_GIF = "image/gif",
       MIME_WOFF = "application/x-font-woff",
       MIME_DEFAULT_BINARY = "application/octet-stream",
@@ -665,7 +666,7 @@ public class RequestServer extends HttpServlet {
 
   private static NanoResponse redirectToFlow() {
     NanoResponse res = new NanoResponse(HTTP_REDIRECT, MIME_PLAINTEXT, "");
-    res.addHeader("Location", "/flow/index.html");
+    res.addHeader("Location", H2O.ARGS.context_path + "/flow/index.html");
     return res;
   }
 
@@ -829,6 +830,7 @@ public class RequestServer extends HttpServlet {
       case "htm":case "html": mime = MIME_HTML; break;
       case "jpg":case "jpeg": mime = MIME_JPEG; break;
       case "png": mime = MIME_PNG; break;
+      case "svg": mime = MIME_SVG; break;
       case "gif": mime = MIME_GIF; break;
       case "woff": mime = MIME_WOFF; break;
       default: mime = MIME_DEFAULT_BINARY;

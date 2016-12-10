@@ -44,7 +44,7 @@ def expr_reducers():
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal max values between h2o and " \
         "numpy".format(h2o_val,num_val)
-    h2o_val = h2o_data.sum()
+    h2o_val = h2o_data.sum().sum(axis=1)[:,0]
     num_val = np.sum(np_data)
     assert abs(h2o_val - num_val) < 1e-06, \
         "check unsuccessful! h2o computed {0} and numpy computed {1}. expected equal sum values between h2o and " \

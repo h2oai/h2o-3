@@ -4,6 +4,7 @@ import water.*;
 import water.util.UnsafeUtils;
 import water.parser.BufferedString;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class CStrChunk extends Chunk {
@@ -13,25 +14,21 @@ public class CStrChunk extends Chunk {
   public boolean _isAllASCII = false;
 
   public CStrChunk() {}
-  public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] strIdx, boolean isAllASCII) {
+  public CStrChunk(int sslen, byte[] ss, int sparseLen, int idxLen, int[] id, int[] is, boolean isAllASCII) {
     _start = -1;
-    _valstart = _OFF + (idxLen<<2);
+    _valstart = idx(idxLen);
     _isAllASCII = isAllASCII;
-    set_len(idxLen);
-
-    _mem = MemoryManager.malloc1(CStrChunk._OFF + idxLen*4 + sslen, false);
-    UnsafeUtils.set4(_mem, 0, CStrChunk._OFF + idxLen * 4); // location of start of strings
-    if (_isAllASCII) UnsafeUtils.set1(_mem, 4, (byte)1); // use byte to store _isAllASCII
-    else UnsafeUtils.set1(_mem, 4, (byte)0);
-
-    for( int i = 0; i < sparseLen; ++i )
-      UnsafeUtils.set4(_mem, CStrChunk._OFF + 4*i, strIdx[i]);
-    for( int i = sparseLen; i < idxLen; ++i )  // set NAs
-      UnsafeUtils.set4(_mem, CStrChunk._OFF + 4*i, -1);
-    for( int i = 0; i < sslen; ++i )
-      _mem[CStrChunk._OFF + idxLen*4 + i] = ss[i];
+    _len = idxLen;
+    _mem = MemoryManager.malloc1(_valstart + sslen, false);
+    UnsafeUtils.set4(_mem, 0, _valstart); // location of start of strings
+    UnsafeUtils.set1(_mem, 4, (byte) (isAllASCII ? 1 : 0)); // isAllASCII flag
+    Arrays.fill(_mem,_OFF,_valstart,(byte)-1); // Indicate All Is NA's
+    for( int i = 0; i < sparseLen; ++i ) // Copy the sparse indices
+      UnsafeUtils.set4(_mem, idx(id==null ? i : id[i]), is[i]);
+    UnsafeUtils.copyMemory(ss,0,_mem,_valstart,sslen);
   }
 
+  private int idx(int i) { return _OFF+(i<<2); }
   @Override public boolean setNA_impl(int idx) { return false; }
   @Override public boolean set_impl(int idx, float f) { if (Float.isNaN(f)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public boolean set_impl(int idx, double d) { if (Double.isNaN(d)) return false; else throw new IllegalArgumentException("Operation not allowed on string vector.");}
@@ -39,14 +36,14 @@ public class CStrChunk extends Chunk {
   @Override public boolean set_impl(int idx, String str) { return false; }
 
   @Override public boolean isNA_impl(int idx) {
-    int off = UnsafeUtils.get4(_mem,(idx<<2)+_OFF);
+    int off = UnsafeUtils.get4(_mem,idx(idx));
     return off == NA;
   }
 
   @Override public long at8_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public double atd_impl(int idx) { throw new IllegalArgumentException("Operation not allowed on string vector.");}
   @Override public BufferedString atStr_impl(BufferedString bStr, int idx) {
-    int off = UnsafeUtils.get4(_mem,(idx<<2)+_OFF);
+    int off = UnsafeUtils.get4(_mem,idx(idx));
     if( off == NA ) return null;
     int len = 0;
     while( _mem[_valstart+off+len] != 0 ) len++;
@@ -65,7 +62,7 @@ public class CStrChunk extends Chunk {
     nc._isAllASCII = _isAllASCII;
     int [] ids = nc.alloc_str_indices(_len);
     for( int i = 0; i < _len; i++ )
-      ids[i] = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+      ids[i] = UnsafeUtils.get4(_mem,idx(i));
     nc._sslen = _mem.length - _valstart;
     nc._ss = MemoryManager.malloc1(nc._sslen);
     System.arraycopy(_mem,_valstart,nc._ss,0,nc._sslen);
@@ -131,7 +128,7 @@ public class CStrChunk extends Chunk {
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
       int j = 0;
-      int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+      int off = UnsafeUtils.get4(_mem,idx(i));
       if (off != NA) {
         //UTF chars will appear as negative values. In Java spec, space is any char 0x20 and lower
         while( _mem[_valstart+off+j] > 0 && _mem[_valstart+off+j] < 0x21) j++;
@@ -163,7 +160,7 @@ public class CStrChunk extends Chunk {
     
     //update offsets and byte array
     for (int i = 0; i < _len; i++) {
-      int off = UnsafeUtils.get4(_mem, (i << 2) + _OFF);
+      int off = UnsafeUtils.get4(_mem, idx(i));
       if (off != NA) {
         int len = 0;
         while (_mem[_valstart + off + len] != 0) len++; //Find length
@@ -190,7 +187,7 @@ public class CStrChunk extends Chunk {
     nc.alloc_exponent(_len); // sadly, a waste
     // fill in lengths
     for(int i=0; i < _len; i++) {
-      int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+      int off = UnsafeUtils.get4(_mem,idx(i));
       int len = 0;
       if (off != NA) {
         while (_mem[_valstart + off + len] != 0) len++;
@@ -203,7 +200,7 @@ public class CStrChunk extends Chunk {
   public NewChunk asciiEntropy(NewChunk nc) {
     nc.alloc_doubles(_len);
     for (int i = 0; i < _len; i++) {
-      int off = UnsafeUtils.get4(_mem, (i << 2) + _OFF);
+      int off = UnsafeUtils.get4(_mem, idx(i));
       if (off != NA) {
         HashMap<Byte, Integer> freq = new HashMap<>();
         int j = 0;
@@ -241,7 +238,7 @@ public class CStrChunk extends Chunk {
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
       int j = 0;
-      int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+      int off = UnsafeUtils.get4(_mem,idx(i));
       if (off != NA) {
         while( intersects(_mem[_valstart + off + j], set) ) j++;
         if (j > 0) nc.set_is(i,off + j);
@@ -256,7 +253,7 @@ public class CStrChunk extends Chunk {
     //update offsets and byte array
     for(int i=0; i < _len; i++) {
       int j = 0;
-      int off = UnsafeUtils.get4(_mem,(i<<2)+_OFF);
+      int off = UnsafeUtils.get4(_mem,idx(i));
       if (off != NA) {
         while( _mem[_valstart+off+j] != 0 ) j++; //Find end
         j--;

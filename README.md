@@ -18,6 +18,7 @@ Data collection is easy. Decision making is hard. H2O makes it fast and easy to 
 * [Building H2O on Hadoop](#BuildingHadoop)
 * [Sparkling Water](#Sparkling)
 * [Documentation](#Documentation)
+* [Citing H2O](#Citing)
 * [Community](#Community) / [Advisors](#Advisors) / [Investors](#Investors)
 
 <a name="Downloading"></a>
@@ -611,8 +612,46 @@ Documentation for each bleeding edge nightly build is available on the [nightly 
 
 -----
 
+<a name="Citing"></a>
+## 9. Citing H2O
+
+If you use H2O as part of your workflow, please cite your H2O resource(s) using the following BibTex entry:
+
+### H2O Software
+
+	@Manual{h2o_package_or_module,
+	    title = {package_or_module_title},
+	    author = {The H2O.ai team},
+	    year = {year},
+	    month = {month},
+	    note = {version_information},
+	    url = {resource_url},
+	}
+
+**Formatted H2O Software citation examples**:
+
+The H2O.ai team (Oct. 2016). _Python Interface for H2O_, Python package version 3.10.0.8. [https://github.com/h2oai/h2o-3].
+
+### H2O Booklets
+
+	@Manual{h2o_booklet_name,
+	    title = {booklet_title},
+	    author = {list_of_authors},
+	    year = {year},
+	    month = {month},
+	    url = {link_url},
+	}
+
+**Formatted booklet citation examples**:
+
+Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Deep Learning with H2O_. [http://h2o.ai/resources]. 
+
+Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. [http://h2o.ai/resources]. 
+
+-----
+
 <a name="Community"></a>
-## 9. Community
+## 10. Community
 
 We will breathe & sustain a vibrant community with the focus of taking a software engineering approach to data science and empowering everyone interested in data to be able to hack data using math and algorithms.
 Join us on google groups at [h2ostream](https://groups.google.com/forum/#!forum/h2ostream) and feel free to file issues directly on our [JIRA](http://jira.h2o.ai). 

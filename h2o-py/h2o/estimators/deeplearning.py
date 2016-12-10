@@ -264,7 +264,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def max_confusion_matrix_size(self):
-        """int: Maximum size (# classes) for confusion matrices to be printed in the Logs. (Default: 20)"""
+        """
+        int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs. (Default: 20)
+        """
         return self._parms.get("max_confusion_matrix_size")
 
     @max_confusion_matrix_size.setter
@@ -597,7 +599,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def max_w2(self):
-        """float: Constraint for squared sum of incoming weights per unit (e.g. for Rectifier). (Default: ∞)"""
+        """
+        float: Constraint for squared sum of incoming weights per unit (e.g. for Rectifier). (Default: 3.4028235e+38)
+        """
         return self._parms.get("max_w2")
 
     @max_w2.setter
@@ -805,7 +809,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def stopping_metric(self):
         """
-        Enum["auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification",
+        Enum["auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification",
         "mean_per_class_error"]: Metric to use for early stopping (AUTO: logloss for classification, deviance for
         regression) (Default: "auto")
         """
@@ -813,7 +817,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "auc", "lift_top_group", "r2", "misclassification", "mean_per_class_error"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "mean_per_class_error"))
         self._parms["stopping_metric"] = stopping_metric
 
 

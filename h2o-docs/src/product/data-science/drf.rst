@@ -31,23 +31,42 @@ applicable to cases with observation weights or for cross-validation.
 Defining a DRF Model
 ~~~~~~~~~~~~~~~~~~~~
 
--  **model\_id**: (Optional) Specify a custom name for the model to use as
+-  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as
    a reference. By default, H2O automatically generates a destination
    key.
 
--  **training\_frame**: (Required) Specify the dataset used to build the
+-  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the
    model. **NOTE**: In Flow, if you click the **Build a model** button from the
    ``Parse`` cell, the training frame is entered automatically.
 
--  **validation\_frame**: (Optional) Specify the dataset used to evaluate
+-  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
--  **nfolds**: Specify the number of folds for cross-validation.
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
 
--  **response\_column**: (Required) Specify the column to use as the
+-  `y <algo-params/y.html>`__: (Required) Specify the column to use as the
    independent variable. The data can be numeric or categorical.
 
--  **Ignored\_columns**: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation prediction.
+
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
+
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Enable this option to score
+   during each iteration of the model training.
+
+-  `score_tree_interval <algo-params/score_tree_interval.html>`__: Score the model after every so many trees.
+   Disabled if set to 0.
+
+-  `fold_assignment <algo-params/fold_assignment.html>`_-: (Applicable only if a value for **nfolds** is
+   specified and **fold\_column** is not specified) Specify the
+   cross-validation fold assignment scheme. The available options are
+   AUTO (which is Random), Random, 
+   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+
+-  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the
+   cross-validation fold index assignment per observation.
+
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column
    name to add it to the list of columns excluded from the model. To add
    all columns, click the **All** button. To remove a column from the
    list of ignored columns, click the X next to the column name. To
@@ -59,74 +78,15 @@ Defining a DRF Model
    values** field. To change the selections for the hidden columns, use
    the **Select Visible** or **Deselect Visible** buttons.
 
--  **ignore\_const\_cols**: Specify whether to ignore constant
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant
    training columns, since no information can be gained from them. This
    option is enabled by default.
 
--  **ntrees**: Specify the number of trees.
-
--  **max\_depth**: Specify the maximum tree depth.
-
--  **min\_rows**: Specify the minimum number of observations for a leaf
-   (``nodesize`` in R).
-
--  **nbins**: (Numerical/real/int only) Specify the number of bins for
-   the histogram to build, then split at the best point.
-
--  **nbins\_cats**: (Categorical/enums only) Specify the maximum number
-   of bins for the histogram to build, then split at the best point.
-   Higher values can lead to more overfitting. The levels are ordered
-   alphabetically; if there are more levels than bins, adjacent levels
-   share bins. This value has a more significant impact on model fitness
-   than **nbins**. Larger values may increase runtime, especially for
-   deep trees and large clusters, so tuning may be required to find the
-   optimal value for your configuration.
-
--  **seed**: Specify the random number generator (RNG) seed for
-   algorithm components dependent on randomization. The seed is
-   consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations.
-
--  **mtries**: Specify the columns to randomly select at each level. If
-   the default value of ``-1`` is used, the number of variables is the
-   square root of the number of columns for classification and p/3 for
-   regression (where p is the number of predictors). The range is -1 to
-   >=1.
-
--  **sample\_rate**: Specify the row sampling rate (x-axis). The range
-   is 0.0 to 1.0. Higher values may improve training accuracy. Test
-   accuracy improves when either columns or rows are sampled. For
-   details, refer to "Stochastic Gradient Boosting" (`Friedman,
-   1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
-
--  **sample\_rate\_per\_class**: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. If this option is specified along with **sample_rate**, then only the first option that DRF encounters will be used.
-
--  **col\_sample\_rate**: Specify the column sampling rate (y-axis). The
-   range is 0.0 to 1.0. Higher values may improve training accuracy.
-   Test accuracy improves when either columns or rows are sampled. For
-   details, refer to "Stochastic Gradient Boosting" (`Friedman,
-   1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
-
--  **score\_each\_iteration**: (Optional) Enable this option to score
-   during each iteration of the model training.
-
--  **score\_tree\_interval**: Score the model after every so many trees.
-   Disabled if set to 0.
-
--  **fold\_assignment**: (Applicable only if a value for **nfolds** is
-   specified and **fold\_column** is not specified) Specify the
-   cross-validation fold assignment scheme. The available options are
-   AUTO (which is Random), Random, 
-   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
-
--  **fold\_column**: Specify the column that contains the
-   cross-validation fold index assignment per observation.
-
--  **offset\_column**: Specify a column to use as the offset. 
+-  `offset_column <algo-params/offset_column.html>`__: Specify a column to use as the offset. 
 
     **Note**: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
--  **weights\_column**: Specify a column to use for the observation
+-  `weights_column <algo-params/weights_column.html>`__: Specify a column to use for the observation
    weights, which are used for bias correction. The specified
    ``weights_column`` must be included in the specified
    ``training_frame``. 
@@ -135,87 +95,130 @@ Defining a DRF Model
     
    | **Note**: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
--  **balance\_classes**: Oversample the minority classes to balance the
+-  `balance_classes <algo-params/balance_classes.html>`__: Oversample the minority classes to balance the
    class distribution. This option is not enabled by default and can
    increase the data frame size. This option is only applicable for
    classification.
 
--  **max\_confusion\_matrix\_size**: Specify the maximum size (in number
-   of classes) for confusion matrices to be printed in the Logs.
+-  `class_sampling_factors <algo-params/class_sampling_factors.html>`__: Specify the per-class (in
+   lexicographical order) over/under-sampling ratios. By default, these
+   ratios are automatically computed during training to obtain the class
+   balance.
 
--  **max\_hit\_ratio\_k**: Specify the maximum number (top K) of
+-  `max_after_balance_size <algo-params/max_after_balance_size.html>`__: Specify the maximum relative size of
+   the training data after balancing class counts (**balance\_classes**
+   must be enabled). The value can be less than 1.0.
+
+-  `max_hit_ratio_k <algo-params/max_hit_ratio_k.html>`__: Specify the maximum number (top K) of
    predictions to use for hit ratio computation. Applicable to
    multi-class only. To disable, enter 0.
 
--  **r2\_stopping**: Specify a threshold for the coefficient of
-   determination :math:`(r^2)` metric value. When this threshold is met or
-   exceeded, H2O stops making trees.
+-  `ntrees <algo-params/ntrees.html>`__: Specify the number of trees.
 
--  **stopping\_rounds**: Stops training when the option selected for
+-  `max_depth <algo-params/max_depth.html>`__: Specify the maximum tree depth.
+
+-  `min_rows <algo-params/min_rows.html>`__: Specify the minimum number of observations for a leaf
+   (``nodesize`` in R).
+
+-  `nbins <algo-params/nbins.html>`__: (Numerical/real/int only) Specify the number of bins for
+   the histogram to build, then split at the best point.
+
+-  `nbins_top_level <algo-params/nbins_top_level.html>`__: (For numerical/real/int columns only) Specify
+   the minimum number of bins at the root level to use to build the
+   histogram. This number will then be decreased by a factor of two per
+   level.
+
+-  `nbins_cats <algo-params/nbins_cats.html>`__: (Categorical/enums only) Specify the maximum number
+   of bins for the histogram to build, then split at the best point.
+   Higher values can lead to more overfitting. The levels are ordered
+   alphabetically; if there are more levels than bins, adjacent levels
+   share bins. This value has a more significant impact on model fitness
+   than **nbins**. Larger values may increase runtime, especially for
+   deep trees and large clusters, so tuning may be required to find the
+   optimal value for your configuration.
+
+-  **r2\_stopping**: ``r2_stopping`` is no longer supported and will be ignored if set - please use ``stopping_rounds``, ``stopping_metric``, and ``stopping_tolerance`` instead.
+
+-  `stopping_rounds <algo-params/stopping_rounds.html>`_-: Stops training when the option selected for
    **stopping\_metric** doesn't improve for the specified number of
    training rounds, based on a simple moving average. To disable this
    feature, specify ``0``. The metric is computed on the validation data
-   (if provided); otherwise, training data is used. When used with
-   **overwrite\_with\_best\_model**, the final model is the best model
-   generated for the given **stopping\_metric** option. 
+   (if provided); otherwise, training data is used. 
    
-     **Note**: If cross-validation is enabled:
+   **Note**: If cross-validation is enabled:
 
-     1. All cross-validation models stop training when the validation metric doesn't improve.
-     2. The main model runs for the mean number of epochs.
-     3. N+1 models do *not* use **overwrite\_with\_best\_model**
-     4. N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
+    - All cross-validation models stop training when the validation metric doesn't improve.
+    - The main model runs for the mean number of epochs.
+    - N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
--  **stopping\_metric**: Specify the metric to use for early stopping.
+-  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
 
-   -  **AUTO**: Logloss for classification, deviance for regression
-   -  **deviance**
-   -  **logloss**
-   -  **MSE**
-   -  **AUC**
-   -  **r2**
-   -  **misclassification**
+   - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+   - ``deviance``
+   - ``logloss``
+   - ``MSE``
+   - ``AUC``
+   - ``lift_top_group``
+   - ``misclassification``
+   - ``mean_per_class_error``
 
--  **stopping\_tolerance**: Specify the relative tolerance for the
+-  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
    than this value.
 
--  **max\_runtime\_secs**: Maximum allowed runtime in seconds for model
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
    training. Use 0 to disable.
 
--  **build\_tree\_one\_node**: To run on a single node, check this
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for
+   algorithm components dependent on randomization. The seed is
+   consistent for each H2O instance so that you can create models with
+   the same starting conditions in alternative configurations.
+
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: To run on a single node, check this
    checkbox. This is suitable for small datasets as there is no network
    overhead but fewer CPUs are used.
 
--  **binomial\_double\_trees**: (Binary classification only) Build twice
+-  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If
+   the default value of ``-1`` is used, the number of variables is the
+   square root of the number of columns for classification and p/3 for
+   regression (where p is the number of predictors). The range is -1 to
+   >=1.
+
+-  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). The range
+   is 0.0 to 1.0. Higher values may improve training accuracy. Test
+   accuracy improves when either columns or rows are sampled. For
+   details, refer to "Stochastic Gradient Boosting" (`Friedman,
+   1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
+
+-  `sample_rate_per_class <algo-params/sample_rate_per_class.html>`__: When building models from imbalanced datasets, this option specifies that each tree in the ensemble should sample from the full training dataset using a per-class-specific sampling rate rather than a global sample factor (as with `sample_rate`). The range for this option is 0.0 to 1.0. If this option is specified along with **sample_rate**, then only the first option that DRF encounters will be used.
+
+-  `binomial_double_trees <algo-params/binomial_double_trees.html>`__: (Binary classification only) Build twice
    as many trees (one per class). Enabling this option can lead to
    higher accuracy, while disabling can result in faster model building.
    This option is disabled by default.
 
--  **checkpoint**: Enter a model key associated with a
+-  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
    previously-trained model. Use this option to build a new model as a
    continuation of a previously-generated model.
 
--  **col\_sample\_rate\_change\_per\_level**: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
+-  `col_sample_rate_change_per_level <algo-params/col_sample_rate_change_per_level.html>`__: This option specifies to change the column sampling rate as a function of the depth in the tree. For example:
 
-	 level 1: **col\_sample_rate**
-	
-	 level 2: **col\_sample_rate** * **factor**
-	
-	 level 3: **col\_sample_rate** * **factor^2**
-	
-	 level 4: **col\_sample_rate** * **factor^3**
-	
-	 etc.
+   level 1: **col\_sample_rate**
+  
+   level 2: **col\_sample_rate** * **factor**
+  
+   level 3: **col\_sample_rate** * **factor^2**
+  
+   level 4: **col\_sample_rate** * **factor^3**
+  
+   etc.
 
--  **col\_sample\_rate\_per\_tree**: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0.
+-  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__: Specify the column sample rate per tree. This can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
 
--  **min\_split\_improvement**: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
+-  `min_split_improvement <algo-params/min_split_improvement.html>`__: The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range.
 
-- **random\_split_points**: By default DRF bins from min...max in steps of (max-min)/N. When this option is enabled, DRF will instead sample N-1 points from min...max and use the sorted list of those for split finding.
-
--  **histogram_type**: By default (AUTO) DRF bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
+-  `histogram_type <algo-params/histogram_type.html>`__: By default (AUTO) DRF bins from min...max in steps of (max-min)/N. Random split points or quantile-based split points can be selected as well. RoundRobin can be specified to cycle through all histogram types (one per tree). Use this option to specify the type of histogram to use for finding optimal split points:
 
 	- AUTO
 	- UniformAdaptive
@@ -225,32 +228,13 @@ Defining a DRF Model
 
     **Note**: H2O supports extremely randomized trees via ``histogram_type="Random"``. In extremely randomized trees (Extra-Trees), randomness goes one step further in the way splits are computed. As in Random Forests, a random subset of candidate features is used, but instead of looking for the best split, thresholds (for the split) are drawn at random for each candidate feature, and the best of these randomly-generated thresholds is picked as the splitting rule. This usually allows to reduce the variance of the model a bit more, at the expense of a slightly greater increase in bias.
 
-- **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
+- `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
   - ``auto``: Allow the algorithm to decide (default)
   - ``enum``: 1 column per categorical feature
   - ``one_hot_explicit``: N+1 new columns for categorical features with N levels
   - ``binary``: No more than 32 columns per categorical feature
   - ``eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
-
--  **keep\_cross\_validation\_predictions**: Enable this option to keep the
-   cross-validation prediction.
-
--  **keep\_cross\_validation\_fold\_assignment**: Enable this option to preserve the cross-validation fold assignment.
-
--  **class\_sampling\_factors**: Specify the per-class (in
-   lexicographical order) over/under-sampling ratios. By default, these
-   ratios are automatically computed during training to obtain the class
-   balance.
-
--  **max\_after\_balance\_size**: Specify the maximum relative size of
-   the training data after balancing class counts (**balance\_classes**
-   must be enabled). The value can be less than 1.0.
-
--  **nbins\_top\_level**: (For numerical/real/int columns only) Specify
-   the minimum number of bins at the root level to use to build the
-   histogram. This number will then be decreased by a factor of two per
-   level.
 
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -334,15 +318,17 @@ FAQ
 
   For an example model using:
 
-   - 100 columns
-   - ``col_sample_rate_per_tree`` is 0.602
-   - ``mtries`` is -1 or 7 (refers to the number of active predictor columns for the dataset)
+  - 100 columns
+  - ``col_sample_rate_per_tree`` is 0.602
+  - ``mtries`` is -1 or 7 (refers to the number of active predictor columns for the dataset)
 
-  For each tree, the floor is used to determine the number - for this example, (0.602\*100)=60 out of the 100 ()of columns that are randomly picked. For classification cases where ``mtries=-1``, the square root ()for this example, (100)=10 columns) are then randomly chosen for each split decision (out of the total 60).
+  For each tree, the floor is used to determine the number of columns that are randomly picked (for this example, (0.602*100)=60 out of the 100 columns). 
 
-  For regression, the floor ()in this example, (100/3)=33 columns) is used for each split by default. If ``mtries=7``, then 7 columns are picked for each split decision (out of the 60).
+  For classification cases where ``mtries=-1``, the square root is randomly chosen for each split decision (out of the total 60 - for this example, (:math:`\sqrt{100}` = 10 columns).
 
-  ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there's only one column left for each split, regardless of how large the value for ``mtries`` is.
+  For regression, the floor  is used for each split by default (in this example, (100/3)=33 columns). If ``mtries=7``, then 7 columns are picked for each split decision (out of the 60).
+
+  ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there’s only one column left for each split, regardless of how large the value for ``mtries`` is.
 
 -  **Why does performance appear slower in DRF than in GBM?**
 

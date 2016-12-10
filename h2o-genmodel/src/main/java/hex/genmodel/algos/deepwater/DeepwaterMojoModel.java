@@ -81,7 +81,8 @@ public class DeepwaterMojoModel extends MojoModel {
   static public BackendTrain createDeepWaterBackend(String backend) {
     try {
       if (backend.equals("mxnet"))      backend="deepwater.backends.mxnet.MXNetBackend";
-      if (backend.equals("tensorflow")) backend="deepwater.backends.tensorflow.TensorFlowBackend";
+      if (backend.equals("tensorflow")) backend="deepwater.backends.tensorflow.TensorflowBackend";
+      if (backend.equals("caffe")) backend="deepwater.backends.caffe.CaffeBackend";
       return (BackendTrain)(Class.forName(backend).newInstance());
     } catch (Exception ignored) {}
     return null;

@@ -14,8 +14,11 @@ def pyunit_as_data_frame():
   ##use_pandas = False
   small_bike_list = smallbike.as_data_frame(use_pandas=False)
   assert isinstance(small_bike_list, list)
-  assert len(small_bike_list[0]) == smallbike.ncol 
+  assert len(small_bike_list[0]) == smallbike.ncol
   assert len(small_bike_list) == smallbike.nrow + 1 #one extra for header
+
+  smallbike_noheader = smallbike.as_data_frame(use_pandas=False, header=False)
+  assert len(smallbike_noheader) == smallbike.nrow
 
   head_small_bike = smallbike.head(rows=5, cols=2)
   tail_small_bike = smallbike.tail(rows=5, cols=2)

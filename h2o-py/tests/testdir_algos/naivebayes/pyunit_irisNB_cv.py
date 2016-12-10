@@ -19,12 +19,12 @@ def nb_iris():
   iris_nbayes.train(x=list(range(4)), y=4, training_frame=iris, validation_frame=iris)
   iris_nbayes.show()
 
-  iris_nbayes = H2ONaiveBayesEstimator(nfolds=3)
-  iris_nbayes.train(x=list(range(4)), y=4, training_frame=iris, validation_frame=iris, seed=1234)
+  iris_nbayes = H2ONaiveBayesEstimator(nfolds=3, seed=1234)
+  iris_nbayes.train(x=list(range(4)), y=4, training_frame=iris, validation_frame=iris)
   iris_nbayes.show()
 
-  iris_nbayes = H2ONaiveBayesEstimator(nfolds=3)
-  iris_nbayes.train(x=list(range(4)), y=4, training_frame=iris, seed=1234)
+  iris_nbayes = H2ONaiveBayesEstimator(nfolds=3, seed=1234)
+  iris_nbayes.train(x=list(range(4)), y=4, training_frame=iris)
   iris_nbayes.show()
 
   iris_nbayes = H2ONaiveBayesEstimator(nfolds=3,fold_assignment="Modulo")

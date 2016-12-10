@@ -973,7 +973,7 @@ types.
 -  **fold\_column**: (GLM, GBM, DL, DRF, K-Means) Select the column that
    contains the cross-validation fold index assignment per observation.
 
--  **offset\_column**: (GLM, DRF, GBM) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
+-  **offset\_column**: (GLM, DRF, GBM, DL) Select a column to use as the offset. *Note*: Offsets are per-row "bias values" that are used during model training. For Gaussian distributions, they can be seen as simple corrections to the response (y) column. Instead of learning to predict the response (y-row), the model learns to predict the (row) offset of the response column. For other distributions, the offset corrections are applied in the linearized space before applying the inverse link function to get the actual response values. For more information, refer to the following `link <http://www.idg.pl/mirrors/CRAN/web/packages/gbm/vignettes/gbm.pdf>`__.
 
 -  **weights\_column**: (GLM, DL, DRF, GBM) Select a column to use for the observation weights. The specified ``weights_column`` must be included in the specified ``training_frame``. *Python only*: To use a weights column when passing an H2OFrame to ``x`` instead of a list of column names, the specified ``training_frame`` must contain the specified ``weights_column``. *Note*: Weights are per-row observation weights and do not increase the size of the data frame. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
@@ -1453,10 +1453,36 @@ response (or vice versa).
    :alt: Standardized Coefficient Magnitudes
 
 
-To learn how to make predictions, continue to the next section.
-
 --------------
 
+Partial Dependence Plots
+------------------------
+
+For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). 
+
+**Note**: The outputted PDPs include the top 10 most important features in a model. 
+
+Viewing Partial Dependence Plots
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+1. To view a PDP for a model, click the Score dropdown at the top of the Flow UI, then select Partial Dependence Plots. 
+
+ .. figure:: images/score_pdp_menu.png
+    :alt: Score > Partial Dependence Plot...
+
+2. Specify the Model and Frame that you want to use to retrieve the plots, and specify the number of bins (levels that PDP will compute). Note that more levels will result in slower speeds. Click **Compute** when you are done.
+
+ **Note**: Be sure to specify the dataframe that was used to build the selected model.
+
+ .. figure:: images/compute_pdp.png
+    :alt: Compute Partial Dependence
+
+3. After the job is finished, click **View** to see the plots.
+
+ .. figure:: images/pdp_summary.png
+    :alt: Partial Dependence Summary
+
+--------------
 
 Predictions
 -----------

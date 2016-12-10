@@ -18,13 +18,13 @@ def cv_cars_dl():
 
   # pick the predictors and the correct response column
   predictors = ["displacement","power","weight","acceleration","year"]
-  if problem == 1   :
+  if problem == 1:
     response_col = "economy_20mpg"
     cars[response_col] = cars[response_col].asfactor()
-  elif problem == 2 :
+  elif problem == 2:
     response_col = "cylinders"
     cars[response_col] = cars[response_col].asfactor()
-  else              :
+  else:
     response_col = "economy"
 
   print("Response column: {0}".format(response_col))
@@ -100,8 +100,8 @@ def cv_cars_dl():
 
   # 3. fold_column and nfolds both specified
   try:
-    dl = H2ODeepLearningEstimator(nfolds=3)
-    dl.train(x=predictors, y=response_col, fold_column="fold_assignments", training_frame=cars, hidden=[20,20],epochs=10)
+    dl = H2ODeepLearningEstimator(nfolds=3, hidden=[20, 20], epochs=10)
+    dl.train(x=predictors, y=response_col, fold_column="fold_assignments", training_frame=cars)
     assert False, "Expected model-build to fail when fold_column and nfolds both specified"
   except EnvironmentError:
     assert True

@@ -8,13 +8,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.FrameUtils;
 
 import java.util.Arrays;
 
 public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.AggregatorParameters,AggregatorModel.AggregatorOutput> implements Model.ExemplarMembers {
-
-  @Override public boolean havePojo() { return false; }
-  @Override public boolean haveMojo() { return false; }
 
   @Override
   public ToEigenVec getToEigenVec() {
@@ -57,7 +55,8 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
 
   @Override
   protected Futures remove_impl(Futures fs) {
-    _exemplar_assignment_vec_key.remove();
+    if (_exemplar_assignment_vec_key!=null)
+      _exemplar_assignment_vec_key.remove();
     return super.remove_impl(fs);
   }
 
@@ -95,6 +94,7 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     Frame ff = new Frame(orig.names(), orig.vecs());
     ff.add("predicate", booleanCol);
     Frame res = new Frame.DeepSelect().doAll(orig.types(),ff).outputFrame(destination_key, orig.names(), orig.domains());
+    FrameUtils.shrinkDomainsToObservedSubset(res);
     booleanCol.remove();
     assert(res.numRows()==_exemplars.length);
 
@@ -125,6 +125,8 @@ public class AggregatorModel extends Model<AggregatorModel,AggregatorModel.Aggre
     Frame ff = new Frame(orig.names(), orig.vecs());
     ff.add("predicate", booleanCol);
     Frame res = new Frame.DeepSelect().doAll(orig.types(),ff).outputFrame(destination_key, orig.names(), orig.domains());
+    FrameUtils.shrinkDomainsToObservedSubset(res);
+    DKV.put(res);
     assert(res.numRows()==_counts[exemplarIdx]);
     booleanCol.remove();
     return res;

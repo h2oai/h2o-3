@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.ConfusionMatrix;
-import hex.Distribution;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
 import hex.genmodel.utils.DistributionFamily;
@@ -74,7 +73,7 @@ public class DeepLearningProstateTest extends TestUtil {
                 DeepLearningParameters.Loss.Automatic,
                 DeepLearningParameters.Loss.CrossEntropy,
                 DeepLearningParameters.Loss.Huber,
-                DeepLearningParameters.Loss.ModifiedHuber,
+//                DeepLearningParameters.Loss.ModifiedHuber,
                 DeepLearningParameters.Loss.Absolute,
                 DeepLearningParameters.Loss.Quadratic
             }) {
@@ -84,7 +83,7 @@ public class DeepLearningProstateTest extends TestUtil {
                   DistributionFamily.AUTO,
                   DistributionFamily.laplace,
                   DistributionFamily.huber,
-                  DistributionFamily.modified_huber,
+//                  DistributionFamily.modified_huber,
                   DistributionFamily.bernoulli,
                   DistributionFamily.gaussian,
                   DistributionFamily.poisson,
@@ -412,7 +411,7 @@ public class DeepLearningProstateTest extends TestUtil {
 
                                                   // confirm that orig CM was made with the right threshold
                                                   // manually make labels with AUC-given default threshold
-                                                  String ast = "pred (> ( pred [2])" + threshold +")";
+                                                  String ast = "(as.factor (> (cols pred [2]) " + threshold + "))";
                                                   Frame tmp = Rapids.exec(ast).getFrame();
                                                   pred2labels = tmp.vecs()[0];
                                                   cm = buildCM(labels, pred2labels);
@@ -441,7 +440,11 @@ public class DeepLearningProstateTest extends TestUtil {
                                             System.err.println(ex);
                                             throw H2O.fail("should not get here");
                                           } catch (RuntimeException t) {
-                                            Assert.assertTrue(t.getMessage().contains("unstable") || (t.getCause() != null && t.getCause().getMessage().contains("unstable")));
+                                            String msg = "" + t.getMessage() + // this way we evade null messages
+                                                (t.getCause() == null ? "" : t.getCause().getMessage());
+                                            Assert.assertTrue("Unexpected exception " + t + ": " + msg, msg.contains("unstable"));
+                                          } catch (AssertionError ae) {
+                                            throw ae; // test assertions should be preserved
                                           } catch (Throwable t) {
                                             t.printStackTrace();
                                             throw new RuntimeException(t);
