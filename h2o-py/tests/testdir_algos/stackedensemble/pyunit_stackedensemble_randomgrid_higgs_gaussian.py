@@ -10,7 +10,7 @@ from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
 from tests import pyunit_utils
 
 
-def stackedensemble_randomgrid_binomial():
+def stackedensemble_randomgrid_gaussian():
   
   # Import train and test datasets
   train = h2o.import_file(path=pyunit_utils.locate("smalldata/testng/higgs_train_5k.csv"), destination_frame="higgs_train_5k")
@@ -65,8 +65,8 @@ def stackedensemble_randomgrid_binomial():
   print("preditions for ensemble are in: " + predictions.frame_id)
 
 if __name__ == "__main__":
-  pyunit_utils.standalone_test(stackedensemble_randomgrid_binomial)
+  pyunit_utils.standalone_test(stackedensemble_randomgrid_gaussian)
 else:
-  stackedensemble_randomgrid_binomial()
+  stackedensemble_randomgrid_gaussian()
   
 
