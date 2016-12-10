@@ -40,6 +40,11 @@ def airline_gbm_random_grid():
     predictions = stacker.predict(air_hex)  # training data
     print("Predictions for ensemble are in: " + predictions.frame_id)
 
+    # Check that the model can be retrieved
+    modelcopy = h2o.get_model(stacker.model_id)
+    assert modelcopy is not None
+
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(airline_gbm_random_grid)
 else:
