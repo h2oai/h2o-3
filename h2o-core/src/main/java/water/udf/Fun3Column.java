@@ -4,6 +4,7 @@ import water.fvec.Chunk;
 import water.fvec.RawChunk;
 import water.fvec.Vec;
 import water.udf.fp.Function3;
+import water.udf.fp.Functions;
 
 /**
  * This column depends on three other columns
@@ -77,7 +78,7 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
     if (this == o) return true;
     if (o instanceof Fun3Column) {
       Fun3Column other = (Fun3Column) o;
-      return equal(f, other.f) && xs.equals(other.xs);
+      return Functions.equal(f, other.f) && xs.equals(other.xs);
     }
     return false;
 
@@ -85,7 +86,7 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
 
   @Override
   public int hashCode() {
-    return 61 * xs.hashCode() + hashCode(f);
+    return 61 * xs.hashCode() + Functions.hashCode(f);
   }
 
   @Override public String toString() { return "Fun3Column(" + f.getClass().getSimpleName() + "," + xs + "," + ys+ "," + zs + ")"; }

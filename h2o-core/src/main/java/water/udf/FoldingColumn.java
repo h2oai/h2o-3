@@ -5,6 +5,7 @@ import water.fvec.Chunk;
 import water.fvec.RawChunk;
 import water.fvec.Vec;
 import water.udf.fp.Foldable;
+import water.udf.fp.Functions;
 
 import java.util.*;
 
@@ -99,7 +100,7 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     if (this == o) return true;
     if (o instanceof FoldingColumn) {
       FoldingColumn other = (FoldingColumn) o;
-      return equal(f, other.f) && Arrays.equals(columns, other.columns);
+      return Functions.equal(f, other.f) && Arrays.equals(columns, other.columns);
     }
     return false;
 
@@ -107,6 +108,6 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
 
   @Override
   public int hashCode() {
-    return 61 * Arrays.hashCode(columns) + hashCode(f);
+    return 61 * Arrays.hashCode(columns) + Functions.hashCode(f);
   }
 }

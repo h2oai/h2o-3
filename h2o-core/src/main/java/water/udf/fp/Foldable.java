@@ -12,7 +12,7 @@ package water.udf.fp;
  * 
  * @see <a href="https://en.wikipedia.org/wiki/Fold_(higher-order_function)">wikipedia</a> for details.
  */
-public interface Foldable<X, Y> extends JustCode {
+public interface Foldable<X, Y> extends Code {
   Y initial();
   Y apply(Y y, X x);
 }

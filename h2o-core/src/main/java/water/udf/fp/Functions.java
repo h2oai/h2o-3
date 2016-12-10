@@ -91,4 +91,12 @@ public class Functions {
       public T apply(Long i) { return x; }
     };
   }
+
+  public static int hashCode(Code x) {
+    return x == null ? 0 : x.getClass().getCanonicalName().hashCode();
+  }
+
+  public static boolean equal(Code x, Code y) {
+    return x == null ? y == null : y != null && (x.getClass() == y.getClass());
+  }
 }

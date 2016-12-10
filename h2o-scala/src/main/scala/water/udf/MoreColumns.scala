@@ -4,10 +4,9 @@ import java.util.Date
 import java.{lang, util}
 
 import water.udf.DataColumns._
-import water.udf.{fp => F}
-import water.udf.fp.Functions
-import water.udf.fp.{Function => UFunction}
+import water.udf.fp.{Function => UFunction, Functions}
 import water.udf.specialized.{Dates, Doubles, Enums, Strings}
+import water.udf.{fp => F}
 
 import scala.collection.JavaConverters._
 

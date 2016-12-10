@@ -11,6 +11,6 @@ package water.udf.fp;
  * @see <a href="https://en.wikipedia.org/wiki/Function_(mathematics)">wikipedia</a> for details.
  * 
  */
-public interface Function<X, Y> extends JustCode {
+public interface Function<X, Y> extends Code {
   Y apply(X x);
 }
