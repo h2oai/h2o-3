@@ -2,7 +2,6 @@
 # -*- encoding: utf-8 -*-
 from __future__ import unicode_literals
 import bindings as bi
-import re
 import sys
 PY3 = sys.version_info[0] == 3
 str_type = str if PY3 else (str, unicode)
@@ -114,7 +113,6 @@ def gen_module(schema, algo):
     init_extra = init_extra_for(algo)
     class_extra = class_extra_for(algo)
     module_extra = module_extra_for(algo)
-    pattern = re.compile(r"[^a-z]+")
 
     param_names = []
     for param in schema["parameters"]:
@@ -298,7 +296,6 @@ def help_epilogue_for(algo):
 def init_extra_for(algo):
     if algo == "deeplearning":
         return "if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True"
-    # TODO: Ugh: this should come from the metadata, not be hacked in here:
     if algo == "glrm":
         return """self._parms["_rest_version"] = 3"""
     if algo == "stackedensemble":
