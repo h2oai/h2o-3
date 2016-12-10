@@ -27,6 +27,7 @@ from .estimators.glrm import H2OGeneralizedLowRankEstimator
 from .estimators.kmeans import H2OKMeansEstimator
 from .estimators.naive_bayes import H2ONaiveBayesEstimator
 from .estimators.random_forest import H2ORandomForestEstimator
+from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -670,6 +671,7 @@ def get_model(model_id):
             m = H2OAutoEncoderEstimator()
         else:
             m = H2ODeepLearningEstimator()
+    elif algo == "stackedensemble": m = H2OStackedEnsembleEstimator()
     else:
         raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)
