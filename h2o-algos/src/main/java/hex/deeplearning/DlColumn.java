@@ -10,10 +10,10 @@ import java.util.List;
  */
 public class DlColumn<T> implements Serializable {
   final String name;
-  final Iterable<T> data;
+  final List<T> data;
   final long size;
   
-  public DlColumn(String name, Iterable<T> data, long size) {
+  public DlColumn(String name, List<T> data, long size) {
     this.name = name;
     this.data = data;
     this.size = size;

@@ -95,17 +95,17 @@ public abstract class SimpleDLM<
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     int mb=0;
     int n=1;
-
+System.out.println("s0");
     if (model_info().isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
+    System.out.println("s1");
     Neurons[] neurons = Neurons.forTesting(model_info);
+    System.out.println("s1a");
     ((Neurons.Input)neurons[0]).setInput(-1, data, mb);
-/*
-long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
-                                    DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double[] offset, int n
- */
+    System.out.println("s2");
+
     Neurons.fpropMiniBatch(
         /*seed*/-1, 
         neurons, 
@@ -116,6 +116,7 @@ long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
         new double[]{offset}, 
         n);
     double[] out = neurons[neurons.length - 1]._a[mb].raw();
+    System.out.println("s3");
 
     return finalizePredictions(preds, out);
   }

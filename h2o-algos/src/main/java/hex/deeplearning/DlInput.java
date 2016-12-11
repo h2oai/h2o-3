@@ -14,6 +14,8 @@ public class DlInput implements Serializable {
   final DlColumn<Integer> target;
   final DlColumn<Double>[] weights;
   
+  public int target(int i) { return target.data.get(i); }
+  
   public boolean isCategorical() {
     return target != null && target.size > 0;
   } 
@@ -24,7 +26,7 @@ public class DlInput implements Serializable {
   }
   
   @SuppressWarnings("unchecked")
-  public DlInput(Iterable<Integer> target, long size, Iterable<Double>... weightColumns) {
+  public DlInput(List<Integer> target, long size, List<Double>... weightColumns) {
     this.target = new DlColumn<Integer>("target", target, size);
     this.weights = buildWeights(weightColumns.length);
     for (int i = 0; i < weightColumns.length; i++) {
@@ -34,7 +36,7 @@ public class DlInput implements Serializable {
   }
 
   @SuppressWarnings("unchecked")
-  public DlInput(Iterable<Integer> target, long size, List<Iterable<Double>> weightColumns) {
+  public DlInput(List<Integer> target, long size, List<List<Double>> weightColumns) {
     
     this.target = new DlColumn<Integer>("target", target, size);
     this.weights = buildWeights(weightColumns.size());
@@ -45,7 +47,7 @@ public class DlInput implements Serializable {
   }
 
   @SuppressWarnings("unchecked")
-  public DlInput(Iterable<Integer> target, List<Double>... weightColumns) {
+  public DlInput(List<Integer> target, List<Double>... weightColumns) {
     assert weightColumns.length > 0;
     int size = weightColumns[0].size();
     this.target = new DlColumn<Integer>("target", target, size);
@@ -59,7 +61,7 @@ public class DlInput implements Serializable {
   }
 
   @SuppressWarnings("unchecked")
-  public DlInput(Iterable<Integer> target, Double[]... weightColumns) {
+  public DlInput(List<Integer> target, Double[]... weightColumns) {
     assert weightColumns.length > 0;
     int size = weightColumns[0].length;
     this.target = new DlColumn<Integer>("target", target, size);
