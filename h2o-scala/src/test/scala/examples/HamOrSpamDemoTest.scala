@@ -19,9 +19,9 @@ package examples
 
 import examples.Frequencies.Data
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters
-import hex.deeplearning.{DeepLearning, DeepLearningModel}
+import hex.deeplearning.{DlInput, DeepLearning, DeepLearningModel}
 import water.fvec.{AppendableVec, Frame, NewChunk, Vec}
-import water.{H2O, Futures, Key, TestUtil}
+import water.{Futures, H2O, Key, TestUtil}
 
 import scala.io.Source
 import scala.language.postfixOps
@@ -112,8 +112,8 @@ object HamOrSpamDemoTest extends TestUtil {
     lazy val (before, after) = categorizedTexts.splitAt(cutoff)
     lazy val train = buildTable("train", before)
     lazy val valid = buildTable("valid", after)
-
-    lazy val dlModel = buildDLModel(train, valid)
+println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + train.lastVec())
+    lazy val dlModel = buildDLModel(train, valid, catData(before), catData(after))
     
     /** Spam detector */
     def spamness(msg: String) = {
@@ -126,11 +126,17 @@ object HamOrSpamDemoTest extends TestUtil {
 
   /** Builds DeepLearning model. */
   def buildDLModel(train: Frame, valid: Frame,
-                   epochs: Int = 10, l1: Double = 0.001,
+                   trainData: DlInput, testData: DlInput,
+
+  epochs: Int = 10, l1: Double = 0.001,
                    hidden: Array[Int] = Array[Int](200, 200)): DeepLearningModel = {
     val dlParams = new DeepLearningParameters()
     dlParams._train = train._key
+    println("Train was " + train.lastVecName())
+    println("Now train is " + dlParams.train().lastVecName())
     dlParams._valid = valid._key
+    dlParams.trainData = trainData
+    dlParams.testData = testData
     dlParams._response_column = "target"
     dlParams._epochs = epochs
     dlParams._l1 = l1
@@ -141,6 +147,8 @@ object HamOrSpamDemoTest extends TestUtil {
     val dl = new DeepLearning(dlParams, jobKey)
 //    val tmi = dl.trainModelImpl()
 //    tmi.computeImpl()
+//    dl.checkMyConditions()
+
     val tm = dl.trainModel()
     tm.waitTillFinish()
     tm._result.get()
@@ -175,22 +183,34 @@ object HamOrSpamDemoTest extends TestUtil {
 
   val CatDomain = "ham" :: "spam" :: Nil toArray
 
-  case class CategorizedTexts(targetText: String, data: Array[Double]) {
+  import scala.collection.JavaConverters._
 
-    def target = CatDomain indexOf targetText
+  case class CategorizedTexts(targetText: String, weights: Array[Double]) {
+
+    def target: Int = CatDomain indexOf targetText
 
     def name(i: Int) = "fv" + i
 
-    lazy val names: Array[String] = ("target" :: (data.indices map name).toList) toArray
-
-    def xx = "1"
+    lazy val names: Array[String] = ("target" :: (weights.indices map name).toList) toArray
   }
 
+  def catData(rows: List[CategorizedTexts]): DlInput = {
+    val row0 = rows.head
+    val target:java.util.List[Integer] = (rows map (_.target) map Integer.valueOf) asJava
+    
+    val columns:List[List[Double]] = row0.weights.indices.map(i => rows.map(_.weights(i)):List[Double]).toList
+
+    val javaColumns: java.util.List[java.util.List[java.lang.Double]] = columns.map(
+      column => (column.map(java.lang.Double.valueOf)).asJava) asJava
+
+    new DlInput(target, target.size, javaColumns)
+  }
+  
   def catVecs(rows: Iterable[CategorizedTexts]): Array[Vec] = {
     val row0 = rows.head
     val targetVec = vec(CatDomain, rows map (_.target))
-    val vecs = row0.data.indices.map(
-      i => dvec(rows map (_.data(i))))
+    val vecs = row0.weights.indices.map(
+      i => dvec(rows map (_.weights(i))))
 
     (targetVec :: vecs.toList) toArray
   }

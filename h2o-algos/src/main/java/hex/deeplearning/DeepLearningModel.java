@@ -1246,6 +1246,9 @@ public class DeepLearningModel extends
    * Deep Learning Parameters
    */
   public static class DeepLearningParameters extends Model.Parameters {
+    public DlInput trainData;
+    public DlInput testData;
+    
     public String algoName() { return "DeepLearning"; }
     public String fullName() { return "Deep Learning"; }
     public String javaName() { return DeepLearningModel.class.getName(); }
