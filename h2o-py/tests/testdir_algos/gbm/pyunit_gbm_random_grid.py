@@ -41,8 +41,10 @@ def airline_gbm_random_grid():
     print("Predictions for ensemble are in: " + predictions.frame_id)
 
     # Check that the model can be retrieved
+    assert stacker.model_id == "my_ensemble"
     modelcopy = h2o.get_model(stacker.model_id)
     assert modelcopy is not None
+    assert modelcopy.model_id == "my_ensemble"
 
 
 if __name__ == "__main__":
