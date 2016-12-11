@@ -36,9 +36,12 @@ public abstract class SimpleDLM<
   }
 
   public double scoreSample(double[] sample) throws IllegalArgumentException {
+    System.out.println("Scoring Sample-1");
     int nouts = numOutputColumns();
+    System.out.println("Scoring Sample-2");
     
     double[] score = score0(sample, new double[nouts]);
+    System.out.println("Scoring Sample-3");
     correctProbabilities(sample, score);
     System.out.println("Got score " + Arrays.toString(score));
     return score[0];
