@@ -1,5 +1,6 @@
 package hex;
 
+import hex.deeplearning.DlInput;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
@@ -22,6 +23,9 @@ public class DataInfo extends Keyed<DataInfo> {
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
   public int _numResponses;   // number of responses
   public int _numOutputs; // number of outputs
+  public DlInput trainData;
+  public DlInput testData;
+  public DlInput currentData;
 
   public Vec setWeights(String name, Vec vec) {
     if(_weights)
@@ -170,7 +174,6 @@ public class DataInfo extends Keyed<DataInfo> {
    */
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, String[] interactions) {
     super(Key.<DataInfo>make());
-    System.out.println("&*&*&*&* 1 response TransformType " + response_transform);
 
     _valid = valid != null;
     assert predictor_transform != null;
@@ -1005,6 +1008,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     for (int i = 0; i < _numResponses; ++i) {
       row.response[i] = chunks[responseChunkId(i)].atd(rid);
+// if (currentData != null)      row.response[i] = currentData.target(i);
       assert(row.response(i) == (int)row.response(i)) : "Expected int response, have " + row.response(i) + ", rcid=" + responseChunkId(i) + ", rid=" + rid;
       if(Double.isNaN(row.response[i])) {
         row.response_bad = true;

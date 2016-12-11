@@ -103,7 +103,8 @@ System.out.println("s0");
     System.out.println("s1");
     Neurons[] neurons = Neurons.forTesting(model_info);
     System.out.println("s1a");
-    ((Neurons.Input)neurons[0]).setInput(-1, data, mb);
+    final Neurons.Input neuron = (Neurons.Input) neurons[0];
+    neuron.setInput(-1, data, mb);
     System.out.println("s2");
 
     Neurons.fpropMiniBatch(
