@@ -51,6 +51,10 @@ public abstract class Neurons {
 
     // Add offset (in link space) if applicable
     for (int mb=0;mb<n;++mb) {
+      if (responses != null) {
+        double target = responses[mb];
+        assert(target == (int)target) : "Expected int target, have " + target + ", mb=" + mb + ", n=" + n;
+      }
       if (offset!=null && offset[mb] > 0) {
         assert (!minfo._classification); // Regression
         double[] m = minfo.data_info()._normRespMul;
@@ -930,7 +934,7 @@ public abstract class Neurons {
      * @param target actual class label (integer)
      */
     @Override protected void setOutputLayerGradient(double target, int mb, int n) {
-      assert(target == (int)target);
+      assert(target == (int)target) : "Expected int target, have " + target + ", mb=" + mb + ", n=" + n;
       double g; //partial derivative dE/dy * dy/dnet
       final int rows = _a[mb].size();
       for( int row = 0; row < rows; row++ ) {

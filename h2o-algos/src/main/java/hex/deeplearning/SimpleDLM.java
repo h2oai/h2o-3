@@ -99,7 +99,19 @@ public abstract class SimpleDLM<
     }
     Neurons[] neurons = Neurons.forTesting(model_info);
     ((Neurons.Input)neurons[0]).setInput(-1, data, mb);
-    Neurons.fpropMiniBatch(-1, neurons, model_info, null, false, null, new double[]{offset}, n);
+/*
+long seed, Neurons[] neurons, DeepLearningModelInfo minfo,
+                                    DeepLearningModelInfo consensus_minfo, boolean training, double[] responses, double[] offset, int n
+ */
+    Neurons.fpropMiniBatch(
+        /*seed*/-1, 
+        neurons, 
+        /*minfo*/model_info, 
+        /*consensus_minfo*/null, 
+        /*training*/false, 
+        /*responses*/null, 
+        new double[]{offset}, 
+        n);
     double[] out = neurons[neurons.length - 1]._a[mb].raw();
 
     return finalizePredictions(preds, out);
