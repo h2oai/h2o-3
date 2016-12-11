@@ -1007,8 +1007,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     for (int i = 0; i < _numResponses; ++i) {
-      row.response[i] = chunks[responseChunkId(i)].atd(rid);
-// if (currentData != null)      row.response[i] = currentData.target(i);
+      row.response[i] = currentData.target(i);
       assert(row.response(i) == (int)row.response(i)) : "Expected int response, have " + row.response(i) + ", rcid=" + responseChunkId(i) + ", rid=" + rid;
       if(Double.isNaN(row.response[i])) {
         row.response_bad = true;

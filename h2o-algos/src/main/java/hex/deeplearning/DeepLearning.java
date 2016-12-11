@@ -59,7 +59,19 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
     return 1;
   }
 
-  @Override public DeepLearningDriver trainModelImpl() { return new DeepLearningDriver(); }
+  public void checkMyConditions() {
+//    if (_train != null && _train.lastVecName().equals("target")) {
+//      System.out.println("******"  + _train + _train.name(0) + ".." + _train.lastVecName() + " size=" + _train.names().length);
+//      Thread.dumpStack();
+//      throw new UnsupportedOperationException("FUCK YOU " + _train + _train.name(0) + ".." + _train.lastVecName());
+//    }
+  }
+  
+  @Override public DeepLearningDriver trainModelImpl() {
+    checkMyConditions();
+    
+    return new DeepLearningDriver(); 
+  }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
    *  training frame.  This call is expected to be overridden in the subclasses
@@ -85,10 +97,22 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms, int nClasses) {
     double x = 0.782347234;
     boolean identityLink = new Distribution(parms).link(x) == x;
-    
-    final DataInfo.TransformType response_transform = !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : identityLink ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE;
-    
-    final DataInfo.TransformType predictor_transform = parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : parms._sparse ? DataInfo.TransformType.DESCALE : DataInfo.TransformType.STANDARDIZE) : DataInfo.TransformType.NONE;
+
+    boolean haveTargetData = parms.trainData != null && parms.trainData.isCategorical();
+
+    boolean haveTestData = parms.testData != null && parms.testData.isCategorical();
+
+    final DataInfo.TransformType response_transform = 
+        haveTestData || !parms._standardize || train.lastVec().isCategorical() ? DataInfo.TransformType.NONE : 
+        identityLink ? DataInfo.TransformType.STANDARDIZE : 
+                       DataInfo.TransformType.NONE;
+
+    final DataInfo.TransformType predictor_transform = 
+        haveTargetData ? DataInfo.TransformType.NONE : 
+        parms._standardize ? (parms._autoencoder ? DataInfo.TransformType.NORMALIZE : 
+                              parms._sparse      ? DataInfo.TransformType.DESCALE : 
+                                                   DataInfo.TransformType.STANDARDIZE) : 
+                         DataInfo.TransformType.NONE;
     
     System.out.println("******** TRANSFORM TYPES= response: " + response_transform + ", predictor: " + predictor_transform);
     
@@ -106,6 +130,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
             parms._offset_column != null,
             parms._fold_column != null
     );
+
+    dinfo.trainData = parms.trainData;
+    dinfo.testData = parms.testData;
+
     // Checks and adjustments:
     // 1) observation weights (adjust mean/sigmas for predictors and response)
     // 2) NAs (check that there's enough rows left)
@@ -214,8 +242,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   }
 
   public class DeepLearningDriver extends Driver {
+    
+    public DeepLearningDriver() {
+      checkMyConditions();
+    }
+
     @Override public void computeImpl() {
-      init(true); //this can change the seed if it was set to -1
+      init(true); //this can change the seed if it was set to -1 
       long cs = _parms.checksum();
       // Something goes wrong
       if (error_count() > 0)
@@ -224,7 +257,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
       //check that _parms isn't changed during DL model training
       long cs2 = _parms.checksum();
       assert(cs == cs2);
-//      throw new UnsupportedOperationException("Just checking that we get here"); // !!!!!!! DON'T COMMIT!!!!!
 
     }
 
@@ -235,7 +267,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      * If checkpoint == null, then start training a new model, otherwise continue from a checkpoint
      */
     public final void buildModel() {
-      List<Key> removeMe = new ArrayList();
+      List<Key> removeMe = new ArrayList<>();
       if (_parms._checkpoint == null) {
         modelWeBuild = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
         if (_parms._pretrained_autoencoder != null) {
@@ -262,6 +294,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
 
         //READ ONLY
         DeepLearningParameters.Sanity.checkIfParameterChangeAllowed(previous._parms, _parms);
+        System.out.println("TR SRC DL X: " + _train.name(0) + ".." + _train.lastVecName());
 
         DataInfo dinfo;
         try {
@@ -318,6 +351,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
           if (modelWeBuild != null) modelWeBuild.unlock(_job);
         }
       }
+  
       trainModel(modelWeBuild);
       for (Key k : removeMe) DKV.remove(k);
 
@@ -350,6 +384,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      * @return Trained model
      */
     public final DeepLearningModel trainModel(DeepLearningModel model) {
+      
       Frame validScoreFrame = null;
       Frame train, trainScoreFrame;
       try {
@@ -357,13 +392,15 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         if (model == null) {
           model = DKV.get(dest()).get();
         }
+            
         Log.info("Model category: " + (_parms._autoencoder ? "Auto-Encoder" : isClassifier() ? "Classification" : "Regression"));
         final long model_size = model.model_info().size();
         Log.info("Number of model parameters (weights/biases): " + String.format("%,d", model_size));
         model.write_lock(_job);
         _job.update(0,"Setting up training data...");
         final DeepLearningParameters mp = model.model_info().get_params();
-
+        DlInput td = mp.trainData;
+        DlInput vd = mp.testData;
         // temporary frames of the same "name" as the orig _train/_valid (asking the parameter's Key, not the actual frame)
         // Note: don't put into DKV or they would overwrite the _train/_valid frames!
         Frame tra_fr = new Frame(mp._train, _train.names(), _train.vecs());
@@ -443,6 +480,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         //main loop
         for(;;) {
           model.iterations++;
+          model.model_info().data_info.currentData = model._parms.trainData;
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
