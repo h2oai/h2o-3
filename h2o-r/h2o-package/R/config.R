@@ -6,6 +6,11 @@
 .parse.h2oconfig <- function(h2oconfig_filename){
     cat(paste0("Reading in config file: ",h2oconfig_filename,"\n"))
 
+    #Need to allocate some value for V1 & V2, which are used down the function for parsing.
+    #This is to help with the CRAN NOTE check.
+    #These variables are first used in subset() and transform().
+    V1 <- V2 <- NULL
+
     #Allowed config keys
     allowed_config_keys = c("init.check_version", "init.proxy","init.cluster_id",
     "init.verify_ssl_certificates","init.cookies","general.allow_breaking_changes")

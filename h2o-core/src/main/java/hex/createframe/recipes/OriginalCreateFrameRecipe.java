@@ -1,27 +1,18 @@
 package hex.createframe.recipes;
 
 import hex.createframe.CreateFrameExecutor;
+import hex.createframe.CreateFrameRecipe;
 import hex.createframe.columns.*;
 import hex.createframe.postprocess.MissingInserterCfps;
 import hex.createframe.postprocess.ShuffleColumnsCfps;
-import water.H2O;
-import water.Iced;
-import water.Job;
-import water.Key;
-import water.fvec.Frame;
-import water.util.Log;
-
-import java.util.Random;
 
 /**
  * This recipe tries to match the behavior of the original hex.CreateFrame class.
  */
-public class OriginalCreateFrameRecipe extends Iced<OriginalCreateFrameRecipe> {
-  private Key<Frame> dest;
+public class OriginalCreateFrameRecipe extends CreateFrameRecipe<OriginalCreateFrameRecipe> {
 
   private int rows = 10000;
   private int cols = 10;
-  private long seed = -1;
   private double real_range = 100;
   private double categorical_fraction = 0.2;
   private int factors = 100;
@@ -39,37 +30,8 @@ public class OriginalCreateFrameRecipe extends Iced<OriginalCreateFrameRecipe> {
   private boolean has_response = false;
 
 
-  public OriginalCreateFrameRecipe(Key<Frame> key) {
-    dest = key;
-  }
-
-  public OriginalCreateFrameRecipe() {
-    dest = Key.make();
-  }
-
-  public Job<Frame> exec() {
-    Job<Frame> job = new Job<>(dest, Frame.class.getName(), "CreateFrame:original");
-    CreateFrameExecutor cfe = new CreateFrameExecutor(job);
-    fillMissingParameters();
-    checkParametersValidity();
-    buildRecipe(cfe);
-    checkParametersValidity2(cfe);
-    return job.start(cfe, cfe.workAmount());
-  }
-
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Private
-  //--------------------------------------------------------------------------------------------------------------------
-
-  private void fillMissingParameters() {
-    if (seed == -1) {
-      seed = new Random().nextLong();
-      Log.info("Generated seed: " + seed);
-    }
-  }
-
-  private void checkParametersValidity() {
+  @Override
+  protected void checkParametersValidity() {
     double total_fraction = integer_fraction + binary_fraction + categorical_fraction + time_fraction + string_fraction;
     check(total_fraction < 1.00000001, "Integer, binary, categorical, time and string fractions must add up to <= 1");
     check(missing_fraction >= 0 && missing_fraction < 1, "Missing fraction must be between 0 and 1");
@@ -98,21 +60,9 @@ public class OriginalCreateFrameRecipe extends Iced<OriginalCreateFrameRecipe> {
     }
   }
 
-  private void checkParametersValidity2(CreateFrameExecutor cfe) {
-    long byteEstimate = cfe.estimatedByteSize();
-    long clusterFreeMem = H2O.CLOUD.free_mem();
-    double gb = (double) (1 << 30);
-    check(byteEstimate <= clusterFreeMem,
-          String.format("Frame is expected to require %.3fGb, which will not fit into H2O's free memory of %.3fGb",
-                        byteEstimate/gb, clusterFreeMem/gb));
-  }
 
-  private void check(boolean cond, String msg) {
-    if (!cond) throw new IllegalArgumentException(msg);
-  }
-
-
-  private void buildRecipe(CreateFrameExecutor cfe) {
+  @Override
+  protected void buildRecipe(CreateFrameExecutor cfe) {
     cfe.setSeed(seed);
     cfe.setNumRows(rows);
 

@@ -1246,11 +1246,13 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{gradient\_epsilon}: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
 \item \texttt{solver}: A character string specifying the solver used: either \texttt{IRLSM}, which supports more features, or \texttt{L\_BFGS}, which scales better for datasets with many columns. 
 \item \texttt{standardize}: A logical value that indicates whether the numeric predictors should be standardized to have a mean of 0 and a variance of 1 prior to model training. 
-\item \texttt{family}: A description of the error distribution and corresponding link function to be used in the model. The following options are supported: \texttt{gaussian, binomial, poisson, gamma,} or \texttt{tweedie}. When a model is specified as Tweedie, users must also specify the appropriate Tweedie power. No default. %%need to specify `tweedie_variance_power` and `tweedie_link_power`??
+\item \texttt{family}: A description of the error distribution and corresponding link function to be used in the model. The following options are supported: \texttt{gaussian}, \texttt{binomial}, \texttt{gamma}, \texttt{multinomial}, \texttt{poisson}, \texttt{tweedie,} or \texttt{quasibinomial}. When a model is specified as Tweedie, users must also specify the appropriate Tweedie power. No default. %%need to specify `tweedie_variance_power` and `tweedie_link_power`??
 \item \texttt{link}: The link function relates the linear predictor to the distribution function. The default is the canonical link for the specified family. The full list of supported links: 
 	\begin{itemize}
 \item	{\textbf {gaussian}}: identity, log, inverse 
-\item {\textbf{binomial}}: logit, log 
+\item {\textbf{binomial}}: logit 
+\item {\textbf{quasibinomial}}: logit
+\item {\textbf{multinomial}}: multinomial (family\_default)
 \item {\textbf{poisson}}: log, identity
 \item {\textbf{gamma}}: inverse, log, identity
 \item {\textbf{tweedie}}: tweedie 
@@ -1272,8 +1274,13 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{weights\_column}: Specify the weights column. Note: Weights are per-row observation weights. This is typically the number of times a row is repeated, but non-integer values are supported as well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 \item \texttt{intercept}: Logical; includes a constant term (intercept) in the model. If there are factor columns in your model, then the intercept must be included. %% <--- still true? copied from `has_intercept`
 \item \texttt{max\_runtime\_secs}: Maximum allowed runtime in seconds for model training. Use 0 to disable.
-\item {\texttt{missing\_values\_handling}}: Handling of missing values. Either {\texttt{Skip}} or {\texttt{MeanImputation}} (default).
+\item \texttt{missing\_values\_handling}: Handling of missing values. Either {\texttt{Skip}} or {\texttt{MeanImputation}} (default).
 \item \texttt{seed}: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
+\item \texttt{max\_active\_predictors}: Specify the maximum number of active predictors during computation. This value is used as a stopping criterium to prevent expensive model building with many predictors.
+\item \texttt{compute\_p\_values}: Request GLM to compute p-values. This is only applicable with no penalty (lambda = 0 and no beta constraints). Setting \texttt{remove\_collinear\_columns} is recommended. H2O will return an error if p-values are requested when there are collinear columns and the \texttt{remove\_collinear\_columns} flag is not enabled.
+\item \texttt{non\_negative}: Forces coefficients to have non-negative values.
+\item \texttt{remove\_collinear\_columns}: Specify whether to automatically remove collinear columns during model building. When enabled, collinear columns will be dropped from the model and will have a 0 coefficient in the returned model. This can only be set if there is no regularization (lambda=0).
+\item \texttt{interactions}: Optionally specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list.
 \end{itemize}
 %Additional: 
 %Strong Rules Enables: Uses strong rules to filter out inactive columns. Default is true. 

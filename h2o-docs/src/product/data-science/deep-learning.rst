@@ -227,17 +227,20 @@ recommended, as model performance can vary greatly.
      3. N+1 models do *not* use **overwrite\_with\_best\_model**
      4. N+1 models may be off by the number specified for **stopping\_rounds** from the best model, but the cross-validation metric estimates the performance of the main model for the resulting number of epochs (which may be fewer than the specified number of epochs).
 
--  **stopping\_metric**: Specify the metric to use for early stopping.
+-  **stopping_metric**: Specify the metric to use for early stopping.
    The available options are:
 
-   - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
-   - ``deviance``
-   - ``logloss``
-   - ``MSE``
-   - ``AUC``
-   - ``lift_top_group``
-   - ``misclassification``
-   - ``mean_per_class_error``
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+    - ``deviance``
+    - ``logloss``
+    - ``mse``
+    - ``rmse``
+    - ``mae``
+    - ``rmsle``
+    - ``auc``
+    - ``lift_top_group``
+    - ``misclassification``
+    - ``mean_per_class_error``
 
 -  **stopping\_tolerance**: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
