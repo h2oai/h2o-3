@@ -56,3 +56,17 @@ checkPCAModel <- function(fitH2O, fitR, tolerance = 1e-6, sort_rows = TRUE) {
   Log.info("H2O Principal Components:"); print(eigvecH2O)
   checkSignedCols(as.matrix(eigvecH2O), eigvecR, tolerance = tolerance)
 }
+
+# generate the reconstructed datasets using the PCA eigenvectors and the projected datasets with numerical datas only
+# The generated dataset will need to be destandardized if we want to compare it to the original dataset
+genReconstructedData <- function(eigenVectors, predMatrix) {
+  dimM = dim(predMatrix)   # should be size m by k
+  dimE = dim(eigenVectors)    # should be n by k
+
+  expect_equal(dimM[2], dimE[2])
+  predMatrix <- as.matrix(predMatrix)
+  eigenVectors <- as.matrix(eigenVectors)
+  eigenVectorsT <- t(eigenVectors)
+
+  outMat = predMatrix %*% eigenVectorsT
+}
