@@ -52,7 +52,7 @@ public class ParseExceptionTest extends TestUtil {
       fkey2 = NFSFileVec.make(new File("smalldata/junit/parse_folder/prostate_2.csv"))._key;
       Frame fr = ParseDataset.parse(okey, fkey0, fkey1, fkey2);
       fr.delete();
-      
+
       assertTrue( "All input & output keys not removed", DKV.get(fkey0)==null );
       assertTrue( "All input & output keys not removed", DKV.get(fkey1)==null );
       assertTrue( "All input & output keys not removed", DKV.get(fkey2)==null );
@@ -70,7 +70,7 @@ public class ParseExceptionTest extends TestUtil {
     @Override public void setupLocal() {
       Vec vec = DKV.get(_key).get();
       Chunk chk = vec.chunkForChunkIdx(0); // Load the chunk (which otherwise loads only lazily)
-      chk.crushBytes(); // Illegal setup: Chunk _mem should never be null; will trigger NPE
+      chk.setBytes(null); // Illegal setup: Chunk _mem should never be null; will trigger NPE
       tryComplete();
     }
   }
