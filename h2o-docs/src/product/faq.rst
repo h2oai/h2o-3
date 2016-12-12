@@ -500,7 +500,7 @@ make a tunnel to reach the ``REST_API`` port. To use the cluster, the
 
 **How can I create a multi-node H2O cluster on a SLURM system?**
 
-The syntax below describes how to create a multi-node H2O cluster on a Simple Linux Utility for Resource Management (SLURM) system using R. 
+The syntax below comes from `https://github.com/ck37/savio-notes/blob/master/h2o-slurm-multinode.Rmd <https://github.com/ck37/savio-notes/blob/master/h2o-slurm-multinode.Rmd>`__ and describes how to create a multi-node H2O cluster on a Simple Linux Utility for Resource Management (SLURM) system using R. 
 
 ::
 
