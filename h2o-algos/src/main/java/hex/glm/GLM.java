@@ -16,6 +16,7 @@ import hex.optimization.ADMM;
 import hex.optimization.ADMM.ProximalSolver;
 import hex.optimization.L_BFGS.*;
 import hex.optimization.OptimizationUtils.*;
+import hex.word2vec.DataInfoExtras;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -31,6 +32,7 @@ import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import static hex.word2vec.DataInfoExtras.*;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -411,7 +413,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         boolean setWeights = skippingRows;// && _parms._lambda_search && _parms._alpha[0] > 0;
         if (setWeights) {
           Vec wc = _weights == null ? _dinfo._adaptedFrame.anyVec().makeCon(1) : _weights.makeCopy();
-          _dinfo.setWeights(_generatedWeights = "__glm_gen_weights", wc);
+          setWeights(_dinfo, _generatedWeights = "__glm_gen_weights", wc);
         }
 
         YMUTask ymt = new YMUTask(_dinfo, _parms._family == Family.multinomial?nclasses():1, setWeights, skippingRows,true).doAll(_dinfo._adaptedFrame);
@@ -1031,7 +1033,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         int N = _dinfo.fullN()+1;
         for(int i = 1; i < _nclass; ++i)
           sumExp += Math.exp(nb[i*N + P] - maxRow);
-        _dinfo.addResponse(new String[]{"__glm_sumExp", "__glm_maxRow"}, _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow}));
+        DataInfoExtras.addResponse(_dinfo, new String[]{"__glm_sumExp", "__glm_maxRow"}, _dinfo._adaptedFrame.anyVec().makeDoubles(2, new double[]{sumExp,maxRow}));
       }
       double oldDevTrain = _nullDevTrain;
       double oldDevTest = _nullDevTest;
@@ -1915,6 +1917,5 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       return res;
     }
   }
-
 
 }

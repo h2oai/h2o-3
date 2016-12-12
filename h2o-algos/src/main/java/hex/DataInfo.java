@@ -22,18 +22,9 @@ public class DataInfo extends Keyed<DataInfo> {
   public int [] _activeCols;
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
   public int _numResponses;   // number of responses
-  public int _numOutputs; // number of outputs
   public DlInput trainData;
   public DlInput testData;
   public DlInput currentData;
-
-  public Vec setWeights(String name, Vec vec) {
-    if(_weights)
-      return _adaptedFrame.replace(weightChunkId(),vec);
-    _adaptedFrame.insertVec(weightChunkId(),name,vec);
-    _weights = true;
-    return null;
-  }
 
   public void dropWeights() {
     if(!_weights)return;
@@ -55,11 +46,6 @@ public class DataInfo extends Keyed<DataInfo> {
     for(int i = 0; i < res.length; ++i)
       res[i] = i;
     return res;
-  }
-
-  public void addResponse(String [] names, Vec[] vecs) {
-    _adaptedFrame.add(names,vecs);
-    _numResponses += vecs.length;
   }
 
   public int[] catNAFill() {return _catNAFill;}
@@ -334,38 +320,6 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     res._adaptedFrame = new Frame(_adaptedFrame.names(),valid.vecs(_adaptedFrame.names()));
     res._valid = true;
-    return res;
-  }
-
-  public DataInfo scoringInfo(Frame adaptFrame){
-    DataInfo res = IcedUtils.deepCopy(this);
-    res._normMul = null;
-    res._normRespSub = null;
-    res._normRespMul = null;
-    res._normRespSub = null;
-    res._predictor_transform = TransformType.NONE;
-    res._response_transform = TransformType.NONE;
-    res._adaptedFrame = adaptFrame;
-    res._weights = _weights && adaptFrame.find(_adaptedFrame.name(weightChunkId())) != -1;
-    res._offset = _offset && adaptFrame.find(_adaptedFrame.name(offsetChunkId())) != -1;
-    res._fold = _fold && adaptFrame.find(_adaptedFrame.name(foldChunkId())) != -1;
-    int resId = adaptFrame.find((_adaptedFrame.name(responseChunkId(0))));
-    if(resId == -1 || adaptFrame.vec(resId).isBad())
-      res._numResponses = 0;
-    else {// NOTE: DataInfo can have extra columns encoded as response, e.g. helper columns when doing Multinomail IRLSM, don't need those for scoring!.
-      res._numResponses = 1;
-    }
-    res._valid = true;
-    res._interactions=_interactions;
-    res._interactionColumns=_interactionColumns;
-
-    // ensure that vecs are in the DKV, may have been swept up in the Scope.exit call
-    for( Vec v: res._adaptedFrame.vecs() )
-      if( v instanceof InteractionWrappedVec ) {
-        ((InteractionWrappedVec)v)._useAllFactorLevels=_useAllFactorLevels;
-        ((InteractionWrappedVec)v)._skipMissing=_skipMissing;
-        DKV.put(v);
-      }
     return res;
   }
 
@@ -1007,7 +961,7 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     for (int i = 0; i < _numResponses; ++i) {
-      row.response[i] = currentData != null ? currentData.target(i) : chunks[responseChunkId(i)].atd(rid);
+      row.response[i] = currentData != null ? currentData.target(rid) : chunks[responseChunkId(i)].atd(rid);
       if(Double.isNaN(row.response[i])) {
         row.response_bad = true;
         break;
@@ -1015,8 +969,12 @@ public class DataInfo extends Keyed<DataInfo> {
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
     }
-    if(_offset)
+    
+//    __("cats:" + _cats + " nums:" + _nums + " weights:" + (_weights?1:0) + " offset:" + (_offset?1:0) + " fold:" + (_fold?1:0));
+    if(_offset) {
+      __("Do offset");
       row.offset = chunks[offsetChunkId()].atd(rid);
+    }
     return row;
   }
   

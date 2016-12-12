@@ -10,7 +10,7 @@ import water.TestUtil;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-
+import static hex.word2vec.DataInfoExtras.*;
 import java.util.Random;
 // data info tests with interactions
 
@@ -47,7 +47,7 @@ public class DataInfoTestAdapt extends TestUtil {
       parms._response_column = "petal_wid";
       Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions,null,null, false);
 
-      scoreInfo = dinfo.scoringInfo(frSplits[1]);
+      scoreInfo = scoringInfo(dinfo, frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1]);
 
     } finally {
@@ -94,7 +94,7 @@ public class DataInfoTestAdapt extends TestUtil {
       parms._response_column = "IsDepDelayed";
       Model.adaptTestForTrain(frSplits[1],null,null,dinfo._adaptedFrame.names(),dinfo._adaptedFrame.domains(),parms,true,false,interactions,null,null, false);
 
-      scoreInfo = dinfo.scoringInfo(frSplits[1]);
+      scoreInfo = scoringInfo(dinfo, frSplits[1]);
       checkFrame(scoreInfo,expandSplits[1], skipMissing);
 
     } finally {

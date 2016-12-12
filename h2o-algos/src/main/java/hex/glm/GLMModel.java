@@ -22,6 +22,7 @@ import water.util.ArrayUtils;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
+import static hex.word2vec.DataInfoExtras.*;
 
 /**
  * Created by tomasnykodym on 8/27/14.
@@ -799,7 +800,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       _dinfo = glm._dinfo.clone();
       _dinfo._adaptedFrame = new Frame(glm._dinfo._adaptedFrame.names().clone(),glm._dinfo._adaptedFrame.vecs().clone());
       if(!glm.hasWeightCol())
-        _dinfo.dropWeights();
+        dropWeights(_dinfo);
       String[] cnames = glm._dinfo.coefNames();
       String [] names = _dinfo._adaptedFrame._names;
       String [][] domains = _dinfo._adaptedFrame.domains();
@@ -1173,7 +1174,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     final boolean computeMetrics = adaptFrm.vec(_output.responseName()) != null && !adaptFrm.vec(_output.responseName()).isBad();
     String [] domain = _output.nclasses()<=1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    return new GLMScore(j, this, _output._dinfo.scoringInfo(adaptFrm),domain,computeMetrics, generatePredictions);
+    return new GLMScore(j, this, scoringInfo(_output._dinfo, adaptFrm),domain,computeMetrics, generatePredictions);
   }
   /** Score an already adapted frame.  Returns a new Frame with new result
    *  vectors, all in the DKV.  Caller responsible for deleting.  Input is

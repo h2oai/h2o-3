@@ -18,6 +18,7 @@ import water.rapids.vals.ValFrame;
 import java.util.Arrays;
 import java.util.Map;
 import water.fvec.Vec.VectorGroup;
+import static hex.word2vec.DataInfoExtras.*;
 
 /**
  * Created by tomasnykodym on 3/25/15.
@@ -139,7 +140,7 @@ public class MakeGLMModelHandler extends Handler {
     }
     DataInfo dinfo = new DataInfo(frcpy,null,0,input.use_all_factor_levels,input.standardize?TransformType.STANDARDIZE:TransformType.NONE,TransformType.NONE,input.skip_missing,false,!input.skip_missing,/* weight */ false, /* offset */ false, /* fold */ false, /* intercept */ true);
     DKV.put(dinfo);
-    if(weight != null)dinfo.setWeights(wname,weight);
+    setWeights(dinfo, wname, weight);
     Gram.GramTask gt = new Gram.GramTask(null,dinfo,false,true).doAll(dinfo._adaptedFrame);
     double [][] gram = gt._gram.getXX();
     dinfo.remove();
