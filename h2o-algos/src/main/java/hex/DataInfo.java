@@ -1007,24 +1007,18 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     for (int i = 0; i < _numResponses; ++i) {
-      row.response[i] = currentData.target(i);
-      assert(row.response(i) == (int)row.response(i)) : "Expected int response, have " + row.response(i) + ", rcid=" + responseChunkId(i) + ", rid=" + rid;
+      row.response[i] = currentData != null ? currentData.target(i) : chunks[responseChunkId(i)].atd(rid);
       if(Double.isNaN(row.response[i])) {
         row.response_bad = true;
         break;
       }
-      double prev = row.response[i];
-      if (_normRespMul != null) {
+      if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
-        System.out.println("have @" + i + "/" + _numResponses + ": " + row.response(i) + " from " + prev + ", rcid=" + responseChunkId(i) + ", rid=" + rid + " ... " + Thread.currentThread().getId() + " nrs=" + _normRespSub[i] + " nrm=" +  _normRespSub[i]);
-      }
-      assert(row.response(i) == (int)row.response(i)) : "Expected int response, have " + row.response(i) + " from " + prev + ", rcid=" + responseChunkId(i) + ", rid=" + rid;
     }
     if(_offset)
       row.offset = chunks[offsetChunkId()].atd(rid);
     return row;
   }
-  
   
   public int getInteractionOffset(Chunk[] chunks, int cid, int rid) {
     boolean useAllFactors = ((InteractionWrappedVec)chunks[cid].vec())._useAllFactorLevels;
