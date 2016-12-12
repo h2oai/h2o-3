@@ -2592,6 +2592,10 @@ class H2OFrame(object):
         """
         fr = H2OFrame._expr(expr=ExprNode("is.na", self))
         fr._ex._cache.nrows = self._ex._cache.nrows
+        fr._ex._cache.ncols = self._ex._cache.ncols
+        if self._ex._cache.names:
+            fr._ex._cache.names = ["isNA(%s)" % n  for n in self._ex._cache.names]
+            fr._ex._cache.types = {"isNA(%s)" % n: "int"  for n in self._ex._cache.names}
         return fr
 
     def year(self):
