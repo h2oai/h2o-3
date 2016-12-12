@@ -36,6 +36,9 @@ public class GLRMModelV3 extends ModelSchemaV3<GLRMModel, GLRMModelV3, GLRMModel
 
     @API(help = "Frame key name for X matrix")
     public String representation_name;
+
+    @API(help = "Standard deviation and importance of each principal component")
+    public TwoDimTableV3 importance;
   }
 
   // TODO: I think we can implement the following two in ModelSchemaV3, using reflection on the type parameters.

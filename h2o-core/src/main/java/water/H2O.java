@@ -463,7 +463,10 @@ final public class H2O {
       else if (s.matches("context_path")) {
         i = s.incrementAndCheck(i, args);
         String value = args[i];
-        ARGS.context_path = value.startsWith("/") ? value : "/" + value;
+        ARGS.context_path = value.startsWith("/")
+                            ? value.trim().length() == 1
+                              ? "" : value
+                            : "/" + value;
       }
       else if (s.matches("nthreads")) {
         i = s.incrementAndCheck(i, args);

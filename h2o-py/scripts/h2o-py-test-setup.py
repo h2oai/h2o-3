@@ -98,13 +98,6 @@ def unknownArg(arg):
     print("")
     usage()
 
-def set_pyunit_pkg_attrs(pkg):
-    setattr(pkg, '__on_hadoop__', _ON_HADOOP_)
-    setattr(pkg, '__hadoop_namenode__', _HADOOP_NAMENODE_)
-
-def set_pybooklet_pkg_attrs(pkg):
-    setattr(pkg, '__test_name__', _TEST_NAME_)
-    setattr(pkg, '__results_dir__', _RESULTS_DIR_)
 
 def h2o_test_setup(sys_args):
     h2o_py_dir = os.path.realpath(os.path.join(os.path.dirname(os.path.realpath(__file__)),".."))
@@ -116,8 +109,11 @@ def h2o_test_setup(sys_args):
     import h2o
     from tests import pyunit_utils, pydemo_utils, pybooklet_utils
 
-    set_pyunit_pkg_attrs(pyunit_utils)
-    set_pybooklet_pkg_attrs(pybooklet_utils)
+    for pkg in (pyunit_utils, pybooklet_utils):
+        setattr(pkg, '__on_hadoop__', _ON_HADOOP_)
+        setattr(pkg, '__hadoop_namenode__', _HADOOP_NAMENODE_)
+        setattr(pkg, '__test_name__', _TEST_NAME_)
+        setattr(pkg, '__results_dir__', _RESULTS_DIR_)
 
     if _IS_PYUNIT_ or _IS_IPYNB_ or _IS_PYBOOKLET_ or _IS_PYDEMO_:
         pass

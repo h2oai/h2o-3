@@ -161,7 +161,7 @@ public class DeepWaterTask extends FrameTask<DeepWaterTask> {
         iter = new DeepWaterDatasetIterator(trainData, trainLabels, _localmodel._dataInfo, batchSize, _localmodel.get_params()._cache_data);
       }
       else if (_localmodel.get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
-        iter = new DeepWaterTextIterator(trainData, trainLabels, batchSize, 100/*FIXME*/, _localmodel.get_params()._cache_data);
+        iter = new DeepWaterTextIterator(trainData, trainLabels, batchSize, 56/*FIXME*/, _localmodel.get_params()._cache_data);
       }
 
       NativeTrainTask ntt;

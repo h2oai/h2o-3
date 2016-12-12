@@ -997,9 +997,10 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @export
 h2o.coef <- function(object) {
   if( is(object, "H2OModel") ) {
-    coefs <- object@model$coefficients_table
-    if( is.null(coefs) ) stop("Can only extract coefficeints from GLMs")
-    return( coefs$coefficients )
+    if( is.null(object@model$coefficients_table) ) stop("Can only extract coefficeints from GLMs")
+    coefs <- object@model$coefficients_table$coefficients
+    names(coefs) <- object@model$coefficients_table$names
+    return(coefs)
   } else stop("Can only extract coefficients from GLMs")
 }
 
@@ -1010,9 +1011,10 @@ h2o.coef <- function(object) {
 #' @export
 h2o.coef_norm <- function(object) {
   if( is(object, "H2OModel") ) {
-    coefs <- object@model$coefficients_table
-    if( is.null(coefs) ) stop("Can only extract coefficeints from GLMs")
-    return( coefs[,3] )  # the normalized coefs are 3rd column, (labels is 1st col)
+    if( is.null(object@model$coefficients_table) ) stop("Can only extract coefficeints from GLMs")
+    coefs <- object@model$coefficients_table$standardized_coefficients
+    names(coefs) <- object@model$coefficients_table$names
+    return(coefs)
   } else stop("Can only extract coefficients from GLMs")
 }
 
@@ -2854,7 +2856,7 @@ h2o.cross_validation_predictions <- function(object) {
 #' @param data An H2OFrame object used for scoring and constructing the plot.
 #' @param cols Feature(s) for which partial dependence will be calculated.
 #' @param destination_key An key reference to the created partial dependence tables in H2O.
-#' @param nbins Number of bins used.
+#' @param nbins Number of bins used. For categorical columns make sure the number of bins exceed the level count.
 #' @param plot A logical specifying whether to plot partial dependence table.
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @examples
@@ -2898,19 +2900,26 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   url <- gsub("/3/", "", res$dest$URL)
   res <- .h2o.__remoteSend(url, method = "GET", h2oRestApiVersion = 3)
 
+  ## Change feature names to the original supplied, the following is okay because order is preserved
+  pps <- res$partial_dependence_data
+  for(i in 1:length(pps)) if(!all(is.na( pps[[i]])) ) names(pps[[i]]) <- c(cols[i], "mean_response")
 
   col_types = unlist(h2o.getTypes(data))
-  col_names = tolower( names(data))
+  col_names = names(data)
   pp.plot <- function(pp) {
-    type = col_types[which(col_names == tolower( names(pp)[1] ))]
-    if(type == "enum") pp[,1] = as.factor( pp[,1])
-    plot(pp, type = "l", main = attr(x,"description"))
+    if(!all(is.na(pp))) {
+      type = col_types[which(col_names == names(pp)[1])]
+      if(type == "enum") pp[,1] = as.factor( pp[,1])
+      plot(pp, type = "l", main = attr(x,"description"))
+    } else {
+      print("Partial Dependence not calculated--make sure nbins is as high as the level count")
+    }
   }
 
-  if(plot) lapply(res$partial_dependence_data, pp.plot)
-  if(length( res$partial_dependence_data) == 1) {
-    return(res$partial_dependence_data[[1]])
+  if(plot) lapply(pps, pp.plot)
+  if(length( pps) == 1) {
+    return(pps[[1]])
   } else {
-    return(res$partial_dependence_data)
+    return(pps)
   }
 }

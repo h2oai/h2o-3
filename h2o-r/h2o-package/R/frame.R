@@ -1769,6 +1769,16 @@ h2o.quantile <- function(x,
   res <- .newExpr("quantile", x, .num.list(probs), .quote(combine_method), weights_column)
   tr <- as.matrix(t(res))
   rownames(tr) <- colnames(res)
+  # detecting potential issues
+  non2dim <- length(dim(tr)) < 2L
+  nonnum <- !is.numeric(tr[1,])
+  if (non2dim || nonnum) {
+    warn <- paste("If you are able to provide reproducible example of error please submit as bug report.\nStructure of object returned:\n", paste(capture.output(str(tr)), collapse="\n"), sep="")
+    if (non2dim)
+      warning("Object returned from quantile method have less than 2 dimensions and will probably fail on further calls.\n", warn)
+    else if (nonnum)
+      warning("Object returned from quantile method is not numeric and will probably fail on further calls.\n", warn)
+  }
   colnames(tr) <- paste0(100*tr[1,],"%")
   tr[-1,]
 }
@@ -2582,15 +2592,21 @@ h2o.floor <- function(x) {
 }
 
 #'
-#' Return the sum of all the values present in its arguments.
+#' Compute the frame's sum by-column (or by-row).
 #'
 #' @name h2o.sum
 #' @param x An H2OFrame object.
 #' @param na.rm \code{logical}. indicating whether missing values should be removed.
+#' @param axis An int that indicates whether to do down a column (0) or across a row (1).
+#' @param return_frame A boolean that indicates whether to return an H2O frame or a list. Default is FALSE.
 #' @seealso \code{\link[base]{sum}} for the base R implementation.
 #' @export
-h2o.sum <- function(x,na.rm = FALSE) {
-  sum(x,na.rm = na.rm)
+h2o.sum <- function(x, na.rm = FALSE, axis = 0, return_frame = FALSE) {
+   if(return_frame){
+      .newExpr("sumaxis", chk.H2OFrame(x), na.rm, axis)
+  }else{
+    sum(x,na.rm = na.rm)
+  }
 }
 
 #'
@@ -2762,6 +2778,41 @@ destination_frame.guess <- function(x) {
   if (valid.key) x else ""
 }
 
+#' @title Use optional package
+#' @description
+#' Testing availability of optional package, its version, and extra global default.
+#' This function is used internally. It is exported and documented because user can
+#' control behavior of the function by global option.
+#' @param package character scalar name of a package that we Suggests or Enhances on.
+#' @param version character scalar required version of a package.
+#' @param use logical scalar, extra escape option, to be used as global option.
+#' @details
+#' We use this function to control csv read/write with optional \link[data.table]{data.table} package.
+#' Currently data.table is disabled by default, to enable it set \code{options("h2o.use.data.table"=TRUE)}.
+#' It is possible to control just \code{\link[data.table]{fread}} or \code{\link[data.table]{fwrite}} with \code{options("h2o.fread"=FALSE, "h2o.fwrite"=FALSE)}.
+#' \code{h2o.fread} and \code{h2o.fwrite} options are not handled in this function but next to \emph{fread} and \emph{fwrite} calls.
+#' @export
+#' @seealso \code{\link{as.h2o.data.frame}}, \code{\link{as.data.frame.H2OFrame}}
+#' @examples
+#' op <- options("h2o.use.data.table" = TRUE)
+#' if (use.package("data.table")) {
+#'   cat("optional package data.table 1.9.8+ is available\n")
+#' } else {
+#'   cat("optional package data.table 1.9.8+ is not available\n")
+#' }
+#' options(op)
+use.package <- function(package, 
+                        version="1.9.8"[package=="data.table"], 
+                        use=getOption("h2o.use.data.table", FALSE)[package=="data.table"]) {
+  ## methods that depends on use.package default arguments (to have control in single place):
+  # as.h2o.data.frame
+  # as.data.frame.H2OFrame
+  stopifnot(is.character(package), length(package)==1L,
+            is.character(version), length(version)==1L,
+            is.logical(use), length(use)==1L)
+  use && requireNamespace(package, quietly=TRUE) && (packageVersion(package) >= as.package_version(version))
+}
+
 #'
 #' Create H2OFrame
 #'
@@ -2823,6 +2874,10 @@ as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
 
 #' @rdname as.h2o
 #' @method as.h2o data.frame
+#' @details 
+#' Method \code{as.h2o.data.frame} will use \code{\link[data.table]{fwrite}} if data.table package is installed in required version.
+#' @seealso \code{\link{use.package}}
+#' @references \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}
 #' @export
 as.h2o.data.frame <- function(x, destination_frame="", ...) {
   if( destination_frame=="" )
@@ -2837,9 +2892,20 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
   types <- sapply(x, function(x) class(x)[1L]) # ensure vector returned
   class.map <- h2o.class.map()
   types[types %in% names(class.map)] <- class.map[types[types %in% names(class.map)]]
-  write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
+  verbose <- getOption("h2o.verbose", FALSE)
+  if (verbose) pt <- proc.time()[[3]]
+  if (getOption("h2o.fwrite", TRUE) && use.package("data.table")) {
+    data.table::fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)
+    fun <- "fwrite"
+  } else {
+    write.csv(x, file = tmpf, row.names = FALSE, na="NA_h2o")
+    fun <- "write.csv"
+  }
+  if (verbose) cat(sprintf("writing csv to disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
+  #if (verbose) pt <- proc.time()[[3]] # timings inside
   h2f <- h2o.uploadFile(tmpf, destination_frame = destination_frame, header = TRUE, col.types=types,
                         col.names=colnames(x, do.NULL=FALSE, prefix="C"), na.strings=rep(c("NA_h2o"),ncol(x)))
+  #if (verbose) cat(sprintf("uploading csv to h2o using 'h2o.uploadFile' took %.2fs\n", proc.time()[[3]]-pt))
   file.remove(tmpf)
   h2f
 }
@@ -2890,6 +2956,9 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
 #'
 #' @param x An H2OFrame object.
 #' @param ... Further arguments to be passed down from other methods.
+#' @details
+#' Method \code{as.data.frame.H2OFrame} will use \code{\link[data.table]{fread}} if data.table package is installed in required version.
+#' @seealso \code{\link{use.package}}
 #' @examples
 #' \donttest{
 #' h2o.init()
@@ -2908,8 +2977,11 @@ as.data.frame.H2OFrame <- function(x, ...) {
   urlSuffix <- paste0('DownloadDataset',
                       '?frame_id=', URLencode( h2o.getId(x)),
                       '&hex_string=', as.numeric(use_hex_string))
-
+  
+  verbose <- getOption("h2o.verbose", FALSE)
+  if (verbose) pt <- proc.time()[[3]]
   ttt <- .h2o.doSafeGET(urlSuffix = urlSuffix)
+  if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
   n <- nchar(ttt)
 
   # Delete last 1 or 2 characters if it's a newline.
@@ -2938,13 +3010,26 @@ as.data.frame.H2OFrame <- function(x, ...) {
   colClasses <- gsub("uuid", "character", colClasses)
   colClasses <- gsub("string", "character", colClasses)
   colClasses <- gsub("time", NA, colClasses) # change to Date after ingestion
-  # Substitute NAs for blank cells rather than skipping
-  df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
-  close(tcon)
+  
   # Convert all date columns to POSIXct
   dates <- attr(x, "types") %in% "time"
-  if (length(dates) > 0) # why do some frames come in with no attributes but many columns?
-    for (i in 1:length(dates)) { if (dates[[i]]) class(df[[i]]) = "POSIXct" }
+  
+  if (verbose) pt <- proc.time()[[3]]
+  if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
+    df <- data.table::fread(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
+    if (sum(dates))
+      for (i in which(dates)) data.table::setattr(df[[i]], "class", "POSIXct")
+    fun <- "fread"
+  } else {
+    # Substitute NAs for blank cells rather than skipping
+    df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
+    close(tcon)
+    if (sum(dates))
+      for (i in which(dates)) class(df[[i]]) = "POSIXct"
+    fun <- "read.csv"
+  }
+  if (verbose) cat(sprintf("reading csv from disk using '%s' took %.2fs\n", fun, proc.time()[[3]]-pt))
+  
   df
 }
 
@@ -2953,7 +3038,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
 #' @param x An H2OFrame object
 #' @param ... Further arguments to be passed down from other methods.
 #' @export
-as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame(x, ...))
+as.matrix.H2OFrame <- function(x, ...) as.matrix(as.data.frame.H2OFrame(x, ...))
 
 #' Convert an H2OFrame to a vector
 #'

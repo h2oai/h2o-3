@@ -697,3 +697,23 @@ summarize_failures <- function(test_failed_array) {
 
   return(failure_message)
 }
+
+#----------------------------------------------------------------------
+# This function will compare a 2-D table results as a matrix
+#
+# Parameters:  table1, table2: 2D table from Java passed to R
+#
+# Returns:     Exception will be thrown if comparison failed
+#----------------------------------------------------------------------
+compare_tables <- function(table1, table2, tol=1e-6) {
+  dim1 = dim(table1)
+  dim2 = dim(table2)
+
+  expect_equal(dim1, dim2)
+
+  for (i in 1:dim1[1]) {
+    for (j in 1:dim1[2]) {
+      expect_equal(TRUE, (abs(table1[i,j]-table2[i,j]) < tol))
+    }
+  }
+}

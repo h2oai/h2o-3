@@ -470,18 +470,21 @@ class ModelBase(backwards_compatible()):
         print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
 
     def coef(self):
-        """Return the coefficients for this model."""
+        """Return the coefficients which can be applied to the non-standardized data.
+         (Note: standardize = True by default, if set to False then coef() returns
+         the coefficients which are fit directly)."""
         tbl = self._model_json["output"]["coefficients_table"]
-        if tbl is None: return None
-        tbl = tbl.cell_values
-        return {a[0]: a[1] for a in tbl}
+        if tbl is None:
+            return None
+        return {name: coef for name, coef in zip(tbl['names'], tbl['coefficients'])}
 
     def coef_norm(self):
-        """Return the normalized coefficients."""
+        """Return coefficients fitted on the standardized data (requires standardize = True,
+         which is on by default). These coefficients can be used to evaluate variable importance."""
         tbl = self._model_json["output"]["coefficients_table"]
-        if tbl is None: return None
-        tbl = tbl.cell_values
-        return {a[0]: a[2] for a in tbl}
+        if tbl is None:
+            return None
+        return {name: coef for name, coef in zip(tbl['names'], tbl['standardized_coefficients'])}
 
 
     def r2(self, train=False, valid=False, xval=False):
@@ -739,9 +742,9 @@ class ModelBase(backwards_compatible()):
         """
         assert_is_type(path, str)
         assert_is_type(get_genmodel_jar, bool)
-        if self.algo not in {"drf", "gbm", "deepwater", "glrm"}:
+        if self.algo not in {"drf", "gbm", "deepwater", "glrm", "glm"}:
             raise H2OValueError("MOJOs are currently supported for Distributed Random Forest, "
-                                "Gradient Boosting Machine, Deep Water and GLRM models only.")
+                                "Gradient Boosting Machine, Deep Water, GLM and GLRM models only.")
         if get_genmodel_jar:
             h2o.api("GET /3/h2o-genmodel.jar", save_to=os.path.join(path, "h2o-genmodel.jar"))
         return h2o.api("GET /3/Models/%s/mojo" % self.model_id, save_to=path)
@@ -842,7 +845,7 @@ class ModelBase(backwards_compatible()):
         :param H2OFrame data: An H2OFrame object used for scoring and constructing the plot.
         :param cols: Feature(s) for which partial dependence will be calculated.
         :param destination_key: An key reference to the created partial dependence tables in H2O.
-        :param nbins: Number of bins used.
+        :param nbins: Number of bins used. For categorical columns make sure the number of bins exceed the level count.
         :param plot: A boolean specifying whether to plot partial dependence table.
         :param figsize: Dimension/size of the returning plots, adjust to fit your output cells.
         :param server: ?
@@ -872,7 +875,6 @@ class ModelBase(backwards_compatible()):
         json = h2o.api("GET /3/PartialDependence/%s" % json.dest_key)
 
         # Extract partial dependence data from json response
-        # pps = json
         pps = json['partial_dependence_data']
 
         ## Plot partial dependence plots using matplotlib

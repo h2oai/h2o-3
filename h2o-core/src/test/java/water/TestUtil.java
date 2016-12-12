@@ -537,6 +537,12 @@ public class TestUtil extends Iced {
       Assert.assertEquals(expected[i], actual[i], threshold);
   }
 
+  public static void checkIcedArrays(IcedWrapper[][] expected, IcedWrapper[][] actual, double threshold) {
+    for(int i = 0; i < actual.length; i++)
+      for (int j = 0; j < actual[0].length; j++)
+      Assert.assertEquals(expected[i][j].d, actual[i][j].d, threshold);
+  }
+
   public static boolean[] checkEigvec(double[][] expected, double[][] actual, double threshold) {
     int nfeat = actual.length;
     int ncomp = actual[0].length;

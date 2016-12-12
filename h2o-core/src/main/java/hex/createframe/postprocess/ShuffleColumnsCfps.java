@@ -36,6 +36,7 @@ public class ShuffleColumnsCfps extends CreateFramePostprocessStep {
   public void exec(Frame fr, Random rng) {
     // Initial shuffle
     int numCols = fr.numCols();
+    if (numCols == 0) return;
     int[] idx = ArrayUtils.seq(0, numCols);
     ArrayUtils.shuffleArray(idx, rng);
 

@@ -18,19 +18,18 @@ import java.util.UUID;
  *  single Java byte array in a single JVM heap, and only an int's worth of
  *  elements.  Chunks support both the notions of a global row-number and a
  *  chunk-local numbering.  The global row-number calls are variants of {@code
- *  at} and {@code set}.  If the row is outside the current Chunk's range, the
- *  data will be loaded by fetching from the correct Chunk.  This probably
- *  involves some network traffic, and if all rows are loaded then the entire
- *  dataset will be pulled local (possibly triggering an OutOfMemory).
+ *  at_abs} and {@code set_abs}.  If the row is outside the current Chunk's
+ *  range, the data will be loaded by fetching from the correct Chunk.  This
+ *  probably involves some network traffic, and if all rows are loaded then the
+ *  entire dataset will be pulled locally (possibly triggering an OutOfMemory).
  *
  *  <p>The chunk-local numbering supports the common {@code for} loop iterator
- *  pattern, using {@code at} and {@code set} calls that end in a '{@code 0}',
- *  and is faster than the global row-numbering for tight loops (because it
- *  avoids some range checks):
- *  <pre>
- *  for( int row=0; row &lt; chunk._len; row++ )
+ *  pattern, using {@code at*} and {@code set} calls, and is faster than the
+ *  global row-numbering for tight loops (because it skips some range checks):
+ *  <pre>{@code
+ *  for (int row = 0; row < chunk._len; row++)
  *    ...chunk.atd(row)...
- *  </pre>
+ *  }</pre>
  *
  *  <p>The array-like API allows loading and storing elements in and out of
  *  Chunks.  When loading, values are decompressed.  When storing, an attempt
@@ -48,8 +47,8 @@ import java.util.UUID;
  *  #close} is made; again this is handled by MRTask directly.
  *
  *  <p>In addition to normal load and store operations, Chunks support the
- *  notion a missing element via the {@code isNA_abs()} calls, and a "next
- *  non-zero" notion for rapidly iterating over sparse data.
+ *  notion a missing element via the {@link #isNA} call, and a "next non-zero"
+ *  notion for rapidly iterating over sparse data.
  *
  *  <p><b>Data Types</b>
  *
@@ -69,12 +68,13 @@ import java.util.UUID;
  *  coding error and will be flagged.  If you are working with integer data
  *  with missing elements, you must first check for a missing value before
  *  loading it:
- *  <pre>
+ *  <pre>{@code
  *  if( !chk.isNA(row) ) ...chk.at8(row)....
- *  </pre>
+ *  }</pre>
  *
  *  <p>The same holds true for the other non-real types (timestamps, UUIDs,
- *  Strings, or categoricals); they must be checked for missing before being used.
+ *  Strings, or categoricals): they must be checked for missing before being
+ *  used.
  *
  *  <p><b>Performance Concerns</b>
  *
@@ -97,17 +97,17 @@ import java.util.UUID;
  *  Note that due "NaN poisoning" if any row element is missing, the entire
  *  distance calculated will be NaN.
  *  <pre>{@code
-final double[] _point;                             // The given point
-public void map( Chunk[] chks ) {                  // Map over a set of same-numbered Chunks
-  for( int row=0; row < chks[0]._len; row++ ) {    // For all rows
-    double dist=0;                                 // Squared distance
-    for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
-      double d = chks[col].atd(row) - _point[col]; // Distance along this dimension
-      dist += d*d;                                 // Sum-squared-distance
-    }
-    chks[chks.length-1].set( row, dist );          // Store back the distance in the last col
-  }
-}}</pre>
+ *  final double[] _point;                             // The given point
+ *  public void map( Chunk[] chks ) {                  // Map over a set of same-numbered Chunks
+ *   for( int row=0; row < chks[0]._len; row++ ) {    // For all rows
+ *     double dist=0;                                 // Squared distance
+ *     for( int col=0; col < chks.length-1; col++ ) { // For all cols, except the last output col
+ *       double d = chks[col].atd(row) - _point[col]; // Distance along this dimension
+ *       dist += d*d;                                 // Sum-squared-distance
+ *     }
+ *     chks[chks.length-1].set( row, dist );          // Store back the distance in the last col
+ *   }
+ *  }}</pre>
  */
 
 public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
@@ -117,7 +117,8 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
 
   /**
    * Sparse bulk interface, stream through the compressed values and extract them into dense double array.
-   * @param vals holds extracted chunk-relative row ids, length must be >= this.sparseLen()
+   * @param vals holds extracted values, length must be >= this.sparseLen()
+   * @param ids holds extracted chunk-relative row ids, length must be >= this.sparseLen()
    * @return number of extracted (non-zero) elements, equal to sparseLen()
    */
   public int asSparseDoubles(double[] vals, int[] ids){return asSparseDoubles(vals,ids,Double.NaN);}
@@ -220,9 +221,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
 
   public void setBytes(byte[] mem) { _mem = mem; }
 
-  /** Used by a ParseExceptionTest to break the Chunk invariants and trigger an
-   *  NPE.  Not intended for public use. */
-  public final void crushBytes() { _mem=null; }
+
 
   final long at8_abs(long i) {
     long x = i - (_start>0 ? _start : 0);

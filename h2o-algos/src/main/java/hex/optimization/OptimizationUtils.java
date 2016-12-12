@@ -3,6 +3,7 @@ package hex.optimization;
 
 import water.Iced;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 
@@ -331,7 +332,7 @@ public class OptimizationUtils {
       double maxObj = _ginfox._objVal - _minRelativeImprovement*_ginfox._objVal;
       final double dgInit = ArrayUtils.innerProduct(_ginfox._gradient, direction);
       final double dgtest = dgInit * _ftol;
-      assert dgtest < 1e-4:"invalid gradient/direction, got positive differential " + dgtest;
+      if(dgtest > 1e-4) Log.warn("MoreThuente LS: got possitive differential " + dgtest);
       if(dgtest >= 0)
         return false;
       double [] beta = new double[_beta.length];
@@ -372,7 +373,6 @@ public class OptimizationUtils {
           step *= .5;
           continue;
         }
-
         double dgp = ArrayUtils.innerProduct(newGinfo._gradient, direction);
         if(Double.isNaN(step) || _brackt && (step <= _stMin || step >= _stMax)) {
           _returnStatus = 6;

@@ -2,6 +2,85 @@
 
 ##H2O
 
+###Turnbull (3.10.1.1) - 12/1/2016
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-2801'>PUBDEV-2801</a>] -         Starting h2o server from R ignores IP and port parameters
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3484'>PUBDEV-3484</a>] -         Treat 1-element numeric list as acceptable when numeric input required
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3509'>PUBDEV-3509</a>] -         h2o&#39;s cor() breaks R&#39;s native cor()
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3592'>PUBDEV-3592</a>] -         h2o.get_grid isn&#39;t working
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3607'>PUBDEV-3607</a>] -         `cor` function should properly pass arguments
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3629'>PUBDEV-3629</a>] -         Avoid confusing error message when column name is not found.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3631'>PUBDEV-3631</a>] -         overwrite_with_best_model fails when using checkpoint
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3633'>PUBDEV-3633</a>] -         plot.h2oModel in R no longer supports metrics with uppercase names (e.g. AUC)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3642'>PUBDEV-3642</a>] -         Fix citibike R demo
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3697'>PUBDEV-3697</a>] -         Create an Attribute for Number of Interal Trees in Python
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3704'>PUBDEV-3704</a>] -         Error with early stopping and score_tree_interval on GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3735'>PUBDEV-3735</a>] -         Python&#39;s coef() and coef_norm() should use column name not index
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3757'>PUBDEV-3757</a>] -         Perfbar does not work for hierarchical path passed via -h2o_context
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3474'>PUBDEV-3474</a>] -         Show Partial Dependence Plots in Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3620'>PUBDEV-3620</a>] -         Allow setting nthreads &gt; 255.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3700'>PUBDEV-3700</a>] -         Add RMSE, MAE, RMSLE, and lift_top_group as stopping metrics
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3719'>PUBDEV-3719</a>] -         Update h2o.mean in R to match Python API
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3579'>PUBDEV-3579</a>] -         Document Partial Dependence Plot in Flow
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3621'>PUBDEV-3621</a>] -         Add R endpoint for cumsum, cumprod, cummin, and cummax
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3649'>PUBDEV-3649</a>] -         Modify correlation matrix calculation to match R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3657'>PUBDEV-3657</a>] -         Remove max_confusion_matrix_size from booklets &amp; py doc
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-645'>HEXDEV-645</a>] -         aggregator should calculate domain for enum columns in aggregated output frames &amp; member frames based on current output or member frame
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/HEXDEV-658'>HEXDEV-658</a>] -         Naive Bayes (and maybe GLM): Drop limit on classes that can be predicted (currently 1000)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3625'>PUBDEV-3625</a>] -         Speed up GBM and DRF
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3756'>PUBDEV-3756</a>] -         Support `-context_path` to change servlet path for REST API
+</li>
+</ul>
+
+<h4>        IT Help
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3279'>PUBDEV-3279</a>] -         Adding a custom loss-function
+</li>
+</ul>
+
 ###Turing (3.10.0.10) - 11/7/2016
 
 <h4>        Bug

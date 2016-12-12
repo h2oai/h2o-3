@@ -92,6 +92,14 @@ public class Scope {
       scope._keys.peek().add(key);            // Track key
   }
 
+  static public void untrack(Key<Vec>... keys) {
+    Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
+    if (scope == null) return;           // Not tracking this thread
+    if (scope._keys.size() == 0) return; // Tracked in the past, but no scope now
+    HashSet<Key> xkeys = scope._keys.peek();
+    for (Key<Vec> key : keys) xkeys.remove(key); // Untrack key
+  }
+
   static public void untrack(Iterable<Key<Vec>> keys) {
     Scope scope = _scope.get();           // Pay the price of T.L.S. lookup
     if (scope == null) return;           // Not tracking this thread

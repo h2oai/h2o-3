@@ -644,7 +644,7 @@ public class DeepWaterModel extends Model<DeepWaterModel,DeepWaterParameters,Dee
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.dataset) {
           iter = new DeepWaterDatasetIterator(score_data, null /*no labels*/, di, batch_size, model_info().get_params()._cache_data);
         } else if (model_info().get_params()._problem_type == DeepWaterParameters.ProblemType.text) {
-          iter = new DeepWaterTextIterator(score_data, null /*no labels*/, batch_size, 100 /*FIXME*/, model_info().get_params()._cache_data);
+          iter = new DeepWaterTextIterator(score_data, null /*no labels*/, batch_size, 56 /*FIXME*/, model_info().get_params()._cache_data);
         } else {
           throw H2O.unimpl();
         }

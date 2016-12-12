@@ -56,6 +56,35 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), strict_version_check = TRUE, proxy = NA_character_,
                      https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_, cluster_id = NA_integer_, cookies = NA_character_) {
+
+    # Check for .h2oconfig file
+    # Find .h2oconfig file starting from currenting directory and going
+    # up all parent directories until it reaches the root directory.
+    config_path <- .find.config()
+
+    #Read in config if available
+    if(!(is.null(config_path))){
+
+      h2oconfig = .parse.h2oconfig(config_path)
+
+      #Check for each `allowed_config_keys` in the config file and set to counterparts in `h2o.init()`
+      if(strict_version_check != TRUE && "init.check_version" %in% colnames(h2oconfig)){
+        strict_version_check = as.logical(trimws(toupper(as.character(h2oconfig$init.check_version))))
+      }
+      if(is.na(proxy) && "init.proxy" %in% colnames(h2oconfig)){
+        proxy = trimws(as.character(h2oconfig$init.proxy))
+      }
+      if(is.na(cluster_id) && "init.cluster_id" %in% colnames(h2oconfig)){
+        cluster_id = as.numeric(as.character(h2oconfig$init.cluster_id))
+      }
+      if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
+        insecure = as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
+      }
+      if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
+        cookies = as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
+    }
+  }
+
   if(!is.character(ip) || length(ip) != 1L || is.na(ip) || !nzchar(ip))
     stop("`ip` must be a non-empty character string")
   if(!is.numeric(port) || length(port) != 1L || is.na(port) || port < 0 || port > 65536)
@@ -162,6 +191,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     username = username, password = password, cluster_id = cluster_id, cookies = cookies)
   assign("SERVER", conn, .pkg.env)
   cat(" Connection successful!\n\n")
+  .h2o.jar.env$port <- port #Ensure right port is called when quitting R
   h2o.clusterInfo()
   cat("\n")
 
@@ -370,7 +400,7 @@ h2o.clusterStatus <- function() {
   # Shut down local H2O when user exits from R ONLY if h2o started from R
   reg.finalizer(.h2o.jar.env, function(e) {
     ip_    <- "127.0.0.1"
-    port_  <- 54321
+    port_  <- if(!is.null(e$port)) e$port else 54321
     myURL <- paste0("http://", ip_, ":", port_)
     if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(prompt = FALSE)
     pid_file <- .h2o.getTmpFile("pid")
@@ -381,7 +411,7 @@ h2o.clusterStatus <- function() {
 
 .onDetach <- function(libpath) {
   ip_   <- "127.0.0.1"
-  port_ <- 54321
+  port_  <- if(!is.null(.h2o.jar.env$port)) .h2o.jar.env$port else 54321
   myURL <- paste0("http://", ip_, ":", port_)
   print("A shutdown has been triggered. ")
   if( url.exists(myURL) ) {
@@ -567,8 +597,10 @@ h2o.clusterStatus <- function() {
   
   # PUBDEV-3534 hook to use arbitrary h2o.jar
   own_jar = Sys.getenv("H2O_JAR_PATH")
-  if (nzchar(own_jar)) {
-    if (!file.exists(own_jar)) stop(sprintf("Environment variable H2O_JAR_PATH is set to '%s' but file does not exists, unset environment variable or provide valid path to h2o.jar file.", own_jar))
+  is_url = function(x) any(grepl("^(http|ftp)s?://", x), grepl("^(http|ftp)s://", x))
+  if (nzchar(own_jar) && !is_url(own_jar)) {
+    if (!file.exists(own_jar))
+      stop(sprintf("Environment variable H2O_JAR_PATH is set to '%s' but file does not exists, unset environment variable or provide valid path to h2o.jar file.", own_jar))
     return(own_jar)
   }
   
@@ -577,7 +609,7 @@ h2o.clusterStatus <- function() {
   } else {
     pkg_path = .h2o.pkg.path
 
-    # Find h2o-jar from testthat tests inside R-Studio.
+    # Find h2o-jar from testthat tests inside RStudio.
     if (length(grep("h2o-dev/h2o-r/h2o$", pkg_path)) == 1L) {
       tmp = substr(pkg_path, 1L, nchar(pkg_path) - nchar("h2o-dev/h2o-r/h2o"))
       return(sprintf("%s/h2o-dev/build/h2o.jar", tmp))
@@ -605,6 +637,11 @@ h2o.clusterStatus <- function() {
 
   buildnumFile <- file.path(pkg_path, "buildnum.txt")
   version <- readLines(buildnumFile)
+  
+  # mockup h2o package as CRAN release (no java/h2o.jar) hook h2o.jar url - PUBDEV-3534
+  jarFile <- file.path(pkg_path, "jar.txt")
+  if (file.exists(jarFile) && !nzchar(own_jar))
+    own_jar <- readLines(jarFile)
 
   dest_folder <- file.path(pkg_path, "java")
   if (!file.exists(dest_folder)) {
@@ -614,46 +651,47 @@ h2o.clusterStatus <- function() {
   dest_file <- file.path(dest_folder, "h2o.jar")
 
   # Download if h2o.jar doesn't already exist or user specifies force overwrite
-  if (TRUE) {
+  if (nzchar(own_jar) && is_url(own_jar)) {
+    h2o_url = own_jar # md5 must have same file name and .md5 suffix
+    md5_url = paste(own_jar, ".md5", sep="")
+  } else {
     base_url <- paste("s3.amazonaws.com/h2o-release/h2o", branch, version, "Rjar", sep = "/")
     h2o_url <- paste("http:/", base_url, "h2o.jar", sep = "/")
-
     # Get MD5 checksum
     md5_url <- paste("http:/", base_url, "h2o.jar.md5", sep = "/")
-    # ttt <- getURLContent(md5_url, binary = FALSE)
-    # tcon <- textConnection(ttt)
-    # md5_check <- readLines(tcon, n = 1)
-    # close(tcon)
-    md5_file <- tempfile(fileext = ".md5")
-    download.file(md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
-    md5_check <- readLines(md5_file, n = 1L)
-    if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
-    unlink(md5_file)
-
-    # Save to temporary file first to protect against incomplete downloads
-    temp_file <- paste(dest_file, "tmp", sep = ".")
-    cat("Performing one-time download of h2o.jar from\n")
-    cat("    ", h2o_url, "\n")
-    cat("(This could take a few minutes, please be patient...)\n")
-    download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE)
-
-    # Apply sanity checks
-    if(!file.exists(temp_file))
-      stop("Error: Transfer failed. Please download ", h2o_url, " and place h2o.jar in ", dest_folder)
-
-    md5_temp_file = md5sum(temp_file)
-    md5_temp_file_as_char = as.character(md5_temp_file)
-    if(md5_temp_file_as_char != md5_check) {
-      cat("Error: Expected MD5: ", md5_check, "\n")
-      cat("Error: Actual MD5  : ", md5_temp_file_as_char, "\n")
-      stop("Error: MD5 checksum of ", temp_file, " does not match ", md5_check)
-    }
-
-    # Move good file into final position
-    file.rename(temp_file, dest_file)
   }
-
-  return(dest_file)
+  # ttt <- getURLContent(md5_url, binary = FALSE)
+  # tcon <- textConnection(ttt)
+  # md5_check <- readLines(tcon, n = 1)
+  # close(tcon)
+  md5_file <- tempfile(fileext = ".md5")
+  download.file(md5_url, destfile = md5_file, mode = "w", cacheOK = FALSE, quiet = TRUE)
+  md5_check <- readLines(md5_file, n = 1L)
+  if (nchar(md5_check) != 32) stop("md5 malformed, must be 32 characters (see ", md5_url, ")")
+  unlink(md5_file)
+  
+  # Save to temporary file first to protect against incomplete downloads
+  temp_file <- paste(dest_file, "tmp", sep = ".")
+  cat("Performing one-time download of h2o.jar from\n")
+  cat("    ", h2o_url, "\n")
+  cat("(This could take a few minutes, please be patient...)\n")
+  download.file(url = h2o_url, destfile = temp_file, mode = "wb", cacheOK = FALSE, quiet = TRUE)
+  
+  # Apply sanity checks
+  if(!file.exists(temp_file))
+    stop("Error: Transfer failed. Please download ", h2o_url, " and place h2o.jar in ", dest_folder)
+  
+  md5_temp_file = md5sum(temp_file)
+  md5_temp_file_as_char = as.character(md5_temp_file)
+  if(md5_temp_file_as_char != md5_check) {
+    cat("Error: Expected MD5: ", md5_check, "\n")
+    cat("Error: Actual MD5  : ", md5_temp_file_as_char, "\n")
+    stop("Error: MD5 checksum of ", temp_file, " does not match ", md5_check)
+  }
+  
+  # Move good file into final position
+  file.rename(temp_file, dest_file)
+  return(dest_file[file.exists(dest_file)])
 }
 
 #' View Network Traffic Speed

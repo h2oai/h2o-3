@@ -678,15 +678,13 @@ def generate_weights_glm(csv_weight_filename, col_count, data_type, min_w_value,
         elif data_type == 2:   # generate real intercept/weights
             weight = np.random.uniform(min_w_value, max_w_value, [col_count+1, 1])
         else:
-            print("dataType must be 1 or 2 for now.")
-            sys.exit(1)
+            assert False, "dataType must be 1 or 2 for now."
     elif ('binomial' in family_type.lower()) or ('multinomial' in family_type.lower()):
         if 'binomial' in family_type.lower():  # for binomial, only need 1 set of weight
             class_number -= 1
 
         if class_number <= 0:
-            print("class_number must be >= 2!")
-            sys.exit(1)
+            assert False, "class_number must be >= 2!"
 
         if isinstance(col_count, np.ndarray):
             temp_col_count = col_count[0]
@@ -698,8 +696,7 @@ def generate_weights_glm(csv_weight_filename, col_count, data_type, min_w_value,
         elif data_type == 2:   # generate real intercept/weights
             weight = np.random.uniform(min_w_value, max_w_value, [temp_col_count+1, class_number])
         else:
-            print("dataType must be 1 or 2 for now.")
-            sys.exit(1)
+            assert False, "dataType must be 1 or 2 for now."
 
     # save the generated intercept and weight
     np.savetxt(csv_weight_filename, weight.transpose(), delimiter=",")
@@ -746,8 +743,7 @@ def generate_training_set_glm(csv_filename, row_count, col_count, min_p_value, m
     elif data_type == 2:   # generate random real numbers
         x_mat = np.random.uniform(min_p_value, max_p_value, [row_count, col_count])
     else:
-        print("dataType must be 1 or 2 for now. ")
-        sys.exit(1)
+        assert False, "dataType must be 1 or 2 for now. "
 
     # generate the response vector to the input predictors
     response_y = generate_response_glm(weight, x_mat, noise_std, family_type,
@@ -779,8 +775,7 @@ def generate_clusters(cluster_center_list, cluster_pt_number_list, cluster_radiu
     k = len(cluster_pt_number_list)     # number of clusters to generate clusters for
 
     if (not(k == len(cluster_center_list))) or (not(k == len(cluster_radius_list))):
-        print("Length of list cluster_center_list, cluster_pt_number_list, cluster_radius_list must be the same!")
-        sys.exit(1)
+        assert False, "Length of list cluster_center_list, cluster_pt_number_list, cluster_radius_list must be the same!"
 
     training_sets = []
     for k_ind in range(k):
@@ -1053,8 +1048,7 @@ def one_hot_encoding(enum_level):
 
         return base_array
     else:
-        print ("enum_level must be >= 2.")
-        sys.exit(1)
+        assert False, "enum_level must be >= 2."
 
 
 def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='probability',
@@ -1149,8 +1143,7 @@ def derive_discrete_response(prob_mat, class_method, class_margin):
 
         discrete_y[mat_bool] = -1
     else:
-        print('class_method should be set to "probability" or "threshold" only!')
-        sys.exit(1)
+        assert False, 'class_method should be set to "probability" or "threshold" only!'
 
     return discrete_y
 
@@ -1193,8 +1186,7 @@ def move_files(dir_path, old_name, new_file, action='move'):
         elif 'copy' in action:
             motion = 'cp '
         else:
-            print("Illegal action setting.  It can only be 'move' or 'copy'!")
-            sys.exit(1)
+            assert False, "Illegal action setting.  It can only be 'move' or 'copy'!"
 
         cmd = motion+old_name+' '+new_name           # generate cmd line string to move the file
 
@@ -1394,9 +1386,37 @@ def equal_two_arrays(array1, array2, eps, tolerance):
 
         return True                                     # return True, elements of two arrays are close enough
     else:
-        print("The two arrays are of different size!")
-        sys.exit(1)
+        assert False, "The two arrays are of different size!"
 
+def equal_2D_tables(table1, table2, tolerance=1e-6):
+    """
+    This function will compare the values of two python tuples.  First, if the values are below
+    eps which denotes the significance level that we care, no comparison is performed.  Next,
+    False is returned if the different between any elements of the two array exceeds some tolerance.
+
+    :param array1: numpy array containing some values of interest
+    :param array2: numpy array containing some values of interest that we would like to compare it with array1
+    :param eps: significance level that we care about in order to perform the comparison
+    :param tolerance: threshold for which we allow the two array elements to be different by
+
+    :return: True if elements in array1 and array2 are close and False otherwise
+    """
+
+    size1 = len(table1)
+    if size1 == len(table2):    # arrays must be the same size
+        # compare two arrays
+        for ind in range(size1):
+            if len(table1[ind]) == len(table2[ind]):
+                for ind2 in range(len(table1[ind])):
+                    if type(table1[ind][ind2]) == float:
+                        if abs(table1[ind][ind2]-table2[ind][ind2]) > tolerance:
+                            return False
+            else:
+                assert False, "The two arrays are of different size!"
+        return True
+
+    else:
+        assert False, "The two arrays are of different size!"
 
 def compare_two_arrays(array1, array2, eps, tolerance, comparison_string, array1_string, array2_string, error_string,
                        success_string, template_is_better, just_print=False):
@@ -1495,8 +1515,7 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
             return p_value_h2o
 
         else:
-            print("P-values are only available to Gaussian family.")
-            sys.exit(1)
+            assert False, "P-values are only available to Gaussian family."
 
     elif what_param == 'weights':
         if 'gaussian' in family_type.lower():
@@ -1528,8 +1547,7 @@ def get_train_glm_params(model, what_param, family_type='gaussian'):
         elif 'binomial' in family_type.lower():
             return model.confusion_matrix().table
     else:
-        print("parameter value not found in GLM model")
-        sys.exit(1)
+        assert False, "parameter value not found in GLM model"
 
 
 def less_than(val1, val2):
@@ -1597,8 +1615,7 @@ def remove_csv_files(dir_path, suffix=".csv", action='remove', new_dir_path=""):
             elif 'copy' in action:
                 move_files(new_dir_path, temp_fn, fn, action=action)
             else:
-                print("action string can only be 'remove' or 'copy.")
-                sys.exit(1)
+                assert False, "action string can only be 'remove' or 'copy."
 
 
 def extract_comparison_attributes_and_print(model_h2o, h2o_model_test_metrics, end_test_str, want_p_values,
@@ -1783,8 +1800,7 @@ def extract_comparison_attributes_and_print_multinomial(model_h2o, h2o_model_tes
         (template_weight, template_logloss_train, template_confusion_matrix_train, template_accuracy_train,
          template_logloss_test, template_confusion_matrix_test, template_accuracy_test) = template_params
     else:
-        print("No valid template parameters are given for comparison.")
-        sys.exit(1)
+        assert False, "No valid template parameters are given for comparison."
 
     # print and/or compare the weights between template and H2O
     compare_index = 0
@@ -1920,9 +1936,8 @@ def grab_model_params_metrics(model_h2o, h2o_model_test_metrics, family_type):
         h2o_accuracy_train = 1-float(h2o_confusion_matrix_train.cell_values[last_index][real_last_index])
         h2o_accuracy_test = 1-float(h2o_confusion_matrix_test.cell_values[last_index][real_last_index])
     else:
-        print("Only 'multinomial' and 'binomial' distribution families are supported for grab_model_params_metrics "
-              "function!")
-        sys.exit(1)
+        assert False, "Only 'multinomial' and 'binomial' distribution families are supported for " \
+                      "grab_model_params_metrics function!"
 
     return h2o_weight, h2o_logloss_train, h2o_confusion_matrix_train, h2o_accuracy_train, h2o_logloss_test,\
            h2o_confusion_matrix_test, h2o_accuracy_test
@@ -2013,8 +2028,7 @@ def add_fold_weights_offset_columns(h2o_frame, nfold_max_weight_offset, column_n
         elif 'offset_column' in column_type:
             temp_a = random.uniform(0, nfold_max_weight_offset)*np.asmatrix(np.ones(number_row)).transpose()
         else:
-            print("column_type must be either 'fold_assignment' or 'weights_column'!")
-            sys.exit(1)
+            assert False, "column_type must be either 'fold_assignment' or 'weights_column'!"
 
         fold_assignments = h2o.H2OFrame(temp_a)
         fold_assignments.set_names([column_names[index]])
@@ -2238,8 +2252,7 @@ def generate_random_words(word_length):
 
         return ''.join((random.choice(all_chars)) for index in range(int(word_length)))
     else:
-        print("word_length must be an integer greater than 0.")
-        sys.exit(1)
+        assert False, "word_length must be an integer greater than 0."
 
 
 def generate_redundant_parameters(hyper_params, gridable_parameters, gridable_defaults, error_number):
@@ -2336,8 +2349,7 @@ def error_diff_2_models(grid_table1, grid_table2, metric_name):
     if (num_model > 0):
         return metric_diff/num_model
     else:
-        print("error_diff_2_models: your table contains zero models.")
-        sys.exit(1)
+        assert False, "error_diff_2_models: your table contains zero models."
 
 
 def find_grid_runtime(model_list):
@@ -2563,8 +2575,8 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
     assert rows1 == rows2 and cols1 == cols2, "failed dim check! frame 1 rows:{0} frame 2 rows:{1} frame 1 cols:{2} " \
                                               "frame2 cols:{3}".format(rows1, rows2, cols1, cols2)
 
-    na_frame1 = frame1.isna().sum()
-    na_frame2 = frame2.isna().sum()
+    na_frame1 = frame1.isna().sum().sum(axis=1)[:,0]
+    na_frame2 = frame2.isna().sum().sum(axis=1)[:,0]
 
     if compare_NA:      # check number of missing values
         assert na_frame1 == na_frame2, "failed numbers of NA check!  Frame 1 NA number: {0}, frame 2 " \
