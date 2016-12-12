@@ -411,7 +411,7 @@ h2o.clusterStatus <- function() {
 
 .onDetach <- function(libpath) {
   ip_   <- "127.0.0.1"
-  port_  <- if(!is.null(e$port)) e$port else 54321
+  port_  <- if(!is.null(.h2o.jar.env$port)) .h2o.jar.env$port else 54321
   myURL <- paste0("http://", ip_, ":", port_)
   print("A shutdown has been triggered. ")
   if( url.exists(myURL) ) {
