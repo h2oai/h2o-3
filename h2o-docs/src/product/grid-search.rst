@@ -60,8 +60,6 @@ The following hyperparameters are supported by grid search.
 Common Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~
 
--  ``validation_frame``
--  ``response_column``
 -  ``weights_column``
 -  ``offset_column``
 -  ``fold_column``
@@ -90,7 +88,6 @@ Shared Tree Hyperparameters
 -  ``sample_rate_per_class``
 -  ``col_sample_rate_per_tree``
 -  ``col_sample_rate_change_per_level``
--  ``score_tree_interval``
 -  ``min_split_improvement``
 -  ``histogram_type``
 
@@ -98,17 +95,21 @@ DRF Hyperparameters
 ~~~~~~~~~~~~~~~~~~~
 
 -  ``mtries``
+-  ``categorical_encoding``
 
 GBM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~
 
 -  ``learn_rate``
 -  ``learn_rate_annealing``
--  ``distribution``
--  ``quantile_alpha``
--  ``tweedie_power``
 -  ``col_sample_rate``
 -  ``max_abs_leafnode_pred``
+-  ``pred_noise_bandwidth``
+-  ``distribution``
+-  ``tweedie_power``
+-  ``quantile_alpha``
+-  ``huber_alpha``
+-  ``categorical_encoding``
 
 K-Means Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -118,9 +119,20 @@ K-Means Hyperparameters
 -  ``seed``
 -  ``init``
 -  ``estimate_k``
+-  ``categorical_encoding``
 
 GLM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~
+
+-  ``seed``
+-  ``tweedie_variance_power``
+-  ``tweedie_link_power``
+-  ``alpha``
+-  ``lambda``
+-  ``missing_values_handling``
+
+GLRM Hyperparameters
+~~~~~~~~~~~~~~~~~~~~
 
 -  ``transform``
 -  ``k``
@@ -134,7 +146,6 @@ GLM Hyperparameters
 -  ``gamma_y``
 -  ``max_iterations``
 -  ``max_updates``
--  ``missing_values_handling``
 -  ``init_step_size``
 -  ``min_step_size``
 -  ``seed``
@@ -165,10 +176,6 @@ Deep Learning Hyperparameters
 -  ``balance_classes``
 -  ``class_sampling_factors``
 -  ``max_after_balance_size``
--  ``max_confusion_matrix_size``
--  ``overwrite_with_best_model``
--  ``use_all_factor_levels``
--  ``standardize``
 -  ``activation``
 -  ``hidden``
 -  ``epochs``
@@ -206,6 +213,9 @@ Deep Learning Hyperparameters
 -  ``regression_stop``
 -  ``quiet_mode``
 -  ``score_validation_sampling``
+-  ``overwrite_with_best_model``
+-  ``use_all_factor_levels``
+-  ``standardize``
 -  ``variable_importances``
 -  ``fast_mode``
 -  ``force_load_balance``
@@ -222,6 +232,7 @@ Deep Learning Hyperparameters
 -  ``elastic_averaging``
 -  ``elastic_averaging_moving_rate``
 -  ``elastic_averaging_regularization``
+-  ``categorical_encoding``
 
 Aggregator Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
