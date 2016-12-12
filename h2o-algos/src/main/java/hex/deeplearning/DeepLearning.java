@@ -114,8 +114,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
                                                    DataInfo.TransformType.STANDARDIZE) : 
                          DataInfo.TransformType.NONE;
     
-    System.out.println("******** TRANSFORM TYPES= response: " + response_transform + ", predictor: " + predictor_transform);
-    
     DataInfo dinfo = new DataInfo(
             train,
             valid,

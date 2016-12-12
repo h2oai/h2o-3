@@ -26,12 +26,6 @@ public class DataInfo extends Keyed<DataInfo> {
   public DlInput testData;
   public DlInput currentData;
 
-  public void dropWeights() {
-    if(!_weights)return;
-    _adaptedFrame.remove(weightChunkId());
-    _weights = false;
-  }
-
   public void dropInteractions() { // only called to cleanup the InteractionWrappedVecs!
     if(_interactions!=null) {
       Vec[] vecs = _adaptedFrame.remove(_interactionVecs);
@@ -604,7 +598,6 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public void setResponseTransform(TransformType t){
-    System.out.println("&*&*&*&* Setting TransformType " + t);
     _response_transform = t;
     if(t == TransformType.NONE) {
       _normRespMul = null;
@@ -960,8 +953,12 @@ public class DataInfo extends Keyed<DataInfo> {
         row.numVals[numValsIdx++] = d;
       }
     }
+    
     for (int i = 0; i < _numResponses; ++i) {
-      row.response[i] = currentData != null ? currentData.target(rid) : chunks[responseChunkId(i)].atd(rid);
+      row.response[i] = /*currentData != null ? currentData.target(i) : */chunks[responseChunkId(i)].atd(rid);
+
+//      assert (int)(row.response[i]) == currentData.target(rid): "Failed at " + rid + ", expected " + row.response[i] + ", got " + currentData.target(rid);
+
       if(Double.isNaN(row.response[i])) {
         row.response_bad = true;
         break;

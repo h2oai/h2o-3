@@ -202,11 +202,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
     if( !nFoldCV() ) {
-      System.out.println("!nFoldCV()");
       return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
     }
 
-    System.out.println("Forking...");
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
     return _job.start(fjtask,
             (nFoldWork()+1/*main model*/) * _parms.progressUnits(), _parms._max_runtime_secs);

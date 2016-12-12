@@ -36,12 +36,9 @@ public abstract class SimpleDLM<
   }
 
   public double scoreSample(double[] sample) throws IllegalArgumentException {
-    System.out.println("Scoring Sample-1");
     int nouts = numOutputColumns();
-    System.out.println("Scoring Sample-2");
     
     double[] score = score0(sample, new double[nouts]);
-    System.out.println("Scoring Sample-3");
     correctProbabilities(sample, score);
     System.out.println("Got score " + Arrays.toString(score));
     return score[0];
@@ -95,17 +92,13 @@ public abstract class SimpleDLM<
   public double[] score0(double[] data, double[] preds, double weight, double offset) {
     int mb=0;
     int n=1;
-System.out.println("s0");
     if (model_info().isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
-    System.out.println("s1");
     Neurons[] neurons = Neurons.forTesting(model_info);
-    System.out.println("s1a");
     final Neurons.Input neuron = (Neurons.Input) neurons[0];
     neuron.setInput(-1, data, mb);
-    System.out.println("s2");
 
     Neurons.fpropMiniBatch(
         /*seed*/-1, 
@@ -117,7 +110,6 @@ System.out.println("s0");
         new double[]{offset}, 
         n);
     double[] out = neurons[neurons.length - 1]._a[mb].raw();
-    System.out.println("s3");
 
     return finalizePredictions(preds, out);
   }

@@ -130,6 +130,13 @@ println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + tr
 
   epochs: Int = 10, l1: Double = 0.001,
                    hidden: Array[Int] = Array[Int](200, 200)): DeepLearningModel = {
+    val v1 = train.vec("target")
+    
+    assert(v1.length() == trainData.target.size())
+    for (i <- 0L until v1.length) {
+      assert(v1.at(i) == trainData.target(i.toInt))
+    }
+    
     val dlParams = new DeepLearningParameters()
     dlParams._train = train._key
     println("Train was " + train.lastVecName())
