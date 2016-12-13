@@ -521,14 +521,13 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("not", self), cache=self._ex._cache)
 
 
-    def _unop(self, op):
-        for cname, ctype in self.types():
+    def _unop(self, op, rtype="real"):
+        for cname, ctype in self.types:
             if ctype not in {"int", "real", "bool"}:
                 raise H2OTypeError("Function %s cannot be applied to %s column '%s'" % (op, ctype, cname))
         ret = H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
-        ret._ex._cache._names = ["%s(%s)" % (op, name) for name in ret._ex._cache._names]
-        # May produce either int or real or bool types
-        ret._ex._cache._types = None
+        ret._ex._cache._names = ["%s(%s)" % (op, name) for name in self._ex._cache._names]
+        ret._ex._cache._types = {name: rtype for name in ret._ex._cache._names}
         return ret
 
 
@@ -711,19 +710,19 @@ class H2OFrame(object):
         return self._unop("abs")
 
     def sign(self):
-        return self._unop("sign")
+        return self._unop("sign", rtype="int")
 
     def sqrt(self):
         return self._unop("sqrt")
 
     def trunc(self):
-        return self._unop("trunc")
+        return self._unop("trunc", rtype="int")
 
     def ceil(self):
-        return self._unop("ceiling")
+        return self._unop("ceiling", rtype="int")
 
     def floor(self):
-        return self._unop("floor")
+        return self._unop("floor", rtype="int")
 
     def log(self):
         return self._unop("log")
