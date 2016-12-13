@@ -1149,7 +1149,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     else if(_parms._lambda_search && _parms._alpha[0] > 0) { // lambda search prefers coordinate descent
       // l1 lambda search is better with coordinate descent!
       s = Solver.COORDINATE_DESCENT;
-    } else if(_state.activeBC().hasBounds()) {
+    } else if(_state.activeBC().hasBounds() && !_state.activeBC().hasProximalPenalty()) {
       s = Solver.COORDINATE_DESCENT;
     } else if(_parms._family == Family.multinomial && _parms._alpha[0] == 0)
       s = Solver.L_BFGS; // multinomial does better with lbfgs
