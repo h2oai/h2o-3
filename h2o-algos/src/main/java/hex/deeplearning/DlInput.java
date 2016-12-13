@@ -32,12 +32,28 @@ public class DlInput implements Serializable {
     this.target = new DlColumn<Integer>("target", target);
     this.weights = buildWeights(weightColumns.size());
     for (int i = 0; i < weightColumns.size(); i++) {
-      this.weights[i] = (new DlColumn<>("fv" + i, weightColumns.get(i)));
-      i++;
+      this.weights[i] = new DlColumn<>("fv" + i, weightColumns.get(i));
     }
   }
   
   @Override public String toString() {
     return "DlInput(" + name + ") " + target.size() + " rows, " + weights.length + " columns";
+  }
+
+  void assertTrue(boolean value, String explanation) {
+    if (!value) throw new IllegalStateException(explanation);
+  }
+
+  void assertTrue(boolean value) {
+    assertTrue(value, "oops");
+  }
+  
+  public void testMe(int expectedWidth) {
+    assertTrue(weights != null);
+    assertTrue(weights.length == expectedWidth);
+      for (int i = 0; i < expectedWidth; i++) {
+        final DlColumn<Double> column = weights[i];
+        assertTrue(column != null, "@" + i);
+      }
   }
 }

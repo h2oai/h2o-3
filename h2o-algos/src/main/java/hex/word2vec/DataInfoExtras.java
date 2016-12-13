@@ -80,4 +80,14 @@ public class DataInfoExtras {
     }
     return false;
   }
+
+  public static void fillBinIds(DataInfo di, Chunk[] chunks, DataInfo.Row row) {
+    int nbins = 0;
+    for (int i = 0; i < di._cats; ++i) {
+      int cid = di.getCategoricalId(i,chunks[i].isNA(row.cid)? di._catNAFill[i]:(int)chunks[i].at8(row.cid));
+      if(cid >= 0)
+        row.binIds[nbins++] = cid;
+    }
+    row.nBins = nbins;
+  }
 }

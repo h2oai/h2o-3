@@ -121,7 +121,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       weight_map = new double[nrows];
       double weight_sum = 0;
       for (int i = 0; i < nrows; ++i) {
-        DataInfo.Row row = _sparse ? rows[i] : _dinfo.buildRow(chunks[0].start(), i, chunks);
+        DataInfo.Row row = _sparse ? rows[i] : _dinfo.buildRow(chunks[0].start(), i);
         weight_sum += row.weight;
         weight_map[i] = weight_sum;
         assert (i == 0 || row.weight == 0 || weight_map[i] > weight_map[i - 1]);
@@ -168,8 +168,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
           // importance sampling based on inverse of cumulative distribution
           double key = skip_rng.nextDouble();
           r = Arrays.binarySearch(weight_map, 0, nrows, key);
-//          Log.info(Arrays.toString(weight_map));
-//          Log.info("key: " + key + " idx: " + (r >= 0 ? r : (-r-1)));
+
           if (r<0) r=-r-1;
           assert(r == 0 || weight_map[r] > weight_map[r-1]);
         } else if (r == -1){
@@ -184,7 +183,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         }
         assert(r >= 0 && r<=nrows);
 
-        DataInfo.Row row = _sparse ? rows[r] : _dinfo.buildRow(chunks[0].start(), r, chunks);
+        DataInfo.Row row = _sparse ? rows[r] : _dinfo.buildRow(chunks[0].start(), r);
         if(row.isBad() || row.weight == 0) {
           num_skipped_rows++;
           continue;

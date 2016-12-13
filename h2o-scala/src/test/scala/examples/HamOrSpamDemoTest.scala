@@ -149,12 +149,13 @@ println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + tr
     dlParams._l1 = l1
     dlParams._hidden = hidden
     dlParams._ignore_const_cols = false // TODO(vlad): figure out how important is it
-
     val jobKey: Key[DeepLearningModel] = water.Key.make("dlModel.hex")
     val dl = new DeepLearning(dlParams, jobKey)
 
     val tm = dl.trainModel()
+    println("Trained?")
     tm.waitTillFinish()
+    println("probably")
     tm._result.get()
   }
 

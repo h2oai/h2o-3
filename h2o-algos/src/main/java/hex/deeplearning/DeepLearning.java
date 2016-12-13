@@ -60,6 +60,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   }
 
   public void checkMyConditions() {
+
 //    if (_train != null && _train.lastVecName().equals("target")) {
 //      System.out.println("******"  + _train + _train.name(0) + ".." + _train.lastVecName() + " size=" + _train.names().length);
 //      Thread.dumpStack();
@@ -68,9 +69,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   }
   
   @Override public DeepLearningDriver trainModelImpl() {
+    __("tMI1");
     checkMyConditions();
+    __("tMI2");
     
-    return new DeepLearningDriver(); 
+    DeepLearningDriver dld = new DeepLearningDriver();
+    __("tMI3");
+    return dld;
   }
 
   /** Initialize the ModelBuilder, validating all arguments and preparing the
@@ -240,7 +245,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   }
 
   public class DeepLearningDriver extends Driver {
-    
+
     public DeepLearningDriver() {
       checkMyConditions();
     }
@@ -265,6 +270,7 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      * If checkpoint == null, then start training a new model, otherwise continue from a checkpoint
      */
     public final void buildModel() {
+
       List<Key> removeMe = new ArrayList<>();
       if (_parms._checkpoint == null) {
         modelWeBuild = new DeepLearningModel(dest(), _parms, new DeepLearningModel.DeepLearningModelOutput(DeepLearning.this), _train, _valid, nclasses());
@@ -479,18 +485,6 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         for(;;) {
           model.iterations++;
           model.model_info().data_info.currentData = model._parms.trainData;
-
-          {
-
-            Vec v1 = train.vec("target");
-
-            assert(v1.length() == mp.trainData.target.size());
-
-            for (long i = 0; i < v1.length(); i++) {
-              assert(v1.at(i) == mp.trainData.target((int)i));
-            }
-
-          }
           
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
