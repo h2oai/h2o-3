@@ -906,8 +906,7 @@ public class DataInfo extends Keyed<DataInfo> {
   int patience = 2;  
   
   public Row buildRow(long absPos, int relPos, Chunk[] chunks) {
-    Row row = newDenseRow();
-    return extractDenseRow(absPos, chunks, relPos, row);
+    return extractDenseRow(absPos, chunks, relPos, newDenseRow());
   }
   
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
