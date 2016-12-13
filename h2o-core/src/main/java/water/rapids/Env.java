@@ -82,7 +82,7 @@ public class Env extends Iced {
     CONSTS.put("nan", AstConst.NAN);
     CONSTS.put("PI", AstConst.PI);
     CONSTS.put("Pi", AstConst.PI);
-    CONSTS.put("null", null);
+    CONSTS.put("null", AstConst.NULL);
 
     // Standard math functions
     init(new AstAbs());
@@ -142,7 +142,6 @@ public class Env extends Iced {
     init(new AstPlus());
     init(new AstPow());
     init(new AstSub());
-    init(new AstIfElse());
     init(new AstIfElse()); // this one is ternary
 
     // Reducers

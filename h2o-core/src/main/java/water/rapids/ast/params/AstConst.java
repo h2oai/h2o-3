@@ -1,32 +1,31 @@
 package water.rapids.ast.params;
 
 import water.rapids.Env;
-import water.rapids.Rapids;
+import water.rapids.Val;
 import water.rapids.ast.AstParameter;
+import water.rapids.vals.ValNull;
 import water.rapids.vals.ValNum;
 
 /**
  * Class for constants
  */
 public class AstConst extends AstParameter {
-  private final ValNum _v;
-  private final String name;
+  private Val value;
+  private String name;
 
-  final public static AstConst FALSE = new AstConst("False", 0);
-  final public static AstConst TRUE = new AstConst("True", 1);
-  final public static AstConst NAN = new AstConst("NaN", Double.NaN);
-  final public static AstConst PI = new AstConst("Pi", Math.PI);
-  final public static AstConst E = new AstConst("E", Math.E);
+  public static final AstConst NULL = new AstConst("null", new ValNull());
+  public static final AstConst FALSE = new AstConst("False", new ValNum(0));
+  public static final AstConst TRUE = new AstConst("True", new ValNum(1));
+  public static final AstConst NAN = new AstConst("NaN", new ValNum(Double.NaN));
+  public static final AstConst PI = new AstConst("Pi", new ValNum(Math.PI));
+  public static final AstConst E = new AstConst("E", new ValNum(Math.E));
 
 
-  public AstConst() {
-    name = null;
-    _v = null;
-  }
+  public AstConst() {}  // For Serializable
 
-  public AstConst(String name, double d) {
+  public AstConst(String name, Val value) {
     this.name = name;
-    this._v = new ValNum(d);
+    this.value = value;
   }
 
   @Override
@@ -35,8 +34,8 @@ public class AstConst extends AstParameter {
   }
 
   @Override
-  public ValNum exec(Env env) {
-    return _v;
+  public Val exec(Env env) {
+    return value;
   }
 
 }
