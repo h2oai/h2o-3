@@ -25,7 +25,7 @@ import requests
 
 import h2o
 from h2o.display import H2ODisplay
-from h2o.exceptions import H2OValueError
+from h2o.exceptions import H2OTypeError, H2OValueError
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
@@ -522,10 +522,13 @@ class H2OFrame(object):
 
 
     def _unop(self, op):
+        for cname, ctype in self.types():
+            if ctype not in {"int", "real", "bool"}:
+                raise H2OTypeError("Function %s cannot be applied to %s column '%s'" % (op, ctype, cname))
         ret = H2OFrame._expr(expr=ExprNode(op, self), cache=self._ex._cache)
-        if ret._ex._cache._names is not None:
-            ret._ex._cache._names = ["%s(%s)" % (op, name) for name in ret._ex._cache._names]
-            ret._ex._cache._types = None
+        ret._ex._cache._names = ["%s(%s)" % (op, name) for name in ret._ex._cache._names]
+        # May produce either int or real or bool types
+        ret._ex._cache._types = None
         return ret
 
 
