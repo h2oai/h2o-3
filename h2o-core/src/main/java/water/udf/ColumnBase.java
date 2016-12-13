@@ -17,10 +17,6 @@ public abstract class ColumnBase<T> extends Iced<ColumnBase<T>> implements Colum
 
   @Override 
   public boolean isCompatibleWith(Column<?> ys) {
-    boolean itis = new Frame(vec()).isCompatible(new Frame(ys.vec()));
-    if (!itis) {
-      new Frame(vec()).isCompatible(new Frame(ys.vec()));
-    }
-    return itis;
+    return vec().isCompatibleWith(ys.vec());
   }
 }
