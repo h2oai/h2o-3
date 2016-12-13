@@ -138,6 +138,9 @@ final public class H2O {
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
             "\n" +
+            "    -context_path <context_path>\n" +
+            "          The context path for jetty.\n" +
+            "\n" +
             "Authentication options:\n" +
             "\n" +
             "    -jks <filename>\n" +
