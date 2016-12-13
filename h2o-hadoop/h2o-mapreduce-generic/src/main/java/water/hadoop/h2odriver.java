@@ -65,6 +65,7 @@ public class h2odriver extends Configured implements Tool {
   static String applicationId = "";
   static int cloudFormationTimeoutSeconds = DEFAULT_CLOUD_FORMATION_TIMEOUT_SECONDS;
   static int nthreads = -1;
+  static String contextPath = null;
   static int basePort = -1;
   static boolean beta = false;
   static boolean enableRandomUdpDrop = false;
@@ -484,6 +485,7 @@ public class h2odriver extends Configured implements Tool {
                     "          [-extramempercent <0 to 20>]\n" +
                     "          -n | -nodes <number of H2O nodes (i.e. mappers) to create>\n" +
                     "          [-nthreads <maximum typical worker threads, i.e. cpus to use>]\n" +
+                    "          [-context_path <context_path> the context path for jetty]\n" +
                     "          [-baseport <starting HTTP port for H2O nodes; default is 54321>]\n" +
                     "          [-flow_dir <server side directory or hdfs directory>]\n " +
                     "          [-ea]\n" +
@@ -705,6 +707,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-nthreads")) {
         i++; if (i >= args.length) { usage(); }
         nthreads = Integer.parseInt(args[i]);
+      }
+      else if (s.equals("-context_path")) {
+        i++; if (i >= args.length) { usage(); }
+        contextPath = args[i];
       }
       else if (s.equals("-baseport")) {
         i++; if (i >= args.length) { usage(); }
@@ -1195,6 +1201,9 @@ public class h2odriver extends Configured implements Tool {
     }
     if (nthreads >= 0) {
       addMapperArg(conf, "-nthreads", Integer.toString(nthreads));
+    }
+    if (contextPath != null) {
+      addMapperArg(conf, "-context_path", contextPath);
     }
     if (basePort >= 0) {
       addMapperArg(conf, "-baseport", Integer.toString(basePort));
