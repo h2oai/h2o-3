@@ -17,7 +17,7 @@ from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *
 from h2o.utils.backward_compatibility import backwards_compatible
-from h2o.utils.shared_utils import quoted
+from h2o.utils.shared_utils import deprecated, quoted
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type
 
@@ -639,41 +639,6 @@ class H2OGridSearch(backwards_compatible()):
         """
         return {model.model_id: model.gini(train, valid, xval) for model in self.models}
 
-    def sort_by(self, metric, increasing=True):
-        """
-        Sort the models in the grid space by a metric.
-
-        Parameters
-        ----------
-        metric: str
-          A metric ('logloss', 'auc', 'r2') by which to sort the models. If addtional arguments are desired,
-          they can be passed to the metric, for example 'logloss(valid=True)'
-        increasing: boolean, optional
-          Sort the metric in increasing (True) (default) or decreasing (False) order.
-
-        Returns
-        -------
-          An H2OTwoDimTable of the sorted models showing model id, hyperparameters, and metric value. The best model can
-          be selected and used for prediction.
-
-        Examples
-        --------
-          >>> grid_search_results = gs.sort_by('F1', False)
-          >>> best_model_id = grid_search_results['Model Id'][0]
-          >>> best_model = h2o.get_model(best_model_id)
-          >>> best_model.predict(test_data)
-        """
-
-        if metric[-1] != ')': metric += '()'
-        c_values = [list(x) for x in zip(*sorted(eval('self.' + metric + '.items()'), key=lambda k_v: k_v[1]))]
-        c_values.insert(1, [self.get_hyperparams(model_id, display=False) for model_id in c_values[0]])
-        if not increasing:
-            for col in c_values: col.reverse()
-        if metric[-2] == '(': metric = metric[:-2]
-        return H2OTwoDimTable(
-            col_header=['Model Id', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']', metric],
-            table_header='Grid Search Results for ' + self.model.__class__.__name__,
-            cell_values=[list(x) for x in zip(*c_values)])
 
     def get_hyperparams(self, id, display=True):
         """
@@ -804,3 +769,18 @@ class H2OGridSearch(backwards_compatible()):
     _bcim = {
         "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     }
+
+    @deprecated("grid.sort_by() is deprecated; use grid.get_grid() instead")
+    def sort_by(self, metric, increasing=True):
+        """Deprecated since 2016-12-12, use grid.get_grid() instead."""
+
+        if metric[-1] != ')': metric += '()'
+        c_values = [list(x) for x in zip(*sorted(eval('self.' + metric + '.items()'), key=lambda k_v: k_v[1]))]
+        c_values.insert(1, [self.get_hyperparams(model_id, display=False) for model_id in c_values[0]])
+        if not increasing:
+            for col in c_values: col.reverse()
+        if metric[-2] == '(': metric = metric[:-2]
+        return H2OTwoDimTable(
+            col_header=['Model Id', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']', metric],
+            table_header='Grid Search Results for ' + self.model.__class__.__name__,
+            cell_values=[list(x) for x in zip(*c_values)])
