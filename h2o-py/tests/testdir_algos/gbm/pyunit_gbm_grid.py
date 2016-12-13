@@ -27,7 +27,7 @@ def iris_gbm_grid():
   gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters)
   gs.train(x=list(range(4)), y=4, training_frame=train)
   print("\nsorted by mse: ")
-  print(gs.sort_by("mse"))
+  print(gs.get_grid(sort_by="mse"))
   #print gs.hit_ratio_table()
 
   for model in gs:
