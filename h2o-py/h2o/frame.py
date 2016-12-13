@@ -56,12 +56,14 @@ class H2OFrame(object):
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, python_obj=None):
+    def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
+                 column_names=None, column_types=None, na_strings=None):
         """Initialize a new H2OFrame object, possibly from some other object."""
         self._ex = ExprNode()
         self._ex._children = None
         if python_obj is not None:
-            self._upload_python_object(python_obj)
+            self._upload_python_object(python_obj, destination_frame, header, separator,
+                                       column_names, column_types, na_strings)
 
     @staticmethod
     def _expr(expr, cache=None):
@@ -93,14 +95,14 @@ class H2OFrame(object):
           header : int, optional
             -1 means the first line is data, 0 means guess, 1 means first line is header.
 
-          sep : str, optional
+          separator : str, optional
             The field separator character. Values on each line of the file are separated by
             this character. If sep = "", the parser will automatically detect the separator.
 
-          col_names : list, optional
+          column_names : list, optional
             A list of column names for the file.
 
-          col_types : list or dict, optional
+          column_types : list or dict, optional
             A list of types or a dictionary of column names to types to specify whether
             columns should be forced to a certain type upon import parsing. If a list, the
             types for elements that are None will be guessed. The possible types a column may
