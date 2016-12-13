@@ -274,7 +274,10 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @property
     def alpha(self):
-        """List[float]: distribution of regularization between L1 and L2."""
+        """
+        List[float]: distribution of regularization between L1 and L2. Default value of alpha is 0 when SOLVER =
+        'L-BFGS', 0.5 otherwise
+        """
         return self._parms.get("alpha")
 
     @alpha.setter
@@ -349,14 +352,14 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     @property
     def missing_values_handling(self):
         """
-        Enum["skip", "mean_imputation"]: Handling of missing values. Either Skip or MeanImputation. (Default:
+        Enum["mean_imputation", "skip"]: Handling of missing values. Either MeanImputation or Skip. (Default:
         "mean_imputation")
         """
         return self._parms.get("missing_values_handling")
 
     @missing_values_handling.setter
     def missing_values_handling(self, missing_values_handling):
-        assert_is_type(missing_values_handling, None, Enum("skip", "mean_imputation"))
+        assert_is_type(missing_values_handling, None, Enum("mean_imputation", "skip"))
         self._parms["missing_values_handling"] = missing_values_handling
 
 

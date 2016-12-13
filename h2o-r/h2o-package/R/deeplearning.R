@@ -5,10 +5,12 @@
 #' 
 #' Build a Deep Neural Network model using CPUs
 #' Builds a feed-forward multilayer artificial neural network on an H2OFrame
-#'
-#' @param x A vector containing the \code{character} names of the predictors in the model.
+#' 
+#' @param x A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing,then all columns except y are used.
-#' @param y The name of the response variable in the model.
+#' @param y The name of the response variable in the model.If the data does not contain a header, this is the column index
+#'        number starting at 0, and increasing from left to right. (The response must be either an integer or a
+#'        categorical variable).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
@@ -31,7 +33,6 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_confusion_matrix_size [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs. Defaults to 20.
 #' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
 #'        Defaults to 0.
 #' @param checkpoint Model checkpoint to resume training with.
@@ -51,8 +52,8 @@
 #'        available data (e.g., replicated training data), -2: automatic. Defaults to -2.
 #' @param target_ratio_comm_to_comp Target ratio of communication overhead to computation. Only for multi-node operation and
 #'        train_samples_per_iteration = -2 (auto-tuning). Defaults to 0.05.
-#' @param seed Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded. Defaults to
-#'        -1.
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
 #' @param adaptive_rate \code{Logical}. Adaptive learning rate. Defaults to True.
 #' @param rho Adaptive learning rate time decay factor (similarity to prior updates). Defaults to 0.99.
 #' @param epsilon Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress). Defaults to 1e-08.
@@ -110,7 +111,7 @@
 #' @param single_node_mode \code{Logical}. Run on a single node for fine-tuning of model parameters. Defaults to False.
 #' @param shuffle_training_data \code{Logical}. Enable shuffling of training data (recommended if training data is replicated and
 #'        train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes). Defaults to False.
-#' @param missing_values_handling Handling of missing values. Either Skip or MeanImputation. Must be one of: "Skip", "MeanImputation". Defaults
+#' @param missing_values_handling Handling of missing values. Either MeanImputation or Skip. Must be one of: "MeanImputation", "Skip". Defaults
 #'        to MeanImputation.
 #' @param quiet_mode \code{Logical}. Enable quiet mode for less output to standard output. Defaults to False.
 #' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to False.
@@ -141,92 +142,90 @@
 #' predictions <- h2o.predict(iris.dl, iris.hex)
 #' }
 #' @export
-h2o.deeplearning <- function(x, y, 
-                             model_id, 
-                             training_frame, 
-                             validation_frame, 
-                             nfolds  = 0, 
-                             keep_cross_validation_predictions  = FALSE, 
-                             keep_cross_validation_fold_assignment  = FALSE, 
-                             fold_assignment  = c("AUTO", "Random", "Modulo", "Stratified"), 
-                             fold_column, 
-                             ignore_const_cols  = TRUE, 
-                             score_each_iteration  = FALSE, 
-                             weights_column, 
-                             offset_column, 
-                             balance_classes  = FALSE, 
-                             class_sampling_factors, 
-                             max_after_balance_size  = 5.0, 
-                             max_confusion_matrix_size  = 20, 
-                             max_hit_ratio_k  = 0, 
-                             checkpoint, 
-                             pretrained_autoencoder, 
-                             overwrite_with_best_model  = TRUE, 
-                             use_all_factor_levels  = TRUE, 
-                             standardize  = TRUE, 
-                             activation  = c("Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"), 
-                             hidden  = c(200, 200), 
-                             epochs  = 10.0, 
-                             train_samples_per_iteration  = -2, 
-                             target_ratio_comm_to_comp  = 0.05, 
-                             seed  = -1, 
-                             adaptive_rate  = TRUE, 
-                             rho  = 0.99, 
-                             epsilon  = 1e-08, 
-                             rate  = 0.005, 
-                             rate_annealing  = 1e-06, 
-                             rate_decay  = 1.0, 
-                             momentum_start  = 0.0, 
-                             momentum_ramp  = 1000000.0, 
-                             momentum_stable  = 0.0, 
-                             nesterov_accelerated_gradient  = TRUE, 
-                             input_dropout_ratio  = 0.0, 
-                             hidden_dropout_ratios, 
-                             l1  = 0.0, 
-                             l2  = 0.0, 
-                             max_w2  = 3.4028235e+38, 
-                             initial_weight_distribution  = c("UniformAdaptive", "Uniform", "Normal"), 
-                             initial_weight_scale  = 1.0, 
-                             initial_weights, 
-                             initial_biases, 
-                             loss  = c("Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute", "Quantile"), 
-                             distribution  = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"), 
-                             quantile_alpha  = 0.5, 
-                             tweedie_power  = 1.5, 
-                             huber_alpha  = 0.9, 
-                             score_interval  = 5.0, 
-                             score_training_samples  = 10000, 
-                             score_validation_samples  = 0, 
-                             score_duty_cycle  = 0.1, 
-                             classification_stop  = 0.0, 
-                             regression_stop  = 1e-06, 
-                             stopping_rounds  = 5, 
-                             stopping_metric  = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"), 
-                             stopping_tolerance  = 0.0, 
-                             max_runtime_secs  = 0.0, 
-                             score_validation_sampling  = c("Uniform", "Stratified"), 
-                             diagnostics  = TRUE, 
-                             fast_mode  = TRUE, 
-                             force_load_balance  = TRUE, 
-                             variable_importances  = FALSE, 
-                             replicate_training_data  = TRUE, 
-                             single_node_mode  = FALSE, 
-                             shuffle_training_data  = FALSE, 
-                             missing_values_handling  = c("Skip", "MeanImputation"), 
-                             quiet_mode  = FALSE, 
-                             autoencoder  = FALSE, 
-                             sparse  = FALSE, 
-                             col_major  = FALSE, 
-                             average_activation  = 0.0, 
-                             sparsity_beta  = 0.0, 
-                             max_categorical_features  = 2147483647, 
-                             reproducible  = FALSE, 
-                             export_weights_and_biases  = FALSE, 
-                             mini_batch_size  = 1, 
-                             categorical_encoding  = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"), 
-                             elastic_averaging  = FALSE, 
-                             elastic_averaging_moving_rate  = 0.9, 
-                             elastic_averaging_regularization  = 0.001
+h2o.deeplearning <- function(x, y, training_frame,
+                             model_id = NULL,
+                             validation_frame = NULL,
+                             nfolds = 0,
+                             keep_cross_validation_predictions = FALSE,
+                             keep_cross_validation_fold_assignment = FALSE,
+                             fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                             fold_column = NULL,
+                             ignore_const_cols = TRUE,
+                             score_each_iteration = FALSE,
+                             weights_column = NULL,
+                             offset_column = NULL,
+                             balance_classes = FALSE,
+                             class_sampling_factors = NULL,
+                             max_after_balance_size = 5.0,
+                             max_hit_ratio_k = 0,
+                             checkpoint = NULL,
+                             pretrained_autoencoder = NULL,
+                             overwrite_with_best_model = TRUE,
+                             use_all_factor_levels = TRUE,
+                             standardize = TRUE,
+                             activation = c("Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
+                             hidden = c(200, 200),
+                             epochs = 10.0,
+                             train_samples_per_iteration = -2,
+                             target_ratio_comm_to_comp = 0.05,
+                             seed = -1,
+                             adaptive_rate = TRUE,
+                             rho = 0.99,
+                             epsilon = 1e-08,
+                             rate = 0.005,
+                             rate_annealing = 1e-06,
+                             rate_decay = 1.0,
+                             momentum_start = 0.0,
+                             momentum_ramp = 1000000.0,
+                             momentum_stable = 0.0,
+                             nesterov_accelerated_gradient = TRUE,
+                             input_dropout_ratio = 0.0,
+                             hidden_dropout_ratios = NULL,
+                             l1 = 0.0,
+                             l2 = 0.0,
+                             max_w2 = 3.4028235e+38,
+                             initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
+                             initial_weight_scale = 1.0,
+                             initial_weights = NULL,
+                             initial_biases = NULL,
+                             loss = c("Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute", "Quantile"),
+                             distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                             quantile_alpha = 0.5,
+                             tweedie_power = 1.5,
+                             huber_alpha = 0.9,
+                             score_interval = 5.0,
+                             score_training_samples = 10000,
+                             score_validation_samples = 0,
+                             score_duty_cycle = 0.1,
+                             classification_stop = 0.0,
+                             regression_stop = 1e-06,
+                             stopping_rounds = 5,
+                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
+                             stopping_tolerance = 0.0,
+                             max_runtime_secs = 0.0,
+                             score_validation_sampling = c("Uniform", "Stratified"),
+                             diagnostics = TRUE,
+                             fast_mode = TRUE,
+                             force_load_balance = TRUE,
+                             variable_importances = FALSE,
+                             replicate_training_data = TRUE,
+                             single_node_mode = FALSE,
+                             shuffle_training_data = FALSE,
+                             missing_values_handling = c("MeanImputation", "Skip"),
+                             quiet_mode = FALSE,
+                             autoencoder = FALSE,
+                             sparse = FALSE,
+                             col_major = FALSE,
+                             average_activation = 0.0,
+                             sparsity_beta = 0.0,
+                             max_categorical_features = 2147483647,
+                             reproducible = FALSE,
+                             export_weights_and_biases = FALSE,
+                             mini_batch_size = 1,
+                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
+                             elastic_averaging = FALSE,
+                             elastic_averaging_moving_rate = 0.9,
+                             elastic_averaging_regularization = 0.001
                              ) 
 {
   #If x is missing, then assume user wants to use all columns as features.
@@ -240,13 +239,13 @@ h2o.deeplearning <- function(x, y,
 
   # Required args: training_frame
   if( missing(training_frame) ) stop("argument 'training_frame' is missing, with no default")
-  if( missing(validation_frame) ) validation_frame = NULL
-  # Training_frame and validation_frame may be a key or an H2OFrame object
+  # Training_frame must be a key or an H2OFrame object
   if (!is.H2OFrame(training_frame))
      tryCatch(training_frame <- h2o.getFrame(training_frame),
            error = function(err) {
              stop("argument 'training_frame' must be a valid H2OFrame or key")
            })
+  # Validation_frame must be a key or an H2OFrame object
   if (!is.null(validation_frame)) {
      if (!is.H2OFrame(validation_frame))
          tryCatch(validation_frame <- h2o.getFrame(validation_frame),
@@ -261,9 +260,9 @@ h2o.deeplearning <- function(x, y,
   if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
   if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+  parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  parms$ignored_columns <- args$x_ignore 
- 
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
@@ -292,8 +291,6 @@ h2o.deeplearning <- function(x, y,
     parms$class_sampling_factors <- class_sampling_factors
   if (!missing(max_after_balance_size))
     parms$max_after_balance_size <- max_after_balance_size
-  if (!missing(max_confusion_matrix_size))
-    parms$max_confusion_matrix_size <- max_confusion_matrix_size
   if (!missing(max_hit_ratio_k))
     parms$max_hit_ratio_k <- max_hit_ratio_k
   if (!missing(checkpoint))
@@ -363,8 +360,6 @@ h2o.deeplearning <- function(x, y,
     } else 
       parms$loss <- loss
   }
-  if (!missing(loss))
-    parms$loss <- loss
   if (!missing(distribution))
     parms$distribution <- distribution
   if (!missing(quantile_alpha))
@@ -439,6 +434,7 @@ h2o.deeplearning <- function(x, y,
     parms$elastic_averaging_moving_rate <- elastic_averaging_moving_rate
   if (!missing(elastic_averaging_regularization))
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
+  # Error check and build model
   .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3) 
 }
 

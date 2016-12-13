@@ -256,7 +256,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     @property
     def max_updates(self):
-        """int: Maximum number of updates (Default: 2000)"""
+        """int: Maximum number of updates, defaults to 2*max_iterations (Default: 2000)"""
         return self._parms.get("max_updates")
 
     @max_updates.setter
