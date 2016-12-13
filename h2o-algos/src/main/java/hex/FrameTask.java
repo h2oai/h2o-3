@@ -111,12 +111,9 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
             && !(_fr.vecs()[_dinfo.weightChunkId()].isBinary()); //special case for cross-val      -> doesn't count as obs weights
     final double global_weight_sum = obs_weights ? Math.round(_fr.vecs()[_dinfo.weightChunkId()].mean() * _fr.numRows()) : 0;
 
-    DataInfo.Row row = null;
     DataInfo.Row[] rows = null;
     if (_sparse)
       rows = _dinfo.extractSparseRows(chunks);
-    else
-      row = _dinfo.newDenseRow();
     double[] weight_map = null;
     double relative_chunk_weight = 1;
     //TODO: store node-local helper arrays in _dinfo -> avoid re-allocation and construction
@@ -124,7 +121,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       weight_map = new double[nrows];
       double weight_sum = 0;
       for (int i = 0; i < nrows; ++i) {
-        row = _sparse ? rows[i] : _dinfo.extractDenseRow(chunks, i, row);
+        DataInfo.Row row = _sparse ? rows[i] : _dinfo.buildRow(chunks[0].start(), i, chunks);
         weight_sum += row.weight;
         weight_map[i] = weight_sum;
         assert (i == 0 || row.weight == 0 || weight_map[i] > weight_map[i - 1]);
@@ -187,7 +184,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         }
         assert(r >= 0 && r<=nrows);
 
-        row = _sparse ? rows[r] : _dinfo.extractDenseRow(chunks, r, row);
+        DataInfo.Row row = _sparse ? rows[r] : _dinfo.buildRow(chunks[0].start(), r, chunks);
         if(row.isBad() || row.weight == 0) {
           num_skipped_rows++;
           continue;

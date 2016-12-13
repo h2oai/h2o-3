@@ -220,6 +220,15 @@ public class DeepLearningModel extends
     super(destKey, parms, output);
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
     DKV.put(dinfo);
+
+    Vec v1 = train.vec("target");
+
+    assert(v1.length() == parms.trainData.target.size());
+
+    for (long i = 0; i < v1.length(); i++) {
+      assert(v1.at(i) == parms.trainData.target((int)i));
+    }
+
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
     _output._origNames = parms._train.get().names();

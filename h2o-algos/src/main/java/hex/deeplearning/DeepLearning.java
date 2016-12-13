@@ -479,6 +479,19 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         for(;;) {
           model.iterations++;
           model.model_info().data_info.currentData = model._parms.trainData;
+
+          {
+
+            Vec v1 = train.vec("target");
+
+            assert(v1.length() == mp.trainData.target.size());
+
+            for (long i = 0; i < v1.length(); i++) {
+              assert(v1.at(i) == mp.trainData.target((int)i));
+            }
+
+          }
+          
           model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
                   new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode

@@ -41,7 +41,7 @@ public class GLMScore extends MRTask<GLMScore> {
       Arrays.fill(ps,0);
     } else {
       _m.scoreRow(r, r.offset, ps);
-      if (_computeMetrics && !r.response_bad)
+      if (_computeMetrics && !r.responseBad())
         _mb.perRow(ps, res, r.weight, r.offset, _m);
     }
     if (_generatePredictions)

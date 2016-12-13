@@ -13,6 +13,7 @@ import java.util.List;
 public class DlInput implements Serializable {
   public final DlColumn<Integer> target;
   public final DlColumn<Double>[] weights;
+  public final String name;
   
   public int target(int i) { return target.data.get(i); }
   
@@ -26,18 +27,8 @@ public class DlInput implements Serializable {
   }
   
   @SuppressWarnings("unchecked")
-  public DlInput(List<Integer> target, long size, List<Double>... weightColumns) {
-    this.target = new DlColumn<Integer>("target", target);
-    this.weights = buildWeights(weightColumns.length);
-    for (int i = 0; i < weightColumns.length; i++) {
-      this.weights[i] = (new DlColumn<>("fv" + i, weightColumns[i]));
-      i++;
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  public DlInput(List<Integer> target, long size, List<List<Double>> weightColumns) {
-    
+  public DlInput(String name, List<Integer> target, List<List<Double>> weightColumns) {
+    this.name = name;
     this.target = new DlColumn<Integer>("target", target);
     this.weights = buildWeights(weightColumns.size());
     for (int i = 0; i < weightColumns.size(); i++) {
@@ -45,32 +36,8 @@ public class DlInput implements Serializable {
       i++;
     }
   }
-
-  @SuppressWarnings("unchecked")
-  public DlInput(List<Integer> target, List<Double>... weightColumns) {
-    assert weightColumns.length > 0;
-    int size = weightColumns[0].size();
-    this.target = new DlColumn<Integer>("target", target);
-    this.weights = buildWeights(weightColumns.length);
-    for (int i = 0; i < weightColumns.length; i++) {
-      List<Double> weights = weightColumns[i];
-      assert(weights.size() == size);
-      this.weights[i] = (new DlColumn<>("fv" + i, weights));
-      i++;
-    }
-  }
-
-  @SuppressWarnings("unchecked")
-  public DlInput(List<Integer> target, Double[]... weightColumns) {
-    assert weightColumns.length > 0;
-    int size = weightColumns[0].length;
-    this.target = new DlColumn<Integer>("target", target);
-    this.weights = buildWeights(weightColumns.length);
-    for (int i = 0; i < weightColumns.length; i++) {
-      Double[] weights = weightColumns[i];
-      assert(weights.length == size);
-      this.weights[i] = (new DlColumn<>("fv" + i, weights));
-      i++;
-    }
+  
+  @Override public String toString() {
+    return "DlInput(" + name + ") " + target.size() + " rows, " + weights.length + " columns";
   }
 }

@@ -3,6 +3,7 @@ package hex.word2vec;
 import hex.DataInfo;
 import water.DKV;
 import water.IcedUtils;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.InteractionWrappedVec;
 import water.fvec.Vec;
@@ -62,5 +63,21 @@ public class DataInfoExtras {
       di._adaptedFrame.remove(di.weightChunkId());
       di._weights = false;
     }
+  }
+
+  public static boolean checkWeightsAndMissing(DataInfo di, Chunk[] chunks, DataInfo.Row row) {
+    if(di._weights)
+      row.weight = chunks[di.weightChunkId()].atd((int)row.rid);
+    if(row.weight == 0) return true;
+    
+    if (di._skipMissing) {
+      int N = di._cats + di._nums;
+      for (int i = 0; i < N; ++i)
+        if (chunks[i].isNA((int)row.rid)) {
+          row.predictors_bad = true;
+          return true;
+        }
+    }
+    return false;
   }
 }

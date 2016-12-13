@@ -113,7 +113,7 @@ object HamOrSpamDemoTest extends TestUtil {
     lazy val train = buildTable("train", before)
     lazy val valid = buildTable("valid", after)
 println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + train.lastVec())
-    lazy val dlModel = buildDLModel(train, valid, catData(before), catData(after))
+    lazy val dlModel = buildDLModel(train, valid, catData("train", before), catData("valid", after))
     
     /** Spam detector */
     def spamness(msg: String) = {
@@ -152,14 +152,10 @@ println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + tr
 
     val jobKey: Key[DeepLearningModel] = water.Key.make("dlModel.hex")
     val dl = new DeepLearning(dlParams, jobKey)
-//    val tmi = dl.trainModelImpl()
-//    tmi.computeImpl()
-//    dl.checkMyConditions()
 
     val tm = dl.trainModel()
     tm.waitTillFinish()
     tm._result.get()
-//    tm.modelWeBuild
   }
 
   /** A numeric Vec from an array of doubles */
@@ -201,7 +197,7 @@ println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + tr
     lazy val names: Array[String] = ("target" :: (weights.indices map name).toList) toArray
   }
 
-  def catData(rows: List[CategorizedTexts]): DlInput = {
+  def catData(name: String, rows: List[CategorizedTexts]): DlInput = {
     val row0 = rows.head
     val target:java.util.List[Integer] = (rows map (_.target) map Integer.valueOf) asJava
     
@@ -210,7 +206,7 @@ println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + tr
     val javaColumns: java.util.List[java.util.List[java.lang.Double]] = columns.map(
       column => (column.map(java.lang.Double.valueOf)).asJava) asJava
 
-    new DlInput(target, target.size, javaColumns)
+    new DlInput(name, target, javaColumns)
   }
   
   def catVecs(rows: Iterable[CategorizedTexts]): Array[Vec] = {

@@ -1,6 +1,7 @@
 package hex;
 
 import hex.deeplearning.DlInput;
+import hex.word2vec.DataInfoExtras;
 import water.*;
 import water.fvec.*;
 import water.util.ArrayUtils;
@@ -735,9 +736,8 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public final class Row extends Iced {
-    public boolean predictors_bad;        // should the row be skipped (GLM skip NA for example)
-    public boolean response_bad;
-    public boolean isBad(){return predictors_bad || response_bad;}
+    public boolean predictors_bad = false;        // should the row be skipped (GLM skip NA for example)
+    public boolean isBad(){return predictors_bad || responseBad();}
     public double [] numVals;  // the backing data of the row
     public double [] response;
     public int    [] numIds;   // location of next sparse value
@@ -746,16 +746,15 @@ public class DataInfo extends Keyed<DataInfo> {
     public int       cid;      // categorical id
     public int       nBins;    // number of enum    columns (not expanded)
     public int       nNums;    // number of numeric columns (not expanded)
-    public int       nOutpus;
     public double    offset = 0;
     public double    weight = 1;
-    private C8DChunk [] _outputs;
 
-
-    public void setOutput(int i, double v) {_outputs[i].set8D(cid,v);}
-    public double getOutput(int i) {return _outputs[i].get8D(cid);}
+    public boolean responseBad() {
+      for (double r : response) if (Double.isNaN(r)) return true;
+      return false;
+    }
+    
     public final boolean isSparse(){return numIds != null;}
-
 
     public Row(boolean sparse, int nNums, int nBins, int nresponses, int i, long start) {
       binIds = MemoryManager.malloc4(nBins);
@@ -904,28 +903,28 @@ public class DataInfo extends Keyed<DataInfo> {
     return val < 0?-1:val+_numOffsets[cid];
   }
 
-
+  int patience = 2;  
+  
+  public Row buildRow(long absPos, int relPos, Chunk[] chunks) {
+    Row row = newDenseRow();
+    return extractDenseRow(absPos, chunks, relPos, row);
+  }
+  
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
-    row.predictors_bad = false;
-    row.response_bad = false;
-    row.rid = rid + chunks[0].start();
+    return extractDenseRow(chunks[0].start() + rid, chunks, rid, row);
+  }
+  
+  public final Row extractDenseRow(long absPos, Chunk[] chunks, int rid, Row row) {
+    row.rid = absPos;
     row.cid = rid;
-    if(_weights)
-      row.weight = chunks[weightChunkId()].atd(rid);
-    if(row.weight == 0) return row;
-    if (_skipMissing) {
-      int N = _cats + _nums;
-      for (int i = 0; i < N; ++i)
-        if (chunks[i].isNA(rid)) {
-          row.predictors_bad = true;
-          return row;
-        }
-    }
+    if (DataInfoExtras.checkWeightsAndMissing(this, chunks, row)) return row;
     int nbins = 0;
     for (int i = 0; i < _cats; ++i) {
       int cid = getCategoricalId(i,chunks[i].isNA(rid)? _catNAFill[i]:(int)chunks[i].at8(rid));
       if(cid >= 0)
         row.binIds[nbins++] = cid;
+      
+      __("binIds+=" + cid + " for " + i + "/" + _cats);
     }
     row.nBins = nbins;
     final int n = _nums;
@@ -955,14 +954,10 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     
     for (int i = 0; i < _numResponses; ++i) {
-      row.response[i] = /*currentData != null ? currentData.target(i) : */chunks[responseChunkId(i)].atd(rid);
+      assert responseChunkId(i) == chunks.length - 1;
+      final Chunk chunk = chunks[responseChunkId(i)];
+      row.response[i] = currentData != null ? currentData.target((int)(row.rid)) : chunk.atd(rid);
 
-//      assert (int)(row.response[i]) == currentData.target(rid): "Failed at " + rid + ", expected " + row.response[i] + ", got " + currentData.target(rid);
-
-      if(Double.isNaN(row.response[i])) {
-        row.response_bad = true;
-        break;
-      }
       if (_normRespMul != null)
         row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
     }
@@ -974,7 +969,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     return row;
   }
-  
+
   public int getInteractionOffset(Chunk[] chunks, int cid, int rid) {
     boolean useAllFactors = ((InteractionWrappedVec)chunks[cid].vec())._useAllFactorLevels;
     InteractionWrappedVec.InteractionWrappedChunk c = (InteractionWrappedVec.InteractionWrappedChunk)chunks[cid];
@@ -1012,15 +1007,6 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     public Row row(int i) {return _sparse?_sparseRows[i]:extractDenseRow(_chks,i,_denseRow);}
   }
-
-  public Rows rows(Chunk [] chks) {
-    int cnt = 0;
-    for(Chunk c:chks)
-      if(c.isSparseZero())
-        ++cnt;
-    return rows(chks,cnt > (chks.length >> 1));
-  }
-  public Rows rows(Chunk [] chks, boolean sparse) {return new Rows(chks,sparse);}
 
   /**
    * Extract (sparse) rows from given chunks.
@@ -1106,18 +1092,14 @@ public class DataInfo extends Keyed<DataInfo> {
       }
     }
     // response(s)
-    for (int i = 1; i <= _numResponses; ++i) {
-      int rid = responseChunkId(i-1);
+    for (int i = 0; i < _numResponses; ++i) {
+      int rid = responseChunkId(i);
       Chunk rChunk = chunks[rid];
       for (int r = 0; r < chunks[0]._len; ++r) {
         Row row = rows[r];
-        row.response[i-1] = rChunk.atd(r);
-        if(Double.isNaN(row.response[i-1])) {
-          row.response_bad = true;
-          break;
-        }
+        row.response[i] = rChunk.atd(r);
         if (_normRespMul != null) {
-          row.response[i-1] = (row.response[i-1] - _normRespSub[i-1]) * _normRespMul[i-1];
+          row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
         }
       }
     }
