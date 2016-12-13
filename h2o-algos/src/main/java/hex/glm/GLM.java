@@ -674,7 +674,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               ls = (_state.l1pen() == 0 && !_state.activeBC().hasBounds())
                  ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
                  : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
-
             if (!ls.evaluate(ArrayUtils.subtract(betaCnd, ls.getX(), betaCnd))) {
               Log.info(LogMsg("Ls failed " + ls));
               return;
