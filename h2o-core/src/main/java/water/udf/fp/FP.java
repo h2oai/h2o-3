@@ -9,7 +9,15 @@ import java.util.*;
  * for details
  */
 public class FP {
-  
+
+  // the following two borrowed from Java 7 library.
+  public static boolean equal(Object a, Object b) {
+    return (a == b) || (a != null && a.equals(b));
+  }
+  public static int hashCode(Object o) {
+    return o != null ? o.hashCode() : 0;
+  }
+
   interface Option<T> extends Iterable<T> {
     boolean isEmpty();
     boolean nonEmpty();
@@ -61,10 +69,10 @@ public class FP {
 
     @Override public boolean equals(Object o) {
       return this == o || 
-             (o instanceof Some && Objects.equals(get(), (((Some<?>) o).get())));
+             (o instanceof Some && equal(get(), (((Some<?>) o).get())));
     }
 
-    @Override public int hashCode() { return Objects.hashCode(get()); }
+    @Override public int hashCode() { return FP.hashCode(get()); }
   }
 
   public static <T> Option<T> Some(T t) {
