@@ -434,7 +434,12 @@ public class OptimizationUtils {
         step = nextStep;
       }
       boolean succ = _ginfox._objVal < oldObjval;
-      if(succ) _beta = beta;
+      if(succ) {
+        // make sure we have correct beta (not all return cases have valid current beta!)
+        for (int i = 0; i < beta.length; ++i)
+          beta[i] = _beta[i] + _stx * direction[i];
+        _beta = beta;
+      }
       return succ;
     }
 
