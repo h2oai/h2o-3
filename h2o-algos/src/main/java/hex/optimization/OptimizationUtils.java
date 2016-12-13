@@ -201,7 +201,8 @@ public class OptimizationUtils {
       "Number of calls to gradient solver has reached the limit.", // 3
       "The step is at the lower bound stpmin.", // 4
       "The step is at the upper bound stpmax.", // 5
-      "Rounding errors prevent further progress, ftol/gtol tolerances may be too small." // 6
+      "Rounding errors prevent further progress, ftol/gtol tolerances may be too small.", // 6
+      "Non-negative differential." // 7
     };
 
     private double nextStep(GradientInfo ginfo, double dg, double stp, double off) {
@@ -333,8 +334,10 @@ public class OptimizationUtils {
       final double dgInit = ArrayUtils.innerProduct(_ginfox._gradient, direction);
       final double dgtest = dgInit * _ftol;
       if(dgtest > 1e-4) Log.warn("MoreThuente LS: got possitive differential " + dgtest);
-      if(dgtest >= 0)
+      if(dgtest >= 0) {
+        _returnStatus = 7;
         return false;
+      }
       double [] beta = new double[_beta.length];
       double width = _maxStep - _minStep;
       double oldWidth = 2*width;
