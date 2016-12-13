@@ -528,7 +528,7 @@ FAQ
 -  **What happens during prediction if the new sample has categorical
    levels not seen in training?** 
    
-  The value will be filled with either 0 or a special missing level (if trained with missing values, and ``missing\_value\_handling`` was set to **MeanImputation**).
+  The value will be filled with either 0 or a special missing level (if trained with missing values, and ``missing_value_handling`` was set to **MeanImputation**).
 
 -  **Does it matter if the data is sorted?**
 
@@ -575,19 +575,19 @@ FAQ
 
   GLM includes three convergence criteria outside of max iterations:
   	
-  	- beta epsilon: beta stops changing. This is used mostly with IRLSM. 
-  	- gradient epsilon: gradient is too small. Thi sis used mostly with L-BFGS.
-  	- objective epsilon: relative objective improvement is too small. This is used by all solvers.
+  	- ``beta_epsilon``: beta stops changing. This is used mostly with IRLSM. 
+  	- ``gradient_epsilon``: gradient is too small. This is used mostly with L-BFGS.
+  	- ``objective_epsilon``: relative objective improvement is too small. This is used by all solvers.
 
   The default values below are based on a heuristic:
 
-   - The default for beta epsilon is 1e-4.  
-   - The default for gradient epsilon is 1e-6 if there is no regularization (lambda = 0) or you are running with lambda search; 1e-4 otherwise.
-   - The default for objective epsilon is 1e-6 if lambda = 0; 1e-4 otherwise.
+   - The default for ``beta_epsilon`` is 1e-4.  
+   - The default for ``gradient_epsilon`` is 1e-6 if there is no regularization (``lambda = 0``) or you are running with ``lambda_search``; 1e-4 otherwise.
+   - The default for ``objective_epsilon`` is 1e-6 if ``lambda = 0``; 1e-4 otherwise.
 
-  The default for max iterations depends on the solver type and whether you run with lambda search:
+  The default for ``max_iterations`` depends on the solver type and whether you run with lambda search:
  
-   - for IRLSM, the default  is 50 if no lambda search; 10* number of lambdas otherwise 
+   - for IRLSM, the default is 50 if no lambda search; 10* number of lambdas otherwise 
    - for LBFGS, the default is number of classes (1 if not classification) * max(20, number of predictors /4 ) if no lambda search; it is number of classes * 100 * n-lambdas with lambda search.
    
   You will receive a warning if you reach the maximum number of iterations. In some cases, GLM  can end prematurely if it can not progress forward via line search. This typically happens when running a lambda search with IRLSM solver. Note that using CoordinateDescent solver fixes the issue.
