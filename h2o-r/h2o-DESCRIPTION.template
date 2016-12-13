@@ -11,7 +11,8 @@ Description: R scripting functionality for H2O, the open source
   gradient boosting machines, random forests, and neural networks
   (deep learning) within various cluster environments.
 License: Apache License (== 2.0)
-URL: http://www.h2o.ai
+URL: https://github.com/h2oai/h2o-3
+BugReports: http://jira.h2o.ai
 NeedsCompilation: no
 SystemRequirements: Java (>= 1.7)
 Depends: R (>= 2.13.0),
