@@ -110,7 +110,7 @@ import java.util.UUID;
  *  }}</pre>
  */
 
-public abstract class Chunk extends Iced<Chunk> {
+public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
 
   public Chunk() {}
   private Chunk(byte [] bytes) {_mem = bytes;initFromBytes();}
@@ -675,7 +675,7 @@ public abstract class Chunk extends Iced<Chunk> {
   }
 
   //NA sparse methods:
-
+  
   /** Sparse Chunks have a significant number of NAs, and support for
    *  skipping over large runs of NAs in a row.
    *  @return true if this Chunk is sparseNA.  */
