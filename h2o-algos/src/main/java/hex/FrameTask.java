@@ -104,6 +104,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
     if(_jobKey != null && _jobKey.get() != null && _jobKey.get().stop_requested()) throw new Job.JobCancelledException();
     final int nrows = chunks[0]._len;
     final long offset = chunks[0].start();
+    System.out.println(getClass().getSimpleName() + ".map on " + offset + ".." + (offset+nrows-1));
     boolean doWork = chunkInit();
     if (!doWork) return;
     final boolean obs_weights = _dinfo._weights
@@ -121,7 +122,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
       weight_map = new double[nrows];
       double weight_sum = 0;
       for (int i = 0; i < nrows; ++i) {
-        DataInfo.Row row = _sparse ? rows[i] : _dinfo.buildRow(chunks[0].start(), i);
+        DataInfo.Row row = _sparse ? rows[i] : _dinfo.buildRow((int)(offset + i));
         weight_sum += row.weight;
         weight_map[i] = weight_sum;
         assert (i == 0 || row.weight == 0 || weight_map[i] > weight_map[i - 1]);
@@ -183,7 +184,7 @@ public abstract class FrameTask<T extends FrameTask<T>> extends MRTask<T>{
         }
         assert(r >= 0 && r<=nrows);
 
-        DataInfo.Row row = _sparse ? rows[r] : _dinfo.buildRow(chunks[0].start(), r);
+        DataInfo.Row row = _sparse ? rows[r] : _dinfo.buildRow((int)(offset + r));
         if(row.isBad() || row.weight == 0) {
           num_skipped_rows++;
           continue;
