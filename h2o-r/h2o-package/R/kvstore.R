@@ -269,11 +269,11 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE) {
     }
     if (get_jar) {
       urlSuffix = "h2o-genmodel.jar"
-      #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
-      tmp <- .h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE)
-      #Build genmodel.jar file path and download genmodel.jar
+      #Build genmodel.jar file path
       jar.path <- paste0(path, "/h2o-genmodel.jar")
-      writeBin(tmp, jar.path, useBytes = TRUE)
+      #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
+      #and write to jar.path.
+      writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE), jar.path, useBytes = TRUE)
     }
     return(paste0(pojoname,".java"))
   }
@@ -319,20 +319,18 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE) {
   #Build URL for MOJO
   urlSuffix <- paste0(.h2o.__MODELS,"/",URLencode(model_id),"/mojo")
 
-  #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with MOJO URL
-  tmp <- .h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE)
-
-  #Build MOJO file path and download MOJO file
+  #Build MOJO file path and download MOJO file & perform a safe (i.e. error-checked)
+  #HTTP GET request to an H2O cluster with MOJO URL
   mojo.path <- paste0(path,"/",model_id,".zip")
-  writeBin(tmp, mojo.path, useBytes = TRUE)
+  writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE), mojo.path, useBytes = TRUE)
 
   if (get_genmodel_jar) {
     urlSuffix = "h2o-genmodel.jar"
-    #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
-    tmp <- .h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE)
-    #Build genmodel.jar file path and download genmodel.jar
+    #Build genmodel.jar file path
     jar.path <- paste0(path, "/h2o-genmodel.jar")
-    writeBin(tmp, jar.path, useBytes = TRUE)
+    #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
+    #and write to jar.path.
+    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE), jar.path, useBytes = TRUE)
   }
   return(paste0(model_id,".zip"))
 }
