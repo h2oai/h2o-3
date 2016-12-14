@@ -59,14 +59,13 @@ Example
 	response <- "IsDepDelayed"
 
 	# split into train and validation
-	airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+	airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8)
 	train <- airlines.splits[[1]]
 	valid <- airlines.splits[[2]]
 
 	# try using the `lambda` parameter:
 	airlines.glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
-	                        validation_frame = valid, lambda =.0001,
-	                        seed = 1234)
+	                        validation_frame = valid, lambda =.0001)
 
 	# print the AUC for the validation data
 	print(h2o.auc(airlines.glm, valid = TRUE))
@@ -79,7 +78,7 @@ Example
 	# random grid search instead: list(strategy = "RandomDiscrete")
 	grid <- h2o.grid(x = predictors, y = response, family = 'binomial', training_frame = train, validation_frame = valid,
 	                 algorithm = "glm", grid_id = "air_grid", hyper_params = hyper_params,
-	                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
+	                 search_criteria = list(strategy = "Cartesian"))
 
 	## Sort the grid models by AUC
 	sortedGrid <- h2o.getGrid("air_grid", sort_by = "auc", decreasing = TRUE)
@@ -109,11 +108,11 @@ Example
 	response = "IsDepDelayed"
 
 	# split into train and validation sets
-	train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+	train, valid= airlines.split_frame(ratios = [.8])
 
 	# try using the `lambda_` parameter:
 	# initialize your estimator
-	airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial', lambda_ = .0001, seed =1234)
+	airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial', lambda_ = .0001)
 
 	# then train your model
 	airlines_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
@@ -133,7 +132,7 @@ Example
 	# and we want to see the performance of all models. For a larger search space use
 	# random grid search instead: {'strategy': "RandomDiscrete"}
 	# initialize the glm estimator
-	airlines_glm_2 = H2OGeneralizedLinearEstimator(family = 'binomial', seed = 1234)
+	airlines_glm_2 = H2OGeneralizedLinearEstimator(family = 'binomial')
 
 	# build grid search with previously made GLM and hyperparameters
 	grid = H2OGridSearch(model = airlines_glm_2, hyper_params = hyper_params,
