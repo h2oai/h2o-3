@@ -53,7 +53,8 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public enum Backend {
     unknown,
-    mxnet, caffe, tensorflow
+    mxnet, caffe, tensorflow, // C++
+    xgrpc // anything that speaks grpc
   }
 
   public enum ProblemType {
