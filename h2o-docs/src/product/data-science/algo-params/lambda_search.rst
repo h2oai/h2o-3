@@ -7,9 +7,9 @@
 Description
 ~~~~~~~~~~~
 
-Setting ``lambda_search`` to TRUE enables efficient and automatic search for the optimal value of the ``lambda`` parameter. When enabled, GLM will first fit a model with maximum regularization (highest lambda value) and then keep decreasing it at each step until overfitting occurs. The resulting model is based on the best lambda value. 
+Setting ``lambda_search`` to TRUE enables efficient and automatic search for the optimal value of the ``lambda`` parameter. When enabled, GLM will first fit a model with maximum regularization (highest lambda value) and then keep decreasing it at each step until it reaches the minimum lambda or until overfitting occurs. The resulting model is based on the best lambda value. 
 
-When looking for a sparse solution (``alpha`` > 0), lambda search can also be used to effeciently handle very wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A common use of lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value. 
+When looking for a sparse solution (``alpha`` > 0), lambda search can also be used to efficiently handle very wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A possible use case for lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

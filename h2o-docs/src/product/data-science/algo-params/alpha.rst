@@ -13,7 +13,7 @@ The ``alpha`` parameter controls the distribution between the :math:`\ell_1` (LA
 
  :math:`P(\alpha,\beta) = (1 - \alpha) /2 ||\beta||{^2_2} + \alpha||\beta||_1 = \sum_j[(1 - \alpha) /2\beta{^2_j} + \alpha|\beta_j|]`
 
-Given the above, a value of 1.0 represents LASSO, and a value of 0.0 produces ridge regression. This value defaults to 0.5.
+Given the above, a value of 1.0 represents LASSO, and a value of 0.0 produces ridge regression. This value defaults to 0 if ``solver=L_BFGS``; otherwise, this value defaults to 0.5.
 
 This option also works closely with the `lambda <lambda.html>`__ parameter, which controls the amount of regularization applied. The following table describes the type of penalized model that results based on the values specifed for the ``lambda`` and ``alpha`` options.
 
@@ -33,7 +33,7 @@ Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `lambda <lambda.html>`__
-
+- `solver <solver.html>`__
 
 Example
 ~~~~~~~
@@ -66,8 +66,7 @@ Example
 	# train your model, where you specify alpha
 	boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
 	                      validation_frame = valid,
-	                      alpha = .25,
-	                      seed = 1234)
+	                      alpha = .25)
 
 	# print the mse for the validation data
 	print(h2o.mse(boston_glm, valid=TRUE))
@@ -115,7 +114,7 @@ Example
 
 	# try using the `alpha` parameter:
 	# initialize the estimator then train the model
-	boston_glm = H2OGeneralizedLinearEstimator(alpha = .25, seed = 1234)
+	boston_glm = H2OGeneralizedLinearEstimator(alpha = .25)
 	boston_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# print the mse for the validation data
