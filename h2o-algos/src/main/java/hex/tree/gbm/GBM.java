@@ -641,16 +641,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       sqt.join();
 
       final DTree tree = ktrees[0];
-      if (sqt._quantiles!=null) {
-        for (int i = 0; i < sqt._quantiles.length; i++) {
-          if (Double.isNaN(sqt._quantiles[i])) continue; //no active rows for this NID
-          double val = effective_learning_rate() * sqt._quantiles[i];
-          assert !Double.isNaN(val) && !Double.isInfinite(val);
-          if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
-          if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
-          ((LeafNode) tree.node(sqt._nids[i]))._pred = (float) val;
-          if (DEV_DEBUG) { Log.info("Leaf " + sqt._nids[i] + " has quantile: " + sqt._quantiles[i]); }
-        }
+      for (int i = 0; i < sqt._quantiles.length; i++) {
+        if (Double.isNaN(sqt._quantiles[i])) continue; //no active rows for this NID
+        double val = effective_learning_rate() * sqt._quantiles[i];
+        assert !Double.isNaN(val) && !Double.isInfinite(val);
+        if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
+        if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
+        ((LeafNode) tree.node(sqt._nids[i]))._pred = (float) val;
+        if (DEV_DEBUG) { Log.info("Leaf " + sqt._nids[i] + " has quantile: " + sqt._quantiles[i]); }
       }
     }
 
