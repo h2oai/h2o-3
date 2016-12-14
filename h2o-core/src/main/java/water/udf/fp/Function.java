@@ -1,5 +1,7 @@
 package water.udf.fp;
 
+import java.io.Serializable;
+
 /**
  * Represents a single-argument function
  * 
@@ -11,6 +13,6 @@ package water.udf.fp;
  * @see <a href="https://en.wikipedia.org/wiki/Function_(mathematics)">wikipedia</a> for details.
  * 
  */
-public interface Function<X, Y> extends Code {
+public interface Function<X, Y> extends Serializable {
   Y apply(X x);
 }

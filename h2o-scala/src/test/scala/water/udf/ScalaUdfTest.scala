@@ -6,7 +6,8 @@ import java.{lang, util}
 
 import org.junit.{Assert, Test, BeforeClass}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-import water.udf.fp.{Functions, Function}
+import water.udf.fp.PureFunctions._
+import water.udf.fp.{PureFunctions, Functions, Function}
 import water.{TestUtil, Test0}
 import water.TestUtil._
 import water.udf.MoreColumns._
@@ -108,7 +109,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
 
   test("Squares") {
     val x: Column[lang.Double] = five_x
-    val y: Column[lang.Double] = new FunColumn[lang.Double, lang.Double](Functions.SQUARE, x)
+    val y: Column[lang.Double] = new FunColumn[lang.Double, lang.Double](SQUARE, x)
     assert(0.0 == y(0), 0.000001)
     assert(44100.0 == y(42), 0.000001)
     assert(10000000000.0 == y(20000), 0.000001)
@@ -116,7 +117,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
 
   test("IsFunNA") {
     val x: Column[lang.Double] = sines
-    val y: Column[lang.Double] = new FunColumn[lang.Double, lang.Double](Functions.SQUARE, x)
+    val y: Column[lang.Double] = new FunColumn[lang.Double, lang.Double](PureFunctions.SQUARE, x)
     assert(!y.isNA(10))
     assert(y.isNA(11))
     assert(y.isNA(19))
@@ -127,9 +128,9 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
   test("Fun2") {
     val x: Column[lang.Double] = five_x
     val y: Column[lang.Double] = sines
-    val y2: Column[lang.Double] = willDrop(new FunColumn[lang.Double, lang.Double](Functions.SQUARE, y))
-    val z1: Column[lang.Double] = willDrop(new Fun2Column[lang.Double, lang.Double, lang.Double](Functions.PLUS, x, y2))
-    val z2: Column[lang.Double] = willDrop(new Fun2Column[lang.Double, lang.Double, lang.Double](Functions.X2_PLUS_Y2, x, y))
+    val y2: Column[lang.Double] = willDrop(new FunColumn[lang.Double, lang.Double](SQUARE, y))
+    val z1: Column[lang.Double] = willDrop(new Fun2Column[lang.Double, lang.Double, lang.Double](PLUS, x, y2))
+    val z2: Column[lang.Double] = willDrop(new Fun2Column[lang.Double, lang.Double, lang.Double](X2_PLUS_Y2, x, y))
     assert(0.0 == z1(0), 0.000001)
     assert(210.84001174779368 == z1(42), 0.000001)
     assert(100000.3387062632 == z1(20000), 0.000001)
@@ -156,21 +157,21 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     val z: Column[lang.Double] = willDrop(Doubles.newColumn(A_LOT, (i: Long) => math.sin(i * 0.0001)))
 
     try {
-      val z1: Column[lang.Double] = new Fun2Column[lang.Double, lang.Double, lang.Double](Functions.PLUS, x, y)
+      val z1: Column[lang.Double] = new Fun2Column[lang.Double, lang.Double, lang.Double](PureFunctions.PLUS, x, y)
       fail("Column incompatibility should be detected")
     }
     catch {
       case ae: AssertionError => // ok 
     }
     try {
-      val r: Column[lang.Double] = new Fun3Column[lang.Double, lang.Double, lang.Double, lang.Double](Functions.X2_PLUS_Y2_PLUS_Z2, x, y, z)
+      val r: Column[lang.Double] = new Fun3Column[lang.Double, lang.Double, lang.Double, lang.Double](X2_PLUS_Y2_PLUS_Z2, x, y, z)
       fail("Column incompatibility should be detected")
     }
     catch {
       case ae: AssertionError => // ok
     }
     try {
-      val r: Column[lang.Double] = new Fun3Column[lang.Double, lang.Double, lang.Double, lang.Double](Functions.X2_PLUS_Y2_PLUS_Z2, x, z, y)
+      val r: Column[lang.Double] = new Fun3Column[lang.Double, lang.Double, lang.Double, lang.Double](PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, z, y)
       fail("Column incompatibility should be detected")
     }
     catch {
@@ -186,7 +187,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     val x: Column[lang.Double] = xsOnSphere
     val y: Column[lang.Double] = ysOnSphere
     val z: Column[lang.Double] = zsOnSphere
-    val r: Column[lang.Double] = new Fun3Column[lang.Double, lang.Double, lang.Double, lang.Double](Functions.X2_PLUS_Y2_PLUS_Z2, x, y, z)
+    val r: Column[lang.Double] = new Fun3Column[lang.Double, lang.Double, lang.Double, lang.Double](PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, y, z)
 
     for {i <- 0 until 100000} assert(math.abs(r(i * 10) - 1.0) < 0.0001)
 
@@ -198,11 +199,11 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     val x: Column[lang.Double] = xsOnSphere
     val y: Column[lang.Double] = ysOnSphere
     val z: Column[lang.Double] = zsOnSphere
-    val r: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](Functions.SUM_OF_SQUARES, x, y, z)
+    val r: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](PureFunctions.SUM_OF_SQUARES, x, y, z)
 
     for {i <- 0 until 100000} assert(math.abs(r(i * 10) - 1.0) < 0.0001)
 
-    val x1: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](Functions.SUM_OF_SQUARES, x)
+    val x1: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](PureFunctions.SUM_OF_SQUARES, x)
 
     for {i <- 0 until 100000} {
       val xi: lang.Double = x(i)
@@ -223,7 +224,7 @@ class ScalaUdfTest extends Test0 with BeforeAndAfter with BeforeAndAfterAll {
     val y: Column[lang.Double] = ysOnSphere
     val z: Column[lang.Double] = sinesShort
     try {
-      val r: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](Functions.SUM_OF_SQUARES, x, y, z)
+      val r: Column[lang.Double] = new FoldingColumn[lang.Double, lang.Double](PureFunctions.SUM_OF_SQUARES, x, y, z)
       fail("Should have failed on incompatibility")
     }
     catch {

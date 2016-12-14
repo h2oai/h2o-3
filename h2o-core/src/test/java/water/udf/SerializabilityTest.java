@@ -4,6 +4,7 @@ import org.apache.commons.lang.SerializationUtils;
 import org.junit.Test;
 import water.udf.fp.Function;
 import water.udf.fp.Functions;
+import water.udf.fp.PureFunctions;
 import water.udf.specialized.Enums;
 
 import java.util.Arrays;
@@ -80,7 +81,7 @@ public class SerializabilityTest extends UdfTestBase {
   @SuppressWarnings("unchecked")
   public void tesFunColumnSerializable() throws Exception {
     Column<Double> source = someDoubles();
-    Column<Double> c = willDrop(new FunColumn<>(Functions.SQUARE, source));
+    Column<Double> c = willDrop(new FunColumn<>(PureFunctions.SQUARE, source));
 
     checkSerialization(c);
   }
@@ -89,7 +90,7 @@ public class SerializabilityTest extends UdfTestBase {
   @SuppressWarnings("unchecked")
   public void tesFun2ColumnSerializable() throws Exception {
     Column<Double> x = someDoubles();
-    Column<Double> c = willDrop(new Fun2Column<>(Functions.PLUS, x, x));
+    Column<Double> c = willDrop(new Fun2Column<>(PureFunctions.PLUS, x, x));
 
     checkSerialization(c);
   }
@@ -99,7 +100,7 @@ public class SerializabilityTest extends UdfTestBase {
   public void tesFun3ColumnSerializable() throws Exception {
     Column<Double> x = someDoubles();
     Column<Double> y = someDoubles();
-    Column<Double> c = willDrop(new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, y, x));
+    Column<Double> c = willDrop(new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, y, x));
 
     checkSerialization(c);
   }
@@ -109,7 +110,7 @@ public class SerializabilityTest extends UdfTestBase {
   public void tesFoldingSerializable() throws Exception {
     Column<Double> x = someDoubles();
     Column<Double> y = someDoubles();
-    Column<Double> c = willDrop(new FoldingColumn<>(Functions.SUM_OF_SQUARES, x, y, x));
+    Column<Double> c = willDrop(new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x, y, x));
 
     checkSerialization(c);
   }
@@ -120,7 +121,7 @@ public class SerializabilityTest extends UdfTestBase {
     Column<String> source = willDrop(Strings.newColumn(Arrays.asList("line 1; line 2; lin 3".split("; "))));
 
     // produce another (virtual) column that stores a list of strings as a row value
-    Column<List<String>> c = new UnfoldingColumn<>(Functions.splitBy(","), source, 10);
+    Column<List<String>> c = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
     checkSerialization(c);
   }
 }

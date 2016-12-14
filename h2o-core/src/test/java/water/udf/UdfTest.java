@@ -5,6 +5,7 @@ import org.junit.Test;
 import water.udf.fp.Function;
 import water.udf.fp.Functions;
 import water.udf.fp.Predicate;
+import water.udf.fp.PureFunctions;
 import water.udf.specialized.Enums;
 import water.util.StringUtils;
 
@@ -159,7 +160,7 @@ public class UdfTest extends UdfTestBase {
   public void testOfSquares() throws Exception {
     Column<Double> x = five_x();
 
-    Column<Double> y = new FunColumn<>(Functions.SQUARE, x);
+    Column<Double> y = new FunColumn<>(PureFunctions.SQUARE, x);
 
     assertEquals(0.0, y.apply(0), 0.000001);
     assertEquals(44100.0, y.apply(42), 0.000001);
@@ -170,7 +171,7 @@ public class UdfTest extends UdfTestBase {
   public void testIsFunNA() throws Exception {
     Column<Double> x = sines();
 
-    Column<Double> y = new FunColumn<>(Functions.SQUARE, x);
+    Column<Double> y = new FunColumn<>(PureFunctions.SQUARE, x);
 
     assertFalse(y.isNA(10));
     assertTrue(y.isNA(11));
@@ -183,9 +184,9 @@ public class UdfTest extends UdfTestBase {
   public void testFun2() throws Exception {
     Column<Double> x = five_x();
     Column<Double> y = sines();
-    Column<Double> y2 = willDrop(new FunColumn<>(Functions.SQUARE, y));
-    Column<Double> z1 = willDrop(new Fun2Column<>(Functions.PLUS, x, y2));
-    Column<Double> z2 = willDrop(new Fun2Column<>(Functions.X2_PLUS_Y2, x, y));
+    Column<Double> y2 = willDrop(new FunColumn<>(PureFunctions.SQUARE, y));
+    Column<Double> z1 = willDrop(new Fun2Column<>(PureFunctions.PLUS, x, y2));
+    Column<Double> z2 = willDrop(new Fun2Column<>(PureFunctions.X2_PLUS_Y2, x, y));
     
     assertEquals(0.0, z1.apply(0), 0.000001);
     assertEquals(210.84001174779368, z1.apply(42), 0.000001);
@@ -217,21 +218,21 @@ public class UdfTest extends UdfTestBase {
     }));
 
     try {
-      Column<Double> z1 = new Fun2Column<>(Functions.PLUS, x, y);
+      Column<Double> z1 = new Fun2Column<>(PureFunctions.PLUS, x, y);
       fail("Column incompatibility should be detected");
     } catch (AssertionError ae) {
       // as designed
     }
 
     try {
-      Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
+      Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
       fail("Column incompatibility should be detected");
     } catch (AssertionError ae) {
       // as designed
     }
     
     try {
-      Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
+      Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
       fail("Column incompatibility should be detected");
     } catch (AssertionError ae) {
       // as designed
@@ -247,21 +248,21 @@ public class UdfTest extends UdfTestBase {
     }));
 
     try {
-      Column<Double> z1 = new Fun2Column<>(Functions.PLUS, x, y);
+      Column<Double> z1 = new Fun2Column<>(PureFunctions.PLUS, x, y);
       fail("Column incompatibility should be detected");
     } catch (AssertionError ae) {
       // as designed
     }
 
     try {
-      Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
+      Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
       fail("Column incompatibility should be detected");
     } catch (AssertionError ae) {
       // as designed
     }
 
     try {
-      Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
+      Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, z, y);
       fail("Column incompatibility should be detected");
     } catch (AssertionError ae) {
       // as designed
@@ -282,7 +283,7 @@ public class UdfTest extends UdfTestBase {
       public Double apply(Long i) { return Math.sin(i*0.0001); }
     }));
 
-    Column<Double> r = new Fun3Column<>(Functions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
+    Column<Double> r = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, y, z);
 
     for (int i = 0; i < 100000; i++) {
       assertEquals(1.00, r.apply(i*10), 0.0001);
@@ -309,13 +310,13 @@ public class UdfTest extends UdfTestBase {
       public Double apply(Long i) { return Math.sin(i*0.0001); }
     }));
 
-    Column<Double> r = new FoldingColumn<>(Functions.SUM_OF_SQUARES, x, y, z);
+    Column<Double> r = new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x, y, z);
 
     for (int i = 0; i < 100000; i++) {
       assertEquals(1.00, r.apply(i*10), 0.0001);
     }
 
-    Column<Double> x1 = new FoldingColumn<>(Functions.SUM_OF_SQUARES, x);
+    Column<Double> x1 = new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x);
 
     for (int i = 0; i < 100000; i++) {
       double xi = x.apply(i);
@@ -323,7 +324,7 @@ public class UdfTest extends UdfTestBase {
     }
 
     try {
-      Column<Double> x0 = new FoldingColumn<>(Functions.SUM_OF_SQUARES);
+      Column<Double> x0 = new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES);
       fail("This should have failed - no empty foldings");
     } catch (AssertionError ae) {
       // good, good!
@@ -348,7 +349,7 @@ public class UdfTest extends UdfTestBase {
     Column<Double> z = sinesShort();
 
     try {
-      Column<Double> r = new FoldingColumn<>(Functions.SUM_OF_SQUARES, x, y, z);
+      Column<Double> r = new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x, y, z);
       fail("Should have failed on incompatibility");
     } catch(AssertionError ae) {
       // as expected
@@ -367,7 +368,7 @@ public class UdfTest extends UdfTestBase {
     Column<String> source = willDrop(Strings.newColumn(lines));
 
     // produce another (virtual) column that stores a list of strings as a row value
-    Column<List<String>> split = new UnfoldingColumn<>(Functions.splitBy(","), source, 10);
+    Column<List<String>> split = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
 
     // now check that we have the right data
     for (int i = 0; i < lines.size(); i++) {
@@ -384,7 +385,7 @@ public class UdfTest extends UdfTestBase {
     File file = getFile("smalldata/chicago/chicagoAllWeather.csv");
     final List<String> lines = Files.readLines(file, Charset.defaultCharset());
     Column<String> source = willDrop(Strings.newColumn(lines));
-    Column<List<String>> split = new UnfoldingColumn<>(Functions.splitBy(","), source, 10);
+    Column<List<String>> split = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
     UnfoldingFrame<String> frame = new UnfoldingFrame<>(Strings, split.size(), split, 11);
     List<DataColumn<String>> columns = frame.materialize();
     

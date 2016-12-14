@@ -55,8 +55,8 @@ public class DataColumns {
       return newColumn(xs.size(), Functions.onList(xs));
     }
 
-    public DataColumn<T> constColumn(final T x, long length) throws IOException {
-      return newColumn(length, Functions.constant(x));
+    public DataColumn<T> constColumn(final T t, long length) throws IOException {
+      return newColumn(length, Functions.<Long, T>constant(t));
     }
 
     @Override public String toString() { return name; }
