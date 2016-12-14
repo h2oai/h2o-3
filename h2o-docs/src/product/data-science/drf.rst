@@ -285,7 +285,7 @@ FAQ
 
 -  **What happens if the response has missing values?**
 
-  No errors will occur, but nothing will be learned from rows containing missing the response.
+  No errors will occur, but nothing will be learned from rows containing missing values in the response column.
 
 -  **What happens when you try to predict on a categorical level not
    seen during training?**

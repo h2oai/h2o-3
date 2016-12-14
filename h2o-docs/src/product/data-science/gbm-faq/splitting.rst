@@ -11,7 +11,7 @@ Splitting
 
 - **How does the minimum rows parameter work?**
 
- ``min_rows`` specifies the minimum number of observations for a leaf. If a user specifies ``min_rows = 500``, and they still have 500 TRUEs and 400 FALSEs, we won't split because we need 500 on both sides. The default for ``min_rows` is 10, so ``min_rows`` rarely affects the GBM splits because GBMs are typically shallow, but the concept still applies.
+ ``min_rows`` specifies the minimum number of observations for a leaf. If a user specifies ``min_rows = 500``, and they still have 500 TRUEs and 400 FALSEs, we won't split because we need 500 on both sides. The default for ``min_rows`` is 10, so this option rarely affects the GBM splits because GBMs are typically shallow, but the concept still applies.
 
 - **How does GBM decide which feature to split on?**
 
