@@ -602,7 +602,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           x.l =  .5 * x.dev;
           break;
         case binomial:
-        case quasibinomial:
           x.l = ym == yr?0:w*((MathUtils.y_log_y(yr, ym)) + MathUtils.y_log_y(1 - yr, 1 - ym));
           x.dev = 2*x.l;
           break;
