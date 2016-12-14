@@ -9,67 +9,37 @@ import java.util.List;
  */
 public class Functions {
 
-  public static <X,Y,Z> Function<X, Z> compose(final Function<X,Y> f, final Function<Y, Z> g) {
-    return new Function<X, Z>() {
-      @Override public Z apply(X x) { return g.apply(f.apply(x)); }
-    };
+  static class Composition<X,Y,Z> implements Function<X,Z> {
+    private final Function<X, Y> f;
+    private final Function<Y, Z> g;
+
+    Composition(final Function<X,Y> f, final Function<Y, Z> g) {
+      this.f = f;
+      this.g = g;
+    }
+
+    @Override
+    public int hashCode() {
+      return f.hashCode() * 211 + g.hashCode() * 79;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (!(obj instanceof Composition)) return false;
+      Composition other = (Composition) obj;
+      return equal(f, other.f) && equal(g, other.g);
+    }
+
+    @Override public Z apply(X x) { return g.apply(f.apply(x)); }
+  }
+  
+  public static <X,Y,Z> Function<X, Z> compose(final Function<Y, Z> g, final Function<X,Y> f) {
+    return new Composition<>(f, g);
   }
   
   public static <X> Function<X, X> identity() {
     return new Function<X, X>() {
       @Override public X apply(X x) { return x; }
-    };
-  }
-  
-  public static final Function<Double, Double> SQUARE = new Function<Double, Double>() {
-    @Override public Double apply(Double x) { return x*x; }
-  };
-
-  public static final Function2<Double, Double, Double> PLUS = new Function2<Double, Double, Double>() {
-    @Override public Double apply(Double x, Double y) { return x+y; }
-  };
-
-  public static final Function2<Double, Double, Double> PROD = new Function2<Double, Double, Double>() {
-    @Override public Double apply(Double x, Double y) { return x*y; }
-  };
-
-  public static final Function2<Double, Double, Double> X2_PLUS_Y2 = new Function2<Double, Double, Double>() {
-    @Override public Double apply(Double x, Double y) { return x*x + y*y; }
-  };
-
-  public static final Function3<Double, Double, Double, Double> X2_PLUS_Y2_PLUS_Z2 = new Function3<Double, Double, Double, Double>() {
-    @Override public Double apply(Double x, Double y, Double z) { return x*x + y*y + z*z; }
-  };
-  
-  public static final Foldable<Double, Double> SUM = new Foldable<Double, Double>() {
-    @Override public Double initial() { return 0.; }
-    @Override public Double apply(Double sum, Double x) {
-      return sum == null || x == null ? null : sum+x;
-    }
-  };
-
-  public static final Foldable<Double, Double> SUM_OF_SQUARES = new Foldable<Double, Double>() {
-    @Override public Double initial() { return 0.; }
-
-    @Override public Double apply(Double sum, Double x) {
-      return sum == null || x == null ? null : sum+x*x;
-    }
-  };
-
-  public static final Foldable<Double, Double> PRODUCT = new Foldable<Double, Double>() {
-    @Override public Double initial() { return 1.; }
-
-    @Override public Double apply(Double sum, Double x) {
-      return sum == null || x == null ? null : sum*x;
-    }
-  };
-  
-  public static Unfoldable<String, String> splitBy(final String separator) {
-    return new Unfoldable<String, String>() {
-
-      @Override public List<String> apply(String s) {
-        return Arrays.asList(s.split(separator));
-      }
     };
   }
 
@@ -86,17 +56,26 @@ public class Functions {
     return ys;
   }
 
-  public static <T> Function<Long,T> constant(final T x) {
-    return new Function<Long, T>() {
-      public T apply(Long i) { return x; }
+  public static <X,Y> Function<X,Y> constant(final Y y) {
+    return new Function<X, Y>() {
+      public Y apply(X x) { return y; }
     };
   }
 
-  public static int hashCode(Code x) {
-    return x == null ? 0 : x.getClass().getCanonicalName().hashCode();
+  public static Unfoldable<String, String> splitBy(final String separator) {
+    return new Unfoldable<String, String>() {
+
+      @Override public List<String> apply(String s) {
+        return Arrays.asList(s.split(separator));
+      }
+    };
   }
 
-  public static boolean equal(Code x, Code y) {
-    return x == null ? y == null : y != null && (x.getClass() == y.getClass());
+  public static int hashCode(Object x) {
+    return x == null ? 0 : x.hashCode();
+  }
+
+  public static boolean equal(Object x, Object y) {
+    return x == null ? y == null : x.equals(y);
   }
 }

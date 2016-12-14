@@ -1,5 +1,7 @@
 package water.udf.fp;
 
+import java.io.Serializable;
+
 /**
  * Represents a three-argument function
  *
@@ -9,6 +11,6 @@ package water.udf.fp;
  * A three-argument function, in abstract settings, is something that takes values of given type (X, Y and Z) and returns a value of a given type (T). 
  * @see <a href="https://en.wikipedia.org/wiki/Function_(mathematics)">wikipedia</a> for details.
  */
-public interface Function3<X, Y, Z, T> extends Code {
+public interface Function3<X, Y, Z, T> extends Serializable {
   T apply(X x, Y y, Z z);
 }

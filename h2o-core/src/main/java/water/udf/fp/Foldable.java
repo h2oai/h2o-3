@@ -1,5 +1,7 @@
 package water.udf.fp;
 
+import java.io.Serializable;
+
 /**
  * Represents a folding operation applicable to streams or collection
  * 
@@ -12,7 +14,7 @@ package water.udf.fp;
  * 
  * @see <a href="https://en.wikipedia.org/wiki/Fold_(higher-order_function)">wikipedia</a> for details.
  */
-public interface Foldable<X, Y> extends Code {
+public interface Foldable<X, Y> extends Serializable {
   Y initial();
   Y apply(Y y, X x);
 }

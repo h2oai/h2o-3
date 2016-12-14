@@ -1,7 +1,6 @@
 package water.udf;
 
 import water.fvec.Vec;
-import water.udf.fp.Code;
 
 /**
  * Basic common behavior for Functional Columns
