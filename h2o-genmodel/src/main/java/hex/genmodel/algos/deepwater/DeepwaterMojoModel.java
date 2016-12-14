@@ -82,9 +82,12 @@ public class DeepwaterMojoModel extends MojoModel {
     try {
       if (backend.equals("mxnet"))      backend="deepwater.backends.mxnet.MXNetBackend";
       if (backend.equals("tensorflow")) backend="deepwater.backends.tensorflow.TensorflowBackend";
-      if (backend.equals("caffe")) backend="deepwater.backends.caffe.CaffeBackend";
+      if (backend.equals("caffe"))      backend="deepwater.backends.caffe.CaffeBackend";
+      if (backend.equals("xgrpc"))      backend="deepwater.backends.grpc.XGRPCBackendTrain";
       return (BackendTrain)(Class.forName(backend).newInstance());
-    } catch (Exception ignored) {}
+    } catch (Exception ignored) {
+      //ignored.printStackTrace();
+    }
     return null;
   }
 }
