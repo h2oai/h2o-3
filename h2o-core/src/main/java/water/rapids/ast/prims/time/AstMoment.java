@@ -105,7 +105,7 @@ public class AstMoment extends AstBuiltin<AstMoment> {
 
     // Some arguments are vecs -- create a frame of the same size
     Vec[] vecs = timevecs.toArray(new Vec[timevecs.size()]);
-    int[] cm = ArrayUtils.toPrimitive(chunksmap);
+    int[] cm = ArrayUtils.toIntArray(chunksmap);
     Frame fr = new SetTimeTask(timeparts, cm)
         .doAll(Vec.T_TIME, vecs)
         .outputFrame(Key.<Frame>make(), new String[]{"time"}, null);

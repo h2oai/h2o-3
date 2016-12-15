@@ -52,6 +52,7 @@ import java.util.Set;
  * </dl>
  *
  */
+@SuppressWarnings("unused")
 public class Cascade {
   private String expr;  // Statement to parse and then execute
   private int pos;      // Parse pointer, points to the index of the next character to be consumed
@@ -63,11 +64,11 @@ public class Cascade {
     Cascade r = new Cascade(expr);
     Ast res = r.parseNext();
     if (r.nextChar() != ' ')
-      throw new IllegalASTException("Syntax error: illegal Cascade expression `" + expr + "`");
+      throw r.syntaxError("illegal Cascade expression");
     return res;
   }
 
-  /**
+  /*/*
    * Execute a single rapids call in a short-lived session
    * @param cascade expression to parse
    */
@@ -86,7 +87,7 @@ public class Cascade {
     }
   }
 */
-  /**
+  /*/*
    * Compute and return a value in this session.  Any returned frame shares
    * Vecs with the session (is not deep copied), and so must be deleted by the
    * caller (with a Rapids "rm" call) or will disappear on session exit, or is
@@ -152,11 +153,11 @@ public class Cascade {
     if (isQuote(ch)) {
       return new AstStr(parseString());
     }
-    if (isDigit(ch) || ch == '-' || ch == '.') {
-      return new AstNum(parseNumber());
+    if (isDigit(ch) || ch == '-') {
+      return new AstNum(parseDouble());
     }
     if (isAlpha(ch)) {
-      return parseId();
+      return new AstId(parseId());
     }
     throw syntaxError("invalid syntax");
   }
@@ -214,7 +215,7 @@ public class Cascade {
    */
   private AstStrList parseStringList() {
     ArrayList<String> strs = new ArrayList<>(10);
-    while (isQuote(nextChar())) {
+    while (nextChar() != ']') {
       strs.add(parseString());
       if (nextChar() == ',') consumeChar(',');
     }
@@ -222,61 +223,119 @@ public class Cascade {
   }
 
   /**
-   * Parse a "num list". This could be either a plain list of numbers, or a range, or a list of ranges. For example
-   * [2 3 4 5 6 7] can also be written as [2:6] or [2:2 4:4:1]. The format of each "range" is `start:count[:stride]`,
-   * and it denotes the sequence {start, start + stride, ..., start + (count-1)*stride}. Here start and stride may
-   * be real numbers, however count must be a non-negative integer. Negative strides are also not allowed.
+   * Parse a list of numbers. There are actually 2 types of lists supported:
+   * one is a plain list, looks like a traditional list of real numbers:
+   * <pre>{@code    [0.1, 2.71828, 7.2e12, -0.222, NaN, 0]}</pre>
+   * <p>
+   * The other type of lists supports ranges of numbers (slice notation), and
+   * when such list is detected, its parsing is handed off to
+   * {@link #parseSliceList(ArrayList)}.
    */
-  private AstNumList parseNumList() {
-    ArrayList<Double> bases = new ArrayList<>();
-    ArrayList<Double> strides = new ArrayList<>();
-    ArrayList<Long> counts = new ArrayList<>();
-
+  private Ast parseNumList() {
+    ArrayList<Double> nums = new ArrayList<>(10);
     while (nextChar() != ']') {
-      double base = parseNumber();
-      double count = 1;
-      double stride = 1;
+      nums.add(parseDouble());
       if (nextChar() == ':') {
-        consumeChar(':');
-        nextChar();
-        count = parseNumber();
-        if (count < 1 || ((long) count) != count)
-          throw new IllegalASTException("Count must be a positive integer, got " + count);
+        // We are parsing a multi-index list, not a simple numbers list...
+        return parseSliceList(nums);
       }
-      if (nextChar() == ':') {
-        consumeChar(':');
-        nextChar();
-        stride = parseNumber();
-        if (stride < 0 || Double.isNaN(stride))
-          throw new IllegalASTException("Stride must be positive, got " + stride);
-      }
-      if (count == 1 && stride != 1)
-        throw new IllegalASTException("If count is 1, then stride must be one (and ignored)");
-      bases.add(base);
-      counts.add((long) count);
-      strides.add(stride);
-      // Optional comma separating span
       if (nextChar() == ',') consumeChar(',');
     }
+    return new AstNumList(nums);
+  }
 
-    return new AstNumList(bases, strides, counts);
+
+  /**
+   * Parse a list of numbers with slices/ranges. For example:
+   * <pre>{@code
+   *   [0, -3, 2:7:5, 3:2, -5:11:-2]
+   * }</pre>
+   * The format of each "range" token is {@code start:count[:stride]}, and it
+   * denotes the sequence (where {@code stride=1} if not given)
+   * <pre>{@code
+   *   [start, start + stride, ..., start + (count-1)*stride]
+   * }</pre>
+   * Real numbers cannot be used in this list format. Within each range token
+   * {@code count} must be positive, whereas {@code stride} can be either
+   * positive or negative.
+   *
+   * <p> Primary use for this number list is to support indexing into columns/
+   * rows of a frame.
+   */
+  private AstSliceList parseSliceList(ArrayList<Double> nums) {
+    int capacity = Math.max(10, nums.size() * 2);
+    ArrayList<Long> bases = new ArrayList<>(capacity);
+    ArrayList<Long> counts = new ArrayList<>(capacity);
+    ArrayList<Long> strides = new ArrayList<>(capacity);
+
+    int numsLeft = nums.size();
+    while (nextChar() != ']') {
+      long base = numsLeft > 0? nums.get(nums.size() - numsLeft).longValue() : parseLong();
+      long count = 1;
+      long stride = 1;
+      if (numsLeft <= 1) {
+        if (nextChar() == ':') {
+          consumeChar(':');
+          count = parseLong();
+          if (count <= 0)
+            throw syntaxError("Count must be a positive integer, got " + count);
+        }
+        if (nextChar() == ':') {
+          consumeChar(':');
+          stride = parseLong();
+        }
+        // If count is 1 then stride is irrelevant, so we force it to be 1 as well.
+        if (count == 1) stride = 1;
+      }
+      bases.add(base);
+      counts.add(count);
+      strides.add(stride);
+      numsLeft--;  // If this becomes negative we don't care
+      // Optional comma separating list elements
+      if (nextChar() == ',') consumeChar(',');
+    }
+    return new AstSliceList(bases, counts, strides);
+  }
+
+  /**
+   * Parse list of identifiers that will be kept unevaluated. This list takes
+   * the form
+   * {@code  `var1 var2 ... varN`}
+   */
+  private AstIdList parseIdList() {
+    consumeChar('`');
+    ArrayList<String> ids = new ArrayList<>(10);
+    String argsId = null;
+    while (nextChar() != '`') {
+      if (nextChar() == '*') {
+        consumeChar('*');
+        argsId = parseId();
+      } else {
+        if (argsId != null)
+          throw syntaxError("regular variable cannot follow a vararg variable");
+        ids.add(parseId());
+      }
+      if (nextChar() == ',') consumeChar(',');
+    }
+    consumeChar('`');
+    return new AstIdList(ids, argsId);
   }
 
   /**
    * Parse an id from the input stream. An id has common interpretation:
    * an alpha character followed by any number of alphanumeric characters.
    */
-  private AstId parseId() {
+  private String parseId() {
     int start = pos;
     while (isAlphaNum(peek(0))) pos++;
     assert pos > start;
-    return new AstId(expr.substring(start, pos));
+    return expr.substring(start, pos);
   }
 
   /**
    * Parse a number from the token stream.
    */
-  private double parseNumber() {
+  private double parseDouble() {
     int start = pos;
     while (validNumberCharacters.contains(peek(0))) pos++;
     if (start == pos) throw syntaxError("Expected a number");
@@ -284,6 +343,23 @@ public class Cascade {
     if (s.toLowerCase().equals("nan")) return Double.NaN;
     try {
       return Double.valueOf(s);
+    } catch (NumberFormatException e) {
+      throw syntaxError(e.toString());
+    }
+  }
+
+  /**
+   * Parse a (long) integer from the token stream.
+   */
+  private long parseLong() {
+    nextChar();
+    int start = pos;
+    if (peek(0) == '-') pos++;
+    while (isDigit(peek(0))) pos++;
+    if (start == pos) throw syntaxError("Missing a number");
+    String s = expr.substring(start, pos);
+    try {
+      return Long.parseLong(s);
     } catch (NumberFormatException e) {
       throw syntaxError(e.toString());
     }
@@ -310,7 +386,7 @@ public class Cascade {
         } else if (cc == 'U') {
           pos += 10;  // e.g: \U0010FFFF
         } else
-          throw new IllegalASTException("Invalid escape sequence \\" + cc);
+          throw syntaxError("Invalid escape sequence \\" + cc);
       } else if (c == quote) {
         pos++;
         if (has_escapes) {
@@ -327,10 +403,10 @@ public class Cascade {
                 try {
                   hex = StringUtils.unhex(expr.substring(i + 1, i + 1 + n));
                 } catch (NumberFormatException e) {
-                  throw new IllegalASTException(e.toString());
+                  throw syntaxError(e.toString());
                 }
                 if (hex > 0x10FFFF)
-                  throw new IllegalASTException("Illegal unicode codepoint " + hex);
+                  throw syntaxError("Illegal unicode codepoint " + hex);
                 sb.append(Character.toChars(hex));
                 i += n;
               }
@@ -346,7 +422,7 @@ public class Cascade {
         pos++;
       }
     }
-    throw new IllegalASTException("Unterminated string at " + start);
+    throw syntaxError("Unterminated string at " + start);
   }
 
   /**
@@ -375,7 +451,7 @@ public class Cascade {
    */
   private void consumeChar(char c) {
     if (peek(0) != c)
-      throw new IllegalASTException("Expected '" + c + "'. Got: '" + peek(0));
+      throw syntaxError("Expected '" + c + "'. Got: '" + peek(0));
     pos++;
   }
 
@@ -426,14 +502,9 @@ public class Cascade {
   //    for (; i < hi; i++) s += '-';
   //    if (i <= hi) s += '^';
   //    s += '\n';
-  //    throw new IllegalASTException(s);
+  //    throw syntaxError(s);
   //  }
 
-  public static class IllegalASTException extends IllegalArgumentException {
-    public IllegalASTException(String s) {
-      super(s);
-    }
-  }
 
   public class CascadeSyntaxError extends RuntimeException {
     public CascadeSyntaxError(String s) {

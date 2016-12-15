@@ -9,7 +9,12 @@ public abstract class Ast<T extends Ast<T>> extends Iced<T> {
 
   public abstract String str();
 
-  public String toString() {
+
+  /**
+   * Override of the standard {@link Object#toString()}, used primarily for
+   * the debugging output.
+   */
+  public final String toString() {
     return str();
   }
 }

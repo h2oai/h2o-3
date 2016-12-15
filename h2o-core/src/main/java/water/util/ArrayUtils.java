@@ -1229,6 +1229,15 @@ public class ArrayUtils {
     }
   }
 
+  /** Check whether the array is sorted (in ascending order). */
+  public static boolean isSorted(long[] array) {
+    for (int i = 1; i < array.length; i++) {
+      if (array[i] < array[i - 1])
+        return false;
+    }
+    return true;
+  }
+
   public static double [] subtract (double [] a, double [] b) {
     double [] c = MemoryManager.malloc8d(a.length);
     subtract(a,b,c);
@@ -1611,8 +1620,18 @@ public class ArrayUtils {
   /**
    * Convert an ArrayList of Integers to a primitive int[] array.
    */
-  public static int[] toPrimitive(ArrayList<Integer> arr) {
+  public static int[] toIntArray(ArrayList<Integer> arr) {
     int[] res = new int[arr.size()];
+    for (int i = 0; i < res.length; i++)
+      res[i] = arr.get(i);
+    return res;
+  }
+
+  /**
+   * Convert an ArrayList of Doubles to a primitive double[] array.
+   */
+  public static double[] toDoubleArray(ArrayList<Double> arr) {
+    double[] res = new double[arr.size()];
     for (int i = 0; i < res.length; i++)
       res[i] = arr.get(i);
     return res;
