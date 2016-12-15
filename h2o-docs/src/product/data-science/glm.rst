@@ -103,7 +103,7 @@ Defining a GLM Model
 
 -  `lambda <algo-params/lambda.html>`__: Specify the regularization strength.
 
--  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max. The given lambda is then interpreted as lambda min. 
+-  `lambda_search <algo-params/lambda_search.html>`__: Specify whether to enable lambda search, starting with lambda max. If you also specify a value for ``lambda``, then this value is interpreted as lambda min. If you do not specify a value for ``lambda``, then GLM will calculate the minimum lambda. 
 
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set.
    
@@ -139,13 +139,13 @@ Defining a GLM Model
    -  If the family is **Multinomial**, then only **Family_Default** is supported. (This defaults to ``multinomial``.)
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
 
--  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. 
+-  prior: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. 
    
      **Note**: This is a simple method affecting only the intercept. You may want to use weights and offset for a better fit.
 
 -  `lambda_min_ratio <algo-params/lambda_min_ratio.html>`__: Specify the minimum lambda to use for lambda search (specified as a ratio of **lambda\_max**).
 
--  `beta_constraints <algo-params/beta_constraints.html>`__: Specify a dataset to use beta constraints. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. The dataset must contain a names column with valid coefficient names.
+-  beta_constraints: Specify a dataset to use beta constraints. The selected frame is used to constraint the coefficient vector to provide upper and lower bounds. The dataset must contain a names column with valid coefficient names.
 
 -  `max_active_predictors <algo-params/max_active_predictors.html>`__: Specify the maximum number of active
    predictors during computation. This value is used as a stopping
@@ -432,9 +432,9 @@ The recommended way to find optimal regularization settings on H2O is to do a gr
 Lambda Search
 '''''''''''''
 
-If the ``lambda_search`` option is set, GLM will compute models for full regularization path similar to glmnet (see glmnet paper). Regularziation path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
+If the ``lambda_search`` option is set, GLM will compute models for full regularization path similar to glmnet (see glmnet paper). Regularization path starts at lambda max (highest lambda values which makes sense - i.e. lowest value driving all coefficients to zero) and goes down to lambda min on log scale, decreasing regularization strength at each step. The returned model will have coefficients corresponding to the “optimal” lambda value as decided during training.
 
-When looking for a sparse solution (``alpha`` > 0), lambda search can also be used to effeciently handle very wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A common use of lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value. 
+When looking for a sparse solution (``alpha`` > 0), lambda search can also be used to efficiently handle very wide datasets because it can filter out inactive predictors (noise) and only build models for a small subset of predictors. A common use of lambda search is to run it on a dataset with many predictors but limit the number of active predictors to a relatively small value. 
 
 Lambda search can be configured along with the following arguments:
 
