@@ -9,9 +9,9 @@ Description
 
 GLM includes three criteria outside of ``max_iterations`` that define and check for convergence during logistic regression:
 
-- ``beta_epsilon``: Converge if the beta change is less than this value (or if beta stops changing). This is used when ``solver=IRLSM``.
+- ``beta_epsilon``: Converge if the beta change is less than this value (or if beta stops changing). This is used with by solvers.
 - ``gradient_epsilon``: Converge if the gradient value change is less than this value (using L-infinity norm). This is used when ``solver=L-BFGS``.
-- ``objective_epsilon``: Converge if the objective values change is less than this value. This is used by all solvers. 
+- ``objective_epsilon``: Converge if the relative objective value changes (for example, (old_val - new_val)/old_val). This is used by all solvers. 
 
 The default for these options is based on a heurisitic:
 
@@ -24,6 +24,7 @@ Related Parameters
 
 - `beta_epsilon <beta_epsilon.html>`__
 - `gradient_epsilon <gradient_epsilon.html>`__
+- `max_iterations <max_iterations.html>`__
 - `solver <solver.html>`__
 
 Example
