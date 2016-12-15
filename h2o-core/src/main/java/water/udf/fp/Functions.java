@@ -62,13 +62,31 @@ public class Functions {
     };
   }
 
-  public static Unfoldable<String, String> splitBy(final String separator) {
-    return new Unfoldable<String, String>() {
+  static class StringSplitter implements Unfoldable<String, String> {
+    private final String separator;
 
-      @Override public List<String> apply(String s) {
-        return Arrays.asList(s.split(separator));
-      }
-    };
+    StringSplitter(String separator) {
+      this.separator = separator;
+    }
+    @Override public List<String> apply(String s) {
+      return Arrays.asList(s.split(separator));
+    }
+
+    @Override
+    public int hashCode() {
+      return 211 + separator.hashCode() * 7;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (!(obj instanceof StringSplitter)) return false;
+      StringSplitter other = (StringSplitter) obj;
+      return equal(separator, other.separator);
+    }
+  }
+  
+  public static Unfoldable<String, String> splitBy(final String separator) {
+    return new StringSplitter(separator);
   }
 
   public static int hashCode(Object x) {

@@ -11,10 +11,10 @@ import java.io.Serializable;
  */
 public abstract class JustCode implements Serializable {
   @Override public int hashCode() {
-    return getClass().getCanonicalName().hashCode();
+    return getClass().getName().hashCode();
   }
 
   @Override public boolean equals(Object other) { 
-    return other != null && getClass().getCanonicalName().equals(other.getClass().getCanonicalName());
+    return other != null && getClass().getName().equals(other.getClass().getName());
   }
 }
