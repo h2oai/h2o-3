@@ -191,6 +191,23 @@ public class RequestServer extends HttpServlet {
     }
   }
 
+  /**
+   * Register an HTTP request handler for the given URL pattern.
+   *
+   * @param method_uri combined method/url pattern of the endpoint, for
+   *                   example: {@code "GET /3/Jobs/{job_id}"}
+   * @param handler_clz class of the handler (should inherit from
+   *                    {@link Handler2}).
+   */
+  public static Route registerEndpoint(String method_uri, Class<? extends Handler2> handler_clz) {
+    try {
+      Handler2 handler = handler_clz.newInstance();
+      return registerEndpoint(handler.name(), method_uri, handler_clz, null, handler.help());
+    } catch (Exception e) {
+      throw H2O.fail(e.getMessage());
+    }
+  }
+
 
 
   //------ Handling Requests -------------------------------------------------------------------------------------------
