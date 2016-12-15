@@ -31,13 +31,13 @@
 # An example of binary classification on a local machine using h2o.ensemble
   
 library(h2oEnsemble)
-localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
+h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
   
   
 # Import a sample binary outcome train/test set into R
-train <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_10k.csv")
-test <- h2o.importFile("http://www.stat.berkeley.edu/~ledell/data/higgs_test_5k.csv")
-y <- "C1"
+train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_5k.csv")
+test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+y <- "response"
 x <- setdiff(names(train), y)
 family <- "binomial"
   

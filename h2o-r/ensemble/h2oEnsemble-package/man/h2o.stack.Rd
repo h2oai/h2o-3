@@ -106,10 +106,10 @@ Erin LeDell \email{erin@h2o.ai}
 \examples{
 \dontrun{
     
-# An example of binary classification on a local machine using h2o.ensemble
+# An example of binary classification on a local machine using h2o.stack
 
 library(h2oEnsemble)
-localH2O <- h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
+h2o.init(nthreads = -1) # Start H2O cluster using all available CPU threads
 
 
 # Import a sample binary outcome train/test set into R
