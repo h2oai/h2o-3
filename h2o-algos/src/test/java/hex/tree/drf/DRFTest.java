@@ -331,14 +331,29 @@ public class DRFTest extends TestUtil {
               }
             },
             1,
-            26, // enough bins to resolve the alphabet
+            20,
             1,
-            1, // depth 1 is enough since nbins_cats == nbins == 26 (enough)
+            10,
             0.0);
   }
   @Test public void testAlphabetRegression2() throws Throwable {
     basicDRFTestOOBE_Regression(
             "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression2.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            26, // enough bins to resolve the alphabet
+            1,
+            1, // depth 1 is enough since nbins_cats == nbins == 26 (enough)
+            0.0);
+  }
+  @Test public void testAlphabetRegression3() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression3.hex",
             new PrepData() {
               @Override
               int prep(Frame fr) {
