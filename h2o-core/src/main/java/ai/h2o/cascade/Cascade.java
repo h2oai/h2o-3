@@ -69,25 +69,6 @@ public class Cascade {
   }
 
   /*/*
-   * Execute a single rapids call in a short-lived session
-   * @param cascade expression to parse
-   */
-  /*
-  public static Val exec(String cascade) {
-    Session session = new Session();
-    try {
-      Ast ast = Cascade.parse(rapids);
-      Val val = session.exec(ast, null);
-      // Any returned Frame has it's REFCNT raised by +1, and the end(val) call
-      // will account for that, copying Vecs as needed so that the returned
-      // Frame is independent of the Session (which is disappearing).
-      return session.end(val);
-    } catch (Throwable ex) {
-      throw session.endQuietly(ex);
-    }
-  }
-*/
-  /*/*
    * Compute and return a value in this session.  Any returned frame shares
    * Vecs with the session (is not deep copied), and so must be deleted by the
    * caller (with a Rapids "rm" call) or will disappear on session exit, or is
@@ -97,8 +78,8 @@ public class Cascade {
   /*
   @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
   public static Val exec(String cascade, Session session) {
-    Ast ast = Cascade.parse(rapids);
-    // Synchronize the session, to stop back-to-back overlapping Rapids calls
+    Ast ast = Cascade.parse(cascade);
+    // Synchronize the session, to stop back-to-back overlapping Cascade calls
     // on the same session, which Flow sometimes does
     synchronized (session) {
       Val val = session.exec(ast, null);
@@ -139,6 +120,7 @@ public class Cascade {
     pos = 0;
   }
 
+
   /**
    * Parse and return the next AST from the rapids expression string.
    */
@@ -161,6 +143,7 @@ public class Cascade {
     }
     throw syntaxError("invalid syntax");
   }
+
 
   /**
    * Parse "function application" expression, i.e. construct of the form
@@ -207,6 +190,7 @@ public class Cascade {
     consumeChar(']');
     return res;
   }
+
 
   /**
    * Parse a list of strings. Strings can be either in single- or in double
@@ -297,6 +281,7 @@ public class Cascade {
     return new AstSliceList(bases, counts, strides);
   }
 
+
   /**
    * Parse list of identifiers that will be kept unevaluated. This list takes
    * the form
@@ -321,6 +306,7 @@ public class Cascade {
     return new AstIdList(ids, argsId);
   }
 
+
   /**
    * Parse an id from the input stream. An id has common interpretation:
    * an alpha character followed by any number of alphanumeric characters.
@@ -331,6 +317,7 @@ public class Cascade {
     assert pos > start;
     return expr.substring(start, pos);
   }
+
 
   /**
    * Parse a number from the token stream.
@@ -348,6 +335,7 @@ public class Cascade {
     }
   }
 
+
   /**
    * Parse a (long) integer from the token stream.
    */
@@ -364,6 +352,7 @@ public class Cascade {
       throw syntaxError(e.toString());
     }
   }
+
 
   /**
    * Parse a string from the token stream.
@@ -425,9 +414,14 @@ public class Cascade {
     throw syntaxError("Unterminated string at " + start);
   }
 
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // (Private) helpers
+  //--------------------------------------------------------------------------------------------------------------------
+
   /**
-   * Return the character at the current ( + {@code offset) parse position
-   * without advancing it. If there are no more characters, return ' '.
+   * Return the character at the current (+ {@code offset}) parse position
+   * without advancing it. If there are no more characters, returns space.
    */
   private char peek(int offset) {
     int p = pos + offset;
@@ -437,7 +431,7 @@ public class Cascade {
   /**
    * Advance parse pointer to the first non-whitespace character, and return
    * that character. If such non-whitespace character cannot be found, then
-   * return ' '.
+   * return a space.
    */
   private char nextChar() {
     char c = ' ';
@@ -454,11 +448,6 @@ public class Cascade {
       throw syntaxError("Expected '" + c + "'. Got: '" + peek(0));
     pos++;
   }
-
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // (Private) helpers
-  //--------------------------------------------------------------------------------------------------------------------
 
   /** Return true if {@code c} is a whitespace character. */
   private static boolean isWhitespace(char c) {
