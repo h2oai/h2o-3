@@ -1,5 +1,7 @@
 package water.rapids.ast.prims.math;
 
+import water.operations.Unary;
+
 /**
  */
 public class AstNot extends AstUniOp {
@@ -8,6 +10,7 @@ public class AstNot extends AstUniOp {
   }
 
   public double op(double d) {
-    return Double.isNaN(d) ? Double.NaN : d == 0 ? 1 : 0;
+      return Unary.Not(d);
   }
+
 }

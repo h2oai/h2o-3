@@ -1578,4 +1578,14 @@ public class Frame extends Lockable<Frame> {
   /** Sort rows of a frame, using the set of columns as keys.
    *  @return Copy of frame, sorted */
   public Frame sort( int[] cols ) { return Merge.sort(this,cols); }
+
+    public Boolean hasCategoricalColumn() {
+        for (Vec vec : vecs()) {
+            if (vec.isCategorical()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

@@ -12,7 +12,7 @@ import water.rapids.ast.AstPrimitive;
 public class AstIsNumeric extends AstPrimitive {
   @Override
   public String[] args() {
-    return new String[]{"ary"};
+      return new String[]{"ary"};
   }
 
   @Override
@@ -28,10 +28,9 @@ public class AstIsNumeric extends AstPrimitive {
   @Override
   public ValNums apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    if (fr.numCols() == 1) return new ValNums(new double[]{fr.anyVec().isNumeric() ? 1 : 0});
+      if (fr.numCols() == 1) return new ValNums(new double[]{fr.anyVec().isNumeric() ? 1 : 0});
     double ds[] = new double[fr.numCols()];
-    for (int i = 0; i < fr.numCols(); i++)
-      ds[i] = fr.vec(i).isNumeric() ? 1 : 0;
+      for (int i = 0; i < fr.numCols(); i++) ds[i] = fr.vec(i).isNumeric() ? 1 : 0;
     return new ValNums(ds);
   }
 }

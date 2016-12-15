@@ -1,5 +1,7 @@
 package water.rapids.ast.prims.math;
 
+import water.operations.Unary;
+
 /**
  */
 public class AstTrunc extends AstUniOp {
@@ -10,6 +12,7 @@ public class AstTrunc extends AstUniOp {
 
   @Override
   public double op(double d) {
-    return d >= 0 ? Math.floor(d) : Math.ceil(d);
+      return Unary.trunc(d);
   }
+
 }

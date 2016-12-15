@@ -35,7 +35,7 @@ public class AstRm extends AstPrimitive {
     Value val = DKV.get(id);
     if (val == null) return new ValNum(0);
     if (val.isFrame())
-      env._ses.remove(val.<Frame>get()); // Remove unshared Vecs
+        env.getSession().remove(val.<Frame>get()); // Remove unshared Vecs
     else
       Keyed.remove(id);           // Normal (e.g. Model) remove
 

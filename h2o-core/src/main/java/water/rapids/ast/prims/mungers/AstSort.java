@@ -3,7 +3,6 @@ package water.rapids.ast.prims.mungers;
 import water.fvec.*;
 import water.rapids.Env;
 import water.rapids.Merge;
-import water.rapids.Val;
 import water.rapids.ast.AstParameter;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -20,6 +19,7 @@ public class AstSort extends AstPrimitive {
   @Override public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     int[] cols = ((AstParameter)asts[2]).columns(fr.names());
-    return new ValFrame(Merge.sort(fr,cols));
+      return new ValFrame(Merge.sort(fr, cols));
   }
+
 }
