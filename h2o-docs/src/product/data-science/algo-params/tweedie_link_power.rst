@@ -58,7 +58,7 @@ Example
 	response <- "y"
 
 	# split into train and validation sets
-	auto.splits <- h2o.splitFrame(data =  auto, ratios = .8, seed = 1234)
+	auto.splits <- h2o.splitFrame(data =  auto, ratios = .8)
 	train <- auto.splits[[1]]
 	valid <- auto.splits[[2]]
 
@@ -67,8 +67,7 @@ Example
 	auto_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
 	                    validation_frame = valid,
 	                    family = 'tweedie',
-	                    tweedie_link_power = 1,
-	                    seed = 1234)
+	                    tweedie_link_power = 1)
 
 	# print the mse for validation set
 	print(h2o.mse(auto_glm, valid=TRUE))
@@ -83,7 +82,7 @@ Example
 	  auto_glm_2 <- h2o.glm(x = predictors, y = response, training_frame = train,
 	                       validation_frame = valid,
 	                       family = 'tweedie', tweedie_variance_power = vp,
-	                       tweedie_link_power = 1.0 - vp, seed = 1234)
+	                       tweedie_link_power = 1.0 - vp)
 	  temp_df <- data.frame(vp, 1.0 - vp, h2o.mse(auto_glm_2, valid = TRUE))
 	  names(temp_df) <- c("variance_power","link_power","mse")
 	  return(temp_df)})   
@@ -111,11 +110,11 @@ Example
 	response = "y"
 
 	# split into train and validation sets
-	train, valid = auto.split_frame(ratios = [.8], seed = 1234)
+	train, valid = auto.split_frame(ratios = [.8])
 
 	# try using the `tweedie_link_power` parameter:
 	# initialize the estimator then train the model
-	auto_glm = H2OGeneralizedLinearEstimator(family = 'tweedie', tweedie_link_power = 1, seed = 1234)
+	auto_glm = H2OGeneralizedLinearEstimator(family = 'tweedie', tweedie_link_power = 1)
 	auto_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# print the mse for the validation data
@@ -131,8 +130,7 @@ Example
 	for vp in vp_list:
 	    auto_glm_2 = H2OGeneralizedLinearEstimator(family = 'tweedie',
 	                                               tweedie_variance_power = vp,
-	                                               tweedie_link_power = 1.0 - vp,
-	                                               seed = 1234)
+	                                               tweedie_link_power = 1.0 - vp)
 	    auto_glm_2.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 	    results.append((vp, 1-vp, auto_glm_2.mse(valid=True)))
 	    

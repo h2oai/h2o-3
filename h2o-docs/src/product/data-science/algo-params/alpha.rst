@@ -58,7 +58,7 @@ Example
 	boston["chas"] <- as.factor(boston["chas"])
 
 	# split into train and validation sets
-	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8, seed = 1234)
+	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
 	train <- boston.splits[[1]]
 	valid <- boston.splits[[2]]
 
@@ -82,7 +82,7 @@ Example
 	# build grid search with previously selected hyperparameters
 	grid <- h2o.grid(x = predictors, y = response, training_frame = train, validation_frame = valid,
 	                 algorithm = "glm", grid_id = "boston_grid", hyper_params = hyper_params,
-	                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
+	                 search_criteria = list(strategy = "Cartesian"))
 
 	# Sort the grid models by mse
 	sortedGrid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
@@ -109,7 +109,7 @@ Example
 	boston['chas'] = boston['chas'].asfactor()
 
 	# split into train and validation sets
-	train, valid = boston.split_frame(ratios = [.8], seed = 1234)
+	train, valid = boston.split_frame(ratios = [.8])
 
 
 	# try using the `alpha` parameter:
@@ -131,7 +131,7 @@ Example
 	# and we want to see the performance of all models. For a larger search space use
 	# random grid search instead: {'strategy': "RandomDiscrete"}
 	# initialize the GLM estimator
-	boston_glm_2 = H2OGeneralizedLinearEstimator(seed = 1234)
+	boston_glm_2 = H2OGeneralizedLinearEstimator()
 
 	# build grid search with previously made GLM and hyperparameters
 	grid = H2OGridSearch(model = boston_glm_2, hyper_params = hyper_params,

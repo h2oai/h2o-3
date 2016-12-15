@@ -1,5 +1,5 @@
-``nlambdas``
-------------
+``gradient_epsilon``
+--------------------
 
 - Available in: GLM
 - Hyperparameter: no
@@ -7,25 +7,25 @@
 Description
 ~~~~~~~~~~~
 
-This option specifies the number of lambdas to use during a lambda search. As such, this option is only available if ``lambda_search=TRUE``. 
+GLM includes three criteria outside of ``max_iterations`` that define and check for convergence during logistic regression:
 
-``nlambdas`` works in conjunction with ``lambda_min_ratio``. The sequence of the :math:`\lambda` values is automatically generated as an exponentially decreasing sequence. It ranges from :math:`\lambda_{max}` (the smallest :math:`\lambda` so that the solution is a model with all 0s) to :math:`\lambda_{min} =` ``lambda_min_ratio`` :math:`\times` :math:`\lambda_{max}`.
+- ``beta_epsilon``: Converge if the beta change is less than this value (or if beta stops changing). This is used with by solvers.
+- ``gradient_epsilon``: Converge if the gradient value change is less than this value (using L-infinity norm). This is used when ``solver=L-BFGS``.
+- ``objective_epsilon``: Converge if the relative objective value changes (for example, (old_val - new_val)/old_val). This is used by all solvers. 
 
-H2O computes :math:`\lambda` models sequentially and in decreasing order, warm-starting the model (using the previous solutin as the initial prediction) for :math:`\lambda_k` with the solution for :math:`\lambda_{k-1}`. By warm-starting the models, we get better performance. Typically models for subsequent :math:`\lambda` values are close to each other, so only a few iterations per :math:`\lambda` are needed (two or three). This also achieves greater numerical stability because models with a higher penalty are easier to compute. This method starts with an easy problem and then continues to make small adjustments. 
+The default for these options is based on a heurisitic:
 
-**Notes**: 
-
-- ``lambda_min_ratio`` and ``nlambdas`` also specify the relative distance of any two lambdas in the sequence. This is important when applying recursive strong rules, which are only effective if the neighboring lambdas are "close" to each other. 
-- When ``alpha`` > 0, the default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, and the default value for ``nlambdas`` is 100. This gives a ratio of 0.912. For best results when using strong rules, keep the ratio close to this default. 
-- When ``alpha=0``, the default value for ``nlamdas`` is set to 30 because fewer lambdas are needed for ridge regression.
+- The default for ``beta_epsilon`` is 1e-4.
+- The default for ``gradient_epsilon`` is 1e-6 if there is no regularization (``lambda=0``) or you are running with lambda search; 1e-4 otherwise.
+- The default for ``objective_epsilon`` is 1e-6 if ``lambda=0``; 1e-4 otherwise.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `alpha <alpha.html>`__
-- `lambda <lambda.html>`__
-- `lambda_min_ratio <lambda_min_ratio.html>`__
-- `lambda_search <lambda_search.html>`__
+- `beta_epsilon <beta_epsilon.html>`__
+- `max_iterations <max_iterations.html>`__
+- `objective_epsilon <objective_epsilon.html>`__
+- `solver <solver.html>`__
 
 Example
 ~~~~~~~
@@ -54,16 +54,14 @@ Example
 	train <- boston.splits[[1]]
 	valid <- boston.splits[[2]]
 
-	# try using the `nlambas` parameter:
-	# train your model
+	# try using the `gradient_epsilon` parameter:
+	# train your model, where you specify gradient_epsilon
 	boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
 	                      validation_frame = valid,
-	                      lambda_search = TRUE,
-	                      nlambdas = 50)
+	                      gradient_epsilon = 1e-3)
 
 	# print the mse for the validation data
 	print(h2o.mse(boston_glm, valid=TRUE))
-
 
    .. code-block:: python
 
@@ -87,11 +85,10 @@ Example
 	# split into train and validation sets
 	train, valid = boston.split_frame(ratios = [.8])
 
-
-	# try using the `nlambdas` parameter:
+	# try using the `gradient_epsilon` parameter:
 	# initialize the estimator then train the model
-	boston_glm = H2OGeneralizedLinearEstimator(lambda_search = True, nlambdas = 50)
+	boston_glm = H2OGeneralizedLinearEstimator(gradient_epsilon = 1e-3)
 	boston_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# print the mse for the validation data
+	# print the mse for validation set
 	print(boston_glm.mse(valid=True))

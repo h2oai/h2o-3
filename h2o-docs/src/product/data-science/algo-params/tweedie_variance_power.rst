@@ -62,7 +62,7 @@ Example
 	response <- "y"
 
 	# split into train and validation sets
-	auto.splits <- h2o.splitFrame(data =  auto, ratios = .8, seed = 1234)
+	auto.splits <- h2o.splitFrame(data =  auto, ratios = .8)
 	train <- auto.splits[[1]]
 	valid <- auto.splits[[2]]
 
@@ -71,8 +71,7 @@ Example
 	auto_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
 	                      validation_frame = valid,
 	                      family = 'tweedie',
-	                      tweedie_variance_power = 1,
-	                      seed = 1234)
+	                      tweedie_variance_power = 1)
 
 	# print the mse for validation set
 	print(h2o.mse(auto_glm, valid=TRUE))
@@ -89,7 +88,7 @@ Example
 	# build grid search with previously selected hyperparameters
 	grid <- h2o.grid(x = predictors, y = response, training_frame = train, validation_frame = valid,
 	                 family = 'tweedie', algorithm = "glm", grid_id = "auto_grid", hyper_params = hyper_params,
-	                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
+	                 search_criteria = list(strategy = "Cartesian"))
 
 	# Sort the grid models by mse
 	sortedGrid <- h2o.getGrid("auto_grid", sort_by = "mse", decreasing = FALSE)
@@ -116,11 +115,11 @@ Example
 	response = "y"
 
 	# split into train and validation sets
-	train, valid = auto.split_frame(ratios = [.8], seed = 1234)
+	train, valid = auto.split_frame(ratios = [.8])
 
 	# try using the `tweedie_variance_power` parameter:
 	# initialize the estimator then train the model
-	auto_glm = H2OGeneralizedLinearEstimator(family = 'tweedie', tweedie_variance_power = 1, seed = 1234)
+	auto_glm = H2OGeneralizedLinearEstimator(family = 'tweedie', tweedie_variance_power = 1)
 	auto_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# print the mse for the validation data
@@ -138,7 +137,7 @@ Example
 	# and we want to see the performance of all models. For a larger search space use
 	# random grid search instead: {'strategy': "RandomDiscrete"}
 	# initialize the GLM estimator
-	auto_glm_2 = H2OGeneralizedLinearEstimator(family = 'tweedie', seed = 1234)
+	auto_glm_2 = H2OGeneralizedLinearEstimator(family = 'tweedie')
 
 	# build grid search with previously made GLM and hyperparameters
 	grid = H2OGridSearch(model = auto_glm_2, hyper_params = hyper_params,
