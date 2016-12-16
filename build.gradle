@@ -6,15 +6,6 @@
 // The top-level jar file that gets produced is empty and not usable
 // for anything.  Use the jar file produced by the h2o-assembly subproject.
 //
-apply from: 'gradle/java.gradle'
-
-// For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
-if (project.hasProperty("doRelease")) {
-    apply from: 'gradle/release.gradle'
-}
-
-// Print out time taken for each task so we find things that are slow.
-apply from: 'gradle/timing.gradle'
 
 // The build script settings to fetch plugins and put them on
 // classpath
@@ -40,6 +31,25 @@ buildscript {
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.3.1'
     }
 }
+
+plugins {
+    id "com.github.hierynomus.license" version "0.13.1"
+}
+
+downloadLicenses {
+    report.html.destination = file("$projectDir/licenses")
+    report.xml.enabled = false
+}
+
+apply from: 'gradle/java.gradle'
+
+// For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
+if (project.hasProperty("doRelease")) {
+    apply from: 'gradle/release.gradle'
+}
+
+// Print out time taken for each task so we find things that are slow.
+apply from: 'gradle/timing.gradle'
 
 //
 // Common configuration
