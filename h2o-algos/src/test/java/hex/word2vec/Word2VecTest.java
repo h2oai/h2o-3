@@ -1,167 +1,98 @@
 package hex.word2vec;
 
 import org.junit.*;
+import water.DKV;
 import water.Key;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.Log;
-import java.io.File;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.HashMap;
 
-/**
- * Each test here runs a given algo for a couple of
- * minutes on a 100M dataset and then finds the top
- * synonym for dog.  The result should include the
- * word dogs.
- *
- * Data referenced here can be retrieved with
- * ./gradlew syncBigdataLaptop
- */
+import java.util.*;
+
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assume.assumeThat;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
+
 public class Word2VecTest extends TestUtil {
-  static final String testFName = "bigdata/laptop/text8.gz";
-  @BeforeClass() public static void setup() {
-    File f = new File(testFName);
-    if(!f.exists())
-      throw new RuntimeException("File "+testFName+" not found.  Please run ./gradlew syncBigdataLaptop (or gradlew.bat syncBigdataLaptop for Windows) to retrieve the file.\"");
-    stall_till_cloudsize(1);
-  }
 
-  private void printResults(HashMap<String, Float> hm) {
-    TreeMap<Float, String> reversedMap = new TreeMap<>();
-    for (Map.Entry entry : hm.entrySet())
-      reversedMap.put((Float) entry.getValue(), (String) entry.getKey());
+  @BeforeClass()
+  public static void setup() { stall_till_cloudsize(1); }
 
-    for (Map.Entry entry : reversedMap.descendingMap().entrySet())
-      Log.info(entry.getKey() + ", " + entry.getValue());
-  }
-
-  @Ignore
-  @Test public void testW2V_CBOW_HSM() {
-    Word2VecModel w2vm = null;
-    Frame fr = null;
+  @Test
+  public void testW2V_SG_HSM_small() {
+    String[] words = new String[220];
+    for (int i = 0; i < 200; i += 2) { words[i] = "a"; words[i + 1] = "b"; }
+    for (int i = 200; i < 220; i += 2) { words[i] = "a"; words[i + 1] = "c"; }
+    Scope.enter();
     try {
-      fr = parse_test_file(testFName);
+      Vec v = Scope.track(svec(words));
+      Frame fr = Scope.track(new Frame(Key.<Frame>make(), new String[]{"Words"}, new Vec[]{v}));
+      DKV.put(fr);
 
-      Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
-      parms._train = fr._key;
-      parms._minWordFreq = 20;
-      parms._wordModel = Word2Vec.WordModel.CBOW;
-      parms._normModel = Word2Vec.NormModel.HSM;
-      parms._vecSize = 100;
-      parms._windowSize = 4;
-      parms._sentSampleRate = 0.01f;
-      parms._initLearningRate = 0.05f;
-      parms._epochs = 25;
-      w2vm = new Word2Vec(parms).trainModel().get();
-      HashMap hm = w2vm.findSynonyms("dog",10);
-      printResults(hm);
-      Assert.assertTrue(hm.containsKey("dogs"));
+      Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
+      p._train = fr._key;
+      p._minWordFreq = 5;
+      p._wordModel = Word2Vec.WordModel.SkipGram;
+      p._normModel = Word2Vec.NormModel.HSM;
+      p._vecSize = 10;
+      p._windowSize = 5;
+      p._sentSampleRate = 0.001f;
+      p._initLearningRate = 0.025f;
+      p._epochs = 1;
+
+      Word2VecModel w2vm = (Word2VecModel) Scope.track_generic(new Word2Vec(p).trainModel().get());
+
+      Map<String, Float> hm = w2vm.findSynonyms("a", 2);
+      logResults(hm);
+
+      assertEquals(new HashSet<>(Arrays.asList("b", "c")), hm.keySet());
     } finally {
-      if( fr  != null ) fr .remove();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testW2V_SG_HSM() {
+    assumeThat("word2vec test enabled", System.getProperty("testW2V"), is(notNullValue())); // ignored by default
+
+    Frame fr = parse_test_file("bigdata/laptop/text8.gz", "NA", 0, new byte[]{Vec.T_STR});
+    Word2VecModel w2vm = null;
+    try {
+      Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
+      p._train = fr._key;
+      p._minWordFreq = 5;
+      p._wordModel = Word2Vec.WordModel.SkipGram;
+      p._normModel = Word2Vec.NormModel.HSM;
+      p._vecSize = 100;
+      p._windowSize = 4;
+      p._sentSampleRate = 0.001f;
+      p._initLearningRate = 0.025f;
+      p._epochs = 10;
+
+      w2vm = new Word2Vec(p).trainModel().get();
+      Map<String, Float> hm = w2vm.findSynonyms("dog", 20);
+      logResults(hm);
+      assertTrue(hm.containsKey("cat") || hm.containsKey("dogs") || hm.containsKey("hound"));
+    } finally {
+      fr.remove();
       if( w2vm != null) w2vm.delete();
     }
   }
 
-  @Ignore
-  @Test public void testW2V_CBOW_NS() {
-    Word2VecModel w2vm = null;
-    Frame fr = null;
-    try {
-      fr = parse_test_file(testFName);
-
-      Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
-      parms._train = fr._key;
-      parms._minWordFreq = 20;
-      parms._wordModel = Word2Vec.WordModel.CBOW;
-      parms._normModel = Word2Vec.NormModel.NegSampling;
-      parms._negSampleCnt = 15;
-      parms._vecSize = 100;
-      parms._windowSize = 4;
-      parms._sentSampleRate = 0.01f;
-      parms._initLearningRate = 0.05f;
-      parms._epochs = 15;
-      w2vm = new Word2Vec(parms).trainModel().get();
-      HashMap hm = w2vm.findSynonyms("dog",10);
-      printResults(hm);
-      Assert.assertTrue(hm.containsKey("dogs"));
-    } finally {
-      if( fr  != null ) fr .remove();
-      if( w2vm != null) w2vm.delete();
-    }
+  private void logResults(Map<String, Float> hm) {
+    List<Map.Entry<String, Float>> result = new ArrayList<>(hm.entrySet());
+    Collections.sort(result, new Comparator<Map.Entry<String, Float>>() {
+      @Override
+      public int compare(Map.Entry<String, Float> o1, Map.Entry<String, Float> o2) {
+        return o2.getValue().compareTo(o1.getValue()); // reverse sort
+      }
+    });
+    int i = 0;
+    for (Map.Entry entry : result)
+      Log.info((i++) + ". " + entry.getKey() + ", " + entry.getValue());
   }
 
-  @Ignore
-  @Test public void testW2V_SG_HSM() {
-    Word2VecModel w2vm = null;
-    Frame fr = null;
-    try {
-      fr = parse_test_file(testFName);
-
-      Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
-      parms._train = fr._key;
-      parms._minWordFreq = 20;
-      parms._wordModel = Word2Vec.WordModel.SkipGram;
-      parms._normModel = Word2Vec.NormModel.HSM;
-      parms._vecSize = 100;
-      parms._windowSize = 4;
-      parms._sentSampleRate = 0.001f;
-      parms._initLearningRate = 0.05f;
-      parms._epochs = 10;
-      w2vm = new Word2Vec(parms).trainModel().get();
-      HashMap hm = w2vm.findSynonyms("dog",10);
-      printResults(hm);
-      Assert.assertTrue(hm.containsKey("dogs"));
-    } finally {
-      if( fr  != null ) fr .remove();
-      if( w2vm != null) w2vm.delete();
-    }
-  }
-
-  @Ignore
-  @Test public void testW2V_SG_NS() {
-    Word2VecModel w2vm = null;
-    Frame fr = null;
-    try {
-      fr = parse_test_file(testFName);
-
-      Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
-      parms._train = fr._key;
-      parms._minWordFreq = 20;
-      parms._wordModel = Word2Vec.WordModel.SkipGram;
-      parms._normModel = Word2Vec.NormModel.NegSampling;
-      parms._negSampleCnt = 5;
-      parms._vecSize = 100;
-      parms._windowSize = 4;
-      parms._sentSampleRate = 0.001f;
-      parms._initLearningRate = 0.025f;
-      parms._epochs = 15;
-      w2vm = new Word2Vec(parms).trainModel().get();
-      HashMap hm = w2vm.findSynonyms("dog",10);
-      printResults(hm);
-      Assert.assertTrue(hm.containsKey("dogs"));
-    } finally {
-      if( fr  != null ) fr .remove();
-      if( w2vm != null) w2vm.delete();
-    }
-  }
-
-  @Test public void testWordCount() {
-    Key wca = null;
-    Frame fr = null;
-    try {
-      long start = System.currentTimeMillis();
-      fr = parse_test_file(testFName);
-      System.out.println("Done Parse: "+(float)(System.currentTimeMillis()-start)/1000+"s");
-
-      start = System.currentTimeMillis();
-      wca = (new WordCountTask(3)).doAll(fr)._wordCountKey;
-      System.out.println("Done counting: "+(float)(System.currentTimeMillis()-start)/1000+"s");
-      Assert.assertEquals(100038l, ((Frame)wca.get()).numRows());
-    } finally {
-      if( fr  != null ) fr.remove();
-      if( wca != null ) wca.remove();
-    }
-  }
 }

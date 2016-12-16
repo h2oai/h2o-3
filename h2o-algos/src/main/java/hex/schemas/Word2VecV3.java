@@ -7,11 +7,10 @@ import water.api.schemas3.ModelParametersSchemaV3;
 
 public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV3.Word2VecParametersV3> {
   public static final class Word2VecParametersV3 extends ModelParametersSchemaV3<Word2VecParameters, Word2VecParametersV3> {
-    static public String[] own_fields = new String[] {
+    public static String[] fields = new String[] {
             "minWordFreq",
             "wordModel",
             "normModel",
-            "negSampleCnt",
             "vecSize",
             "windowSize",
             "sentSampleRate",
@@ -22,54 +21,50 @@ public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV
     /**
      *
      */
-    @API(help="Set size of word vectors", required = true)
+    @API(help="Set size of word vectors")
     public int vecSize;
 
     /**
      *
      */
-    @API(help="Set max skip length between words", required = true)
+    @API(help="Set max skip length between words")
     public int windowSize;
 
     /**
      *
      */
     @API(help="Set threshold for occurrence of words. Those that appear with higher frequency in the training data\n" +
-            "\t\twill be randomly down-sampled; useful range is (0, 1e-5)", required = true)
+            "\t\twill be randomly down-sampled; useful range is (0, 1e-5)")
     public float sentSampleRate;
 
     /**
      *
      */
-    @API(help="Use Hierarchical Softmax or Negative Sampling", values = {"HSM", "NegSampling"}, required = true)
+    @API(help="Use Hierarchical Softmax", values = {"HSM"})
     public Word2Vec.NormModel normModel;
 
     /**
      *
      */
-    @API(help="Number of negative examples, common values are 3 - 10 (0 = not used)", required = true)
-    public int negSampleCnt;
-
-    /**
-     *
-     */
-    @API(help="Number of training iterations to run",  required = true)
+    @API(help="Number of training iterations to run")
     public int epochs;
-    /**
-     *
-     */
-    @API(help="This will discard words that appear less than <int> times", required = true)
-    public int minWordFreq;
-    /**
-     *
-     */
-    @API(help="Set the starting learning rate", required = true)
-    public float initLearningRate;
-    /**
-     *
-     */
-    @API(help="Use the continuous bag of words model or the Skip-Gram model", values = {"CBOW", "SkipGram"}, required = true)
-    public Word2Vec.WordModel wordModel;
 
+    /**
+     *
+     */
+    @API(help="This will discard words that appear less than <int> times")
+    public int minWordFreq;
+
+    /**
+     *
+     */
+    @API(help="Set the starting learning rate")
+    public float initLearningRate;
+
+    /**
+     *
+     */
+    @API(help="Use the Skip-Gram model", values = {"SkipGram"})
+    public Word2Vec.WordModel wordModel;
   }
 }
