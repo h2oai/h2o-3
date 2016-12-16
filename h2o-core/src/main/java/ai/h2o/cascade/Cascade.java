@@ -35,16 +35,13 @@ import java.util.Set;
  *   <dt><p>{@code `var1 var2 ... varN`}</dt>
  *   <dd> a list of unevaluated identifiers;</dd>
  *
- *   <dt><p>{@code var = value}</dt>
- *   <dd> assign {@code value} to a variable {@code var};</dd>
- *
  *   <dt><p>{@code (def `arg1 ... argN` body)}</dt>
  *   <dd> define a function taking arguments {@code arg1, ..., argN} and
  *        executing {@code body} with those values locally bound;</dd>
  *
  *   <dt><p>{@code (if condition var1 var2)}</dt>
  *   <dd> evaluate {@code condition} and then execute {@code var1} if the
- *        condition is true, or (optionally) {@code var2} otherwise;</dd>
+ *        condition is true, or {@code var2} otherwise;</dd>
  *
  *   <dt><p>{@code (for `i` [list] body)}</dt>
  *   <dd> run the loop, with variable {@code i} taking values sequentially
@@ -73,7 +70,7 @@ public class Cascade {
    * Vecs with the session (is not deep copied), and so must be deleted by the
    * caller (with a Rapids "rm" call) or will disappear on session exit, or is
    * a normal global frame.
-   * @param cascade expression to parse
+   * @param the Cascade expression to parse
    */
   /*
   @SuppressWarnings("SynchronizationOnLocalVariableOrMethodParameter")
