@@ -64,6 +64,13 @@ public class Scope {
     track_impl(scope, k);
   }
 
+  static public <T extends Keyed> Keyed<T> track_generic(Keyed<T> keyed) {
+    Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
+    assert scope != null;
+    track_impl(scope, keyed._key);
+    return keyed;
+  }
+
   static public Vec track( Vec vec ) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
