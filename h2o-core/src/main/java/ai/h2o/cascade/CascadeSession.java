@@ -7,14 +7,14 @@ import java.io.Closeable;
 /**
  * Session is a long-lasting environment...
  */
-public class Session implements Closeable {
+public class CascadeSession implements Closeable {
   private String user;
   private String session_id;
 
   /**
    * Create a new session object.
    */
-  public Session(String username) {
+  public CascadeSession(String username) {
     user = username;
     session_id = Key.make().toString().substring(0, 6);
   }

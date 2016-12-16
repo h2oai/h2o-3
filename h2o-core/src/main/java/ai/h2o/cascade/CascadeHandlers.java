@@ -25,7 +25,7 @@ import java.util.HashMap;
  */
 public abstract class CascadeHandlers {
   /** Map of session-ids (sent by the client) to the actual session instance. */
-  public static final HashMap<String, Session> SESSIONS = new HashMap<>();
+  public static final HashMap<String, CascadeSession> SESSIONS = new HashMap<>();
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -43,7 +43,7 @@ public abstract class CascadeHandlers {
       if (!SESSIONS.containsKey(sessionId))
         throw new IllegalArgumentException("Session id " + sessionId + " is not valid");
 
-      Session sess;
+      CascadeSession sess;
       synchronized (sess = SESSIONS.get(sessionId)) {
 
         return new CascadeOV4();
@@ -64,7 +64,7 @@ public abstract class CascadeHandlers {
     }
 
     public CascadeSessionOV4 exec(int ignored, CascadeSessionIV4 input) {
-      Session sess = new Session(input.user);
+      CascadeSession sess = new CascadeSession(input.user);
       String sessionId = sess.id();
 
       synchronized (SESSIONS) {
@@ -95,7 +95,7 @@ public abstract class CascadeHandlers {
     public OutputSchemaV4 exec(int ignored, CascadeCloseSessionIV4 input) {
       String sessionId = input.session_id;
 
-      Session sess;
+      CascadeSession sess;
       synchronized (SESSIONS) {
         sess = SESSIONS.remove(sessionId);
       }
