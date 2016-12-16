@@ -248,22 +248,25 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     h2oconn.cluster.show_status()
 
 
-def lazy_import(path):
+def lazy_import(path, pattern):
     """
     Import a single file or collection of files.
 
     :param path: A path to a data file (remote or local).
+    :param pattern: Character string containing a regular expression to match file(s) in the folder.
     """
     assert_is_type(path, str, [str])
+    assert_is_type(pattern, str)
     if is_type(path, str):
-        return _import(path)
+        return _import(path,pattern)
     else:
-        return [_import(p)[0] for p in path]
+        return [_import(p,pattern)[0] for p in path]
 
 
-def _import(path):
+def _import(path, pattern):
     assert_is_type(path, str)
-    j = api("GET /3/ImportFiles", data={"path": path})
+    assert_is_type(pattern, str)
+    j = api("GET /3/ImportFiles", data={"path": path, "pattern": pattern})
     if j["fails"]: raise ValueError("ImportFiles of " + path + " failed on " + str(j["fails"]))
     return j["destination_frames"]
 
@@ -320,7 +323,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
     return H2OFrame()._upload_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
-def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
+def import_file(path=None, pattern="", destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
                 na_strings=None):
     """
     Import a dataset that is already on the cluster.
@@ -330,6 +333,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     multi-threaded pull of the data. Also see :func:`upload_file`.
 
     :param path: a path / paths specifying the location of the data to import.
+    :param pattern: Character string containing a regular expression to match file(s) in the folder.
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will be
         automatically generated.
     :param parse: If True, the file should be parsed after import.
@@ -359,6 +363,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
     assert_is_type(path, str, [str])
+    assert_is_type(pattern,str)
     assert_is_type(destination_frame, str, None)
     assert_is_type(parse, bool)
     assert_is_type(header, -1, 0, 1)
@@ -372,9 +377,9 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         raise H2OValueError("Paths relative to a current user (~) are not valid in the server environment. "
                             "Please use absolute paths if possible.")
     if not parse:
-        return lazy_import(path)
+        return lazy_import(path, pattern)
     else:
-        return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
+        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=True):

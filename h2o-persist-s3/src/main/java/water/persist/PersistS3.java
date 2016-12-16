@@ -142,7 +142,7 @@ public final class PersistS3 extends Persist {
       }
     }
   }
-  public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+  public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     Log.info("ImportS3 processing (" + path + ")");
     // List of processed files
     AmazonS3 s3 = getClient();

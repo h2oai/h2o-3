@@ -20,7 +20,7 @@ public class GBM_Example {
 
         // STEP 1: import raw file
         ImportFilesV3 importBody = h2o.importFiles(
-            "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz"
+            "http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", ""
           );
         System.out.println("import: " + importBody);
 
