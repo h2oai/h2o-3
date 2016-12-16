@@ -390,7 +390,7 @@ public final class PersistHdfs extends Persist {
   }
 
   @Override
-  public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+  public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
 //    path = convertS3toS3N(path);
 
     // Fix for S3 kind of URL

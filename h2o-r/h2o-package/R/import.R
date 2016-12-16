@@ -61,6 +61,14 @@
 #' prostate.hex = h2o.importFile(path = prosPath, destination_frame = "prostate.hex")
 #' class(prostate.hex)
 #' summary(prostate.hex)
+#'
+#' #Import files with a certain regex pattern by utilizing h2o.importFolder()
+#' #In this example we import all .csv files in the directory prostate_folder
+#' prosPath = system.file("extdata", "prostate_folder", package = "h2o")
+#' prostate_pattern.hex = h2o.importFolder(path = prosPath, pattern = ".*.csv",
+#'                         destination_frame = "prostate.hex")
+#' class(prostate_pattern.hex)
+#' summary(prostate_pattern.hex)
 #' }
 
 
@@ -87,14 +95,14 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
     destFrames <- c()
     fails <- c()
     for(path2 in path){
-      res <-.h2o.__remoteSend(.h2o.__IMPORT, path=path2)
+      res <-.h2o.__remoteSend(.h2o.__IMPORT, path=path2,pattern=pattern)
       destFrames <- c(destFrames, res$destination_frames)
       fails <- c(fails, res$fails)
     }
     res$destination_frames <- destFrames
     res$fails <- fails
   } else {
-    res <- .h2o.__remoteSend(.h2o.__IMPORT, path=path)
+    res <- .h2o.__remoteSend(.h2o.__IMPORT, path=path,pattern=pattern)
   }
 
   if(length(res$fails) > 0L) {
@@ -103,16 +111,11 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
   }
   # Return only the files that successfully imported
   if(length(res$files) <= 0L) stop("all files failed to import")
-  if(parse) {
-    if(pattern=="") {srcKey <- res$destination_frames
-    } else {srcKey  <- res$destination_frames[grepl(pattern,res$destination_frames)]}
-    if(length(srcKey)>0){
-      return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1), destination_frame=destination_frame,
-                           header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings) )
-    }else{
-      stop("all files failed to import - No file has this `pattern` ")
-    }
-  }
+if(parse) {
+    srcKey <- res$destination_frames
+    return( h2o.parseRaw(data=.newH2OFrame(op="ImportFolder",id=srcKey,-1,-1),pattern=pattern, destination_frame=destination_frame,
+            header=header, sep=sep, col.names=col.names, col.types=col.types, na.strings=na.strings) )
+}
   myData <- lapply(res$destination_frames, function(x) .newH2OFrame( op="ImportFolder", id=x,-1,-1))  # do not gc, H2O handles these nfs:// vecs
   if(length(res$destination_frames) == 1L)
     return( myData[[1L]] )
