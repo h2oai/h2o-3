@@ -7,6 +7,7 @@ public class ImportFilesV3 extends RequestSchemaV3<ImportFilesV3.ImportFiles, Im
 
   public final static class ImportFiles extends Iced {
     public String path;
+    public String pattern;
     public String files[];
     public String destination_frames[];
     public String fails[];
@@ -16,6 +17,9 @@ public class ImportFilesV3 extends RequestSchemaV3<ImportFilesV3.ImportFiles, Im
   // Input fields
   @API(help = "path", required = true)
   public String path;
+
+  @API(help = "pattern", direction = API.Direction.INPUT)
+  public String pattern;
 
   // Output fields
   @API(help = "files", direction = API.Direction.OUTPUT)
