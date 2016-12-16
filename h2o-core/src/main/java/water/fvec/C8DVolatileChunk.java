@@ -74,7 +74,8 @@ public final class C8DVolatileChunk extends Chunk {
 
   @Override
   public double [] getDoubles(double [] vals, int from, int to){
-    throw H2O.unimpl();
+    System.arraycopy(_ds, from, vals, from, to-from);
+    return vals;
   }
 
   /**
