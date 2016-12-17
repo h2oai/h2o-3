@@ -5,6 +5,7 @@ import ai.h2o.cascade.core.IdList;
 import ai.h2o.cascade.core.SliceList;
 import water.fvec.Frame;
 
+
 /**
  * Base class for all Value objects passed around the Cascade system.
  *
@@ -70,6 +71,7 @@ public abstract class Val {
     FUNC,     // function -- either built-in or user-defined
   }
 
+
   //--------------------------------------------------------------------------------------------------------------------
   // maybeX()/getX() methods
   //--------------------------------------------------------------------------------------------------------------------
@@ -130,7 +132,7 @@ public abstract class Val {
     throw badValue("function");
   }
 
-  
+
   private IllegalArgumentException badValue(String expectedType) {
     return new IllegalArgumentException("Expected a " + expectedType + " but found a " + getClass());
   }

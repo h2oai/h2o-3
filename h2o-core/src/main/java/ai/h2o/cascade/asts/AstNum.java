@@ -1,7 +1,7 @@
 package ai.h2o.cascade.asts;
 
-import water.rapids.vals.ValNum;
 
+import ai.h2o.cascade.vals.ValNum;
 
 /**
  * A number literal.
@@ -11,6 +11,11 @@ public class AstNum extends Ast<AstNum> {
 
   public AstNum(double d) {
     value = new ValNum(d);
+  }
+
+  @Override
+  public ValNum exec() {
+    return value;
   }
 
   @Override

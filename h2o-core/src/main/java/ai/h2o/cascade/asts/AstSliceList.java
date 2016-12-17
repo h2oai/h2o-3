@@ -77,13 +77,6 @@ public class AstSliceList extends Ast<AstSliceList> {
     isSorted = ArrayUtils.isSorted(bases);
   }
 
-  /** Make a simple list of 1 number. */
-  public AstSliceList(long n) {
-    bases = new long[]{n};
-    isList = true;
-    isSorted = true;
-  }
-
   /**
    * Make a simple list from {@code lo} to {@code hi} (exclusive). This is
    * equivalent to Python's {@code range(lo, hi)}.
