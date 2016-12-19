@@ -1,5 +1,6 @@
 package ai.h2o.cascade.asts;
 
+import ai.h2o.cascade.CascadeScope;
 import ai.h2o.cascade.core.IdList;
 import ai.h2o.cascade.vals.ValIdList;
 import water.util.SB;
@@ -23,7 +24,7 @@ public class AstIdList extends Ast<AstIdList> {
   }
 
   @Override
-  public ValIdList exec() {
+  public ValIdList exec(CascadeScope scope) {
     return new ValIdList(idList);
   }
 

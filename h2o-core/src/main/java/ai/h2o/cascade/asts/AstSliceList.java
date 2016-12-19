@@ -1,7 +1,8 @@
 package ai.h2o.cascade.asts;
 
-    import ai.h2o.cascade.vals.Val;
-    import water.util.ArrayUtils;
+import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.vals.Val;
+import water.util.ArrayUtils;
 import water.util.SB;
 
 import java.util.ArrayList;
@@ -96,7 +97,10 @@ public class AstSliceList extends Ast<AstSliceList> {
   //--------------------------------------------------------------------------------------------------------------------
 
   @Override
-  public Val exec() { return null; }
+  public Val exec(CascadeScope scope) {
+    // TODO
+    return null;
+  }
 
   @Override
   public String str() {

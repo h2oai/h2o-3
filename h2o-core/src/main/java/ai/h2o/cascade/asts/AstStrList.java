@@ -1,5 +1,6 @@
 package ai.h2o.cascade.asts;
 
+import ai.h2o.cascade.CascadeScope;
 import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.vals.ValStrs;
 
@@ -18,7 +19,7 @@ public class AstStrList extends Ast<AstStrList> {
   }
 
   @Override
-  public Val exec() {
+  public Val exec(CascadeScope scope) {
     return new ValStrs(strings);
   }
 
