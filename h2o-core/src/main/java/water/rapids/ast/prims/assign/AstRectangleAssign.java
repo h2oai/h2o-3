@@ -290,10 +290,14 @@ public class AstRectangleAssign extends AstPrimitive {
 
   // Boolean assignment with a scalar
   private void assign_frame_scalar(Frame dst, int[] cols, Frame rows, Object src, Session ses) {
+    Vec bool = rows.vec(0);
+    if (dst.numRows() != rows.numRows()) {
+      throw new IllegalArgumentException("Frame " + dst._key + " has different number of rows than frame " + rows._key +
+              " (" + dst.numRows() + " vs " + rows.numRows() + ").");
+    }
     // Bulk assign a numeric constant over a frame. Directly set columns without checking target type
     // assuming the user just wants to overwrite everything: Copy-On-Write optimization happens here on the apply() exit.
     // Note: this skips "scalar to Vec" compatibility check because the whole Vec is overwritten
-    Vec bool = rows.vec(0);
     if (bool.isConst() && ((int) bool.min() == 1) && (src instanceof Number)) {
       Vec anyVec = dst.anyVec();
       assert anyVec != null;
