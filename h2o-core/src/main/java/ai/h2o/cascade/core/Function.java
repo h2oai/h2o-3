@@ -1,6 +1,11 @@
 package ai.h2o.cascade.core;
 
+import ai.h2o.cascade.vals.Val;
+
 /**
  */
-public class Function {
+public abstract class Function {
+
+  public abstract Val apply(Val[] args);
+
 }
