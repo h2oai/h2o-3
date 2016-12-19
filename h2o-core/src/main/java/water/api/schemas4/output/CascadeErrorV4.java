@@ -1,12 +1,13 @@
 package water.api.schemas4.output;
 
+import water.Iced;
 import water.api.API;
 
 /**
  * Schema to be returned to the user if evaluation of a Cascade expression
  * resulted in an exception.
  */
-public class CascadeErrorV4 extends CascadeOV4<CascadeErrorV4> {
+public class CascadeErrorV4 extends CascadeOV4<Iced, CascadeErrorV4> {
 
   @API(help="Cascade expression which caused an error")
   public String expr;
