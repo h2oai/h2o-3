@@ -3,7 +3,6 @@ package water.udf;
 import com.google.common.io.Files;
 import org.junit.Test;
 import water.udf.fp.Function;
-import water.udf.fp.Functions;
 import water.udf.fp.Predicate;
 import water.udf.fp.PureFunctions;
 import water.udf.specialized.Enums;
@@ -110,8 +109,7 @@ public class UdfTest extends UdfTestBase {
       }
     }));
     assertEquals(new Date(0), c.apply(0));
-    Date expected = new GregorianCalendar(1970, 8, 15, 17, 0, 0).getTime();
-    assertEquals(expected, c.apply(258));
+    assertEquals(new Date(258 * 24 * 3600 * 1000L), c.apply(258));
 
     Column<Date> materialized = Dates.materialize(c);
 
