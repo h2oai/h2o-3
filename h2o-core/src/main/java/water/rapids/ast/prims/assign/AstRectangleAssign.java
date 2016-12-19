@@ -18,6 +18,8 @@ import water.rapids.vals.ValFrame;
 
 import java.util.Arrays;
 
+import static water.rapids.ast.prims.assign.AstRecAsgnHelper.*;
+
 /**
  * Rectangular assign into a row and column slice.  The destination must
  * already exist.  The output is conceptually a new copy of the data, with a
@@ -225,7 +227,7 @@ public class AstRectangleAssign extends AstPrimitive {
       Vec[] vecs = ses.copyOnWrite(dst, cols);
       long drow = (long) rows._bases[0];
       for (int col : cols)
-        Chunk.createValueSetter(vecs[col], src).setValue(vecs[col], drow);
+        createValueSetter(vecs[col], src).setValue(vecs[col], drow);
       return;
     }
 
@@ -240,13 +242,13 @@ public class AstRectangleAssign extends AstPrimitive {
 
   private static class AssignFrameScalarTask extends RowSliceTask {
 
-    final Chunk.ValueSetter[] _setters;
+    final ValueSetter[] _setters;
 
     AssignFrameScalarTask(AstNumList rows, Vec[] vecs, Object value) {
       super(rows);
-      _setters = new Chunk.ValueSetter[vecs.length];
+      _setters = new ValueSetter[vecs.length];
       for (int i = 0; i < _setters.length; i++)
-        _setters[i] = Chunk.createValueSetter(vecs[i], value);
+        _setters[i] = createValueSetter(vecs[i], value);
     }
 
     @Override
@@ -325,11 +327,11 @@ public class AstRectangleAssign extends AstPrimitive {
 
   private static class ConditionalAssignTask extends MRTask<ConditionalAssignTask> {
 
-    final Chunk.ValueSetter[] _setters;
+    final ValueSetter[] _setters;
 
     ConditionalAssignTask(Vec[] vecs, Object value) {
-      _setters = new Chunk.ValueSetter[vecs.length];
-      for (int i = 0; i < _setters.length; i++) _setters[i] = Chunk.createValueSetter(vecs[i], value);
+      _setters = new ValueSetter[vecs.length];
+      for (int i = 0; i < _setters.length; i++) _setters[i] = AstRecAsgnHelper.createValueSetter(vecs[i], value);
     }
 
     @Override
