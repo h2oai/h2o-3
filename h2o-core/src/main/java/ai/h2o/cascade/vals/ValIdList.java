@@ -20,7 +20,7 @@ public class ValIdList extends Val {
   }
 
   @Override public String toString() {
-    return new AstIdList(value).str();
+    return new AstIdList(this).str();
   }
 
 

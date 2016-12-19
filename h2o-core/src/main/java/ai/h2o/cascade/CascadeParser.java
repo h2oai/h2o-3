@@ -11,41 +11,53 @@ import java.util.Set;
 
 /**
  * This class handles parsing of a Cascade expression into a Cascade AST.
- * <p>
  * Main language structures are the following:
+ *
  * <dl>
  *   <dt><p>{@code (fun val1 ... valN)}</dt>
- *   <dd> function {@code fun} applied to the provided list of values;</dd>
+ *   <dd>Function {@code fun} applied to the provided list of values. Any
+ *       expression surrounded in parentheses is considered a function
+ *       application, with first token being interpreted as the function
+ *       itself, and subsequent tokens as the function's arguments.<br/>
+ *       It is also possible to provide names for all (or some) of  the
+ *       values: {@code (fun val1 ... argN=valN)}. If such construct is used
+ *       then the unnamed arguments should precede any named ones.</dd>
  *
- *   <dt><p>{@code 42.7}</dt>
- *   <dd> a number;</dd>
+ *   <dt><p>{@code -42.7e+03}</dt>
+ *   <dd>Number literal. In addition to standard floating-point literals we
+ *       recognize strings {@code "nan"} and {@code "NaN"} as representing
+ *       a Not-a-Number value. We do not recognize literals corresponding to
+ *       infinite double values.</dd>
+ *
+ *   <dt><p>{@code [7 4.2 nan -1.78E+3]}</dt>
+ *   <dd>List of numbers. The elements of the list may be separated either with
+ *       spaces (canonical) or with commas (for convenience).</dd>
  *
  *   <dt><p>{@code "Hello, \"world\"!"}</dt>
- *   <dd> a string (with standard escapes);</dd>
+ *   <dd>String literal, may be enclosed either in single or in double quotes.
+ *       Standard C-style escapes are supported: {@code "\n", "\t", "\r", "\f",
+ *       "\b", "\'", "\"", "\\", "\xAA", "\u005Cu1234", "\U0010FFFF"}. Only
+ *       {@code "\"} character and quotes have to be escaped, escaping other
+ *       characters is optional. For example, you can use a string literal with
+ *       newline characters, or ASCII control characters, or Unicode. However
+ *       such usage may be outlawed in the future.</dd>
  *
- *   <dt><p>{@code [7, 4.2, nan, -1.78E+3]}</dt>
- *   <dd> a list of numbers;</dd>
+ *   <dt><p>{@code ['one' "two" "thre\u005cu0207"]}</dt>
+ *   <dd>List of strings.</dd>
  *
- *   <dt><p>{@code [1:2:-1, 3:3, 5, 7]}</dt>
- *   <dd> a slice list: shorthand for writing ranges of numbers compactly;</dd>
+ *   <dt><p>{@code <1:2:-1 3:3 5 7>}</dt>
+ *   <dd>Slice list: special notation for writing ranges of numbers compactly.
+ *       Individual items within this list are either single numbers, or
+ *       pairs {@code base:count}, or triples {@code base:count:stride}. When
+ *       either count or stride are not given, they are assumed to be 1.<br/>
+ *       Each triple corresponds to the sequence of numbers {@code [base,
+ *       base + stride, ..., base + (count-1)*stride]}.<br/>
+ *       Within this list only integers (long) are allowed. Additionally,
+ *       {@code count}s must be positive, while {@code base}s and
+ *       {@code stride}s may be positive, negative, or zero.</dd>
  *
- *   <dt><p>{@code ['one', "two", "thre\u005cu0207"]}</dt>
- *   <dd> a list of strings;</dd>
- *
- *   <dt><p>{@code `var1 var2 ... varN`}</dt>
- *   <dd> a list of unevaluated identifiers;</dd>
- *
- *   <dt><p>{@code (def `arg1 ... argN` body)}</dt>
- *   <dd> define a function taking arguments {@code arg1, ..., argN} and
- *        executing {@code body} with those values locally bound;</dd>
- *
- *   <dt><p>{@code (if condition var1 var2)}</dt>
- *   <dd> evaluate {@code condition} and then execute {@code var1} if the
- *        condition is true, or {@code var2} otherwise;</dd>
- *
- *   <dt><p>{@code (for `i` [list] body)}</dt>
- *   <dd> run the loop, with variable {@code i} taking values sequentially
- *        from the list;</dd>
+ *   <dt><p>{@code `var1 var2 ... varN *argvars`}</dt>
+ *   <dd>List of unevaluated identifiers.</dd>
  * </dl>
  *
  */
@@ -93,6 +105,12 @@ public class CascadeParser {
     }
     if (ch == '[') {
       return parseList();
+    }
+    if (ch == '`') {
+      return parseIdList();
+    }
+    if (ch == '<') {
+      return parseSliceList();
     }
     if (isQuote(ch)) {
       return new AstStr(parseString());
@@ -169,22 +187,12 @@ public class CascadeParser {
   }
 
   /**
-   * Parse a list of numbers. There are actually 2 types of lists supported:
-   * one is a plain list, looks like a traditional list of real numbers:
-   * <pre>{@code    [0.1, 2.71828, 7.2e12, -0.222, NaN, 0]}</pre>
-   * <p>
-   * The other type of lists supports ranges of numbers (slice notation), and
-   * when such list is detected, its parsing is handed off to
-   * {@link #parseSliceList(ArrayList)}.
+   * Parse a plain list of numbers.
    */
   private Ast parseNumList() {
     ArrayList<Double> nums = new ArrayList<>(10);
     while (nextChar() != ']') {
       nums.add(parseDouble());
-      if (nextChar() == ':') {
-        // We are parsing a multi-index list, not a simple numbers list...
-        return parseSliceList(nums);
-      }
       if (nextChar() == ',') consumeChar(',');
     }
     return new AstNumList(nums);
@@ -208,38 +216,35 @@ public class CascadeParser {
    * <p> Primary use for this number list is to support indexing into columns/
    * rows of a frame.
    */
-  private AstSliceList parseSliceList(ArrayList<Double> nums) {
-    int capacity = Math.max(10, nums.size() * 2);
-    ArrayList<Long> bases = new ArrayList<>(capacity);
-    ArrayList<Long> counts = new ArrayList<>(capacity);
-    ArrayList<Long> strides = new ArrayList<>(capacity);
+  private AstSliceList parseSliceList() {
+    consumeChar('<');
+    ArrayList<Long> bases = new ArrayList<>(5);
+    ArrayList<Long> counts = new ArrayList<>(5);
+    ArrayList<Long> strides = new ArrayList<>(5);
 
-    int numsLeft = nums.size();
-    while (nextChar() != ']') {
-      long base = numsLeft > 0? nums.get(nums.size() - numsLeft).longValue() : parseLong();
+    while (nextChar() != '>') {
+      long base = parseLong();
       long count = 1;
       long stride = 1;
-      if (numsLeft <= 1) {
-        if (nextChar() == ':') {
-          consumeChar(':');
-          count = parseLong();
-          if (count <= 0)
-            throw syntaxError("Count must be a positive integer, got " + count);
-        }
-        if (nextChar() == ':') {
-          consumeChar(':');
-          stride = parseLong();
-        }
-        // If count is 1 then stride is irrelevant, so we force it to be 1 as well.
-        if (count == 1) stride = 1;
+      if (nextChar() == ':') {
+        consumeChar(':');
+        count = parseLong();
+        if (count <= 0)
+          throw syntaxError("Count must be a positive integer, got " + count);
       }
+      if (nextChar() == ':') {
+        consumeChar(':');
+        stride = parseLong();
+      }
+      // If count is 1 then stride is irrelevant, so we force it to be 1 as well.
+      if (count == 1) stride = 1;
       bases.add(base);
       counts.add(count);
       strides.add(stride);
-      numsLeft--;  // If this becomes negative we don't care
       // Optional comma separating list elements
       if (nextChar() == ',') consumeChar(',');
     }
+    consumeChar('>');
     return new AstSliceList(bases, counts, strides);
   }
 
@@ -275,7 +280,7 @@ public class CascadeParser {
    */
   private String parseId() {
     int start = pos;
-    while (isAlphaNum(peek(0))) pos++;
+    while (isAlphaNum(peek())) pos++;
     assert pos > start;
     return expr.substring(start, pos);
   }
@@ -286,7 +291,7 @@ public class CascadeParser {
    */
   private double parseDouble() {
     int start = pos;
-    while (validNumberCharacters.contains(peek(0))) pos++;
+    while (validNumberCharacters.contains(peek())) pos++;
     if (start == pos) throw syntaxError("Expected a number");
     String s = expr.substring(start, pos);
     if (s.toLowerCase().equals("nan")) return Double.NaN;
@@ -304,8 +309,8 @@ public class CascadeParser {
   private long parseLong() {
     nextChar();
     int start = pos;
-    if (peek(0) == '-') pos++;
-    while (isDigit(peek(0))) pos++;
+    if (peek() == '-') pos++;
+    while (isDigit(peek())) pos++;
     if (start == pos) throw syntaxError("Missing a number");
     String s = expr.substring(start, pos);
     try {
@@ -320,22 +325,23 @@ public class CascadeParser {
    * Parse a string from the token stream.
    */
   private String parseString() {
-    char quote = peek(0);
+    char quote = peek();
     int start = ++pos;
     boolean has_escapes = false;
     while (pos < expr.length()) {
-      char c = peek(0);
+      char c = peek();
       if (c == '\\') {
         has_escapes = true;
-        char cc = peek(1);
+        pos++;
+        char cc = peek();
         if (simpleEscapeSequences.containsKey(cc)) {
-          pos += 2;
+          pos += 1;
         } else if (cc == 'x') {
-          pos += 4;   // e.g: \x5A
+          pos += 3;   // e.g: \x5A
         } else if (cc == 'u') {
-          pos += 6;   // e.g: \u1234
+          pos += 5;   // e.g: \u1234
         } else if (cc == 'U') {
-          pos += 10;  // e.g: \U0010FFFF
+          pos += 9;   // e.g: \U0010FFFF
         } else
           throw syntaxError("Invalid escape sequence \\" + cc);
       } else if (c == quote) {
@@ -382,22 +388,21 @@ public class CascadeParser {
   //--------------------------------------------------------------------------------------------------------------------
 
   /**
-   * Return the character at the current (+ {@code offset}) parse position
-   * without advancing it. If there are no more characters, returns space.
+   * Return a character at the current parse position without advancing it.
+   * If current position is at the end of the input, return a space.
    */
-  private char peek(int offset) {
-    int p = pos + offset;
-    return p < expr.length()? expr.charAt(p) : ' ';
+  private char peek() {
+    return pos < expr.length()? expr.charAt(pos) : ' ';
   }
 
   /**
    * Advance parse pointer to the first non-whitespace character, and return
-   * that character. If such non-whitespace character cannot be found, then
-   * return a space.
+   * that character. If all remaining input characters are whitespace, then
+   * advance parse position to the end of the input and return a space.
    */
   private char nextChar() {
     char c = ' ';
-    while (pos < expr.length() && isWhitespace(c = peek(0))) pos++;
+    while (pos < expr.length() && isWhitespace(c = peek())) pos++;
     return c;
   }
 
@@ -406,8 +411,8 @@ public class CascadeParser {
    * if it is not {@code c}.
    */
   private void consumeChar(char c) {
-    if (peek(0) != c)
-      throw syntaxError("Expected '" + c + "'. Got: '" + peek(0));
+    if (peek() != c)
+      throw syntaxError("Expected '" + c + "'. Got: '" + peek());
     pos++;
   }
 
