@@ -18,7 +18,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
 
-    protected Number _version;
+    protected Number _mojo_version;
 
     /**
      * {@code _ntree_groups} is the number of trees requested by the user. For
@@ -442,9 +442,9 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             int k = _nclasses == 1? 0 : i + 1;
             for (int j = 0; j < _ntree_groups; j++) {
                 int itree = treeIndex(j, i);
-                if (_version.equals(1.0)) { //First version
+                if (_mojo_version.equals(1.0)) { //First version
                     preds[k] += scoreTree0(_compressed_trees[itree], row, _nclasses, false);
-                } else if (_version.equals(0.1)) { //CURRENT VERSION
+                } else if (_mojo_version.equals(1.1)) { //CURRENT VERSION
                     preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses);
                 }
             }
