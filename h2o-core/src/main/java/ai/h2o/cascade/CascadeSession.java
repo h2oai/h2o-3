@@ -10,13 +10,15 @@ import java.io.Closeable;
 public class CascadeSession implements Closeable {
   private String user;
   private String session_id;
+  private CascadeScope global;
 
   /**
    * Create a new session object.
    */
   public CascadeSession(String username) {
     user = username;
-    session_id = Key.make().toString().substring(0, 6);
+    session_id = Key.make().toString().substring(1, 7);
+    global = new CascadeScope(null);
   }
 
   public String id() {
@@ -25,6 +27,10 @@ public class CascadeSession implements Closeable {
 
   public String user() {
     return user;
+  }
+
+  public CascadeScope globalScope() {
+    return global;
   }
 
 

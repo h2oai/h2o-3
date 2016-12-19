@@ -2,6 +2,8 @@ package ai.h2o.cascade;
 
 import ai.h2o.cascade.asts.Ast;
 import ai.h2o.cascade.vals.Val;
+import ai.h2o.cascade.vals.ValNull;
+import water.util.StringUtils;
 
 
 /**
@@ -29,20 +31,9 @@ public abstract class Cascade {
    * @param session session within which the expression will be evaluated
    */
   public static Val eval(String cascade, CascadeSession session) {
+    if (StringUtils.isNullOrEmpty(cascade)) return new ValNull();
     Ast ast = parse(cascade);
-    /*
-    Val val = session.exec(ast, null);
-    // Any returned Frame has it's REFCNT raised by +1, but is exiting the
-    // session.  If it's a global, we simply need to lower the internal refcnts
-    // (which won't delete on zero cnts because of the global).  If it's a
-    // named temp, the ref cnts are accounted for by being in the temp table.
-    if (val.type() == Val.Type.FRAME) {
-      Frame frame = val.getFrame();
-      assert frame._key != null : "Returned frame has no key";
-      // session.addRefCnt(frame, -1);
-    }
-    return val;*/
-    return null;
+    return ast.exec(session.globalScope());
   }
 
 }
