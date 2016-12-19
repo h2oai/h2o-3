@@ -18,10 +18,7 @@ import java.util.Set;
  *   <dd>Function {@code fun} applied to the provided list of values. Any
  *       expression surrounded in parentheses is considered a function
  *       application, with first token being interpreted as the function
- *       itself, and subsequent tokens as the function's arguments.<br/>
- *       It is also possible to provide names for all (or some) of  the
- *       values: {@code (fun val1 ... argN=valN)}. If such construct is used
- *       then the unnamed arguments should precede any named ones.</dd>
+ *       itself, and subsequent tokens as the function's arguments.</dd>
  *
  *   <dt><p>{@code -42.7e+03}</dt>
  *   <dd>Number literal. In addition to standard floating-point literals we
@@ -151,26 +148,12 @@ public class CascadeParser {
     Ast head = parseNext();
 
     ArrayList<Ast> args = new ArrayList<>();
-    ArrayList<String> names = null;
     while (nextChar() != ')') {
       Ast ast = parseNext();
-      if (ast instanceof AstId && nextChar() == '=') {
-        consumeChar('=');
-        if (names == null) {
-          names = new ArrayList<>(args.size() + 1);
-          for (int i = 0; i < args.size(); ++i)
-            names.add(null);
-        }
-        names.add(ast.str());
-        args.add(parseNext());
-      } else {
-        if (names != null)
-          throw syntaxError("positional argument after a named argument");
-        args.add(ast);
-      }
+      args.add(ast);
     }
     consumeChar(')');
-    return new AstApply(head, args, names);
+    return new AstApply(head, args);
   }
 
 

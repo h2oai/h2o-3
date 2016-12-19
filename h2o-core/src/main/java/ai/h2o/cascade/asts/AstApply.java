@@ -11,20 +11,19 @@ import java.util.ArrayList;
 public class AstApply extends Ast<AstApply> {
   private Ast head;
   private Ast[] args;
-  private String[] names;
 
-  public AstApply(Ast head, ArrayList<Ast> args, ArrayList<String> names) {
+  public AstApply(Ast head, ArrayList<Ast> args) {
     this.head = head;
     this.args = args.toArray(new Ast[args.size()]);
-    if (names != null) {
-      assert args.size() == names.size() : "Size mismatch between args and names";
-      this.names = names.toArray(new String[names.size()]);
-    }
   }
 
   @Override
   public Val exec() {
     Function f = head.exec().getFun();
+    Val[] vals = new Val[args.length];
+    for (int i = 0; i < vals.length; i++) {
+      vals[i] = args[i].exec();
+    }
     // TODO
     return null;
   }
@@ -32,11 +31,8 @@ public class AstApply extends Ast<AstApply> {
   @Override
   public String str() {
     SB sb = new SB().p('(').p(head.str());
-    for (int i = 0; i < args.length; i++) {
-      sb.p(' ');
-      if (names != null && names[i] != null)
-        sb.p(names[i]).p('=');
-      sb.p(args[i].str());
+    for (Ast arg : args) {
+      sb.p(' ').p(arg.str());
     }
     return sb.p(')').toString();
   }
