@@ -46,7 +46,7 @@
 #'        values can lead to more overfitting. Defaults to 1024.
 #' @param r2_stopping r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds, stopping_metric
 #'        and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2 metric equals or
-#'        exceeds this Defaults to 1.79769313486e+308.
+#'        exceeds this Defaults to 1.7976931348623157e+308.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
@@ -61,7 +61,7 @@
 #'        Defaults to False.
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
 #'        classification and p/3 for regression (where p is the # of predictors Defaults to -1.
-#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.632000029087.
+#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.6320000290870667.
 #' @param sample_rate_per_class Row sample rate per tree per class (from 0.0 to 1.0)
 #' @param binomial_double_trees \code{Logical}. For binary classification: Build 2x as many trees (one per class) - can lead to higher
 #'        accuracy. Defaults to False.
@@ -99,7 +99,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              nbins = 20,
                              nbins_top_level = 1024,
                              nbins_cats = 1024,
-                             r2_stopping = 1.79769313486e+308,
+                             r2_stopping = 1.7976931348623157e+308,
                              stopping_rounds = 0,
                              stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
                              stopping_tolerance = 0.001,
@@ -107,7 +107,7 @@ h2o.randomForest <- function(x, y, training_frame,
                              seed = -1,
                              build_tree_one_node = FALSE,
                              mtries = -1,
-                             sample_rate = 0.632000029087,
+                             sample_rate = 0.6320000290870667,
                              sample_rate_per_class = NULL,
                              binomial_double_trees = FALSE,
                              checkpoint = NULL,
