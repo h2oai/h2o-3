@@ -1,5 +1,6 @@
 package ai.h2o.cascade.vals;
 
+import ai.h2o.cascade.asts.Ast;
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.core.IdList;
 import ai.h2o.cascade.core.SliceList;
@@ -69,6 +70,7 @@ public abstract class Val {
     FRAME,    // Frame object
     WFRAME,   // WorkFrame
     FUNC,     // function -- either built-in or user-defined
+    AST,      // unevaluated AST
   }
 
 
@@ -130,6 +132,9 @@ public abstract class Val {
   }
   public Function getFun() {
     throw badValue("function");
+  }
+  public Ast getAst() {
+    throw badValue("unevaluated expression");
   }
 
 

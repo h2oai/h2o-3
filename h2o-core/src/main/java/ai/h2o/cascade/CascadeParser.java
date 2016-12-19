@@ -58,6 +58,20 @@ import java.util.Set;
  *
  *   <dt><p>{@code `var1 var2 ... varN *argvars`}</dt>
  *   <dd>List of unevaluated identifiers.</dd>
+ *
+ *   <dt><p>{@code ?expr}</dt>
+ *   <dd>Unevaluated expression. Putting a question mark before an expression
+ *       indicates that it should be passed unevaluated onto the execution
+ *       stack. This constract is necessary for some functions that do not
+ *       evaluate their arguments in the standard manner: {@code if, for, def,
+ *       and, or}, etc. For example, an {@code if} statement should be written
+ *       as {@code (if test ?then ?else)}, where {@code test} is a boolean
+ *       condition and {@code then} and {@code else} are subexpressions that
+ *       should be executed when the test is true / false respectively. Without
+ *       the question marks all 3 arguments would have been evaluated before
+ *       being passed to {@code if}. With question marks, only {@code test} is
+ *       evaluted, and then the {@code if} function determines whether it needs
+ *       to execute {@code then} or {@code else} subexpressions.</dd>
  * </dl>
  *
  */
@@ -111,6 +125,9 @@ public class CascadeParser {
     }
     if (ch == '<') {
       return parseSliceList();
+    }
+    if (ch == '?') {
+      return parseUnevaluatedExpr();
     }
     if (isQuote(ch)) {
       return new AstStr(parseString());
@@ -380,6 +397,13 @@ public class CascadeParser {
       }
     }
     throw syntaxError("Unterminated string at " + start);
+  }
+
+
+  private Ast parseUnevaluatedExpr() {
+    consumeChar('?');
+    Ast next = parseNext();
+    return new AstUneval(next);
   }
 
 

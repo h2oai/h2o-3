@@ -1,5 +1,6 @@
 package ai.h2o.cascade.asts;
 
+import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.vals.Val;
 import water.util.SB;
 
@@ -23,6 +24,7 @@ public class AstApply extends Ast<AstApply> {
 
   @Override
   public Val exec() {
+    Function f = head.exec().getFun();
     // TODO
     return null;
   }
