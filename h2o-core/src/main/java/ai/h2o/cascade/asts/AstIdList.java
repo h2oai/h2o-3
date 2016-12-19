@@ -1,5 +1,7 @@
 package ai.h2o.cascade.asts;
 
+import ai.h2o.cascade.core.IdList;
+import ai.h2o.cascade.vals.ValIdList;
 import water.util.SB;
 
 import java.util.ArrayList;
@@ -9,23 +11,33 @@ import java.util.ArrayList;
  * List of unevaluated identifiers.
  */
 public class AstIdList extends Ast<AstIdList> {
-  String[] ids;
-  String argsId;
+  private ValIdList value;
 
   public AstIdList(ArrayList<String> names, String argsName) {
-    ids = names.toArray(new String[names.size()]);
-    argsId = argsName;
+    value = new ValIdList(new IdList(names.toArray(new String[names.size()]), argsName));
+  }
+
+  public AstIdList(ValIdList v) {
+    value = v;
+  }
+
+  @Override
+  public ValIdList exec() {
+    return value;
   }
 
   @Override
   public String str() {
+    IdList idlist = value.getIds();
+    int numIds = idlist.numIds();
+    String argsId = idlist.getVarargId();
     SB sb = new SB("`");
-    for (int i = 0; i < ids.length; i++) {
+    for (int i = 0; i < numIds; i++) {
       if (i > 0) sb.p(' ');
-      sb.p(ids[i]);
+      sb.p(idlist.getId(i));
     }
     if (argsId != null) {
-      if (ids.length > 0) sb.p(' ');
+      if (numIds > 0) sb.p(' ');
       sb.p('*').p(argsId);
     }
     sb.p('`');
