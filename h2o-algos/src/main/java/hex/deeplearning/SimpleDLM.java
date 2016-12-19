@@ -24,38 +24,39 @@ public abstract class SimpleDLM<
           + "\nTry a different initial distribution, a bounded activation function (Tanh), adding regularization"
           + "\n(via max_w2, l1, l2, dropout) or learning rate (either enable adaptive_rate or use a smaller learning rate or faster annealing).");
 
-  /**
-   * Full constructor
-   *
-   * @param selfKey
-   * @param parms
-   * @param output
-   */
   public SimpleDLM(Key<M> selfKey, P parms, O output) {
     super(selfKey, parms, output);
   }
 
   public double scoreSample(double[] sample) throws IllegalArgumentException {
-    int nouts = numOutputColumns();
     
-    double[] score = score0(sample, new double[nouts]);
-    correctProbabilities(sample, score);
-    System.out.println("Got score " + Arrays.toString(score));
-    return score[0];
+      double offset = 0;
+    int mb=0;
+    if (model_info().isUnstable()) {
+      Log.err(unstable_msg);
+      throw new UnsupportedOperationException(unstable_msg);
+    }
+    Neurons[] neurons = Neurons.forTesting(model_info);
+    final Neurons.Input neuron = (Neurons.Input) neurons[0];
+    neuron.setInput(-1, sample, mb);
+
+    Neurons.runTestBatch(neurons, model_info);
+    double[] out = neurons[neurons.length - 1]._a[mb].raw();
+
+    double[] score = finalizePredictions(out);
+    System.out.println("Got score " + Arrays.toString(score) + " from " + Arrays.toString(out));
+    return (score[2] >= .5) ? 1 : 0;
   }
 
-  @Override
-  protected double[] score0(double[] data, double[] preds) {
-    return score0(data, preds, 1, 0);
-  }
-  
   abstract public P get_params();
   
   public DeepLearningModelInfo model_info() { return model_info; }
 
   volatile DeepLearningModelInfo model_info;
 
-  protected double[] finalizePredictions(double[] preds, double[] out) {
+  protected double[] finalizePredictions(double[] out) {
+    int nouts = numOutputColumns();
+    double[] preds = new double[nouts];
     if (get_params()._distribution == DistributionFamily.modified_huber) {
       preds[0] = -1;
       preds[2] = _dist.linkInv(out[0]);
@@ -82,16 +83,10 @@ public abstract class SimpleDLM<
     return preds;
   }
 
-  /**
-   * Predict from raw double values representing the data
-   * @param data raw array containing categorical values (horizontalized to 1,0,0,1,0,0 etc.) and numerical values (0.35,1.24,5.3234,etc), both can contain NaNs
-   * @param preds predicted label and per-class probabilities (for classification), predicted target (regression), can contain NaNs
-   * @return preds, can contain NaNs
-   */
   @Override
-  public double[] score0(double[] data, double[] preds, double weight, double offset) {
+  protected double[] score0(double[] data, double[] preds) {
+    double offset = 0;
     int mb=0;
-    int n=1;
     if (model_info().isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
@@ -100,17 +95,9 @@ public abstract class SimpleDLM<
     final Neurons.Input neuron = (Neurons.Input) neurons[0];
     neuron.setInput(-1, data, mb);
 
-    Neurons.fpropMiniBatch(
-        /*seed*/-1, 
-        neurons, 
-        /*minfo*/model_info, 
-        /*consensus_minfo*/null, 
-        /*training*/false, 
-        /*responses*/null, 
-        new double[]{offset}, 
-        n);
+    Neurons.runTestBatch(neurons, model_info);
     double[] out = neurons[neurons.length - 1]._a[mb].raw();
 
-    return finalizePredictions(preds, out);
+    return finalizePredictions(out);
   }
 }

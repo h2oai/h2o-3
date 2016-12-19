@@ -1132,8 +1132,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Correct probabilities obtained from training on oversampled data back to original distribution
     // C.f. http://gking.harvard.edu/files/0s.pdf Eq.(27)
     if( _output.isClassifier()) {
-      if (_parms._balance_classes)
+      if (_parms._balance_classes) {
         GenModel.correctProbabilities(score, _output._priorClassDist, _output._modelClassDist);
+      }
       //assign label at the very end (after potentially correcting probabilities)
       score[0] = GenModel.getPrediction(score, _output._priorClassDist, sample, defaultThreshold());
     }
@@ -1149,9 +1150,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     assert (weight == 1 && offset == 0) : "Override this method for non-trivial weight/offset!";
     return score0(data, preds);
   }
-  // Version where the user has just ponied-up an array of data to be scored.
-  // Data must be in proper order.  Handy for JUnit tests.
-  public double score(double[] data){ return ArrayUtils.maxIndex(score0(data, new double[_output.nclasses()]));  }
 
   @Override protected Futures remove_impl( Futures fs ) {
     if (_output._model_metrics != null)

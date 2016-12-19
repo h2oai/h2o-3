@@ -111,21 +111,20 @@ object HamOrSpamDemoTest extends TestUtil {
     // Split table
     lazy val (before, after) = categorizedTexts.splitAt(cutoff)
     lazy val train = buildTable("train", before)
-    lazy val valid = buildTable("valid", after)
-println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + train.lastVec())
-    lazy val dlModel = buildDLModel(train, valid, catData("train", before), catData("valid", after))
+    lazy val dlModel = buildDLModel(train, catData("train", before), catData("valid", after))
     
     /** Spam detector */
     def spamness(msg: String) = {
       val weights = freqModel.weigh(msg)
       val normalizedWeights = idf.normalize(weights)
+      val o = dlModel._output
       val estimate: Double = dlModel.scoreSample(normalizedWeights)
       estimate.toInt
     }
   }
 
   /** Builds DeepLearning model. */
-  def buildDLModel(train: Frame, valid: Frame,
+  def buildDLModel(train: Frame,
                    trainData: DlInput, testData: DlInput,
 
   epochs: Int = 10, l1: Double = 0.001,
@@ -141,7 +140,6 @@ println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + tr
     dlParams._train = train._key
     println("Train was " + train.lastVecName())
     println("Now train is " + dlParams.train().lastVecName())
-    dlParams._valid = valid._key
     dlParams.trainData = trainData
     dlParams.testData = testData
     dlParams._response_column = "target"
@@ -153,9 +151,7 @@ println("v1 = " + train.lastVecName() + ", v2=" + valid.lastVecName() + "/" + tr
     val dl = new DeepLearning(dlParams, jobKey)
 
     val tm = dl.trainModel()
-    println("Trained?")
     tm.waitTillFinish()
-    println("probably")
     tm._result.get()
   }
 

@@ -33,6 +33,18 @@ public abstract class Neurons {
     this.units = units;
   }
 
+  public static void runTestBatch(Neurons[] neurons, DeepLearningModelInfo modelInfo) {
+    fpropMiniBatch(
+        /*seed*/-1,
+        neurons, 
+        /*minfo*/modelInfo, 
+        /*consensus_minfo*/null, 
+        /*training*/false, 
+        /*responses*/null, 
+        /*offset*/null,
+        /*n*/1);
+  }
+
   /**
    * Forward propagation
    * assumption: layer 0 has _a filled with (horizontalized categoricals) double values
