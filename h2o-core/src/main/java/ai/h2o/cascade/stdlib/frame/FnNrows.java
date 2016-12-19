@@ -1,4 +1,4 @@
-package ai.h2o.cascade.libs.frame;
+package ai.h2o.cascade.stdlib.frame;
 
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.vals.Val;

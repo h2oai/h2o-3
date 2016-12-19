@@ -19,6 +19,7 @@ public class CascadeSession implements Closeable {
     user = username;
     session_id = Key.make().toString().substring(1, 7);
     global = new CascadeScope(null);
+    global.importFrom(CascadeStandardLibrary.instance());
   }
 
   public String id() {

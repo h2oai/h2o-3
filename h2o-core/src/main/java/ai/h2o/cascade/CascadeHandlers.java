@@ -7,10 +7,7 @@ import water.api.schemas4.OutputSchemaV4;
 import water.api.schemas4.input.CascadeCloseSessionIV4;
 import water.api.schemas4.input.CascadeIV4;
 import water.api.schemas4.input.CascadeSessionIV4;
-import water.api.schemas4.output.CascadeErrorV4;
-import water.api.schemas4.output.CascadeNumOV4;
-import water.api.schemas4.output.CascadeOV4;
-import water.api.schemas4.output.CascadeSessionOV4;
+import water.api.schemas4.output.*;
 
 import java.util.HashMap;
 
@@ -58,7 +55,8 @@ public abstract class CascadeHandlers {
         }
 
         switch (v.type()) {
-          case NUM: return new CascadeNumOV4(v.getNum());
+          case NULL: return new CascadeNullOV4();
+          case NUM:  return new CascadeNumOV4(v.getNum());
         }
 
         return new CascadeOV4();

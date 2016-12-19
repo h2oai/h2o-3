@@ -130,7 +130,7 @@ public abstract class Val {
   public Frame getFrame() {
     throw badValue("Frame");
   }
-  public Function getFun() {
+  public Function getFunc() {
     throw badValue("function");
   }
   public Ast getAst() {

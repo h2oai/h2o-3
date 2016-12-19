@@ -34,4 +34,8 @@ public class CascadeScope {
     throw new IllegalArgumentException("Name lookup of " + id + " failed");
   }
 
+  public void importFrom(ICascadeLibrary lib) {
+    symbolTable.putAll(lib.members());
+  }
+
 }

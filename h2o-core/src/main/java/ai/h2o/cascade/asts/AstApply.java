@@ -24,7 +24,7 @@ public class AstApply extends Ast<AstApply> {
 
   @Override
   public Val exec(CascadeScope scope) {
-    Function f = head.exec(scope).getFun();
+    Function f = head.exec(scope).getFunc();
     Val[] vals = new Val[args.length];
     for (int i = 0; i < vals.length; i++) {
       vals[i] = args[i].exec(scope);
