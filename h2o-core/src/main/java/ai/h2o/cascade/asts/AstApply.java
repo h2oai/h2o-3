@@ -7,12 +7,12 @@ import java.util.ArrayList;
 
 /**
  */
-public class AstExec extends Ast<AstExec> {
+public class AstApply extends Ast<AstApply> {
   private Ast head;
   private Ast[] args;
   private String[] names;
 
-  public AstExec(Ast head, ArrayList<Ast> args, ArrayList<String> names) {
+  public AstApply(Ast head, ArrayList<Ast> args, ArrayList<String> names) {
     this.head = head;
     this.args = args.toArray(new Ast[args.size()]);
     if (names != null) {

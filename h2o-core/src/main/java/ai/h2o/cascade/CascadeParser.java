@@ -129,7 +129,7 @@ public class CascadeParser {
    * Parse "function application" expression, i.e. construct of the form
    * {@code (func arg1 ... argN)}.
    */
-  private AstExec parseFunctionApplication() {
+  private AstApply parseFunctionApplication() {
     consumeChar('(');
     Ast head = parseNext();
 
@@ -153,7 +153,7 @@ public class CascadeParser {
       }
     }
     consumeChar(')');
-    return new AstExec(head, args, names);
+    return new AstApply(head, args, names);
   }
 
 
