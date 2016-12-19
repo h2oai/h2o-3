@@ -15,6 +15,7 @@ import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.prims.mungers.AstColSlice;
 import water.rapids.vals.ValFrame;
+import water.util.ArrayUtils;
 
 import java.util.Arrays;
 
@@ -278,8 +279,7 @@ public class AstRectangleAssign extends AstPrimitive {
       return v.get_type() == Vec.T_NUM || v.get_type() == Vec.T_TIME;
     else if (scalar instanceof String) {
       if (v.get_type() == Vec.T_CAT) {
-        for (String f: v.domain()) if (f.equals(scalar)) return true;
-        return false;
+        return ArrayUtils.contains(v.domain(), (String) scalar);
       } else
         return v.get_type() == Vec.T_STR || (v.get_type() == Vec.T_UUID);
     } else
