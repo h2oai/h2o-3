@@ -11,30 +11,30 @@ import java.util.ArrayList;
  * List of unevaluated identifiers.
  */
 public class AstIdList extends Ast<AstIdList> {
-  private ValIdList value;
+  private IdList idList;
+
 
   public AstIdList(ArrayList<String> names, String argsName) {
-    value = new ValIdList(new IdList(names.toArray(new String[names.size()]), argsName));
+    idList = new IdList(names.toArray(new String[names.size()]), argsName);
   }
 
-  public AstIdList(ValIdList v) {
-    value = v;
+  public AstIdList(IdList v) {
+    idList = v;
   }
 
   @Override
   public ValIdList exec() {
-    return value;
+    return new ValIdList(idList);
   }
 
   @Override
   public String str() {
-    IdList idlist = value.getIds();
-    int numIds = idlist.numIds();
-    String argsId = idlist.getVarargId();
+    int numIds = idList.numIds();
+    String argsId = idList.getVarargId();
     SB sb = new SB("`");
     for (int i = 0; i < numIds; i++) {
       if (i > 0) sb.p(' ');
-      sb.p(idlist.getId(i));
+      sb.p(idList.getId(i));
     }
     if (argsId != null) {
       if (numIds > 0) sb.p(' ');

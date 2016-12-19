@@ -1,5 +1,6 @@
 package ai.h2o.cascade.asts;
 
+    import ai.h2o.cascade.vals.Val;
     import water.util.ArrayUtils;
 import water.util.SB;
 
@@ -93,6 +94,9 @@ public class AstSliceList extends Ast<AstSliceList> {
   //--------------------------------------------------------------------------------------------------------------------
   // Ast implementation
   //--------------------------------------------------------------------------------------------------------------------
+
+  @Override
+  public Val exec() { return null; }
 
   @Override
   public String str() {

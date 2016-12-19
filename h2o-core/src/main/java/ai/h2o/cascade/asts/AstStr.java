@@ -7,20 +7,20 @@ import ai.h2o.cascade.vals.ValStr;
  * A String literal.
  */
 public class AstStr extends Ast<AstStr> {
-  private final ValStr value;
+  private String value;
 
   public AstStr(String str) {
-    value = new ValStr(str);
+    value = str;
   }
 
   @Override
   public ValStr exec() {
-    return value;
+    return new ValStr(value);
   }
 
   @Override
   public String str() {
-    return value.toString();
+    return value;
   }
 
 }

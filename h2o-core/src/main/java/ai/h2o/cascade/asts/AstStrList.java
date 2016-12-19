@@ -1,5 +1,8 @@
 package ai.h2o.cascade.asts;
 
+import ai.h2o.cascade.vals.Val;
+import ai.h2o.cascade.vals.ValStrs;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -12,6 +15,11 @@ public class AstStrList extends Ast<AstStrList> {
 
   public AstStrList(ArrayList<String> strs) {
     strings = strs.toArray(new String[strs.size()]);
+  }
+
+  @Override
+  public Val exec() {
+    return new ValStrs(strings);
   }
 
   @Override
