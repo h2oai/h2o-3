@@ -72,9 +72,9 @@ test <- function() {
   h2o_pp_race   = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
   
   ## Dataset with only one level only scores with the first level in the column domain based off of the model
-  checkEquals(h2o_pp_race_0$race, "0")
-  checkEquals(h2o_pp_race_1$race, "1")
-  checkEquals(h2o_pp_race_2$race, "2")
+  checkEquals(h2o_pp_race_0$RACE, "0")
+  checkEquals(h2o_pp_race_1$RACE, "1")
+  checkEquals(h2o_pp_race_2$RACE, "2")
   
   ## Note: Partial plots in R/sckit-learn generates the bins based on the data and the domain from the data
   ## However it can be useful to score for RACE = "0", "1", "2" instead of just "0"
