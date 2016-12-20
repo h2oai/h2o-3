@@ -565,8 +565,9 @@ public abstract class Neurons {
     public void setInput(long seed, final double[] data, int mb) {
 //      Log.info("Data: " + ArrayUtils.toString(data));
       assert(_dinfo != null);
-      double [] nums = MemoryManager.malloc8d(_dinfo._nums); // a bit wasteful - reallocated each time
-      int    [] cats = MemoryManager.malloc4(_dinfo._cats); // a bit wasteful - reallocated each time
+      double [] nums = new double[_dinfo._nums];
+      int    [] cats = new int[_dinfo._cats];
+      
       int i = 0, ncats = 0;
       for(; i < _dinfo._cats; ++i){
         assert(_dinfo._catMissing[i]); //we now *always* have a categorical level for NAs, just in case.

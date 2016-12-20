@@ -69,12 +69,10 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
   }
   
   @Override public DeepLearningDriver trainModelImpl() {
-    __("tMI1");
-    checkMyConditions();
-    __("tMI2");
+    __("trainModelImpl1");
     
     DeepLearningDriver dld = new DeepLearningDriver();
-    __("tMI3");
+    __("trainModelImpl2");
     return dld;
   }
 

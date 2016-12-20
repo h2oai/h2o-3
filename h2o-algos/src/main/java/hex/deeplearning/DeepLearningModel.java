@@ -583,9 +583,8 @@ public class DeepLearningModel extends
         @Override public void map( Chunk chks[], NewChunk recon[] ) {
           double tmp [] = new double[_output._names.length];
           double preds[] = new double [len];
-          final Neurons[] neurons = Neurons.forTesting(model_info);
           for( int row=0; row<chks[0]._len; row++ ) {
-            double p[] = score_autoencoder(chks, row, tmp, preds, neurons, true /*reconstruction*/, false /*reconstruction_error_per_feature*/);
+            double p[] = score_autoencoder(chks, row, tmp, preds, true /*reconstruction*/, false /*reconstruction_error_per_feature*/);
             for( int c=0; c<len; c++ )
               recon[c].addNum(p[c]);
           }
@@ -606,7 +605,7 @@ public class DeepLearningModel extends
    */
   public double meanLoss(DataInfo.Row[] myRows) {
     double loss = 0;
-    Neurons[] neurons = Neurons.forTraining(model_info());
+    Neurons[] neurons = model_info().neuronsForTraining();
     //for absolute error, gradient -1/1 matches the derivative of abs(x) without correction term
     long seed = -1; //ignored
 
@@ -617,7 +616,7 @@ public class DeepLearningModel extends
       DataInfo.Row myRow = myRows[mb];
       if (myRow == null) continue;
       n++;
-      ((Neurons.Input) neurons[0]).setInput(seed, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds, mb);
+      model_info().inputForTraining().setInput(seed, myRow.numIds, myRow.numVals, myRow.nBins, myRow.binIds, mb);
       responses[mb] = myRow.response(0);
       offsets[mb] = myRow.offset;
 
@@ -705,11 +704,10 @@ public class DeepLearningModel extends
       @Override public void map( Chunk chks[], NewChunk[] mse ) {
         double tmp [] = new double[len];
         double out[] = new double[outputcols];
-        final Neurons[] neurons = Neurons.forTesting(model_info);
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          score_autoencoder(tmp, out, neurons, false /*reconstruction*/, reconstruction_error_per_feature);
+          score_autoencoder(tmp, out, false /*reconstruction*/, reconstruction_error_per_feature);
           for (int i=0; i<outputcols; ++i)
             mse[i].addNum(out[i]);
         }
@@ -774,11 +772,11 @@ public class DeepLearningModel extends
       @Override public void map( Chunk chks[] ) {
         if (isCancelled() || job !=null && job.stop_requested()) return;
         double tmp [] = new double[len];
-        final Neurons[] neurons = Neurons.forTesting(model_info);
+        final Neurons[] neurons = model_info.neuronsForTesting();
         for( int row=0; row<chks[0]._len; row++ ) {
           for( int i=0; i<len; i++ )
             tmp[i] = chks[i].atd(row);
-          ((Neurons.Input)neurons[0]).setInput(-1, tmp, mb); //FIXME: No weights yet
+          model_info().inputForTesting().setInput(-1, tmp, mb); //FIXME: No weights yet
           Neurons.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n);
           double[] out = neurons[layer+1]._a[mb].raw(); //extract the layer-th hidden feature
           for( int c=0; c<features; c++ )
@@ -797,12 +795,12 @@ public class DeepLearningModel extends
 
 
   // Make (potentially expanded) reconstruction
-  private double[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds, Neurons[] neurons, boolean reconstruction, boolean reconstruction_error_per_feature) {
+  private double[] score_autoencoder(Chunk[] chks, int row_in_chunk, double[] tmp, double[] preds, boolean reconstruction, boolean reconstruction_error_per_feature) {
     assert(get_params()._autoencoder);
     assert(tmp.length == _output._names.length);
     for (int i=0; i<tmp.length; i++ )
       tmp[i] = chks[i].atd(row_in_chunk);
-    score_autoencoder(tmp, preds, neurons, reconstruction, reconstruction_error_per_feature); // this fills preds, returns MSE error (ignored here)
+    score_autoencoder(tmp, preds, reconstruction, reconstruction_error_per_feature); // this fills preds, returns MSE error (ignored here)
     return preds;
   }
 
@@ -810,17 +808,17 @@ public class DeepLearningModel extends
    * Helper to reconstruct original data into preds array and compute the reconstruction error (MSE)
    * @param data Original data (unexpanded)
    * @param preds Reconstruction (potentially expanded)
-   * @param neurons Array of neurons to work with (will call fprop on them)
    */
-  private void score_autoencoder(double[] data, double[] preds, Neurons[] neurons, boolean reconstruction, boolean reconstruction_error_per_feature) {
-    final int mb=0;
+  private void score_autoencoder(double[] data, double[] preds, boolean reconstruction, boolean reconstruction_error_per_feature) {
+    final Neurons[] neurons = model_info.neuronsForTesting();
     final int n=1;
     assert(model_info().get_params()._autoencoder);
     if (model_info().isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
-    ((Neurons.Input)neurons[0]).setInput(-1, data, mb);
+    final int mb=0;
+    model_info.inputForTesting().setInput(-1, data, mb);
     Neurons.fpropMiniBatch(-1, neurons, model_info, null, false, null, null /*no offset*/, n); // reconstructs data in expanded space
     double[] in  = neurons[0]._a[mb].raw(); //input (expanded)
     double[] out = neurons[neurons.length - 1]._a[mb].raw(); //output (expanded)
@@ -923,7 +921,7 @@ public class DeepLearningModel extends
     sb = super.toJavaInit(sb, fileCtx);
     final String mname = JCodeGen.toJavaId(_key.toString());
 
-    final Neurons[] neurons = Neurons.forTesting(model_info());
+    final Neurons[] neurons = model_info().neuronsForTesting();
     final DeepLearningParameters p = model_info.get_params();
 
     sb.ip("public boolean isSupervised() { return " + isSupervised() + "; }").nl();

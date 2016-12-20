@@ -184,7 +184,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             mymodel = new DeepLearning(p).trainModel().get();
                             p._epochs = epoch;
 
-                            Neurons[] neurons = Neurons.forTraining(mymodel.model_info());
+                            Neurons[] neurons = mymodel.model_info().neuronsForTraining();
 
                             // use the same random weights for the reference implementation
                             Neurons l = neurons[1];

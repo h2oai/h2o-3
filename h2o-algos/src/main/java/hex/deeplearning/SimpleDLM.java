@@ -28,24 +28,23 @@ public abstract class SimpleDLM<
     super(selfKey, parms, output);
   }
 
-  public double scoreSample(double[] sample) throws IllegalArgumentException {
-    
-      double offset = 0;
+  public boolean isUnstable() { return model_info().isUnstable(); }
+  
+  public int scoreSample(double[] sample) throws IllegalArgumentException {
     int mb=0;
-    if (model_info().isUnstable()) {
+    if (isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
-    Neurons[] neurons = Neurons.forTesting(model_info);
+    Neurons[] neurons = model_info.neuronsForTesting();
     final Neurons.Input neuron = (Neurons.Input) neurons[0];
-    neuron.setInput(-1, sample, mb);
+    neuron.setInput(-1, sample, 0);
 
     Neurons.runTestBatch(neurons, model_info);
-    double[] out = neurons[neurons.length - 1]._a[mb].raw();
+    double[] out = neurons[neurons.length - 1]._a[0].raw();
 
-    double[] score = finalizePredictions(out);
-    System.out.println("Got score " + Arrays.toString(score) + " from " + Arrays.toString(out));
-    return (score[2] >= .5) ? 1 : 0;
+    System.out.println("Got score " + Arrays.toString(out));
+    return out[0] > .5 ? 0 : 1;
   }
 
   abstract public P get_params();
@@ -71,15 +70,13 @@ public abstract class SimpleDLM<
       // label assignment happens later - explicitly mark it as invalid here
       preds[0] = -1;
     } else {
-      if (model_info().data_info()._normRespMul != null) //either both are null or none
-        preds[0] = (out[0] / model_info().data_info()._normRespMul[0] + model_info().data_info()._normRespSub[0]);
-      else
-        preds[0] = out[0];
+      double normalized = model_info().data_info().normalize(out[0]);
       // transform prediction to response space
-      preds[0] = _dist.linkInv(preds[0]);
+      preds[0] = _dist.linkInv(normalized);
       if (Double.isNaN(preds[0]))
         throw new RuntimeException("Predicted regression target NaN!");
     }
+//    System.out.println("Predictions " + Arrays.toString(preds));
     return preds;
   }
 
@@ -91,7 +88,7 @@ public abstract class SimpleDLM<
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
-    Neurons[] neurons = Neurons.forTesting(model_info);
+    Neurons[] neurons = model_info.neuronsForTesting();
     final Neurons.Input neuron = (Neurons.Input) neurons[0];
     neuron.setInput(-1, data, mb);
 

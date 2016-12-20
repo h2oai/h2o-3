@@ -278,7 +278,7 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
    */
   TwoDimTable createSummaryTable() {
     computeStats();
-    Neurons[] neurons = Neurons.forTesting(this);
+    Neurons[] neurons = neuronsForTesting();
     long byte_size = new AutoBuffer().put(this).buf().length;
     TwoDimTable table = new TwoDimTable(
             "Status of Neuron Layers",
@@ -766,6 +766,14 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
     return Key.make(_model_id + ".elasticaverage", (byte) 1 /*replica factor*/, (byte) 31 /*hidden user-key*/, true, H2O.CLOUD._memary[0]);
   }
 
+  Neurons[] neuronsForTesting() { return Neurons.forTesting(this); }
+
+  Neurons[] neuronsForTraining() { return Neurons.forTraining(this); }
+
+  Neurons.Input inputForTraining() { return (Neurons.Input)neuronsForTraining()[0]; }
+
+  Neurons.Input inputForTesting() { return (Neurons.Input)neuronsForTesting()[0]; }
+  
   static public class GradientCheck {
     GradientCheck(int l, int r, int c) { layer=l; row=r; col=c; gradient=0;}
     int layer;

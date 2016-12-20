@@ -92,7 +92,7 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   @Override protected boolean chunkInit(){
     if (_localmodel.get_processed_local() >= _useFraction * _fr.numRows())
       return false;
-    _neurons = Neurons.forTraining(_localmodel);
+    _neurons = _localmodel.neuronsForTraining();
     _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());
     return true;
   }

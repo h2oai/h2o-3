@@ -1007,14 +1007,19 @@ public class DataInfo extends Keyed<DataInfo> {
     if (_normMul != null && _normSub != null)
       for (int i = 0; i < _nums; i++) row.numVals[i] = (row.numVals[i] - _normSub[i]) * _normMul[i];
 
-    row.response[0] = currentData.target(rowNumber);
-
-    if (_normRespMul != null)
-      row.response[0] = (row.response[0] - _normRespSub[0]) * _normRespMul[0];
+    row.response[0] = normalize(currentData.target(rowNumber));
 
     return row;
   }
 
+  public double normalize(double value) {
+    return normalize(value, 0);
+  }
+
+  public double normalize(double value, int index) {
+    return (_normRespMul == null) ? value : (value - _normRespSub[index]) * _normRespMul[index];
+  }
+  
   public final Row extractDenseRow(Chunk[] chunks, int rid, Row row) {
     return extractDenseRow(chunks[0].start() + rid, chunks, rid, row);
   }
@@ -1049,10 +1054,8 @@ public class DataInfo extends Keyed<DataInfo> {
     }
 
     for (int i = 0; i < _numResponses; ++i) {
-      row.response[i] = currentData != null ? currentData.target((int) (row.rid)) : chunks[responseChunkId(i)].atd(rid);
-
-      if (_normRespMul != null)
-        row.response[i] = (row.response[i] - _normRespSub[i]) * _normRespMul[i];
+      final double raw =  currentData.target((int) (row.rid)); // : chunks[responseChunkId(i)].atd(rid);
+      row.response[i] = normalize(raw, i);
     }
 
     if (_offset) row.offset = chunks[offsetChunkId()].atd(rid);
