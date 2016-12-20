@@ -63,8 +63,8 @@ public class TestUtil extends Iced {
   // Stall test until we see at least X members of the Cloud
   protected static int getDefaultTimeForClouding() {
     return JACOCO_ENABLED
-           ? DEFAULT_TIME_FOR_CLOUDING * 10
-           : DEFAULT_TIME_FOR_CLOUDING;
+        ? DEFAULT_TIME_FOR_CLOUDING * 10
+        : DEFAULT_TIME_FOR_CLOUDING;
   }
 
   public static void stall_till_cloudsize(int x) {
@@ -137,7 +137,7 @@ public class TestUtil extends Iced {
     @Override public Statement apply(Statement base, Description description) {
       String testName = description.getClassName() + "#" + description.getMethodName();
       if ((ignoreTestsNames != null && Arrays.asList(ignoreTestsNames).contains(testName)) ||
-              (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
+          (doonlyTestsNames != null && !Arrays.asList(doonlyTestsNames).contains(testName))) {
         // Ignored tests trump do-only tests
         Log.info("#### TEST " + testName + " IGNORED");
         return new Statement() {
@@ -231,12 +231,12 @@ public class TestUtil extends Iced {
     assertTrue("File should exist: " + name, file.exists());
   }
 
-  private static void checkFile(String name, File file) {
+  public static void checkFile(String name, File file) {
     checkFileEntry(name, file);
     assertTrue("Expected a readable file: " + name, file.canRead());
   }
 
-  private static File[] checkFolder(String name, File folder) {
+  static File[] checkFolder(String name, File folder) {
     checkFileEntry(name, folder);
     assertTrue("Expected a folder: " + name, folder.isDirectory());
     File[] files = folder.listFiles();
@@ -271,7 +271,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -332,7 +332,7 @@ public class TestUtil extends Iced {
 
     // create new parseSetup in order to store our na_string
     ParseSetup p = ParseSetup.guessSetup(res, new ParseSetup(DefaultParserProviders.GUESS_INFO,(byte) ',',true,
-            check_header,0,null,null,null,null,null));
+        check_header,0,null,null,null,null,null));
 
     // add the na_strings into p.
     if (na_string != null) {
@@ -482,7 +482,7 @@ public class TestUtil extends Iced {
     return r;
   }
 
-// Java7+  @SafeVarargs
+  // Java7+  @SafeVarargs
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====

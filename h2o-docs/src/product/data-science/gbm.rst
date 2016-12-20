@@ -208,14 +208,17 @@ Defining a GBM Model
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
 
-   - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
-   - ``deviance``
-   - ``logloss``
-   - ``MSE``
-   - ``AUC``
-   - ``lift_top_group``
-   - ``misclassification``
-   - ``mean_per_class_error``
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+    - ``deviance``
+    - ``logloss``
+    - ``mse``
+    - ``rmse``
+    - ``mae``
+    - ``rmsle``
+    - ``auc``
+    - ``lift_top_group``
+    - ``misclassification``
+    - ``mean_per_class_error``
 
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
@@ -364,6 +367,11 @@ have large outliers?**
 You can try adding a new predictor column which is either pre-binned
 (e.g. as a categorical - "small", "median", and "giant" values), or a
 log-transform - plus keep the old column.
+
+Parallel Performance in GBM
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+GBM's parallel performance is strongly determined by the ``max_depth``, ``nbins``, ``nbins_cats`` parameters along with the number of columns. Communication overhead grows with the number of leaf node split calculations in order to find the best column to split (and where to split). More nodes will create more communication overhead, and more nodes generally only help if the data is getting so large that the extra cores are needed to compute histograms.  In general, for datasets over 10GB, it makes sense to use 2 to 4 nodes; for datasets over 100GB, it makes sense to use over 10 nodes, and so on.  
 
 GBM Tuning Guide
 ~~~~~~~~~~~~~~~~

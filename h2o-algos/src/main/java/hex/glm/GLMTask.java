@@ -659,6 +659,25 @@ public abstract class GLMTask  {
     }
   }
 
+  static class GLMQuasiBinomialGradientTask extends GLMGradientTask {
+    private final GLMWeightsFun _glmf;
+    public GLMQuasiBinomialGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double[] beta) {
+      super(jobKey, dinfo, parms._obj_reg, lambda, beta);
+      _glmf = new GLMWeightsFun(parms);
+    }
+    @Override protected void computeGradientMultipliers(double [] es, double [] ys, double [] ws){
+      double l = 0;
+      for(int i = 0; i < es.length; ++i){
+        double p = _glmf.linkInv(es[i]);
+        if(p == 0) p = 1e-15;
+        if(p == 1) p = 1 - 1e-15;
+        es[i] = -ws[i]*(ys[i]-p);
+        l += ys[i]*Math.log(p) + (1-ys[i])*Math.log(1-p);
+      }
+      _likelihood = -l;
+    }
+  }
+
 
   static class GLMBinomialGradientTask extends GLMGradientTask {
     public GLMBinomialGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta) {
@@ -670,10 +689,11 @@ public abstract class GLMTask  {
     protected void computeGradientMultipliers(double[] es, double[] ys, double[] ws) {
       for(int i = 0; i < es.length; ++i) {
         if(Double.isNaN(ys[i]) || ws[i] == 0){es[i] = 0; continue;}
-        double e = es[i], y = 1 - 2*ys[i], w = ws[i];
-        double d = 1 + Math.exp(y*e);
-        _likelihood += w*Math.log(d);
-        es[i] = w*y*(1-1.0/d);
+        double e = es[i], w = ws[i];
+        double yr = ys[i];
+        double ym = 1.0 / (Math.exp(-e) + 1.0);
+        if(ym != yr) _likelihood += w*((MathUtils.y_log_y(yr, ym)) + MathUtils.y_log_y(1 - yr, 1 - ym));
+        es[i] = ws[i] * (ym - yr);
       }
     }
   }

@@ -40,6 +40,7 @@ public class DTree extends Iced {
   public final transient int[] _cols; // Per-tree selection of columns to consider for splits
   public transient SharedTreeModel.SharedTreeParameters _parms;
 
+
   // compute the effective number of columns to sample
   public int actual_mtries() {
     return Math.min(Math.max(1,(int)((double)_mtrys * Math.pow(_parms._col_sample_rate_change_per_level, _depth))),_ncols);
@@ -117,7 +118,7 @@ public class DTree extends Iced {
       return parent.printChild(sb,_nid);
     }
     abstract public StringBuilder toString2(StringBuilder sb, int depth);
-    abstract protected AutoBuffer compress(AutoBuffer ab);
+    abstract protected AutoBuffer compress(AutoBuffer ab, AutoBuffer abAux);
     abstract protected int size();
 
     public final int nid() { return _nid; }
@@ -130,7 +131,7 @@ public class DTree extends Iced {
     final public int _col, _bin;// Column to split, bin where being split
     final DHistogram.NASplitDir _nasplit;
     final IcedBitSet _bs;       // For binary y and categorical x (with >= 4 levels), split into 2 non-contiguous groups
-    final byte _equal;          // Split is 0: <, 1: == with single split point, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
+    final byte _equal;          // Split is 0: <, 2: == with group split (<= 32 levels), 3: == with group split (> 32 levels)
     final double _se;           // Squared error without a split
     final double _se0, _se1;    // Squared error of each subsplit
     final double _n0,  _n1;     // (Weighted) Rows in each final split
@@ -139,13 +140,12 @@ public class DTree extends Iced {
     public Split(int col, int bin, DHistogram.NASplitDir nasplit, IcedBitSet bs, byte equal, double se, double se0, double se1, double n0, double n1, double p0, double p1 ) {
       assert(nasplit!= DHistogram.NASplitDir.None);
       assert(equal!=1); //no longer done
+      assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
+      assert(col>=0);
+      assert(bin>=0);
       _col = col;  _bin = bin; _nasplit = nasplit; _bs = bs;  _equal = equal;  _se = se;
       _n0 = n0;  _n1 = n1;  _se0 = se0;  _se1 = se1;
       _p0 = p0;  _p1 = p1;
-      assert se > se0+se1 || se==Double.MAX_VALUE; // No point in splitting unless error goes down
-      assert equal != 1;
-      assert(_col>=0);
-      assert(_bin>=0);
 //      Log.info(this);
     }
     public final double pre_split_se() { return _se; }
@@ -164,7 +164,6 @@ public class DTree extends Iced {
       assert _bs==null : "Dividing point is a bitset, not a bin#, so dont call splat() as result is meaningless";
       if (_nasplit == DHistogram.NASplitDir.NAvsREST) return -1;
       assert _equal != 1;
-      if( _equal == 1 ) { assert h.bins(_bin)!=0; return (float)h.binAt(_bin); }
       assert _equal==0; // not here for bitset splits, just range splits
       // Find highest non-empty bin below the split
       int x=_bin-1;
@@ -233,7 +232,7 @@ public class DTree extends Iced {
         // unrelated column will not change the j'th columns min/max.
         // Tighten min/max based on actual observed data for tracked columns
         double min, maxEx;
-        if( h._vals == null ) { // Not tracked this last pass?
+        if( h._vals == null || _equal > 1) { // Not tracked this last pass? For bitset, always keep the full range of factors
           min = h._min;         // Then no improvement over last go
           maxEx = h._maxEx;
         } else {                // Else pick up tighter observed bounds
@@ -243,11 +242,8 @@ public class DTree extends Iced {
           maxEx = h.find_maxEx(); // Exclusive max
         }
         if (_nasplit== DHistogram.NASplitDir.NAvsREST) {
-          if (way==0) {
-            // leave the min/max alone, and make another histogram (but this time, there won't be any NAs)
-          } else if (way==1) {
-            continue; //no histogram needed - we just split NAs away
-          }
+          if (way==1) continue; //no histogram needed - we just split NAs away
+          // otherwise leave the min/max alone, and make another histogram (but this time, there won't be any NAs)
         }
 
         // Tighter bounds on the column getting split: exactly each new
@@ -293,16 +289,8 @@ public class DTree extends Iced {
     }
 
     @Override public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append("Splitting: ");
-      sb.append("col=").append(_col);
-      sb.append(", splitpoint=").append(_bin);
-      sb.append(", nadir=").append(_nasplit.toString());
-      sb.append(", se0=").append(_se0);
-      sb.append(", se1=").append(_se1);
-      sb.append(", n0=" ).append(_n0 );
-      sb.append(", n1=" ).append(_n1 );
-      return sb.toString();
+      return "Splitting: col=" + _col + " type=" + ((int)_equal == 0 ? " < " : "bitset")
+              + ", splitpoint=" + _bin + ", nadir=" + _nasplit.toString() + ", se0=" + _se0 + ", se1=" + _se1 + ", n0=" + _n0 + ", n1=" + _n1;
     }
   }
 
@@ -420,9 +408,6 @@ public class DTree extends Iced {
     static private StringBuilder p(StringBuilder sb, String s, int w) {
       return sb.append(Log.fixedLength(s,w));
     }
-    static private StringBuilder p(StringBuilder sb, long l, int w) {
-      return p(sb,Long.toString(l),w);
-    }
     static private StringBuilder p(StringBuilder sb, double d, int w) {
       String s = Double.isNaN(d) ? "NaN" :
         ((d==Float.MAX_VALUE || d==-Float.MAX_VALUE || d==Double.MAX_VALUE || d==-Double.MAX_VALUE) ? " -" :
@@ -440,7 +425,7 @@ public class DTree extends Iced {
       for( int d=0; d<depth; d++ ) sb.append("  ");
       return sb.append("Undecided\n");
     }
-    @Override protected AutoBuffer compress(AutoBuffer ab) { throw H2O.fail(); }
+    @Override protected AutoBuffer compress(AutoBuffer ab, AutoBuffer abAux) { throw H2O.fail(); }
     @Override protected int size() { throw H2O.fail(); }
   }
 
@@ -466,9 +451,9 @@ public class DTree extends Iced {
     }
 
     // Pick the best column from the given histograms
-    public Split bestCol( UndecidedNode u, DHistogram hs[], long seed ) {
+    public Split bestCol(UndecidedNode u, DHistogram hs[]) {
       DTree.Split best = null;
-      if( hs == null ) return best;
+      if( hs == null ) return null;
       final int maxCols = u._scoreCols == null /* all cols */ ? hs.length : u._scoreCols.length;
       List<FindSplits> findSplits = new ArrayList<>();
       //total work is to find the best split across sum_over_cols_to_split(nbins)
@@ -505,14 +490,15 @@ public class DTree extends Iced {
       DTree.Split _s;
       final int _nid;
       @Override public void compute() {
-        _s = _hs[_col].findBestSplitPoint(_col, _tree._parms._min_rows);
+        _s = findBestSplitPoint(_hs[_col], _col, _tree._parms._min_rows);
+        if (_s == null) return;
       }
     }
 
-    public DecidedNode( UndecidedNode n, DHistogram hs[], long seed ) {
+    public DecidedNode(UndecidedNode n, DHistogram hs[]) {
       super(n._tree,n._pid,n._nid); // Replace Undecided with this DecidedNode
       _nids = new int[2];           // Split into 2 subsets
-      _split = bestCol(n,hs,seed);  // Best split-point for this tree
+      _split = bestCol(n,hs);  // Best split-point for this tree
       if( _split == null) {
         // Happens because the predictor columns cannot split the responses -
         // which might be because all predictor columns are now constant, or
@@ -533,19 +519,30 @@ public class DTree extends Iced {
 
     public int getChildNodeID(Chunk [] chks, int row ) {
       double d = chks[_split._col].atd(row);
-      int bin;
-      if (!Double.isNaN(d)) {
+      int bin = -1;
+      boolean isNA = Double.isNaN(d);
+
+      if (!isNA) {
         if (_split._nasplit == DHistogram.NASplitDir.NAvsREST)
           bin = 0;
-        else if (_split._equal == 0)
+        else if (_split._equal == 0) {
+          assert(!Float.isNaN(_splat));
           bin = d >= _splat ? 1 : 0;
 //        else if (_split._equal == 1)
 //          bin = d == _splat ? 1 : 0;
-        else if (_split._equal == 2 || _split._equal == 3)
-          bin = _split._bs.contains((int) d) ? 1 : 0; // contains goes right
-        else throw H2O.unimpl();
-      } else {
-        // NA handling
+        }
+        else if (_split._equal >= 2) {
+          int b = (int)d;
+          if (_split._bs.isInRange(b)) {
+            bin = _split._bs.contains(b) ? 1 : 0; // contains goes right
+          } else {
+            isNA = true;
+          }
+        }
+      }
+
+      // NA handling
+      if (isNA) {
         if (_split._nasplit== DHistogram.NASplitDir.NALeft || _split._nasplit == DHistogram.NASplitDir.Left) {
           bin = 0;
         } else if (_split._nasplit == DHistogram.NASplitDir.NARight || _split._nasplit == DHistogram.NASplitDir.Right || _split._nasplit == DHistogram.NASplitDir.NAvsREST) {
@@ -564,13 +561,13 @@ public class DTree extends Iced {
     @Override public String toString() {
       StringBuilder sb = new StringBuilder();
       sb.append("DecidedNode:\n");
-      sb.append("_nid: " + _nid);
-      sb.append("_nids (children): " + Arrays.toString(_nids));
+      sb.append("_nid: " + _nid + "\n");
+      sb.append("_nids (children): " + Arrays.toString(_nids) + "\n");
       if (_split!=null)
-        sb.append("_split:" + _split.toString());
-      sb.append("_splat:" + _splat);
+        sb.append("_split:" + _split.toString() + "\n");
+      sb.append("_splat:" + _splat + "\n");
       if( _split == null ) {
-        sb.append(" col = -1 ");
+        sb.append(" col = -1\n");
       } else {
         int col = _split._col;
         if (_split._equal == 1) {
@@ -649,7 +646,7 @@ public class DTree extends Iced {
       Node left = _tree.node(_nids[0]);
       int lsz = left.size();
       res += lsz;
-      if( left instanceof LeafNode ) _nodeType |= (byte)(48 << 0*2);
+      if( left instanceof LeafNode ) _nodeType |= (byte)48;
       else {
         int slen = lsz < 256 ? 0 : (lsz < 65535 ? 1 : (lsz<(1<<24) ? 2 : 3));
         _nodeType |= slen; // Set the size-skip bits
@@ -657,7 +654,7 @@ public class DTree extends Iced {
       }
 
       Node right = _tree.node(_nids[1]);
-      if( right instanceof LeafNode ) _nodeType |= (byte)(48 << 1*2);
+      if( right instanceof LeafNode ) _nodeType |= (byte)(48 << 2);
       res += right.size();
       assert (_nodeType&0x33) != 51;
       assert res != 0;
@@ -665,7 +662,7 @@ public class DTree extends Iced {
     }
 
     // Compress this tree into the AutoBuffer
-    @Override public AutoBuffer compress(AutoBuffer ab) {
+    @Override public AutoBuffer compress(AutoBuffer ab, AutoBuffer abAux) {
       int pos = ab.position();
       if( _nodeType == 0 ) size(); // Sets _nodeType & _size both
       ab.put1(_nodeType);          // Includes left-child skip-size bits
@@ -680,6 +677,18 @@ public class DTree extends Iced {
         else if(_split._equal == 2) _split._bs.compress2(ab);
         else _split._bs.compress3(ab);
       }
+      if (abAux != null) {
+        abAux.put4(_nid);
+        abAux.put4(_pid);
+        abAux.put4f((float)_split._n0);
+        abAux.put4f((float)_split._n1);
+        abAux.put4f((float)_split._p0);
+        abAux.put4f((float)_split._p1);
+        abAux.put4f((float)_split._se0);
+        abAux.put4f((float)_split._se1);
+        abAux.put4(_nids[0]);
+        abAux.put4(_nids[1]);
+      }
 
       Node left = _tree.node(_nids[0]);
       if( (_nodeType&48) == 0 ) { // Size bits are optional for left leaves !
@@ -690,9 +699,9 @@ public class DTree extends Iced {
         else                    ab.put4(       sz); // 1<<31-1
       }
       // now write the subtree in
-      left.compress(ab);
+      left.compress(ab, abAux);
       Node rite = _tree.node(_nids[1]);
-      rite.compress(ab);
+      rite.compress(ab, abAux);
       assert _size == ab.position()-pos:"reported size = " + _size + " , real size = " + (ab.position()-pos);
       return ab;
     }
@@ -710,7 +719,9 @@ public class DTree extends Iced {
     }
     // Insert just the predictions: a single byte/short if we are predicting a
     // single class, or else the full distribution.
-    @Override protected AutoBuffer compress(AutoBuffer ab) { assert !Double.isNaN(_pred); return ab.put4f(_pred); }
+    @Override protected AutoBuffer compress(AutoBuffer ab, AutoBuffer abAux) {
+      assert !Double.isNaN(_pred); return ab.put4f(_pred);
+    }
     @Override protected int size() { return 4; }
     public final double pred() { return _pred; }
   }
@@ -718,15 +729,281 @@ public class DTree extends Iced {
   final static public int NO_PARENT = -1;
   static public boolean isRootNode(Node n)   { return n._pid == NO_PARENT; }
 
+  public transient AutoBuffer _abAux;
   // Build a compressed-tree struct
   public CompressedTree compress(int tid, int cls) {
     int sz = root().size();
     if( root() instanceof LeafNode ) sz += 3; // Oops - tree-stump
     AutoBuffer ab = new AutoBuffer(sz);
+    _abAux = new AutoBuffer();
     if( root() instanceof LeafNode ) // Oops - tree-stump
       ab.put1(0).put2((char)65535); // Flag it special so the decompress doesn't look for top-level decision
-    root().compress(ab);      // Compress whole tree
+    root().compress(ab, _abAux);      // Compress whole tree
     assert ab.position() == sz;
     return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls);
+  }
+
+  static Split findBestSplitPoint(DHistogram hs, int col, double min_rows) {
+    if(hs._vals == null) return null; // TODO: there are empty leafs?
+    final int nbins = hs.nbins();
+    assert nbins > 1;
+
+    // Histogram arrays used for splitting, these are either the original bins
+    // (for an ordered predictor), or sorted by the mean response (for an
+    // unordered predictor, i.e. categorical predictor).
+    double[]   vals =   hs._vals;
+    int idxs[] = null;          // and a reverse index mapping
+
+    // For categorical (unordered) predictors, sort the bins by average
+    // prediction then look for an optimal split.
+    if( hs._isInt == 2 && hs._step == 1 ) {
+      // Sort the index by average response
+      idxs = MemoryManager.malloc4(nbins+1); // Reverse index
+      for( int i=0; i<nbins+1; i++ ) idxs[i] = i; //index in 0..nbins-1
+      final double[] avgs = MemoryManager.malloc8d(nbins+1);
+      for( int i=0; i<nbins; i++ ) avgs[i] = hs.w(i)==0 ? -Double.MAX_VALUE /* value doesn't matter - see below for sending empty buckets (unseen levels) into the NA direction */: hs.wY(i) / hs.w(i); // Average response
+      avgs[nbins] = Double.MAX_VALUE;
+      ArrayUtils.sort(idxs, avgs);
+      // Fill with sorted data.  Makes a copy, so the original data remains in
+      // its original order.
+      vals = MemoryManager.malloc8d(3*nbins);
+
+      for( int i=0; i<nbins; i++ ) {
+        int id = idxs[i];
+        vals[3*i+0] = hs._vals[3*id+0];
+        vals[3*i+1] = hs._vals[3*id+1];
+        vals[3*i+2] = hs._vals[3*id+2];
+//        Log.info(vals[3*i] + " obs have avg response [" + i + "]=" + avgs[id]);
+      }
+    }
+
+    // Compute mean/var for cumulative bins from 0 to nbins inclusive.
+    double   wlo[] = MemoryManager.malloc8d(nbins+1);
+    double  wYlo[] = MemoryManager.malloc8d(nbins+1);
+    double wYYlo[] = MemoryManager.malloc8d(nbins+1);
+    for( int b=1; b<=nbins; b++ ) {
+      int id = 3*(b-1);
+      double n0 =   wlo[b-1], n1 = vals[id+0];
+      if( n0==0 && n1==0 )
+        continue;
+      double m0 =  wYlo[b-1], m1 = vals[id+1];
+      double s0 = wYYlo[b-1], s1 = vals[id+2];
+      wlo[b] = n0+n1;
+      wYlo[b] = m0+m1;
+      wYYlo[b] = s0+s1;
+    }
+    double wNA = hs.wNA();
+    double tot = wlo[nbins] + wNA; //total number of (weighted) rows
+    // Is any split possible with at least min_obs?
+    if( tot < 2*min_rows )
+      return null;
+    // If we see zero variance, we must have a constant response in this
+    // column.  Normally this situation is cut out before we even try to split,
+    // but we might have NA's in THIS column...
+    double wYNA = hs.wYNA();
+    double wYYNA = hs.wYYNA();
+    double var = (wYYlo[nbins]+wYYNA)*tot - (wYlo[nbins]+wYNA)*(wYlo[nbins]+wYNA);
+    if( ((float)var) == 0f )
+      return null;
+
+    // Compute mean/var for cumulative bins from nbins to 0 inclusive.
+    double   whi[] = MemoryManager.malloc8d(nbins+1);
+    double  wYhi[] = MemoryManager.malloc8d(nbins+1);
+    double wYYhi[] = MemoryManager.malloc8d(nbins+1);
+    for( int b=nbins-1; b>=0; b-- ) {
+      double n0 =   whi[b+1], n1 = vals[3*b];
+      if( n0==0 && n1==0 )
+        continue;
+      double m0 =  wYhi[b+1], m1 = vals[3*b+1];
+      double s0 = wYYhi[b+1], s1 = vals[3*b+2];
+      whi[b] = n0+n1;
+      wYhi[b] = m0+m1;
+      wYYhi[b] = s0+s1;
+      assert MathUtils.compare(wlo[b]+ whi[b]+wNA,tot,1e-5,1e-5);
+    }
+
+    double best_seL=Double.MAX_VALUE;   // squared error for left side of the best split (so far)
+    double best_seR=Double.MAX_VALUE;   // squared error for right side of the best split (so far)
+    DHistogram.NASplitDir nasplit = DHistogram.NASplitDir.None;
+
+    // squared error of all non-NAs
+    double seNonNA = wYYhi[0] - wYhi[0]* wYhi[0]/ whi[0]; // Squared Error with no split
+    if (seNonNA < 0) seNonNA = 0;
+    double seBefore = seNonNA;
+
+    // if there are any NAs, then try to split them from the non-NAs
+    if (wNA>=min_rows) {
+      double seAll = (wYYhi[0] + wYYNA) - (wYhi[0] + wYNA) * (wYhi[0] + wYNA) / (whi[0] + wNA);
+      double seNA = wYYNA - wYNA * wYNA / wNA;
+      if (seNA < 0) seNA = 0;
+      best_seL = seNonNA;
+      best_seR = seNA;
+      nasplit = DHistogram.NASplitDir.NAvsREST;
+      seBefore = seAll;
+    }
+
+    // Now roll the split-point across the bins.  There are 2 ways to do this:
+    // split left/right based on being less than some value, or being equal/
+    // not-equal to some value.  Equal/not-equal makes sense for categoricals
+    // but both splits could work for any integral datatype.  Do the less-than
+    // splits first.
+    int best=0;                         // The no-split
+    byte equal=0;                       // Ranged check
+    for( int b=1; b<=nbins-1; b++ ) {
+      if( vals[3*b] == 0 ) continue; // Ignore empty splits
+      if( wlo[b]+wNA < min_rows ) continue;
+      if( whi[b]+wNA < min_rows ) break; // w1 shrinks at the higher bin#s, so if it fails once it fails always
+      // We're making an unbiased estimator, so that MSE==Var.
+      // Then Squared Error = MSE*N = Var*N
+      //                    = (wYY/N - wY^2)*N
+      //                    = wYY - N*wY^2
+      //                    = wYY - N*(wY/N)(wY/N)
+      //                    = wYY - wY^2/N
+
+      // no NAs
+      if (wNA==0) {
+        double selo = wYYlo[b] - wYlo[b] * wYlo[b] / wlo[b];
+        double sehi = wYYhi[b] - wYhi[b] * wYhi[b] / whi[b];
+        if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
+        if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
+        if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
+                // Or tied MSE, then pick split towards middle bins
+                (selo + sehi == best_seL + best_seR &&
+                        Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
+          best_seL = selo;
+          best_seR = sehi;
+          best = b;
+        }
+      } else {
+        // option 1: split the numeric feature and throw NAs to the left
+        {
+          double selo = wYYlo[b] + wYYNA - (wYlo[b] + wYNA) * (wYlo[b] + wYNA) / (wlo[b] + wNA);
+          double sehi = wYYhi[b] - wYhi[b] * wYhi[b] / whi[b];
+          if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
+          if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
+          if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
+                  // Or tied SE, then pick split towards middle bins
+                  (selo + sehi == best_seL + best_seR &&
+                          Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
+            if( (wlo[b] + wNA) >= min_rows && whi[b] >= min_rows) {
+              best_seL = selo;
+              best_seR = sehi;
+              best = b;
+              nasplit = DHistogram.NASplitDir.NALeft;
+            }
+          }
+        }
+
+        // option 2: split the numeric feature and throw NAs to the right
+        {
+          double selo = wYYlo[b] - wYlo[b] * wYlo[b] / wlo[b];
+          double sehi = wYYhi[b]+wYYNA - (wYhi[b]+wYNA) * (wYhi[b]+wYNA) / (whi[b]+wNA);
+          if (selo < 0) selo = 0;    // Roundoff error; sometimes goes negative
+          if (sehi < 0) sehi = 0;    // Roundoff error; sometimes goes negative
+          if ((selo + sehi < best_seL + best_seR) || // Strictly less error?
+                  // Or tied SE, then pick split towards middle bins
+                  (selo + sehi == best_seL + best_seR &&
+                          Math.abs(b - (nbins >> 1)) < Math.abs(best - (nbins >> 1)))) {
+            if( wlo[b] >= min_rows && (whi[b] + wNA) >= min_rows ) {
+              best_seL = selo;
+              best_seR = sehi;
+              best = b;
+              nasplit = DHistogram.NASplitDir.NARight;
+            }
+          }
+        }
+      }
+    }
+
+    double nLeft = wlo[best];
+    double nRight = whi[best];
+
+    // For categorical (unordered) predictors, we sorted the bins by average
+    // prediction then found the optimal split on sorted bins
+    IcedBitSet bs = null;       // In case we need an arbitrary bitset
+    if( idxs != null ) {        // We sorted bins; need to build a bitset
+      int off = (int)hs._min;
+      bs = new IcedBitSet(nbins,off);
+      for( int i=best; i<nbins; i++ )
+        bs.set(idxs[i] + off);
+
+      // Throw empty (unseen) categorical buckets into the majority direction (should behave like NAs during testing)
+      int nonEmptyThatWentRight = 0;
+      int nonEmptyThatWentLeft = 0;
+      for (int i=0; i<nbins; i++) {
+        if (hs.w(i) > 0) {
+          if (bs.contains(i + off))
+            nonEmptyThatWentRight++;
+          else
+            nonEmptyThatWentLeft++;
+        }
+      }
+      boolean shouldGoLeft = nonEmptyThatWentLeft >= nonEmptyThatWentRight;
+      for (int i=0; i<nbins; i++) {
+        assert(bs.isInRange(i + off));
+        if (hs.w(i) == 0) {
+          if (bs.contains(i + off) && shouldGoLeft) {
+            bs.clear(i + off);
+          }
+          if (!bs.contains(i + off) && !shouldGoLeft) {
+            bs.set(i + off);
+          }
+        }
+      }
+
+      if (bs.cardinality()==0 || bs.cardinality()==bs.size()) {
+//        Log.info("Not splitting: no separation of categoricals possible");
+        return null;
+      }
+
+      equal = (byte)(bs.max() <= 32 ? 2 : 3); // Flag for bitset split; also check max size
+    }
+
+    if( best==0 && nasplit== DHistogram.NASplitDir.None) {
+//      Log.info("Not splitting: no optimal split point found:\n" + hs);
+      return null;
+    }
+
+    //if( se <= best_seL+best_se1) return null; // Ultimately roundoff error loses, and no split actually helped
+    if (!(best_seL+ best_seR < seBefore * (1- hs._minSplitImprovement))) {
+//      Log.info("Not splitting: not enough relative improvement: " + (1-(best_seL + best_seR) / seBefore) + "\n" + hs);
+      return null;
+    }
+
+    double predLeft = wYlo[best];
+    double predRight = wYhi[best];
+
+    if (nasplit== DHistogram.NASplitDir.NAvsREST) {
+      assert(best == 0);
+      nLeft = whi[0]; //all non-NAs
+      predLeft = wYhi[0];
+      nRight = wNA;
+      predRight = wYNA;
+    }
+    else if (nasplit== DHistogram.NASplitDir.NALeft) {
+      nLeft +=wNA;
+      predLeft +=wYNA;
+    }
+    else if (nasplit== DHistogram.NASplitDir.NARight) {
+      nRight +=wNA;
+      predRight +=wYNA;
+    }
+    assert(Math.abs(tot - (nRight + nLeft)) < 1e-5*tot);
+
+    if( MathUtils.equalsWithinOneSmallUlp((float)(predLeft / nLeft),(float)(predRight / nRight)) ) {
+//      Log.info("Not splitting: Predictions for left/right are the same:\n" + this);
+      return null;
+    }
+
+    if (nLeft < min_rows || nRight < min_rows) {
+//      Log.info("Not splitting: split would violate min_rows limit:\n" + this);
+      return null;
+    }
+
+    // if still undecided (e.g., if there are no NAs in training), pick a good default direction for NAs in test time
+    if (nasplit == DHistogram.NASplitDir.None) {
+      nasplit = nLeft > nRight ? DHistogram.NASplitDir.Left : DHistogram.NASplitDir.Right;
+    }
+    return new Split(col,best,nasplit,bs,equal,seBefore,best_seL, best_seR, nLeft, nRight, predLeft / nLeft, predRight / nRight);
   }
 }

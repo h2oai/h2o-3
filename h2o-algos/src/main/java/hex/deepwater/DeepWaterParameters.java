@@ -53,7 +53,8 @@ public class DeepWaterParameters extends Model.Parameters {
 
   public enum Backend {
     unknown,
-    mxnet, caffe, tensorflow
+    mxnet, caffe, tensorflow, // C++
+    xgrpc // anything that speaks grpc
   }
 
   public enum ProblemType {
@@ -90,7 +91,7 @@ public class DeepWaterParameters extends Model.Parameters {
   public boolean _use_all_factor_levels = true;
 
   public enum MissingValuesHandling {
-    Skip, MeanImputation
+    MeanImputation, Skip
   }
 
   public MissingValuesHandling _missing_values_handling = MissingValuesHandling.MeanImputation;

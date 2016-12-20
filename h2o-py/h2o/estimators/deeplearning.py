@@ -264,7 +264,9 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
     @property
     def max_confusion_matrix_size(self):
-        """int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs. (Default: 20)"""
+        """
+        int: [Deprecated] Maximum size (# classes) for confusion matrices to be printed in the Logs. (Default: 20)
+        """
         return self._parms.get("max_confusion_matrix_size")
 
     @max_confusion_matrix_size.setter
@@ -949,14 +951,14 @@ class H2ODeepLearningEstimator(H2OEstimator):
     @property
     def missing_values_handling(self):
         """
-        Enum["skip", "mean_imputation"]: Handling of missing values. Either Skip or MeanImputation. (Default:
+        Enum["mean_imputation", "skip"]: Handling of missing values. Either MeanImputation or Skip. (Default:
         "mean_imputation")
         """
         return self._parms.get("missing_values_handling")
 
     @missing_values_handling.setter
     def missing_values_handling(self, missing_values_handling):
-        assert_is_type(missing_values_handling, None, Enum("skip", "mean_imputation"))
+        assert_is_type(missing_values_handling, None, Enum("mean_imputation", "skip"))
         self._parms["missing_values_handling"] = missing_values_handling
 
 

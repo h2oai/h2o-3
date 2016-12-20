@@ -345,7 +345,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       for (int i = 0; i < ntreesFromCheckpoint; i++) _rand.nextLong(); //for determinism
       Log.info("Reconstructing OOB stats from checkpoint took " + t);
       if (DEV_DEBUG) {
-        System.out.println(_train.toString());
+        System.out.println(_train.toTwoDimTable());
       }
     }
 
@@ -382,7 +382,6 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   // Build an entire layer of all K trees
-//  protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
   protected DHistogram[][][] buildLayer(final Frame fr, final int nbins, int nbins_cats, final DTree ktrees[], final int leafs[], final DHistogram hcs[][][], boolean build_tree_one_node) {
     // Build K trees, one per class.
 
@@ -406,7 +405,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
       int workIdx = fr2.numCols(); fr2.add(fr._names[idx_work(k)],vecs[idx_work(k)]); //target value to fit (copy of actual response for DRF, residual for GBM)
       int nidIdx  = fr2.numCols(); fr2.add(fr._names[idx_nids(k)],vecs[idx_nids(k)]); //node indices for tree construction
       if (DEV_DEBUG) {
-        System.out.println("Building a layer for class " + k + ":\n" + fr2.toString());
+        System.out.println("Building a layer for class " + k + ":\n" + fr2.toTwoDimTable());
       }
       // Async tree building
       // step 1: build histograms
@@ -428,7 +427,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
                         vecs[idx_work(k)],
                         vecs[idx_nids(k)]
                 }
-        ).toString());
+        ).toTwoDimTable());
       }
     }
     // The layer is done.
@@ -545,7 +544,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // Builder-specific decision node
   protected DTree.DecidedNode makeDecided( DTree.UndecidedNode udn, DHistogram hs[] ) {
-    return new DTree.DecidedNode(udn, hs, _parms._seed);
+    return new DTree.DecidedNode(udn, hs);
   }
 
   // Read the 'tree' columns, do model-specific math and put the results in the

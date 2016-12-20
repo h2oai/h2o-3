@@ -345,8 +345,11 @@ class H2OCache(object):
             elif t == "time":
                 x = ["" if math.isnan(z) else time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(z / 1000)) for z in x]
             if rollups:  # Rollups, if requested
-                mins = v['mins'][0] if v['mins'] else None
-                maxs = v['maxs'][0] if v['maxs'] else None
+                mins = v['mins'][0] if v['mins'] and v["type"] != "enum" else None
+                maxs = v['maxs'][0] if v['maxs'] and v["type"] != "enum" else None
+                #Cross check type with mean and sigma. Set to None if of type enum.
+                if v['type'] == "enum":
+                    v['mean'] = v['sigma'] = v['zero_count'] = None
                 x = [v['type'], mins, v['mean'], maxs, v['sigma'], v['zero_count'], v['missing_count']] + x
             d[k] = x  # Insert into ordered-dict
         return tabulate.tabulate(d, headers="keys", tablefmt=tablefmt)

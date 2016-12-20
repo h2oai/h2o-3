@@ -15,7 +15,7 @@ public class DrfMojoWriter extends SharedTreeMojoWriter<DRFModel, DRFModel.DRFPa
   public DrfMojoWriter(DRFModel model) { super(model); }
 
   @Override public String mojoVersion() {
-    return "1.00";
+    return "1.10";
   }
 
   @Override

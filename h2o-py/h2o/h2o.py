@@ -134,25 +134,24 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
 
-    :param url:
-    :param ip:
-    :param port:
-    :param https:
-    :param insecure:
-    :param username:
-    :param password:
-    :param cluster_id:
-    :param cookies:
-    :param proxy:
-    :param start_h2o:
-    :param nthreads:
-    :param ice_root:
-    :param enable_assertions:
-    :param max_mem_size:
-    :param min_mem_size:
-    :param strict_version_check:
+    :param url: Full URL of the server to connect to (can be used instead of `ip` + `port` + `https`).
+    :param ip: The ip address (or host name) of the server where H2O is running.
+    :param port: Port number that H2O service is listening to.
+    :param https: Set to True to connect via https:// instead of http://.
+    :param insecure: When using https, setting this to True will disable SSL certificates verification.
+    :param username: Username and
+    :param password: Password for basic authentication.
+    :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
+    :param cookies: Cookie (or list of) to add to each request.
+    :param proxy: Proxy server address.
+    :param start_h2o: If False, do not attempt to start an h2o server when connection to an existing one failed.
+    :param nthreads: "Number of threads" option when launching a new h2o server.
+    :param ice_root: Directory for temporary files for the new h2o server.
+    :param enable_assertions: Enable assertions in Java for the new h2o server.
+    :param max_mem_size: Maximum memory to use for the new h2o server.
+    :param min_mem_size: Minimum memory to use for the new h2o server.
+    :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param kwargs: (all other deprecated attributes)
-    :returns: nothing
     """
     global h2oconn
     assert_is_type(url, str, None)

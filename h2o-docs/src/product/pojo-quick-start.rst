@@ -12,4 +12,6 @@ Users can refer to the following Quick Start files for more information about ge
 - `POJO Quick Start <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/POJO_QuickStart.md>`__
 - `MOJO Quick Start <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/howto/MOJO_QuickStart.md>`__
 
+**Note**: MOJOs are supported for GBM, DRF, and GLM models only.
+
 Developers can refer to the the `POJO and MOJO Model Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.

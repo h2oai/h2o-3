@@ -36,7 +36,7 @@ final class RollupStats extends Iced {
 
   // Computed in 1st pass
   volatile long _naCnt; //count(!isNA(X))
-  double _mean, _sigma; //sum(X) and sum(X^2) for non-NA values
+  double _mean, _sigma; //mean(X) and sqrt(sum((X-mean(X))^2)) for non-NA values
   long    _rows,        //count(X) for non-NA values
           _nzCnt,       //count(X!=0) for non-NA values
           _size,        //byte size

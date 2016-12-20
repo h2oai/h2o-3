@@ -60,7 +60,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     # Check for .h2oconfig file
     # Find .h2oconfig file starting from currenting directory and going
     # up all parent directories until it reaches the root directory.
-    config_path <- .h2o.candidate.config.files()
+    config_path <- .find.config()
 
     #Read in config if available
     if(!(is.null(config_path))){
@@ -191,6 +191,7 @@ h2o.init <- function(ip = "localhost", port = 54321, startH2O = TRUE, forceDL = 
     username = username, password = password, cluster_id = cluster_id, cookies = cookies)
   assign("SERVER", conn, .pkg.env)
   cat(" Connection successful!\n\n")
+  .h2o.jar.env$port <- port #Ensure right port is called when quitting R
   h2o.clusterInfo()
   cat("\n")
 
@@ -399,7 +400,7 @@ h2o.clusterStatus <- function() {
   # Shut down local H2O when user exits from R ONLY if h2o started from R
   reg.finalizer(.h2o.jar.env, function(e) {
     ip_    <- "127.0.0.1"
-    port_  <- 54321
+    port_  <- if(!is.null(e$port)) e$port else 54321
     myURL <- paste0("http://", ip_, ":", port_)
     if( .h2o.startedH2O() && url.exists(myURL) ) h2o.shutdown(prompt = FALSE)
     pid_file <- .h2o.getTmpFile("pid")
@@ -410,7 +411,7 @@ h2o.clusterStatus <- function() {
 
 .onDetach <- function(libpath) {
   ip_   <- "127.0.0.1"
-  port_ <- 54321
+  port_  <- if(!is.null(.h2o.jar.env$port)) .h2o.jar.env$port else 54321
   myURL <- paste0("http://", ip_, ":", port_)
   print("A shutdown has been triggered. ")
   if( url.exists(myURL) ) {

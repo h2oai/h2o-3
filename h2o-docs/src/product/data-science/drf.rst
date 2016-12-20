@@ -154,14 +154,17 @@ Defining a DRF Model
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
 
-   - ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` for regression
-   - ``deviance``
-   - ``logloss``
-   - ``MSE``
-   - ``AUC``
-   - ``lift_top_group``
-   - ``misclassification``
-   - ``mean_per_class_error``
+    - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression
+    - ``deviance``
+    - ``logloss``
+    - ``mse``
+    - ``rmse``
+    - ``mae``
+    - ``rmsle``
+    - ``auc``
+    - ``lift_top_group``
+    - ``misclassification``
+    - ``mean_per_class_error``
 
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the
    metric-based stopping to stop training if the improvement is less
@@ -282,7 +285,7 @@ FAQ
 
 -  **What happens if the response has missing values?**
 
-  No errors will occur, but nothing will be learned from rows containing missing the response.
+  No errors will occur, but nothing will be learned from rows containing missing values in the response column.
 
 -  **What happens when you try to predict on a categorical level not
    seen during training?**

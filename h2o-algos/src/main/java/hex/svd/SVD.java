@@ -5,6 +5,7 @@ import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 import hex.*;
 import hex.DataInfo.Row;
+import hex.glrm.GLRMModel;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 import hex.svd.SVDModel.SVDParameters;
@@ -35,6 +36,9 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   // Maximum number of columns when categoricals expanded
   private final int MAX_COLS_EXPANDED = 5000;
 
+  private boolean _callFromGLRM;  // when SVD is used as an init method for GLRM, need to initialize properly
+  private GLRMModel _glrmModel;
+
   // Number of columns in training set (p)
   private transient int _ncolExp;    // With categoricals expanded into 0/1 indicator cols
 
@@ -46,8 +50,16 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
   @Override public boolean haveMojo() { return false; }
 
   // Called from an http request
-  public SVD(SVDModel.SVDParameters parms         ) { super(parms    ); init(false); }
-  public SVD(SVDModel.SVDParameters parms, Job job) { super(parms,job); init(false); }
+  public SVD(SVDModel.SVDParameters parms         ) { super(parms    ); init(false); _glrmModel=null; _callFromGLRM=false;}
+  public SVD(SVDModel.SVDParameters parms, Job job) { super(parms,job); init(false); _glrmModel=null; _callFromGLRM=false;}
+  public SVD(SVDModel.SVDParameters parms, Job job, boolean callFromGlrm, GLRMModel gmodel) {
+    super(parms,job);
+    init(false);
+    _callFromGLRM = callFromGlrm;
+    if (gmodel == null)
+      error("_train SVD for GLRM", "Your GLRM model parameter is null.");
+    _glrmModel = gmodel;
+  }
   public SVD(boolean startup_once) { super(new SVDParameters(),startup_once); }
 
   @Override
@@ -70,7 +82,10 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
       error("_max_iterations", "max_iterations must be at least 1");
 
     if(_train == null) return;
-    _ncolExp = LinearAlgebraUtils.numColsExp(_train,_parms._use_all_factor_levels);
+      if (_callFromGLRM)  // when used to initialize GLRM, need to treat binary numeric columns with binary loss as numeric columns
+        _ncolExp = _glrmModel._output._catOffsets[_glrmModel._output._catOffsets.length-1]+_glrmModel._output._nnums;
+      else
+        _ncolExp = LinearAlgebraUtils.numColsExp(_train,_parms._use_all_factor_levels);
     if (_ncolExp > MAX_COLS_EXPANDED)
       warn("_train", "_train has " + _ncolExp + " columns when categoricals are expanded. Algorithm may be slow.");
 
@@ -229,7 +244,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           _job.update(1, "Iteration " + String.valueOf(model._output._iterations+1) + " of randomized subspace iteration");
 
           // 2) Form \tilde{Y}_j = A'Q_{j-1} and compute \tilde{Y}_j = \tilde{Q}_j \tilde{R}_j factorization
-          SMulTask stsk = new SMulTask(dinfo, _parms._nv);
+          SMulTask stsk = new SMulTask(dinfo, _parms._nv, _ncolExp);
           stsk.doAll(aqfrm);    // Pass in [A,Q]
 
           Matrix ysmall = new Matrix(stsk._atq);
@@ -237,7 +252,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
           double[][] ysmall_q = ysmall_qr.getQ().getArray();
 
           // 3) Form Y_j = A\tilde{Q}_j and compute Y_j = Q_jR_j factorization
-          BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(ysmall_q));
+          BMulInPlaceTask tsk = new BMulInPlaceTask(dinfo, ArrayUtils.transpose(ysmall_q), _ncolExp);
           tsk.doAll(ayfrm);
           qerr = LinearAlgebraUtils.computeQ(_job._key, yinfo, yqfrm);
           model._output._iterations++;
@@ -274,7 +289,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
 
         // 1) Form the matrix B' = A'Q = (Q'A)'
         _job.update(1, "Forming small matrix B = Q'A for direct SVD");
-        SMulTask stsk = new SMulTask(dinfo, _parms._nv);
+        SMulTask stsk = new SMulTask(dinfo, _parms._nv, _ncolExp);
         stsk.doAll(aqfrm);
 
         // 2) Compute SVD of small matrix: If B' = WDV', then B = VDW'
@@ -322,17 +337,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         DKV.put(dinfo._key, dinfo);
 
         // Save adapted frame info for scoring later
-        model._output._normSub = dinfo._normSub == null ? new double[dinfo._nums] : dinfo._normSub;
-        if(dinfo._normMul == null) {
-          model._output._normMul = new double[dinfo._nums];
-          Arrays.fill(model._output._normMul, 1.0);
-        } else
-          model._output._normMul = dinfo._normMul;
-        model._output._permutation = dinfo._permutation;
-        model._output._nnums = dinfo._nums;
-        model._output._ncats = dinfo._cats;
-        model._output._catOffsets = dinfo._catOffsets;
-        model._output._names_expanded = dinfo.coefNames();
+        setSVDModel(model, dinfo);
 
         String u_name = (_parms._u_name == null || _parms._u_name.length() == 0) ? "SVDUMatrix_" + Key.rand() : _parms._u_name;
         String v_name = (_parms._v_name == null || _parms._v_name.length() == 0) ? "SVDVMatrix_" + Key.rand() : _parms._v_name;
@@ -485,6 +490,35 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         Scope.untrack(keep);
       }
     }
+  }
+
+  /*
+  This method may make changes to the dinfo parameters if SVD is called by GLRM as a init method.
+   */
+  private void setSVDModel(SVDModel model, DataInfo dinfo) {
+    if (_callFromGLRM) {
+      dinfo._normSub = Arrays.copyOf(_glrmModel._output._normSub, _glrmModel._output._normSub.length);
+      dinfo._normMul = Arrays.copyOf(_glrmModel._output._normMul, _glrmModel._output._normMul.length);
+      dinfo._permutation = Arrays.copyOf(_glrmModel._output._permutation, _glrmModel._output._permutation.length);
+      dinfo._numMeans = Arrays.copyOf(dinfo._normSub, dinfo._normSub.length);
+      dinfo._nums = _glrmModel._output._nnums;
+      dinfo._cats = _glrmModel._output._ncats;
+      dinfo._catOffsets = Arrays.copyOf(_glrmModel._output._catOffsets, _glrmModel._output._catOffsets.length);
+      model._output._names_expanded = Arrays.copyOf(_glrmModel._output._names_expanded,
+              _glrmModel._output._names_expanded.length);
+    } else
+      model._output._names_expanded = dinfo.coefNames();
+
+    model._output._normSub = dinfo._normSub == null ? new double[dinfo._nums] : dinfo._normSub;
+    if (dinfo._normMul == null) {
+      model._output._normMul = new double[dinfo._nums];
+      Arrays.fill(model._output._normMul, 1.0);
+    } else
+      model._output._normMul = dinfo._normMul;
+    model._output._permutation = dinfo._permutation;
+    model._output._nnums = dinfo._nums;
+    model._output._ncats = dinfo._cats;
+    model._output._catOffsets = dinfo._catOffsets;
   }
 
   private TwoDimTable createModelSummaryTable(SVDModel.SVDOutput output) {

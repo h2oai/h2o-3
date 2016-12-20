@@ -34,12 +34,12 @@ class H2ODeepWaterEstimator(H2OEstimator):
                       "train_samples_per_iteration", "target_ratio_comm_to_comp", "seed", "standardize",
                       "learning_rate", "learning_rate_annealing", "momentum_start", "momentum_ramp", "momentum_stable",
                       "distribution", "score_interval", "score_training_samples", "score_validation_samples",
-                      "score_duty_cycle", "stopping_rounds", "stopping_metric", "stopping_tolerance",
-                      "max_runtime_secs", "ignore_const_cols", "shuffle_training_data", "mini_batch_size",
-                      "clip_gradient", "network", "backend", "image_shape", "channels", "sparse", "gpu", "device_id",
-                      "network_definition_file", "network_parameters_file", "mean_image_file",
-                      "export_native_parameters_prefix", "activation", "hidden", "input_dropout_ratio",
-                      "hidden_dropout_ratios", "problem_type"}
+                      "score_duty_cycle", "classification_stop", "regression_stop", "stopping_rounds",
+                      "stopping_metric", "stopping_tolerance", "max_runtime_secs", "ignore_const_cols",
+                      "shuffle_training_data", "mini_batch_size", "clip_gradient", "network", "backend", "image_shape",
+                      "channels", "sparse", "gpu", "device_id", "network_definition_file", "network_parameters_file",
+                      "mean_image_file", "export_native_parameters_prefix", "activation", "hidden",
+                      "input_dropout_ratio", "hidden_dropout_ratios", "problem_type"}
         if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
@@ -463,6 +463,30 @@ class H2ODeepWaterEstimator(H2OEstimator):
     def score_duty_cycle(self, score_duty_cycle):
         assert_is_type(score_duty_cycle, None, numeric)
         self._parms["score_duty_cycle"] = score_duty_cycle
+
+
+    @property
+    def classification_stop(self):
+        """
+        float: Stopping criterion for classification error fraction on training data (-1 to disable). (Default: 0)
+        """
+        return self._parms.get("classification_stop")
+
+    @classification_stop.setter
+    def classification_stop(self, classification_stop):
+        assert_is_type(classification_stop, None, numeric)
+        self._parms["classification_stop"] = classification_stop
+
+
+    @property
+    def regression_stop(self):
+        """float: Stopping criterion for regression error (MSE) on training data (-1 to disable). (Default: 0)"""
+        return self._parms.get("regression_stop")
+
+    @regression_stop.setter
+    def regression_stop(self, regression_stop):
+        assert_is_type(regression_stop, None, numeric)
+        self._parms["regression_stop"] = regression_stop
 
 
     @property

@@ -609,8 +609,8 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     public boolean shuffle_training_data;
 
     @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,
-        values = {"Skip", "MeanImputation"},
-        help = "Handling of missing values. Either Skip or MeanImputation.")
+        values = {"MeanImputation", "Skip"},
+        help = "Handling of missing values. Either MeanImputation or Skip.")
     public DeepLearningParameters.MissingValuesHandling missing_values_handling;
 
     @API(level = API.Level.expert, direction = API.Direction.INOUT, gridable = true,

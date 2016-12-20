@@ -40,6 +40,16 @@ public abstract class SharedTreeMojoWriter<
         assert ct._nclass == nclasses;
         // assume ct._seed is useless and need not be persisted
         writeblob(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
+
+        if (model._output._treeKeysAux!=null) {
+          key = model._output._treeKeysAux[i][j];
+          ctVal = key != null ? DKV.get(key) : null;
+          if (ctVal != null) {
+            ct = ctVal.get();
+            assert ct._nclass == -1;
+            writeblob(String.format("trees/t%02d_%03d_aux.bin", j, i), ct._bits);
+          }
+        }
       }
     }
   }

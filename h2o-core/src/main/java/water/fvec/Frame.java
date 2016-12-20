@@ -368,7 +368,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /** Pair of (column name, Frame key). */
-  public static class VecSpecifier extends Iced {
+  public static class VecSpecifier extends Iced implements Vec.Holder {
     public Key<Frame> _frame;
     public String _column_name;
 
@@ -1118,6 +1118,7 @@ public class Frame extends Lockable<Frame> {
 
   public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
   public String toString(long off, int len, boolean rollups) { return toTwoDimTable(off, len, rollups).toString(); }
+  public TwoDimTable toTwoDimTable() { return toTwoDimTable(0,10); }
   public TwoDimTable toTwoDimTable(long off, int len ) { return toTwoDimTable(off,len,true); }
   public TwoDimTable toTwoDimTable(long off, int len, boolean rollups ) {
     if( off > numRows() ) off = numRows();

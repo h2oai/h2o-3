@@ -35,7 +35,7 @@ from h2o.utils.config import get_config_value
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,
                                     can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
-from h2o.utils.typechecks import (assert_is_type, assert_satisfies, I, is_type, numeric, numpy_ndarray,
+from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   pandas_dataframe, scipy_sparse, U)
 
 __all__ = ("H2OFrame", )
@@ -56,12 +56,14 @@ class H2OFrame(object):
     # Construction
     #-------------------------------------------------------------------------------------------------------------------
 
-    def __init__(self, python_obj=None):
+    def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
+                 column_names=None, column_types=None, na_strings=None):
         """Initialize a new H2OFrame object, possibly from some other object."""
         self._ex = ExprNode()
         self._ex._children = None
         if python_obj is not None:
-            self._upload_python_object(python_obj)
+            self._upload_python_object(python_obj, destination_frame, header, separator,
+                                       column_names, column_types, na_strings)
 
     @staticmethod
     def _expr(expr, cache=None):
@@ -93,14 +95,14 @@ class H2OFrame(object):
           header : int, optional
             -1 means the first line is data, 0 means guess, 1 means first line is header.
 
-          sep : str, optional
+          separator : str, optional
             The field separator character. Values on each line of the file are separated by
             this character. If sep = "", the parser will automatically detect the separator.
 
-          col_names : list, optional
+          column_names : list, optional
             A list of column names for the file.
 
-          col_types : list or dict, optional
+          column_types : list or dict, optional
             A list of types or a dictionary of column names to types to specify whether
             columns should be forced to a certain type upon import parsing. If a list, the
             types for elements that are None will be guessed. The possible types a column may
@@ -2318,16 +2320,18 @@ class H2OFrame(object):
         return H2OFrame._expr(expr=ExprNode("table", self, data2, dense)) if data2 is not None else H2OFrame._expr(
             expr=ExprNode("table", self, dense))
 
-    def hist(self, breaks="Sturges", plot=True, **kwargs):
-        """Compute a histogram over a numeric column.
+
+    def hist(self, breaks="sturges", plot=True, **kwargs):
+        """
+        Compute a histogram over a numeric column.
 
         Parameters
         ----------
           breaks: str, int, list
-            Can be one of "Sturges", "Rice", "sqrt", "Doane", "FD", "Scott."
-            Can be a single number for the number of breaks.
-            Can be a list containing sthe split points, e.g., [-50,213.2123,9324834]
-            If breaks is "FD", the MAD is used over the IQR in computing bin width.
+            Can be one of "sturges", "rice", "sqrt", "doane", "fd", "scott";
+            or a single number for the number of breaks;
+            or a list containing the split points, e.g: [-50, 213.2123, 9324834]
+            If breaks is "fd", the MAD is used over the IQR in computing bin width.
           plot : bool, default=True
             If True, then a plot is generated
 
@@ -2336,47 +2340,43 @@ class H2OFrame(object):
           If plot is False, return H2OFrame with these columns: breaks, counts, mids_true,
           mids, and density; otherwise produce the plot.
         """
-        frame = H2OFrame._expr(expr=ExprNode("hist", self, breaks))._frame()
-        total = frame["counts"].sum(True,return_frame=False)
-        densities = [[(frame[i, "counts"] / total) * (1 / (frame[i, "breaks"] - frame[i - 1, "breaks"]))] for i in
-                     range(1, frame["counts"].nrow)]
-        densities.insert(0, [0])
-        densities_frame = H2OFrame(densities)
-        densities_frame.set_names(["density"])
-        frame = frame.cbind(densities_frame)
+        server = kwargs.pop("server") if "server" in kwargs else False
+        assert_is_type(breaks, int, [numeric], Enum("sturges", "rice", "sqrt", "doane", "fd", "scott"))
+        assert_is_type(plot, bool)
+        assert_is_type(server, bool)
+        if kwargs:
+            raise H2OValueError("Unknown parameters to hist(): %r" % kwargs)
+        hist = H2OFrame._expr(expr=ExprNode("hist", self, breaks))._frame()
 
         if plot:
             try:
-                imp.find_module('matplotlib')
                 import matplotlib
-                if 'server' in kwargs.keys() and kwargs['server']: matplotlib.use('Agg', warn=False)
+                if server:
+                    matplotlib.use("Agg", warn=False)
                 import matplotlib.pyplot as plt
             except ImportError:
-                print(
-                    "matplotlib is required to make the histogram plot. Set `plot` to False, if a plot is not desired.")
+                print("ERROR: matplotlib is required to make the histogram plot. "
+                      "Set `plot` to False, if a plot is not desired.")
                 return
 
-            lower = float(frame[0, "breaks"])
-            clist = h2o.as_list(frame["counts"], use_pandas=False)
-            clist.pop(0)
-            clist.pop(0)
-            mlist = h2o.as_list(frame["mids"], use_pandas=False)
-            mlist.pop(0)
-            mlist.pop(0)
-            counts = [float(c[0]) for c in clist]
-            counts.insert(0, 0)
-            mids = [float(m[0]) for m in mlist]
-            mids.insert(0, lower)
+            hist["widths"] = hist["breaks"].difflag1()
+            # [2:] because we're removing the title and the first row (which consists of NaNs)
+            lefts = [float(c[0]) for c in h2o.as_list(hist["breaks"], use_pandas=False)[2:]]
+            widths = [float(c[0]) for c in h2o.as_list(hist["widths"], use_pandas=False)[2:]]
+            counts = [float(c[0]) for c in h2o.as_list(hist["counts"], use_pandas=False)[2:]]
+
             plt.xlabel(self.names[0])
-            plt.ylabel('Frequency')
-            plt.title('Histogram of {0}'.format(self.names[0]))
-            plt.bar(mids, counts)
-            if not ('server' in kwargs.keys() and kwargs['server']): plt.show()
-
+            plt.ylabel("Frequency")
+            plt.title("Histogram of %s" % self.names[0])
+            plt.bar(left=lefts, width=widths, height=counts, bottom=0)
+            if not server:
+                plt.show()
         else:
-            return frame
+            hist["density"] = hist["counts"] / (hist["breaks"].difflag1() * hist["counts"].sum())
+            return hist
 
-    def isax(self, num_words, max_cardinality,optimize_card = False, **kwargs):
+
+    def isax(self, num_words, max_cardinality, optimize_card=False, **kwargs):
         """ Compute the iSAX index for DataFrame which is assumed to be numeric time series data
          References:
             - http://www.cs.ucr.edu/~eamonn/SAX.pdf
@@ -2592,6 +2592,10 @@ class H2OFrame(object):
         """
         fr = H2OFrame._expr(expr=ExprNode("is.na", self))
         fr._ex._cache.nrows = self._ex._cache.nrows
+        fr._ex._cache.ncols = self._ex._cache.ncols
+        if self._ex._cache.names:
+            fr._ex._cache.names = ["isNA(%s)" % n  for n in self._ex._cache.names]
+            fr._ex._cache.types = {"isNA(%s)" % n: "int"  for n in self._ex._cache.names}
         return fr
 
     def year(self):

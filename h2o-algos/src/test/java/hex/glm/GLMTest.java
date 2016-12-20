@@ -1782,6 +1782,7 @@ public class GLMTest  extends TestUtil {
   @Test
   public void testDeviances() {
     for (Family fam : Family.values()) {
+      if(fam == Family.quasibinomial) continue;
       Frame tfr = null;
       Frame res = null;
       Frame preds = null;

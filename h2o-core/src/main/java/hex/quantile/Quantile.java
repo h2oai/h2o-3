@@ -138,7 +138,7 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     @Override public void compute2() {
       final int strataMin = (int)_strata.min();
       final int strataMax = (int)_strata.max();
-      if (strataMin < 0 || strataMax < 0) {
+      if (strataMin < 0 && strataMax < 0) {
         Log.warn("No quantiles can be computed since there are no non-OOB rows.");
         tryComplete();
         return;

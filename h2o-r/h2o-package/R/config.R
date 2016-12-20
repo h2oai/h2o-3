@@ -6,6 +6,11 @@
 .parse.h2oconfig <- function(h2oconfig_filename){
     cat(paste0("Reading in config file: ",h2oconfig_filename,"\n"))
 
+    #Need to allocate some value for V1 & V2, which are used down the function for parsing.
+    #This is to help with the CRAN NOTE check.
+    #These variables are first used in subset() and transform().
+    V1 <- V2 <- NULL
+
     #Allowed config keys
     allowed_config_keys = c("init.check_version", "init.proxy","init.cluster_id",
     "init.verify_ssl_certificates","init.cookies","general.allow_breaking_changes")
@@ -101,21 +106,45 @@
 
 #Helper function responsible for reading h2o config files.
 
-#This function will look for file(s) named ".h2oconfig" in the current folder, in all parent folders, and finally in
+#This function will look for file(s) named ".h2oconfig" in the current folder, in all parent folders (up to root), and finally in
 #the user's home directory. The first such file found will be used for configuration purposes. The format for such
 #file is a simple "key = value" store, with possible section names in square brackets. Single-line comments starting
 #with '#' are also allowed.
-.h2o.candidate.config.files <- function(){
-    path_to_config = getwd()
-    current_directory = getwd()
-    while(identical(Sys.glob(".h2oconfig"),character(0))){
-        if(getwd() == "/" || getwd() == "C:/" || getwd() == "D:/"){ #Search up to root directory in Unix/Windows OS
-          setwd(current_directory)
-          return()
-        }
-      setwd("..")
-      path_to_config = getwd()
+#Input is a list of file names or a single file name.
+#Returns path to first file found in files. Otherwise it returns NULL
+.find.config <- function(files = ".h2oconfig") {
+  windows <- .Platform$OS.type == "windows" #Are we dealing with a Windows OS?
+
+  #Function to check if in root directory
+  is_root <- function() {
+    if (windows)
+     identical(normalizePath(file.path(getwd(), dirname(path))), paste(win.drive,":\\",sep = ""))
+    else
+     identical(normalizePath(file.path(getwd(), dirname(path))), "/")
+  }
+
+  if(windows){
+    win.drive <- strsplit(normalizePath(getwd()), ":", fixed=TRUE)[[1]][1] #Get drive if Windows OS
+  }
+  ans.file <- NULL
+  i <- 0
+
+  while(is.null(ans.file)) {
+    path <- file.path(do.call("file.path", as.list(c(".",rep("..", i)))), files)
+    i <- i + 1
+    if (any(fe <- file.exists(path))) {
+     ans.file <- path[fe][1L] # take first if few present
+     break
     }
-    setwd(current_directory)
-    return(paste0(path_to_config,"/.h2oconfig"))
+   if (is_root()){
+     #Final check in home diretory
+     if (any(fe <- file.exists(fp <- path.expand(file.path("~",files)))))  {
+      ans.file <- fp[fe][1L] #`fp` and `fe` are vectors. If multiple files are the input, then we first subset from all files
+                             # that exist in `fp`, which are `[fe]` and then only use first, which is shown by `[1L]`
+     }
+     break # root directory and files are not found
+   }
+ }
+
+ return(ans.file)
 }
