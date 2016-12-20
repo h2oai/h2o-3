@@ -506,7 +506,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
       }
 
       double d = row[colId];
-      if (Double.isNaN(d)? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains((int)d))) {
+      if (Double.isNaN(d)? !leftward : !naVsRest && (equal == 0? d >= splitVal : bs.contains0((int)d))) {
         // go RIGHT
         switch (lmask) {
           case 0:  ab.skip(ab.get1U());  break;
