@@ -22,25 +22,35 @@
 #' @export
 h2o.predict_json <- function(model, json, classpath, javaoptions) {
 	java <- "java"
-	javapath <- c( c(".", "h2o-genmodel.jar"),  sapply(.libPaths(), paste0, "/h2o/java/h2o.jar", USE.NAMES=FALSE) )
+	javapath <- c(".", "h2o-genmodel.jar", .h2o.downloadJar() )
 	if (!missing(classpath)) {
+		# prepend optional path
 	   javapath <- c( classpath, javapath )
 	}
 	javaopts <- if (!missing(javaoptions)) javaoptions else "-Xmx4g"
+    # Windows require different Java classpath separator and quoting
 	iswindows <- Sys.info()[["sysname"]] == "Windows"
 	separator <- if (iswindows) ";" else ":"
+	jsonq <- if (iswindows) paste('"', json, '"', sep="") else paste("'", json, "'", sep="")
 	classpath <- paste(javapath, sep="", collapse=separator)
 	javaargs <- paste(" ", javaopts, " -cp ", classpath, " water.util.H2OPredictor", sep="")
-	jsonq <- if (iswindows) paste('"', json, '"', sep="") else paste("'", json, "'", sep="")
 	args <- paste(javaargs, model, jsonq, sep=" ")
+	# run the Java method H2OPredictor, which will return JSON or an error message
 	res <- system2(java, args, stdout=TRUE, stderr=TRUE)
-	first <- substring(res, 1, 1)
-	if (first == '{' || first == '[') {
+	# check the returned for start of JSON, if json then decode and return, otherwise print the error
+	first_char <- substring(res, 1, 1)
+	if (first_char == '{' || first_char == '[') {
+		# JSON returned -- it must start with { or [
 	   	json <- fromJSON(paste0(res, collapse=""))
 		return(json)
+	} else  {
+	    # An error message was returned: show it and return nothing
+	    print(res)
+	    return(NULL)
 	}
-	print(res)
 }
+
+# These are defined so that you can use the same names in Python and allows us to change the backing method
 
 h2o.to_json <- function(object) {
 	return(toJSON(object))
