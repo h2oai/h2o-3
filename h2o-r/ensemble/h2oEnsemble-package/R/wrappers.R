@@ -11,7 +11,12 @@ h2o.example.wrapper <- function(x, y, training_frame, model_id = NULL, family = 
 
 
 
-# Wrappers for: h2o.glm, h2o.randomForest, h2o.gbm, h2o.deeplearning:
+# H2O Algorithm function wrappers for:
+# h2o.glm
+# h2o.randomForest
+# h2o.gbm
+# h2o.deeplearning
+# h2o.naiveBayes (classification only)
 
 
 # This is a version of the h2o.glm.wrapper which doesn't pass along all the args
@@ -45,7 +50,7 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL,
                             weights_column = NULL, 
                             intercept = TRUE, 
                             max_active_predictors = NULL,
-                            interactions = NULL,
+                            #interactions = NULL,
                             objective_epsilon = NULL,
                             gradient_epsilon = NULL, 
                             non_negative = FALSE, 
@@ -55,6 +60,7 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL,
                             missing_values_handling = c("MeanImputation", "Skip"), ...) {
   
   # Also, offset_column, weights_column, intercept not implemented at the moment due to similar bug as beta_constraints
+  # intercept argument not currently supported due to GLM bug with explicitly setting interactions = NULL (the default) 
   h2o.glm(x = x, 
           y = y, 
           training_frame = training_frame, 
@@ -86,7 +92,7 @@ h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL,
           #weights_column = weights_column, 
           #intercept = intercept, 
           max_active_predictors = max_active_predictors, 
-          interactions = interactions,
+          #interactions = interactions,  #setting to NULL is causing a bug: "Don't know what to do with interactions. Supply vector of indices or names"
           objective_epsilon = objective_epsilon,
           gradient_epsilon = gradient_epsilon, 
           non_negative = non_negative, 
@@ -240,8 +246,6 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      min_split_improvement = 1e-05,
                                      histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal",
                                                         "RoundRobin"), 
-                                     max_abs_leafnode_pred = 1.79769313486e+308, 
-                                     pred_noise_bandwidth = 0,
                                      categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
                                                               "Binary", "Eigen"), ...) {
   
@@ -285,8 +289,6 @@ h2o.randomForest.wrapper <- function(x, y, training_frame, model_id = NULL,
                    max_runtime_secs = max_runtime_secs,
                    min_split_improvement = min_split_improvement,
                    histogram_type = match.arg(histogram_type),
-                   max_abs_leafnode_pred = max_abs_leafnode_pred,
-                   pred_noise_bandwidth = pred_noise_bandwidth,
                    categorical_encoding = match.arg(categorical_encoding))
 }
 
@@ -334,8 +336,8 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      score_training_samples = 10000, 
                                      score_validation_samples = 0, 
                                      score_duty_cycle = 0.1,
-                                     classification_stop 0.0, 
-                                     regression_stop 1e-06,
+                                     classification_stop = 0.0, 
+                                     regression_stop = 1e-06,
                                      stopping_rounds = 5, 
                                      stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "AUC", "misclassification", "mean_per_class_error"),
                                      stopping_tolerance = 0, 
@@ -348,7 +350,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                                      score_validation_sampling = c("Uniform", "Stratified"), 
                                      missing_values_handling = c("MeanImputation", "Skip"),
                                      diagnostics = TRUE,
-                                     variable_importances FALSE, 
+                                     variable_importances = FALSE, 
                                      fast_mode = TRUE, 
                                      ignore_const_cols = TRUE, 
                                      force_load_balance = TRUE,
@@ -428,7 +430,7 @@ h2o.deeplearning.wrapper <- function(x, y, training_frame, model_id = NULL,
                    class_sampling_factors = class_sampling_factors,
                    max_after_balance_size = max_after_balance_size, 
                    score_validation_sampling = match.arg(score_validation_sampling),
-                   missing_values_handling = match.arg(missing_values_handling)
+                   missing_values_handling = match.arg(missing_values_handling),
                    diagnostics = diagnostics,
                    variable_importances = variable_importances, 
                    fast_mode = fast_mode, 
