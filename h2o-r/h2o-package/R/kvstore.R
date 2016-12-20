@@ -268,12 +268,12 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE) {
         getjar = NULL
     }
     if (get_jar) {
-      urlSuffix = "h2o-genmodel.jar"
       #Build genmodel.jar file path
+      urlSuffix = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")
       jar.path <- paste0(path, "/h2o-genmodel.jar")
       #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
       #and write to jar.path.
-      writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE), jar.path, useBytes = TRUE)
+      writeBin(.h2o.getBinary(urlSuffix = urlSuffix), jar.path, useBytes = TRUE)
     }
     return(paste0(pojoname,".java"))
   }
@@ -317,20 +317,21 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE) {
   model_id <- model@model_id
 
   #Build URL for MOJO
-  urlSuffix <- paste0(.h2o.__MODELS,"/",URLencode(model_id),"/mojo")
+  urlSuffix <- .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = paste0(.h2o.__MODELS,"/",model_id,"/mojo"))
 
   #Build MOJO file path and download MOJO file & perform a safe (i.e. error-checked)
   #HTTP GET request to an H2O cluster with MOJO URL
   mojo.path <- paste0(path,"/",model_id,".zip")
-  writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE), mojo.path, useBytes = TRUE)
+  writeBin(.h2o.getBinary(urlSuffix = urlSuffix), mojo.path, useBytes = TRUE)
 
   if (get_genmodel_jar) {
-    urlSuffix = "h2o-genmodel.jar"
+    #Build URL for genmodel jar
+    urlSuffix = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")
     #Build genmodel.jar file path
     jar.path <- paste0(path, "/h2o-genmodel.jar")
     #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
     #and write to jar.path.
-    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, getBinary=TRUE), jar.path, useBytes = TRUE)
+    writeBin(.h2o.getBinary(urlSuffix = urlSuffix), jar.path, useBytes = TRUE)
   }
   return(paste0(model_id,".zip"))
 }
