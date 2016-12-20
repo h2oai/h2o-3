@@ -1,5 +1,5 @@
 #'
-#' H2O Prediction from R
+#' H2O Prediction from R without having H2O running
 #'
 #' Provides the method h2o.predict with which you can predict a MOJO or POJO Jar model
 #' from R.
