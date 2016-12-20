@@ -292,7 +292,7 @@ def help_return_for(algo):
         #'         object has coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics
         #'         including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please refer to the
         #'         more in-depth GLM documentation available here:
-        #'         \\url{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
+        #'         \\url{https://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
         """
     if algo == "kmeans":
         return "#' @return Returns an object of class \linkS4class{H2OClusteringModel}."
