@@ -123,7 +123,11 @@ h2o.grid <- function(algorithm,
   h2o.getGrid(grid_id = grid_id)
 }
 
-#' Get a grid object from H2O distributed K/V store.
+#' Get a grid object from H2O distributed K/V store. Note that if neither cross-validation nor a 
+#' validation frame is used in the grid search, then the training metrics will display in the 
+#' "get grid" output. If a validation frame is passed to the grid, and nfolds = 0, then the 
+#' validation metrics will display. However, if nfolds > 1, then cross-validation metrics will 
+#' display even if a validation frame is provided.
 #'
 #' @param grid_id  ID of existing grid object to fetch
 #' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "residual_deviance", "mse", "auc", "accuracy", "precision", "recall", "f1", etc.
