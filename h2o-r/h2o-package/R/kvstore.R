@@ -255,12 +255,12 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE) {
   pojoname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
 
   #Path to save POJO, if `path` is provided
-  file.path <- paste0(path, "/", pojoname, ".java")
+  file_path <- file.path(path, paste0(pojoname, ".java"))
 
   if( is.null(path) ){
     cat(java) #Pretty print POJO
   } else {
-    write(java, file=file.path) #Write POJO to specified path
+    write(java, file=file_path) #Write POJO to specified path
     # getjar is now deprecated and the new arg name is get_jar
     if (!is.null(getjar)) {
         warning("The `getjar` argument is DEPRECATED; use `get_jar` instead as `getjar` will eventually be removed")
@@ -270,7 +270,7 @@ h2o.download_pojo <- function(model, path=NULL, getjar=NULL, get_jar=TRUE) {
     if (get_jar) {
       #Build genmodel.jar file path
       urlSuffix = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")
-      jar.path <- paste0(path, "/h2o-genmodel.jar")
+      jar.path <- file.path(path, "h2o-genmodel.jar")
       #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
       #and write to jar.path.
       writeBin(.h2o.getBinary(urlSuffix = urlSuffix), jar.path, useBytes = TRUE)
@@ -321,14 +321,14 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE) {
 
   #Build MOJO file path and download MOJO file & perform a safe (i.e. error-checked)
   #HTTP GET request to an H2O cluster with MOJO URL
-  mojo.path <- paste0(path,"/",model_id,".zip")
+  mojo.path <- file.path(path, paste0(model_id,".zip"))
   writeBin(.h2o.getBinary(urlSuffix = urlSuffix), mojo.path, useBytes = TRUE)
 
   if (get_genmodel_jar) {
     #Build URL for genmodel jar
     urlSuffix = .h2o.calcBaseURL(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = "h2o-genmodel.jar")
     #Build genmodel.jar file path
-    jar.path <- paste0(path, "/h2o-genmodel.jar")
+    jar.path <- file.path(path,"h2o-genmodel.jar")
     #Perform a safe (i.e. error-checked) HTTP GET request to an H2O cluster with genmodel.jar URL
     #and write to jar.path.
     writeBin(.h2o.getBinary(urlSuffix = urlSuffix), jar.path, useBytes = TRUE)

@@ -88,10 +88,10 @@
   #Capture logging information if desired
   if (.h2o.isLogging()) {
     .h2o.logRest("------------------------------------------------------------")
-  .h2o.logRest("")
-  .h2o.logRest(sprintf("Time:     %s", as.character(format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"))))
-  .h2o.logRest("")
-  .h2o.logRest(sprintf("%-9s %s", "GET", urlSuffix))
+    .h2o.logRest("")
+    .h2o.logRest(sprintf("Time:     %s", as.character(format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"))))
+    .h2o.logRest("")
+    .h2o.logRest(sprintf("%-9s %s", "GET", urlSuffix))
   }
 
   beginTimeSeconds = as.numeric(proc.time())[3L]
@@ -112,13 +112,13 @@
   tmp <- getBinaryURL(url = urlSuffix,
                                 #Identify curl options in .opts
                                 .opts = curlOptions(customrequest = "GET",
-                                writefunction = t$update,
-                                headerfunction = h$update,
-                                useragent=R.version.string,
-                                httpheader = header,
-                                verbose = FALSE,
-                                timeout = timeout_secs,
-                                .opts = opts))
+                                                    writefunction = t$update,
+                                                    headerfunction = h$update,
+                                                    useragent=R.version.string,
+                                                    httpheader = header,
+                                                    verbose = FALSE,
+                                                    timeout = timeout_secs,
+                                                    .opts = opts))
 
   #If status !=200, then throw exception to client
   httpStatusCode = as.numeric(h$value()["status"])
