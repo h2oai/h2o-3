@@ -161,6 +161,7 @@ public class Env extends Iced {
     init(new AstMin());
     init(new AstMinNa());
     init(new AstNaCnt());
+    init(new AstNaRowCnt());
     init(new AstProd());
     init(new AstProdNa());
     init(new AstSdev());
