@@ -60,17 +60,27 @@ public abstract class Val {
   public abstract Type type();
 
   public enum Type {
-    NULL,     // null (void) value
-    NUM,      // double
-    NUMS,     // array of doubles
-    SLICE,    // list of slices -- used for indexing
-    STR,      // string
-    STRS,     // array of strings
-    IDS,      // list of unevaluated variables
-    FRAME,    // Frame object
-    WFRAME,   // WorkFrame
-    FUNC,     // function -- either built-in or user-defined
-    AST,      // unevaluated AST
+    NULL("ValNull"),     // null (void) value
+    NUM("ValNum"),       // double
+    INT("ValNum"),       // integer (backed by the ValNum class)
+    BOOL("ValNum"),      // boolean (backed by the ValNum class)
+    NUMS("ValNums"),     // array of doubles
+    SLICE("ValSlice"),   // list of slices -- used for indexing
+    STR("ValStr"),       // string
+    STRS("ValStrs"),     // array of strings
+    IDS("ValIdList"),    // list of unevaluated variables
+    FRAME("ValFrame"),   // Frame object
+    WFRAME("ValWFrame"), // WorkFrame
+    FUNC("ValFun"),      // function -- either built-in or user-defined
+    AST("ValAst");       // unevaluated AST
+
+    private String valClassName;
+    Type(String name) {
+      valClassName = name;
+    }
+    public String getValClassName() {
+      return valClassName;
+    }
   }
 
 
@@ -82,6 +92,9 @@ public abstract class Val {
     return false;
   }
   public boolean maybeInt() {
+    return false;
+  }
+  public boolean maybeBool() {
     return false;
   }
   public boolean maybeNums() {
@@ -111,6 +124,9 @@ public abstract class Val {
   }
   public int getInt() {
     throw badValue("integer");
+  }
+  public boolean getBool() {
+    throw badValue("boolean");
   }
   public double[] getNums() {
     throw badValue("number array");

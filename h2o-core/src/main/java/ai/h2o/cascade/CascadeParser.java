@@ -145,7 +145,9 @@ public class CascadeParser {
    */
   private AstApply parseFunctionApplication() {
     consumeChar('(');
+    int start = pos;
     Ast head = parseNext();
+    head.setPos(start, pos);
 
     ArrayList<Ast> args = new ArrayList<>();
     while (nextChar() != ')') {

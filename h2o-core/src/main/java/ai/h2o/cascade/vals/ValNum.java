@@ -14,6 +14,18 @@ public class ValNum extends Val {
     value = d;
   }
 
+  public ValNum(long d) {
+    value = d;
+  }
+
+  public ValNum(int d) {
+    value = d;
+  }
+
+  public ValNum(boolean d) {
+    value = d? 1 : 0;
+  }
+
   @Override public Type type() {
     return Type.NUM;
   }
@@ -44,6 +56,14 @@ public class ValNum extends Val {
     return (int) value;
   }
 
+
+  @Override public boolean maybeBool() {
+    return value == 0 || value == 1;
+  }
+
+  @Override public boolean getBool() {
+    return value != 0;
+  }
 
   @Override public boolean maybeSlice() {
     return (long) value == value;

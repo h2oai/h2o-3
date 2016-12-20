@@ -1,5 +1,6 @@
 package water.api.schemas4.output;
 
+import ai.h2o.cascade.Cascade;
 import ai.h2o.cascade.CascadeParser;
 import water.Iced;
 import water.api.API;
@@ -14,10 +15,10 @@ public class CascadeErrorV4 extends CascadeOV4<Iced, CascadeErrorV4> {
   public String expr;
 
   @API(help="Position of the error (character offset within the `expr`).")
-  public int errorPos;
+  public int error_pos;
 
   @API(help="Length of the token that caused the error; may be zero if not applicable.")
-  public int errorLen;
+  public int error_len;
 
   @API(help="Error message.")
   public String message;
@@ -27,8 +28,15 @@ public class CascadeErrorV4 extends CascadeOV4<Iced, CascadeErrorV4> {
 
   public CascadeErrorV4(CascadeParser.CascadeSyntaxError e) {
     expr = e.expr();
-    errorPos = e.errorPos();
-    errorLen = 0;
+    error_pos = e.errorPos();
+    error_len = 0;
+    message = e.getMessage();
+  }
+
+  public CascadeErrorV4(Cascade.RuntimeError e, String cascade) {
+    expr = cascade;
+    error_pos = e.startPos;
+    error_len = e.length;
     message = e.getMessage();
   }
 }

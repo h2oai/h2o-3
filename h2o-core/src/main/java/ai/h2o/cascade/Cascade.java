@@ -36,4 +36,15 @@ public abstract class Cascade {
     return ast.exec(session.globalScope());
   }
 
+
+  public static class RuntimeError extends RuntimeException {
+    public int startPos;
+    public int length;
+
+    public RuntimeError(int start, int len, String message) {
+      super(message);
+      startPos = start;
+      length = len;
+    }
+  }
 }

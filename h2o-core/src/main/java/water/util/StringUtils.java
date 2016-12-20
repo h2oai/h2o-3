@@ -188,4 +188,13 @@ public class StringUtils {
     }
     return res;
   }
+
+
+  /**
+   * Return the string with first letter uppercased and all other letters
+   * in the lower case.
+   */
+  public static String capitalize(String s) {
+    return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
+  }
 }

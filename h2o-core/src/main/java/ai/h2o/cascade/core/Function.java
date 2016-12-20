@@ -6,6 +6,6 @@ import ai.h2o.cascade.vals.Val;
  */
 public abstract class Function {
 
-  public abstract Val apply(Val[] args);
+  public Val apply0(Val[] args) { return null; }
 
 }
