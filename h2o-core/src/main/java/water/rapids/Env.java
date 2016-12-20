@@ -264,6 +264,7 @@ public class Env extends Iced {
     init(new AstRStrip());
     init(new AstStrLength());
     init(new AstStrSplit());
+    init(new AstTokenize());
     init(new AstSubstring());
     init(new AstToLower());
     init(new AstToUpper());
