@@ -7,7 +7,9 @@ The **h2oEnsemble** R package provides functionality to create ensembles from th
 H2O Ensemble currently supports [regression](https://en.wikipedia.org/wiki/Regression_analysis) and [binary classification](https://en.wikipedia.org/wiki/Binary_classification).  As is true of all the H2O algorithms, binary classification provides predicted values for each class in addition to a predicted class label.  Support for [multiclass classification](https://en.wikipedia.org/wiki/Multiclass_classification) will be included in a future release (follow the progress [here](https://0xdata.atlassian.net/browse/PUBDEV-2355)).
 
 ## Tutorial
+
 The [H2O Ensemble Tutorial](http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html) from [H2O World 2015](http://h2oworld.h2o.ai/) and accompanying [slides](https://github.com/h2oai/h2o-world-2015-training/blob/master/tutorials/ensembles-stacking/H2O_World_2015_Ensembles.pdf) are good places to learn about the algorithm and our implementation.
+
 
 ## Installation
 
@@ -17,16 +19,18 @@ The **h2oEnsemble** R package requires the **h2o** R package (and its dependenci
 
 
 ### Install H2O Ensemble (Stable)
-The latest stable version, compatible with the H2O "Turchin" release, be installed as follows:
+The latest stable version, compatible with the latest stable version of h2o, be installed as follows:
 
 ```r
-install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz", repos = NULL)
+install.packages("https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.9.tar.gz", repos = NULL)
 ``` 
 
 To install **h2oEnsemble** for a previous stable release of H2O, you can replace the URL above with the URL in the table below that matches your H2O version.
 
 |H2O Stable Release| Recommended version| Other versions |
 |:---------|:----------|:----------|
+|H2O 3.10.1.1 - [3.10.1.2](http://h2o-release.s3.amazonaws.com/h2o/rel-turnbull/2/index.html) (Turnbull)|[h2oEnsemble 0.1.9](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.9.tar.gz)| [h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz), [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
+|H2O 3.10.0.1 - [3.10.0.10](http://h2o-release.s3.amazonaws.com/h2o/rel-turing/10/index.html) (Turing)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O 3.8.2.1 - [3.8.2.9](http://h2o-release.s3.amazonaws.com/h2o/rel-turchin/9/index.html) (Turchin)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O 3.8.1.1 - [3.8.1.4](http://h2o-release.s3.amazonaws.com/h2o/rel-turan/4/index.html) (Turan)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
 |H2O 3.8.8.1 - [3.8.0.6](http://h2o-release.s3.amazonaws.com/h2o/rel-tukey/6/index.html) (Tukey)|[h2oEnsemble 0.1.8](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.8.tar.gz)| [h2oEnsemble 0.1.7](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.7.tar.gz), [h2oEnsemble 0.1.6](https://h2o-release.s3.amazonaws.com/h2o-ensemble/R/h2oEnsemble_0.1.6.tar.gz)|
@@ -52,6 +56,7 @@ R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
 
 
 ## Create Ensembles
+
 - An example of how to train and test an ensemble is in the `h2o.ensemble` function documentation in the `h2oEnsemble` package and also in the [H2O Ensemble Tutorial](http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html).
 - The ensemble is defined by its set of base learning algorithms and the metalearning algorithm.  Algorithm wrapper functions are used to specify these algorithms.
 - The ensemble fit is an object of class, "h2o.ensemble", however this is just an R list.
@@ -59,6 +64,7 @@ R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
 
 
 ## Wrapper Functions
+
 - The ensemble works by using wrapper functions (located in the `wrappers.R` file in the package).  These wrapper functions are used to specify the base learner and metalearner algorithms for the ensemble.  Examples of how to create custom algorithm wrappers are available in the [H2O Ensemble Tutorial](http://learn.h2o.ai/content/tutorials/ensembles-stacking/index.html).
 - This methodology of using wrapper functions is modeled after the [SuperLearner](http://cran.r-project.org/web/packages/SuperLearner/index.html) and [subsemble](http://cran.r-project.org/web/packages/subsemble/index.html) ensemble learning packages.  The use of wrapper functions makes the ensemble code cleaner by providing a unified interface.
 - Often it is a good idea to include variants of one algorithm/function by specifying different tuning parameters for different base learners.  There is an examples of how to create new variants of the wrapper functions in the [create\_h2o\_wrappers.R](https://github.com/h2oai/h2o-3/blob/master/h2o-r/ensemble/create_h2o_wrappers.R) script, as well as in the `h2o.ensemble` R function documentation.
@@ -67,6 +73,7 @@ R CMD INSTALL h2o-3/h2o-r/ensemble/h2oEnsemble-package
 
 
 ## Metalearning
+
 - Historically, methods such as GLM or [non-negative least squares (NNLS)](https://en.wikipedia.org/wiki/Non-negative_least_squares) have been used to find the optimal weighted combination of the base learners, however any supervised learning algorithm can be used as a metalearner.  To use a GLM with non-negative weights, you simply pass `non_negative = TRUE` to the generic, `h2o.glm.wrapper` function as follows:
 
 ```r
@@ -86,6 +93,7 @@ Check out the `h2o.save_ensemble` and `h2o.load_ensemble` functions to save and 
 
 
 ## Known Issues
+
 - This package is incompatible with R 3.0.0-3.1.0 due to a [parser bug](https://bugs.r-project.org/bugzilla3/show_bug.cgi?id=15753) in R.  Upgrade to R 3.1.1 or greater to resolve the issue.  It may work on earlier versions of R but has not been tested.
 - When using a `h2o.deeplearning` model as a base learner, it is not possible to reproduce ensemble model results exactly (even when using the `seed` argument of `h2o.ensemble`) if your H2O cluster uses multiple cores.  This is due to the fact that `h2o.deeplearning` results are only reproducible when trained on a single core.  More info [here](https://0xdata.atlassian.net/projects/TN/issues/TN-3).
 - The [SNOW](https://cran.r-project.org/web/packages/snow/) cluster functionality is not active at this time (see the `parallel` option of the `h2o.ensemble` function).  There is a conflict with using the R parallel functionality in conjunction with the H2O parallel functionality.  The `h2o.*` base learning algorithms will use all cores available, so even when the `h2o.ensemble` function is executed with the default `parallel = "seq"` option, the H2O algorithms will be training in parallel.  The `parallel` argument was intended to parallelize the cross-validation and base learning steps, but this functionality either needs to be re-architected to work in concert with H2O parallelism or removed in a future release.
@@ -93,9 +101,11 @@ Check out the `h2o.save_ensemble` and `h2o.load_ensemble` functions to save and 
 
 
 ## Bug Reports
-- Please report any bugs or issues you may be having (or just general questions) to [h2ostream](https://groups.google.com/forum/#!forum/h2ostream).
+
+- Please report any bugs or issues you may be having (or just general questions) to [h2ostream](https://groups.google.com/forum/#!forum/h2ostream) or [community.h2o.ai](https://community.h2o.ai).
+- We also recommend filing a bug report (with a reproducible code example) on the [H2O JIRA](http://jira.h2o.ai/) under the "PUBDEV" project.
 
 ## Benchmarks
 
-Benchmarking code for **h2oEnsemble Classic** (compatible with H2O version 2.0, aka "H2O Classic") is available here: [https://github.com/ledell/h2oEnsemble-benchmarks](https://github.com/ledell/h2oEnsemble-benchmarks)  These benchmarks are out of date -- a major rewrite of the `h2o.ensemble` backend occured in version 0.0.5, which speeds things up a lot.  New benchmarks forthcoming. 
+Benchmarking code for **h2oEnsemble Classic** (compatible with H2O version 2.0, aka "H2O Classic") is available here: [https://github.com/ledell/h2oEnsemble-benchmarks](https://github.com/ledell/h2oEnsemble-benchmarks)  These benchmarks are out of date -- a major rewrite of the `h2o.ensemble` backend occured in version 0.0.5.  [New benchmarks forthcoming](https://github.com/ledell/h2oEnsemble-benchmarks/tree/v0.1.8). 
 
