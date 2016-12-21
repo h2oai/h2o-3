@@ -83,6 +83,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
         }
         double[] colVals = new double[actualbins];
         double delta = (v.max() - v.min()) / (actualbins - 1);
+        if (actualbins == 1) delta = 0;
         for (int j = 0; j < colVals.length; ++j) {
           colVals[j] = v.min() + j * delta;
         }
