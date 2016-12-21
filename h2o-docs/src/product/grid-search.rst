@@ -1,57 +1,6 @@
 Grid (Hyperparameter) Search
 ============================
 
-REST API
---------
-
-The current implementation of the grid search REST API exposes the
-following endpoints:
-
--  ``GET /<version>/Grids``: List available grids, with optional
-   parameters to sort the list by model metric such as MSE
--  ``GET /<version>/Grids/<grid_id>``: Return specified grid
--  ``POST /<version>/Grids/<algo_name>``: Start a new grid search
-
-   -  ``<algo_name>``: Supported algorithm values are
-      ``{glm, gbm, drf, kmeans, deeplearning}``
-
-Endpoints accept model-specific parameters (e.g.,
-`GBMParametersV3 <https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/schemas/GBMV3.java>`__
-and an additional parameter called ``hyper_parameters`` which contains a
-dictionary of the hyper parameters which will be searched. In this
-dictionary an array of values is specified for each searched
-hyperparameter.
-
-.. code:: json
-
-    {
-      "ntrees":[1,5],
-      "learn_rate":[0.1,0.01]
-    }
-
-An optional ``search_criteria`` dictionary specifies options for
-controlling more advanced search strategies. Currently, full
-``Cartesian`` is the default. ``RandomDiscrete`` allows a random search
-over the hyperparameter space, with three ways of specifying when to
-stop the search: max number of models, max time, and metric-based early
-stopping (e.g., stop if MSE hasn't improved by 0.0001 over the 5 best
-models). An example is:
-
-.. code:: json
-
-    {
-      "strategy": "RandomDiscrete",
-      "max_runtime_secs": 600,
-      "max_models": 100,
-      "stopping_metric": "AUTO",
-      "stopping_tolerance": 0.00001,
-      "stopping_rounds": 5,
-      "seed": 123456
-    }
-
-With grid search, each model is built sequentially, allowing users to
-view each model as it is built.
-
 Supported Grid Search Hyperparameters
 -------------------------------------
 
@@ -243,8 +192,59 @@ Aggregator Hyperparameters
 -  ``k``
 -  ``max_iterations``
 
+REST API
+--------
+
+The current implementation of the grid search REST API exposes the
+following endpoints:
+
+-  ``GET /<version>/Grids``: List available grids, with optional
+   parameters to sort the list by model metric such as MSE
+-  ``GET /<version>/Grids/<grid_id>``: Return specified grid
+-  ``POST /<version>/Grids/<algo_name>``: Start a new grid search
+
+   -  ``<algo_name>``: Supported algorithm values are
+      ``{glm, gbm, drf, kmeans, deeplearning}``
+
+Endpoints accept model-specific parameters (e.g.,
+`GBMParametersV3 <https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/schemas/GBMV3.java>`__
+and an additional parameter called ``hyper_parameters`` which contains a
+dictionary of the hyper parameters which will be searched. In this
+dictionary an array of values is specified for each searched
+hyperparameter.
+
+.. code:: json
+
+    {
+      "ntrees":[1,5],
+      "learn_rate":[0.1,0.01]
+    }
+
+An optional ``search_criteria`` dictionary specifies options for
+controlling more advanced search strategies. Currently, full
+``Cartesian`` is the default. ``RandomDiscrete`` allows a random search
+over the hyperparameter space, with three ways of specifying when to
+stop the search: max number of models, max time, and metric-based early
+stopping (e.g., stop if MSE hasn't improved by 0.0001 over the 5 best
+models). An example is:
+
+.. code:: json
+
+    {
+      "strategy": "RandomDiscrete",
+      "max_runtime_secs": 600,
+      "max_models": 100,
+      "stopping_metric": "AUTO",
+      "stopping_tolerance": 0.00001,
+      "stopping_rounds": 5,
+      "seed": 123456
+    }
+
+With grid search, each model is built sequentially, allowing users to
+view each model as it is built.
+
 Example
--------
+~~~~~~~
 
 Invoke a new GBM model grid search by POSTing the following request to
 ``/99/Grid/gbm``:
@@ -503,7 +503,7 @@ Example
 Exposing grid search end-point for a new algorithm
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In the following example, the PCA algorithm has been implemented and we
+In the following example, the PCA algorithm has been implemented, and we
 would like to expose the algorithm via REST API. The following aspects
 are assumed:
 
@@ -626,6 +626,7 @@ Caveats/In Progress
 -  The model builder job and grid jobs are not associated.
 -  There is no way to list the hyper space parameters that caused a
    model builder job failure.
+- The ``get_grid`` (Python) or ``getGrid`` (R) function can be called to retrieve a grid search instance. If neither cross-validation nor a validation frame is used in the grid search, then the training metrics will display in the "get grid" output. If a validation frame is passed to the grid, and ``nfolds = 0``, then the validation metrics will display. However, if ``nfolds`` > 1, then cross-validation metrics will display even if a validation frame is provided.
 
 Additional Documentation
 ------------------------
