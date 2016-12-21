@@ -38,7 +38,7 @@ public abstract class StdlibFunction extends Function {
    * argument's {@code index} into its location within the cascade expression
    * being executed.
    */
-  public class TypeError extends IllegalArgumentException {
+  public static class TypeError extends IllegalArgumentException {
     public int index;
 
     public TypeError(int i, String message) {
@@ -57,7 +57,7 @@ public abstract class StdlibFunction extends Function {
    * argument's {@code index} into its location within the cascade expression
    * being executed.
    */
-  public class ValueError extends IllegalArgumentException {
+  public static class ValueError extends IllegalArgumentException {
     public int index;
 
     public ValueError(int i, String message) {
@@ -74,7 +74,7 @@ public abstract class StdlibFunction extends Function {
    * <p>This exception will be caught within {@code AstApply} and converted
    * into a {@link ai.h2o.cascade.Cascade.RuntimeError}.
    */
-  public class RuntimeError extends RuntimeException {
+  public static class RuntimeError extends RuntimeException {
     public RuntimeError(String message) {
       super(message);
     }

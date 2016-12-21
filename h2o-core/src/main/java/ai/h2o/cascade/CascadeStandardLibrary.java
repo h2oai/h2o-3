@@ -1,5 +1,6 @@
 package ai.h2o.cascade;
 
+import ai.h2o.cascade.core.CFrame;
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.core.IdList;
 import ai.h2o.cascade.vals.Val;
@@ -7,7 +8,6 @@ import ai.h2o.cascade.vals.ValFun;
 import ai.h2o.cascade.vals.ValNull;
 import ai.h2o.cascade.vals.ValNum;
 import javassist.*;
-import water.fvec.Frame;
 import water.util.SB;
 import water.util.StringUtils;
 
@@ -327,7 +327,7 @@ public class CascadeStandardLibrary implements ICascadeLibrary {
     TYPE_MAP.put("java.lang.String", "STR");
     TYPE_MAP.put("double[]", "NUMS");
     TYPE_MAP.put("java.lang.String[]", "STRS");
-    TYPE_MAP.put(Frame.class.getName(), "FRAME");
+    TYPE_MAP.put(CFrame.class.getName(), "FRAME");
     TYPE_MAP.put(IdList.class.getName(), "IDS");
   }
 

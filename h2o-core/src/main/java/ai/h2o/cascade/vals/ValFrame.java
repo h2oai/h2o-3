@@ -1,16 +1,21 @@
 package ai.h2o.cascade.vals;
 
+import ai.h2o.cascade.core.CFrame;
 import water.fvec.Frame;
 
 /**
- * Val wrapper around a {@link Frame}.
+ * Val wrapper around a {@link CFrame}.
  */
 public class ValFrame extends Val {
-  private Frame frame;
+  private CFrame frame;
 
 
   public ValFrame(Frame f) {
-    frame = f;
+    frame = new CFrame(f);
+  }
+
+  public ValFrame(CFrame cf) {
+    frame = cf;
   }
 
   @Override
@@ -24,7 +29,7 @@ public class ValFrame extends Val {
   }
 
   @Override
-  public Frame getFrame() {
+  public CFrame getFrame() {
     return frame;
   }
 }
