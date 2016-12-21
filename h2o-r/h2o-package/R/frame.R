@@ -1406,7 +1406,16 @@ names.H2OFrame <- function(x) .Primitive("names")(.fetch.data(x,1L))
 #' @param prefix for created names.
 #' @export
 colnames <- function(x, do.NULL=TRUE, prefix = "col") {
-  if( !is.H2OFrame(x) ) return(base::colnames(x,do.NULL,prefix))
+  if (is.data.frame(x)) {
+    # PUBDEV-3821 workaround for slow do.NULL=F
+    nm <- names(x)
+    if (do.NULL || !is.null(nm))
+      return(nm)
+    else
+      return(paste0(prefix, seq_along(x)))
+  }
+  if (!is.H2OFrame(x))
+    return(base::colnames(x,do.NULL=do.NULL,prefix=prefix))
   return(names.H2OFrame(x))
 }
 
