@@ -310,7 +310,7 @@ class H2OConnection(backwards_compatible()):
         issued, the session id will stay the same until the connection is closed.
         """
         if self._session_id is None:
-            self._session_id = self.request("POST /4/sessions")["session_key"]
+            self._session_id = self.request("POST /4/sessions")["session_id"]
         return CallableString(self._session_id)
 
     @property

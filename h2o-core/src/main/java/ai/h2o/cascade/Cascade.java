@@ -67,8 +67,11 @@ public abstract class Cascade {
    * correctly. Should be thrown from {@link CascadeParser} only.
    */
   public static class SyntaxError extends Error {
-    public SyntaxError(String s, int location) {
-      super(location, 0, s);
+    public SyntaxError(String s, int start) {
+      super(start, 1, s);
+    }
+    public SyntaxError(String s, int start, int len) {
+      super(start, len, s);
     }
   }
 

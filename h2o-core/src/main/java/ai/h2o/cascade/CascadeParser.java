@@ -90,7 +90,7 @@ public class CascadeParser {
   public Ast parse() throws Cascade.SyntaxError {
     Ast res = parseNext();
     if (nextChar() != ' ')
-      throw syntaxError("illegal Cascade expression");
+      throw syntaxError("Illegal Cascade expression");
     return res;
   }
 
@@ -131,13 +131,15 @@ public class CascadeParser {
     if (isQuote(ch)) {
       return new AstStr(parseString());
     }
-    if (isDigit(ch) || ch == '-') {
+    if (isDigit(ch) || ch == '-' || ch == '.') {
       return new AstNum(parseDouble());
     }
     if (isAlpha(ch)) {
-      return new AstId(parseId());
+      String id = parseId();
+      if (id.toLowerCase().equals("nan")) return new AstNum(Double.NaN);
+      return new AstId(id);
     }
-    throw syntaxError("invalid syntax");
+    throw syntaxError("Invalid syntax");
   }
 
 
@@ -186,6 +188,7 @@ public class CascadeParser {
     while (nextChar() != ']') {
       strs.add(parseString());
       if (nextChar() == ',') consumeChar(',');
+      if (nextChar() == ' ') throw syntaxError("Unexpected end of string");
     }
     return new AstStrList(strs);
   }
@@ -198,6 +201,7 @@ public class CascadeParser {
     while (nextChar() != ']') {
       nums.add(parseDouble());
       if (nextChar() == ',') consumeChar(',');
+      if (nextChar() == ' ') throw syntaxError("Unexpected end of string");
     }
     return new AstNumList(nums);
   }
@@ -302,7 +306,8 @@ public class CascadeParser {
     try {
       return Double.valueOf(s);
     } catch (NumberFormatException e) {
-      throw syntaxError(e.toString());
+      String msg = e.getMessage();
+      throw syntaxError(msg.startsWith("For input string:")? "Invalid number" : "Invalid number: " + msg, start);
     }
   }
 
@@ -336,7 +341,8 @@ public class CascadeParser {
       char c = peek();
       if (c == '\\') {
         has_escapes = true;
-        pos++;
+        int escapeStart = pos;
+        consumeChar('\\');
         char cc = peek();
         if (simpleEscapeSequences.containsKey(cc)) {
           pos += 1;
@@ -347,9 +353,21 @@ public class CascadeParser {
         } else if (cc == 'U') {
           pos += 9;   // e.g: \U0010FFFF
         } else
-          throw syntaxError("Invalid escape sequence \\" + cc);
+          throw syntaxError("Invalid escape sequence \\" + cc, pos++ - 1);
+        if (pos > expr.length()) {
+          pos = expr.length();
+          throw syntaxError("Escape sequence too short", escapeStart);
+        }
+        if (pos > escapeStart + 2) {
+          for (int i = escapeStart + 2; i < pos; i++) {
+            char ch = expr.charAt(i);
+            if (!isHexDigit(ch))
+              throw syntaxError("Escape sequence contains non-hexademical character '" + ch + "'", escapeStart);
+          }
+        }
       } else if (c == quote) {
         pos++;
+        // End of string -- now either unescape it or return as-is
         if (has_escapes) {
           StringBuilder sb = new StringBuilder();
           for (int i = start; i < pos - 1; i++) {
@@ -360,14 +378,17 @@ public class CascadeParser {
                 sb.append(simpleEscapeSequences.get(cc));
               } else {
                 int n = (cc == 'x')? 2 : (cc == 'u')? 4 : (cc == 'U')? 8 : -1;
+                String hexStr = expr.substring(i + 1, i + 1 + n);
                 int hex;
                 try {
-                  hex = StringUtils.unhex(expr.substring(i + 1, i + 1 + n));
+                  hex = StringUtils.unhex(hexStr);
                 } catch (NumberFormatException e) {
                   throw syntaxError(e.toString());
                 }
-                if (hex > 0x10FFFF)
-                  throw syntaxError("Illegal unicode codepoint " + hex);
+                if (hex > 0x10FFFF) {
+                  pos = i + n + 1;
+                  throw syntaxError("Illegal Unicode codepoint 0x" + hexStr.toUpperCase(), i - 1);
+                }
                 sb.append(Character.toChars(hex));
                 i += n;
               }
@@ -383,7 +404,7 @@ public class CascadeParser {
         pos++;
       }
     }
-    throw syntaxError("Unterminated string at " + start);
+    throw syntaxError("Unterminated string", start - 1);
   }
 
 
@@ -452,6 +473,10 @@ public class CascadeParser {
     return isAlpha(c) || isDigit(c);
   }
 
+  /** Return true if character {@code c} is a hexdemical digit. */
+  private static boolean isHexDigit(char c) {
+    return c >= '0' && c <= '9' || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+  }
 
 
   /**
@@ -460,6 +485,10 @@ public class CascadeParser {
    */
   private Cascade.SyntaxError syntaxError(String message) {
     return new Cascade.SyntaxError(message, pos);
+  }
+
+  private Cascade.SyntaxError syntaxError(String message, int start) {
+    return new Cascade.SyntaxError(message, start, pos - start);
   }
 
 }
