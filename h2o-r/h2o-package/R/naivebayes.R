@@ -20,7 +20,7 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
+#'        Defaults to -1 (time-based random number).
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.

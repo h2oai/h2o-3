@@ -27,7 +27,7 @@
 #'        to 10.
 #' @param standardize \code{Logical}. Standardize columns before computing distances Defaults to True.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
+#'        Defaults to -1 (time-based random number).
 #' @param init Initialization mode Must be one of: "Random", "PlusPlus", "Furthest", "User". Defaults to Furthest.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",

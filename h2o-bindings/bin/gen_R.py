@@ -50,7 +50,9 @@ def gen_module(schema, algo, module):
                 continue
         if param["name"] == "seed":
             yield "#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)"
-            yield "#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number)."
+            if algo in ["deeplearning", "deepwater"]:
+                yield "#'        Note: only reproducible when running single threaded."
+            yield "#'        Defaults to -1 (time-based random number)."
             continue
         phelp = param["help"]
         if param["type"] == "boolean":

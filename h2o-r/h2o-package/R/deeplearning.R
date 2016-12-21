@@ -53,7 +53,8 @@
 #' @param target_ratio_comm_to_comp Target ratio of communication overhead to computation. Only for multi-node operation and
 #'        train_samples_per_iteration = -2 (auto-tuning). Defaults to 0.05.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
+#'        Note: only reproducible when running single threaded.
+#'        Defaults to -1 (time-based random number).
 #' @param adaptive_rate \code{Logical}. Adaptive learning rate. Defaults to True.
 #' @param rho Adaptive learning rate time decay factor (similarity to prior updates). Defaults to 0.99.
 #' @param epsilon Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress). Defaults to 1e-08.

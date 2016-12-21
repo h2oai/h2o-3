@@ -20,7 +20,7 @@
 #' @param nv Number of right singular vectors Defaults to 1.
 #' @param max_iterations Maximum iterations Defaults to 1000.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
+#'        Defaults to -1 (time-based random number).
 #' @param keep_u \code{Logical}. Save left singular vectors? Defaults to True.
 #' @param u_name Frame key to save left singular vectors
 #' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to True.

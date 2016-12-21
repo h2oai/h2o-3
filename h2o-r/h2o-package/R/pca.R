@@ -22,7 +22,7 @@
 #' @param compute_metrics \code{Logical}. Whether to compute metrics on the training data Defaults to True.
 #' @param impute_missing \code{Logical}. Whether to impute missing entries with the column mean Defaults to False.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
+#'        Defaults to -1 (time-based random number).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
