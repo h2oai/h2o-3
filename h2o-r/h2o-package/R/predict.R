@@ -29,7 +29,7 @@ h2o.predict_json <- function(model, json, classpath, javaoptions) {
 	}
 	javaopts <- if (!missing(javaoptions)) javaoptions else "-Xmx4g"
     # Windows require different Java classpath separator and quoting
-	iswindows <- Sys.info()[["sysname"]] == "Windows"
+	iswindows <- .Platform$OS.type == "windows"
 	separator <- if (iswindows) ";" else ":"
 	jsonq <- if (iswindows) paste('"', json, '"', sep="") else paste("'", json, "'", sep="")
 	classpath <- paste(javapath, sep="", collapse=separator)
@@ -37,6 +37,7 @@ h2o.predict_json <- function(model, json, classpath, javaoptions) {
 	args <- paste(javaargs, model, jsonq, sep=" ")
 	# run the Java method H2OPredictor, which will return JSON or an error message
 	res <- system2(java, args, stdout=TRUE, stderr=TRUE)
+	print(res)
 	# check the returned for start of JSON, if json then decode and return, otherwise print the error
 	first_char <- substring(res, 1, 1)
 	if (first_char == '{' || first_char == '[') {
