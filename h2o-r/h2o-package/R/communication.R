@@ -138,21 +138,58 @@
   if ((method == "GET") || (method == "DELETE")) {
     h <- basicHeaderGatherer()
     t <- basicTextGatherer(.mapUnicode = FALSE)
-    curlFxn <- curlPerform
     if(getBinary){
-      curlFxn <- getBinaryURL
+      tmp <- getBinaryURL(url = url,
+                            #Identify curl options in .opts
+                            .opts = curlOptions(customrequest = "GET",
+                            writefunction = t$update,
+                            headerfunction = h$update,
+                            useragent=R.version.string,
+                            httpheader = header,
+                            verbose = FALSE,
+                            timeout = timeout_secs,
+                            .opts = opts))
+      #If status !=200, then throw exception to client
+      httpStatusCode = as.numeric(h$value()["status"])
+      httpStatusMessage = h$value()["statusMessage"]
+      if (httpStatusCode != "200") {
+        cat("\n")
+        cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", httpStatusCode, httpStatusMessage, url))
+        cat("\n")
+
+        jsonObject = jsonlite::fromJSON(t$value(), simplifyDataFrame=FALSE)
+
+        exceptionType = jsonObject$exception_type
+        if (! is.null(exceptionType)) {
+          cat(sprintf("%s\n", exceptionType))
+        }
+
+        stacktrace = jsonObject$stacktrace
+        if (! is.null(stacktrace)) {
+          print(jsonObject$stacktrace)
+          cat("\n")
+        }
+
+        msg = jsonObject$msg
+        if (! is.null(msg)) {
+          stop(msg)
+        } else {
+          stop("Unexpected HTTP Status code")
+        }
+      }else{
+        return(tmp) #Return binary data if status is 200
+      }
     }
-    tmp <- tryCatch(curlFxn(url = url,
-                                   #Identify curl options in .opts
-                                   .opts = curlOptions(customrequest = method,
-                                                       writefunction = t$update,
-                                                       headerfunction = h$update,
-                                                       useragent=R.version.string,
-                                                       httpheader = header,
-                                                       verbose = FALSE,
-                                                       timeout = timeout_secs,
-                                                       .opts = opts)),
-    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                httpheader = header,
+                                verbose = FALSE,
+                                timeout = timeout_secs,
+                                .opts = opts),
+                                error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
@@ -311,13 +348,19 @@
               parms = parms, method = "POST", ...)
 }
 
-.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
+.h2o.doSafeREST <- function(h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo,getBinary=FALSE, ...) {
   stopifnot(is.character(urlSuffix))
   stopifnot(is.character(method))
   if (!missing(fileUploadInfo)) stopifnot(is(fileUploadInfo, "FileUploadInfo"))
 
   rv = .h2o.doREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
-                   parms = parms, method = method, fileUploadInfo = fileUploadInfo, ...)
+                   parms = parms, method = method, fileUploadInfo = fileUploadInfo,getBinary=getBinary, ...)
+
+  #If getBinary(), then we only care about the binary payload. The curl error will be caught in .h2o.doRawREST()
+  #if there is any such exception.
+  if(getBinary){
+    return(rv)
+  }
 
   if (rv$curlError) {
   
@@ -361,9 +404,9 @@
 #' @param urlSuffix The partial URL suffix to add to the calculated base URL for the instance
 #' @param parms (Optional) Parameters to include in the request
 #' @return The raw response payload as a character vector
-.h2o.doSafeGET <- function(h2oRestApiVersion, urlSuffix, parms, ...) {
+.h2o.doSafeGET <- function(h2oRestApiVersion, urlSuffix, parms,getBinary=FALSE, ...) {
   .h2o.doSafeREST(h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix,
-                  parms = parms, method = "GET", ...)
+                  parms = parms, method = "GET", getBinary=getBinary, ...)
 }
 
 #' Perform a safe (i.e. error-checked) HTTP POST request to an H2O cluster.
