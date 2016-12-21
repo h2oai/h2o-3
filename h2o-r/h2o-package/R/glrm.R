@@ -9,8 +9,8 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param loading_name Frame key to save resulting X
 #' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
 #'        Defaults to NONE.
@@ -26,11 +26,11 @@
 #'        "OneSparse", "UnitOneSparse", "Simplex". Defaults to None.
 #' @param regularization_y Regularization function for Y matrix Must be one of: "None", "Quadratic", "L2", "L1", "NonNegative",
 #'        "OneSparse", "UnitOneSparse", "Simplex". Defaults to None.
-#' @param gamma_x Regularization weight on X matrix Defaults to 0.0.
-#' @param gamma_y Regularization weight on Y matrix Defaults to 0.0.
+#' @param gamma_x Regularization weight on X matrix Defaults to 0.
+#' @param gamma_y Regularization weight on Y matrix Defaults to 0.
 #' @param max_iterations Maximum number of iterations Defaults to 1000.
 #' @param max_updates Maximum number of updates, defaults to 2*max_iterations Defaults to 2000.
-#' @param init_step_size Initial step size Defaults to 1.0.
+#' @param init_step_size Initial step size Defaults to 1.
 #' @param min_step_size Minimum step size Defaults to 0.0001.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
@@ -39,10 +39,10 @@
 #'        unstable) Must be one of: "GramSVD", "Power", "Randomized". Defaults to Randomized.
 #' @param user_y User-specified initial Y
 #' @param user_x User-specified initial X
-#' @param expand_user_y \code{Logical}. Expand categorical columns in user-specified initial Y Defaults to True.
-#' @param impute_original \code{Logical}. Reconstruct original training data by reversing transform Defaults to False.
-#' @param recover_svd \code{Logical}. Recover singular values and eigenvectors of XY Defaults to False.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
+#' @param expand_user_y \code{Logical}. Expand categorical columns in user-specified initial Y Defaults to TRUE.
+#' @param impute_original \code{Logical}. Reconstruct original training data by reversing transform Defaults to FALSE.
+#' @param recover_svd \code{Logical}. Recover singular values and eigenvectors of XY Defaults to FALSE.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.kmeans}, \link{h2o.svd}}, \code{\link{h2o.prcomp}}
 #' @references M. Udell, C. Horn, R. Zadeh, S. Boyd (2014). {Generalized Low Rank Models}[http://arxiv.org/abs/1410.0342]. Unpublished manuscript, Stanford Electrical Engineering Department
@@ -72,11 +72,11 @@ h2o.glrm <- function(training_frame, cols = NULL,
                      period = 1,
                      regularization_x = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
                      regularization_y = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
-                     gamma_x = 0.0,
-                     gamma_y = 0.0,
+                     gamma_x = 0,
+                     gamma_y = 0,
                      max_iterations = 1000,
                      max_updates = 2000,
-                     init_step_size = 1.0,
+                     init_step_size = 1,
                      min_step_size = 0.0001,
                      seed = -1,
                      init = c("Random", "SVD", "PlusPlus", "User"),
@@ -86,7 +86,7 @@ h2o.glrm <- function(training_frame, cols = NULL,
                      expand_user_y = TRUE,
                      impute_original = FALSE,
                      recover_svd = FALSE,
-                     max_runtime_secs = 0.0
+                     max_runtime_secs = 0
                      ) 
 {
 
