@@ -63,7 +63,10 @@ def gen_module(schema, algo, module):
     if help_details:
         yield "#' @details %s" % bi.wrap(help_details, indent=("#'          "), indent_first=False)
     if help_return:
-        yield "#' @return %s" % bi.wrap(help_return, indent=("#'         "), indent_first=False)
+        lines = help_return.split("\n")
+        for line in lines:
+            yield "%s" % line.lstrip()
+        # yield "#' @return %s" % bi.wrap(help_return, indent=("#'         "), indent_first=False)
     if help_epilogue:
         yield "#' @seealso %s" % bi.wrap(help_epilogue, indent=("#'          "), indent_first=False)
     if help_references:
@@ -279,24 +282,25 @@ def help_details_for(algo):
 
 def help_return_for(algo):
     if algo == "drf":
-        return "Creates a \linkS4class{H2OModel} object of the right type."
+        return "#' @return Creates a \linkS4class{H2OModel} object of the right type."
     if algo == "glm":
-        return """A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
-        learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
-        returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
-        out of the models is shown, but further GLM-specifc information can be queried out of the object. To access
-        these various items, please refer to the seealso section below. Upon completion of the GLM, the resulting
-        object has coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics
-        including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please refer to the
-        more in-depth GLM documentation available here: \\url{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
+        return """#' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
+        #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
+        #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
+        #'         out of the models is shown, but further GLM-specifc information can be queried out of the object. To access
+        #'         these various items, please refer to the seealso section below. Upon completion of the GLM, the resulting
+        #'         object has coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics
+        #'         including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please refer to the
+        #'         more in-depth GLM documentation available here:
+        #'         \\url{https://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
         """
     if algo == "kmeans":
-        return "Returns an object of class \linkS4class{H2OClusteringModel}."
+        return "#' @return Returns an object of class \linkS4class{H2OClusteringModel}."
     if algo == "naivebayes":
-        return """Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
-         and \linkS4class{H2OMultinomialModel} otherwise."""
+        return """#' @return Returns an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
+        #'         and \linkS4class{H2OMultinomialModel} otherwise."""
     if algo in ["glrm", "pca", "svd"]:
-        return "Returns an object of class \linkS4class{H2ODimReductionModel}."
+        return "#' @return Returns an object of class \linkS4class{H2ODimReductionModel}."
 
 def help_epilogue_for(algo):
     if algo == "glm":
