@@ -1,7 +1,6 @@
 package water.api.schemas4.output;
 
 import ai.h2o.cascade.Cascade;
-import ai.h2o.cascade.CascadeParser;
 import water.Iced;
 import water.api.API;
 
@@ -26,16 +25,10 @@ public class CascadeErrorV4 extends CascadeOV4<Iced, CascadeErrorV4> {
 
   public CascadeErrorV4() {}  // for dynamic object registration.
 
-  public CascadeErrorV4(CascadeParser.CascadeSyntaxError e) {
-    expr = e.expr();
-    error_pos = e.errorPos();
-    error_len = 0;
-    message = e.getMessage();
-  }
 
-  public CascadeErrorV4(Cascade.RuntimeError e, String cascade) {
+  public CascadeErrorV4(Cascade.Error e, String cascade) {
     expr = cascade;
-    error_pos = e.startPos;
+    error_pos = e.location;
     error_len = e.length;
     message = e.getMessage();
   }

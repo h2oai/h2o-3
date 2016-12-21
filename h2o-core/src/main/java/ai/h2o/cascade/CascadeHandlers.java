@@ -50,9 +50,7 @@ public abstract class CascadeHandlers {
         Val v;
         try {
           v = Cascade.eval(input.cascade, sess);
-        } catch (CascadeParser.CascadeSyntaxError e) {
-          return new CascadeErrorV4(e);
-        } catch (Cascade.RuntimeError e) {
+        } catch (Cascade.Error e) {
           return new CascadeErrorV4(e, input.cascade);
         }
 

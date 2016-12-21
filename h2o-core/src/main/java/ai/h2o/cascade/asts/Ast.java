@@ -8,7 +8,7 @@ import water.Iced;
  * Base class for all AST nodes in the Cascade language.
  */
 public abstract class Ast<T extends Ast<T>> extends Iced<T> {
-  protected int startPos = -1;
+  protected int start = -1;
   protected int length;
 
 
@@ -33,7 +33,7 @@ public abstract class Ast<T extends Ast<T>> extends Iced<T> {
    * @param end End position of the AST.
    */
   public final void setPos(int start, int end) {
-    startPos = start;
+    this.start = start;
     length = end - start;
   }
 }

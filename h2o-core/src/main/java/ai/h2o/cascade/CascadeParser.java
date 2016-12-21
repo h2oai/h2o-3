@@ -84,8 +84,10 @@ public class CascadeParser {
 
   /**
    * Parse a Cascade expression string into an AST object.
+   *
+   * @throws Cascade.SyntaxError if the expression cannot be parsed.
    */
-  public Ast parse() throws CascadeSyntaxError {
+  public Ast parse() throws Cascade.SyntaxError {
     Ast res = parseNext();
     if (nextChar() != ' ')
       throw syntaxError("illegal Cascade expression");
@@ -451,29 +453,13 @@ public class CascadeParser {
   }
 
 
-  /**
-   * This exception is thrown whenever a Cascade expression cannot be parsed
-   * correctly.
-   */
-  public class CascadeSyntaxError extends RuntimeException {
-    public CascadeSyntaxError(String s) {
-      super(s);
-    }
-
-    public String expr() {
-      return expr;
-    }
-
-    public int errorPos() {
-      return pos;
-    }
-  }
 
   /**
+   *
    * Usage: {@code throw syntaxError("error message")}.
    */
-  private CascadeSyntaxError syntaxError(String message) {
-    return this.new CascadeSyntaxError(message);
+  private Cascade.SyntaxError syntaxError(String message) {
+    return new Cascade.SyntaxError(message, pos);
   }
 
 }

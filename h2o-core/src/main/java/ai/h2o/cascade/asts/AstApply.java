@@ -26,17 +26,28 @@ public class AstApply extends Ast<AstApply> {
 
   @Override
   public Val exec(CascadeScope scope) {
-    Function f = head.exec(scope).getFunc();
+    Val vhead = head.exec(scope);
+    if (!vhead.maybeFunc())
+      throw new Cascade.TypeError(head.start, head.length,
+                                  "Expected a function, but got a " + vhead.type().toString());
+    Function f = vhead.getFunc();
 
     Val[] vals = new Val[args.length];
     for (int i = 0; i < vals.length; i++) {
-      try {
-        vals[i] = args[i].exec(scope);
-      } catch (StdlibFunction.TypeError e) {
-        throw new Cascade.RuntimeError(args[i].startPos, args[i].length, e.getMessage());
-      }
+      vals[i] = args[i].exec(scope);
     }
-    return f.apply0(vals);
+
+    try {
+      return f.apply0(vals);
+    } catch (StdlibFunction.TypeError e) {
+      Ast ast = args[e.index];
+      throw new Cascade.TypeError(ast.start, ast.length, e.getMessage());
+    } catch (StdlibFunction.ValueError e) {
+      Ast ast = args[e.index];
+      throw new Cascade.ValueError(ast.start, ast.length, e.getMessage());
+    } catch (StdlibFunction.RuntimeError e) {
+      throw new Cascade.RuntimeError(this.start, this.length, e.getMessage());
+    }
   }
 
   @Override
