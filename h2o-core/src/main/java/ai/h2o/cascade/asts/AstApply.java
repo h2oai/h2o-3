@@ -41,8 +41,12 @@ public class AstApply extends Ast<AstApply> {
     try {
       return f.apply0(vals);
     } catch (StdlibFunction.TypeError e) {
-      Ast ast = args[e.index];
-      throw new Cascade.TypeError(ast.start, ast.length, e.getMessage());
+      if (e.index >= 0) {
+        Ast ast = args[e.index];
+        throw new Cascade.TypeError(ast.start, ast.length, e.getMessage());
+      } else {
+        throw new Cascade.TypeError(this.start, this.length, e.getMessage());
+      }
     } catch (StdlibFunction.ValueError e) {
       Ast ast = args[e.index];
       throw new Cascade.ValueError(ast.start, ast.length, e.getMessage());

@@ -28,7 +28,10 @@ public abstract class StdlibFunction extends Function {
 
   /**
    * Exception to be raised within the body of an stdlib function, indicating
-   * that the type of the {@code i}'th argument is incorrect.
+   * that the type of the {@code index}'th argument is incorrect.
+   *
+   * <p>If the type error refers to overall shape of all arguments, then
+   * {@code index} will be -1.
    *
    * <p>This exception will be caught within {@code AstApply} and converted
    * into a {@link ai.h2o.cascade.Cascade.TypeError}, translating the
@@ -98,18 +101,18 @@ public abstract class StdlibFunction extends Function {
       if (actualN != expectedMin) {
         String count = expectedMin + " argument" + (expectedMin == 1? "" : "s");
         String actual = actualN + " argument" + (actualN == 1? "" : "s");
-        throw new IllegalArgumentException("Expected " + count + " but obtained " + actual);
+        throw new TypeError(-1, "Expected " + count + " but got " + actual);
       }
     } else {
       if (actualN < expectedMin) {
         String count = expectedMin + " argument" + (expectedMin == 1? "" : "s");
         String actual = actualN + " argument" + (actualN == 1? "" : "s");
-        throw new IllegalArgumentException("Expected at least " + count + " but obtained " + actual);
+        throw new TypeError(-1, "Expected at least " + count + " but got " + actual);
       }
       if (actualN > expectedMax && expectedMax != -1) {
         String count = expectedMax + " argument" + (expectedMax == 1? "" : "s");
         String actual = actualN + " argument" + (actualN == 1? "" : "s");
-        throw new IllegalArgumentException("Expected at most " + count + " but obtained " + actual);
+        throw new TypeError(-1, "Expected at most " + count + " but got " + actual);
       }
     }
   }

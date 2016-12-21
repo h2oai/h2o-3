@@ -147,12 +147,24 @@ public class CascadeParserTest extends TestUtil {
     try {
       return Cascade.parse(expr);
     } catch (Cascade.SyntaxError e) {
-      Log.info("\n" + e.getClass().getSimpleName() + " in expression:");
-      Log.info(expr);
-      Log.info(StringUtils.repeat(" ", e.location) +
-               StringUtils.repeat("^", Math.max(e.length, 1)) +
-               " " + e.getMessage() + "\n");
+      reportCascadeError(e, expr);
       throw e;
     }
+  }
+
+  /**
+   * Format error message nicely, and display it in the system log.
+   * This method is intended to be reused from other Cascade test classes.
+   *
+   * @param e error that was thrown
+   * @param expr Cascade expression that caused the error
+   */
+  public static void reportCascadeError(Cascade.Error e, String expr) {
+    Log.info("\n" + e.getClass().getSimpleName() + " in expression:");
+    Log.info(expr);
+    Log.info(StringUtils.repeat(" ", e.location) +
+        StringUtils.repeat("^", Math.max(e.length, 1)) +
+        " " + e.getMessage());
+    Log.info("");
   }
 }

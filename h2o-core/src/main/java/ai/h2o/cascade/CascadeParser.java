@@ -161,7 +161,9 @@ public class CascadeParser {
       args.add(ast);
     }
     consumeChar(')');
-    return new AstApply(head, args);
+    AstApply res = new AstApply(head, args);
+    res.setPos(start - 1, pos);
+    return res;
   }
 
 
