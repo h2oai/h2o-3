@@ -1,6 +1,10 @@
 package ai.h2o.cascade;
 
 import ai.h2o.cascade.vals.Val;
+import ai.h2o.cascade.vals.ValFrame;
+import water.DKV;
+import water.Key;
+import water.fvec.Frame;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,8 +38,21 @@ public class CascadeScope {
     throw new IllegalArgumentException("Name lookup of " + id + " failed");
   }
 
-  public void importFrom(ICascadeLibrary lib) {
+  public void importFromLibrary(ICascadeLibrary lib) {
     symbolTable.putAll(lib.members());
+  }
+
+  public void importFromDkv(String name, Key key) {
+    water.Value value = DKV.get(key);
+    if (value == null)
+      throw new IllegalArgumentException("Key " + key + " was not found in DKV");
+    if (value.isFrame()) {
+      Val val = new ValFrame(value.<Frame>get());
+      symbolTable.put(name, val);
+    } else {
+      String clzName = value.theFreezableClass().getSimpleName();
+      throw new IllegalArgumentException("Key " + key + " corresponds to object of type " + clzName);
+    }
   }
 
 }

@@ -31,6 +31,7 @@ public class AstApply extends Ast<AstApply> {
       throw new Cascade.TypeError(head.start, head.length,
                                   "Expected a function, but got a " + vhead.type().toString());
     Function f = vhead.getFunc();
+    f.scope = scope;
 
     Val[] vals = new Val[args.length];
     for (int i = 0; i < vals.length; i++) {

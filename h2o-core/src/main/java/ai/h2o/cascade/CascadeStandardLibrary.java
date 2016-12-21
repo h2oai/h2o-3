@@ -75,6 +75,10 @@ public class CascadeStandardLibrary implements ICascadeLibrary {
     String[] frameCmds = {"ncols", "nrows"};
     for (String cmd : frameCmds)
       registerCommand("frame", cmd);
+
+    String[] coreCmds = {"fromdkv"};
+    for (String cmd : coreCmds)
+      registerCommand("core", cmd);
   }
 
 
@@ -226,9 +230,13 @@ public class CascadeStandardLibrary implements ICascadeLibrary {
     }
 
     String retTypeName = applyMethod.retType.getName();
-    Val.Type retValType = Val.Type.valueOf(getValType(retTypeName));
-    sb.p("  ").p(retTypeName).p(" ret = apply(").p(argsList).p(");\n");
-    sb.p("  return new ").p(retValType.getValClassName()).p("(ret);\n");
+    if (retTypeName.equals(Val.class.getName())) {
+      sb.p("  return apply(").p(argsList).p(");\n");
+    } else {
+      Val.Type retValType = Val.Type.valueOf(getValType(retTypeName));
+      sb.p("  ").p(retTypeName).p(" ret = apply(").p(argsList).p(");\n");
+      sb.p("  return new ").p(retValType.getValClassName()).p("(ret);\n");
+    }
     sb.p("}");
     return sb.toString();
   }
