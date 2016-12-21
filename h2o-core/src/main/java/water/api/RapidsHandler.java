@@ -112,7 +112,7 @@ public class RapidsHandler extends Handler {
     return p;
   }
 
-  public static class StartSession4 extends Handler2<InputSchemaV4, SessionIdV4> {
+  public static class StartSession4 extends RestApiHandler<InputSchemaV4, SessionIdV4> {
     @Override public String name() {
       return "newSession4";
     }

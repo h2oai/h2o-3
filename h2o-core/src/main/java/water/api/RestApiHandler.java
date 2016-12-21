@@ -2,11 +2,13 @@ package water.api;
 
 /**
  * Common interface for <s>all</s> some REST endpoint handlers.
+ * <p>
+ * This class is a preferred way for adding new REST endpoints.
  *
  * @param <IS> input schema class
  * @param <OS> output schema class
  */
-public abstract class Handler2<IS extends Schema, OS extends Schema> extends Handler {
+public abstract class RestApiHandler<IS extends Schema, OS extends Schema> extends Handler {
 
   /** Suggested name for the endpoint in external libraries. */
   public abstract String name();
