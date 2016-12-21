@@ -11,9 +11,9 @@ The ``solver`` option allows you to specify the solver method to use in GLM. Whe
 
 In GLM, you can specify one of the following solvers:
 
-- IRLSM: Iteratively Reweighted Least Squares Method (default)
+- IRLSM: Iteratively Reweighted Least Squares Method
 - L_BFGS: Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm
-- AUTO: Sets the solver based on given data and parameters.
+- AUTO: Sets the solver based on given data and parameters (default)
 - COORDINATE_DESCENT: Coordinate Decent
 - COORDINATE_DESCENT_NAIVE: Coordinate Decent Naive
 
