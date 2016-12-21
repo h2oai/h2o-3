@@ -51,9 +51,9 @@
   #Some type checks
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
-  if (missing(parms))
+  if (missing(parms)){
     parms = list()
-  else {
+  }else {
     stopifnot(is.list(parms))
   }
 
@@ -73,8 +73,8 @@
   }
   if (conn@https) {
     if (conn@insecure) {
-    opts = curlOptions(ssl.verifypeer = 0L, ssl.verifyhost=0L, .opts = opts)
-   }
+      opts = curlOptions(ssl.verifypeer = 0L, ssl.verifyhost=0L, .opts = opts)
+    }
   }
   if (!is.na(conn@proxy)) {
     opts = curlOptions(proxy = conn@proxy, .opts = opts)
@@ -124,7 +124,7 @@
   httpStatusCode = as.numeric(h$value()["status"])
   httpStatusMessage = h$value()["statusMessage"]
   if (httpStatusCode != "200") {
-      stop(paste0(httpStatusMessage," -> Status: ", httpStatusCode))
+    stop(paste0(httpStatusMessage," -> Status: ", httpStatusCode))
   }else{
     return(tmp) #Return binary data if status is 200
   }

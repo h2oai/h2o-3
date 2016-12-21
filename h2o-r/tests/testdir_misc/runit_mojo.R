@@ -11,7 +11,7 @@ test.mojo <- function() {
 
 	#Get MOJO and check size is adequate (> 1 byte)
 	mojo <- unzip(paste0(dir,"/",hh@model_id,".zip"), exdir = dir)
-	expect_true(object.size(mojo) > 1)
+	expect_true(object.size(mojo) > 1) # Check for PUBDEV-3819: R h2o.download_mojo broken - writes a 1 byte file
 
 	#Delete direcory on exit
 	on.exit(unlink(dir,recursive=TRUE))
