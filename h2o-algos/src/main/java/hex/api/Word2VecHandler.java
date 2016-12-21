@@ -1,9 +1,12 @@
 package hex.api;
 
 import hex.schemas.Word2VecSynonymsV3;
+import hex.schemas.Word2VecTransformV3;
 import hex.word2vec.Word2VecModel;
 import water.DKV;
 import water.api.Handler;
+import water.api.schemas3.KeyV3;
+import water.fvec.Frame;
 
 import java.util.*;
 
@@ -31,6 +34,24 @@ public class Word2VecHandler extends Handler {
       args.scores[i] = entry.getValue();
       i++;
     }
+    return args;
+  }
+
+  public Word2VecTransformV3 transform(int version, Word2VecTransformV3 args) {
+    Word2VecModel model = DKV.getGet(args.model.key());
+    if (model == null)
+      throw new IllegalArgumentException("missing source model " + args.model);
+
+    Frame words = DKV.getGet(args.words_frame.key());
+    if (words == null)
+      throw new IllegalArgumentException("missing words frame " + args.words_frame);
+
+    if (words.numCols() != 1) {
+      throw new IllegalArgumentException("words frame is expected to have a single string column, got" + words.numCols());
+    }
+
+    Frame vectors = model.transform(words.vec(0));
+    args.vectors_frame = new KeyV3.FrameKeyV3(vectors._key);
     return args;
   }
 

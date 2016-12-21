@@ -47,8 +47,18 @@ public class Word2VecTest extends TestUtil {
 
       Map<String, Float> hm = w2vm.findSynonyms("a", 2);
       logResults(hm);
-
       assertEquals(new HashSet<>(Arrays.asList("b", "c")), hm.keySet());
+
+      Vec testWordVec = Scope.track(svec("a", "b", "c", "Unseen", null));
+      Frame wv = Scope.track(w2vm.transform(testWordVec));
+      assertEquals(10, wv.numCols());
+      for (int i = 0; i < 10; i++) {
+        for (int j = 0; j < 3; j++)
+          assertFalse(wv.vec(i).isNA(j)); // known words
+        for (int j = 3; j < 5; j++)
+          assertTrue(wv.vec(i).isNA(j)); // unseen & missing words
+      }
+
     } finally {
       Scope.exit();
     }

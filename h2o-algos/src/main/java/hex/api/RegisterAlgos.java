@@ -60,6 +60,9 @@ public class RegisterAlgos extends water.api.AbstractRegister {
     H2O.register("GET /3/Word2VecSynonyms", Word2VecHandler.class, "findSynonyms", "word2vec_synonyms",
             "Find synonyms using a word2vec model");
 
+    H2O.register("GET /3/Word2VecTransform", Word2VecHandler.class, "transform", "word2vec_transform",
+            "Transform words to vectors using a word2vec model");
+
     H2O.register("POST /3/DataInfoFrame",MakeGLMModelHandler.class, "getDataInfoFrame", "glm_datainfo_frame",
         "Test only");
   }

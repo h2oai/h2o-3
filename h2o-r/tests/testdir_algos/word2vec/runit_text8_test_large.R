@@ -18,6 +18,10 @@ test.word2vec.sg_hs <- function() {
   print(matched.synonyms)
 
   expect_true(length(matched.synonyms) > 0)
+
+  vectors <- h2o.transform(w2v, words = words[1:1000,])
+  expect_equal(nrow(vectors), 1000)
+  expect_equal(ncol(vectors), 50)
 }
 
 doTest("Test word2vec (Skip Gram, Hierarchical Softmax) on text8 dataset", test.word2vec.sg_hs)

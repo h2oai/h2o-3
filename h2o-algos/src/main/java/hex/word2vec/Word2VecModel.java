@@ -42,11 +42,47 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
    *  the word isn't present in the vocabulary.
    */
   public float[] transform(String target) {
-    BufferedString word = new BufferedString(target);
+    return transform(new BufferedString(target));
+  }
+
+  private float[] transform(BufferedString word) {
     if (! _output._vocab.containsKey(word))
       return null;
     int wordIdx = _output._vocab.get(word);
     return Arrays.copyOfRange(_output._vecs, wordIdx * _output._vecSize, (wordIdx + 1) * _output._vecSize);
+  }
+
+  public Frame transform(Vec wordVec) {
+    if (wordVec.get_type() != Vec.T_STR) {
+      throw new IllegalArgumentException("Expected a string vector, got " + wordVec.get_type_str() + " vector.");
+    }
+    byte[] types = new byte[_output._vecSize];
+    Arrays.fill(types, Vec.T_NUM);
+    return new Word2VecTransformTask(this).doAll(types, wordVec).outputFrame(Key.<Frame>make(), null, null);
+  }
+
+  private static class Word2VecTransformTask extends MRTask<Word2VecTransformTask> {
+    private Word2VecModel _model;
+    public Word2VecTransformTask(Word2VecModel model) { _model = model; }
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      assert cs.length == 1;
+      Chunk chk = cs[0];
+      BufferedString tmp = new BufferedString();
+      for (int i = 0; i < chk._len; i++) {
+        if (chk.isNA(i)) {
+          for (NewChunk nc : ncs) nc.addNA();
+        } else {
+          BufferedString word = chk.atStr(tmp, i);
+          float[] vs = _model.transform(word);
+          if (vs == null)
+            for (NewChunk nc : ncs) nc.addNA();
+          else
+            for (int j = 0; j < ncs.length; j++)
+              ncs[j].addNum(vs[j]);
+        }
+      }
+    }
   }
 
   /**
