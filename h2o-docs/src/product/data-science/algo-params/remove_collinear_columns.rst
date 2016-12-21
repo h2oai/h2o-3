@@ -41,15 +41,14 @@ Example
 	response <- "IsDepDelayed"
 
 	# split into train and validation
-	airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+	airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8)
 	train <- airlines.splits[[1]]
 	valid <- airlines.splits[[2]]
 
 	# try using the `remove_collinear_columns` parameter:
 	# must be used with lambda = 0
 	airlines.glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
-	                        validation_frame = valid, remove_collinear_columns = TRUE, lambda = 0,
-	                        seed = 1234)
+	                        validation_frame = valid, remove_collinear_columns = TRUE, lambda = 0)
 
 	# print the auc for the validation data
 	print(h2o.auc(airlines.glm, valid = TRUE))
@@ -78,13 +77,13 @@ Example
 	response = "IsDepDelayed"
 
 	# split into train and validation sets
-	train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+	train, valid= airlines.split_frame(ratios = [.8])
 
 	# try using the `remove_collinear_columns` parameter:
 	# must be used with lambda_ = 0
 	# initialize your estimator
 	airlines_glm = H2OGeneralizedLinearEstimator(family = 'binomial', lambda_ = 0, 
-	                                             remove_collinear_columns = True, seed =1234)
+	                                             remove_collinear_columns = True)
 
 	# then train your model
 	airlines_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)

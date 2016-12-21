@@ -48,15 +48,14 @@ Example
 	boston["chas"] <- as.factor(boston["chas"])
 
 	# split into train and validation sets
-	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8, seed = 1234)
+	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
 	train <- boston.splits[[1]]
 	valid <- boston.splits[[2]]
 
 	# try using the `solver` parameter:
 	boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
 	                      validation_frame = valid,
-	                      solver = 'IRLSM',
-	                      seed = 1234)
+	                      solver = 'IRLSM')
 
 	# print the mse for the validation data
 	print(h2o.mse(boston_glm, valid=TRUE))
@@ -81,11 +80,11 @@ Example
 	boston['chas'] = boston['chas'].asfactor()
 
 	# split into train and validation sets
-	train, valid = boston.split_frame(ratios = [.8], seed = 1234)
+	train, valid = boston.split_frame(ratios = [.8])
 
 	# try using the `solver` parameter:
 	# initialize the estimator then train the model
-	boston_glm = H2OGeneralizedLinearEstimator(solver = 'irlsm' , seed = 1234)
+	boston_glm = H2OGeneralizedLinearEstimator(solver = 'irlsm')
 	boston_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# print the mse for the validation data

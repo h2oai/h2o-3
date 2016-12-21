@@ -41,12 +41,12 @@ Example
 	boston["chas"] <- as.factor(boston["chas"])
 
 	# split into train and validation sets
-	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8, seed = 1234)
+	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
 	train <- boston.splits[[1]]
 	valid <- boston.splits[[2]]
 
 	# insert missing values at random (this method happens inplace)
-	h2o.insertMissingValues(boston, seed =1234)
+	h2o.insertMissingValues(boston)
 
 	# check the number of missing values
 	print(paste("missing:", sum(is.na(boston)), sep = ", "))
@@ -54,8 +54,7 @@ Example
 	# try using the `missing_values_handling` parameter:
 	boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
 	                      missing_values_handling = "Skip",
-	                      validation_frame = valid,
-	                      seed = 1234)
+	                      validation_frame = valid)
 
 	# print the mse for the validation data
 	print(h2o.mse(boston_glm, valid=TRUE))
@@ -71,7 +70,7 @@ Example
 	# build grid search with previously made GLM and hyperparameters
 	grid <- h2o.grid(x = predictors, y = response, training_frame = train, validation_frame = valid,
 	                 algorithm = "glm", grid_id = "boston_grid", hyper_params = hyper_params,
-	                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
+	                 search_criteria = list(strategy = "Cartesian"))
 
 	# Sort the grid models by mse
 	sortedGrid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
@@ -97,17 +96,17 @@ Example
 	boston['chas'] = boston['chas'].asfactor()
 
 	# insert missing values at random (this method happens inplace)
-	boston.insert_missing_values(seed = 1234)
+	boston.insert_missing_values()
 
 	# check the number of missing values
 	print('missing:', boston.isna().sum())
 
 	# split into train and validation sets
-	train, valid = boston.split_frame(ratios = [.8], seed = 1234)
+	train, valid = boston.split_frame(ratios = [.8])
 
 	# try using the `missing_values_handling` parameter:
 	# initialize the estimator then train the model
-	boston_glm = H2OGeneralizedLinearEstimator(missing_values_handling = "skip", seed = 1234)
+	boston_glm = H2OGeneralizedLinearEstimator(missing_values_handling = "skip")
 	boston_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# print the mse for the validation data
@@ -124,7 +123,7 @@ Example
 	# and we want to see the performance of all models. For a larger search space use
 	# random grid search instead: {'strategy': "RandomDiscrete"}
 	# initialize the GLM estimator
-	boston_glm_2 = H2OGeneralizedLinearEstimator(seed = 1234)
+	boston_glm_2 = H2OGeneralizedLinearEstimator()
 
 	# build grid search with previously made GLM and hyperparameters
 	grid = H2OGridSearch(model = boston_glm_2, hyper_params = hyper_params,

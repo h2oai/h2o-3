@@ -59,13 +59,13 @@ Example
 	response <- "economy_20mpg"
 
 	# split into train and validation
-	cars.splits <- h2o.splitFrame(data = cars, ratios = .8, seed = 1234)
+	cars.splits <- h2o.splitFrame(data = cars, ratios = .8)
 	train <- cars.splits[[1]]
 	valid <- cars.splits[[2]]
 
 	# try using the `family` parameter:
 	car_glm <- h2o.glm(x = predictors, y = response, family = 'binomial', training_frame = train, 
-	                   validation_frame = valid, seed = 1234)
+	                   validation_frame = valid)
 
 	# print the auc for your validation data
 	print(h2o.auc(car_glm, valid = TRUE))
@@ -89,11 +89,11 @@ Example
 	response = "economy_20mpg"
 
 	# split into train and validation sets
-	train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+	train, valid = cars.split_frame(ratios = [.8])
 
 	# try using the `family` parameter:
 	# Initialize and train a GLM
-	cars_glm = H2OGeneralizedLinearEstimator(family = 'binomial', seed = 1234)
+	cars_glm = H2OGeneralizedLinearEstimator(family = 'binomial')
 	cars_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# print the auc for the validation data

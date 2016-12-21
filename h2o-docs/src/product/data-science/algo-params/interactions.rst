@@ -46,7 +46,7 @@ Examples
 	boston["chas"] <- as.factor(boston["chas"])
 
 	# split into train and validation sets
-	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8, seed = 1234)
+	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
 	train <- boston.splits[[1]]
 	valid <- boston.splits[[2]]
 
@@ -57,8 +57,7 @@ Examples
 	interactions_list = c('crim', 'dis')
 	boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
 	                      interactions = interactions_list,
-	                      validation_frame = valid,
-	                      seed = 1234)
+	                      validation_frame = valid)
 
 	# print the mse for validation set
 	print(h2o.mse(boston_glm, valid=TRUE))
@@ -83,7 +82,7 @@ Examples
 	boston['chas'] = boston['chas'].asfactor()
 
 	# split into train and validation sets
-	train, valid = boston.split_frame(ratios = [.8], seed = 1234)
+	train, valid = boston.split_frame(ratios = [.8])
 
 	# take a look at the boston columns:
 	print(boston.columns)
@@ -93,7 +92,7 @@ Examples
 	# the weighted distances to five Boston employment centres)
 	# initialize the estimator then train the model
 	interactions_list = ['crim', 'dis']
-	boston_glm = H2OGeneralizedLinearEstimator(interactions = interactions_list, seed = 1234)
+	boston_glm = H2OGeneralizedLinearEstimator(interactions = interactions_list)
 	boston_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# print the mse for the validation data

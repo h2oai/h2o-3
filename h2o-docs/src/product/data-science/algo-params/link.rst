@@ -68,13 +68,13 @@ Example
 	response <- 'class'
 
 	# split into train and validation
-	iris.splits <- h2o.splitFrame(data = iris, ratios = .8, seed = 1234)
+	iris.splits <- h2o.splitFrame(data = iris, ratios = .8)
 	train <- iris.splits[[1]]
 	valid <- iris.splits[[2]]
 
 	# try using the `link` parameter:
 	iris_glm <- h2o.glm(x = predictors, y = response, family = 'multinomial', link = 'family_default',
-	                   training_frame = train, validation_frame = valid, seed = 1234)
+	                   training_frame = train, validation_frame = valid)
 
 	# print the logloss for the validation data
 	print(h2o.logloss(iris_glm, valid = TRUE))
@@ -98,11 +98,11 @@ Example
 	response = 'class'
 
 	# split into train and validation sets
-	train, valid = iris.split_frame(ratios = [.8], seed = 1234)
+	train, valid = iris.split_frame(ratios = [.8])
 
 	# try using the `link` parameter:
 	# Initialize and train a GLM
-	iris_glm = H2OGeneralizedLinearEstimator(family = 'multinomial', link = 'family_default', seed = 1234)
+	iris_glm = H2OGeneralizedLinearEstimator(family = 'multinomial', link = 'family_default')
 	iris_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
 	# print the logloss for the validation data
