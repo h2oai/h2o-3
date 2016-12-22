@@ -10,26 +10,26 @@
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to False.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to False.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param k The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will
 #'        find up to k centroids. Defaults to 1.
 #' @param estimate_k \code{Logical}. Whether to estimate the number of clusters (<=k) iteratively and deterministically. Defaults
-#'        to False.
+#'        to FALSE.
 #' @param user_points User-specified points
 #' @param max_iterations Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration) Defaults
 #'        to 10.
-#' @param standardize \code{Logical}. Standardize columns before computing distances Defaults to True.
+#' @param standardize \code{Logical}. Standardize columns before computing distances Defaults to TRUE.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
 #' @param init Initialization mode Must be one of: "Random", "PlusPlus", "Furthest", "User". Defaults to Furthest.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen". Defaults to AUTO.
 #' @return Returns an object of class \linkS4class{H2OClusteringModel}.
@@ -62,7 +62,7 @@ h2o.kmeans <- function(training_frame, x,
                        standardize = TRUE,
                        seed = -1,
                        init = c("Random", "PlusPlus", "Furthest", "User"),
-                       max_runtime_secs = 0.0,
+                       max_runtime_secs = 0,
                        categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen")
                        ) 
 {
