@@ -1628,6 +1628,16 @@ public class ArrayUtils {
   }
 
   /**
+   * Convert an ArrayList of Longs to a primitive long[] array.
+   */
+  public static long[] toLongArray(ArrayList<Long> arr) {
+    long[] res = new long[arr.size()];
+    for (int i = 0; i < res.length; i++)
+      res[i] = arr.get(i);
+    return res;
+  }
+
+  /**
    * Convert an ArrayList of Doubles to a primitive double[] array.
    */
   public static double[] toDoubleArray(ArrayList<Double> arr) {

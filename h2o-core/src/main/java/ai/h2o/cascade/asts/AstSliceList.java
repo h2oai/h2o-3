@@ -1,7 +1,9 @@
 package ai.h2o.cascade.asts;
 
 import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.core.SliceList;
 import ai.h2o.cascade.vals.Val;
+import ai.h2o.cascade.vals.ValSlice;
 import water.util.ArrayUtils;
 import water.util.SB;
 
@@ -27,6 +29,31 @@ import java.util.Arrays;
  * require a sorted list.
  */
 public class AstSliceList extends Ast<AstSliceList> {
+  private SliceList sliceList;
+
+
+  public AstSliceList(SliceList sl) {
+    sliceList = sl;
+  }
+
+  public AstSliceList(ArrayList<Long> bases, ArrayList<Long> counts, ArrayList<Long> strides) {
+    sliceList = new SliceList(bases, counts, strides);
+  }
+
+  @Override
+  public Val exec(CascadeScope scope) {
+    return new ValSlice(sliceList);
+  }
+
+
+
+  //
+  //
+  // TODO: move all of this functionality below into the {@code SliceList} class.
+  //
+  //
+
+
   public static final int LARGEST_LIST_TO_EXPAND = 1000000;
 
   private long[] bases;
@@ -46,61 +73,13 @@ public class AstSliceList extends Ast<AstSliceList> {
   private boolean isSorted;
 
 
-  //--------------------------------------------------------------------------------------------------------------------
-  // Constructors
-  //--------------------------------------------------------------------------------------------------------------------
-
-  public AstSliceList(ArrayList<Long> bases, ArrayList<Long> counts, ArrayList<Long> strides) {
-    int n = bases.size();
-    // Convert to fixed-sized arrays
-    this.bases = new long[n];
-    this.strides = new long[n];
-    this.counts = new long[n];
-    isList = true;
-    for (int i = 0; i < n; i++) {
-      this.bases[i] = bases.get(i);
-      this.counts[i] = counts.get(i);
-      this.strides[i] = strides.get(i);
-      if (this.counts[i] != 1) isList = false;
-    }
-    // Detect whether the list is sorted
-    isSorted = true;
-    for (int i = 1; i < n; i++)
-      // This assumes the strides are positive! Need to modify when we allow negative strides
-      if (this.bases[i-1] + (this.counts[i-1] - 1) * this.strides[i-1] >= this.bases[i]) {
-        isSorted = false;
-        break;
-      }
-  }
-
-  public AstSliceList(long[] abases) {
-    bases = abases;
-    isList = true;
-    isSorted = ArrayUtils.isSorted(bases);
-  }
-
-  /**
-   * Make a simple list from {@code lo} to {@code hi} (exclusive). This is
-   * equivalent to Python's {@code range(lo, hi)}.
-   */
-  public AstSliceList(long lo, long hi) {
-    bases = new long[]{lo};
-    counts = new long[]{hi - lo};
-    strides = new long[]{1};
-    isList = hi - lo == 1;
-    isSorted = true;
-  }
 
 
   //--------------------------------------------------------------------------------------------------------------------
   // Ast implementation
   //--------------------------------------------------------------------------------------------------------------------
 
-  @Override
-  public Val exec(CascadeScope scope) {
-    // TODO
-    return null;
-  }
+
 
   @Override
   public String str() {
@@ -123,10 +102,6 @@ public class AstSliceList extends Ast<AstSliceList> {
   // Public methods
   //--------------------------------------------------------------------------------------------------------------------
 
-  public boolean isSorted() {
-    return isSorted;
-  }
-
   /**
    * Expand the compressed form into an array of ints; may be used for lists
    * that are expected to be reasonably small, such as column indices.
@@ -135,7 +110,7 @@ public class AstSliceList extends Ast<AstSliceList> {
    *     list would exceed {@link #LARGEST_LIST_TO_EXPAND}.
    */
   public int[] expand4() {
-    long nrows = count();
+    long nrows = isList? bases.length : ArrayUtils.sum(counts);
     if (nrows > LARGEST_LIST_TO_EXPAND)
       throw new IllegalArgumentException("Refuse to expand list with more than " + nrows + " elements.");
     // At this point conversion to int is already safe
@@ -154,15 +129,6 @@ public class AstSliceList extends Ast<AstSliceList> {
         res[r++] = (int) d;
     }
     return res;
-  }
-
-
-  /**
-   * Count the total number of indices represented by this multi-index list.
-   * For example, `count([3:2:2 5:1000])` is 1002.
-   */
-  public long count() {
-    return isList? bases.length : ArrayUtils.sum(counts);
   }
 
 
