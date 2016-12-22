@@ -17,14 +17,14 @@
 #' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to False.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to False.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
@@ -32,8 +32,8 @@
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
 #'        one of: "gaussian", "binomial", "quasibinomial", "multinomial", "poisson", "gamma", "tweedie". Defaults to
 #'        gaussian.
-#' @param tweedie_variance_power Tweedie variance power Defaults to 0.0.
-#' @param tweedie_link_power Tweedie link power Defaults to 1.0.
+#' @param tweedie_variance_power Tweedie variance power Defaults to 0.
+#' @param tweedie_link_power Tweedie link power Defaults to 1.
 #' @param solver AUTO will set the solver based on given data and the other parameters. IRLSM is fast on on problems with small
 #'        number of predictors and for lambda-search with L1 penalty, L_BFGS scales better for datasets with many
 #'        columns. Coordinate descent is experimental (beta). Must be one of: "AUTO", "IRLSM", "L_BFGS",
@@ -42,52 +42,52 @@
 #'        otherwise
 #' @param lambda regularization strength
 #' @param lambda_search \code{Logical}. use lambda search starting at lambda max, given lambda is then interpreted as lambda min
-#'        Defaults to False.
+#'        Defaults to FALSE.
 #' @param early_stopping \code{Logical}. stop early when there is no more relative improvement on train or validation (if provided)
-#'        Defaults to True.
+#'        Defaults to TRUE.
 #' @param nlambdas Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 #'        Defaults to -1.
-#' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to True.
+#' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to TRUE.
 #' @param missing_values_handling Handling of missing values. Either MeanImputation or Skip. Must be one of: "MeanImputation", "Skip". Defaults
 #'        to MeanImputation.
 #' @param compute_p_values \code{Logical}. request p-values computation, p-values work only with IRLSM solver and no regularization
-#'        Defaults to False.
-#' @param remove_collinear_columns \code{Logical}. in case of linearly dependent columns remove some of the dependent columns Defaults to False.
-#' @param intercept \code{Logical}. include constant term in the model Defaults to True.
-#' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to False.
+#'        Defaults to FALSE.
+#' @param remove_collinear_columns \code{Logical}. in case of linearly dependent columns remove some of the dependent columns Defaults to FALSE.
+#' @param intercept \code{Logical}. include constant term in the model Defaults to TRUE.
+#' @param non_negative \code{Logical}. Restrict coefficients (not intercept) to be non-negative Defaults to FALSE.
 #' @param max_iterations Maximum number of iterations Defaults to -1.
 #' @param objective_epsilon Converge if  objective value changes less than this. Default indicates: If lambda_search is set to True the
 #'        value of objective_epsilon is set to .0001. If the lambda_search is set to False and lambda is equal to zero,
 #'        the value of objective_epsilon is set to .000001, for any other value of lambda the default value of
-#'        objective_epsilon is set to .0001. Defaults to -1.0.
+#'        objective_epsilon is set to .0001. Defaults to -1.
 #' @param beta_epsilon converge if  beta changes less (using L-infinity norm) than beta esilon, ONLY applies to IRLSM solver
 #'        Defaults to 0.0001.
 #' @param gradient_epsilon Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
 #'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
-#'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.0.
+#'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link  Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie". Defaults to
 #'        family_default.
 #' @param prior prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
-#'        of response does not reflect reality. Defaults to -1.0.
+#'        of response does not reflect reality. Defaults to -1.
 #' @param lambda_min_ratio Min lambda used in lambda search, specified as a ratio of lambda_max. Default indicates: if the number of
 #'        observations is greater than the number of variables then lambda_min_ratio is set to 0.0001; if the number of
-#'        observations is less than the number of variables then lambda_min_ratio is set to 0.01. Defaults to -1.0.
+#'        observations is less than the number of variables then lambda_min_ratio is set to 0.01. Defaults to -1.
 #' @param beta_constraints beta constraints
 #' @param max_active_predictors Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
 #'        building with many predictors. Default indicates: If the IRLSM solver is used, the value of
 #'        max_active_predictors is set to 7000 otherwise it is set to 100000000. Defaults to -1.
 #' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        False.
+#'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
 #' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 #'        Defaults to 0.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -95,8 +95,9 @@
 #'         these various items, please refer to the seealso section below. Upon completion of the GLM, the resulting
 #'         object has coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics
 #'         including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please refer to the
-#'         more in-depth GLM documentation available here: \url{http://h2o-release.s3.amazonaws.com/h2o-dev/rel-
-#'         shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
+#'         more in-depth GLM documentation available here:
+#'         \url{https://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
+
 #' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}},
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}},
 #'          \code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
@@ -142,8 +143,8 @@ h2o.glm <- function(x, y, training_frame,
                     offset_column = NULL,
                     weights_column = NULL,
                     family = c("gaussian", "binomial", "quasibinomial", "multinomial", "poisson", "gamma", "tweedie"),
-                    tweedie_variance_power = 0.0,
-                    tweedie_link_power = 1.0,
+                    tweedie_variance_power = 0,
+                    tweedie_link_power = 1,
                     solver = c("AUTO", "IRLSM", "L_BFGS", "COORDINATE_DESCENT_NAIVE", "COORDINATE_DESCENT"),
                     alpha = NULL,
                     lambda = NULL,
@@ -157,12 +158,12 @@ h2o.glm <- function(x, y, training_frame,
                     intercept = TRUE,
                     non_negative = FALSE,
                     max_iterations = -1,
-                    objective_epsilon = -1.0,
+                    objective_epsilon = -1,
                     beta_epsilon = 0.0001,
-                    gradient_epsilon = -1.0,
+                    gradient_epsilon = -1,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"),
-                    prior = -1.0,
-                    lambda_min_ratio = -1.0,
+                    prior = -1,
+                    lambda_min_ratio = -1,
                     beta_constraints = NULL,
                     max_active_predictors = -1,
                     interactions = NULL,
@@ -170,7 +171,7 @@ h2o.glm <- function(x, y, training_frame,
                     class_sampling_factors = NULL,
                     max_after_balance_size = 5.0,
                     max_hit_ratio_k = 0,
-                    max_runtime_secs = 0.0
+                    max_runtime_secs = 0
                     ) 
 {
   #If x is missing, then assume user wants to use all columns as features.

@@ -13,18 +13,18 @@
 #'        categorical variable).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param checkpoint Model checkpoint to resume training with.
-#' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to False.
+#' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to FALSE.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        False.
+#'        FALSE.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to False.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to False.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
@@ -33,12 +33,12 @@
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen". Defaults to AUTO.
 #' @param overwrite_with_best_model \code{Logical}. If enabled, override the final model with the best model found during training. Defaults to
-#'        True.
-#' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.0.
+#'        TRUE.
+#' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.
 #' @param train_samples_per_iteration Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all
 #'        available data (e.g., replicated training data), -2: automatic. Defaults to -2.
 #' @param target_ratio_comm_to_comp Target ratio of communication overhead to computation. Only for multi-node operation and
@@ -47,39 +47,39 @@
 #'        Note: only reproducible when running single threaded.
 #'        Defaults to -1 (time-based random number).
 #' @param standardize \code{Logical}. If enabled, automatically standardize the data. If disabled, the user must provide properly
-#'        scaled input data. Defaults to True.
+#'        scaled input data. Defaults to TRUE.
 #' @param learning_rate Learning rate (higher => less stable, lower => slower convergence). Defaults to 0.005.
 #' @param learning_rate_annealing Learning rate annealing: rate / (1 + rate_annealing * samples). Defaults to 1e-06.
 #' @param momentum_start Initial momentum at the beginning of training (try 0.5). Defaults to 0.9.
-#' @param momentum_ramp Number of training samples for which momentum increases. Defaults to 10000.0.
+#' @param momentum_ramp Number of training samples for which momentum increases. Defaults to 10000.
 #' @param momentum_stable Final momentum after the ramp is over (try 0.99). Defaults to 0.99.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
-#' @param score_interval Shortest time interval (in seconds) between model scoring. Defaults to 5.0.
+#' @param score_interval Shortest time interval (in seconds) between model scoring. Defaults to 5.
 #' @param score_training_samples Number of training set samples for scoring (0 for all). Defaults to 10000.
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all). Defaults to 0.
 #' @param score_duty_cycle Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring). Defaults to 0.1.
-#' @param classification_stop Stopping criterion for classification error fraction on training data (-1 to disable). Defaults to 0.0.
-#' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to disable). Defaults to 0.0.
+#' @param classification_stop Stopping criterion for classification error fraction on training data (-1 to disable). Defaults to 0.
+#' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to disable). Defaults to 0.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
 #'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
 #'        "mean_per_class_error". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
-#'        much) Defaults to 0.0.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
-#' @param shuffle_training_data \code{Logical}. Enable global shuffling of training data. Defaults to True.
+#'        much) Defaults to 0.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param shuffle_training_data \code{Logical}. Enable global shuffling of training data. Defaults to TRUE.
 #' @param mini_batch_size Mini-batch size (smaller leads to better fit, larger can speed up and generalize better). Defaults to 32.
-#' @param clip_gradient Clip gradients once their absolute value is larger than this value. Defaults to 10.0.
+#' @param clip_gradient Clip gradients once their absolute value is larger than this value. Defaults to 10.
 #' @param network Network architecture. Must be one of: "auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn",
 #'        "resnet". Defaults to auto.
 #' @param backend Deep Learning Backend. Must be one of: "auto", "mxnet", "caffe", "tensorflow". Defaults to mxnet.
 #' @param image_shape Width and height of image. Defaults to [0, 0].
 #' @param channels Number of (color) channels. Defaults to 3.
-#' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to False.
-#' @param gpu \code{Logical}. Whether to use a GPU (if available). Defaults to True.
+#' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to FALSE.
+#' @param gpu \code{Logical}. Whether to use a GPU (if available). Defaults to TRUE.
 #' @param device_id Device IDs (which GPUs to use). Defaults to [0].
 #' @param network_definition_file Path of file containing network definition (graph, architecture).
 #' @param network_parameters_file Path of file containing network (initial) parameters (weights, biases).
@@ -89,7 +89,7 @@
 #'        problem_type=dataset. Must be one of: "Rectifier", "Tanh".
 #' @param hidden Hidden layer sizes (e.g. [200, 200]). Only used if no user-defined network architecture file is provided, and
 #'        only for problem_type=dataset.
-#' @param input_dropout_ratio Input layer dropout ratio (can improve generalization, try 0.1 or 0.2). Defaults to 0.0.
+#' @param input_dropout_ratio Input layer dropout ratio (can improve generalization, try 0.1 or 0.2). Defaults to 0.
 #' @param hidden_dropout_ratios Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5.
 #' @param problem_type Problem type, auto-detected by default. If set to image, the H2OFrame must contain a string column containing
 #'        the path (URI or URL) to the images in the first column. If set to text, the H2OFrame must contain a string
@@ -115,7 +115,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           score_each_iteration = FALSE,
                           categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen"),
                           overwrite_with_best_model = TRUE,
-                          epochs = 10.0,
+                          epochs = 10,
                           train_samples_per_iteration = -2,
                           target_ratio_comm_to_comp = 0.05,
                           seed = -1,
@@ -123,23 +123,23 @@ h2o.deepwater <- function(x, y, training_frame,
                           learning_rate = 0.005,
                           learning_rate_annealing = 1e-06,
                           momentum_start = 0.9,
-                          momentum_ramp = 10000.0,
+                          momentum_ramp = 10000,
                           momentum_stable = 0.99,
                           distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
-                          score_interval = 5.0,
+                          score_interval = 5,
                           score_training_samples = 10000,
                           score_validation_samples = 0,
                           score_duty_cycle = 0.1,
-                          classification_stop = 0.0,
-                          regression_stop = 0.0,
+                          classification_stop = 0,
+                          regression_stop = 0,
                           stopping_rounds = 5,
                           stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
-                          stopping_tolerance = 0.0,
-                          max_runtime_secs = 0.0,
+                          stopping_tolerance = 0,
+                          max_runtime_secs = 0,
                           ignore_const_cols = TRUE,
                           shuffle_training_data = TRUE,
                           mini_batch_size = 32,
-                          clip_gradient = 10.0,
+                          clip_gradient = 10,
                           network = c("auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn", "resnet"),
                           backend = c("auto", "mxnet", "caffe", "tensorflow"),
                           image_shape = c(0, 0),
@@ -153,7 +153,7 @@ h2o.deepwater <- function(x, y, training_frame,
                           export_native_parameters_prefix = NULL,
                           activation = c("Rectifier", "Tanh"),
                           hidden = NULL,
-                          input_dropout_ratio = 0.0,
+                          input_dropout_ratio = 0,
                           hidden_dropout_ratios = NULL,
                           problem_type = c("auto", "image", "text", "dataset")
                           ) 

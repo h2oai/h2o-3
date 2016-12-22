@@ -734,7 +734,11 @@ class H2OGridSearch(backwards_compatible()):
 
     def get_grid(self, sort_by=None, decreasing=None):
         """
-        Retrieve an H2OGridSearch instance. Optionally specify a metric by which to sort models and a sort order.
+        Retrieve an H2OGridSearch instance. Optionally specify a metric by which to sort models and a sort order. 
+        Note that if neither cross-validation nor a validation frame is used in the grid search, then the 
+        training metrics will display in the "get grid" output. If a validation frame is passed to the grid, and 
+        ``nfolds = 0``, then the validation metrics will display. However, if ``nfolds`` > 1, then cross-validation 
+        metrics will display even if a validation frame is provided.
 
         Parameters
         ----------

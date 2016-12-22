@@ -11,8 +11,8 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
 #'        Defaults to NONE.
 #' @param svd_method Method for computing SVD (Caution: Power and Randomized are currently experimental and unstable) Must be one
@@ -21,10 +21,10 @@
 #' @param max_iterations Maximum iterations Defaults to 1000.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
 #'        Defaults to -1 (time-based random number).
-#' @param keep_u \code{Logical}. Save left singular vectors? Defaults to True.
+#' @param keep_u \code{Logical}. Save left singular vectors? Defaults to TRUE.
 #' @param u_name Frame key to save left singular vectors
-#' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to True.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
+#' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to TRUE.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
@@ -49,7 +49,7 @@ h2o.svd <- function(training_frame, x, destination_key,
                     keep_u = TRUE,
                     u_name = NULL,
                     use_all_factor_levels = TRUE,
-                    max_runtime_secs = 0.0
+                    max_runtime_secs = 0
                     ) 
 {
 
