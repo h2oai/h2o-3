@@ -40,10 +40,14 @@
     sprintf("%s://%s:%s/%s/%s", scheme, conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
 }
 
-.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
+.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, binary=FALSE, ...) {
   timeout_secs <- 0
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
+  stopifnot(is.logical(binary))
+  if(binary != FALSE && method != "GET"){
+    stop("binary data is only supported with HTTP GET responses")
+  }
   if (missing(parms))
     parms = list()
   else {
@@ -136,21 +140,36 @@
 
   if ((method == "GET") || (method == "DELETE")) {
     h <- basicHeaderGatherer()
-    t <- basicTextGatherer(.mapUnicode = FALSE)
+    #Internal C-level data structure for collecting binary data.
+    buf <- binaryBuffer()
+    #C routine that puts the binary data in memory as its being processed. Here we are only interested in its
+    #address in memory and will pass it into curlPerform() as the writefunction
+    write <- getNativeSymbolInfo("R_curl_write_binary_data")$address
+    #Note: binaryBuffer() is a constructor function for creating an internal data structure that is used when reading binary
+    #data from an HTTP request via RCurl. It is used with the native routine R_curl_write_binary_data
+    #for collecting the response from the HTTP query into a buffer that stores the bytes. The contents
+    #can then be brought back into R as a raw vector and then used in different ways, e.g. uncompressed
+    #with the Rcompression package, or written to a file via writeBin. We can also convert the raw vector to of type
+    #character.
     tmp <- tryCatch(curlPerform(url = url,
-                                customrequest = method,
-                                writefunction = t$update,
-                                headerfunction = h$update,
-                                useragent=R.version.string,
-                                httpheader = header,
-                                verbose = FALSE,
-                                timeout = timeout_secs,
-                                .opts = opts),
-                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+                                  customrequest = method,
+                                  writefunction = write,
+                                  headerfunction = h$update,
+                                  useragent=R.version.string,
+                                  httpheader = header,
+                                  verbose = FALSE,
+                                  timeout = timeout_secs,
+                                  file = buf@ref, #Always get binary data
+                                  .opts = opts),
+                      error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
-      httpStatusCode = as.numeric(h$value()["status"])
-      httpStatusMessage = h$value()["statusMessage"]
-      payload = t$value()
+        httpStatusCode = as.numeric(h$value()["status"])
+        httpStatusMessage = h$value()["statusMessage"]
+        if(binary){
+          payload = as(buf, "raw") #Return binary payload as is for output such as MOJOs and genmodel.jar
+        }else{
+          payload = rawToChar(as(buf, "raw")) #convert binary payload to text for other REST calls as they expect text responses
+        }
     }
   } else if (! missing(fileUploadInfo)) {
     stopifnot(method == "POST")
@@ -321,7 +340,9 @@
     cat(sprintf("ERROR: Unexpected HTTP Status code: %d %s (url = %s)\n", rv$httpStatusCode, rv$httpStatusMessage, rv$url))
     cat("\n")
 
-    jsonObject = jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE)
+    #Check if payload is a raw vector(binary data) and convert to character for error printing. Otherwise return
+    #normal payload
+    jsonObject = jsonlite::fromJSON(ifelse(is.raw(rv$payload),rawToChar(rv$payload),rv$payload), simplifyDataFrame=FALSE)
 
     exceptionType = jsonObject$exception_type
     if (! is.null(exceptionType)) {
