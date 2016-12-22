@@ -33,7 +33,7 @@
 #' @param init_step_size Initial step size Defaults to 1.
 #' @param min_step_size Minimum step size Defaults to 0.0001.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
+#'        Defaults to -1 (time-based random number).
 #' @param init Initialization mode Must be one of: "Random", "SVD", "PlusPlus", "User". Defaults to PlusPlus.
 #' @param svd_method Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and
 #'        unstable) Must be one of: "GramSVD", "Power", "Randomized". Defaults to Randomized.
