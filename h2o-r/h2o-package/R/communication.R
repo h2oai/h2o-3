@@ -40,11 +40,100 @@
     sprintf("%s://%s:%s/%s/%s", scheme, conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
 }
 
-.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, getBinary = FALSE, ...) {
+.h2o.getBinary <- function(h2oRestApiVersion, urlSuffix, parms, ...){
+
+  #Get H2O connection
+  conn <- h2o.getConnection()
+
+  #Initial timeout secs
+  timeout_secs <- 0
+
+  #Some type checks
+  stopifnot(is(conn, "H2OConnection"))
+  stopifnot(is.character(urlSuffix))
+  if (missing(parms)){
+    parms = list()
+  }else {
+    stopifnot(is.list(parms))
+  }
+
+  if( length(list(...)) != 0 ) {
+    l <- list(...)
+  if( !is.null(l$timeout) )
+    timeout_secs <- l$timeout
+    print(timeout_secs)
+  }
+
+  #Set up curlOptions() where applicable
+  opts = curlOptions()
+  if (!is.na(conn@username)) {
+    userpwd = sprintf("%s:%s", conn@username, conn@password)
+    basicAuth = 1L
+    opts = curlOptions(userpwd = userpwd, httpauth = basicAuth, .opts = opts)
+  }
+  if (conn@https) {
+    if (conn@insecure) {
+      opts = curlOptions(ssl.verifypeer = 0L, ssl.verifyhost=0L, .opts = opts)
+    }
+  }
+  if (!is.na(conn@proxy)) {
+    opts = curlOptions(proxy = conn@proxy, .opts = opts)
+  }
+
+  #Initialize status codes/messages/payload
+  httpStatusCode = -1L
+  httpStatusMessage = ""
+  payload = ""
+
+  #Capture logging information if desired
+  if (.h2o.isLogging()) {
+    .h2o.logRest("------------------------------------------------------------")
+    .h2o.logRest("")
+    .h2o.logRest(sprintf("Time:     %s", as.character(format(Sys.time(), "%Y-%m-%d %H:%M:%OS3"))))
+    .h2o.logRest("")
+    .h2o.logRest(sprintf("%-9s %s", "GET", urlSuffix))
+  }
+
+  beginTimeSeconds = as.numeric(proc.time())[3L]
+
+  #Check for cluster_id, cookies, and finally get binary data
+  tmp <- NULL
+  header <- c('Connection' = 'close')
+  if (!is.na(conn@cluster_id)) {
+    header['X-Cluster'] = conn@cluster_id
+  }
+
+  if(!is.na(conn@cookies)) {
+    header['Cookie'] = paste0(conn@cookies, collapse=';')
+  }
+
+  h <- basicHeaderGatherer()
+  t <- basicTextGatherer(.mapUnicode = FALSE)
+  tmp <- getBinaryURL(url = urlSuffix,
+                                #Identify curl options in .opts
+                                .opts = curlOptions(customrequest = "GET",
+                                                    writefunction = t$update,
+                                                    headerfunction = h$update,
+                                                    useragent=R.version.string,
+                                                    httpheader = header,
+                                                    verbose = FALSE,
+                                                    timeout = timeout_secs,
+                                                    .opts = opts))
+
+  #If status !=200, then throw exception to client
+  httpStatusCode = as.numeric(h$value()["status"])
+  httpStatusMessage = h$value()["statusMessage"]
+  if (httpStatusCode != "200") {
+    stop(paste0(httpStatusMessage," -> Status: ", httpStatusCode))
+  }else{
+    return(tmp) #Return binary data if status is 200
+  }
+}
+
+.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
   timeout_secs <- 0
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
-  stopifnot(is.logical(getBinary))
   if (missing(parms))
     parms = list()
   else {
@@ -138,20 +227,15 @@
   if ((method == "GET") || (method == "DELETE")) {
     h <- basicHeaderGatherer()
     t <- basicTextGatherer(.mapUnicode = FALSE)
-    curlFxn <- curlPerform
-    if(getBinary){
-      curlFxn <- getBinaryURL
-    }
-    tmp <- tryCatch(curlFxn(url = url,
-                                   #Identify curl options in .opts
-                                   .opts = curlOptions(customrequest = method,
-                                                       writefunction = t$update,
-                                                       headerfunction = h$update,
-                                                       useragent=R.version.string,
-                                                       httpheader = header,
-                                                       verbose = FALSE,
-                                                       timeout = timeout_secs,
-                                                       .opts = opts)),
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                httpheader = header,
+                                verbose = FALSE,
+                                timeout = timeout_secs,
+                                .opts = opts),
     error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])

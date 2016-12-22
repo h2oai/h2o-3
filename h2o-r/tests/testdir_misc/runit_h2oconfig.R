@@ -4,7 +4,8 @@ source("../../scripts/h2o-r-test-setup.R")
 test.config <- function() {
 
     #Set up testing framework
-    dir <- sandbox()
+    dir <- paste0(sandbox(),"/configresults")
+    dir.create(dir)
     h2oconfig_filename <- paste0(dir,"/.h2oconfig")
     fileConn <- file(h2oconfig_filename)
 
