@@ -18,21 +18,21 @@
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to False.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to False.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        False.
+#'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
@@ -41,7 +41,7 @@
 #'        Defaults to 0.
 #' @param ntrees Number of trees. Defaults to 50.
 #' @param max_depth Maximum tree depth. Defaults to 5.
-#' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 10.0.
+#' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 10.
 #' @param nbins For numerical columns (real/int), build a histogram of (at least) this many bins, then split at the best point
 #'        Defaults to 20.
 #' @param nbins_top_level For numerical columns (real/int), build a histogram of (at most) this many bins at the root level, then
@@ -50,7 +50,7 @@
 #'        values can lead to more overfitting. Defaults to 1024.
 #' @param r2_stopping r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds, stopping_metric
 #'        and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2 metric equals or
-#'        exceeds this Defaults to 1.7976931348623157e+308.
+#'        exceeds this Defaults to 1.797693135e+308.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression) Must be one of:
@@ -58,13 +58,13 @@
 #'        "mean_per_class_error". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
+#'        Defaults to -1 (time-based random number).
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
-#'        Defaults to False.
+#'        Defaults to FALSE.
 #' @param learn_rate Learning rate (from 0.0 to 1.0) Defaults to 0.1.
-#' @param learn_rate_annealing Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)  Defaults to 1.0.
+#' @param learn_rate_annealing Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)  Defaults to 1.
 #' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
 #'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
 #' @param quantile_alpha Desired quantile for Quantile regression, must be between 0 and 1. Defaults to 0.5.
@@ -72,16 +72,16 @@
 #' @param huber_alpha Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and
 #'        1). Defaults to 0.9.
 #' @param checkpoint Model checkpoint to resume training with.
-#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.0.
+#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param sample_rate_per_class Row sample rate per tree per class (from 0.0 to 1.0)
-#' @param col_sample_rate Column sample rate (from 0.0 to 1.0) Defaults to 1.0.
-#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0) Defaults to 1.0.
-#' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.0.
+#' @param col_sample_rate Column sample rate (from 0.0 to 1.0) Defaults to 1.
+#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (from 0.0 to 2.0) Defaults to 1.
+#' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param min_split_improvement Minimum relative improvement in squared error reduction for a split to happen Defaults to 1e-05.
 #' @param histogram_type What type of histogram to use for finding optimal split points Must be one of: "AUTO", "UniformAdaptive",
 #'        "Random", "QuantilesGlobal", "RoundRobin". Defaults to AUTO.
-#' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction Defaults to 1.7976931348623157e+308.
-#' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions Defaults to 0.0.
+#' @param max_abs_leafnode_pred Maximum absolute value of a leaf node prediction Defaults to 1.797693135e+308.
+#' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen". Defaults to AUTO.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -119,33 +119,33 @@ h2o.gbm <- function(x, y, training_frame,
                     max_hit_ratio_k = 0,
                     ntrees = 50,
                     max_depth = 5,
-                    min_rows = 10.0,
+                    min_rows = 10,
                     nbins = 20,
                     nbins_top_level = 1024,
                     nbins_cats = 1024,
-                    r2_stopping = 1.7976931348623157e+308,
+                    r2_stopping = 1.797693135e+308,
                     stopping_rounds = 0,
                     stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
                     stopping_tolerance = 0.001,
-                    max_runtime_secs = 0.0,
+                    max_runtime_secs = 0,
                     seed = -1,
                     build_tree_one_node = FALSE,
                     learn_rate = 0.1,
-                    learn_rate_annealing = 1.0,
+                    learn_rate_annealing = 1,
                     distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                     quantile_alpha = 0.5,
                     tweedie_power = 1.5,
                     huber_alpha = 0.9,
                     checkpoint = NULL,
-                    sample_rate = 1.0,
+                    sample_rate = 1,
                     sample_rate_per_class = NULL,
-                    col_sample_rate = 1.0,
-                    col_sample_rate_change_per_level = 1.0,
-                    col_sample_rate_per_tree = 1.0,
+                    col_sample_rate = 1,
+                    col_sample_rate_change_per_level = 1,
+                    col_sample_rate_per_tree = 1,
                     min_split_improvement = 1e-05,
                     histogram_type = c("AUTO", "UniformAdaptive", "Random", "QuantilesGlobal", "RoundRobin"),
-                    max_abs_leafnode_pred = 1.7976931348623157e+308,
-                    pred_noise_bandwidth = 0.0,
+                    max_abs_leafnode_pred = 1.797693135e+308,
+                    pred_noise_bandwidth = 0,
                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen")
                     ) 
 {

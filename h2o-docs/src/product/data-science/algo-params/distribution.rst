@@ -72,8 +72,8 @@ Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `huber_alpha <huber_alpha.html>`__
-- `quantile_alpha <quantile_alpha.html>`__
 - `offset_column <offset_column.html>`__
+- `quantile_alpha <quantile_alpha.html>`__
 - `tweedie_power <tweedie_power.html>`__
 - `y <y.html>`__
 
