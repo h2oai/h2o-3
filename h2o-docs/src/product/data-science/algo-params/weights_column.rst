@@ -16,10 +16,10 @@ For scoring, all computed metrics will take the observation weights into account
 - Weights can be specified as integers or as non-integers.
 - You do not have to specify a weight when calling ``model.predict()``. New test data will have the weights column with the same column name. 
 - The weights column cannot be the same as the `fold_column <fold_column.html>`__. 
-- Example unit test scripts are available on github:
+- Example unit test scripts are available on GitHub:
+
   - https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/gbm/pyunit_weights_gbm.py
   - https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/gbm/pyunit_weights_gamma_gbm.py
-
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

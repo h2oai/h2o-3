@@ -9,6 +9,8 @@ Description
 
 Use this option to specify a response column (y-axis). The response column is the column that you are attempting to predict. For example, based on a set of parameters in a training dataset, will a new customber be more or less likely to purchase a product? Or based on some known variables, what is the likelihood that a flight will be delayed? In both cases, a model can be applied to a training frame and to a validation frame to predict the likely response.  
 
+**Response Columns with DL and GBM Distribution**
+
 Response columns can be numeric or categorical, and they can be binomial or multiomial. If you are specifying a distribution type in DL or GBM, however, then keep in mind the following when defining a response column:
 
 - If the distribution is ``bernoulli``, the the response column must be 2-class categorical
@@ -21,19 +23,30 @@ Response columns can be numeric or categorical, and they can be binomial or mult
 - If the distribution is ``gamma``, the response column must be numeric.
 - If the distribution is ``quantile``, the response column must be numeric.
 
+**Response Columns with GLM Family**
+
+In GLM, you can specify one of the following family options based on the response column type:
+
+- ``gaussian``: The data must be numeric (Real or Int). This is the default family.
+- ``binomial``: The data must be categorical 2 levels/classes or binary (Enum or Int).
+- ``quasibinomial``: The data must be numeric.
+- ``multinomial``: The data can be categorical with more than two levels/classes (Enum).
+- ``poisson``: The data must be numeric and non-negative (Int).
+- ``gamma``: The data must be numeric and continuous and positive (Real or Int).
+- ``tweedie``: The data must be numeric and continuous (Real) and non-negative.
+
 **Notes**: 
 
 - The response column cannot be the same as the `fold_column <fold_column.html>`__. 
 - For supervised learning, the response column cannot be the same as the `weights_column <weights_column.html>`__, and the response column must exist in both the training frame and in the validation frame. 
 
-
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `distribution <distribution.html>`__
+- `family <family.html>`__
 - `offset_column <offset_column.html>`__
 - `weights_column <weights_column.html>`__
-
 
 Example
 ~~~~~~~
