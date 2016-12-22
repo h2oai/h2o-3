@@ -40,11 +40,10 @@
     sprintf("%s://%s:%s/%s/%s", scheme, conn@ip, as.character(conn@port), h2oRestApiVersion, urlSuffix)
 }
 
-.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, getBinary = FALSE, ...) {
+.h2o.doRawREST <- function(conn, h2oRestApiVersion, urlSuffix, parms, method, fileUploadInfo, ...) {
   timeout_secs <- 0
   stopifnot(is(conn, "H2OConnection"))
   stopifnot(is.character(urlSuffix))
-  stopifnot(is.logical(getBinary))
   if (missing(parms))
     parms = list()
   else {
@@ -138,21 +137,16 @@
   if ((method == "GET") || (method == "DELETE")) {
     h <- basicHeaderGatherer()
     t <- basicTextGatherer(.mapUnicode = FALSE)
-    curlFxn <- curlPerform
-    if(getBinary){
-      curlFxn <- getBinaryURL
-    }
-    tmp <- tryCatch(curlFxn(url = url,
-                                   #Identify curl options in .opts
-                                   .opts = curlOptions(customrequest = method,
-                                                       writefunction = t$update,
-                                                       headerfunction = h$update,
-                                                       useragent=R.version.string,
-                                                       httpheader = header,
-                                                       verbose = FALSE,
-                                                       timeout = timeout_secs,
-                                                       .opts = opts)),
-    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
+    tmp <- tryCatch(curlPerform(url = url,
+                                customrequest = method,
+                                writefunction = t$update,
+                                headerfunction = h$update,
+                                useragent=R.version.string,
+                                httpheader = header,
+                                verbose = FALSE,
+                                timeout = timeout_secs,
+                                .opts = opts),
+                    error = function(x) { .__curlError <<- TRUE; .__curlErrorMessage <<- x$message })
     if (! .__curlError) {
       httpStatusCode = as.numeric(h$value()["status"])
       httpStatusMessage = h$value()["statusMessage"]
