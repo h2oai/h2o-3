@@ -66,13 +66,13 @@ public class AstRectangleAssign extends AstPrimitive {
       if (rows.isEmpty()) rows = new AstNumList(0, dst.numRows()); // Empty rows is really: all rows
       switch (vsrc.type()) {
         case Val.NUM:
-          assign_frame_scalar(dst, cols, rows, vsrc.getNum(), env._ses);
+            assign_frame_scalar(dst, cols, rows, vsrc.getNum(), env.getSession());
           break;
         case Val.STR:
-          assign_frame_scalar(dst, cols, rows, vsrc.getStr(), env._ses);
+            assign_frame_scalar(dst, cols, rows, vsrc.getStr(), env.getSession());
           break;
         case Val.FRM:
-          assign_frame_frame(dst, cols, rows, vsrc.getFrame(), env._ses);
+            assign_frame_frame(dst, cols, rows, vsrc.getFrame(), env.getSession());
           break;
         default:
           throw new IllegalArgumentException("Source must be a Frame or Number, but found a " + vsrc.getClass());
@@ -81,10 +81,10 @@ public class AstRectangleAssign extends AstPrimitive {
       Frame rows = stk.track(asts[4].exec(env)).getFrame();
       switch (vsrc.type()) {
         case Val.NUM:
-          assign_frame_scalar(dst, cols, rows, vsrc.getNum(), env._ses);
+            assign_frame_scalar(dst, cols, rows, vsrc.getNum(), env.getSession());
           break;
         case Val.STR:
-          assign_frame_scalar(dst, cols, rows, vsrc.getStr(), env._ses);
+            assign_frame_scalar(dst, cols, rows, vsrc.getStr(), env.getSession());
           break;
         case Val.FRM:
           throw H2O.unimpl();

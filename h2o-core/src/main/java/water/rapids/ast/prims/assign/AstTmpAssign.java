@@ -56,6 +56,6 @@ public class AstTmpAssign extends AstPrimitive {
         throw new IllegalArgumentException("Temp ID " + id + " already exists");
     }
     Frame dst = new Frame(id, srcFrame._names, srcFrame.vecs());
-    return new ValFrame(env._ses.track_tmp(dst)); // Track new session-wide ID
+      return new ValFrame(env.getSession().track_tmp(dst)); // Track new session-wide ID
   }
 }

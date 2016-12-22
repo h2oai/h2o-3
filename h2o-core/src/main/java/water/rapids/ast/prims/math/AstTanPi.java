@@ -1,7 +1,6 @@
 package water.rapids.ast.prims.math;
 
-/**
- */
+@Deprecated
 public class AstTanPi extends AstUniOp {
   @Override
   public String str() {

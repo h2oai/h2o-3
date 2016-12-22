@@ -9,6 +9,7 @@ import water.rapids.ast.AstPrimitive;
 /**
  * Is String Vec?
  */
+@Deprecated
 public class AstIsCharacter extends AstPrimitive {
   @Override
   public String[] args() {

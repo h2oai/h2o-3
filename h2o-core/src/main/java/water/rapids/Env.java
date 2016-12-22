@@ -23,6 +23,9 @@ import water.rapids.vals.ValFun;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Stack;
 
 /**
  * Execute a set of instructions in the context of an H2O cloud.
@@ -45,10 +48,11 @@ import java.util.HashMap;
 public class Env extends Iced {
 
   // Session holds the ref-counts across multiple executions.
-  public final Session _ses;
+  private final Session _ses;
 
   // Current lexical scope lookup
-  public AstFunction _scope;
+  private AstFunction _scope;
+    private Stack<AstFunction> _scopes = new Stack<>();
 
 
   // Frames that are alive in mid-execution; usually because we have evaluated
@@ -305,6 +309,29 @@ public class Env extends Iced {
     return new StackHelp();
   }
 
+    public Session getSession() {
+        return _ses;
+    }
+
+    public AstFunction getScope() {
+        return _scope;
+    }
+
+  @
+
+    synchronized
+    public AstFunction pushScope(AstFunction scope) {
+        _scopes.push(scope);
+        _scope = scope;
+        return scope;
+    }
+
+    public AstFunction popScope() {
+        AstFunction previous = _scopes.pop();
+        _scope = previous;
+        return _scope;
+    }
+
   public class StackHelp implements Closeable {
     final int _sp = sp();
 
@@ -330,7 +357,7 @@ public class Env extends Iced {
       int sp = sp();
       while (sp > _sp) {
         Frame fr = _stk.remove(--sp); // Pop and stop tracking
-        fs = _ses.downRefCnt(fr, fs);  // Refcnt -1 all Vecs, and delete if zero refs
+          fs = getSession().downRefCnt(fr, fs);  // Refcnt -1 all Vecs, and delete if zero refs
       }
       if (fs != null) fs.blockForPending();
     }
@@ -340,7 +367,7 @@ public class Env extends Iced {
     public Val untrack(Val vfr) {
       if (!vfr.isFrame()) return vfr;
       Frame fr = vfr.getFrame();
-      _ses.addRefCnt(fr, -1);           // Lower counts, but do not delete on zero
+        getSession().addRefCnt(fr, -1);           // Lower counts, but do not delete on zero
       return vfr;
     }
 
@@ -352,7 +379,7 @@ public class Env extends Iced {
   // shared in the returning output Frame.
   public <V extends Val> V returning(V val) {
     if (val instanceof ValFrame)
-      _ses.addRefCnt(val.getFrame(), 1);
+        getSession().addRefCnt(val.getFrame(), 1);
     return val;
   }
 
@@ -361,7 +388,7 @@ public class Env extends Iced {
 
   public Val lookup(String id) {
     // Lexically scoped functions first
-    Val val = _scope == null ? null : _scope.lookup(id);
+      Val val = getScope() == null ? null : getScope().lookup(id);
     if (val != null) return val;
 
     // disallow TRUE/FALSE/NA to be overwritten by keys in the DKV... just way way saner this way
@@ -387,13 +414,13 @@ public class Env extends Iced {
   }
 
   public String expand(String id) {
-    return id.startsWith("$")? id.substring(1) + "~" + _ses.id() : id;
+      return id.startsWith("$") ? id.substring(1) + "~" + getSession().id() : id;
   }
 
   // Add these Vecs to the global list, and make a new defensive copy of the
   // frame - so we can hack it without changing the global frame view.
   ValFrame addGlobals(Frame fr) {
-    _ses.addGlobals(fr);
+      getSession().addGlobals(fr);
     return new ValFrame(new Frame(fr._names.clone(), fr.vecs().clone()));
   }
 

@@ -44,7 +44,7 @@ public class AstDdply extends AstPrimitive {
     int[] gbCols = groupby.expand4();
 
     AstRoot fun = asts[3].exec(env).getFun();
-    AstFunction scope = env._scope;  // Current execution scope; needed to lookup variables
+      AstFunction scope = env.getScope();  // Current execution scope; needed to lookup variables
 
     // Pass 1: Find all the groups (and count rows-per-group)
     IcedHashMap<AstGroup.G, String> gss = AstGroup.doGroups(fr, gbCols, AstGroup.aggNRows());

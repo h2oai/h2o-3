@@ -107,7 +107,7 @@ public class AstApply extends AstPrimitive {
   private ValFrame rowwise(Env env, Frame fr, final AstPrimitive fun) {
     final String[] names = fr._names;
 
-    final AstFunction scope = env._scope;  // Current execution scope; needed to lookup variables
+      final AstFunction scope = env.getScope();  // Current execution scope; needed to lookup variables
 
     // do a single row of the frame to determine the size of the output.
     double[] ds = new double[fr.numCols()];
@@ -122,7 +122,7 @@ public class AstApply extends AstPrimitive {
         AstRoot[] asts = new AstRoot[]{fun, new AstRow(ds, names)}; // Arguments to be called; they are reused endlessly
         Session ses = new Session();                      // Session, again reused endlessly
         Env env = new Env(ses);
-        env._scope = scope;                               // For proper namespace lookup
+          env.pushScope(scope);                               // For proper namespace lookup
         for (int row = 0; row < chks[0]._len; row++) {
           for (int col = 0; col < chks.length; col++) // Fill the row
             ds[col] = chks[col].atd(row);

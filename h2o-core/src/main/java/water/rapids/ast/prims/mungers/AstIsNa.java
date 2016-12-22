@@ -1,11 +1,7 @@
 package water.rapids.ast.prims.mungers;
 
 import water.H2O;
-import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.operations.FrameUtils;
 import water.rapids.Val;
 import water.rapids.ast.AstBuiltin;
 import water.rapids.vals.ValFrame;
@@ -40,22 +36,7 @@ public class AstIsNa extends AstBuiltin<AstIsNa> {
         return new ValNum(op(val.getNum()));
 
       case Val.FRM:
-        Frame fr = val.getFrame();
-        String[] newNames = new String[fr.numCols()];
-        for (int i = 0; i < newNames.length; i++) {
-          newNames[i] = "isNA(" + fr.name(i) + ")";
-        }
-        return new ValFrame(new MRTask() {
-          @Override
-          public void map(Chunk cs[], NewChunk ncs[]) {
-            for (int col = 0; col < cs.length; col++) {
-              Chunk c = cs[col];
-              NewChunk nc = ncs[col];
-              for (int i = 0; i < c._len; i++)
-                nc.addNum(c.isNA(i) ? 1 : 0);
-            }
-          }
-        }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(newNames, null));
+          return new ValFrame(FrameUtils.isNA(val));
 
       case Val.STR:
         return new ValNum(val.getStr() == null ? 1 : 0);

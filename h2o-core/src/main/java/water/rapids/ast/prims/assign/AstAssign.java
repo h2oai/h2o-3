@@ -30,7 +30,7 @@ public class AstAssign extends AstPrimitive {
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Key<Frame> id = Key.make(asts[1].str());
     Frame src = stk.track(asts[2].exec(env)).getFrame();
-    return new ValFrame(env._ses.assign(id, src)); // New global Frame over shared Vecs
+      return new ValFrame(env.getSession().assign(id, src)); // New global Frame over shared Vecs
   }
 }
 

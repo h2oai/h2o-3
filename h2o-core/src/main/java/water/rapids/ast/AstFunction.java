@@ -1,7 +1,6 @@
 package water.rapids.ast;
 
 import water.rapids.Env;
-import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFun;
 import water.util.SB;
@@ -78,7 +77,7 @@ public class AstFunction extends AstPrimitive {
   // capture the existing global scope.
   @Override
   public ValFun exec(Env env) {
-    return new ValFun(new AstFunction(this, null, env._scope));
+      return new ValFun(new AstFunction(this, null, env.getScope()));
   }
 
   // Expected argument count, plus self
@@ -105,14 +104,17 @@ public class AstFunction extends AstPrimitive {
   public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     // Evaluation all arguments
     Val[] args = new Val[asts.length];
-    for (int i = 1; i < asts.length; i++)
+      for (int i = 1; i < asts.length; i++) {
       args[i] = stk.track(asts[i].exec(env));
-    AstFunction old = env._scope;
-    env._scope = new AstFunction(this, args, _parent); // Push a new lexical scope, extended from the old
+      }
+      try {
+          env.getScope();
+          env.pushScope(new AstFunction(this, args, _parent)); // Push a new lexical scope, extended from the old
 
-    Val res = stk.untrack(_body.exec(env));
-
-    env._scope = old;           // Pop the lexical scope off (by restoring the old unextended scope)
-    return res;
+          Val res = stk.untrack(_body.exec(env));
+          return res;
+      } finally {
+          env.popScope();
+      }
   }
 }

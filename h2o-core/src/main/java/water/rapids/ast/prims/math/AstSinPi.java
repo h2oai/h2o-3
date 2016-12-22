@@ -2,6 +2,7 @@ package water.rapids.ast.prims.math;
 
 /**
  */
+@Deprecated
 public class AstSinPi extends AstUniOp {
   @Override
   public String str() {

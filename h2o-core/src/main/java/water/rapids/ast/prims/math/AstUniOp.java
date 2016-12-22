@@ -30,33 +30,44 @@ public abstract class AstUniOp extends AstPrimitive {
       case Val.NUM:
         return new ValNum(op(val.getNum()));
       case Val.FRM:
+          return applyOperationToFrame(val);
+        case Val.ROW:
+            return applyOperationToRow(val);
+        default:
+            throw H2O.unimpl("unop unimpl: " + val.getClass());
+    }
+  }
+
+
+    public Val applyOperationToRow(Val val) {
+        double[] ds = new double[val.getRow().length];
+        for (int i = 0; i < ds.length; ++i) {
+            ds[i] = op(val.getRow()[i]);
+        }
+        String[] names = ((ValRow) val).getNames().clone();
+        return new ValRow(ds, names);
+    }
+
+
+    public Val applyOperationToFrame(Val val) {
         Frame fr = val.getFrame();
         //Get length of columns in fr and append `op(colName)`. For example, a column named "income" that had
         //a log transformation would now be changed to `log(income)`.
         String[] newNames = new String[fr.numCols()];
-        for(int i = 0; i < newNames.length; i++){
-          newNames[i] = str() + "(" + fr.name(i) + ")";
+        for (int i = 0; i < newNames.length; i++) {
+            newNames[i] = str() + "(" + fr.name(i) + ")";
         }
         return new ValFrame(new MRTask() {
-          @Override
-          public void map(Chunk cs[], NewChunk ncs[]) {
-            for (int col = 0; col < cs.length; col++) {
-              Chunk c = cs[col];
-              NewChunk nc = ncs[col];
-              for (int i = 0; i < c._len; i++)
-                nc.addNum(op(c.atd(i)));
+            @Override
+            public void map(Chunk cs[], NewChunk ncs[]) {
+                for (int col = 0; col < cs.length; col++) {
+                    Chunk c = cs[col];
+                    NewChunk nc = ncs[col];
+                    for (int i = 0; i < c._len; i++)
+                        nc.addNum(op(c.atd(i)));
+                }
             }
-          }
         }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(newNames, fr.domains()));
-      case Val.ROW:
-        double[] ds = new double[val.getRow().length];
-        for (int i = 0; i < ds.length; ++i)
-          ds[i] = op(val.getRow()[i]);
-        String[] names = ((ValRow) val).getNames().clone();
-        return new ValRow(ds, names);
-      default:
-        throw H2O.unimpl("unop unimpl: " + val.getClass());
-    }
   }
 
   public abstract double op(double d);
