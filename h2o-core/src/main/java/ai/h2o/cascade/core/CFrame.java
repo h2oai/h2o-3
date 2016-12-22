@@ -3,32 +3,24 @@ package ai.h2o.cascade.core;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 import org.apache.commons.lang.NotImplementedException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import java.util.ArrayList;
 
 
 /**
  * Cascade version of the {@link Frame} class.
+ * <p>
+ * A CFrame may exist in two forms: either in "stone", where it just works as
+ * a thin wrapper around an underlying {@link Frame}; or as a "ghost", where
+ * the frame is essentially a blueprint for how it should be eventually
+ * computed.
  */
 public class CFrame {
 
-  private Frame wrappedFrame;
+  private Frame stone;
   private int ncols;
   private long nrows;
-  private ArrayList<Column> columns;
-
-  public static class Column {
-    public Frame parent;
-    public String name;
-    public Vec vec;
-
-    public Column(Frame f, int col) {
-      parent = f;
-      name = f.name(col);
-      vec = f.vec(col);
-    }
-  }
+  private ArrayList<CFrameColumn> columns;
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -45,7 +37,7 @@ public class CFrame {
    * normal mode if the cascade runtime demands it.
    */
   public CFrame(Frame f) {
-    wrappedFrame = f;
+    stone = f;
     ncols = f.numCols();
     nrows = f.numRows();
   }
@@ -54,15 +46,19 @@ public class CFrame {
   private CFrame() {}
 
 
-  public boolean isLightweight() {
-    return wrappedFrame != null;
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // CFrame properties
+  //--------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * Return true if the frame is "in stone" (aka materialized, petrified). Such
+   * a frame is just a thin wrapper around a regular {@link Frame}.
+   */
+  public boolean isStoned() {
+    return stone != null;
   }
 
-  public Frame getFrame() {
-    if (wrappedFrame == null)
-      throw error("Cannot unwrap a CFrame");
-    return wrappedFrame;
-  }
 
   /**
    * Number of columns in the frame. This counts only the "output" columns,
@@ -80,6 +76,11 @@ public class CFrame {
   }
 
 
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // CFrame operations
+  //--------------------------------------------------------------------------------------------------------------------
+
   /**
    * Create new {@code CFrame} by extracting columns given by the
    * {@code indices} from the current frame.
@@ -87,21 +88,23 @@ public class CFrame {
    * @param indices the list of columns to extract
    */
   public CFrame extractColumns(SliceList indices) {
-    if (wrappedFrame == null) {
+    if (stone == null) {
       // TODO
       throw new NotImplementedException();
 
     } else {
       CFrame res = new CFrame();
+      res.stone = null;
       res.nrows = this.nrows;
       res.ncols = (int) indices.count();
       res.columns = new ArrayList<>(res.ncols);
 
-      for (SliceList.SliceIterator iter = indices.iter(); iter.hasNext(); ) {
-        int index = (int) iter.nextPrim();
+      SliceList.Iterator iter = indices.iter();
+      while (iter.hasNext()) {
+        long index = iter.nextPrim();
         if (index < 0 || index >= res.ncols)
           throw error("Column index " + index + " is out of bounds");
-        res.columns.add(new Column(wrappedFrame, index));
+        res.columns.add(new CFrameColumn(stone, (int)index));
       }
       return res;
     }
@@ -110,7 +113,14 @@ public class CFrame {
 
 
 
+  // Is this really needed?
+  public Frame getFrame() {
+    if (stone == null)
+      throw error("Cannot unwrap a CFrame");
+    return stone;
+  }
 
+  /** Helper function for raising errors */
   private StdlibFunction.RuntimeError error(String message) {
     return new StdlibFunction.RuntimeError(message);
   }

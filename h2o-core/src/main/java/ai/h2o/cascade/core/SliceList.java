@@ -3,7 +3,6 @@ package ai.h2o.cascade.core;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 
 /**
  */
@@ -100,7 +99,7 @@ public class SliceList {
   /**
    * Return an iterator over this sequence of indices.
    */
-  public SliceIterator iter() {
+  public Iterator iter() {
     return isList? new SimpleSliceIterator() : new MultiSliceIterator();
   }
 
@@ -108,12 +107,12 @@ public class SliceList {
   /**
    * Helper interface for iteration over the slice list.
    * <p>
-   * In addition to standard {@link Iterator<Long>}, this interface also
+   * In addition to standard {@code Iterator<Long>}, this interface also
    * implements {@link #nextPrim()} which works like {@link #next()}
    * except that it returns a primitive {@code long} value instead of boxed
    * {@code Long}. Thus, using {@link #nextPrim()} may improve performance.
    */
-  public interface SliceIterator extends Iterator<Long> {
+  public interface Iterator extends java.util.Iterator<Long> {
     long nextPrim();
   }
 
@@ -122,8 +121,10 @@ public class SliceList {
   // Private
   //--------------------------------------------------------------------------------------------------------------------
 
-  /** Iterator over a plain list of indices (when {@code isList} is true). */
-  public class SimpleSliceIterator implements SliceIterator {
+  /**
+   * Iterator over a plain list of indices (when {@code isList} is true).
+   */
+  public class SimpleSliceIterator implements Iterator {
     private int i;
     private int n;
 
@@ -133,15 +134,17 @@ public class SliceList {
       n = bases.length;
     }
 
-    @Override public long nextPrim() { return bases[i++]; }
     @Override public boolean hasNext() { return i < n; }
-    @Override public Long next() { return nextPrim(); }
+    @Override public long nextPrim() { return bases[i++]; }
+    @Override public Long next() { return bases[i++]; }
     @Override public void remove() {}
   }
 
 
-  /** Iterator over the arbitrary SliceList. */
-  private class MultiSliceIterator implements SliceIterator {
+  /**
+   * Iterator over a generic SliceList.
+   */
+  private class MultiSliceIterator implements Iterator {
     private int i;  // Index of the current triple base:count:stride
     private int n;  // Total number of such triples - 1
     private long prevValue;  // Previous yielded value

@@ -40,7 +40,7 @@ public class FnFromdkvTest extends TestUtil {
       Val res = exec("(fromdkv `iris` '" + f._key + "')");
       assertTrue(res instanceof ValFrame);
       CFrame cff = res.getFrame();
-      assertTrue("CFrame object is supposed to be lightweight", cff.isLightweight());
+      assertTrue("CFrame object is supposed to be lightweight", cff.isStoned());
       Frame ff = cff.getFrame();
       Scope.track(ff);
 
@@ -49,7 +49,7 @@ public class FnFromdkvTest extends TestUtil {
       CascadeScope global = session.globalScope();
       Val vs = global.lookup("iris");
       assertTrue(vs instanceof ValFrame);
-      assertTrue(vs.getFrame().isLightweight());
+      assertTrue(vs.getFrame().isStoned());
       assertEquals(ff._key, vs.getFrame().getFrame()._key);
       assertEquals(ff._key, f._key);
 

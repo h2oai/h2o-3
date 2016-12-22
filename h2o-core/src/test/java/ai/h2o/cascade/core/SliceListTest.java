@@ -35,6 +35,7 @@ public class SliceListTest extends TestUtil {
     assertIter("<100:3:-10>", ar(100, 90, 80));
     assertIter("<1 2 3 15>", ar(1, 2, 3, 15));
     assertIter("<1 2:3:0 3:6:-1, 17, 4>", ar(1, 2, 2, 2, 3, 2, 1, 0, -1, -2, 17, 4));
+    assertIter("<0:5 7:3:0 4:2:-2 0:2:0 8>", ar(0, 1, 2, 3, 4, 7, 7, 7, 4, 2, 0, 0, 8));
 
     assertIter("new SliceList(5)", new SliceList(5), ar(5));
     assertIter("new SliceList(3, 7)", new SliceList(3, 7), ar(3, 4, 5, 6));
@@ -42,15 +43,18 @@ public class SliceListTest extends TestUtil {
   }
 
 
+  //--------------------------------------------------------------------------------------------------------------------
+  // Helpers
+  //--------------------------------------------------------------------------------------------------------------------
+
   private SliceList getSliceList(String expr) {
     return Cascade.parse(expr).exec(scope).getSlice();
   }
-
   private void assertIter(String expr, long[] expected) {
     assertIter(expr, getSliceList(expr), expected);
   }
   private void assertIter(String expr, SliceList sl, long[] expected) {
-    SliceList.SliceIterator iter = sl.iter();
+    SliceList.Iterator iter = sl.iter();
     for (int i = 0; i < expected.length; i++) {
       if (iter.hasNext()) {
         long nextValue = iter.nextPrim();
