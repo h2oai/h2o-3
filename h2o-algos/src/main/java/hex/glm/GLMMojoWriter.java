@@ -7,6 +7,9 @@ import java.io.IOException;
 
 public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParameters, GLMModel.GLMOutput> {
 
+  @SuppressWarnings("unused")  // Called through reflection in ModelBuildersHandler
+  public GLMMojoWriter() {}
+
   public GLMMojoWriter(GLMModel model) {
     super(model);
   }
