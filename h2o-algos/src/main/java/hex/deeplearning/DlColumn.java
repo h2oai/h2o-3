@@ -13,6 +13,8 @@ public class DlColumn<T> implements Serializable {
   final public List<T> data;
   public long size() { return data.size(); }
 
+  public T at(int i) { return data.get(i); }
+  
   public DlColumn(String name, List<T> data) {
     this.name = name;
     this.data = data;
@@ -23,3 +25,7 @@ public class DlColumn<T> implements Serializable {
     this.data = Arrays.asList(data);
   }
 }
+/*
+            final DlInput currentData = model_info().data_info.currentData;
+            double x = currentData.weights[i].at(row);
+ */

@@ -354,22 +354,7 @@ public class DeepLearningModel extends
       scoringInfo.is_autoencoder = _output.isAutoencoder();
 
       if (get_params()._autoencoder) {
-        if (printme) Log.info("Scoring the auto-encoder.");
-        // training
-        {
-          final Frame mse_frame = scoreAutoEncoder(fTrain, Key.make(), false);
-          mse_frame.delete();
-          ModelMetrics mtrain = ModelMetrics.getFromDKV(this, fTrain); //updated by model.score
-          _output._training_metrics = mtrain;
-          scoringInfo.scored_train = new ScoreKeeper(mtrain);
-        }
-        if (fValid != null) {
-          final Frame mse_frame = scoreAutoEncoder(fValid, Key.make(), false);
-          mse_frame.delete();
-          ModelMetrics mtest = ModelMetrics.getFromDKV(this, fValid); //updated by model.score
-          _output._validation_metrics = mtest;
-          scoringInfo.scored_valid = new ScoreKeeper(mtest);
-        }
+        doAutoEncoding(fTrain, fValid, printme, scoringInfo);
       } else {
         if (printme) Log.info("Scoring the model.");
         // compute errors
@@ -414,40 +399,7 @@ public class DeepLearningModel extends
         } else {
           _output._training_metrics._description = "Metrics reported on full training frame";
         }
-
-        // Scoring on validation data
-        hex.ModelMetrics mvalid;
-        if (fValid != null) {
-          preds = null;
-          if (needPreds) {
-            // allocate predictions since they are needed
-            preds = score(fValid);
-            mvalid = ModelMetrics.getFromDKV(this, fValid);
-          } else {
-            // no need to allocate predictions
-            ModelMetrics.MetricBuilder mb = scoreMetrics(fValid);
-            mvalid = mb.makeModelMetrics(this, fValid, fValid,null);
-          }
-          if (preds!=null) preds.remove();
-          _output._validation_metrics = mvalid;
-          scoringInfo.scored_valid = new ScoreKeeper(mvalid);
-          if (mvalid != null) {
-            if (mvalid instanceof ModelMetricsBinomial) {
-              ModelMetricsBinomial mm = (ModelMetricsBinomial) mvalid;
-              scoringInfo.validation_AUC = mm._auc;
-            }
-            if (fValid.numRows() != validation_rows) {
-              _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + fValid.numRows() + " samples";
-              if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
-                _output._validation_metrics._description += " (stratified sampling)";
-              }
-            } else if (fValid._key != null && fValid._key.toString().contains("chunks")){
-              _output._validation_metrics._description = "Metrics reported on temporary (load-balanced) validation frame";
-            } else {
-              _output._validation_metrics._description = "Metrics reported on full validation frame";
-            }
-          }
-        }
+        scoreValidationData(fValid, scoringInfo, needPreds);
       }
       if (get_params()._variable_importances) {
         if (!get_params()._quiet_mode) Log.info("Computing variable importances.");
@@ -532,6 +484,66 @@ public class DeepLearningModel extends
     progressUpdate(jobKey, keep_running);
     update(jobKey);
     return keep_running;
+  }
+
+  private void scoreValidationData(Frame fValid, DeepLearningScoringInfo scoringInfo, boolean needPreds) {
+    Frame preds;// Scoring on validation data
+    ModelMetrics mvalid;
+    if (fValid != null) {
+      preds = null;
+      if (needPreds) {
+        // allocate predictions since they are needed
+        preds = score(fValid);
+        mvalid = ModelMetrics.getFromDKV(this, fValid);
+      } else {
+        // no need to allocate predictions
+        ModelMetrics.MetricBuilder mb = scoreMetrics(fValid);
+        mvalid = mb.makeModelMetrics(this, fValid, fValid,null);
+      }
+      
+      if (preds!=null) preds.remove();
+      _output._validation_metrics = mvalid;
+      scoringInfo.scored_valid = new ScoreKeeper(mvalid);
+      if (mvalid != null) {
+        if (mvalid instanceof ModelMetricsBinomial) {
+          ModelMetricsBinomial mm = (ModelMetricsBinomial) mvalid;
+          scoringInfo.validation_AUC = mm._auc;
+        }
+        provideValidationDescription(fValid);
+      }
+    }
+  }
+
+  private void provideValidationDescription(Frame fValid) {
+    if (fValid.numRows() != validation_rows) {
+      _output._validation_metrics._description = "Metrics reported on temporary validation frame with " + fValid.numRows() + " samples";
+      if (get_params()._score_validation_sampling == DeepLearningParameters.ClassSamplingMethod.Stratified) {
+        _output._validation_metrics._description += " (stratified sampling)";
+      }
+    } else if (fValid._key != null && fValid._key.toString().contains("chunks")){
+      _output._validation_metrics._description = "Metrics reported on temporary (load-balanced) validation frame";
+    } else {
+      _output._validation_metrics._description = "Metrics reported on full validation frame";
+    }
+  }
+
+  private void doAutoEncoding(Frame fTrain, Frame fValid, boolean printme, DeepLearningScoringInfo scoringInfo) {
+    if (printme) Log.info("Scoring the auto-encoder.");
+    // training
+    {
+      final Frame mse_frame = scoreAutoEncoder(fTrain, Key.make(), false);
+      mse_frame.delete();
+      ModelMetrics mtrain = ModelMetrics.getFromDKV(this, fTrain); //updated by model.score
+      _output._training_metrics = mtrain;
+      scoringInfo.scored_train = new ScoreKeeper(mtrain);
+    }
+    if (fValid != null) {
+      final Frame mse_frame = scoreAutoEncoder(fValid, Key.make(), false);
+      mse_frame.delete();
+      ModelMetrics mtest = ModelMetrics.getFromDKV(this, fValid); //updated by model.score
+      _output._validation_metrics = mtest;
+      scoringInfo.scored_valid = new ScoreKeeper(mtest);
+    }
   }
 
   private void progressUpdate(Key<Job> job_key, boolean keep_running) {
@@ -693,6 +705,7 @@ public class DeepLearningModel extends
    * @param reconstruction_error_per_feature whether to return the squared error per feature
    * @return Frame containing one Vec with reconstruction error (MSE) of each reconstructed row, caller is responsible for deletion
    */
+  
   public Frame scoreAutoEncoder(Frame frame, Key destination_key, final boolean reconstruction_error_per_feature) {
     if (!get_params()._autoencoder)
       throw new H2OIllegalArgumentException("Only for AutoEncoder Deep Learning model.", "");
@@ -705,8 +718,9 @@ public class DeepLearningModel extends
         double tmp [] = new double[len];
         double out[] = new double[outputcols];
         for( int row=0; row<chks[0]._len; row++ ) {
-          for( int i=0; i<len; i++ )
+          for( int i=0; i<len; i++ ) {
             tmp[i] = chks[i].atd(row);
+          }
           score_autoencoder(tmp, out, false /*reconstruction*/, reconstruction_error_per_feature);
           for (int i=0; i<outputcols; ++i)
             mse[i].addNum(out[i]);

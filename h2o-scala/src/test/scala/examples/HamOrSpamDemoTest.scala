@@ -117,9 +117,7 @@ object HamOrSpamDemoTest extends TestUtil {
     def spamness(msg: String) = {
       val weights = freqModel.weigh(msg)
       val normalizedWeights = idf.normalize(weights)
-      val o = dlModel._output
-      val estimate: Double = dlModel.scoreSample(normalizedWeights)
-      estimate.toInt
+      dlModel.scoreSample(normalizedWeights)
     }
   }
 
