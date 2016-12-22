@@ -2,6 +2,115 @@
 
 ##H2O
 
+###Tutte (3.10.2.1) - 12/22/2016
+
+<h4>        Technical task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3695'>PUBDEV-3695</a>] -         Documentation: Add GLM to list of algorithms that support MOJOs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3791'>PUBDEV-3791</a>] -         Documentation: Add quasibinomomial family in GLM
+</li>
+</ul>
+
+<h4>        Bug
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3291'>PUBDEV-3291</a>] -         Summary() doesn&#39;t update stats values when asfactor() is applied
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3498'>PUBDEV-3498</a>] -         rectangular assign to a categorical column does not work (should be possible to assign either an existing level, or a new one)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3618'>PUBDEV-3618</a>] -         Numerical Column Names in H2O and R
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3690'>PUBDEV-3690</a>] -         pred_noise_bandwidth parameter is not reproducible with seed
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3723'>PUBDEV-3723</a>] -         Fix mktime() referencing from 0 base to 1 base for month and day
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3728'>PUBDEV-3728</a>] -         Binary loss functions return error in GLRM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3738'>PUBDEV-3738</a>] -         tweak StackedEnsemble in the generated Python binding
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3747'>PUBDEV-3747</a>] -         python hist() plotted bars overlap
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3750'>PUBDEV-3750</a>] -         Python set_levels doesn&#39;t change other methods
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3753'>PUBDEV-3753</a>] -         h2o doc: glm grid search hyper parameters missing/incorrect listing. Presently glrm&#39;s is marked as glm&#39;s
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3764'>PUBDEV-3764</a>] -         Partial Plot incorrectly calculates for constant categorical column
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3778'>PUBDEV-3778</a>] -         h2o.proj_archetypes returns error if constant column is dropped in GLRM model
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3788'>PUBDEV-3788</a>] -         GLRM loss by col produces error if constant columns are dropped
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3796'>PUBDEV-3796</a>] -         isna() overwrites column names
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3812'>PUBDEV-3812</a>] -         NullPointerException with Quantile GBM, cross validation, &amp; sample_rate &lt; 1
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3819'>PUBDEV-3819</a>] -         R h2o.download_mojo broken - writes a 1 byte file
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3831'>PUBDEV-3831</a>] -         Seed definition incorrect in R API for RF, GBM, GLM, NB
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3834'>PUBDEV-3834</a>] -         h2o.glm: get AIOOB exception with xval and lambda search
+</li>
+</ul>
+
+<h4>        New Feature
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3482'>PUBDEV-3482</a>] -         Supporting GLM binomial model to allow two arbitrary integer values
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3376'>PUBDEV-3376</a>] -         Implement ISAX calculations per ISAX word
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3377'>PUBDEV-3377</a>] -         Optimizations and final fixes for ISAX
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3664'>PUBDEV-3664</a>] -         Implement GLM MOJO
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3501'>PUBDEV-3501</a>] -         Variance metrics are missing from GLRM that are available in PCA
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3541'>PUBDEV-3541</a>] -         py h2o.as_list() should not return headers
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3715'>PUBDEV-3715</a>] -         Modify sum() calculation to work on rows or columns
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3737'>PUBDEV-3737</a>] -         make sure that the generated R bindings work with StackedEnsemble
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3833'>PUBDEV-3833</a>] -         Add HDP 2.5 Support
+</li>
+</ul>
+
+<h4>        Task
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3012'>PUBDEV-3012</a>] -         Remove grid.sort_by method in Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3676'>PUBDEV-3676</a>] -         Add SLURM cluster documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3692'>PUBDEV-3692</a>] -         Add memory check for GLRM before proceeding
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3765'>PUBDEV-3765</a>] -         Check to make sure hinge loss works for GLRM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3803'>PUBDEV-3803</a>] -         Add parameters from _upload_python_object to H2OFrame constructor
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3804'>PUBDEV-3804</a>] -         Refer to .h2o.jar.env when detaching R package
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3805'>PUBDEV-3805</a>] -         Call on proper port when exiting R/detaching package
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3806'>PUBDEV-3806</a>] -         Modify search for config file in R api
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3818'>PUBDEV-3818</a>] -         properly handle url in R docs from autogen
+</li>
+</ul>
+
+<h4>        Improvement
+</h4>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3256'>PUBDEV-3256</a>] -         Documentation: As a GLM user, I want to be able to better understand the parameters
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3758'>PUBDEV-3758</a>] -         Fix bad/inconsistent/empty categorical (bitset) splits for DRF/GBM
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3793'>PUBDEV-3793</a>] -         Auto-generate R bindings
+</li>
+</ul>
+
 ###Turnbull (3.10.1.2) - 12/14/2016
 
 <h4>        Bug
