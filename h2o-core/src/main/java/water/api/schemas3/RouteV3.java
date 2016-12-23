@@ -1,8 +1,8 @@
 package water.api.schemas3;
 
 import water.api.API;
-import water.api.Handler;
-import water.api.Route;
+import water.http.Route;
+import water.http.handlers.Handler;
 import water.util.PojoUtils;
 
 public final class RouteV3 extends SchemaV3<Route, RouteV3> {

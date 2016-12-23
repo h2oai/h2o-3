@@ -1,12 +1,12 @@
 package water.api;
 
 import hex.Model;
-import water.api.ModelsHandler.Models;
+import water.http.handlers.ModelsHandler;
 
 public class ModelCacheManager {
 
   public static <M extends Model, P extends Model.Parameters> M get(P parms) {
-    Model[] models = Models.fetchAll();
+    Model[] models = ModelsHandler.Models.fetchAll();
     long checksum = parms.checksum();
     for (Model model : models) {
       if (model._parms != null && model._parms.checksum() == checksum)

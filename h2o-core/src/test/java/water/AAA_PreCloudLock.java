@@ -2,7 +2,7 @@ package water;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.api.RequestServer;
+import water.http.RequestServer;
 
 import java.util.Properties;
 
@@ -52,7 +52,7 @@ public class AAA_PreCloudLock extends TestUtil {
   }
 
   private void serve(String s, Properties parms) {
-    RequestServer.serve(s,"GET",null,parms==null?new Properties():parms,null);
+    RequestServer.serve(s, "GET",null,parms==null?new Properties():parms,null);
     assertFalse("Check of pre-cloud classes failed.  You likely added a class to TypeMap.BOOTSTRAP_CLASSES[].  Page: " + s, Paxos._cloudLocked);
   }
 }

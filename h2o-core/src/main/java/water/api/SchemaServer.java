@@ -16,9 +16,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- *
- */
 public class SchemaServer {
 
   private static final int HIGHEST_SUPPORTED_VERSION = 4;

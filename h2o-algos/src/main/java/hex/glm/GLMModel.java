@@ -3,10 +3,10 @@ package hex.glm;
 import hex.*;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
-import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
+import hex.operations.OneHot;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
@@ -790,7 +790,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     @Override public String[] interactions() { return _dinfo._interactionColumns; }
     public static Frame expand(Frame fr, String[] interactions, boolean useAll, boolean standardize, boolean skipMissing) {
-      return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
+      return OneHot.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
     }
 
     public GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {

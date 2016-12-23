@@ -61,27 +61,27 @@ public final class SchemaMetadata extends Iced {
     /**
      *  A short help description to appear alongside the field in a UI.  Set from the @API annotation.
      */
-    String help;
+    public String help;
 
     /**
      * The label that should be displayed for the field if the name is insufficient.  Set from the @API annotation.
      */
-    String label;
+    public String label;
 
     /**
      * Is this field required, or is the default value generally sufficient?  Set from the @API annotation.
      */
-    boolean required;
+    public boolean required;
 
     /**
      * How important is this field?  The web UI uses the level to do a slow reveal of the parameters.  Set from the @API annotation.
      */
-    API.Level level;
+    public API.Level level;
 
     /**
      * Is this field an input, output or inout?  Set from the @API annotation.
      */
-    API.Direction direction;
+    public API.Direction direction;
 
     /**
      * Is this field inherited from a class higher in the hierarchy?
@@ -105,7 +105,7 @@ public final class SchemaMetadata extends Iced {
      * This is used in UIs to tell the user the allowed values, and for validation.
      * Set from the @API annotation.
      */
-    String[] values;
+    public String[] values;
 
     /**
      * Should this field be rendered in the JSON representation?  Set from the @API annotation.
@@ -117,14 +117,14 @@ public final class SchemaMetadata extends Iced {
      * For example, for a SupervisedModel the response_column must be in both the training_frame
      * and (if it's set) the validation_frame.
      */
-    String[] is_member_of_frames;
+    public String[] is_member_of_frames;
 
     /**
      * For Vec-type fields this is the set of other Vec-type fields which must contain
      * mutually exclusive values.  For example, for a SupervisedModel the response_column
      * must be mutually exclusive with the weights_column.
      */
-    String[] is_mutually_exclusive_with;
+    public String[] is_mutually_exclusive_with;
 
 
     public FieldMetadata() { }
@@ -300,30 +300,6 @@ public final class SchemaMetadata extends Iced {
       if (clz.isArray()) {
         return new IcedWrapper(o);
       }
-
-/*
-      if (water.Keyed.class.isAssignableFrom(o.getClass())) {
-        Keyed k = (Keyed)o;
-        return k._key.toString();
-      }
-
-      if (! o.getClass().isArray()) {
-        if (Schema.class.isAssignableFrom(o.getClass())) {
-          return new String(((Schema)o).writeJSON(new AutoBuffer()).buf());
-        } else {
-          return o.toString();
-        }
-      }
-
-      StringBuilder sb = new StringBuilder();
-      sb.append("[");
-      for (int i = 0; i < Array.getLength(o); i++) {
-        if (i > 0) sb.append(", ");
-        sb.append(consValue(Array.get(o, i)));
-      }
-      sb.append("]");
-      return sb.toString();
-      */
 
       // Primitive type
       if (clz.isPrimitive())

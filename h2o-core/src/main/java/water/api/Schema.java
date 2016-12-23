@@ -1,6 +1,15 @@
 package water.api;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
 import water.*;
 import water.api.schemas3.FrameV3;
 import water.api.schemas3.JobV3;
@@ -17,6 +26,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 import java.util.*;
 
 
@@ -62,7 +72,7 @@ import java.util.*;
  *
  * <h1>Usage</h1>
  * <p>
- * {@link Handler} creates an input schema from the body/parameters of the HTTP request (using
+ * {@link water.http.handlers.Handler} creates an input schema from the body/parameters of the HTTP request (using
  * {@link #fillFromParms(Properties) fillFromParms()}, and passes it on to the corresponding handler method.
  * <p>
  * Each handler method may modify the input schema and return it as the output schema (common for V3 endpoints,
@@ -99,7 +109,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   private transient String _schema_name;
   private transient String _schema_type;
 
-  private transient static final Gson gson = H2oRestGsonHelper.createH2oCompatibleGson(); // stateless and thread safe
+  private transient static final Gson gson = JSON(); // stateless and thread safe
 
 
   /** Default constructor; triggers lazy schema registration.
@@ -107,7 +117,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    *          there is more than one schema which maps to the same Iced class */
   public Schema() {
     init_meta();
-    SchemaServer.checkIfRegistered(this);
+    //SchemaServer.checkIfRegistered(this);
   }
 
   /**
@@ -118,7 +128,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     this.fillFromImpl(impl);
   }
 
-  protected void init_meta() {
+  public void init_meta() {
     if (_schema_name != null) return;
     _schema_name = this.getClass().getSimpleName();
     _schema_version = extractVersionFromSchemaName(_schema_name);
@@ -619,8 +629,8 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   /**
    * For a given schema_name (e.g., "FrameV2") return an appropriate new schema object (e.g., a water.api.Framev2).
    */
-  protected static Schema newInstance(String schema_name) {
-    return Schema.newInstance(SchemaServer.getSchema(schema_name));
+  public static Schema newInstance(String schema_name) {
+    return newInstance(SchemaServer.getSchema(schema_name));
   }
 
 
@@ -715,4 +725,68 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
     }
     return builder.stringBuffer();
   }
+
+  /**
+   * Create a Gson JSON serializer / deserializer that has custom handling for certain H2O classes
+   * for which our REST API does automagic type conversions.
+   *
+   * <p>TODO: this method is copy-pasted from H2oApi.java in a more limited form; refactor. See the
+   * comments there.
+   */
+  public static Gson JSON() {
+    return new GsonBuilder()
+            .registerTypeAdapter(KeyV3.class, new KeySerializer())
+            .registerTypeAdapter(FrameV3.ColSpecifierV3.class, new ColSerializer())
+            .create();
+  }
+
+  /**
+   * Keys get sent as Strings and returned as objects also containing the type and URL, so they need
+   * a custom GSON serializer.
+   */
+  private static class KeySerializer implements JsonSerializer<KeyV3>, JsonDeserializer<KeyV3> {
+    @Override
+    public JsonElement serialize(KeyV3 key, Type typeOfKey, JsonSerializationContext context) {
+      return new JsonPrimitive(key.name);
+    }
+
+    @Override
+    public KeyV3 deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+      if (json.isJsonNull()) return null;
+      JsonObject jobj = json.getAsJsonObject();
+      String type = jobj.get("type").getAsString();
+      switch (type) {
+        // TODO: dynamically generate all possible cases
+        case "Key<Model>":
+          return context.deserialize(jobj, KeyV3.ModelKeyV3.class);
+        case "Key<Job>":
+          return context.deserialize(jobj, KeyV3.JobKeyV3.class);
+        case "Key<Grid>":
+          return context.deserialize(jobj, KeyV3.GridKeyV3.class);
+        case "Key<Frame>":
+          return context.deserialize(jobj, KeyV3.FrameKeyV3.class);
+        default:
+          throw new JsonParseException("Unable to deserialize key of type " + type);
+      }
+    }
+  }
+
+  private static class ColSerializer
+          implements JsonSerializer<FrameV3.ColSpecifierV3>, JsonDeserializer<FrameV3.ColSpecifierV3> {
+    @Override
+    public JsonElement serialize(
+            FrameV3.ColSpecifierV3 col, Type typeOfCol, JsonSerializationContext context) {
+      return new JsonPrimitive(
+              col.column_name); // UGH: external-facing, generated POJO uses camelCase. . .
+    }
+
+    @Override
+    public FrameV3.ColSpecifierV3 deserialize(
+            JsonElement json, Type typeOfT, JsonDeserializationContext context) {
+      if (json.isJsonNull()) return null;
+
+      return new FrameV3.ColSpecifierV3(json.getAsString());
+    }
+  }
 }
+

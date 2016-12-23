@@ -6,6 +6,7 @@ import deepwater.backends.BackendTrain;
 import deepwater.backends.RuntimeOptions;
 import deepwater.datasets.ImageDataSet;
 import hex.DataInfo;
+import hex.genmodel.algos.deepwater.InvalidBackendException;
 import water.H2O;
 import water.Iced;
 import water.Key;
@@ -302,9 +303,15 @@ final public class DeepWaterModelInfo extends Iced {
       Log.warn("No need to move the state from Java to native.");
       return;
     }
+
     if (_backend ==null) {
-      _backend = createDeepWaterBackend(get_params()._backend.toString()); // new ImageTrain(_width, _height, _channels, _deviceID, (int)parameters.getOrMakeRealSeed(), _gpu);
-      if (_backend == null) throw new IllegalArgumentException("No backend found. Cannot build a Deep Water model.");
+      String backend = get_params()._backend.toString();
+      try {
+        _backend = createDeepWaterBackend(backend);
+      } catch (InvalidBackendException e) {
+        e.printStackTrace();
+        throw new IllegalArgumentException("Could not instantiate backend:"+backend+":"+e.getMessage());
+      }
     }
 
     if (network==null) network = _network;

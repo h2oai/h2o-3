@@ -1,12 +1,9 @@
 package water.api.schemas4;
 
 import water.api.API;
-import water.api.Handler;
-import water.api.Route;
+import water.http.Route;
+import water.http.handlers.Handler;
 
-/**
- *
- */
 public class EndpointV4 extends OutputSchemaV4<Route, EndpointV4> {
 
   @API(help="Method+Url of the request; variable parts are enclosed in curly braces. For example: " +

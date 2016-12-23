@@ -4,6 +4,7 @@ import org.apache.log4j.H2OPropertyConfigurator;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.PropertyConfigurator;
 import water.H2O;
+import water.http.RequestServer;
 import water.persist.PersistManager;
 
 import java.io.File;
@@ -76,7 +77,7 @@ abstract public class Log {
   }
 
   public static void httpd( String method, String uri, int status, long deltaMillis ) {
-    org.apache.log4j.Logger l = LogManager.getLogger(water.api.RequestServer.class);
+    org.apache.log4j.Logger l = LogManager.getLogger(RequestServer.class);
     String s = String.format("  %-6s  %3d  %6d ms  %s", method, status, deltaMillis, uri);
     l.info(s);
   }

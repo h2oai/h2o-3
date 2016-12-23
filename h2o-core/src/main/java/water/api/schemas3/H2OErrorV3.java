@@ -2,8 +2,7 @@ package water.api.schemas3;
 
 import water.H2OError;
 import water.api.API;
-import water.api.SpecifiesHttpResponseCode;
-import water.util.IcedHashMap;
+import water.http.SpecifiesHttpResponseCode;
 import water.util.IcedHashMapGeneric;
 
 

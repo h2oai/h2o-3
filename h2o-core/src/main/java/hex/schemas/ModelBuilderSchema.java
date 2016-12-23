@@ -5,9 +5,9 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.AutoBuffer;
 import water.H2O;
-import water.Job;
 import water.api.*;
 import water.api.schemas3.*;
+import water.http.SpecifiesHttpResponseCode;
 import water.util.*;
 import java.util.Properties;
 

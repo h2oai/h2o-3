@@ -3,7 +3,7 @@ package water.api.schemas3;
 
 import water.H2OModelBuilderError;
 import water.api.API;
-import water.api.SpecifiesHttpResponseCode;
+import water.http.SpecifiesHttpResponseCode;
 
 /**
  * Schema which represents a back-end error from the model building process which will be

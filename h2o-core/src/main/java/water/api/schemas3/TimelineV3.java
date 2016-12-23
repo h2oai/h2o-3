@@ -2,7 +2,7 @@ package water.api.schemas3;
 
 import water.*;
 import water.api.API;
-import water.api.TimelineHandler.Timeline;
+import water.http.handlers.TimelineHandler;
 import water.init.TimelineSnapshot;
 
 import java.text.SimpleDateFormat;
@@ -12,7 +12,7 @@ import java.util.Date;
 /**
  * Display of a Timeline
  */
-public class TimelineV3 extends RequestSchemaV3<Timeline,TimelineV3> {
+public class TimelineV3 extends RequestSchemaV3<TimelineHandler.Timeline,TimelineV3> {
   // This schema has no input params
   @API(help="Current time in millis.", direction=API.Direction.OUTPUT)
   private long now;
@@ -123,7 +123,7 @@ public class TimelineV3 extends RequestSchemaV3<Timeline,TimelineV3> {
     @Override public    String toString() { return "I_O('" + io_flavor + "')"; }
   } // IOEvent
 
-  @Override public TimelineV3 fillFromImpl(Timeline timeline) {
+  @Override public TimelineV3 fillFromImpl(TimelineHandler.Timeline timeline) {
     ArrayList<EventV3> outputEvents = new ArrayList<>();
     ArrayList<TimelineSnapshot.Event> heartbeats = new ArrayList();
     H2O cloud = TimeLine.getCLOUD();

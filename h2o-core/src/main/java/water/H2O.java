@@ -36,9 +36,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 
 import water.UDPRebooted.ShutdownTsk;
-import water.api.RequestServer;
+import water.api.SchemaServer;
+import water.http.RequestServer;
 import water.exceptions.H2OFailException;
 import water.exceptions.H2OIllegalArgumentException;
+import water.http.JettyHTTPD;
 import water.init.AbstractBuildVersion;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.JarHash;
@@ -1493,7 +1495,7 @@ final public class H2O {
   static private volatile boolean _doneRequests;
 
   static public void register(
-      String method_url, Class<? extends water.api.Handler> hclass, String method, String apiName, String summary
+      String method_url, Class<? extends water.http.handlers.Handler> hclass, String method, String apiName, String summary
   ) {
     if (_doneRequests) throw new IllegalArgumentException("Cannot add more Requests once the list is finalized");
     RequestServer.registerEndpoint(apiName, method_url, hclass, method, summary);
@@ -1509,7 +1511,7 @@ final public class H2O {
     if (_doneRequests) return;
     _doneRequests = true;
 
-    water.api.SchemaServer.registerAllSchemasIfNecessary();
+    SchemaServer.registerAllSchemasIfNecessary();
     jetty.acceptRequests();
   }
 

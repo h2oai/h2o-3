@@ -8,7 +8,7 @@ import water.H2O;
 import water.Paxos;
 import water.TestUtil;
 import water.TypeMap;
-import water.api.RequestServer;
+import water.http.RequestServer;
 
 import java.util.Properties;
 

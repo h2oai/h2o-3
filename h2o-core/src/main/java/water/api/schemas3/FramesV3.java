@@ -1,8 +1,8 @@
 package water.api.schemas3;
 
 import water.api.API;
-import water.api.FramesHandler.Frames;
 import water.fvec.Frame;
+import water.http.handlers.FramesHandler.Frames;
 
 public class FramesV3 extends RequestSchemaV3<Frames, FramesV3> {
 

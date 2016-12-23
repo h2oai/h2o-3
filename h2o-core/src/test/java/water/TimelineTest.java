@@ -3,8 +3,8 @@ package water;
 import jsr166y.CountedCompleter;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.api.TimelineHandler;
 import water.api.schemas3.TimelineV3;
+import water.http.handlers.TimelineHandler;
 
 import java.util.HashSet;
 import java.util.Set;

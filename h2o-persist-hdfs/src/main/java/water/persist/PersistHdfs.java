@@ -1,6 +1,5 @@
 package water.persist;
 
-import com.google.common.io.ByteStreams;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
@@ -14,7 +13,6 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -24,9 +22,7 @@ import water.H2O;
 import water.Key;
 import water.MemoryManager;
 import water.Value;
-import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
-import water.fvec.Vec;
 import water.util.FileUtils;
 import water.util.Log;
 

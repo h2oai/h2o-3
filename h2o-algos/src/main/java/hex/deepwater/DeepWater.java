@@ -5,6 +5,7 @@ import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.ToEigenVec;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
+import hex.genmodel.algos.deepwater.InvalidBackendException;
 import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -36,10 +37,16 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
 
   public DeepWater(boolean startup_once ) { super(new DeepWaterParameters(),startup_once); }
 
-  /** Check whether we have any Deep Water native backends available */
+  /** Check whether we have any Deep Water native backend available */
   static boolean haveBackend() {
     for (DeepWaterParameters.Backend b : DeepWaterParameters.Backend.values()) {
-      if (DeepwaterMojoModel.createDeepWaterBackend(b.toString()) != null) return true;
+      try {
+        if (DeepwaterMojoModel.createDeepWaterBackend(b.toString()) != null) {
+          return true;
+        }
+      } catch (InvalidBackendException ignored) {
+          // ignored
+      }
     }
     return false;
   }

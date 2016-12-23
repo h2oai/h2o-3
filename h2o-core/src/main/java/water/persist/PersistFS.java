@@ -5,7 +5,6 @@ import java.net.URI;
 import java.util.ArrayList;
 
 import water.*;
-import water.api.FSIOException;
 import water.fvec.NFSFileVec;
 import water.util.Log;
 

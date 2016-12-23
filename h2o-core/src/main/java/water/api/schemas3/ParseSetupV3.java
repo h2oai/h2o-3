@@ -1,7 +1,6 @@
 package water.api.schemas3;
 
 import water.api.API;
-import water.api.ParseTypeValuesProvider;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.FileVec;

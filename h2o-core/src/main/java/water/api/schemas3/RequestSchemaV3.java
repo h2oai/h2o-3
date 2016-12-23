@@ -2,7 +2,6 @@ package water.api.schemas3;
 
 import water.Iced;
 import water.api.API;
-import water.api.Schema;
 
 /**
  * Base Schema class for all REST API requests, gathering up common behavior such as the
