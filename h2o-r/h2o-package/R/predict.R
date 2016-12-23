@@ -37,18 +37,17 @@ h2o.predict_json <- function(model, json, classpath, javaoptions) {
 	args <- paste(javaargs, model, jsonq, sep=" ")
 	# run the Java method H2OPredictor, which will return JSON or an error message
 	res <- system2(java, args, stdout=TRUE, stderr=TRUE)
-	print(res)
+	res <- paste0(res, collapse="")
 	# check the returned for start of JSON, if json then decode and return, otherwise print the error
 	first_char <- substring(res, 1, 1)
 	if (first_char == '{' || first_char == '[') {
 		# JSON returned -- it must start with { or [
-	   	json <- fromJSON(paste0(res, collapse=""))
-		return(json)
 	} else  {
-	    # An error message was returned: show it and return nothing
-	    print(res)
-	    return(NULL)
+	    # An error message was returned: make json
+		res = paste0("\"error\": \"", res, "\"")
 	}
+    json <- fromJSON(paste0(res, collapse=""))
+    return(json)
 }
 
 # These are defined so that you can use the same names in Python and allows us to change the backing method
