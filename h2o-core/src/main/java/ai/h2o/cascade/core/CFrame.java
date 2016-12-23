@@ -76,6 +76,20 @@ public class CFrame {
   }
 
 
+  public CFrameColumn column(int i) {
+    if (columns == null) return null;
+    return columns.get(i - ncols + columns.size());
+  }
+
+
+  public byte type(int i) {
+    if (stone == null)
+      return columns.get(i - ncols + columns.size()).vec.get_type();
+    else
+      return stone.vec(i).get_type();
+  }
+
+
 
   //--------------------------------------------------------------------------------------------------------------------
   // CFrame operations
@@ -114,7 +128,7 @@ public class CFrame {
 
 
   // Is this really needed?
-  public Frame getFrame() {
+  public Frame getStoneFrame() {
     if (stone == null)
       throw error("Cannot unwrap a CFrame");
     return stone;

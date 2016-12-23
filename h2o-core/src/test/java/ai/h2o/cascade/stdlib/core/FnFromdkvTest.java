@@ -41,7 +41,7 @@ public class FnFromdkvTest extends TestUtil {
       assertTrue(res instanceof ValFrame);
       CFrame cff = res.getFrame();
       assertTrue("CFrame object is supposed to be lightweight", cff.isStoned());
-      Frame ff = cff.getFrame();
+      Frame ff = cff.getStoneFrame();
       Scope.track(ff);
 
       // Verify that the imported frame is stored in the global scope, and
@@ -50,7 +50,7 @@ public class FnFromdkvTest extends TestUtil {
       Val vs = global.lookup("iris");
       assertTrue(vs instanceof ValFrame);
       assertTrue(vs.getFrame().isStoned());
-      assertEquals(ff._key, vs.getFrame().getFrame()._key);
+      assertEquals(ff._key, vs.getFrame().getStoneFrame()._key);
       assertEquals(ff._key, f._key);
 
       // Verify that the name {@code iris} can now be used from Cascade
