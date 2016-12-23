@@ -442,7 +442,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
             int k = _nclasses == 1? 0 : i + 1;
             for (int j = 0; j < _ntree_groups; j++) {
                 int itree = treeIndex(j, i);
-                if (_mojo_version.equals(1.0)) { //First version
+                if (_mojo_version == null || _mojo_version.equals(1.0)) { //First version
                     preds[k] += scoreTree0(_compressed_trees[itree], row, _nclasses, false);
                 } else if (_mojo_version.equals(1.1)) { //CURRENT VERSION
                     preds[k] += scoreTree(_compressed_trees[itree], row, _nclasses);
