@@ -28,7 +28,7 @@ public class ValIdList extends Val {
   // Value representations
   //--------------------------------------------------------------------------------------------------------------------
 
-  @Override public boolean maybeIds() {
+  @Override public boolean isIds() {
     return true;
   }
 

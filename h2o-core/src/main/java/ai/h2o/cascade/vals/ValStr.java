@@ -24,7 +24,7 @@ public class ValStr extends Val {
   // Value representations
   //--------------------------------------------------------------------------------------------------------------------
 
-  @Override public boolean maybeStr() {
+  @Override public boolean isStr() {
     return true;
   }
 

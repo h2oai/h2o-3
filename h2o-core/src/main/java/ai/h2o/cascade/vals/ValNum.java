@@ -39,7 +39,7 @@ public class ValNum extends Val {
   // Value representations
   //--------------------------------------------------------------------------------------------------------------------
 
-  @Override public boolean maybeNum() {
+  @Override public boolean isNum() {
     return true;
   }
 
@@ -48,7 +48,7 @@ public class ValNum extends Val {
   }
 
 
-  @Override public boolean maybeInt() {
+  @Override public boolean isInt() {
     return (int) value == value;
   }
 
@@ -57,7 +57,7 @@ public class ValNum extends Val {
   }
 
 
-  @Override public boolean maybeBool() {
+  @Override public boolean isBool() {
     return value == 0 || value == 1;
   }
 
@@ -65,7 +65,7 @@ public class ValNum extends Val {
     return value != 0;
   }
 
-  @Override public boolean maybeSlice() {
+  @Override public boolean isSlice() {
     return (long) value == value;
   }
 

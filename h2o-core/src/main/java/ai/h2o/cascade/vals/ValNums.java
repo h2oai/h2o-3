@@ -16,7 +16,7 @@ public class ValNums extends Val {
   }
 
   @Override
-  public boolean maybeNums() {
+  public boolean isNums() {
     return true;
   }
 

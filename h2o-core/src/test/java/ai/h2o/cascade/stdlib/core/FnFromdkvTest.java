@@ -69,7 +69,7 @@ public class FnFromdkvTest extends TestUtil {
     try {
       exec("(fromdkv 1)");
     } catch (Cascade.TypeError e) {
-      assertEquals("Expected 2 arguments but got 1 argument", e.getMessage());
+      assertEquals("Wrong number of arguments: expected 2, received 1", e.getMessage());
       assertEquals(0, e.location);
       assertEquals(11, e.length);
     }

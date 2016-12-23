@@ -27,7 +27,7 @@ public class ValNull extends Val {
   // Value representations
   //--------------------------------------------------------------------------------------------------------------------
 
-  @Override public boolean maybeNum() {
+  @Override public boolean isNum() {
     return true;
   }
 
@@ -36,7 +36,7 @@ public class ValNull extends Val {
   }
 
 
-  @Override public boolean maybeStr() {
+  @Override public boolean isStr() {
     return true;
   }
 

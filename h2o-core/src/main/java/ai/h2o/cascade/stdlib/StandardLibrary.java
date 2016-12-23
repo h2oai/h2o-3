@@ -75,7 +75,7 @@ public class StandardLibrary implements ICascadeLibrary {
     members.put("NA", new ValNum(Double.NaN));
     members.put("null", new ValNull());
 
-    String[] frameCmds = {"ncols", "nrows"};
+    String[] frameCmds = {"col", "ncols", "nrows"};
     for (String cmd : frameCmds)
       registerCommand("frame", cmd);
 
@@ -93,7 +93,7 @@ public class StandardLibrary implements ICascadeLibrary {
 
   /**
    * Register command {@code name} within subpackage {@code pkg} as a member
-   * of the library. The class for this command is resolved as
+   * of the library. The class for this command is assumed to be
    * {@code stdlib.{pkg}.Fn{Name}}.
    * <p>
    * This method loads the command's class, and then adds the
@@ -103,6 +103,7 @@ public class StandardLibrary implements ICascadeLibrary {
     String className = "ai.h2o.cascade.stdlib." + pkg + ".Fn" + StringUtils.capitalize(name);
     ClassPool cp = ClassPool.getDefault();
     cp.importPackage("ai.h2o.cascade.vals");
+    cp.importPackage("ai.h2o.cascade.core");
     try {
       CtClass cc = cp.get(className);
       augmentClass(cc);
@@ -133,53 +134,190 @@ public class StandardLibrary implements ICascadeLibrary {
    */
   private void augmentClass(CtClass cc) {
     try {
-      MyMethodInfo[] applyMethods = getApplies(cc);
-      if (applyMethods.length == 0) {
+      List<MInfo> applyMethods = getApplies(cc);
+      if (applyMethods.isEmpty()) {
         throw new RuntimeException("Class " + cc.getName() + " does not define any apply() methods.");
       }
-      String apply0Body = applyMethods.length == 1? makeApply0Single(applyMethods[0]) : makeApply0Multi(applyMethods);
+      String apply0Body = makeApply0(applyMethods);
       if (DEBUG) {
         System.out.println("\n[Source code of " + cc.getSimpleName() + ".apply0()]:\n");
         System.out.println(apply0Body);
         System.out.println("\n");
       }
       cc.addMethod(CtMethod.make(apply0Body, cc));
-    } catch (RuntimeException e) {
-      throw new RuntimeException("[In class " + cc.getName() + "]: " + e.getMessage());
+    } catch (RuntimeException | AssertionError e) {
+      throw new RuntimeException("[In class " + cc.getName() + "]: " + e.getMessage(), e);
     } catch (NotFoundException | CannotCompileException e) {
-      throw new RuntimeException(e.getMessage());
-    }
-  }
-
-
-  /**
-   * Helper class which holds information about a {@link CtMethod}, avoiding
-   * having to recalculate it in multiple places.
-   */
-  private static class MyMethodInfo {
-    public CtClass[] params;
-    public CtClass retType;
-    public boolean isVararg;
-
-    public MyMethodInfo(CtMethod method) throws NotFoundException {
-      params = method.getParameterTypes();
-      retType = method.getReturnType();
-      isVararg = (method.getModifiers() & Modifier.VARARGS) != 0;
+      throw new RuntimeException(e.getMessage(), e);
     }
   }
 
 
   /**
    * Find all {@code apply(...)} methods in the class {@code cc}, and return
-   * their {@link MyMethodInfo} records.
+   * their {@link MInfo} records.
    */
-  private MyMethodInfo[] getApplies(CtClass cc) throws NotFoundException {
-    ArrayList<MyMethodInfo> res = new ArrayList<>(2);
+  private List<MInfo> getApplies(CtClass cc) throws NotFoundException {
+    List<MInfo> res = new LinkedList<>();
     for (CtMethod method : cc.getDeclaredMethods()) {
       if (method.getName().equals("apply"))
-        res.add(new MyMethodInfo(method));
+        res.add(new MInfo(method));
     }
-    return res.toArray(new MyMethodInfo[res.size()]);
+    return res;
+  }
+
+
+
+  /**
+   * Create the body of the {@code apply0(Val[])} method, and return it
+   * as a string. This method works for the case when there are multiple
+   * {@code apply(...)} methods in the target class.
+   * <p>
+   * For example, suppose the target class defines the following
+   * {@code apply()} methods:
+   * <pre>{@code
+   *   apply()
+   *   apply(CFrame, int, boolean);
+   *   apply(CFrame, double);
+   *   apply(CFrame, double, String);
+   *   apply(CFrame, int, String[]);
+   *   apply(CFrame, int, int, int, int, int);
+   * }</pre>
+   */
+  private String makeApply0(List<MInfo> applyMethods) throws NotFoundException {
+    SB sb = new SB();
+    sb.p("public Val apply0(Val[] args) {\n");
+    sb.p("  final int n = args.length;\n");
+    generateNestedChecks(applyMethods, 0, 0, 255, "  ", "", sb);
+    sb.p("}");
+    return sb.toString();
+  }
+
+
+  /**
+   * This function provides support for {@link #makeApply0(List)}. Its
+   * job is to recursively build nested checkers for arguments type,
+   * implementing the multiple dispatch mechanism.
+   *
+   * @param methods List of methods, with their first {@code iarg} arguments
+   *                having same types.
+   * @param iarg Index of the argument that should be tested next. The list of
+   *             {@code methods} will have all the preceding arguments already
+   *             checked. Thus it is guaranteed that {@code n >= iarg}.
+   *             Note that for each method in the list, one of the 3 cases is
+   *             possible: (1) either the method's signature has exactly
+   *             {@code iarg} items, or (2) the method's signature has
+   *             {@code iarg+1} arguments however the last one is a vararg,
+   *             or (3) the method's {@code iarg}'th argument exists and is not
+   *             a vararg.
+   * @param indent Indentation string, for pretty-printing.
+   * @param args Arguments string so far. This will be supplied to the final
+   *             {@code apply()} method.
+   * @param sb String Buffer to write to.
+   */
+  private void generateNestedChecks(
+      List<MInfo> methods, int iarg, int minChecked, int maxChecked, String indent, String args, SB sb
+  ) {
+    // First we need to consider the case when there is a method whose number
+    // of arguments is equal to {@code iarg} -- those methods can be dispatched
+    // without any further checks if the number of arguments is correct.
+    int num0Methods = 0;
+    Iterator<MInfo> iter = methods.iterator();
+    while (iter.hasNext()) {
+      MInfo method = iter.next();
+      if (method.maxNumArgs() == iarg) {
+        iter.remove();  // remove the "0-method" from the list of methods
+        num0Methods++;
+        if (minChecked < iarg || maxChecked > iarg) {
+          sb.p(indent).p("if (n == ").p(iarg).p(") {\n");
+          writeReturnStatement(method, indent + "  ", args, sb);
+          sb.p(indent).p("}\n");
+        } else {
+          writeReturnStatement(method, indent, args, sb);
+          return;
+        }
+      }
+    }
+    assert num0Methods <= 1 : "Number of 0-methods is > 1";
+
+    if (methods.size() == 1) {
+      generateSingleMethodCheck(methods.get(0), iarg, minChecked, maxChecked, indent, args, sb);
+      return;
+    }
+    sortMethods(methods, iarg);
+
+    // Second, we will consider all methods where {@code iarg}th item is a
+    // vararg. (Unlike in Java, in our implementation these take precedence
+    // over the regular methods).
+    iter = methods.iterator();
+    int numVMethods = 0;
+    while (iter.hasNext()) {
+      MInfo method = iter.next();
+      if (method.isVararg && method.minNumArgs() == iarg) {
+        iter.remove();
+        String flagName = "flag" + (numVMethods++);
+        String varargClassname = method.argJavaName(iarg);
+        String valType = method.argValType(iarg);
+        sb.p(indent).p("boolean ").p(flagName).p(" = true;\n");
+        sb.p(indent).p("for (int i = ").p(iarg).p("; i < n; ++i) {\n");
+        sb.p(indent).p("  if (!args[i].is").p(valType).p("()) {\n");
+        sb.p(indent).p("    ").p(flagName).p(" = false;\n");
+        sb.p(indent).p("    break;\n");
+        sb.p(indent).p("  }\n");
+        sb.p(indent).p("}\n");
+        sb.p(indent).p("if (").p(flagName).p(") {\n");
+        sb.p(indent).p("  ").p(varargClassname).p("[] vararg = new ").p(varargClassname).p("[n - ").p(iarg).p("];\n");
+        sb.p(indent).p("  for (int i = ").p(iarg).p("; i < n; ++i) {\n");
+        sb.p(indent).p("    vararg[i - ").p(iarg).p("] = args[i].get").p(valType).p("();\n");
+        sb.p(indent).p("  }\n");
+        args = args.isEmpty()? "vararg" : args + ", vararg";
+        writeReturnStatement(method, indent + "  ", args, sb);
+        sb.p(indent).p("}\n");
+      }
+    }
+
+    // Insert argument count check.
+    if (!methods.isEmpty()) {
+      int minArgs = Integer.MAX_VALUE, maxArgs = 0;
+      for (MInfo method : methods) {
+        minArgs = Math.min(minArgs, method.minNumArgs());
+        maxArgs = Math.max(maxArgs, method.maxNumArgs());
+      }
+      assert minArgs >= iarg + 1 : "Unexpected minArgs: " + minArgs;
+      if (minArgs > minChecked || maxArgs < maxChecked) {
+        sb.p(indent).p("argumentsCountCheck(n, ").p(minArgs).p(", ").p(maxArgs).p(");\n");
+        minChecked = minArgs;
+        maxChecked = maxArgs;
+      }
+    }
+
+    // Finally, write a series of if-checks for each possible type at the
+    // {@code iarg}-th position.
+    while (!methods.isEmpty()) {
+      if (methods.size() == 1) {
+        generateSingleMethodCheck(methods.get(0), iarg, minChecked, maxChecked, indent, args, sb);
+        return;
+      }
+      String currType = methods.get(0).argValType(iarg);
+      String nextArgs = args + (args.isEmpty()? "" : ", ") + "args[" + iarg + "].get" + currType + "()";
+      List<MInfo> filteredMethods = new LinkedList<>();
+      iter = methods.iterator();
+      while (iter.hasNext()) {
+        MInfo method = iter.next();
+        if (method.argValType(iarg).equals(currType)) {
+          iter.remove();
+          filteredMethods.add(method);
+        }
+      }
+      if (methods.isEmpty()) {
+        sb.p(indent).p("checkArg(").p(iarg).p(", args[").p(iarg).p("], Val.Type.").p(currType.toUpperCase()).p(");\n");
+        generateNestedChecks(filteredMethods, iarg + 1, minChecked, maxChecked, indent, nextArgs, sb);
+      } else {
+        sb.p(indent).p("if (args[").p(iarg).p("].is").p(currType).p("()) {\n");
+        generateNestedChecks(filteredMethods, iarg + 1, minChecked, maxChecked, indent + "  ", nextArgs, sb);
+        sb.p(indent).p("}\n");
+      }
+    }
   }
 
 
@@ -193,152 +331,170 @@ public class StandardLibrary implements ICascadeLibrary {
    * we can generate more specific error messages compared to the case of
    * multiple dispatch.
    */
-  private String makeApply0Single(MyMethodInfo applyMethod) throws NotFoundException {
-    final int nParams = applyMethod.params.length;
+  private String generateSingleMethodCheck(
+      MInfo method, int iarg, int minChecked, int maxChecked, String indent, String args, SB sb
+  ) {
+    if (method.minNumArgs() > minChecked || method.maxNumArgs() < maxChecked)
+      sb.p(indent).p("argumentsCountCheck(n, ").p(method.minNumArgs()).p(", ").p(method.maxNumArgs()).p(");\n");
 
-    SB sb = new SB();
-    SB argsList = new SB();
-
-    sb.p("public Val apply0(Val[] args) {\n");
-    sb.p("  final int n = args.length;\n");
-    if (applyMethod.isVararg) {
-      // It is allowed for the vararg argument to have 0 elements, so the
-      // smallest valid number of parameters is actually nParams - 1.
-      sb.p("  argumentsCountCheck(n, ").p(nParams - 1).p(", ").p(-1).p(");\n");
-    } else {
-      sb.p("  argumentsCountCheck(n, ").p(nParams).p(", ").p(nParams).p(");\n");
-    }
-
-    for (int i = 0; i < nParams - (applyMethod.isVararg? 1 : 0); i++) {
-      String valTYPE = getValType(applyMethod.params[i].getName());
-      String valType = StringUtils.capitalize(valTYPE);
-      sb.p("  checkArg(args, ").p(i).p(", Val.Type.").p(valTYPE).p(");\n");
+    SB argsList = new SB(args);
+    for (int i = iarg; i < method.minNumArgs(); i++) {
+      sb.p(indent).p("checkArg(").p(i).p(", args[").p(i).p("], Val.Type.").p(method.argValTYPE(i)).p(");\n");
       if (i > 0) argsList.p(", ");
-      argsList.p("args[").p(i).p("].get").p(valType).p("()");
+      argsList.p("args[").p(i).p("].get").p(method.argValType(i)).p("()");
     }
-    if (applyMethod.isVararg) {
-      int k = nParams - 1;
-      String javaType = applyMethod.params[k].getName();
-      assert javaType.endsWith("[]");
-      javaType = javaType.substring(0, javaType.length() - 2);
-      String valTYPE = getValType(javaType);
-      String valType = StringUtils.capitalize(valTYPE);
-      sb.p("  ").p(javaType).p("[] vararg = new ").p(javaType).p("[n - ").p(k).p("];\n");
-      sb.p("  for (int i = ").p(k).p("; i < n; ++i) {\n");
-      sb.p("    checkArg(args, i, Val.Type.").p(valTYPE).p(");\n");
-      sb.p("    vararg[i - ").p(k).p("] = args[i].get").p(valType).p("();\n");
-      sb.p("  }\n");
-      if (k > 0) argsList.p(", ");
-      argsList.p("vararg");
-    }
-
-    String retTypeName = applyMethod.retType.getName();
-    if (retTypeName.equals(Val.class.getName())) {
-      sb.p("  return apply(").p(argsList).p(");\n");
-    } else {
-      Val.Type retValType = Val.Type.valueOf(getValType(retTypeName));
-      sb.p("  ").p(retTypeName).p(" ret = apply(").p(argsList).p(");\n");
-      sb.p("  return new ").p(retValType.getValClassName()).p("(ret);\n");
-    }
-    sb.p("}");
-    return sb.toString();
-  }
-
-
-  /**
-   * Create the body of the {@code apply0(Val[])} method, and return it
-   * as a string. This method works for the case when there are multiple
-   * {@code apply(...)} methods in the target class.
-   * <p>
-   * For example, suppose the target class defines 4 {@code apply()} methods:
-   * <pre>{@code
-   *   apply(Frame, int, boolean);
-   *   apply(Frame, double);
-   *   apply(Frame, double, String);
-   *   apply(Frame, int, String[]);
-   * }</pre>
-   */
-  private String makeApply0Multi(MyMethodInfo[] applyMethods) throws NotFoundException {
-    assert applyMethods.length >= 2;
-
-    // Determine the smallest and the largest number of arguments in each {@code apply()} method.
-    // If any method has varargs, then {@code maxArgs} will be -1.
-    int minArgs = Integer.MAX_VALUE, maxArgs = 0;
-    for (MyMethodInfo method : applyMethods) {
-      int nParams = method.params.length;
-      minArgs = Math.min(minArgs, method.isVararg? nParams - 1 : nParams);
-      maxArgs = method.isVararg || maxArgs == -1? -1 : Math.max(maxArgs, nParams);
-    }
-
-    SB sb = new SB();
-    sb.p("public Val apply0(Val[] args) {\n");
-    sb.p("  final int n = args.length;\n");
-    sb.p("  argumentsCountCheck(n, ").p(minArgs).p(", ").p(maxArgs).p(");\n");
-
-    List<MyMethodInfo> allMethods = Arrays.asList(applyMethods);
-    throw new RuntimeException("Unimplemented");
-//    if (minArgs == maxArgs) {
-//    } else {
-//      sb.p("  if (n ").p(isVararg? ">=" : "==").p(" ").p(params.length).p(") {\n");
-//      writeArgumentTypeChecks(params, isVararg, retType, "    ", sb);
-//      sb.p("  }\n");
-//    }
-//    sb.p("  throw new java.lang.IllegalArgumentException(\"No matching signature\");\n");
-//    sb.p("}");
-//    return sb.toString();
-  }
-
-
-  private void writeArgumentTypeChecks(CtClass[] params, boolean isVararg, CtClass retType, String indent, SB sb) {
-    SB argsList = new SB();
-    int nRegularParams = params.length - (isVararg? 1 : 0);
-    for (int i = 0; i < nRegularParams; i++) {
-      String valType = getValType(params[i].getName());
-      sb.p(indent).p("checkArg(args, ").p(i).p(", Val.Type.").p(valType).p(");\n");
-      if (i > 0) argsList.p(", ");
-      argsList.p("args[").p(i).p("].get").p(StringUtils.capitalize(valType)).p("()");
-    }
-    if (isVararg) {
-      int k = params.length - 1;
-      String javaType = params[k].getName();
-      assert javaType.endsWith("[]");
-      javaType = javaType.substring(0, javaType.length() - 2);
-      String valType = getValType(javaType);
-      String valTypeC = StringUtils.capitalize(valType);
+    if (method.isVararg) {
+      int k = method.minNumArgs();
+      String javaType = method.argJavaName(k);
       sb.p(indent).p(javaType).p("[] vararg = new ").p(javaType).p("[n - ").p(k).p("];\n");
       sb.p(indent).p("for (int i = ").p(k).p("; i < n; ++i) {\n");
-      sb.p(indent).p("  checkArg(args, i, Val.Type.").p(valType).p(");\n");
-      sb.p(indent).p("  vararg[i - ").p(k).p("] = args[i].get").p(valTypeC).p("();\n");
+      sb.p(indent).p("  checkArg(i, args[i], Val.Type.").p(method.argValTYPE(k)).p(");\n");
+      sb.p(indent).p("  vararg[i - ").p(k).p("] = args[i].get").p(method.argValType(k)).p("();\n");
       sb.p(indent).p("}\n");
       if (k > 0) argsList.p(", ");
       argsList.p("vararg");
     }
-    sb.p(indent).p(retType.getName()).p(" ret = apply(").p(argsList).p(");\n");
-    Val.Type retValType = Val.Type.valueOf(getValType(retType.getName()));
-    sb.p(indent).p("return new ").p(retValType.getValClassName()).p("(ret);\n");
+    writeReturnStatement(method, indent, argsList.toString(), sb);
+    return sb.toString();
+  }
+
+
+  private void writeReturnStatement(MInfo method, String indent, String args, SB sb) {
+    String retClass = method.retValName();
+    switch (retClass) {
+      case "Val":
+        sb.p(indent).p("return apply(").p(args).p(");\n");
+        break;
+      case "ValNull":
+        sb.p(indent).p("apply(").p(args).p(");\n");
+        sb.p(indent).p("return new ValNull();\n");
+        break;
+      default:
+        sb.p(indent).p(method.retType.getSimpleName()).p(" ret = apply(").p(args).p(");\n");
+        sb.p(indent).p("return new ").p(retClass).p("(ret);\n");
+        break;
+    }
+  }
+
+
+  /**
+   * Sort the list of methods on their {@code level}'th element. It is
+   * guaranteed that each method's signature will have at least {@code level+1}
+   * arguments.
+   *
+   * <p>The sort order is such that booleans should be the first, followed by
+   * ints, followed by all other types.
+   */
+  private void sortMethods(List<MInfo> methods, int level) {
+    Collections.sort(methods, new MInfo.Comparator(level));
   }
 
 
 
-  /** Mapping from Java types to {@link Val.Type}s. */
-  private static final Map<String, String> TYPE_MAP = new HashMap<>(9);
-  static {
-    TYPE_MAP.put("boolean", "BOOL");
-    TYPE_MAP.put("int", "INT");
-    TYPE_MAP.put("long", "INT");
-    TYPE_MAP.put("double", "NUM");
-    TYPE_MAP.put("java.lang.String", "STR");
-    TYPE_MAP.put("double[]", "NUMS");
-    TYPE_MAP.put("java.lang.String[]", "STRS");
-    TYPE_MAP.put(CFrame.class.getName(), "FRAME");
-    TYPE_MAP.put(IdList.class.getName(), "IDS");
+  //--------------------------------------------------------------------------------------------------------------------
+  // "Method Info" helper class
+  //--------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * Helper class which holds information about a {@link CtMethod}, avoiding
+   * having to recalculate it in multiple places. In addition, it also provides
+   * certain convenience accessors to method's properties.
+   */
+  private static class MInfo {
+    public CtClass[] params;
+    public CtClass retType;
+    public boolean isVararg;
+
+    public MInfo(CtMethod method) throws NotFoundException {
+      params = method.getParameterTypes();
+      retType = method.getReturnType();
+      isVararg = (method.getModifiers() & Modifier.VARARGS) != 0;
+    }
+
+    /** Smallest number of arguments the method may take. */
+    public int minNumArgs() {
+      // It is allowed for the vararg argument to have 0 elements, so the
+      // smallest valid number of parameters is actually nParams - 1.
+      return params.length + (isVararg? -1 : 0);
+    }
+
+    /** Largest number of arguments the method may take. */
+    public int maxNumArgs() {
+      return isVararg? 255 : params.length;
+    }
+
+    /** Return Java class name of the method's return type. */
+    public String retJavaName() {
+      return retType.getName();
+    }
+
+    /** Return Val's class name corresponding to the method's return type. */
+    public String retValName() {
+      String retName = retJavaName();
+      if (retName.equals(Val.class.getName())) return "Val";
+      Val.Type retValType = Val.Type.valueOf(getValType(retName));
+      return retValType.getValClassName();
+    }
+
+    public String argJavaName(int i) {
+      if (isVararg && i == params.length - 1) {
+        String name = params[i].getName();
+        assert name.endsWith("[]");
+        return name.substring(0, name.length() - 2);
+      }
+      return params[i].getName();
+    }
+
+    public String argValTYPE(int i) {
+      return getValType(argJavaName(i));
+    }
+
+    public String argValType(int i) {
+      return StringUtils.capitalize(argValTYPE(i));
+    }
+
+
+    /** Mapping from Java types to {@link Val.Type}s. */
+    private static final Map<String, String> TYPE_MAP = new HashMap<>(9);
+    static {
+      TYPE_MAP.put("void", "NULL");
+      TYPE_MAP.put("boolean", "BOOL");
+      TYPE_MAP.put("int", "INT");
+      TYPE_MAP.put("long", "INT");
+      TYPE_MAP.put("double", "NUM");
+      TYPE_MAP.put("java.lang.String", "STR");
+      TYPE_MAP.put("double[]", "NUMS");
+      TYPE_MAP.put("java.lang.String[]", "STRS");
+      TYPE_MAP.put(CFrame.class.getName(), "FRAME");
+      TYPE_MAP.put(IdList.class.getName(), "IDS");
+    }
+
+    /** Helper method to translate Java types into Val types. */
+    private static String getValType(String javaType) {
+      String valType = TYPE_MAP.get(javaType);
+      if (valType == null)
+        throw new RuntimeException("Parameter of type " + javaType + " is not supported in .apply() method.");
+      return valType;
+    }
+
+
+    public static class Comparator implements java.util.Comparator<MInfo> {
+      private int index;
+      public Comparator(int i) {
+        index = i;
+      }
+      @Override public int compare(MInfo o1, MInfo o2) {
+        return key(o1) - key(o2);
+      }
+      private int key(MInfo mi) {
+        switch (mi.argValTYPE(index)) {
+          case "BOOL": return 2;
+          case "INT": return 1;
+          default: return 0;
+        }
+      }
+
+    }
   }
 
-  /** Helper method to translate Java types into Val types. */
-  private String getValType(String javaType) {
-    String valType = TYPE_MAP.get(javaType);
-    if (valType == null)
-      throw new RuntimeException("Parameter of type " + javaType + " is not supported in .apply() method.");
-    return valType;
-  }
 }

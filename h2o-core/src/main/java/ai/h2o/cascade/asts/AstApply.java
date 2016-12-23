@@ -27,10 +27,10 @@ public class AstApply extends Ast<AstApply> {
   @Override
   public Val exec(Scope scope) {
     Val vhead = head.exec(scope);
-    if (!vhead.maybeFunc())
+    if (!vhead.isFun())
       throw new Cascade.TypeError(head.start, head.length,
                                   "Expected a function, but got a " + vhead.type().toString());
-    Function f = vhead.getFunc();
+    Function f = vhead.getFun();
     f.scope = scope;
 
     Val[] vals = new Val[args.length];

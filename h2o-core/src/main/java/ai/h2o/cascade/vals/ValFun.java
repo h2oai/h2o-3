@@ -15,16 +15,16 @@ public class ValFun extends Val {
 
   @Override
   public Type type() {
-    return Type.FUNC;
+    return Type.FUN;
   }
 
   @Override
-  public boolean maybeFunc() {
+  public boolean isFun() {
     return true;
   }
 
   @Override
-  public Function getFunc() {
+  public Function getFun() {
     return f;
   }
 

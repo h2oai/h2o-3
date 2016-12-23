@@ -24,7 +24,7 @@ public class ValFrame extends Val {
   }
 
   @Override
-  public boolean maybeFrame() {
+  public boolean isFrame() {
     return true;
   }
 

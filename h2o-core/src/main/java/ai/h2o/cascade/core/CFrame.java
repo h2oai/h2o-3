@@ -125,6 +125,27 @@ public class CFrame {
   }
 
 
+  /**
+   * Return index of the column with the given {@code name}, or {@code -1} if
+   * such column does not exist in the frame.
+   *
+   * <p>Note: this performs linear O(N) search, and is therefore not very
+   * optimal for bulk search of multiple column names.
+   */
+  public int findColumnByName(String name) {
+    if (stone == null) {
+      for (int i = 0; i < ncols; i++) {
+        CFrameColumn column = column(i);
+        if (column.name.equals(name)) {
+          return i;
+        }
+      }
+      return -1;
+    } else {
+      return stone.find(name);
+    }
+  }
+
 
 
   // Is this really needed?

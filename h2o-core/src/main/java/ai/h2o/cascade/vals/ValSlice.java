@@ -19,7 +19,7 @@ public class ValSlice extends Val {
   }
 
   @Override
-  public boolean maybeSlice() {
+  public boolean isSlice() {
     return true;
   }
 

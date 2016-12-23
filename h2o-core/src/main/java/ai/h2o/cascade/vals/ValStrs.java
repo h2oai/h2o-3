@@ -17,7 +17,7 @@ public class ValStrs extends Val {
   }
 
   @Override
-  public boolean maybeStrs() {
+  public boolean isStrs() {
     return true;
   }
 

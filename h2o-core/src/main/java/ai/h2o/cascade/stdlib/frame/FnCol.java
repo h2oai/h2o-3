@@ -18,4 +18,11 @@ public class FnCol extends StdlibFunction {
     return frame.extractColumns(new SliceList(column));
   }
 
+  public CFrame apply(CFrame frame, String colname) {
+    int i = frame.findColumnByName(colname);
+    if (i == -1)
+      throw new ValueError(1, "Column '" + colname + "' was not found in the frame");
+    return apply(frame, i);
+  }
+
 }

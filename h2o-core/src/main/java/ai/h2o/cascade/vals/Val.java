@@ -18,31 +18,17 @@ import ai.h2o.cascade.core.SliceList;
  * values wrap around core H2O or Cascade objects: {@code Frame},
  * {@code WorkFrame}, {@code SliceList}, {@code Function}, etc.
  *
- * <p> In many circumstances values of different types may be interchangeable.
+ * <p> In rare circumstances values of different types may be interchangeable.
  * For example, a {@code NULL} value may be used in place of almost all other
- * values. A {@code NUMS} list may be interchangeable with a {@code SLICE} if
- * it contains only integer values. A {@code FRAME} of size 1x1 can be
- * treated as a {@code NUM} (or {@code STR}), and vice versa. In order to
- * support conversions like this there is a set of methods
+ * values. A {@code NUM} may be treated as an {@code INT} or {@code BOOL}. In
+ * order to support these intricacies, the following functions are available:
  * <pre>{@code
- *    maybeX()
+ *    isX()
  *    getX()
  * }</pre>
  * for various kinds of {@code X}s. Each subclass of {@code Val} overrides
  * one or more of these methods to indicate whether it is convertible to type
  * {@code X}, and to return raw value of type {@code X}.
- *
- * <p> The conversions among types do not follow a rigid structure, and are
- * not hierarchical. In particular, there are values that may convert
- * in both directions, there are values that convert only unidirectionally.
- * It is possible that in the future the set of allowable conversions will be
- * extended (or on the contrary, restricted). Generally you should use a
- * {@code maybeX()} call when you expect to obtain an argument convertible to
- * some particular type. If on the other hand your code needs to handle
- * different types differently, then either switch on the value's
- * {@link #type()} or perform the {@code maybeX()} / {@code maybeY()} calls in
- * a carefully chosen order, bearing in mind that these checks are not
- * exclusive.
  *
  * <p> NOTE: This class should *not* derive from Iced, since these objects
  * are not intended to be passed around the cluster.
@@ -70,8 +56,7 @@ public abstract class Val {
     STRS("ValStrs"),     // array of strings
     IDS("ValIdList"),    // list of unevaluated variables
     FRAME("ValFrame"),   // Frame object
-    WFRAME("ValWFrame"), // WorkFrame
-    FUNC("ValFun"),      // function -- either built-in or user-defined
+    FUN("ValFun"),       // function -- either built-in or user-defined
     AST("ValAst");       // unevaluated AST
 
     private String valClassName;
@@ -85,39 +70,43 @@ public abstract class Val {
 
 
   //--------------------------------------------------------------------------------------------------------------------
-  // maybeX()/getX() methods
+  // isX()/getX() methods
   //--------------------------------------------------------------------------------------------------------------------
 
-  public boolean maybeNum() {
+  public boolean isNum() {
     return false;
   }
-  public boolean maybeInt() {
+  public boolean isInt() {
     return false;
   }
-  public boolean maybeBool() {
+  public boolean isBool() {
     return false;
   }
-  public boolean maybeNums() {
+  public boolean isNums() {
     return false;
   }
-  public boolean maybeSlice() {
+  public boolean isSlice() {
     return false;
   }
-  public boolean maybeStr() {
+  public boolean isStr() {
     return false;
   }
-  public boolean maybeStrs() {
+  public boolean isStrs() {
     return false;
   }
-  public boolean maybeIds() {
+  public boolean isIds() {
     return false;
   }
-  public boolean maybeFrame() {
+  public boolean isFrame() {
     return false;
   }
-  public boolean maybeFunc() {
+  public boolean isFun() {
     return false;
   }
+  public boolean isAst() {
+    return false;
+  }
+
 
   public double getNum() {
     throw badValue("number");
@@ -146,7 +135,7 @@ public abstract class Val {
   public CFrame getFrame() {
     throw badValue("Frame");
   }
-  public Function getFunc() {
+  public Function getFun() {
     throw badValue("function");
   }
   public Ast getAst() {

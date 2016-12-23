@@ -18,6 +18,12 @@ public class ValAst extends Val {
     return Type.AST;
   }
 
+  @Override
+  public boolean isAst() {
+    return true;
+  }
+
+  @Override
   public Ast getAst() {
     return ast;
   }
