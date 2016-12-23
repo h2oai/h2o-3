@@ -17,7 +17,7 @@ import static org.junit.Assert.*;
  */
 @SuppressWarnings("FieldCanBeLocal")
 public class CascadeParserTest extends TestUtil {
-  // Initializing a session causes the CascadeStandardLibrary to load
+  // Initializing a session causes the StandardLibrary to load
   public static CascadeSession session;
 
   // Error messages

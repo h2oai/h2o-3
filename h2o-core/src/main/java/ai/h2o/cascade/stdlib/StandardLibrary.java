@@ -1,5 +1,8 @@
-package ai.h2o.cascade;
+package ai.h2o.cascade.stdlib;
 
+import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.CascadeSession;
+import ai.h2o.cascade.ICascadeLibrary;
 import ai.h2o.cascade.core.CFrame;
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.core.IdList;
@@ -32,13 +35,13 @@ import java.util.*;
  * NOTE: care must be taken not to touch any of the functions within this
  * library before the library is first instantiated.
  */
-public class CascadeStandardLibrary implements ICascadeLibrary {
-  private static CascadeStandardLibrary instance;
+public class StandardLibrary implements ICascadeLibrary {
+  private static StandardLibrary instance;
   private Map<String, Val> members;
 
   /** Retrieve the singleton instance of this class. */
-  public static CascadeStandardLibrary instance() {
-    if (instance == null) instance = new CascadeStandardLibrary();
+  public static StandardLibrary instance() {
+    if (instance == null) instance = new StandardLibrary();
     return instance;
   }
 
@@ -57,7 +60,7 @@ public class CascadeStandardLibrary implements ICascadeLibrary {
   // Registry of library members:
   //--------------------------------------------------------------------------------------------------------------------
 
-  private CascadeStandardLibrary() {
+  private StandardLibrary() {
     members = new HashMap<>(100);
 
     // Constants
