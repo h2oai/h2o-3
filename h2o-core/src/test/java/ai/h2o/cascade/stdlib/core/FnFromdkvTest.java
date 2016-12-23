@@ -2,14 +2,13 @@ package ai.h2o.cascade.stdlib.core;
 
 import ai.h2o.cascade.Cascade;
 import ai.h2o.cascade.CascadeParserTest;
-import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.CascadeSession;
 import ai.h2o.cascade.core.CFrame;
 import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.vals.ValFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -31,10 +30,10 @@ public class FnFromdkvTest extends TestUtil {
 
   @Test
   public void basicTest() {
-    Scope.enter();
+    water.Scope.enter();
     try {
       Frame f = parse_test_file("smalldata/iris/iris2.csv");
-      Scope.track(f);
+      water.Scope.track(f);
 
       // Import frame {@code f} from DKV into the Cascade session
       Val res = exec("(fromdkv `iris` '" + f._key + "')");
@@ -42,11 +41,11 @@ public class FnFromdkvTest extends TestUtil {
       CFrame cff = res.getFrame();
       assertTrue("CFrame object is supposed to be lightweight", cff.isStoned());
       Frame ff = cff.getStoneFrame();
-      Scope.track(ff);
+      water.Scope.track(ff);
 
       // Verify that the imported frame is stored in the global scope, and
       // that its key remains unchanged (i.e. no copy is made).
-      CascadeScope global = session.globalScope();
+      Scope global = session.globalScope();
       Val vs = global.lookup("iris");
       assertTrue(vs instanceof ValFrame);
       assertTrue(vs.getFrame().isStoned());
@@ -60,7 +59,7 @@ public class FnFromdkvTest extends TestUtil {
       Val ncols = Cascade.eval("(ncols iris)", session);
       assertEquals(5, ncols.getInt());
     } finally {
-      Scope.exit();
+      water.Scope.exit();
     }
   }
 

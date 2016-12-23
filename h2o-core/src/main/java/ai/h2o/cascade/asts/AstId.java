@@ -1,7 +1,7 @@
 package ai.h2o.cascade.asts;
 
 import ai.h2o.cascade.Cascade;
-import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.vals.Val;
 
 /**
@@ -15,7 +15,7 @@ public class AstId extends Ast<AstId> {
   }
 
   @Override
-  public Val exec(CascadeScope scope) {
+  public Val exec(Scope scope) {
     try {
       return scope.lookup(name);
     } catch (IllegalArgumentException e) {

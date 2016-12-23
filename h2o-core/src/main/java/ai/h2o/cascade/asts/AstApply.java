@@ -1,7 +1,7 @@
 package ai.h2o.cascade.asts;
 
 import ai.h2o.cascade.Cascade;
-import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 import ai.h2o.cascade.vals.Val;
@@ -25,7 +25,7 @@ public class AstApply extends Ast<AstApply> {
   }
 
   @Override
-  public Val exec(CascadeScope scope) {
+  public Val exec(Scope scope) {
     Val vhead = head.exec(scope);
     if (!vhead.maybeFunc())
       throw new Cascade.TypeError(head.start, head.length,

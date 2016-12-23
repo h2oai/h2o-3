@@ -1,6 +1,6 @@
 package ai.h2o.cascade.asts;
 
-import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.vals.Val;
 import water.Iced;
 
@@ -17,7 +17,7 @@ public abstract class Ast<T extends Ast<T>> extends Iced<T> {
   /**
    * Execute the AST node within the provided {@code scope}.
    */
-  public abstract Val exec(CascadeScope scope);
+  public abstract Val exec(Scope scope);
 
   /**
    * Override of the standard {@link Object#toString()}, used primarily for

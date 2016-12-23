@@ -1,5 +1,6 @@
 package ai.h2o.cascade;
 
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.stdlib.StandardLibrary;
 import water.Key;
 
@@ -11,7 +12,7 @@ import java.io.Closeable;
 public class CascadeSession implements Closeable {
   private String user;
   private String session_id;
-  private CascadeScope global;
+  private Scope global;
 
   /**
    * Create a new session object.
@@ -19,7 +20,7 @@ public class CascadeSession implements Closeable {
   public CascadeSession(String username) {
     user = username;
     session_id = Key.make().toString().substring(1, 7);
-    global = new CascadeScope(null);
+    global = new Scope(null);
     global.importFromLibrary(StandardLibrary.instance());
   }
 
@@ -31,7 +32,7 @@ public class CascadeSession implements Closeable {
     return user;
   }
 
-  public CascadeScope globalScope() {
+  public Scope globalScope() {
     return global;
   }
 

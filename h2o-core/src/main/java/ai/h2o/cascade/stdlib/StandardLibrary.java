@@ -1,8 +1,8 @@
 package ai.h2o.cascade.stdlib;
 
-import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.CascadeSession;
-import ai.h2o.cascade.ICascadeLibrary;
+import ai.h2o.cascade.core.ICascadeLibrary;
 import ai.h2o.cascade.core.CFrame;
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.core.IdList;
@@ -121,7 +121,7 @@ public class StandardLibrary implements ICascadeLibrary {
    * Modify class {@code cc} by adding method {@code Val apply0(Val[])} before
    * it will be instantiated. The method being added is an implementation of
    * the method declared in the {@link Function} class. This method will be
-   * called from {@link ai.h2o.cascade.asts.AstApply#exec(CascadeScope)} to
+   * called from {@link ai.h2o.cascade.asts.AstApply#exec(Scope)} to
    * invoke the functionality of the function-class {@code cc}.
    *
    * <p>The job of the {@code Val apply0(Val[])} method is thus to convert the

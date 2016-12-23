@@ -1,7 +1,7 @@
 package ai.h2o.cascade.asts;
 
 
-import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.vals.ValStr;
 
 /**
@@ -15,7 +15,7 @@ public class AstStr extends Ast<AstStr> {
   }
 
   @Override
-  public ValStr exec(CascadeScope scope) {
+  public ValStr exec(Scope scope) {
     return new ValStr(value);
   }
 

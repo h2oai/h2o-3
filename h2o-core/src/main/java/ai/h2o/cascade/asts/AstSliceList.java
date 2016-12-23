@@ -1,6 +1,6 @@
 package ai.h2o.cascade.asts;
 
-import ai.h2o.cascade.CascadeScope;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.core.SliceList;
 import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.vals.ValSlice;
@@ -41,7 +41,7 @@ public class AstSliceList extends Ast<AstSliceList> {
   }
 
   @Override
-  public Val exec(CascadeScope scope) {
+  public Val exec(Scope scope) {
     return new ValSlice(sliceList);
   }
 

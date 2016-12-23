@@ -1,7 +1,5 @@
-package ai.h2o.cascade;
+package ai.h2o.cascade.core;
 
-import ai.h2o.cascade.core.CFrame;
-import ai.h2o.cascade.core.SliceList;
 import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.vals.ValFrame;
 import water.DKV;
@@ -37,12 +35,12 @@ import java.util.Map;
  * </ul>
  *
  */
-public class CascadeScope {
-  private CascadeScope parent;
+public class Scope {
+  private Scope parent;
   private Map<String, Val> symbolTable;
 
 
-  public CascadeScope(CascadeScope parentScope) {
+  public Scope(Scope parentScope) {
     parent = parentScope;
     symbolTable = new HashMap<>(5);
     vecCopyCounts = new HashMap<>(16);

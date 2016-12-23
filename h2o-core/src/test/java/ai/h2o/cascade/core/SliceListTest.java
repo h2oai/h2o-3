@@ -1,7 +1,6 @@
 package ai.h2o.cascade.core;
 
 import ai.h2o.cascade.Cascade;
-import ai.h2o.cascade.CascadeScope;
 import ai.h2o.cascade.CascadeSession;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,7 +13,7 @@ import static org.junit.Assert.fail;
 /**
  */
 public class SliceListTest extends TestUtil {
-  private CascadeScope scope;
+  private Scope scope;
 
   @Before
   public void setUp() throws Exception {
