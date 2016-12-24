@@ -4,15 +4,6 @@
 
 ###Tutte (3.10.2.1) - 12/22/2016
 
-<h4>        Technical task
-</h4>
-<ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3695'>PUBDEV-3695</a>] -         Documentation: Add GLM to list of algorithms that support MOJOs
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3791'>PUBDEV-3791</a>] -         Documentation: Add quasibinomomial family in GLM
-</li>
-</ul>
-
 <h4>        Bug
 </h4>
 <ul>
@@ -79,6 +70,10 @@
 </h4>
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3012'>PUBDEV-3012</a>] -         Remove grid.sort_by method in Python API
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3695'>PUBDEV-3695</a>] -         Documentation: Add GLM to list of algorithms that support MOJOs
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3791'>PUBDEV-3791</a>] -         Documentation: Add quasibinomomial family in GLM
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3676'>PUBDEV-3676</a>] -         Add SLURM cluster documentation
 </li>
