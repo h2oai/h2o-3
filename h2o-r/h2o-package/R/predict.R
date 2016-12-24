@@ -6,6 +6,7 @@
 #'
 #' @param model  String with file name of MOJO or POJO Jar
 #' @param json  JSON String with inputs to model
+#' @param labels  if TRUE then show output labels in result
 #' @param classpath  (Optional) Extra items for the class path of where to look for Java classes, e.g., h2o-genmodel.jar
 #' @param javaoptions  (Optional) Java options string, default if "-Xmx4g"
 #' @return Returns an object with the prediction result
@@ -17,16 +18,17 @@
 #' h2o.predict_json('~/GBM_model_python_1473313897851_6.zip', '{"C7":1}', c(".", "lib"))
 #' }
 #' @usage
-#' h2o.predict_json(model, json, classpath, javaoptions)
+#' h2o.predict_json(model, json, labels, classpath, javaoptions)
 #' @name h2o.predict_json
 #' @export
-h2o.predict_json <- function(model, json, classpath, javaoptions) {
+h2o.predict_json <- function(model, json, labels, classpath, javaoptions) {
 	java <- "java"
 	javapath <- c(".", "h2o-genmodel.jar", .h2o.downloadJar() )
 	if (!missing(classpath)) {
 		# prepend optional path
 	   javapath <- c( classpath, javapath )
 	}
+	showlabels <- if (!missing(labels) && labels == TRUE) "-l" else ""
 	javaopts <- if (!missing(javaoptions)) javaoptions else "-Xmx4g"
     # Windows require different Java classpath separator and quoting
 	iswindows <- .Platform$OS.type == "windows"
@@ -34,7 +36,7 @@ h2o.predict_json <- function(model, json, classpath, javaoptions) {
 	jsonq <- if (iswindows) paste('"', json, '"', sep="") else paste("'", json, "'", sep="")
 	classpath <- paste(javapath, sep="", collapse=separator)
 	javaargs <- paste(" ", javaopts, " -cp ", classpath, " water.util.H2OPredictor", sep="")
-	args <- paste(javaargs, model, jsonq, sep=" ")
+	args <- paste(javaargs, showlabels, model, jsonq, sep=" ")
 	# run the Java method H2OPredictor, which will return JSON or an error message
 	res <- system2(java, args, stdout=TRUE, stderr=TRUE)
 	res <- paste0(res, collapse="")
@@ -44,7 +46,7 @@ h2o.predict_json <- function(model, json, classpath, javaoptions) {
 		# JSON returned -- it must start with { or [
 	} else  {
 	    # An error message was returned: make json
-		res = paste0("\"error\": \"", res, "\"")
+		res = paste0("{ \"error\": ", toJSON(res), " }")
 	}
     json <- fromJSON(paste0(res, collapse=""))
     return(json)
