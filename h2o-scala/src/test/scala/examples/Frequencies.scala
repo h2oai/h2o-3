@@ -48,7 +48,7 @@ class Frequencies(numFeatures: Int, minDocFreq: Int) extends Serializable {
 
   def hash(s: String) = murmurMod(numFeatures)(s)
 
-  def weigh(text: String): Data = {
+  def eval(text: String): Data = {
     val out = Array.fill[Double](numFeatures)(0.0)
 
     for {

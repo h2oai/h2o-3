@@ -20,11 +20,13 @@ package examples
 import examples.Frequencies.Data
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters
 import hex.deeplearning.{DlInput, DeepLearning, DeepLearningModel}
+import org.junit.{Assert, Test, AfterClass, BeforeClass}
 import water.fvec.{AppendableVec, Frame, NewChunk, Vec}
 import water.{Futures, H2O, Key, TestUtil}
 
 import scala.io.Source
 import scala.language.postfixOps
+import Assert._
 
 /**
   * Demo for NYC meetup and MLConf 2015.
@@ -32,37 +34,44 @@ import scala.language.postfixOps
   * It predicts spam text messages.
   * Training dataset is available in the file smalldata/smsData.txt.
   */
-object HamOrSpamDemoTest extends TestUtil {
-  ClassLoader.getSystemClassLoader.setDefaultAssertionStatus(true)
+class HamOrSpamDemoTest extends TestUtil {
   
   val numFeatures = 1024
 
   val minDocFreq: Int = 4
 
-  val freqModel = new Frequencies(numFeatures, minDocFreq)
+  val frequenciesCollector = new Frequencies(numFeatures, minDocFreq)
 
   val DATAFILE = "smsData.txt"
-  val TEST_MSGS = Seq(
-    "Michal, beer tonight in MV?",
+  val HAM = Seq(
+    "Michal, beer tonight in MV?"
+  )
+  val SPAM = Seq(
     "penis enlargement, our exclusive offer of penis enlargement, enlarge one, enlarge one free",
+    "We tried to contact you re penis enlargement, our exclusive offer of penis enlargement, enlarge one, enlarge one free",
     "We tried to contact you re your reply to our offer of a Video Handset? 750 anytime any networks mins? UNLIMITED TEXT?"
   )
 
-  def main(args: Array[String]) {
-    TestUtil.stall_till_cloudsize(1)
+  def createModel: SpamModel = {
+    val (hs: List[String], msgs: List[String]) = readSamples
+    new SpamModel(hs, msgs)
+  }
 
-    try {
-      val (hs: List[String], msgs: List[String]) = readSamples
-      val spamModel = new SpamModel(hs, msgs)
+  @Test def testOnSamples(): Unit = {
+    val spamModel = createModel
 
-      TEST_MSGS.foreach(msg => {
-        val whatitis = ("HAM"::"SPAM"::Nil)(spamModel.spamness(msg))
-        println(s"$msg is $whatitis")
-      })
-    } finally {
-      // Shutdown H2O
-      //      h2oContext.stop(stopSparkContext = true)
-      H2O.exit(0);
+    HAM foreach { m =>
+      print(s"$m...")
+      val isSpam = spamModel.isSpam(m)
+      assertFalse(s"Ham $m failed", isSpam)
+      println(s" -> $isSpam")
+    }
+    println("Now try spam")
+    SPAM foreach { m =>
+      print(s"$m...")
+      val isSpam = spamModel.isSpam(m)
+      assertTrue(s"Spam $m failed", isSpam) 
+      println(s" -> $isSpam")
     }
   }
 
@@ -98,10 +107,10 @@ object HamOrSpamDemoTest extends TestUtil {
 
   case class SpamModel(hs: List[String], msgs: List[String]) {
 
-    lazy val tf: List[Data] = msgs map freqModel.weigh
+    lazy val tf: List[Data] = msgs map frequenciesCollector.eval
 
     // Build term frequency-inverse document frequency
-    lazy val idf: freqModel.IDF = (new freqModel.IDF() /: tf) (_ + _)
+    lazy val idf: frequenciesCollector.IDF = (new frequenciesCollector.IDF() /: tf) (_ + _)
 
     lazy val weights: List[Array[Double]] = tf map idf.normalize
     
@@ -114,10 +123,11 @@ object HamOrSpamDemoTest extends TestUtil {
     lazy val dlModel = buildDLModel(train, catData("train", before), catData("valid", after))
     
     /** Spam detector */
-    def spamness(msg: String) = {
-      val weights = freqModel.weigh(msg)
+    def isSpam(msg: String) = {
+      val weights = frequenciesCollector.eval(msg)
       val normalizedWeights = idf.normalize(weights)
-      dlModel.scoreSample(normalizedWeights)
+      val spamness = dlModel.scoreSample(normalizedWeights)
+      spamness == 1
     }
   }
 
@@ -213,16 +223,35 @@ object HamOrSpamDemoTest extends TestUtil {
     (targetVec :: vecs.toList) toArray
   }
 
-  case class VectorOfDoubles(fv: Data) {
-    def name(i: Int) = "fv" + i
+}
 
-    def names: Array[String] = fv.indices map name toArray
+object HamOrSpamDemoTest extends HamOrSpamDemoTest {
+  @BeforeClass def setup() = TestUtil.stall_till_cloudsize(1)
+  @AfterClass  def shutup() = H2O.exit(0)
 
-    def vecs: Array[Vec] = fv map (x => dvec(x :: Nil))
+  ClassLoader.getSystemClassLoader.setDefaultAssertionStatus(true)
 
-    def frame: Frame = new Frame(names, vecs)
+  def main(args: Array[String]) {
+    TestUtil.stall_till_cloudsize(1)
+
+    try {
+      val spamModel = createModel
+      HAM foreach { m =>
+        print(s"$m...")
+        val isSpam = spamModel.isSpam(m)
+        //        assert(!isSpam, s"Ham $m failed")
+        println(s" -> $isSpam")
+      }
+      println("Now try spam")
+      SPAM foreach { m =>
+        print(s"$m...")
+        val isSpam = spamModel.isSpam(m)
+        //        assert(isSpam, s"Spam $m failed") 
+        println(s" -> $isSpam")
+      }
+    } finally {
+      H2O.exit(0)
+    }
   }
 
 }
-
-
