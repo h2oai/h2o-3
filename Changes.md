@@ -28,8 +28,6 @@
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3728'>PUBDEV-3728</a>] -         Binary loss functions return error in GLRM
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3738'>PUBDEV-3738</a>] -         tweak StackedEnsemble in the generated Python binding
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3747'>PUBDEV-3747</a>] -         python hist() plotted bars overlap
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3750'>PUBDEV-3750</a>] -         Python set_levels doesn&#39;t change other methods
