@@ -36,6 +36,21 @@ public class DlInput implements Serializable {
     }
   }
   
+  public String[] names() {
+    String[] names = new String[weights.length];
+    for (int i = 0; i < names.length; i++) names[i] = weights[i].name;
+    return names;
+  }
+  
+  public double[] row(int rowIdx) {
+    double[] row = new double[weights.length];
+ 
+    for (int colIdx = 0; colIdx < row.length; colIdx++) {
+      row[colIdx] = weights[colIdx].at(rowIdx);
+    }
+    return row;
+  }
+  
   @Override public String toString() {
     return "DlInput(" + name + ") " + target.size() + " rows, " + weights.length + " columns";
   }

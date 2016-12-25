@@ -49,6 +49,9 @@ class HamOrSpamDemoTest extends TestUtil {
   val SPAM = Seq(
     "penis enlargement, our exclusive offer of penis enlargement, enlarge one, enlarge one free",
     "We tried to contact you re penis enlargement, our exclusive offer of penis enlargement, enlarge one, enlarge one free",
+    "We tried to contact you re UNLIMITED penis enlargement, our exclusive offer of penis enlargement, enlarge one, enlarge one free",
+    "We tried to contact you re your reply to our offer of penis enlargement, our exclusive offer of penis enlargement",
+    "We tried to contact you re your reply to our offer of penis enlargement, our exclusive offer of penis enlargement, enlarge one, enlarge one free",
     "We tried to contact you re your reply to our offer of a Video Handset? 750 anytime any networks mins? UNLIMITED TEXT?"
   )
 
@@ -146,8 +149,6 @@ class HamOrSpamDemoTest extends TestUtil {
     
     val dlParams = new DeepLearningParameters()
     dlParams._train = train._key
-    println("Train was " + train.lastVecName())
-    println("Now train is " + dlParams.train().lastVecName())
     dlParams.trainData = trainData
     dlParams.testData = testData
     dlParams._response_column = "target"
@@ -209,7 +210,7 @@ class HamOrSpamDemoTest extends TestUtil {
     val columns:List[List[Double]] = row0.weights.indices.map(i => rows.map(_.weights(i)):List[Double]).toList
 
     val javaColumns: java.util.List[java.util.List[java.lang.Double]] = columns.map(
-      column => (column.map(java.lang.Double.valueOf)).asJava) asJava
+      column => column.map(java.lang.Double.valueOf).asJava) asJava
 
     new DlInput(name, target, javaColumns)
   }
@@ -242,15 +243,17 @@ object HamOrSpamDemoTest extends HamOrSpamDemoTest {
       HAM foreach { m =>
         print(s"$m...")
         val isSpam = spamModel.isSpam(m)
+        val ok = !isSpam
         //        assert(!isSpam, s"Ham $m failed")
-        println(s" -> $isSpam")
+        println(s" -> $ok")
       }
       println("Now try spam")
       SPAM foreach { m =>
         println(s"$m...")
         val isSpam = spamModel.isSpam(m)
+        val ok = isSpam
         //        assert(isSpam, s"Spam $m failed") 
-        println(s" -> $isSpam")
+        println(s" -> $ok")
       }
     } finally {
       H2O.exit(0)
