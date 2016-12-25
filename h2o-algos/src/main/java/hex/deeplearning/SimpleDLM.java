@@ -31,7 +31,6 @@ public abstract class SimpleDLM<
   public boolean isUnstable() { return model_info().isUnstable(); }
   
   public int scoreSample(double[] sample) throws IllegalArgumentException {
-    int mb=0;
     if (isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);

@@ -33,7 +33,9 @@ import java.io.*;
  */
 abstract public class Iced<D extends Iced> implements Freezable<D>, Externalizable {
 
-  public void __(Object x) {System.out.println(x);}
+  public void __(Object x) {
+    System.out.println(x);
+  }
   
   // The serialization flavor / delegate.  Lazily set on first use.
   transient private volatile short _ice_id = 0;

@@ -19,14 +19,14 @@ package examples
 
 import examples.Frequencies.Data
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters
-import hex.deeplearning.{DlInput, DeepLearning, DeepLearningModel}
-import org.junit.{Assert, Test, AfterClass, BeforeClass}
+import hex.deeplearning.{DeepLearning, DeepLearningModel, DlInput}
+import org.junit.Assert._
+import org.junit.{AfterClass, BeforeClass, Test}
 import water.fvec.{AppendableVec, Frame, NewChunk, Vec}
 import water.{Futures, H2O, Key, TestUtil}
 
 import scala.io.Source
 import scala.language.postfixOps
-import Assert._
 
 /**
   * Demo for NYC meetup and MLConf 2015.
@@ -120,7 +120,7 @@ class HamOrSpamDemoTest extends TestUtil {
     // Split table
     lazy val (before, after) = categorizedTexts.splitAt(cutoff)
     lazy val train = buildTable("train", before)
-    lazy val dlModel = buildDLModel(train, catData("train", before), catData("valid", after))
+    val dlModel = buildDLModel(train, catData("train", before), catData("valid", after))
     
     /** Spam detector */
     def isSpam(msg: String) = {
@@ -236,6 +236,9 @@ object HamOrSpamDemoTest extends HamOrSpamDemoTest {
 
     try {
       val spamModel = createModel
+//      H2O.exit(0)
+      spamModel.isSpam("")
+      
       HAM foreach { m =>
         print(s"$m...")
         val isSpam = spamModel.isSpam(m)
@@ -244,7 +247,7 @@ object HamOrSpamDemoTest extends HamOrSpamDemoTest {
       }
       println("Now try spam")
       SPAM foreach { m =>
-        print(s"$m...")
+        println(s"$m...")
         val isSpam = spamModel.isSpam(m)
         //        assert(isSpam, s"Spam $m failed") 
         println(s" -> $isSpam")
