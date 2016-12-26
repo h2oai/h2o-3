@@ -1,26 +1,27 @@
 package ai.h2o.cascade.core;
 
 import ai.h2o.cascade.stdlib.StdlibFunction;
-import org.apache.commons.lang.NotImplementedException;
+import water.H2O;
 import water.fvec.Frame;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 /**
  * Cascade version of the {@link Frame} class.
- * <p>
- * A CFrame may exist in two forms: either in "stone", where it just works as
+ *
+ * <p> A CFrame may exist in two forms: either in "stone", where it is merely
  * a thin wrapper around an underlying {@link Frame}; or as a "ghost", where
- * the frame is essentially a blueprint for how it should be eventually
- * computed.
+ * the frame comprises a blueprint for how it should eventually be computed.
+ *
  */
-public class CFrame {
+public class CFrame {  // not Iced: not intended to be stored in DKV
 
   private Frame stone;
   private int ncols;
   private long nrows;
-  private ArrayList<CFrameColumn> columns;
+  private List<CFrameColumn> columns;
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -33,8 +34,8 @@ public class CFrame {
    * processing of the source frame is being done yet.
    * <p>
    * When {@code CFrame} is created with this constructor, it is considered
-   * to exist in the "lightweight" mode. It may later be converted into the
-   * normal mode if the cascade runtime demands it.
+   * to exist in the "stone" mode. It may later be converted into the
+   * ghost mode if the cascade runtime requires it.
    */
   public CFrame(Frame f) {
     stone = f;
@@ -104,7 +105,7 @@ public class CFrame {
   public CFrame extractColumns(SliceList indices) {
     if (stone == null) {
       // TODO
-      throw new NotImplementedException();
+      throw H2O.unimpl();
 
     } else {
       CFrame res = new CFrame();

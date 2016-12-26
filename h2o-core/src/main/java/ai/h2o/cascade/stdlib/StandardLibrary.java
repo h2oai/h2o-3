@@ -22,6 +22,9 @@ import java.util.*;
  * language. This library also adds certain predefined constants, such as
  * {@code true, False, NaN, null}, etc.
  * <p>
+ * Every function that's being written by the user should be registered here,
+ * within the private constructor.
+ * <p>
  * This library is imported into the global scope when a new session is
  * started (see {@link CascadeSession}).
  * <p>
@@ -36,8 +39,10 @@ import java.util.*;
  * library before the library is first instantiated.
  */
 public class StandardLibrary implements ICascadeLibrary {
+
   private static StandardLibrary instance;
   private Map<String, Val> members;
+
 
   /** Retrieve the singleton instance of this class. */
   public static StandardLibrary instance() {
@@ -359,6 +364,19 @@ public class StandardLibrary implements ICascadeLibrary {
   }
 
 
+  /**
+   * Write the "return" expression for the generated {@code apply0(Val[])}
+   * function to the output stream {@code sb}. This method will handle return
+   * types which are Java primitives, as well as produce correct code for the
+   * {@code void} return type, or when the underlying {@code method} returns
+   * a {@link Val}.
+   *
+   * @param method {@code apply(...)} method that the return statement should
+   *               invoke.
+   * @param indent Code indent level.
+   * @param args Unwrapped arguments to the {@code apply(...)} method.
+   * @param sb String buffer where to write the return statement.
+   */
   private void writeReturnStatement(MInfo method, String indent, String args, SB sb) {
     String retClass = method.retValName();
     switch (retClass) {
