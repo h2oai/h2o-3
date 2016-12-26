@@ -1,19 +1,18 @@
 package water.api;
 
-import com.google.code.regexp.Pattern;
-
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 /**
  *
  */
 public class RequestUri {
 
-  private static Pattern version_pattern = Pattern.compile("^/(?i)(\\d+|EXPERIMENTAL|LATEST)/(.*)");
+  private static Pattern version_pattern = Pattern.compile("^/(?:\\d+|EXPERIMENTAL|LATEST)/.*", Pattern.CASE_INSENSITIVE);
   private static Set<String> http_methods = new HashSet<>(Arrays.asList("HEAD", "GET", "POST", "DELETE"));
 
   private String method;
