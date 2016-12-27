@@ -1,7 +1,7 @@
 ``standardize``
 ---------------
 
-- Available in: Deep Learning, GLM
+- Available in: Deep Learning, GLM, K-Means
 - Hyperparameter: no
 
 Description
