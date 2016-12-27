@@ -5,7 +5,8 @@ import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.vals.ValNums;
+import water.rapids.vals.ValNum;
+import water.rapids.Val;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -31,13 +32,10 @@ public class AstNaRowCnt extends AstPrimitive {
   }  // (naCnt fr)
 
   @Override
-  public ValNums apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+  public Val apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
-    double[] ds = new double[1];
     Set<Long> naRowCnt = new HashSet<Long>();
-
     if (fr.hasNAs()) {
-
       for (int i = 0; i < fr.numCols(); ++i) { // check each data columns for nas
         Vec oneColumn = fr.vec(i);
         for (long r = 0; r < fr.numRows(); r++) {
@@ -47,7 +45,6 @@ public class AstNaRowCnt extends AstPrimitive {
         }
       }
     }
-    ds[0] = naRowCnt.size();
-    return new ValNums(ds);
+    return new ValNum(naRowCnt.size());
   }
 }

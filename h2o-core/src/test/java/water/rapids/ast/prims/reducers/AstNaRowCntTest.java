@@ -32,8 +32,7 @@ public class AstNaRowCntTest extends TestUtil {
          // make the call to count number of NAs rows in frame
       String x = String.format("(naRowCnt %s)", f._key);
       Val res = Rapids.exec(x);         // make the call to count number of NAs rows  in frame
-      double[] naCnts = res.getNums();
-      assertEquals((int) naCnts[0], 2);
+      assertEquals((int) res.getNum(), 2);
     } finally {
       if (f != null) f.delete();
     }
@@ -46,8 +45,7 @@ public class AstNaRowCntTest extends TestUtil {
               ard(Double.NaN, 3.3), ard(Double.NaN, Double.NaN));
       String x = String.format("(naRowCnt %s)", f._key);
       Val res = Rapids.exec(x);         // make the call to count number of NAs rows  in frame
-      double[] naCnts = res.getNums();
-      assertEquals((int) naCnts[0], 3);
+      assertEquals((int) res.getNum(), 3);
     } finally {
       if (f != null) f.delete();
     }
