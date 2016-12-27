@@ -18,7 +18,7 @@ import java.util.Set;
 public class AstNaRowCnt extends AstPrimitive {
   @Override
   public String[] args() {
-    return new String[]{"ary"};
+    return new String[]{"frame"};
   }
 
   @Override
