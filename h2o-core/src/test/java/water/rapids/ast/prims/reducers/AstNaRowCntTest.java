@@ -25,8 +25,9 @@ public class AstNaRowCntTest extends TestUtil {
   //--------------------------------------------------------------------------------------------------------------------
 
   @Test public void testAstRowNaNumEnum() {
-    Frame f = parse_test_file(Key.make("prostate.hex"), "smalldata/prostate/prostate_cat.csv");
+    Frame f = null;
     try {
+      f = parse_test_file(Key.make("prostate.hex"), "smalldata/prostate/prostate_cat.csv");
       // insert NAs in 0/2/3/4 columns which are enums
       f.vec(0).setNA(0);  // set 0th column 0th row to NA
       f.vec(2).setNA(10); // set 2th column 10th row to NA
@@ -47,8 +48,9 @@ public class AstNaRowCntTest extends TestUtil {
   }
 
   @Test public void testAstRowNaCntString() {
-    Frame f = parse_test_file(Key.make("prostate.hex"), "smalldata/iris/virginica.csv");
+    Frame f = null;
     try {
+      f = parse_test_file(Key.make("prostate.hex"), "smalldata/iris/virginica.csv");
       // insert NAs in 4th column which is string
       f.vec(4).setNA(10);  // set 4th column 100th row to NA.
       f.vec(4).setNA(20);  // set 4th column 100th row to NA.
@@ -67,8 +69,9 @@ public class AstNaRowCntTest extends TestUtil {
   }
 
   @Test public void testAstRowNaCntUUIDs() {
-    Frame f = parse_test_file(Key.make("prostate.hex"), "smalldata/jira/test_uuid_na.csv");
+    Frame f = null;
     try {
+      f = parse_test_file(Key.make("prostate.hex"), "smalldata/jira/test_uuid_na.csv");
       String x = String.format("(naRowCnt %s)", f._key);
       Val res = Rapids.exec(x);         // frame contains 1 NA
       assertEquals((int) res.getNum(), 1);
@@ -78,8 +81,9 @@ public class AstNaRowCntTest extends TestUtil {
   }
 
   @Test public void testAstRowNaCntDateTime() {
-    Frame f = parse_test_file(Key.make("prostate.hex"), "smalldata/parser/orc/orc2csv/TestOrcFile.testDate1900.csv");
+    Frame f = null;
     try {
+      f = parse_test_file(Key.make("prostate.hex"), "smalldata/parser/orc/orc2csv/TestOrcFile.testDate1900.csv");
       // insert NAs into 0th column which is time stamp
       f.vec(0).setNA(1);
       f.vec(0).setNA(18);
