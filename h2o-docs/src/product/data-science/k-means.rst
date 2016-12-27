@@ -193,8 +193,8 @@ References
 ~~~~~~~~~~
 
 `Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. The
-Elements of Statistical Learning. Vol.1. N.p., Springer New York,
-2001. <http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf>`__
+Elements of Statistical Learning. Second Edition. N.p., Springer New York,
+2001. <http://statweb.stanford.edu/~tibs/ElemStatLearn/printings/ESLII_print10.pdf>`__
 
 Xiong, Hui, Junjie Wu, and Jian Chen. “K-means Clustering Versus
 Validation Measures: A Data- distribution Perspective.” Systems, Man,

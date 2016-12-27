@@ -2,7 +2,7 @@
 ------------------
 
 - Available in: GLM, PCA, GLRM, K-Means
-- Hyperparameter: no
+- Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
