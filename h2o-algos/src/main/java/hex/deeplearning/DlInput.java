@@ -15,6 +15,7 @@ public class DlInput implements Serializable {
   public final DlColumn<Double>[] weights;
   public final String name;
   
+  public double weight(int row, int col) { return weights[col].at(row);}
   public int target(int i) { return target.data.get(i); }
   
   public boolean isCategorical() {

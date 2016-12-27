@@ -9,7 +9,7 @@ import water.fvec.NewChunk;
  * Pulled out from Model
  */
 public class BigScore extends MRTask<BigScore> {
-  private Model model;
+  final protected Model model;
   final protected String[] _domain; // Prediction domain; union of test and train classes
   final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
   public ModelMetrics.MetricBuilder _mb;

@@ -387,13 +387,13 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
      */
     public final DeepLearningModel trainModel(DeepLearningModel model) {
       
-      Frame validScoreFrame = null;
-      Frame train, trainScoreFrame;
       try {
 //      if (checkpoint == null && !quiet_mode) logStart(); //if checkpoint is given, some Job's params might be uninitialized (but the restarted model's parameters are correct)
         if (model == null) {
           model = DKV.get(dest()).get();
         }
+        Frame validScoreFrame = null;
+        Frame train, trainScoreFrame;
             
         Log.info("Model category: " + (_parms._autoencoder ? "Auto-Encoder" : isClassifier() ? "Classification" : "Regression"));
         final long model_size = model.model_info().size();

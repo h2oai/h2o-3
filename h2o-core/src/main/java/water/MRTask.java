@@ -644,8 +644,6 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         else if (num_outputs == 2) {  // convenience versions for cases with 2 outputs (e.g split).
           assert appendableChunks != null;
           if (num_fr_vecs == 1) map(bvs[0], appendableChunks[0], appendableChunks[1]);
-          // else if (fr_vecs_length == 2) map(bvs[0], bvs[1], appendableChunks[0], appendableChunks[1]);
-          // else if (fr_vecs_length == 3) map(bvs[0], bvs[1], bvs[2], appendableChunks[0], appendableChunks[1]);
           map(bvs, appendableChunks[0], appendableChunks[1]);
         }
         if (num_outputs >= 0)

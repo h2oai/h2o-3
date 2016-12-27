@@ -1,8 +1,13 @@
 package hex.deeplearning;
 
+import hex.BigScore;
 import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
+import water.H2O;
+import water.Job;
 import water.Key;
+import water.fvec.Chunk;
+import water.fvec.Frame;
 import water.util.Log;
 
 import java.util.Arrays;
@@ -31,19 +36,49 @@ public abstract class SimpleDLM<
   public boolean isUnstable() { return model_info().isUnstable(); }
   
   public int scoreSample(double[] sample) throws IllegalArgumentException {
+    double[] out = feedOneRow(sample);
+
+    System.out.println("Got score " + Arrays.toString(out));
+    return out[0] > .5 ? 0 : 1;
+  }
+
+  protected double[] score0(double[] data) {
+    double[] out = feedOneRow(data);
+    return finalizePredictions(out);
+  }
+  
+  @Override
+  public double[] score0(Chunk chks[], double weight, double offset, int row_in_chunk, double[] tmp, double[] preds ) {
+//    Thread.dumpStack();
+    int rowIdx = (int)(chks[0].start() + row_in_chunk);
+    return scoreRow(rowIdx);
+  }
+
+  public double[] scoreRow(int rowIdx) {
+    double[] sample = model_info.parameters.trainData.row(rowIdx);
+    double[] score = score0(sample);
+    if(isSupervised()) {
+      correctProbabilities(sample, score);
+    }
+    return score;
+  }
+
+
+  void assertStable() {
     if (isUnstable()) {
       Log.err(unstable_msg);
       throw new UnsupportedOperationException(unstable_msg);
     }
+  }
+
+  private double[] feedOneRow(double[] data) {
+    assertStable();
     Neurons[] neurons = model_info.neuronsForTesting();
     final Neurons.Input neuron = (Neurons.Input) neurons[0];
-    neuron.setInput(-1, sample, 0);
+    neuron.setInput(-1, data, 0);
 
     Neurons.runTestBatch(neurons, model_info);
-    double[] out = neurons[neurons.length - 1]._a[0].raw();
-
-    System.out.println("Got score " + Arrays.toString(out));
-    return out[0] > .5 ? 0 : 1;
+    return neurons[neurons.length - 1]._a[0].raw();
   }
 
   abstract public P get_params();
@@ -59,7 +94,6 @@ public abstract class SimpleDLM<
       preds[0] = -1;
       preds[2] = _dist.linkInv(out[0]);
       preds[1] = 1-preds[2];
-      return preds;
     } else if (_output.isClassifier()) {
       assert (preds.length == out.length + 1);
       for (int i = 0; i < preds.length - 1; ++i) {
@@ -81,19 +115,11 @@ public abstract class SimpleDLM<
 
   @Override
   protected double[] score0(double[] data, double[] preds) {
-    double offset = 0;
-    int mb=0;
-    if (model_info().isUnstable()) {
-      Log.err(unstable_msg);
-      throw new UnsupportedOperationException(unstable_msg);
-    }
-    Neurons[] neurons = model_info.neuronsForTesting();
-    final Neurons.Input neuron = (Neurons.Input) neurons[0];
-    neuron.setInput(-1, data, mb);
-
-    Neurons.runTestBatch(neurons, model_info);
-    double[] out = neurons[neurons.length - 1]._a[mb].raw();
-
-    return finalizePredictions(out);
+    throw H2O.unimpl("How did you get here?");
   }
+
+  @Override protected BigScore buildBigScore(Frame adaptFrm, int nNames, boolean computeMetrics, String[] domain, boolean makePreds, Job j) {
+    return new DLScore(this, domain,nNames,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, makePreds, j);
+  }
+
 }

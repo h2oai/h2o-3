@@ -476,7 +476,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean isSupervised() { return _isSupervised; }
     /** The name of the response column (which is always the last column). */
     protected final boolean _hasOffset; // weights and offset are kept at designated position in the names array
-    protected final boolean _hasWeights;// only need to know if we have them
+    public final boolean _hasWeights;// only need to know if we have them
     protected final boolean _hasFold;// only need to know if we have them
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
@@ -1083,12 +1083,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[][] domains = new String[names.length][];
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(this, domains[0],names.length,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, true /*make preds*/, j).doAll(names.length, Vec.T_NUM, adaptFrm);
+    final BigScore bigScore = 
+        buildBigScore(adaptFrm, names.length, computeMetrics, domains[0], true, j);
+//        new BigScore(this, domains[0], names.length, adaptFrm.means(), _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0, computeMetrics, true /*make preds*/, j);
+    
+    BigScore bs = bigScore.doAll(names.length, Vec.T_NUM, adaptFrm);
     if (computeMetrics)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     return bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
   }
 
+  protected BigScore buildBigScore(Frame adaptFrm, int nNames, boolean computeMetrics, String[] domain, boolean makePreds, Job j) {
+    return new BigScore(this, domain,nNames,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, makePreds, j);
+  }
 
   /** Score an already adapted frame.  Returns a MetricBuilder that can be used to make a model metrics.
    * @param adaptFrm Already adapted frame
@@ -1099,10 +1106,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Build up the names & domains.
     String [] domain = !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     // Score the dataset, building the class distribution & predictions
-    BigScore bs = new BigScore(this, domain,0,adaptFrm.means(),_output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0,computeMetrics, false /*no preds*/, null).doAll(adaptFrm);
+    BigScore bs = buildBigScore(adaptFrm, 0, computeMetrics, domain, false, null).doAll(adaptFrm);
     return bs._mb;
   }
-
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
    *  and expect the last Chunks are for the final distribution and prediction.
