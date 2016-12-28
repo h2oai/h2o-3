@@ -342,7 +342,11 @@
 
     #Check if payload is a raw vector(binary data) and convert to character for error printing. Otherwise return
     #normal payload
-    jsonObject = jsonlite::fromJSON(ifelse(is.raw(rv$payload),rawToChar(rv$payload),rv$payload), simplifyDataFrame=FALSE)
+    if(is.raw(rv$payload)){
+      jsonObject = jsonlite::fromJSON(rawToChar(rv$payload), simplifyDataFrame=FALSE)
+    }else{
+      jsonObject = jsonlite::fromJSON(rv$payload, simplifyDataFrame=FALSE)
+    }
 
     exceptionType = jsonObject$exception_type
     if (! is.null(exceptionType)) {
