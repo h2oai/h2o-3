@@ -4,7 +4,7 @@ import ai.h2o.cascade.Cascade;
 import ai.h2o.cascade.CascadeParserTest;
 import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.CascadeSession;
-import ai.h2o.cascade.core.CFrame;
+import ai.h2o.cascade.core.WorkFrame;
 import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.vals.ValFrame;
 import org.junit.BeforeClass;
@@ -39,8 +39,8 @@ public class FnFromdkvTest extends TestUtil {
       // Import frame {@code f} from DKV into the Cascade session
       Val res = exec("(fromdkv `iris` '" + originalFrame._key + "')");
       assertTrue(res instanceof ValFrame);
-      CFrame cff = res.getFrame();
-      assertTrue("CFrame object is supposed to be in the 'stone' mode", cff.isStoned());
+      WorkFrame cff = res.getFrame();
+      assertTrue("WorkFrame object is supposed to be in the 'stone' mode", cff.isStoned());
       Frame importedFrame = cff.getStoneFrame();
       water.Scope.track(importedFrame);
 

@@ -1,6 +1,6 @@
 package ai.h2o.cascade.stdlib.frame;
 
-import ai.h2o.cascade.core.CFrame;
+import ai.h2o.cascade.core.WorkFrame;
 import ai.h2o.cascade.core.SliceList;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 
@@ -9,7 +9,7 @@ import ai.h2o.cascade.stdlib.StdlibFunction;
  */
 public class FnCol extends StdlibFunction {
 
-  public CFrame apply(CFrame frame, int column) {
+  public WorkFrame apply(WorkFrame frame, int column) {
     if (column < 0)
       throw new ValueError(1, "Column index cannot be negative");
     if (column >= frame.nCols())
@@ -18,7 +18,7 @@ public class FnCol extends StdlibFunction {
     return frame.extractColumns(new SliceList(column));
   }
 
-  public CFrame apply(CFrame frame, String colname) {
+  public WorkFrame apply(WorkFrame frame, String colname) {
     int i = frame.findColumnByName(colname);
     if (i == -1)
       throw new ValueError(1, "Column '" + colname + "' was not found in the frame");

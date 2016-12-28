@@ -1,11 +1,8 @@
 package ai.h2o.cascade.stdlib;
 
-import ai.h2o.cascade.core.Scope;
+import ai.h2o.cascade.core.*;
 import ai.h2o.cascade.CascadeSession;
-import ai.h2o.cascade.core.ICascadeLibrary;
-import ai.h2o.cascade.core.CFrame;
-import ai.h2o.cascade.core.Function;
-import ai.h2o.cascade.core.IdList;
+import ai.h2o.cascade.core.WorkFrame;
 import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.vals.ValFun;
 import ai.h2o.cascade.vals.ValNull;
@@ -182,11 +179,11 @@ public class StandardLibrary implements ICascadeLibrary {
    * {@code apply()} methods:
    * <pre>{@code
    *   apply()
-   *   apply(CFrame, int, boolean);
-   *   apply(CFrame, double);
-   *   apply(CFrame, double, String);
-   *   apply(CFrame, int, String[]);
-   *   apply(CFrame, int, int, int, int, int);
+   *   apply(WorkFrame, int, boolean);
+   *   apply(WorkFrame, double);
+   *   apply(WorkFrame, double, String);
+   *   apply(WorkFrame, int, String[]);
+   *   apply(WorkFrame, int, int, int, int, int);
    * }</pre>
    */
   private String makeApply0(List<MInfo> applyMethods) throws NotFoundException {
@@ -483,7 +480,7 @@ public class StandardLibrary implements ICascadeLibrary {
       TYPE_MAP.put("java.lang.String", "STR");
       TYPE_MAP.put("double[]", "NUMS");
       TYPE_MAP.put("java.lang.String[]", "STRS");
-      TYPE_MAP.put(CFrame.class.getName(), "FRAME");
+      TYPE_MAP.put(WorkFrame.class.getName(), "FRAME");
       TYPE_MAP.put(IdList.class.getName(), "IDS");
     }
 

@@ -1,7 +1,7 @@
 package ai.h2o.cascade.vals;
 
 import ai.h2o.cascade.asts.Ast;
-import ai.h2o.cascade.core.CFrame;
+import ai.h2o.cascade.core.WorkFrame;
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.core.IdList;
 import ai.h2o.cascade.core.SliceList;
@@ -132,7 +132,7 @@ public abstract class Val {
   public IdList getIds() {
     throw badValue("list of ids (in backticks)");
   }
-  public CFrame getFrame() {
+  public WorkFrame getFrame() {
     throw badValue("Frame");
   }
   public Function getFun() {

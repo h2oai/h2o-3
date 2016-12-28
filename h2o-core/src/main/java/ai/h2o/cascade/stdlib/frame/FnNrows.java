@@ -1,6 +1,6 @@
 package ai.h2o.cascade.stdlib.frame;
 
-import ai.h2o.cascade.core.CFrame;
+import ai.h2o.cascade.core.WorkFrame;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 
 /**
@@ -8,7 +8,7 @@ import ai.h2o.cascade.stdlib.StdlibFunction;
  */
 public class FnNrows extends StdlibFunction {
 
-  public long apply(CFrame frame) {
+  public long apply(WorkFrame frame) {
     return frame.nRows();
   }
 

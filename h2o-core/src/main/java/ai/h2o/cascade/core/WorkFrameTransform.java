@@ -1,9 +1,9 @@
 package ai.h2o.cascade.core;
 
 /**
- * Transformation step used inside of a {@link CFrame}.
+ * Transformation step used inside of a {@link WorkFrame}.
  */
-public abstract class CFrameTransform {
+public abstract class WorkFrameTransform {
   protected int ioffset;
   protected int ooffset;
 
