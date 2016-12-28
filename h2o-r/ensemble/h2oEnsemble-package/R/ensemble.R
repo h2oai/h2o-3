@@ -5,6 +5,7 @@ h2o.ensemble <- function(x, y, training_frame,
                          metalearner = "h2o.glm.wrapper",
                          cvControl = list(V = 5, shuffle = TRUE),  #maybe change this to cv_control
                          seed = 1,
+                         weights_column,
                          parallel = "seq",  #only seq implemented
                          keep_levelone_data = TRUE) 
 {
@@ -118,7 +119,8 @@ h2o.ensemble <- function(x, y, training_frame,
                 parallel = parallel, 
                 seed = seed, 
                 V = V, 
-                L = L, 
+                L = L,
+                weights_column = weights_column,
                 idxs = idxs,
                 metalearner_type = metalearner_type)
   # TO DO: Could pass on the metalearner arg instead of metalearner_type and get this info internally
@@ -146,11 +148,13 @@ h2o.ensemble <- function(x, y, training_frame,
                                                                           id = seq(N), 
                                                                           obsWeights = rep(1,N)), gcFirst = FALSE)
   } else {
-    Z$y <- training_frame[,c(y)]  # do we want to add y to the Z frame?  
+    Z$y <- training_frame[,c(y)]  # do we want to add y to the Z frame?
+    Z$weights <- training_frame[, c(weights_column)]
     runtime$metalearning <- system.time(metafit <- match.fun(metalearner)(x = learner, 
                                                                           y = "y", 
                                                                           training_frame = Z, 
                                                                           validation_frame = NULL, 
+                                                                          weights_column = 'weights',
                                                                           family = family), gcFirst = FALSE)
   }
   
@@ -165,7 +169,8 @@ h2o.ensemble <- function(x, y, training_frame,
   
   # Ensemble model
   out <- list(x = x,
-              y = y, 
+              y = y,
+              weights = weights_column,
               family = family, 
               learner = learner,
               metalearner = metalearner,
@@ -187,11 +192,11 @@ h2o.ensemble <- function(x, y, training_frame,
 
 
 # Generate the CV predicted values for all learners
-.make_Z <- function(x, y, training_frame, family, learner, parallel, seed, V, L, idxs, metalearner_type = c("h2o", "SuperLearner")) {
+.make_Z <- function(x, y, training_frame, family, learner, parallel, weights_column, seed, V, L, idxs, metalearner_type = c("h2o", "SuperLearner")) {
   
   # Do V-fold cross-validation of each learner (in a loop/apply over 1:L)...
   fitlist <- sapply(X = 1:L, FUN = .fitWrapper, y = y, xcols = x, training_frame = training_frame,
-                    validation_frame = NULL, family = family, learner = learner, 
+                    validation_frame = NULL, family = family, learner = learner, weights_column = weights_column,
                     seed = seed, fold_column = "fold_id", 
                     simplify = FALSE)
   
@@ -222,15 +227,15 @@ h2o.ensemble <- function(x, y, training_frame,
 
 
 # Train a model using learner l 
-.fitFun <- function(l, y, x, training_frame, validation_frame, family, learner, seed, fold_column) {
+.fitFun <- function(l, y, x, training_frame, validation_frame, family, learner, weights_column, seed, fold_column) {
   if (!is.null(fold_column)) cv = TRUE
   if (is.numeric(seed)) set.seed(seed)  #If seed given, set seed prior to next step
   if (("x" %in% names(formals(learner[l]))) && (as.character(formals(learner[l])$x)[1] != "")) {
     # Special case where we pass a subset of the colnames, x, in a custom learner function wrapper
-    fit <- match.fun(learner[l])(y = y, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = TRUE)
+    fit <- match.fun(learner[l])(y = y, training_frame = training_frame, validation_frame = NULL, family = family, weights_column = weights_column, fold_column = fold_column, keep_cross_validation_folds = TRUE)
   } else {
     # Use all predictors in training set for training
-    fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = TRUE)
+    fit <- match.fun(learner[l])(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, weights_column = weights_column, fold_column = fold_column, keep_cross_validation_folds = TRUE)
   }
   #fit <- get(learner[l], mode = "function", envir = parent.frame())(y = y, x = x, training_frame = training_frame, validation_frame = NULL, family = family, fold_column = fold_column, keep_cross_validation_folds = cv)
   return(fit)
@@ -238,10 +243,10 @@ h2o.ensemble <- function(x, y, training_frame,
 
 
 # Wrapper function for .fitFun to record system.time
-.fitWrapper <- function(l, y, xcols, training_frame, validation_frame, family, learner, seed, fold_column) {
+.fitWrapper <- function(l, y, xcols, training_frame, validation_frame, family, learner, weights_column, seed, fold_column) {
   print(sprintf("Cross-validating and training base learner %s: %s", l, learner[l]))
   fittime <- system.time(fit <- .fitFun(l, y, xcols, training_frame, validation_frame, family, 
-                                        learner, seed, fold_column), gcFirst=FALSE)
+                                        learner, weights_column, seed, fold_column), gcFirst=FALSE)
   return(list(fit=fit, fittime=fittime))
 }
 
