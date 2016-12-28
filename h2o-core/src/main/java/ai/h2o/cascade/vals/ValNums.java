@@ -24,4 +24,17 @@ public class ValNums extends Val {
   public double[] getNums() {
     return nums;
   }
+
+
+  // When {@code nums} array is empty, it can be treated as an empty StrList as well
+  @Override
+  public boolean isStrs() {
+    return nums.length == 0;
+  }
+
+  @Override
+  public String[] getStrs() {
+    if (nums.length == 0) return new String[0];
+    return super.getStrs();
+  }
 }

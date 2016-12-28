@@ -339,6 +339,9 @@ public class CascadeParser {
    */
   private String parseString() {
     char quote = peek();
+    if (!isQuote(quote)) {
+      throw syntaxError("Expected a string");
+    }
     int start = ++pos;
     boolean has_escapes = false;
     while (pos < expr.length()) {
@@ -437,9 +440,8 @@ public class CascadeParser {
    * advance parse position to the end of the input and return a space.
    */
   private char nextChar() {
-    char c = ' ';
-    while (pos < expr.length() && isWhitespace(c = peek())) pos++;
-    return c;
+    while (pos < expr.length() && isWhitespace(expr.charAt(pos))) pos++;
+    return peek();
   }
 
   /**

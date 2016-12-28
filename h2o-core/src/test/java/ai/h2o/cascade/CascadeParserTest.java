@@ -1,9 +1,7 @@
 package ai.h2o.cascade;
 
-import ai.h2o.cascade.asts.Ast;
-import ai.h2o.cascade.asts.AstNum;
-import ai.h2o.cascade.asts.AstNumList;
-import ai.h2o.cascade.asts.AstStr;
+import ai.h2o.cascade.asts.*;
+import ai.h2o.cascade.vals.Val;
 import org.apache.commons.lang.StringUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,9 +26,11 @@ public class CascadeParserTest extends TestUtil {
   private final String ESCSHR = "Escape sequence too short";
   private final String ENDSTR = "Unexpected end of string";
   private final String EXPNUM = "Expected a number";
+  private final String EXPSTR = "Expected a string";
   private final String MULTIP = "Invalid number: multiple points";
   private final String BADNUM = "Invalid number";
   private final String SYNTAX = "Invalid syntax";
+  private final String UNICOD = "Illegal Unicode codepoint ";
 
   @BeforeClass
   public static void setup() {
@@ -83,10 +83,12 @@ public class CascadeParserTest extends TestUtil {
     parse_err("'\\xHI", NONHEX + "'H'", 1, 4);
     parse_err("'\\u123 spam'", NONHEX + "' '", 1, 6);
     parse_err("'\\U'",         ESCSHR, 1, 3);
-    parse_err("'\\U1234aBcD'", "Illegal Unicode codepoint 0x1234ABCD", 1, 10);
+    parse_err("'\\U1234aBcD'", UNICOD + "0x1234ABCD", 1, 10);
     parse_err("'\\U1F578'",    ESCSHR, 1, 8);
     parse_err("'\\U+1F578'",   ESCSHR, 1, 9);
     parse_err("'\\u{1F578}'", NONHEX + "'{'", 1, 6);
+    parse_err("“hello”",       SYNTAX, 0, 1);
+    parse_err("‘world’",       SYNTAX, 0, 1);
   }
 
 
@@ -101,6 +103,7 @@ public class CascadeParserTest extends TestUtil {
     astNumList_ok("[1,\n2,\n3,\n]", ard(1, 2, 3));
 
     parse_err("[21 11",           ENDSTR, 6, 1);
+    parse_err("[1-1]",            BADNUM, 1, 3);
     parse_err("[1 0.00.0]",       MULTIP, 3, 6);
     parse_err("[0 1 true false]", EXPNUM, 5, 1);
     parse_err("[#1 #2 #3]",       EXPNUM, 1, 1);
@@ -112,7 +115,19 @@ public class CascadeParserTest extends TestUtil {
 
 
   @Test public void testParseStringList() {
+    astStrList_ok("[]", new String[0]);
+    astStrList_ok("['a' 'b' 'c']", ar("a", "b", "c"));
+    astStrList_ok("[\"frog\"]", ar("frog"));
+    astStrList_ok("[\"one\", 'two','three']", ar("one", "two", "three"));
+    astStrList_ok("['alpha',\t'beta'\n\"gamma\\n\"    ]\n", ar("alpha", "beta", "gamma\n"));
+    astStrList_ok("['one'\"two\"'three''4']", ar("one", "two", "three", "4"));  // is this ok?
+    astStrList_ok("['''''''''']", ar("", "", "", "", ""));  // what about this?
+    astStrList_ok("['a', 'b', ]", ar("a", "b"));
 
+    parse_err("['hello', 'world!'", ENDSTR, 18, 1);
+    parse_err("['goodbye]", UNTERM, 1, 9);
+    parse_err("['one', 2000, 3]", EXPSTR, 8, 1);
+    parse_err("['a', , 'b']", EXPSTR, 6, 1);
   }
 
 
@@ -153,15 +168,21 @@ public class CascadeParserTest extends TestUtil {
   }
 
   private static void astNumList_ok(String expr, double[] expected) {
-    Ast res = parse(expr);
-    assertTrue(res instanceof AstNumList);
-    assertArrayEquals(expected, (res.exec(null)).getNums(), 1e-10);
+    Val val = parse(expr).exec(null);
+    assertTrue("Expected a ValNums result", val.isNums());
+    assertArrayEquals(expected, val.getNums(), 1e-10);
   }
 
   private static void astStr_ok(String expr, String expected) {
     Ast res = parse(expr);
     assertTrue(res instanceof AstStr);
     assertEquals(expected, res.str());
+  }
+
+  private static void astStrList_ok(String expr, String[] expected) {
+    Val val = parse(expr).exec(null);
+    assertTrue("Expected a ValStrs result", val.isStrs());
+    assertArrayEquals(expected, val.getStrs());
   }
 
   private static void parse_err(String expr, String expectedError, int expectedPos, int expectedLen) {
