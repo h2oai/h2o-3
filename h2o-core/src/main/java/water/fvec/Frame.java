@@ -1118,6 +1118,7 @@ public class Frame extends Lockable<Frame> {
 
   public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
   public String toString(long off, int len, boolean rollups) { return toTwoDimTable(off, len, rollups).toString(); }
+  public TwoDimTable toTwoDimTable() { return toTwoDimTable(0,10); }
   public TwoDimTable toTwoDimTable(long off, int len ) { return toTwoDimTable(off,len,true); }
   public TwoDimTable toTwoDimTable(long off, int len, boolean rollups ) {
     if( off > numRows() ) off = numRows();

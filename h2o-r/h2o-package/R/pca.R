@@ -10,20 +10,20 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
 #'        Defaults to NONE.
 #' @param pca_method Method for computing PCA (Caution: Power and GLRM are currently experimental and unstable) Must be one of:
 #'        "GramSVD", "Power", "Randomized", "GLRM". Defaults to GramSVD.
 #' @param k Rank of matrix approximation Defaults to 1.
 #' @param max_iterations Maximum training iterations Defaults to 1000.
-#' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to False.
-#' @param compute_metrics \code{Logical}. Whether to compute metrics on the training data Defaults to True.
-#' @param impute_missing \code{Logical}. Whether to impute missing entries with the column mean Defaults to False.
+#' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to FALSE.
+#' @param compute_metrics \code{Logical}. Whether to compute metrics on the training data Defaults to TRUE.
+#' @param impute_missing \code{Logical}. Whether to impute missing entries with the column mean Defaults to FALSE.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
+#'        Defaults to -1 (time-based random number).
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
@@ -49,7 +49,7 @@ h2o.prcomp <- function(training_frame, x,
                        compute_metrics = TRUE,
                        impute_missing = FALSE,
                        seed = -1,
-                       max_runtime_secs = 0.0
+                       max_runtime_secs = 0
                        ) 
 {
 

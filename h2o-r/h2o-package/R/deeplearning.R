@@ -15,20 +15,20 @@
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to False.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to False.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
 #'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
 #'        weights are not allowed.
 #' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        False.
+#'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
@@ -38,42 +38,43 @@
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param pretrained_autoencoder Pretrained autoencoder model to initialize this model with.
 #' @param overwrite_with_best_model \code{Logical}. If enabled, override the final model with the best model found during training. Defaults to
-#'        True.
+#'        TRUE.
 #' @param use_all_factor_levels \code{Logical}. Use all factor levels of categorical variables. Otherwise, the first factor level is omitted
 #'        (without loss of accuracy). Useful for variable importances and auto-enabled for autoencoder. Defaults to
-#'        True.
+#'        TRUE.
 #' @param standardize \code{Logical}. If enabled, automatically standardize the data. If disabled, the user must provide properly
-#'        scaled input data. Defaults to True.
+#'        scaled input data. Defaults to TRUE.
 #' @param activation Activation function. Must be one of: "Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout",
 #'        "MaxoutWithDropout". Defaults to Rectifier.
 #' @param hidden Hidden layer sizes (e.g. [100, 100]). Defaults to [200, 200].
-#' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.0.
+#' @param epochs How many times the dataset should be iterated (streamed), can be fractional. Defaults to 10.
 #' @param train_samples_per_iteration Number of training samples (globally) per MapReduce iteration. Special values are 0: one epoch, -1: all
 #'        available data (e.g., replicated training data), -2: automatic. Defaults to -2.
 #' @param target_ratio_comm_to_comp Target ratio of communication overhead to computation. Only for multi-node operation and
 #'        train_samples_per_iteration = -2 (auto-tuning). Defaults to 0.05.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
-#' @param adaptive_rate \code{Logical}. Adaptive learning rate. Defaults to True.
+#'        Note: only reproducible when running single threaded.
+#'        Defaults to -1 (time-based random number).
+#' @param adaptive_rate \code{Logical}. Adaptive learning rate. Defaults to TRUE.
 #' @param rho Adaptive learning rate time decay factor (similarity to prior updates). Defaults to 0.99.
 #' @param epsilon Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress). Defaults to 1e-08.
 #' @param rate Learning rate (higher => less stable, lower => slower convergence). Defaults to 0.005.
 #' @param rate_annealing Learning rate annealing: rate / (1 + rate_annealing * samples). Defaults to 1e-06.
-#' @param rate_decay Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1). Defaults to 1.0.
-#' @param momentum_start Initial momentum at the beginning of training (try 0.5). Defaults to 0.0.
-#' @param momentum_ramp Number of training samples for which momentum increases. Defaults to 1000000.0.
-#' @param momentum_stable Final momentum after the ramp is over (try 0.99). Defaults to 0.0.
-#' @param nesterov_accelerated_gradient \code{Logical}. Use Nesterov accelerated gradient (recommended). Defaults to True.
-#' @param input_dropout_ratio Input layer dropout ratio (can improve generalization, try 0.1 or 0.2). Defaults to 0.0.
+#' @param rate_decay Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1). Defaults to 1.
+#' @param momentum_start Initial momentum at the beginning of training (try 0.5). Defaults to 0.
+#' @param momentum_ramp Number of training samples for which momentum increases. Defaults to 1000000.
+#' @param momentum_stable Final momentum after the ramp is over (try 0.99). Defaults to 0.
+#' @param nesterov_accelerated_gradient \code{Logical}. Use Nesterov accelerated gradient (recommended). Defaults to TRUE.
+#' @param input_dropout_ratio Input layer dropout ratio (can improve generalization, try 0.1 or 0.2). Defaults to 0.
 #' @param hidden_dropout_ratios Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5.
 #' @param l1 L1 regularization (can add stability and improve generalization, causes many weights to become 0). Defaults to
-#'        0.0.
+#'        0.
 #' @param l2 L2 regularization (can add stability and improve generalization, causes many weights to be small. Defaults to
-#'        0.0.
+#'        0.
 #' @param max_w2 Constraint for squared sum of incoming weights per unit (e.g. for Rectifier). Defaults to 3.4028235e+38.
 #' @param initial_weight_distribution Initial weight distribution. Must be one of: "UniformAdaptive", "Uniform", "Normal". Defaults to
 #'        UniformAdaptive.
-#' @param initial_weight_scale Uniform: -value...value, Normal: stddev. Defaults to 1.0.
+#' @param initial_weight_scale Uniform: -value...value, Normal: stddev. Defaults to 1.
 #' @param initial_weights A list of H2OFrame ids to initialize the weight matrices of this model with.
 #' @param initial_biases A list of H2OFrame ids to initialize the bias vectors of this model with.
 #' @param loss Loss function. Must be one of: "Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute", "Quantile".
@@ -84,11 +85,11 @@
 #' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2. Defaults to 1.5.
 #' @param huber_alpha Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and
 #'        1). Defaults to 0.9.
-#' @param score_interval Shortest time interval (in seconds) between model scoring. Defaults to 5.0.
+#' @param score_interval Shortest time interval (in seconds) between model scoring. Defaults to 5.
 #' @param score_training_samples Number of training set samples for scoring (0 for all). Defaults to 10000.
 #' @param score_validation_samples Number of validation set samples for scoring (0 for all). Defaults to 0.
 #' @param score_duty_cycle Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring). Defaults to 0.1.
-#' @param classification_stop Stopping criterion for classification error fraction on training data (-1 to disable). Defaults to 0.0.
+#' @param classification_stop Stopping criterion for classification error fraction on training data (-1 to disable). Defaults to 0.
 #' @param regression_stop Stopping criterion for regression error (MSE) on training data (-1 to disable). Defaults to 1e-06.
 #' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 5.
@@ -96,38 +97,38 @@
 #'        "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification",
 #'        "mean_per_class_error". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
-#'        much) Defaults to 0.0.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
+#'        much) Defaults to 0.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param score_validation_sampling Method used to sample validation dataset for scoring. Must be one of: "Uniform", "Stratified". Defaults to
 #'        Uniform.
-#' @param diagnostics \code{Logical}. Enable diagnostics for hidden layers. Defaults to True.
-#' @param fast_mode \code{Logical}. Enable fast mode (minor approximation in back-propagation). Defaults to True.
+#' @param diagnostics \code{Logical}. Enable diagnostics for hidden layers. Defaults to TRUE.
+#' @param fast_mode \code{Logical}. Enable fast mode (minor approximation in back-propagation). Defaults to TRUE.
 #' @param force_load_balance \code{Logical}. Force extra load balancing to increase training speed for small datasets (to keep all cores
-#'        busy). Defaults to True.
+#'        busy). Defaults to TRUE.
 #' @param variable_importances \code{Logical}. Compute variable importances for input features (Gedeon method) - can be slow for large
-#'        networks. Defaults to False.
+#'        networks. Defaults to FALSE.
 #' @param replicate_training_data \code{Logical}. Replicate the entire training dataset onto every node for faster training on small datasets.
-#'        Defaults to True.
-#' @param single_node_mode \code{Logical}. Run on a single node for fine-tuning of model parameters. Defaults to False.
+#'        Defaults to TRUE.
+#' @param single_node_mode \code{Logical}. Run on a single node for fine-tuning of model parameters. Defaults to FALSE.
 #' @param shuffle_training_data \code{Logical}. Enable shuffling of training data (recommended if training data is replicated and
-#'        train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes). Defaults to False.
+#'        train_samples_per_iteration is close to #nodes x #rows, of if using balance_classes). Defaults to FALSE.
 #' @param missing_values_handling Handling of missing values. Either MeanImputation or Skip. Must be one of: "MeanImputation", "Skip". Defaults
 #'        to MeanImputation.
-#' @param quiet_mode \code{Logical}. Enable quiet mode for less output to standard output. Defaults to False.
-#' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to False.
-#' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to False.
+#' @param quiet_mode \code{Logical}. Enable quiet mode for less output to standard output. Defaults to FALSE.
+#' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to FALSE.
+#' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to FALSE.
 #' @param col_major \code{Logical}. #DEPRECATED Use a column major weight matrix for input layer. Can speed up forward
-#'        propagation, but might slow down backpropagation. Defaults to False.
-#' @param average_activation Average activation for sparse auto-encoder. #Experimental Defaults to 0.0.
-#' @param sparsity_beta Sparsity regularization. #Experimental Defaults to 0.0.
+#'        propagation, but might slow down backpropagation. Defaults to FALSE.
+#' @param average_activation Average activation for sparse auto-encoder. #Experimental Defaults to 0.
+#' @param sparsity_beta Sparsity regularization. #Experimental Defaults to 0.
 #' @param max_categorical_features Max. number of categorical features, enforced via hashing. #Experimental Defaults to 2147483647.
-#' @param reproducible \code{Logical}. Force reproducibility on small data (will be slow - only uses 1 thread). Defaults to False.
-#' @param export_weights_and_biases \code{Logical}. Whether to export Neural Network weights and biases to H2O Frames. Defaults to False.
+#' @param reproducible \code{Logical}. Force reproducibility on small data (will be slow - only uses 1 thread). Defaults to FALSE.
+#' @param export_weights_and_biases \code{Logical}. Whether to export Neural Network weights and biases to H2O Frames. Defaults to FALSE.
 #' @param mini_batch_size Mini-batch size (smaller leads to better fit, larger can speed up and generalize better). Defaults to 1.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen". Defaults to AUTO.
 #' @param elastic_averaging \code{Logical}. Elastic averaging between compute nodes can improve distributed model convergence.
-#'        #Experimental Defaults to False.
+#'        #Experimental Defaults to FALSE.
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -165,7 +166,7 @@ h2o.deeplearning <- function(x, y, training_frame,
                              standardize = TRUE,
                              activation = c("Tanh", "TanhWithDropout", "Rectifier", "RectifierWithDropout", "Maxout", "MaxoutWithDropout"),
                              hidden = c(200, 200),
-                             epochs = 10.0,
+                             epochs = 10,
                              train_samples_per_iteration = -2,
                              target_ratio_comm_to_comp = 0.05,
                              seed = -1,
@@ -174,18 +175,18 @@ h2o.deeplearning <- function(x, y, training_frame,
                              epsilon = 1e-08,
                              rate = 0.005,
                              rate_annealing = 1e-06,
-                             rate_decay = 1.0,
-                             momentum_start = 0.0,
-                             momentum_ramp = 1000000.0,
-                             momentum_stable = 0.0,
+                             rate_decay = 1,
+                             momentum_start = 0,
+                             momentum_ramp = 1000000,
+                             momentum_stable = 0,
                              nesterov_accelerated_gradient = TRUE,
-                             input_dropout_ratio = 0.0,
+                             input_dropout_ratio = 0,
                              hidden_dropout_ratios = NULL,
-                             l1 = 0.0,
-                             l2 = 0.0,
+                             l1 = 0,
+                             l2 = 0,
                              max_w2 = 3.4028235e+38,
                              initial_weight_distribution = c("UniformAdaptive", "Uniform", "Normal"),
-                             initial_weight_scale = 1.0,
+                             initial_weight_scale = 1,
                              initial_weights = NULL,
                              initial_biases = NULL,
                              loss = c("Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute", "Quantile"),
@@ -193,16 +194,16 @@ h2o.deeplearning <- function(x, y, training_frame,
                              quantile_alpha = 0.5,
                              tweedie_power = 1.5,
                              huber_alpha = 0.9,
-                             score_interval = 5.0,
+                             score_interval = 5,
                              score_training_samples = 10000,
                              score_validation_samples = 0,
                              score_duty_cycle = 0.1,
-                             classification_stop = 0.0,
+                             classification_stop = 0,
                              regression_stop = 1e-06,
                              stopping_rounds = 5,
                              stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
-                             stopping_tolerance = 0.0,
-                             max_runtime_secs = 0.0,
+                             stopping_tolerance = 0,
+                             max_runtime_secs = 0,
                              score_validation_sampling = c("Uniform", "Stratified"),
                              diagnostics = TRUE,
                              fast_mode = TRUE,
@@ -216,8 +217,8 @@ h2o.deeplearning <- function(x, y, training_frame,
                              autoencoder = FALSE,
                              sparse = FALSE,
                              col_major = FALSE,
-                             average_activation = 0.0,
-                             sparsity_beta = 0.0,
+                             average_activation = 0,
+                             sparsity_beta = 0,
                              max_categorical_features = 2147483647,
                              reproducible = FALSE,
                              export_weights_and_biases = FALSE,

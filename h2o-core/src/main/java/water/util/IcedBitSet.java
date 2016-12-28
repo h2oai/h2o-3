@@ -1,7 +1,7 @@
 package water.util;
 
+import hex.genmodel.GenModel;
 import water.AutoBuffer;
-import water.H2O;
 import water.Iced;
 
 /** BitSet - Iced, meaning cheaply serialized over the wire.
@@ -38,35 +38,42 @@ public class IcedBitSet extends Iced {
     if( byteoff < 0 ) throw new IndexOutOfBoundsException("byteoff < 0: "+ byteoff);
     if( bitoff  < 0 ) throw new IndexOutOfBoundsException("bitoff < 0: " + bitoff );
     assert v==null || byteoff+((nbits-1) >> 3)+1 <= v.length;
-    _val = v;  _nbits = nbits;  _bitoff = bitoff;  _byteoff = byteoff;
+    _val = v;
+    _nbits = nbits;
+    _bitoff = bitoff;
+    _byteoff = byteoff;
+  }
+
+  public boolean isInRange(int idx) {
+    idx -= _bitoff;
+    return idx >= 0 && idx < _nbits;
   }
 
   public boolean contains(int idx) {
-    if(idx < 0) throw new IndexOutOfBoundsException("idx < 0: " + idx);
     idx -= _bitoff;
-    return (idx >= 0) && (idx < _nbits) &&
-        (_val[_byteoff+(idx >> 3)] & ((byte)1 << (idx & 7))) != 0;
+    assert (idx >= 0 && idx < _nbits): "Must have "+_bitoff+" <= idx <= " + (_bitoff+_nbits-1) + ": " + idx;
+    return (_val[_byteoff+(idx >> 3)] & ((byte)1 << (idx & 7))) != 0;
   }
+
+  /**
+   * Activate the bit specified by the integer (must be from 0 ... _nbits-1)
+   * @param idx
+   */
   public void set(int idx) {
     idx -= _bitoff;
-    if(idx < 0 || idx >= _nbits)
-      throw new IndexOutOfBoundsException("Must have "+_bitoff+" <= idx <= " + (_bitoff+_nbits-1) + ": " + idx);
-    if( _byteoff != 0 ) throw H2O.fail(); // TODO
-    _val[idx >> 3] |= ((byte)1 << (idx & 7));
+    assert (idx >= 0 && idx < _nbits): "Must have "+_bitoff+" <= idx <= " + (_bitoff+_nbits-1) + ": " + idx;
+    _val[_byteoff+(idx >> 3)] |= ((byte)1 << (idx & 7));
   }
   public void clear(int idx) {
     idx -= _bitoff;
-    if(idx < 0 || idx >= _nbits)
-      throw new IndexOutOfBoundsException("Must have 0 <= idx <= " + Integer.toString(_nbits-1) + ": " + idx);
-    if( _byteoff != 0 ) throw H2O.fail(); // TODO
-    _val[idx >> 3] &= ~((byte)1 << (idx & 7));
+    assert (idx >= 0 && idx < _nbits) : "Must have 0 <= idx <= " + Integer.toString(_nbits-1) + ": " + idx;
+    _val[_byteoff + (idx >> 3)] &= ~((byte)1 << (idx & 7));
   }
   public int cardinality() {
     int nbits = 0;
     int bytes = numBytes();
-    if( _byteoff != 0 ) throw H2O.fail(); // TODO
     for(int i = 0; i < bytes; i++)
-      nbits += Integer.bitCount(0xFF&_val[i]);
+      nbits += Integer.bitCount(0xFF&_val[_byteoff + i]);
     return nbits;
   }
 
@@ -130,8 +137,11 @@ public class IcedBitSet extends Iced {
     return sb.toString();
   }
 
-  public SB toJava( SB sb, String varname, int col, String colname ) {
-    // pass a double to bitSetContains, such that it can do the NaN check inside
-    return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", data[").p(col).p(" /* ").p(colname).p(" */").p("])");
+  public SB toJava( SB sb, String varname, int col) {
+    return sb.p("!GenModel.bitSetContains(").p(varname).p(", ").p(_bitoff).p(", data[").p(col).p("])");
+  }
+
+  public SB toJavaRangeCheck(SB sb, String varname, int col) {
+    return sb.p("GenModel.bitSetIsInRange(").p(varname).p(", ").p(_bitoff).p(", data[").p(col).p("])");
   }
 }

@@ -8,11 +8,16 @@ This Appendix provides detailed descriptions of parameters that can be specified
 **Notes**:
 
 - This Appendix is a work in progress.
-- For parameters that are supported in multiple algorithms, the included example uses the GBM algorithm. 
+- For parameters that are supported in multiple algorithms, the included example uses the GBM or GLM algorithm.
+- The examples in this section include datasets that are pulled from GitHub and S3. Alternatively, you can run the following command from within the H2O repository on your local machine to retrieve all datasets in the smalldata folder:
+
+ ::
+  
+  ./gradlew syncSmalldata
 
 .. toctree::
    :maxdepth: 2
-   
+
    data-science/algo-params/alpha
    data-science/algo-params/balance_classes
    data-science/algo-params/beta_epsilon
@@ -27,6 +32,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/compute_p_values
    data-science/algo-params/distribution
    data-science/algo-params/early_stopping
+   data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
    data-science/algo-params/gradient_epsilon
@@ -34,6 +40,8 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/huber_alpha
    data-science/algo-params/ignore_const_cols
    data-science/algo-params/ignored_columns
+   data-science/algo-params/interactions
+   data-science/algo-params/intercept
    data-science/algo-params/keep_cross_validation_fold_assignment
    data-science/algo-params/keep_cross_validation_predictions
    data-science/algo-params/lambda
@@ -41,6 +49,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/lambda_search
    data-science/algo-params/learn_rate
    data-science/algo-params/learn_rate_annealing
+   data-science/algo-params/link
    data-science/algo-params/max_abs_leafnode_pred
    data-science/algo-params/max_active_predictors
    data-science/algo-params/max_after_balance_size
@@ -50,6 +59,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/max_runtime_secs
    data-science/algo-params/min_rows
    data-science/algo-params/min_split_improvement
+   data-science/algo-params/missing_values_handling
    data-science/algo-params/model_id
    data-science/algo-params/mtries
    data-science/algo-params/nbins
@@ -63,11 +73,14 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/offset_column
    data-science/algo-params/pred_noise_bandwidth
    data-science/algo-params/quantile_alpha
+   data-science/algo-params/remove_collinear_columns
    data-science/algo-params/sample_rate
    data-science/algo-params/sample_rate_per_class
    data-science/algo-params/score_each_iteration
    data-science/algo-params/score_tree_interval
    data-science/algo-params/seed
+   data-science/algo-params/solver
+   data-science/algo-params/standardize
    data-science/algo-params/stopping_metric
    data-science/algo-params/stopping_rounds
    data-science/algo-params/stopping_tolerance

@@ -11,6 +11,7 @@ import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
+import water.api.StreamingSchema;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
@@ -21,6 +22,7 @@ import water.util.Triple;
 import water.util.VecUtils;
 
 import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.util.*;
 
@@ -334,6 +336,36 @@ public class DRFTest extends TestUtil {
             10,
             0.0);
   }
+  @Test public void testAlphabetRegression2() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression2.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            26, // enough bins to resolve the alphabet
+            1,
+            1, // depth 1 is enough since nbins_cats == nbins == 26 (enough)
+            0.0);
+  }
+  @Test public void testAlphabetRegression3() throws Throwable {
+    basicDRFTestOOBE_Regression(
+            "./smalldata/gbm_test/alphabet_cattest.csv", "alphabetRegression3.hex",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                return fr.find("y");
+              }
+            },
+            1,
+            25, // not enough bins to resolve the alphabet
+            1,
+            1, // depth 1 is not enough since nbins_cats == nbins < 26
+            0.24007225096411577);
+  }
 
   @Ignore  //1-vs-5 node discrepancy (parsing into different number of chunks?)
   @Test public void testAirlines() throws Throwable {
@@ -420,6 +452,11 @@ public class DRFTest extends TestUtil {
       DRF job = new DRF(drf);
       // Get the model
       model = job.trainModel().get();
+
+//      StreamingSchema ss = new StreamingSchema(model.getMojo(), "model.zip");
+//      FileOutputStream fos = new FileOutputStream("model.zip");
+//      ss.getStreamWriter().writeTo(fos);
+
       Log.info(model._output);
       Assert.assertTrue(job.isStopped()); //HEX-1817
 
@@ -741,7 +778,7 @@ public class DRFTest extends TestUtil {
       Log.info("trial: " + i + " -> MSE: " + mses[i]);
     }
     for (int i=0; i<mses.length; ++i) {
-      assertEquals(0.21270754031847988, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
+      assertEquals(0.20377446328850304, mses[i], 1e-4); //check for the same result on 1 nodes and 5 nodes
     }
   }
 

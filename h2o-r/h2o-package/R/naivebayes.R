@@ -20,31 +20,31 @@
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param nfolds Number of folds for N-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
-#'        Note: only reproducible when running single threaded. Defaults to -1 (time-based random number).
+#'        Defaults to -1 (time-based random number).
 #' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
 #'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
 #'        "Random", "Modulo", "Stratified". Defaults to AUTO.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to False.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to False.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param validation_frame Id of the validation data frame.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to True.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to False.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        False.
+#'        FALSE.
 #' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
 #' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 #'        Defaults to 0.
-#' @param laplace Laplace smoothing parameter Defaults to 0.0.
+#' @param laplace Laplace smoothing parameter Defaults to 0.
 #' @param threshold The minimum standard deviation to use for observations without enough data. 
 #'                  Must be at least 1e-10.
 #' @param eps A threshold cutoff to deal with numeric instability, must be positive.
-#' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to True.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.0.
+#' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @details The naive Bayes classifier assumes independence between predictor variables conditional         on the
 #'          response, and a Gaussian distribution of numeric predictors with mean and standard         deviation
 #'          computed from the training dataset. When building a naive Bayes classifier,         every row in the
@@ -75,11 +75,11 @@ h2o.naiveBayes <- function(x, y, training_frame,
                            class_sampling_factors = NULL,
                            max_after_balance_size = 5.0,
                            max_hit_ratio_k = 0,
-                           laplace = 0.0,
+                           laplace = 0,
                            threshold = 0.001,
-                           eps = 0.0,
+                           eps = 0,
                            compute_metrics = TRUE,
-                           max_runtime_secs = 0.0
+                           max_runtime_secs = 0
                            ) 
 {
   #If x is missing, then assume user wants to use all columns as features.

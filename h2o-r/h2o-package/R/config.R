@@ -3,6 +3,7 @@
 #
 # Input is the path to an .h2oconfig file
 # Returns the .h2oconfig file as a data frame with respective key-value pairs as headers
+#' @importFrom utils read.table
 .parse.h2oconfig <- function(h2oconfig_filename){
     cat(paste0("Reading in config file: ",h2oconfig_filename,"\n"))
 
