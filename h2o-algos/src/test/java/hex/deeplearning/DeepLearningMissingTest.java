@@ -2,7 +2,6 @@ package hex.deeplearning;
 
 import hex.FrameSplitter;
 import water.TestUtil;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -76,7 +75,7 @@ public class DeepLearningMissingTest extends TestUtil {
           p._response_column = train._names[train.numCols()-1];
           p._ignored_columns = new String[]{train._names[1],train._names[22]}; //only for weather data
           p._missing_values_handling = mvh;
-          p._loss = DeepLearningParameters.Loss.CrossEntropy; // DeepLearningParameters.Loss.ModifiedHuber;
+          p._loss = Loss.CrossEntropy; // DeepLearningParameters.Loss.ModifiedHuber;
           p._activation = DeepLearningParameters.Activation.Rectifier;
           p._hidden = new int[]{50,50};
           p._l1 = 1e-5;

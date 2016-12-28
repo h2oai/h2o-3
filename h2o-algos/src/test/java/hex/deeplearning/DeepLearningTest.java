@@ -3,7 +3,6 @@ package hex.deeplearning;
 
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -962,12 +961,12 @@ public class DeepLearningTest extends TestUtil {
     Frame tfr = null, vfr = null, fr2 = null;
     DeepLearningModel dl = null;
 
-    for (DeepLearningParameters.Loss loss: new DeepLearningParameters.Loss[]{
-        DeepLearningParameters.Loss.Automatic,
-        DeepLearningParameters.Loss.Quadratic,
-        DeepLearningParameters.Loss.Huber,
-        DeepLearningParameters.Loss.Absolute,
-        DeepLearningParameters.Loss.Quantile,
+    for (Loss loss: new Loss[]{
+        Loss.Automatic,
+        Loss.Quadratic,
+        Loss.Huber,
+        Loss.Absolute,
+        Loss.Quantile,
     }) {
       Scope.enter();
       try {
@@ -993,7 +992,7 @@ public class DeepLearningTest extends TestUtil {
 
         ModelMetricsRegression mm = (ModelMetricsRegression)dl._output._training_metrics;
 
-        if (loss == DeepLearningParameters.Loss.Automatic || loss == DeepLearningParameters.Loss.Quadratic)
+        if (loss == Loss.Automatic || loss == Loss.Quadratic)
           Assert.assertEquals(mm._mean_residual_deviance, mm._MSE, 1e-6);
         else
           assertTrue(mm._mean_residual_deviance != mm._MSE);
@@ -1641,7 +1640,7 @@ public class DeepLearningTest extends TestUtil {
         parms._rate_decay=1.0;
         parms._adaptive_rate=false;
         parms._rate_annealing=1e-3;
-        parms._loss= DeepLearningParameters.Loss.CrossEntropy;
+        parms._loss= Loss.CrossEntropy;
         dl1 = new DeepLearning(parms).trainModel().get();
         // test POJO
         Frame res = dl1.score(tfr);

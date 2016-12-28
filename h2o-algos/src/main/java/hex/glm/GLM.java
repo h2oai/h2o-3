@@ -1,7 +1,7 @@
 package hex.glm;
 
 import hex.*;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.deeplearning.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.*;
 import hex.optimization.ADMM.L1Solver;
 import hex.optimization.L_BFGS;

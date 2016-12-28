@@ -18,10 +18,9 @@ import static water.H2O.technote;
  * Simple version of DLM.
  */
 public abstract class SimpleDLM<
-    M extends Model<M, P, O>, 
-    P extends Model.Parameters,
+    M extends Model<M, DeepLearningParameters, O>, 
     O extends Model.Output> 
-    extends Model<M, P, O> {
+    extends Model<M, DeepLearningParameters, O> {
   protected final String unstable_msg = technote(4,
       "\n\nTrying to predict with an unstable model." +
           "\nJob was aborted due to observed numerical instability (exponential growth)."
@@ -29,7 +28,7 @@ public abstract class SimpleDLM<
           + "\nTry a different initial distribution, a bounded activation function (Tanh), adding regularization"
           + "\n(via max_w2, l1, l2, dropout) or learning rate (either enable adaptive_rate or use a smaller learning rate or faster annealing).");
 
-  public SimpleDLM(Key<M> selfKey, P parms, O output) {
+  public SimpleDLM(Key<M> selfKey, DeepLearningParameters parms, O output) {
     super(selfKey, parms, output);
   }
 
@@ -81,7 +80,7 @@ public abstract class SimpleDLM<
     return neurons[neurons.length - 1]._a[0].raw();
   }
 
-  abstract public P get_params();
+  abstract public DeepLearningParameters get_params();
   
   public DeepLearningModelInfo model_info() { return model_info; }
 

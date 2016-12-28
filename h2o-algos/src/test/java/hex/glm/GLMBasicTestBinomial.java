@@ -1,7 +1,7 @@
 package hex.glm;
 
 import hex.ModelMetricsBinomialGLM;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.deeplearning.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;

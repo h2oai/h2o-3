@@ -18,8 +18,7 @@
 package examples
 
 import examples.Frequencies.Data
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters
-import hex.deeplearning.{DeepLearning, DeepLearningModel, DlInput}
+import hex.deeplearning.{DeepLearningParameters, DeepLearning, DeepLearningModel, DlInput}
 import org.junit.Assert._
 import org.junit.{AfterClass, BeforeClass, Test}
 import water.fvec.{AppendableVec, Frame, NewChunk, Vec}

@@ -7,7 +7,7 @@ import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
 import water.util.Log;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+
 import java.util.HashSet;
 
 public class DeepLearningAutoEncoderTest extends TestUtil {
@@ -52,7 +52,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._average_activation = -0.7;
         p._l1 = 1e-4;
         p._activation = DeepLearningParameters.Activation.TanhWithDropout;
-        p._loss = DeepLearningParameters.Loss.Absolute;
+        p._loss = Loss.Absolute;
         p._epochs = 13.3;
         p._force_load_balance = true;
         p._elastic_averaging = false;

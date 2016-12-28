@@ -2,6 +2,7 @@ package hex;
 
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
+import hex.deeplearning.DeepLearningParameters;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
@@ -79,7 +80,7 @@ public class XValPredictionsCheck extends TestUtil {
       checkModel(glm, foldId.anyVec(),1);
 
       // DL
-      DeepLearningModel.DeepLearningParameters parmsDL = new DeepLearningModel.DeepLearningParameters();
+      DeepLearningParameters parmsDL = new DeepLearningParameters();
       parmsDL._train = tfr._key;
       parmsDL._response_column = "class";
       parmsDL._hidden = new int[]{1};

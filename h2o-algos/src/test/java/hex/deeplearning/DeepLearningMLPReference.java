@@ -1,9 +1,7 @@
 package hex.deeplearning;
 
 import org.junit.Ignore;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
+import hex.deeplearning.DeepLearningParameters.Activation;
 import water.util.ArrayUtils;
 import water.util.RandomUtils;
 

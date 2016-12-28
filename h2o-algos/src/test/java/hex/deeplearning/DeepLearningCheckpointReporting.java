@@ -1,6 +1,5 @@
 package hex.deeplearning;
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Assert;

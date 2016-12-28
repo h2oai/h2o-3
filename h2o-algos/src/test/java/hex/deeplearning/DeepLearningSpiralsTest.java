@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 import hex.ScoreKeeper;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.ModelMetricsBinomial;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -41,7 +40,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._activation = DeepLearningParameters.Activation.Tanh;
           p._initial_weight_distribution = DeepLearningParameters.InitialWeightDistribution.Normal;
           p._initial_weight_scale = 2.5;
-          p._loss = DeepLearningParameters.Loss.CrossEntropy;
+          p._loss = Loss.CrossEntropy;
           p._train = frame._key;
           p._response_column = frame.names()[resp];
           Scope.track(frame.replace(resp, frame.vecs()[resp].toCategoricalVec())); // Convert response to categorical

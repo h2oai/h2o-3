@@ -8,7 +8,7 @@ import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
 import water.util.Log;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+
 import java.io.File;
 
 /**

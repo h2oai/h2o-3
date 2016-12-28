@@ -1,6 +1,5 @@
 package hex.deeplearning;
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.DataInfo;
 import hex.FrameTask;
 import water.DKV;

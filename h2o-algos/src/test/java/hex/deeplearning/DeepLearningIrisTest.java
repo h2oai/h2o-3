@@ -1,10 +1,8 @@
 package hex.deeplearning;
 
 import hex.ScoringInfo;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Activation;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.InitialWeightDistribution;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.Loss;
+import hex.deeplearning.DeepLearningParameters.Activation;
+import hex.deeplearning.DeepLearningParameters.InitialWeightDistribution;
 import hex.genmodel.GenModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;

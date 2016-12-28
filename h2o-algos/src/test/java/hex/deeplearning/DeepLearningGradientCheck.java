@@ -1,7 +1,6 @@
 package hex.deeplearning;
 
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.DataInfo;
 import hex.Distribution;
 import hex.FrameTask;

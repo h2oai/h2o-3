@@ -1,6 +1,6 @@
 package hex.schemas;
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.deeplearning.DeepLearningParameters;
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Solver;

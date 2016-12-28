@@ -3,6 +3,8 @@ package water;
 import hex.*;
 import hex.deeplearning.DeepLearning;
 import hex.deeplearning.DeepLearningModel;
+import hex.deeplearning.DeepLearningParameters;
+import hex.deeplearning.Loss;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
@@ -129,7 +131,7 @@ public class TestCase {
             bestModelJson = gbmModel._parms.toJsonString();
             break;
           case "dl":
-            dlJob = new DeepLearning((DeepLearningModel.DeepLearningParameters) params);
+            dlJob = new DeepLearning((DeepLearningParameters) params);
             AccuracyTestingSuite.summaryLog.println("Training DL model.");
             startTime = System.currentTimeMillis();
             dlModel = dlJob.trainModel().get();
@@ -724,7 +726,7 @@ public class TestCase {
 
   private DeepLearningModel.Parameters makeDlModelParameters() throws Exception {
     AccuracyTestingSuite.summaryLog.println("Making DL model parameters.");
-    DeepLearningModel.DeepLearningParameters dlParams = new DeepLearningModel.DeepLearningParameters();
+    DeepLearningParameters dlParams = new DeepLearningParameters();
     String[] tokens = algoParameters.trim().split(";", -1);
     for (int i = 0; i < tokens.length; i++) {
       String parameterName = tokens[i].split("=", -1)[0];
@@ -760,22 +762,22 @@ public class TestCase {
         case "_activation":
           switch (parameterValue) {
             case "tanh":
-              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Tanh;
+              dlParams._activation = DeepLearningParameters.Activation.Tanh;
               break;
             case "tanhwithdropout":
-              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.TanhWithDropout;
+              dlParams._activation = DeepLearningParameters.Activation.TanhWithDropout;
               break;
             case "rectifier":
-              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Rectifier;
+              dlParams._activation = DeepLearningParameters.Activation.Rectifier;
               break;
             case "rectifierwithdropout":
-              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.RectifierWithDropout;
+              dlParams._activation = DeepLearningParameters.Activation.RectifierWithDropout;
               break;
             case "maxout":
-              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.Maxout;
+              dlParams._activation = DeepLearningParameters.Activation.Maxout;
               break;
             case "maxoutwithdropout":
-              dlParams._activation = DeepLearningModel.DeepLearningParameters.Activation.MaxoutWithDropout;
+              dlParams._activation = DeepLearningParameters.Activation.MaxoutWithDropout;
               break;
             default:
               throw new Exception(parameterValue + " activation is not supported for gbm test cases");
@@ -784,23 +786,23 @@ public class TestCase {
         case "_loss":
           switch (parameterValue) {
             case "AUTO":
-              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Automatic;
+              dlParams._loss = Loss.Automatic;
               ;
               break;
             case "crossentropy":
-              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.CrossEntropy;
+              dlParams._loss = Loss.CrossEntropy;
               break;
             case "quadratic":
-              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Quadratic;
+              dlParams._loss = Loss.Quadratic;
               break;
             case "huber":
-              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Huber;
+              dlParams._loss = Loss.Huber;
               break;
             case "modified_huber":
-              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.ModifiedHuber;
+              dlParams._loss = Loss.ModifiedHuber;
               break;
             case "absolute":
-              dlParams._loss = DeepLearningModel.DeepLearningParameters.Loss.Absolute;
+              dlParams._loss = Loss.Absolute;
               break;
             default:
               throw new Exception(parameterValue + " loss is not supported for gbm test cases");

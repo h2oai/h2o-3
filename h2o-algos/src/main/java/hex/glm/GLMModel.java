@@ -4,7 +4,7 @@ import hex.*;
 import hex.DataInfo.Row;
 import hex.DataInfo.TransformType;
 import hex.api.MakeGLMModelHandler;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.deeplearning.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
 import org.apache.commons.math3.distribution.NormalDistribution;

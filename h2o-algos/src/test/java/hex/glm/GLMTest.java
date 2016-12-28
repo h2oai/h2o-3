@@ -2,7 +2,7 @@ package hex.glm;
 
 import hex.*;
 import hex.DataInfo.TransformType;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.deeplearning.DeepLearningParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;

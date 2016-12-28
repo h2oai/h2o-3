@@ -1,6 +1,5 @@
 package hex.deeplearning;
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -38,7 +37,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     p._activation = DeepLearningParameters.Activation.Tanh;
     p._max_w2 = 10;
     p._train_samples_per_iteration = -1;
-    p._loss = DeepLearningParameters.Loss.Huber;
+    p._loss = Loss.Huber;
     p._epochs = 0.2;
     p._force_load_balance = true;
     p._score_training_samples = 0;

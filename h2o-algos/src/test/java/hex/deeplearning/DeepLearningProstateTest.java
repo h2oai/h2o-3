@@ -1,8 +1,7 @@
 package hex.deeplearning;
 
 import hex.ConfusionMatrix;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.ClassSamplingMethod;
+import hex.deeplearning.DeepLearningParameters.ClassSamplingMethod;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -69,15 +68,15 @@ public class DeepLearningProstateTest extends TestUtil {
               assert (frame.vec(respname).isCategorical());
               assert (vframe.vec(respname).isCategorical());
             }
-            for (DeepLearningParameters.Loss loss : new DeepLearningParameters.Loss[]{
-                DeepLearningParameters.Loss.Automatic,
-                DeepLearningParameters.Loss.CrossEntropy,
-                DeepLearningParameters.Loss.Huber,
+            for (Loss loss : new Loss[]{
+                Loss.Automatic,
+                Loss.CrossEntropy,
+                Loss.Huber,
 //                DeepLearningParameters.Loss.ModifiedHuber,
-                DeepLearningParameters.Loss.Absolute,
-                DeepLearningParameters.Loss.Quadratic
+                Loss.Absolute,
+                Loss.Quadratic
             }) {
-              if (!classification && (loss == DeepLearningParameters.Loss.CrossEntropy || loss == DeepLearningParameters.Loss.ModifiedHuber))
+              if (!classification && (loss == Loss.CrossEntropy || loss == Loss.ModifiedHuber))
                 continue;
               for (DistributionFamily dist : new DistributionFamily[]{
                   DistributionFamily.AUTO,
@@ -101,23 +100,23 @@ public class DeepLearningProstateTest extends TestUtil {
                   case tweedie:
                   case gamma:
                   case poisson:
-                    if (loss != DeepLearningParameters.Loss.Automatic)
+                    if (loss != Loss.Automatic)
                       cont=true;
                     break;
                   case huber:
-                    if (loss != DeepLearningParameters.Loss.Huber && loss != DeepLearningParameters.Loss.Automatic)
+                    if (loss != Loss.Huber && loss != Loss.Automatic)
                       cont=true;
                     break;
                   case laplace:
-                    if (loss != DeepLearningParameters.Loss.Absolute && loss != DeepLearningParameters.Loss.Automatic)
+                    if (loss != Loss.Absolute && loss != Loss.Automatic)
                       cont=true;
                     break;
                   case modified_huber:
-                    if (loss != DeepLearningParameters.Loss.ModifiedHuber && loss != DeepLearningParameters.Loss.Automatic)
+                    if (loss != Loss.ModifiedHuber && loss != Loss.Automatic)
                       cont=true;
                     break;
                   case bernoulli:
-                    if (loss != DeepLearningParameters.Loss.CrossEntropy && loss != DeepLearningParameters.Loss.Automatic)
+                    if (loss != Loss.CrossEntropy && loss != Loss.Automatic)
                       cont=true;
                     break;
                 }
@@ -348,8 +347,8 @@ public class DeepLearningProstateTest extends TestUtil {
                                             assert (p != model1.model_info().get_params());
                                             assert (p2 != model2.model_info().get_params());
 
-                                            if (p._loss == DeepLearningParameters.Loss.Automatic) {
-                                              assert (p2._loss == DeepLearningParameters.Loss.Automatic);
+                                            if (p._loss == Loss.Automatic) {
+                                              assert (p2._loss == Loss.Automatic);
 //                                              assert(model1.model_info().get_params()._loss != DeepLearningParameters.Loss.Automatic);
 //                                              assert(model2.model_info().get_params()._loss != DeepLearningParameters.Loss.Automatic);
                                             }

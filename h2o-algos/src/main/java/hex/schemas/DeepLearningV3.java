@@ -1,8 +1,8 @@
 package hex.schemas;
 
-import hex.Distribution;
 import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.deeplearning.DeepLearningParameters;
+import hex.deeplearning.Loss;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.KeyV3;
@@ -452,7 +452,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
     @API(level = API.Level.secondary, direction = API.Direction.INOUT, gridable = true, required = false,
         values = {"Automatic", "CrossEntropy", "Quadratic", "Huber", "Absolute", "Quantile"},
         help = "Loss function.")
-    public DeepLearningParameters.Loss loss;
+    public Loss loss;
 
     /*Scoring*/
 

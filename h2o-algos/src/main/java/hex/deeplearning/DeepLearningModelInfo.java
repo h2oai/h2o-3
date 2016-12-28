@@ -5,7 +5,6 @@ import hex.genmodel.utils.DistributionFamily;
 import static java.lang.Double.isNaN;
 
 import hex.Model;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import water.*;
 import water.fvec.Frame;
 import water.util.*;
