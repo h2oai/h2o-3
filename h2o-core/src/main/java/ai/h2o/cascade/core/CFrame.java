@@ -23,6 +23,14 @@ public class CFrame {  // not Iced: not intended to be stored in DKV
   private long nrows;
   private List<CFrameColumn> columns;
 
+  // If this flag is true, then the CFrame exists only on the stack and is not
+  // referenced by any Cascade variable. This means that this CFrame can be
+  // modified in-place without the risk of affecting anyone else. On the other
+  // hand, if this flag is false, then the caller who wishes to modify this
+  // frame will have to copy it. This flag is always true for "ghost"-mode
+  // CFrames.
+  private boolean mutable;
+
 
   //--------------------------------------------------------------------------------------------------------------------
   // Constructors

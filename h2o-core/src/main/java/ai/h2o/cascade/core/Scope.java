@@ -1,9 +1,7 @@
 package ai.h2o.cascade.core;
 
+import ai.h2o.cascade.CascadeSession;
 import ai.h2o.cascade.vals.Val;
-import ai.h2o.cascade.vals.ValFrame;
-import water.DKV;
-import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -37,38 +35,39 @@ import java.util.Map;
  */
 public class Scope {
   private Scope parent;
+  private CascadeSession session;
   private Map<String, Val> symbolTable;
 
 
-  public Scope(Scope parentScope) {
+  public Scope(CascadeSession sess, Scope parentScope) {
+    session = sess;
     parent = parentScope;
     symbolTable = new HashMap<>(5);
     vecCopyCounts = new HashMap<>(16);
   }
 
-  public Val lookup(String id) {
+
+  public CascadeSession session() {
+    return session;
+  }
+
+
+  public Val lookupVariable(String id) {
     if (symbolTable.containsKey(id))
       return symbolTable.get(id);
     if (parent != null)
-      return parent.lookup(id);
+      return parent.lookupVariable(id);
     throw new IllegalArgumentException("Name lookup of " + id + " failed");
   }
+
 
   public void importFromLibrary(ICascadeLibrary lib) {
     symbolTable.putAll(lib.members());
   }
 
-  public void importFromDkv(String name, Key key) {
-    water.Value value = DKV.get(key);
-    if (value == null)
-      throw new IllegalArgumentException("Key " + key + " was not found in DKV");
-    if (value.isFrame()) {
-      Val val = new ValFrame(value.<Frame>get());
-      symbolTable.put(name, val);
-    } else {
-      String clzName = value.theFreezableClass().getSimpleName();
-      throw new IllegalArgumentException("Key " + key + " corresponds to object of type " + clzName);
-    }
+
+  public void addVariable(String name, Val value) {
+    symbolTable.put(name, value);
   }
 
 

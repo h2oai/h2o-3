@@ -17,9 +17,9 @@ public class AstId extends Ast<AstId> {
   @Override
   public Val exec(Scope scope) {
     try {
-      return scope.lookup(name);
+      return scope.lookupVariable(name);
     } catch (IllegalArgumentException e) {
-      throw new Cascade.ValueError(start, length, e.getMessage());
+      throw new Cascade.NameError(start, length, e.getMessage());
     }
   }
 

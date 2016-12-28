@@ -13,6 +13,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -32,30 +33,36 @@ public class FnFromdkvTest extends TestUtil {
   public void basicTest() {
     water.Scope.enter();
     try {
-      Frame f = parse_test_file("smalldata/iris/iris2.csv");
-      water.Scope.track(f);
+      Frame originalFrame = parse_test_file("smalldata/iris/iris2.csv");
+      water.Scope.track(originalFrame);
 
       // Import frame {@code f} from DKV into the Cascade session
-      Val res = exec("(fromdkv `iris` '" + f._key + "')");
+      Val res = exec("(fromdkv `iris` '" + originalFrame._key + "')");
       assertTrue(res instanceof ValFrame);
       CFrame cff = res.getFrame();
-      assertTrue("CFrame object is supposed to be lightweight", cff.isStoned());
-      Frame ff = cff.getStoneFrame();
-      water.Scope.track(ff);
+      assertTrue("CFrame object is supposed to be in the 'stone' mode", cff.isStoned());
+      Frame importedFrame = cff.getStoneFrame();
+      water.Scope.track(importedFrame);
 
-      // Verify that the imported frame is stored in the global scope, and
-      // that its key remains unchanged (i.e. no copy is made).
+      // Verify that the imported frame is stored in the global scope
       Scope global = session.globalScope();
-      Val vs = global.lookup("iris");
+      Val vs = global.lookupVariable("iris");
       assertTrue(vs instanceof ValFrame);
       assertTrue(vs.getFrame().isStoned());
-      assertEquals(ff._key, vs.getFrame().getStoneFrame()._key);
-      assertEquals(ff._key, f._key);
+      assertEquals(importedFrame._key, vs.getFrame().getStoneFrame()._key);
+
+      // Verify that it's a deep copy of the original frame
+      assertEquals(importedFrame.numCols(), originalFrame.numCols());
+      assertNotEquals("Key of the imported frame should be different from the original frame",
+          importedFrame._key, originalFrame._key);
+      for (int i = 0; i < originalFrame.numCols(); i++) {
+        assertNotEquals("vec(" + i + ")-th keys should be different in the imported and original frames",
+            importedFrame.vec(i)._key, originalFrame.vec(i)._key);
+      }
 
       // Verify that the name {@code iris} can now be used from Cascade
       Val nrows = Cascade.eval("(nrows iris)", session);
       assertEquals(150, nrows.getInt());
-
       Val ncols = Cascade.eval("(ncols iris)", session);
       assertEquals(5, ncols.getInt());
     } finally {
@@ -76,7 +83,7 @@ public class FnFromdkvTest extends TestUtil {
 
     try {
       exec("(fromdkv irrrris 'iris.hex')");
-    } catch (Cascade.ValueError e) {
+    } catch (Cascade.NameError e) {
       assertEquals("Name lookup of irrrris failed", e.getMessage());
       assertEquals(9, e.location);
       assertEquals(7, e.length);
@@ -93,7 +100,7 @@ public class FnFromdkvTest extends TestUtil {
     try {
       exec("(fromdkv `iris` 'irrris.hex')");
     } catch (Cascade.ValueError e) {
-      assertEquals("Key irrris.hex was not found in DKV", e.getMessage());
+      assertEquals("Key not found in the DKV", e.getMessage());
       assertEquals(16, e.location);
       assertEquals(12, e.length);
     }

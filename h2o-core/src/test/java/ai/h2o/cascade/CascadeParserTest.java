@@ -22,14 +22,15 @@ public class CascadeParserTest extends TestUtil {
 
   // Error messages
   private final String UNTERM = "Unterminated string";
-  private final String BADEXPR = "Illegal Cascade expression";
-  private final String INVESC = "Invalid escape sequence ";
+  private final String BADEXP = "Illegal Cascade expression";
+  private final String INVESC = "Invalid escape sequence";
   private final String NONHEX = "Escape sequence contains non-hexademical character ";
-  private final String ESCSHRT = "Escape sequence too short";
+  private final String ESCSHR = "Escape sequence too short";
   private final String ENDSTR = "Unexpected end of string";
   private final String EXPNUM = "Expected a number";
   private final String MULTIP = "Invalid number: multiple points";
   private final String BADNUM = "Invalid number";
+  private final String SYNTAX = "Invalid syntax";
 
   @BeforeClass
   public static void setup() {
@@ -50,14 +51,15 @@ public class CascadeParserTest extends TestUtil {
     astNum_ok("33.", 33);
 
     parse_err("127.0.0.1", MULTIP, 0, 9);
-    parse_err("1e3e7", BADNUM, 0, 5);
-    parse_err("--1", BADNUM, 0, 3);
-    parse_err("+1", "Invalid syntax", 0, 1);
-    parse_err("-2-3", BADNUM, 0, 4);
-    parse_err("0xA7", BADEXPR, 1, 1);
-    parse_err("-Inf", BADNUM, 0, 1);
-    parse_err("4.nan", BADNUM, 0, 5);
+    parse_err("1e3e7",     BADNUM, 0, 5);
+    parse_err("--1",       BADNUM, 0, 3);
+    parse_err("+1",        SYNTAX, 0, 1);
+    parse_err("-2-3",      BADNUM, 0, 4);
+    parse_err("0xA7",      BADEXP, 1, 1);
+    parse_err("-Inf",      BADNUM, 0, 1);
+    parse_err("4.nan",     BADNUM, 0, 5);
   }
+
 
   @Test public void testParseString() {
     astStr_ok("'hello'", "hello");
@@ -72,20 +74,21 @@ public class CascadeParserTest extends TestUtil {
     astStr_ok("\"\\uABCD\\u0000\\uffff\"", "\uABCD\u0000\uFFFF");
     astStr_ok("\"\\U0001F578\"", new String(Character.toChars(0x1F578)));
 
-    parse_err("\"hello", UNTERM, 0, 6);
-    parse_err("\"one\"two\"", BADEXPR, 5, 1);
+    parse_err("\"hello",       UNTERM, 0, 6);
+    parse_err("\"one\"two\"",  BADEXP, 5, 1);
     parse_err("\"something\'", UNTERM, 0, 11);
-    parse_err("'\\+'", INVESC + "\\+", 1, 2);
-    parse_err("'\\0'", INVESC + "\\0", 1, 2);
+    parse_err("'\\+'",         INVESC, 1, 2);
+    parse_err("'\\0'",         INVESC, 1, 2);
     parse_err("'\\xA'", NONHEX + "'''", 1, 4);
     parse_err("'\\xHI", NONHEX + "'H'", 1, 4);
     parse_err("'\\u123 spam'", NONHEX + "' '", 1, 6);
-    parse_err("'\\U'", ESCSHRT, 1, 3);
+    parse_err("'\\U'",         ESCSHR, 1, 3);
     parse_err("'\\U1234aBcD'", "Illegal Unicode codepoint 0x1234ABCD", 1, 10);
-    parse_err("'\\U1F578'", ESCSHRT, 1, 8);
-    parse_err("'\\U+1F578'", ESCSHRT, 1, 9);
+    parse_err("'\\U1F578'",    ESCSHR, 1, 8);
+    parse_err("'\\U+1F578'",   ESCSHR, 1, 9);
     parse_err("'\\u{1F578}'", NONHEX + "'{'", 1, 6);
   }
+
 
   @Test public void testParseNumList() {
     astNumList_ok("[]", new double[0]);
@@ -96,15 +99,47 @@ public class CascadeParserTest extends TestUtil {
     astNumList_ok("[000.1 -3 17.003 2e+01 +11.1 1234567890]", ard(0.1, -3, 17.003, 20, 11.1, 1234567890));
     astNumList_ok("[NaN nan 1.e2 .1e2]", ard(Double.NaN, Double.NaN, 100, 10));
     astNumList_ok("[1,\n2,\n3,\n]", ard(1, 2, 3));
-    parse_err("[21 11", ENDSTR, 6, 1);
-    parse_err("[1 0.00.0]", MULTIP, 3, 6);
+
+    parse_err("[21 11",           ENDSTR, 6, 1);
+    parse_err("[1 0.00.0]",       MULTIP, 3, 6);
     parse_err("[0 1 true false]", EXPNUM, 5, 1);
-    parse_err("[#1 #2 #3]", EXPNUM, 1, 1);
-    parse_err("[0 1 'hello']", EXPNUM, 5, 1);
-    parse_err("[1:3]", EXPNUM, 2, 1);
-    parse_err("[, 1, 2, 3]", EXPNUM, 1, 1);
-    parse_err("[1 ,, 2]", EXPNUM, 4, 1);
+    parse_err("[#1 #2 #3]",       EXPNUM, 1, 1);
+    parse_err("[0 1 'hello']",    EXPNUM, 5, 1);
+    parse_err("[1:3]",            EXPNUM, 2, 1);
+    parse_err("[, 1, 2, 3]",      EXPNUM, 1, 1);
+    parse_err("[1 ,, 2]",         EXPNUM, 4, 1);
   }
+
+
+  @Test public void testParseStringList() {
+
+  }
+
+
+  @Test public void testParseSliceList() {
+
+  }
+
+
+  @Test public void testParseIdList() {
+
+  }
+
+
+  @Test public void testParseId() {
+
+  }
+
+
+  @Test public void testParseUnevalExpression() {
+
+  }
+
+
+  @Test public void testParseFunctionApplication() {
+
+  }
+
 
 
   //--------------------------------------------------------------------------------------------------------------------

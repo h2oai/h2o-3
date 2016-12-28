@@ -114,4 +114,14 @@ public abstract class Cascade {
     }
   }
 
+
+  /**
+   * Error indicating that an identifier cannot be resolved.
+   */
+  public static class NameError extends Error {
+    public NameError(int start, int len, String message) {
+      super(start, len, message);
+    }
+  }
+
 }

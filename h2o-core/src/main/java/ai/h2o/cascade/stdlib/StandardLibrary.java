@@ -80,7 +80,7 @@ public class StandardLibrary implements ICascadeLibrary {
     members.put("NA", new ValNum(Double.NaN));
     members.put("null", new ValNull());
 
-    String[] frameCmds = {"col", "ncols", "nrows"};
+    String[] frameCmds = {"clone", "col", "ncols", "nrows"};
     for (String cmd : frameCmds)
       registerCommand("frame", cmd);
 

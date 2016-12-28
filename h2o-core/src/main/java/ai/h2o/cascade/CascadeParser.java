@@ -214,12 +214,12 @@ public class CascadeParser {
   /**
    * Parse a list of numbers with slices/ranges. For example:
    * <pre>{@code
-   *   [0, -3, 2:7:5, 3:2, -5:11:-2]
+   *   <0, -3, 2:7:5, 3:2, -5:11:-2>
    * }</pre>
    * The format of each "range" token is {@code start:count[:stride]}, and it
    * denotes the sequence (where {@code stride=1} if not given)
    * <pre>{@code
-   *   [start, start + stride, ..., start + (count-1)*stride]
+   *   (start, start + stride, ..., start + (count-1)*stride)
    * }</pre>
    * Real numbers cannot be used in this list format. Within each range token
    * {@code count} must be positive, whereas {@code stride} can be either
@@ -242,7 +242,7 @@ public class CascadeParser {
         consumeChar(':');
         count = parseLong();
         if (count <= 0)
-          throw syntaxError("Count must be a positive integer, got " + count);
+          throw syntaxError("Count must be a positive integer");
       }
       if (nextChar() == ':') {
         consumeChar(':');
@@ -357,7 +357,7 @@ public class CascadeParser {
         } else if (cc == 'U') {
           pos += 9;   // e.g: \U0010FFFF
         } else
-          throw syntaxError("Invalid escape sequence \\" + cc, pos++ - 1);
+          throw syntaxError("Invalid escape sequence", pos++ - 1);
         if (pos > expr.length()) {
           pos = expr.length();
           throw syntaxError("Escape sequence too short", escapeStart);
