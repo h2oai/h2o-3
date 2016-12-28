@@ -17,7 +17,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Test module for {@link FnFromdkv}.
+ * Test module for {@link FnFromDkv}.
  */
 public class FnFromdkvTest extends TestUtil {
   private static CascadeSession session;
@@ -37,7 +37,7 @@ public class FnFromdkvTest extends TestUtil {
       water.Scope.track(originalFrame);
 
       // Import frame {@code f} from DKV into the Cascade session
-      Val res = exec("(fromdkv `iris` '" + originalFrame._key + "')");
+      Val res = exec("(fromDkv `iris` '" + originalFrame._key + "')");
       assertTrue(res instanceof ValFrame);
       WorkFrame cff = res.getFrame();
       assertTrue("WorkFrame object is supposed to be in the 'stone' mode", cff.isStoned());
@@ -74,7 +74,7 @@ public class FnFromdkvTest extends TestUtil {
   @Test
   public void testBadImports() {
     try {
-      exec("(fromdkv 1)");
+      exec("(fromDkv 1)");
     } catch (Cascade.TypeError e) {
       assertEquals("Wrong number of arguments: expected 2, received 1", e.getMessage());
       assertEquals(0, e.location);
@@ -82,7 +82,7 @@ public class FnFromdkvTest extends TestUtil {
     }
 
     try {
-      exec("(fromdkv irrrris 'iris.hex')");
+      exec("(fromDkv irrrris 'iris.hex')");
     } catch (Cascade.NameError e) {
       assertEquals("Name lookup of irrrris failed", e.getMessage());
       assertEquals(9, e.location);
@@ -90,7 +90,7 @@ public class FnFromdkvTest extends TestUtil {
     }
 
     try {
-      exec("(fromdkv ?iris 'iris.hex')");
+      exec("(fromDkv ?iris 'iris.hex')");
     } catch (Cascade.TypeError e) {
       assertEquals("Expected argument of type IDS but instead got AST", e.getMessage());
       assertEquals(9, e.location);
@@ -98,7 +98,7 @@ public class FnFromdkvTest extends TestUtil {
     }
 
     try {
-      exec("(fromdkv `iris` 'irrris.hex')");
+      exec("(fromDkv `iris` 'irrris.hex')");
     } catch (Cascade.ValueError e) {
       assertEquals("Key not found in the DKV", e.getMessage());
       assertEquals(16, e.location);
@@ -106,7 +106,7 @@ public class FnFromdkvTest extends TestUtil {
     }
 
     try {
-      exec("(fromdkv `iris1 iris2` 'iris.hex')");
+      exec("(fromDkv `iris1 iris2` 'iris.hex')");
     } catch (Cascade.ValueError e) {
       assertEquals("Only one id should be supplied", e.getMessage());
       assertEquals(9, e.location);

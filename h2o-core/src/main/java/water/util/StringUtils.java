@@ -191,10 +191,9 @@ public class StringUtils {
 
 
   /**
-   * Return the string with first letter uppercased and all other letters
-   * in the lower case.
+   * Return the string with first letter uppercased.
    */
   public static String capitalize(String s) {
-    return s.substring(0, 1).toUpperCase() + s.substring(1).toLowerCase();
+    return s.substring(0, 1).toUpperCase() + s.substring(1);
   }
 }

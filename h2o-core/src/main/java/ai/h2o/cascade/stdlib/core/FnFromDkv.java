@@ -16,7 +16,7 @@ import water.fvec.Frame;
  * in the sense that a deep copy of the DKV object is created, and Cascade
  * doesn't assume ownership of the original object.
  */
-public class FnFromdkv extends StdlibFunction {
+public class FnFromDkv extends StdlibFunction {
 
   public Val apply(IdList ids, String key) {
     if (ids.numIds() != 1)

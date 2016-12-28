@@ -81,7 +81,7 @@ public class StandardLibrary implements ICascadeLibrary {
     for (String cmd : frameCmds)
       registerCommand("frame", cmd);
 
-    String[] coreCmds = {"fromdkv"};
+    String[] coreCmds = {"fromDkv"};
     for (String cmd : coreCmds)
       registerCommand("core", cmd);
   }
@@ -465,7 +465,7 @@ public class StandardLibrary implements ICascadeLibrary {
     }
 
     public String argValType(int i) {
-      return StringUtils.capitalize(argValTYPE(i));
+      return StringUtils.capitalize(argValTYPE(i).toLowerCase());
     }
 
 

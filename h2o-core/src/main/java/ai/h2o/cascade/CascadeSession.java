@@ -58,6 +58,12 @@ public class CascadeSession implements Closeable {
   }
 
 
+  /**
+   * Issue a new {@link Key} that can be used for storing an object in the DKV.
+   * The key will be prefixed with a session id, making it recognizable as
+   * being owned by this session.
+   * @param <T> type of the {@code Key} to create.
+   */
   public <T extends Keyed<T>> Key<T> mintKey() {
     return Key.make(session_id + "~cc" + (idCounter++));
   }
