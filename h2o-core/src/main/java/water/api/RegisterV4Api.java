@@ -1,7 +1,8 @@
 package water.api;
 
-import static water.api.RequestServer.registerEndpoint;
 import ai.h2o.cascade.CascadeHandlers;
+
+import static water.api.RequestServer.registerEndpoint;
 
 
 /**
@@ -20,14 +21,10 @@ public class RegisterV4Api extends AbstractRegister {
     );
 
 
-    //------------ Rapids ----------------------------------------------------------------------------------------------
+    //------------ Cascade ---------------------------------------------------------------------------------------------
     registerEndpoint("POST /4/sessions", CascadeHandlers.StartSession.class);
 
-    registerEndpoint("endSession4",
-        "DELETE /4/sessions/{session_key}",
-        RapidsHandler.class, "endSession",
-        "Close the Rapids session."
-    );
+    registerEndpoint("DELETE /4/sessions/{session_id}", CascadeHandlers.CloseSession.class);
 
     registerEndpoint("POST /4/cascade", CascadeHandlers.Run.class);
 

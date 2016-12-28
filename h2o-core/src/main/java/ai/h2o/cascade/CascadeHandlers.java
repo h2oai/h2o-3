@@ -1,7 +1,6 @@
 package ai.h2o.cascade;
 
 import ai.h2o.cascade.vals.Val;
-import water.api.Handler;
 import water.api.RestApiHandler;
 import water.api.schemas4.OutputSchemaV4;
 import water.api.schemas4.input.CascadeCloseSessionIV4;
@@ -97,7 +96,7 @@ public abstract class CascadeHandlers {
 
   //--------------------------------------------------------------------------------------------------------------------
 
-  public static class CloseSession extends Handler {
+  public static class CloseSession extends RestApiHandler<CascadeCloseSessionIV4, OutputSchemaV4> {
     public String name() {
       return "closeCascadeSession";
     }
