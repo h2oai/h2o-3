@@ -1,5 +1,6 @@
 package hex.api;
 
+import hex.deeplearning.DeepLearningBig;
 import water.H2O;
 import hex.ModelBuilder;
 import water.api.GridSearchHandler;
@@ -9,7 +10,7 @@ public class RegisterAlgos extends water.api.AbstractRegister {
   @Override public void register(String relativeResourcePath) throws ClassNotFoundException {
     // List of algorithms
     ModelBuilder[] algos = new ModelBuilder[]{
-      new hex.deeplearning.DeepLearning(true),
+      new DeepLearningBig(true),
       new hex.glm         .GLM         (true),
       new hex.glrm        .GLRM        (true),
       new hex.kmeans      .KMeans      (true),

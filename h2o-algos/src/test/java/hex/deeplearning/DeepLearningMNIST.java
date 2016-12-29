@@ -101,7 +101,7 @@ public class DeepLearningMNIST extends TestUtil {
 //        p._score_interval = 5; //score and print progress report (only) every 20 seconds
         p._score_training_samples = 10000; //only score on a small sample of the training set -> don't want to spend too much time scoring (note: there will be at least 1 row per chunk)
 
-        DeepLearning dl = new DeepLearning(p,Key.<DeepLearningModel>make("dl_mnist_model"));
+        DeepLearningBig dl = new DeepLearningBig(p,Key.<DeepLearningModel>make("dl_mnist_model"));
         DeepLearningModel model = dl.trainModel().get();
         if (model != null)
           model.delete();

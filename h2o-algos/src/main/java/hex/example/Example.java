@@ -1,11 +1,11 @@
 package hex.example;
 
+import hex.Driver;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.example.ExampleModel.ExampleOutput;
 import hex.example.ExampleModel.ExampleParameters;
 import water.MRTask;
-import water.Scope;
 import water.fvec.Chunk;
 import water.util.Log;
 
@@ -36,6 +36,7 @@ public class Example extends ModelBuilder<ExampleModel,ExampleParameters,Example
 
   // ----------------------
   private class ExampleDriver extends Driver {
+    public ExampleDriver() { super(Example.this); }
     @Override public void computeImpl() {
       ExampleModel model = null;
       try {

@@ -55,6 +55,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
   }
 
   public class CoxPHDriver extends Driver {
+    public CoxPHDriver() { super(CoxPH.this); }
     private Frame _modelBuilderTrain = null;
 
     private void applyScoringFrameSideEffects() {

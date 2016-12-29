@@ -1,9 +1,6 @@
 package hex.deepwater;
 
-import hex.DataInfo;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ToEigenVec;
+import hex.*;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -105,6 +102,7 @@ public class DeepWater extends ModelBuilder<DeepWaterModel,DeepWaterParameters,D
   }
 
   public class DeepWaterDriver extends Driver {
+    public DeepWaterDriver() { super(DeepWater.this); }
     @Override public void computeImpl() {
       init(true); //this can change the seed if it was set to -1
       long cs = _parms.checksum();

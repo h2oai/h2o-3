@@ -182,6 +182,7 @@ class Bogus extends ModelBuilder<BogusModel,BogusModel.BogusParameters,BogusMode
   @Override public void init(boolean expensive) { super.init(expensive); }
 
   private class BogusDriver extends Driver {
+    public BogusDriver() { super(Bogus.this); }
     @Override public void computeImpl() {
       _driver_priority = priority(); // Get H2OCountedCompleter priority
       synchronized(Bogus.this) {

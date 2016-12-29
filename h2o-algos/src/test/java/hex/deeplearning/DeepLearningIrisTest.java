@@ -179,7 +179,7 @@ public class DeepLearningIrisTest extends TestUtil {
                             p._single_node_mode = true;
                             p._epochs = 0;
                             p._elastic_averaging = false;
-                            mymodel = new DeepLearning(p).trainModel().get();
+                            mymodel = new DeepLearningBig(p).trainModel().get();
                             p._epochs = epoch;
 
                             Neurons[] neurons = mymodel.model_info().neuronsForTraining();
@@ -209,7 +209,7 @@ public class DeepLearningIrisTest extends TestUtil {
 
                             // Train H2O
                             mymodel.delete();
-                            DeepLearning dl = new DeepLearning(p);
+                            DeepLearningBig dl = new DeepLearningBig(p);
                             mymodel = dl.trainModel().get();
                             Assert.assertTrue(mymodel.model_info().get_processed_total() == epoch * dl.train().numRows());
 

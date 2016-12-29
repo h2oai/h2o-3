@@ -1088,7 +1088,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 //        new BigScore(this, domains[0], names.length, adaptFrm.means(), _output.hasWeights() && adaptFrm.find(_output.weightsName()) >= 0, computeMetrics, true /*make preds*/, j);
     
     BigScore bs = bigScore.doAll(names.length, Vec.T_NUM, adaptFrm);
-    if (computeMetrics)
+    if (computeMetrics && bs._mb != null)
       bs._mb.makeModelMetrics(this, fr, adaptFrm, bs.outputFrame());
     return bs.outputFrame(Key.<Frame>make(destination_key), names, domains);
   }

@@ -49,7 +49,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
       long start = System.currentTimeMillis();
       try { Thread.sleep(1000); } catch( InterruptedException ex ) { } //to avoid rounding issues with printed time stamp (1 second resolution)
 
-      DeepLearningModel model = new DeepLearning(p).trainModel().get();
+      DeepLearningModel model = new DeepLearningBig(p).trainModel().get();
       long sleepTime = 5; //seconds
       try { Thread.sleep(sleepTime*1000); } catch( InterruptedException ex ) { }
 
@@ -59,7 +59,7 @@ public class DeepLearningCheckpointReporting extends TestUtil {
       p2._epochs *= 2;
       DeepLearningModel model2 = null;
       try {
-        model2 = new DeepLearning(p2).trainModel().get();
+        model2 = new DeepLearningBig(p2).trainModel().get();
         long end = System.currentTimeMillis();
         TwoDimTable table = model2._output._scoring_history;
         double priorDurationDouble=0;

@@ -2,11 +2,8 @@ package hex.pca;
 
 import Jama.Matrix;
 import Jama.SingularValueDecomposition;
-import hex.DataInfo;
+import hex.*;
 
-import hex.ModelBuilder;
-import hex.ModelMetrics;
-import hex.ModelCategory;
 import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
@@ -78,6 +75,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
   }
 
   class PCADriver extends Driver {
+    public PCADriver() { super(PCA.this); }
 
     protected void buildTables(PCAModel pca, String[] rowNames) {
       // Eigenvectors are just the V matrix

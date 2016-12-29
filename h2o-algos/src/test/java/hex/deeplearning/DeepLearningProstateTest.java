@@ -244,7 +244,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                               p._score_validation_sampling = csm;
                                               p._elastic_averaging = elastic_averaging;
 //                                      Log.info(new String(p.writeJSON(new AutoBuffer()).buf()).replace(",","\n"));
-                                              DeepLearning dl = new DeepLearning(p, Key.<DeepLearningModel>make(Key.make().toString() + "first"));
+                                              DeepLearningBig dl = new DeepLearningBig(p, Key.<DeepLearningModel>make(Key.make().toString() + "first"));
                                               try {
                                                 model1 = dl.trainModel().get();
                                                 checkSums.add(model1.checksum());
@@ -321,7 +321,7 @@ public class DeepLearningProstateTest extends TestUtil {
                                               p2._train_samples_per_iteration = train_samples_per_iteration;
                                               p2._balance_classes = classification && balance_classes;
                                               p2._elastic_averaging = elastic_averaging2;
-                                              DeepLearning dl = new DeepLearning(p2);
+                                              DeepLearningBig dl = new DeepLearningBig(p2);
                                               try {
                                                 model2 = dl.trainModel().get();
                                               } catch (Throwable t) {

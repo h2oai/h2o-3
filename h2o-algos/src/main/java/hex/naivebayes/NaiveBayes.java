@@ -73,6 +73,7 @@ public class NaiveBayes extends ModelBuilder<NaiveBayesModel,NaiveBayesParameter
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
   class NaiveBayesDriver extends Driver {
+    public NaiveBayesDriver() { super(NaiveBayes.this); }
 
     public boolean computeStatsFillModel(NaiveBayesModel model, DataInfo dinfo, NBTask tsk) {
       model._output._levels = _response.domain();

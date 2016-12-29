@@ -125,7 +125,7 @@ public class DeepLearningGradientCheck extends TestUtil {
                 DeepLearningModelInfo.gradientCheck = new DeepLearningModelInfo.GradientCheck(0, 0, 0); //tell it what gradient to collect
 
                 // Build a first model; all remaining models should be equal
-                DeepLearning job = new DeepLearning(parms);
+                DeepLearningBig job = new DeepLearningBig(parms);
                 try {
                   dl = job.trainModel().get();
 

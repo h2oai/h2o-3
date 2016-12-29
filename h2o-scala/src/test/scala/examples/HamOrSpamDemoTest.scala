@@ -18,7 +18,7 @@
 package examples
 
 import examples.Frequencies.Data
-import hex.deeplearning.{DeepLearningParameters, DeepLearning, DeepLearningModel, DlInput}
+import hex.deeplearning.{DeepLearningParameters, DeepLearningBig, DeepLearningModel, DlInput}
 import org.junit.Assert._
 import org.junit.{AfterClass, BeforeClass, Test}
 import water.fvec.{AppendableVec, Frame, NewChunk, Vec}
@@ -141,11 +141,6 @@ class HamOrSpamDemoTest extends TestUtil {
                    hidden: Array[Int] = Array[Int](200, 200)): DeepLearningModel = {
     val v1 = train.vec("target")
     
-    assert(v1.length() == trainData.target.size())
-    for (i <- 0L until v1.length) {
-      assert(v1.at(i) == trainData.target(i.toInt))
-    }
-    
     val dlParams = new DeepLearningParameters()
     dlParams._train = train._key
     dlParams.trainData = trainData
@@ -156,7 +151,7 @@ class HamOrSpamDemoTest extends TestUtil {
     dlParams._hidden = hidden
     dlParams._ignore_const_cols = false // TODO(vlad): figure out how important is it
     val jobKey: Key[DeepLearningModel] = water.Key.make("dlModel.hex")
-    val dl = new DeepLearning(dlParams, jobKey)
+    val dl = new DeepLearningBig(dlParams, jobKey)
 
     val tm = dl.trainModel()
     tm.waitTillFinish()

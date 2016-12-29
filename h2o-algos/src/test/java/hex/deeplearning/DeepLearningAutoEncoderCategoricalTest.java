@@ -44,7 +44,7 @@ public class DeepLearningAutoEncoderCategoricalTest extends TestUtil {
     p._score_validation_samples = 0;
     p._reproducible = true;
 
-    DeepLearning dl = new DeepLearning(p);
+    DeepLearningBig dl = new DeepLearningBig(p);
     DeepLearningModel mymodel = dl.trainModel().get();
 
     // Verification of results

@@ -518,6 +518,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
    * Main loop of the glm algo.
    */
   public final class GLMDriver extends Driver implements ProgressMonitor {
+    public GLMDriver() { super(GLM.this); }
     private long _workPerIteration;
 
 

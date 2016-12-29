@@ -70,7 +70,7 @@ public class DeepLearningReproducibilityTest extends TestUtil {
 //          p._nfolds = 2;
           p._quiet_mode = true;
           p._reproducible = repro;
-          DeepLearning dl = new DeepLearning(p);
+          DeepLearningBig dl = new DeepLearningBig(p);
           mymodel = dl.trainModel().get();
 
           // Extract the scoring on validation set from the model

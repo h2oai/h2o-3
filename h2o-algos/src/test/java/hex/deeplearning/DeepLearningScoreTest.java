@@ -44,7 +44,7 @@ public class DeepLearningScoreTest extends TestUtil {
       dlParams._epochs = 5;
       dlParams._response_column = "CAPSULE";
 
-      dlModel = new DeepLearning(dlParams).trainModel().get();
+      dlModel = new DeepLearningBig(dlParams).trainModel().get();
     } finally {
       fr.delete();
       rebalanced.delete();

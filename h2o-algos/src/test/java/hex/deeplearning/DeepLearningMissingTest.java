@@ -93,7 +93,7 @@ public class DeepLearningMissingTest extends TestUtil {
           DKV.put(train);
           DKV.put(test);
 
-          DeepLearning dl = new DeepLearning(p);
+          DeepLearningBig dl = new DeepLearningBig(p);
           Log.info("Starting with " + missing_fraction * 100 + "% missing values added.");
           mymodel = dl.trainModel().get();
 

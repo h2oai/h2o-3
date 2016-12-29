@@ -20,7 +20,7 @@ import java.util.Arrays;
 
 import static hex.ModelMetrics.calcVarImp;
 import static hex.deeplearning.DeepLearningBig.makeDataInfo;
-import static hex.deeplearning.Loss.*;
+import static hex.deeplearning.Loss.CrossEntropy;
 import static water.H2O.technote;
 
 /**
@@ -29,8 +29,8 @@ import static water.H2O.technote;
  * a scoring history, as well as some helpers to indicate the progress
  */
 
-public class DeepLearningModel extends 
-    SimpleDLM<DeepLearningModel, DeepLearningModelOutput> implements Model.DeepFeatures {
+public class DLModel extends 
+    SimpleDLM<DLModel, DeepLearningModelOutput> implements Model.DeepFeatures {
   @Override public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
   }
@@ -123,7 +123,7 @@ public class DeepLearningModel extends
    *  @param parms User-given parameters for checkpoint restart
    *  @param cp Checkpoint to restart from
    * @param store_best_model Store only the best model instead of the latest one  */
-  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModel cp, final boolean store_best_model, final DataInfo dataInfo) {
+  public DLModel(final Key destKey, final DeepLearningParameters parms, final DLModel cp, final boolean store_best_model, final DataInfo dataInfo) {
     super(destKey, parms == null ? (DeepLearningParameters)cp._parms.clone() : parms, (DeepLearningModelOutput)cp._output.clone());
     assert(_parms != cp._parms); //make sure we have a clone
     model_info = IcedUtils.deepCopy(cp.model_info); //don't want to interfere with model being built, just make a deep copy and store that
@@ -142,9 +142,9 @@ public class DeepLearningModel extends
     assert(_dist.distribution != DistributionFamily.AUTO); // Note: Must use sanitized parameters via get_params() as this._params can still have defaults AUTO, etc.)
     actual_best_model_key = cp.actual_best_model_key;
     if (actual_best_model_key.get() == null) {
-      DeepLearningModel best = IcedUtils.deepCopy(cp);
+      DLModel best = IcedUtils.deepCopy(cp);
       //best.model_info.data_info = model_info.data_info; // Note: we currently DO NOT use the checkpoint's data info - as data may change during checkpoint restarts
-      actual_best_model_key = Key.<DeepLearningModel>make(H2O.SELF);
+      actual_best_model_key = Key.<DLModel>make(H2O.SELF);
       DKV.put(actual_best_model_key, best);
     }
     time_of_start_ms = cp.time_of_start_ms;
@@ -180,7 +180,7 @@ public class DeepLearningModel extends
    * @param valid Validation frame
    * @param nClasses Number of classes (1 for regression or autoencoder)
    */
-  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
+  public DLModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
     super(destKey, parms, output);
     final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
     DKV.put(dinfo);
@@ -330,7 +330,7 @@ public class DeepLearningModel extends
                             get_params()._distribution == DistributionFamily.huber;
 
         // Scoring on training data
-        hex.ModelMetrics mtrain;
+        ModelMetrics mtrain;
         Frame preds = null;
         if (needPreds) {
           // allocate predictions since they are needed
@@ -351,7 +351,7 @@ public class DeepLearningModel extends
         if (preds!=null) preds.remove();
         _output._training_metrics = mtrain;
         scoringInfo.scored_train = new ScoreKeeper(mtrain);
-        hex.ModelMetricsSupervised mm1 = (ModelMetricsSupervised)mtrain;
+        ModelMetricsSupervised mm1 = (ModelMetricsSupervised)mtrain;
         if (mm1 instanceof ModelMetricsBinomial) {
           ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
           scoringInfo.training_AUC = mm._auc;
@@ -390,7 +390,7 @@ public class DeepLearningModel extends
       }
       _output.errors = last_scored();
       makeWeightsBiases(_key);
-      water.util.Timer t = new Timer();
+      Timer t = new Timer();
       // store weights and matrices to Frames
       if (_output.weights != null && _output.biases != null) {
         for (int i = 0; i < _output.weights.length; ++i) {
@@ -414,7 +414,7 @@ public class DeepLearningModel extends
       if (!finalScoring) {
         if (actual_best_model_key != null && get_params()._overwrite_with_best_model && (
                 // if we have a best_model in DKV, then compare against its error() (unless it's a different model as judged by the network size)
-                (DKV.get(actual_best_model_key) != null && (!(loss() >= DKV.get(actual_best_model_key).<DeepLearningModel>get().loss()) || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DeepLearningModel>get().model_info().units)))
+                (DKV.get(actual_best_model_key) != null && (!(loss() >= DKV.get(actual_best_model_key).<DLModel>get().loss()) || !Arrays.equals(model_info().units, DKV.get(actual_best_model_key).<DLModel>get().model_info().units)))
                         ||
                         // otherwise, compare against our own _bestError
                         (DKV.get(actual_best_model_key) == null && loss() < _bestLoss)
@@ -851,7 +851,7 @@ public class DeepLearningModel extends
 
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
-    DeepLearningModel bestModel = IcedUtils.deepCopy(this);
+    DLModel bestModel = IcedUtils.deepCopy(this);
     DKV.put(bestModelKey, bestModel);
     if (model_info().get_params()._elastic_averaging) {
       DeepLearningModelInfo eamodel = DKV.getGet(model_info.elasticAverageModelInfoKey());

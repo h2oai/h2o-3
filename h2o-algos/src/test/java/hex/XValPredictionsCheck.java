@@ -1,6 +1,6 @@
 package hex;
 
-import hex.deeplearning.DeepLearning;
+import hex.deeplearning.DeepLearningBig;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningParameters;
 import hex.genmodel.utils.DistributionFamily;
@@ -87,7 +87,7 @@ public class XValPredictionsCheck extends TestUtil {
       parmsDL._epochs = 1;
       parmsDL._fold_column = "foldId";
       parmsDL._keep_cross_validation_predictions=true;
-      DeepLearning dlJob = new DeepLearning(parmsDL);
+      DeepLearningBig dlJob = new DeepLearningBig(parmsDL);
       DeepLearningModel dl = dlJob.trainModel().get();
       checkModel(dl, foldId.anyVec(),3);
 

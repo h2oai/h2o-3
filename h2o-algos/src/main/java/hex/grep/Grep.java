@@ -1,5 +1,6 @@
 package hex.grep;
 
+import hex.Driver;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.*;
@@ -47,6 +48,7 @@ public class Grep extends ModelBuilder<GrepModel,GrepModel.GrepParameters,GrepMo
 
   // ----------------------
   private class GrepDriver extends Driver {
+    public GrepDriver() { super(Grep.this); }
 
     @Override public void computeImpl() {
       GrepModel model = null;

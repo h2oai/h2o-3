@@ -54,7 +54,7 @@ public class DeepLearningSpiralsTest extends TestUtil {
           p._score_each_iteration = true;
           p._reproducible = true;
           p._seed = 1234;
-          new DeepLearning(p,model_id).trainModel().get();
+          new DeepLearningBig(p,model_id).trainModel().get();
         }
 
         // score and check result

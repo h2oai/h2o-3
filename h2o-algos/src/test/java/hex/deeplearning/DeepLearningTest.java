@@ -457,7 +457,7 @@ public class DeepLearningTest extends TestUtil {
       dl._elastic_averaging = false;
 
       // Invoke DL and block till the end
-      DeepLearning job = new DeepLearning(dl,Key.<DeepLearningModel>make("DL_model_" + hexnametrain));
+      DeepLearningBig job = new DeepLearningBig(dl,Key.<DeepLearningModel>make("DL_model_" + hexnametrain));
       // Get the model
       model = job.trainModel().get();
       Log.info(model._output);
@@ -548,7 +548,7 @@ public class DeepLearningTest extends TestUtil {
         }
 
         // Invoke DL and block till the end
-        DeepLearning job = new DeepLearning(dl);
+        DeepLearningBig job = new DeepLearningBig(dl);
         // Get the model
         models[i] = job.trainModel().get();
         frTrain.remove();
@@ -615,7 +615,7 @@ public class DeepLearningTest extends TestUtil {
         dl._elastic_averaging_regularization = 1e-4;
 
         // Invoke DL and block till the end
-        DeepLearning job = new DeepLearning(dl);
+        DeepLearningBig job = new DeepLearningBig(dl);
         // Get the model
         models[i] = job.trainModel().get();
       }
@@ -658,7 +658,7 @@ public class DeepLearningTest extends TestUtil {
       parms._classification_stop = -1;
 
       // Build a first model; all remaining models should be equal
-      DeepLearningModel dl = new DeepLearning(parms).trainModel().get();
+      DeepLearningModel dl = new DeepLearningBig(parms).trainModel().get();
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
@@ -698,7 +698,7 @@ public class DeepLearningTest extends TestUtil {
       parms._epochs = 1;
 
       // Build a first model; all remaining models should be equal
-      DeepLearningModel dl = new DeepLearning(parms).trainModel().get();
+      DeepLearningModel dl = new DeepLearningBig(parms).trainModel().get();
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
@@ -737,7 +737,7 @@ public class DeepLearningTest extends TestUtil {
       parms._classification_stop = -1;
 
       // Build a first model; all remaining models should be equal
-      DeepLearningModel dl = new DeepLearning(parms).trainModel().get();
+      DeepLearningModel dl = new DeepLearningBig(parms).trainModel().get();
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
@@ -777,7 +777,7 @@ public class DeepLearningTest extends TestUtil {
       parms._epochs = 10;
 
       // Build a first model; all remaining models should be equal
-      DeepLearningModel dl = new DeepLearning(parms).trainModel().get();
+      DeepLearningModel dl = new DeepLearningBig(parms).trainModel().get();
 
       pred = dl.score(parms.train());
       hex.ModelMetricsBinomial mm = hex.ModelMetricsBinomial.getFromDKV(dl, parms.train());
@@ -892,7 +892,7 @@ public class DeepLearningTest extends TestUtil {
       dl._hidden = new int[]{10, 10};
 
       // Invoke DL and block till the end
-      DeepLearning job = new DeepLearning(dl);
+      DeepLearningBig job = new DeepLearningBig(dl);
       // Get the model
       model = job.trainModel().get();
       Log.info(model._output);
@@ -987,7 +987,7 @@ public class DeepLearningTest extends TestUtil {
         parms._loss = loss;
 
         // Build a first model; all remaining models should be equal
-        DeepLearning job = new DeepLearning(parms);
+        DeepLearningBig job = new DeepLearningBig(parms);
         dl = job.trainModel().get();
 
         ModelMetricsRegression mm = (ModelMetricsRegression)dl._output._training_metrics;
@@ -1039,7 +1039,7 @@ public class DeepLearningTest extends TestUtil {
         parms._distribution = dist;
 
         // Build a first model; all remaining models should be equal
-        DeepLearning job = new DeepLearning(parms);
+        DeepLearningBig job = new DeepLearningBig(parms);
         dl = job.trainModel().get();
 
         ModelMetricsRegression mm = (ModelMetricsRegression)dl._output._training_metrics;
@@ -1086,7 +1086,7 @@ public class DeepLearningTest extends TestUtil {
       parms._activation = DeepLearningParameters.Activation.Tanh;
 
       // Build a first model; all remaining models should be equal
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       ModelMetricsAutoEncoder mm = (ModelMetricsAutoEncoder)dl._output._training_metrics;
       Assert.assertEquals(0.0712931422088762, mm._MSE, 1e-2);
@@ -1135,7 +1135,7 @@ public class DeepLearningTest extends TestUtil {
         parms._max_w2 = 1e20f;
 
         // Build a first model; all remaining models should be equal
-        DeepLearning job = new DeepLearning(parms);
+        DeepLearningBig job = new DeepLearningBig(parms);
         try {
           dl = job.trainModel().get();
           Assert.fail("Should toss exception instead of reaching here");
@@ -1187,7 +1187,7 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
 
       // Build a first model; all remaining models should be equal
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
       assertTrue(dl.stopped_early);
       assertTrue(dl.epoch_counter < 100);
     } finally {
@@ -1216,7 +1216,7 @@ public class DeepLearningTest extends TestUtil {
       parms._variable_importances = true;
 
       // Build a first model; all remaining models should be equal
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
       Assert.assertTrue(dl.varImp()._varimp != null);
       Log.info(dl.model_info().toStringAll());//for code coverage only
       Assert.assertTrue(ArrayUtils.minValue(dl.varImp()._varimp) > 0.5); //all features matter
@@ -1244,13 +1244,13 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._variable_importances = true;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
       parms2._epochs = 10;
       parms2._checkpoint = dl._key;
       try {
-        dl2 = new DeepLearning(parms2).trainModel().get();
+        dl2 = new DeepLearningBig(parms2).trainModel().get();
         Assert.fail("Should toss exception instead of reaching here");
       } catch (H2OIllegalArgumentException ex) {
       }
@@ -1279,13 +1279,13 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._variable_importances = true;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
       parms2._epochs = 9;
       parms2._checkpoint = dl._key;
       try {
-        dl2 = new DeepLearning(parms2).trainModel().get();
+        dl2 = new DeepLearningBig(parms2).trainModel().get();
         Assert.fail("Should toss exception instead of reaching here");
       } catch (H2OIllegalArgumentException ex) {
       }
@@ -1321,7 +1321,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.logloss; //don't stop based on absolute classification error
       parms._stopping_tolerance = 0.03;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertTrue(dl.epoch_counter < parms._epochs);
 
@@ -1355,7 +1355,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.misclassification; //don't stop based on absolute classification error
       parms._stopping_tolerance = 0.0;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertTrue(dl.epoch_counter < parms._epochs);
 
@@ -1389,7 +1389,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.deviance; //don't stop based on absolute classification error
       parms._stopping_tolerance = 0.0;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertTrue(dl.epoch_counter < parms._epochs);
 
@@ -1431,7 +1431,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC; //don't stop based on absolute classification error
       parms._stopping_tolerance = 0.0;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertTrue(dl.epoch_counter < parms._epochs);
 
@@ -1475,7 +1475,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_metric = ScoreKeeper.StoppingMetric.AUC; //don't stop based on absolute classification error
       parms._stopping_tolerance = 0.0;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertTrue(dl.epoch_counter < parms._epochs);
 
@@ -1500,7 +1500,7 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._nfolds = 4;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(12.959355363801334,dl._output._training_metrics._MSE,1e-6);
       Assert.assertEquals(17.296871012606317,dl._output._cross_validation_metrics._MSE,1e-6);
@@ -1527,7 +1527,7 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._mini_batch_size = 1;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(12.938076268040659,dl._output._training_metrics._MSE,1e-6);
 
@@ -1553,7 +1553,7 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._mini_batch_size = 5;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(15.594774935758249, dl._output._training_metrics._MSE, 1e-6);
 
@@ -1579,7 +1579,7 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._mini_batch_size = 50;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(22.555132824953393,dl._output._training_metrics._MSE,1e-6);
 
@@ -1618,7 +1618,7 @@ public class DeepLearningTest extends TestUtil {
         parms._hidden_dropout_ratios = new double[]{0.2, 0.1};
         parms._autoencoder = true;
         parms._seed = 0xdecaf;
-        ae = new DeepLearning(parms, key).trainModel().get();
+        ae = new DeepLearningBig(parms, key).trainModel().get();
         // test POJO
         Frame res = ae.score(tfr);
         assertTrue(ae.testJavaScoring(tfr, res, 1e-5));
@@ -1641,7 +1641,7 @@ public class DeepLearningTest extends TestUtil {
         parms._adaptive_rate=false;
         parms._rate_annealing=1e-3;
         parms._loss= Loss.CrossEntropy;
-        dl1 = new DeepLearning(parms).trainModel().get();
+        dl1 = new DeepLearningBig(parms).trainModel().get();
         // test POJO
         Frame res = dl1.score(tfr);
         assertTrue(dl1.testJavaScoring(tfr, res, 1e-5));
@@ -1662,7 +1662,7 @@ public class DeepLearningTest extends TestUtil {
         parms._rate_decay=1.0;
         parms._adaptive_rate=false;
         parms._rate_annealing=1e-3;
-        dl2 = new DeepLearning(parms).trainModel().get();
+        dl2 = new DeepLearningBig(parms).trainModel().get();
         // test POJO
         Frame res = dl2.score(tfr);
         assertTrue(dl2.testJavaScoring(tfr, res, 1e-5));
@@ -1701,7 +1701,7 @@ public class DeepLearningTest extends TestUtil {
         parms._hidden = new int[]{20, 20};
         parms._seed = 0xdecad;
         parms._export_weights_and_biases = true;
-        dl1 = new DeepLearning(parms).trainModel().get();
+        dl1 = new DeepLearningBig(parms).trainModel().get();
       }
 
       // train DL model starting from weights/biases from first model
@@ -1716,7 +1716,7 @@ public class DeepLearningTest extends TestUtil {
         parms._initial_weights = dl1._output.weights;
         parms._initial_biases = dl1._output.biases;
         parms._epochs = 0;
-        dl2 = new DeepLearning(parms).trainModel().get();
+        dl2 = new DeepLearningBig(parms).trainModel().get();
       }
 
       Log.info("dl1  : MSE=" + dl1._output._training_metrics.mse());
@@ -1752,7 +1752,7 @@ public class DeepLearningTest extends TestUtil {
         parms._hidden = new int[]{20, 20};
         parms._seed = 0xdecad;
         parms._export_weights_and_biases = true;
-        dl1 = new DeepLearning(parms).trainModel().get();
+        dl1 = new DeepLearningBig(parms).trainModel().get();
       }
 
       // train DL model starting from weights/biases from first model
@@ -1771,7 +1771,7 @@ public class DeepLearningTest extends TestUtil {
         parms._initial_biases[0].remove();
         parms._initial_biases[0] = null;
         parms._epochs = 10;
-        dl2 = new DeepLearning(parms).trainModel().get();
+        dl2 = new DeepLearningBig(parms).trainModel().get();
       }
 
       Log.info("dl1  : MSE=" + dl1._output._training_metrics.mse());
@@ -1805,7 +1805,7 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._distribution = laplace;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(2.31398/*MAE*/,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
       Assert.assertEquals(14.889,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-3);
@@ -1832,7 +1832,7 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._distribution = gaussian;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
       Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-5);
@@ -1860,7 +1860,7 @@ public class DeepLearningTest extends TestUtil {
       parms._distribution = huber;
       parms._huber_alpha = 1; //just like gaussian
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,0.7);
       Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._MSE,0.7);
@@ -1889,7 +1889,7 @@ public class DeepLearningTest extends TestUtil {
       parms._huber_alpha = 1e-2;
       // more like Laplace, but different slope and different prefactor -> so can't compare deviance 1:1
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       double delta = 0.011996;
       // can compute huber loss from MAE since no obs weights
@@ -1918,7 +1918,7 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._distribution = huber;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(6.4964976811,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
 
@@ -1951,7 +1951,7 @@ public class DeepLearningTest extends TestUtil {
       parms._distribution = bernoulli;
       parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(0.97329 , ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-3);
       Assert.assertEquals(0.97329 , ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-3);
@@ -1988,7 +1988,7 @@ public class DeepLearningTest extends TestUtil {
       parms._nfolds = 3;
       parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(0.94696  , ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
       Assert.assertEquals(0.94696  , ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-4);
@@ -2034,7 +2034,7 @@ public class DeepLearningTest extends TestUtil {
       parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
       parms._score_training_samples = 0;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(
               ((ModelMetricsBinomial)dl._output._training_metrics)._logloss,
@@ -2072,7 +2072,7 @@ public class DeepLearningTest extends TestUtil {
       parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Eigen;
       parms._score_training_samples = 0;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(0.9521718170580964, ((ModelMetricsBinomial)dl._output._training_metrics)._auc._auc,1e-4);
       Assert.assertEquals(0.9521656365883807, ((ModelMetricsBinomial)dl._output._validation_metrics)._auc._auc,1e-4);
@@ -2111,7 +2111,7 @@ public class DeepLearningTest extends TestUtil {
       parms._distribution = huber;
       parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
 
       Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-4);
       Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl._output._validation_metrics)._mean_residual_deviance,1e-4);
@@ -2151,7 +2151,7 @@ public class DeepLearningTest extends TestUtil {
         p._adaptive_rate = false;
         p._rate = 0.005;
         p._sparse = true;
-        model = new DeepLearning(p).trainModel().get();
+        model = new DeepLearningBig(p).trainModel().get();
 
         FrameSplitter fs = new FrameSplitter(train, new double[]{0.0001},new Key[]{Key.make("small"),Key.make("large")},null);
         fs.compute2();
@@ -2202,7 +2202,7 @@ public class DeepLearningTest extends TestUtil {
       p._adaptive_rate = false;
       p._rate = 0.005;
       p._sparse = true;
-      model = new DeepLearning(p).trainModel().get();
+      model = new DeepLearningBig(p).trainModel().get();
 
       preds = model.score(train);
       preds.remove(0); //remove label, keep only probs
@@ -2238,7 +2238,7 @@ public class DeepLearningTest extends TestUtil {
       parms._reproducible = true;
       parms._hidden = new int[]{20,20};
       parms._seed = 0xdecaf;
-      model = new DeepLearning(parms).trainModel().get();
+      model = new DeepLearningBig(parms).trainModel().get();
 
       FrameSplitter fs = new FrameSplitter(train, new double[]{0.002},new Key[]{Key.make("small"),Key.make("large")},null);
       fs.compute2();
@@ -2294,7 +2294,7 @@ public class DeepLearningTest extends TestUtil {
       parms._hidden = new int[]{20,20};
       parms._distribution = laplace;
       parms._seed = 0xdecaf;
-      model = new DeepLearning(parms).trainModel().get();
+      model = new DeepLearningBig(parms).trainModel().get();
 
       preds = model.score(train);
       Vec targets = train.vec("age"); //actual
@@ -2363,7 +2363,7 @@ public class DeepLearningTest extends TestUtil {
       Log.info(mainFrame, 0, 100);
 
       FrameUtils.CategoricalEigenEncoder cbed =
-              new FrameUtils.CategoricalEigenEncoder(new DeepLearning(new DeepLearningParameters()).getToEigenVec(), mainFrame, null);
+              new FrameUtils.CategoricalEigenEncoder(new DeepLearningBig(new DeepLearningParameters()).getToEigenVec(), mainFrame, null);
       transformedFrame = cbed.exec().get();
       assert transformedFrame != null : "Unable to transform a frame";
 
@@ -2423,7 +2423,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_rounds = 0;
       parms._overwrite_with_best_model = true;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
       double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
 
 
@@ -2431,7 +2431,7 @@ public class DeepLearningTest extends TestUtil {
       parms2._epochs = 10;
       parms2._checkpoint = dl._key;
 
-      dl2 = new DeepLearning(parms2).trainModel().get();
+      dl2 = new DeepLearningBig(parms2).trainModel().get();
       double ll2 = ((ModelMetricsMultinomial)dl2._output._validation_metrics).logloss();
 
       Assert.assertTrue(ll2 <= ll1);
@@ -2474,7 +2474,7 @@ public class DeepLearningTest extends TestUtil {
       parms._stopping_rounds = 0;
       parms._overwrite_with_best_model = true;
 
-      dl = new DeepLearning(parms).trainModel().get();
+      dl = new DeepLearningBig(parms).trainModel().get();
       double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
 
 
@@ -2482,7 +2482,7 @@ public class DeepLearningTest extends TestUtil {
       parms2._epochs = 20;
       parms2._checkpoint = dl._key;
 
-      dl2 = new DeepLearning(parms2).trainModel().get();
+      dl2 = new DeepLearningBig(parms2).trainModel().get();
       double ll2 = ((ModelMetricsMultinomial)dl2._output._validation_metrics).logloss();
 
       Assert.assertTrue(ll2 <= ll1);

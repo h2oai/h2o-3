@@ -5,6 +5,7 @@ import Jama.Matrix;
 import Jama.QRDecomposition;
 import Jama.SingularValueDecomposition;
 import hex.DataInfo;
+import hex.Driver;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.genmodel.algos.glrm.GlrmInitialization;
@@ -320,6 +321,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
   }
 
   class GLRMDriver extends Driver {
+    public GLRMDriver() { super(GLRM.this); }
     // Initialize Y and X matrices
     // tinfo = original training data A, dfrm = [A,X,W] where W is working copy of X (initialized here)
     private double[][] initialXY(DataInfo tinfo, Frame dfrm, GLRMModel model, long na_cnt) {

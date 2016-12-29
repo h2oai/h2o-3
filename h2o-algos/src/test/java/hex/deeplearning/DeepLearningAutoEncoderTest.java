@@ -56,7 +56,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         p._epochs = 13.3;
         p._force_load_balance = true;
         p._elastic_averaging = false;
-        DeepLearning dl = new DeepLearning(p);
+        DeepLearningBig dl = new DeepLearningBig(p);
         DeepLearningModel mymodel = dl.trainModel().get();
 
         Frame l2_frame_train=null, l2_frame_test=null;

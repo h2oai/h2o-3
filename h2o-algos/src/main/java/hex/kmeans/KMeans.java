@@ -97,7 +97,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
   // ----------------------
   private final class KMeansDriver extends Driver {
     private String[][] _isCats;  // Categorical columns
-
+    public KMeansDriver() { super(KMeans.this); }
     // Initialize cluster centers
     double[][] initial_centers(KMeansModel model, final Vec[] vecs, final double[] means, final double[] mults, final int[] modes, int k) {
 

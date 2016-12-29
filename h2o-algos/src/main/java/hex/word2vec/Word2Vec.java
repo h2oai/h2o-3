@@ -1,9 +1,9 @@
 package hex.word2vec;
 
+import hex.Driver;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import hex.word2vec.Word2VecModel.*;
-import water.Scope;
 import water.fvec.Vec;
 import water.util.Log;
 
@@ -38,6 +38,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   }
 
   private class Word2VecDriver extends Driver {
+    public Word2VecDriver() { super(Word2Vec.this); }
     @Override public void computeImpl() {
       Word2VecModel model = null;
       long start, stop, lastCnt=0;

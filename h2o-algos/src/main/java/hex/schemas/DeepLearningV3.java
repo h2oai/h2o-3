@@ -1,13 +1,13 @@
 package hex.schemas;
 
-import hex.deeplearning.DeepLearning;
+import hex.deeplearning.DeepLearningBig;
 import hex.deeplearning.DeepLearningParameters;
 import hex.deeplearning.Loss;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.KeyV3;
 
-public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearningV3,DeepLearningV3.DeepLearningParametersV3> {
+public class DeepLearningV3 extends ModelBuilderSchema<DeepLearningBig,DeepLearningV3,DeepLearningV3.DeepLearningParametersV3> {
 
   public static final class DeepLearningParametersV3 extends ModelParametersSchemaV3<DeepLearningParameters, DeepLearningParametersV3> {
 

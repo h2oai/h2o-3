@@ -1,5 +1,6 @@
 package hex.quantile;
 
+import hex.Driver;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 import water.*;
@@ -59,6 +60,9 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
 
   // ----------------------
   private class QuantileDriver extends Driver {
+    public QuantileDriver() {
+      super(Quantile.this);
+    }
 
     @Override public void computeImpl() {
       QuantileModel model = null;

@@ -1,7 +1,7 @@
 package water;
 
 import hex.*;
-import hex.deeplearning.DeepLearning;
+import hex.deeplearning.DeepLearningBig;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningParameters;
 import hex.deeplearning.Loss;
@@ -97,7 +97,7 @@ public class TestCase {
       GLMModel glmModel = null;
       GBM gbmJob;
       GBMModel gbmModel = null;
-      DeepLearning dlJob;
+      DeepLearningBig dlJob;
       DeepLearningModel dlModel = null;
       String bestModelJson = null;
 
@@ -131,7 +131,7 @@ public class TestCase {
             bestModelJson = gbmModel._parms.toJsonString();
             break;
           case "dl":
-            dlJob = new DeepLearning((DeepLearningParameters) params);
+            dlJob = new DeepLearningBig((DeepLearningParameters) params);
             AccuracyTestingSuite.summaryLog.println("Training DL model.");
             startTime = System.currentTimeMillis();
             dlModel = dlJob.trainModel().get();
@@ -203,7 +203,7 @@ public class TestCase {
             break;
           case "dl":
             if (!dlRegistered) {
-              new DeepLearning(true);
+              new DeepLearningBig(true);
               new DeepLearningParametersV3();
               dlRegistered = true;
             }

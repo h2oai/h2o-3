@@ -116,6 +116,7 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
   }
 
   class AggregatorDriver extends Driver {
+    public AggregatorDriver() { super(Aggregator.this); }
 
     // Main worker thread
     @Override

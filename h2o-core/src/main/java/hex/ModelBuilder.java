@@ -30,6 +30,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   void cleanUp() { FrameUtils.cleanUp(_toDelete); }
 
   public Job<M> _job;     // Job controlling this build
+  public Job<M> job() { return _job; }
+
   /** Block till completion, and return the built model from the DKV.  Note the
    *  funny assert: the Job does NOT have to be controlling this model build,
    *  but might, e.g. be controlling a Grid search for which this is just one
@@ -46,11 +48,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Key<M> dest() { return _result; }
 
   private long _start_time; //start time in msecs - only used for time-based stopping
-  protected boolean timeout() {
+  public boolean timeout() {
     assert(_start_time > 0) : "Must set _start_time for each individual model.";
     return _parms._max_runtime_secs > 0 && System.currentTimeMillis() - _start_time > (long) (_parms._max_runtime_secs * 1e3);
   }
-  protected boolean stop_requested() {
+  public boolean stop_requested() {
     return _job.stop_requested() || timeout();
   }
 
@@ -132,17 +134,18 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** All the parameters required to build the model. */
   public P _parms;              // Not final, so CV can set-after-clone
 
+  public P params() { return _parms; };
 
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to an Categorical, etc.  */
   public final Frame train() { return _train; }
   protected transient Frame _train;
-
+  
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
-  protected final Frame valid() { return _valid; }
+  public final Frame valid() { return _valid; }
   protected transient Frame _valid;
 
   // TODO: tighten up the type
@@ -163,30 +166,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Validation response vector. */
   public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
-  abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
-    protected Driver(){ super(); }
-    protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
-    // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
-    // 1) Scope (unless they want to keep data, then they must call Scope.untrack(Key<Vec>[]))
-    // 2) Train/Valid frame locking and unlocking
-    // 3) calling tryComplete()
-    public void compute2() {
-      try {
-        Scope.enter();
-        _parms.read_lock_frames(_job); // Fetch & read-lock input frames
-        computeImpl();
-      } finally {
-        setFinalState();
-        _parms.read_unlock_frames(_job);
-        if (!_parms._is_cv_model) cleanUp(); //cv calls cleanUp on its own terms
-        Scope.exit();
-      }
-      tryComplete();
-    }
-    public abstract void computeImpl();
-  }
-
-  private void setFinalState() {
+  public void setFinalState() {
     Key<M> reskey = dest();
     if (reskey == null) return;
     M res = reskey.get();
@@ -552,8 +532,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
-  protected transient Vec _offset; // Handy offset column
-  protected transient Vec _weights; // observation weight column
+  public transient Vec _offset; // Handy offset column
+  public transient Vec _weights; // observation weight column
   protected transient Vec _fold; // fold id column
   protected transient String[] _origNames;
   protected transient String[][] _origDomains;

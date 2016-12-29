@@ -154,7 +154,8 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   // --------------------------------------------------------------------------
   // Top-level tree-algo driver
-  abstract protected class Driver extends ModelBuilder<M,P,O>.Driver {
+  abstract protected class Driver extends hex.Driver {
+    public Driver() { super(SharedTree.this); }
 
     @Override public void computeImpl() {
       _model = null;            // Resulting model!
