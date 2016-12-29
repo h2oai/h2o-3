@@ -18,6 +18,14 @@ public abstract class WorkFrameTransform {
 
 
   /**
+   * May be optionally overridden in a subclass to perform certain
+   * initialization steps at the beginning of each chunk. This method should
+   * work with transient properties only.
+   */
+  public void setupLocal() {}
+
+
+  /**
    * Describe the types of the output columns your task wants to create. The
    * returned array cannot be empty. This method will be called only once, so
    * the result need not be cached.

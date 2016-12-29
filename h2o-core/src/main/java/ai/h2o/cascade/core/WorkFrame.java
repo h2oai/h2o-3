@@ -1,11 +1,12 @@
 package ai.h2o.cascade.core;
 
 import ai.h2o.cascade.stdlib.StdlibFunction;
-import water.H2O;
 import water.fvec.Frame;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static ai.h2o.cascade.core.WorkFrameTransforms.*;
 
 
 /**
@@ -22,14 +23,15 @@ public class WorkFrame {  // not Iced: not intended to be stored in DKV
   private int ncols;
   private long nrows;
   private List<WorkFrameColumn> columns;
+  private List<WorkFrameTransform> maps;
 
-  // If this flag is true, then the WorkFrame exists only on the stack and is not
-  // referenced by any Cascade variable. This means that this WorkFrame can be
-  // modified in-place without the risk of affecting anyone else. On the other
-  // hand, if this flag is false, then the caller who wishes to modify this
-  // frame will have to copy it. This flag is always true for "ghost"-mode
-  // CFrames.
-  private boolean mutable;
+  // If this flag is true, then the {@code WorkFrame} exists only on the stack
+  // and is not referenced by any Cascade variable. This means that this
+  // {@code WorkFrame} can be modified in-place without the risk of affecting
+  // anyone else. On the other hand, if this flag is false, then the caller who
+  // wishes to modify this frame will have to copy it. This flag is always true
+  // for "ghost"-mode {@code WorkFrame}s.
+  private boolean readonly;
 
 
   //--------------------------------------------------------------------------------------------------------------------
@@ -77,6 +79,7 @@ public class WorkFrame {  // not Iced: not intended to be stored in DKV
     return ncols;
   }
 
+
   /**
    * Number of rows in the frame.
    */
@@ -104,22 +107,48 @@ public class WorkFrame {  // not Iced: not intended to be stored in DKV
   // WorkFrame operations
   //--------------------------------------------------------------------------------------------------------------------
 
+  public void makeReadonly() {
+    readonly = true;
+  }
+
+
   /**
    * Create new {@code WorkFrame} by extracting columns given by the
    * {@code indices} from the current frame.
    *
    * @param indices the list of columns to extract
    */
-  public WorkFrame extractColumns(SliceList indices) {
+  public WorkFrame keepColumns(SliceList indices) {
     if (stone == null) {
-      // TODO
-      throw H2O.unimpl();
+      assert !readonly;
+      if (indices.isDense() && indices.first() >= 0 && indices.first() + indices.size() == ncols) {
+        // Extracting the last indices.size() columns from the frame -- no
+        // copying is needed... We just *declare* that the number of output
+        // columns is the size of the index, and that's it.
+        ncols = (int) indices.size();
+      } else {
+        int offset0 = columns.size() - ncols;
+        SliceList.Iterator iter = indices.iter();
+        while (iter.hasNext()) {
+          long index = iter.nextPrim();
+          if (index < 0 || index >= ncols)
+            throw error("Column index " + index + " is out of bounds");
+          WorkFrameColumn coli = columns.get(((int)index) + offset0);
+          columns.add(new WorkFrameColumn(coli.name(), coli.type()));
+        }
+        int numColsAdded = columns.size() - ncols - offset0;
+        if (numColsAdded == 1) {
+          maps.add(new CopySingleColumnTransform((int) indices.first()));
+        } else {  // if (indices.isDense()) {
+          maps.add(new CopyColumnSliceTransform(indices));
+        }
+      }
+      return this;
 
     } else {
-      WorkFrame res = new WorkFrame();
-      res.stone = null;
+      WorkFrame res = readonly? new WorkFrame() : this;
       res.nrows = this.nrows;
-      res.ncols = (int) indices.count();
+      res.ncols = (int) indices.size();
       res.columns = new ArrayList<>(res.ncols);
 
       SliceList.Iterator iter = indices.iter();
@@ -129,6 +158,8 @@ public class WorkFrame {  // not Iced: not intended to be stored in DKV
           throw error("Column index " + index + " is out of bounds");
         res.columns.add(new WorkFrameColumn(stone, (int)index));
       }
+      res.stone = null;
+      res.readonly = false;
       return res;
     }
   }
@@ -164,8 +195,15 @@ public class WorkFrame {  // not Iced: not intended to be stored in DKV
     return stone;
   }
 
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Helpers
+  //--------------------------------------------------------------------------------------------------------------------
+
   /** Helper function for raising errors */
   private StdlibFunction.RuntimeError error(String message) {
     return new StdlibFunction.RuntimeError(message);
   }
+
+
 }

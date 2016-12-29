@@ -15,7 +15,7 @@ public class FnCol extends StdlibFunction {
     if (column >= frame.nCols())
       throw new ValueError(1, "Column index exceeds number of columns in the frame");
 
-    return frame.extractColumns(new SliceList(column));
+    return frame.keepColumns(new SliceList(column));
   }
 
   public WorkFrame apply(WorkFrame frame, String colname) {

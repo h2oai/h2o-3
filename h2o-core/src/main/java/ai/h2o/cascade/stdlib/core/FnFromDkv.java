@@ -32,6 +32,7 @@ public class FnFromDkv extends StdlibFunction {
     Frame originalFrame = value.get();
     Frame clonedFrame = FnClone.cloneFrame(originalFrame, scope.session().<Frame>mintKey());
     Val val = new ValFrame(clonedFrame);
+    val.getFrame().makeReadonly();  // set the readonly flag on the frame before storing it in the scope
     scope.addVariable(id, val);
 
     return val;

@@ -14,20 +14,30 @@ public class WorkFrameColumn {
   Frame parent;
   String name;
   Vec vec;
+  byte type;
 
   public WorkFrameColumn(Frame f, int colIndex) {
     parent = f;
     name = f.name(colIndex);
     vec = f.vec(colIndex);
+    type = vec.get_type();
   }
 
+  public WorkFrameColumn(String name, byte type) {
+    this.name = name;
+    this.type = type;
+  }
 
   /**
    * Return the type of the column, one of the {@code T_*} constants defined
    * in {@link Vec}.
    */
   public byte type() {
-    return vec.get_type();
+    return type;
   }
 
+
+  public String name() {
+    return name;
+  }
 }

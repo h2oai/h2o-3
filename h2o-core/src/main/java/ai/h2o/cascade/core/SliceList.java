@@ -1,12 +1,13 @@
 package ai.h2o.cascade.core;
 
+import water.Iced;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
 
 /**
  */
-public class SliceList {
+public class SliceList extends Iced {
   public static final int LARGEST_LIST_TO_EXPAND = 1000000;
 
   private long[] bases;
@@ -88,11 +89,39 @@ public class SliceList {
 
 
   /**
-   * Count the total number of indices represented by this multi-index list.
-   * For example, `count([3:2:2 5:1000])` is 1002.
+   * Return true if the list of indices represents a sequence (a, a+1, ... b)
+   * for some a and b. Thus, a dense list is the one without any gaps.
    */
-  public long count() {
+  public boolean isDense() {
+    if (isList) {
+      for (int i = 1; i < bases.length; ++i) {
+        if (bases[i] != bases[i-1] + 1)
+          return false;
+      }
+    } else {
+      for (int i = 0; i < bases.length; i++) {
+        if (strides[i] != 1) return false;
+        if (i > 0 && bases[i] != bases[i-1] + counts[i-1]) return false;
+      }
+    }
+    return true;
+  }
+
+
+  /**
+   * Return the total number of indices represented by this multi-index list.
+   * For example, {@code size(<3:2:2 5:1000>)} is 1002.
+   */
+  public long size() {
     return isList? bases.length : ArrayUtils.sum(counts);
+  }
+
+
+  /**
+   * Return the first index in the list.
+   */
+  public long first() {
+    return bases[0];
   }
 
 
@@ -114,6 +143,7 @@ public class SliceList {
    */
   public interface Iterator extends java.util.Iterator<Long> {
     long nextPrim();
+    void reset();
   }
 
 
@@ -138,6 +168,7 @@ public class SliceList {
     @Override public long nextPrim() { return bases[i++]; }
     @Override public Long next() { return bases[i++]; }
     @Override public void remove() {}
+    @Override public void reset() { i = 0; }
   }
 
 
@@ -173,6 +204,12 @@ public class SliceList {
     @Override
     public Long next() {
       return nextPrim();
+    }
+
+    @Override
+    public void reset() {
+      i = -1;
+      nextStep();
     }
 
     @Override public void remove() {}
