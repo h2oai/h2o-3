@@ -439,7 +439,8 @@ public class PojoUtils {
    */
   public static void setField(Object o, String fieldName, Object value) {
     try {
-      Field f = o.getClass().getField(fieldName);
+      Field f = PojoUtils.getFieldEvenInherited(o, fieldName);
+      f.setAccessible(true);
 
       if (null == value) {
         f.set(o, null);
@@ -473,6 +474,26 @@ public class PojoUtils {
   }
 
   /**
+   * Gets a public, protected or private Field of an object, even if it's inherited.  Neither Class.getField nor
+   * Class.getDeclaredField do this.  NOTE: the caller must call f.setAccessible(true) if they want to make private
+   * fields accessible.
+   */
+  public static Field getFieldEvenInherited(Object o, String name) throws NoSuchFieldException, SecurityException {
+    Class clazz = o.getClass();
+
+    while (clazz != Object.class) {
+      try {
+        return clazz.getDeclaredField(name);
+      }
+      catch (Exception e) {
+        // ignore
+      }
+      clazz = clazz.getSuperclass();
+    }
+    throw new NoSuchFieldException("Failed to find field: " + name + " in object: " + o);
+  }
+
+  /**
    * Returns field value.
    *
    * @param o  object to read field value from
@@ -486,7 +507,7 @@ public class PojoUtils {
     if (o == null) throw new IllegalArgumentException("Cannot get the field from null object!");
     String destName = fieldNaming.toDest(name);
     try {
-      Field f = o.getClass().getField(destName); // failing with fields declared in superclasses
+      Field f = PojoUtils.getFieldEvenInherited(o, destName); // failing with fields declared in superclasses
       return f.get(o);
     } catch (NoSuchFieldException e) {
       throw new IllegalArgumentException("Field not found: '" + name + "/" + destName + "' on object " + o);
@@ -516,7 +537,7 @@ public class PojoUtils {
       if (value instanceof Map) {
         // handle nested objects
         try {
-          Field f = o.getClass().getField(key);
+          Field f = PojoUtils.getFieldEvenInherited(o, key);
           f.setAccessible(true);
 
           // In some cases, the target object has children already (e.g., defaults), while in other cases it doesn't.
@@ -529,7 +550,8 @@ public class PojoUtils {
           throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
         } catch (InstantiationException e) {
           try {
-            throw new IllegalArgumentException("Cannot create new child object of type: " + o.getClass().getField(key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
+            throw new IllegalArgumentException("Cannot create new child object of type: " +
+                    PojoUtils.getFieldEvenInherited(o, key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
           } catch (NoSuchFieldException ee) {
             // Can't happen: we've already checked for this.
             throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
@@ -541,7 +563,7 @@ public class PojoUtils {
         // TODO: refactor the type conversions out of copyProperties so they all work, and remove
         // this now-redundant code:
         try {
-          Field f = o.getClass().getField(key);
+          Field f = PojoUtils.getFieldEvenInherited(o, key);
           f.setAccessible(true);
 
           if (f.getType().isAssignableFrom(FrameV3.ColSpecifierV3.class)) {

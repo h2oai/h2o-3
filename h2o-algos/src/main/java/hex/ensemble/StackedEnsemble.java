@@ -43,6 +43,19 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
   @Override protected StackedEnsembleDriver trainModelImpl() { return _driver = new StackedEnsembleDriver(); }
 
+  public static void addModelPredictionsToLevelOneFrame(Model aModel, Frame aModelsPredictions, Frame levelOneFrame) {
+    if (aModel._output.isBinomialClassifier())
+      levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("YES"));
+    else if (aModel._output.isClassifier())
+      throw new H2OIllegalArgumentException("Don't yet know how to stack multinomial classifiers: " + aModel._key);
+    else if (aModel._output.isAutoencoder())
+      throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
+    else if (!aModel._output.isSupervised())
+      throw new H2OIllegalArgumentException("Don't yet know how to stack unsupervised models: " + aModel._key);
+    else
+      levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("predict"));
+  }
+
   private class StackedEnsembleDriver extends Driver {
 
     private Frame prepareLevelOneFrame(StackedEnsembleModel.StackedEnsembleParameters parms) {
@@ -61,17 +74,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         // add the predictions for aModel to levelOneFrame
         // TODO: multinomial classification:
         Frame aModelsPredictions = aModel._output._cross_validation_holdout_predictions_frame_id.get();
-        if (aModel._output.isBinomialClassifier())
-          levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("YES"));
-        else if (aModel._output.isClassifier())
-          throw new H2OIllegalArgumentException("Don't yet know how to stack multinomial classifiers: " + aModel._key);
-        else if (aModel._output.isAutoencoder())
-          throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
-        else if (!aModel._output.isSupervised())
-          throw new H2OIllegalArgumentException("Don't yet know how to stack unsupervised models: " + aModel._key);
-        else
-          levelOneFrame.add(aModel._key.toString(), aModelsPredictions.vec("predict"));
-
+        StackedEnsemble.addModelPredictionsToLevelOneFrame(aModel, aModelsPredictions, levelOneFrame);
       } // for all base_models
 
       levelOneFrame.add(_model.responseColumn, _model.commonTrainingFrame.vec(_model.responseColumn));
@@ -82,6 +85,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       Log.info("Finished creating \"level one\" frame for stacking: " + levelOneFrame.toString());
       return levelOneFrame;
     }
+
     public void computeImpl() {
       init(true);
       if (error_count() > 0)
@@ -121,7 +125,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       Log.info("Finished training metalearner model.");
 
       _model._output._meta_model = metaBuilder.get();
-      _model.doScoreMetrics();
+      _model.doScoreMetrics(_job);
       // _model._output._model_summary = createModelSummaryTable(model._output);
       _model.update(_job);
 
