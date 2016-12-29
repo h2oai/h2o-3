@@ -25,13 +25,16 @@ h2o.ensemble_performance <- function(object, newdata, score_base_models = TRUE) 
   }
   names(newdata_levelone) <- names(object$basefits)
   newdata_levelone$y <- newdata[,object$y]  #cbind the response column to calculate metrics
+  if(!is.null(object$weights)){
+    newdata_levelone$weights <- newdata[,object$weights]  #cbind the weight column to calculate metrics  
+  }
   newdata_metrics <- h2o.performance(model = object$metafit, newdata = newdata_levelone)
   if (score_base_models) {
     newdata_base_metrics <- sapply(object$basefits, function(ll) h2o.performance(model = ll, newdata = newdata))
   } else {
     newdata_base_metrics <- NULL
   }
-
+  
   out <- list(ensemble = newdata_metrics, base = newdata_base_metrics)
   class(out) <- "h2o.ensemble_performance"
   return(out)
