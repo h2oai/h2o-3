@@ -177,7 +177,7 @@ public abstract class Chunk extends Iced<Chunk> implements Vec.Holder {
   /** Global index of this chunk filled during chunk load */
   transient int _cidx = -1;
 
-  /** Number of rows in this Chunk; publically a read-only field.  Odd API
+  /** Number of rows in this Chunk; publicly a read-only field.  Odd API
    *  design choice: public, not-final, read-only, NO-ACCESSOR.
    *
    *  <p>NO-ACCESSOR: This is a high-performance field, and must have a known

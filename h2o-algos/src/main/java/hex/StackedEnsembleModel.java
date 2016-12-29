@@ -3,12 +3,10 @@ package hex;
 import hex.ensemble.StackedEnsemble;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMModel;
-import water.DKV;
-import water.H2O;
-import water.Job;
-import water.Key;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.nbhm.NonBlockingHashSet;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -61,38 +59,92 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   }
 
   /**
-   * @see Model#score0(double[], double[])
+   * For StackedEnsemble we call score on all the base_models and then combine the results
+   * with the metalearner to create the final predictions frame.
+   *
+   * @see Model#predictScoreImpl(Frame, Frame, String, Job, boolean)
+   * @param adaptFrm Already adapted frame
+   * @param computeMetrics
+   * @return A Frame containing the prediction column, and class distribution
    */
-  protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
-    // TODO: don't score models that have 0 coefficients / aren't used by the metalearner
-
-    // For each base learner, compute and save the predictions.
-    // For binary classification this array is [_base_models.length][3].
-    double[/*baseIdx*/][/*nclasses+1*/] basePreds = new double[this._parms._base_models.length][preds.length];
+  protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics) {
+    // Build up the names & domains.
+    String[] names = makeScoringNames();
+    String[][] domains = new String[names.length][];
+    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
 
     // TODO: optimize these DKV lookups:
+    Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
     int baseIdx = 0;
+    Frame[] base_prediction_frames = new Frame[this._parms._base_models.length];
+
+    // TODO: don't score models that have 0 coefficients / aren't used by the metalearner.
     for (Key<Model> baseKey : this._parms._base_models) {
       Model base = baseKey.get();  // TODO: cacheme!
-      base.score0(data, basePreds[baseIdx]);
+
+      // adapt fr for each base_model
+
+      // TODO: cache: don't need to call base.adaptTestForTrain() if the
+      // base_model has the same names and domains as one we've seen before.
+      // Such base_models can share their adapted frame.
+      Frame adaptedFrame = new Frame(fr);
+      base.adaptTestForTrain(adaptedFrame, true, computeMetrics);
+
+      // TODO: parallel scoring for the base_models
+      BigScore baseBs = (BigScore)base.makeBigScore(domains, names, adaptedFrame, computeMetrics, j).doAll(names.length, Vec.T_NUM, adaptedFrame);
+      Frame basePreds = baseBs.outputFrame(Key.<Frame>make("preds_base_" + this._key.toString() + fr._key), names, domains);
+      base_prediction_frames[baseIdx] = basePreds;
+      StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
+
+      Model.cleanup_adapt(adaptedFrame, fr);
+
       baseIdx++;
     }
 
-    // TODO: multiclass
-    // TODO: regression
-    // TODO: include_training_features
-    double[] basePredsRotated = new double[this._parms._base_models.length];
-    ModelCategory modelCategory = this._output.getModelCategory();
-    for (baseIdx = 0; baseIdx < this._parms._base_models.length; baseIdx++) {
-      if (modelCategory == ModelCategory.Binomial)
-        basePredsRotated[baseIdx] = basePreds[baseIdx][2];
-      else if (modelCategory == ModelCategory.Regression)
-        basePredsRotated[baseIdx] = basePreds[baseIdx][0];
-      else
-        throw new H2OIllegalArgumentException("Don't know how to handle predictions frame for model category: " + modelCategory);
+    levelOneFrame.add(this.responseColumn, this.commonTrainingFrame.vec(this.responseColumn));
+
+    // TODO: what if we're running multiple in parallel and have a name collision?
+    DKV.put(levelOneFrame);
+    Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
+
+    // Score the dataset, building the class distribution & predictions
+
+    Model metalearner = this._output._meta_model;
+    Frame levelOneAdapted = new Frame(levelOneFrame);
+    metalearner.adaptTestForTrain(levelOneAdapted, true, computeMetrics);
+
+    DKV.put(levelOneAdapted);
+
+    String[] metaNames = metalearner.makeScoringNames();
+    String[][] metaDomains = new String[metaNames.length][];
+    metaDomains[0] = metaNames.length == 1 ? null : !computeMetrics ? metalearner._output._domains[metalearner._output._domains.length-1] : levelOneAdapted.lastVec().domain();
+
+    BigScore metaBs = (BigScore)metalearner.makeBigScore(metaDomains, metaNames, levelOneAdapted, computeMetrics, j).
+            doAll(metaNames.length, Vec.T_NUM, levelOneAdapted);
+
+    if (computeMetrics) {
+      ModelMetrics mmMetalearner = metaBs._mb.makeModelMetrics(metalearner, levelOneFrame, levelOneAdapted, metaBs.outputFrame());
+
+      // This has just stored a ModelMetrics object for the (metalearner, preds_levelone) Model/Frame pair.
+      // We need to be able to look it up by the (this, fr) pair.
+      // The ModelMetrics object for the metalearner will be removed when the metalearner is removed.
+      ModelMetrics mmStackedEnsemble = mmMetalearner.deepCloneWithDifferentModelAndFrame(this, this.commonTrainingFrame);
+      this.addModelMetrics(mmStackedEnsemble);
     }
 
-    return _output._meta_model.score0(basePredsRotated, preds);
+    Model.cleanup_adapt(levelOneAdapted, levelOneFrame);
+    return metaBs.outputFrame(Key.<Frame>make(destination_key), metaNames, metaDomains);
+  }
+
+
+
+  /**
+   * Should never be called: the code paths that normally go here should call predictScoreImpl().
+   * @see Model#score0(double[], double[])
+   */
+  @Override
+  protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]) {
+    throw new UnsupportedOperationException("StackedEnsembleModel.score0() should never be called: the code paths that normally go here should call predictScoreImpl().");
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -107,41 +159,17 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
   }
 
-  public ModelMetrics doScoreMetricsOneFrame(Frame frame) {
-    // For GainsLift and Huber, we need the full predictions to compute the model metrics
-    boolean needPreds = _output.nclasses() == 2 /* gains/lift table requires predictions */ || _parms._distribution== DistributionFamily.huber;
-
-    if (needPreds) {
-      Frame preds = null;
-      preds = score(frame);
-      preds.remove();
+  public ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
+      this.predictScoreImpl(frame, new Frame(frame), null, job, true);
       return ModelMetrics.getFromDKV(this, frame);
-    } else {
-      // no need to allocate predictions
-      ModelMetrics.MetricBuilder mb = scoreMetrics(frame);
-      return mb.makeModelMetrics(this, frame, frame, null);
-    }
   }
 
-  public void doScoreMetrics() {
+  public void doScoreMetrics(Job job) {
 
-    this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train());
+    this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
     if (null != this._parms.valid()) {
-      this._output._validation_metrics = doScoreMetricsOneFrame(this._parms.valid());
+      this._output._validation_metrics = doScoreMetricsOneFrame(this._parms.valid(), job);
     }
-/*
-    adaptFr = new Frame(this._parms.train());
-    this.adaptTestForTrain(adaptFr, true, !isSupervised());
-    mb = this.scoreMetrics(adaptFr);
-    this._output._training_metrics  = mb.makeModelMetrics(this, adaptFr, adaptFr, null);
-
-    if (null != this._parms.valid()) {
-      adaptFr = new Frame(this._parms.valid());
-      this.adaptTestForTrain(adaptFr, true, !isSupervised());
-      mb = this.scoreMetrics(adaptFr);
-      this._output._validation_metrics  = mb.makeModelMetrics(this, adaptFr, adaptFr, null);
-    }
-    */
   }
 
   private DistributionFamily distributionFamily(Model aModel) {
@@ -271,5 +299,12 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   }
 
+  // TODO: Are we leaking anything?
+  @Override protected Futures remove_impl(Futures fs ) {
+    if (_output._meta_model != null)
+        DKV.remove(_output._meta_model._key, fs);
+
+    return super.remove_impl(fs);
+  }
 }
 
