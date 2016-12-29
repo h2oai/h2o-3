@@ -30,10 +30,6 @@ public class ValNum extends Val {
     return Type.NUM;
   }
 
-  @Override public String toString() {
-    return String.valueOf(value);
-  }
-
 
   //--------------------------------------------------------------------------------------------------------------------
   // Value representations

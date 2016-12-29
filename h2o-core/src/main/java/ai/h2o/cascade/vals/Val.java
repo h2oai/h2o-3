@@ -3,7 +3,6 @@ package ai.h2o.cascade.vals;
 import ai.h2o.cascade.asts.Ast;
 import ai.h2o.cascade.core.WorkFrame;
 import ai.h2o.cascade.core.Function;
-import ai.h2o.cascade.core.IdList;
 import ai.h2o.cascade.core.SliceList;
 
 
@@ -54,7 +53,7 @@ public abstract class Val {
     SLICE("ValSlice"),   // list of slices -- used for indexing
     STR("ValStr"),       // string
     STRS("ValStrs"),     // array of strings
-    IDS("ValIdList"),    // list of unevaluated variables
+    IDS("IdList"),       // list of unevaluated variables
     FRAME("ValFrame"),   // Frame object
     FUN("ValFun"),       // function -- either built-in or user-defined
     AST("ValAst");       // unevaluated AST

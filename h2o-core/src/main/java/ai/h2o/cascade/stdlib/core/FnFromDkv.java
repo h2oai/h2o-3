@@ -1,6 +1,6 @@
 package ai.h2o.cascade.stdlib.core;
 
-import ai.h2o.cascade.core.IdList;
+import ai.h2o.cascade.vals.IdList;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 import ai.h2o.cascade.stdlib.frame.FnClone;
 import ai.h2o.cascade.vals.Val;

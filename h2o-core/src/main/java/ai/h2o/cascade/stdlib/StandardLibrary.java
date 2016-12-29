@@ -3,10 +3,7 @@ package ai.h2o.cascade.stdlib;
 import ai.h2o.cascade.core.*;
 import ai.h2o.cascade.CascadeSession;
 import ai.h2o.cascade.core.WorkFrame;
-import ai.h2o.cascade.vals.Val;
-import ai.h2o.cascade.vals.ValFun;
-import ai.h2o.cascade.vals.ValNull;
-import ai.h2o.cascade.vals.ValNum;
+import ai.h2o.cascade.vals.*;
 import javassist.*;
 import water.util.SB;
 import water.util.StringUtils;
@@ -246,6 +243,17 @@ public class StandardLibrary implements ICascadeLibrary {
       generateSingleMethodCheck(methods.get(0), iarg, minChecked, maxChecked, indent, args, sb);
       return;
     }
+    // Sort all methods on the iarg-th argument, ensuring that they can be
+    // dispatched to the correct destination. For example, suppose there are
+    // two methods: apply(double) and apply(int). Since both double and int are
+    // represented as a ValNum in the Cascade system, we need to generate the
+    // code that first tries to check that the Val is an Int, and only then
+    // check whether it is a double (if you do it in the wrong order, then the
+    // method apply(int) will never be dispatched to). Thus, the generated code
+    // should look like this:
+    //     if (args[0].isInt()) return apply(args[0].getInt());
+    //     if (args[0].isNum()) return apply(args[0].getNum());
+    //     throw error("No valid signature");
     sortMethods(methods, iarg);
 
     // Second, we will consider all methods where {@code iarg}th item is a
@@ -270,7 +278,7 @@ public class StandardLibrary implements ICascadeLibrary {
         sb.p(indent).p("if (").p(flagName).p(") {\n");
         sb.p(indent).p("  ").p(varargClassname).p("[] vararg = new ").p(varargClassname).p("[n - ").p(iarg).p("];\n");
         sb.p(indent).p("  for (int i = ").p(iarg).p("; i < n; ++i) {\n");
-        sb.p(indent).p("    vararg[i - ").p(iarg).p("] = args[i].get").p(valType).p("();\n");
+        sb.p(indent).p("    vararg[i - ").p(iarg).p("] = ").p(method.varargArgGetter()).p(";\n");
         sb.p(indent).p("  }\n");
         args = args.isEmpty()? "vararg" : args + ", vararg";
         writeReturnStatement(method, indent + "  ", args, sb);
@@ -301,7 +309,7 @@ public class StandardLibrary implements ICascadeLibrary {
         return;
       }
       String currType = methods.get(0).argValType(iarg);
-      String nextArgs = args + (args.isEmpty()? "" : ", ") + "args[" + iarg + "].get" + currType + "()";
+      String nextArgs = (args.isEmpty()? "" : args + ", ") + methods.get(0).argGetter(iarg);
       List<MInfo> filteredMethods = new LinkedList<>();
       iter = methods.iterator();
       while (iter.hasNext()) {
@@ -343,7 +351,7 @@ public class StandardLibrary implements ICascadeLibrary {
     for (int i = iarg; i < method.minNumArgs(); i++) {
       sb.p(indent).p("checkArg(").p(i).p(", args[").p(i).p("], Val.Type.").p(method.argValTYPE(i)).p(");\n");
       if (i > 0) argsList.p(", ");
-      argsList.p("args[").p(i).p("].get").p(method.argValType(i)).p("()");
+      argsList.p(method.argGetter(i));
     }
     if (method.isVararg) {
       int k = method.minNumArgs();
@@ -351,7 +359,7 @@ public class StandardLibrary implements ICascadeLibrary {
       sb.p(indent).p(javaType).p("[] vararg = new ").p(javaType).p("[n - ").p(k).p("];\n");
       sb.p(indent).p("for (int i = ").p(k).p("; i < n; ++i) {\n");
       sb.p(indent).p("  checkArg(i, args[i], Val.Type.").p(method.argValTYPE(k)).p(");\n");
-      sb.p(indent).p("  vararg[i - ").p(k).p("] = args[i].get").p(method.argValType(k)).p("();\n");
+      sb.p(indent).p("  vararg[i - ").p(k).p("] = ").p(method.varargArgGetter()).p(";\n");
       sb.p(indent).p("}\n");
       if (k > 0) argsList.p(", ");
       argsList.p("vararg");
@@ -469,6 +477,17 @@ public class StandardLibrary implements ICascadeLibrary {
     }
 
 
+    public String argGetter(int i) {
+      String valType = argValType(i);
+      return "args[" + i + "].get" + valType + "()";
+    }
+
+    public String varargArgGetter() {
+      String valType = argValType(minNumArgs());
+      return "args[i].get" + valType + "()";
+    }
+
+
     /** Mapping from Java types to {@link Val.Type}s. */
     private static final Map<String, String> TYPE_MAP = new HashMap<>(9);
     static {
@@ -482,6 +501,7 @@ public class StandardLibrary implements ICascadeLibrary {
       TYPE_MAP.put("java.lang.String[]", "STRS");
       TYPE_MAP.put(WorkFrame.class.getName(), "FRAME");
       TYPE_MAP.put(IdList.class.getName(), "IDS");
+      TYPE_MAP.put(SliceList.class.getName(), "SLICE");
     }
 
     /** Helper method to translate Java types into Val types. */

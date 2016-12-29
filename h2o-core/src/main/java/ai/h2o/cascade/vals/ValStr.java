@@ -15,10 +15,6 @@ public class ValStr extends Val {
     return Type.STR;
   }
 
-  @Override public String toString() {
-    return value;
-  }
-
 
   //--------------------------------------------------------------------------------------------------------------------
   // Value representations

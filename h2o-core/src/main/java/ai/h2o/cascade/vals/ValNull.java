@@ -18,10 +18,6 @@ public class ValNull extends Val {
     return Type.NULL;
   }
 
-  @Override public String toString() {
-    return "null";
-  }
-
 
   //--------------------------------------------------------------------------------------------------------------------
   // Value representations
