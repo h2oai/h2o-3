@@ -1,6 +1,6 @@
 package ai.h2o.cascade.vals;
 
-import ai.h2o.cascade.asts.Ast;
+import ai.h2o.cascade.asts.AstNode;
 import ai.h2o.cascade.core.WorkFrame;
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.core.SliceList;
@@ -137,7 +137,7 @@ public abstract class Val {
   public Function getFun() {
     throw badValue("function");
   }
-  public Ast getAst() {
+  public AstNode getAst() {
     throw badValue("unevaluated expression");
   }
 

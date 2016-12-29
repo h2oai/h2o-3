@@ -7,7 +7,7 @@ import ai.h2o.cascade.vals.ValNum;
 /**
  * A number literal.
  */
-public class AstNum extends Ast<AstNum> {
+public class AstNum extends AstNode<AstNum> {
   private double value;
 
   public AstNum(double d) {

@@ -1,15 +1,15 @@
 package ai.h2o.cascade.vals;
 
-import ai.h2o.cascade.asts.Ast;
+import ai.h2o.cascade.asts.AstNode;
 
 /**
  *
  */
 public class ValAst extends Val {
-  private Ast ast;
+  private AstNode ast;
 
 
-  public ValAst(Ast v) {
+  public ValAst(AstNode v) {
     ast = v;
   }
 
@@ -24,7 +24,7 @@ public class ValAst extends Val {
   }
 
   @Override
-  public Ast getAst() {
+  public AstNode getAst() {
     return ast;
   }
 }

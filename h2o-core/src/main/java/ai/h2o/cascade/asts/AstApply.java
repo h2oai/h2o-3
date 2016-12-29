@@ -14,14 +14,14 @@ import java.util.ArrayList;
  * node for the function itself, and {@code args} -- AST nodes for the list
  * of arguments that should be passed to the function.
  */
-public class AstApply extends Ast<AstApply> {
-  private Ast head;
-  private Ast[] args;
+public class AstApply extends AstNode<AstApply> {
+  private AstNode head;
+  private AstNode[] args;
 
 
-  public AstApply(Ast head, ArrayList<Ast> args) {
+  public AstApply(AstNode head, ArrayList<AstNode> args) {
     this.head = head;
-    this.args = args.toArray(new Ast[args.size()]);
+    this.args = args.toArray(new AstNode[args.size()]);
   }
 
   @Override
@@ -42,13 +42,13 @@ public class AstApply extends Ast<AstApply> {
       return f.apply0(vals);
     } catch (StdlibFunction.TypeError e) {
       if (e.index >= 0) {
-        Ast ast = args[e.index];
+        AstNode ast = args[e.index];
         throw new Cascade.TypeError(ast.start, ast.length, e.getMessage());
       } else {
         throw new Cascade.TypeError(this.start, this.length, e.getMessage());
       }
     } catch (StdlibFunction.ValueError e) {
-      Ast ast = args[e.index];
+      AstNode ast = args[e.index];
       throw new Cascade.ValueError(ast.start, ast.length, e.getMessage());
     } catch (StdlibFunction.RuntimeError e) {
       throw new Cascade.RuntimeError(this.start, this.length, e.getMessage());
@@ -58,7 +58,7 @@ public class AstApply extends Ast<AstApply> {
   @Override
   public String str() {
     SB sb = new SB().p('(').p(head.str());
-    for (Ast arg : args) {
+    for (AstNode arg : args) {
       sb.p(' ').p(arg.str());
     }
     return sb.p(')').toString();

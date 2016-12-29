@@ -10,7 +10,7 @@ import java.util.ArrayList;
 /**
  * List of unevaluated identifiers.
  */
-public class AstIdList extends Ast<AstIdList> {
+public class AstIdList extends AstNode<AstIdList> {
   private IdList idList;
 
 

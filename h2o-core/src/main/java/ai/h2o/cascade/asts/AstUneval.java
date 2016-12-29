@@ -7,11 +7,11 @@ import ai.h2o.cascade.vals.ValAst;
 /**
  * Unevaluated expression.
  */
-public class AstUneval extends Ast<AstUneval> {
-  private Ast value;
+public class AstUneval extends AstNode<AstUneval> {
+  private AstNode value;
 
 
-  public AstUneval(Ast v) {
+  public AstUneval(AstNode v) {
     value = v;
   }
 

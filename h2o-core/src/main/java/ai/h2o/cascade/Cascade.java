@@ -1,13 +1,38 @@
 package ai.h2o.cascade;
 
-import ai.h2o.cascade.asts.Ast;
+import ai.h2o.cascade.asts.AstNode;
 import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.vals.ValNull;
+import ai.h2o.cascade.core.Scope;
 import water.util.StringUtils;
 
 
 /**
- * Cascade is the next generation of the Rapids language.
+ * <hr/>
+ * <h1>Cascade</h1>
+ *
+ * <p> Cascade is the next generation of the Rapids language. It is an
+ * interpreted language with Lisp-like syntax. A Cascade program is first read
+ * by the {@link CascadeParser} and converted into an Abstract Syntax Tree.
+ * The root node of this AST is then executed, and its result is returned to
+ * the user. Each {@link AstNode} will first evaluate its children nodes, and
+ * thus the entire AST is recursively executed.
+ *
+ * <p> All {@code AstNode}s are executed within the context of some
+ * {@link Scope}. A <i>scope</i> is essentially a namespace for variables
+ * lookup. The scopes can be nested, with variables in the inner scope
+ * shadowing variables from the outer scopes. Also, when a scope is exited,
+ * then all variables that were defined within that scope will be automatically
+ * garbage-collected. Each scope carries a reference to its parent scope, so
+ * that if a variable cannot be found within the current scope, it will be
+ * searched for in all parent scopes. Thus, scopes also form a tree, with root
+ * being the "global scope". This global scope is kept in an instance of a
+ * {@link CascadeSession} and persists across multiple REST API calls.
+ *
+ * <p> Everything in Cascade is a {@link Val}. Every {@code Val} may exist
+ * either bound to a local variable, or on the execution stack.
+ *
+ *
  *
  */
 @SuppressWarnings("unused")
@@ -16,7 +41,7 @@ public abstract class Cascade {
   /**
    * Parse a Cascade expression string into an AST object.
    */
-  public static Ast parse(String expr) {
+  public static AstNode parse(String expr) {
     return new CascadeParser(expr).parse();
   }
 
@@ -32,7 +57,7 @@ public abstract class Cascade {
    */
   public static Val eval(String cascade, CascadeSession session) {
     if (StringUtils.isNullOrEmpty(cascade)) return new ValNull();
-    Ast ast = parse(cascade);
+    AstNode ast = parse(cascade);
     return ast.exec(session.globalScope());
   }
 

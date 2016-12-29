@@ -7,7 +7,7 @@ import water.Iced;
 /**
  * Base class for all AST nodes in the Cascade language.
  */
-public abstract class Ast<T extends Ast<T>> extends Iced<T> {
+public abstract class AstNode<T extends AstNode<T>> extends Iced<T> {
   protected int start = -1;
   protected int length;
 

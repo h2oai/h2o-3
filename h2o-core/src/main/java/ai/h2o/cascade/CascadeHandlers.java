@@ -24,20 +24,22 @@ import java.util.HashMap;
  * <p>Close an existing Cascade session.</p>
  */
 public abstract class CascadeHandlers {
-  /** Map of session-ids (sent by the client) to the actual session instance. */
+
+  /** Map of session-ids (sent by the client) to the actual session instances. */
   public static final HashMap<String, CascadeSession> SESSIONS = new HashMap<>();
 
 
   //--------------------------------------------------------------------------------------------------------------------
 
   public static class Run extends RestApiHandler<CascadeIV4, CascadeOV4> {
-    public String name() {
+    @Override public String name() {
       return "runCascade";
     }
-    public String help() {
+    @Override public String help() {
       return "Execute a Cascade statement within the provided session.";
     }
 
+    @Override
     public CascadeOV4 exec(int ignored, CascadeIV4 input) {
       String sessionId = input.session_id;
       if (!SESSIONS.containsKey(sessionId))
@@ -68,13 +70,14 @@ public abstract class CascadeHandlers {
   //--------------------------------------------------------------------------------------------------------------------
 
   public static class StartSession extends RestApiHandler<CascadeSessionIV4, CascadeSessionOV4> {
-    public String name() {
+    @Override public String name() {
       return "startCascadeSession";
     }
-    public String help() {
+    @Override public String help() {
       return "Start a new Cascade session, and return the session's id.";
     }
 
+    @Override
     public CascadeSessionOV4 exec(int ignored, CascadeSessionIV4 input) {
       CascadeSession sess = new CascadeSession(input.user);
       String sessionId = sess.id();
@@ -97,13 +100,14 @@ public abstract class CascadeHandlers {
   //--------------------------------------------------------------------------------------------------------------------
 
   public static class CloseSession extends RestApiHandler<CascadeCloseSessionIV4, OutputSchemaV4> {
-    public String name() {
+    @Override public String name() {
       return "closeCascadeSession";
     }
-    public String help() {
+    @Override public String help() {
       return "Finish a Cascade session, removing all objects created within it.";
     }
 
+    @Override
     public OutputSchemaV4 exec(int ignored, CascadeCloseSessionIV4 input) {
       String sessionId = input.session_id;
 

@@ -162,7 +162,7 @@ public class CascadeParserTest extends TestUtil {
   //--------------------------------------------------------------------------------------------------------------------
 
   private static void astNum_ok(String expr, double expected) {
-    Ast res = parse(expr);
+    AstNode res = parse(expr);
     assertTrue("Unexpected result of type " + res.getClass().getSimpleName(), res instanceof AstNum);
     assertEquals(expected, (res.exec(null)).getNum(), 1e-10);
   }
@@ -174,7 +174,7 @@ public class CascadeParserTest extends TestUtil {
   }
 
   private static void astStr_ok(String expr, String expected) {
-    Ast res = parse(expr);
+    AstNode res = parse(expr);
     assertTrue(res instanceof AstStr);
     assertEquals(expected, res.str());
   }
@@ -199,7 +199,7 @@ public class CascadeParserTest extends TestUtil {
     }
   }
 
-  private static Ast parse(String expr) {
+  private static AstNode parse(String expr) {
     try {
       return Cascade.parse(expr);
     } catch (Cascade.SyntaxError e) {

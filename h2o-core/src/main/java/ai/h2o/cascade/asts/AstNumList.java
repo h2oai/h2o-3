@@ -17,7 +17,7 @@ import java.util.Arrays;
  * When executed, this AST produces a {link ValNums} wrapper around the
  * underlying array of numbers.
  */
-public class AstNumList extends Ast<AstNumList> {
+public class AstNumList extends AstNode<AstNumList> {
   private double[] items;
 
 

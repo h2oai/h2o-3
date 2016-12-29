@@ -28,7 +28,7 @@ import java.util.Arrays;
  * also demand no overlap between bases.  The has(), min() and max() calls
  * require a sorted list.
  */
-public class AstSliceList extends Ast<AstSliceList> {
+public class AstSliceList extends AstNode<AstSliceList> {
   private SliceList sliceList;
 
 

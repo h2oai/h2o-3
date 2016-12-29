@@ -11,7 +11,7 @@ import java.util.Arrays;
 /**
  * A list of Strings.
  */
-public class AstStrList extends Ast<AstStrList> {
+public class AstStrList extends AstNode<AstStrList> {
   public String[] strings;
 
   public AstStrList(ArrayList<String> strs) {

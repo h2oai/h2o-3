@@ -87,8 +87,8 @@ public class CascadeParser {
    *
    * @throws Cascade.SyntaxError if the expression cannot be parsed.
    */
-  public Ast parse() throws Cascade.SyntaxError {
-    Ast res = parseNext();
+  public AstNode parse() throws Cascade.SyntaxError {
+    AstNode res = parseNext();
     if (nextChar() != ' ')
       throw syntaxError("Illegal Cascade expression");
     return res;
@@ -111,7 +111,7 @@ public class CascadeParser {
   /**
    * Parse and return the next AST from the rapids expression string.
    */
-  private Ast parseNext() {
+  private AstNode parseNext() {
     char ch = nextChar();
     if (ch == '(') {
       return parseFunctionApplication();
@@ -150,13 +150,13 @@ public class CascadeParser {
   private AstApply parseFunctionApplication() {
     consumeChar('(');
     int start = pos;
-    Ast head = parseNext();
+    AstNode head = parseNext();
     head.setPos(start, pos);
 
-    ArrayList<Ast> args = new ArrayList<>();
+    ArrayList<AstNode> args = new ArrayList<>();
     while (nextChar() != ')') {
       int argStart = pos;
-      Ast ast = parseNext();
+      AstNode ast = parseNext();
       ast.setPos(argStart, pos);
       args.add(ast);
     }
@@ -173,10 +173,10 @@ public class CascadeParser {
    * variables / other expressions. If necessary, such lists can always be
    * created using the {@code list} function.
    */
-  private Ast parseList() {
+  private AstNode parseList() {
     consumeChar('[');
     char nextChar = nextChar();
-    Ast res = isQuote(nextChar)? parseStringList() : parseNumList();
+    AstNode res = isQuote(nextChar)? parseStringList() : parseNumList();
     consumeChar(']');
     return res;
   }
@@ -200,7 +200,7 @@ public class CascadeParser {
   /**
    * Parse a plain list of numbers.
    */
-  private Ast parseNumList() {
+  private AstNode parseNumList() {
     ArrayList<Double> nums = new ArrayList<>(10);
     while (nextChar() != ']') {
       nums.add(parseDouble());
@@ -415,9 +415,9 @@ public class CascadeParser {
   }
 
 
-  private Ast parseUnevaluatedExpr() {
+  private AstNode parseUnevaluatedExpr() {
     consumeChar('?');
-    Ast next = parseNext();
+    AstNode next = parseNext();
     return new AstUneval(next);
   }
 
