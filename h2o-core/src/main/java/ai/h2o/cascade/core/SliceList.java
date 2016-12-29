@@ -4,6 +4,7 @@ import water.Iced;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
  */
@@ -71,8 +72,27 @@ public class SliceList extends Iced {
   }
 
 
+  /**
+   * Make a SliceList out of a plain list of numbers;
+   */
   public SliceList(long[] numbers) {
     bases = numbers;
+    isList = true;
+    isSorted = ArrayUtils.isSorted(bases);
+  }
+
+
+  /**
+   * Make a SliceList from the list of column names in a frame.
+   */
+  public SliceList(String[] names, WorkFrame frame) {
+    bases = new long[names.length];
+    for (int i = 0; i < names.length; i++) {
+      int j = frame.findColumnByName(names[i]);
+      if (j == -1)
+        throw new IllegalArgumentException("Column '" + names[i] + "' was not found in the frame");
+      bases[i] = j;
+    }
     isList = true;
     isSorted = ArrayUtils.isSorted(bases);
   }
@@ -144,6 +164,85 @@ public class SliceList extends Iced {
   public interface Iterator extends java.util.Iterator<Long> {
     long nextPrim();
     void reset();
+  }
+
+
+  /**
+   * Check and normalize the slice list, assuming it will be applied to a list
+   * with {@code n} elements. Actual normalization consists of treating
+   * the negative elements as "take everything except those" and translating
+   * this into actual ranges. Note that these negative indices are 1-based
+   * (i.e. -1 means take all rows except the first), and cannot be combined
+   * with the positive indices. For example, {@code <-1, -3>} is valid and
+   * means take all elements except the first and the third, whereas
+   * {@code <-1, 1>} is invalid.
+   *
+   * @param n number of items in the array to which the index will be applied.
+   *          This is needed for AIOOBE checking, and in order to expand the
+   *          negative indices.
+   */
+  public void normalizeR(long n) {
+    boolean normalizationRequired = false;
+    for (int i = 0; i < bases.length; i++) {
+      long rfrst = bases[i];
+      long rlast = isList? rfrst : rfrst + strides[i] * (counts[i] - 1);
+      if (rfrst < 0 || rlast < 0) {
+        normalizationRequired = true;
+        if (rfrst != rlast)  // We could support this case too, if really really want to
+          throw new IllegalArgumentException("Negative indices cannot be strided");
+      }
+      if (rlast < -n || rlast >= n) {
+        throw new IllegalArgumentException("Elements in the index are not within the [0.." + n + ") range");
+      }
+    }
+    if (normalizationRequired) {
+      // Example: suppose n = 10 and the original list is
+      //     <-7, -6, -5, -3, -5, -1>
+      // First step sorts and negates, making it the list of indices to exclude:
+      //     <0, 2, 4, 4, 5, 6>
+      // Second step counts the number of "gaps" in this list (3), which will
+      // be the number of triples in the final multi-index.
+      // Last step creates new bases/counts/strides arrays, consisting of the
+      // gaps in the original array:
+      //     <1:1, 3:1, 7:3>
+      //
+      int nbases = bases.length;
+      for (int i = 0; i < nbases; i++)
+        bases[i] = -bases[i] - 1;
+      Arrays.sort(bases);
+      assert bases[0] >= 0 && bases[nbases - 1] < n : "Unexpected bases list: " + Arrays.toString(bases);
+
+      int ngaps = (bases[0] == 0? 0 : 1) + (bases[nbases - 1] == n - 1? 0 : 1);
+      for (int i = 1; i < nbases; i++)
+        if (bases[i] - bases[i - 1] >= 2)
+          ngaps++;
+
+      long[] oldbases = bases;
+      bases = new long[ngaps];
+      counts = new long[ngaps];
+      strides = new long[ngaps];
+      int igap = 0;
+      if (oldbases[0] > 0) {
+        bases[igap] = 0;
+        counts[igap] = oldbases[0];
+        strides[igap++] = 1;
+      }
+      for (int i = 1; i < nbases; i++)
+        if (oldbases[i] - oldbases[i-1] >= 2) {
+          bases[igap] = oldbases[i-1] + 1;
+          counts[igap] = oldbases[i] - oldbases[i-1] - 1;
+          strides[igap++] = 1;
+        }
+      if (oldbases[nbases-1] < n - 1) {
+        bases[igap] = oldbases[nbases-1] + 1;
+        counts[igap] = n - oldbases[nbases-1];
+        strides[igap++] = 1;
+      }
+      assert igap == ngaps;
+
+      isList = false;
+      isSorted = true;
+    }
   }
 
 
