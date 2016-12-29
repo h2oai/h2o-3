@@ -26,7 +26,7 @@ import static water.util.MRUtils.sampleFrameStratified;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class DeepLearningSmall extends ModelBuilder<DLModel,DeepLearningParameters,DeepLearningModelOutput> implements DeepLearning {
+public class DeepLearningSmall extends ModelBuilder<DLModel,DeepLearningParameters,DeepLearningModelOutput> implements DeepLearning<DLModel> {
   /** Main constructor from Deep Learning parameters */
   public DeepLearningSmall(DeepLearningParameters parms ) { super(parms); init(false); }
   public DeepLearningSmall(DeepLearningParameters parms, Key<DLModel> key ) { super(parms,key); init(false); }
@@ -96,7 +96,7 @@ public class DeepLearningSmall extends ModelBuilder<DLModel,DeepLearningParamete
    * @param nClasses Number of response levels (1: regression, >=2: classification)
    * @return DataInfo
    */
-  static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms, int nClasses) {
+  public DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms, int nClasses) {
     double x = 0.782347234;
     boolean identityLink = new Distribution(parms).link(x) == x;
 
@@ -270,7 +270,7 @@ public class DeepLearningSmall extends ModelBuilder<DLModel,DeepLearningParamete
 
       List<Key> removeMe = new ArrayList<>();
       if (_parms._checkpoint == null) {
-        modelWeBuild = new DLModel(dest(), _parms, new DeepLearningModelOutput(DeepLearningSmall.this), _train, _valid, nclasses());
+        modelWeBuild = new DLModel(dest(), _parms, new DeepLearningModelOutput(DeepLearningSmall.this), _train, _valid, nclasses(), DeepLearningSmall.this);
         if (_parms._pretrained_autoencoder != null) {
           final DLModel pretrained = DKV.getGet(_parms._pretrained_autoencoder);
           if (pretrained == null)
@@ -573,7 +573,7 @@ public class DeepLearningSmall extends ModelBuilder<DLModel,DeepLearningParamete
    * @param model DL model
    * @return The total number of training rows to be processed per iteration (summed over on all nodes)
    */
-  static long computeTrainSamplesPerIteration(final DeepLearningParameters mp, final long numRows, final DLModel model) {
+  public long computeTrainSamplesPerIteration(final DeepLearningParameters mp, final long numRows, final DLModel model) {
     long tspi = mp._train_samples_per_iteration;
     assert(tspi == 0 || tspi == -1 || tspi == -2 || tspi >= 1);
     if (tspi == 0 || (!mp._replicate_training_data && tspi == -1) ) {

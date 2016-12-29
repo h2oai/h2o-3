@@ -19,7 +19,6 @@ import water.util.*;
 import java.util.Arrays;
 
 import static hex.ModelMetrics.calcVarImp;
-import static hex.deeplearning.DeepLearningBig.makeDataInfo;
 import static hex.deeplearning.Loss.*;
 import static water.H2O.technote;
 
@@ -180,9 +179,9 @@ public class DeepLearningModel extends
    * @param valid Validation frame
    * @param nClasses Number of classes (1 for regression or autoencoder)
    */
-  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses) {
+  public DeepLearningModel(final Key destKey, final DeepLearningParameters parms, final DeepLearningModelOutput output, Frame train, Frame valid, int nClasses, DeepLearning deepLearning) {
     super(destKey, parms, output);
-    final DataInfo dinfo = makeDataInfo(train, valid, _parms, nClasses);
+    final DataInfo dinfo = deepLearning.makeDataInfo(train, valid, _parms, nClasses);
     DKV.put(dinfo);
 
     Vec v1 = train.vec("target");

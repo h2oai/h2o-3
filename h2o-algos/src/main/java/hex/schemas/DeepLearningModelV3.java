@@ -1,5 +1,6 @@
 package hex.schemas;
 
+import hex.deeplearning.DeepLearningBig;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModelOutput;
 import hex.deeplearning.DeepLearningParameters;
@@ -48,6 +49,7 @@ public class DeepLearningModelV3 extends ModelSchemaV3<DeepLearningModel, DeepLe
   // Version&Schema-specific filling into the impl
   @Override public DeepLearningModel createImpl() {
     DeepLearningParameters parms = parameters.createImpl();
-    return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModelOutput(null), null, null, 0);
+    final DeepLearningBig deepLearning = new DeepLearningBig(parms);
+    return new DeepLearningModel(Key.make() /*dest*/, parms, new DeepLearningModelOutput(null), null, null, 0, deepLearning);
   }
 }

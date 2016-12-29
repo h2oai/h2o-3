@@ -18,7 +18,7 @@ import static water.util.MRUtils.sampleFrameStratified;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class DeepLearningBig extends ModelBuilder<DeepLearningModel,DeepLearningParameters,DeepLearningModelOutput> implements DeepLearning {
+public class DeepLearningBig extends ModelBuilder<DeepLearningModel,DeepLearningParameters,DeepLearningModelOutput> implements DeepLearning<DeepLearningModel> {
   /** Main constructor from Deep Learning parameters */
   public DeepLearningBig(DeepLearningParameters parms ) { super(parms); init(false); }
   public DeepLearningBig(DeepLearningParameters parms, Key<DeepLearningModel> key ) { super(parms,key); init(false); }
@@ -89,7 +89,7 @@ public class DeepLearningBig extends ModelBuilder<DeepLearningModel,DeepLearning
    * @param nClasses Number of response levels (1: regression, >=2: classification)
    * @return DataInfo
    */
-  static DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms, int nClasses) {
+  public DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms, int nClasses) {
     double x = 0.782347234;
     boolean identityLink = new Distribution(parms).link(x) == x;
 
@@ -241,7 +241,7 @@ public class DeepLearningBig extends ModelBuilder<DeepLearningModel,DeepLearning
    * @param model DL model
    * @return The total number of training rows to be processed per iteration (summed over on all nodes)
    */
-  static long computeTrainSamplesPerIteration(final DeepLearningParameters mp, final long numRows, final DeepLearningModel model) {
+  public long computeTrainSamplesPerIteration(final DeepLearningParameters mp, final long numRows, final DeepLearningModel model) {
     long tspi = mp._train_samples_per_iteration;
     assert(tspi == 0 || tspi == -1 || tspi == -2 || tspi >= 1);
     if (tspi == 0 || (!mp._replicate_training_data && tspi == -1) ) {

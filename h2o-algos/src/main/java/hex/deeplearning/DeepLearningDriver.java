@@ -58,7 +58,7 @@ public class DeepLearningDriver extends Driver {
 
     List<Key> removeMe = new ArrayList<>();
     if (deepLearning.params()._checkpoint == null) {
-      modelWeBuild = new DeepLearningModel(mb.dest(), deepLearning.params(), new DeepLearningModelOutput(deepLearning), deepLearning.train(), deepLearning.valid(), deepLearning.nclasses());
+      modelWeBuild = new DeepLearningModel(mb.dest(), deepLearning.params(), new DeepLearningModelOutput(deepLearning), deepLearning.train(), deepLearning.valid(), deepLearning.nclasses(), deepLearning);
       if (deepLearning.params()._pretrained_autoencoder != null) {
         final DeepLearningModel pretrained = DKV.getGet(deepLearning.params()._pretrained_autoencoder);
         if (pretrained == null)
@@ -90,7 +90,7 @@ public class DeepLearningDriver extends Driver {
         // This can add or remove dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
         for (String st : previous.adaptTestForTrain(deepLearning.train(), true, false)) Log.warn(st);
         for (String st : previous.adaptTestForTrain(deepLearning.valid(), true, false)) Log.warn(st);
-        DataInfo dinfo = DeepLearningBig.makeDataInfo(deepLearning.train(), deepLearning.valid(), deepLearning.params(), deepLearning.nclasses());
+        DataInfo dinfo = deepLearning.makeDataInfo(deepLearning.train(), deepLearning.valid(), deepLearning.params(), deepLearning.nclasses());
         DKV.put(dinfo); // For FrameTask that needs DataInfo in the DKV as a standalone thing - the DeepLearningModel has its own copy inside itself
         removeMe.add(dinfo._key);
         modelWeBuild = new DeepLearningModel(deepLearning.dest(), deepLearning.params(), previous, false, dinfo);
@@ -237,7 +237,7 @@ public class DeepLearningDriver extends Driver {
       }
 
       // Set train_samples_per_iteration size (cannot be done earlier since this depends on whether stratified sampling is done)
-      model.actual_train_samples_per_iteration = DeepLearningBig.computeTrainSamplesPerIteration(mp, model.training_rows, model);
+      model.actual_train_samples_per_iteration = deepLearning.computeTrainSamplesPerIteration(mp, model.training_rows, model);
       // Determine whether shuffling is enforced
       if (mp._replicate_training_data && (model.actual_train_samples_per_iteration == model.training_rows * (mp._single_node_mode ? 1 : H2O.CLOUD.size())) && !mp._shuffle_training_data && H2O.CLOUD.size() > 1 && !mp._reproducible) {
         if (!mp._quiet_mode)

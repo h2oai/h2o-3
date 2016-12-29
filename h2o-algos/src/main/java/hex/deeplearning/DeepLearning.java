@@ -1,9 +1,6 @@
 package hex.deeplearning;
 
-import hex.Driver;
-import hex.ModelBuilder;
-import hex.ModelCategory;
-import hex.ToEigenVec;
+import hex.*;
 import water.Job;
 import water.Key;
 import water.fvec.Frame;
@@ -29,7 +26,9 @@ public interface DeepLearning<M extends SimpleDLM> {
   public Job<M> job();
   Key<M> dest();
   // Kick the methods above out
-  
+
+  DataInfo makeDataInfo(Frame train, Frame valid, DeepLearningParameters parms, int nClasses);
+    
   boolean havePojo();
 
   boolean haveMojo();
@@ -45,4 +44,6 @@ public interface DeepLearning<M extends SimpleDLM> {
   void init(boolean expensive);
 
   void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders);
+
+  long computeTrainSamplesPerIteration(DeepLearningParameters mp, long training_rows, M model);
 }
