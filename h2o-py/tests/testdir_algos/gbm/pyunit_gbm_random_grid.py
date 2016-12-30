@@ -3,6 +3,8 @@
 from __future__ import print_function
 
 import h2o
+import sys
+sys.path.insert(1,"../../../")  # allow us to run this standalone
 from h2o.grid.grid_search import H2OGridSearch
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
