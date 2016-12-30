@@ -216,11 +216,13 @@ public class CascadeParserTest extends TestUtil {
    * @param expr Cascade expression that caused the error
    */
   public static void reportCascadeError(Cascade.Error e, String expr) {
+    Throwable cause = e.getCause();
+    if (cause == null) cause = e;
     Log.info("\n" + e.getClass().getSimpleName() + " in expression:");
     Log.info(expr);
     Log.info(StringUtils.repeat(" ", e.location) +
         StringUtils.repeat("^", Math.max(e.length, 1)) +
-        " " + e.getMessage());
+        " " + cause.getMessage());
     Log.info("");
   }
 }

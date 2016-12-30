@@ -26,12 +26,17 @@ public abstract class Function {
    * into a {@link Cascade.TypeError}, translating the argument's {@code index}
    * into its location within the cascade expression being executed.
    */
-  public static class TypeError extends IllegalArgumentException {
+  public static class TypeError extends Error {
     public int index;
 
     public TypeError(int i, String message) {
       super(message);
       index = i;
+    }
+
+    @Override
+    public Cascade.Error toCascadeError(int start, int length) {
+      return new Cascade.TypeError(start, length, this);
     }
   }
 
@@ -45,12 +50,17 @@ public abstract class Function {
    * {@code index} into its location within the cascade expression being
    * executed.
    */
-  public static class ValueError extends IllegalArgumentException {
+  public static class ValueError extends Error {
     public int index;
 
     public ValueError(int i, String message) {
       super(message);
       index = i;
+    }
+
+    @Override
+    public Cascade.Error toCascadeError(int start, int length) {
+      return new Cascade.ValueError(start, length, this);
     }
   }
 
@@ -62,10 +72,25 @@ public abstract class Function {
    * <p> This exception will be caught within {@code AstApply} and converted
    * into a {@link Cascade.RuntimeError}.
    */
-  public static class RuntimeError extends RuntimeException {
+  public static class RuntimeError extends Error {
     public RuntimeError(String message) {
       super(message);
     }
+
+    @Override
+    public Cascade.Error toCascadeError(int start, int length) {
+      return new Cascade.RuntimeError(start, length, this);
+    }
+  }
+
+
+
+  public abstract static class Error extends RuntimeException {
+    public Error(String message) {
+      super(message);
+    }
+
+    public abstract Cascade.Error toCascadeError(int start, int length);
   }
 
 }

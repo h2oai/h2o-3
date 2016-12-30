@@ -96,6 +96,12 @@ public abstract class Cascade {
       location = start;
       length = len;
     }
+
+    public Error(int start, int len, Throwable cause) {
+      super(cause);
+      location = start;
+      length = len;
+    }
   }
 
 
@@ -117,11 +123,14 @@ public abstract class Cascade {
    * Error indicating general type mismatch between the expected and the
    * provided argument(s).
    *
-   * @see ai.h2o.cascade.stdlib.StdlibFunction.TypeError
+   * @see ai.h2o.cascade.core.Function.TypeError
    */
   public static class TypeError extends Error {
     public TypeError(int start, int len, String message) {
       super(start, len, message);
+    }
+    public TypeError(int start, int len, Throwable cause) {
+      super(start, len, cause);
     }
   }
 
@@ -130,11 +139,14 @@ public abstract class Cascade {
    * Error indicating that the provided value is somehow invalid, even though
    * its type is correct.
    *
-   * @see ai.h2o.cascade.stdlib.StdlibFunction.ValueError
+   * @see ai.h2o.cascade.core.Function.ValueError
    */
   public static class ValueError extends Error {
     public ValueError(int start, int len, String message) {
       super(start, len, message);
+    }
+    public ValueError(int start, int len, Throwable cause) {
+      super(start, len, cause);
     }
   }
 
@@ -143,11 +155,14 @@ public abstract class Cascade {
    * All other kinds of errors, that do not fit either the {@link TypeError}
    * or the {@link ValueError} definitions.
    *
-   * @see ai.h2o.cascade.stdlib.StdlibFunction.RuntimeError
+   * @see ai.h2o.cascade.core.Function.RuntimeError
    */
   public static class RuntimeError extends Error {
     public RuntimeError(int start, int len, String message) {
       super(start, len, message);
+    }
+    public RuntimeError(int start, int len, Throwable cause) {
+      super(start, len, cause);
     }
   }
 
@@ -158,6 +173,9 @@ public abstract class Cascade {
   public static class NameError extends Error {
     public NameError(int start, int len, String message) {
       super(start, len, message);
+    }
+    public NameError(int start, int len, Throwable cause) {
+      super(start, len, cause);
     }
   }
 

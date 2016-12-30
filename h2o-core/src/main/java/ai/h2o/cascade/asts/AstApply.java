@@ -1,9 +1,8 @@
 package ai.h2o.cascade.asts;
 
 import ai.h2o.cascade.Cascade;
-import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.core.Function;
-import ai.h2o.cascade.stdlib.StdlibFunction;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.vals.Val;
 import water.util.SB;
 
@@ -40,25 +39,23 @@ public class AstApply extends AstNode<AstApply> {
       vals[i] = args[i].exec(scope);
     }
 
+    Val ret;
     try {
-      Val ret = f.apply0(vals);
-      for (Val v : vals)
-        if (v != ret)
-          v.dispose();
-      return ret;
-    } catch (StdlibFunction.TypeError e) {
-      if (e.index >= 0) {
-        AstNode ast = args[e.index];
-        throw new Cascade.TypeError(ast.start, ast.length, e.getMessage());
-      } else {
-        throw new Cascade.TypeError(this.start, this.length, e.getMessage());
-      }
-    } catch (StdlibFunction.ValueError e) {
-      AstNode ast = args[e.index];
-      throw new Cascade.ValueError(ast.start, ast.length, e.getMessage());
-    } catch (StdlibFunction.RuntimeError e) {
-      throw new Cascade.RuntimeError(this.start, this.length, e.getMessage());
+      ret = f.apply0(vals);
+    } catch (Function.Error e) {
+      vhead.dispose();
+      for (Val v : vals) v.dispose();
+      int i = (e instanceof Function.TypeError)? ((Function.TypeError)e).index :
+              (e instanceof Function.ValueError)? ((Function.ValueError)e).index : -1;
+      AstNode src = i >= 0? args[i] : this;
+      throw e.toCascadeError(src.start, src.length);
     }
+
+    vhead.dispose();
+    for (Val v : vals)
+      if (v != ret)
+        v.dispose();
+    return ret;
   }
 
   @Override

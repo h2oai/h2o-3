@@ -76,7 +76,7 @@ public class FnFromdkvTest extends TestUtil {
     try {
       exec("(fromDkv 1)");
     } catch (Cascade.TypeError e) {
-      assertEquals("Wrong number of arguments: expected 2, received 1", e.getMessage());
+      assertEquals("Wrong number of arguments: expected 2, received 1", e.getCause().getMessage());
       assertEquals(0, e.location);
       assertEquals(11, e.length);
     }
@@ -92,7 +92,7 @@ public class FnFromdkvTest extends TestUtil {
     try {
       exec("(fromDkv ?iris 'iris.hex')");
     } catch (Cascade.TypeError e) {
-      assertEquals("Expected argument of type IDS but instead got AST", e.getMessage());
+      assertEquals("Expected argument of type IDS but instead got AST", e.getCause().getMessage());
       assertEquals(9, e.location);
       assertEquals(5, e.length);
     }
@@ -100,7 +100,7 @@ public class FnFromdkvTest extends TestUtil {
     try {
       exec("(fromDkv `iris` 'irrris.hex')");
     } catch (Cascade.ValueError e) {
-      assertEquals("Key not found in the DKV", e.getMessage());
+      assertEquals("Key not found in the DKV", e.getCause().getMessage());
       assertEquals(16, e.location);
       assertEquals(12, e.length);
     }
@@ -108,7 +108,7 @@ public class FnFromdkvTest extends TestUtil {
     try {
       exec("(fromDkv `iris1 iris2` 'iris.hex')");
     } catch (Cascade.ValueError e) {
-      assertEquals("Only one id should be supplied", e.getMessage());
+      assertEquals("Only one id should be supplied", e.getCause().getMessage());
       assertEquals(9, e.location);
       assertEquals(13, e.length);
     }
