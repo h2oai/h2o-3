@@ -17,7 +17,7 @@ public class Word2VecHandler extends Handler {
     if (model == null)
       throw new IllegalArgumentException("missing source model " + args.model);
 
-    Map<String, Float> synonyms = model.findSynonyms(args.target, args.count);
+    Map<String, Float> synonyms = model.findSynonyms(args.word, args.count);
 
     List<Map.Entry<String, Float>> result = new ArrayList<>(synonyms.entrySet());
     Collections.sort(result, new Comparator<Map.Entry<String, Float>>() {
@@ -26,11 +26,11 @@ public class Word2VecHandler extends Handler {
         return o2.getValue().compareTo(o1.getValue()); // reverse sort
       }
     });
-    args.words = new String[result.size()];
+    args.synonyms = new String[result.size()];
     args.scores = new double[result.size()];
     int i = 0;
     for (Map.Entry<String, Float> entry : result) {
-      args.words[i] = entry.getKey();
+      args.synonyms[i] = entry.getKey();
       args.scores[i] = entry.getValue();
       i++;
     }

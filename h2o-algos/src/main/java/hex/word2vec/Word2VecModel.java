@@ -147,7 +147,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
   }
 
   void buildModelOutput(Word2VecModelInfo modelInfo) {
-    final int vecSize = _parms._vecSize;
+    final int vecSize = _parms._vec_size;
 
     IcedHashMapGeneric<BufferedString, Integer> vocab = ((Vocabulary) DKV.getGet(modelInfo._vocabKey))._data;
     BufferedString[] words = new BufferedString[vocab.size()];
@@ -172,14 +172,14 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     @Override public long progressUnits() { return _epochs; }
     static final int MAX_VEC_SIZE = 10000;
 
-    public Word2Vec.WordModel _wordModel = Word2Vec.WordModel.SkipGram;
-    public Word2Vec.NormModel _normModel = Word2Vec.NormModel.HSM;
-    public int _minWordFreq = 5;
-    public int _vecSize = 100;
-    public int _windowSize = 5;
+    public Word2Vec.WordModel _word_model = Word2Vec.WordModel.SkipGram;
+    public Word2Vec.NormModel _norm_model = Word2Vec.NormModel.HSM;
+    public int _min_word_freq = 5;
+    public int _vec_size = 100;
+    public int _window_size = 5;
     public int _epochs = 5;
-    public float _initLearningRate = 0.05f;
-    public float _sentSampleRate = 1e-3f;
+    public float _init_learning_rate = 0.025f;
+    public float _sent_sample_rate = 1e-3f;
     Vec trainVec() { return train().vec(0); }
   }
 
@@ -205,7 +205,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
     float[] _syn0, _syn1;
     Key<HBWTree> _treeKey;
     Key<Vocabulary> _vocabKey;
-    Key<?> _wordCountsKey;
+    Key<WordCounts> _wordCountsKey;
 
     private Word2VecParameters _parameters;
     public final Word2VecParameters getParams() { return _parameters; }
@@ -218,7 +218,7 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
       long vocabWordCount = 0L;
       List<Map.Entry<BufferedString, IcedLong>> wordCountList = new ArrayList<>(wordCounts._data.size());
       for (Map.Entry<BufferedString, IcedLong> wc : wordCounts._data.entrySet()) {
-        if (wc.getValue()._val >= _parameters._minWordFreq) {
+        if (wc.getValue()._val >= _parameters._min_word_freq) {
           wordCountList.add(wc);
           vocabWordCount += wc.getValue()._val;
         }
@@ -248,9 +248,9 @@ public class Word2VecModel extends Model<Word2VecModel, Word2VecParameters, Word
 
       //initialize weights to random values
       Random rand = RandomUtils.getRNG(0xDECAF, 0xDA7A);
-      _syn1 = MemoryManager.malloc4f(_parameters._vecSize * vocabSize);
-      _syn0 = MemoryManager.malloc4f(_parameters._vecSize * vocabSize);
-      for (int i = 0; i < _parameters._vecSize * vocabSize; i++) _syn0[i] = (rand.nextFloat() - 0.5f) / _parameters._vecSize;
+      _syn1 = MemoryManager.malloc4f(_parameters._vec_size * vocabSize);
+      _syn0 = MemoryManager.malloc4f(_parameters._vec_size * vocabSize);
+      for (int i = 0; i < _parameters._vec_size * vocabSize; i++) _syn0[i] = (rand.nextFloat() - 0.5f) / _parameters._vec_size;
     }
 
     public static Word2VecModelInfo createInitialModelInfo(Word2VecParameters params) {

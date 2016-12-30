@@ -9,12 +9,12 @@ test.word2vec.sg_hs <- function() {
   epochs <- nrow(h2o.clusterStatus())
 
   words <- h2o.importFile(text8.path, destination_frame = "words", col.names = "word", col.types = "String")
-  w2v <- h2o.word2vec(words, minWordFreq = 5, vecSize = 50, sentSampleRate = 0.001,
-                      initLearningRate = 0.025, epochs = epochs, windowSize = 4)
+  w2v <- h2o.word2vec(words, min_word_freq = 5, vec_size = 50, sent_sample_rate = 0.001,
+                      init_learning_rate = 0.025, epochs = epochs, window_size = 4)
   synonyms <- h2o.findSynonyms(w2v, "dog", 20)
   print(synonyms)
   known.synonyms <- c("dogs", "cat", "hound", "wolf")
-  matched.synonyms <- which(synonyms$synonyms %in% known.synonyms)
+  matched.synonyms <- which(synonyms$synonym %in% known.synonyms)
   print(matched.synonyms)
 
   expect_true(length(matched.synonyms) > 0)

@@ -34,13 +34,13 @@ public class Word2VecTest extends TestUtil {
 
       Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
       p._train = fr._key;
-      p._minWordFreq = 5;
-      p._wordModel = Word2Vec.WordModel.SkipGram;
-      p._normModel = Word2Vec.NormModel.HSM;
-      p._vecSize = 10;
-      p._windowSize = 5;
-      p._sentSampleRate = 0.001f;
-      p._initLearningRate = 0.025f;
+      p._min_word_freq = 5;
+      p._word_model = Word2Vec.WordModel.SkipGram;
+      p._norm_model = Word2Vec.NormModel.HSM;
+      p._vec_size = 10;
+      p._window_size = 5;
+      p._sent_sample_rate = 0.001f;
+      p._init_learning_rate = 0.025f;
       p._epochs = 1;
 
       Word2VecModel w2vm = (Word2VecModel) Scope.track_generic(new Word2Vec(p).trainModel().get());
@@ -73,13 +73,13 @@ public class Word2VecTest extends TestUtil {
     try {
       Word2VecModel.Word2VecParameters p = new Word2VecModel.Word2VecParameters();
       p._train = fr._key;
-      p._minWordFreq = 5;
-      p._wordModel = Word2Vec.WordModel.SkipGram;
-      p._normModel = Word2Vec.NormModel.HSM;
-      p._vecSize = 100;
-      p._windowSize = 4;
-      p._sentSampleRate = 0.001f;
-      p._initLearningRate = 0.025f;
+      p._min_word_freq = 5;
+      p._word_model = Word2Vec.WordModel.SkipGram;
+      p._norm_model = Word2Vec.NormModel.HSM;
+      p._vec_size = 100;
+      p._window_size = 4;
+      p._sent_sample_rate = 0.001f;
+      p._init_learning_rate = 0.025f;
       p._epochs = 10;
 
       w2vm = new Word2Vec(p).trainModel().get();

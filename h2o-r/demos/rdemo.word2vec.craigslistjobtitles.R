@@ -48,7 +48,7 @@ print("Break job titles into sequence of words")
 words <- tokenize(job.titles$jobtitle)
 
 print("Build word2vec model")
-w2v.model <- h2o.word2vec(words, initLearningRate = 0.025, sentSampleRate = 0, epochs = 10)
+w2v.model <- h2o.word2vec(words, sent_sample_rate = 0, epochs = 10)
 
 print("Sanity check - find synonyms for the word 'teacher'")
 print(h2o.findSynonyms(w2v.model, "teacher", count = 5))

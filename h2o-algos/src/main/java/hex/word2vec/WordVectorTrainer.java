@@ -17,6 +17,8 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
   private static final int MAX_SENTENCE_LEN = 1000;
   private static final int EXP_TABLE_SIZE = 1000;
   private static final int MAX_EXP = 6;
+  private static final float[] _expTable = calcExpTable();
+  private static final float LEARNING_RATE_MIN_FACTOR = 0.0001F; // learning rate stops decreasing at (initLearningRate * this factor)
 
   // Params
   private final int _wordVecSize, _windowSize, _epochs;
@@ -26,17 +28,19 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
 
   // Model IN
   private final Key<Vocabulary> _vocabKey;
-  private final Key _wordCountsKey;
+  private final Key<WordCounts> _wordCountsKey;
   private final Key<HBWTree> _treeKey;
   private final long _prevTotalProcessedWords;
 
   // Model IN & OUT
+  // _syn0 represents the matrix of synaptic weights connecting the input layer of the NN to the hidden layer,
+  // similarly _syn1 corresponds to the weight matrix of the synapses connecting the hidden layer to the output layer
+  // both matrices are represented in a 1D array, where M[i,j] == array[i * VEC_SIZE + j]
   float[] _syn0, _syn1;
   long _processedWords = 0L;
 
   // Node-Local (Shared)
   IcedLong _nodeProcessedWords; // mutable long, approximates the total number of words processed by this node
-  private transient float[] _expTable;
   private transient IcedHashMapGeneric<BufferedString, Integer> _vocab;
   private transient IcedHashMap<BufferedString, IcedLong> _wordCounts;
   private transient int[][] _HBWTCode;
@@ -52,11 +56,11 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     _wordCountsKey = input._wordCountsKey;
 
     // Params
-    _wordVecSize = input.getParams()._vecSize;
-    _windowSize = input.getParams()._windowSize;
-    _sentSampleRate = input.getParams()._sentSampleRate;
+    _wordVecSize = input.getParams()._vec_size;
+    _windowSize = input.getParams()._window_size;
+    _sentSampleRate = input.getParams()._sent_sample_rate;
     _epochs = input.getParams()._epochs;
-    _initLearningRate = input.getParams()._initLearningRate;
+    _initLearningRate = input.getParams()._init_learning_rate;
 
     _vocabWordCount = input._vocabWordCount;
     _prevTotalProcessedWords = input._totalProcessedWords;
@@ -73,18 +77,17 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
     HBWTree t = DKV.getGet(_treeKey);
     _HBWTCode = t._code;
     _HBWTPoint = t._point;
-    initExpTable();
     _nodeProcessedWords = new IcedLong(0L);
   }
 
   // Precompute the exp() table
-  private void initExpTable() {
-    _expTable = new float[EXP_TABLE_SIZE];
-
+  private static float[] calcExpTable() {
+    float[] expTable = new float[EXP_TABLE_SIZE];
     for (int i = 0; i < EXP_TABLE_SIZE; i++) {
-      _expTable[i] = (float) Math.exp((i / (float) EXP_TABLE_SIZE * 2 - 1) * MAX_EXP);
-      _expTable[i] = _expTable[i] / (_expTable[i] + 1);  // Precompute f(x) = x / (x + 1)
+      expTable[i] = (float) Math.exp((i / (float) EXP_TABLE_SIZE * 2 - 1) * MAX_EXP);
+      expTable[i] = expTable[i] / (expTable[i] + 1);  // Precompute f(x) = x / (x + 1)
     }
+    return expTable;
   }
 
   @Override public void map(Chunk chk) {
@@ -176,7 +179,7 @@ public class WordVectorTrainer extends MRTask<WordVectorTrainer> {
    */
   private static float calcLearningRate(float initLearningRate, int epochs, long totalProcessed, long vocabWordCount) {
     float rate = initLearningRate * (1 - totalProcessed / (float) (epochs * vocabWordCount + 1));
-    if (rate < initLearningRate * 0.0001F) rate = initLearningRate * 0.0001F;
+    if (rate < initLearningRate * LEARNING_RATE_MIN_FACTOR) rate = initLearningRate * LEARNING_RATE_MIN_FACTOR;
     return rate;
   }
 

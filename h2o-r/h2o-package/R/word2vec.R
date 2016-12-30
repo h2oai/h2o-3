@@ -7,24 +7,24 @@
 #' 
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #'        The training frame must contain a single string column containing the words to train on.
-#' @param minWordFreq This will discard words that appear less than <int> times Defaults to 5.
-#' @param wordModel Use the Skip-Gram model Must be one of: "SkipGram". Defaults to SkipGram.
-#' @param normModel Use Hierarchical Softmax Must be one of: "HSM". Defaults to HSM.
-#' @param vecSize Set size of word vectors Defaults to 100.
-#' @param windowSize Set max skip length between words Defaults to 5.
-#' @param sentSampleRate Set threshold for occurrence of words. Those that appear with higher frequency in the training data
+#' @param min_word_freq This will discard words that appear less than <int> times Defaults to 5.
+#' @param word_model Use the Skip-Gram model Must be one of: "SkipGram". Defaults to SkipGram.
+#' @param norm_model Use Hierarchical Softmax Must be one of: "HSM". Defaults to HSM.
+#' @param vec_size Set size of word vectors Defaults to 100.
+#' @param window_size Set max skip length between words Defaults to 5.
+#' @param sent_sample_rate Set threshold for occurrence of words. Those that appear with higher frequency in the training data
 #'        will be randomly down-sampled; useful range is (0, 1e-5) Defaults to 0.001.
-#' @param initLearningRate Set the starting learning rate Defaults to 0.05.
+#' @param init_learning_rate Set the starting learning rate Defaults to 0.025.
 #' @param epochs Number of training iterations to run Defaults to 5.
 #' @export
 h2o.word2vec <- function(training_frame,
-                         minWordFreq = 5,
-                         wordModel = c("SkipGram"),
-                         normModel = c("HSM"),
-                         vecSize = 100,
-                         windowSize = 5,
-                         sentSampleRate = 0.001,
-                         initLearningRate = 0.05,
+                         min_word_freq = 5,
+                         word_model = c("SkipGram"),
+                         norm_model = c("HSM"),
+                         vec_size = 100,
+                         window_size = 5,
+                         sent_sample_rate = 0.001,
+                         init_learning_rate = 0.025,
                          epochs = 5
                          ) 
 {
@@ -41,20 +41,20 @@ h2o.word2vec <- function(training_frame,
   parms <- list()
   parms$training_frame <- training_frame
 
-  if (!missing(minWordFreq))
-    parms$minWordFreq <- minWordFreq
-  if (!missing(wordModel))
-    parms$wordModel <- wordModel
-  if (!missing(normModel))
-    parms$normModel <- normModel
-  if (!missing(vecSize))
-    parms$vecSize <- vecSize
-  if (!missing(windowSize))
-    parms$windowSize <- windowSize
-  if (!missing(sentSampleRate))
-    parms$sentSampleRate <- sentSampleRate
-  if (!missing(initLearningRate))
-    parms$initLearningRate <- initLearningRate
+  if (!missing(min_word_freq))
+    parms$min_word_freq <- min_word_freq
+  if (!missing(word_model))
+    parms$word_model <- word_model
+  if (!missing(norm_model))
+    parms$norm_model <- norm_model
+  if (!missing(vec_size))
+    parms$vec_size <- vec_size
+  if (!missing(window_size))
+    parms$window_size <- window_size
+  if (!missing(sent_sample_rate))
+    parms$sent_sample_rate <- sent_sample_rate
+  if (!missing(init_learning_rate))
+    parms$init_learning_rate <- init_learning_rate
   if (!missing(epochs))
     parms$epochs <- epochs
   # Error check and build model

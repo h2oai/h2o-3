@@ -8,13 +8,13 @@ import water.api.schemas3.ModelParametersSchemaV3;
 public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV3.Word2VecParametersV3> {
   public static final class Word2VecParametersV3 extends ModelParametersSchemaV3<Word2VecParameters, Word2VecParametersV3> {
     public static String[] fields = new String[] {
-            "minWordFreq",
-            "wordModel",
-            "normModel",
-            "vecSize",
-            "windowSize",
-            "sentSampleRate",
-            "initLearningRate",
+            "min_word_freq",
+            "word_model",
+            "norm_model",
+            "vec_size",
+            "window_size",
+            "sent_sample_rate",
+            "init_learning_rate",
             "epochs"
     };
 
@@ -22,26 +22,26 @@ public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV
      *
      */
     @API(help="Set size of word vectors")
-    public int vecSize;
+    public int vec_size;
 
     /**
      *
      */
     @API(help="Set max skip length between words")
-    public int windowSize;
+    public int window_size;
 
     /**
      *
      */
     @API(help="Set threshold for occurrence of words. Those that appear with higher frequency in the training data\n" +
             "\t\twill be randomly down-sampled; useful range is (0, 1e-5)")
-    public float sentSampleRate;
+    public float sent_sample_rate;
 
     /**
      *
      */
     @API(help="Use Hierarchical Softmax", values = {"HSM"})
-    public Word2Vec.NormModel normModel;
+    public Word2Vec.NormModel norm_model;
 
     /**
      *
@@ -53,18 +53,18 @@ public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV
      *
      */
     @API(help="This will discard words that appear less than <int> times")
-    public int minWordFreq;
+    public int min_word_freq;
 
     /**
      *
      */
     @API(help="Set the starting learning rate")
-    public float initLearningRate;
+    public float init_learning_rate;
 
     /**
      *
      */
     @API(help="Use the Skip-Gram model", values = {"SkipGram"})
-    public Word2Vec.WordModel wordModel;
+    public Word2Vec.WordModel word_model;
   }
 }
