@@ -38,14 +38,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  of many results.  Calling 'get' means that we are blocking on the Job
    *  which is controlling ONLY this ModelBuilder, and when the Job completes
    *  we can return built Model. */
-  public final M get() { assert _job._result == _result; return _job.get(); }
+  public final M get() { 
+    assert _job._result == _result;
+    return _job.get(); 
+  }
   public final boolean isStopped() { return _job.isStopped(); }
 
   // Key of the model being built; note that this is DIFFERENT from
   // _job._result if the Job is being shared by many sub-models
   // e.g. cross-validation.
   protected Key<M> _result;  // Built Model key
-  public final Key<M> dest() { return _result; }
+  public final Key<M> dest() {
+    return _result; 
+  }
 
   private long _start_time; //start time in msecs - only used for time-based stopping
   public boolean timeout() {

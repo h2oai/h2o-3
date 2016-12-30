@@ -452,11 +452,7 @@ public class DeepLearningParameters extends Model.Parameters {
         dl.hide("_regression_stop", "regression_stop is used only with regression.");
       } else {
         dl.hide("_classification_stop", "classification_stop is used only with classification.");
-//          dl.hide("_max_hit_ratio_k", "max_hit_ratio_k is used only with classification.");
-//          dl.hide("_balance_classes", "balance_classes is used only with classification.");
       }
-//        if( !classification || !_balance_classes )
-//          dl.hide("_class_sampling_factors", "class_sampling_factors requires both classification and balance_classes.");
       if (!classification && _valid != null || _valid == null)
         dl.hide("_score_validation_sampling", "score_validation_sampling requires classification and a validation frame.");
     } else {
@@ -470,13 +466,14 @@ public class DeepLearningParameters extends Model.Parameters {
     if (_categorical_encoding==CategoricalEncodingScheme.OneHotExplicit) {
       dl.error("_categorical_encoding", "Won't use explicit Enum encoding for categoricals - it's much faster with OneHotInternal!");
     }
-    if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
+    final boolean problemsWithActivation = _activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout;
+    if (problemsWithActivation) {
       dl.hide("_hidden_dropout_ratios", "hidden_dropout_ratios requires a dropout activation function.");
     }
     if (_hidden_dropout_ratios != null) {
       if (_hidden_dropout_ratios.length != _hidden.length) {
         dl.error("_hidden_dropout_ratios", "Must have " + _hidden.length + " hidden layer dropout ratios.");
-      } else if (_activation != Activation.TanhWithDropout && _activation != Activation.MaxoutWithDropout && _activation != Activation.RectifierWithDropout && _activation != Activation.ExpRectifierWithDropout) {
+      } else if (problemsWithActivation) {
         dl.error("_hidden_dropout_ratios", "Cannot specify hidden_dropout_ratios with a non-dropout activation function. Use 'RectifierWithDropout', 'TanhWithDropout', etc.");
       } else if (ArrayUtils.maxValue(_hidden_dropout_ratios) >= 1 || ArrayUtils.minValue(_hidden_dropout_ratios) < 0) {
         dl.error("_hidden_dropout_ratios", "Hidden dropout ratios must be >= 0 and <1.");

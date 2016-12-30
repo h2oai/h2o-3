@@ -41,6 +41,8 @@ public interface DeepLearning<M extends SimpleDLM> {
 
   <D extends Driver> D trainModelImpl();
 
+//  void init0();
+//  void init1();
   void init(boolean expensive);
 
   void cv_computeAndSetOptimalParameters(ModelBuilder[] cvModelBuilders);

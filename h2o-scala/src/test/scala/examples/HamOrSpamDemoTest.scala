@@ -133,29 +133,23 @@ class HamOrSpamDemoTest extends TestUtil {
     }
   }
 
-  /** Builds DeepLearning model. */
   def buildDLModel(train: Frame,
-                   trainData: DlInput, testData: DlInput,
-
-  epochs: Int = 10, l1: Double = 0.001,
-                   hidden: Array[Int] = Array[Int](200, 200)): DLModel = {
-    val v1 = train.vec("target")
+                   trainData: DlInput, 
+                   testData: DlInput): DLModel = {
     
     val dlParams = new DeepLearningParameters()
     dlParams._train = train._key
     dlParams.trainData = trainData
     dlParams.testData = testData
     dlParams._response_column = "target"
-    dlParams._epochs = epochs
-    dlParams._l1 = l1
-    dlParams._hidden = hidden
+    dlParams._epochs = 10
+    dlParams._l1 = 0.001
+    dlParams._hidden = Array[Int](200, 200)
     dlParams._ignore_const_cols = false // TODO(vlad): figure out how important is it
-    val jobKey: Key[DLModel] = water.Key.make("dlModel.hex")
-    val dl = new DeepLearningSmall(dlParams, jobKey)
-
-    val tm = dl.trainModel()
-    tm.waitTillFinish()
-    tm._result.get()
+    val jobKey: Key[DLModel] = water.Key.make("ignoreme")
+    val mb = new SmallDeepLearningModelBuilder(dlParams, jobKey)
+    mb.trainModel()
+    mb.get()
   }
 
   /** A numeric Vec from an array of doubles */

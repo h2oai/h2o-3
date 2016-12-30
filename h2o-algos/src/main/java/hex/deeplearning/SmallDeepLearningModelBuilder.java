@@ -26,11 +26,16 @@ import static water.util.MRUtils.sampleFrameStratified;
 /**
  * Deep Learning Neural Net implementation based on MRTask
  */
-public class DeepLearningSmall extends ModelBuilder<DLModel,DeepLearningParameters,DeepLearningModelOutput> implements DeepLearning<DLModel> {
+public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLearningParameters,DeepLearningModelOutput> implements DeepLearning<DLModel> {
   /** Main constructor from Deep Learning parameters */
-  public DeepLearningSmall(DeepLearningParameters parms ) { super(parms); init(false); }
-  public DeepLearningSmall(DeepLearningParameters parms, Key<DLModel> key ) { super(parms,key); init(false); }
-  public DeepLearningSmall(boolean startup_once ) { super(new DeepLearningParameters(),startup_once); }
+  public SmallDeepLearningModelBuilder(DeepLearningParameters parms ) { 
+    super(parms); 
+    init(false); 
+  }
+  public SmallDeepLearningModelBuilder(DeepLearningParameters parms, Key<DLModel> key ) { 
+    super(parms,key); 
+    init(false); 
+  }
 
   /** Types of models we can build with DeepLearning  */
   @Override public ModelCategory[] can_build() {
@@ -243,7 +248,7 @@ public class DeepLearningSmall extends ModelBuilder<DLModel,DeepLearningParamete
 
   public class DeepLearningDriver extends Driver {
     public DeepLearningDriver() { 
-      super(DeepLearningSmall.this); 
+      super(SmallDeepLearningModelBuilder.this); 
       checkMyConditions();
     }
 
@@ -252,7 +257,7 @@ public class DeepLearningSmall extends ModelBuilder<DLModel,DeepLearningParamete
       long cs = _parms.checksum();
       // Something goes wrong
       if (error_count() > 0)
-        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(DeepLearningSmall.this);
+        throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(SmallDeepLearningModelBuilder.this);
       buildModel();
       //check that _parms isn't changed during DL model training
       long cs2 = _parms.checksum();
@@ -270,7 +275,7 @@ public class DeepLearningSmall extends ModelBuilder<DLModel,DeepLearningParamete
 
       List<Key> removeMe = new ArrayList<>();
       if (_parms._checkpoint == null) {
-        modelWeBuild = new DLModel(dest(), _parms, new DeepLearningModelOutput(DeepLearningSmall.this), _train, _valid, nclasses(), DeepLearningSmall.this);
+        modelWeBuild = new DLModel(dest(), _parms, new DeepLearningModelOutput(SmallDeepLearningModelBuilder.this), _train, _valid, nclasses(), SmallDeepLearningModelBuilder.this);
         if (_parms._pretrained_autoencoder != null) {
           final DLModel pretrained = DKV.getGet(_parms._pretrained_autoencoder);
           if (pretrained == null)
