@@ -1003,6 +1003,10 @@ def create_frame(frame_id=None, rows=10000, cols=10, randomize=True,
     assert_is_type(seed, int, None)
     assert_is_type(seed_for_column_types, int, None)
     check_frame_id(frame_id)
+
+    if randomize and value:
+        raise H2OValueError("Cannot set data to a `value` if `randomize` is true")
+
     if (categorical_fraction or integer_fraction) and not randomize:
         raise H2OValueError("`randomize` should be True when either categorical or integer columns are used.")
 
