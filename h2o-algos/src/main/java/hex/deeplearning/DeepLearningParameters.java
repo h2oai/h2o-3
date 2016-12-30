@@ -21,6 +21,7 @@ import static hex.deeplearning.Loss.*;
 public class DeepLearningParameters extends Model.Parameters {
   public DlInput trainData;
   public DlInput testData;
+  public boolean distributeCalculations;
   
   public String algoName() { return "DeepLearning"; }
   public String fullName() { return "Deep Learning"; }

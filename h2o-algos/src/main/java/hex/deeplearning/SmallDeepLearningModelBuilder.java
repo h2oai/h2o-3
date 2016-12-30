@@ -30,11 +30,16 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
   /** Main constructor from Deep Learning parameters */
   public SmallDeepLearningModelBuilder(DeepLearningParameters parms ) { 
     super(parms); 
-    init(false); 
+    init0(); 
   }
+
+  void init0() {
+    init(false);
+  }
+
   public SmallDeepLearningModelBuilder(DeepLearningParameters parms, Key<DLModel> key ) { 
     super(parms,key); 
-    init(false); 
+    init0(); 
   }
 
   /** Types of models we can build with DeepLearning  */
@@ -51,6 +56,16 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
   @Override public boolean haveMojo() { return false; }
 
   @Override
+  public String[] names() {
+    return _parms.testData.names();
+  }
+
+  @Override
+  public String[][] domains() {
+    return null;
+  }
+
+  @Override
   public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
   }
@@ -59,7 +74,7 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
 
   @Override protected int nModelsInParallel() {
     if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
-    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+    if (train().byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
     return 1;
   }
 
@@ -133,11 +148,14 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
             true,  // always add a bucket for missing values
             parms._weights_column != null, // observation weights
             parms._offset_column != null,
-            parms._fold_column != null
+            parms._fold_column != null,
+        null,
+        parms.trainData,
+        parms.testData
     );
 
     dinfo.trainData = parms.trainData;
-    dinfo.testData = parms.testData;
+    dinfo.validationData = parms.testData;
 
     // Checks and adjustments:
     // 1) observation weights (adjust mean/sigmas for predictors and response)
@@ -158,16 +176,16 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
 
   @Override protected void checkMemoryFootPrint() {
     if (_parms._checkpoint != null) return;
-    long p = LinearAlgebraUtils.numColsExp(_train,true) - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
-    String[][] dom = _train.domains();
+    long p = LinearAlgebraUtils.numColsExp(train(),true) - (_parms._autoencoder ? 0 : train().lastVec().cardinality());
+    String[][] dom = train().domains();
     // hack: add the factor levels for the NAs
-    for (int i=0; i<_train.numCols()-(_parms._autoencoder ? 0 : 1); ++i) {
+    for (int i=0; i<train().numCols()-(_parms._autoencoder ? 0 : 1); ++i) {
       if (dom[i] != null) {
         p++;
       }
     }
 //    assert(makeDataInfo(_train, _valid, _parms).fullN() == p);
-    long output = _parms._autoencoder ? p : Math.abs(_train.lastVec().cardinality());
+    long output = _parms._autoencoder ? p : Math.abs(train().lastVec().cardinality());
     // weights
     long model_size = p * _parms._hidden[0];
     int layer=1;
@@ -253,7 +271,7 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
     }
 
     @Override public void computeImpl() {
-      init(true); //this can change the seed if it was set to -1 
+      init1(); //this can change the seed if it was set to -1 
       long cs = _parms.checksum();
       // Something goes wrong
       if (error_count() > 0)
@@ -263,6 +281,10 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
       long cs2 = _parms.checksum();
       assert(cs == cs2);
 
+    }
+
+    void init1() {
+      init(_parms.distributeCalculations);
     }
 
     public DLModel modelWeBuild = null;
@@ -275,7 +297,7 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
 
       List<Key> removeMe = new ArrayList<>();
       if (_parms._checkpoint == null) {
-        modelWeBuild = new DLModel(dest(), _parms, new DeepLearningModelOutput(SmallDeepLearningModelBuilder.this), _train, _valid, nclasses(), SmallDeepLearningModelBuilder.this);
+        modelWeBuild = new DLModel(dest(), _parms, new DeepLearningModelOutput(SmallDeepLearningModelBuilder.this), train(), _valid, nclasses(), SmallDeepLearningModelBuilder.this);
         if (_parms._pretrained_autoencoder != null) {
           final DLModel pretrained = DKV.getGet(_parms._pretrained_autoencoder);
           if (pretrained == null)
@@ -300,14 +322,14 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
 
         //READ ONLY
         DeepLearningParameters.Sanity.checkIfParameterChangeAllowed(previous._parms, _parms);
-        System.out.println("TR SRC DL X: " + _train.name(0) + ".." + _train.lastVecName());
+        System.out.println("TR SRC DL X: " + train().name(0) + ".." + train().lastVecName());
 
         try {
           // PUBDEV-2513: Adapt _train and _valid (in-place) to match the frames that were used for the previous model
           // This can add or remove dummy columns (can happen if the dataset is sparse and datasets have different non-const columns)
-          for (String st : previous.adaptTestForTrain(_train,true,false)) Log.warn(st);
+          for (String st : previous.adaptTestForTrain(train(),true,false)) Log.warn(st);
           for (String st : previous.adaptTestForTrain(_valid,true,false)) Log.warn(st);
-          DataInfo dinfo = makeDataInfo(_train, _valid, _parms, nclasses());
+          DataInfo dinfo = makeDataInfo(train(), _valid, _parms, nclasses());
           DKV.put(dinfo); // For FrameTask that needs DataInfo in the DKV as a standalone thing - the DLModel has its own copy inside itself
           removeMe.add(dinfo._key);
           modelWeBuild = new DLModel(dest(), _parms, previous, false, dinfo);
@@ -410,7 +432,7 @@ public class SmallDeepLearningModelBuilder extends ModelBuilder<DLModel,DeepLear
         // Note: don't put into DKV or they would overwrite the _train/_valid frames!
         Frame val_fr = _valid != null ? new Frame(mp._valid,_valid.names(), _valid.vecs()) : null;
 
-        train = new Frame(mp._train, _train.names(), _train.vecs());
+        train = new Frame(mp._train, train().names(), train().vecs());
         if (model._output.isClassifier() && mp._balance_classes) {
           _job.update(0,"Balancing class distribution of training data...");
           float[] trainSamplingFactors = new float[train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below

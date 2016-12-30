@@ -137,8 +137,11 @@ class HamOrSpamDemoTest extends TestUtil {
                    trainData: DlInput, 
                    testData: DlInput): DLModel = {
     
+    val t = true
+    val f = false
     val dlParams = new DeepLearningParameters()
-    dlParams._train = train._key
+    dlParams.distributeCalculations = t
+    dlParams._train = if(dlParams.distributeCalculations) train._key else null
     dlParams.trainData = trainData
     dlParams.testData = testData
     dlParams._response_column = "target"

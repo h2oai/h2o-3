@@ -46,7 +46,7 @@ public class DeepLearningBig extends ModelBuilder<DeepLearningModel,DeepLearning
 
   @Override protected int nModelsInParallel() {
     if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
-    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+    if (train().byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
     return 1;
   }
 
@@ -125,7 +125,7 @@ public class DeepLearningBig extends ModelBuilder<DeepLearningModel,DeepLearning
     );
 
     dinfo.trainData = parms.trainData;
-    dinfo.testData = parms.testData;
+    dinfo.validationData = parms.testData;
 
     // Checks and adjustments:
     // 1) observation weights (adjust mean/sigmas for predictors and response)
@@ -146,16 +146,16 @@ public class DeepLearningBig extends ModelBuilder<DeepLearningModel,DeepLearning
 
   @Override protected void checkMemoryFootPrint() {
     if (_parms._checkpoint != null) return;
-    long p = hex.util.LinearAlgebraUtils.numColsExp(_train,true) - (_parms._autoencoder ? 0 : _train.lastVec().cardinality());
-    String[][] dom = _train.domains();
+    long p = hex.util.LinearAlgebraUtils.numColsExp(train(),true) - (_parms._autoencoder ? 0 : train().lastVec().cardinality());
+    String[][] dom = train().domains();
     // hack: add the factor levels for the NAs
-    for (int i=0; i<_train.numCols()-(_parms._autoencoder ? 0 : 1); ++i) {
+    for (int i=0; i<train().numCols()-(_parms._autoencoder ? 0 : 1); ++i) {
       if (dom[i] != null) {
         p++;
       }
     }
 //    assert(makeDataInfo(_train, _valid, _parms).fullN() == p);
-    long output = _parms._autoencoder ? p : Math.abs(_train.lastVec().cardinality());
+    long output = _parms._autoencoder ? p : Math.abs(train().lastVec().cardinality());
     // weights
     long model_size = p * _parms._hidden[0];
     int layer=1;

@@ -28,7 +28,7 @@ public class DataInfo extends Keyed<DataInfo> {
   public Frame _adaptedFrame;  // the modified DataInfo frame (columns sorted by largest categorical -> least then all numerical columns)
   public int _numResponses;   // number of responses
   public DlInput trainData;
-  public DlInput testData;
+  public DlInput validationData;
   public DlInput currentData;
 
   public void dropInteractions() { // only called to cleanup the InteractionWrappedVecs!
@@ -152,7 +152,9 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public final boolean _skipMissing;
   public final boolean _imputeMissing;
-  public boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
+  private boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
+  public boolean currentlyValidating() { return _valid; }
+  public void willValidate() { _valid = true; }
   public final int[][] _catLvls; // cat lvls post filter (e.g. by strong rules)
   public final int[][] _intLvls; // interaction lvls post filter (e.g. by strong rules)
 
@@ -206,8 +208,13 @@ public class DataInfo extends Keyed<DataInfo> {
    * B. As a list of pairs of column indices with limited enums.
    */
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, String[] interactions) {
+    this(train,valid, nResponses, useAllFactorLevels, predictor_transform, response_transform, skipMissing, imputeMissing, missingBucket, weight, offset, fold, interactions, null, null);
+  }
+  
+  public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, String[] interactions, DlInput training, DlInput validation) {
     super(Key.<DataInfo>make());
-
+    this.trainData = training;
+    this.validationData = validation;
     _valid = valid != null;
     assert predictor_transform != null;
     assert response_transform != null;
@@ -244,7 +251,7 @@ public class DataInfo extends Keyed<DataInfo> {
         valid = Model.makeInteractions(valid, true, _interactions, _useAllFactorLevels, _skipMissing, predictor_transform == TransformType.STANDARDIZE).add(valid); // FIXME: should be using the training subs/muls!
     }
 
-    _permutation = new int[train.numCols()];
+    _permutation = new int[numCols(train)];
     final Vec[] tvecs = train.vecs();
 
     // Count categorical-vs-numerical
@@ -347,6 +354,11 @@ public class DataInfo extends Keyed<DataInfo> {
     if (_numResponses > 0)
       setResponseTransform(response_transform);
     _intLvls = new int[_interactionVecs == null ? 0 : _interactionVecs.length][];
+  }
+
+  int numCols(Frame train) {
+    if (trainData == null) throw new UnsupportedOperationException("Wtf, traindata is null in " + this);    
+    return train != null ? train.numCols() : trainData.names().length;
   }
 
   public DataInfo(Frame train, Frame valid, int nResponses, boolean useAllFactorLevels, TransformType predictor_transform, TransformType response_transform, boolean skipMissing, boolean imputeMissing, boolean missingBucket, boolean weight, boolean offset, boolean fold, boolean intercept) {

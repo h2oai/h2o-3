@@ -16,6 +16,14 @@ import java.util.*;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
+  public String[] names() {
+    return _train.names();
+  }
+  
+  public String[][] domains() {
+    return _train.domains();
+  }
+  
   public H2O.H2OCountedCompleter fjtask = new H2O.H2OCountedCompleter() {
     @Override
     public void compute2() {
@@ -146,7 +154,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  response column to an Categorical, etc.  */
   public final Frame train() { return _train; }
   protected transient Frame _train;
-  
+  protected void setTrain(Frame t) {
+    if (_train != null && _train != t) {
+      System.out.println("Wow, new train " + t + " replacing " + _train);
+    }
+    _train = t;
+  }
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
@@ -206,7 +219,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * */
   final public M trainModelNested(Frame fr) {
     if(fr != null) // Use the working copy (e.g. rebalanced) instead of the original K/V store version
-      _train = fr;
+      setTrain(fr);
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     _start_time = System.currentTimeMillis();
@@ -227,7 +240,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   protected int nModelsInParallel() {
     if (!_parms._parallelize_cross_validation || _parms._max_runtime_secs != 0) return 1; //user demands serial building (or we need to honor the time constraints for all CV models equally)
-    if (_train.byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
+    if (train().byteSize() < 1e6) return _parms._nfolds; //for small data, parallelize over CV models
     return 1; //safe fallback
   }
 
@@ -764,7 +777,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     Frame tr = _train != null?_train:_parms.train();
     if( tr == null ) { error("_train", "Missing training frame: "+_parms._train); return; }
-    _train = new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone());
+    setTrain(new Frame(null /* not putting this into KV */, tr._names.clone(), tr.vecs().clone()));
     if (expensive) {
       _parms.getOrMakeRealSeed();
     }
@@ -814,7 +827,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     // Rebalance train and valid datasets
     if (expensive && error_count() == 0 && _parms._auto_rebalance) {
-      _train = rebalance(_train, false, _result + ".temporary.train");
+      setTrain(rebalance(_train, false, _result + ".temporary.train"));
       _valid = rebalance(_valid, false, _result + ".temporary.valid");
     }
 
@@ -929,7 +942,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         assert(newtrain._key!=null);
         _origNames = _train.names();
         _origDomains = _train.domains();
-        _train = newtrain;
+        setTrain(newtrain);
         if (!_parms._is_cv_model)
           Scope.track(_train);
         else
