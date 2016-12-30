@@ -3,8 +3,8 @@ from builtins import map
 from builtins import str
 from builtins import range
 from collections import OrderedDict
-import sys
 import math
+import sys
 sys.path.insert(1,"../../../")
 import h2o
 from tests import pyunit_utils

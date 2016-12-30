@@ -128,6 +128,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       _model.doScoreMetrics(_job);
       // _model._output._model_summary = createModelSummaryTable(model._output);
       _model.update(_job);
+      _model.unlock(_job);
 
     } // computeImpl
   }
