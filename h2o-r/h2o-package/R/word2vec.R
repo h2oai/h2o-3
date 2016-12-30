@@ -7,6 +7,8 @@
 #' 
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #'        The training frame must contain a single string column containing the words to train on.
+#' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param min_word_freq This will discard words that appear less than <int> times Defaults to 5.
 #' @param word_model Use the Skip-Gram model Must be one of: "SkipGram". Defaults to SkipGram.
 #' @param norm_model Use Hierarchical Softmax Must be one of: "HSM". Defaults to HSM.
@@ -18,6 +20,7 @@
 #' @param epochs Number of training iterations to run Defaults to 5.
 #' @export
 h2o.word2vec <- function(training_frame,
+                         model_id = NULL,
                          min_word_freq = 5,
                          word_model = c("SkipGram"),
                          norm_model = c("HSM"),
@@ -41,6 +44,8 @@ h2o.word2vec <- function(training_frame,
   parms <- list()
   parms$training_frame <- training_frame
 
+  if (!missing(model_id))
+    parms$model_id <- model_id
   if (!missing(min_word_freq))
     parms$min_word_freq <- min_word_freq
   if (!missing(word_model))
