@@ -17,22 +17,7 @@ h2o.example.wrapper <- function(x, y, training_frame, model_id = NULL, family = 
 # This is a version of the h2o.glm.wrapper which doesn't pass along all the args
 # Use this version until this is resolved: https://0xdata.atlassian.net/browse/PUBDEV-1558
 # beta_constraints currently causing a bug: https://0xdata.atlassian.net/browse/PUBDEV-1556
-h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL, 
-                            validation_frame = NULL,
-                            ignore_const_cols = TRUE,
-                            max_iterations = 50,
-                            beta_epsilon = 0, 
-                            solver = c("IRLSM", "L_BFGS"), 
-                            standardize = TRUE,
-                            family = c("gaussian", "binomial", "poisson", "gamma", "tweedie"),
-                            link = c("family_default", "identity", "logit", "log", "inverse", "tweedie"), 
-                            tweedie_variance_power = 0, 
-                            tweedie_link_power = -1,
-                            alpha = 0.5, 
-                            prior = NULL, 
-                            lambda = 1e-05, 
-                            lambda_search = FALSE,
-                            nlambdas = NULL,
+
 h2o.glm.wrapper <- function(x, y, training_frame, model_id = NULL, 
                             validation_frame = NULL,
                             ignore_const_cols = TRUE,
