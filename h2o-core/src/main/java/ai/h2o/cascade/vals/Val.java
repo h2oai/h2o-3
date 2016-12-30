@@ -34,16 +34,6 @@ import ai.h2o.cascade.core.SliceList;
  */
 public abstract class Val {
 
-  /**
-   * Return {@link Type} of this {@code Val}.
-   *
-   * <p>Each subclass of {@code Val} is associated with a unique constant
-   * within the {@code Val.Type} enum. This is roughly equivalent to
-   * {@code instanceof} expressions, however may be more convenient to use
-   * within switch statements or for serialization.
-   */
-  public abstract Type type();
-
   public enum Type {
     NULL("ValNull"),     // null (void) value
     NUM("ValNum"),       // double
@@ -66,6 +56,24 @@ public abstract class Val {
       return valClassName;
     }
   }
+
+  /**
+   * Return {@link Type} of this {@code Val}.
+   *
+   * <p>Each subclass of {@code Val} is associated with a unique constant
+   * within the {@link Type} enum. This is roughly equivalent to
+   * {@code instanceof} expressions, however may be more convenient to use
+   * within switch statements or for serialization.
+   */
+  public abstract Type type();
+
+
+  /**
+   * This method may be overridden in subclasses to perform custom clean-up
+   * when the {@code Val} is about to be garbage-collected. For example, a
+   * Frame may remove itself from the DKV, etc.
+   */
+  public void dispose() {}
 
 
   //--------------------------------------------------------------------------------------------------------------------

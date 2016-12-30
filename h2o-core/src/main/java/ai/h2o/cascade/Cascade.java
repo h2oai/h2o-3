@@ -4,6 +4,7 @@ import ai.h2o.cascade.asts.AstNode;
 import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.vals.ValNull;
 import ai.h2o.cascade.core.Scope;
+import ai.h2o.cascade.core.WorkFrame;
 import water.util.StringUtils;
 
 
@@ -18,6 +19,10 @@ import water.util.StringUtils;
  * the user. Each {@link AstNode} will first evaluate its children nodes, and
  * thus the entire AST is recursively executed.
  *
+ * <p> Within a single session execution is single-threaded. However operations
+ * on large data frames are still parallelized across the entire cluster, thus
+ * most time-consuming work is performed efficiently.
+ *
  * <p> All {@code AstNode}s are executed within the context of some
  * {@link Scope}. A <i>scope</i> is essentially a namespace for variables
  * lookup. The scopes can be nested, with variables in the inner scope
@@ -29,8 +34,15 @@ import water.util.StringUtils;
  * being the "global scope". This global scope is kept in an instance of a
  * {@link CascadeSession} and persists across multiple REST API calls.
  *
- * <p> Everything in Cascade is a {@link Val}. Every {@code Val} may exist
- * either bound to a local variable, or on the execution stack.
+ * <p> Executing an {@code AstNode} in Cascade produces a {@link Val}. Thus,
+ * {@code Val} is Cascade's equivalent of {@code Object} in Java / Python.
+ * Each {@code Val} has an implicit "owner". Owner is free to modify the
+ * {@code Val}, but is also responsible for its finalization if the value is
+ * no longer needed. (Some of the values, notably {@link WorkFrame}s require
+ * explicit finalization, because they hold external resources in the DKV).
+ * If a function creates a {@code Val}, it automatically becomes its owner.
+ * Additionally, a <b>function owns all {@code Val}s that are passed to it as
+ * arguments, unless they are marked readonly</b>.
  *
  *
  *

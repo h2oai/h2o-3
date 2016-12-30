@@ -27,9 +27,11 @@ public class AstApply extends AstNode<AstApply> {
   @Override
   public Val exec(Scope scope) {
     Val vhead = head.exec(scope);
-    if (!vhead.isFun())
-      throw new Cascade.TypeError(head.start, head.length,
-                                  "Expected a function, but got a " + vhead.type().toString());
+    if (!vhead.isFun()) {
+      vhead.dispose();
+      throw new Cascade.TypeError(head.start, head.length, "Function expected");
+    }
+
     Function f = vhead.getFun();
     f.scope = scope;
 
@@ -39,7 +41,11 @@ public class AstApply extends AstNode<AstApply> {
     }
 
     try {
-      return f.apply0(vals);
+      Val ret = f.apply0(vals);
+      for (Val v : vals)
+        if (v != ret)
+          v.dispose();
+      return ret;
     } catch (StdlibFunction.TypeError e) {
       if (e.index >= 0) {
         AstNode ast = args[e.index];
