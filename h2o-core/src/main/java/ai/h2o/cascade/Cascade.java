@@ -1,11 +1,14 @@
 package ai.h2o.cascade;
 
 import ai.h2o.cascade.asts.AstNode;
+import ai.h2o.cascade.asts.AstApply;
 import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.vals.ValNull;
+import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.core.WorkFrame;
 import water.util.StringUtils;
+
 
 
 /**
@@ -36,14 +39,30 @@ import water.util.StringUtils;
  *
  * <p> Executing an {@code AstNode} in Cascade produces a {@link Val}. Thus,
  * {@code Val} is Cascade's equivalent of {@code Object} in Java / Python.
- * Each {@code Val} has an implicit "owner". Owner is free to modify the
- * {@code Val}, but is also responsible for its finalization if the value is
- * no longer needed. (Some of the values, notably {@link WorkFrame}s require
- * explicit finalization, because they hold external resources in the DKV).
- * If a function creates a {@code Val}, it automatically becomes its owner.
- * Additionally, a <b>function owns all {@code Val}s that are passed to it as
- * arguments, unless they are marked readonly</b>.
+ * Some {@code Val}s (notably {@link WorkFrame}s) may depend on external
+ * resources (such as DKV) and thus require explicit deallocation when such
+ * values are garbage-collected:
+ * <ul>
+ *   <li> If a {@code Val} is returned from a function, then it is the caller's
+ *   responsibility to dispose of that value. Usually this happens within
+ *   {@link AstApply}, and you don't need to do anything extra.
+ *   <li> If a {@code Val} is stored in a variable, then it should be finalized
+ *   when the variable is destroyed (either by going out of scope, or
+ *   explicitly deleted by the user).
+ *   <li> If in a function you create {@code Val}s but do not return them, you
+ *   have to finalize them yourself. (This also applies to {@code Val}s that
+ *   you mutate but do not return).
+ * </ul>
  *
+ * <p> For efficiency purposes, some {@code Val}s are considered mutable, while
+ * others are read-only. All {@code Val}s are created in the mutable state, and
+ * they become read-only when written to a variable. Mutating methods on
+ * {@code Val}s are all written in such a way as to return modified copies of
+ * themselves if they're in the read-only state; or otherwise change in-place
+ * and return {@code this}. Certain functions may need to circumvent the
+ * read-only protection and modify the {@code Val} anyways -- this should be
+ * done only if the semantics of the function demands it, and when it is
+ * clearly documented.
  *
  *
  */
@@ -123,7 +142,7 @@ public abstract class Cascade {
    * Error indicating general type mismatch between the expected and the
    * provided argument(s).
    *
-   * @see ai.h2o.cascade.core.Function.TypeError
+   * @see Function.TypeError
    */
   public static class TypeError extends Error {
     public TypeError(int start, int len, String message) {
@@ -139,7 +158,7 @@ public abstract class Cascade {
    * Error indicating that the provided value is somehow invalid, even though
    * its type is correct.
    *
-   * @see ai.h2o.cascade.core.Function.ValueError
+   * @see Function.ValueError
    */
   public static class ValueError extends Error {
     public ValueError(int start, int len, String message) {
@@ -155,7 +174,7 @@ public abstract class Cascade {
    * All other kinds of errors, that do not fit either the {@link TypeError}
    * or the {@link ValueError} definitions.
    *
-   * @see ai.h2o.cascade.core.Function.RuntimeError
+   * @see Function.RuntimeError
    */
   public static class RuntimeError extends Error {
     public RuntimeError(int start, int len, String message) {
