@@ -131,6 +131,31 @@ public class Frame extends Lockable<Frame> {
     assert _names.length == vecs.length;
   }
 
+  /**
+   * Special constructor to make a Frame that contains just vecs and nothing
+   * else (in particular it has no key nor column names). The vecs must be
+   * compatible with each other.
+   * <p>
+   * A frame constructed with this function is not a full-fledged frame, as it
+   * violates certain internal assumptions. Use at your own risk!
+   */
+  public static Frame vecBundle(Vec... vecs) {
+    Key<Vec>[] keys = makeVecKeys(vecs.length);
+    int i = 0;
+    for (Vec vec : vecs) {
+      DKV.prefetch(keys[i++] = vec._key);
+    }
+    Frame fr = new Frame();
+    fr._vecs = vecs;
+    fr._keys = keys;
+    fr._names = null;
+    return fr;
+  }
+
+  /** Private constructor for static frame makers. */
+  private Frame() {}
+
+
   public void setNames(String[] columns){
     if(columns.length!= _vecs.length){
       throw new IllegalArgumentException("Size of array containing column names does not correspond to the number of vecs!");
@@ -156,7 +181,7 @@ public class Frame extends Lockable<Frame> {
    * @param size number of elements in the array that will be created.
    */
   @SuppressWarnings("unchecked")
-  private Key<Vec>[] makeVecKeys(int size) {
+  private static Key<Vec>[] makeVecKeys(int size) {
     return new Key[size];
   }
 
