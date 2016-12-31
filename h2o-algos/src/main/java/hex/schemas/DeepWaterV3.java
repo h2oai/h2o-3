@@ -382,7 +382,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
         help = "Network architecture.")
     public DeepWaterParameters.Network network;
 
-    @API(level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true, values = {"auto","mxnet","caffe","tensorflow"},
+    @API(level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true, values = {"mxnet","caffe","tensorflow"},
         help = "Deep Learning Backend.")
     public DeepWaterParameters.Backend backend;
 
