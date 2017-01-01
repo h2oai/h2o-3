@@ -13,6 +13,20 @@ import static water.udf.fp.FP.*;
  */
 public class FPTest {
 
+  @Test public void testEquals() {
+    assertTrue(equal(null, null));
+    assertFalse(equal(null, 1));
+    assertFalse(equal("", null));
+    assertFalse(equal("1", 1));
+    assertTrue(equal(1234567, Integer.parseInt("1234567")));
+  }
+
+  @Test public void testHashCode() {
+    assertEquals(0, FP.hashCode(null));
+    assertEquals(1, FP.hashCode(1));
+    assertEquals(1929600551, FP.hashCode(new String[]{null}));
+  }
+  
   @Test
   public void testSome() throws Exception {
     Some<String> sut = new Some<>("Hello Junit");
@@ -35,6 +49,7 @@ public class FPTest {
     assertEquals("Some(3.141592653589793)", Some(Math.PI).toString());
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testOption() throws Exception {
     Option<String> sut1 = Some("Hello Junit");
@@ -52,7 +67,8 @@ public class FPTest {
     assertTrue(None.isEmpty());
     assertFalse(None.nonEmpty());
     assertFalse(None.iterator().hasNext());
-    
+    assertEquals("None", None.toString());
+    assertEquals(-1, None.hashCode());
     Option<String> sut2 = Option("Hello Junit");
     assertEquals(sut1, sut2);
     assertNotEquals(Option("Hello JuniT"), sut1);
@@ -67,9 +83,13 @@ public class FPTest {
     
     assertEquals(Option(10), sut4);
     
-    Option<?> sute = Option(None);
+    Option<Integer> sutem = ((Option<Object>)None).flatMap(
+        new Function<Object, Option<Integer>>() {
+          public Option<Integer> apply(Object x) {
+            return Option(x.toString().length() - 1); } });
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testFlatten() throws Exception {
     Option<String> sut1 = Some("Hello Junit");
