@@ -695,7 +695,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
       p._train = (tr = parse_test_file("smalldata/deepwater/imagenet/binomial_image_urls.csv"))._key;
       p._response_column = "C2";
       p._balance_classes = true;
-      p._epochs = 1;
+      p._epochs = 5;
       p._seed = 1234;
       p._max_after_balance_size = 2f;
       p._class_sampling_factors = new float[]{3,5};
@@ -1249,6 +1249,7 @@ public abstract class DeepWaterAbstractIntegrationTest extends TestUtil {
     Assert.assertEquals(38, coded.get(0).length);
   }
 
+  @Ignore
   @Test
   public void tweetsToArrayTest() throws IOException {
     ArrayList<String> texts = new ArrayList<>();
