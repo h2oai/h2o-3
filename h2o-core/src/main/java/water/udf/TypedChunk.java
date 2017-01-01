@@ -11,7 +11,4 @@ public interface TypedChunk<T> extends Vec.Holder {
   boolean isNA(long i);
   int length();
   long start();
-  Chunk rawChunk();
-
-  int cidx();
 }

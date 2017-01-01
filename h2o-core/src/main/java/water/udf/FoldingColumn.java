@@ -1,8 +1,6 @@
 package water.udf;
 
 import com.google.common.collect.Lists;
-import water.fvec.Chunk;
-import water.fvec.RawChunk;
 import water.fvec.Vec;
 import water.udf.fp.Foldable;
 import water.udf.fp.Functions;
@@ -76,11 +74,7 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
       this.chunks = chunks;
     }
 
-    private RawChunk myChunk = new RawChunk(this);
-
     @Override public Vec vec() { return FoldingColumn.this.vec(); }
-
-    @Override public Chunk rawChunk() { return myChunk; }
 
     @Override public boolean isNA(long i) {
       for (TypedChunk<X> c : chunks) if (c.isNA(i)) return true;

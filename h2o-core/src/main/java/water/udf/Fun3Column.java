@@ -1,7 +1,5 @@
 package water.udf;
 
-import water.fvec.Chunk;
-import water.fvec.RawChunk;
 import water.fvec.Vec;
 import water.udf.fp.Function3;
 import water.udf.fp.Functions;
@@ -59,10 +57,6 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
       this.cy = cy;
       this.cz = cz;
     }
-
-    private RawChunk myChunk = new RawChunk(this);
-
-    @Override public Chunk rawChunk() { return myChunk; }
 
     @Override public Vec vec() { return Fun3Column.this.vec(); }
 

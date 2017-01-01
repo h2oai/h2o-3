@@ -1,7 +1,5 @@
 package water.udf;
 
-import water.fvec.Chunk;
-import water.fvec.RawChunk;
 import water.fvec.Vec;
 import water.udf.fp.Function;
 import water.udf.fp.Functions;
@@ -51,10 +49,6 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
     @Override public Vec vec() { return FunColumn.this.vec(); }
 
     @Override public int length() { return cx.length(); }
-
-    private RawChunk myChunk = new RawChunk(this);
-
-    @Override public Chunk rawChunk() { return myChunk; }
 
     @Override public boolean isNA(long i) { return cx.isNA(i); }
 

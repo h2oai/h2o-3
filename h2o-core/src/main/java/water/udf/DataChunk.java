@@ -16,8 +16,6 @@ public abstract class DataChunk<T> implements TypedChunk<T> {
   
   public DataChunk(Chunk c) { this.c = c; }
 
-  @Override public Chunk rawChunk() { return c; }
-
   protected static int index4(long i) { return Integer.MAX_VALUE & (int) i; }
 
   static long positionOf( int cidx, long i) {
@@ -35,8 +33,6 @@ public abstract class DataChunk<T> implements TypedChunk<T> {
   @Override public int length() { return c.len(); }
 
   public abstract void set(long i, T value);
-  
-  @Override public int cidx() { return c.cidx(); }
   
   @Override public Vec vec() { return c.vec(); }
 }
