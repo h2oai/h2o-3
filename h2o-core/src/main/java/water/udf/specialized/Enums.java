@@ -40,7 +40,7 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
     EnumChunk(Chunk c) { super(c); }
     @Override
     public Integer get(long idx) {
-      int i = index4(idx);
+      int i = indexOf(idx);
       try {
         return c.isNA(i) ? null : (int) c.at8(i);
       } catch (ArrayIndexOutOfBoundsException iae) {
@@ -49,15 +49,12 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
     }
 
     @Override
-    public void set(long idx, Integer value) {
-      int i = index4(idx);
-      if (value == null) c.setNA(i);
-      else c.set(i, value);
+    protected void setValue(int at, Integer value) {
+      c.set(at, value);
     }
 
-    public void set(long idx, int value) {
-      int i = index4(idx);
-      c.set(i, value);
+    public void set(int at, int value) {
+      c.set(at, value);
     }
   }
 

@@ -37,16 +37,15 @@ public class Doubles extends DataColumns.BaseFactory<Double> {
     DoubleChunk(Chunk c) {
       super(c);
     }
-    @Override public Double get(long idx) { 
-      int i = index4(idx);
+    @Override public Double get(long position) { 
+      int i = indexOf(position);
       return c.isNA(i) ? Double.NaN : c.atd(i); 
     }
 
-    @Override public void set(long idx, Double value) {
-      int i = index4(idx);
-      if (value == null) c.setNA(i); else c.set(i, value);
+    @Override protected void setValue(int at, Double value) {
+      c.set(at, value);
     }
-    public void set(int idx, double value) { c.set(idx, value); }
+    public void set(int at, double value) { c.set(at, value); }
   }
 
   static class Column extends DataColumn<Double> {

@@ -27,7 +27,7 @@ public class Strings extends DataColumns.BaseFactory<String> {
     public StringChunk(Chunk c) { super(c); }
     @Override
     public String get(long idx) {
-      int i = index4(idx);
+      int i = indexOf(idx);
       try {
         return asString(c.atStr(new BufferedString(), i));
       } catch (IllegalArgumentException iae) {
@@ -39,12 +39,10 @@ public class Strings extends DataColumns.BaseFactory<String> {
     }
 
     @Override
-    public void set(long idx, String value) {
-      int i = index4(idx);
-      c.set(i, value);
+    public void setValue(int at, String value) {
+      c.set(at, value);
     }
   }
-  
   
   @Override
   public DataChunk<String> apply(final Chunk c) {

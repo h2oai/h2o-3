@@ -25,18 +25,17 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
 
   /**
    * Gets the vec value by its coordinates
-   * @param i coordinates, (chunkNumber, relativePosition) represented as long
+   * @param position coordinates, (chunkNumber, relativePosition) represented as long
    * @return the value of type T
    */
-  public abstract T get(long i);
+  public abstract T get(long position);
   
-  public T getByIndex(long index) {
-    final long idx = index2position(index);
-    return get(idx);
+  public T getByRowNumber(long i) {
+    return get(positionOfRow(i));
   }
 
-  public long index2position(long i) {
-    Chunk ch = vec.chunkForRow((int)i);
+  public long positionOfRow(long i) {
+    Chunk ch = vec.chunkForRow(i);
     return DataChunk.positionOf(i, ch.cidx(), ch.start());
   }
 
@@ -47,10 +46,10 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
       @Override
       public Iterator<Long> iterator() {
         return new Iterator<Long>() {
-          int ci = 0;
           int ciMax = vec().nChunks();
-          int i = 0;
           Chunk c = vec().chunkForChunkIdx(0);
+          int ci = 0;
+          int i = 0;
           @Override
           public boolean hasNext() {
             return ci < ciMax && i < c.len();
@@ -79,7 +78,7 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
   public abstract void set(long i, T value);
 
   public void setByIndex(long index, T value) {
-    set(index2position(index), value);
+    set(positionOfRow(index), value);
   }
 
   @Override
@@ -108,7 +107,7 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
   
   public boolean isNA(long i) {
     final Chunk chunk = chunkAt(i);
-    return chunk.isNA(DataChunk.index4(i));
+    return chunk.isNA(DataChunk.indexOf(i));
   }
 
   public Vec vec() {

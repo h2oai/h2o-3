@@ -63,7 +63,7 @@ public class UdfTest extends UdfTestBase {
 
     assertEquals(0.0, c.apply(0), 0.000001);
     assertEquals(210.0, c.apply(42), 0.000001);
-    final long position = c.index2position(20000);
+    final long position = c.positionOfRow(20000);
     
     assertEquals("@" + Long.toHexString(position), 20000*5.0, c.apply(position), 0.000001);
   }
@@ -81,7 +81,7 @@ public class UdfTest extends UdfTestBase {
     Column<String> materialized = Strings.materialize(c);
 
     for (int i = 0; i < 100000; i++) {
-      long coord = c.index2position(i);
+      long coord = c.positionOfRow(i);
       
       assertEquals(c.apply(coord), materialized.apply(coord));
     }
@@ -98,19 +98,19 @@ public class UdfTest extends UdfTestBase {
     assertEquals(0, c.apply(0).intValue());
     assertEquals(0, c.apply(42).intValue());
     assertEquals(1, c.apply(100).intValue());
-    assertEquals(1, c.getByIndex(1000).intValue());
-    assertEquals(2, c.getByIndex(2000).intValue());
-    assertEquals(2, c.getByIndex(5000).intValue());
+    assertEquals(1, c.getByRowNumber(1000).intValue());
+    assertEquals(2, c.getByRowNumber(2000).intValue());
+    assertEquals(2, c.getByRowNumber(5000).intValue());
 
-    final long i1 = c.index2position(10000);
+    final long i1 = c.positionOfRow(10000);
     final int expected = (int) (i1 % 3);
     assertEquals("At " + Long.toHexString(i1), 1, c.apply(i1).intValue());
-    assertEquals(2, c.getByIndex(20000).intValue());
+    assertEquals(2, c.getByRowNumber(20000).intValue());
 
     Column<Integer> materialized = Enums.enums(new String[] {"Red", "White", "Blue"}).materialize(c);
 
     for (int i = 0; i < 100000; i++) {
-      final long position = c.index2position(i);
+      final long position = c.positionOfRow(i);
       
       int ci = (int)(position << 32);
       int ic = (int)position & Integer.MAX_VALUE;
@@ -178,7 +178,7 @@ public class UdfTest extends UdfTestBase {
     assertEquals("Red", y.apply(0));
     assertEquals("Red", y.apply(42));
     assertEquals("White", y.apply(100));
-    assertEquals("Blue", y.getByIndex(20000));
+    assertEquals("Blue", y.getByRowNumber(20000));
   }
 
   @Test
@@ -189,7 +189,7 @@ public class UdfTest extends UdfTestBase {
 
     assertEquals(0.0, y.apply(0), 0.000001);
     assertEquals(44100.0, y.apply(42), 0.000001);
-    final long position = y.index2position(20000);
+    final long position = y.positionOfRow(20000);
     assertEquals(25.0*20000*20000, y.apply(position), 0.000001);
   }
 
@@ -216,21 +216,21 @@ public class UdfTest extends UdfTestBase {
     
     assertEquals(0.0, z1.apply(0), 0.000001);
     assertEquals(210.84001174779368, z1.apply(42), 0.000001);
-    final long position = z1.index2position(20000);
+    final long position = z1.positionOfRow(20000);
     assertEquals(100000.3387062632, z1.apply(position), 0.000001);
 
     assertEquals(0.0, z2.apply(0), 0.000001);
     assertEquals(44100.840011747794, z2.apply(42), 0.000001);
-    assertEquals(1000.0, x.getByIndex(200), 0.000001);
-    assertEquals(10000.0, x.getByIndex(2000), 0.000001);
-    assertEquals(100000.0, x.getByIndex(20000), 0.000001);
-    assertEquals(0.3387062632, y2.getByIndex(20000), 0.000001);
-    assertEquals(10000000000.3387062632, z2.getByIndex(20000), 0.000001);
+    assertEquals(1000.0, x.getByRowNumber(200), 0.000001);
+    assertEquals(10000.0, x.getByRowNumber(2000), 0.000001);
+    assertEquals(100000.0, x.getByRowNumber(20000), 0.000001);
+    assertEquals(0.3387062632, y2.getByRowNumber(20000), 0.000001);
+    assertEquals(10000000000.3387062632, z2.getByRowNumber(20000), 0.000001);
 
     Column<Double> materialized = willDrop(Doubles.materialize(z2));
 
     for (int i = 0; i < 100000; i++) {
-      long j = z2.index2position(i);
+      long j = z2.positionOfRow(i);
       Double expected = z2.apply(j);
       assertEquals(z2.isNA(j), materialized.isNA(j));
       // the following exposes a problem. nulls being returned.
@@ -318,7 +318,7 @@ public class UdfTest extends UdfTestBase {
     Column<Double> rs = new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, xs, ys, zs);
 
     for (int i = 0; i < 100000; i++) {
-      long j = rs.index2position(i*10);
+      long j = rs.positionOfRow(i*10);
       final Double x = xs.apply(j);
       final Double y = ys.apply(j);
       final Double z = zs.apply(j);
@@ -330,7 +330,7 @@ public class UdfTest extends UdfTestBase {
     Column<Double> materialized = Doubles.materialize(rs);
 
     for (int i = 0; i < 100000; i++) {
-      long j = rs.index2position(i*10);
+      long j = rs.positionOfRow(i*10);
       assertEquals(rs.apply(j), materialized.apply(j), 0.0001);
     }
   }
@@ -352,7 +352,7 @@ public class UdfTest extends UdfTestBase {
     Column<Double> r = new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x, y, z);
 
     for (int i = 0; i < 100000; i++) {
-      long j = r.index2position(i*10);
+      long j = r.positionOfRow(i*10);
       assertEquals(1.00, r.apply(j), 0.0001);
     }
 
@@ -373,7 +373,7 @@ public class UdfTest extends UdfTestBase {
     Column<Double> materialized = Doubles.materialize(r);
 
     for (int i = 0; i < 100000; i++) {
-      long j = r.index2position(i);
+      long j = r.positionOfRow(i);
       assertEquals(r.apply(j), materialized.apply(j), 0.0001);
     }
   }
@@ -413,8 +413,8 @@ public class UdfTest extends UdfTestBase {
 
     // now check that we have the right data
     for (int i = 0; i < lines.size(); i++) {
-      long j = split.index2position(i);
-      long j1 = source.index2position(i);
+      long j = split.positionOfRow(i);
+      long j1 = source.positionOfRow(i);
       assertEquals(j, j1);
 
       // since we specified width (10), the rest of the list is filled with nulls; have to ignore them. 
@@ -438,7 +438,7 @@ public class UdfTest extends UdfTestBase {
     
     for (int i = 0; i < lines.size(); i++) {
       List<String> fromColumns = new ArrayList<>(10);
-      long coord = columns.get(0).index2position(i);
+      long coord = columns.get(0).positionOfRow(i);
       for (int j = 0; j < 10; j++) {
         String value = columns.get(j).get(coord);
         if (value != null) fromColumns.add(value);

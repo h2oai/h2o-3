@@ -26,7 +26,7 @@ import water.udf.fp.Function;
  */
 public interface Column<T> extends Function<Long, T>, Vec.Holder {
   T apply(long i);
-  T getByIndex(long i);
+  T getByRowNumber(long i);
   TypedChunk<T> chunkAt(int i);
   
   Iterable<Long> positions();
@@ -38,5 +38,5 @@ public interface Column<T> extends Function<Long, T>, Vec.Holder {
 
   boolean isCompatibleWith(Column<?> ys);
 
-  long index2position(long i);
+  long positionOfRow(long i);
 }

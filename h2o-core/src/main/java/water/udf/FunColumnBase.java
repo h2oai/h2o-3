@@ -25,13 +25,13 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
 
   public abstract T get(long i);
   
-  public T getByIndex(long i) { return get(index2position(i)); }
+  public T getByRowNumber(long i) { return get(positionOfRow(i)); }
   
   @Override
   public Iterable<Long> positions() {
     return master.positions();
   }
 
-  public long index2position(long i) { return master.index2position(i); }
+  public long positionOfRow(long i) { return master.positionOfRow(i); }
 
 }

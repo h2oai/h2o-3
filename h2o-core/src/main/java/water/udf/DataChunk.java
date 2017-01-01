@@ -16,23 +16,28 @@ public abstract class DataChunk<T> implements TypedChunk<T> {
   
   public DataChunk(Chunk c) { this.c = c; }
 
-  protected static int index4(long i) { return Integer.MAX_VALUE & (int) i; }
+  protected static int indexOf(long position) { return Integer.MAX_VALUE & (int) position; }
 
-  static long positionOf( int cidx, long i) {
-    return ((long)cidx << Integer.SIZE) | index4(i);
+  static long positionOf(int cidx, long i) {
+    return ((long)cidx << Integer.SIZE) | indexOf(i);
   }
 
   static long positionOf(long index, int cidx, long start) {
     return positionOf(cidx, index - start);
   }
 
-  @Override public boolean isNA(long i) { return c.isNA(index4(i)); }
-  public void setNA(int i) { c.setNA(index4(i)); }
+  @Override public boolean isNA(long i) { return c.isNA(indexOf(i)); }
+  public void setNA(int i) { c.setNA(indexOf(i)); }
 
   @Override public long start() { return c.start(); }
   @Override public int length() { return c.len(); }
 
-  public abstract void set(long i, T value);
+  public void set(long position, T value) {
+    int i = indexOf(position);
+    if (value == null) c.setNA(i); else setValue(i, value);
+  }
+
+  protected abstract void setValue(int at, T value);
   
   @Override public Vec vec() { return c.vec(); }
 }

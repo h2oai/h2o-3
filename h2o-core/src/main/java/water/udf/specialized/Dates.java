@@ -31,15 +31,13 @@ public class Dates extends DataColumns.BaseFactory<Date> {
     
     @Override
     public Date get(long idx) {
-      int i = index4(idx);
+      int i = indexOf(idx);
       return isNA(i) ? null : new Date(c.at8(i));
     }
 
     @Override
-    public void set(long idx, Date value) {
-      int i = index4(idx);
-      if (value == null) c.setNA(i);
-      else c.set(i, value.getTime());
+    protected void setValue(int at, Date value) {
+      c.set(at, value.getTime());
     }
   }
   
