@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Stores stock pure functions, that is those that don't keep any context.
+ * Stock pure functions, that is those that don't keep any context.
  * Pure functions have this feature that their equals() only compares classes.
  */
 public class PureFunctions extends Functions {
