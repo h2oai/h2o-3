@@ -29,8 +29,8 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
     assert xs.isCompatibleWith(ys) : "Columns must be compatible: " + xs + ", " + ys;
   }
   
-  @Override public Z get(long idx) { 
-    return isNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx)); 
+  @Override public Z get(long position) { 
+    return isNA(position) ? null : f.apply(xs.apply(position), ys.apply(position)); 
   }
 
   @Override

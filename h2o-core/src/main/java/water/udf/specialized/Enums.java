@@ -39,12 +39,12 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
     
     EnumChunk(Chunk c) { super(c); }
     @Override
-    public Integer get(long idx) {
-      int i = indexOf(idx);
+    public Integer get(long position) {
+      int i = indexOf(position);
       try {
         return c.isNA(i) ? null : (int) c.at8(i);
       } catch (ArrayIndexOutOfBoundsException iae) {
-        throw new ArrayIndexOutOfBoundsException(iae.getMessage() + " idx=" + Long.toHexString(idx));
+        throw new ArrayIndexOutOfBoundsException(iae.getMessage() + " position=" + Long.toHexString(position));
       }
     }
 
@@ -81,20 +81,20 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
     }
 
     @Override
-    public Integer get(long idx) {
-      EnumChunk c = new EnumChunk(chunkAt(idx));
-      return c.get(idx);
+    public Integer get(long position) {
+      EnumChunk c = new EnumChunk(chunkAt(position));
+      return c.get(position);
     }
 
     @Override
-    public void set(long idx, Integer value) {
-      EnumChunk c = new EnumChunk(chunkAt(idx));
-      c.set(idx, value);
+    public void set(long position, Integer value) {
+      EnumChunk c = new EnumChunk(chunkAt(position));
+      c.set(position, value);
     }
 
-    public void set(long idx, int value) {
-      EnumChunk c = new EnumChunk(chunkAt(idx));
-      c.set(idx, value);
+    public void set(long position, int value) {
+      EnumChunk c = new EnumChunk(chunkAt(position));
+      c.set(position, value);
     }
   }
   

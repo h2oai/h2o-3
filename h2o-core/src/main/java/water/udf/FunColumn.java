@@ -32,7 +32,7 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
 
   public Y get(long i) { return isNA(i) ? null : f.apply(xs.apply(i)); }
 
-  @Override public boolean isNA(long idx) { return xs.isNA(idx); }
+  @Override public boolean isNA(long position) { return xs.isNA(position); }
 
   /**
    * Pretends to be a chunk of a column, for distributed calculations.

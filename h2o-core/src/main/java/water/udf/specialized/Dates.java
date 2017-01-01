@@ -30,8 +30,8 @@ public class Dates extends DataColumns.BaseFactory<Date> {
     }
     
     @Override
-    public Date get(long idx) {
-      int i = indexOf(idx);
+    public Date get(long position) {
+      int i = indexOf(position);
       return isNA(i) ? null : new Date(c.at8(i));
     }
 

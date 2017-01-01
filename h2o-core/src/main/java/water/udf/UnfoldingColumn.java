@@ -42,8 +42,8 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
     this.requiredSize = requiredSize;
   }
   
-  public List<Y> get(long idx) {
-    List<Y> raw = isNA(idx) ? Collections.<Y>emptyList() : f.apply(column.apply(idx));
+  public List<Y> get(long position) {
+    List<Y> raw = isNA(position) ? Collections.<Y>emptyList() : f.apply(column.apply(position));
     if (requiredSize == 0 || raw.size() == requiredSize) return raw;
     else {
       List<Y> result = raw.subList(0, Math.min(raw.size(), requiredSize));
@@ -59,9 +59,9 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
     }
   }
 
-  @Override public List<Y> apply(long idx) { return get(idx); }
+  @Override public List<Y> apply(long position) { return get(position); }
 
-  @Override public List<Y> apply(Long idx) { return get(idx); }
+  @Override public List<Y> apply(Long position) { return get(position); }
 
   @Override
   public TypedChunk<List<Y>> chunkAt(int i) {

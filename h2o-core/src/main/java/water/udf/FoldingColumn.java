@@ -47,9 +47,9 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     this.columns = (Column<X>[])Lists.newArrayList(columns).toArray();
   }
   
-  @Override public Y get(long idx) {
+  @Override public Y get(long position) {
     Y y = f.initial();
-    for (Column<X> col : columns) y = f.apply(y, col.apply(idx));
+    for (Column<X> col : columns) y = f.apply(y, col.apply(position));
     return y; 
   }
   
@@ -82,9 +82,9 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     }
 
     @Override
-    public Y get(long idx) {
+    public Y get(long position) {
       Y y = f.initial();
-      for (TypedChunk<X> c : chunks) y = f.apply(y, c.get(idx));
+      for (TypedChunk<X> c : chunks) y = f.apply(y, c.get(position));
       return y;
     }
   }
