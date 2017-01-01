@@ -26,13 +26,22 @@ public class Strings extends DataColumns.BaseFactory<String> {
     
     public StringChunk(Chunk c) { super(c); }
     @Override
-    public String get(int idx) {
-      return asString(c.atStr(new BufferedString(), idx));
+    public String get(long idx) {
+      int i = index4(idx);
+      try {
+        return asString(c.atStr(new BufferedString(), i));
+      } catch (IllegalArgumentException iae) {
+        if (iae.getMessage().equals("Not a String")) return null;
+        throw new IllegalArgumentException("idx was " + Long.toHexString(idx), iae);
+      } catch (ArrayIndexOutOfBoundsException aie) {
+        throw new IllegalArgumentException("idx was " + Long.toHexString(idx), aie);
+      }
     }
 
     @Override
-    public void set(int idx, String value) {
-      c.set(idx, value);
+    public void set(long idx, String value) {
+      int i = index4(idx);
+      c.set(i, value);
     }
   }
   
@@ -52,12 +61,14 @@ public class Strings extends DataColumns.BaseFactory<String> {
 
     @Override
     public String get(long idx) {
-      return isNA(idx) ? null : asString(vec().atStr(new BufferedString(), idx));
+      StringChunk c = new StringChunk(chunkAt(idx));
+      return c.get(idx);
     }
 
     @Override
     public void set(long idx, String value) {
-      vec().set(idx, value);
+      StringChunk c = new StringChunk(chunkAt(idx));
+      c.set(idx, value);
     }
   }
   

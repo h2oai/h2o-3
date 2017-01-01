@@ -2,7 +2,10 @@ package water.udf;
 
 import water.DKV;
 import water.Key;
+import water.fvec.Chunk;
 import water.fvec.Vec;
+
+import java.util.Iterator;
 
 /**
  * A Column based on actual data in a Vec (hence implementing Vec.Holder)
@@ -19,19 +22,64 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
   public DataColumn() {
     type = Vec.T_BAD;
   }
+
+  /**
+   * Gets the vec value by its coordinates
+   * @param i coordinates, (chunkNumber, relativePosition) represented as long
+   * @return the value of type T
+   */
+  public abstract T get(long i);
   
-  public abstract T get(long idx);
-
-  public abstract void set(long idx, T value);
-
-  @Override
-  public T apply(Long idx) {
+  public T getByIndex(long index) {
+    final long idx = index2position(index);
     return get(idx);
   }
 
+  public long index2position(long i) {
+    Chunk ch = vec.chunkForRow((int)i);
+    return DataChunk.positionOf(i, ch.cidx(), ch.start());
+  }
+
   @Override
-  public T apply(long idx) {
-    return get(idx);
+  public Iterable<Long> positions() {
+    return new Iterable<Long>() {
+     
+      @Override
+      public Iterator<Long> iterator() {
+        return new Iterator<Long>() {
+          int ci = 0;
+          int ciMax = vec().nChunks();
+          int i = 0;
+          Chunk c = vec().chunkForChunkIdx(0);
+          @Override
+          public boolean hasNext() {
+            return ci < ciMax && i < c.len();
+          }
+
+          @Override
+          public Long next() {
+            if (!hasNext()) throw new IndexOutOfBoundsException("Chunk#" + ci + ", last was #" + i);
+            Long x = DataChunk.positionOf(ci, i);
+            if (++i >= c.len()) {
+              ++ci;
+              if (ci < ciMax) c = vec().chunkForChunkIdx(ci);
+            }
+            return x;
+          }
+        };
+      }
+    };
+  }
+
+  /**
+   * Sets the vec value by its coordinates
+   * @param i coordinates, (chunkNumber, relativePosition) represented as long
+   * @param value the value to set
+   */
+  public abstract void set(long i, T value);
+
+  public void setByIndex(long index, T value) {
+    set(index2position(index), value);
   }
 
   @Override
@@ -56,13 +104,20 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
     this.chunkFactory = factory;
   }
 
-  public boolean isNA(long idx) {
-    return vec().isNA(idx);
+  protected Chunk chunkAt(long i) { return chunk((int)(i>>32)); } 
+  
+  public boolean isNA(long i) {
+    final Chunk chunk = chunkAt(i);
+    return chunk.isNA(DataChunk.index4(i));
   }
 
   public Vec vec() {
     if (vec == null) vec = DKV.get(vecKey).get();
     return vec;
+  }
+  
+  public Chunk chunk(int i) {
+    return vec().chunkForChunkIdx(i);
   }
   
   @Override public String toString() {

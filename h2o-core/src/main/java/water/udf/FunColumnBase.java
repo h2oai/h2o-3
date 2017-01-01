@@ -23,10 +23,15 @@ public abstract class FunColumnBase<T> extends ColumnBase<T> implements Column<T
 
   @Override public long size() { return master.size(); }
 
-  public abstract T get(long idx);
+  public abstract T get(long i);
   
-  @Override public T apply(long idx) { return get(idx); }
+  public T getByIndex(long i) { return get(index2position(i)); }
+  
+  @Override
+  public Iterable<Long> positions() {
+    return master.positions();
+  }
 
-  @Override public T apply(Long idx) { return get(idx); }
+  public long index2position(long i) { return master.index2position(i); }
 
 }

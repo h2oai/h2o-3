@@ -68,9 +68,12 @@ public class UnfoldingColumn<X, Y> extends FunColumnBase<List<Y>> {
     throw H2O.unimpl("Will have to think how to implement multi-string chunks...");
   }
 
-  @Override public boolean isNA(long idx) {
-    return column.isNA(idx);
+  @Override
+  public Iterable<Long> positions() {
+    return column.positions();
   }
+
+  @Override public boolean isNA(long i) { return column.isNA(i); }
 
   public static String join(String delimiter, Iterable<?> xs) {
     StringBuilder sb = new StringBuilder();

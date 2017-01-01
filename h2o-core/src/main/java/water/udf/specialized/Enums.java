@@ -39,18 +39,25 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
     
     EnumChunk(Chunk c) { super(c); }
     @Override
-    public Integer get(int idx) {
-      return c.isNA(idx) ? null : (int) c.at8(idx);
+    public Integer get(long idx) {
+      int i = index4(idx);
+      try {
+        return c.isNA(i) ? null : (int) c.at8(i);
+      } catch (ArrayIndexOutOfBoundsException iae) {
+        throw new ArrayIndexOutOfBoundsException(iae.getMessage() + " idx=" + Long.toHexString(idx));
+      }
     }
 
     @Override
-    public void set(int idx, Integer value) {
-      if (value == null) c.setNA(idx);
-      else c.set(idx, value);
+    public void set(long idx, Integer value) {
+      int i = index4(idx);
+      if (value == null) c.setNA(i);
+      else c.set(i, value);
     }
 
-    public void set(int idx, int value) {
-      c.set(idx, value);
+    public void set(long idx, int value) {
+      int i = index4(idx);
+      c.set(i, value);
     }
   }
 
@@ -78,17 +85,19 @@ public class Enums extends DataColumns.BaseFactory<Integer> {
 
     @Override
     public Integer get(long idx) {
-      return isNA(idx) ? null : (int) vec().at8(idx);
+      EnumChunk c = new EnumChunk(chunkAt(idx));
+      return c.get(idx);
     }
 
     @Override
     public void set(long idx, Integer value) {
-      if (value == null) vec().setNA(idx);
-      else vec().set(idx, value);
+      EnumChunk c = new EnumChunk(chunkAt(idx));
+      c.set(idx, value);
     }
 
     public void set(long idx, int value) {
-      vec().set(idx, value);
+      EnumChunk c = new EnumChunk(chunkAt(idx));
+      c.set(idx, value);
     }
   }
   

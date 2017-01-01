@@ -40,7 +40,7 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
     return new FunChunk(xs.chunkAt(i), ys.chunkAt(i));
   }
 
-  @Override public boolean isNA(long idx) { return xs.isNA(idx) || ys.isNA(idx); }
+  @Override public boolean isNA(long i) { return xs.isNA(i) || ys.isNA(i); }
 
   /**
    * Pretends to be a chunk of a column, for distributed calculations.
@@ -62,9 +62,9 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
       this.cy = cy;
     }
 
-    @Override public boolean isNA(int i) { return cx.isNA(i) || cy.isNA(i); }
+    @Override public boolean isNA(long i) { return cx.isNA(i) || cy.isNA(i); }
 
-    @Override public Z get(int i) { return f.apply(cx.get(i), cy.get(i)); }
+    @Override public Z get(long i) { return f.apply(cx.get(i), cy.get(i)); }
   }
 
   @Override

@@ -33,8 +33,8 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
     assert xs.isCompatibleWith(zs) : "Columns 1 and 3 must be compatible: " + xs + ", " + zs;
   }
   
-  @Override public T get(long idx) { 
-    return isNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx), zs.apply(idx)); 
+  @Override public T get(long i) { 
+    return isNA(i) ? null : f.apply(xs.apply(i), ys.apply(i), zs.apply(i)); 
   }
 
   @Override
@@ -42,7 +42,7 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
     return new FunChunk(xs.chunkAt(i), ys.chunkAt(i), zs.chunkAt(i));
   }
 
-  @Override public boolean isNA(long idx) { return xs.isNA(idx) || ys.isNA(idx); }
+  @Override public boolean isNA(long i) { return xs.isNA(i) || ys.isNA(i); }
 
   /**
    * Pretends to be a chunk of a column, for distributed calculations.
@@ -66,9 +66,9 @@ public class Fun3Column<X, Y, Z, T> extends FunColumnBase<T> {
 
     @Override public Vec vec() { return Fun3Column.this.vec(); }
 
-    @Override public boolean isNA(int i) { return cx.isNA(i) || cy.isNA(i) || cz.isNA(i); }
+    @Override public boolean isNA(long i) { return cx.isNA(i) || cy.isNA(i) || cz.isNA(i); }
 
-    @Override public T get(int i) {
+    @Override public T get(long i) {
       return f.apply(cx.get(i), cy.get(i), cz.get(i));
     }
   }
