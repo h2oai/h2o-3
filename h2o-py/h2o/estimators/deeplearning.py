@@ -16,7 +16,7 @@ class H2ODeepLearningEstimator(H2OEstimator):
     """
     Deep Learning
 
-    Build a supervised Deep Neural Network model
+    Build a Deep Neural Network model using CPUs
     Builds a feed-forward multilayer artificial neural network on an H2OFrame
 
     Examples

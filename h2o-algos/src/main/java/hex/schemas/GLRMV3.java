@@ -1,18 +1,20 @@
 package hex.schemas;
 
 import hex.DataInfo;
+import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel.GLRMParameters;
-import hex.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.svd.SVDModel.SVDParameters;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.KeyV3;
 
-public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParametersV3> {
+public class GLRMV3 extends ModelBuilderSchema<GLRM, GLRMV3, GLRMV3.GLRMParametersV3> {
 
   public static final class GLRMParametersV3 extends ModelParametersSchemaV3<GLRMParameters, GLRMParametersV3> {
-    static public String[] fields = new String[] {
+    public static String[] fields = {
         "model_id",
         "training_frame",
         "validation_frame",
@@ -68,10 +70,10 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
     public int period;
 
     @API(help = "Regularization function for X matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }, gridable = true) // TODO: pull out of categorical class
-    public GLRMParameters.Regularizer regularization_x;
+    public GlrmRegularizer regularization_x;
 
     @API(help = "Regularization function for Y matrix", values = { "None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex" }, gridable = true) // TODO: pull out of categorical class
-    public GLRMParameters.Regularizer regularization_y;
+    public GlrmRegularizer regularization_y;
 
     @API(help = "Regularization weight on X matrix", gridable = true)
     public double gamma_x;
@@ -95,20 +97,19 @@ public class GLRMV3 extends ModelBuilderSchema<GLRM,GLRMV3,GLRMV3.GLRMParameters
     public long seed;
 
     @API(help = "Initialization mode", values = { "Random", "SVD", "PlusPlus", "User" }, gridable = true) // TODO: pull out of categorical class
-    public GLRM.Initialization init;
+    public GlrmInitialization init;
 
     @API(help = "Method for computing SVD during initialization (Caution: Power and Randomized are currently experimental and unstable)", values = { "GramSVD", "Power", "Randomized" }, gridable = true)   // TODO: pull out of enum class
     public SVDParameters.Method svd_method;
 
-    @API(help = "User-specified initial Y", required = false)
+    @API(help = "User-specified initial Y")
     public KeyV3.FrameKeyV3 user_y;
 
-    @API(help = "User-specified initial X", required = false)
+    @API(help = "User-specified initial X")
     public KeyV3.FrameKeyV3 user_x;
 
     @API(help = "Frame key to save resulting X")
     public String loading_name;
-    // public KeyV3.FrameKeyV3 loading_key;
 
     @API(help = "Expand categorical columns in user-specified initial Y")
     public boolean expand_user_y;

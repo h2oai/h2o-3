@@ -7,9 +7,11 @@ import hex.DataInfo;
 import hex.ModelBuilder;
 import hex.ModelMetrics;
 import hex.ModelCategory;
+import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRM;
 import hex.glrm.GLRMModel;
-import hex.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.gram.Gram;
 import hex.gram.Gram.GramTask;
 
@@ -17,6 +19,7 @@ import hex.pca.PCAModel.PCAParameters;
 import hex.svd.SVD;
 import hex.svd.SVDModel;
 import water.*;
+import water.fvec.Frame;
 import water.util.*;
 
 import java.util.Arrays;
@@ -186,7 +189,8 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
         // The model to be built
         model = new PCAModel(dest(), _parms, new PCAModel.PCAOutput(PCA.this));
         model.delete_and_lock(_job);
-
+        // store (possibly) rebalanced input train to pass it to nested SVD job
+        Frame tranRebalanced = new Frame(_train);
         if(_parms._pca_method == PCAParameters.Method.GramSVD) {
           dinfo = new DataInfo(_train, _valid, 0, _parms._use_all_factor_levels, _parms._transform, DataInfo.TransformType.NONE, /* skipMissing */ !_parms._impute_missing, /* imputeMissing */ _parms._impute_missing, /* missingBucket */ false, /* weights */ false, /* offset */ false, /* fold */ false, /* intercept */ false);
           DKV.put(dinfo._key, dinfo);
@@ -237,7 +241,7 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
           parms._save_v_frame = false;
 
           // Build an SVD model
-          SVDModel svd = new SVD(parms, _job).trainModelNested();
+          SVDModel svd = new SVD(parms, _job).trainModelNested(tranRebalanced);
           if (stop_requested()) return;
           svd.remove(); // Remove from DKV
 
@@ -260,14 +264,14 @@ public class PCA extends ModelBuilder<PCAModel,PCAModel.PCAParameters,PCAModel.P
 
           parms._loss = GlrmLoss.Quadratic;
           parms._gamma_x = parms._gamma_y = 0;
-          parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.None;
-          parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.None;
-          parms._init = GLRM.Initialization.PlusPlus;
+          parms._regularization_x = GlrmRegularizer.None;
+          parms._regularization_y = GlrmRegularizer.None;
+          parms._init = GlrmInitialization.PlusPlus;
 
           // Build an SVD model
           // Hack: we have to resort to unsafe type casts because _job is of Job<PCAModel> type, whereas a GLRM
           // model requires a Job<GLRMModel> _job. If anyone knows how to avoid this hack, please fix it!
-          GLRMModel glrm = new GLRM(parms, (Job)_job).trainModelNested();
+          GLRMModel glrm = new GLRM(parms, (Job)_job).trainModelNested(tranRebalanced);
           if (stop_requested()) return;
           glrm._output._representation_key.get().delete();
           glrm.remove(); // Remove from DKV

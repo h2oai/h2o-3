@@ -56,7 +56,7 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
    @Override public int hashCode(){
      int hash = 0;
      int n = _off + _len;
-     for (int i = _off; i < n; ++i) // equivalent to String.hashCode
+     for (int i = _off; i < n; ++i) // equivalent to String.hashCode (not actually)
        hash = 31 * hash + (char)_buf[i];
      return hash;
    }
@@ -80,9 +80,10 @@ public class BufferedString extends Iced implements Comparable<BufferedString> {
   // even if they are otherwise a valid member of the field/BufferedString.
   // Converting back to a BufferedString will then make something with fewer
   // characters than what you started with, and will fail all equals() tests.
+  // TODO(Vlad): figure out what to do about the buffer being not UTF-8 (who guarantees?)
   @Override
   public String toString() {
-    return new String(_buf, _off, _len, Charsets.UTF_8);
+    return new String(_buf, Math.max(0, _off), Math.min(_buf.length, _len), Charsets.UTF_8);
   }
 
   public String bytesToString() {

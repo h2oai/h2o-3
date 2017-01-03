@@ -19,6 +19,7 @@ from h2o.utils.shared_utils import deprecated, gen_header, is_list_of_lists, py_
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
+from .estimators.deepwater import H2ODeepWaterEstimator
 from .estimators.estimator_base import H2OEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
 from .estimators.glm import H2OGeneralizedLinearEstimator
@@ -47,7 +48,7 @@ h2oconn = None
 
 
 def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cluster_id=None, verbose=True):
+            proxy=None, cluster_id=None, cookies=None, verbose=True):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -64,12 +65,13 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
                  authenticator objects.
     :param proxy: Proxy server address.
     :param cluster_id: Name of the H2O cluster to connect to. This option is used from Steam only.
+    :param cookies: Cookie (or list of) to add to request
     :param verbose: Set to False to disable printing connection status messages.
     """
     global h2oconn
     h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https, auth=auth,
                                  verify_ssl_certificates=verify_ssl_certificates, proxy=proxy,
-                                 cluster_id=cluster_id, verbose=verbose)
+                                 cluster_id=cluster_id, cookies=cookies, verbose=verbose)
     if verbose:
         h2oconn.cluster.show_status()
     return h2oconn
@@ -84,7 +86,11 @@ def api(endpoint, data=None, json=None, filename=None, save_to=None):
 
 
 def connection():
-    """Return current H2OConnection handler."""
+    """
+    Return current H2OConnection handler.
+
+    :returns H2OConnection:
+    """
     return h2oconn
 
 
@@ -123,7 +129,7 @@ def version_check():
 
 
 def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None, cluster_id=None,
-         proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
+         cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, enable_assertions=True,
          max_mem_size=None, min_mem_size=None, strict_version_check=None, **kwargs):
     """
     Attempt to connect to a local server, or if not successful start a new server and connect to it.
@@ -136,6 +142,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     :param username:
     :param password:
     :param cluster_id:
+    :param cookies:
     :param proxy:
     :param start_h2o:
     :param nthreads:
@@ -156,6 +163,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     assert_is_type(username, str, None)
     assert_is_type(password, str, None)
     assert_is_type(cluster_id, int, None)
+    assert_is_type(cookies, str, [str], None)
     assert_is_type(proxy, {str: str}, None)
     assert_is_type(start_h2o, bool, None)
     assert_is_type(nthreads, int)
@@ -202,6 +210,8 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
         proxy = config["init.proxy"]
     if cluster_id is None and "init.cluster_id" in config:
         cluster_id = int(config["init.cluster_id"])
+    if cookies is None and "init.cookies" in config:
+        cookies = config["init.cookies"].split(";")
     if strict_version_check is None:
         if "init.check_version" in config:
             check_version = config["init.check_version"].lower() != "false"
@@ -222,7 +232,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates,
-                                     auth=auth, proxy=proxy, cluster_id=cluster_id, verbose=True,
+                                     auth=auth, proxy=proxy, cluster_id=cluster_id, cookies=cookies, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url}",
                                             "connected.", "not found."))
     except H2OConnectionError:
@@ -233,7 +243,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, port=port)
         h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
-                                     auth=auth, proxy=proxy, cluster_id=cluster_id, verbose=True)
+                                     auth=auth, proxy=proxy, cluster_id=cluster_id, cookies=cookies, verbose=True)
     if check_version:
         version_check()
     h2oconn.cluster.show_status()
@@ -634,6 +644,7 @@ def get_model(model_id):
     elif algo == "glrm":         m = H2OGeneralizedLowRankEstimator()
     elif algo == "glm":          m = H2OGeneralizedLinearEstimator()
     elif algo == "gbm":          m = H2OGradientBoostingEstimator()
+    elif algo == "deepwater":    m = H2ODeepWaterEstimator()
     elif algo == "deeplearning":
         if model_json["output"]["model_category"] == "AutoEncoder":
             m = H2OAutoEncoderEstimator()

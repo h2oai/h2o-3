@@ -1,6 +1,7 @@
 package hex;
 
 import hex.genmodel.GenModel;
+import hex.genmodel.MojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
@@ -9,21 +10,18 @@ import hex.genmodel.utils.DistributionFamily;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.StreamWriter;
+import water.api.StreamingSchema;
 import water.api.schemas3.KeyV3;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.*;
+import water.parser.BufferedString;
 import water.util.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Field;
-import java.nio.charset.Charset;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -83,6 +81,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public final boolean isSupervised() { return _output.isSupervised(); }
+  public boolean havePojo() { return false; }
+  public boolean haveMojo() { return false; }
 
   public ToEigenVec getToEigenVec() { return null; }
 
@@ -107,7 +107,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** The short name, used in making Keys.  e.g. "GBM" */
     abstract public String algoName();
 
-    /** The pretty algo name for this Model (e.g., Gradient Boosting Method, rather than GBM).*/
+    /** The pretty algo name for this Model (e.g., Gradient Boosting Machine, rather than GBM).*/
     abstract public String fullName();
 
     /** The Java class name for this Model (e.g., hex.tree.gbm.GBM, rather than GBM).*/
@@ -384,8 +384,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
     public Key _cross_validation_predictions[];
-    public Key _cross_validation_holdout_predictions_frame_id;
-    public Key _cross_validation_fold_assignment_frame_id;
+    public Key<Frame> _cross_validation_holdout_predictions_frame_id;
+    public Key<Frame> _cross_validation_fold_assignment_frame_id;
 
     // Model-specific start/end/run times
     // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
@@ -874,6 +874,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (expensive) {
       Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, catEncoding, tev);
       if (updated!=test) {
+        assert(updated._key!=test._key);
         if (toDelete!=null) toDelete.put(updated._key, Arrays.toString(Thread.currentThread().getStackTrace()));
         test.restructure(updated.names(), updated.vecs());
       }
@@ -1067,17 +1068,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return bs._mb;
   }
 
-  private class BigScore extends MRTask<BigScore> {
-    final String[] _domain; // Prediction domain; union of test and train classes
-    final int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
-    ModelMetrics.MetricBuilder _mb;
+  protected class BigScore extends MRTask<BigScore> {
+    final protected String[] _domain; // Prediction domain; union of test and train classes
+    final protected int _npredcols;  // Number of columns in prediction; nclasses+1 - can be less than the prediction domain
+    public ModelMetrics.MetricBuilder _mb;
     final double[] _mean;  // Column means of test frame
-    final boolean _computeMetrics;  // Column means of test frame
-    final boolean _hasWeights;
-    final boolean _makePreds;
-    final Job _j;
+    final public boolean _computeMetrics;  // Column means of test frame
+    final public boolean _hasWeights;
+    final public boolean _makePreds;
+    final public Job _j;
 
-    BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
+    public BigScore( String[] domain, int ncols, double[] mean, boolean testHasWeights, boolean computeMetrics, boolean makePreds, Job j) {
       _j = j;
       _domain = domain; _npredcols = ncols; _mean = mean; _computeMetrics = computeMetrics; _makePreds = makePreds;
       if(_output._hasWeights && _computeMetrics && !testHasWeights)
@@ -1129,7 +1130,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       if ( _j != null) _j.update(1);
     }
-    @Override public void reduce( BigScore bs ) { if(_mb != null)_mb.reduce(bs._mb); }
+    @Override public void reduce( BigScore bs ) { if(_mb != null )_mb.reduce(bs._mb); }
     @Override protected void postGlobal() { if(_mb != null)_mb.postGlobal(); }
   }
 
@@ -1200,152 +1201,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return _parms.checksum_impl() * _output.checksum_impl();
   }
 
-
-  //====================================================================================================================
   /**
-   * Serialize the model into a zipped file containing multiple raw data files. The structure of the zip will be
-   * as follows:
-   *    domains/
-   *        d000.txt
-   *        d001.txt
-   *        ...
-   *    trees/
-   *        t00_000.bin
-   *        ...
-   *    model.ini
-   * Each domain file is a plain text file with one line per category (not quoted).
-   * Each tree file is a binary file that is equivalent to `_bit` array in the model's `score()` function. The first 2
-   * digits in the tree file's name correspond to the class index, the last tree are the tree index (since trees are
-   * stored in a double-array Key&lt;CompressedTree>[ntrees][nclasses].
-   *
-   * The model.ini file has 3 sections: [info], [columns] and [domains]:
-   *    [info]
-   *    algo = Random Forest
-   *    n_trees = 100
-   *    n_columns = 25
-   *    n_domains = 3
-   *    ...
-   *    h2o_version = 3.9.10.0
-   *
-   *    [columns]
-   *    col1
-   *    col2
-   *    ...
-   *
-   *    [domains]
-   *    5: d000.txt
-   *    6: d001.txt
-   *    12: d002.txt
-   *
-   * The [info] section lists general model information; [columns] contains the list of all column names; and [domains]
-   *
+   * Override this in models that support serialization into the MOJO format.
+   * @return a class that inherits from ModelMojoWriter
    */
-  public class MojoStreamWriter extends StreamWriter {
-    private StringBuilder tmpfile;
-    private String tmpname;
-    private ZipOutputStream zos;
-
-    @Override
-    public void writeTo(OutputStream os) {
-      zos = new ZipOutputStream(os);
-      try {
-        writeModelInfo();
-        writeDomains();
-        writeModelData();
-        zos.close();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
-
-    private void writeModelInfo() throws IOException {
-      int n_categoricals = 0;
-      for (String[] domain : _output._domains)
-        if (domain != null)
-          n_categoricals++;
-
-      startWritingTextFile("model.ini");
-      writeln("[info]");
-      writeln("algorithm = " + _parms.fullName());
-      writeln("category = " + _output.getModelCategory());
-      writeln("uuid = " + checksum());
-      writeln("n_classes = " + _output.nclasses());
-      writeln("n_columns = " + _output._names.length);
-      writeln("n_domains = " + n_categoricals);
-      writeln("balance_classes = " + _parms._balance_classes);
-      writeln("default_threshold = " + defaultThreshold());
-      writeln("prior_class_distrib = " + Arrays.toString(_output._priorClassDist));
-      writeln("model_class_distrib = " + Arrays.toString(_output._modelClassDist));
-      writeExtraModelInfo();
-      writeln("timestamp = " + new DateTime().toString());
-      writeln("h2o_version = " + H2O.ABV.projectVersion());
-      writeln("mojo_version = 1.0");
-      writeln("license = Apache License Version 2.0");
-      writeln("");
-      writeln("[columns]");
-      for (String name : _output._names) {
-        writeln(name);
-      }
-      writeln("");
-      writeln("[domains]");
-      String format = "%d: %d d%03d.txt";
-      for (int colIndex = 0, domIndex = 0; colIndex < _output._names.length; colIndex++) {
-        if (_output._domains[colIndex] != null)
-          writeln(String.format(format, colIndex, _output._domains[colIndex].length, domIndex++));
-      }
-      finishWritingTextFile();
-    }
-
-    private void writeDomains() throws IOException {
-      int domIndex = 0;
-      for (String[] domain : _output._domains) {
-        if (domain == null) continue;
-        startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
-        for (String category : domain) {
-          writeln(category.replaceAll("\n", "\\n"));  // replace newlines with "\n" escape sequences
-        }
-        finishWritingTextFile();
-      }
-    }
-
-    /**
-     * Overwrite in subclasses to write any additional information into the model.ini/[info] section.
-     */
-    protected void writeExtraModelInfo() throws IOException {}
-
-    /**
-     * Overwrite in subclasses to write the actual model data.
-     */
-    protected void writeModelData() throws IOException {}
-
-    protected void startWritingTextFile(String filename) {
-      assert tmpfile == null : "Previous text file was not closed";
-      tmpfile = new StringBuilder();
-      tmpname = filename;
-    }
-
-    protected void writeln(String s) {
-      assert tmpfile != null : "No text file is currently being written";
-      tmpfile.append(s);
-      tmpfile.append('\n');
-    }
-
-    protected void finishWritingTextFile() throws IOException {
-      writeBinaryFile(tmpname, tmpfile.toString().getBytes(Charset.forName("UTF-8")));
-      tmpfile = null;
-    }
-
-    protected void writeBinaryFile(String filename, byte[] bytes) throws IOException {
-      ZipEntry archiveEntry = new ZipEntry(filename);
-      archiveEntry.setSize(bytes.length);
-      zos.putNextEntry(archiveEntry);
-      zos.write(bytes);
-      zos.closeEntry();
-    }
-  }
-
-  public MojoStreamWriter getMojoStream() {
-    return new MojoStreamWriter();
+  public ModelMojoWriter getMojo() {
+    throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
   }
 
 
@@ -1563,8 +1424,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   // is well, false is there are any mismatches.  Throws if there is any error
   // (typically an AssertionError or unable to compile the POJO).
   public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon) {
+    return testJavaScoring(data, model_predictions, rel_epsilon, 1e-15, 0.1);
+  }
+  public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon) {
+    return testJavaScoring(data, model_predictions, rel_epsilon, abs_epsilon, 0.1);
+  }
+  public boolean testJavaScoring(Frame data, Frame model_predictions, double rel_epsilon, double abs_epsilon, double fraction) {
+    Random rnd = RandomUtils.getRNG(data.byteSize());
     assert data.numRows() == model_predictions.numRows();
-    final Frame fr = new Frame(data);
+    Frame fr = new Frame(data);
     boolean computeMetrics = data.vec(_output.responseName()) != null && !data.vec(_output.responseName()).isBad();
     try {
       String[] warns = adaptTestForTrain(fr,true, computeMetrics);
@@ -1576,94 +1444,162 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       int[] omap = null;
       if( _output.isClassifier() ) {
         Vec actual = fr.vec(_output.responseName());
-        String sdomain[] = actual == null ? null : actual.domain(); // Scored/test domain; can be null
-        String mdomain[] = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
-        if( sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain)) {
+        String[] sdomain = actual == null ? null : actual.domain(); // Scored/test domain; can be null
+        String[] mdomain = model_predictions.vec(0).domain(); // Domain of predictions (union of test and train)
+        if( sdomain != null && !Arrays.equals(mdomain, sdomain)) {
           omap = CategoricalWrappedVec.computeMap(mdomain,sdomain); // Map from model-domain to scoring-domain
         }
       }
 
       String modelName = JCodeGen.toJavaId(_key.toString());
       boolean preview = false;
-      String java_text = toJava(preview, true);
-      GenModel genmodel;
-      try {
-        Class clz = JCodeGen.compile(modelName,java_text);
-        genmodel = (GenModel)clz.newInstance();
-      } catch (Exception e) {
-        e.printStackTrace();
-        throw H2O.fail("Internal POJO compilation failed",e);
-      }
-
+      GenModel genmodel = null;
       Vec[] dvecs = fr.vecs();
       Vec[] pvecs = model_predictions.vecs();
+      double[] features = null;
+      int num_errors = 0;
+      int num_total = 0;
 
-      double features[] = MemoryManager.malloc8d(genmodel._names.length);
-      double predictions[] = MemoryManager.malloc8d(genmodel.nclasses() + 1);
-
-      // Compare predictions, counting mis-predicts
-      int totalMiss = 0;
-      int miss = 0;
-      for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
-
-        // Native Java API
-        for (int col = 0; col < features.length; col++) // Build feature set
-          features[col] = dvecs[col].at(row);
-        genmodel.score0(features, predictions);            // POJO predictions
-        for (int col = 0; col < pvecs.length; col++) { // Compare predictions
-          double d = pvecs[col].at(row);                  // Load internal scoring predictions
-          if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
-          if (!MathUtils.compare(predictions[col], d, 1e-15, rel_epsilon)) {
-            if (miss++ < 10)
-              System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
-          }
-        }
-        totalMiss = miss;
-      }
-
-      // EasyPredict API
-      EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
-      RowData rowData = new RowData();
-      for( int row=0; row<fr.numRows(); row++ ) { // For all rows, single-threaded
-        if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
-        for (int col = 0; col < features.length; col++) {
-          double val = dvecs[col].at(row);
-          rowData.put(
-                  genmodel._names[col],
-                  genmodel._domains[col] == null ? (Double) val
-                          : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
-                          : (int)val < genmodel._domains[col].length ? genmodel._domains[col][(int)val] : "UnknownLevel"); //unseen levels are treated as such
+      // First try internal POJO via fast double[] API
+      if (havePojo()) {
+        try {
+          String java_text = toJava(preview, true);
+          Class clz = JCodeGen.compile(modelName,java_text);
+          genmodel = (GenModel)clz.newInstance();
+        } catch (Exception e) {
+          e.printStackTrace();
+          throw H2O.fail("Internal POJO compilation failed",e);
         }
 
-        AbstractPrediction p;
-        try { p=epmw.predict(rowData); }
-        catch (PredictException e) { continue; }
-        for (int col = 0; col < pvecs.length; col++) { // Compare predictions
-          double d = pvecs[col].at(row); // Load internal scoring predictions
-          if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
-          double d2 = Double.NaN;
-          switch( genmodel.getModelCategory()) {
-          case Clustering:  d2 = ((ClusteringModelPrediction) p).cluster;  break;
-          case Regression:  d2 = ((RegressionModelPrediction) p).value;    break;
-          case Binomial:       BinomialModelPrediction bmp = (   BinomialModelPrediction) p;
-                            d2 = (col==0) ? bmp.labelIndex : bmp.classProbabilities[col-1];  break;
-          case Multinomial: MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
-                            d2 = (col==0) ? mmp.labelIndex : mmp.classProbabilities[col-1];  break;
-          case DimReduction: d2 = ((DimReductionModelPrediction) p).dimensions[col]; break;
+        features = MemoryManager.malloc8d(genmodel._names.length);
+        double[] predictions = MemoryManager.malloc8d(genmodel.nclasses() + 1);
 
-          }
-          if( !MathUtils.compare(d2, d, 1e-15, rel_epsilon) ) {
-            miss++;
-            if (miss < 20) {
-              System.err.println("EasyPredict Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", EasyPredict POJO prediction=" + d2);
-              System.err.println("Row: " + rowData.toString());
+        // Compare predictions, counting mis-predicts
+        for (int row=0; row<fr.numRows(); row++) { // For all rows, single-threaded
+          if (rnd.nextDouble() >= fraction) continue;
+          num_total++;
+
+          // Native Java API
+          for (int col = 0; col < features.length; col++) // Build feature set
+            features[col] = dvecs[col].at(row);
+          genmodel.score0(features, predictions);            // POJO predictions
+          for (int col = 0; col < pvecs.length; col++) { // Compare predictions
+            double d = pvecs[col].at(row);                  // Load internal scoring predictions
+            if (col == 0 && omap != null) d = omap[(int) d];  // map categorical response to scoring domain
+            if (!MathUtils.compare(predictions[col], d, abs_epsilon, rel_epsilon)) {
+              if (num_errors++ < 10)
+                System.err.println("Predictions mismatch, row " + row + ", col " + model_predictions._names[col] + ", internal prediction=" + d + ", POJO prediction=" + predictions[col]);
+              break;
             }
           }
-          totalMiss = miss;
         }
       }
-      if (totalMiss != 0) System.err.println("Number of mismatches: " + totalMiss + (totalMiss > 20 ? " (only first 20 are shown)": ""));
-      return totalMiss==0;
+
+      // EasyPredict API with POJO and/or MOJO
+      for (int i = 0; i < 2; ++i) {
+        if (i == 0 && !havePojo()) continue;
+        if (i == 1 && !haveMojo()) continue;
+        if (i == 1) {  // MOJO
+          final String filename = modelName + ".zip";
+          StreamingSchema ss = new StreamingSchema(getMojo(), filename);
+          try {
+            FileOutputStream os = new FileOutputStream(ss.getFilename());
+            ss.getStreamWriter().writeTo(os);
+            os.close();
+            genmodel = MojoModel.load(filename);
+            features = MemoryManager.malloc8d(genmodel._names.length);
+          } catch (IOException e1) {
+            e1.printStackTrace();
+            throw H2O.fail("Internal MOJO loading failed", e1);
+          } finally {
+            boolean deleted = new File(filename).delete();
+            assert deleted : "Failed to delete the file";
+          }
+        }
+
+        EasyPredictModelWrapper epmw = new EasyPredictModelWrapper(genmodel);
+        RowData rowData = new RowData();
+        BufferedString bStr = new BufferedString();
+        for (int row = 0; row < fr.numRows(); row++) { // For all rows, single-threaded
+          if (rnd.nextDouble() >= fraction) continue;
+          if (genmodel.getModelCategory() == ModelCategory.AutoEncoder) continue;
+
+          // Generate input row
+          for (int col = 0; col < features.length; col++) {
+            if (dvecs[col].isString()) {
+              rowData.put(genmodel._names[col], dvecs[col].atStr(bStr, row).toString());
+            } else {
+              double val = dvecs[col].at(row);
+              rowData.put(
+                  genmodel._names[col],
+                  genmodel._domains[col] == null ? (Double) val
+                      : Double.isNaN(val) ? val  // missing categorical values are kept as NaN, the score0 logic passes it on to bitSetContains()
+                      : (int) val < genmodel._domains[col].length ? genmodel._domains[col][(int) val] : "UnknownLevel"); //unseen levels are treated as such
+            }
+          }
+
+          // Make a prediction
+          AbstractPrediction p;
+          try {
+            p = epmw.predict(rowData);
+          } catch (PredictException e) {
+            num_errors++;
+            if (num_errors < 20) {
+              System.err.println("EasyPredict threw an exception when predicting row " + rowData);
+              e.printStackTrace();
+            }
+            continue;
+          }
+
+          // Convert model predictions and "internal" predictions into the same shape
+          double[] expected_preds = new double[pvecs.length];
+          double[] actual_preds = new double[pvecs.length];
+          for (int col = 0; col < pvecs.length; col++) { // Compare predictions
+            double d = pvecs[col].at(row); // Load internal scoring predictions
+            if (col == 0 && omap != null) d = omap[(int) d]; // map categorical response to scoring domain
+            double d2 = Double.NaN;
+            switch (genmodel.getModelCategory()) {
+              case Clustering:
+                d2 = ((ClusteringModelPrediction) p).cluster;
+                break;
+              case Regression:
+                d2 = ((RegressionModelPrediction) p).value;
+                break;
+              case Binomial:
+                BinomialModelPrediction bmp = (BinomialModelPrediction) p;
+                d2 = (col == 0) ? bmp.labelIndex : bmp.classProbabilities[col - 1];
+                break;
+              case Multinomial:
+                MultinomialModelPrediction mmp = (MultinomialModelPrediction) p;
+                d2 = (col == 0) ? mmp.labelIndex : mmp.classProbabilities[col - 1];
+                break;
+              case DimReduction:
+                d2 = ((DimReductionModelPrediction) p).dimensions[col];
+                break;
+            }
+            expected_preds[col] = d;
+            actual_preds[col] = d2;
+          }
+
+          // Verify the correctness of the prediction
+          num_total++;
+          for (int col = 0; col < pvecs.length; col++) {
+            if (!MathUtils.compare(actual_preds[col], expected_preds[col], abs_epsilon, rel_epsilon)) {
+              num_errors++;
+              if (num_errors < 20) {
+                System.err.println( (i == 0 ? "POJO" : "MOJO") + " EasyPredict Predictions mismatch for row " + rowData);
+                System.err.println("  Expected predictions: " + Arrays.toString(expected_preds));
+                System.err.println("  Actual predictions:   " + Arrays.toString(actual_preds));
+              }
+              break;
+            }
+          }
+        }
+      }
+      if (num_errors != 0)
+        System.err.println("Number of errors: " + num_errors + (num_errors > 20 ? " (only first 20 are shown)": "") +
+                           " out of " + num_total + " rows tested.");
+      return num_errors == 0;
     } finally {
       cleanup_adapt(fr, data);  // Remove temp keys.
     }

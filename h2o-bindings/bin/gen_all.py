@@ -43,11 +43,11 @@ sys.argv.insert(2, "%s:%s" % (cloud.get_ip(), cloud.get_port()))
 
 # Actually generate all the bindings
 print()
-gen_java.main()
 gen_python.main()
 gen_docs_json.main()
 gen_thrift.main()
 gen_csharp.main()
+gen_java.main()
 bindings.done()
 print()
 

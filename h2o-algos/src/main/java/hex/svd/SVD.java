@@ -470,14 +470,14 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         if( u != null & !_parms._keep_u ) u.delete();
         if( qfrm != null ) qfrm.delete();
 
-        List<Key> keep = new ArrayList<>();
+        List<Key<Vec>> keep = new ArrayList<>();
         if (model._output!=null) {
           Frame uFrm = DKV.getGet(model._output._u_key);
           if (uFrm != null) for (Vec vec : uFrm.vecs()) keep.add(vec._key);
           Frame vFrm = DKV.getGet(model._output._v_key);
           if (vFrm != null) for (Vec vec : vFrm.vecs()) keep.add(vec._key);
         }
-        Scope.untrack(keep.toArray(new Key[0]));
+        Scope.untrack(keep);
       }
     }
   }

@@ -19,6 +19,7 @@ public class RegisterAlgos extends water.api.AbstractRegister {
       new hex.tree.drf    .DRF         (true),
       new hex.tree.gbm    .GBM         (true),
       new hex.aggregator  .Aggregator  (true),
+      new hex.deepwater   .DeepWater   (true),
     };
     // "Word2Vec", "Example", "Grep"
     for (ModelBuilder algo : algos) {

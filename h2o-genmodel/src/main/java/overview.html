@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <body>
 <br>
-This document describes how to use H2O's generated POJO models.
+This document describes how to use H2O's generated MOJO and POJO models.
 
 <!-- ============================================================ -->
 <!-- ============================================================ -->
@@ -11,22 +11,36 @@ This document describes how to use H2O's generated POJO models.
 
 <h1><u>About generated models</u></h1>
 <p></p>
-H2O-generated POJO models are intended to be easily embeddable in any Java environment.
+H2O-generated MOJO and POJO models are intended to be easily embeddable in any Java environment.
 The only compilation and runtime dependency for a generated model is the h2o-genmodel.jar
 file produced as the build output of this package.
 
 <p></p>
-If you are just getting started, refer to the <a href="#quickstart">Quick start</a> section below first,
-then look at the documentation for the <em>hex.genmodel.easy</em> package.
+There are subtle differences between POJOs and MOJOs especially in the main.java file and in
+specifying the model output. If you are just getting started, refer to the Quick start sections
+for <a href="#quickstartmojo">MOJOs</a> and <a href="#quickstartpojo">POJOs</a> first, then
+look at the documentation for the <em>hex.genmodel.easy</em> package.
 
 <p></p>
 The following topics are covered here:
 
+<p></p>
+
+<h3>POJOs</h3>
 <ul>
-    <li>* <a href="#quickstart">Quick start</a></li>
-    <li>* <a href="#extracting">Extracting generated models from H2O</a></li>
-    <li>* <a href="#usecases">Use cases</a></li>
+    <li><a href="#whatisapojo">What is a POJO?</a></li>
+    <li><a href="#quickstartpojo">POJO Quick Start</a></li>
+    <li><a href="#extracting">Extracting generated models from H2O</a></li>
+    <li><a href="#usecases">Use cases</a></li>
 </ul>
+
+<h3>MOJOs</h3>
+<ul>
+    <li><a href="#whatisamojo">What is a MOJO?</a></li>
+    <li><a href="#quickstartmojo">MOJO Quick Start</a></li>
+</ul>
+
+
 
 <!-- ============================================================ -->
 <!-- ============================================================ -->
@@ -34,8 +48,22 @@ The following topics are covered here:
 <hr>
 <br>
 
-<a name="quickstart"></a>
-<h1><u>Quick start</u></h1>
+<a name="whatisapojo"></a>
+<h1><u>What is a POJO?</u></h1>
+<p></p>
+H2O allows you to convert the models you have built to a
+<a href="https://en.wikipedia.org/wiki/Plain_Old_Java_Object">Plain Old Java Object</a> (POJO).
+POJOs allow users to build a model using H2O and then deploy the model to score in real-time.
+
+<p></p>
+<!-- ============================================================ -->
+<!-- ============================================================ -->
+<br>
+<hr>
+<br>
+
+<a name="quickstartpojo"></a>
+<h1><u>POJO Quick start</u></h1>
 
 <h3>Step 1 (in terminal window 1): Start H2O</h3>
 <pre>
@@ -68,7 +96,8 @@ $ curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
 </pre>
 
 <h3>Step 4 (in terminal window 2): Create the main program</h3>
-Create a new file called <em>main.java</em> ( `vim main.java`) with the following contents:
+Create a new file called <em>main.java</em> (for example, using vim main.java) with the following contents.
+Note that the modelClassName must match the downloaded model name.
 
 <pre>
 {@code
@@ -94,14 +123,14 @@ public class main {
     //                                             .setConvertUnknownCategoricalLevelsToNa(true));
 
     RowData row = new RowData();
-    row.put("Year", "1987");
-    row.put("Month", "10");
-    row.put("DayofMonth", "14");
-    row.put("DayOfWeek", "3");
-    row.put("CRSDepTime", "730");
-    row.put("UniqueCarrier", "PS");
-    row.put("Origin", "SAN");
-    row.put("Dest", "SFO");
+     row.put("Year", "1987");
+     row.put("Month", "10");
+     row.put("DayofMonth", "14");
+     row.put("DayOfWeek", "3");
+     row.put("CRSDepTime", "730");
+     row.put("UniqueCarrier", "PS");
+     row.put("Origin", "SAN");
+     row.put("Dest", "SFO");
 
     BinomialModelPrediction p = model.predictBinomial(row);
     System.out.println("Label (aka prediction) is flight departure delayed: " + p.label);
@@ -255,5 +284,175 @@ See the <a href="https://github.com/h2oai/app-consumer-loan" target="_blank">Con
 
 <h3>A user-defined-function called directly from hive</h3>
 See the <a href="https://github.com/h2oai/h2o-world-2015-training" target="_blank">H2O World 2015 Training github repository</a>.
+
+<!-- ============================================================ -->
+<!-- ============================================================ -->
+<br>
+<hr>
+<br>
+<a name="whatisamojo"></a>
+<h1><u>What is a MOJO?</u></h1>
+<p></p>
+A MOJO (Model Object, Optimized) is an alternative to H2O's currently available POJO. As with
+POJOs, H2O allows you to convert models that you build to MOJOs, which can then be deployed
+for scoring in real time.
+<p></p>
+<b>Note</b>: MOJOs are supported for DRF and GBM algorithms only.
+
+<h3><u>Benefit of MOJOs over POJOs</u></h3>
+<p></p>
+While POJOs continue to be supported, some customers encountered issues with large POJOs not
+compiling. (Note that POJOs are not supported for source files larger than 1G.) MOJOs do not
+have a size restriction and address the size issue by taking the tree out of the POJO and using
+generic tree-walker code to navigate the model. The resulting executable is much smaller and
+faster than a POJO.
+<p></p>
+At large scale, new models are roughly 20-25 times smaller in disk space, 2-3 times faster
+during "hot" scoring, and 10-40 times faster in "cold" scoring compared to POJOs. These efficiency
+gains are larger the bigger the size of the model.
+<p></p>
+H2O conducted in-house testing using models with 5000 trees of depth 25. At very small scale
+(50 trees / 5 depth), POJOs were found to perform approximately 10% faster than MOJOs for binomial
+and regression models, but 50% slower than MOJOs for multinomial models.
+
+<p></p>
+
+<!-- ============================================================ -->
+<!-- ============================================================ -->
+<br>
+<hr>
+<br>
+
+<a name="quickstartmojo"></a>
+<h1><u>MOJO Quick start</u></h1>
+
+MOJOs are built in much the same way as POJOs. The example code below
+shows how to start H2O and then build a model using either R or Python.
+
+<h3>Step 1: Start H2O, then build and extract the model</h3>
+
+<p></p>
+The examples below describe how to create a model using R and Python. The
+<code>download_mojo()</code> function saves the model as a zip file. You can
+unzip the file to view the options used to build the file along with each
+tree built in the model. Note that each tree file is saved as a binary file type.
+
+<h5>Build and extract a model using R</h5>
+
+MOJOs are only supported for GBM and DRF models.
+
+<ol><li>Open a terminal window and start r.</li>
+    <li>Run the following commands to build a simple GBM model.
+        <pre>
+        library(h2o)
+        h2o.init(nthreads=-1)
+        path = system.file("extdata", "prostate.csv", package="h2o")
+        h2o_df = h2o.importFile(path)
+        h2o_df$RACE = as.factor(h2o_df$RACE)
+        model = h2o.gbm(y="CAPSULE",
+                        x=c("AGE", "RACE", "PSA", "GLEASON"),
+                        training_frame=h2o_df,
+                        distribution="bernoulli",
+                        ntrees=100,
+                        max_depth=4,
+                        learn_rate=0.1)
+        </pre>
+    </li>
+    <li>Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
+        <pre>modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
+		print("Model saved to " + modelfile)
+		Model saved to /Users/user/GBM_model_R_1475248925871_74.zip"
+        </pre>
+    </li>
+</ol>
+
+<h5>Build and extract a model using Python</h5>
+
+<ol><li>Open a new terminal window and start python.</li>
+    <li>Run the following commands to build a simple GBM model.
+        <pre>
+        import h2o
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        h2o.init()
+        h2o_df = h2o.load_dataset("prostate.csv")
+        h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
+        model=H2OGradientBoostingEstimator(distribution="bernoulli",
+                                           ntrees=100,
+                                           max_depth=4,
+                                           learn_rate=0.1)
+        model.train(y="CAPSULE",
+                    x=["AGE","RACE","PSA","GLEASON"],
+                    training_frame=h2o_df)
+        </pre>
+    </li>
+    <li>
+        Download the MOJO and the resulting h2o-genmodel.jar file to a new **experiment** folder.
+        <pre>
+        modelfile = model.download_mojo(path="~/experiment/", get_genmodel_jar=True)
+		print("Model saved to " + modelfile)
+		Model saved to /Users/user/GBM_model_python_1475248925871_888.zip
+        </pre>
+    </li>
+</ol>
+
+<h3>Step 2: Compile and Run the MOJO</h3>
+
+<p></p>
+
+<ol>
+    <li>Open a *new* terminal window and change directories to the **experiment** folder:
+        <pre>
+        $ cd experiment
+        </pre>
+    </li>
+
+    <li>Create your main program in the **experiment** folder by creating a new file
+        called main.java (for example, using "vim main.java"). Include the following contents.
+        Note that this file references the GBM model created above using R.
+        <pre>
+        import java.io.*;
+        import hex.genmodel.easy.RowData;
+        import hex.genmodel.easy.EasyPredictModelWrapper;
+        import hex.genmodel.easy.prediction.*;
+        import hex.genmodel.MojoModel;
+
+        public class main {
+          public static void main(String[] args) throws Exception {
+            EasyPredictModelWrapper model = new EasyPredictModelWrapper(MojoModel.load("GBM_model_R_1475248925871_74.zip"));
+
+            RowData row = new RowData();
+            row.put("AGE", "68");
+            row.put("RACE", "2");
+            row.put("DCAPS", "2");
+            row.put("VOL", "0");
+            row.put("GLEASON", "6");
+
+            BinomialModelPrediction p = model.predictBinomial(row);
+            System.out.println("Has penetrated the prostatic capsule (1=yes; 0=no): " + p.label);
+            System.out.print("Class probabilities: ");
+            for (int i = 0; i < p.classProbabilities.length; i++) {
+              if (i > 0) {
+                System.out.print(",");
+              }
+              System.out.print(p.classProbabilities[i]);
+            }
+            System.out.println("");
+          }
+        }
+        </pre>
+    </li>
+    <li>
+        Compile and run in terminal window 2.
+        <pre>
+        $ javac -cp h2o-genmodel.jar -J-Xms2g -J-XX:MaxPermSize=128m main.java
+        $ java -cp .:h2o-genmodel.jar main
+        </pre>
+    </li>
+</ol>
+
+The following output displays:
+<p></p>
+<pre>Has penetrated the prostatic capsule (1 yes; 0 no): 0
+Class probabilities: 0.8059929056296662,0.19400709437033375</pre>
 
 </body>

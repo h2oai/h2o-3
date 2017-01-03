@@ -27,6 +27,9 @@ import java.util.NoSuchElementException;
  * Created by tomasnykodym on 8/27/14.
  */
 public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLMOutput> {
+  @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return false; }
+
   public GLMModel(Key selfKey, GLMParameters parms, GLM job, double [] ymu, double ySigma, double lambda_max, long nobs) {
     super(selfKey, parms, job == null?new GLMOutput():new GLMOutput(job));
     // modelKey, parms, null, Double.NaN, Double.NaN, Double.NaN, -1
@@ -958,11 +961,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     int intercept = _parms._intercept ? 1 : 0;
     if(_output.nclasses() > 2) {
-      _output._model_summary.set(0, 3 + lambdaSearch,_output.bestSubmodel().beta.length);
+      _output._model_summary.set(0, 3 + lambdaSearch,_output.nclasses()*_output._coefficient_names.length);
+      _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - _output.nclasses()*intercept));
     } else {
       _output._model_summary.set(0, 3 + lambdaSearch, beta().length - 1);
+      _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - intercept));
     }
-    _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - intercept));
+
     _output._model_summary.set(0, 5 + lambdaSearch, Integer.valueOf(iter));
     _output._model_summary.set(0, 6 + lambdaSearch, train.toString());
     return _output._model_summary;

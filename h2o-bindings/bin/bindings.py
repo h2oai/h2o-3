@@ -330,13 +330,58 @@ def schemas(raw=False):
     return json["schemas"]
 
 
-def schemas_map():
+def schemas_map(add_generics=False):
     """
     Returns a dictionary of H₂O schemas, indexed by their name.
     """
     m = {}
     for schema in schemas():
         m[schema["name"]] = schema
+
+    def find_field(fields, field_name):
+        """Finds a field with the given `field_name` among the list of fields."""
+        for f in fields:
+            if f["is_inherited"] and f["name"] == field_name:
+                return f
+        raise RuntimeError("Unable to find field %s" % (field_name))
+
+    # Add information about the generics. This is rather hacky at the moment.
+    if add_generics:
+        for base, generics in [
+                # Note: derived classes must come before base classes here
+                ("SharedTreeModelV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
+                ("ModelSchemaV3", [("P", "ModelParametersSchemaV3"), ("O", "ModelOutputSchemaV3")]),
+                ("SharedTreeV3", [("P", "ModelParametersSchemaV3")]),
+                ("ModelBuilderSchema", [("P", "ModelParametersSchemaV3")]),
+        ]:
+            # Write the generic information about the base class
+            schema = m[base]
+            schema["generics"] = generics
+            generic_map = {long_type: gen_type for gen_type, long_type in generics}
+            generic_index = {geninfo[0]: i for i, geninfo in enumerate(generics)}
+            mapped_fields = {}
+            for field in schema["fields"]:
+                ftype = field["schema_name"]
+                if ftype in generic_map:
+                    gen_type = generic_map[ftype]
+                    field["schema_name"] = gen_type
+                    mapped_fields[field["name"]] = generic_index[gen_type]
+            assert len(mapped_fields) == len(generics), (
+                "Unable to find generic types %r in base class %s. Schema: %r" %
+                (generic_map, base, {f["name"]: f["schema_name"] for f in schema["fields"]}))
+
+            # Find all the derived classes, and fill in their derived information
+            for schema_name, schema in m.items():
+                if schema["superclass"] == base:
+                    base_generics = [None] * len(generics)
+                    for mapped_field_name, generic_index in mapped_fields.items():
+                        field = find_field(schema["fields"], mapped_field_name)
+                        base_generics[generic_index] = field["schema_name"]
+                    assert None not in base_generics, (
+                        "Unable to find mapped super types in schema %s: base = %r, map = %r" %
+                        (schema_name, base_generics, mapped_fields))
+                    schema["super_generics"] = base_generics
+
     return m
 
 

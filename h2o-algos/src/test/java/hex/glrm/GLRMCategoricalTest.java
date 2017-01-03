@@ -2,6 +2,9 @@ package hex.glrm;
 
 import hex.DataInfo;
 import hex.ModelMetrics;
+import hex.genmodel.algos.glrm.GlrmInitialization;
+import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.genmodel.algos.glrm.GlrmRegularizer;
 import hex.glrm.GLRMModel.GLRMParameters;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -64,7 +67,7 @@ public class GLRMCategoricalTest extends TestUtil {
       parms._train = train._key;
       parms._k = 4;
       parms._loss = GlrmLoss.Absolute;
-      parms._init = GLRM.Initialization.SVD;
+      parms._init = GlrmInitialization.SVD;
       parms._transform = DataInfo.TransformType.NONE;
       parms._recover_svd = true;
       parms._max_iterations = 1000;
@@ -97,9 +100,9 @@ public class GLRMCategoricalTest extends TestUtil {
       parms._train = train._key;
       parms._k = 8;
       parms._gamma_x = parms._gamma_y = 0.1;
-      parms._regularization_x = GLRMModel.GLRMParameters.Regularizer.Quadratic;
-      parms._regularization_y = GLRMModel.GLRMParameters.Regularizer.Quadratic;
-      parms._init = GLRM.Initialization.PlusPlus;
+      parms._regularization_x = GlrmRegularizer.Quadratic;
+      parms._regularization_y = GlrmRegularizer.Quadratic;
+      parms._init = GlrmInitialization.PlusPlus;
       parms._transform = DataInfo.TransformType.STANDARDIZE;
       parms._recover_svd = false;
       parms._max_iterations = 200;
@@ -121,13 +124,13 @@ public class GLRMCategoricalTest extends TestUtil {
     Random rng = new Random(seed);
     Frame train = null;
     final int[] cats = new int[]{1,3,4,5};    // Categoricals: CAPSULE, RACE, DPROS, DCAPS
-    final GLRMParameters.Regularizer[] regs = new GLRMParameters.Regularizer[] {
-            GLRMParameters.Regularizer.Quadratic,
-            GLRMParameters.Regularizer.L1,
-            GLRMParameters.Regularizer.NonNegative,
-            GLRMParameters.Regularizer.OneSparse,
-            GLRMParameters.Regularizer.UnitOneSparse,
-            GLRMParameters.Regularizer.Simplex
+    final GlrmRegularizer[] regs = new GlrmRegularizer[] {
+            GlrmRegularizer.Quadratic,
+            GlrmRegularizer.L1,
+            GlrmRegularizer.NonNegative,
+            GlrmRegularizer.OneSparse,
+            GlrmRegularizer.UnitOneSparse,
+            GlrmRegularizer.Simplex
     };
 
     Scope.enter();
@@ -160,7 +163,7 @@ public class GLRMCategoricalTest extends TestUtil {
             parms._k = 5;
             parms._loss = loss;
             parms._multi_loss = multiloss;
-            parms._init = GLRM.Initialization.SVD;
+            parms._init = GlrmInitialization.SVD;
             parms._regularization_x = regs[rng.nextInt(regs.length)];
             parms._regularization_y = regs[rng.nextInt(regs.length)];
             parms._gamma_x = Math.abs(rng.nextDouble());
@@ -207,7 +210,7 @@ public class GLRMCategoricalTest extends TestUtil {
       parms._multi_loss = GlrmLoss.Categorical;
       parms._loss_by_col = new GlrmLoss[] { GlrmLoss.Ordinal, GlrmLoss.Poisson, GlrmLoss.Absolute};
       parms._loss_by_col_idx = new int[] { 3 /* DPROS */, 1 /* AGE */, 6 /* VOL */ };
-      parms._init = GLRM.Initialization.PlusPlus;
+      parms._init = GlrmInitialization.PlusPlus;
       parms._min_step_size = 1e-5;
       parms._recover_svd = false;
       parms._max_iterations = 2000;

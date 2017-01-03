@@ -31,9 +31,9 @@ import static water.H2O.technote;
  */
 
 public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel.DeepLearningParameters,DeepLearningModel.DeepLearningModelOutput> implements Model.DeepFeatures {
-
-  @Override
-  public ToEigenVec getToEigenVec() {
+  @Override public boolean havePojo() { return true; }
+  @Override public boolean haveMojo() { return false; }
+  @Override public ToEigenVec getToEigenVec() {
     return LinearAlgebraUtils.toEigen;
   }
 
@@ -222,6 +222,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     _output._names = dinfo._adaptedFrame.names();
     _output._domains = dinfo._adaptedFrame.domains();
     DKV.put(dinfo);
+    Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);
     _dist = new Distribution(get_params());

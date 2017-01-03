@@ -130,6 +130,11 @@
   if (!is.na(conn@cluster_id)) {
     header['X-Cluster'] = conn@cluster_id
   }
+
+  if(!is.na(conn@cookies)) {
+    header['Cookie'] = paste0(conn@cookies, collapse=';')
+  }
+
   if ((method == "GET") || (method == "DELETE")) {
     h <- basicHeaderGatherer()
     t <- basicTextGatherer(.mapUnicode = FALSE)
@@ -738,6 +743,10 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
         cat("\n\n")
         cat(job$exception)
         cat("\n\n")
+        
+        if (!is.null(job$stacktrace)) {cat(job$stacktrace)}
+        cat("\n")
+        
         m <- strsplit(jobs[[1]]$exception, "\n")[[1]][1]
         m <- gsub(".*msg ","",m)
         stop(m, call.=FALSE)

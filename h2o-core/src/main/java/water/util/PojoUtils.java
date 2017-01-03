@@ -339,6 +339,9 @@ public class PojoUtils {
    * <b>NOTE: modifies the scheme tree in place.</b>
    */
   public static void filterFields(Object o, String includes, String excludes) {
+    if (null == o)
+      return;
+
     if (null == excludes || "".equals(excludes))
       return;
 

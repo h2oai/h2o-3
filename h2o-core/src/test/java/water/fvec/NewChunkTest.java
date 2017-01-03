@@ -2,6 +2,7 @@ package water.fvec;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Futures;
@@ -10,8 +11,7 @@ import water.TestUtil;
 import java.util.Arrays;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class NewChunkTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -52,6 +52,23 @@ public class NewChunkTest extends TestUtil {
     assertEquals(Math.PI,c.atd(N+1),1e-16);
   }
 
+  @Test public void testSparseNAs() {
+    NewChunk nc = new NewChunk(null, 0, true);
+    nc.addNAs(128);
+    assertTrue(nc.isSparseNA());
+    for (int i = 0; i < 512; i++)
+      nc.addUUID(i, i/2+i/3);
+    assertFalse(nc.isSparseNA());
+    Chunk c = nc.compress();
+    assertEquals(128 + 512, c.len());
+    for (int i = 0; i < 128; ++i)
+      assertTrue(c.isNA(i));
+    for (int i = 0; i < 512; i++) {
+      assertEquals(i, c.at16l(128 + i));
+      assertEquals(i/2+i/3, c.at16h(128 + i));
+    }
+  }
+
   private static class NewChunkTestCpy extends NewChunk {
     NewChunkTestCpy(Vec vec, int cidx) {super(vec, cidx);}
     public NewChunkTestCpy() { super(null,0); }
@@ -60,6 +77,7 @@ public class NewChunkTest extends TestUtil {
     int missingSize()  {return _missing == null?0:_missing.size();}
   }
 
+  
   private void testIntegerChunk(long [] values, int mantissaSize) {
     Vec v = Vec.makeCon(0,0);
     // single bytes
@@ -522,40 +540,93 @@ public class NewChunkTest extends TestUtil {
     } finally { remove(); }
   }
 
+  @Test public void testSetStrNull() {
+    try {
+      av = new AppendableVec(Vec.newKey(), Vec.T_STR);
+      nc = new NewChunk(av, 0);
+      nc.addStr("a");
+      post();
+      Assert.assertFalse(cc.isNA(0));
+      cc.set(0, (String)null);
+      Assert.assertTrue(cc.isNA(0));
+    } finally { remove(); }
+  }
 
-private static double []  test_seq = new double[]{
+
+
+  private static double []  test_seq = new double[]{
     2,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,3,0,0,0,Double.NaN,Double.NaN,Double.NaN,Double.NaN,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,3,3,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,10,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,3,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,3,0,0,1,0,0,0,0,0,0,0,0,2,0,0,3,0,0,0,0,0,0,0,0,0,3,32,0,0,0,17,6,2,0,0,0,0,0,0,0,0,67,0,0,0,0,0,0,0
-};
-@Test public void testSparseWithMissing(){
-  // DOUBLES
-  av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-  nc = new NewChunk(av, 0);
-  for(double d:test_seq)
-    nc.addNum(d);
-  Chunk c = nc.compress();
-  for(int i =0 ; i < test_seq.length; ++i) {
-    if(Double.isNaN(test_seq[i]))
-      Assert.assertTrue(c.isNA(i));
-    else
-      Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +  test_seq[i],c.atd(i),0);
+  };
+
+  @Test
+  public void testSparseWithMissing() {
+    // DOUBLES
+    av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
+    nc = new NewChunk(av, 0);
+    for (double d : test_seq)
+      nc.addNum(d);
+    Chunk c = nc.compress();
+    for (int i = 0; i < test_seq.length; ++i) {
+      if (Double.isNaN(test_seq[i]))
+        Assert.assertTrue(c.isNA(i));
+      else
+        Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +test_seq[i], c.atd(i), 0);
+    }
+    // INTS
+    av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
+    nc = new NewChunk(av, 0);
+    for (double d : test_seq)
+      if (Double.isNaN(d)) nc.addNA();
+      else nc.addNum((int) d, 0);
+    c = nc.compress();
+    for (int i = 0; i < test_seq.length; ++i) {
+      if (Double.isNaN(test_seq[i]))
+        Assert.assertTrue(c.isNA(i));
+      else
+        Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +test_seq[i], c.atd(i), 0);
+    }
   }
-  // INTS
-  av = new AppendableVec(Vec.newKey(), Vec.T_NUM);
-  nc = new NewChunk(av, 0);
-  for(double d:test_seq)
-    if(Double.isNaN(d)) nc.addNA();
-    else nc.addNum((int)d,0);
-  c = nc.compress();
-  for(int i =0 ; i < test_seq.length; ++i) {
-    if(Double.isNaN(test_seq[i]))
-      Assert.assertTrue(c.isNA(i));
-    else
-      Assert.assertEquals("mismatch at line " + i + ": expected " + test_seq[i] + ", got " + c.atd(i), +  test_seq[i],c.atd(i),0);
+
+  @Test public void testAddIllegalUUID() {
+    nc = new NewChunk(av, 0);
+    nc.addUUID(123L, 456L);
+    nc.addNA();
+    assertTrue(nc.isNA(1));
+    assertTrue(nc.isNA2(1));
+    try {
+      nc.addUUID(C16Chunk._LO_NA, C16Chunk._HI_NA);
+      assertTrue(nc.isNA(2));
+      fail("Expected a failure on adding an illegal value");
+    } catch(IllegalArgumentException iae) {
+      // as expected
+    }
+/* TODO(Vlad): fix after UUID checks get through
+    nc.addNum(Double.NEGATIVE_INFINITY);
+    nc.addNum(Double.POSITIVE_INFINITY);
+    try {
+      nc.addNum(Double.NaN);
+      fail("Expected a failure on adding an illegal value");
+    } catch(IllegalArgumentException iae) {
+      // as expected
+    }
+    */
   }
 
-}
+  @Ignore("Vlad: will fix it after UUID")
+  @Test public void testAddIllegalNum() {
+    nc = new NewChunk(av, 0);
 
-
+    nc.addNum(Math.PI);
+    nc.addNum(Double.NEGATIVE_INFINITY);
+    nc.addNum(Double.POSITIVE_INFINITY);
+    try {
+      nc.addNum(Double.NaN);
+      assertTrue(nc.isNA(3));
+      fail("Expected a failure on adding an illegal value");
+    } catch(IllegalArgumentException iae) {
+      // as expected
+    }
+  }
 
 }
 

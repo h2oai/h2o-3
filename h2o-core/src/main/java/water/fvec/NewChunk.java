@@ -641,24 +641,29 @@ public class NewChunk extends Chunk {
     else { addStr(c.atStr(new BufferedString(), row)); _isAllASCII &= ((CStrChunk)c)._isAllASCII; }
   }
 
+  public void addUUID(UUID uuid) {
+    if (uuid == null) addNA();
+    else addUUID(uuid.getLeastSignificantBits(), uuid.getMostSignificantBits());
+  }
 
   // Append a UUID, stored in _ls & _ds
   public void addUUID( long lo, long hi ) {
+    if (C16Chunk.isNA(lo, hi)) throw new IllegalArgumentException("Cannot set illegal UUID value");
     if( _ms==null || _ds== null || _sparseLen >= _ms.len() )
       append2slowUUID();
     _ms.set(_sparseLen,lo);
     _ds[_sparseLen] = Double.longBitsToDouble(hi);
+    if (_id != null) _id[_sparseLen] = _len;
     _sparseLen++;
     _len++;
     assert _sparseLen <= _len;
   }
   public void addUUID( Chunk c, long row ) {
-    if( c.isNA_abs(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
+    if (c.isNA_abs(row)) addNA();
     else addUUID(c.at16l_abs(row),c.at16h_abs(row));
   }
   public void addUUID( Chunk c, int row ) {
-    if( c.isNA(row) ) addUUID(C16Chunk._LO_NA,C16Chunk._HI_NA);
-    else addUUID(c.at16l(row),c.at16h(row));
+    addUUID(c, (long) row);
   }
 
   public final boolean isUUID(){return _ms != null && _ds != null; }
@@ -783,6 +788,8 @@ public class NewChunk extends Chunk {
   }
   // Slow-path append data
   private void append2slowUUID() {
+    if(_id != null)
+      cancel_sparse();
     if( _ds==null && _ms!=null ) { // This can happen for columns with all NAs and then a UUID
       _xs=null;
       _ms.switchToLongs();
@@ -793,6 +800,7 @@ public class NewChunk extends Chunk {
     if( _ms != null && _sparseLen > 0 ) {
       _ds = MemoryManager.arrayCopyOf(_ds, _sparseLen * 2);
       _ms.resize(_sparseLen*2);
+      if(_id != null) _id = Arrays.copyOf(_id,_sparseLen*2);
     } else {
       _ms = new Mantissas(4);
       _xs = null;
@@ -897,6 +905,7 @@ public class NewChunk extends Chunk {
   //Sparsify. Compressible element can be 0 or NA. Store noncompressible elements in _ds OR _ls and _xs OR _is and 
   // their row indices in _id.
   protected void set_sparse(int num_noncompressibles, Compress sparsity_type) {
+    assert !isUUID():"sparse for uuids is not supported";
     if ((sparsity_type == Compress.ZERO && isSparseNA()) || (sparsity_type == Compress.NA && isSparseZero()))
       cancel_sparse();
     if (sparsity_type == Compress.NA) {
@@ -991,7 +1000,7 @@ public class NewChunk extends Chunk {
         _xs = xs;
         _missing = missing;
         _ms = ms;
-      } else {
+      } else{
         double [] ds = MemoryManager.malloc8d(_len);
         _missing = new BitSet();
         if (_sparseNA) Arrays.fill(ds, Double.NaN);
@@ -1514,6 +1523,9 @@ public class NewChunk extends Chunk {
   @Override boolean set_impl(int i, float f) {  return set_impl(i,(double)f); }
 
   @Override boolean set_impl(int i, String str) {
+    if (str == null) {
+      return setNA_impl(i);
+    }
     if(_is == null && _len > 0) {
       assert _sparseLen == 0;
       alloc_str_indices(_len);
@@ -1584,13 +1596,22 @@ public class NewChunk extends Chunk {
     assert _xs==null; 
     return _ds[i];
   }
+
+  private long loAt(int idx) { return _ms.get(idx); }
+  private long hiAt(int idx) { return Double.doubleToRawLongBits(_ds[idx]); }
+
   @Override protected long at16l_impl(int idx) {
-    if(_ms.get(idx) == C16Chunk._LO_NA) throw new RuntimeException("Attempting to access NA as integer value.");
+    long lo = loAt(idx);
+    if(lo == C16Chunk._LO_NA && hiAt(idx) == C16Chunk._HI_NA) {
+      throw new RuntimeException("Attempting to access NA as integer lo value at " + idx);
+    }
     return _ms.get(idx);
   }
   @Override protected long at16h_impl(int idx) {
     long hi = Double.doubleToRawLongBits(_ds[idx]);
-    if(hi == C16Chunk._HI_NA) throw new RuntimeException("Attempting to access NA as integer value.");
+    if(hi == C16Chunk._HI_NA && loAt(idx) == C16Chunk._LO_NA) {
+      throw new RuntimeException("Attempting to access NA as integer hi value at " + idx);
+    }
     return hi;
   }
   @Override public boolean isNA_impl( int i ) {

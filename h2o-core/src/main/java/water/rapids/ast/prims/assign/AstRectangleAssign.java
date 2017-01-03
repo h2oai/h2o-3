@@ -7,6 +7,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.rapids.*;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -14,6 +15,8 @@ import water.rapids.ast.params.AstNum;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.prims.mungers.AstColSlice;
 import water.rapids.vals.ValFrame;
+
+import java.util.Arrays;
 
 /**
  * Rectangular assign into a row and column slice.  The destination must
@@ -112,9 +115,16 @@ public class AstRectangleAssign extends AstPrimitive {
     // copy-on-write
     Vec[] dvecs = dst.vecs();
     final Vec[] svecs = src.vecs();
-    for (int col = 0; col < cols.length; col++)
-      if (dvecs[cols[col]].get_type() != svecs[col].get_type())
-        throw new IllegalArgumentException("Columns must be the same type; column " + col + ", \'" + dst._names[cols[col]] + "\', is of type " + dvecs[cols[col]].get_type_str() + " and the source is " + svecs[col].get_type_str());
+    for (int col = 0; col < cols.length; col++) {
+      int dtype = dvecs[cols[col]].get_type();
+      if (dtype != svecs[col].get_type())
+        throw new IllegalArgumentException("Columns must be the same type; " +
+                "column " + col + ", \'" + dst._names[cols[col]] + "\', is of type " + dvecs[cols[col]].get_type_str() +
+                " and the source is " + svecs[col].get_type_str());
+      if ((dtype == Vec.T_CAT) && (! Arrays.equals(dvecs[cols[col]].domain(), svecs[col].domain())))
+        throw new IllegalArgumentException("Cannot assign to a categorical column with a different domain; " +
+                "source column " + src._names[col] + ", target column " + dst._names[cols[col]]);
+    }
 
     // Frame fill
     // Handle fast small case
@@ -123,8 +133,16 @@ public class AstRectangleAssign extends AstPrimitive {
       dvecs = ses.copyOnWrite(dst, cols); // Update dst columns
       long[] rownums = rows.expand8();   // Just these rows
       for (int col = 0; col < svecs.length; col++)
-        for (int ridx = 0; ridx < rownums.length; ridx++)
-          dvecs[cols[col]].set(rownums[ridx], svecs[col].at(ridx));
+        if (svecs[col].get_type() == Vec.T_STR) {
+          BufferedString bStr = new BufferedString();
+          for (int ridx = 0; ridx < rownums.length; ridx++) {
+            BufferedString s = svecs[col].atStr(bStr, ridx);
+            dvecs[cols[col]].set(rownums[ridx], s != null ? s.toString() : null);
+          }
+        } else {
+          for (int ridx = 0; ridx < rownums.length; ridx++)
+            dvecs[cols[col]].set(rownums[ridx], svecs[col].at(ridx));
+        }
       return;
     }
     // Handle large case
@@ -156,11 +174,21 @@ public class AstRectangleAssign extends AstPrimitive {
             scs[j] = _svecs[j].chunkForChunkIdx(sChkIdx);
           }
         }
+        BufferedString bStr = new BufferedString();
         int si = (int) (idx - scs[0].start());
         for (int j = 0; j < cs.length; j++) {
           Chunk chk = cs[j];
           Chunk schk = scs[j];
-          chk.set(i, schk.atd(si));
+          if (_svecs[j].get_type() == Vec.T_STR) {
+            BufferedString s = schk.atStr(bStr, si);
+            chk.set(i, s != null ? s.toString() : null);
+            BufferedString bss = chk.atStr(new BufferedString(), i);
+            if (s == null && bss != null) {
+              chk.set(i, s != null ? s.toString() : null);
+            }
+          } else {
+            chk.set(i, schk.atd(si));
+          }
         }
       }
     }

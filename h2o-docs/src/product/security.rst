@@ -49,7 +49,7 @@ Terms
 |                                     | communication path.             |
 +-------------------------------------+---------------------------------+
 
-Assumptions (threat model)
+Assumptions (Threat Model)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. H2O lives in a secure data center.
@@ -102,7 +102,7 @@ Assumptions (threat model)
    -  H2O only allows access to the embedded web port to the person that
       started the cluster.
 
-Data chain-of-custody in a Hadoop data center environment
+Data Chain-of-Custody in a Hadoop Data Center Environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Note**: This holds true for all versions of Hadoop (including YARN) supported by H2O.
@@ -126,7 +126,7 @@ jobs.
 9. The authenticated user can access the same data in H2O that he could
    access via HDFS
 
-What is being secured today
+What is being Secured Today
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1. Standard file permissions security is provided by the Operating
@@ -147,7 +147,7 @@ What is being secured today
 
 **Note**: Embedded web port HTTPS and authentication may be used separately or together.
 
-What is specifically not being secured today
+What is Specifically not being Secured Today
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 -  Internal H2O node-to-H2O node communication.
@@ -192,16 +192,16 @@ are detailed below.
 HTTPS
 ~~~~~
 
-HTTPS client side
+HTTPS Client Side
 ^^^^^^^^^^^^^^^^^
 
-Flow Web UI client
+Flow Web UI Client
 ''''''''''''''''''
 
 When HTTPS is enabled on the server side, the user must provide the
 https URI scheme to the browser. No http access will exist.
 
-R client
+R Client
 ''''''''
 
 The following code snippet demonstrates connecting to an H2O cluster
@@ -216,12 +216,12 @@ extension libcurl and OpenSSL.
 
  **Caution:** Certificate checking has not been implemented yet. The insecure flag tells the client to ignore certificate checking. This means your client is exposed to a man-in-the-middle attack. We assume for the time being that in a secure corporate network such attacks are of low concern. Currently, the insecure flag must be set to TRUE so that in some future version of H2O you will confidently know when certificate checking has actually been implemented.
 
-Python client
+Python Client
 '''''''''''''
 
 Not yet implemented. Please contact H2O for an update.
 
-HTTPS server side
+HTTPS Server Side
 ^^^^^^^^^^^^^^^^^
 
 A `Java Keystore <https://en.wikipedia.org/wiki/Keystore>`_ must be
@@ -326,19 +326,19 @@ standalone H2O using your Keystore:
     # Run H2O using the newly generated self-signed keystore.
     java -jar h2o.jar -jks mykeystore.jks -jks_pass mypass
 
-Kerberos authentication
+Kerberos Authentication
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Kerberos H2O-client side
+Kerberos H2O Client Side
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-Flow Web UI client
+Flow Web UI Client
 ''''''''''''''''''
 
 When authentication is enabled, the user will be presented with a
 username and password dialog box when attempting to reach Flow.
 
-R client
+R Client
 ''''''''
 
 The following code snippet demonstrates connecting to an H2O cluster
@@ -348,7 +348,7 @@ with authentication:
 
     h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
-Python client
+Python Client
 '''''''''''''
 
 For Python, connecting to H2O with authentication is similar:
@@ -357,7 +357,7 @@ For Python, connecting to H2O with authentication is similar:
 
     h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
-Kerberos H2O-server side
+Kerberos H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
 You must provide a simple configuration file that specifies the Kerberos
@@ -452,23 +452,23 @@ Example:
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.kerberos.login=true --conf spark.ext.h2o.user.name=kerb_principal --conf spark.ext.h2o.login.conf=kerb.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
 
-LDAP authentication
+LDAP Authentication
 ~~~~~~~~~~~~~~~~~~~
 
 H2O client and server side configuration for LDAP is discussed below.
 Authentication is implemented using `Basic
 Auth <https://en.wikipedia.org/wiki/Basic_access_authentication>`__.
 
-LDAP H2O-client side
+LDAP H2O Client Side
 ^^^^^^^^^^^^^^^^^^^^
 
-Flow Web UI client
+Flow Web UI Client
 ''''''''''''''''''
 
 When authentication is enabled, the user will be presented with a
 username and password dialog box when attempting to reach Flow.
 
-R client
+R Client
 ''''''''
 
 The following code snippet demonstrates connecting to an H2O cluster
@@ -478,12 +478,12 @@ with authentication:
 
     h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
-Python client
+Python Client
 '''''''''''''
 
 Not yet implemented. Please contact H2O for an update.
 
-LDAP H2O-server side
+LDAP H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^
 
 An ldap.conf configuration file must be provided by the user. As an
@@ -593,23 +593,23 @@ Example:
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.ldap.login=true --conf spark.ext.h2o.user.name=myLDAPusername --conf spark.ext.h2o.login.conf=/path/to/ldap.conf sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
-Hash file authentication
+Hash File Authentication
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 H2O client and server side configuration for a hardcoded hash file is
 discussed below. Authentication is implemented using `Basic
 Auth <https://en.wikipedia.org/wiki/Basic_access_authentication>`__.
 
-Hash file H2O-client side
+Hash File H2O Client Side
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Flow Web UI client
+Flow Web UI Client
 ''''''''''''''''''
 
 When authentication is enabled, the user will be presented with a
 username and password dialog box when attempting to reach Flow.
 
-R client
+R Client
 ''''''''
 
 The following code snippet demonstrates connecting to an H2O cluster
@@ -619,12 +619,12 @@ with authentication:
 
     h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
 
-Python client
+Python Client
 '''''''''''''
 
 Not yet implemented. Please contact H2O for an update.
 
-Hash file H2O-server side
+Hash File H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 A **realm.properties** configuration file must be provided by the user.
@@ -709,3 +709,125 @@ Example:
 
     $SPARK_HOME/bin/spark-submit --class water.SparklingWaterDriver --conf spark.ext.h2o.hash.login=true --conf spark.ext.h2o.login.conf=/path/to/realm.properties sparkling-water-assembly-0.2.17-SNAPSHOT-all.jar
 
+SSL Internode Security
+----------------------
+
+By default, communication between H2O nodes is not encrypted for performance reasons. H2O currently support SSL/TLS authentication (basic handshake authentication) and data encryption for internode communication.
+
+Usage
+~~~~~
+
+Hadoop
+^^^^^^
+
+The easiest way to enable SSL while running H2O via h2odriver is to pass the ``-internal_secure_connections`` flag. This will tell h2odriver to automatically generate all the necessary files and distribute them to all mappers. This distribution may be secure depending on your YARN configuration.
+
+::
+
+  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_secure_connections
+
+
+The user can also manually generate keystore/truststore and properties file as described in the `Standalone/AWS`_ section that follows and run the following command to use them instead. In this case, all the files (certificates and properties) have to be distributed to all the mapper nodes by the user.
+
+::
+
+  hadoop jar h2odriver.jar -nodes 4 -mapperXmx 6g -output hdfsOutputDirName -internal_security security.properties
+
+
+Standalone/AWS
+^^^^^^^^^^^^^^
+
+In this case, the user has to generate the keystores, truststores, and properties file manually.
+
+1. Generate public/private keys and distributed them. (Refer to the `Keystore/Truststore Generation`_ section for more information).
+
+2. Create the security properties file. (Refer to the `Configuration`_ section for a full list of parameters.)
+
+ ::
+
+    h2o_ssl_jks_internal=keystore.jks
+    h2o_ssl_jks_password=password
+    h2o_ssl_jts_internal=truststore.jks
+    h2o_ssl_jts_password=password
+
+3. To start an SSL-enabled node, pass the location to the properties file using the ``-internal_security`` flag
+
+ ::
+
+  java -jar h2o.jar -internal_security security.properties
+
+Configuration
+~~~~~~~~~~~~~
+
+To enable this feature, set the ``-internal_security`` parameter when starting an H2O node, and point that to a configuration file (key=value format) that contains the following values:
+
+- ``h2o_ssl_jks_internal`` (required): The path (absolute or relative) to the key-store file used for internal SSL communication
+- ``h2o_ssl_jks_password`` (required): The password for the internal key-store
+- ``h2o_ssl_jts_internal`` (optional): The path (absolute or relative) to the trust-store file used for internal SSL communication. If not present, then ``h2o_ssl_jks_internal`` will be used.
+- ``h2o_ssl_jts_password`` (optional): The password to the internal trust-store. If not present, then ``h2o_ssl_jks_password`` will be used.
+- ``h2o_ssl_protocol`` (optional): The protocol name used during encrypted communication (supported by JVM). This defaults to TSLv1.2.
+- ``h2o_ssl_enabled_algorithms`` (optional): A comma separated list of enabled cipher algorithms. Include only those that are supported by JVM.
+
+This must be set for every node in the cluster. Every node needs to have access to both Java keystore and Java truststore containing appropriate keys and certificates.
+
+This feature should not be used together with the ``-useUDP`` flag, as we currently do not support UDP encryption through DTLS or any other protocol that might result in unencrypted data transfers.
+
+Keystore/Truststore Generation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Keystore/truststore creation and distribution are deployment specific and have to be handled by the end user.
+
+Basic keystore/truststore generation can be done using the keytool program, which ships with Java, documentation can be found `here <https://docs.oracle.com/javase/7/docs/technotes/tools/solaris/keytool.html>`__. Each node should have a key pair generated, and all public keys should be imported into a single truststore, which should be distributed to all the nodes.
+
+The simplest (though not recommended) way would be to call:
+
+::
+
+  keytool -genkeypair -keystore h2o-internal.jks -alias h2o-internal
+
+Then distribute the ``h2o-internal.jks`` file to all the nodes, and set it as both the keystore and truststore in ``ssl.config``. 
+
+A more secure way would be to:
+
+1. Run the same command on each node:
+  
+ ::
+
+  keytool -genkeypair -keystore h2o-internal.jks -alias h2o-internal
+
+2. Extract the certificate on each node:
+
+ ::
+
+  keytool -export -keystore h2o-internal.jks -alias signFiles -file node<number>.cer
+
+3. Distribute all of the above certificates to each node, and on each node create a truststore containing all of them (or put all certificates on one node, import to truststore and distribute that truststore to each node):
+
+ ::
+
+  keytool -importcert -file node<number>.cer -keystore truststore.jks -alias node<number>
+
+
+Performance
+~~~~~~~~~~~
+
+Turning on SSL may result in performance overhead for settings and algorithms that exchange data between nodes due to encryption/decryption time. Some algorithms might also slower because of this.
+
+Example benchmark on a 5 node cluster (6GB memory per node) working with a 5.8mln row dataset (580MB):
+
++------------+---------------------+------------------------+
+|            | Non SSL             | SSL                    |
++============+=====================+========================+
+| Parsing:   | 4.908s              | 5.304s                 |
++------------+---------------------+------------------------+
+| GLM model: | 01:39.446           | 01:49.634              |
++------------+---------------------+------------------------+
+
+Caveats and Missing Pieces
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+ - This feature CANNOT be used together with the ``-useUDP`` flag. We currently do not support DTLS or any other encryption for UDP.
+ - Should you start a mixed cloud of SSL and nonSSL nodes, the SSL ones will fail to bootstrap, while the nonSSL ones will become unresponsive.
+ - H2O does not provide in-memory data encryption. This might spill data to disk in unencrypted form should swaps to disk occur. As a workaround, an encrypted drive is advised.
+ - H2O does not support encryption of data saved to disk, should appropriate flags be enabled. Similar to the previous caveat, the user can use an encrypted drive to work around this issue.
+ - H2O supports only SSL and does not support SASL.

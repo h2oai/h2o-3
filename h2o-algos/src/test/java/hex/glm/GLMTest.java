@@ -1470,6 +1470,13 @@ public class GLMTest  extends TestUtil {
 //      params._missing_values_handling = MissingValuesHandling.Skip;
       GLM glm = new GLM(params);
       model = glm.trainModel().get();
+      assertTrue(model._output.bestSubmodel().iteration == 5);
+      model.delete();
+      params._max_iterations = 4;
+      glm = new GLM(params);
+      model = glm.trainModel().get();
+      assertTrue(model._output.bestSubmodel().iteration == 4);
+      System.out.println(model._output._model_summary);
       HashMap<String, Double> coefs = model.coefficients();
       System.out.println(coefs);
       for(int i = 0; i < cfs1.length; ++i)
@@ -1653,38 +1660,47 @@ public class GLMTest  extends TestUtil {
       params._nlambdas = 35;
       params._lambda_min_ratio = 0.18;
       params._max_iterations = 100000;
-      params._max_active_predictors = 215;
+      params._max_active_predictors = 10000;
       params._alpha = new double[]{1};
       for(Solver s: new Solver[]{ Solver.IRLSM, Solver.COORDINATE_DESCENT}){//Solver.COORDINATE_DESCENT,}) { // LBFGS lambda-search is too slow now
         params._solver = s;
         GLM glm = new GLM( params, modelKey);
         glm.trainModel().get();
         model = DKV.get(modelKey).get();
+        System.out.println(model._output._model_summary);
         // assert on that we got all submodels (if strong rules work, we should be able to get the results with this many active predictors)
         assertEquals(params._nlambdas, model._output._submodels.length);
         System.out.println(model._output._training_metrics);
         // assert on the quality of the result, technically should compare objective value, but this should be good enough for now
       }
       model.delete();
-      // test behavior when we can not fit within the active cols limit (should just bail out early and give us whatever it got)
-      params = new GLMParameters(Family.gaussian);
-      // params._response = 0;
-      params._lambda = null;
-      params._response_column = fr._names[0];
-      params._train = parsed;
-      params._lambda_search = true;
-      params._nlambdas = 35;
-      params._lambda_min_ratio = 0.18;
-      params._max_active_predictors = 20;
-      params._alpha = new double[]{1};
-      GLM glm = new GLM(params);
+      params._solver = Solver.COORDINATE_DESCENT;
+      params._max_active_predictors = 100;
+      params._lambda_min_ratio = 1e-2;
+      params._nlambdas = 100;
+      GLM glm = new GLM( params, modelKey);
       glm.trainModel().get();
-      model = DKV.get(glm.dest()).get();
-      testScoring(model,fr);
-      assertTrue(model._output._submodels.length > 3);
-      assertTrue(residualDeviance(model) <= 93);
+      model = DKV.get(modelKey).get();
+      assertTrue(model._output.rank() <= params._max_active_predictors);
+//      System.out.println("============================================================================================================");
+      System.out.println(model._output._model_summary);
+      // assert on that we got all submodels (if strong rules work, we should be able to get the results with this many active predictors)
+      System.out.println(model._output._training_metrics);
+      System.out.println("============================================================================================================");
       model.delete();
-      model = null;
+      params._max_active_predictors = 250;
+      params._lambda = null;
+      params._lambda_search = false;
+      glm = new GLM( params, modelKey);
+      glm.trainModel().get();
+      model = DKV.get(modelKey).get();
+      assertTrue(model._output.rank() <= params._max_active_predictors);
+//      System.out.println("============================================================================================================");
+      System.out.println(model._output._model_summary);
+      // assert on that we got all submodels (if strong rules work, we should be able to get the results with this many active predictors)
+      System.out.println(model._output._training_metrics);
+      System.out.println("============================================================================================================");
+      model.delete();
     } finally {
       fr.delete();
       if(model != null)model.delete();

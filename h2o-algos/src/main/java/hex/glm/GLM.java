@@ -1039,6 +1039,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         updateProgress(false);
       // lambda search loop
       for (int i = 0; i < _parms._lambda.length; ++i) {  // lambda search
+        if(_parms._max_iterations != -1 && _state._iter >= _parms._max_iterations)
+          break;
         Submodel sm = computeSubmodel(i,_parms._lambda[i]);
         double trainDev = sm.devianceTrain;
         double testDev = sm.devianceTest;

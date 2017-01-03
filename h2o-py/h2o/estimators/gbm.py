@@ -14,7 +14,7 @@ from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 class H2OGradientBoostingEstimator(H2OEstimator):
     """
-    Gradient Boosting Method
+    Gradient Boosting Machine
 
     Builds gradient boosted trees on a parsed data set, for regression or classification.
     The default distribution function will guess the model type based on the response column type.
@@ -356,7 +356,11 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @property
     def r2_stopping(self):
-        """float: Stop making trees when the R^2 metric equals or exceeds this (Default: 1.79769313486e+308)"""
+        """
+        float: r2_stopping is no longer supported and will be ignored if set - please use stopping_rounds,
+        stopping_metric and stopping_tolerance instead. Previous version of H2O would stop making trees when the R^2
+        metric equals or exceeds this (Default: 1.79769313486e+308)
+        """
         return self._parms.get("r2_stopping")
 
     @r2_stopping.setter

@@ -3,16 +3,14 @@ package water.util;
 import water.*;
 import water.H2O.H2OCallback;
 import water.H2O.H2OCountedCompleter;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.nbhm.NonBlockingHashMap;
 
 import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import water.parser.BufferedString;
 import static water.util.RandomUtils.getRNG;
 
 public class MRUtils {
@@ -36,13 +34,20 @@ public class MRUtils {
       @Override
       public void map(Chunk[] cs, NewChunk[] ncs) {
         final Random rng = getRNG(0);
+        final BufferedString bStr = new BufferedString();
         int count = 0;
         for (int r = 0; r < cs[0]._len; r++) {
           rng.setSeed(seed+r+cs[0].start());
           if (rng.nextFloat() < fraction || (count == 0 && r == cs[0]._len-1) ) {
             count++;
             for (int i = 0; i < ncs.length; i++) {
-              ncs[i].addNum(cs[i].atd(r));
+              if (cs[i].isNA(r)) ncs[i].addNA();
+              else if (cs[i] instanceof CStrChunk)
+                ncs[i].addStr(cs[i].atStr(bStr,r));
+              else if (cs[i] instanceof C16Chunk)
+                ncs[i].addUUID(cs[i].at16l(r),cs[i].at16h(r));
+              else
+                ncs[i].addNum(cs[i].atd(r));
             }
           }
         }
@@ -70,11 +75,15 @@ public class MRUtils {
         ArrayUtils.shuffleArray(idx, getRNG(seed));
         for (long anIdx : idx) {
           for (int i = 0; i < ncs.length; i++) {
-            ncs[i].addNum(cs[i].atd((int) anIdx));
+            if (cs[i] instanceof CStrChunk) {
+              ncs[i].addStr(cs[i],cs[i].start()+anIdx);
+            } else {
+              ncs[i].addNum(cs[i].atd((int) anIdx));
+            }
           }
         }
       }
-    }.doAll(fr.numCols(), Vec.T_NUM, fr).outputFrame(fr.names(), fr.domains());
+    }.doAll(fr.types(), fr).outputFrame(fr.names(), fr.domains());
   }
 
   /**
@@ -277,8 +286,14 @@ public class MRUtils {
             sampling_reps = (int)sampling_ratios[label] + (rng.nextFloat() < remainder ? 1 : 0);
           }
           for (int i = 0; i < ncs.length; i++) {
-            for (int j = 0; j < sampling_reps; ++j) {
-              ncs[i].addNum(cs[i].atd(r));
+            if (cs[i] instanceof CStrChunk) {
+              for (int j = 0; j < sampling_reps; ++j) {
+                ncs[i].addStr(cs[i],cs[0].start()+r);
+              }
+            } else {
+              for (int j = 0; j < sampling_reps; ++j) {
+                ncs[i].addNum(cs[i].atd(r));
+              }
             }
           }
         }
