@@ -176,8 +176,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
       // Set the initial prediction into the tree column 0
       if (_initialPrediction != 0.0) {
-        MRTask t = new MakeConstantVecTask(_initialPrediction);
-        t.doAll(vec_tree(_train, 0), _parms._build_tree_one_node);  // Only setting tree-column 0
+        new FillVecWithConstant(_initialPrediction)
+          .doAll(vec_tree(_train, 0), _parms._build_tree_one_node);  // Only setting tree-column 0
       }
     }
 
@@ -869,10 +869,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   }
 
 
-  private static class MakeConstantVecTask extends MRTask<MakeConstantVecTask> {
+  private static class FillVecWithConstant extends MRTask<FillVecWithConstant> {
     private double init;
 
-    public MakeConstantVecTask(double d) {
+    public FillVecWithConstant(double d) {
       init = d;
     }
 
