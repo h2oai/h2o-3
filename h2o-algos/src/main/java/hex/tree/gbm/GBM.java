@@ -245,53 +245,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
 
-    class ComputeMinMax extends MRTask<ComputeMinMax> {
-      public ComputeMinMax(int firstLeafIndex, int totalNumNodes) {
-        _firstLeafIndex = firstLeafIndex;
-        _totalNumNodes = totalNumNodes;
-      }
-      int _firstLeafIndex;
-      int _totalNumNodes;
-      float[] _mins;
-      float[] _maxs;
-      @Override public void map( Chunk chks[] ) {
-        int _len = _totalNumNodes - _firstLeafIndex; //number of leaves
-        _mins = new float[_len];
-        _maxs = new float[_len];
-        Arrays.fill(_mins, Float.MAX_VALUE);
-        Arrays.fill(_maxs, -Float.MAX_VALUE);
-
-        Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk preds = chk_tree(chks, 0); // Prior tree sums
-        Chunk nids = chk_nids(chks, 0);
-        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        for( int row = 0; row < preds._len; row++) {
-          if( ys.isNA(row) ) continue;
-          if (weights.atd(row)==0) continue;
-          int nid = (int)nids.at8(row);
-          assert(nid!=ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
-          if (nid < 0) continue; //skip OOB and otherwise skipped rows
-          float f = (float)(preds.atd(row) + offset.atd(row));
-          int idx = nid - _firstLeafIndex;
-          _mins[idx] = Math.min(_mins[idx], f);
-          _maxs[idx] = Math.max(_maxs[idx], f);
-        }
-      }
-
-      @Override
-      public void reduce(ComputeMinMax mrt) {
-        ArrayUtils.reduceMin(_mins, mrt._mins);
-        ArrayUtils.reduceMax(_maxs, mrt._maxs);
-      }
-    }
-
-    final static private double MIN_LOG_TRUNC = -19;
-    final static private double MAX_LOG_TRUNC = 19;
+    private static final double MIN_LOG_TRUNC = -19;
+    private static final double MAX_LOG_TRUNC = 19;
 
     private void truncatePreds(final DTree tree, int firstLeafIndex, DistributionFamily dist) {
       if (firstLeafIndex==tree._len) return;
-      ComputeMinMax minMax = new ComputeMinMax(firstLeafIndex, tree._len).doAll(_train);
+      ComputeMinMax minMax = new ComputeMinMax(
+          idx_resp(), idx_offset(), idx_weight(), idx_tree(0), idx_nids(0), firstLeafIndex, tree._len
+      ).doAll(_train);
       if (DEV_DEBUG) {
         Log.info("Number of leaf nodes: " + minMax._mins.length);
         Log.info("Min: " + java.util.Arrays.toString(minMax._mins));
@@ -1024,6 +985,61 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           wk.getValues()[row] = ((float) dist.negHalfGradient(y, f));
         }
       }
+    }
+  }
+
+
+  private static class ComputeMinMax extends MRTask<ComputeMinMax> {
+    private int responseIdx;
+    private int offsetIdx;
+    private int weightIdx;
+    private int treeIdx;
+    private int nidsIdx;
+    int firstLeafIdx;
+    int _totalNumNodes;
+    float[] _mins;
+    float[] _maxs;
+
+
+    public ComputeMinMax(int responseIndex, int offsetIndex, int weightIndex, int treeIndex, int nidsIndex, int firstLeafIndex, int totalNumNodes) {
+      responseIdx = responseIndex;
+      offsetIdx = offsetIndex;
+      weightIdx = weightIndex;
+      treeIdx = treeIndex;
+      nidsIdx = nidsIndex;
+      firstLeafIdx = firstLeafIndex;
+      _totalNumNodes = totalNumNodes;
+    }
+
+    @Override public void map(Chunk[] chks) {
+      int len = _totalNumNodes - firstLeafIdx;  // number of leaves
+      _mins = new float[len];
+      _maxs = new float[len];
+      Arrays.fill(_mins, Float.MAX_VALUE);
+      Arrays.fill(_maxs, -Float.MAX_VALUE);
+
+      Chunk ys = chks[responseIdx];
+      Chunk offset = offsetIdx >= 0? chks[offsetIdx] : new C0DChunk(0, chks[0]._len);
+      Chunk preds = chks[treeIdx]; // Prior tree sums
+      Chunk nids = chks[nidsIdx];
+      Chunk weights = weightIdx >= 0? chks[weightIdx] : new C0DChunk(1, chks[0]._len);
+      for( int row = 0; row < preds._len; row++) {
+        if( ys.isNA(row) ) continue;
+        if (weights.atd(row)==0) continue;
+        int nid = (int)nids.at8(row);
+        assert(nid!=ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
+        if (nid < 0) continue; //skip OOB and otherwise skipped rows
+        float f = (float)(preds.atd(row) + offset.atd(row));
+        int idx = nid - firstLeafIdx;
+        _mins[idx] = Math.min(_mins[idx], f);
+        _maxs[idx] = Math.max(_maxs[idx], f);
+      }
+    }
+
+    @Override
+    public void reduce(ComputeMinMax mrt) {
+      ArrayUtils.reduceMin(_mins, mrt._mins);
+      ArrayUtils.reduceMax(_maxs, mrt._maxs);
     }
   }
 
