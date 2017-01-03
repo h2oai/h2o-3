@@ -1,194 +1,206 @@
-options(echo=FALSE)
-#'
-#' Check that the required packages are installed and it's the correct version
-#'
+invisible(options(echo=FALSE))
 
-H2O.S3.R.PACKAGE.REPO.OSX <- "http://s3.amazonaws.com/h2o-r/osx"
-H2O.S3.R.PACKAGE.REPO.LIN <- "http://s3.amazonaws.com/h2o-r/linux"
-H2O.S3.R.PACKAGE.REPO.WIN <- "http://s3.amazonaws.com/h2o-r/windows"
-JENKINS.R.PKG.VER.REQS.OSX <- paste0(H2O.S3.R.PACKAGE.REPO.OSX,"/package_version_requirements.osx")
-JENKINS.R.PKG.VER.REQS.LIN <- paste0(H2O.S3.R.PACKAGE.REPO.LIN,"/package_version_requirements.linux")
-JENKINS.R.PKG.VER.REQS.WIN <- paste0(H2O.S3.R.PACKAGE.REPO.WIN,"/package_version_requirements.windows")
-JENKINS.R.VERSION.MAJOR <- "3"
-JENKINS.R.VERSION.MINOR <- "2.2"
-
-#'
-#' Given a dataframe of required packages, reorder the rows to satisfy package interdependencies
-#'
-orderByDependencies<-
-function(reqs) {
-    installOrder <- c("spatial","proto","randomForest","boot","rgl","ade4","RUnit","AUC","mlbench","HDtweedie",
-                      "LiblineaR","statmod","bit","bit64","R.methodsS3","R.oo","R.utils","bitops","RCurl","caTools",
-                      "KernSmooth","gtools","gdata","gplots","ROCR","codetools","iterators","foreach","lattice",
-                      "Matrix","nlme","mgcv","glmnet","modeltools","flexclust","MASS","nnet","flexmix","DEoptimR",
-                      "robustbase","trimcluster","mclust","kernlab","diptest","mvtnorm","prabclus","cluster","class",
-                      "e1071","fpc","foreign","acepack","Formula","rpart","colorspace","munsell","dichromat",
-                      "labeling","mime","R6","rstudioapi","git2r","brew","whisker","magrittr","stringi","BH",
-                      "RColorBrewer","gtable","Rcpp","digest","xml2","curl","rversions","jsonlite","gridExtra",
-                      "survival","gbm","latticeExtra","stringr","evaluate","roxygen2","memoise","crayon","testthat",
-                      "httr","devtools","plyr","reshape2","scales","ggplot2","Hmisc")
-    return(reqs[match(installOrder,reqs[,1]),])
+# helpers, possibly removed if current head of this branch merged
+# https://svn.r-project.org/R/branches/tools4pkgs/src/library/tools/R/packages.R
+packages.dcf <- function(file = "DESCRIPTION", 
+                         which = c("Depends","Imports","LinkingTo"), 
+                         except.priority = "base") {
+  if (!is.character(file) || !length(file) || !all(file.exists(file)))
+    stop("file argument must be character of filepath(s) to existing DESCRIPTION file(s)")
+  if (!is.character(except.priority) || !length(except.priority) || !all(except.priority %in% c("base","recommended")))
+    stop("except.priority accept 'base', 'recommended' or both")
+  which_all <- c("Depends", "Imports", "LinkingTo", "Suggests", "Enhances")
+  if (identical(which, "all"))
+    which <- which_all
+  else if (identical(which, "most"))
+    which <- c("Depends", "Imports", "LinkingTo", "Suggests")
+  if (!is.character(which) || !length(which) || !all(which %in% which_all))
+    stop("which argument accept only valid dependency relation: ", paste(which_all, collapse=", "))
+  x <- unlist(lapply(file, function(f, which) {
+    dcf <- tryCatch(read.dcf(f, fields = which),
+                    error = identity)
+    if (inherits(dcf, "error") || !length(dcf))
+      warning(gettextf("error reading file '%s'", f),
+              domain = NA, call. = FALSE)
+    else dcf[!is.na(dcf)]
+  }, which = which), use.names = FALSE)
+  x <- unlist(lapply(x, tools:::.extract_dependency_package_names))
+  except <- c("R", unlist(tools:::.get_standard_package_names()[except.priority], use.names = FALSE))
+  setdiff(x, except)
+}
+repos.dcf <- function(file = "DESCRIPTION") {
+  if (!is.character(file) || !length(file) || !all(file.exists(file)))
+    stop("file argument must be character of filepath(s) to existing DESCRIPTION file(s)")
+  x <- unlist(lapply(file, function(f) {
+    dcf <- tryCatch(read.dcf(f, fields = "Additional_repositories"),
+                    error = identity)
+    if (inherits(dcf, "error") || !length(dcf))
+      warning(gettextf("error reading file '%s'", f),
+              domain = NA, call. = FALSE)
+    else dcf[!is.na(dcf)]
+  }), use.names = FALSE)
+  x <- trimws(unlist(strsplit(trimws(x), ",", fixed = TRUE), use.names = FALSE))
+  unique(x)
 }
 
-#'
-#' Given a vector of installed packages, and a data frame of requirements (package,version,repo_name), return
-#' a vector of packages that need to be retrieved
-#'
-doCheck<-
-function(installed_packages, reqs) {
-    mp <- wv <- gp <- c()
-    for (i in 1:nrow(reqs)) {
-        req_pkg <- as.character(reqs[i,1])
-        req_ver <- as.character(reqs[i,2])
-        no_pkg <- !req_pkg %in% installed_packages
-        wrong_version <- FALSE
-        if (!no_pkg) wrong_version <- !req_ver == packageVersion(req_pkg)
-        if (no_pkg || wrong_version) {
-            gp <- c(gp, c(as.character(reqs[i,3])))
-            if (no_pkg) mp <- c(mp, c(req_pkg))
-            else wv <- c(wv, c(paste0("package=", req_pkg,", installed version=", packageVersion(req_pkg), ", required version=", req_ver))) } }
-
-    # missing packages
-    num_missing_packages <- length(mp)
-    if (num_missing_packages > 0) {
-        write("",stdout())
-        write("INFO: Missing the following Jenkins-approved R packages: ",stdout())
-        write("",stdout())
-        write(mp,stdout())
-        write("",stdout())
-        write("INFO: Please run `./gradlew syncRPackages` to update ",stdout()) }
-
-    # wrong versions
-    num_wrong_versions <- length(wv)
-    if (num_wrong_versions > 0) {
-        write("",stdout())
-        write("INFO: This system has R packages that are not Jenkins-approved versions: ",stdout())
-        write("",stdout())
-        write(wv,stdout())
-        write("",stdout())
-        write("INFO: Please run `./gradlew syncRPackages` to update",stdout()) }
-
-    gp
+#' @title R version Check
+#' @description Check that running R release is at least in a version provided to arguments.
+#' @param major character, expected major version R release, default \code{"3"}.
+#' @param minor character, expected minor version R release, default \code{"2.1"}.
+r_check <- function(major="3", minor="2.1") {
+  r_version <- as.package_version(R.version)
+  req_version <- as.package_version(paste(major, minor, sep="."))
+  if (r_version < req_version)
+    stop(sprintf("Jenkins has R version %s but this system has %s", req_version, r_version))
+  TRUE
 }
 
-#'
-#' Main
-#'
-#' @param args args[1] is requirements filename, args[2] is check or update, args[3] is optional and indicates -PnoAskRPkgSync=true
-#'
-packageVersionCheckUpdate <-
-function(args) {
-    doCheckOnly <- args[1] == "check"
-    if (doCheckOnly) {
-        write("",stdout())
-        write(paste0("INFO: R package/version check only. Please run `./gradlew syncRPackages` if you want to update instead"),stdout())
+#' @title Packages Check and Update
+#' @description Confirm that packages are present in library, by default also must match to packages version available in \code{repos}. If needed it will install (upgrade and downgrade) packages which are not matching.
+#' @param pkgs character vector of packages to check from \code{lib.loc} library vs. \code{repos}.
+#' @param lib.loc library location.
+#' @param check_only logical default TRUE.
+#' @param strict_version_check default TRUE also check that version of packages match to the one in repository.
+#' @param force_install character vector subset of \code{pkgs}, those packages should be installed every time, even if version match. Works only when \code{check_only} is FALSE.
+#' @param repos character R repositories where \code{pkgs} can be found, by default \emph{h2o-3 cran-dev} package repository.
+#' @param method character default \code{"curl"} passed to \link{install.packages}.
+#' @param quiet logical default FALSE passed to \link{install.packages}.
+#' @details When package update is to be done on clean R environment/library, or in case when we want to re-install every package, we can simply call \code{install.packages(pkgs, repos="http://s3.amazonaws.com/h2o-r/cran-dev")}.
+#' @section Adding dependencies
+#' When adding new R dependencies for \emph{h2o-3} project build just edit \code{h2o-3-DESCRIPTION.template} file and put them there, use \code{Additional_repositories} field for packages that are not present in our \code{repos}.
+#' @section Force update
+#' If some dependencies should be always re-installed, then provide them to \code{force_install} argument.
+#' This will ensure that latest version was installed, even if it has version numbers are already installed in \code{lib.loc}.
+#' @section Updating packages in \code{repos}
+#' When there is a need to update packages in \emph{upstream} \code{repos} it should be done by making new CRAN snapshop of all packages and replacing whole repository content.
+#' This is not technically required, but should be practiced to avoid issues between \emph{h2o-3} dependencies.
+pkgs_check_update <- function(pkgs, lib.loc=file.path(Sys.getenv("R_LIBS_USER", .libPaths()[1L])),
+                              check_only=TRUE, strict_version_check=TRUE, force_install=NULL,
+                              repos="http://s3.amazonaws.com/h2o-r/cran-dev",
+                              method="curl", quiet=FALSE) {
+  if (!length(pkgs) || !is.character(pkgs))
+    stop("Argument 'pkgs' must be provided, a character vector of packages to check or update.")
+  if (length(force_install) && (!is.character(force_install) || !all(force_install %in% pkgs)))
+    stop("Argument 'force_install' must be character vector, subset of 'pkgs' argument.")
+  if (!dir.exists(lib.loc) && !dir.create(lib.loc, recursive=TRUE))
+    stop(sprintf("Library location 'lib.loc' does not exists '%s' and directory could not be created.", lib.loc))
+  
+  # exclude base R packages
+  pkgs <- setdiff(pkgs, c("R", rownames(installed.packages(priority="base"))))
+  
+  # proper output redirection so CI catch it
+  cat <- function(..., file=stdout()) base::cat(..., file=file)
+  
+  if (check_only)
+    cat(c("", sprintf("INFO: R package%s check only. Please run `./gradlew syncRPackages` if you want to update instead", if (strict_version_check) "/version" else "")), sep="\n")
+  else
+    cat(c("", sprintf("INFO: R package%s s3 sync procedure", if (strict_version_check) "/version" else "")), sep="\n")
+  
+  ap <- available.packages(contrib.url(repos))
+  # missing available packages
+  map <- setdiff(pkgs, ap[,"Package"])
+  if (length(map))
+    stop(sprintf("Packages requested to check or update are missing in upstream repo(s): %s.", paste(map, collapse=", ")))
+  
+  cat(c("","INFO: Jenkins (package,version) list:", paste0("(",paste(ap[,"Package"], ap[,"Version"], sep=", "),")")), sep="\n")
+  
+  # force update packages
+  if (!check_only && length(force_install)) {
+    cat(c("","INFO: Force installing packages:", paste(force_install, collapse=", "), ""), sep="\n")
+    install.packages(force_install, lib=lib.loc, repos=repos, method=method, quiet=quiet)
+  }
+  
+  ip <- installed.packages(lib.loc)
+  # missing installed packages
+  mip <- setdiff(pkgs, ip[,"Package"])
+  if (length(mip))
+    cat(c(
+      "", "INFO: Missing the following Jenkins-approved R packages:", mip,
+      if (check_only) c("", "INFO: Please run `./gradlew syncRPackages` to update")
+    ), sep="\n")
+  
+  mipv <- character()
+  if (strict_version_check) {
+    missing_installed_packages_version <- function(pkgs, ap, ip) {
+      ap <- ap[ap[,"Package"] %in% pkgs,]
+      ip <- ip[ip[,"Package"] %in% pkgs,]
+      apv <- paste(ap[,"Package"], ap[,"Version"], sep="_")
+      ipv <- paste(ip[,"Package"], ip[,"Version"], sep="_")
+      setdiff(apv, ipv)
+    }
+    mipv <- missing_installed_packages_version(setdiff(pkgs, mip), ap, ip)
+    
+    if (!length(mipv)) {
+      cat(c("","INFO: Installed R packages match version to Jenkins-approved"), sep="\n")
     } else {
-        write("",stdout())
-        write(paste0("INFO: R package/version s3 sync procedure"),stdout()) }
-
-    OSX <- Sys.info()["sysname"] == "Darwin"
-    LIN <- Sys.info()["sysname"] == "Linux"
-
-    # check R version
-    return_val <- 0
-    sysRVersion <- paste0(R.version$major, ".", R.version$minor)
-    jenRVersion <- paste0(JENKINS.R.VERSION.MAJOR, ".", JENKINS.R.VERSION.MINOR)
-    if (sysRVersion < jenRVersion) {
-        write("", stdout())
-        write(paste("ERROR: Jenkins has R version", jenRVersion, "but this system has", sysRVersion), stdout())
-        write(paste("ERROR: Please upgrade your R version to match Jenkins'"), stdout())
-        q("no", 1, FALSE)
+      cat(c(
+        "", "INFO: Some R packages are installed in version which is not Jenkins-approved:",
+        mipv, # missing pkgs already reported
+        if (check_only) c("", "INFO: Please run `./gradlew syncRPackages` to update")
+      ), sep="\n")
     }
-
-    rLibsUser <- Sys.getenv("R_LIBS_USER")
-    if (rLibsUser == "" || !file.exists(rLibsUser)) { installed_packages <- rownames(installed.packages())
-    } else { installed_packages <- rownames(installed.packages(lib.loc=file.path(rLibsUser)))
-    }
-
-    # download and install RCurl
-    url <- tryCatch({
-        no_rcurl <- !"RCurl" %in% installed_packages
-        if (no_rcurl) {
-            write("INFO: Installing RCurl...",stdout())
-            install.packages("RCurl",repos="http://cran.us.r-project.org") }
-    }, error = function(e) {
-        write(paste0("ERROR: Unable to install RCurl, which is a requirement to continue proceed: ",e),stdout())
-        q("no",1,FALSE)
-    })
-
-    # read the package_version_requirements file
-    require(RCurl,quietly=TRUE)
-    url <- tryCatch({
-        if (OSX) { # osx
-            getURL(JENKINS.R.PKG.VER.REQS.OSX,.opts=list(ssl.verifypeer = FALSE))
-        } else if (LIN) { # linux
-            getURL(JENKINS.R.PKG.VER.REQS.LIN,.opts=list(ssl.verifypeer = FALSE))
-        } else {
-            getURL(JENKINS.R.PKG.VER.REQS.WIN,.opts=list(ssl.verifypeer = FALSE)) }
-    }, error = function(e) {
-        write(paste0("ERROR: Could not connect to S3 to retrieve R package requirements: ",e),stdout())
-        q("no",1,FALSE)
-    })
-    reqs <- read.csv(textConnection(url), header=FALSE)
-    # reorder the rows to satisfy package interdependencies
-    reqs <- orderByDependencies(reqs)
-    write("",stdout())
-    write("INFO: Jenkins' (package,version) list:",stdout())
-    write("",stdout())
-    invisible(lapply(1:nrow(reqs),function(x) write(paste0("(",as.character(reqs[x,1]),", ",as.character(reqs[x,2]),")"),stdout())))
-    num_packages <- nrow(reqs)
-
-    if (doCheckOnly) { # do package and version checks.
-        get_packages <- doCheck(installed_packages,reqs)
-        num_get_packages <- length(get_packages)
-        if (num_get_packages > 0) return_val <- return_val + 1
-        write("",stdout())
-        if (return_val == 0) {
-            write("INFO: Check successful. All system R packages/versions are Jenkins-approved",stdout())
-        } else {
-            write("ERROR: Check unsuccessful",stdout()) }
-        q("no",return_val,FALSE)
-    } else { # install/upgrade/downgrade packages/versions
-        write("",stdout())
-        write("INFO: Starting updates...",stdout())
-
-        for (i in 1:num_packages) {
-            name <- as.character(reqs[i,1])
-            ver  <- as.character(reqs[i,2])
-            pkg  <- as.character(reqs[i,3])
-
-            no_pkg <- !name %in% installed_packages
-            wrong_version <- FALSE
-            if (!no_pkg) wrong_version <- !ver == packageVersion(name)
-
-            if (no_pkg || wrong_version) {
-                write("",stdout())
-                write(paste0("Installing package ",pkg,"..."),stdout())
-                if (OSX) { # osx
-                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.OSX,"/",pkg),repos=NULL,type="mac.binary.mavericks")
-                } else if (LIN) { # linux
-                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.LIN,"/",pkg),repos=NULL,method="curl")
-                } else {
-                    install.packages(paste0(H2O.S3.R.PACKAGE.REPO.WIN,"/",pkg),repos=NULL,type="win.binary",method="curl") }}}
-
-        # follow-on check
-        write("",stdout())
-        write("INFO: R package sync complete. Conducting follow-on R package/version checks...",stdout())
-
-        if (rLibsUser == "" || !file.exists(rLibsUser)) { installed_packages <- rownames(installed.packages())
-        } else { installed_packages <- rownames(installed.packages(lib.loc=file.path(rLibsUser)))
-        }
-        get_packages <- doCheck(installed_packages,reqs)
-
-        if (length(get_packages) > 0) {
-            write("",stdout())
-            write("ERROR: Above list of missing/incorrect R packages was unexpected.",stdout())
-            q("no",1,FALSE)
-        } else {
-            write("",stdout())
-            write("INFO: R package sync successful",stdout())
-            write("",stdout()) }}
+  }
+  
+  if (check_only && length(c(mip, mipv)))
+    stop("Check unsuccessful.")
+  
+  inst_pkgs <- unique(c(unlist(sapply(strsplit(mipv, "_", fixed=TRUE), `[[`, 1L)), mip))
+  if (length(inst_pkgs)) {
+    if (any(reinst_pkgs<-inst_pkgs %in% force_install))
+      stop(sprintf("Attempt to install packages again, those should be already installed by 'force_install' argument: %s.", paste(inst_pkg[reinst_pkgs], collapse=", ")))
+    
+    cat(c("","INFO: Installing packages:", paste(inst_pkgs, collapse=", "), ""), sep="\n")
+    install.packages(inst_pkgs, lib=lib.loc, repos=repos, method=method, quiet=quiet)
+    
+    cat(c("",sprintf("INFO: R package sync complete. Conducting follow-on R package%s checks...", if (strict_version_check) "/version" else "")), sep="\n")
+    
+    ip <- installed.packages(lib.loc)
+    mip <- setdiff(pkgs, ip[,"Package"])
+    if (strict_version_check)
+      mipv <- missing_installed_packages_version(setdiff(pkgs, mip), ap, ip)
+    if (length(mip))
+      stop(sprintf("Missing installed packages were not installed for some reason: %s.",  paste(mip, collapse=", ")))
+    if (length(mipv))
+      stop(sprintf("Missing installed packages/version were not upgraded/downgraded for some reason: %s.",  paste(mipv, collapse=", ")))
+  }
+  
+  cat(c("","INFO: R package sync successful"), sep="\n")
+  
+  TRUE
 }
 
-packageVersionCheckUpdate(args=commandArgs(trailingOnly = TRUE))
+# check expected R version
+valid_r <- r_check()
 
+# check expected packages (/version)
+check_only <- if (length(args <- commandArgs(trailingOnly=TRUE))) !args[[1]]=="update" else TRUE
+
+# finding h2o-3-DESCRIPTION.template
+seek.files <- function(files, n = 7L) {
+  ans.file <- NULL
+  for (i in 0:n) {
+    path <- file.path(do.call("file.path", as.list(c(".",rep("..", i)))), files)
+    if (any(fe <- file.exists(path))) {
+      ans.file <- path[fe][1L] # take first if few present
+      break
+    }
+    if (identical(normalizePath(file.path(getwd(), dirname(path))), "/"))
+      break # root dir
+  }
+  if (is.null(ans.file) || !file.exists(ans.file))
+    stop(sprintf("Cannot find any of requested files, tried %s, also in parent directories up to %s levels, current wd '%s'.", paste(paste("'",files,"'",sep=""), sep=", "), i, getwd()))
+  ans.file
+}
+dcf.file <- seek.files(c("h2o-3-DESCRIPTION.template","h2o-3-DESCRIPTION"))
+
+repos <- c(repos.dcf(dcf.file), "http://s3.amazonaws.com/h2o-r/cran-dev")
+pkgs <- packages.dcf(dcf.file, which = "all")
+
+# try on windows/macosx
+ans <- pkgs_check_update(pkgs, check_only=check_only, repos=repos) #, force_install="data.table") # allows to be fully up to date
+
+if (!interactive()) {
+  # expect TRUE
+  status <- if (isTRUE(ans)) 0 else 1
+  q("no", status=status)
+}

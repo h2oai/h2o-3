@@ -23,13 +23,26 @@ test.string.manipulation <- function() {
   s1 <- h2o.trim(s1)
   expect_identical(as.character(s1[1,1]), "this is a string")
 
+  Log.info("String splitting")
   ds <- h2o.rbind(s1, s2, s3)
   print(ds)
-  #splits <- h2o.strsplit(ds, " ")
-  #print(splits)
-  #expect_equal(ncol(splits), 5)
+  splits <- h2o.strsplit(ds, " ")
+  print(splits)
+  splits.expected <- data.frame(
+    C1 = "this",
+    C2 = "is",
+    C3 = c("a", "another", "a"),
+    C4 = c("string", "string", "longer"),
+    C5 = c(NA, NA, "string"), stringsAsFactors = FALSE
+  )
+  expect_equal(as.data.frame(splits), splits.expected)
 
-  
+  tokenized <- h2o.tokenize(ds, " ")
+  tokenized.expected <- data.frame(C1 = c("this", "is", "a", "string", NA,
+                                          "this", "is", "another", "string", NA,
+                                          "this", "is", "a", "longer", "string", NA), stringsAsFactors = FALSE)
+  expect_equal(as.data.frame(tokenized), tokenized.expected)
+  expect_equal(as.data.frame(tokenized), tokenized.expected)
 }
 
 doTest("Testing Various String Manipulations", test.string.manipulation)

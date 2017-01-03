@@ -134,7 +134,7 @@ def gen_module(schema, algo, module):
     yield "           error = function(err) {"
     yield "             stop(\"argument \'training_frame\' must be a valid H2OFrame or key\")"
     yield "           })"
-    if algo != "stackedensemble":
+    if algo not in ["stackedensemble", "word2vec"]:
         yield "  # Validation_frame must be a key or an H2OFrame object"
         yield "  if (!is.null(validation_frame)) {"
         yield "     if (!is.H2OFrame(validation_frame))"
@@ -162,6 +162,8 @@ def gen_module(schema, algo, module):
             yield "  if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]"
             yield "  parms$ignored_columns <- args$x_ignore"
         yield "  parms$response_column <- args$y\n"
+    elif algo == "word2vec":
+        yield ""
     else:
         yield "  if(!missing(x))"
         yield "    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore"
@@ -271,6 +273,10 @@ def help_preamble_for(algo):
     if algo == "svd":
         return """
         Singular value decomposition of an H2O data frame using the power method.
+    """
+    if algo == "word2vec":
+        return """
+        Trains a word2vec model on a String column of an H2O data frame.
     """
 
 def help_details_for(algo):
@@ -425,6 +431,8 @@ def get_extra_params_for(algo):
         return "training_frame, x, destination_key"
     elif algo == "stackedensemble":
         return "x, y, training_frame, model_id"
+    elif algo == "word2vec":
+        return "training_frame"
     else:
         return "training_frame, x"
 
@@ -449,6 +457,9 @@ def help_extra_params_for(algo):
             #'        categorical variable).
             #' @param model_id Destination id for this model; auto-generated if not specified.
             #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters)."""
+    elif algo == "word2vec":
+        return """#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
+            #'        The training frame must contain a single string column containing the words to train on."""
     else:
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
 

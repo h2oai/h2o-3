@@ -5,6 +5,8 @@ import water.H2O;
 import water.Key;
 import water.api.schemas3.*;
 import water.api.schemas3.RapidsHelpV3.RapidsExpressionV3;
+import water.api.schemas4.InputSchemaV4;
+import water.api.schemas4.SessionIdV4;
 import water.exceptions.H2OIllegalArgumentException;
 import water.rapids.ast.AstRoot;
 import water.rapids.Rapids;
@@ -109,4 +111,21 @@ public class RapidsHandler extends Handler {
     }
     return p;
   }
+
+  public static class StartSession4 extends RestApiHandler<InputSchemaV4, SessionIdV4> {
+    @Override public String name() {
+      return "newSession4";
+    }
+    @Override public String help() {
+      return "Start a new Rapids session, and return the session id.";
+    }
+
+    @Override
+    public SessionIdV4 exec(int ignored, InputSchemaV4 input) {
+      SessionIdV4 out = new SessionIdV4();
+      out.session_key = "_sid" + Key.make().toString().substring(0, 5);
+      return out;
+    }
+  }
+
 }

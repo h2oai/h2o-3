@@ -4,97 +4,67 @@ K-Means
 Introduction
 ~~~~~~~~~~~~
 
-K-Means falls in the general category of clustering algorithms.
+K-Means falls in the general category of clustering algorithms. Clustering is a form of unsupervised learning that tries to find structures in the data without using any labels or target values. Clustering partitions a set of observations into separate groupings such that an observation in a given group is more similar to another observation in the same group than to another observation in a different group.
+
+For more information, refer to `"A Fast Clustering Algorithm to Cluster Very Large Categorical Data Sets in Data Mining" <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.134.83&rep=rep1&type=pdf>`__ and `"Extensions to the k-Means Algorithm for Clustering Large Data Sets with Catgorical Values" <http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.15.4028&rep=rep1&type=pdf>`__ by Zhexue Huang. 
 
 Defining a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
--  **model\_id**: (Optional) Specify a custom name for the model to use as
+-  `model_id <algo-params/model_id.html>`__: (Optional) Specify a custom name for the model to use as
    a reference. By default, H2O automatically generates a destination
    key.
 
--  **training\_frame**: (Required) Specify the dataset used to build the
+-  `training_frame <algo-params/training_frame.html>`__: (Required) Specify the dataset used to build the
    model. **NOTE**: In Flow, if you click the **Build a model** button from the
    ``Parse`` cell, the training frame is entered automatically.
 
--  **validation\_frame**: (Optional) Specify the dataset used to evaluate
+-  `validation_frame <algo-params/validation_frame.html>`__: (Optional) Specify the dataset used to evaluate
    the accuracy of the model.
 
--  **nfolds**: Specify the number of folds for cross-validation.
+-  `nfolds <algo-params/nfolds.html>`__: Specify the number of folds for cross-validation.
 
--  **keep\_cross\_validation\_predictions**: Enable this option to keep the
+-  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
    cross-validation predictions.
 
--  **keep_cross_validation_fold_assignment**: Enable this option to preserve the cross-validation fold assignment.
+-  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
 
--  **fold\_assignment**: (Applicable only if a value for **nfolds** is
-   specified and **fold\_column** is not specified) Specify the
-   cross-validation fold assignment scheme. The available options are
-   AUTO (which is Random), Random,
-   `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
+-  `fold_assignment <algo-params/fold_assignment.html>`__: (Applicable only if a value for **nfolds** is specified and **fold_column** is not specified) Specify the cross-validation fold assignment scheme. The available options are AUTO (which is Random), Random, `Modulo <https://en.wikipedia.org/wiki/Modulo_operation>`__, or Stratified (which will stratify the folds based on the response variable for classification problems).
 
--  **fold\_column**: Specify the column that contains the
-   cross-validation fold index assignment per observation.
+-  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
--  **ignored\_columns**: (Optional) Specify the column or columns to be exclude from the model. In Flow, click the checkbox next to a column
-   name to add it to the list of columns excluded from the model. To add
-   all columns, click the **All** button. To remove a column from the
-   list of ignored columns, click the X next to the column name. To
-   remove all columns from the list of ignored columns, click the
-   **None** button. To search for a specific column, type the column
-   name in the **Search** field above the column list. To only show
-   columns with a specific percentage of missing values, specify the
-   percentage in the **Only show columns with more than 0% missing
-   values** field. To change the selections for the hidden columns, use
-   the **Select Visible** or **Deselect Visible** buttons.
+-  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional) Specify the column or columns to be exclude from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
--  **ignore\_const\_cols**: (Optional) Specify whether to ignore
-   constant training columns, since no information can be gained from
-   them. This option is enabled by default.
+-  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: (Optional) Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  **score\_each\_iteration**: (Optional) Specify whether to score
-   during each iteration of the model training.
+-  `score_each_iteration <algo-params/score_each_iteration.html>`__: (Optional) Specify whether to score during each iteration of the model training.
 
--  **k**: Specify the number of clusters.
+-  `k <algo-params/k.html>`__: Specify the number of clusters.
 
--  **estimate_k**: Specify whether to estimate the number of clusters (<=k) iteratively (independent of the seed) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each **k** that, the estimate will go up to **max_iteration**. This option is disabled by default.
+-  `estimate_k <algo-params/estimate_k.html>`__: Specify whether to estimate the number of clusters (<=k) iteratively (independent of the seed) and deterministically (beginning with ``k=1,2,3...``). If enabled, for each **k** that, the estimate will go up to **max_iteration**. This option is disabled by default.
 
--  **user\_points**: Specify a vector of initial cluster centers. The
-   user-specified points must have the same number of columns as the
-   training observations. The number of rows must equal the number of
-   clusters.
+-  `user_points <algo-params/user_points.html>`__: Specify a vector of initial cluster centers. The user-specified points must have the same number of columns as the training observations. The number of rows must equal the number of clusters.
 
--  **max\_iterations**: Specify the maximum number of training
-   iterations. The range is 0 to 1e6.
+-  `max_iterations <algo-params/max_iterations.html>`__: Specify the maximum number of training iterations. The range is 0 to 1e6.
 
--  **standardize**: Enable this option to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to  have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is enabled by default.
+-  `standardize <algo-params/standardize.html>`__: Enable this option to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to  have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is enabled by default.
 
-    **Note**: If standardization is enabled, each column of numeric data
-    is centered and scaled so that its mean is zero and its standard
-    deviation is one before the algorithm is used. At the end of the
-    process, the cluster centers on both the standardized scale
-    (``centers_std``) and the de-standardized scale (``centers``) are
-    displayed. To de-standardize the centers, the algorithm multiplies
-    by the original standard deviation of the corresponding column and
-    adds the original mean. Enabling standardization is mathematically
-    equivalent to using ``h2o.scale`` in R with ``center`` = TRUE and
-    ``scale`` = TRUE on the numeric columns. Therefore, there will be no
-    discernible difference if standardization is enabled or not for
-    K-Means, since H2O calculates unstandardized centroids.
+    **Note**: If standardization is enabled, each column of numeric data is centered and scaled so that its mean is zero and its standard deviation is one before the algorithm is used. At the end of the process, the cluster centers on both the standardized scale (``centers_std``) and the de-standardized scale (``centers``). To de-standardize the centers, the algorithm multiplies by the original standard deviation of the corresponding column and adds the original mean. Enabling standardization is mathematically equivalent to using ``h2o.scale`` in R with ``center`` = TRUE and ``scale`` = TRUE on the numeric columns. Therefore, there will be no discernible difference if standardization is enabled or not for K-Means, since H2O calculates unstandardized centroids.
 
--  **seed**: Specify the random number generator (RNG) seed for
-   algorithm components dependent on randomization. The seed is
-   consistent for each H2O instance so that you can create models with
-   the same starting conditions in alternative configurations.
+-  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  **init**: Specify the initialization mode. The options are Random,
-   Furthest, PlusPlus, or User. **Note**: If PlusPlus is specified, the
-   initial Y matrix is chosen by the final cluster centers from the
-   K-Means PlusPlus algorithm.
+-  `init <algo-params/init.html>`__: Specify the initialization mode. The options are Random, Furthest, PlusPlus, or User.
 
-- **max_runtime_secs**: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+ - Random initialization randomly samples the k-specified value of the rows of the training data as cluster centers.
+ - PlusPlus initialization chooses one initial center at random and weights the random selection of subsequent centers so that points furthest from the first center are more likely to be chosen.
+ - Furthest initialization chooses one initial center at random and then chooses the next center to be the point furthest away in terms of Euclidean distance.
+ - User initialization requires the corresponding ``user_points`` parameter. Note that the user-specified points dataset must have the same number of columns as the training dataset.
 
-- **categorical_encoding**: Specify one of the following encoding schemes for handling categorical features:
+ **Note**: If PlusPlus is specified, the initial Y matrix is chosen by the final cluster centers from the K-Means PlusPlus algorithm. 
+
+- `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. Use 0 to disable.
+
+- `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
   - ``auto``: Allow the algorithm to decide (default)
   - ``one_hot_internal``: On the fly N+1 new cols for categorical features with N levels (default)
@@ -122,13 +92,7 @@ By default, the following output displays:
 -  Centroid statistics (centroid number, size, within sum of squares)
 -  Cluster means (centroid number, column)
 
-K-Means randomly chooses starting points and converges to a local
-minimum of centroids. The number of clusters is arbitrary, and should be
-thought of as a tuning parameter. The output is a matrix of the cluster
-assignments and the coordinates of the cluster centers in terms of the
-originally chosen attributes. Your cluster centers may differ slightly
-from run to run as this problem is Non-deterministic Polynomial-time
-(NP)-hard.
+K-Means randomly chooses starting points and converges to a local minimum of centroids. The number of clusters is arbitrary and should be thought of as a tuning parameter. The output is a matrix of the cluster assignments and the coordinates of the cluster centers in terms of the originally chosen attributes. Your cluster centers may differ slightly from run to run as this problem is Non-deterministic Polynomial-time (NP)-hard.
 
 FAQ
 ~~~
@@ -229,8 +193,8 @@ References
 ~~~~~~~~~~
 
 `Hastie, Trevor, Robert Tibshirani, and J Jerome H Friedman. The
-Elements of Statistical Learning. Vol.1. N.p., Springer New York,
-2001. <http://www.stanford.edu/~hastie/local.ftp/Springer/OLD//ESLII_print4.pdf>`__
+Elements of Statistical Learning. Second Edition. N.p., Springer New York,
+2001. <http://statweb.stanford.edu/~tibs/ElemStatLearn/printings/ESLII_print10.pdf>`__
 
 Xiong, Hui, Junjie Wu, and Jian Chen. “K-means Clustering Versus
 Validation Measures: A Data- distribution Perspective.” Systems, Man,

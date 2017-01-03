@@ -280,7 +280,7 @@ public class Vec extends Keyed<Vec> {
   private int chunkLen( int cidx ) { espc(); return (int) (_espc[cidx + 1] - _espc[cidx]); }
 
   /** Check that row-layouts are compatible. */
-  boolean isCompatibleWith(Vec v ) {
+  public boolean isCompatibleWith(Vec v) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
     return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e3);

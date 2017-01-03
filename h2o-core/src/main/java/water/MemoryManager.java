@@ -41,6 +41,9 @@ import water.util.PrettyPrint;
  * @author cliffc
  */
 abstract public class MemoryManager {
+  // Track timestamp of last oom log to avoid spamming the logs with junk.
+  private static volatile long oomLastLogTimestamp = 0;
+  private static final long SIXTY_SECONDS_IN_MILLIS = 60 * 1000;
 
   // max heap memory
   public static final long MEM_MAX = Runtime.getRuntime().maxMemory();
@@ -117,6 +120,7 @@ abstract public class MemoryManager {
       Cleaner.DESIRED = d;      // Desired caching level
     final long cacheUsageNow = Cleaner.Histo.cached();
 
+    boolean skipThisLogMessageToAvoidSpammingTheLogs = false;
     String m="";
     if( cacheUsageNow > Cleaner.DESIRED ) {
       m = (CAN_ALLOC?"Swapping!  ":"blocked:   ");
@@ -130,9 +134,21 @@ abstract public class MemoryManager {
         // Here we enter the zone of possibly dieing for OOM.  There's no point
         // in blocking allocations, as no more memory can be freed by more
         // cache-flushing.  Might as well proceed on a "best effort" basis.
+
+        long now = System.currentTimeMillis();
+        if ((now - oomLastLogTimestamp) >= SIXTY_SECONDS_IN_MILLIS) {
+          oomLastLogTimestamp = now;
+        }
+        else {
+          skipThisLogMessageToAvoidSpammingTheLogs = true;
+        }
       } else { 
         m = "MemGood:   "; // Cache is low enough, room for POJO allocation - full steam ahead!
       }
+    }
+
+    if (skipThisLogMessageToAvoidSpammingTheLogs) {
+      return;
     }
 
     // No logging if under memory pressure: can deadlock the cleaner thread
