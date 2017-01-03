@@ -245,47 +245,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
 
-    // --------------------------------------------------------------------------
-    // Compute Residuals
-    // Do this for all rows, whether OOB or not
-    class ComputePredAndRes extends MRTask<ComputePredAndRes> {
-      @Override public void map( Chunk chks[] ) {
-        Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk preds = chk_tree(chks, 0); // Prior tree sums
-        C8DVolatileChunk wk = (C8DVolatileChunk) chk_work(chks, 0); // Place to store residuals
-        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        double fs[] = _nclass > 1 ? new double[_nclass+1] : null;
-        Distribution dist = new Distribution(_parms);
-        for( int row = 0; row < wk._len; row++) {
-          double weight = weights.atd(row);
-          if (weight == 0) continue;
-          if (ys.isNA(row)) continue;
-          double f = preds.atd(row) + offset.atd(row);
-          double y = ys.atd(row);
-//          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
-          if( _parms._distribution == DistributionFamily.multinomial ) {
-            double sum = score1(chks, weight,0.0 /*offset not used for multiclass*/,fs,row);
-            if( Double.isInfinite(sum) ) { // Overflow (happens for constant responses)
-              for (int k = 0; k < _nclass; k++) {
-                wk = (C8DVolatileChunk) chk_work(chks, k);
-                wk.getValues()[row] = (((int)y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f));
-              }
-            } else {
-              for( int k=0; k<_nclass; k++ ) { // Save as a probability distribution
-                if( _model._output._distribution[k] != 0 ) {
-                  wk = (C8DVolatileChunk) chk_work(chks, k);
-                  wk.getValues()[row] = (((int)y == k ? 1f : 0f) - (float)(fs[k + 1] / sum));
-                }
-              }
-            }
-          } else {
-            wk.getValues()[row] = ((float) dist.negHalfGradient(y, f));
-          }
-        }
-      }
-    }
-
     class ComputeMinMax extends MRTask<ComputeMinMax> {
       public ComputeMinMax(int firstLeafIndex, int totalNumNodes) {
         _firstLeafIndex = firstLeafIndex;
@@ -404,7 +363,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         new StoreResiduals(dist).doAll(_train, _parms._build_tree_one_node);
       } else {
         // compute predictions and residuals in one shot
-        new ComputePredAndRes().doAll(_train, _parms._build_tree_one_node);
+        new ComputePredAndRes(
+            idx_resp(), idx_offset(), idx_weight(), idx_tree(0), idx_work(0),
+            _nclass, _model._output._distribution, new Distribution(_parms)
+        ).doAll(_train, _parms._build_tree_one_node);
       }
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
@@ -1000,18 +962,91 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   }
 
 
+  //--------------------------------------------------------------------------------------------------------------------
+  // Compute Residuals
+  // Do this for all rows, whether OOB or not
+  private static class ComputePredAndRes extends MRTask<ComputePredAndRes> {
+    private int responseIdx;
+    private int offsetIdx;
+    private int weightIdx;
+    private int treeIdx;
+    private int workIdx;
+    private int nclass;
+    private boolean[] out;
+    private Distribution dist;
+
+    public ComputePredAndRes(
+        int responseIndex, int offsetIndex, int weightIndex, int treeIndex, int workIndex,
+        int nClasses, double[] outputDistribution, Distribution distribution
+    ) {
+      responseIdx = responseIndex;
+      offsetIdx = offsetIndex;
+      weightIdx = weightIndex;
+      treeIdx = treeIndex;
+      workIdx = workIndex;
+      nclass = nClasses;
+      dist = distribution;
+      out = new boolean[outputDistribution.length];
+      for (int i = 0; i < out.length; i++) out[i] = (outputDistribution[i] != 0);
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      Chunk ys = chks[responseIdx];
+      Chunk offset = offsetIdx >= 0? chks[offsetIdx] : new C0DChunk(0, chks[0]._len);
+      Chunk preds = chks[treeIdx];  // Prior tree sums
+      C8DVolatileChunk wk = (C8DVolatileChunk) chks[workIdx]; // Place to store residuals
+      Chunk weights = weightIdx >= 0? chks[weightIdx] : new C0DChunk(1, chks[0]._len);
+      double[] fs = nclass > 1 ? new double[nclass + 1] : null;
+      for (int row = 0; row < wk._len; row++) {
+        double weight = weights.atd(row);
+        if (weight == 0) continue;
+        if (ys.isNA(row)) continue;
+        double f = preds.atd(row) + offset.atd(row);
+        double y = ys.atd(row);
+//          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
+        if (dist.distribution == DistributionFamily.multinomial && fs != null) {
+          double sum = score1static(chks, treeIdx, 0.0 /*not used for multiclass*/, fs, row, dist, nclass);
+          if (Double.isInfinite(sum)) {  // Overflow (happens for constant responses)
+            for (int k = 0; k < nclass; k++) {
+              wk = (C8DVolatileChunk) chks[workIdx + k];
+              wk.getValues()[row] = ((int) y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f);
+            }
+          } else {
+            for (int k = 0; k < nclass; k++) { // Save as a probability distribution
+              if (out[k]) {
+                wk = (C8DVolatileChunk) chks[workIdx + k];
+                wk.getValues()[row] = (((int) y == k ? 1f : 0f) - (float) (fs[k + 1] / sum));
+              }
+            }
+          }
+        } else {
+          wk.getValues()[row] = ((float) dist.negHalfGradient(y, f));
+        }
+      }
+    }
+  }
+
+
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
   // turns the results into a probability distribution.
-  @Override protected double score1( Chunk chks[], double weight, double offset, double fs[/*nclass*/], int row ) {
-    double f = chk_tree(chks,0).atd(row) + offset;
-    double p = new Distribution(_parms).linkInv(f);
-    if( _parms._distribution == DistributionFamily.modified_huber || _parms._distribution == DistributionFamily.bernoulli ) {
+  @Override protected double score1(Chunk[] chks, double weight, double offset, double[/*nclass*/] fs, int row) {
+    return score1static(chks, idx_tree(0), offset, fs, row, new Distribution(_parms), _nclass);
+  }
+
+  // Read the 'tree' columns, do model-specific math and put the results in the
+  // fs[] array, and return the sum.  Dividing any fs[] element by the sum
+  // turns the results into a probability distribution.
+  private static double score1static(Chunk[] chks, int treeIdx, double offset, double[] fs, int row, Distribution dist, int nClasses) {
+    double f = chks[treeIdx].atd(row) + offset;
+    double p = dist.linkInv(f);
+    if (dist.distribution == DistributionFamily.modified_huber || dist.distribution == DistributionFamily.bernoulli) {
       fs[2] = p;
-      fs[1] = 1.0-p;
+      fs[1] = 1.0 - p;
       return 1;                 // f2 = 1.0 - f1; so f1+f2 = 1.0
-    } else if (_parms._distribution == DistributionFamily.multinomial) {
-      if (_nclass == 2) {
+    } else if (dist.distribution == DistributionFamily.multinomial) {
+      if (nClasses == 2) {
         // This optimization assumes the 2nd tree of a 2-class system is the
         // inverse of the first.  Fill in the missing tree
         fs[1] = p;
@@ -1019,15 +1054,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         return fs[1] + fs[2];
       }
       // Multinomial loss function; sum(exp(data)).  Load tree data
-      assert(offset==0);
+      assert (offset == 0);
       fs[1] = f;
-      for( int k=1; k<_nclass; k++ )
-        fs[k+1]=chk_tree(chks,k).atd(row);
+      for (int k = 1; k < nClasses; k++)
+        fs[k + 1] = chks[treeIdx + k].atd(row);
       // Rescale to avoid Infinities; return sum(exp(data))
       return hex.genmodel.GenModel.log_rescale(fs);
-    }
-    else {
+    } else {
       return fs[0] = p;
     }
   }
+
 }
