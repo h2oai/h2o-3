@@ -21,8 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static jdk.nashorn.internal.objects.NativeError.getStackTrace;
-
 /**
  * Created by magnus on 5/5/16.
  */
