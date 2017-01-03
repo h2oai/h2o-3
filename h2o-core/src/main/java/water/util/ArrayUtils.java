@@ -163,6 +163,10 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] += b[i];
     return a;
   }
+  public static float[] add(float ca, float[] a, float cb, float[] b) {
+    for(int i = 0; i < a.length; i++ ) a[i] = (ca * a[i]) + (cb * b[i]);
+    return a;
+  }
   public static float[][] add(float[][] a, float[][] b) {
     for(int i = 0; i < a.length; i++ ) add(a[i],b[i]);
     return a;

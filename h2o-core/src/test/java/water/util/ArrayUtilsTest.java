@@ -1,16 +1,8 @@
 package water.util;
 
-import hex.CreateFrame;
-import hex.ToEigenVec;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.hamcrest.CoreMatchers;
-import water.DKV;
-import water.Key;
 import water.TestUtil;
-import water.fvec.Frame;
-import water.fvec.Vec;
 import static org.junit.Assert.*;
 import static water.util.ArrayUtils.*;
 
@@ -182,4 +174,15 @@ public class ArrayUtilsTest extends TestUtil {
     double[] somenz = {-1.0, Double.MIN_VALUE, 0.0, Double.MAX_VALUE, 0.001, 0.0, 42.0};
     assertEquals(5, countNonzeros(somenz));
   }
+
+  @Test
+  public void testAddWithCoefficients() {
+    float[] a = {1.0f, 2.0f, 3.0f};
+    float[] b = {100.0f, 200.0f, 300.0f};
+
+    float[] result = ArrayUtils.add(10.0f, a, 2.0f, b);
+    assertTrue(result == a);
+    assertArrayEquals(new float[]{210.0f, 420.0f, 630.0f}, a, 0.001f);
+  }
+
 }

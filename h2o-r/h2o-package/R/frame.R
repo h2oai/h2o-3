@@ -3768,6 +3768,18 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
 h2o.strsplit <- function(x, split) { .newExpr("strsplit", x, .quote(split)) }
 
 #'
+#' Tokenize String
+#'
+#' h2o.tokenize is similar to h2o.strsplit, the difference between them is that h2o.tokenize will store the tokenized
+#' text into a single column making it easier for additional processing (filtering stop words, word2vec algo, ...).
+#'
+#' @param x The column or columns whose strings to tokenize.
+#' @param split The regular expression to split on.
+#' @return An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
+#' @export
+h2o.tokenize <- function(x, split) { .newExpr("tokenize", x, .quote(split)) }
+
+#'
 #' To Lower
 #'
 #' @param x An H2OFrame object whose strings should be lower'd

@@ -54,6 +54,7 @@ Collate:
          'randomforest.R'
          'naivebayes.R'
          'word2vec.R'
+         'w2vutils.R'
          'locate.R'
          'grid.R'
          'zzz.R'
