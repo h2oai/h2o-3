@@ -175,18 +175,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
 
       // Set the initial prediction into the tree column 0
-      if( _initialPrediction != 0.0 ) {
-        final double init = _initialPrediction;
-        new MRTask() {
-          @Override
-          public void map(Chunk tree) {
-            if(tree instanceof C8DVolatileChunk){
-              Arrays.fill(((C8DVolatileChunk)tree).getValues(),init);
-            } else  for (int i = 0; i < tree._len; i++) tree.set(i, init);
-          }
-        }.doAll(vec_tree(_train, 0), _parms._build_tree_one_node); // Only setting tree-column 0
+      if (_initialPrediction != 0.0) {
+        MRTask t = new MakeConstantVecTask(_initialPrediction);
+        t.doAll(vec_tree(_train, 0), _parms._build_tree_one_node);  // Only setting tree-column 0
       }
     }
+
 
     /**
      * Helper to compute the initial value for Laplace/Huber/Quantile (incl. optional offset and obs weights)
@@ -948,6 +942,28 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
   }
+
+
+  private static class MakeConstantVecTask extends MRTask<MakeConstantVecTask> {
+    private double init;
+
+    public MakeConstantVecTask(double d) {
+      init = d;
+    }
+
+    @Override public boolean modifiesVolatileVecs() { return true; }
+
+    @Override
+    public void map(Chunk tree) {
+      if (tree instanceof C8DVolatileChunk) {
+        Arrays.fill(((C8DVolatileChunk)tree).getValues(), init);
+      } else {
+        for (int i = 0; i < tree._len; i++)
+          tree.set(i, init);
+      }
+    }
+  }
+
 
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
