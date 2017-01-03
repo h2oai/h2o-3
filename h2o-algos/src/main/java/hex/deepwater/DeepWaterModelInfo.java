@@ -34,7 +34,6 @@ final public class DeepWaterModelInfo extends Iced {
 
   private TwoDimTable summaryTable;
 
-  //for image classification
   transient BackendTrain _backend; //interface provider
   transient BackendModel _model;  //pointer to C++ process
 
