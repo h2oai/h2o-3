@@ -236,51 +236,19 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       int N = 1; //one step is enough - same as R
 
       double init = 0; //start with initial value of 0 for convergence
+      NewtonRaphson nrtask = new NewtonRaphson(idx_resp(), idx_offset(), idx_weight(), new Distribution(_parms));
       do {
-        double newInit = new NewtonRaphson(init).doAll(train).value();
+        nrtask.setValue(init);
+        double newInit = nrtask.doAll(train).value();
         delta = Math.abs(init - newInit);
         init = newInit;
-        Log.info("Iteration " + ++count + ": initial value: " + init);
+        Log.info("Iteration " + (++count) + ": initial value: " + init);
       } while (count < N && delta >= tol);
       if (delta > tol) Log.warn("Not fully converged.");
       Log.info("Newton-Raphson iteration ran for " + count + " iteration(s). Final residual: " + delta);
       return init;
     }
 
-    /**
-     * Newton-Raphson fixpoint iteration to find a self-consistent initial value
-     */
-    private class NewtonRaphson extends MRTask<NewtonRaphson> {
-      double _init;
-      double _num;
-      double _denom;
-      public double value() {
-        return _init + _num/_denom;
-      }
-      NewtonRaphson(double init) { _init = init; }
-      @Override public void map( Chunk chks[] ) {
-        Chunk ys = chk_resp(chks);
-        Chunk offset = chk_offset(chks);
-        Chunk weight = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        Distribution dist = new Distribution(_parms);
-        for( int row = 0; row < ys._len; row++) {
-          double w = weight.atd(row);
-          if (w == 0) continue;
-          if (ys.isNA(row)) continue;
-          double y = ys.atd(row);
-          double o = offset.atd(row);
-          double p = dist.linkInv(o + _init);
-          _num += w*(y-p);
-          _denom += w*p*(1.-p);
-        }
-      }
-
-      @Override
-      public void reduce(NewtonRaphson mrt) {
-        _num += mrt._num;
-        _denom += mrt._denom;
-      }
-    }
 
     // --------------------------------------------------------------------------
     // Compute Residuals
@@ -961,6 +929,60 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for (int i = 0; i < tree._len; i++)
           tree.set(i, init);
       }
+    }
+  }
+
+
+  /**
+   * Newton-Raphson fixpoint iteration to find a self-consistent initial value
+   */
+  private static class NewtonRaphson extends MRTask<NewtonRaphson> {
+    private int responseIdx;
+    private int offsetIdx;
+    private int weightIdx;
+    private Distribution dist;
+    private double _init;
+    private double _numerator;
+    private double _denominator;
+
+    public NewtonRaphson(int responseIndex, int offsetIndex, int weightIndex, Distribution distribution) {
+      responseIdx = responseIndex;
+      offsetIdx = offsetIndex;
+      weightIdx = weightIndex;
+      dist = distribution;
+    }
+
+    public void setValue(double initialValue) {
+      _init = initialValue;
+      _numerator = 0;
+      _denominator = 0;
+    }
+
+    public double value() {
+      return _init + _numerator / _denominator;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      Chunk ys = chks[responseIdx];
+      Chunk offset = chks[offsetIdx];
+      Chunk weight = weightIdx >= 0? chks[weightIdx] : new C0DChunk(1, chks[0]._len);
+      for (int row = 0; row < ys._len; row++) {
+        double w = weight.atd(row);
+        if (w == 0) continue;
+        if (ys.isNA(row)) continue;
+        double y = ys.atd(row);
+        double o = offset.atd(row);
+        double p = dist.linkInv(o + _init);
+        _numerator += w * (y - p);
+        _denominator += w * p * (1. - p);
+      }
+    }
+
+    @Override
+    public void reduce(NewtonRaphson mrt) {
+      _numerator += mrt._numerator;
+      _denominator += mrt._denominator;
     }
   }
 
