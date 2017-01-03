@@ -188,17 +188,12 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
      */
     private double getInitialValueQuantile(double quantile) {
       // obtain y - o
-      Vec y = hasOffsetCol() ? new MRTask() {
-        @Override public void map(Chunk[] chks, NewChunk[] nc) {
-          final Chunk resp = chk_resp(chks);
-          final Chunk offset = chk_offset(chks);
-          for (int i=0; i<chks[0]._len; ++i)
-            nc[0].addNum(resp.atd(i) - offset.atd(i)); //y - o
-        }
-      }.doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec() : response();
+      Vec y = hasOffsetCol()
+          ? new ResponseLessOffsetTask(idx_resp(), idx_offset()).doAll(1, Vec.T_NUM, _train).outputFrame().anyVec()
+          : response();
 
       // Now compute (weighted) quantile of y - o
-      double res = Double.NaN;
+      double res;
       QuantileModel qm = null;
       Frame tempFrame = null;
       try {
@@ -929,6 +924,24 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         for (int i = 0; i < tree._len; i++)
           tree.set(i, init);
       }
+    }
+  }
+
+
+  private static class ResponseLessOffsetTask extends MRTask<ResponseLessOffsetTask> {
+    private int responseIdx;
+    private int offsetIdx;
+
+    public ResponseLessOffsetTask(int responseIndex, int offsetIndex) {
+      responseIdx = responseIndex;
+      offsetIdx = offsetIndex;
+    }
+
+    @Override public void map(Chunk[] chks, NewChunk[] nc) {
+      final Chunk resp = chks[responseIdx];
+      final Chunk offset = chks[offsetIdx];
+      for (int i = 0; i < chks[0]._len; ++i)
+        nc[0].addNum(resp.atd(i) - offset.atd(i));  // y - o
     }
   }
 
