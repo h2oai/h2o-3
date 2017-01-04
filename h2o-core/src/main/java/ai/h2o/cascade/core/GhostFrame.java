@@ -17,8 +17,8 @@ import java.util.List;
  *
  * This should be the base class for all "frames" produced in Cascade.
  */
-public abstract class NFrame {
-  protected NFrame[] parents;
+public abstract class GhostFrame {
+  protected GhostFrame[] parents;
 
 
   /** Number of columns in the frame. */
@@ -36,12 +36,12 @@ public abstract class NFrame {
 
 
   /**
-   * <p> If the {@code NFrame} depends on 1 or more external {@link Vec}s,
+   * <p> If the {@code GhostFrame} depends on 1 or more external {@link Vec}s,
    * then it should override this method and append herein all the dependents
    * onto the list of {@code inputs}. Thus, this method mutates the
    * provided argument.
    *
-   * <p> If the {@code NFrame} depends on 1 or more other {@code NFrame}s, it
+   * <p> If the {@code GhostFrame} depends on 1 or more other {@code GhostFrame}s, it
    * should call their {@code prepareInput()} methods recursively.
    *
    * <p> If you put some {@code Vec}s onto the list of inputs, then expect
@@ -50,7 +50,7 @@ public abstract class NFrame {
    * list of {@code inputs}.
    */
   protected void prepareInputs(List<Vec> inputs) {
-    for (NFrame nf: parents)
+    for (GhostFrame nf: parents)
       nf.prepareInputs(inputs);
   }
 
@@ -59,16 +59,16 @@ public abstract class NFrame {
    * When an {@link MRTask} is run, this method will be invoked once per each
    * invocation of {@link MRTask#map(Chunk[])}.
    *
-   * <p> If your {@code NFrame} requires some local initialization (for example
+   * <p> If your {@code GhostFrame} requires some local initialization (for example
    * to initialize a reusable output array, or a random number generator
    * object, etc), or if it needs to read inputs from external {@code Vec}s,
    * then you can do so in this method.
    *
-   * <p> If your {@code NFrame} depends on 1 or more other {@code NFrame}s, you
+   * <p> If your {@code GhostFrame} depends on 1 or more other {@code GhostFrame}s, you
    * should call their {@code preparePerChunk()} methods recursively.
    */
   protected void preparePerChunk(Chunk[] cs) {
-    for (NFrame nf: parents)
+    for (GhostFrame nf: parents)
       nf.preparePerChunk(cs);
   }
 
