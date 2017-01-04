@@ -316,7 +316,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
         // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
         // compute absolute diff |y-(f+o)| for all rows
-        Vec diff = new ComputeAbsDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
+        Vec diff = new ComputeAbsDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
         Distribution dist = new Distribution(_parms);
         // compute weighted alpha-quantile of the absolute residual -> this is the delta for the huber loss
         huberDelta = MathUtils.computeWeightedQuantile(_weights, diff, _parms._huber_alpha);
@@ -472,27 +472,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } // -- k-trees are done
     }
 
-    private class ComputeDiff extends MRTask<ComputeDiff> {
-      @Override
-      public void map(Chunk[] chks, NewChunk[] nc) {
-        final Chunk y = chk_resp(chks);
-        final Chunk o = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        final Chunk f = chk_tree(chks,0);
-        for (int i=0; i<chks[0].len(); ++i)
-          nc[0].addNum(y.atd(i) - (f.atd(i) + o.atd(i)));
-      }
-    }
 
-    private class ComputeAbsDiff extends MRTask<ComputeAbsDiff> {
-      @Override
-      public void map(Chunk[] chks, NewChunk[] nc) {
-        final Chunk y = chk_resp(chks);
-        final Chunk o = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        final Chunk f = chk_tree(chks,0);
-        for (int i=0; i<chks[0].len(); ++i)
-          nc[0].addNum(Math.abs(y.atd(i) - (f.atd(i) + o.atd(i))));
-      }
-    }
 
     private class StoreResiduals extends MRTask<StoreResiduals> {
       Distribution _dist;
@@ -517,7 +497,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private void fitBestConstantsQuantile(DTree[] ktrees, int firstLeafIndex, double quantile) {
       if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
       assert(_nclass==1);
-      Vec diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
+      Vec diff = new ComputeDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
       Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
       Vec strata = vec_nids(_train,0);
 
@@ -612,7 +592,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       assert(_nclass==1);
 
       // get diff y-(f+o) and weights and strata (node idx)
-      Vec diff = new ComputeDiff().doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
+      Vec diff = new ComputeDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
       Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
       Vec strata = vec_nids(_train,0);
 
@@ -1021,6 +1001,44 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   }
 
 
+  private static class ComputeDiff extends MRTask<ComputeDiff> {
+    private FrameMap fm;
+
+    public ComputeDiff(FrameMap frameMap) {
+      fm = frameMap;
+    }
+
+    @Override
+    public void map(Chunk[] chks, NewChunk[] nc) {
+      final Chunk y = chks[fm.responseIndex];
+      final Chunk o = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      final Chunk f = chks[fm.tree0Index];
+      for (int i = 0; i < chks[0].len(); ++i)
+        nc[0].addNum(y.atd(i) - (f.atd(i) + o.atd(i)));
+    }
+  }
+
+
+  private static class ComputeAbsDiff extends MRTask<ComputeAbsDiff> {
+    private FrameMap fm;
+
+    public ComputeAbsDiff(FrameMap frameMap) {
+      fm = frameMap;
+    }
+
+    @Override
+    public void map(Chunk[] chks, NewChunk[] nc) {
+      final Chunk y = chks[fm.responseIndex];
+      final Chunk o = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      final Chunk f = chks[fm.tree0Index];
+      for (int i = 0; i < chks[0].len(); ++i)
+        nc[0].addNum(Math.abs(y.atd(i) - (f.atd(i) + o.atd(i))));
+    }
+  }
+
+
+
+  //--------------------------------------------------------------------------------------------------------------------
 
   // Read the 'tree' columns, do model-specific math and put the results in the
   // fs[] array, and return the sum.  Dividing any fs[] element by the sum
