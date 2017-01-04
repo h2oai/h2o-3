@@ -10,6 +10,8 @@ import static ai.h2o.cascade.core.WorkFrameTransforms.*;
 
 
 /**
+ * TODO: will be removed shortly
+ *
  * Cascade version of the {@link Frame} class.
  *
  * <p> A WorkFrame may exist in two forms: either in "stone", where it is merely

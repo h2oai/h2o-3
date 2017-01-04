@@ -87,7 +87,7 @@ public abstract class GhostFrame extends Val {
   protected BufferedString getStrValue(int row, int col) { return null; }
 
 
-  public final void materialize() {
+  public CorporealFrame materialize() {
     ArrayList<Vec> inputs = new ArrayList<>();
     prepareInputs(inputs);
     Vec[] inputVecs = inputs.toArray(new Vec[inputs.size()]);
@@ -125,6 +125,8 @@ public abstract class GhostFrame extends Val {
       }
     }.doAll(outputTypes, inputVecs)
      .outputFrame(Key.<Frame>make(), outputNames, null);
+
+    return new CorporealFrame(res);
   }
 
 

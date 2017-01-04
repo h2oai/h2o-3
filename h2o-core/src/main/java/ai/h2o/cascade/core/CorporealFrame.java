@@ -8,18 +8,35 @@ import water.parser.BufferedString;
 import java.util.Arrays;
 import java.util.List;
 
+
 /**
- * This is a {@link GhostFrame} wrapped around a plain {@link Frame}.
+ * This is a {@link GhostFrame} wrapped around a plain old {@link Frame}.
  */
 public class CorporealFrame extends GhostFrame {
   private Frame frame;
-  private int inputsOffset;
+  // Helper variables used during an MRTask execution over the frame.
+  private int j0;
   private transient Chunk[] chunks;
   private transient BufferedString bs;
+
 
   public CorporealFrame(Frame f) {
     frame = f;
   }
+
+  /**
+   * Retrieve the {@link Frame} wrapped by this {@code CorporealFrame}. This
+   * method is unsafe, as it allows access to underlying data without any
+   * supervision from the Cascade runtime.
+   */
+  public Frame getWrappedFrame() {
+    return frame;
+  }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // GhostFrame interface implementation
+  //--------------------------------------------------------------------------------------------------------------------
 
   @Override
   public int numCols() {
@@ -44,7 +61,7 @@ public class CorporealFrame extends GhostFrame {
 
   @Override
   protected void prepareInputs(List<Vec> inputs) {
-    inputsOffset = inputs.size();
+    j0 = inputs.size();
     inputs.addAll(Arrays.asList(frame.vecs()));
   }
 
@@ -56,16 +73,22 @@ public class CorporealFrame extends GhostFrame {
 
   @Override
   public double getNumValue(int i, int j) {
-    return chunks[j + inputsOffset].atd(i);
+    return chunks[j + j0].atd(i);
   }
 
   @Override
   public BufferedString getStrValue(int i, int j) {
-    return chunks[j + inputsOffset].atStr(bs, i);
+    return chunks[j + j0].atStr(bs, i);
   }
 
-
-  public Frame getWrappedFrame() {
-    return frame;
+  /**
+   * Materializing a {@code CorporealFrame} is a noop -- the frame is already
+   * "material". Therefore, this method just returns the object itself (not
+   * even a copy).
+   */
+  @Override
+  public CorporealFrame materialize() {
+    return this;
   }
+
 }

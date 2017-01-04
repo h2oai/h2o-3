@@ -1,6 +1,5 @@
 package ai.h2o.cascade.core;
 
-import water.Iced;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
@@ -8,7 +7,7 @@ import java.util.Arrays;
 
 /**
  */
-public class SliceList extends Iced {
+public class SliceList extends Val {
   public static final int LARGEST_LIST_TO_EXPAND = 1000000;
 
   private long[] bases;
@@ -243,6 +242,26 @@ public class SliceList extends Iced {
       isList = false;
       isSorted = true;
     }
+  }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Val interface implementation
+  //--------------------------------------------------------------------------------------------------------------------
+
+  @Override
+  public Val.Type type() {
+    return Val.Type.SLICE;
+  }
+
+  @Override
+  public boolean isSlice() {
+    return true;
+  }
+
+  @Override
+  public SliceList getSlice() {
+    return this;
   }
 
 

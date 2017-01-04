@@ -16,10 +16,16 @@ import water.fvec.Vec;
 public class FnClone extends StdlibFunction {
 
   public GhostFrame apply(GhostFrame frame) {
-    Frame srcFrame = ((CorporealFrame) frame).getWrappedFrame();
-    Key<Frame> destKey = scope.session().mintKey();
-    Frame destFrame = cloneFrame(srcFrame, destKey);
-    return new CorporealFrame(destFrame);
+    if (frame instanceof CorporealFrame) {
+      Frame srcFrame = ((CorporealFrame) frame).getWrappedFrame();
+      Key<Frame> destKey = scope.session().mintKey();
+      Frame destFrame = cloneFrame(srcFrame, destKey);
+      return new CorporealFrame(destFrame);
+    } else {
+      // If the source frame is not corporeal, then materializing it is
+      // equivalent to creating a copy.
+      return frame.materialize();
+    }
   }
 
 

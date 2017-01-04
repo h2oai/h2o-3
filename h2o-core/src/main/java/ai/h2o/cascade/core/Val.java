@@ -1,6 +1,7 @@
 package ai.h2o.cascade.core;
 
 import ai.h2o.cascade.asts.AstNode;
+import water.Iced;
 
 
 /**
@@ -25,11 +26,8 @@ import ai.h2o.cascade.asts.AstNode;
  * for various kinds of {@code X}s. Each subclass of {@code Val} overrides
  * one or more of these methods to indicate whether it is convertible to type
  * {@code X}, and to return raw value of type {@code X}.
- *
- * <p> NOTE: This class should *not* derive from Iced, since these objects
- * are not intended to be passed around the cluster.
  */
-public abstract class Val {
+public abstract class Val extends Iced<Val> {
 
   public enum Type {
     NULL("ValNull"),     // null (void) value
@@ -37,7 +35,7 @@ public abstract class Val {
     INT("ValNum"),       // integer (backed by the ValNum class)
     BOOL("ValNum"),      // boolean (backed by the ValNum class)
     NUMS("ValNums"),     // array of doubles
-    SLICE("ValSlice"),   // list of slices -- used for indexing
+    SLICE("SliceList"),  // list of slices -- used for indexing
     STR("ValStr"),       // string
     STRS("ValStrs"),     // array of strings
     IDS("IdList"),       // list of unevaluated variables
