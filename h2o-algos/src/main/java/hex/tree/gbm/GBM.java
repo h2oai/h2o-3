@@ -588,12 +588,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       init = d;
     }
 
-    @Override public boolean modifiesVolatileVecs() { return true; }
+    @Override
+    protected boolean modifiesVolatileVecs() {
+      return true;
+    }
 
     @Override
     public void map(Chunk tree) {
       if (tree instanceof C8DVolatileChunk) {
-        Arrays.fill(((C8DVolatileChunk)tree).getValues(), init);
+        Arrays.fill(((C8DVolatileChunk) tree).getValues(), init);
       } else {
         for (int i = 0; i < tree._len; i++)
           tree.set(i, init);
@@ -609,7 +612,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       fm = frameMap;
     }
 
-    @Override public void map(Chunk[] chks, NewChunk[] nc) {
+    @Override
+    public void map(Chunk[] chks, NewChunk[] nc) {
       final Chunk resp = chks[fm.responseIndex];
       final Chunk offset = chks[fm.offsetIndex];
       for (int i = 0; i < chks[0]._len; ++i)
@@ -647,7 +651,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     public void map(Chunk[] chks) {
       Chunk ys = chks[fm.responseIndex];
       Chunk offset = chks[fm.offsetIndex];
-      Chunk weight = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+      Chunk weight = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
       for (int row = 0; row < ys._len; row++) {
         double w = weight.atd(row);
         if (w == 0) continue;
@@ -689,10 +693,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     @Override
     public void map(Chunk[] chks) {
       Chunk ys = chks[fm.responseIndex];
-      Chunk offset = fm.offsetIndex >= 0? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      Chunk offset = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
       Chunk preds = chks[fm.tree0Index];  // Prior tree sums
       C8DVolatileChunk wk = (C8DVolatileChunk) chks[fm.work0Index]; // Place to store residuals
-      Chunk weights = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+      Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
       double[] fs = nclass > 1 ? new double[nclass + 1] : null;
       for (int row = 0; row < wk._len; row++) {
         double weight = weights.atd(row);
@@ -738,7 +742,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _totalNumNodes = totalNumNodes;
     }
 
-    @Override public void map(Chunk[] chks) {
+    @Override
+    public void map(Chunk[] chks) {
       int len = _totalNumNodes - firstLeafIdx;  // number of leaves
       _mins = new float[len];
       _maxs = new float[len];
@@ -746,17 +751,17 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       Arrays.fill(_maxs, -Float.MAX_VALUE);
 
       Chunk ys = chks[fm.responseIndex];
-      Chunk offset = fm.offsetIndex >= 0? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      Chunk offset = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
       Chunk preds = chks[fm.tree0Index]; // Prior tree sums
       Chunk nids = chks[fm.nids0Index];
-      Chunk weights = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
-      for( int row = 0; row < preds._len; row++) {
-        if( ys.isNA(row) ) continue;
-        if (weights.atd(row)==0) continue;
-        int nid = (int)nids.at8(row);
-        assert(nid!=ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
+      Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+      for (int row = 0; row < preds._len; row++) {
+        if (ys.isNA(row)) continue;
+        if (weights.atd(row) == 0) continue;
+        int nid = (int) nids.at8(row);
+        assert (nid != ScoreBuildHistogram.UNDECIDED_CHILD_NODE_ID);
         if (nid < 0) continue; //skip OOB and otherwise skipped rows
-        float f = (float)(preds.atd(row) + offset.atd(row));
+        float f = (float) (preds.atd(row) + offset.atd(row));
         int idx = nid - firstLeafIdx;
         _mins[idx] = Math.min(_mins[idx], f);
         _maxs[idx] = Math.max(_maxs[idx], f);
@@ -856,7 +861,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       Log.info("Computing Huber math for (up to) " + nstrata + " different strata.");
       _huberGamma = new double[nstrata];
       _wcounts = new double[nstrata];
-      Chunk weights = fm.weightIndex >= 0? cs[fm.weightIndex] : new C0DChunk(1, cs[0]._len);
+      Chunk weights = fm.weightIndex >= 0 ? cs[fm.weightIndex] : new C0DChunk(1, cs[0]._len);
       Chunk stratum = cs[fm.nids0Index];
       Chunk diffMinusMedianDiff = cs[cs.length - 1];
       for (int row = 0; row < cs[0]._len; ++row) {
@@ -918,11 +923,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    * ESL2, page 387.  Step 2b iii.
    * Nids <== f(Nids)
    * For classification (bernoulli):
-   *    gamma_i = sum (w_i * res_i) / sum (w_i*p_i*(1 - p_i)) where p_i = y_i - res_i
+   * <pre>{@code    gamma_i = sum (w_i * res_i) / sum (w_i*p_i*(1 - p_i)) where p_i = y_i - res_i}</pre>
    * For classification (multinomial):
-   *    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
+   * <pre>{@code    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))}</pre>
    * For regression (gaussian):
-   *    gamma_i = sum res_i / count(res_i)
+   * <pre>{@code    gamma_i = sum res_i / count(res_i)}</pre>
    */
   private static class GammaPass extends MRTask<GammaPass> {
     private final FrameMap fm;
@@ -978,9 +983,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         final C4VolatileChunk nids = (C4VolatileChunk) chks[fm.nids0Index + k]; // Node-ids  for this tree/class
         int[] nids_vals = nids.getValues();
         final Chunk ress = chks[fm.work0Index + k];  // Residuals for this tree/class
-        final Chunk offset = fm.offsetIndex >= 0? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+        final Chunk offset = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
         final Chunk preds = chks[fm.tree0Index + k];
-        final Chunk weights = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+        final Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
 
         // If we have all constant responses, then we do not split even the
         // root and the residuals should be zero.
@@ -1075,7 +1080,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         final C8DVolatileChunk ct = (C8DVolatileChunk) chks[fm.tree0Index + k];
         double[] ct_vals = ct.getValues();
         final Chunk y = chks[fm.responseIndex];
-        final Chunk weights = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+        final Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
         long baseseed = (0xDECAF + _seed) * (0xFAAAAAAB + k * _ntrees1 + _ntrees2);
         for (int row = 0; row < nids._len; row++) {
           int nid = nids_vals[row];
