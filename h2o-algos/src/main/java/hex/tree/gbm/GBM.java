@@ -348,7 +348,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // ----
       // ESL2, page 387.  Step 2b iii.  Compute the gammas (leaf node predictions === fit best constant), and store them back
       // into the tree leaves.  Includes learn_rate.
-      GammaPass gp = new GammaPass(ktrees, leaves, new Distribution(_parms));
+      GammaPass gp = new GammaPass(frameMap, ktrees, leaves, new Distribution(_parms), _nclass);
       gp.doAll(_train);
       if (_parms._distribution == DistributionFamily.laplace) {
         fitBestConstantsQuantile(ktrees, leaves[0], 0.5); //special case for Laplace: compute the median for each leaf node and store that as prediction
@@ -569,117 +569,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
-    // Set terminal node estimates (gamma)
-    // ESL2, page 387.  Step 2b iii.
-    // Nids <== f(Nids)
-    // For classification (bernoulli):
-    //    gamma_i = sum (w_i * res_i) / sum (w_i*p_i*(1 - p_i)) where p_i = y_i - res_i
-    // For classification (multinomial):
-    //    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
-    // For regression (gaussian):
-    //    gamma_i = sum res_i / count(res_i)
-    private class GammaPass extends MRTask<GammaPass> {
-      final DTree _trees[]; // Read-only, shared (except at the histograms in the Nodes)
-      final int _leafs[];  // Starting index of leaves (per class-tree)
-      final Distribution _dist;
-      private double _num[/*tree/klass*/][/*tree-relative node-id*/];
-      private double _denom[/*tree/klass*/][/*tree-relative node-id*/];
-
-      double gamma(int tree, int nid) {
-        if (_denom[tree][nid] == 0) return 0;
-        double g = _num[tree][nid]/ _denom[tree][nid];
-        assert (!Double.isInfinite(g) && !Double.isNaN(g));
-        if (_dist.distribution == DistributionFamily.poisson ||
-            _dist.distribution == DistributionFamily.gamma ||
-            _dist.distribution == DistributionFamily.tweedie)
-        {
-          return _dist.link(g);
-        } else {
-          return g;
-        }
-      }
-
-      GammaPass(DTree trees[],
-                int leafs[],
-                Distribution distribution
-      ) {
-        _leafs=leafs;
-        _trees=trees;
-        _dist = distribution;
-      }
-      @Override public void map( Chunk[] chks ) {
-        _denom = new double[_nclass][];
-        _num = new double[_nclass][];
-        final Chunk resp = chk_resp(chks); // Response for this frame
-
-        // For all tree/klasses
-        for( int k=0; k<_nclass; k++ ) {
-          final DTree tree = _trees[k];
-          final int   leaf = _leafs[k];
-          if( tree == null ) continue; // Empty class is ignored
-          assert(tree._len-leaf >= 0);
-
-          // A leaf-biased array of all active Tree leaves.
-          final double denom[] = _denom[k] = new double[tree._len-leaf];
-          final double num[] = _num[k] = new double[tree._len-leaf];
-          final C4VolatileChunk nids = (C4VolatileChunk) chk_nids(chks, k); // Node-ids  for this tree/class
-          int [] nids_vals = nids.getValues();
-          final Chunk ress = chk_work(chks, k); // Residuals for this tree/class
-          final Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len); // Residuals for this tree/class
-          final Chunk preds = chk_tree(chks,k);
-          final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-
-          // If we have all constant responses, then we do not split even the
-          // root and the residuals should be zero.
-          if( tree.root() instanceof LeafNode )
-            continue;
-          Distribution dist = new Distribution(_parms);
-          for( int row=0; row<nids._len; row++ ) { // For all rows
-            double w = weights.atd(row);
-            if (w==0) continue;
-
-            double y = resp.atd(row); //response
-            if (Double.isNaN(y)) continue;
-
-            // Compute numerator and denominator of terminal node estimate (gamma)
-            int nid = (int)nids.at8(row);          // Get Node to decide from
-            final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
-            if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
-            if (nid < 0) continue;
-            DecidedNode dn = tree.decided(nid);           // Must have a decision point
-            if( dn._split == null )                    // Unable to decide?
-              dn = tree.decided(dn.pid());  // Then take parent's decision
-            int leafnid = dn.getChildNodeID(chks,row); // Decide down to a leafnode
-            assert leaf <= leafnid && leafnid < tree._len :
-                    "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
-            assert tree.node(leafnid) instanceof LeafNode;
-            // Note: I can tell which leaf/region I end up in, but I do not care for
-            // the prediction presented by the tree.  For GBM, we compute the
-            // sum-of-residuals (and sum/abs/mult residuals) for all rows in the
-            // leaf, and get our prediction from that.
-            nids_vals[row] =  leafnid;
-            assert !ress.isNA(row);
-
-            // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
-            // For Laplace/Quantile distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
-            if (wasOOBRow
-                    || _parms._distribution == DistributionFamily.laplace
-                    || _parms._distribution == DistributionFamily.huber
-                    || _parms._distribution == DistributionFamily.quantile) continue;
-
-            double z = ress.atd(row); //residual
-            double f = preds.atd(row) + offset.atd(row);
-            int idx=leafnid-leaf;
-            num[idx] += dist.gammaNum(w, y, z, f);
-            denom[idx] += dist.gammaDenom(w, y, z, f);
-          }
-        }
-      }
-      @Override public void reduce( GammaPass gp ) {
-        ArrayUtils.add(_denom,gp._denom);
-        ArrayUtils.add(_num,gp._num);
-      }
-    }
 
     private class AddTreeContributions extends MRTask<AddTreeContributions> {
       DTree[] _ktrees;
@@ -1052,6 +941,129 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         double y = ys.atd(row);
         wk.getValues()[row] = ((float) dist.negHalfGradient(y, f));
       }
+    }
+  }
+
+
+  /**
+   * Set terminal node estimates (gamma)
+   * ESL2, page 387.  Step 2b iii.
+   * Nids <== f(Nids)
+   * For classification (bernoulli):
+   *    gamma_i = sum (w_i * res_i) / sum (w_i*p_i*(1 - p_i)) where p_i = y_i - res_i
+   * For classification (multinomial):
+   *    gamma_i_k = (nclass-1)/nclass * (sum res_i / sum (|res_i|*(1-|res_i|)))
+   * For regression (gaussian):
+   *    gamma_i = sum res_i / count(res_i)
+   */
+  private static class GammaPass extends MRTask<GammaPass> {
+    private final FrameMap fm;
+    private final DTree[] _trees; // Read-only, shared (except at the histograms in the Nodes)
+    private final int[] _leafs;  // Starting index of leaves (per class-tree)
+    private final Distribution _dist;
+    private final int _nclass;
+    private double[/*tree/klass*/][/*tree-relative node-id*/] _num;
+    private double[/*tree/klass*/][/*tree-relative node-id*/] _denom;
+
+    public GammaPass(FrameMap frameMap, DTree[] trees, int[] leafs, Distribution distribution, int nClasses) {
+      fm = frameMap;
+      _leafs = leafs;
+      _trees = trees;
+      _dist = distribution;
+      _nclass = nClasses;
+    }
+
+    double gamma(int tree, int nid) {
+      if (_denom[tree][nid] == 0) return 0;
+      double g = _num[tree][nid] / _denom[tree][nid];
+      assert (!Double.isInfinite(g) && !Double.isNaN(g));
+      if (_dist.distribution == DistributionFamily.poisson ||
+          _dist.distribution == DistributionFamily.gamma ||
+          _dist.distribution == DistributionFamily.tweedie) {
+        return _dist.link(g);
+      } else {
+        return g;
+      }
+    }
+
+    @Override
+    public boolean modifiesVolatileVecs() {
+      return true;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      _denom = new double[_nclass][];
+      _num = new double[_nclass][];
+      final Chunk resp = chks[fm.responseIndex]; // Response for this frame
+
+      // For all tree/klasses
+      for (int k = 0; k < _nclass; k++) {
+        final DTree tree = _trees[k];
+        final int leaf = _leafs[k];
+        if (tree == null) continue; // Empty class is ignored
+        assert (tree._len - leaf >= 0);
+
+        // A leaf-biased array of all active Tree leaves.
+        final double[] denom = _denom[k] = new double[tree._len - leaf];
+        final double[] num = _num[k] = new double[tree._len - leaf];
+        final C4VolatileChunk nids = (C4VolatileChunk) chks[fm.nids0Index + k]; // Node-ids  for this tree/class
+        int[] nids_vals = nids.getValues();
+        final Chunk ress = chks[fm.work0Index + k];  // Residuals for this tree/class
+        final Chunk offset = fm.offsetIndex >= 0? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+        final Chunk preds = chks[fm.tree0Index + k];
+        final Chunk weights = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+
+        // If we have all constant responses, then we do not split even the
+        // root and the residuals should be zero.
+        if (tree.root() instanceof LeafNode)
+          continue;
+        for (int row = 0; row < nids._len; row++) { // For all rows
+          double w = weights.atd(row);
+          if (w == 0) continue;
+
+          double y = resp.atd(row); //response
+          if (Double.isNaN(y)) continue;
+
+          // Compute numerator and denominator of terminal node estimate (gamma)
+          int nid = (int) nids.at8(row);          // Get Node to decide from
+          final boolean wasOOBRow = ScoreBuildHistogram.isOOBRow(nid); //same for all k
+          if (wasOOBRow) nid = ScoreBuildHistogram.oob2Nid(nid);
+          if (nid < 0) continue;
+          DecidedNode dn = tree.decided(nid);           // Must have a decision point
+          if (dn._split == null)                    // Unable to decide?
+            dn = tree.decided(dn.pid());  // Then take parent's decision
+          int leafnid = dn.getChildNodeID(chks, row); // Decide down to a leafnode
+          assert leaf <= leafnid && leafnid < tree._len :
+              "leaf: " + leaf + " leafnid: " + leafnid + " tree._len: " + tree._len + "\ndn: " + dn;
+          assert tree.node(leafnid) instanceof LeafNode;
+          // Note: I can tell which leaf/region I end up in, but I do not care for
+          // the prediction presented by the tree.  For GBM, we compute the
+          // sum-of-residuals (and sum/abs/mult residuals) for all rows in the
+          // leaf, and get our prediction from that.
+          nids_vals[row] = leafnid;
+          assert !ress.isNA(row);
+
+          // OOB rows get placed properly (above), but they don't affect the computed Gamma (below)
+          // For Laplace/Quantile distribution, we need to compute the median of (y-offset-preds == y-f), will be done outside of here
+          if (wasOOBRow
+              || _dist.distribution == DistributionFamily.laplace
+              || _dist.distribution == DistributionFamily.huber
+              || _dist.distribution == DistributionFamily.quantile) continue;
+
+          double z = ress.atd(row);  // residual
+          double f = preds.atd(row) + offset.atd(row);
+          int idx = leafnid - leaf;
+          num[idx] += _dist.gammaNum(w, y, z, f);
+          denom[idx] += _dist.gammaDenom(w, y, z, f);
+        }
+      }
+    }
+
+    @Override
+    public void reduce(GammaPass gp) {
+      ArrayUtils.add(_denom, gp._denom);
+      ArrayUtils.add(_num, gp._num);
     }
   }
 
