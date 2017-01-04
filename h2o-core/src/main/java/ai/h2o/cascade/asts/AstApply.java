@@ -3,7 +3,7 @@ package ai.h2o.cascade.asts;
 import ai.h2o.cascade.Cascade;
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.core.Scope;
-import ai.h2o.cascade.vals.Val;
+import ai.h2o.cascade.core.Val;
 import water.util.SB;
 
 import java.util.ArrayList;

@@ -1,7 +1,7 @@
 package ai.h2o.cascade;
 
 import ai.h2o.cascade.asts.*;
-import ai.h2o.cascade.vals.Val;
+import ai.h2o.cascade.core.Val;
 import org.apache.commons.lang.StringUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;

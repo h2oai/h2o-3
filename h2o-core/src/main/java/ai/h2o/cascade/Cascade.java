@@ -2,8 +2,8 @@ package ai.h2o.cascade;
 
 import ai.h2o.cascade.asts.AstNode;
 import ai.h2o.cascade.asts.AstApply;
-import ai.h2o.cascade.vals.Val;
-import ai.h2o.cascade.vals.ValNull;
+import ai.h2o.cascade.core.Val;
+import ai.h2o.cascade.core.ValNull;
 import ai.h2o.cascade.core.Function;
 import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.core.WorkFrame;

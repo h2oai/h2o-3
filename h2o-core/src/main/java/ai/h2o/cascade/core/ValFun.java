@@ -1,6 +1,4 @@
-package ai.h2o.cascade.vals;
-
-import ai.h2o.cascade.core.Function;
+package ai.h2o.cascade.core;
 
 /**
  * Function wrapper.

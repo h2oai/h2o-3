@@ -1,6 +1,6 @@
 package ai.h2o.cascade;
 
-import ai.h2o.cascade.vals.Val;
+import ai.h2o.cascade.core.Val;
 import water.api.RestApiHandler;
 import water.api.schemas4.OutputSchemaV4;
 import water.api.schemas4.input.CascadeCloseSessionIV4;

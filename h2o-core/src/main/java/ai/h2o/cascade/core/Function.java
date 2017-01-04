@@ -1,6 +1,5 @@
 package ai.h2o.cascade.core;
 
-import ai.h2o.cascade.vals.Val;
 import ai.h2o.cascade.Cascade;
 
 /**

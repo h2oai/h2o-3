@@ -1,7 +1,5 @@
-package ai.h2o.cascade.vals;
+package ai.h2o.cascade.core;
 
-
-import ai.h2o.cascade.core.SliceList;
 
 /**
  */

@@ -2,7 +2,7 @@ package ai.h2o.cascade.asts;
 
 
 import ai.h2o.cascade.core.Scope;
-import ai.h2o.cascade.vals.ValStr;
+import ai.h2o.cascade.core.ValStr;
 
 /**
  * A String literal.

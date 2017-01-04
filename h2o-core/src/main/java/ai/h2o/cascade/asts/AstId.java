@@ -2,7 +2,7 @@ package ai.h2o.cascade.asts;
 
 import ai.h2o.cascade.Cascade;
 import ai.h2o.cascade.core.Scope;
-import ai.h2o.cascade.vals.Val;
+import ai.h2o.cascade.core.Val;
 
 /**
  * Identifier, will perform a name lookup in the local/session scopes.

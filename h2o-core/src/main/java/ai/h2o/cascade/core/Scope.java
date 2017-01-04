@@ -1,7 +1,6 @@
 package ai.h2o.cascade.core;
 
 import ai.h2o.cascade.CascadeSession;
-import ai.h2o.cascade.vals.Val;
 import water.fvec.Frame;
 import water.fvec.Vec;
 

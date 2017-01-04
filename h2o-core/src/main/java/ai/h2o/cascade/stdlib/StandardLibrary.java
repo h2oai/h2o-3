@@ -3,7 +3,6 @@ package ai.h2o.cascade.stdlib;
 import ai.h2o.cascade.core.*;
 import ai.h2o.cascade.CascadeSession;
 import ai.h2o.cascade.core.WorkFrame;
-import ai.h2o.cascade.vals.*;
 import javassist.*;
 import water.util.SB;
 import water.util.StringUtils;

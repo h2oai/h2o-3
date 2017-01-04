@@ -1,9 +1,9 @@
 package ai.h2o.cascade.stdlib;
 
 import ai.h2o.cascade.core.Function;
-import ai.h2o.cascade.vals.Val;
+import ai.h2o.cascade.core.Val;
 
-import static ai.h2o.cascade.vals.Val.Type.*;
+import static ai.h2o.cascade.core.Val.Type.*;
 
 
 /**

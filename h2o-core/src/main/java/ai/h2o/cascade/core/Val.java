@@ -1,9 +1,6 @@
-package ai.h2o.cascade.vals;
+package ai.h2o.cascade.core;
 
 import ai.h2o.cascade.asts.AstNode;
-import ai.h2o.cascade.core.WorkFrame;
-import ai.h2o.cascade.core.Function;
-import ai.h2o.cascade.core.SliceList;
 
 
 /**

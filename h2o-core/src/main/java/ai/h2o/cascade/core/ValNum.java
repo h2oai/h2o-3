@@ -1,7 +1,4 @@
-package ai.h2o.cascade.vals;
-
-import ai.h2o.cascade.core.SliceList;
-
+package ai.h2o.cascade.core;
 
 /**
  * Numeric (double) value.

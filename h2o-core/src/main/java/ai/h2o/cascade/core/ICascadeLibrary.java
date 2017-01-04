@@ -1,7 +1,5 @@
 package ai.h2o.cascade.core;
 
-import ai.h2o.cascade.vals.Val;
-
 import java.util.Map;
 
 /**

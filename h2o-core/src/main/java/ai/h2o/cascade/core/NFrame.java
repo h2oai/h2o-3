@@ -18,7 +18,7 @@ import java.util.List;
  * This should be the base class for all "frames" produced in Cascade.
  */
 public abstract class NFrame {
-  protected NFrame[] dependentFrames;
+  protected NFrame[] parents;
 
 
   /** Number of columns in the frame. */
@@ -50,7 +50,7 @@ public abstract class NFrame {
    * list of {@code inputs}.
    */
   protected void prepareInputs(List<Vec> inputs) {
-    for (NFrame nf: dependentFrames)
+    for (NFrame nf: parents)
       nf.prepareInputs(inputs);
   }
 
@@ -68,7 +68,7 @@ public abstract class NFrame {
    * should call their {@code preparePerChunk()} methods recursively.
    */
   protected void preparePerChunk(Chunk[] cs) {
-    for (NFrame nf: dependentFrames)
+    for (NFrame nf: parents)
       nf.preparePerChunk(cs);
   }
 

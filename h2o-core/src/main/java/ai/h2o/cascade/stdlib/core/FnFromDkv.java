@@ -1,10 +1,10 @@
 package ai.h2o.cascade.stdlib.core;
 
-import ai.h2o.cascade.vals.IdList;
+import ai.h2o.cascade.core.IdList;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 import ai.h2o.cascade.stdlib.frame.FnClone;
-import ai.h2o.cascade.vals.Val;
-import ai.h2o.cascade.vals.ValFrame;
+import ai.h2o.cascade.core.Val;
+import ai.h2o.cascade.core.ValFrame;
 import water.DKV;
 import water.Value;
 import water.fvec.Frame;

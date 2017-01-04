@@ -1,8 +1,8 @@
 package ai.h2o.cascade.asts;
 
 import ai.h2o.cascade.core.Scope;
-import ai.h2o.cascade.vals.Val;
-import ai.h2o.cascade.vals.ValNums;
+import ai.h2o.cascade.core.Val;
+import ai.h2o.cascade.core.ValNums;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
