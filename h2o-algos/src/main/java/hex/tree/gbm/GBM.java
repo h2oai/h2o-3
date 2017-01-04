@@ -322,7 +322,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         huberDelta = MathUtils.computeWeightedQuantile(_weights, diff, _parms._huber_alpha);
         dist.setHuberDelta(huberDelta);
         // now compute residuals using the gradient of the huber loss (with a globally adjusted delta)
-        new StoreResiduals(dist).doAll(_train, _parms._build_tree_one_node);
+        new StoreResiduals(frameMap, dist).doAll(_train, _parms._build_tree_one_node);
       } else {
         // compute predictions and residuals in one shot
         new ComputePredAndRes(frameMap, _nclass, _model._output._distribution, new Distribution(_parms))
@@ -472,26 +472,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       } // -- k-trees are done
     }
 
-
-    private class StoreResiduals extends MRTask<StoreResiduals> {
-      Distribution _dist;
-      StoreResiduals(Distribution dist) { _dist = dist; }
-      @Override public void map( Chunk chks[] ) {
-        Chunk ys = chk_resp(chks);
-        Chunk offset = hasOffsetCol() ? chk_offset(chks) : new C0DChunk(0, chks[0]._len);
-        Chunk preds = chk_tree(chks, 0); // Prior tree sums
-        C8DVolatileChunk wk = (C8DVolatileChunk) chk_work(chks, 0); // Place to store residuals
-        Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-        for( int row = 0; row < wk._len; row++) {
-          double weight = weights.atd(row);
-          if (weight == 0) continue;
-          if (ys.isNA(row)) continue;
-          double f = preds.atd(row) + offset.atd(row);
-          double y = ys.atd(row);
-          wk.getValues()[row] = ((float) _dist.negHalfGradient(y, f));
-        }
-      }
-    }
 
     private void fitBestConstantsQuantile(DTree[] ktrees, int firstLeafIndex, double quantile) {
       if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
@@ -1039,6 +1019,39 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     protected void postGlobal() {
       for (int i = 0; i < _huberGamma.length; ++i)
         _huberGamma[i] /= _wcounts[i];
+    }
+  }
+
+
+  private static class StoreResiduals extends MRTask<StoreResiduals> {
+    private FrameMap fm;
+    private Distribution dist;
+
+    public StoreResiduals(FrameMap frameMap, Distribution distribution) {
+      fm = frameMap;
+      dist = distribution;
+    }
+
+    @Override
+    public boolean modifiesVolatileVecs() {
+      return true;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      Chunk ys = chks[fm.responseIndex];
+      Chunk offset = fm.offsetIndex >= 0 ? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      Chunk preds = chks[fm.tree0Index];  // Prior tree sums
+      C8DVolatileChunk wk = (C8DVolatileChunk) chks[fm.work0Index]; // Place to store residuals
+      Chunk weights = fm.weightIndex >= 0 ? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+      for (int row = 0; row < wk._len; row++) {
+        double weight = weights.atd(row);
+        if (weight == 0) continue;
+        if (ys.isNA(row)) continue;
+        double f = preds.atd(row) + offset.atd(row);
+        double y = ys.atd(row);
+        wk.getValues()[row] = ((float) dist.negHalfGradient(y, f));
+      }
     }
   }
 
