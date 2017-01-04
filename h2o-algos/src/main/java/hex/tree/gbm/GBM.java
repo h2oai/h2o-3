@@ -473,7 +473,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
 
-
     private class StoreResiduals extends MRTask<StoreResiduals> {
       Distribution _dist;
       StoreResiduals(Distribution dist) { _dist = dist; }
@@ -518,72 +517,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
-    public class DiffMinusMedianDiff extends MRTask<DiffMinusMedianDiff> {
-      Vec _strata;
-      final int _strataMin;
-      double[] _terminalMedians;
-      DiffMinusMedianDiff(Vec strata, double[] terminalMedians) {
-        _strata = strata;
-        _strataMin = (int) strata.min();
-        _terminalMedians = terminalMedians;
-      }
-      @Override
-      public void map(Chunk[] chks) {
-        final Chunk strata = chks[0];
-        final Chunk diff = chks[1];
-        final int strataMin = _strataMin;
-        for (int i=0; i<chks[0].len(); ++i) {
-          int nid = (int)strata.atd(i);
-          diff.set(i, diff.atd(i) - _terminalMedians[nid-strataMin]);
-        }
-      }
-    }
-
-    private final class HuberLeafMath extends MRTask<HuberLeafMath> {
-      // INPUT
-      final double _huberDelta;
-      final Vec _strata;
-      final int _strataMin;
-      final int _strataMax;
-      // OUTPUT
-      double[/*leaves*/] _huberGamma, _wcounts;
-      public HuberLeafMath(double huberDelta, Vec strata) {
-        _huberDelta = huberDelta;
-        _strata = strata;
-        _strataMin = (int)_strata.min();
-        _strataMax = (int)_strata.max();
-      }
-      @Override
-      public void map(Chunk cs[]) {
-        if (_strataMin < 0 || _strataMax < 0) {
-          Log.warn("No Huber math can be done since there's no strata.");
-          return;
-        }
-        final int nstrata = _strataMax - _strataMin + 1;
-        Log.info("Computing Huber math for (up to) " + nstrata + " different strata.");
-        _huberGamma = new double[nstrata];
-        _wcounts = new double[nstrata];
-        Chunk weights = hasWeightCol() ? chk_weight(cs) : new C0DChunk(1, cs[0]._len);
-        Chunk stratum = chk_nids(cs, 0 /*regression*/);
-        Chunk diffMinusMedianDiff = cs[cs.length-1];
-        for (int row=0;row<cs[0]._len;++row) {
-          int nidx = (int) stratum.at8(row) - _strataMin; //get terminal node for this row
-          _huberGamma[nidx] += weights.atd(row) * Math.signum(diffMinusMedianDiff.atd(row)) * Math.min(Math.abs(diffMinusMedianDiff.atd(row)), _huberDelta);
-                  _wcounts[nidx] += weights.atd(row);
-        }
-      }
-      @Override
-      public void reduce(HuberLeafMath mrt) {
-        ArrayUtils.add(_huberGamma,mrt._huberGamma);
-        ArrayUtils.add(_wcounts,mrt._wcounts);
-      }
-
-      @Override
-      protected void postGlobal() {
-        for (int i = 0; i< _huberGamma.length; ++i)
-          _huberGamma[i]/=_wcounts[i];
-      }
-    }
 
     // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
     // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
@@ -611,7 +544,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // where huberDelta is the alpha-percentile of the residual across all observations
       Frame tmpFrame2 = new Frame(_train.vecs());
       tmpFrame2.add("resMinusMedianRes", diffMinusMedianDiff);
-      double[] huberGamma = new HuberLeafMath(huberDelta,strata).doAll(tmpFrame2)._huberGamma;
+      double[] huberGamma = new HuberLeafMath(frameMap, huberDelta,strata).doAll(tmpFrame2)._huberGamma;
 
       // now assign the median per leaf + the above _huberCorrection[i] to each leaf
       final DTree tree = ktrees[0];
@@ -1036,6 +969,78 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
   }
 
+
+  public static class DiffMinusMedianDiff extends MRTask<DiffMinusMedianDiff> {
+    private final int _strataMin;
+    private double[] _terminalMedians;
+
+    public DiffMinusMedianDiff(Vec strata, double[] terminalMedians) {
+      _strataMin = (int) strata.min();
+      _terminalMedians = terminalMedians;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      final Chunk strata = chks[0];
+      final Chunk diff = chks[1];
+      for (int i = 0; i < chks[0].len(); ++i) {
+        int nid = (int) strata.atd(i);
+        diff.set(i, diff.atd(i) - _terminalMedians[nid - _strataMin]);
+      }
+    }
+  }
+
+
+  private static final class HuberLeafMath extends MRTask<HuberLeafMath> {
+    // INPUT
+    final FrameMap fm;
+    final double _huberDelta;
+    final Vec _strata;
+    final int _strataMin;
+    final int _strataMax;
+    // OUTPUT
+    double[/*leaves*/] _huberGamma, _wcounts;
+
+    public HuberLeafMath(FrameMap frameMap, double huberDelta, Vec strata) {
+      fm = frameMap;
+      _huberDelta = huberDelta;
+      _strata = strata;
+      _strataMin = (int) _strata.min();
+      _strataMax = (int) _strata.max();
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+      if (_strataMin < 0 || _strataMax < 0) {
+        Log.warn("No Huber math can be done since there's no strata.");
+        return;
+      }
+      final int nstrata = _strataMax - _strataMin + 1;
+      Log.info("Computing Huber math for (up to) " + nstrata + " different strata.");
+      _huberGamma = new double[nstrata];
+      _wcounts = new double[nstrata];
+      Chunk weights = fm.weightIndex >= 0? cs[fm.weightIndex] : new C0DChunk(1, cs[0]._len);
+      Chunk stratum = cs[fm.nids0Index];
+      Chunk diffMinusMedianDiff = cs[cs.length - 1];
+      for (int row = 0; row < cs[0]._len; ++row) {
+        int nidx = (int) stratum.at8(row) - _strataMin; //get terminal node for this row
+        _huberGamma[nidx] += weights.atd(row) * Math.signum(diffMinusMedianDiff.atd(row)) * Math.min(Math.abs(diffMinusMedianDiff.atd(row)), _huberDelta);
+        _wcounts[nidx] += weights.atd(row);
+      }
+    }
+
+    @Override
+    public void reduce(HuberLeafMath mrt) {
+      ArrayUtils.add(_huberGamma, mrt._huberGamma);
+      ArrayUtils.add(_wcounts, mrt._wcounts);
+    }
+
+    @Override
+    protected void postGlobal() {
+      for (int i = 0; i < _huberGamma.length; ++i)
+        _huberGamma[i] /= _wcounts[i];
+    }
+  }
 
 
   //--------------------------------------------------------------------------------------------------------------------
