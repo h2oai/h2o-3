@@ -373,7 +373,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // new tree, in the 'tree' columns.  Also, zap the NIDs for next pass.
       // Tree <== f(Tree)
       // Nids <== 0
-      new AddTreeContributions(ktrees).doAll(_train);
+      new AddTreeContributions(
+          frameMap, ktrees, _parms._pred_noise_bandwidth, _parms._seed, _parms._ntrees, _model._output._ntrees
+      ).doAll(_train);
 
       // sanity check
       for (int k = 0; k < _nclass; k++) {
@@ -569,40 +571,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
-
-    private class AddTreeContributions extends MRTask<AddTreeContributions> {
-      DTree[] _ktrees;
-      AddTreeContributions(DTree[] ktrees) { _ktrees = ktrees; }
-      @Override public void map( Chunk chks[] ) {
-        // For all tree/klasses
-        for( int k=0; k<_nclass; k++ ) {
-          final DTree tree = _ktrees[k];
-          if( tree == null ) continue;
-          final C4VolatileChunk nids = (C4VolatileChunk) chk_nids(chks,k);
-          final int [] nids_vals = nids.getValues();
-          final C8DVolatileChunk ct   = (C8DVolatileChunk) chk_tree(chks, k);
-          double [] ct_vals = ct.getValues();
-          final Chunk y   = chk_resp(chks);
-          final Chunk weights = hasWeightCol() ? chk_weight(chks) : new C0DChunk(1, chks[0]._len);
-          long baseseed = (0xDECAF + _parms._seed) * (0xFAAAAAAB + k * _parms._ntrees + _model._output._ntrees);
-          for( int row=0; row<nids._len; row++ ) {
-            int nid = nids_vals[row];
-            nids_vals[row] = ScoreBuildHistogram.FRESH;
-            if( nid < 0 ) continue;
-            if (y.isNA(row)) continue;
-            if (weights.atd(row)==0) continue;
-            double factor = 1;
-            if (_parms._pred_noise_bandwidth !=0) {
-              _rand.setSeed(baseseed + nid); //bandwidth is a function of tree number, class and node id (but same for all rows in that node)
-              factor += _rand.nextGaussian() * _parms._pred_noise_bandwidth;
-            }
-            // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
-            // <tree_klazz> fields from tree prediction
-            ct_vals[row] = ((float)(ct.atd(row) + factor * ((LeafNode)tree.node(nid))._pred ));
-          }
-        }
-      }
-    }
 
     @Override protected GBMModel makeModel(Key<GBMModel> modelKey, GBMModel.GBMParameters parms) {
       return new GBMModel(modelKey, parms, new GBMModel.GBMOutput(GBM.this));
@@ -922,7 +890,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     @Override
-    public boolean modifiesVolatileVecs() {
+    protected boolean modifiesVolatileVecs() {
       return true;
     }
 
@@ -987,7 +955,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     }
 
     @Override
-    public boolean modifiesVolatileVecs() {
+    protected boolean modifiesVolatileVecs() {
       return true;
     }
 
@@ -1066,6 +1034,68 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       ArrayUtils.add(_num, gp._num);
     }
   }
+
+
+  private static class AddTreeContributions extends MRTask<AddTreeContributions> {
+    private FrameMap fm;
+    private DTree[] _ktrees;
+    private int _nclass;
+    private double _pred_noise_bandwidth;
+    private long _seed;
+    private int _ntrees1;
+    private int _ntrees2;
+
+    public AddTreeContributions(
+        FrameMap frameMap, DTree[] ktrees, double predictionNoiseBandwidth, long seed, int nTreesInp, int nTreesOut
+    ) {
+      fm = frameMap;
+      _ktrees = ktrees;
+      _nclass = ktrees.length;
+      _pred_noise_bandwidth = predictionNoiseBandwidth;
+      _seed = seed;
+      _ntrees1 = nTreesInp;
+      _ntrees2 = nTreesOut;
+    }
+
+    @Override
+    protected boolean modifiesVolatileVecs() {
+      return true;
+    }
+
+    @Override
+    public void map(Chunk[] chks) {
+      Random rand = RandomUtils.getRNG(_seed);
+
+      // For all tree/klasses
+      for (int k = 0; k < _nclass; k++) {
+        final DTree tree = _ktrees[k];
+        if (tree == null) continue;
+        final C4VolatileChunk nids = (C4VolatileChunk) chks[fm.nids0Index + k];
+        final int[] nids_vals = nids.getValues();
+        final C8DVolatileChunk ct = (C8DVolatileChunk) chks[fm.tree0Index + k];
+        double[] ct_vals = ct.getValues();
+        final Chunk y = chks[fm.responseIndex];
+        final Chunk weights = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
+        long baseseed = (0xDECAF + _seed) * (0xFAAAAAAB + k * _ntrees1 + _ntrees2);
+        for (int row = 0; row < nids._len; row++) {
+          int nid = nids_vals[row];
+          nids_vals[row] = ScoreBuildHistogram.FRESH;
+          if (nid < 0) continue;
+          if (y.isNA(row)) continue;
+          if (weights.atd(row) == 0) continue;
+          double factor = 1;
+          if (_pred_noise_bandwidth != 0) {
+            rand.setSeed(baseseed + nid); //bandwidth is a function of tree number, class and node id (but same for all rows in that node)
+            factor += rand.nextGaussian() * _pred_noise_bandwidth;
+          }
+          // Prediction stored in Leaf is cut to float to be deterministic in reconstructing
+          // <tree_klazz> fields from tree prediction
+          ct_vals[row] = ((float) (ct.atd(row) + factor * ((LeafNode) tree.node(nid))._pred));
+        }
+      }
+    }
+  }
+
 
 
   //--------------------------------------------------------------------------------------------------------------------
