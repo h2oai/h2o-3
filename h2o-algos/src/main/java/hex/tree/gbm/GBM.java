@@ -154,6 +154,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
   // ----------------------
   private class GBMDriver extends Driver {
+    private transient FrameMap frameMap;
+
     @Override protected boolean doOOBScoring() { return false; }
     @Override protected void initializeModelSpecifics() {
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols)); //per-tree
@@ -173,6 +175,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         _initialPrediction = getInitialValueQuantile(_parms._quantile_alpha);
       }
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
+      frameMap = new FrameMap(GBM.this);
 
       // Set the initial prediction into the tree column 0
       if (_initialPrediction != 0.0) {
@@ -189,7 +192,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private double getInitialValueQuantile(double quantile) {
       // obtain y - o
       Vec y = hasOffsetCol()
-          ? new ResponseLessOffsetTask(idx_resp(), idx_offset()).doAll(1, Vec.T_NUM, _train).outputFrame().anyVec()
+          ? new ResponseLessOffsetTask(frameMap).doAll(1, Vec.T_NUM, _train).outputFrame().anyVec()
           : response();
 
       // Now compute (weighted) quantile of y - o
@@ -231,7 +234,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       int N = 1; //one step is enough - same as R
 
       double init = 0; //start with initial value of 0 for convergence
-      NewtonRaphson nrtask = new NewtonRaphson(idx_resp(), idx_offset(), idx_weight(), new Distribution(_parms));
+      NewtonRaphson nrtask = new NewtonRaphson(frameMap, new Distribution(_parms));
       do {
         nrtask.setValue(init);
         double newInit = nrtask.doAll(train).value();
@@ -250,9 +253,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     private void truncatePreds(final DTree tree, int firstLeafIndex, DistributionFamily dist) {
       if (firstLeafIndex==tree._len) return;
-      ComputeMinMax minMax = new ComputeMinMax(
-          idx_resp(), idx_offset(), idx_weight(), idx_tree(0), idx_nids(0), firstLeafIndex, tree._len
-      ).doAll(_train);
+      ComputeMinMax minMax = new ComputeMinMax(frameMap, firstLeafIndex, tree._len).doAll(_train);
       if (DEV_DEBUG) {
         Log.info("Number of leaf nodes: " + minMax._mins.length);
         Log.info("Min: " + java.util.Arrays.toString(minMax._mins));
@@ -324,10 +325,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         new StoreResiduals(dist).doAll(_train, _parms._build_tree_one_node);
       } else {
         // compute predictions and residuals in one shot
-        new ComputePredAndRes(
-            idx_resp(), idx_offset(), idx_weight(), idx_tree(0), idx_work(0),
-            _nclass, _model._output._distribution, new Distribution(_parms)
-        ).doAll(_train, _parms._build_tree_one_node);
+        new ComputePredAndRes(frameMap, _nclass, _model._output._distribution, new Distribution(_parms))
+            .doAll(_train, _parms._build_tree_one_node);
       }
       for (int k = 0; k < _nclass; k++) {
         if (DEV_DEBUG && ktrees[k]!=null) {
@@ -823,12 +822,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
     }
 
-    @Override protected GBMModel makeModel( Key modelKey, GBMModel.GBMParameters parms) {
-      return new GBMModel(modelKey,parms,new GBMModel.GBMOutput(GBM.this));
+    @Override protected GBMModel makeModel(Key<GBMModel> modelKey, GBMModel.GBMParameters parms) {
+      return new GBMModel(modelKey, parms, new GBMModel.GBMOutput(GBM.this));
     }
 
   }
 
+
+  //--------------------------------------------------------------------------------------------------------------------
 
   private static class FillVecWithConstant extends MRTask<FillVecWithConstant> {
     private double init;
@@ -852,17 +853,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
 
   private static class ResponseLessOffsetTask extends MRTask<ResponseLessOffsetTask> {
-    private int responseIdx;
-    private int offsetIdx;
+    private FrameMap fm;
 
-    public ResponseLessOffsetTask(int responseIndex, int offsetIndex) {
-      responseIdx = responseIndex;
-      offsetIdx = offsetIndex;
+    public ResponseLessOffsetTask(FrameMap frameMap) {
+      fm = frameMap;
     }
 
     @Override public void map(Chunk[] chks, NewChunk[] nc) {
-      final Chunk resp = chks[responseIdx];
-      final Chunk offset = chks[offsetIdx];
+      final Chunk resp = chks[fm.responseIndex];
+      final Chunk offset = chks[fm.offsetIndex];
       for (int i = 0; i < chks[0]._len; ++i)
         nc[0].addNum(resp.atd(i) - offset.atd(i));  // y - o
     }
@@ -873,18 +872,14 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
    * Newton-Raphson fixpoint iteration to find a self-consistent initial value
    */
   private static class NewtonRaphson extends MRTask<NewtonRaphson> {
-    private int responseIdx;
-    private int offsetIdx;
-    private int weightIdx;
+    private FrameMap fm;
     private Distribution dist;
     private double _init;
     private double _numerator;
     private double _denominator;
 
-    public NewtonRaphson(int responseIndex, int offsetIndex, int weightIndex, Distribution distribution) {
-      responseIdx = responseIndex;
-      offsetIdx = offsetIndex;
-      weightIdx = weightIndex;
+    public NewtonRaphson(FrameMap frameMap, Distribution distribution) {
+      fm = frameMap;
       dist = distribution;
     }
 
@@ -900,9 +895,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     @Override
     public void map(Chunk[] chks) {
-      Chunk ys = chks[responseIdx];
-      Chunk offset = chks[offsetIdx];
-      Chunk weight = weightIdx >= 0? chks[weightIdx] : new C0DChunk(1, chks[0]._len);
+      Chunk ys = chks[fm.responseIndex];
+      Chunk offset = chks[fm.offsetIndex];
+      Chunk weight = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
       for (int row = 0; row < ys._len; row++) {
         double w = weight.atd(row);
         if (w == 0) continue;
@@ -923,28 +918,18 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
   }
 
 
-  //--------------------------------------------------------------------------------------------------------------------
-  // Compute Residuals
-  // Do this for all rows, whether OOB or not
+  /**
+   * Compute Residuals
+   * Do this for all rows, whether OOB or not
+   */
   private static class ComputePredAndRes extends MRTask<ComputePredAndRes> {
-    private int responseIdx;
-    private int offsetIdx;
-    private int weightIdx;
-    private int treeIdx;
-    private int workIdx;
+    private FrameMap fm;
     private int nclass;
     private boolean[] out;
     private Distribution dist;
 
-    public ComputePredAndRes(
-        int responseIndex, int offsetIndex, int weightIndex, int treeIndex, int workIndex,
-        int nClasses, double[] outputDistribution, Distribution distribution
-    ) {
-      responseIdx = responseIndex;
-      offsetIdx = offsetIndex;
-      weightIdx = weightIndex;
-      treeIdx = treeIndex;
-      workIdx = workIndex;
+    public ComputePredAndRes(FrameMap frameMap, int nClasses, double[] outputDistribution, Distribution distribution) {
+      fm = frameMap;
       nclass = nClasses;
       dist = distribution;
       out = new boolean[outputDistribution.length];
@@ -953,11 +938,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     @Override
     public void map(Chunk[] chks) {
-      Chunk ys = chks[responseIdx];
-      Chunk offset = offsetIdx >= 0? chks[offsetIdx] : new C0DChunk(0, chks[0]._len);
-      Chunk preds = chks[treeIdx];  // Prior tree sums
-      C8DVolatileChunk wk = (C8DVolatileChunk) chks[workIdx]; // Place to store residuals
-      Chunk weights = weightIdx >= 0? chks[weightIdx] : new C0DChunk(1, chks[0]._len);
+      Chunk ys = chks[fm.responseIndex];
+      Chunk offset = fm.offsetIndex >= 0? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      Chunk preds = chks[fm.tree0Index];  // Prior tree sums
+      C8DVolatileChunk wk = (C8DVolatileChunk) chks[fm.work0Index]; // Place to store residuals
+      Chunk weights = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
       double[] fs = nclass > 1 ? new double[nclass + 1] : null;
       for (int row = 0; row < wk._len; row++) {
         double weight = weights.atd(row);
@@ -967,16 +952,16 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         double y = ys.atd(row);
 //          Log.info(f + " vs " + y); //expect that the model predicts very negative values for 0 and very positive values for 1
         if (dist.distribution == DistributionFamily.multinomial && fs != null) {
-          double sum = score1static(chks, treeIdx, 0.0 /*not used for multiclass*/, fs, row, dist, nclass);
+          double sum = score1static(chks, fm.tree0Index, 0.0 /*not used for multiclass*/, fs, row, dist, nclass);
           if (Double.isInfinite(sum)) {  // Overflow (happens for constant responses)
             for (int k = 0; k < nclass; k++) {
-              wk = (C8DVolatileChunk) chks[workIdx + k];
+              wk = (C8DVolatileChunk) chks[fm.work0Index + k];
               wk.getValues()[row] = ((int) y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f);
             }
           } else {
             for (int k = 0; k < nclass; k++) { // Save as a probability distribution
               if (out[k]) {
-                wk = (C8DVolatileChunk) chks[workIdx + k];
+                wk = (C8DVolatileChunk) chks[fm.work0Index + k];
                 wk.getValues()[row] = (((int) y == k ? 1f : 0f) - (float) (fs[k + 1] / sum));
               }
             }
@@ -990,23 +975,15 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
 
   private static class ComputeMinMax extends MRTask<ComputeMinMax> {
-    private int responseIdx;
-    private int offsetIdx;
-    private int weightIdx;
-    private int treeIdx;
-    private int nidsIdx;
+    private FrameMap fm;
     int firstLeafIdx;
     int _totalNumNodes;
     float[] _mins;
     float[] _maxs;
 
 
-    public ComputeMinMax(int responseIndex, int offsetIndex, int weightIndex, int treeIndex, int nidsIndex, int firstLeafIndex, int totalNumNodes) {
-      responseIdx = responseIndex;
-      offsetIdx = offsetIndex;
-      weightIdx = weightIndex;
-      treeIdx = treeIndex;
-      nidsIdx = nidsIndex;
+    public ComputeMinMax(FrameMap frameMap, int firstLeafIndex, int totalNumNodes) {
+      fm = frameMap;
       firstLeafIdx = firstLeafIndex;
       _totalNumNodes = totalNumNodes;
     }
@@ -1018,11 +995,11 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       Arrays.fill(_mins, Float.MAX_VALUE);
       Arrays.fill(_maxs, -Float.MAX_VALUE);
 
-      Chunk ys = chks[responseIdx];
-      Chunk offset = offsetIdx >= 0? chks[offsetIdx] : new C0DChunk(0, chks[0]._len);
-      Chunk preds = chks[treeIdx]; // Prior tree sums
-      Chunk nids = chks[nidsIdx];
-      Chunk weights = weightIdx >= 0? chks[weightIdx] : new C0DChunk(1, chks[0]._len);
+      Chunk ys = chks[fm.responseIndex];
+      Chunk offset = fm.offsetIndex >= 0? chks[fm.offsetIndex] : new C0DChunk(0, chks[0]._len);
+      Chunk preds = chks[fm.tree0Index]; // Prior tree sums
+      Chunk nids = chks[fm.nids0Index];
+      Chunk weights = fm.weightIndex >= 0? chks[fm.weightIndex] : new C0DChunk(1, chks[0]._len);
       for( int row = 0; row < preds._len; row++) {
         if( ys.isNA(row) ) continue;
         if (weights.atd(row)==0) continue;
@@ -1042,6 +1019,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       ArrayUtils.reduceMax(_maxs, mrt._maxs);
     }
   }
+
 
 
   // Read the 'tree' columns, do model-specific math and put the results in the
