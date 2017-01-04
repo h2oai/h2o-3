@@ -234,10 +234,8 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       int N = 1; //one step is enough - same as R
 
       double init = 0; //start with initial value of 0 for convergence
-      NewtonRaphson nrtask = new NewtonRaphson(frameMap, new Distribution(_parms));
       do {
-        nrtask.setValue(init);
-        double newInit = nrtask.doAll(train).value();
+        double newInit = new NewtonRaphson(frameMap, new Distribution(_parms), init).doAll(train).value();
         delta = Math.abs(init - newInit);
         init = newInit;
         Log.info("Iteration " + (++count) + ": initial value: " + init);
@@ -632,12 +630,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private double _numerator;
     private double _denominator;
 
-    public NewtonRaphson(FrameMap frameMap, Distribution distribution) {
+    public NewtonRaphson(FrameMap frameMap, Distribution distribution, double initialValue) {
       fm = frameMap;
       dist = distribution;
-    }
-
-    public void setValue(double initialValue) {
       _init = initialValue;
       _numerator = 0;
       _denominator = 0;
