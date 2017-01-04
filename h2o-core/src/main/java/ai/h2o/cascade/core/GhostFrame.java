@@ -17,7 +17,7 @@ import java.util.List;
  *
  * This should be the base class for all "frames" produced in Cascade.
  */
-public abstract class GhostFrame {
+public abstract class GhostFrame extends Val {
   protected GhostFrame[] parents;
 
 
@@ -125,5 +125,26 @@ public abstract class GhostFrame {
       }
     }.doAll(outputTypes, inputVecs)
      .outputFrame(Key.<Frame>make(), outputNames, null);
+  }
+
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Val interface
+  //--------------------------------------------------------------------------------------------------------------------
+
+  @Override
+  public Val.Type type() {
+    return Val.Type.FRAME;
+  }
+
+  @Override
+  public boolean isFrame() {
+    return true;
+  }
+
+  @Override
+  public GhostFrame getFrame() {
+    return this;
   }
 }

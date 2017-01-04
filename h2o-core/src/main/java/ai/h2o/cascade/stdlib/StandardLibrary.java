@@ -1,8 +1,7 @@
 package ai.h2o.cascade.stdlib;
 
-import ai.h2o.cascade.core.*;
 import ai.h2o.cascade.CascadeSession;
-import ai.h2o.cascade.core.WorkFrame;
+import ai.h2o.cascade.core.*;
 import javassist.*;
 import water.util.SB;
 import water.util.StringUtils;
@@ -498,7 +497,7 @@ public class StandardLibrary implements ICascadeLibrary {
       TYPE_MAP.put("java.lang.String", "STR");
       TYPE_MAP.put("double[]", "NUMS");
       TYPE_MAP.put("java.lang.String[]", "STRS");
-      TYPE_MAP.put(WorkFrame.class.getName(), "FRAME");
+      TYPE_MAP.put(GhostFrame.class.getName(), "FRAME");
       TYPE_MAP.put(IdList.class.getName(), "IDS");
       TYPE_MAP.put(SliceList.class.getName(), "SLICE");
     }

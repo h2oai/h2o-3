@@ -1,10 +1,10 @@
 package ai.h2o.cascade.stdlib.core;
 
 import ai.h2o.cascade.core.IdList;
+import ai.h2o.cascade.core.WrappedfFrame;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 import ai.h2o.cascade.stdlib.frame.FnClone;
 import ai.h2o.cascade.core.Val;
-import ai.h2o.cascade.core.ValFrame;
 import water.DKV;
 import water.Value;
 import water.fvec.Frame;
@@ -31,8 +31,7 @@ public class FnFromDkv extends StdlibFunction {
 
     Frame originalFrame = value.get();
     Frame clonedFrame = FnClone.cloneFrame(originalFrame, scope.session().<Frame>mintKey());
-    Val val = new ValFrame(clonedFrame);
-    val.getFrame().makeReadonly();  // set the readonly flag on the frame before storing it in the scope
+    Val val = new WrappedfFrame(clonedFrame);
     scope.addVariable(id, val);
 
     return val;

@@ -41,7 +41,7 @@ public abstract class Val {
     STR("ValStr"),       // string
     STRS("ValStrs"),     // array of strings
     IDS("IdList"),       // list of unevaluated variables
-    FRAME("ValFrame"),   // Frame object
+    FRAME("GhostFrame"), // Frame object
     FUN("ValFun"),       // function -- either built-in or user-defined
     AST("ValAst");       // unevaluated AST
 
@@ -136,7 +136,7 @@ public abstract class Val {
   public IdList getIds() {
     throw badValue("list of ids (in backticks)");
   }
-  public WorkFrame getFrame() {
+  public GhostFrame getFrame() {
     throw badValue("Frame");
   }
   public Function getFun() {
