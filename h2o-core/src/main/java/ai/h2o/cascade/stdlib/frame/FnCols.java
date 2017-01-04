@@ -1,7 +1,7 @@
 package ai.h2o.cascade.stdlib.frame;
 
+import ai.h2o.cascade.core.GhostFrame;
 import ai.h2o.cascade.core.SliceList;
-import ai.h2o.cascade.core.WorkFrame;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 
 /**
@@ -9,18 +9,20 @@ import ai.h2o.cascade.stdlib.StdlibFunction;
  */
 public class FnCols extends StdlibFunction {
 
-  public WorkFrame apply(WorkFrame frame, SliceList columns) {
+  public GhostFrame apply(GhostFrame frame, SliceList columns) {
     try {
-      columns.normalizeR(frame.nCols());
-      return frame.keepColumns(columns);
+      columns.normalizeR(frame.numCols());
+      // return frame.keepColumns(columns);
+      return null;
     } catch (IllegalArgumentException e) {
       throw new ValueError(1, e.getMessage());
     }
   }
 
-  public WorkFrame apply(WorkFrame frame, String[] columns) {
+  public GhostFrame apply(GhostFrame frame, String[] columns) {
     SliceList sl = new SliceList(columns, frame);
-    return frame.keepColumns(sl);
+    // return frame.keepColumns(sl);
+    return null;
   }
 
 }

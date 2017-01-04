@@ -1,7 +1,7 @@
 package ai.h2o.cascade.stdlib.core;
 
 import ai.h2o.cascade.core.IdList;
-import ai.h2o.cascade.core.WrappedfFrame;
+import ai.h2o.cascade.core.CorporealFrame;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 import ai.h2o.cascade.stdlib.frame.FnClone;
 import ai.h2o.cascade.core.Val;
@@ -19,7 +19,7 @@ import water.fvec.Frame;
 public class FnFromDkv extends StdlibFunction {
 
   public Val apply(IdList ids, String key) {
-    if (ids.numIds() != 1)
+    if (ids.numIds() != 1 || ids.hasVarargId())
       throw new ValueError(0, "Only one id should be supplied");
     String id = ids.getId(0);
 
@@ -31,8 +31,9 @@ public class FnFromDkv extends StdlibFunction {
 
     Frame originalFrame = value.get();
     Frame clonedFrame = FnClone.cloneFrame(originalFrame, scope.session().<Frame>mintKey());
-    Val val = new WrappedfFrame(clonedFrame);
+    Val val = new CorporealFrame(clonedFrame);
     scope.addVariable(id, val);
+    scope.session().increaseFrameRefCount(clonedFrame);
 
     return val;
   }

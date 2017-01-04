@@ -1,6 +1,6 @@
 package ai.h2o.cascade.stdlib.frame;
 
-import ai.h2o.cascade.core.WorkFrame;
+import ai.h2o.cascade.core.GhostFrame;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 
 /**
@@ -8,8 +8,8 @@ import ai.h2o.cascade.stdlib.StdlibFunction;
  */
 public class FnNcols extends StdlibFunction {
 
-  public int apply(WorkFrame frame) {
-    return frame.nCols();
+  public int apply(GhostFrame frame) {
+    return frame.numCols();
   }
 
 }

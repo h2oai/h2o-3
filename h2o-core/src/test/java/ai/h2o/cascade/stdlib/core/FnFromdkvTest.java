@@ -2,19 +2,17 @@ package ai.h2o.cascade.stdlib.core;
 
 import ai.h2o.cascade.Cascade;
 import ai.h2o.cascade.CascadeParserTest;
-import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.CascadeSession;
-import ai.h2o.cascade.core.WorkFrame;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.core.Val;
-import ai.h2o.cascade.core.ValFrame;
+import ai.h2o.cascade.core.CorporealFrame;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 import water.fvec.Frame;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+
 
 /**
  * Test module for {@link FnFromDkv}.
@@ -38,18 +36,16 @@ public class FnFromdkvTest extends TestUtil {
 
       // Import frame {@code f} from DKV into the Cascade session
       Val res = exec("(fromDkv `iris` '" + originalFrame._key + "')");
-      assertTrue(res instanceof ValFrame);
-      WorkFrame cff = res.getFrame();
-      assertTrue("WorkFrame object is supposed to be in the 'stone' mode", cff.isStoned());
-      Frame importedFrame = cff.getStoneFrame();
+      assertTrue(res instanceof CorporealFrame);
+      assertTrue(res.getFrame() == res);
+      Frame importedFrame = ((CorporealFrame) res).getWrappedFrame();
       water.Scope.track(importedFrame);
 
       // Verify that the imported frame is stored in the global scope
       Scope global = session.globalScope();
       Val vs = global.lookupVariable("iris");
-      assertTrue(vs instanceof ValFrame);
-      assertTrue(vs.getFrame().isStoned());
-      assertEquals(importedFrame._key, vs.getFrame().getStoneFrame()._key);
+      assertTrue(vs instanceof CorporealFrame);
+      assertEquals(importedFrame._key, ((CorporealFrame) vs).getWrappedFrame()._key);
 
       // Verify that it's a deep copy of the original frame
       assertEquals(importedFrame.numCols(), originalFrame.numCols());

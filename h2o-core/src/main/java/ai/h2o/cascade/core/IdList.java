@@ -31,6 +31,14 @@ public class IdList extends Val {
 
 
   /**
+   * Return true if there is a vararg in the id list.
+   */
+  public boolean hasVarargId() {
+    return varargId != null;
+  }
+
+
+  /**
    * Return the vararg id if there is one; otherwise return {@code null}.
    */
   public String getVarargId() {

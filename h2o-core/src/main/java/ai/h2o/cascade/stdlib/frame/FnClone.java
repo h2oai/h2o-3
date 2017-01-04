@@ -1,6 +1,7 @@
 package ai.h2o.cascade.stdlib.frame;
 
-import ai.h2o.cascade.core.WorkFrame;
+import ai.h2o.cascade.core.CorporealFrame;
+import ai.h2o.cascade.core.GhostFrame;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 import water.DKV;
 import water.Key;
@@ -14,11 +15,11 @@ import water.fvec.Vec;
  */
 public class FnClone extends StdlibFunction {
 
-  public WorkFrame apply(WorkFrame frame) {
-    Frame srcFrame = frame.getStoneFrame();
+  public GhostFrame apply(GhostFrame frame) {
+    Frame srcFrame = ((CorporealFrame) frame).getWrappedFrame();
     Key<Frame> destKey = scope.session().mintKey();
     Frame destFrame = cloneFrame(srcFrame, destKey);
-    return new WorkFrame(destFrame);
+    return new CorporealFrame(destFrame);
   }
 
 

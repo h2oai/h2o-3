@@ -11,13 +11,13 @@ import java.util.List;
 /**
  * This is a {@link GhostFrame} wrapped around a plain {@link Frame}.
  */
-public class WrappedfFrame extends GhostFrame {
+public class CorporealFrame extends GhostFrame {
   private Frame frame;
   private int inputsOffset;
   private transient Chunk[] chunks;
   private transient BufferedString bs;
 
-  public WrappedfFrame(Frame f) {
+  public CorporealFrame(Frame f) {
     frame = f;
   }
 
@@ -62,5 +62,10 @@ public class WrappedfFrame extends GhostFrame {
   @Override
   public BufferedString getStrValue(int i, int j) {
     return chunks[j + inputsOffset].atStr(bs, i);
+  }
+
+
+  public Frame getWrappedFrame() {
+    return frame;
   }
 }

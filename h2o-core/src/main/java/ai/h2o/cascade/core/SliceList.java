@@ -85,10 +85,10 @@ public class SliceList extends Iced {
   /**
    * Make a SliceList from the list of column names in a frame.
    */
-  public SliceList(String[] names, WorkFrame frame) {
+  public SliceList(String[] names, GhostFrame frame) {
     bases = new long[names.length];
     for (int i = 0; i < names.length; i++) {
-      int j = frame.findColumnByName(names[i]);
+      int j = -1; //frame.findColumnByName(names[i]);
       if (j == -1)
         throw new IllegalArgumentException("Column '" + names[i] + "' was not found in the frame");
       bases[i] = j;

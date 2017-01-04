@@ -87,6 +87,17 @@ public class StandardLibrary implements ICascadeLibrary {
   //--------------------------------------------------------------------------------------------------------------------
   private static final boolean DEBUG = false;
 
+  private static final ClassPool cp = ClassPool.getDefault();
+  private static CtClass valCtClass;
+  static {
+    cp.importPackage("ai.h2o.cascade.core");
+    try {
+      valCtClass = cp.get("ai.h2o.cascade.core.Val");
+    } catch (NotFoundException e) {
+      throw new RuntimeException("Cannot find class Val", e);
+    }
+  }
+
 
   /**
    * Register command {@code name} within subpackage {@code pkg} as a member
@@ -98,9 +109,6 @@ public class StandardLibrary implements ICascadeLibrary {
    */
   private void registerCommand(String pkg, String name) {
     String className = "ai.h2o.cascade.stdlib." + pkg + ".Fn" + StringUtils.capitalize(name);
-    ClassPool cp = ClassPool.getDefault();
-    cp.importPackage("ai.h2o.cascade.vals");
-    cp.importPackage("ai.h2o.cascade.core");
     try {
       CtClass cc = cp.get(className);
       augmentClass(cc);
@@ -130,12 +138,13 @@ public class StandardLibrary implements ICascadeLibrary {
    * runtime exception occurs.
    */
   private void augmentClass(CtClass cc) {
+    String apply0Body = null;
     try {
       List<MInfo> applyMethods = getApplies(cc);
       if (applyMethods.isEmpty()) {
         throw new RuntimeException("Class " + cc.getName() + " does not define any apply() methods.");
       }
-      String apply0Body = makeApply0(applyMethods);
+      apply0Body = makeApply0(applyMethods);
       if (DEBUG) {
         System.out.println("\n[Source code of " + cc.getSimpleName() + ".apply0()]:\n");
         System.out.println(apply0Body);
@@ -143,9 +152,15 @@ public class StandardLibrary implements ICascadeLibrary {
       }
       cc.addMethod(CtMethod.make(apply0Body, cc));
     } catch (RuntimeException | AssertionError e) {
-      throw new RuntimeException("[In class " + cc.getName() + "]: " + e.getMessage(), e);
+      String message = "[In class " + cc.getName() + "]: " + e.getMessage();
+      if (apply0Body != null)
+        message += "\nGenerated code:\n\n" + apply0Body;
+      throw new RuntimeException(message, e);
     } catch (NotFoundException | CannotCompileException e) {
-      throw new RuntimeException(e.getMessage(), e);
+      String message = e.getMessage();
+      if (apply0Body != null)
+        message += "\nGenerated code:\n\n" + apply0Body;
+      throw new RuntimeException(message, e);
     }
   }
 
@@ -381,19 +396,14 @@ public class StandardLibrary implements ICascadeLibrary {
    * @param sb String buffer where to write the return statement.
    */
   private void writeReturnStatement(MInfo method, String indent, String args, SB sb) {
-    String retClass = method.retValName();
-    switch (retClass) {
-      case "Val":
-        sb.p(indent).p("return apply(").p(args).p(");\n");
-        break;
-      case "ValNull":
-        sb.p(indent).p("apply(").p(args).p(");\n");
-        sb.p(indent).p("return new ValNull();\n");
-        break;
-      default:
-        sb.p(indent).p(method.retType.getSimpleName()).p(" ret = apply(").p(args).p(");\n");
-        sb.p(indent).p("return new ").p(retClass).p("(ret);\n");
-        break;
+    if (method.retType.subclassOf(valCtClass)) {
+      sb.p(indent).p("return apply(").p(args).p(");\n");
+    } else if (method.retType.getName().equals("void")) {
+      sb.p(indent).p("apply(").p(args).p(");\n");
+      sb.p(indent).p("return new ValNull();\n");
+    } else {
+      sb.p(indent).p(method.retType.getSimpleName()).p(" ret = apply(").p(args).p(");\n");
+      sb.p(indent).p("return new ").p(method.retValName()).p("(ret);\n");
     }
   }
 

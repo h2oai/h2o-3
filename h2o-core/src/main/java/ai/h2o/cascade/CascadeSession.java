@@ -4,6 +4,7 @@ import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.stdlib.StandardLibrary;
 import water.Key;
 import water.Keyed;
+import water.fvec.Frame;
 import water.fvec.Vec;
 
 import java.io.Closeable;
@@ -31,6 +32,7 @@ public class CascadeSession implements Closeable {
   private Scope global;
   private Map<Vec, Integer> vecCopyCounts;
   private int idCounter;
+  private Map<Frame, Integer> frameRefCounts;
 
 
   /**
@@ -43,6 +45,7 @@ public class CascadeSession implements Closeable {
     global = new Scope(this, null);
     global.importFromLibrary(StandardLibrary.instance());
     vecCopyCounts = new HashMap<>(64);
+    frameRefCounts = new HashMap<>(16);
   }
 
   public String id() {
@@ -78,6 +81,24 @@ public class CascadeSession implements Closeable {
   //--------------------------------------------------------------------------------------------------------------------
   //
   //--------------------------------------------------------------------------------------------------------------------
+
+  public void increaseFrameRefCount(Frame f) {
+    Integer currentCount = frameRefCounts.get(f);
+    if (currentCount == null) currentCount = 0;
+    frameRefCounts.put(f, currentCount + 1);
+  }
+
+  public void decreaseFrameRefCount(Frame f) {
+    Integer currentCount = frameRefCounts.get(f);
+    if (currentCount == null || currentCount == 0)
+      throw new RuntimeException("Trying to remove a non-tracked frame " + f._key);
+    if (currentCount == 1) {
+      f.delete();
+      frameRefCounts.remove(f);
+    } else {
+      frameRefCounts.put(f, currentCount - 1);
+    }
+  }
 
 
 }
