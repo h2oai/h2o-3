@@ -40,7 +40,7 @@ public abstract class Val extends Iced<Val> {
     STRS("ValStrs"),     // array of strings
     IDS("IdList"),       // list of unevaluated variables
     FRAME("GhostFrame"), // Frame object
-    FUN("ValFun"),       // function -- either built-in or user-defined
+    FUN("Function"),     // function -- either built-in or user-defined
     AST("ValAst");       // unevaluated AST
 
     private String valClassName;

@@ -4,10 +4,30 @@ import ai.h2o.cascade.Cascade;
 
 /**
  */
-public abstract class Function {
+public abstract class Function extends Val {
   public Scope scope;
 
   public abstract Val apply0(Val[] args);
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Val interface implementation
+  //--------------------------------------------------------------------------------------------------------------------
+
+  @Override
+  public Type type() {
+    return Type.FUN;
+  }
+
+  @Override
+  public boolean isFun() {
+    return true;
+  }
+
+  @Override
+  public Function getFun() {
+    return this;
+  }
 
 
   //--------------------------------------------------------------------------------------------------------------------

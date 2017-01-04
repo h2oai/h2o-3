@@ -114,7 +114,7 @@ public class StandardLibrary implements ICascadeLibrary {
       augmentClass(cc);
       Class c = cc.toClass();
       Function f = (Function) c.newInstance();
-      members.put(name, new ValFun(f));
+      members.put(name, f);
     } catch (NotFoundException | CannotCompileException e) {
       throw new RuntimeException("Woven class " + className + " cannot be compiled:\n" + e.getMessage());
     } catch (InstantiationException | IllegalAccessException e) {
