@@ -631,7 +631,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private double _denominator;
 
     public NewtonRaphson(FrameMap frameMap, Distribution distribution, double initialValue) {
-      assert fm != null;
+      assert frameMap != null && distribution != null;
       fm = frameMap;
       dist = distribution;
       _init = initialValue;
