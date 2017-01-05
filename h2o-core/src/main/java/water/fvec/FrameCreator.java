@@ -8,6 +8,7 @@ import water.util.FrameUtils;
 
 import java.util.Arrays;
 import java.util.Random;
+import java.util.UUID;
 
 import static water.fvec.Vec.makeCon;
 import water.util.RandomUtils;
@@ -82,9 +83,6 @@ public class FrameCreator extends H2O.H2OCountedCompleter {
       for (int c : _cat_cols) {
         _domain[c] = new String[_createFrame.factors];
         for (int i = 0; i < _createFrame.factors; ++i) {
-          byte[] data = new byte[16];
-          Random rng = RandomUtils.getRNG(_createFrame.seed + c*0xDECAF + i);
-          rng.nextBytes(data);
           _domain[c][i] = "c" + c + ".l" + i;
         }
       }
