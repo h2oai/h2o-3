@@ -18,8 +18,6 @@ import java.util.List;
  * This should be the base class for all "frames" produced in Cascade.
  */
 public abstract class GhostFrame extends Val {
-  protected GhostFrame[] parents;
-
 
   /** Number of columns in the frame. */
   public abstract int numCols();
@@ -49,10 +47,7 @@ public abstract class GhostFrame extends Val {
    * row-by-row computation at the same position as you put them into the
    * list of {@code inputs}.
    */
-  protected void prepareInputs(List<Vec> inputs) {
-    for (GhostFrame nf: parents)
-      nf.prepareInputs(inputs);
-  }
+  protected abstract void prepareInputs(List<Vec> inputs);
 
 
   /**
@@ -67,10 +62,7 @@ public abstract class GhostFrame extends Val {
    * <p> If your {@code GhostFrame} depends on 1 or more other {@code GhostFrame}s, you
    * should call their {@code preparePerChunk()} methods recursively.
    */
-  protected void preparePerChunk(Chunk[] cs) {
-    for (GhostFrame nf: parents)
-      nf.preparePerChunk(cs);
-  }
+  protected abstract void preparePerChunk(Chunk[] cs);
 
 
   /**
@@ -149,4 +141,27 @@ public abstract class GhostFrame extends Val {
   public GhostFrame getFrame() {
     return this;
   }
+
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Frame operations
+  //--------------------------------------------------------------------------------------------------------------------
+
+  /**
+   * Return index of the column with the given {@code name}, or {@code -1} if
+   * such column does not exist in the frame.
+   *
+   * <p>Note: this performs linear O(N) search, and is therefore not very
+   * optimal for bulk search of multiple column names.
+   */
+  public int findColumnByName(String name) {
+    int ncols = numCols();
+    for (int i = 0; i < ncols; i++) {
+      if (name(i).equals(name)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
 }

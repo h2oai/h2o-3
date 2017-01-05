@@ -91,4 +91,9 @@ public class CorporealFrame extends GhostFrame {
     return this;
   }
 
+  @Override
+  public int findColumnByName(String name) {
+    return frame.find(name);
+  }
+
 }
