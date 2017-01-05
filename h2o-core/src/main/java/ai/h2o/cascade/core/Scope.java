@@ -1,6 +1,8 @@
 package ai.h2o.cascade.core;
 
 import ai.h2o.cascade.CascadeSession;
+import water.Key;
+import water.Keyed;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -67,6 +69,11 @@ public class Scope {
 
   public void addVariable(String name, Val value) {
     symbolTable.put(name, value);
+  }
+
+
+  public <T extends Keyed<T>> Key<T> mintKey() {
+    return session.mintKey();
   }
 
 

@@ -24,7 +24,7 @@ public class FnClone extends StdlibFunction {
     } else {
       // If the source frame is not corporeal, then materializing it is
       // equivalent to creating a copy.
-      return frame.materialize();
+      return frame.materialize(scope);
     }
   }
 

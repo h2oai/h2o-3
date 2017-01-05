@@ -87,7 +87,7 @@ public class CorporealFrame extends GhostFrame {
    * even a copy).
    */
   @Override
-  public CorporealFrame materialize() {
+  public CorporealFrame materialize(Scope scope) {
     return this;
   }
 

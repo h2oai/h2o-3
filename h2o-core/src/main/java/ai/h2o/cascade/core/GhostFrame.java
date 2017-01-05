@@ -1,6 +1,5 @@
 package ai.h2o.cascade.core;
 
-import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -79,11 +78,20 @@ public abstract class GhostFrame extends Val {
   public BufferedString getStrValue(int row, int col) { return null; }
 
 
-  public CorporealFrame materialize() {
+  /**
+   * Convert {@code GhostFrame} into a {@link CorporealFrame}: this method will
+   * compute all values within the current frame, producing a "material"
+   * {@link Frame}, wrapped into the {@code CorporealFrame} class.
+   *
+   * @param scope Current execution scope (needed to properly track the newly
+   *              created {@code Frame}).
+   */
+  public CorporealFrame materialize(Scope scope) {
     ArrayList<Vec> inputs = new ArrayList<>();
     prepareInputs(inputs);
     Vec[] inputVecs = inputs.toArray(new Vec[inputs.size()]);
 
+    // TODO: we will probably be better-off creating a SliceList instead
     final int nOutputs = numCols();
     byte[] outputTypes = new byte[nOutputs];
     String[] outputNames = new String[nOutputs];
@@ -99,26 +107,37 @@ public abstract class GhostFrame extends Val {
         numericOutputs.add(i);
       }
     }
-    final int[] arrayNumOutputs = ArrayUtils.toIntArray(numericOutputs);
-    final int[] arrayStrOutputs = ArrayUtils.toIntArray(stringOutputs);
 
-    Frame res = new MRTask() {
-      @Override public void map(Chunk[] cs, NewChunk[] ncs) {
-        preparePerChunk(cs);
-        int nRowsInChunk = cs[0]._len;
-        for (int i = 0; i < nRowsInChunk; i++) {
-          for (int j: arrayNumOutputs) {
-            ncs[j].addNum(getNumValue(i, j));
-          }
-          for (int j: arrayStrOutputs) {
-            ncs[j].addStr(getStrValue(i, j));
-          }
-        }
-      }
-    }.doAll(outputTypes, inputVecs)
-     .outputFrame(Key.<Frame>make(), outputNames, null);
+    MaterializationTask mtask = new MaterializationTask(numericOutputs, stringOutputs);
+    Frame res = mtask.doAll(outputTypes, inputVecs)
+                     .outputFrame(scope.<Frame>mintKey(), outputNames, null);
 
     return new CorporealFrame(res);
+  }
+
+
+  private class MaterializationTask extends MRTask<MaterializationTask> {
+    private int[] numericOutputIndices;
+    private int[] stringOutputIndices;
+
+    public MaterializationTask(ArrayList<Integer> numericOutputs, ArrayList<Integer> stringOutputs) {
+      numericOutputIndices = ArrayUtils.toIntArray(numericOutputs);
+      stringOutputIndices = ArrayUtils.toIntArray(stringOutputs);
+    }
+
+    @Override public void map(Chunk[] cs, NewChunk[] ncs) {
+      preparePerChunk(cs);
+      int nRowsInChunk = cs[0]._len;
+      for (int i = 0; i < nRowsInChunk; i++) {
+        for (int j: numericOutputIndices) {
+          ncs[j].addNum(getNumValue(i, j));
+        }
+        for (int j: stringOutputIndices) {
+          ncs[j].addStr(getStrValue(i, j));
+        }
+      }
+    }
+
   }
 
 
