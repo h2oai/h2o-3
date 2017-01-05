@@ -102,7 +102,8 @@ public class EasyPredictModelWrapperTest {
 
     m = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
             .setModel(rawModel)
-            .setConvertUnknownCategoricalLevelsToNa(true));
+            .setConvertUnknownCategoricalLevelsToNa(true)
+            .setConvertInvalidNumbersToNa(true));
 
     {
       RowData row0 = new RowData();
