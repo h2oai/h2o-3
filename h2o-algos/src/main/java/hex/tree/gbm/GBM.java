@@ -158,6 +158,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     @Override protected boolean doOOBScoring() { return false; }
     @Override protected void initializeModelSpecifics() {
+      frameMap = new FrameMap(GBM.this);
       _mtry_per_tree = Math.max(1, (int)(_parms._col_sample_rate_per_tree * _ncols)); //per-tree
       if (!(1 <= _mtry_per_tree && _mtry_per_tree <= _ncols)) throw new IllegalArgumentException("Computed mtry_per_tree should be in interval <1,"+_ncols+"> but it is " + _mtry_per_tree);
       _mtry = Math.max(1, (int)(_parms._col_sample_rate * _parms._col_sample_rate_per_tree * _ncols)); //per-split
@@ -175,7 +176,6 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         _initialPrediction = getInitialValueQuantile(_parms._quantile_alpha);
       }
       _model._output._init_f = _initialPrediction; //always write the initial value here (not just for Bernoulli)
-      frameMap = new FrameMap(GBM.this);
 
       // Set the initial prediction into the tree column 0
       if (_initialPrediction != 0.0) {
@@ -631,6 +631,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
     private double _denominator;
 
     public NewtonRaphson(FrameMap frameMap, Distribution distribution, double initialValue) {
+      assert fm != null;
       fm = frameMap;
       dist = distribution;
       _init = initialValue;
