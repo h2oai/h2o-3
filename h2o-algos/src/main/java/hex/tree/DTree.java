@@ -635,13 +635,13 @@ public class DTree extends Iced {
         _nodeType |= _split._equal == 1 ? 4 : (_split._equal == 2 ? 8 : 12);
 
       // int res = 7;  // 1B node type + flags, 2B colId, 4B float split val
-      // 1B node type + flags, 2B colId, 4B split val/small group or (2B offset + 2B size) + large group
-      int res = _split._equal == 3 ? 7 + _split._bs.numBytes() : 7;
+      // 1B node type + flags, 2B colId, 4B split val/small group or (2B offset + 4B size) + large group
+      int res = _split._equal == 3 ? 9 + _split._bs.numBytes() : 7;
 
       // NA handling correction
       res++; //1 byte for NA split dir
       if (_split._nasplit == DHistogram.NASplitDir.NAvsREST)
-        res -= _split._equal == 3 ? 4 + _split._bs.numBytes() : 4; //don't need certain stuff
+        res -= _split._equal == 3 ? 6 + _split._bs.numBytes() : 4; //don't need certain stuff
 
       Node left = _tree.node(_nids[0]);
       int lsz = left.size();

@@ -28,7 +28,8 @@ public class IcedBitSet extends Iced {
   public IcedBitSet(int nbits, int bitoff) {
     // For small bitsets, just use a no-offset fixed-length format
     if( bitoff+nbits <= 32 ) {  bitoff = 0;  nbits = 32;  }
-    fill(nbits <= 0 ? null : new byte[bytes(nbits)], 0, nbits, bitoff);
+    int nbytes = bytes(nbits);
+    fill(nbits <= 0 ? null : new byte[nbytes], 0, nbits, bitoff);
   }
 
   // Fill in fields, with the bytes coming from some other large backing byte
@@ -37,7 +38,8 @@ public class IcedBitSet extends Iced {
     if( nbits   < 0 ) throw new NegativeArraySizeException("nbits < 0: " + nbits  );
     if( byteoff < 0 ) throw new IndexOutOfBoundsException("byteoff < 0: "+ byteoff);
     if( bitoff  < 0 ) throw new IndexOutOfBoundsException("bitoff < 0: " + bitoff );
-    assert v==null || byteoff+((nbits-1) >> 3)+1 <= v.length;
+    assert(v.length >= bytes(nbits));
+    assert v==null || byteoff+bytes(nbits) <= v.length;
     _val = v;
     _nbits = nbits;
     _bitoff = bitoff;
@@ -100,16 +102,16 @@ public class IcedBitSet extends Iced {
     assert _byteoff == 0;       // This is only set on loading a pre-existing IcedBitSet
     assert _val.length==numBytes();
     ab.put2((char)_bitoff);
-    ab.put2((char)_val.length);
+    ab.put4(_nbits);
     ab.putA1(_val,_val.length);
   }
 
   // Reload IcedBitSet from AutoBuffer
   public void fill3( byte[] bits, AutoBuffer ab ) {
     int bitoff = ab.get2();
-    int nbytes = ab.get2();
-    fill(bits,ab.position(),nbytes<<3,bitoff);
-    ab.skip(nbytes);            // Skip inline bitset
+    int nbits =  ab.get4();
+    fill(bits,ab.position(),nbits,bitoff);
+    ab.skip(bytes(nbits));            // Skip inline bitset
   }
 
   @Override public String toString() { return toString(new SB()).toString(); }
