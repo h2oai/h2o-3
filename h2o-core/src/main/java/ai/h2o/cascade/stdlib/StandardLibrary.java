@@ -189,11 +189,11 @@ public class StandardLibrary implements ICascadeLibrary {
    * {@code apply()} methods:
    * <pre>{@code
    *   apply()
-   *   apply(WorkFrame, int, boolean);
-   *   apply(WorkFrame, double);
-   *   apply(WorkFrame, double, String);
-   *   apply(WorkFrame, int, String[]);
-   *   apply(WorkFrame, int, int, int, int, int);
+   *   apply(GhostFrame, int, boolean);
+   *   apply(GhostFrame, double);
+   *   apply(GhostFrame, double, String);
+   *   apply(GhostFrame, int, String[]);
+   *   apply(GhostFrame, int, int, int, int, int);
    * }</pre>
    */
   private String makeApply0(List<MInfo> applyMethods) throws NotFoundException {

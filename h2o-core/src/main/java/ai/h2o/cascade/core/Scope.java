@@ -28,7 +28,7 @@ import java.util.Map;
  * <ul>
  *   <li>Any function that intends to reuse a vec from some other frame, should
  *       register the newly created frame with
- *       {@code #registerReuse(WorkFrame, SliceList)}.</li>
+ *       {@code #registerReuse(CorporealFrame, SliceList)}.</li>
  * </ul>
  *
  */
@@ -77,21 +77,16 @@ public class Scope {
 
   /**
    * I, the caller of this function, do hereby proclaim that I have created
-   * a new {@link WorkFrame} {@code frame}, and in doing so I have used vecs from
-   * other {@link Frame}s or {@code WorkFrame}s, as given in the {@code columns}
+   * a new {@link CorporealFrame} {@code frame}, and in doing so I have used
+   * vecs from other {@link Frame}s, as given in the {@code columns}
    * list. I shall hereby be held harmless from any data loss that may result
    * from my future use of the new {@code frame}, provided such use is
    * restricted to read access only.
-   *
-   * @param frame
-   * @param columns
    */
-  public void registerReuse(WorkFrame frame, SliceList columns) {
+  public void registerReuse(CorporealFrame frame, SliceList columns) {
     if (columns == null)
-      columns = new SliceList(0, frame.nCols());
-    if (!frame.isStoned())
-      throw new RuntimeException("Direct reuse of ghost WorkFrame is not supported");
-    Frame f = frame.getStoneFrame();
+      columns = new SliceList(0, frame.numCols());
+    Frame f = frame.getWrappedFrame();
     SliceList.Iterator iter = columns.iter();
     while (iter.hasNext()) {
       Vec v = f.vec((int) iter.nextPrim());
@@ -100,7 +95,7 @@ public class Scope {
     }
   }
 
-  public void intendToModify(WorkFrame frame, SliceList columns) {
+  public void intendToModify(CorporealFrame frame, SliceList columns) {
 
   }
 

@@ -12,8 +12,8 @@ import water.Iced;
  *
  * <p> Most values are simple wrappers around simple Java types, such as
  * {@code double}, {@code null}, {@code String}, {@code double[]}, etc. Other
- * values wrap around core H2O or Cascade objects: {@code Frame},
- * {@code WorkFrame}, {@code SliceList}, {@code Function}, etc.
+ * values are internal Cascade objects: {@code GhostFrame}, {@code SliceList},
+ * {@code Function}, etc.
  *
  * <p> In rare circumstances values of different types may be interchangeable.
  * For example, a {@code NULL} value may be used in place of almost all other

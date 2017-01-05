@@ -1,12 +1,12 @@
 package ai.h2o.cascade;
 
-import ai.h2o.cascade.asts.AstNode;
 import ai.h2o.cascade.asts.AstApply;
+import ai.h2o.cascade.asts.AstNode;
+import ai.h2o.cascade.core.Function;
+import ai.h2o.cascade.core.GhostFrame;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.core.Val;
 import ai.h2o.cascade.core.ValNull;
-import ai.h2o.cascade.core.Function;
-import ai.h2o.cascade.core.Scope;
-import ai.h2o.cascade.core.WorkFrame;
 import water.util.StringUtils;
 
 
@@ -39,7 +39,7 @@ import water.util.StringUtils;
  *
  * <p> Executing an {@code AstNode} in Cascade produces a {@link Val}. Thus,
  * {@code Val} is Cascade's equivalent of {@code Object} in Java / Python.
- * Some {@code Val}s (notably {@link WorkFrame}s) may depend on external
+ * Some {@code Val}s (notably {@link GhostFrame}s) may depend on external
  * resources (such as DKV) and thus require explicit deallocation when such
  * values are garbage-collected:
  * <ul>
