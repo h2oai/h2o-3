@@ -13,6 +13,8 @@ public abstract class GhostFrame1 extends GhostFrame {
   protected GhostFrame parent;
   protected long nrows;
 
+  public GhostFrame1() {}  // For serialization
+
   public GhostFrame1(GhostFrame p) {
     parent = p;
     nrows = p.numRows();

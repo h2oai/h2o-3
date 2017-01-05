@@ -74,9 +74,9 @@ public abstract class GhostFrame extends Val {
    * finally return each cell individually from this method. This method will
    * only be called for columns that produce numeric results.
    */
-  protected double getNumValue(int row, int col) { return Double.NaN; }
+  public double getNumValue(int row, int col) { return Double.NaN; }
 
-  protected BufferedString getStrValue(int row, int col) { return null; }
+  public BufferedString getStrValue(int row, int col) { return null; }
 
 
   public CorporealFrame materialize() {
