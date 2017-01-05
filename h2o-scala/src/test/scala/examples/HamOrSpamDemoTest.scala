@@ -88,6 +88,7 @@ class HamOrSpamDemoTest extends TestUtil {
   def buildTable(id: String, trainingRows: List[CategorizedTexts]): Frame = {
     val fr = new Frame(trainingRows.head.names, catVecs(trainingRows))
     new water.fvec.H2OFrame(fr)
+//    fr
   }
 
   def readSamples(dataFile: String): List[Array[String]] = {
@@ -203,7 +204,7 @@ class HamOrSpamDemoTest extends TestUtil {
     val javaColumns: java.util.List[java.util.List[java.lang.Double]] = columns.map(
       column => column.map(java.lang.Double.valueOf).asJava) asJava
 
-    new DlInput(name, target, javaColumns)
+    new DlInput(name, CatDomain, target, javaColumns)
   }
   
   def catVecs(rows: Iterable[CategorizedTexts]): Array[Vec] = {

@@ -571,6 +571,7 @@ public abstract class Neurons {
         assert(_dinfo._catMissing[i]); //we now *always* have a categorical level for NAs, just in case.
         if (Double.isNaN(data[i])) {
           cats[ncats] = (_dinfo._catOffsets[i+1]-1); //use the extra level for NAs made during training
+          assert cats[ncats] >= 0 : "bad cat found at " + ncats;
         } else {
           int c = (int)data[i];
 
@@ -579,13 +580,21 @@ public abstract class Neurons {
           else if (c!=0)
             cats[ncats] = c + _dinfo._catOffsets[i] - 1;
 
+          assert cats[ncats] >= 0 : "bad cat found at " + ncats;
+
           // If factor level in test set was not seen by training, then turn it into an NA
           if (cats[ncats] >= _dinfo._catOffsets[i+1]) {
             cats[ncats] = (_dinfo._catOffsets[i+1]-1);
           }
+          assert cats[ncats] >= 0 : "bad cat found at " + ncats;
         }
         ncats++;
       }
+
+      for (int ii = 0; ii < cats.length; i++) {
+        assert cats[ii] >= 0 : "Bad cats at " + ii;
+      }
+
       for(;i < data.length;++i){
         double d = data[i];
         if(_dinfo._normMul != null) d = (d - _dinfo._normSub[i-_dinfo._cats])*_dinfo._normMul[i-_dinfo._cats];
@@ -604,42 +613,15 @@ public abstract class Neurons {
      * @param mb Mini-Batch index (which point inside this mini-batch)
      */
     public void setInput(long seed, final int[] numIds, final double[] nums, final int numcat, final int[] cats, int mb) {
+      for (int i = 0; i < numcat; i++) {
+        assert cats[i] >= 0 : "Bad cats at " + i;
+      }
       Arrays.fill(_a[mb].raw(), 0f);
 
       // random projection from fullN down to max_categorical_features
       if (params._max_categorical_features < _dinfo.fullN() - _dinfo._nums) {
         assert(nums.length == _dinfo._nums);
         final int M = nums.length + params._max_categorical_features;
-//        final boolean random_projection = false;
-//        final boolean hash_trick = true;
-//        if (random_projection) {
-//          final int N = _dinfo.fullN();
-//          assert (_a.size() == M);
-//
-//          // sparse random projection
-//          for (int i = 0; i < M; ++i) {
-//            for (int c = 0; c < numcat; ++c) {
-//              int j = cats[c];
-//              Random rng = RandomUtils.getRNG(params._seed + i * N + j);
-//              double val = 0;
-//              final float rnd = rng.nextFloat();
-//              if (rnd < 1. / 6.) val = Math.sqrt(3);
-//              if (rnd > 5. / 6.) val = -Math.sqrt(3);
-//              _a.add(i, 1f * val);
-//            }
-//            Random rng = RandomUtils.getRNG(params._seed + i*N + _dinfo.numStart());
-//            for (int n = 0; n < nums.length; ++n) {
-//              double val = 0;
-//              final float rnd = rng.nextFloat();
-//              if (rnd < 1. / 6.) val = Math.sqrt(3);
-//              if (rnd > 5. / 6.) val = - Math.sqrt(3);
-//              _a.set(i, (Double.isNaN(nums[n]) ? 0f /*Always do MeanImputation during scoring*/ : nums[n]) * val);
-//            }
-//          }
-//        } else if (hash_trick) {
-          // Use hash trick for categorical features
-          assert (_a[mb].size() == M);
-          // hash N-nums.length down to M-nums.length = cM (#categorical slots - always use all numerical features)
           final int cM = params._max_categorical_features;
 
           assert (_a[mb].size() == M);

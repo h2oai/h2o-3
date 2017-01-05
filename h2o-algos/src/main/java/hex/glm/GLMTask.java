@@ -237,7 +237,7 @@ public abstract class GLMTask  {
        if(changedWeights && _weightId != -1)
          chunks[_weightId].set(ws);
      }
-     Chunk response = _responseId < 0 ? null : chunks[_responseId];
+     Chunk response = _responseId < 0 || _responseId >= chunks.length ? null : chunks[_responseId];
      double [] numsResponse = null;
      _basicStats = new BasicStats(_nums);
      if(_computeWeightedMeanSigmaResponse) {

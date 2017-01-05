@@ -48,11 +48,11 @@ public class DataInfo extends Keyed<DataInfo> {
   }
 
   public int[] catNAFill() {
-    return _catNAFill;
+    throw H2O.unimpl();
   }
 
   public int catNAFill(int cid) {
-    return _catNAFill[cid];
+    throw H2O.unimpl();
   }
 
   public enum TransformType {
@@ -152,7 +152,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public final boolean _skipMissing;
   public final boolean _imputeMissing;
-  private boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
+  public boolean _valid; // DataInfo over validation data set, can have unseen (unmapped) categorical levels
   public boolean currentlyValidating() { return _valid; }
   public void willValidate() { _valid = true; }
   public final int[][] _catLvls; // cat lvls post filter (e.g. by strong rules)
@@ -256,32 +256,21 @@ public class DataInfo extends Keyed<DataInfo> {
 
     // Count categorical-vs-numerical
     final int n = tvecs.length - _numResponses - (offset ? 1 : 0) - (weight ? 1 : 0) - (fold ? 1 : 0);
-    int[] nums = MemoryManager.malloc4(n);
-    int[] cats = MemoryManager.malloc4(n);
+    int[] nums = new int[n];
+    int[] cats = new int[n];
     int nnums = 0, ncats = 0;
     for (int i = 0; i < n; ++i)
-      if (tvecs[i].isCategorical())
-        cats[ncats++] = i;
-      else
         nums[nnums++] = i;
 
-    _nums = nnums;
-    _cats = ncats;
-    _catLvls = new int[ncats][];
+    _nums = trainData.weights.length;
+    _cats = 0;
+    _catLvls = new int[_cats][];
 
-    // sort the cats in the decreasing order according to their size
-    for (int i = 0; i < ncats; ++i)
-      for (int j = i + 1; j < ncats; ++j)
-        if (tvecs[cats[i]].domain().length < tvecs[cats[j]].domain().length) {
-          int x = cats[i];
-          cats[i] = cats[j];
-          cats[j] = x;
-        }
     String[] names = new String[train.numCols()];
     Vec[] tvecs2 = new Vec[train.numCols()];
 
     // Compute the cardinality of each cat
-    _catNAFill = new int[ncats];
+//    _catNAFill = new int[ncats];
     _catOffsets = MemoryManager.malloc4(ncats + 1);
     _catMissing = new boolean[ncats];
     int len = _catOffsets[0] = 0;
@@ -297,19 +286,6 @@ public class DataInfo extends Keyed<DataInfo> {
         for (int i = 0; i < _interactionVecs.length; ++i)
           _interactionVecs[i] = interactionIds.get(i);
       }
-    }
-    for (int i = 0; i < ncats; ++i) {
-      names[i] = train._names[cats[i]];
-      Vec v = (tvecs2[i] = tvecs[cats[i]]);
-      _catMissing[i] = missingBucket; //needed for test time
-      if (v instanceof InteractionWrappedVec) {
-        if (_interactions != null) _interactions[interactionIdx].vecIdx = i;
-        _interactionVecs[interactionIdx++] = i;  // i (and not cats[i]) because this is the index in _adaptedFrame
-        _catOffsets[i + 1] = (len += v.domain().length + (missingBucket ? 1 : 0));
-      } else
-        _catOffsets[i + 1] = (len += v.domain().length - (useAllFactorLevels ? 0 : 1) + (missingBucket ? 1 : 0)); //missing values turn into a new factor level
-      _catNAFill[i] = imputeMissing ? imputeCat(train.vec(cats[i]), _useAllFactorLevels) : _catMissing[i] ? v.domain().length - (_useAllFactorLevels || isInteractionVec(i) ? 0 : 1) : -100;
-      _permutation[i] = cats[i];
     }
     _numOffsets = MemoryManager.malloc4(nnums + 1);
     _numOffsets[0] = len;
@@ -1152,7 +1128,7 @@ public class DataInfo extends Keyed<DataInfo> {
           row.predictors_bad = true;
           continue;
         }
-        int cid = getCategoricalId(i, isMissing ? _catNAFill[i] : (int) chunks[i].at8(r));
+        int cid = getCategoricalId(i, (int) chunks[i].at8(r));
         if (cid >= 0)
           row.binIds[row.nBins++] = cid;
       }

@@ -395,7 +395,8 @@ public class DeepLearningModel extends
         for (int i = 0; i < _output.weights.length; ++i) {
           Frame f = model_info.get_weights(i).toFrame(_output.weights[i]);
           if (i==0) {
-            f.setNames(model_info.data_info.coefNames());
+            final String[] coefNames = model_info.data_info.coefNames();
+            f.setNames(coefNames);
             DKV.put(f);
           }
         }

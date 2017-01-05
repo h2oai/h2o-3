@@ -11,6 +11,7 @@ import java.util.List;
  * Created by vpatryshev on 12/6/16.
  */
 public class DlInput implements Serializable {
+  public String[] domain;
   public final DlColumn<Integer> target;
   public final DlColumn<Double>[] weights;
   public final String name;
@@ -28,8 +29,9 @@ public class DlInput implements Serializable {
   }
   
   @SuppressWarnings("unchecked")
-  public DlInput(String name, List<Integer> target, List<List<Double>> weightColumns) {
+  public DlInput(String name, String[] domain, List<Integer> target, List<List<Double>> weightColumns) {
     this.name = name;
+    this.domain = domain;
     this.target = new DlColumn<Integer>("target", target);
     this.weights = buildWeights(weightColumns.size());
     for (int i = 0; i < weightColumns.size(); i++) {
