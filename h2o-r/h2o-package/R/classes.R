@@ -279,6 +279,9 @@ setClass("H2OAutoEncoderModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
 setClass("H2ODimReductionModel", contains="H2OModel")
+#' @rdname H2OModel-class
+#' @export
+setClass("H2OWordEmbeddingModel", contains="H2OModel")
 
 #'
 #' Accessor Methods for H2OModel Object
@@ -507,6 +510,10 @@ setMethod("show", "H2ODimReductionMetrics", function(object) {
     }
   } else print(NULL)
 })
+
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OWordEmbeddingMetrics", contains="H2OModelMetrics")
 
 #' H2O Future Model
 #'
