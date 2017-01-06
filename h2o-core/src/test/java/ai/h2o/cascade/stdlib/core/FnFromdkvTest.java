@@ -14,6 +14,7 @@ import water.fvec.Frame;
 import static org.junit.Assert.*;
 
 
+
 /**
  * Test module for {@link FnFromDkv}.
  */
@@ -111,7 +112,7 @@ public class FnFromdkvTest extends TestUtil {
   }
 
 
-
+  /** Execute a Cascade expression, reporting an error if there is one. */
   private static Val exec(String expr) {
     try {
       return Cascade.eval(expr, session);

@@ -34,6 +34,7 @@ h2o-r/h2o-package/DESCRIPTION
 .settings/*
 gradle-app.setting
 .gradle
+.h2oconfig
 src/main/java/water/BuildVersion.java
 .Rproj.user
 .RData

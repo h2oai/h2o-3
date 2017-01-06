@@ -1,6 +1,7 @@
 package ai.h2o.cascade;
 
 import ai.h2o.cascade.core.Scope;
+import ai.h2o.cascade.core.ValNull;
 import ai.h2o.cascade.stdlib.StandardLibrary;
 import water.Key;
 import water.Keyed;
@@ -44,6 +45,7 @@ public class CascadeSession implements Closeable {
     session_id = Key.make().toString().substring(1, 7);
     global = new Scope(this, null);
     global.importFromLibrary(StandardLibrary.instance());
+    global.addVariable("_", new ValNull());
     vecCopyCounts = new HashMap<>(64);
     frameRefCounts = new HashMap<>(16);
   }
@@ -65,6 +67,7 @@ public class CascadeSession implements Closeable {
    * Issue a new {@link Key} that can be used for storing an object in the DKV.
    * The key will be prefixed with a session id, making it recognizable as
    * being owned by this session.
+   *
    * @param <T> type of the {@code Key} to create.
    */
   public <T extends Keyed<T>> Key<T> mintKey() {
