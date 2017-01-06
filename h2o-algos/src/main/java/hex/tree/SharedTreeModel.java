@@ -183,11 +183,11 @@ public abstract class SharedTreeModel<
       Key[] keysAux = _treeKeysAux[_ntrees] = new Key[trees.length];
       Futures fs = new Futures();
       for( int i=0; i<nclasses(); i++ ) if( trees[i] != null ) {
-        CompressedTree ct = trees[i].compress(_ntrees,i);
+        CompressedTree ct = trees[i].compress(_ntrees,i,_domains);
         DKV.put(keys[i]=ct._key,ct,fs);
         _treeStats.updateBy(trees[i]); // Update tree shape stats
 
-        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1);
+        CompressedTree ctAux = new CompressedTree(trees[i]._abAux.buf(),-1,-1,-1,-1,_domains);
         keysAux[i] = ctAux._key = Key.make(createAuxKey(ct._key.toString()));
         DKV.put(ctAux);
       }

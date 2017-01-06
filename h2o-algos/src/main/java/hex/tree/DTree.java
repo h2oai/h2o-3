@@ -731,7 +731,7 @@ public class DTree extends Iced {
 
   public transient AutoBuffer _abAux;
   // Build a compressed-tree struct
-  public CompressedTree compress(int tid, int cls) {
+  public CompressedTree compress(int tid, int cls, String[][] domains) {
     int sz = root().size();
     if( root() instanceof LeafNode ) sz += 3; // Oops - tree-stump
     AutoBuffer ab = new AutoBuffer(sz);
@@ -740,7 +740,7 @@ public class DTree extends Iced {
       ab.put1(0).put2((char)65535); // Flag it special so the decompress doesn't look for top-level decision
     root().compress(ab, _abAux);      // Compress whole tree
     assert ab.position() == sz;
-    return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls);
+    return new CompressedTree(ab.buf(),_nclass,_seed,tid,cls, domains);
   }
 
   static Split findBestSplitPoint(DHistogram hs, int col, double min_rows) {

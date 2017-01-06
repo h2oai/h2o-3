@@ -100,12 +100,25 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
     String colName = _verboseCode ? " /* " + _tm._output._names[col] + " */" : "";
 
     if(equal == 0 || equal == 1) {
-      if (naSplitDirInt == DhnasdNaVsRest)
+      String[][] domains = _tm._output._domains;
+      int limit = (domains != null && domains[col] != null) ? domains[col].length : Integer.MAX_VALUE;
+
+      if (naSplitDirInt == DhnasdNaVsRest) {
         _sb.p("!Double.isNaN(data[").p(col).p("])");
-      else if (naSplitDirInt == DhnasdNaLeft || naSplitDirInt == DhnasdLeft)
-        _sb.p("Double.isNaN(data[").p(col).p("]) || ");
-      else if (equal==1)
+        if (limit != Integer.MAX_VALUE)
+          _sb.p(" && data[").p(col).p("] < " + limit);
+      }
+      else if (naSplitDirInt == DhnasdNaLeft || naSplitDirInt == DhnasdLeft) {
+        _sb.p("Double.isNaN(data[").p(col).p("]) ");
+        if (limit != Integer.MAX_VALUE)
+          _sb.p("|| data[").p(col).p("] >= " + limit);
+        _sb.p("|| ");
+      }
+      else if (equal==1) {
         _sb.p("!Double.isNaN(data[").p(col).p("]) && ");
+        if (limit != Integer.MAX_VALUE)
+          _sb.p("data[").p(col).p("] < " + limit + " && ");
+      }
       if (naSplitDirInt != DhnasdNaVsRest) {
         _sb.p("data[").p(col);
         _sb.p(colName);
