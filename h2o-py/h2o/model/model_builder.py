@@ -18,6 +18,7 @@ from .multinomial import H2OMultinomialModel
 from .regression import H2ORegressionModel
 from .binomial import H2OBinomialModel
 from .clustering import H2OClusteringModel
+from .word_embedding import H2OWordEmbeddingModel
 
 
 def build_model(algo_params):
@@ -67,6 +68,8 @@ def _resolve_model(future_model, **kwargs):
         model = H2OAutoEncoderModel(future_model.job.dest_key, model_json)
     elif model_type == "DimReduction":
         model = H2ODimReductionModel(future_model.job.dest_key, model_json)
+    elif model_type == "WordEmbedding":
+        model = H2OWordEmbeddingModel(future_model.job.dest_key, model_json)
     else:
         raise NotImplementedError(model_type)
     return model

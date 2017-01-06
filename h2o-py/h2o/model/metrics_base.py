@@ -642,3 +642,8 @@ class H2ODimReductionModelMetrics(MetricsBase):
         if MetricsBase._has(self._metric_json, "caterr"):
             return self._metric_json["caterr"]
         return None
+
+
+class H2OWordEmbeddingModelMetrics(MetricsBase):
+    def __init__(self, metric_json, on=None, algo=""):
+        super(H2OWordEmbeddingModelMetrics, self).__init__(metric_json, on, algo)

@@ -9,7 +9,7 @@ public class Word2Vec extends ModelBuilder<Word2VecModel,Word2VecModel.Word2VecP
   public enum WordModel { SkipGram }
   public enum NormModel { HSM }
 
-  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.Unknown, }; }
+  @Override public ModelCategory[] can_build() { return new ModelCategory[]{ ModelCategory.WordEmbedding, }; }
   @Override public BuilderVisibility builderVisibility() { return BuilderVisibility.Stable; }
 
   public Word2Vec(boolean startup_once) {
