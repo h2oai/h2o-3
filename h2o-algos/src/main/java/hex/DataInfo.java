@@ -256,11 +256,6 @@ public class DataInfo extends Keyed<DataInfo> {
 
     // Count categorical-vs-numerical
     final int n = tvecs.length - _numResponses - (offset ? 1 : 0) - (weight ? 1 : 0) - (fold ? 1 : 0);
-    int[] nums = new int[n];
-    int[] cats = new int[n];
-    int nnums = 0, ncats = 0;
-    for (int i = 0; i < n; ++i)
-        nums[nnums++] = i;
 
     _nums = trainData.weights.length;
     _cats = 0;
@@ -270,9 +265,8 @@ public class DataInfo extends Keyed<DataInfo> {
     Vec[] tvecs2 = new Vec[train.numCols()];
 
     // Compute the cardinality of each cat
-//    _catNAFill = new int[ncats];
-    _catOffsets = MemoryManager.malloc4(ncats + 1);
-    _catMissing = new boolean[ncats];
+    _catOffsets = new int[1];
+    _catMissing = new boolean[0];
     int len = _catOffsets[0] = 0;
     int interactionIdx = 0; // simple index into the _interactionVecs array
 
@@ -287,39 +281,27 @@ public class DataInfo extends Keyed<DataInfo> {
           _interactionVecs[i] = interactionIds.get(i);
       }
     }
-    _numOffsets = MemoryManager.malloc4(nnums + 1);
+    _numOffsets = new int[n + 1];
     _numOffsets[0] = len;
     boolean isIWV; // is InteractionWrappedVec?
-    for (int i = 0; i < nnums; ++i) {
-      names[i + ncats] = train._names[nums[i]];
-      Vec v = train.vec(nums[i]);
-      tvecs2[i + ncats] = v;
-      isIWV = v instanceof InteractionWrappedVec;
-      if (isIWV) {
-        if (null != _interactions) _interactions[interactionIdx].vecIdx = i + ncats;
-        _interactionVecs[interactionIdx++] = i + ncats;
-      }
-      _numOffsets[i + 1] = (len += (isIWV ? ((InteractionWrappedVec) v).expandedLength() : 1));
-      _permutation[i + ncats] = nums[i];
+    for (int i = 0; i < n; ++i) {
+      names[i] = train._names[i];
+      Vec v = train.vec(i);
+      tvecs2[i] = v;
+      _numOffsets[i + 1] = (len += 1);
+      _permutation[i] = i;
     }
     _numMeans = new double[numNums()];
     int meanIdx = 0;
-    for (int i = 0; i < nnums; ++i) {
-      Vec v = train.vec(nums[i]);
-      if (v instanceof InteractionWrappedVec) {
-        InteractionWrappedVec iwv = (InteractionWrappedVec) v;
-        double[] means = iwv.getMeans();
-        int start = iwv._useAllFactorLevels ? 0 : 1;
-        int length = iwv.expandedLength();
-        System.arraycopy(means, start, _numMeans, meanIdx, length);
-        meanIdx += length;
-      } else
-        _numMeans[meanIdx++] = v.mean();
+    for (int i = 0; i < n; ++i) {
+      Vec v = train.vec(i);
+      _numMeans[meanIdx++] = v.mean();
     }
     for (int i = names.length - nResponses - (weight ? 1 : 0) - (offset ? 1 : 0) - (fold ? 1 : 0); i < names.length; ++i) {
-      names[i] = train._names[i];
       tvecs2[i] = train.vec(i);
     }
+    names = trainData.allNames();
+
     _adaptedFrame = new Frame(names, tvecs2);
     train.restructure(names, tvecs2);
     if (valid != null)
@@ -399,7 +381,7 @@ public class DataInfo extends Keyed<DataInfo> {
     _fold = dinfo._fold;
     _valid = false;
     _interactions = null;
-    ArrayList<Integer> interactionVecs = new ArrayList<>();
+    List<Integer> interactionVecs = new ArrayList<>();
     for (int i = 0; i < fr.numCols(); ++i)
       if (fr.vec(i) instanceof InteractionWrappedVec) interactionVecs.add(i);
 
@@ -725,24 +707,6 @@ public class DataInfo extends Keyed<DataInfo> {
     String[] res = new String[n];
     final Vec[] vecs = _adaptedFrame.vecs();
 
-    // first do all of the expanded categorical names
-    for (int i = 0; i < _cats; ++i) {
-      for (int j = (_useAllFactorLevels || vecs[i] instanceof InteractionWrappedVec) ? 0 : 1; j < vecs[i].domain().length; ++j) {
-        int jj = getCategoricalId(i, j);
-        if (jj < 0)
-          continue;
-        res[k++] = _adaptedFrame._names[i] + "." + vecs[i].domain()[j];
-      }
-      if (_catMissing[i] && getCategoricalId(i, _catNAFill[i]) >= 0)
-        res[k++] = _adaptedFrame._names[i] + ".missing(NA)";
-      if (vecs[i] instanceof InteractionWrappedVec) {
-        InteractionWrappedVec iwv = (InteractionWrappedVec) vecs[i];
-        if (null != iwv.missingDomains()) {
-          for (String s : iwv.missingDomains())
-            res[k++] = s + ".missing(NA)";
-        }
-      }
-    }
     // now loop over the numerical columns, collecting up any expanded InteractionVec names
     if (_interactions == null) {
       final int nums = n - k;

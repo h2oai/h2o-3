@@ -184,18 +184,8 @@ public class DLModel extends
     final DataInfo dinfo = deepLearning.makeDataInfo(train, valid, _parms, nClasses);
     DKV.put(dinfo);
 
-    Vec v1 = train.vec("target");
-
-    assert(v1.length() == parms.trainData.target.size());
-
-    for (long i = 0; i < v1.length(); i++) {
-      assert(v1.at(i) == parms.trainData.target((int)i));
-    }
-
-    _output._names = dinfo._adaptedFrame.names();
-    _output._domains = dinfo._adaptedFrame.domains();
-    _output._origNames = parms._train.get().names();
-    _output._origDomains = parms._train.get().domains();
+    _output._names = dinfo.trainData.allNames();
+    _output._domains = dinfo.trainData.allDomains();
     Log.info("Building the model on " + dinfo.numNums() + " numeric features and " + dinfo.numCats() + " (one-hot encoded) categorical features.");
     model_info = new DeepLearningModelInfo(parms, destKey, dinfo, nClasses, train, valid);
     model_info_key = Key.make(H2O.SELF);

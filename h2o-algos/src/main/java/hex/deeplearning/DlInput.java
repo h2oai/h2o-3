@@ -45,6 +45,20 @@ public class DlInput implements Serializable {
     return names;
   }
   
+  public String[] allNames() {
+    String[] names = new String[weights.length + 1];
+    for (int i = 0; i < weights.length; i++) names[i] = weights[i].name;
+    names[weights.length] = target.name;
+    return names;
+  }
+
+  public String[][] allDomains() {
+    String[][] domains = new String[weights.length + 1][];
+    for (int i = 0; i < weights.length; i++) domains[i] = null;
+    domains[weights.length] = domain;
+    return domains;
+  }
+  
   public double[] row(int rowIdx) {
     double[] row = new double[weights.length];
  

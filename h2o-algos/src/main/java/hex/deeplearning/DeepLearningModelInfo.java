@@ -52,20 +52,6 @@ final public class DeepLearningModelInfo extends Iced<DeepLearningModelInfo> {
     return siz;
   }
 
-  /**
-   * Check whether a missing value was found for every categorical predictor
-   * @param cats activation of categorical buckets for a given row
-   */
-  void checkMissingCats(int[] cats)  {
-    if (cats == null) return;
-    if (_saw_missing_cats == null) return;
-    for (int i=0; i<cats.length; ++i) {
-      assert(data_info._catMissing[i]); //have a missing bucket for each categorical
-      if (_saw_missing_cats[i]) continue;
-      _saw_missing_cats[i] = (cats[i] == data_info._catOffsets[i+1]-1);
-    }
-  }
-
   // accessors to (shared) weights and biases - those will be updated racily (c.f. Hogwild!)
   boolean has_momenta() {
     return get_params()._momentum_start != 0 || get_params()._momentum_stable != 0;
