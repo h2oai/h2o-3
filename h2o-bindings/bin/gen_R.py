@@ -458,8 +458,7 @@ def help_extra_params_for(algo):
             #' @param model_id Destination id for this model; auto-generated if not specified.
             #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters)."""
     elif algo == "word2vec":
-        return """#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
-            #'        The training frame must contain a single string column containing the words to train on."""
+        return None
     else:
         return """#' @param x A vector containing the \code{character} names of the predictors in the model."""
 

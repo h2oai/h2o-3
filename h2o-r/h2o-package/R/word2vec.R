@@ -5,8 +5,6 @@
 #' 
 #' Trains a word2vec model on a String column of an H2O data frame.
 #' 
-#' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
-#'        The training frame must contain a single string column containing the words to train on.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param training_frame Id of the training data frame (Not required, to allow initial validation of model parameters).
 #' @param min_word_freq This will discard words that appear less than <int> times Defaults to 5.
