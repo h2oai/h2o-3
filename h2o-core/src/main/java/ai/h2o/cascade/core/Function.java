@@ -5,7 +5,7 @@ import ai.h2o.cascade.Cascade;
 /**
  */
 public abstract class Function extends Val {
-  public Scope scope;
+  public transient Scope scope;
 
   public abstract Val apply0(Val[] args);
 
