@@ -106,18 +106,18 @@ class TreeJCodeGen extends TreeVisitor<RuntimeException> {
       if (naSplitDirInt == DhnasdNaVsRest) {
         _sb.p("!Double.isNaN(data[").p(col).p("])");
         if (limit != Integer.MAX_VALUE)
-          _sb.p(" && data[").p(col).p("] < " + limit);
+          _sb.p(" && (data[").p(col).p("] < " + limit + ") ");
       }
       else if (naSplitDirInt == DhnasdNaLeft || naSplitDirInt == DhnasdLeft) {
         _sb.p("Double.isNaN(data[").p(col).p("]) ");
         if (limit != Integer.MAX_VALUE)
-          _sb.p("|| data[").p(col).p("] >= " + limit);
+          _sb.p("|| (data[").p(col).p("] >= " + limit + ") ");
         _sb.p("|| ");
       }
       else if (equal==1) {
         _sb.p("!Double.isNaN(data[").p(col).p("]) && ");
         if (limit != Integer.MAX_VALUE)
-          _sb.p("data[").p(col).p("] < " + limit + " && ");
+          _sb.p("(data[").p(col).p("] < " + limit + ") && ");
       }
       if (naSplitDirInt != DhnasdNaVsRest) {
         _sb.p("data[").p(col);
