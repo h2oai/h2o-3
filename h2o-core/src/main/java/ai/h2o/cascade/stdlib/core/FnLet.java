@@ -2,6 +2,7 @@ package ai.h2o.cascade.stdlib.core;
 
 import ai.h2o.cascade.core.CorporealFrame;
 import ai.h2o.cascade.core.IdList;
+import ai.h2o.cascade.core.Scope;
 import ai.h2o.cascade.core.Val;
 import ai.h2o.cascade.stdlib.StdlibFunction;
 
@@ -9,6 +10,9 @@ import ai.h2o.cascade.stdlib.StdlibFunction;
  * Bind value to a variable.
  */
 public class FnLet extends StdlibFunction {
+
+  public FnLet() {}
+  public FnLet(Scope s) { scope = s; }
 
   public Val apply(IdList id, Val value) {
     if (id.numIds() != 1 || id.hasVarargId())
@@ -20,7 +24,7 @@ public class FnLet extends StdlibFunction {
   public Val apply(String name, Val value) {
     Val currValue = scope.lookupVariable(name);
     if (currValue != null) {
-      // Variable with such name already exists -- need to perform an appropriate cleanup
+      // Variable with such name already exists -- need to perform a cleanup
       if (currValue instanceof CorporealFrame) {
         ((CorporealFrame) currValue).dispose(scope);
       }

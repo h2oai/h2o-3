@@ -52,6 +52,13 @@ public abstract class StandardLibrary {
     String[] coreCmds = {"fromDkv", "let"};
     for (String cmd : coreCmds)
       importCommand("core", cmd, scope);
+
+    String[] mathCmds = {"abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cbrt", "ceil",
+                         "cos", "cosh", "cosPi", "digamma", "erf", "erfc", "exp", "expm1", "floor",
+                         "gamma", "invErf", "log", "log1p", "log2", "log10", "logGamma", "round",
+                         "signum", "sin", "sinh", "sinPi", "sqrt", "tan", "tanh", "tanPi", "trigamma"};
+    for (String cmd : mathCmds)
+      importCommand("math", cmd, scope);
   }
 
 
@@ -60,7 +67,7 @@ public abstract class StandardLibrary {
   //--------------------------------------------------------------------------------------------------------------------
   private static final boolean DEBUG = false;
 
-  private static Set<String> augmentedClasses = new HashSet<>();
+  private static Map<String, Class> augmentedClasses = new HashMap<>();
   private static final ClassPool cp = ClassPool.getDefault();
   private static CtClass valCtClass;
   static {
@@ -85,19 +92,20 @@ public abstract class StandardLibrary {
     String className = "ai.h2o.cascade.stdlib." + pkg + ".Fn" + StringUtils.capitalize(name);
     String classShort = pkg + "/" + name;
     try {
-      CtClass cc = cp.get(className);
-      if (!augmentedClasses.contains(classShort)) {
-        augmentedClasses.add(classShort);
+      Class c = augmentedClasses.get(classShort);
+      if (c == null) {
+        CtClass cc = cp.get(className);
         augmentClass(cc);
+        c = cc.toClass();
+        augmentedClasses.put(classShort, c);
       }
-      Class c = cc.toClass();
       Function f = (Function) c.newInstance();
       f.scope = scope;
       scope.addVariable(name, f);
     } catch (NotFoundException | CannotCompileException e) {
-      throw new RuntimeException("Woven class " + className + " cannot be compiled:\n" + e.getMessage());
+      throw new RuntimeException("Woven class " + className + " cannot be compiled:", e);
     } catch (InstantiationException | IllegalAccessException e) {
-      throw new RuntimeException("Could not instantiate class " + className + ":\n" + e.getMessage());
+      throw new RuntimeException("Could not instantiate class " + className + ":", e);
     }
   }
 
@@ -312,7 +320,8 @@ public abstract class StandardLibrary {
         }
       }
       if (methods.isEmpty()) {
-        sb.p(indent).p("checkArg(").p(iarg).p(", args[").p(iarg).p("], Val.Type.").p(currType.toUpperCase()).p(");\n");
+        if (!currType.isEmpty())
+          sb.p(indent).p("checkArg(").p(iarg).p(", args[").p(iarg).p("], Val.Type.").p(currType.toUpperCase()).p(");\n");
         generateNestedChecks(filteredMethods, iarg + 1, minChecked, maxChecked, indent, nextArgs, sb);
       } else {
         sb.p(indent).p("if (args[").p(iarg).p("].is").p(currType).p("()) {\n");
@@ -341,16 +350,20 @@ public abstract class StandardLibrary {
 
     SB argsList = new SB(args);
     for (int i = iarg; i < method.minNumArgs(); i++) {
-      sb.p(indent).p("checkArg(").p(i).p(", args[").p(i).p("], Val.Type.").p(method.argValTYPE(i)).p(");\n");
+      String argTYPE = method.argValTYPE(i);
+      if (!argTYPE.isEmpty())
+        sb.p(indent).p("checkArg(").p(i).p(", args[").p(i).p("], Val.Type.").p(argTYPE).p(");\n");
       if (i > 0) argsList.p(", ");
       argsList.p(method.argGetter(i));
     }
     if (method.isVararg) {
       int k = method.minNumArgs();
       String javaType = method.argJavaName(k);
+      String argTYPE = method.argValTYPE(k);
       sb.p(indent).p(javaType).p("[] vararg = new ").p(javaType).p("[n - ").p(k).p("];\n");
       sb.p(indent).p("for (int i = ").p(k).p("; i < n; ++i) {\n");
-      sb.p(indent).p("  checkArg(i, args[i], Val.Type.").p(method.argValTYPE(k)).p(");\n");
+      if (!argTYPE.isEmpty())
+        sb.p(indent).p("  checkArg(i, args[i], Val.Type.").p(argTYPE).p(");\n");
       sb.p(indent).p("  vararg[i - ").p(k).p("] = ").p(method.varargArgGetter()).p(";\n");
       sb.p(indent).p("}\n");
       if (k > 0) argsList.p(", ");
@@ -460,18 +473,20 @@ public abstract class StandardLibrary {
     }
 
     public String argValType(int i) {
-      return StringUtils.capitalize(argValTYPE(i).toLowerCase());
+      String TYPE = argValTYPE(i);
+      if (TYPE.isEmpty()) return TYPE;
+      return StringUtils.capitalize(TYPE.toLowerCase());
     }
 
 
     public String argGetter(int i) {
       String valType = argValType(i);
-      return "args[" + i + "].get" + valType + "()";
+      return valType.isEmpty()? "args[" + i + "]" : "args[" + i + "].get" + valType + "()";
     }
 
     public String varargArgGetter() {
       String valType = argValType(minNumArgs());
-      return "args[i].get" + valType + "()";
+      return valType.isEmpty()? "args[i]" : "args[i].get" + valType + "()";
     }
 
 
@@ -486,6 +501,7 @@ public abstract class StandardLibrary {
       TYPE_MAP.put("java.lang.String", "STR");
       TYPE_MAP.put("double[]", "NUMS");
       TYPE_MAP.put("java.lang.String[]", "STRS");
+      TYPE_MAP.put(Val.class.getName(), "");
       TYPE_MAP.put(GhostFrame.class.getName(), "FRAME");
       TYPE_MAP.put(IdList.class.getName(), "IDS");
       TYPE_MAP.put(SliceList.class.getName(), "SLICE");

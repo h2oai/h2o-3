@@ -38,11 +38,11 @@ public class Scope {
   }
 
 
-  public Val lookupVariable(String id) {
-    if (symbolTable.containsKey(id))
-      return symbolTable.get(id);
+  public Val lookupVariable(String name) {
+    if (symbolTable.containsKey(name))
+      return symbolTable.get(name);
     if (parent != null)
-      return parent.lookupVariable(id);
+      return parent.lookupVariable(name);
     return null;
   }
 

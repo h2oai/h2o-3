@@ -32,7 +32,7 @@ public class FnFromDkv extends StdlibFunction {
     Frame originalFrame = value.get();
     Frame clonedFrame = FnClone.cloneFrame(originalFrame, scope.session().<Frame>mintKey());
     Val val = new CorporealFrame(clonedFrame, scope);
-    scope.addVariable(id, val);
+    new FnLet(scope).apply(id, val);
 
     return val;
   }

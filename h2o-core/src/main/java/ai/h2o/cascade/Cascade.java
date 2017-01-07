@@ -162,7 +162,7 @@ public abstract class Cascade {
     AstNode ast = parse(cascade);
     Val result = ast.exec(session.globalScope());
     session.cleanCorporealFrameRegistry();
-    FnLet let = (FnLet) session.globalScope().lookupVariable("let");
+    FnLet let = new FnLet(session.globalScope());
     let.apply("_", result);  // save the result into variable `_`
     return result;
   }
