@@ -50,7 +50,7 @@ public class CascadeSession implements Closeable {
     user = username;
     session_id = Key.make().toString().substring(1, 7);
     global = new Scope(this, null);
-    global.importFromLibrary(StandardLibrary.instance());
+    StandardLibrary.importAll(global);
     global.addVariable("_", new ValNull());
     vecCopyCounts = new HashMap<>(64);
     keyedRefCounts = new HashMap<>(16);

@@ -47,11 +47,6 @@ public class Scope {
   }
 
 
-  public void importFromLibrary(ICascadeLibrary lib) {
-    symbolTable.putAll(lib.members());
-  }
-
-
   public void addVariable(String name, Val value) {
     symbolTable.put(name, value);
   }

@@ -30,55 +30,28 @@ import java.util.*;
  * NOTE: care must be taken not to touch any of the functions within this
  * library before the library is first instantiated.
  */
-public class StandardLibrary implements ICascadeLibrary {
+public abstract class StandardLibrary {
 
-  private static StandardLibrary instance;
-  private Map<String, Val> members;
-
-
-  /** Retrieve the singleton instance of this class. */
-  public static StandardLibrary instance() {
-    if (instance == null) instance = new StandardLibrary();
-    return instance;
-  }
-
-  /**
-   * Obtain a map of the individual members of the class: most of them are
-   * functions, but some are also (numeric) constants. Use this map to import
-   * the library into the current scope.
-   */
-  @Override
-  public Map<String, Val> members() {
-    return members;
-  }
-
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // Registry of library members:
-  //--------------------------------------------------------------------------------------------------------------------
-
-  private StandardLibrary() {
-    members = new HashMap<>(100);
-
+  public static void importAll(Scope scope) {
     // Constants
-    members.put("true", new ValNum(1));
-    members.put("True", new ValNum(1));
-    members.put("TRUE", new ValNum(1));
-    members.put("false", new ValNum(0));
-    members.put("False", new ValNum(0));
-    members.put("FALSE", new ValNum(0));
-    members.put("NaN", new ValNum(Double.NaN));
-    members.put("nan", new ValNum(Double.NaN));
-    members.put("NA", new ValNum(Double.NaN));
-    members.put("null", new ValNull());
+    scope.addVariable("true", new ValNum(1));
+    scope.addVariable("True", new ValNum(1));
+    scope.addVariable("TRUE", new ValNum(1));
+    scope.addVariable("false", new ValNum(0));
+    scope.addVariable("False", new ValNum(0));
+    scope.addVariable("FALSE", new ValNum(0));
+    scope.addVariable("NaN", new ValNum(Double.NaN));
+    scope.addVariable("nan", new ValNum(Double.NaN));
+    scope.addVariable("NA", new ValNum(Double.NaN));
+    scope.addVariable("null", new ValNull());
 
     String[] frameCmds = {"clone", "col", "cols", "ncols", "nrows"};
     for (String cmd : frameCmds)
-      registerCommand("frame", cmd);
+      importCommand("frame", cmd, scope);
 
     String[] coreCmds = {"fromDkv", "let"};
     for (String cmd : coreCmds)
-      registerCommand("core", cmd);
+      importCommand("core", cmd, scope);
   }
 
 
@@ -87,6 +60,7 @@ public class StandardLibrary implements ICascadeLibrary {
   //--------------------------------------------------------------------------------------------------------------------
   private static final boolean DEBUG = false;
 
+  private static Set<String> augmentedClasses = new HashSet<>();
   private static final ClassPool cp = ClassPool.getDefault();
   private static CtClass valCtClass;
   static {
@@ -107,14 +81,19 @@ public class StandardLibrary implements ICascadeLibrary {
    * This method loads the command's class, and then adds the
    * {@code Val apply0(Val[])} method using {@link #augmentClass(CtClass)}.
    */
-  private void registerCommand(String pkg, String name) {
+  private static void importCommand(String pkg, String name, Scope scope) {
     String className = "ai.h2o.cascade.stdlib." + pkg + ".Fn" + StringUtils.capitalize(name);
+    String classShort = pkg + "/" + name;
     try {
       CtClass cc = cp.get(className);
-      augmentClass(cc);
+      if (!augmentedClasses.contains(classShort)) {
+        augmentedClasses.add(classShort);
+        augmentClass(cc);
+      }
       Class c = cc.toClass();
       Function f = (Function) c.newInstance();
-      members.put(name, f);
+      f.scope = scope;
+      scope.addVariable(name, f);
     } catch (NotFoundException | CannotCompileException e) {
       throw new RuntimeException("Woven class " + className + " cannot be compiled:\n" + e.getMessage());
     } catch (InstantiationException | IllegalAccessException e) {
@@ -137,7 +116,7 @@ public class StandardLibrary implements ICascadeLibrary {
    * aims to produce clear and understandable error messages in case any
    * runtime exception occurs.
    */
-  private void augmentClass(CtClass cc) {
+  private static void augmentClass(CtClass cc) {
     String apply0Body = null;
     try {
       List<MInfo> applyMethods = getApplies(cc);
@@ -169,7 +148,7 @@ public class StandardLibrary implements ICascadeLibrary {
    * Find all {@code apply(...)} methods in the class {@code cc}, and return
    * their {@link MInfo} records.
    */
-  private List<MInfo> getApplies(CtClass cc) throws NotFoundException {
+  private static List<MInfo> getApplies(CtClass cc) throws NotFoundException {
     List<MInfo> res = new LinkedList<>();
     for (CtMethod method : cc.getDeclaredMethods()) {
       if (method.getName().equals("apply"))
@@ -196,7 +175,7 @@ public class StandardLibrary implements ICascadeLibrary {
    *   apply(GhostFrame, int, int, int, int, int);
    * }</pre>
    */
-  private String makeApply0(List<MInfo> applyMethods) throws NotFoundException {
+  private static String makeApply0(List<MInfo> applyMethods) throws NotFoundException {
     SB sb = new SB();
     sb.p("public Val apply0(Val[] args) {\n");
     sb.p("  final int n = args.length;\n");
@@ -227,7 +206,7 @@ public class StandardLibrary implements ICascadeLibrary {
    *             {@code apply()} method.
    * @param sb String Buffer to write to.
    */
-  private void generateNestedChecks(
+  private static void generateNestedChecks(
       List<MInfo> methods, int iarg, int minChecked, int maxChecked, String indent, String args, SB sb
   ) {
     // First we need to consider the case when there is a method whose number
@@ -354,7 +333,7 @@ public class StandardLibrary implements ICascadeLibrary {
    * we can generate more specific error messages compared to the case of
    * multiple dispatch.
    */
-  private String generateSingleMethodCheck(
+  private static String generateSingleMethodCheck(
       MInfo method, int iarg, int minChecked, int maxChecked, String indent, String args, SB sb
   ) {
     if (method.minNumArgs() > minChecked || method.maxNumArgs() < maxChecked)
@@ -395,7 +374,7 @@ public class StandardLibrary implements ICascadeLibrary {
    * @param args Unwrapped arguments to the {@code apply(...)} method.
    * @param sb String buffer where to write the return statement.
    */
-  private void writeReturnStatement(MInfo method, String indent, String args, SB sb) {
+  private static void writeReturnStatement(MInfo method, String indent, String args, SB sb) {
     if (method.retType.subclassOf(valCtClass)) {
       sb.p(indent).p("return apply(").p(args).p(");\n");
     } else if (method.retType.getName().equals("void")) {
@@ -416,7 +395,7 @@ public class StandardLibrary implements ICascadeLibrary {
    * <p>The sort order is such that booleans should be the first, followed by
    * ints, followed by all other types.
    */
-  private void sortMethods(List<MInfo> methods, int level) {
+  private static void sortMethods(List<MInfo> methods, int level) {
     Collections.sort(methods, new MInfo.Comparator(level));
   }
 
