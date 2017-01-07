@@ -27,7 +27,6 @@ public class AstApply extends AstNode<AstApply> {
   public Val exec(Scope scope) {
     Val vhead = head.exec(scope);
     if (!vhead.isFun()) {
-      vhead.dispose();
       throw new Cascade.TypeError(head.start, head.length, "Function expected");
     }
 
@@ -43,18 +42,11 @@ public class AstApply extends AstNode<AstApply> {
     try {
       ret = f.apply0(vals);
     } catch (Function.Error e) {
-      vhead.dispose();
-      for (Val v : vals) v.dispose();
       int i = (e instanceof Function.TypeError)? ((Function.TypeError)e).index :
               (e instanceof Function.ValueError)? ((Function.ValueError)e).index : -1;
       AstNode src = i >= 0? args[i] : this;
       throw e.toCascadeError(src.start, src.length);
     }
-
-    vhead.dispose();
-    for (Val v : vals)
-      if (v != ret)
-        v.dispose();
     return ret;
   }
 

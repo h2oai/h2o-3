@@ -2,6 +2,7 @@ package ai.h2o.cascade;
 
 import ai.h2o.cascade.asts.AstNode;
 import ai.h2o.cascade.core.*;
+import ai.h2o.cascade.stdlib.core.FnLet;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.StringUtils;
@@ -159,7 +160,11 @@ public abstract class Cascade {
   public static Val eval(String cascade, CascadeSession session) {
     if (StringUtils.isNullOrEmpty(cascade)) return new ValNull();
     AstNode ast = parse(cascade);
-    return ast.exec(session.globalScope());
+    Val result = ast.exec(session.globalScope());
+    session.cleanCorporealFrameRegistry();
+    FnLet let = (FnLet) session.globalScope().lookupVariable("let");
+    let.apply("_", result);  // save the result into variable `_`
+    return result;
   }
 
 

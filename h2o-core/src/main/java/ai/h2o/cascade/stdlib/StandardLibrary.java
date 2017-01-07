@@ -76,7 +76,7 @@ public class StandardLibrary implements ICascadeLibrary {
     for (String cmd : frameCmds)
       registerCommand("frame", cmd);
 
-    String[] coreCmds = {"fromDkv"};
+    String[] coreCmds = {"fromDkv", "let"};
     for (String cmd : coreCmds)
       registerCommand("core", cmd);
   }

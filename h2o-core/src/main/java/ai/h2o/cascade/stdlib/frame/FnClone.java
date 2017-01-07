@@ -20,7 +20,7 @@ public class FnClone extends StdlibFunction {
       Frame srcFrame = ((CorporealFrame) frame).getWrappedFrame();
       Key<Frame> destKey = scope.session().mintKey();
       Frame destFrame = cloneFrame(srcFrame, destKey);
-      return new CorporealFrame(destFrame);
+      return new CorporealFrame(destFrame, scope);
     } else {
       // If the source frame is not corporeal, then materializing it is
       // equivalent to creating a copy.

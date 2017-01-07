@@ -112,7 +112,7 @@ public abstract class GhostFrame extends Val {
     Frame res = mtask.doAll(outputTypes, inputVecs)
                      .outputFrame(scope.<Frame>mintKey(), outputNames, null);
 
-    return new CorporealFrame(res);
+    return new CorporealFrame(res, scope);
   }
 
 

@@ -3,8 +3,6 @@ package ai.h2o.cascade.core;
 import ai.h2o.cascade.CascadeSession;
 import water.Key;
 import water.Keyed;
-import water.fvec.Frame;
-import water.fvec.Vec;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -21,18 +19,6 @@ import java.util.Map;
  * new scopes may be opened by certain commands, such as {@code for},
  * {@code def} and {@code scope}.
  *
- * <hr/>
- *
- * <p>In addition to resolving variables, scope also provides a mechanism for
- * copy-on-write (COW) optimizations. This mechanism is not automatic, and
- * requires a certain amount of cooperation from the authors of stdlib
- * functions. In particular,
- * <ul>
- *   <li>Any function that intends to reuse a vec from some other frame, should
- *       register the newly created frame with
- *       {@code #registerReuse(CorporealFrame, SliceList)}.</li>
- * </ul>
- *
  */
 public class Scope {
   private Scope parent;
@@ -44,7 +30,6 @@ public class Scope {
     session = sess;
     parent = parentScope;
     symbolTable = new HashMap<>(5);
-    vecCopyCounts = new HashMap<>(16);
   }
 
 
@@ -58,7 +43,7 @@ public class Scope {
       return symbolTable.get(id);
     if (parent != null)
       return parent.lookupVariable(id);
-    throw new IllegalArgumentException("Name lookup of " + id + " failed");
+    return null;
   }
 
 
@@ -81,36 +66,6 @@ public class Scope {
    */
   public <T extends Keyed<T>> Key<T> mintKey() {
     return session.mintKey();
-  }
-
-
-  //--------------------------------------------------------------------------------------------------------------------
-  // COW optimizations
-  //--------------------------------------------------------------------------------------------------------------------
-  private Map<Vec, Integer> vecCopyCounts;
-
-  /**
-   * I, the caller of this function, do hereby proclaim that I have created
-   * a new {@link CorporealFrame} {@code frame}, and in doing so I have used
-   * vecs from other {@link Frame}s, as given in the {@code columns}
-   * list. I shall hereby be held harmless from any data loss that may result
-   * from my future use of the new {@code frame}, provided such use is
-   * restricted to read access only.
-   */
-  public void registerReuse(CorporealFrame frame, SliceList columns) {
-    if (columns == null)
-      columns = new SliceList(0, frame.numCols());
-    Frame f = frame.getWrappedFrame();
-    SliceList.Iterator iter = columns.iter();
-    while (iter.hasNext()) {
-      Vec v = f.vec((int) iter.nextPrim());
-      Integer count = vecCopyCounts.get(v);
-      vecCopyCounts.put(v, (count == null? 0 : count) + 1);
-    }
-  }
-
-  public void intendToModify(CorporealFrame frame, SliceList columns) {
-
   }
 
 

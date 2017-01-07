@@ -63,13 +63,6 @@ public abstract class Val extends Iced<Val> {
   public abstract Type type();
 
 
-  /**
-   * This method may be overridden in subclasses to perform custom clean-up
-   * when the {@code Val} is about to be garbage-collected. For example, a
-   * Frame may remove itself from the DKV, etc.
-   */
-  public void dispose() {}
-
 
   //--------------------------------------------------------------------------------------------------------------------
   // isX()/getX() methods

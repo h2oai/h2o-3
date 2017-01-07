@@ -16,11 +16,11 @@ public class AstId extends AstNode<AstId> {
 
   @Override
   public Val exec(Scope scope) {
-    try {
-      return scope.lookupVariable(name);
-    } catch (IllegalArgumentException e) {
-      throw new Cascade.NameError(start, length, e.getMessage());
+    Val result = scope.lookupVariable(name);
+    if (result == null) {
+      throw new Cascade.NameError(start, length, "Name lookup of " + name + " failed");
     }
+    return result;
   }
 
   @Override

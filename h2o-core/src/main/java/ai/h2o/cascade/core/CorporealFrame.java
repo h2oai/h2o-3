@@ -20,8 +20,10 @@ public class CorporealFrame extends GhostFrame {
   private transient BufferedString bs;
 
 
-  public CorporealFrame(Frame f) {
+  public CorporealFrame(Frame f, Scope scope) {
     frame = f;
+    scope.session().increaseRefCount(f);
+    scope.session().trackCorporealFrame(this);
   }
 
   /**
@@ -31,6 +33,10 @@ public class CorporealFrame extends GhostFrame {
    */
   public Frame getWrappedFrame() {
     return frame;
+  }
+
+  public void dispose(Scope scope) {
+    scope.session().decreaseRefCount(frame);
   }
 
 

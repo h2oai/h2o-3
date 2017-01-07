@@ -68,8 +68,8 @@ public class FnCols extends StdlibFunction {
           vecsSlice[i] = f.vec(index[i]);
           namesSlice[i] = f.name(index[i]);
         }
-        Frame r = new Frame(scope.<Frame>mintKey(), namesSlice, vecsSlice);
-        return new CorporealFrame(r);
+        Frame res = new Frame(scope.<Frame>mintKey(), namesSlice, vecsSlice);
+        return new CorporealFrame(res, scope);
       }
       return super.materialize(scope);
     }
