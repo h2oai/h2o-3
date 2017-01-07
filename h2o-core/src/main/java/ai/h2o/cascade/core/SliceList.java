@@ -3,8 +3,8 @@ package ai.h2o.cascade.core;
 import water.util.ArrayUtils;
 import water.util.SB;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * TODO: clean up
@@ -50,9 +50,9 @@ public class SliceList extends Val {
 
   /**
    * Standard constructor, building the {@code SliceList} out of
-   * {@code ArrayList}s of {@code bases}, {@code counts} and {@code strides}.
+   * {@code List}s of {@code bases}, {@code counts} and {@code strides}.
    */
-  public SliceList(ArrayList<Long> basesList, ArrayList<Long> countsList, ArrayList<Long> stridesList) {
+  public SliceList(List<Long> basesList, List<Long> countsList, List<Long> stridesList) {
     bases = ArrayUtils.toLongArray(basesList);
     counts = ArrayUtils.toLongArray(countsList);
     strides = ArrayUtils.toLongArray(stridesList);
@@ -311,7 +311,7 @@ public class SliceList extends Val {
         }
       if (bases1[nbases-1] < n - 1) {
         bases2[igap] = bases1[nbases-1] + 1;
-        counts2[igap] = n - bases1[nbases-1];
+        counts2[igap] = n - bases1[nbases-1] - 1;
         strides2[igap++] = 1;
       }
       assert igap == ngaps;
@@ -355,11 +355,13 @@ public class SliceList extends Val {
     SB sb = new SB().p('<');
     for (int i = 0; i < bases.length; i++) {
       sb.p(bases[i]);
-      if (counts[i] != 1) {
-        sb.p(':').p(counts[i]);
-      }
-      if (strides[i] != 1) {
-        sb.p(':').p(strides[i]);
+      if (!isList) {
+        if (counts[i] != 1) {
+          sb.p(':').p(counts[i]);
+        }
+        if (strides[i] != 1) {
+          sb.p(':').p(strides[i]);
+        }
       }
       if (i < bases.length - 1)
         sb.p(' ');

@@ -1620,7 +1620,7 @@ public class ArrayUtils {
   /**
    * Convert an ArrayList of Integers to a primitive int[] array.
    */
-  public static int[] toIntArray(ArrayList<Integer> arr) {
+  public static int[] toIntArray(List<Integer> arr) {
     int[] res = new int[arr.size()];
     for (int i = 0; i < res.length; i++)
       res[i] = arr.get(i);
@@ -1630,7 +1630,7 @@ public class ArrayUtils {
   /**
    * Convert an ArrayList of Longs to a primitive long[] array.
    */
-  public static long[] toLongArray(ArrayList<Long> arr) {
+  public static long[] toLongArray(List<Long> arr) {
     long[] res = new long[arr.size()];
     for (int i = 0; i < res.length; i++)
       res[i] = arr.get(i);
@@ -1640,7 +1640,7 @@ public class ArrayUtils {
   /**
    * Convert an ArrayList of Doubles to a primitive double[] array.
    */
-  public static double[] toDoubleArray(ArrayList<Double> arr) {
+  public static double[] toDoubleArray(List<Double> arr) {
     double[] res = new double[arr.size()];
     for (int i = 0; i < res.length; i++)
       res[i] = arr.get(i);
