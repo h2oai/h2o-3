@@ -213,12 +213,12 @@ public class PredictCsv {
 
   private void loadPojo(String className) throws Exception {
     GenModel genModel = (GenModel) Class.forName(className).newInstance();
-    model = new EasyPredictModelWrapper(genModel);
+    model = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true));
   }
 
   private void loadMojo(String modelName) throws IOException {
     GenModel genModel = MojoModel.load(modelName);
-    model = new EasyPredictModelWrapper(genModel);
+    model = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true));
   }
 
   private static void usage() {
