@@ -499,7 +499,7 @@ public abstract class SharedTreeMojoModel extends MojoModel {
           if (equal == 8)
             bs.fill2(tree, ab);
           else
-            bs.fill3(tree, ab);
+            bs.fill3_1(tree, ab);
         }
       }
 

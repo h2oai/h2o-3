@@ -279,6 +279,26 @@ public class DRFTest extends TestUtil {
             s("0", "1"));
   }
 
+  @Test public void test30k() throws Throwable {
+    basicDRFTestOOBE_Classification(
+            "./smalldata/gbm_test/30k_cattest.csv", "cat30k",
+            new PrepData() {
+              @Override
+              int prep(Frame fr) {
+                Vec resp = fr.remove("C3");
+                fr.add("C3", VecUtils.toCategoricalVec(resp));
+                resp.remove();
+                return fr.find("C3");
+              }
+            },
+            50, //ntrees
+            20, //bins
+            10, //min_rows
+            5, //max_depth
+            null,
+            s("0", "1"));
+  }
+
   @Test public void testProstate() throws Throwable {
     basicDRFTestOOBE_Classification(
             "./smalldata/prostate/prostate.csv.zip", "prostate2.zip.hex",
