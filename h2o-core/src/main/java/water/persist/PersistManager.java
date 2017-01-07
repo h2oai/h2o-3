@@ -16,7 +16,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 /**
  * One true persistence manager which hides the implementations from H2O.
  * In particular, HDFS support or S3 support may or may not exist depending
@@ -239,12 +240,13 @@ public class PersistManager {
    * importFiles(importFiles.path, files, keys, fails, dels);
    *
    * @param path  (Input) Path to import data from
+   * @param pattern (Input) Regex pattern to match files by
    * @param files (Output) List of files found
    * @param keys  (Output) List of keys corresponding to files
    * @param fails (Output) List of failed files which mismatch among nodes
    * @param dels  (Output) I don't know what this is
    */
-  public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+  public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     String s = path.toLowerCase(); // path must not be null
     if( s.startsWith("http:") || s.startsWith("https:") ) {
       try {
@@ -258,24 +260,30 @@ public class PersistManager {
       } catch( Throwable e) {
         fails.add(path); // Fails for e.g. broken sockets silently swallow exceptions and just record the failed path
       }
-      return;
     }
-
-    if(s.startsWith("s3:")) {
+    else if(s.startsWith("s3:")) {
       if (I[Value.S3] == null) throw new H2OIllegalArgumentException("S3 support is not configured");
-      I[Value.S3].importFiles(path, files, keys, fails, dels);
-      return;
+      I[Value.S3].importFiles(path, pattern, files, keys, fails, dels);
     }
-    if( s.startsWith("hdfs:") ||
+    else if( s.startsWith("hdfs:") ||
         s.startsWith("s3n:") || 
         s.startsWith("s3a:") || 
         s.startsWith("maprfs:")) {
       if (I[Value.HDFS] == null) throw new H2OIllegalArgumentException("HDFS, S3N, and S3A support is not configured");
-      I[Value.HDFS].importFiles(path, files, keys, fails, dels);
-      return;
+      I[Value.HDFS].importFiles(path, pattern, files, keys, fails, dels);
     }
-    // Attempt NFS import instead
-    I[Value.NFS].importFiles(path, files, keys, fails, dels);
+    else {
+      // Attempt NFS import instead
+      I[Value.NFS].importFiles(path, pattern, files, keys, fails, dels);
+    }
+    if(!pattern.isEmpty()) {
+      ArrayList<String> subsetFiles = matchPattern(path,files,pattern); //New files ArrayList after matching pattern of choice
+      files.retainAll(subsetFiles); //Subset files based on subsetFiles
+      ArrayList<String> subsetKey = matchPattern(path,keys,pattern); //New keys ArrayList after matching pattern of choice
+      keys.retainAll(subsetKey); //Subset keys based on subsetKey
+    }
+
+    return;
   }
 
 
@@ -479,7 +487,7 @@ public class PersistManager {
       return I[Value.ICE];
     }
 
-    if (scheme != null ) {
+    if (scheme != null) {
       switch (scheme) {
         case Schemes.FILE:
           return I[Value.ICE]; // Local FS
@@ -496,4 +504,44 @@ public class PersistManager {
       return I[Value.ICE];
     }
   }
+
+  /**
+   * Finds all entries in the list that matches the regex
+   * @param fileList The list of strings to check
+   * @param matchStr The regular expression to use
+   * @return list containing the matching entries
+   */
+  public ArrayList<String> matchPattern(String prefix, ArrayList<String> fileList, String matchStr){
+    ArrayList<String> result = new ArrayList<String>();
+    Pattern pattern = Pattern.compile(matchStr);
+    if (matchStr != null) {
+      for(String s : fileList){
+        Matcher matcher = pattern.matcher(afterPrefix(s,prefix));
+        if (matcher.find()) {
+          result.add(s);
+        }
+      }
+    }
+    return result;
+  }
+
+  /**
+   * Returns the part of the string that occurs after the first index of the substring
+   * @param wholeString A string that needs to be subsetted
+   * @param substring The substring to extract
+   * @return string after subsetting
+   */
+  static String afterPrefix(String wholeString , String substring) {
+    // Returns a substring containing all characters after a string.
+    int posSubstring = wholeString.lastIndexOf(substring);
+    if (posSubstring == -1) {
+      return "";
+    }
+    int adjustedPosSubstring = posSubstring + substring.length();
+    if (adjustedPosSubstring >= wholeString.length()) {
+      return "";
+    }
+    return wholeString.substring(adjustedPosSubstring);
+  }
+
 }

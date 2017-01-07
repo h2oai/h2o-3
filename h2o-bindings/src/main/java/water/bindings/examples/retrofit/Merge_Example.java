@@ -26,7 +26,7 @@ public class Merge_Example {
 
         // import and parse files
         { // tourism
-          ImportFilesV3 importBody = h2o.importFiles("../smalldata/merge/tourism.csv");
+          ImportFilesV3 importBody = h2o.importFiles("../smalldata/merge/tourism.csv", "");
           ParseSetupV3 parseSetupParams = new ParseSetupV3();
           parseSetupParams.sourceFrames = H2oApi.stringArrayToKeyArray(importBody.destinationFrames, FrameKeyV3.class);
           parseSetupParams.checkHeader = 1;
@@ -40,7 +40,7 @@ public class Merge_Example {
         }
 
         { // heart
-          ImportFilesV3 importBody = h2o.importFiles("../smalldata/merge/heart.csv");
+          ImportFilesV3 importBody = h2o.importFiles("../smalldata/merge/heart.csv", "");
           ParseSetupV3 parseSetupParams = new ParseSetupV3();
           parseSetupParams.sourceFrames = H2oApi.stringArrayToKeyArray(importBody.destinationFrames, FrameKeyV3.class);
           parseSetupParams.checkHeader = 1;

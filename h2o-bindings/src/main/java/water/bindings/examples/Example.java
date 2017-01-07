@@ -90,7 +90,7 @@ public class Example {
 
         try {
             // STEP 1: import raw file
-            ImportFilesV3 importBody = importService.importFiles("http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", null).execute().body();
+            ImportFilesV3 importBody = importService.importFiles("http://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/arrhythmia.csv.gz", "", null).execute().body();
             System.out.println("import: " + importBody);
 
             // STEP 2: parse setup
