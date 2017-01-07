@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<div>
+Hello world!
+</div>
+<script>
+console.log('window.location', window.location);
+console.log('window.location.href', window.location.href);
+console.log('window.location.search', window.location.search);
+
+const paramsString = window.location.search;
+const searchParams = new URLSearchParams(paramsString);
+const user = searchParams.get('user');
+console.log('user from searchParams', user);
+if(user !== null) {
+  const div = document.querySelectorAll('div')[0];
+  div.innerHTML = `Hello ${user}`;
+}
+</script>
+</html>
