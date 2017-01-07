@@ -49,7 +49,7 @@ public abstract class StandardLibrary {
     for (String cmd : frameCmds)
       importCommand("frame", cmd, scope);
 
-    String[] coreCmds = {"fromDkv", "let"};
+    String[] coreCmds = {"fromDkv", "let", "del"};
     for (String cmd : coreCmds)
       importCommand("core", cmd, scope);
 

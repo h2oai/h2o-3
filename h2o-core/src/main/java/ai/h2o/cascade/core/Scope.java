@@ -51,6 +51,9 @@ public class Scope {
     symbolTable.put(name, value);
   }
 
+  public void removeVariable(String name) {
+    symbolTable.remove(name);
+  }
 
   /**
    * Issue a new {@link Key} that can be used for storing an object in the DKV.
