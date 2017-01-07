@@ -243,6 +243,9 @@ def generate_proxy(classname, endpoints):
 
     for e in endpoints:
         method = e["handler_method"]
+        # should we always use e.api_name ?
+        if method == "exec":
+            method = e["api_name"]
 
         param_strs = []
         required_param_strs = []
@@ -489,11 +492,11 @@ def generate_main_class(endpoints):
                 if fields == input_fields_wo_excluded:
                     values += ", \"\""
 
+            method = apiname if route["handler_method"] == "exec" else route["handler_method"]
             yield "  public {type} {method}({args}) throws IOException {{".\
                   format(type=outtype, method=apiname, args=args)
             yield "    {clazz} s = getService({clazz}.class);".format(clazz=class_name)
-            yield "    return s.{method}({values}).execute().body();".\
-                  format(method=route["handler_method"], values=values)
+            yield "    return s.{method}({values}).execute().body();".format(method=method, values=values)
             yield "  }"
         yield ""
 
