@@ -25,7 +25,9 @@ function() {
     params$min_rows        <- 10
     params$x               <- c("C1", "C2")
     params$y               <- "C3"
+    params$nbins_cats      <- 20
     params$training_frame  <- training_frame
+    params$seed            <- 1234
 
     doJavapredictTest("randomForest",test_file,test_frame,params)
 }
