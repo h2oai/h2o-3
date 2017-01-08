@@ -6,6 +6,7 @@ import org.apache.commons.math3.util.FastMath;
 /**
  * Ceiling function (smallest whole number larger than x)
  */
+@SuppressWarnings("unused")  // loaded from StandardLibrary
 public class FnCeil extends FnUniOp {
 
   public double apply(double x) {
@@ -13,6 +14,14 @@ public class FnCeil extends FnUniOp {
   }
 
   public GhostFrame apply(GhostFrame frame) {
-    return new NumericUniOpFrame(frame, "ceil");
+    return new NumericUniOpFrame(frame, CEIL);
+  }
+
+
+  private static CeilSpec CEIL = new CeilSpec();
+  private static class CeilSpec extends UniOpSpec {
+    public CeilSpec() {}
+    @Override public String name() { return "ceil"; }
+    @Override public double apply(double x) { return FastMath.ceil(x); }
   }
 }

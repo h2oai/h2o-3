@@ -6,6 +6,7 @@ import org.apache.commons.math3.util.FastMath;
 /**
  * Cosine function
  */
+@SuppressWarnings("unused")  // loaded from StandardLibrary
 public class FnCos extends FnUniOp {
 
   public double apply(double x) {
@@ -13,6 +14,14 @@ public class FnCos extends FnUniOp {
   }
 
   public GhostFrame apply(GhostFrame frame) {
-    return new NumericUniOpFrame(frame, "cos");
+    return new NumericUniOpFrame(frame, COS);
+  }
+
+
+  private static CosSpec COS = new CosSpec();
+  private static class CosSpec extends UniOpSpec {
+    public CosSpec() {}
+    @Override public String name() { return "cos"; }
+    @Override public double apply(double x) { return FastMath.cos(x); }
   }
 }

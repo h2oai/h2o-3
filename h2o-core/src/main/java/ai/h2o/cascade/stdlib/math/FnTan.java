@@ -6,6 +6,7 @@ import org.apache.commons.math3.util.FastMath;
 /**
  * Tangent function
  */
+@SuppressWarnings("unused")  // loaded from StandardLibrary
 public class FnTan extends FnUniOp {
 
   public double apply(double x) {
@@ -13,6 +14,14 @@ public class FnTan extends FnUniOp {
   }
 
   public GhostFrame apply(GhostFrame frame) {
-    return new NumericUniOpFrame(frame, "tan");
+    return new NumericUniOpFrame(frame, TAN);
+  }
+
+
+  private static TanSpec TAN = new TanSpec();
+  private static class TanSpec extends UniOpSpec {
+    public TanSpec() {}
+    @Override public String name() { return "tan"; }
+    @Override public double apply(double x) { return FastMath.tan(x); }
   }
 }

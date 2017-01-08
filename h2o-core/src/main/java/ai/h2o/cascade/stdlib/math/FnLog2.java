@@ -6,14 +6,18 @@ import org.apache.commons.math3.util.FastMath;
 /**
  * Base-2 logarithm function
  */
+@SuppressWarnings("unused")  // loaded from StandardLibrary
 public class FnLog2 extends FnUniOp {
-  private static final double LOG2 = FastMath.log(2);
 
   public double apply(double x) {
-    return FastMath.log(x) / LOG2;
+    return FastMath.log(x) / LG2;
   }
 
   public GhostFrame apply(GhostFrame frame) {
-    return new NumericUniOpFrame(frame, "log2");
+    return new NumericUniOpFrame(frame, LOG2);
   }
+
+
+  private static final double LG2 = FastMath.log(2);
+  private static final FnLog.LogBSpec LOG2 = new FnLog.LogBSpec(2);
 }
