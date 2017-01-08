@@ -56,7 +56,8 @@ public abstract class StandardLibrary {
     String[] mathCmds = {"abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "cbrt", "ceil",
                          "cos", "cosh", "cosPi", "digamma", "erf", "erfc", "exp", "expm1", "floor",
                          "gamma", "invErf", "log", "log1p", "log2", "log10", "logGamma", "round",
-                         "signum", "sin", "sinh", "sinPi", "sqrt", "tan", "tanh", "tanPi", "trigamma"};
+                         "signum", "sin", "sinh", "sinPi", "sqrt", "tan", "tanh", "tanPi", "trigamma",
+                         "boxCox", "gammaP", "gammaQ"};
     for (String cmd : mathCmds)
       importCommand("math", cmd, scope);
   }

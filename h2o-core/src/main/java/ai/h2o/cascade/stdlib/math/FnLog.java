@@ -33,7 +33,7 @@ public class FnLog extends FnUniOp {
   }
 
 
-  private static LnSpec LN = new LnSpec();
+  public static LnSpec LN = new LnSpec();
   private static class LnSpec extends UniOpSpec {
     public LnSpec() {}
     @Override public String name() { return "ln"; }
