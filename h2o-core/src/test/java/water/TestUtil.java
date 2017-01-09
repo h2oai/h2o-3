@@ -1,6 +1,7 @@
 package water;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.ArrayUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -359,6 +360,36 @@ public class TestUtil extends Iced {
     fs.blockForPending();
     return vec;
   }
+
+  public static Vec vec(double[][] vals) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, water.util.ArrayUtils.makeConst(vals[0].length,Vec.T_NUM));
+    NewChunkAry chunk = avec.chunkForChunkIdx(0);
+    for( int r = 0; r < vals.length; ++r)
+      for(int c = 0; c < vals[r].length; ++c)
+        chunk.addNum(c,vals[r][c]);
+    chunk.close(fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
+  public static Vec vec(String [][] doms, int[][] vals) {
+    Key<Vec> k = Vec.VectorGroup.VG_LEN1.addVec();
+    Futures fs = new Futures();
+    AppendableVec avec = new AppendableVec(k, water.util.ArrayUtils.makeConst(vals[0].length,Vec.T_NUM));
+    avec.setDomains(doms);
+    NewChunkAry chunk = avec.chunkForChunkIdx(0);
+    for( int r = 0; r < vals.length; ++r)
+      for(int c = 0; c < vals[r].length; ++c)
+        chunk.addInteger(c,vals[r][c]);
+    chunk.close(fs);
+    Vec vec = avec.layout_and_close(fs);
+    fs.blockForPending();
+    return vec;
+  }
+
 
   // Shortcuts for initializing constant arrays
   public static String[]   ar (String ...a)   { return a; }

@@ -25,7 +25,7 @@ public class ByteVec extends Vec {
    *  length Vec.DFLT_CHUNK_SIZE but no guarantees.  Useful for previewing the start
    *  of large files.
    *  @return array of initial bytes */
-  public byte[] getChunkBytes(int cidx) { return chunkIdx(cidx)._cs[0]._mem; }
+  public byte[] getChunkBytes(int cidx) { return chunkIdx(cidx).getColChunk(0)._mem; }
   public byte[] getFirstBytes() { return getChunkBytes(0); }
 
   static final byte CHAR_CR = 13;
@@ -66,7 +66,7 @@ public class ByteVec extends Vec {
         if (_c0 == null || _sz >= _c0._len) {
           sz[0] += _c0 != null ? _c0._len : 0;
           if (_cidx >= nChunks()) return 0;
-          _c0 = (C1NChunk) chunkIdx(_cidx++)._cs[0];
+          _c0 = (C1NChunk) chunkIdx(_cidx++);
           _sz = C1NChunk._OFF;
           if (job_key != null)
             Job.update(_c0._len, job_key);

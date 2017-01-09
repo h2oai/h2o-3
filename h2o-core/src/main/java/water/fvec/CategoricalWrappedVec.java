@@ -45,8 +45,8 @@ public class CategoricalWrappedVec extends WrappedVec {
     return tmp._map;
   }
 
-  @Override public DBlock chunkIdx(int cidx) {
-    return new DBlock(new CategoricalWrappedChunk(masterVec().chunkIdx(cidx)._cs[0], this));
+  @Override public CategoricalWrappedChunk chunkIdx(int cidx) {
+    return new CategoricalWrappedChunk(masterVec().chunkIdx(cidx).getColChunk(0), this);
   }
 
   /** Compute a mapping from the 'from' domain to the 'to' domain.  Strings in

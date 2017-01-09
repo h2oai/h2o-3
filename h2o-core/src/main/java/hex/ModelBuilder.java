@@ -259,7 +259,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       final Vec foldAssignment = cv_AssignFold(N);
 
       // Step 2: Make 2*N binary weight vectors
-      final VecAry weights = cv_makeWeights(N,foldAssignment);
+      final AVecAry weights = cv_makeWeights(N,foldAssignment);
 
       // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
       ModelBuilder<M, P, O> cvModelBuilders[] = cv_makeFramesAndBuilders(N,weights);
@@ -315,7 +315,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 2: Make 2*N binary weight vectors
-  public VecAry cv_makeWeights( final int N, Vec foldAssignment ) {
+  public AVecAry cv_makeWeights(final int N, Vec foldAssignment ) {
     String origWeightsName = _parms._weights_column;
     Vec origWeight  = origWeightsName != null ? train().vec(origWeightsName) : train().anyVec().makeCon(1.0);
     Frame folds_and_weights = new Frame(foldAssignment, origWeight);
@@ -345,7 +345,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, VecAry weights ) {
+  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, AVecAry weights ) {
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
@@ -419,7 +419,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 5: Score the CV models
-  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, VecAry weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
+  public ModelMetrics.MetricBuilder[] cv_scoreCVModels(int N, AVecAry weights, ModelBuilder<M, P, O>[] cvModelBuilders) {
     if( _job.stop_requested() ) return null;
     ModelMetrics.MetricBuilder[] mbs = new ModelMetrics.MetricBuilder[N];
     Futures fs = new Futures();

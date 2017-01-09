@@ -4,7 +4,6 @@ import water.MRTask;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
-import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
@@ -46,7 +45,7 @@ public class AstStrSplit extends AstPrimitive {
     // Transform each vec
     ArrayList<Vec> vs = new ArrayList<>(fr.numCols());
     for (Vec v : fr.vecs()) {
-      VecAry splits;
+      AVecAry splits;
       if (v.isCategorical()) {
         splits = strSplitCategoricalCol(v, splitRegEx);
         for (Vec split : splits) vs.add(split);
@@ -59,7 +58,7 @@ public class AstStrSplit extends AstPrimitive {
     return new ValFrame(new Frame(vs.toArray(new Vec[vs.size()])));
   }
 
-  private VecAry strSplitCategoricalCol(Vec vec, String splitRegEx) {
+  private AVecAry strSplitCategoricalCol(Vec vec, String splitRegEx) {
     final String[] old_domains = vec.domain();
     final String[][] new_domains = newDomains(old_domains, splitRegEx);
 
@@ -122,7 +121,7 @@ public class AstStrSplit extends AstPrimitive {
     return doms;
   }
 
-  private VecAry strSplitStringCol(Vec vec, final String splitRegEx) {
+  private AVecAry strSplitStringCol(Vec vec, final String splitRegEx) {
     final int newColCnt = (new AstStrSplit.CountSplits(splitRegEx)).doAll(vec)._maxSplits;
     return new MRTask() {
       @Override

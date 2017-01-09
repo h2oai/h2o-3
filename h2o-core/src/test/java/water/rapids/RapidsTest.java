@@ -4,10 +4,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
-import water.fvec.Frame;
-import water.fvec.NFSFileVec;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.vals.ValFrame;
@@ -362,7 +359,7 @@ public class RapidsTest extends TestUtil {
       Value val = Value.STORE_get(k);
       if( val != null && val.isFrame() ) {
         Frame fr = val.get();
-        VecAry vecs = fr.vecs();
+        AVecAry vecs = fr.vecs();
         for(Vec v:vecs.vecs()) {
           if( DKV.get(v._key) == null ) {
             System.err.println("Frame "+fr._key+" in the DKV, is missing Vec "+v._key);

@@ -109,7 +109,7 @@ final class RollupStats extends Iced {
     }
 
     //all const NaNs
-    if (Double.isNaN(min) && Double.isNaN(max)) {
+    if (ca.isSparseNA(col) && ca.sparseLenNA(col) == 0) {
       _sigma=0; //count of non-NAs * variance of non-NAs
       _mean = 0; //sum of non-NAs (will get turned into mean)
       _naCnt=ca._len;

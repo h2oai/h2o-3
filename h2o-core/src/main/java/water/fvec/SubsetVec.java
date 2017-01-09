@@ -37,7 +37,7 @@ public class SubsetVec extends WrappedVec {
   @Override
   public DBlock chunkIdx(int cidx) {
     Chunk crows = rows().chunkForChunkIdx(cidx).getChunk(0);
-    return new DBlock(new SubsetChunk(crows,this,masterVec()));
+    return new SubsetChunk(crows,this,masterVec());
   }
 
   // 

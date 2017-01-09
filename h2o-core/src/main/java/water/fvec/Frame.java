@@ -7,13 +7,11 @@ import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.parser.BufferedString;
 import water.rapids.Merge;
-import water.persist.Persist;
 import water.util.*;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.HashMap;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -114,7 +112,7 @@ public class Frame extends Lockable<Frame> {
       // for compatible Vecs & names.
       _names = names;
     }
-    assert _names.length == _vecs.numCols();
+    assert _names.length == _vecs.numCols():_names.length + "  != " + _vecs.numCols();
   }
 
   public void setNames(String[] columns){
@@ -235,9 +233,7 @@ public class Frame extends Lockable<Frame> {
 
   /** Convenience to accessor for last Vec
    *  @return last Vec */
-  public VecAry lastVec() {
-    throw H2O.unimpl();
-  }
+  public VecAry lastVec() {return _vecs.select(_vecs.numCols()-1);}
   /** Convenience to accessor for last Vec name
    *  @return last Vec name */
   public String lastVecName() {  return _names[_names.length-1]; }
@@ -246,7 +242,7 @@ public class Frame extends Lockable<Frame> {
    *  remotely, or that the _vecs array was shared and now needs to be a
    *  defensive copy.
    *  @return the new instance of the Frame's Vec[] */
-  public final VecAry reloadVecs() { _vecs.reloadVecs(); return _vecs; }
+  public final AVecAry reloadVecs() { _vecs.reloadVecs(); return _vecs; }
 
   /** Returns the Vec by given index, implemented by code: {@code vecs()[idx]}.
    *  @param idx idx of column
@@ -327,7 +323,7 @@ public class Frame extends Lockable<Frame> {
 
   /** All the domains for categorical columns; null for non-categorical columns.
    *  @return the domains for categorical columns */
-  public String[][] domains() {return _vecs._domains;}
+  public String[][] domains() {return _vecs.domains();}
 
   /** Number of categorical levels for categorical columns; -1 for non-categorical columns.
    * @return the number of levels for categorical columns */
@@ -553,7 +549,7 @@ public class Frame extends Lockable<Frame> {
     }
     String [] names = new String[_names.length - idxs.length];int j = 0, k = 0;
     for(int i = 0; i < _names.length; ++i)
-      if(i == idxs[j])++j;
+      if(j < idxs.length && i == idxs[j])++j;
       else names[k++] = _names[i];
     _names = names;
     assert _names.length == _vecs._numCols;
@@ -564,7 +560,7 @@ public class Frame extends Lockable<Frame> {
    *  @param startIdx - start index of column (inclusive)
    *  @param endIdx - end index of column (exclusive)
    *  @return array of removed columns  */
-  VecAry remove(int startIdx, int endIdx) {return remove(ArrayUtils.seq(startIdx,endIdx));}
+  AVecAry remove(int startIdx, int endIdx) {return remove(ArrayUtils.seq(startIdx,endIdx));}
 
 
   /** Restructure a Frame completely, but only for a specified number of columns (counting up)  */
@@ -748,8 +744,7 @@ public class Frame extends Lockable<Frame> {
     return ("Frame key: " + _key + "\n") +
             "   cols: " + numCols() + "\n" +
             "   rows: " + numRows() + "\n" +
-            " chunks: " + (anyVec() == null ? "N/A" : anyVec().nChunks()) + "\n" +
-            "   size: " + byteSize() + "\n";
+            " chunks: " + (anyVec() == null ? "N/A" : anyVec().nChunks()) + "\n";
   }
 
   public String toString(long off, int len) { return toTwoDimTable(off, len).toString(); }
@@ -795,7 +790,7 @@ public class Frame extends Lockable<Frame> {
         dblCells[4][i] = x._naCnt;
       }
 
-      switch( _vecs.get_type(i) ) {
+      switch( _vecs.getType(i) ) {
       case Vec.T_BAD:
         coltypes[i] = "string";
         for( int j=0; j<len; j++ ) { strCells[j+H][i] = null; dblCells[j+H][i] = TwoDimTable.emptyDouble; }
@@ -820,7 +815,7 @@ public class Frame extends Lockable<Frame> {
       case Vec.T_UUID:
         throw H2O.unimpl();
       default:
-        System.err.println("bad vector type during debug print: "+_vecs.get_type(i));
+        System.err.println("bad vector type during debug print: "+_vecs.getType(i));
         throw H2O.fail();
       }
     }
@@ -894,7 +889,7 @@ public class Frame extends Lockable<Frame> {
         Chunk [] chks = cs.getChunks().clone();
         for(int i = 0; i < chks.length; ++i)
           chks[i] = chks[i].deepCopy();
-        DKV.put(v.chunkKey(cs._cidx),new DBlock(chks,null),_fs);
+        DKV.put(v.chunkKey(cs._cidx),new DBlock.MultiChunkBlock(chks),_fs);
       }
     }.doAll(src);
     return new Frame(keyName == null?null:Key.<Frame>make(keyName),src.names().clone(),v);
@@ -942,7 +937,7 @@ public class Frame extends Lockable<Frame> {
   private byte[] types(int [] cols){
     byte[] res = new byte[cols.length];
     for(int i = 0; i < cols.length; ++i)
-      res[i] = _vecs.get_type(cols[i]);
+      res[i] = _vecs.getType(cols[i]);
     return res;
   }
 

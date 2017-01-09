@@ -168,7 +168,7 @@ public class Vec extends Keyed<Vec> {
   private transient long _espc[];
 
   // String domain, only for Categorical columns
-  protected String[][] _domains;
+  private String[][] _domains;
 
   protected Vec() {}
 
@@ -177,18 +177,22 @@ public class Vec extends Keyed<Vec> {
    *  Not a defensive clone (to expensive to clone; coding error to change the
    *  contents).
    *  @return the categorical / factor / categorical mapping array, or null if not a categorical column */
-  public String[] domain(int c) { return _domains[c]; }
+  public String[] domain(int c) { return _domains == null?null:_domains[c]; }
   public String[] domain() { return domain(0); }
   public String[][] allDomains(){return _domains;}
   /** Returns the {@code i}th factor for this categorical column.
    *  @return The {@code i}th factor */
-  public final String factor( int c, int i ) { return _domains[c][i]; }
+  public final String factor( int c, int i ) { return domain(c)[i]; }
   /** Set the categorical/factor names.  No range-checking on the actual
    *  underlying numeric domain; user is responsible for maintaining a mapping
    *  which is coherent with the Vec contents. */
-  public final Vec setDomain(int c, String[] domain) { _domains[c] = domain; if( domain != null ) _types[c] = T_CAT; return this; }
+  public Vec setDomain(int c, String[] domain) {
+    if(_domains == null)
+      _domains = new String[numCols()][];
+    _domains[c] = domain; if( domain != null ) _types[c] = T_CAT; return this;
+  }
   /** Returns cardinality for categorical domain or -1 for other types. */
-  public final int cardinality(int c) { return isCategorical(c) ? _domains[c].length : -1; }
+  public final int cardinality(int c) { return isCategorical(c) ? domain(c).length : -1; }
   public final int cardinality() { return cardinality(0); }
 
   // Vec internal type
@@ -207,8 +211,8 @@ public class Vec extends Keyed<Vec> {
    *  @return true if this is an categorical column.  */
   public final boolean isCategorical() { return isCategorical(0);}
   public final boolean isCategorical(int c) {
-    assert (_types[c]==T_CAT && _domains[c]!=null) || (_types[c]!=T_CAT && _domains[c]==null) || (_types[c]==T_NUM && this instanceof InteractionWrappedVec && _domains[c]!=null);
-    return _types[c]==T_CAT;
+//    assert (getType(c) ==T_CAT && _domains[c]!=null) || (getType(c) !=T_CAT && _domains[c]==null) || (getType(c) ==T_NUM && this instanceof InteractionWrappedVec && _domains[c]!=null);
+    return getType(c) ==T_CAT;
   }
 
   public final double sparseRatio(int c) {
@@ -216,20 +220,20 @@ public class Vec extends Keyed<Vec> {
   }
   /** True if this is a UUID column.  
    *  @return true if this is a UUID column.  */
-  public final boolean isUUID   (int c){ return _types[c]==T_UUID; }
+  public final boolean isUUID   (int c){ return getType(c) ==T_UUID; }
   public final boolean isUUID   (){ return isUUID(0); }
   /** True if this is a String column.  
    *  @return true if this is a String column.  */
-  public final boolean isString (int c){ return _types[c]==T_STR; }
+  public final boolean isString (int c){ return getType(c) ==T_STR; }
   public final boolean isString (){ return isString(0); }
   /** True if this is a numeric column, excluding categorical and time types.
    *  @return true if this is a numeric column, excluding categorical and time types  */
-  public final boolean isNumeric(int c){ return _types[c]==T_NUM; }
+  public final boolean isNumeric(int c){ return getType(c) ==T_NUM; }
   public final boolean isNumeric(){ return isNumeric(0); }
   /** True if this is a time column.  All time columns are also {@link #isInt}, but
    *  not vice-versa.
    *  @return true if this is a time column.  */
-  public final boolean isTime   (int c){ return _types[c]==T_TIME; }
+  public final boolean isTime   (int c){ return getType(c) ==T_TIME; }
   public final boolean isTime   (){ return isTime(0); }
 
   /** Build a numeric-type Vec; the caller understands Chunk layout (via the
@@ -260,13 +264,18 @@ public class Vec extends Keyed<Vec> {
    *  by subclasses that compute length in an alternative way, such as
    *  file-backed Vecs.
    *  @return Number of elements in the vector */
-  public long length() { espc(); return _espc[_espc.length-1]; }
+  public long length() {
+    espc();
+    return _espc[_espc.length-1];
+  }
 
   /** Number of chunks, returned as an {@code int} - Chunk count is limited by
    *  the max size of a Java {@code long[]}.  Overridden by subclasses that
    *  compute chunks in an alternative way, such as file-backed Vecs.
    *  @return Number of chunks */
-  public int nChunks() { return espc().length-1; }
+  public int nChunks() {
+    return espc().length-1;
+  }
 
   /** Convert a chunk-index into a starting row #.  For constant-sized chunks
    *  this is a little shift-and-add math.  For variable-sized chunks this is a
@@ -279,6 +288,10 @@ public class Vec extends Keyed<Vec> {
   /** Check that row-layouts are compatible. */
   boolean checkCompatible( Vec v ) {
     // Vecs are compatible iff they have same group and same espc (i.e. same length and same chunk-distribution)
+    boolean res =  (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
+        (VectorGroup.sameGroup(this, v) || length() < 1e3);
+    if(!res)
+      System.out.println("haha");
     return (espc() == v.espc() || Arrays.equals(_espc, v._espc)) &&
             (VectorGroup.sameGroup(this, v) || length() < 1e3);
   }
@@ -287,10 +300,18 @@ public class Vec extends Keyed<Vec> {
   boolean readable() { return true ; }
   /** Default read/write behavior for Vecs.  AppendableVecs are write-only. */
   boolean writable() { return true; }
-  public void setBad(int c) { _types[c] = T_BAD; }
+  public void setBad(int c) { setType(c,T_BAD); }
+
+  public byte getType(int c) {
+    return _types[c];
+  }
+
+  protected byte setType(int c, byte t) {
+    return _types[c] = t;
+  }
+
   /** Get the column type. */
-  public byte get_type(int c) { return _types[c]; }
-  public String get_type_str(int c) { return TYPE_STR[_types[c]]; }
+  public String get_type_str(int c) { return TYPE_STR[getType(c)]; }
   public String get_type_str() {
     String[] res = new String[_types.length];
     for (int i = 0; i < res.length; ++i)
@@ -400,10 +421,7 @@ public class Vec extends Keyed<Vec> {
     final Vec v = new Vec(group().addVec(),_rowLayout,_domains,_types);
     new MRTask(){
       @Override public void map(ChunkAry c){
-        DBlock db = new DBlock(c._cs,c._ids);
-        for(int i = 0; i < c._cs.length; ++i)
-          db._cs[i] = db._cs[i].deepCopy();
-        DKV.put(v.chunkKey(c._cidx), db, _fs);
+        DKV.put(v.chunkKey(c._cidx), c.copyIntoNewBlock(), _fs);
       }
     }.doAll(this);
     return v;
@@ -477,7 +495,7 @@ public class Vec extends Keyed<Vec> {
             Chunk[] cs = new Chunk[d.length];
             for(int j = 0; j < cs.length; ++j)
               cs[j] = new C0DChunk(d[j],0);
-            if (k.home()) DKV.put(k, new DBlock(cs,null), _fs);
+            if (k.home()) DKV.put(k, new DBlock.MultiChunkBlock(cs), _fs);
           }
         }
       }
@@ -505,7 +523,7 @@ public class Vec extends Keyed<Vec> {
           Chunk [] cs = new Chunk[res.numCols()];
           for(int j = 0; j < cs.length; ++j)
             cs[j] = new C0LChunk(l, 0);
-            DKV.put(k,new DBlock(cs,null), _fs);
+            DKV.put(k,new DBlock.MultiChunkBlock(cs), _fs);
         }
       }
       }
@@ -688,6 +706,14 @@ public class Vec extends Keyed<Vec> {
 
   public byte[] get_types() {return _types;}
 
+  public int homeNodeIdx(int i) {
+    return chunkKey(i).home_node().index();
+  }
+
+  public String[][] domains() {return _domains;}
+
+  public void setDomains(String[][] domains) {_domains = domains;}
+
 
   private static class RemoveColsFromRollupsTsk extends TAtomic<RollupsAry>{
     final int _ncols;
@@ -709,6 +735,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   public void removeCols(final int... ids){
+    assert numCols() > 1;
     RemoveColsFromRollupsTsk t = new RemoveColsFromRollupsTsk(numCols(),ids);
     t.invoke(rollupStatsKey());
     if(t._removed) remove();
@@ -718,7 +745,7 @@ public class Vec extends Keyed<Vec> {
         for(int i = 0; i < nChunks(); ++i){
           Key k = chunkKey(i);
           if(k.home()){
-            DBlock db = DKV.getGet(k);
+            DBlock.MultiChunkBlock db = DKV.getGet(k);
             db.removeChunks(ids);
             DKV.put(k,db,_fs);
           }
@@ -732,8 +759,8 @@ public class Vec extends Keyed<Vec> {
     Value val = DKV.get(rollupStatsKey());
     if( val == null )           // No rollup stats present?
       return length() > 0 ? /*not computed*/null : /*empty vec*/new RollupsAry(0);
-      RollupsAry rs = val.get();
-      return rs;
+    RollupsAry rs = val.get();
+    return rs;
   }
 
   /** Compute the roll-up stats as-needed */
@@ -766,6 +793,7 @@ public class Vec extends Keyed<Vec> {
         } else // rollups computation is already in progress, wait for it to finish
           rpcOld.get();
       } catch( Throwable t ) {
+        t.printStackTrace();
         System.err.println("Remote rollups failed with an exception, wrapping and rethrowing: "+t);
         throw new RuntimeException(t);
       }
@@ -842,8 +870,8 @@ public class Vec extends Keyed<Vec> {
     return lo;
   }
 
-  public int numCols(){throw H2O.unimpl();}
-  public int numRows(){throw H2O.unimpl();}
+  public int numCols(){return _types.length;}
+  public long numRows(){return _espc[_espc.length-1];}
 
 
 
@@ -857,33 +885,23 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
-  private transient ThreadLocal<Key> _keyTemplate = new ThreadLocal<>();
 
-  protected Key keyTemplate(){
-    Key k = _keyTemplate.get();
-    if(k == null)_keyTemplate.set(k = Key.make(_key._kb.clone()));
-    return k;
-  }
+
   /** Get a Chunk Key from a chunk-index.  Basically the index-to-key map.
    *  @return Chunk Key from a chunk-index */
-  protected Key chunkKey(int cidx ) { return chunkKey(keyTemplate(),cidx); }
-  public int homeNodeIdx(int cidx ) { return chunkKey(keyTemplate(),cidx).D(0); }
-  public boolean isHomedLocally(int cidx){return H2O.CLOUD._memary[homeNodeIdx(cidx)] == H2O.SELF;}
-
-  public Key newChunkKey(int cidx ) {
-    return chunkKey(Key.make(_key._kb.clone()),cidx);
+  protected Key chunkKey(int cidx ) {
+    return chunkKey(_key,cidx);
   }
-
-  /** Get a Chunk Key from a chunk-index and a Vec Key, without needing the
-   *  actual Vec object.  Basically the index-to-key map.
-   *  @return Chunk Key from a chunk-index and Vec Key */
-  public static Key chunkKey(Key veckey, int cidx ) {
-    byte [] bits = veckey._kb;
+  public static Key chunkKey(Key k, int cidx ) {
+    byte [] bits = k._kb.clone();
     bits[0] = Key.CHK;
     UnsafeUtils.set4(bits, 6, cidx); // chunk#
-    veckey.flushCache();
-    return veckey;
+    return Key.make(bits);
   }
+  public boolean isHomedLocally(int cidx){return chunkKey(cidx).home_node() == H2O.SELF;}
+  public Key newChunkKey(int cidx ) {return chunkKey(cidx);}
+
+
 
   // Filled in lazily and racily... but all writers write the exact identical Key
   public Key rollupStatsKey() {return chunkKey(-2);}
@@ -941,11 +959,17 @@ public class Vec extends Keyed<Vec> {
     return Key.make(bits);
   }
 
-  Futures closeChunk(ChunkAry c, Futures fs){
-    Key k = newChunkKey(c._cidx);
-    DKV.put(k,new DBlock(c._cs, c._ids),fs);
+  Futures closeChunk(int cidx, int len, DBlock db, Futures fs){
+    DKV.put(newChunkKey(cidx),db,fs);
     return fs;
   }
+
+  Futures closeChunk(ChunkAry c, Futures fs){
+    return closeChunk(c._cidx,c._len,c._numCols == 1?c.getChunk(0):new DBlock.MultiChunkBlock(c.getChunks()),fs);
+  }
+
+
+
 
   /** Get the group this vector belongs to.  In case of a group with only one
    *  vector, the object actually does not exist in KV store.  This is the ONLY
@@ -963,7 +987,7 @@ public class Vec extends Keyed<Vec> {
    *  @return Chunk for a chunk# */
   public ChunkAry chunkForChunkIdx(int cidx) {
     DBlock data = chunkIdx(cidx);        // Chunk# to chunk data
-    return new ChunkAry(this,cidx,data._cs,data._ids);
+    return data.chunkAry(this,cidx);
   }
 
 
@@ -1299,9 +1323,17 @@ public class Vec extends Keyed<Vec> {
   }
 
 
-  public static Key<Vec> setVecId(Key groupKey, int vecId){
-    UnsafeUtils.set4(groupKey._kb,2,vecId);
-    return groupKey;
+  /**
+   * Get Vec from the same vector group as src by it's vector group id.
+   * @param sameGroupVec
+   * @param vecId
+   * @return
+   */
+  public static Key<Vec> getVecKeyById(Vec sameGroupVec, int vecId){
+    byte [] bits = sameGroupVec._key._kb.clone();
+    bits[0] = Key.VEC;
+    UnsafeUtils.set4(bits,2,vecId);
+    return Key.make(bits);
   }
 
   public static Key<Vec> setChunkId(Key vecKey, int chunkId){

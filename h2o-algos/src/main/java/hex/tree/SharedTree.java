@@ -377,7 +377,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     //           O( #active_splits * #bins * #ncols )
     // but is NOT over all the data.
     ScoreBuildOneTree sb1ts[] = new ScoreBuildOneTree[_nclass];
-    VecAry vecs = fr.vecs();
+    AVecAry vecs = fr.vecs();
     for( int k=0; k<_nclass; k++ ) {
       final DTree tree = ktrees[k]; // Tree for class K
       if( tree == null ) continue;

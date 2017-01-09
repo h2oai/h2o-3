@@ -960,7 +960,6 @@ public class NewChunk extends Chunk {
       return new C0DChunk(Double.NaN, _len);
     if( mode==Vec.T_STR )
       return new CStrChunk(_sslen, _ss, _sparseLen, _len, _is, _isAllASCII);
-    boolean rerun=false;
     if(mode == Vec.T_CAT) {
       for(int i = 0; i< _sparseLen; i++ )
         if(isCategorical2(i))
@@ -972,12 +971,27 @@ public class NewChunk extends Chunk {
         // Smack any mismatched string/numbers
     } else if( mode == Vec.T_NUM ) {
       for(int i = 0; i< _sparseLen; i++ )
-        if(isCategorical2(i)) {
+        if(isCategorical2(i))
           setNA_impl2(i);
-          rerun = true;
-        }
     }
-    if( rerun ) { _naCnt = -1;  type(); } // Re-run rollups after dropping all numbers/categoricals
+    if( _ds != null && _ms != null ) {
+      assert _type == Vec.T_UUID:"expected type UUID, got " + Vec.TYPE_STR[_type];
+      return chunkUUID();
+    }
+    if(_ds != null){
+      boolean isInt = true;
+      _nzCnt = 0;
+      _naCnt = 0;
+      for(int i = 0 ; i < _ds.length; ++i) {
+        isInt &= (long)_ds[i] == _ds[i];
+        if(Double.isNaN(_ds[i])) ++_naCnt;
+        else if(_ds[i] != 0) ++_nzCnt;
+      }
+    } else {
+      _naCnt = _missing == null?0:_missing.cardinality();
+      _nzCnt = _ms._nzs;
+    }
+
 
     boolean sparse = false;
     boolean na_sparse = false;
@@ -992,8 +1006,7 @@ public class NewChunk extends Chunk {
       cancel_sparse();
     
     // If the data is UUIDs there's not much compression going on
-    if( _ds != null && _ms != null )
-      return chunkUUID();
+
     // cut out the easy all NaNs case; takes care of constant na_sparse
     if(_naCnt == _len) return new C0DChunk(Double.NaN,_len);
     // If the data was set8 as doubles, we do a quick check to see if it's

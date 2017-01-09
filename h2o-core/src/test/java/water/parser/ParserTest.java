@@ -33,7 +33,7 @@ public class ParserTest extends TestUtil {
     DKV.put(k,bv,fs);
     for( int i = 0; i < data.length; ++i ) {
       Key ck = bv.newChunkKey(i);
-      DKV.put(ck, new Value(ck,new DBlock(new C1NChunk(data[i].getBytes()))),fs);
+      DKV.put(ck, new Value(ck,new C1NChunk(data[i].getBytes())),fs);
     }
     fs.blockForPending();
     return k;
@@ -862,11 +862,11 @@ public class ParserTest extends TestUtil {
       Assert.assertEquals("Frame columns", 3, f.numCols());
 
       VecAry vecs = f.vecs();
-      Assert.assertEquals("1. Column type", Vec.T_NUM, vecs.get_type(0));
-      Assert.assertEquals("2. Column type", Vec.T_NUM, vecs.get_type(1));
+      Assert.assertEquals("1. Column type", Vec.T_NUM, vecs.getType(0));
+      Assert.assertEquals("2. Column type", Vec.T_NUM, vecs.getType(1));
 
 
-      Assert.assertEquals("3. Column type", Vec.T_CAT, vecs.get_type(2));
+      Assert.assertEquals("3. Column type", Vec.T_CAT, vecs.getType(2));
       Assert.assertArrayEquals("3. Column domain", ar("A", "B"), vecs.domain(2));
       int domainLen = vecs.domain(2).length;
       // Verify values in columns

@@ -12,10 +12,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
-import water.fvec.Frame;
-import water.fvec.RebalanceDataSet;
-import water.fvec.Vec;
-import water.fvec.VecAry;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.Triple;
@@ -285,7 +282,7 @@ public class DRFTest extends TestUtil {
               @Override
               int prep(Frame fr) {
                 String[] names = fr.names().clone();
-                VecAry en = fr.remove(new int[]{1,4,5,8});
+                AVecAry en = fr.remove(new int[]{1,4,5,8});
                 fr.add(names[1], VecUtils.toCategoricalVec(en.select(0))); //CAPSULE
                 fr.add(names[4], VecUtils.toCategoricalVec(en.select(1))); //DPROS
                 fr.add(names[5], VecUtils.toCategoricalVec(en.select(2))); //DCAPS

@@ -3,138 +3,235 @@ package water.fvec;
 import water.*;
 import water.util.ArrayUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 
 /**
  * Created by tomas on 10/5/16.
  */
-public class VecAry extends Vec implements Iterable<Vec> {
-  int [] _vecIds;
+public class VecAry extends AVecAry {
   int [] _colFilter; // positive, negative or permuted positive column filter or null
+  int [] _blockOffset;
   // permutation  ChunkAry id -> (flattened) Vec[] id.
-  private transient Vec [] _vecs;
-  private Key _groupKey;
 
   public int _numCols;
   public long _numRows;
 
   public int numCols(){return _numCols;}
-  private VecAry replaceWith(VecAry newSelf){
+
+  private AVecAry replaceWith(VecAry newSelf){
     _vecIds = newSelf._vecIds;
     _colFilter = newSelf._colFilter;
     _vecs = newSelf._vecs;
-    _groupKey = newSelf._groupKey;
+    _key = newSelf._key;
+    _blockOffset = newSelf._blockOffset;
+    _numCols = newSelf._numCols;
+    _numRows = newSelf._numRows;
     return this;
   }
 
 
 
-  private Vec[] fetchVecs(){
-    Vec [] vecs = _vecs;
-    if(_vecs == null) {
-      vecs = new Vec[_vecIds.length];
-      for(int i = 0; i < vecs.length; ++i)
-        vecs[i] = getVec(i);
-      _vecs = vecs;
-    }
-    return vecs;
+  public VecAry(Key<Vec> k, int rowLayout, int numCols){
+    super(k,rowLayout,numCols);
   }
 
   public VecAry(Vec... v){
+    _vecIds = new int[0];
+    _blockOffset = new int[]{0};
     if(v.length == 0){
       _rowLayout = -1;
     } else {
       _rowLayout = v[0]._rowLayout;
-      _groupKey =  v[0].groupKey();
+      _key =  v[0].groupKey();
       _numRows = v[0].length();
-      if (v[0] instanceof VecAry) {
-        replaceWith((VecAry) v[0]);
-      } else _vecIds = new int[v[0].vecId()];
-      _numCols = v[0].numCols();
-      for (int i = 1; i < v.length; ++i)
+      for (int i = 0; i < v.length; ++i)
         append(v[i]);
+      assert _vecIds.length > 0;
     }
   }
-
+  private VecAry(Vec v, int... ids){
+    _key = v.groupKey();
+    _vecIds = new int[]{v.vecId()};
+    _colFilter = ids;
+    _numCols = _colFilter.length;
+    _rowLayout = v._rowLayout;
+    _numRows = v.numRows();
+    _blockOffset = new int[]{0,v.numCols()};
+  }
   private VecAry(Key groupKey, long numRows, int rowLayout,int numCols, int [] vecIds, int [] colFilter){
-    _groupKey = groupKey;
+    _key = groupKey;
     _numRows = numRows;
     _rowLayout = rowLayout;
     _numCols = numCols;
     _vecIds = vecIds;
     _colFilter = colFilter;
+    assert _vecIds.length > 0;
   }
 
-  Vec getVec(int i){
-    Key k = keyTemplate();
-    k._kb[0] = Key.VEC;
-    Vec.setVecId(k,_vecIds[i]);
-    return DKV.getGet(k);
+
+
+  public RollupsAry rollupStats(boolean computeHisto) {
+    Futures fs = new Futures();
+    for(Vec v:vecs()) v.startRollupStats(fs,computeHisto);
+    RollupStats [] rs = new RollupStats[_blockOffset[_blockOffset.length-1]];
+    int i = 0;
+    for(Vec v:vecs()){
+      RollupsAry rsa = v.rollupStats(computeHisto);
+      for(int j = 0; j < v.numCols(); ++j)
+        rs[i++] = rsa.isRemoved(j)?null:rsa.getRollups(j);
+    }
+    if(_colFilter != null) rs = ArrayUtils.select(rs,_colFilter);
+    for(int j = 0 ; j < rs.length; ++j)
+      if(rs[j] == null)
+        throw new IllegalArgumentException("accessing rollups of a removed vec!");
+    return new RollupsAry(rs);
   }
+
+  @Override public long length(){return vecs()[0].length();}
+  @Override long chunk2StartElem( int cidx ) { return _vecs[0].chunk2StartElem(cidx); }
+
+
 
 
   @Override public DBlock chunkIdx(int cidx){
     if(_numCols == 1){ // needed for wrapped vecs, otherwise should not be used
       ChunkAry cary = chunkForChunkIdx(cidx);
-      return new DBlock(cary.getChunk(0));
+      return cary.getChunk(0);
     }
     throw new UnsupportedOperationException();
   }
+
+
   @Override
   public ChunkAry chunkForChunkIdx(int cidx) {
     fetchVecs();
-    Key k = chunkKey(cidx);
-    int s = 0;
-    Chunk [] csall = new Chunk[numCols()];
-    for(int i = 0; i < _vecIds.length;++i) {
-      DBlock db = _vecs[i].chunkIdx(cidx);
-      int n = _vecs[i].numCols();
-      System.arraycopy(db._cs,0,csall,s,n);
-      s += n;
+    if(_vecIds.length == 1) {
+      if(_colFilter == null) return _vecs[0].chunkForChunkIdx(cidx);
+      DBlock db = _vecs[0].chunkIdx(cidx);
+      assert db instanceof DBlock.MultiChunkBlock; // only one vec, so either no colFilter or must be multichunk
+      return new ChunkAry(this,cidx,ArrayUtils.select(((DBlock.MultiChunkBlock) db)._cs,_colFilter),null);
+    } else {
+      int s = 0;
+      Chunk [] csall = new Chunk[_blockOffset[_blockOffset.length - 1]];
+      for (int i = 0; i < _vecIds.length; ++i) {
+        DBlock db = _vecs[i].chunkIdx(cidx);
+        if (db instanceof Chunk) {
+          csall[s++] = (Chunk) db;
+        } else if (db instanceof DBlock.MultiChunkBlock) {
+          int n = _vecs[i].numCols();
+          System.arraycopy(((DBlock.MultiChunkBlock) db)._cs, 0, csall, s, n);
+          s += n;
+        } else
+          throw H2O.unimpl();
+      }
+      return new ChunkAry(this,cidx,_colFilter == null?csall:ArrayUtils.select(csall,_colFilter),null);
     }
-    return new ChunkAry(this,cidx,_colFilter == null?csall:ArrayUtils.select(csall,_colFilter),null);
   }
+
+  @Override public byte getType(int c){
+    if(_colFilter != null) c = _colFilter[c];
+    int vecId = getBlockId(c);
+    int off = c - _blockOffset[vecId];
+    return fetchVecs()[vecId].getType(off);
+  }
+
+
+  @Override protected byte setType(int c, byte t){
+    if(_colFilter != null) c = _colFilter[c];
+    int vecId = getBlockId(c);
+    int off = c - _blockOffset[vecId];
+    return fetchVecs()[vecId].setType(off,t);
+  }
+
+  public String[] domain(int c) {
+    if(_colFilter != null) c = _colFilter[c];
+    int vecId = getBlockId(c);
+    int off = c - _blockOffset[vecId];
+    return fetchVecs()[vecId].domain(off);
+  }
+
+  @Override
+  public RollupsAry tryFetchRollups(){
+    if(_vecIds == null || _vecIds.length == 0)
+      return null;
+    RollupStats [] rs = new RollupStats[numCols()];
+    int i = 0;
+    for(Vec v:vecs()){
+      RollupsAry rsa = v.tryFetchRollups();
+      if(rsa == null) return null;
+      for(int j = 0; j < rsa.numCols(); ++j)
+        rs[i++] = rsa.getRollups(j);
+    }
+    if(_colFilter != null) rs = ArrayUtils.select(rs,_colFilter);
+    return new RollupsAry(rs);
+  }
+
+  @Override public String toString() {
+    if(_vecIds == null || _vecIds.length == 0)
+      return "[empty]";
+    return super.toString();
+  }
+  @Override
+  public Vec setDomain(int c, String [] domain) {
+    if(_colFilter != null) c = _colFilter[c];
+    int vecId = getBlockId(c);
+    int off = c - _blockOffset[vecId];
+    fetchVecs()[vecId].setDomain(off, domain);
+    return this;
+  }
+
+  public void setDomains(String[][] domains) {
+    for(int i = 0; i < numCols(); ++i)
+      setDomain(i,domains[i]);
+  }
+
+  @Override public String[][] domains(){
+    String [][] res = new String[numCols()][];
+    for(int i = 0; i < numCols(); ++i)
+      res[i] = domain(_colFilter == null?i:_colFilter[i]);
+    return res;
+  }
+
 
   @Override // update changed blocks, need to reverse the mapping
   Futures closeChunk(ChunkAry c, Futures fs) {
     int cidx = c._cidx;
-    // columns changed
     Vec [] vecs = fetchVecs();
-    int nextId = 0;
-    int vecId = 0;
-    int nsum = 0;
-    DBlock db = null;
     int [] changedCols = c.changedCols();
-    int [] dstCols = translateIds(changedCols);
-    int [] perm = null;
-    if(!ArrayUtils.isSorted(dstCols)) {
-      Arrays.sort(dstCols);
-      perm = new int[numCols()];
-      Arrays.fill(perm,-1);
-      for(int i = 0; i < _colFilter.length; ++i)
-        perm[_colFilter[i]] = i;
-    }
-    for(int i = 0; i < changedCols.length; ++i) {
-      if(db != null) {
-        DKV.put(vecs[vecId].chunkKey(cidx),db,fs);
-        db = null;
+    if(changedCols.length == 0) return fs;
+    int [] dstCols = _colFilter == null?changedCols:ArrayUtils.select(ArrayUtils.invertedPermutation(_colFilter),changedCols);
+    int lb, ub = _blockOffset[1];
+    int blockId = -1;
+    int i = 0;
+    while(i < dstCols.length){
+      int cid = dstCols[i];
+      blockId = (ub == cid)?blockId+1:getBlockId(cid);
+      lb = _blockOffset[blockId];
+      ub = _blockOffset[blockId+1];
+      int j = i;
+      while(i < dstCols.length && lb <= dstCols[i] && dstCols[i] < ub) i++;
+      Vec v = vecs[blockId];
+      if(v.numCols() == 1) {
+        assert j+1 == i;
+        DKV.put(v.chunkKey(cidx),c.getChunk(changedCols[j]),fs);
+      } else {
+        Key key = vecs[blockId].chunkKey(cidx);
+        DBlock.MultiChunkBlock block = DKV.getGet(key);
+        for(int k = j; k < i; ++k)
+          block.setChunk(dstCols[k] - lb,c.getChunk(changedCols[k]));
+        DKV.put(key,block);
       }
-      int idDst = dstCols[i];
-      int idSrc = perm == null?changedCols[i]:perm[dstCols[i]];
-      while(idDst >= nextId){
-        nsum = nextId;
-        db = DKV.getGet(vecs[vecId].chunkKey(cidx));
-        nextId += vecs[vecId++].numCols();
-      }
-      db.setChunk(idDst - nsum, c.getChunk(idSrc));
     }
-    if(db != null)
-      DKV.put(vecs[vecId].chunkKey(cidx),db,fs);
     return fs;
+  }
+
+  private int getBlockId(int cid) {
+    int blockId;
+    blockId = Arrays.binarySearch(_blockOffset, cid);
+    if (blockId < 0) blockId = -blockId - 2;
+    return blockId;
   }
 
   public void reloadVecs() {
@@ -142,52 +239,43 @@ public class VecAry extends Vec implements Iterable<Vec> {
     fetchVecs();
   }
 
-  // map ids from ChunkAry ids to flattened Vec[] ids
-  private int [] translateIds(int [] ids){
-    if(_colFilter == null) return ids;
-    if(ArrayUtils.isSorted(_colFilter))
-      return ArrayUtils.select(ids,_colFilter);
-    // cols are permuted
-    ids = ids.clone();
-    for(int i = 0; i < ids.length; ++i)
-      ids[i] = _colFilter[ids[i]];
-    return ids;
-  }
 
+  @Override
+  public VecAry selectRange(int from, int to){
+    return select(ArrayUtils.seq(from,to));
+  }
   /**
    * Get (possibly permuted) subset of the vecs.
    * @param idxs ids of the vecs to be selected
    * @return
    */
+  @Override
   public VecAry select(int... idxs) {
-    int [] ids = translateIds(idxs);
-    int [] sortedIs = ids;
-    if(!ArrayUtils.isSorted(ids)){
-      sortedIs = ids.clone();
-      Arrays.sort(sortedIs);
-    }
-    // clean up the blocks not used by the new vec ary
-    Vec [] vecs = fetchVecs();
-    int to = 0;
-    int k = 0, l = 0;
-    int rsum = 0;
-    int [] vecIds = _vecIds.clone();
-    for(int i = 0; i < vecs.length; ++i) {
-      to += vecs[i].numCols();
-      int kstart = k;
-      while(ids[k] < to){
-        sortedIs[k] -= rsum;
-        k++;
+    VecAry res = new VecAry();
+    if(_colFilter != null) idxs = ArrayUtils.select(_colFilter,idxs);
+    int vid = getBlockId(idxs[0]);
+    int off = _blockOffset[vid];
+    ArrayUtils.IntAry ids = new ArrayUtils.IntAry();
+    for(int i = 0; i < idxs.length; ++i){
+      int x = idxs[i];
+      if(numCols() <= x || x < 0)
+        throw new ArrayIndexOutOfBoundsException(x);
+      if(_blockOffset[vid+1] <= x || x < off){
+        if(ids.size() > 0) {
+          res.append(new VecAry(fetchVec(vid), ids.toArray()));
+          ids.clear();
+        }
+        vid = getBlockId(x);
+        off = _blockOffset[vid];
       }
-      if(k - kstart <= 1)  // block is not used => need to subtract vecs from this block
-        rsum += vecs[i].numCols();
-      else vecIds[l++] = _vecIds[i];
+      ids.add(x-off);
     }
-    if(l < _vecIds.length)
-      vecIds = Arrays.copyOf(vecIds,l);
-    return new VecAry(_groupKey, _numRows, _rowLayout,ids.length,vecIds,ids);
+    if(ids.size() > 0)
+      res.append(new VecAry(fetchVecs()[vid],ids.toArray()));
+    return res;
   }
 
+  @Override
   public VecAry remove(int... idxs){
     VecAry res = select(idxs);
     if(!ArrayUtils.isSorted(idxs)) {
@@ -200,12 +288,17 @@ public class VecAry extends Vec implements Iterable<Vec> {
     return res;
   }
 
+  @Override
+  public int nChunks(){return vecs()[0].nChunks();}
+
   /** Remove associated Keys when this guy removes.  For Vecs, remove all
    *  associated Chunks.
    *  @return Passed in Futures for flow-coding  */
   @Override public Futures remove_impl( Futures fs ) {
     if(_colFilter == null){
-      for(Vec v:vecs()) v.remove(fs);
+      for(Vec v:vecs())
+        if(v != null)
+          v.remove(fs);
       return fs;
     }
     Arrays.sort(_vecIds);
@@ -225,7 +318,7 @@ public class VecAry extends Vec implements Iterable<Vec> {
     remove(ids).remove();
   }
 
-  private transient int _x;
+
 
   private int [] vecOffsets(){
     int [] res = new int[_vecIds.length+1];
@@ -235,76 +328,58 @@ public class VecAry extends Vec implements Iterable<Vec> {
     return res;
   }
 
-
-
-  public VecAry append(Vec v){
-    VecAry apndee = (v instanceof VecAry)?(VecAry)v:new VecAry(v);
-    if(_rowLayout == -1) return replaceWith(new VecAry(apndee));
-    if(!checkCompatible(apndee)) throw new IllegalArgumentException("Can not append incompatible vecs");
-
-    if(apndee.numCols() == 1 && apndee._vecIds[0] == _vecIds[_vecIds.length-1])
-      _x = _vecIds[_vecIds.length-1];
+  private AVecAry appendAry(VecAry apndee){
+    if(_vecIds.length == 0) return replaceWith(apndee);
+    int lastVecId = _vecIds[_vecIds.length-1];
     // easy common cases first
-    if(apndee.numCols() == 1 && apndee._vecIds[0] == _vecIds[_x]){
-      if(_colFilter == null) _colFilter = ArrayUtils.seq(0,_numCols);
-      int off = 0;
-      if(_vecIds.length > 1){
-        Vec [] vecs = fetchVecs();
-        for(int i = 0; i < vecs.length-1; ++i)
-          off += vecs[i].numCols();
-      }
-      _colFilter = ArrayUtils.append(_colFilter,(apndee._colFilter == null?0:apndee._colFilter[0])+off);
-      _numCols++;
-      return this;
-    }
-    if(ArrayUtils.maxValue(_vecIds) < ArrayUtils.minValue(apndee._vecIds) || ArrayUtils.minValue(_vecIds) > ArrayUtils.maxValue(apndee._vecIds)){
-      _vecIds = ArrayUtils.join(_vecIds,apndee._vecIds);
-      if(_colFilter != null && apndee._colFilter == null)
-        _colFilter = ArrayUtils.join(_colFilter,ArrayUtils.seq(_numCols,_numCols+ apndee.numCols()));
-      else if(apndee._colFilter != null) {
-        _colFilter = ArrayUtils.join(_colFilter == null?ArrayUtils.seq(0, _numCols):_colFilter, apndee._colFilter);
+    if(_colFilter == null && apndee._colFilter == null) { // no filters, just append the vecIds
+      _vecIds = ArrayUtils.join(_vecIds, apndee._vecIds);
+    } else {
+      if(_colFilter == null) _colFilter = ArrayUtils.seq(0,numCols());
+      int [] apndColFilter = apndee._colFilter == null?ArrayUtils.seq(0,apndee.numCols()):apndee._colFilter;
+      _colFilter = ArrayUtils.append(_colFilter, apndColFilter);
+      if(_vecIdMax < apndee._vecIdMin || _vecIdMin > apndee._vecIdMax) { // strictly non-overlapping
         for(int i = _numCols; i < _colFilter.length; ++i)
           _colFilter[i] += _numCols;
-      }
-      reloadVecs();
-      _numCols += apndee.numCols();
-      return this;
-    }
-    // general append, we have overlapping vecs, colfilter, need to map apndee to this, then join the arrays
-    int vid;
-    int [] thisVecOffsets = vecOffsets();
-    int [] apndeeVecOffsets = apndee.vecOffsets();
-    int k = thisVecOffsets[thisVecOffsets.length-1]; // extra vecs
-    ArrayUtils.IntAry newVecIds = new ArrayUtils.IntAry();
-    outer:
-    for(int i = 0; i < apndeeVecOffsets.length-1; ++i) {
-      vid = apndee._vecIds[i];
-      if (_vecIds[_x] == vid || _vecIds[++_x] == vid){ // cover common case
-        apndeeVecOffsets[i] -= thisVecOffsets[_x];
-        continue;
-      } else for (int j = 0; j < _vecIds.length; ++i) {
-        if (_vecIds[j] == vid) {
-          apndeeVecOffsets[i] -= thisVecOffsets[_x];
-          continue outer;
+      } else {
+        int [] offsetMap = apndee._blockOffset.clone();
+        for(int i = 0; i < apndee._vecIds.length; ++i) {
+          int vid = apndee._vecIds[i];
+          int j = _colFilter.length-1;
+          for(;j >= 0 && _vecIds[j] != vid; j--);
+          if(j < 0) {
+            offsetMap[i] -= apndee._blockOffset[i] + _numCols;
+            _vecIds = ArrayUtils.append(_vecIds,vid);
+          } else
+            offsetMap[i] -= _blockOffset[j];
         }
+        for(int i = _numCols; i < _colFilter.length; ++i)
+          _colFilter[i] -= offsetMap[i];
       }
-      apndeeVecOffsets[i] -= k;
-      k += apndee.vecs()[i].numCols();
-      newVecIds.add(vid);
     }
-    assert _colFilter != null || apndee._colFilter != null:"duplicated vecs?";
-    if(_colFilter == null)
-      _colFilter = ArrayUtils.seq(0,_numCols);
-    if(apndee._colFilter == null)
-      apndee._colFilter = ArrayUtils.seq(0,apndee._numCols);
-    _colFilter = ArrayUtils.join(_colFilter,apndee._colFilter);
-    for(int i = _numCols; i < _colFilter.length; ++i)
-      _colFilter[i] -= apndeeVecOffsets[i-_numCols];
-    if(newVecIds.size() > 0){
-      _vecIds = ArrayUtils.join(_vecIds,newVecIds.toArray());
-      reloadVecs();
+    _numCols += apndee.numCols();
+    return this;
+  }
+  private int _vecIdMax = Integer.MIN_VALUE;
+  private int _vecIdMin = Integer.MAX_VALUE;
+
+  @Override
+  public VecAry append(Vec v){
+    if(!checkCompatible(v)) throw new IllegalArgumentException("Can not append incompatible vecs");
+    if(v instanceof AVecAry) {
+      appendAry((VecAry)v);
+    } else if(_colFilter != null){
+      appendAry(new VecAry(v,ArrayUtils.seq(0,v.numCols())));
+    } else {
+      _vecIds = ArrayUtils.append(_vecIds, v.vecId());
+//      _blockOffset = ArrayUtils.append(_blockOffset,_blockOffset[_blockOffset.length-1]+v.numCols());
+      _numCols += v.numCols();
     }
-    _numCols += apndee._numCols;
+    if(_colFilter != null && _colFilter.length == _blockOffset[_blockOffset.length-1] && ArrayUtils.isSorted(_colFilter))
+      _colFilter = null;
+    assert _colFilter == null || _colFilter.length == _numCols;
+    _vecs = null;
+    _blockOffset = ArrayUtils.append(_blockOffset,_blockOffset[_blockOffset.length-1]+v.numCols());
     return this;
   }
 
@@ -313,26 +388,20 @@ public class VecAry extends Vec implements Iterable<Vec> {
   }
 
   @Override public Key groupKey(){
-    return _rowLayout == -1?null:_groupKey;
+    return _rowLayout == -1?null: _key;
   }
 
-  private int updateNumCols(){
-    if(_colFilter != null) return _numCols = _colFilter.length;
-    fetchVecs();
-    int res = 0;
-    for(Vec v:_vecs) res += v.numCols();
-    return _numCols = res;
-  }
-
+  @Override
   public void swap(int lo, int hi) {
     if(_colFilter == null)
-      _colFilter = ArrayUtils.seq(0,_numCols);
+      _colFilter = ArrayUtils.seq(0, _numCols);
     int loVal = _colFilter[lo];
     int hiVal = _colFilter[hi];
     _colFilter[lo] = hiVal;
     _colFilter[hi] = loVal;
   }
 
+  @Override
   public void moveFirst(int[] cols) {
     int [] colFilter = _colFilter == null?ArrayUtils.seq(0,numCols()):_colFilter;
     _colFilter = MemoryManager.malloc4(numCols());
@@ -344,6 +413,7 @@ public class VecAry extends Vec implements Iterable<Vec> {
         _colFilter[k++] = colFilter[i];
   }
 
+  @Override
   public VecAry replace(int col, Vec nv) {
     if(nv.numCols() != 1) throw new IllegalArgumentException("only 1d vec allowed");
     int newColId = numCols();
@@ -356,24 +426,27 @@ public class VecAry extends Vec implements Iterable<Vec> {
 
   // TODO: remove in the future
   // Not very efficient. I don't want to be fixing all for(Vec v:fr.vecs()) loops right now. Probably should be removed later.
+
+
   @Override
-  public Iterator<Vec> iterator() {
-    return new Iterator<Vec>() {
-      int _id;
-      @Override
-      public boolean hasNext() {
-        return _id < _numCols;
-      }
-
-      @Override
-      public Vec next() {
-        return select(_id++);
-      }
-      @Override public void remove(){throw new UnsupportedOperationException();}
-    };
-  }
-
   public void insertVec(int i, VecAry x) {
-    throw H2O.unimpl();
+    replaceWith(selectRange(0,i).append(x).append(selectRange(i,numCols())));
   }
+
+  public double[] means() {
+    RollupsAry rsa = rollupStats();
+    double [] res = MemoryManager.malloc8d(rsa.numCols());
+    for(int i = 0; i < rsa.numCols(); ++i)
+      res[i] = rsa.getRollups(i)._mean;
+    return res;
+  }
+
+  public double [] sds() {
+    RollupsAry rsa = rollupStats();
+    double [] res = MemoryManager.malloc8d(rsa.numCols());
+    for(int i = 0; i < rsa.numCols(); ++i)
+      res[i] = rsa.getRollups(i)._sigma;
+    return res;
+  }
+
 }

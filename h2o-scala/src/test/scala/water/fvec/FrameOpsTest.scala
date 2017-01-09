@@ -42,9 +42,9 @@ class FrameOpsTest extends TestUtil {
       Assert.assertEquals(f1.numRows(), subframe.numRows())
 
       // Transform 'name' column to string type
-      Assert.assertEquals(Vec.T_CAT, f1.vec("name").get_type())
-      f1((name, vec) => vec.toStringVec, (name, vec) => name == "name" && vec.get_type() == Vec.T_CAT)
-      Assert.assertEquals(Vec.T_STR, f1.vec("name").get_type())
+      Assert.assertEquals(Vec.T_CAT, f1.vec("name").getType())
+      f1((name, vec) => vec.toStringVec, (name, vec) => name == "name" && vec.getType() == Vec.T_CAT)
+      Assert.assertEquals(Vec.T_STR, f1.vec("name").getType())
     } finally {
       f1.delete()
       subframe.delete()

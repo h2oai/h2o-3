@@ -7,7 +7,6 @@ import water.Key;
 import water.MRTask;
 
 import java.util.Arrays;
-import java.util.Iterator;
 
 /**
  *  Created by tomasnykodym on 3/28/14.
@@ -80,7 +79,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
     }
     final int rowLayout = Vec.ESPC.rowLayout(_vg._key,espc);
     final VecAry srcVecs = _in.vecs();
-    _out = new Frame(_okey,_in.names(), new Vec(_vg.addVec(),rowLayout,1).makeCons(srcVecs.numRows(),0L,_in.domains(),_in.types()));
+    _out = new Frame(_okey,_in.names(), new Vec(_vg.addVec(),rowLayout,1).makeCons(srcVecs.numCols(),0L,_in.domains(),_in.types()));
     _out.delete_and_lock(_jobKey);
     new RebalanceTask(this,srcVecs).dfork(_out);
   }
@@ -108,7 +107,7 @@ public class RebalanceDataSet extends H2O.H2OCountedCompleter {
       int N = chks._len;
       NewChunk [] ncs = new NewChunk[chks._numCols];
       for(int i = 0; i < ncs.length; ++i)
-        ncs[i] = new NewChunk(_srcVecs.get_type(i));
+        ncs[i] = new NewChunk(_srcVecs.getType(i));
       int len = 0;
       while(N > len) {
         ChunkAry srcRaw = _srcVecs.chunkForRow(chks._start+ len);

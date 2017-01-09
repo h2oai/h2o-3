@@ -1,6 +1,7 @@
 package water.fvec;
 
 import water.Futures;
+import water.H2O;
 import water.Iced;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
@@ -21,6 +22,15 @@ public class ChunkAry<C extends Chunk> extends Iced {
   int [] _ids;
 
   public ChunkAry(Vec v,int cidx, C... cs){this(v,cidx,cs,null);}
+  public ChunkAry(int cidx, int len, C... cs){
+    _vec = null;
+    _cidx = cidx;
+    _start = -1;
+    _len = len;
+    _numCols = cs.length;
+    _cs = cs;
+    _ids = null;
+  }
   public ChunkAry(Vec v,int cidx, C [] cs, int [] ids){
     _vec = v;
     _cidx = cidx;
@@ -67,7 +77,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
   }
   public NewChunk getChunkInflated(int c){
     if(!(_cs[c] instanceof NewChunk))
-      _cs[c] = (C)_cs[c].inflate_impl(new NewChunk(_vec.get_type(c)));
+      _cs[c] = (C)_cs[c].inflate_impl(new NewChunk(_vec.getType(c)));
     return (NewChunk) _cs[c];
   }
 
@@ -88,7 +98,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public final double set(int i, int j, double d){
     setWrite(j);
     if(!_cs[j].set_impl(i,d)){
-      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.get_type(j)));
+      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.getType(j)));
       _cs[j].set_impl(i,d);
     }
     return d;
@@ -97,7 +107,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
   public long set(int i, int j, long l){
     setWrite(j);
     if(!_cs[j].set_impl(i,l)){
-      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.get_type(j)));
+      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.getType(j)));
       _cs[j].set_impl(i,l);
     }
     return l;
@@ -243,6 +253,15 @@ public class ChunkAry<C extends Chunk> extends Iced {
   }
   public int sparseLenZero(){return sparseLenZero(0);}
 
+  public int sparseLenNA(int c) {
+    if(_ids != null){
+      int j = Arrays.binarySearch(_ids,c);
+      return j >= 0?_cs[j].sparseLenNA():0;
+    }
+    return _cs[c].sparseLenZero();
+  }
+  public int sparseLenNA(){return sparseLenNA(0);}
+
 
   public boolean isSparseNA(int c){
     if(_ids != null){
@@ -285,7 +304,7 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   public void setInflated(int i, int j, DVal v){
     if(!_cs[j].setInflated(i,v)){
-      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.get_type(j)));
+      _cs[j] = (C)_cs[j].inflate_impl(new NewChunk(_vec.getType(j)));
       _cs[j].setInflated(i,v);
     }
   }
@@ -297,5 +316,16 @@ public class ChunkAry<C extends Chunk> extends Iced {
 
   public double[] getDoubles(int c, double[] vals, int from, int to) {
     return _cs[c].getDoubles(vals,from,to);
+  }
+
+  public DBlock copyIntoNewBlock() {
+    if(_cs.length == 1)
+      return _cs[0].deepCopy();
+    Chunk [] cs = _cs.clone();
+    for(int i =0 ; i < cs.length; ++i)
+      cs[i] = cs[i].deepCopy();
+    if(_ids != null) // sparse
+      throw H2O.unimpl();
+    return new DBlock.MultiChunkBlock(cs);
   }
 }

@@ -15,7 +15,7 @@ public class RollupsAry extends Iced {
 
   private enum State {ready, computing, mutating};
 
-  private final RollupStats [] _rs;
+  protected final RollupStats [] _rs;
   private final IcedBitSet _removed;
   public transient final ForkJoinTask _tsk;
   public long _checksum;
@@ -70,8 +70,9 @@ public class RollupsAry extends Iced {
 
 
   public boolean isReady(Vec v,boolean computeHisto){
+    if(_rs == null) return false;
     for(int i = 0; i < _rs.length; ++i){
-      if(_rs[i] == null || _rs[i].isComputing() || !isRemoved(i) && computeHisto && computeHisto(v._types[i]) && !_rs[i].hasHisto())
+      if(_rs == null || _rs[i] == null || _rs[i].isComputing() || !isRemoved(i) && computeHisto && computeHisto(v._types[i]) && !_rs[i].hasHisto())
         return false;
     }
     return true;

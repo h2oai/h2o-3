@@ -22,7 +22,7 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   @Override public void addNumCol(int colIdx, long number, int exp) {
     assert colIdx >= _col;
     if(colIdx >= _vecs.numCols()) addColumns(colIdx+1);
-    _nvs.addZeros(colIdx,(int)(_nLines - _nvs.len(colIdx)));
+    _nvs.addZeros(colIdx,(_nLines - _nvs.len(colIdx)));
     _nvs.addNum(colIdx,number, exp);
     _col = colIdx+1;
   }
@@ -36,7 +36,7 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   @Override public FVecParseWriter close(Futures fs) {
     if (_nvs != null) {
       for (int i = 0; i < _nvs._numCols; ++i)
-        _nvs.addZeros(i, (int) (_nLines - _nvs.len(i)));
+        _nvs.addZeros(i, _nLines - _nvs.len(i));
       _nCols = _nvs._numCols;
     }
     return super.close(fs);

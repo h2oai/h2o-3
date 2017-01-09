@@ -229,12 +229,12 @@ public class Merge {
     final String[][] doms = new String[numColsInResult][];
     final String[] names = new String[numColsInResult];
     for (int j=0; j<numLeftCols; j++) {
-      types[j] = leftFrame.vecs().get_type(j);
+      types[j] = leftFrame.vecs().getType(j);
       doms[j] = leftFrame.domains()[j];
       names[j] = leftFrame.names()[j];
     }
     for (int j=0; j<riteFrame.numCols()-numJoinCols; j++) {
-      types[numLeftCols + j] = riteFrame.vecs().get_type(j+numJoinCols);
+      types[numLeftCols + j] = riteFrame.vecs().getType(j+numJoinCols);
       doms[numLeftCols + j] = riteFrame.domains()[j+numJoinCols];
       names[numLeftCols + j] = riteFrame.names()[j+numJoinCols];
     }

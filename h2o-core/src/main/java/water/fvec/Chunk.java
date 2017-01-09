@@ -105,7 +105,7 @@ public void map( Chunk[] chks ) {                  // Map over a set of same-num
 }}</pre>
  */
 
-public abstract class Chunk extends Iced<Chunk> {
+public abstract class Chunk extends DBlock {
   /** The Big Data.  Frequently set in the subclasses, but not otherwise a publically writable field. */
   byte[] _mem;
   public int len(){return _len;}
@@ -383,4 +383,22 @@ public abstract class Chunk extends Iced<Chunk> {
   public abstract DVal getInflated(int i, DVal v);
   public boolean setInflated(int i, DVal v){ return false;}
 
+  public void removeChunks(int [] ids){
+    if(ids.length != 1 || ids[0] != 0)
+      throw new IndexOutOfBoundsException();
+
+  }
+  @Override public int numCols(){return 1;}
+
+  @Override public Chunk subRange(int off, int to){
+    if(off != 0 || to != 1) throw new IndexOutOfBoundsException();
+    return this;
+  }
+
+  @Override
+  public Chunk getColChunk(int c){
+    if(c != 0) throw new ArrayIndexOutOfBoundsException(c);
+    return this;
+  }
+  @Override public ChunkAry chunkAry(Vec v, int cidx){return new ChunkAry(v,cidx,this);}
 }

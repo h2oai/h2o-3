@@ -4,7 +4,6 @@ import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.*;
-import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
@@ -32,7 +31,7 @@ public class VecUtils {
    *  @return the resulting categorical Vec
    */
   public static Vec toCategoricalVec(Vec src) {
-    switch (src.get_type(0)) {
+    switch (src.getType(0)) {
       case Vec.T_CAT:
         return src.makeCopy(new String[][]{src.domain(0)});
       case Vec.T_NUM:
@@ -137,7 +136,7 @@ public class VecUtils {
    *  @return the resulting numeric {@link Vec}
    */
   public static Vec toNumericVec(Vec src) {
-    switch (src.get_type(0)) {
+    switch (src.getType(0)) {
       case Vec.T_CAT:
         return categoricalToInt(src);
       case Vec.T_STR:
@@ -252,7 +251,7 @@ public class VecUtils {
    *  @return the resulting string {@link Vec}
    */
   public static Vec toStringVec(Vec src) {
-    switch (src.get_type(0)) {
+    switch (src.getType(0)) {
       case Vec.T_STR:
         return src.makeCopy();
       case Vec.T_CAT:

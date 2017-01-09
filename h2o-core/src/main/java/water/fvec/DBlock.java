@@ -1,59 +1,51 @@
 package water.fvec;
 
 
+import water.Freezable;
 import water.Iced;
+import water.Key;
 
 import java.util.Arrays;
 
 /**
  * Created by tomas on 10/6/16.
  */
-public class DBlock extends Iced<DBlock> {
-  int _numCols;
-  int _numRows;
-  Chunk [] _cs; // chunks containing the data
-  int [] _ids;  // ids of non-zero chunks, null if not sparse
-  public DBlock(Chunk... c){this(c,null);}
-  public DBlock(Chunk [] cs, int [] id){
-    _cs = cs;
-    _ids = id;
-  }
+public abstract class DBlock extends Iced<DBlock> {
+  public boolean isColumnBased() {return true;}
+  public abstract Chunk getColChunk(int c);
+  public abstract ChunkAry chunkAry(Vec v, int cidx);
 
-  public void removeChunks(int [] ids){
-    if(_ids != null)
-      cancelSparse();
-    for(int id:ids)
-      _cs[id] = null;
-  }
+  public abstract int numCols();
 
-  private void cancelSparse(){
-    Chunk [] ncs = new Chunk[_numCols];
-    for(int k = 0; k < _numCols; ++k)
-      ncs[k] = new C0DChunk(0,0);
-    for(int k = 0; k < _ids.length; ++k)
-      ncs[_ids[k]] = _cs[k];
-    _cs = ncs;
-    _ids = null;
-  }
-  public void setChunk(int i, Chunk chunk) {
-    if(_ids != null){
-      int j = Arrays.binarySearch(_ids,i);
-      if(j >= 0){
-        _cs[j] = chunk;
-        return;
-      }
-      // else cancel sparse
-      cancelSparse();
+  public abstract DBlock subRange(int off, int to);
+
+  public static class MultiChunkBlock extends DBlock  {
+    final Chunk [] _cs;
+    public MultiChunkBlock(Chunk [] cs){_cs = cs;}
+
+    @Override
+    public Chunk getColChunk(int c) {return _cs[c];}
+
+    public void setChunk(int i, Chunk c){_cs[i] = c;}
+    @Override
+    public ChunkAry chunkAry(Vec v, int cidx) {return new ChunkAry(v,cidx,_cs);}
+
+    @Override
+    public int numCols() {return _cs.length;}
+
+    @Override
+    public MultiChunkBlock subRange(int off, int to) {
+      return new MultiChunkBlock(Arrays.copyOfRange(_cs,off,to));
     }
-    _cs[i] = chunk;
+
+    public void removeChunks(int[] ids) {
+      for(int i:ids)_cs[i] = null;
+    }
   }
 
-  public int numCols() {return _numCols;}
 
-  public Chunk getChunk(int c) {
-    if(_ids != null && (c = Arrays.binarySearch(_ids,c)) < 0)
-      return new C0DChunk(0,_numRows);
-    return _cs[c];
-  }
+
 
 }
+
+

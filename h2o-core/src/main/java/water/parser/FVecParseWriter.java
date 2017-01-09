@@ -15,7 +15,7 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   protected transient NewChunkAry _nvs;
   protected transient final Categorical [] _categoricals;
   protected transient final byte[] _ctypes;
-  long _nLines;
+  int _nLines;
   int _nCols;
   int _col = -1;
   final int _cidx;

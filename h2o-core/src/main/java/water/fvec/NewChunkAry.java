@@ -1,5 +1,7 @@
 package water.fvec;
 
+import water.DKV;
+import water.Futures;
 import water.H2O;
 import water.parser.BufferedString;
 
@@ -46,7 +48,7 @@ public class NewChunkAry extends ChunkAry<NewChunk> {
     _cs[c].setDoubles(vals);
   }
 
-  public long len(int c) {return _cs[c]._len;}
+  public int len(int c) {return _cs[c]._len;}
 
   public void addNumCols(int n){
     int oldN = _cs.length;
@@ -65,6 +67,15 @@ public class NewChunkAry extends ChunkAry<NewChunk> {
     }
   }
 
+  @Override
+  public Futures close(Futures fs){
+    Chunk [] cs = new Chunk[_cs.length];
+    int len = _cs[0].len();
+    for(int i = 0; i < _cs.length; ++i)
+      cs[i] = _cs[i].compress();
+    _cs = null;
+    return _vec.closeChunk(_cidx,len,cs.length == 1?cs[0]:new DBlock.MultiChunkBlock(cs),fs);
+  }
   public void addInflated(int c, DVal inflated) {
     _cs[c].addInflated(inflated);
   }

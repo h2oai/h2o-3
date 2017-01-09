@@ -65,7 +65,7 @@ public class TransformWrappedVec extends WrappedVec {
 
   @Override
   public DBlock chunkIdx(int cidx) {
-    return new DBlock(new TransformWrappedChunk(_fun, this, _masterVecs.chunkForChunkIdx(cidx)));
+    return new TransformWrappedChunk(_fun, this, _masterVecs.chunkForChunkIdx(cidx));
   }
 
   public static class TransformWrappedChunk extends Chunk {

@@ -5,7 +5,6 @@ import water.fvec.*;
 import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.Merge;
-import water.rapids.Val;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.ast.AstPrimitive;
@@ -102,7 +101,7 @@ public class AstMerge extends AstPrimitive {
     for (int i = 0; i < ncols; i++) {
 //        Vec lv = l.vecs()[i];
 //        Vec rv = r.vecs()[i];
-        if (lv.get_type(i) != rv.get_type(i))
+        if (lv.getType(i) != rv.getType(i))
           throw new IllegalArgumentException("Merging columns must be the same type, column " + l._names[ncols] +
               " found types " + lv.get_type_str(i) + " and " + rv.get_type_str(i));
         if (lv.isString(i))
@@ -394,7 +393,7 @@ public class AstMerge extends AstPrimitive {
       else nc.addNum(c.at8(row), 0);
     }
     protected static void addElem(NewChunk nc, Vec v, long absRow, BufferedString bStr) {
-      switch (v.get_type(0)) {
+      switch (v.getType(0)) {
         case Vec.T_NUM:
           nc.addNum(v.at(absRow));
           break;
@@ -468,7 +467,7 @@ public class AstMerge extends AstPrimitive {
     public void map(ChunkAry chks, NewChunkAry nchks) {
       // Shared common hash map
       final IcedHashMap<Row, String> rows = _rows;
-      VecAry vecs = _hashed.vecs(); // Data source from hashed set
+      AVecAry vecs = _hashed.vecs(); // Data source from hashed set
 //      assert vecs.length == _ncols + nchks.length;
       Row row = new Row(_ncols);   // Recycled Row object on the bigger dataset
       BufferedString bStr = new BufferedString(); // Recycled BufferedString
@@ -488,7 +487,7 @@ public class AstMerge extends AstPrimitive {
       }
     }
 
-    void addRow(NewChunkAry nchks, ChunkAry chks, VecAry vecs, int relRow, long absRow, BufferedString bStr) {
+    void addRow(NewChunkAry nchks, ChunkAry chks, AVecAry vecs, int relRow, long absRow, BufferedString bStr) {
       int c = 0;
       for (; c < chks._numCols; ++c) addElem((NewChunk)nchks.getChunk(c), chks.getChunk(c), relRow,bStr);
       for (; c < nchks._numCols; ++c) addElem((NewChunk)nchks.getChunk(c), vecs.select(c - chks._numCols + _ncols), absRow, bStr);

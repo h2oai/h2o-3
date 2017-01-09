@@ -20,6 +20,11 @@ public class ArrayUtils {
     Arrays.fill(ary,b);
     return ary;
   }
+  public static double [] makeConst(int sz, double d){
+    double [] ary = MemoryManager.malloc8d(sz);
+    Arrays.fill(ary,d);
+    return ary;
+  }
   // Sum elements of an array
   public static long sum(final long[] from) {
     long result = 0;
@@ -1595,6 +1600,10 @@ public class ArrayUtils {
       if(ids[i-1] > ids[i]) return false;
     return true;
   }
+  public static int [] sorted(int[] ids) {
+    Arrays.sort(ids);
+    return ids;
+  }
   public static int [] reversePermutation(int [] perm){
     int [] rperm = perm.clone();
     for(int i = 0; i < perm.length; ++i)
@@ -1607,7 +1616,7 @@ public class ArrayUtils {
     int [] res = MemoryManager.malloc4(N-idxs.length);
     int k = 0,l = 0;
     for(int i = 0; i < N; ++i){
-      if(i == idxs[k]) k++;
+      if(k < idxs.length && i == idxs[k]) k++;
       else res[l++] = i;
     }
     return res;
@@ -1618,6 +1627,13 @@ public class ArrayUtils {
     System.arraycopy(names,0,res,0,i);
     res[i] = x;
     System.arraycopy(names,i,res,i+1,names.length-i);
+    return res;
+  }
+
+  public static int[] invertedPermutation(int[] colFilter) {
+    int [] res = new int[colFilter.length];
+    for(int i = 0; i < res.length; ++i)
+      res[colFilter[i]] = i;
     return res;
   }
 
@@ -1635,5 +1651,7 @@ public class ArrayUtils {
     }
     public int size(){return _sz;}
     public int[] toArray(){return Arrays.copyOf(_ary,_sz);}
+
+    public void clear() {_sz = 0;}
   }
 }

@@ -2,8 +2,6 @@ package water.parser;
 
 import com.google.common.base.Charsets;
 import jsr166y.CountedCompleter;
-import jsr166y.ForkJoinTask;
-import jsr166y.RecursiveAction;
 import water.*;
 import water.H2O.H2OCountedCompleter;
 import water.exceptions.H2OIllegalArgumentException;
@@ -198,6 +196,7 @@ public final class ParseDataset {
 
     // Took a crash/NPE somewhere in the parser.  Attempt cleanup.
     @Override public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller){
+      ex.printStackTrace();
       parseCleanup();           // Can get called many tims
       return true;
     }
@@ -256,7 +255,7 @@ public final class ParseDataset {
     int n = 0;
     int[] ecols2 = new int[avs.numCols()];
     for( int i = 0; i < avs.numCols(); ++i )
-      if( avs.get_type(i)==Vec.T_CAT  ) // Intended type is categorical (even though no domain has been set)?
+      if( avs.getType(i)==Vec.T_CAT  ) // Intended type is categorical (even though no domain has been set)?
         ecols2[n++] = i;
     final int[] ecols = Arrays.copyOf(ecols2, n);
     // If we have any, go gather unified categorical domains
@@ -291,7 +290,7 @@ public final class ParseDataset {
       if (!setup.getParseType().isDomainProvided) {
         // Update categoricals to the globally agreed numbering
         VecAry evecs = fr.vecs(ecols);
-
+        System.out.println(evecs.toString());
         job.update(0, "Unifying categorical domains across nodes.");
         {
           // new CreateParse2GlobalCategoricalMaps(mfpt._cKey).doAll(evecs);
@@ -1062,7 +1061,7 @@ public final class ParseDataset {
       String meanStr="";
       String sigmaStr="";
 
-      switch( vecArr.get_type(i) ) {
+      switch( vecArr.getType(i) ) {
         case Vec.T_BAD :   typeStr = "all_NA" ;  minStr = "";  maxStr = "";  break;
         case Vec.T_UUID:  typeStr = "UUID"   ;  minStr = "";  maxStr = "";  break;
         case Vec.T_STR :  typeStr = "string" ;  minStr = "";  maxStr = "";  break;

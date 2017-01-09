@@ -155,7 +155,7 @@ public class CreateFrameTest extends TestUtil {
     frame1.toString();
     frame2.toString();
     for (int i=0;i<frame1.numCols();++i) {
-      Assert.assertTrue(frame1.vecs().get_type(i)==frame2.vecs().get_type(i));
+      Assert.assertTrue(frame1.vecs().getType(i)==frame2.vecs().getType(i));
     }
 
     frame1.delete();

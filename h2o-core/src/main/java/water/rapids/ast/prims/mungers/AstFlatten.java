@@ -34,7 +34,7 @@ public class AstFlatten extends AstPrimitive {
     Frame fr = stk.track(asts[1].exec(env)).getFrame();
     if (fr.numCols() != 1 || fr.numRows() != 1) return new ValFrame(fr); // did not flatten
     Vec vec = fr.anyVec();
-    switch (vec.get_type(0)) {
+    switch (vec.getType(0)) {
       case Vec.T_BAD:
       case Vec.T_NUM:
         return new ValNum(vec.at(0));

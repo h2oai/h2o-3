@@ -112,8 +112,8 @@ public class AstRectangleAssign extends AstPrimitive {
     VecAry dvecs = dst.vecs();
     final VecAry svecs = src.vecs();
     for (int col = 0; col < cols.length; col++) {
-      int dtype = dvecs.get_type(cols[col]);
-      if (dtype != svecs.get_type(col))
+      int dtype = dvecs.getType(cols[col]);
+      if (dtype != svecs.getType(col))
         throw new IllegalArgumentException("Columns must be the same type; " +
                 "column " + col + ", \'" + dst._names[cols[col]] + "\', is of type " + dvecs.get_type_str(cols[col]) +
                 " and the source is " + svecs.get_type_str(col));
@@ -134,7 +134,7 @@ public class AstRectangleAssign extends AstPrimitive {
       return;
     }
     // Handle large case
-    VecAry vecs = ses.copyOnWrite(dst, cols);
+    AVecAry vecs = ses.copyOnWrite(dst, cols);
     VecAry vecs2 = vecs.select(cols);
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new AssignFrameFrameTask(rows, svecs).doAll(vecs2);
@@ -190,7 +190,7 @@ public class AstRectangleAssign extends AstPrimitive {
       return;
     }
     // Handle large case
-    VecAry vecs = ses.copyOnWrite(dst, cols);
+    AVecAry vecs = ses.copyOnWrite(dst, cols);
     VecAry vecs2 = vecs.select(cols); // Just the selected columns get updated
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new AssignFrameScalarTask(rows, src).doAll(vecs2);
@@ -216,7 +216,7 @@ public class AstRectangleAssign extends AstPrimitive {
   private void assign_frame_scalar(Frame dst, int[] cols, AstNumList rows, String src, Session ses) {
     // Check for needing to copy before updating
     // Handle fast small case
-    VecAry dvecs = dst.vecs();
+    AVecAry dvecs = dst.vecs();
     long nrows = rows.cnt();
     if( nrows==1 ) {
       long drow = (long)rows.expand()[0];
@@ -226,7 +226,7 @@ public class AstRectangleAssign extends AstPrimitive {
     }
 
     // Handle large case
-    VecAry vecs = ses.copyOnWrite(dst, cols);
+    AVecAry vecs = ses.copyOnWrite(dst, cols);
     VecAry vecs2 = vecs.select(cols); // Just the selected columns get updated
     rows.sort();                // Side-effect internal sort; needed for fast row lookup
     new AssignFrameStringScalarTask(rows, src).doAll(vecs2);

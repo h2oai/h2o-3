@@ -30,32 +30,31 @@ public class AppendableVec extends Vec {
     super( key, -1/*no rowLayout yet*/, null, types );
     _tmp_espc = tmp_espc;
     _chunkOff = chunkOff;
-    _blocks = new int[]{numCols()};
+    _blocks = new int[]{Integer.MAX_VALUE};
   }
   public AppendableVec setBlocks(int [] blocks){_blocks = blocks; return this;}
   // A NewVector chunk was "closed" - completed.  Add it's info to the roll-up.
   // This call is made in parallel across all node-local created chunks, but is
   // not called distributed.
 
-  @Override Futures closeChunk(ChunkAry ncs, Futures fs) {
+  @Override Futures closeChunk(int cidx, int len, DBlock db, Futures fs) {
     // The Parser will pre-allocate the _tmp_espc large enough (the Parser
     // knows how many final Chunks there will be up front).  Other users are
     // encouraged to set a "large enough" espc - and a shared one at that - to
     // avoid these copies.
-    int cidx = ncs._cidx;
     int off = 0;
-    int vecId = vecId();
     for(int i = 0; i < _blocks.length; ++i) {
-      Chunk [] cs = Arrays.copyOfRange(ncs._cs,off,off+_blocks[i]);
-      Key k = Vec.setVecId(newChunkKey(cidx),vecId+i);
-      DKV.put(k, new DBlock(cs), fs);
+      if(_blocks[i] == 1)
+        DKV.put(vecs()[i].chunkKey(cidx), db.getColChunk(off), fs);
+      else
+        DKV.put(vecs()[i].chunkKey(cidx), db.subRange(off,Math.min(db.numCols(),off + _blocks[i])), fs);
     }
-    _numCols = Math.max(ncs._cs.length,_numCols);
+    _numCols = Math.max(db.numCols(),_numCols);
     // Set the length into the temp ESPC at the Chunk index (accounting for _chunkOff)
     cidx -= _chunkOff;
     while( cidx >= _tmp_espc.length ) // should not happen if espcs are preallocated and shared!
       _tmp_espc = Arrays.copyOf(_tmp_espc, _tmp_espc.length<<1);
-    _tmp_espc[cidx] = ncs._len;
+    _tmp_espc[cidx] = len;
     return fs;
   }
 
@@ -65,8 +64,14 @@ public class AppendableVec extends Vec {
     Futures fs = new Futures();
     int row_layout = compute_rowLayout();
     Vec [] res = new Vec[_blocks.length];
-    for(int i = 0; i < _blocks.length; ++i)
-      DKV.put(res[i] = new Vec(vg.vecKey(idStart + i), row_layout, new String[_blocks[i]][], _types),fs);
+    int sum = 0;
+    for(int i = 0; i < _blocks.length; ++i) {
+      int bsz = Math.min(_numCols-sum,_blocks[i]);
+      DKV.put(res[i] = new Vec(vg.vecKey(idStart + i), row_layout, domains() == null?null:Arrays.copyOfRange(domains(),sum,sum+bsz), Arrays.copyOfRange(_types,sum,sum+bsz)), fs);
+      sum += bsz;
+      _blocks[i] = bsz;
+    }
+    assert sum == _numCols;
     fs.blockForPending();
     return res;
   }
@@ -113,11 +118,6 @@ public class AppendableVec extends Vec {
     espc[nchunk]=x;             // Total element count in last
     return ESPC.rowLayout(_key,espc);
   }
-  public final void setDomains(String[][] domains) {
-    _domains = domains;
-    for(int i = 0; i < _types.length; ++i)
-      assert (_domains[i] != null) == (_types[i] == Vec.T_CAT);
-  }
   // "Close" out a NEW vector - rewrite it to a plain Vec that supports random
   // reads, plus computes rows-per-chunk, min/max/mean, etc.
   public Vec close(int rowLayout, Futures fs) {
@@ -129,7 +129,7 @@ public class AppendableVec extends Vec {
       DKV.remove(chunkKey(nchunk),fs); // remove potential trailing key
     }
     // Replacement plain Vec for AppendableVec.
-    Vec vec = new Vec(_key, rowLayout, _domains, _types);
+    Vec vec = new Vec(_key, rowLayout, domains(), _types);
     DKV.put(_key,vec,fs);       // Inject the header into the K/V store
     return vec;
   }
@@ -148,7 +148,7 @@ public class AppendableVec extends Vec {
   @Override public long length() { throw H2O.fail(); }
   @Override public int nChunks() { throw H2O.fail(); }
   @Override public int elem2ChunkIdx( long i ) { throw H2O.fail(); }
-  @Override protected long chunk2StartElem( int cidx ) { throw H2O.fail(); }
+  @Override protected long chunk2StartElem( int cidx ) { return -1; }
   @Override public long byteSize() { return 0; }
   @Override public String toString() { return "[AppendableVec, unknown size]"; }
 }
