@@ -46,7 +46,7 @@ public abstract class GhostFrame extends Val {
    * row-by-row computation at the same position as you put them into the
    * list of {@code inputs}.
    */
-  protected abstract void prepareInputs(List<Vec> inputs);
+  public abstract void prepareInputs(List<Vec> inputs);
 
 
   /**
@@ -61,7 +61,7 @@ public abstract class GhostFrame extends Val {
    * <p> If your {@code GhostFrame} depends on 1 or more other {@code GhostFrame}s, you
    * should call their {@code preparePerChunk()} methods recursively.
    */
-  protected abstract void preparePerChunk(Chunk[] cs);
+  public abstract void preparePerChunk(Chunk[] cs);
 
 
   /**
@@ -109,6 +109,7 @@ public abstract class GhostFrame extends Val {
     }
 
     MaterializationTask mtask = new MaterializationTask(numericOutputs, stringOutputs);
+    // TODO: ensure that inputVecs are compatible
     Frame res = mtask.doAll(outputTypes, inputVecs)
                      .outputFrame(scope.<Frame>mintKey(), outputNames, null);
 
@@ -181,6 +182,19 @@ public abstract class GhostFrame extends Val {
       }
     }
     return -1;
+  }
+
+
+  /**
+   * Return true if all columns in the frame are numeric.
+   */
+  public boolean isNumeric() {
+    int ncols = numCols();
+    for (int i = 0; i < ncols; i++) {
+      if (type(i) != Vec.T_NUM)
+        return false;
+    }
+    return true;
   }
 
 }

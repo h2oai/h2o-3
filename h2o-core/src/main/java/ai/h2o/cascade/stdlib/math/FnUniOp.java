@@ -41,23 +41,18 @@ public abstract class FnUniOp extends StdlibFunction {
       }
     }
 
-    @Override
-    public int numCols() {
+    @Override public int numCols() {
       return ncols;
     }
-
-    @Override
-    public byte type(int i) {
+    @Override public byte type(int i) {
       return Vec.T_NUM;
     }
-
-    @Override
-    public String name(int i) {
+    @Override public String name(int i) {
       return func.name() + "(" + parent.name(i) + ")";
     }
+    @Override public boolean isNumeric() { return true; }
 
-    @Override
-    public double getNumValue(int i, int j) {
+    @Override public double getNumValue(int i, int j) {
       return func.apply(parent.getNumValue(i, j));
     }
   }
@@ -79,9 +74,10 @@ public abstract class FnUniOp extends StdlibFunction {
     @Override public String name(int i) {
       return funcName + "(" + parent.name(i) + ")";
     }
+    @Override public boolean isNumeric() { return true; }
 
-    @Override protected void prepareInputs(List<Vec> inputs) {}
-    @Override protected void preparePerChunk(Chunk[] cs) {}
+    @Override public void prepareInputs(List<Vec> inputs) {}
+    @Override public void preparePerChunk(Chunk[] cs) {}
     @Override public double getNumValue(int i, int j) {
       return Double.NaN;
     }

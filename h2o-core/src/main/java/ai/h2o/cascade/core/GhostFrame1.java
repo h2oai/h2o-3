@@ -24,11 +24,11 @@ public abstract class GhostFrame1 extends GhostFrame {
     return nrows;
   }
 
-  protected void prepareInputs(List<Vec> inputs) {
+  public void prepareInputs(List<Vec> inputs) {
     parent.prepareInputs(inputs);
   }
 
-  protected void preparePerChunk(Chunk[] cs) {
+  public void preparePerChunk(Chunk[] cs) {
     parent.preparePerChunk(cs);
   }
 
