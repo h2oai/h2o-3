@@ -56,8 +56,8 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   private final HashMap<String, Integer> modelColumnNameToIndexMap;
   private final HashMap<Integer, HashMap<String, Integer>> domainMap;
 
-  // These private members are configured by setConvertUnknownCategoricalLevelsToNa().
   private final boolean convertUnknownCategoricalLevelsToNa;
+  private final boolean convertInvalidNumbersToNa;
   private final ConcurrentHashMap<String,AtomicLong> unknownCategoricalLevelsSeenPerColumn;
 
   /**
@@ -66,6 +66,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
   public static class Config {
     private GenModel model;
     private boolean convertUnknownCategoricalLevelsToNa = false;
+    private boolean convertInvalidNumbersToNa = false;
 
     /**
      * Specify model object to wrap.
@@ -98,6 +99,22 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
      * @return Setting for unknown categorical levels handling
      */
     public boolean getConvertUnknownCategoricalLevelsToNa() { return convertUnknownCategoricalLevelsToNa; }
+
+    /**
+     * Specify the default action when a string value cannot be converted to
+     * a number.
+     *
+     * @param value if true, then an N/A value will be produced, if false an
+     *              exception will be thrown.
+     */
+    public Config setConvertInvalidNumbersToNa(boolean value) {
+      convertInvalidNumbersToNa = value;
+      return this;
+    }
+
+    public boolean getConvertInvalidNumbersToNa() {
+      return convertInvalidNumbersToNa;
+    }
   }
 
   /**
@@ -118,6 +135,7 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
     // How to handle unknown categorical levels.
     unknownCategoricalLevelsSeenPerColumn = new ConcurrentHashMap<>();
     convertUnknownCategoricalLevelsToNa = config.getConvertUnknownCategoricalLevelsToNa();
+    convertInvalidNumbersToNa = config.getConvertInvalidNumbersToNa();
     setupConvertUnknownCategoricalLevelsToNa();
 
     // Create map of input variable domain information.
@@ -446,25 +464,25 @@ public class EasyPredictModelWrapper implements java.io.Serializable {
         if (o instanceof String) {
           String s = ((String) o).trim();
           // Url to an image given
-          boolean isURL = s.matches("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
           if (isImage) {
+            boolean isURL = s.matches("^(https?|ftp|file)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]");
             try {
-              if (isURL) img = ImageIO.read(new URL(s));
-              else       img = ImageIO.read(new File(s));
+              img = isURL? ImageIO.read(new URL(s)) : ImageIO.read(new File(s));
             }
             catch (IOException e) {
               throw new PredictException("Couldn't read image from " + s);
             }
           } else if (isText) {
             // TODO: use model-specific vectorization of text
-            throw new IllegalArgumentException("MOJO scoring for text classification is not yet implemented.");
+            throw new PredictException("MOJO scoring for text classification is not yet implemented.");
           }
           else {
             // numeric
             try {
               value = Double.parseDouble(s);
             } catch(NumberFormatException nfe) {
-              throw new PredictNumberFormatException("Unable to parse value: " + s + ", from column: "+ dataColumnName + ", as Double; " + nfe.getMessage());
+              if (!convertInvalidNumbersToNa)
+                throw new PredictNumberFormatException("Unable to parse value: " + s + ", from column: "+ dataColumnName + ", as Double; " + nfe.getMessage());
             }
           }
         } else if (o instanceof Double) {

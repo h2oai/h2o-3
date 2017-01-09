@@ -248,22 +248,25 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
     h2oconn.cluster.show_status()
 
 
-def lazy_import(path):
+def lazy_import(path, pattern=None):
     """
     Import a single file or collection of files.
 
     :param path: A path to a data file (remote or local).
+    :param pattern: Character string containing a regular expression to match file(s) in the folder.
     """
     assert_is_type(path, str, [str])
+    assert_is_type(pattern, str, None)
     if is_type(path, str):
-        return _import(path)
+        return _import(path,pattern)
     else:
-        return [_import(p)[0] for p in path]
+        return [_import(p,pattern)[0] for p in path]
 
 
-def _import(path):
+def _import(path, pattern):
     assert_is_type(path, str)
-    j = api("GET /3/ImportFiles", data={"path": path})
+    assert_is_type(pattern, str, None)
+    j = api("GET /3/ImportFiles", data={"path": path, "pattern": pattern})
     if j["fails"]: raise ValueError("ImportFiles of " + path + " failed on " + str(j["fails"]))
     return j["destination_frames"]
 
@@ -321,7 +324,7 @@ def upload_file(path, destination_frame=None, header=0, sep=None, col_names=None
 
 
 def import_file(path=None, destination_frame=None, parse=True, header=0, sep=None, col_names=None, col_types=None,
-                na_strings=None):
+                na_strings=None, pattern=None):
     """
     Import a dataset that is already on the cluster.
 
@@ -329,7 +332,7 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     cannot see the file, then an exception will be thrown by the H2O cluster. Does a parallel/distributed
     multi-threaded pull of the data. Also see :func:`upload_file`.
 
-    :param path: a path / paths specifying the location of the data to import.
+    :param path: a path / paths specifying the location of the data to import or a path to a directory of files to import
     :param destination_frame: The unique hex key assigned to the imported file. If none is given, a key will be
         automatically generated.
     :param parse: If True, the file should be parsed after import.
@@ -352,13 +355,23 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
             Times can also contain "AM" or "PM".
     :param na_strings: A list of strings, or a list of lists of strings (one list per column), or a dictionary
         of column names to strings which are to be interpreted as missing values.
+    :param pattern: Character string containing a regular expression to match file(s) in the folder if `path` is a
+        directory.
 
     :returns: a new H2OFrame instance.
+
+    Examples
+    --------
+        >>> #Single file import
+        >>> iris = import_file("h2o-3/smalldata/iris.csv")
+        >>> #Return all files in the folder iris/ with the regex pattern "iris_.*_correct.*"
+        >>> iris_pattern = h2o.import_file(path = "/h2o-3/smalldata/iris", pattern = "iris_.*_correct.*")
     """
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
     assert_is_type(path, str, [str])
+    assert_is_type(pattern, str, None)
     assert_is_type(destination_frame, str, None)
     assert_is_type(parse, bool)
     assert_is_type(header, -1, 0, 1)
@@ -372,9 +385,9 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         raise H2OValueError("Paths relative to a current user (~) are not valid in the server environment. "
                             "Please use absolute paths if possible.")
     if not parse:
-        return lazy_import(path)
+        return lazy_import(path, pattern)
     else:
-        return H2OFrame()._import_parse(path, destination_frame, header, sep, col_names, col_types, na_strings)
+        return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings)
 
 
 def import_sql_table(connection_url, table, username, password, columns=None, optimize=True):

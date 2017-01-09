@@ -99,7 +99,7 @@ final class PersistFS extends Persist {
   }
 
   @Override
-  public void importFiles(String path, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
+  public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
     assert false;
   }
 
