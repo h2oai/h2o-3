@@ -6,6 +6,7 @@ import h2o
 from tests import pyunit_utils
 import random
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+import pandas as pd
 
 def all_confusion_matrix_funcs():
     
@@ -41,6 +42,29 @@ def all_confusion_matrix_funcs():
     gbm_mult.train(x=["Origin", "Dest", "Distance", "UniqueCarrier", "IsDepDelayed", "fDayofMonth", "fMonth"],
                    y="fDayOfWeek", training_frame=air_train, validation_frame=air_test)
 
+    def df_check(cm,v):
+        #Assert confusion matrix is a dataframe after conversion to data frame
+        assert isinstance(cm,pd.DataFrame), "Incorrect type for confusion matrix after transform to dataframe." \
+                                            "Expect `DataFrame` but got {0}".format(type(cm))
+        #General size for binomial confusion matrix
+        assert cm.shape == (3,5), "incorrect confusion matrix dimensions. Expected 3 x 5 matrix "
+        #General column headers for binomial confusion matrix
+        assert (cm.columns.values == ['', 'NO', 'YES', 'Error', 'Rate']).all(), "incorrect confusion matrix dimension headers " \
+                                                                           "expected ['', '0', '1', 'Error', 'Rate'] but got: " \
+                                                                            "{0}".format(cm.columns.values)
+        #Check row counts
+        if v:
+            assert cm.ix[0,1] + cm.ix[0,2] + cm.ix[1,1] + cm.ix[1,2] == air_test.nrow, \
+            "incorrect confusion matrix elements: {0}, {1}, {2}, {3}. Should sum " \
+            "to {4}. metric/thresh: {5}, train: {6}, valid: {7}".format(cm.ix[0,1] + cm.ix[0,2] + cm.ix[1,1] + cm.ix[1,2],
+                                                                    air_test.nrow,v)
+        else:
+            assert cm.ix[0,1] + cm.ix[0,2] + cm.ix[1,1] + cm.ix[1,2] == air_train.nrow, \
+            "incorrect confusion matrix elements: {0}, {1}, {2}, {3}. Should sum " \
+            "to {4}. metric/thresh: {5}, train: {6}, valid: {7}".format(cm.ix[0,1] + cm.ix[0,2] + cm.ix[1,1] + cm.ix[1,2],
+                                                                    air_train.nrow, v)
+
+
     def dim_check(cm, m, t, v):
         assert len(cm) == 2 and len(cm[0]) == 2 and len(cm[1]) == 2, "incorrect confusion matrix dimensions " \
                                                                      "for metric/thresh: {0}, train: {1}, valid: " \
@@ -72,10 +96,12 @@ def all_confusion_matrix_funcs():
                 if t and v: continue
                 cm = gbm_bin.confusion_matrix(metrics=m, train=t, valid=v)
                 if cm:
-                    cm = cm.to_list()
-                    dim_check(cm, m, t, v)
-                    type_check(cm, m, t, v)
-                    count_check(cm, m, t, v)
+                    ls_cm = cm.to_list()
+                    df_cm = cm.to_df()
+                    dim_check(ls_cm, m, t, v)
+                    type_check(ls_cm, m, t, v)
+                    count_check(ls_cm, m, t, v)
+                    df_check(df_cm,v)
 
     # H2OBinomialModel.confusion_matrix()
     for x in range(10):
@@ -87,10 +113,12 @@ def all_confusion_matrix_funcs():
                 cms = gbm_bin.confusion_matrix(thresholds=thresholds, train=t, valid=v)
                 if not isinstance(cms, list): cms = [cms]
                 for idx, cm in enumerate(cms):
-                    cm = cm.to_list()
-                    dim_check(cm, thresholds[idx], t, v)
-                    type_check(cm, thresholds[idx], t, v)
-                    count_check(cm, thresholds[idx], t, v)
+                    ls_cm = cm.to_list()
+                    df_cm = cm.to_df()
+                    dim_check(ls_cm, thresholds[idx], t, v)
+                    type_check(ls_cm, thresholds[idx], t, v)
+                    count_check(ls_cm, thresholds[idx], t, v)
+                    df_check(df_cm,v)
 
     # H2OMultinomialModel.confusion_matrix()
     cm = gbm_mult.confusion_matrix(data=air_test)
@@ -104,10 +132,12 @@ def all_confusion_matrix_funcs():
     # H2OBinomialModelMetrics.confusion_matrix()
     bin_perf = gbm_bin.model_performance(valid=True)
     for metric in metrics:
-        cm = bin_perf.confusion_matrix(metrics=metric).to_list()
-        dim_check(cm, metric, False, True)
-        type_check(cm, metric, False, True)
-        count_check(cm, metric, False, True)
+        ls_cm = bin_perf.confusion_matrix(metrics=metric).to_list()
+        df_cm = bin_perf.confusion_matrix(metrics=metric).to_df()
+        dim_check(ls_cm, metric, False, True)
+        type_check(ls_cm, metric, False, True)
+        count_check(ls_cm, metric, False, True)
+        df_check(df_cm,True)
 
     # H2OBinomialModelMetrics.confusion_matrix()
     bin_perf = gbm_bin.model_performance(train=True)
@@ -117,10 +147,12 @@ def all_confusion_matrix_funcs():
         cms = bin_perf.confusion_matrix(thresholds=thresholds)
         if not isinstance(cms, list): cms = [cms]
         for idx, cm in enumerate(cms):
-            cm = cm.to_list()
-            dim_check(cm, thresholds[idx], True, False)
-            type_check(cm, thresholds[idx], True, False)
-            count_check(cm, thresholds[idx], True, False)
+            ls_cm = cm.to_list()
+            df_cm = cm.to_df()
+            dim_check(ls_cm, thresholds[idx], True, False)
+            type_check(ls_cm, thresholds[idx], True, False)
+            count_check(ls_cm, thresholds[idx], True, False)
+            df_check(df_cm,False)
 
     # H2OMultinomialModelMetrics.confusion_matrix()
     mult_perf = gbm_mult.model_performance(valid=True)
