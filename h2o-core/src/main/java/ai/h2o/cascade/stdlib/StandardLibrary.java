@@ -60,6 +60,10 @@ public abstract class StandardLibrary {
                          "boxCox", "gammaP", "gammaQ"};
     for (String cmd : mathCmds)
       importCommand("math", cmd, scope);
+
+    String[] operatorsCmds = {"minus", "plus", "times", "divide", "lt", "le", "ge", "gt"};
+    for (String cmd : operatorsCmds)
+      importCommand("operators", cmd, scope);
   }
 
 

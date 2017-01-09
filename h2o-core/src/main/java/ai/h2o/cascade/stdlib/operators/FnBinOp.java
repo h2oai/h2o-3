@@ -31,7 +31,14 @@ public abstract class FnBinOp extends StdlibFunction {
    * and row-compatible. Frames are column-compatible if they have either the
    * same number of columns, or one of the frames has just one column.
    * Similarly, the frames are row-compatible if they have either same number
-   * of rows, or one of them has just one row.
+   * of rows, or one of them has just one row. In other words, the following
+   * 9 cases are possible:
+   * <pre>
+   *                      L.rows == 1   R.rows == 1   L.rows == R.rows
+   *   L.cols == 1            1             3                5
+   *   R.cols == 1            4             2                6
+   *   L.cols == R.cols       7             8                9
+   * </pre>
    */
   protected GhostFrame numeric_frame_op_frame(GhostFrame lhs, GhostFrame rhs, BinOpSpec op) {
     int ncolsL = lhs.numCols();
@@ -43,37 +50,31 @@ public abstract class FnBinOp extends StdlibFunction {
     if (!rhs.isNumeric())
       throw new ValueError(1, "RHS frame contains non-numeric columns");
 
-    if (ncolsL == 1 && nrowsL == 1) {
-      // LHS is a 1x1 frame: convert to a simple number and use scalar-frame op
+    if (ncolsL == 1 && nrowsL == 1) {  // 1
       return new NumericScalarFrameOp(frame2scalar(lhs), rhs, op);
     }
-    if (ncolsR == 1 && nrowsR == 1) {
-      // RHS is a 1x1 frame: convert to a simple number and use frame-scalar op
+    if (ncolsR == 1 && nrowsR == 1) {  // 2
       return new NumericFrameScalarOp(lhs, frame2scalar(rhs), op);
     }
-    if (ncolsL == 1 && nrowsR == 1) {
-      // L frame has a single column and R frame has a single row.
+    if (ncolsL == 1 && nrowsR == 1) {  // 3
       return new NumericColRowOp(lhs, frame2row(rhs), op);
     }
-    if (ncolsR == 1 && nrowsL == 1) {
-      // L frame has a single row and R frame has a single column.
+    if (ncolsR == 1 && nrowsL == 1) {  // 4
       return new NumericRowColOp(frame2row(lhs), rhs, op);
     }
-    if (ncolsL == 1 && nrowsL == nrowsR) {
-      // L frame has a single col, and can be broadcasted over the R frame.
+    if (ncolsL == 1 && nrowsL == nrowsR) {  // 5
       return new NumericColFrameOp(lhs, rhs, op);
     }
-    if (ncolsR == 1 && nrowsL == nrowsR) {
-      // R frame has a single col, and can be broadcasted over the L frame.
+    if (ncolsR == 1 && nrowsL == nrowsR) {  // 6
       return new NumericFrameColOp(lhs, rhs, op);
     }
-    if (ncolsL == ncolsR && nrowsL == 1) {
+    if (ncolsL == ncolsR && nrowsL == 1) {  // 7
       return new NumericRowFrameOp(frame2row(lhs), rhs, op);
     }
-    if (ncolsL == ncolsR && nrowsR == 1) {
+    if (ncolsL == ncolsR && nrowsR == 1) {  // 8
       return new NumericFrameRowOp(lhs, frame2row(rhs), op);
     }
-    if (ncolsL == ncolsR && nrowsL == nrowsR) {
+    if (ncolsL == ncolsR && nrowsL == nrowsR) {  // 9
       return new NumericFrameFrameOp(lhs, rhs, op);
     }
     throw new ValueError(1,

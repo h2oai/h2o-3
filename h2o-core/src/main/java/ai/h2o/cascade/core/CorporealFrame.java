@@ -66,13 +66,13 @@ public class CorporealFrame extends GhostFrame {
 
 
   @Override
-  protected void prepareInputs(List<Vec> inputs) {
+  public void prepareInputs(List<Vec> inputs) {
     j0 = inputs.size();
     inputs.addAll(Arrays.asList(frame.vecs()));
   }
 
   @Override
-  protected void preparePerChunk(Chunk[] cs) {
+  public void preparePerChunk(Chunk[] cs) {
     chunks = cs;
     bs = new BufferedString();
   }
