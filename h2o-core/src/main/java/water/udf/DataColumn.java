@@ -65,6 +65,10 @@ public abstract class DataColumn<T> extends ColumnBase<T> {
             }
             return x;
           }
+          
+          public void remove() {
+            throw new UnsupportedOperationException("can't remove immutable data");
+          }
         };
       }
     };
