@@ -1,6 +1,8 @@
 package water.udf;
 
 import com.google.common.collect.Lists;
+import water.fvec.Chunk;
+import water.fvec.RawChunk;
 import water.fvec.Vec;
 import water.udf.fp.Foldable;
 import water.udf.fp.Functions;
@@ -47,12 +49,12 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     this.columns = (Column<X>[])Lists.newArrayList(columns).toArray();
   }
   
-  @Override public Y get(long position) {
+  @Override public Y get(long idx) {
     Y y = f.initial();
-    for (Column<X> col : columns) y = f.apply(y, col.apply(position));
+    for (Column<X> col : columns) y = f.apply(y, col.apply(idx));
     return y; 
   }
-  
+
   @Override
   public TypedChunk<Y> chunkAt(int i) {
     List<TypedChunk<X>> chunks = new LinkedList<>();
@@ -61,8 +63,8 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
     return new FunChunk(chunks);
   }
 
-  @Override public boolean isNA(long i) {
-    for (Column<X> col : columns) if (col.isNA(i)) return true;
+  @Override public boolean isNA(long idx) {
+    for (Column<X> col : columns) if (col.isNA(idx)) return true;
     return false;
   }
 
@@ -74,17 +76,21 @@ public class FoldingColumn<X, Y> extends FunColumnBase<Y> {
       this.chunks = chunks;
     }
 
+    private RawChunk myChunk = new RawChunk(this);
+
     @Override public Vec vec() { return FoldingColumn.this.vec(); }
 
-    @Override public boolean isNA(long i) {
+    @Override public Chunk rawChunk() { return myChunk; }
+
+    @Override public boolean isNA(int i) {
       for (TypedChunk<X> c : chunks) if (c.isNA(i)) return true;
       return false;
     }
 
     @Override
-    public Y get(long position) {
+    public Y get(int idx) {
       Y y = f.initial();
-      for (TypedChunk<X> c : chunks) y = f.apply(y, c.get(position));
+      for (TypedChunk<X> c : chunks) y = f.apply(y, c.get(idx));
       return y;
     }
   }

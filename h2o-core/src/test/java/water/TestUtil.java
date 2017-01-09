@@ -72,7 +72,6 @@ public class TestUtil extends Iced {
   }
 
   public static void stall_till_cloudsize(int x, int timeout) {
-    System.out.println("Waiting for " + x + " servers until " + timeout);
     stall_till_cloudsize(new String[] {}, x, timeout);
   }
 
@@ -317,7 +316,7 @@ public class TestUtil extends Iced {
    *
    * @param fname name of folder
    * @param na_string string for NA in a column
-   * @return a frame with parsed data
+   * @return
    */
   protected static Frame parse_test_folder( String fname, String na_string, int check_header, byte[] column_types ) {
     File folder = find_test_file_static(fname);

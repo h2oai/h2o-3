@@ -1,5 +1,7 @@
 package water.udf;
 
+import water.fvec.Chunk;
+import water.fvec.RawChunk;
 import water.fvec.Vec;
 import water.udf.fp.Function2;
 import water.udf.fp.Functions;
@@ -29,8 +31,8 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
     assert xs.isCompatibleWith(ys) : "Columns must be compatible: " + xs + ", " + ys;
   }
   
-  @Override public Z get(long position) { 
-    return isNA(position) ? null : f.apply(xs.apply(position), ys.apply(position)); 
+  @Override public Z get(long idx) { 
+    return isNA(idx) ? null : f.apply(xs.apply(idx), ys.apply(idx)); 
   }
 
   @Override
@@ -38,7 +40,7 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
     return new FunChunk(xs.chunkAt(i), ys.chunkAt(i));
   }
 
-  @Override public boolean isNA(long i) { return xs.isNA(i) || ys.isNA(i); }
+  @Override public boolean isNA(long idx) { return xs.isNA(idx) || ys.isNA(idx); }
 
   /**
    * Pretends to be a chunk of a column, for distributed calculations.
@@ -48,6 +50,10 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
     private final TypedChunk<X> cx;
     private final TypedChunk<Y> cy;
 
+    private RawChunk myChunk = new RawChunk(this);
+
+    @Override public Chunk rawChunk() { return myChunk; }
+
     @Override public Vec vec() { return Fun2Column.this.vec(); }
 
     public FunChunk(TypedChunk<X> cx, TypedChunk<Y> cy) {
@@ -56,9 +62,9 @@ public class Fun2Column<X, Y, Z> extends FunColumnBase<Z> {
       this.cy = cy;
     }
 
-    @Override public boolean isNA(long i) { return cx.isNA(i) || cy.isNA(i); }
+    @Override public boolean isNA(int i) { return cx.isNA(i) || cy.isNA(i); }
 
-    @Override public Z get(long i) { return f.apply(cx.get(i), cy.get(i)); }
+    @Override public Z get(int i) { return f.apply(cx.get(i), cy.get(i)); }
   }
 
   @Override

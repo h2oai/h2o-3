@@ -18,6 +18,7 @@ public class TypedFrame<X> extends Frame {
   private final ColumnFactory<X> factory;
   private final long length;
   private final Function<Long, X> function;
+  private Column<X> column;
 
   /**
    * deserialization :(
@@ -38,41 +39,29 @@ public class TypedFrame<X> extends Frame {
   public static <X> TypedFrame<X> forColumn(final BaseFactory<X> factory, final Column<X> column) {
     return new TypedFrame<X>(factory, column.size(), column) {
       @Override protected Vec buildZeroVec() { return factory.buildZeroVec(column); }
-      @Override protected X evalAt(long coord, long absIndex) {
-        return column.apply(coord);
-      }
     };
   }
   
-  protected X evalAt(long coord, long absIndex) {
-    return function.apply(absIndex);
-  }
-    
   public final static class EnumFrame extends TypedFrame<Integer> {
+    private final String[] domain;
     
     public EnumFrame(long length, Function<Long, Integer> function, String[] domain) {
       super(Enums.enums(domain), length, function);
+      this.domain = domain;
     }
   }
   
   protected Vec buildZeroVec() { return factory.buildZeroVec(length); }
   
-  private Vec makeVec() throws IOException {
+  protected Vec makeVec() throws IOException {
     final Vec vec0 = buildZeroVec();
     MRTask task = new MRTask() {
       @Override public void map(Chunk[] cs) {
         for (Chunk c : cs) {
           DataChunk<X> tc = factory.apply(c);
           for (int r = 0; r < c._len; r++) {
-
-            long positionInVec = ((long)c.cidx()<<32) + r;
-            long absoluteIndex = c.start() + r;
-            try {
-              final X value = evalAt(positionInVec, absoluteIndex);
-              tc.set(positionInVec, value);
-            } catch (ArrayIndexOutOfBoundsException iae) {
-              throw new IllegalArgumentException(iae.getMessage() + " i=" + absoluteIndex + "(" + Long.toHexString(positionInVec) + ")/" + c.cidx() + "," + c._len + "," + r, iae);
-            }
+            long i = r + c.start();
+            tc.set(r, function.apply(i));
           }
         }
       }

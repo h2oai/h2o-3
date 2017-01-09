@@ -91,7 +91,7 @@ public class UnfoldingFrame<X> extends Frame {
         int size = cs[0].len(); // TODO(vlad): find a solution for empty  
         long start = cs[0].start();
         for (int r = 0; r < size; r++) {
-          long i = ((long)cs[0].cidx() << 32) + r;
+          long i = r + start;
           List<X> values = function.apply(i);
           for (int j = 0; j < cs.length; j++) {
             DataChunk<X> tc = factory.apply(cs[j]);

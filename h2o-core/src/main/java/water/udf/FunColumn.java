@@ -1,5 +1,7 @@
 package water.udf;
 
+import water.fvec.Chunk;
+import water.fvec.RawChunk;
 import water.fvec.Vec;
 import water.udf.fp.Function;
 import water.udf.fp.Functions;
@@ -30,9 +32,9 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
     return new FunChunk(xs.chunkAt(i));
   }
 
-  public Y get(long i) { return isNA(i) ? null : f.apply(xs.apply(i)); }
+  public Y get(long idx) { return isNA(idx) ? null : f.apply(xs.apply(idx)); }
 
-  @Override public boolean isNA(long position) { return xs.isNA(position); }
+  @Override public boolean isNA(long idx) { return xs.isNA(idx); }
 
   /**
    * Pretends to be a chunk of a column, for distributed calculations.
@@ -50,9 +52,13 @@ public class FunColumn<X, Y> extends FunColumnBase<Y> {
 
     @Override public int length() { return cx.length(); }
 
-    @Override public boolean isNA(long i) { return cx.isNA(i); }
+    private RawChunk myChunk = new RawChunk(this);
 
-    @Override public Y get(long i) { return f.apply(cx.get(i)); }
+    @Override public Chunk rawChunk() { return myChunk; }
+
+    @Override public boolean isNA(int i) { return cx.isNA(i); }
+
+    @Override public Y get(int i) { return f.apply(cx.get(i)); }
   }
 
   @Override
