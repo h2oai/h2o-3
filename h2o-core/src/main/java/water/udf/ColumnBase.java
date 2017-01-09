@@ -9,11 +9,11 @@ import water.fvec.Vec;
  */
 public abstract class ColumnBase<T> extends Iced<ColumnBase<T>> implements Column<T> {
 
-  public abstract T get(long position);
+  public abstract T get(long idx);
   
-  @Override public T apply(long position) { return get(position); }
+  @Override public T apply(long idx) { return get(idx); }
 
-  @Override public T apply(Long position) { return get(position); }
+  @Override public T apply(Long idx) { return get(idx); }
 
   @Override 
   public boolean isCompatibleWith(Column<?> ys) {

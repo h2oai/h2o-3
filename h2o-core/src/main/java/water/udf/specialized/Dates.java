@@ -30,14 +30,14 @@ public class Dates extends DataColumns.BaseFactory<Date> {
     }
     
     @Override
-    public Date get(long position) {
-      int i = indexOf(position);
-      return isNA(i) ? null : new Date(c.at8(i));
+    public Date get(int idx) {
+      return isNA(idx) ? null : new Date(c.at8(idx));
     }
 
     @Override
-    protected void setValue(int at, Date value) {
-      c.set(at, value.getTime());
+    public void set(int idx, Date value) {
+      if (value == null) c.setNA(idx);
+      else c.set(idx, value.getTime());
     }
   }
   
@@ -51,17 +51,15 @@ public class Dates extends DataColumns.BaseFactory<Date> {
     public Column(Vec v, ColumnFactory<Date> factory) {
       super(v, factory);
     }
-    
     @Override
-    public Date get(long coord) {
-      DateChunk c = new DateChunk(chunkAt(coord));
-      return c.get(coord);
+    public Date get(long idx) {
+      return isNA(idx) ? null : new Date(vec().at8(idx));
     }
 
     @Override
-    public void set(long coord, Date value) {
-      DateChunk c = new DateChunk(chunkAt(coord));
-      c.set(coord, value);
+    public void set(long idx, Date value) {
+      if (value == null) vec().setNA(idx);
+      else vec().set(idx, value.getTime());
     }
   }
   
