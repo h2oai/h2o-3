@@ -34,13 +34,19 @@ public class Strings extends DataColumns.BaseFactory<String> {
         if (iae.getMessage().equals("Not a String")) return null;
         throw new IllegalArgumentException("position was " + Long.toHexString(position) + "; " + iae.getMessage(), iae);
       } catch (ArrayIndexOutOfBoundsException aie) {
-        throw new IllegalArgumentException("position was " + Long.toHexString(position) + ", i=" + i + ", got " + aie.getMessage(), aie);
+        aie.printStackTrace();
+        throw new IllegalArgumentException("position was " + Long.toHexString(position) + ", i=" + i + ", got " + aie.getMessage() + "; details: " + this, aie);
       }
     }
 
     @Override
     public void setValue(int at, String value) {
       c.set(at, value);
+    }
+    
+    @Override
+    public String toString() {
+      return "StringChunk(" + c + ")";
     }
   }
   
