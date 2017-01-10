@@ -82,7 +82,7 @@ public class DeepWaterV3 extends ModelBuilderSchema<DeepWater,DeepWaterV3,DeepWa
      * Tanh: Hyperbolic tangent function (same as scaled and shifted sigmoid).
      */
     @API(level = API.Level.critical, direction = API.Direction.INOUT,
-        values = {"auto", "image", "text", "dataset"},
+        values = {"auto", "image", /*"text",*/ "dataset"},
         help = "Problem type, auto-detected by default. If set to image, the H2OFrame must contain a string column containing the path (URI or URL) to the images in the first column. " +
         "If set to text, the H2OFrame must contain a string column containing the text in the first column. " +
         "If set to dataset, Deep Water behaves just like any other H2O Model and builds a model on the provided H2OFrame (non-String columns).")
