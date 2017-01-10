@@ -2,8 +2,7 @@ package water.udf.fp;
 
 import org.junit.Test;
 
-import java.util.Collections;
-import java.util.Iterator;
+import java.util.*;
 
 import static org.junit.Assert.*;
 import static water.udf.fp.FP.*;
@@ -24,7 +23,11 @@ public class FPTest {
   @Test public void testHashCode() {
     assertEquals(0, FP.hashCode(null));
     assertEquals(1, FP.hashCode(1));
-    assertEquals(1929600551, FP.hashCode(new String[]{null}));
+    final List<String> sut = new ArrayList<String>();
+    sut.add(null);
+    int hc = sut.hashCode();
+    final int hashCode = FP.hashCode(sut);
+    assertEquals(31, hashCode);
   }
   
   @Test
