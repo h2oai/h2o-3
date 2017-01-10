@@ -605,12 +605,12 @@ class H2ODeepWaterEstimator(H2OEstimator):
 
     @property
     def backend(self):
-        """Enum["auto", "mxnet", "caffe", "tensorflow"]: Deep Learning Backend. (Default: "mxnet")"""
+        """Enum["mxnet", "caffe", "tensorflow"]: Deep Learning Backend. (Default: "mxnet")"""
         return self._parms.get("backend")
 
     @backend.setter
     def backend(self, backend):
-        assert_is_type(backend, None, Enum("auto", "mxnet", "caffe", "tensorflow"))
+        assert_is_type(backend, None, Enum("mxnet", "caffe", "tensorflow"))
         self._parms["backend"] = backend
 
 
