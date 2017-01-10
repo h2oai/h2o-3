@@ -34,7 +34,7 @@ public class Strings extends DataColumns.BaseFactory<String> {
         if (iae.getMessage().equals("Not a String")) return null;
         throw new IllegalArgumentException("position was " + Long.toHexString(position) + "; " + iae.getMessage(), iae);
       } catch (ArrayIndexOutOfBoundsException aie) {
-        throw new IllegalArgumentException("position was " + Long.toHexString(position), aie);
+        throw new IllegalArgumentException("position was " + Long.toHexString(position) + ", i=" + i + ", got " + aie.getMessage(), aie);
       }
     }
 
