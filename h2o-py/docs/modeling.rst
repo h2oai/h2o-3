@@ -1,11 +1,8 @@
 Modeling In H2O
 ===============
 
-:mod:`H2OEstimator`
+Supervised
 -------------------
-.. autoclass:: h2o.estimators.estimator_base.H2OEstimator
-  :members:
-  :show-inheritance:
 
 :mod:`H2ODeepLearningEstimator`
 -------------------------------
@@ -13,19 +10,11 @@ Modeling In H2O
   :members:
   :show-inheritance:
 
-:mod:`H2OAutoEncoderEstimator`
-------------------------------
-.. autoclass:: h2o.estimators.deeplearning.H2OAutoEncoderEstimator
+:mod:`H2OGeneralizedLinearEstimator`
+------------------------------------
+.. autoclass:: h2o.estimators.glm.H2OGeneralizedLinearEstimator
   :members:
   :show-inheritance:
-
-
-:mod:`H2ORandomForestEstimator`
--------------------------------
-.. autoclass:: h2o.estimators.random_forest.H2ORandomForestEstimator
-  :members:
-  :show-inheritance:
-
 
 :mod:`H2OGradientBoostingEstimator`
 -----------------------------------
@@ -33,9 +22,24 @@ Modeling In H2O
   :members:
   :show-inheritance:
 
-:mod:`H2OGeneralizedLinearEstimator`
-------------------------------------
-.. autoclass:: h2o.estimators.glm.H2OGeneralizedLinearEstimator
+:mod:`H2ONaiveBayesEstimator`
+-----------------------------
+.. autoclass:: h2o.estimators.naive_bayes.H2ONaiveBayesEstimator
+  :members:
+  :show-inheritance:
+
+:mod:`H2ORandomForestEstimator`
+-------------------------------
+.. autoclass:: h2o.estimators.random_forest.H2ORandomForestEstimator
+  :members:
+  :show-inheritance:
+
+Unsupervised
+------------
+
+:mod:`H2OAutoEncoderEstimator`
+------------------------------
+.. autoclass:: h2o.estimators.deeplearning.H2OAutoEncoderEstimator
   :members:
   :show-inheritance:
 
@@ -51,9 +55,18 @@ Modeling In H2O
   :members:
   :show-inheritance:
 
-:mod:`H2ONaiveBayesEstimator`
------------------------------
-.. autoclass:: h2o.estimators.naive_bayes.H2ONaiveBayesEstimator
+:mod:`H2OPrincipalComponentAnalysisEstimator`
+----------------------------------------------
+.. autoclass:: h2o.estimators.pca.H2OPrincipalComponentAnalysisEstimator
+ :members:
+ :show-inheritance:
+
+Misc
+----
+
+:mod:`H2OEstimator`
+-------------------
+.. autoclass:: h2o.estimators.estimator_base.H2OEstimator
   :members:
   :show-inheritance:
 
