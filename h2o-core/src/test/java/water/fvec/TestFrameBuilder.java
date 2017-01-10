@@ -176,7 +176,10 @@ public class TestFrameBuilder {
 
   // Utility method to get unique values from categorical domain
   private String[] getUniqueValues(HashMap<String, Integer> mapping){
-   return mapping.keySet().toArray(new String[mapping.keySet().size()]);
+    String[] values = new String[mapping.size()];
+    for (String key : mapping.keySet())
+      values[mapping.get(key)] = key;
+    return values;
   }
 
   // Utility method to convert domain into categories
