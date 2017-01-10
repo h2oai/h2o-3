@@ -231,8 +231,8 @@ section {
     width: 022.72727273vw;
     max-width: 300px;
     min-width: 260px;
-    margin-right: 10px;
-    margin-left: 10px;
+    margin-right: 8px;
+    margin-left: 8px;
     flex: 1;
 }
 
@@ -240,17 +240,17 @@ section {
     width: 022.72727273vw;
     max-width: 300px;
     min-width: 180px;
-    margin-right: 10px;
-    margin-left: 10px;
+    margin-right: 8px;
+    margin-left: 8px;
     flex: 1;
 }
 
 .col-3dw {
     width: 022.72727273vw;
     max-width: 300px;
-    min-width: 235px;
-    margin-right: 10px;
-    margin-left: 10px;
+    min-width: 250px;
+    margin-right: 8px;
+    margin-left: 8px;
     flex: 1;
 }
 
@@ -258,8 +258,8 @@ section {
     width: 022.72727273vw;
     max-width: 300px;
     min-width: 240px;
-    margin-right: 10px;
-    margin-left: 10px;
+    margin-right: 8px;
+    margin-left: 8px;
     flex: 1;
 }
 
