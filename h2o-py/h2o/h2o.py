@@ -362,9 +362,9 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :examples:
         >>> # Single file import
         >>> iris = import_file("h2o-3/smalldata/iris.csv")
-        >>> # Return all files in the folder iris/ with the regex pattern r"iris_.*_correct\..*"
-        >>> iris_pattern = h2o.import_file(path = "/h2o-3/smalldata/iris",
-        ...                                pattern = "iris_.*_correct\..*")
+        >>> # Return all files in the folder iris/ matching the regex r"iris_.*\.csv"
+        >>> iris_pattern = h2o.import_file(path = "h2o-3/smalldata/iris",
+        ...                                pattern = "iris_.*\.csv")
     """
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
@@ -460,7 +460,8 @@ def import_sql_select(connection_url, select_query, username, password, optimize
         >>> select_query = "SELECT bikeid from citibike20k"
         >>> username = "root"
         >>> password = "abc123"
-        >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query, username, password)
+        >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query,
+        ...                                          username, password)
     """
     assert_is_type(connection_url, str)
     assert_is_type(select_query, str)
