@@ -275,14 +275,14 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     gbmParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
 
     Map<String, Object[]> searchParams = new HashMap<>();
-    searchParams.put("ntrees", new Integer[]{10000});
-    searchParams.put("max_depth", new Integer[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
-    searchParams.put("min_rows", new Integer[]{1, 5, 10, 15, 30, 100});
-    searchParams.put("learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
-    searchParams.put("sample_rate", new Double[]{0.50, 0.60, 0.70, 0.80, 0.90, 1.00});
-    searchParams.put("col_sample_rate", new Double[]{ 0.4, 0.7, 1.0});
-    searchParams.put("col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
-    searchParams.put("min_split_improvement", new Double[]{1e-4, 1e-5});
+    searchParams.put("_ntrees", new Integer[]{10000});
+    searchParams.put("_max_depth", new Integer[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
+    searchParams.put("_min_rows", new Integer[]{1, 5, 10, 15, 30, 100});
+    searchParams.put("_learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
+    searchParams.put("_sample_rate", new Double[]{0.50, 0.60, 0.70, 0.80, 0.90, 1.00});
+    searchParams.put("_col_sample_rate", new Double[]{ 0.4, 0.7, 1.0});
+    searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
+    searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
 
 /*
     if (trainingFrame.numCols() > 1000 && responseVec.isCategorical() && responseVec.cardinality() > 2)
@@ -294,7 +294,7 @@ public final class AutoML extends Keyed<AutoML> implements TimedH2ORunnable {
     Job<Grid> gridJob = GridSearch.startGridSearch(gridKey,
             gbmParameters, // TODO
             searchParams, // TODO
-            new DefaultModelParametersBuilderFactory<Model.Parameters, ModelParametersSchemaV3>(),
+            new GridSearch.SimpleParametersBuilderFactory<GBMModel.GBMParameters>(),
             searchCriteria);
 
     // TODO: poll!  (better than this)
