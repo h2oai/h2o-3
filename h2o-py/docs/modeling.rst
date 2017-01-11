@@ -2,7 +2,7 @@ Modeling In H2O
 ===============
 
 Supervised
--------------------
+----------
 
 :mod:`H2ODeepLearningEstimator`
 -------------------------------
