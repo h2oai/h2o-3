@@ -163,7 +163,7 @@ public class H2OPredictor {
 
       if (!isJson) {
         // argument is a file name
-        byte[] bytes = Files.readAllBytes(Paths.get(jsonArgs));
+        byte[] bytes = readFile(jsonArgs);
         jsonArgs = new String(bytes);
         first = jsonArgs.trim().charAt(0);
         isJson = first == '{' || first == '[';
@@ -212,6 +212,25 @@ public class H2OPredictor {
     int index = modelName.lastIndexOf(File.separatorChar);
     if (index != -1) modelName = modelName.substring(index + 1);
     return predict3(ojoFileName, modelName, jsonArgs);
+  }
+
+  private static byte[] readFile(String filePath) throws IOException {
+    StringBuffer fileData = new StringBuffer();
+    BufferedReader reader = null;
+    try {
+      reader = new BufferedReader(new FileReader(filePath));
+      char[] buf = new char[1024];
+      int numRead = 0;
+      while ((numRead = reader.read(buf)) != -1) {
+        String readData = String.valueOf(buf, 0, numRead);
+        fileData.append(readData);
+      }
+    }
+    finally{
+      if (reader != null)
+        reader.close();
+    }
+    return fileData.toString().getBytes();
   }
 
   private static String stackTraceToString(Throwable e) {
